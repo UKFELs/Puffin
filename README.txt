@@ -1,24 +1,22 @@
 ==================== Puffin v1.4.0 ======================
 
-A program for solving an unaveraged 3D FEL system. This 
-code requires FTW_2.5.1 (MPI).
+The code 'Puffin' solves the unaveraged 3D FEL system of equations. 
+The code requires FFTW_2.5.1 and uses MPI.
 
 Puffin (Parallel Unaveraged Fel INtegrator) is described in:-
-
 LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
 
 The code has been improved since then, and no longer uses an
-external linear solver, removing many of the dependencies.
-The only external package now required is FFTW.
+external linear solver. The only external package now required is FFTW.
 
-In the sub-directories you will find:
+The sub-directories include:
 
-  source/  -  This contains the main code.
+  source/  -  This contains the main source code written in Fortran 90.
   compile/ -  Some example compilation and linking scripts.
-  submit/  -  An example subission script used on Archie-WEST.  
+  submit/  -  Example subission script for the Archie-WEST HPC.  
   inputs/  -  Some example input files.
 
-Bear in mind you must load FFTW v2.1.5 and MPI compilers into
+FFTW v2.1.5 and MPI compilers must be loaded into
 your environment before compiling. e.g. on Archie, do
 
 module load compilers/gcc/4.6.2
@@ -28,7 +26,7 @@ module load /libs/gcc/fftw2/double-mpi/2.1.5
 You may wish to put these commands into your .bashrc script (or
 equivalent) to save typing this every time you log in.
 
-The job submission script lanches a job on 1 node, using 12 
+The example job submission script lanches a job on 1 node, using 12 
 processes. The line
 
 #$ -pe mpi-verbose 1
@@ -58,52 +56,51 @@ require many nodes, and plenty of memory. You may wish, on a
 larger machine, to use 1 MPI process per node, and lots of 
 nodes, to maximize the RAM for each process.
 
-
- -Dr Lawrence Campbell                    17th September 2013
-  University of Strathclyde, Glasgow
-  lawrence.campbell@strath.ac.uk
-
 =========================HISTORY==========================
 
-Puffin is the result of work performed by different 
-individuals at the University of Strathclyde over the period
-2005-2013. In order to give proper credit, a brief history
-now follows.
+Puffin is the result of work performed by a group of people 
+at the University of Strathclyde over the period
+2005-2013. A brief history is as follows:
 
-An early version of Puffin was originally developed by Dr 
-Cynthia Nam, Dr Pamela Johnston and Dr Brian McNeil. This 
-version is reported in:-
+The code had its origins in a 1D version briefly described in:
+BWJ McNeil, GRM Robb and D Jaroszynski,
+‘Self Amplification of Coherent Spontaneous Emission in the Free Electron Laser',
+Optics Comm., 165, p 65, 1999
 
+The first 3D version of the code was originally developed by 
+Dr Cynthia Nam, Dr Pamela Johnston and Dr Brian McNeil and was 
+reported in:
 Unaveraged Three-Dimensional Modelling of the FEL, Proceedings 
 of the 30th International Free Electron Laser Conference, 
 Gyeongju, Korea (2008)
 
-It was redeveloped by myself a further two times to try
-different algortithms to improve the parallelism with MPI.
-The different iterations have been reported in the proceedings
-of FEL conferences:-
+It was significantly redeveloped by Lawrence Campbell (et al) a further two times
+improving the algortithms (Fourier method back to Finite Element) and the 
+parallelism with MPI. This development has been reported in the 
+following proceedings of FEL conferences:
 
-L.T. Campbell, R. Martin and B.W.J. McNeil, A Fully Unaveraged, 
-Non-localised, Parallelized Computational Model of the FEL, 
-Proceedings of the 31st International Free Electron Laser 
-Conference, Liverpool, United Kingdom (2009)
+L.T. Campbell, R. Martin and B.W.J. McNeil, 
+'A Fully Unaveraged, Non-localised, Parallelized Computational Model of the FEL', 
+Proceedings of the 31st International Free Electron Laser Conference, 
+Liverpool, United Kingdom (2009)
 
-L.T. Campbell and B.W.J. McNeil, An Unaveraged Computational 
-Model of a Variably Polarized Undulator FEL, Proceedings of
-the 32nd International Free Electron Laser Conference, Malmo, 
-Sweden (2010)
-
-L.T. Campbell and B.W.J. McNeil, Generation of Variable 
-Polarization in a Short Wavelength FEL Amplifier, Proceedings
-of the 32nd International Free Electron Laser Conference, 
+L.T. Campbell and B.W.J. McNeil, 
+'An Unaveraged Computational Model of a Variably Polarized Undulator FEL', 
+Proceedings of the 32nd International Free Electron Laser Conference, 
 Malmo, Sweden (2010)
 
-Final working equations and algorithm was reported in:
+L.T. Campbell and B.W.J. McNeil, 
+'Generation of Variable Polarization in a Short Wavelength FEL Amplifier', 
+Proceedings of the 32nd International Free Electron Laser Conference, 
+Malmo, Sweden (2010)
 
-LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
+The final working equations and scaling were reported in:
+LT Campbell and BWJ McNeil, 
+'Puffin: A three dimensional, unaveraged free electron laser simulation code'
+Physics of Plasmas 19, 093119 (2012)
 
- -Dr Lawrence Campbell                    30th November 2012
-  University of Strathclyde, Glasgow
-  lawrence.campbell@strath.ac.uk
+The code algorithm has been improved since and no longer needs an
+external linear solver for the coupled electron-radiation field equations.
+The only external package now required by Puffin is FFTW.
 
 =============================================================
