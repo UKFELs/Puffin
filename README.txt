@@ -104,3 +104,6 @@ external linear solver for the coupled electron-radiation field equations.
 The only external package now required by Puffin is FFTW.
 
 =============================================================
+Contact Information:
+Dr Lawrence Campbell:	lawrence.campbell@strath.ac.uk
+Dr Brian McNeil:		b.w.j.mcneil@strath.ac.uk
