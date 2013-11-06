@@ -418,7 +418,8 @@ END SUBROUTINE checkFreeParams
   SUBROUTINE passToGlobals(rho,eta,kbeta,iNN, &
                    sRNX,sRNY,iNM, &
                    sElmLen,sLenEPulse,sSigE,&
-                   fx,fy,sFocusFactor,sFiltFrac,qSwitch,qOK)
+                   fx,fy,sFocusFactor,sFiltFrac, &
+                   dStepFrac,qSwitch,qOK)
 
     IMPLICIT NONE
 
@@ -547,7 +548,7 @@ END SUBROUTINE checkFreeParams
             (1.0_WP - (1.0_WP / ( 1.0_WP + eta )**2) ) - 1.0_WP) ** (-0.5_WP)
     sGammaR_G = sAw_G / (2.0_WP * rho * sFocusFactor * kbeta)
 
-    diffStep = 4.0_WP * pi * rho
+    diffStep = dStepFrac * 4.0_WP * pi * rho
 
 !     Get the number of nodes
 

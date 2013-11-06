@@ -72,21 +72,13 @@ ALLOCATE(Ar_local(2*local_rows))
   ELSE
      CALL getAlocalFL(sA,Ar_local)
   END IF
-  
-
 
 CALL local2globalA(Ar_local,sAr,mrecvs,mdispls,tTransInfo_G%qOneD)
 
 qDiffrctd = .false.
 
-
-
-
-
 iCount = 0_IP
 
-!diffStep = sStepSize
-diffStep = diffStep / 12.0_WP
 sStep = diffStep*0.5_WP ! Integration step size for first diffraction step
 nextDiff = 0.0_WP
 

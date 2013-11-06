@@ -37,6 +37,7 @@ SUBROUTINE read_in(zfilename, &
        sA0_Re, &
        sA0_Im, &
        sFiltFact, &
+       sDiffFrac, &
        srho, &
        sEta, &
        sKBeta, &
@@ -143,17 +144,13 @@ SUBROUTINE read_in(zfilename, &
   
   INTEGER(KIND=IP), INTENT(INOUT) :: nbeams, nseeds
 
-
-
-
-  
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sA0_Re(:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sA0_Im(:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: freqf(:), SmeanZ2(:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sSigmaF(:,:)
   LOGICAL, ALLOCATABLE, INTENT(OUT) :: qFlatTopS(:)
   
-  REAL(KIND=WP),     INTENT(OUT)  :: sFiltFact
+  REAL(KIND=WP),     INTENT(OUT)  :: sFiltFact,sDiffFrac
   REAL(KIND=WP),     INTENT(OUT)  :: srho
   REAL(KIND=WP),     INTENT(OUT)  :: sEta
   REAL(KIND=WP),     INTENT(OUT)  :: sKBeta
@@ -274,6 +271,7 @@ SUBROUTINE read_in(zfilename, &
   READ(UNIT=168,FMT=*) iRedNodesX
   READ(UNIT=168,FMT=*) iRedNodesY
   READ(UNIT=168,FMT=*) sFiltFact
+  READ(UNIT=168,FMT=*) sDiffFrac
   READ(UNIT=168,FMT=*) seed_file
 
 !     Read whitespace...
