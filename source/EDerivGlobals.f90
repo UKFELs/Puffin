@@ -141,5 +141,14 @@ REAL(KIND=WP)   :: time1, time2 !!!FOR DEBUGGING!!!
 
 
 
+REAL(KIND=WP), ALLOCATABLE     :: sEl_X0Position_G(:)
+REAL(KIND=WP), ALLOCATABLE     :: sEl_Y0Position_G(:)
+REAL(KIND=WP), ALLOCATABLE     :: sEl_Z20Position_G(:)
+REAL(KIND=WP), ALLOCATABLE     :: sEl_PX0Position_G(:)
+REAL(KIND=WP), ALLOCATABLE     :: sEl_PY0Position_G(:)
+REAL(KIND=WP), ALLOCATABLE     :: sEl_PZ20Position_G(:)
+
+
+
 
 End Module DerivsGlobals

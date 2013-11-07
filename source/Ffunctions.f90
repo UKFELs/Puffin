@@ -9,6 +9,7 @@ IMPLICIT NONE
 
 CONTAINS
 !********************************************************
+
   FUNCTION gaussian(x,xc,sigma)
 
     IMPLICIT NONE
@@ -22,8 +23,10 @@ CONTAINS
     REAL(KIND=WP) :: gaussian(SIZE(x)),&
          ngaussian(SIZE(x))
     REAL(KIND=WP) ::pi,s_twopi_sigma
-!--------------------------------------------------------
+
+
 ! BEGIN:-
+
     pi=4.0_WP*ATAN(1.0_WP)
     s_twopi_sigma=sqrt(2*pi)*sigma
 	
@@ -32,7 +35,9 @@ CONTAINS
     gaussian=ngaussian
 
   END FUNCTION gaussian
+
 !********************************************************
+
   FUNCTION linspace(xstart,xend,n)
 
     IMPLICIT NONE
@@ -45,8 +50,9 @@ CONTAINS
 ! Local vars:-
     REAL(KIND=WP) :: dx
     INTEGER(KIND=IP) :: i
-!********************************************************
+
 ! BEGIN:-
+
     IF(n>1) THEN
        dx=(xend-xstart)/REAL((n-1),KIND=WP)
        linspace=(/ (xstart+i*dx,i=0,(n-1))/)
@@ -55,8 +61,11 @@ CONTAINS
     ELSE
        STOP "*** Number of points must be >0 in LINSPACE ***"
     END IF
+
   END FUNCTION linspace
+
 !********************************************************
+
   FUNCTION getx(i,i_nmp,s_xc,sigma,s_xstart,s_h_in,&
        s_tol_in)
 

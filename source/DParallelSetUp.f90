@@ -102,8 +102,7 @@ END SUBROUTINE InitializeProcessors
 	  
 	  END SUBROUTINE Get_time
 
-!--------------------------------------------------------------------------------
-!--------------------------------------------------------------------------------
+!------------------------------------------------
 
       SUBROUTINE  UnDefineParallelLibrary(qOK)
 !
@@ -257,6 +256,27 @@ INTEGER(KIND=IP)  ::  error
 			  	root,tProcInfo_G%comm, error)
 
 END SUBROUTINE scatter2Loc
+
+
+!======================================================================
+
+!======================================================================
+
+SUBROUTINE scatterE2Loc(A_local,sA,nA_loc,nA,recvs,displs,root)
+! Scatter from A on root to A_local on all processes
+REAL(KIND=WP),INTENT(INOUT)  ::  A_local(:)
+INTEGER,INTENT(IN)  ::  nA_loc,nA,root
+INTEGER,INTENT(IN)  ::  recvs(:),displs(:)
+REAL(KIND=WP),INTENT(INOUT) ::  sA(:)
+
+INTEGER(KIND=IP)  ::  error
+
+ CALL MPI_SCATTERV( sA(1:nA),recvs,displs,MPI_DOUBLE_PRECISION, &
+                   A_local(1:nA_loc),nA_loc,MPI_DOUBLE_PRECISION, &
+          root,tProcInfo_G%comm, error)
+
+
+END SUBROUTINE scatterE2Loc
 
 !======================================================================
 

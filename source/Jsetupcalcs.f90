@@ -10,6 +10,8 @@ USE extra
 USE typesAndConstants
 USE DerivsGlobals
 USE electronInit
+USE gMPsFromDists
+
 
 IMPLICIT NONE
 
@@ -707,6 +709,152 @@ END SUBROUTINE checkFreeParams
 2000 CONTINUE
 
   END SUBROUTINE SetUpInitialValues
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+SUBROUTINE PopMacroElectrons(sQe,NE,noise,Z,LenEPulse,&
+                             sigma, beamCenZ2,gamma_d,eThresh, &
+                             chirp,nbeams, &
+                             sV,qOK)
+
+!                     ARGUMENTS
+
+    REAL(KIND=WP),     INTENT(IN)    :: sQe(:), gamma_d(:), chirp(:)
+    INTEGER(KIND=IP),  INTENT(IN)    :: NE(:,:),nbeams
+    LOGICAL,           INTENT(IN)    :: noise
+    REAL(KIND=WP),     INTENT(IN)    :: Z
+    REAL(KIND=WP),     INTENT(INOUT) :: LenEPulse(:,:)
+    REAL(KIND=WP),     INTENT(INOUT) :: sigma(:,:)
+    REAL(KIND=WP),     INTENT(INOUT) :: beamCenZ2(:)
+    REAL(KIND=WP),     INTENT(IN)    :: eThresh
+    REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sV(:)
+    LOGICAL,           INTENT(OUT)   :: qOK     
+
+!                   LOCAL ARGS
+
+    character(29_IP) :: fname(3)
+    integer(kind=ip) :: nbeams2
+
+    INTEGER(KIND=IPL) :: NMacroE
+    REAL(KIND=WP)     :: sQOneE
+    REAL(KIND=WP), ALLOCATABLE  :: RealE(:)
+    INTEGER(KIND=IP) :: j,error, req, lrank, rrank
+    INTEGER(KIND=IPL) :: sendbuff, recvbuff
+    INTEGER sendstat(MPI_STATUS_SIZE)
+    INTEGER recvstat(MPI_STATUS_SIZE)
+    LOGICAL :: qOKL
+
+    sQOneE = 1.60217656535E-19
+
+    qOK = .FALSE.
+
+    ALLOCATE(RealE(nbeams))
+
+!     Print a reminder to check whether shot-noise is
+!     being modelled or not
+
+    IF (tProcInfo_G%qROOT) THEN
+       IF (noise) THEN
+          PRINT *, 'SHOT-NOISE TURNED ON'
+       ELSE
+          PRINT *, 'SHOT-NOISE TURNED OFF'
+       ENDIF
+    ENDIF
+
+!     Number of real electrons
+
+    RealE = sQe / sQOneE
+
+
+!     Change sig_gamma / gamma to sig_gamma
+
+  LenEPulse(:,iPZ2_CG) = gamma_d(:) * sGammaR_G * LenEPulse(:,iPZ2_CG)
+  sigma(:,iPZ2_CG) = gamma_d(:) * sGammaR_G * sigma(:,iPZ2_CG)
+
+!     Setup electrons
+
+!    CALL electron_grid(RealE,NE,noise, &
+!                       Z,nbeams, LenEPulse,sigma, beamCenZ2, gamma_d, &
+!                       eThresh,tTransInfo_G%qOneD, &
+!                       chirp,sV,qOKL)
+!    IF (.NOT. qOKL) GOTO 1000
+
+
+    fname(1) = 'troLi16_LiPlusElec_47_1.pufin'
+    fname(2) = 'troLi16_LiPlusElec_47_2.pufin'
+    fname(3) = 'troLi16_LiPlusElec_47_3.pufin'
+
+    nbeams2 = 3_IP
+
+    call getMPs(fname, nbeams2, Z, noise, eThresh)
+
+    IF(iGloNumElectrons_G <= 0_IPL) THEN
+       CALL Error_log('iGloNumElectrons_G <=0.',tErrorLog_G)
+       GOTO 1000    
+    END IF
+
+    IF (tProcInfo_G%qROOT) PRINT *,&
+         'TOTAL NUM OF MACROPARTICLES = ', iGloNumElectrons_G
+
+    allocate(sV(iNumberElectrons_G * 6_IP))
+
+!    Set up the array describing the number of electrons
+!    on each processor
+
+    IF (tProcInfo_G%rank == tProcInfo_G%size-1) THEN
+       rrank = 0
+       lrank = tProcInfo_G%rank-1
+    ELSE IF (tProcInfo_G%rank==0) THEN
+       rrank = tProcInfo_G%rank+1
+       lrank = tProcInfo_G%size-1
+    ELSE
+       rrank = tProcInfo_G%rank+1
+       lrank = tProcInfo_G%rank-1
+    END IF
+
+    ALLOCATE(procelectrons_G(tProcInfo_G%size))
+
+    procelectrons_G(1) = iNumberElectrons_G
+
+    sendbuff = iNumberElectrons_G
+    recvbuff = iNumberElectrons_G
+
+!     When the following loop is complete, the array
+!     procelectrons_G will contain a record of the number
+!     of macroparticles on each process. The first element,
+!     procelectrons_G(1), will contain this processes local
+!     macroparticle number. The array then cycles through each
+!     process in ascending order.
+
+    DO j=2,tProcInfo_G%size
+       CALL MPI_ISSEND( sendbuff,1,MPI_INT_HIGH,rrank,&
+            0,tProcInfo_G%comm,req,error )
+       CALL MPI_RECV( recvbuff,1,MPI_INT_HIGH,lrank,&
+            0,tProcInfo_G%comm,recvstat,error )
+       CALL MPI_WAIT( req,sendstat,error )
+       procelectrons_G(j) = recvbuff
+       sendbuff=recvbuff
+    END DO
+
+    IF (iNumberElectrons_G==0) qEmpty=.TRUE. 
+
+    DEALLOCATE(RealE)
+
+!    Set error flag and exit
+
+    qOK = .TRUE.
+
+    GOTO 2000
+
+1000 CALL Error_log('Error in SetupCalcs:PopMacroElectrons',tErrorLog_G)
+
+2000 CONTINUE
+
+END SUBROUTINE PopMacroElectrons
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
