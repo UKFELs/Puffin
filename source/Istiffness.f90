@@ -141,7 +141,9 @@ SUBROUTINE oldG2newG(old,new)
 !IF (old<200) PRINT*, 'so my new is',new
 
 END SUBROUTINE oldG2newG
+
 !======================================================
+
 SUBROUTINE getLargeLocSizes(fst_row,lst_row,newfst,&
      newlst,newlocsize)
 
@@ -183,7 +185,9 @@ SUBROUTINE getLargeLocSizes(fst_row,lst_row,newfst,&
   newlocsize=newlst-newfst+1_IP
 
 END SUBROUTINE getLargeLocSizes
+
 !========================================================
+
 SUBROUTINE getAlocalFS(sA,A_local)
 
 ! get A local From Small
@@ -262,7 +266,9 @@ SUBROUTINE getAlocalFL(sA,A_local)
 
 
 END SUBROUTINE getAlocalFL !getASmall
+
 !==========================================================
+
 SUBROUTINE innerLA2largeA(A_local,sA,recvs,displs,qOneD)
 
 ! Inner Local A to large global A

@@ -106,7 +106,7 @@ LOGICAL          :: q_noise
 
 
 
-REAL(KIND=WP)    :: sElectronThreshold, sDiffFrac
+REAL(KIND=WP)    :: sElectronThreshold, sDiffFrac, sBeta
 
 REAL(KIND=WP)    :: sPEOut
 REAL(KIND=WP)    :: srho, sEta, sKBeta

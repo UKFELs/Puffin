@@ -54,8 +54,8 @@ IMPLICIT NONE
 ! iNumberElectrons_G  - Number of electrons (total)
 ! iNumberNodes_G      - Number of nodes (total)
 
-INTEGER(KIND=IP) :: NX_G
-INTEGER(KIND=IP) :: NY_G
+INTEGER(KIND=IP) :: NX_G, NBX_G
+INTEGER(KIND=IP) :: NY_G, NBY_G
 INTEGER(KIND=IP) :: NZ2_G
 
 REAL(KIND=WP)    :: sLengthOfElmX_G 
@@ -102,6 +102,8 @@ REAL(KIND=WP)    :: fx_G, fy_G
 REAL(KIND=WP), ALLOCATABLE :: kx_G(:)
 REAL(KIND=WP), ALLOCATABLE :: ky_G(:)
 REAL(KIND=WP), ALLOCATABLE :: kz2_loc_G(:)
+
+REAL(KIND=WP) :: sBeta_G    ! Absorption coefficient
 
 REAL(KIND=WP)  :: sfilt
   

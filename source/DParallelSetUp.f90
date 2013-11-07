@@ -101,8 +101,10 @@ END SUBROUTINE InitializeProcessors
 	  in_time = MPI_Wtime(error)
 	  
 	  END SUBROUTINE Get_time
+
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
+
       SUBROUTINE  UnDefineParallelLibrary(qOK)
 !
 !********************************************************************
@@ -154,6 +156,7 @@ END SUBROUTINE InitializeProcessors
 
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
+
       SUBROUTINE  StopCode(qOK)
 !
 !********************************************************************
@@ -211,7 +214,9 @@ END SUBROUTINE InitializeProcessors
 2000 CONTINUE
 	      
       END SUBROUTINE StopCode
+
 !====================================================================== 
+
 SUBROUTINE gather2A(A_local,sA,nA_loc,nA,recvs,displs)
 ! Gather from A_local to A
 REAL(KIND=WP),INTENT(IN)  ::  A_local(:)
@@ -231,7 +236,9 @@ INTEGER(KIND=IP)  ::  error
  
 
 END SUBROUTINE gather2A
+
 !======================================================================
+
 SUBROUTINE scatter2Loc(A_local,sA,nA_loc,nA,recvs,displs,root)
 ! Scatter from A on root to A_local on all processes
 REAL(KIND=WP),INTENT(INOUT)  ::  A_local(:)
@@ -250,10 +257,15 @@ INTEGER(KIND=IP)  ::  error
 			  	root,tProcInfo_G%comm, error)
 
 END SUBROUTINE scatter2Loc
+
 !======================================================================
+
 SUBROUTINE gather2Acomtoreal(A_local,sA,nA_loc,nA,totsize,recvs,displs)
-!IMPLICIT NONE
+
+IMPLICIT NONE
+
 ! Gather from A_local to A
+
 INTEGER(KIND=IP), INTENT(IN) :: totsize
 COMPLEX(KIND=WP),DIMENSION(0:totsize-1),INTENT(IN)  ::  A_local
 INTEGER,INTENT(IN)  ::  nA_loc,nA
@@ -272,7 +284,9 @@ INTEGER(KIND=IP)  ::  error
  
 
 END SUBROUTINE gather2Acomtoreal
+
 !===========================================================================
+
 SUBROUTINE getGathArrs(nlocalvals,recvs,displs)
 
 INTEGER(KIND=IP),INTENT(IN)  ::  nlocalvals
@@ -291,7 +305,9 @@ INTEGER(KIND=IP)  ::  i,error
    END DO
 
 END SUBROUTINE getGathArrs
+
 !======================================================================
+
 SUBROUTINE sum2GlobalArr(loc_arr,nvals)
 
 REAL(KIND=WP),INTENT(INOUT)  ::  loc_arr(:)
@@ -303,7 +319,9 @@ INTEGER(KIND=IP)  ::  error
  			MPI_SUM,MPI_COMM_WORLD,error)
 
 END SUBROUTINE sum2GlobalArr
+
 !======================================================================
+
 SUBROUTINE sum2RootArr(loc_arr,nvals,root)
 
 REAL(KIND=WP),INTENT(INOUT)  ::  loc_arr(:)
@@ -325,7 +343,9 @@ INTEGER(KIND=IP)  ::  error
  END IF
 
 END SUBROUTINE sum2RootArr
+
 !======================================================================
+
 SUBROUTINE GetMPIfiletype(filetype,mpifiletype)
 
 TYPE(cFileType),INTENT(IN)	::	filetype
@@ -359,7 +379,9 @@ arrayofdisps(3)=address-startaddress
  CALL MPI_TYPE_COMMIT(mpifiletype,error)
    
 END SUBROUTINE GetMPIfileType
+
 !================================================================
+
 SUBROUTINE shareFileType(fileType)
 
 TYPE(cFileType),INTENT(INOUT)  ::  filetype
@@ -393,5 +415,7 @@ strsize=len(filetype%zFileName)
                 tProcInfo_G%comm,error) 
 
 END SUBROUTINE shareFileType
+
 !==============================================================
+
 END MODULE ParallelSetUp

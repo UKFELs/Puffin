@@ -119,6 +119,7 @@ MODULE Setup
        sA0_Im,            &
        sFiltFrac,         &
        sDiffFrac,         &
+       sBeta,             &
        srho,              &
        sEta,              &
        sKBeta,            &
@@ -182,7 +183,7 @@ MODULE Setup
   CALL passToGlobals(srho,sEta,sKBeta,iNodes, &
                      iredNodesX,iredNodesY,iNumElectrons, &
                      sLengthOfElm,sLenEPulse,sSigmaGaussian,&
-                     fx,fy,sFocusFactor,sFiltFrac,sDiffFrac,&
+                     fx,fy,sFocusFactor,sFiltFrac,sDiffFrac,sBeta, &
                      qSwitches,qOK)
 
   IF (.NOT. qOKL) GOTO 1000

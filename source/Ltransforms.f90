@@ -2,13 +2,14 @@ MODULE transforms
 
 ! This module contains subroutines called in Main.f90 dealing with
 ! fourier transforms, calculations in fourier space etc.
-!
+
 USE ParallelInfoType
 USE TransformInfoType
 USE FFTW_Constants
 USE DerivsGlobals
 USE Derivative
 USE IO
+USE masks
 
 IMPLICIT NONE
 
@@ -39,7 +40,6 @@ SUBROUTINE getTransformPlans4FEL(nnodes,qOK)
   LOGICAL  :: qOKL
 
 !                   Begin
-!---------------------------------------------------
 
   qOK = .FALSE.
 
@@ -64,6 +64,7 @@ SUBROUTINE getTransformPlans4FEL(nnodes,qOK)
 END SUBROUTINE getTransformPlans4FEL
 
 !*************************************************
+
 SUBROUTINE getTransformPlans_MultiD(sizes,nDims,qOK)
 
   IMPLICIT NONE
@@ -85,7 +86,6 @@ SUBROUTINE getTransformPlans_MultiD(sizes,nDims,qOK)
   INTEGER, INTENT(IN) :: nDims
   LOGICAL, INTENT(OUT) :: qOK
 
-!------------------------------------------------
 !                         Begin
 
   qOK = .FALSE.
@@ -128,6 +128,7 @@ SUBROUTINE getTransformPlans_MultiD(sizes,nDims,qOK)
 
 END SUBROUTINE getTransformPlans_MultiD
 !******************************************************
+
 SUBROUTINE getTransformPlans_OneD(nn1D,qOK)
 
   IMPLICIT NONE
@@ -145,7 +146,6 @@ SUBROUTINE getTransformPlans_OneD(nn1D,qOK)
   INTEGER, INTENT(IN)   :: nn1D
   LOGICAL, INTENT(OUT)  :: qOK
 
-!-------------------------------------------------------
 !                         Begin
 
   qOk = .FALSE.
@@ -186,7 +186,9 @@ SUBROUTINE getTransformPlans_OneD(nn1D,qOK)
 2000 CONTINUE
     
 END SUBROUTINE getTransformPlans_OneD
+
 !*****************************************************
+
 SUBROUTINE clearTransformPlans(qOK)
 
   IMPLICIT NONE
@@ -207,7 +209,6 @@ SUBROUTINE clearTransformPlans(qOK)
 
   LOGICAL :: qOKL
 
-!-----------------------------------------------------
 !                      Begin
 
   qOK = .FALSE.
@@ -233,7 +234,9 @@ SUBROUTINE clearTransformPlans(qOK)
 2000 CONTINUE
 
 END SUBROUTINE clearTransformPlans
+
 !******************************************************
+
 SUBROUTINE clearTransformPlans_OneD(qOK)
 
   IMPLICIT NONE
@@ -247,7 +250,6 @@ SUBROUTINE clearTransformPlans_OneD(qOK)
 
   LOGICAL, INTENT(OUT) :: qOK
 
-!-----------------------------------------------------
 !                    BEGIN:-
 
   qOK = .FALSE.
@@ -266,7 +268,9 @@ SUBROUTINE clearTransformPlans_OneD(qOK)
 2000 CONTINUE
   
 END SUBROUTINE clearTransformPlans_OneD
+
 !*****************************************************
+
 SUBROUTINE clearTransformPlans_ThreeD(qOK)
 
   IMPLICIT NONE
@@ -279,8 +283,7 @@ SUBROUTINE clearTransformPlans_ThreeD(qOK)
 ! qOK            error flag; .false. if error occurs
 !
   LOGICAL, INTENT(OUT)  :: qOK
-!	  
-!-----------------------------------------------------
+
 !                  Begin
   qOK = .FALSE.
 
@@ -299,7 +302,9 @@ SUBROUTINE clearTransformPlans_ThreeD(qOK)
 2000 CONTINUE
 
 END SUBROUTINE clearTransformPlans_ThreeD
+
 !*****************************************************
+
 SUBROUTINE SetupParallelFourierField(sA,sA_local,&
                             work,qOK)      
 
@@ -336,8 +341,7 @@ SUBROUTINE SetupParallelFourierField(sA,sA_local,&
   INTEGER(KIND=IP) :: strans, first, last
   LOGICAL  ::  qOKL 
 
-!--------------------------------------------------------
-!          Begin
+!                      Begin
 
   qOK = .FALSE.
 
@@ -389,6 +393,7 @@ SUBROUTINE SetupParallelFourierField(sA,sA_local,&
 END SUBROUTINE SetupParallelFourierField
       
 !***********************************************************
+
 SUBROUTINE Transform(plan, &
      work, &
      local_in, &
@@ -428,7 +433,6 @@ SUBROUTINE Transform(plan, &
 
   LOGICAL :: qOKL
 
-!-------------------------------------------------------	
 !                     Begin
 
   qOK = .FALSE.
@@ -454,7 +458,9 @@ SUBROUTINE Transform(plan, &
 2000 CONTINUE
 	
 END SUBROUTINE Transform
+
 !******************************************************
+
 SUBROUTINE Transform_MultiD(plan,work,local_in,qOK)
   
   IMPLICIT NONE				   
@@ -484,7 +490,7 @@ SUBROUTINE Transform_MultiD(plan,work,local_in,qOK)
        :: local_in
 
   LOGICAL, INTENT(OUT) :: qOK
-!-------------------------------------------------------
+
 !                       Begin
 
   qOK = .FALSE.
@@ -505,7 +511,9 @@ SUBROUTINE Transform_MultiD(plan,work,local_in,qOK)
 2000 CONTINUE
 
 END SUBROUTINE Transform_MultiD
+
 !******************************************************
+
 SUBROUTINE Transform_OneD(plan,work,local_in,qOK)
 
   IMPLICIT NONE
@@ -533,7 +541,6 @@ SUBROUTINE Transform_OneD(plan,work,local_in,qOK)
 
   LOGICAL, INTENT(OUT) :: qOK
 
-!------------------------------------------------------
 !                       Begin
 
   qOK = .FALSE.
@@ -553,7 +560,9 @@ SUBROUTINE Transform_OneD(plan,work,local_in,qOK)
 2000 CONTINUE
 
 END SUBROUTINE Transform_OneD
+
 !******************************************************
+
 SUBROUTINE multiplyexp(h,Field,qOK)
 
   IMPLICIT NONE
@@ -599,9 +608,9 @@ SUBROUTINE multiplyexp(h,Field,qOK)
 
 !      Main loop, multiply FT field by exp factor
   
-  DO x_inc=0,NX_G-1_IP
+  DO z2_inc=0,loc_nz2-1_IP
      DO y_inc=0,NY_G-1_IP
-        DO z2_inc=0,loc_nz2-1_IP
+        DO x_inc=0,NX_G-1_IP
 
            ind=x_inc+y_inc*NX_G+z2_inc*NX_G*NY_G
 
@@ -679,11 +688,10 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sV,sA,qOK)
 ! sA_local      The local Fourier transformed field array
 ! qOKL          Local error flag
 
-  COMPLEX(KIND=WP),DIMENSION(:),ALLOCATABLE :: &
+  COMPLEX(KIND=WP), DIMENSION(:), ALLOCATABLE :: &
        work,sA_local
   LOGICAL :: qOKL
 
-!------------------------------------------------------
 !                      Begin
 
   qOK = .FALSE.
@@ -711,19 +719,24 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sV,sA,qOK)
 
   IF (.NOT. qOKL) GOTO 1000
 
-  DEALLOCATE(work)
-
-
 !      Scale the field data to normalize transforms
 
   sA_local = sA_local/ffact
 
+
+!      Now solve for the absorbing boundary layer
+
+  CALL AbsorptionStep(sA_local,work,h,tTransInfo_G%loc_nz2,ffact)
+
+
+  DEALLOCATE(work)
+
 !   Collect data back onto global field var sA on every process
 
-  CALL gather2Acomtoreal(sA_local,sA,&
-       (NX_G*NY_G*tTransInfo_G%loc_nz2),&
-       NX_G*NY_G*NZ2_G,&
-       tTransInfo_G%TOTAL_LOCAL_SIZE,&
+  CALL gather2Acomtoreal(sA_local,sA, &
+       (NX_G*NY_G*tTransInfo_G%loc_nz2), &
+       NX_G*NY_G*NZ2_G, &
+       tTransInfo_G%TOTAL_LOCAL_SIZE, &
        recvs,displs)
 
   DEALLOCATE(sA_local)
@@ -743,7 +756,134 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sV,sA,qOK)
 2000 CONTINUE
 
 END SUBROUTINE DiffractionStep
+
+!***********************************************************
+
+SUBROUTINE AbsorptionStep(sAl,work,h,loc_nz2,ffact)
+
+! This subroutine implements a boundary region
+! in the x, y and z2 directions. The method used
+! is similar to e.g. REF.
+!
+! The boundary layer absorbs the outgoing radiation
+! to minimize the reflections of the diffracted 
+! radiation.
+!
+! Written by
+! Dr L.T. Campbell
+! University of Hamburg
+! Oct 2013
+
+
+
+! 
+! APPLY ABSORPTION FIRST IN THE TRANSVERSE DIRECTION,
+! THEN IN THE LONGITUDINAL. 
+!
+! SO, FIRST, TRANSVERSE MASK, THEN FT, THEN:
+!
+!          NEW_Af = Af * EXP(delz*beta*(-kx-ky)/kz2)
+!
+! i.e. EXPONENTIALLY DECREASE FREQUENCY COMPONENTS 
+! DEPENDANT ON *BOTH* TRANSVERSE AND LONGITUDINAL 
+! WAVENUMBER.
+!
+! THEN FFT BACK TO A.
+!
+! THEN APPLY LONGITUDINAL MASK, AND FFT AGAIN
+!
+! THEN ABSORB LONGITUDINAL PROP FROM DIFFRACTION
+!
+!
+!
+!                ARGUMENTS
+
+  COMPLEX(KIND=WP), INTENT(INOUT) :: sAl(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1)
+  COMPLEX(KIND=WP), INTENT(INOUT) :: work(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1)
+  INTEGER(KIND=IP), INTENT(IN) :: loc_nz2
+  REAL(KIND=WP), INTENT(IN) :: h,ffact
+
+!               LOCAL ARGS
+
+  REAL(KIND=WP) :: mask(NX_G*NY_G)
+  COMPLEX(KIND=WP) :: sAnb(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1)
+  INTEGER(KIND=IP) :: iz2, x_inc, y_inc, z2_inc, ind
+  integer :: error
+  LOGICAL :: qOKL
+
+  CALL getMask(NX_G, NY_G, sLengthOfElmX_G, sLengthOfElmY_G, &
+               NBX_G, NBY_G, mask)
+  
+!!!!!      sAl is local      !!!!!
+!!!!!      goes from 0,total_local_size     !!!!!!!
+
+  IF (loc_nz2 > 0) THEN
+
+  DO iz2 = 0_IP, loc_nz2 - 1_IP
+
+    sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)  = (1.0_WP - mask) * sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
+    sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP) =  mask * sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
+
+  END DO
+
+  END IF
+
+!     FFT sAb
+
+  CALL Transform(tTransInfo_G%fplan, &
+       work, sAl, qOKL)
+
+!     Apply filter, by decreasing fourier coefficients
+
+  DO z2_inc=0,loc_nz2-1_IP
+    DO y_inc=0,NY_G-1_IP
+      DO x_inc=0,NX_G-1_IP
+
+        ind=x_inc+y_inc*NX_G+z2_inc*NX_G*NY_G
+              
+        IF (kz2_loc_G(z2_inc)/=0.0_WP) THEN
+
+          sAl(ind) = exp(-h*sBeta_G*(abs(kx_G(x_inc)) + &
+                         abs(ky_G(y_inc))) / &
+                         (sqrt(abs(kz2_loc_G(z2_inc))))) * sAl(ind)
+
+        END IF
+
+      END DO
+    END DO
+  END DO
+
+!     Inverse FFT
+
+  CALL Transform(tTransInfo_G%bplan, &
+       work, &
+       sAl, &
+       qOKL)
+
+!CALL MPI_BARRIER(tProcInfo_G%comm,error)
+
+!  IF (.NOT. qOKL) GOTO 1000
+
+!     Scale the field data to normalize transforms
+
+  sAl = sAl / ffact
+
+!     Recombine masked field around boundary with remainder
+
+  sAl = sAl + sAnb
+
+
+END SUBROUTINE AbsorptionStep
+
+
+! PUT IN ANOTHER FILE
 !**************************************************
+!**************************************************
+!**************************************************
+!**************************************************
+
+!**************************************************
+
 SUBROUTINE clearA(sA,sV,qOK)
 
 ! qOK       OUT      Error flag; if .false. error has occured
@@ -765,6 +905,7 @@ SUBROUTINE clearA(sA,sV,qOK)
 
 ! Find furthest back electron
   loc_max = MAXVAL(Vector(iRe_Z2_CG,sV))
+
   CALL MPI_ALLREDUCE(loc_max,glo_max,1,MPI_DOUBLE_PRECISION,&
        MPI_MAX,MPI_COMM_WORLD,error)
 
@@ -803,6 +944,7 @@ SUBROUTINE clearA(sA,sV,qOK)
 END SUBROUTINE clearA
 
 !**************************************************
+
 SUBROUTINE GetKValues(recvs,displs,qOK)
 
   IMPLICIT NONE

@@ -419,7 +419,7 @@ END SUBROUTINE checkFreeParams
                    sRNX,sRNY,iNM, &
                    sElmLen,sLenEPulse,sSigE,&
                    fx,fy,sFocusFactor,sFiltFrac, &
-                   dStepFrac,qSwitch,qOK)
+                   dStepFrac,sBeta,qSwitch,qOK)
 
     IMPLICIT NONE
 
@@ -452,7 +452,7 @@ END SUBROUTINE checkFreeParams
     REAL(KIND=WP),     INTENT(INOUT) :: sLenEPulse(:,:)   
     REAL(KIND=WP),     INTENT(IN)    :: sSigE(:,:)
     REAL(KIND=WP),     INTENT(IN)    :: fx,fy,sFocusFactor
-    REAL(KIND=WP),     INTENT(IN)    :: sFiltFrac
+    REAL(KIND=WP),     INTENT(IN)    :: sFiltFrac, dStepFrac, sBeta
     LOGICAL,           INTENT(IN)    :: qSwitch(nSwitches_CG)
     LOGICAL,           INTENT(OUT)   :: qOK
 
@@ -549,6 +549,10 @@ END SUBROUTINE checkFreeParams
     sGammaR_G = sAw_G / (2.0_WP * rho * sFocusFactor * kbeta)
 
     diffStep = dStepFrac * 4.0_WP * pi * rho
+
+    sBeta_G = sBeta
+    NBX_G = 16_IP
+    NBY_G = 16_IP
 
 !     Get the number of nodes
 
