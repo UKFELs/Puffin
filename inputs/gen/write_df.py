@@ -241,6 +241,11 @@ lwy = 1E0
 lsys_x = lwx
 lsys_y = lwy
 
+
+filtFrac = 0.3
+diffFrac = 1.0
+
+
 ################################################
 # Write data
 
@@ -314,7 +319,8 @@ f.write('{:<24.15E}'.format(lsys_x)   + 'REAL        sFModelLengthY       Length
 f.write('{:<24.15E}'.format(lsys_z2)  + 'REAL        sWigglerLengthZ2     Length of wiggler in z2-bar direction\n')
 f.write('{:<24d}'.format(1)        + 'INTEGER     iRedNodesX           Length of central wiggler section in x where electrons will not leave\n')
 f.write('{:<24d}'.format(1)        + 'INTEGER     iRedNodesY           Length of central wiggler section in y where electrons will not leave\n')
-f.write('{:<24.15E}'.format(0.3)   + 'REAL        sFiltFrac            Specifies cutoff for high pass filter as fraction of resonant frequency\n')
+f.write('{:<24.15E}'.format(filtFrac)   + 'REAL        sFiltFrac            Specifies cutoff for high pass filter as fraction of resonant frequency\n')
+f.write('{:<24.15E}'.format(diffFrac)   + 'REAL        sDiffFrac                  Specifies diffraction step size as fraction of the undulator period\n')
 f.write('{:<24}'.format(seedfile) + 'CHARACTER   seed_file                  Name of the seed file\n')
 
 
