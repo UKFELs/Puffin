@@ -59,10 +59,7 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
 
   call getHeaders(fname, npk, dz2, nZ2G)
 
-  nGam = 41_IP  !!!  TEMP, SHOULD BE READ IN
-
-  print*, tProcInfo_G%rank, 'made it to 0.5 ....'
-
+  nGam = 149_IP  !!!  TEMP, SHOULD BE READ IN
 
   do ib = 1, nbeams
 
@@ -71,13 +68,9 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
 
   end do
 
-  print*, tProcInfo_G%rank, 'made it to 0.6 ....'
-
   tnms   = sum(int(nZ2(:),kind=ipl) * int((nGam),kind=ipl))
 
 !!!!    temp
-
-  print*, tProcInfo_G%rank, 'made it to 0.7 ....'
 
   allocate(totMPs_b(nbeams), b_sts(nbeams), b_ends(nbeams))
 
@@ -85,22 +78,13 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
 
   totMPs_b(:) = int(nZ2(:),kind=ipl) * int(nGam,kind=ipl)  ! no of mps in z2 times num in gamma
 
-  print*, tProcInfo_G%rank, 'made it to 0.8 ....'
-
   tnms   = sum(totMPs_b)    ! Sum of totMPs is the total number of 
                             ! MPs in the entire system
-
-
-  print*, tProcInfo_G%rank, 'made it to 0.9 ....'
 
   call getStEnd(nbeams, totMPs_b, b_sts, b_ends)
 
   allocate(x(tnms), y(tnms), px(tnms), py(tnms), z2(tnms), gamma(tnms), &
            chi_b(tnms), chi(tnms))
-
-
-
-  print*, tProcInfo_G%rank, 'made it to 1 ....'
 
 
 !     Loop around beams, reading in dist files for each beam.
@@ -126,51 +110,19 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
 
 !     get Macroparticles in this beam
 
-
-    !deallocate(z2m)
-
-    !call mpi_finalize(error)
-    !stop
-
-!    deallocate(z2m, gm, gsig, xm, ym, pxm, pym, Ne, pxsig, pysig)
-
     call getMPsFDists(z2m, gm, gsig, xm, ym, pxm, pym, dz2(ib), Ne, npk, &
                       qnoise, x(b_sts(ib):b_ends(ib)), y(b_sts(ib):b_ends(ib)), &
                       px(b_sts(ib):b_ends(ib)), py(b_sts(ib):b_ends(ib)), &
                       z2(b_sts(ib):b_ends(ib)), gamma(b_sts(ib):b_ends(ib)), &   ! ....BOUNDS.... !
-                      chi_b(b_sts(ib):b_ends(ib)), chi(b_sts(ib):b_ends(ib)),sZ)
-
-
-
-
-    if (tProcInfo_G%qRoot) print*, 'px is ', px(1:40)
-    !print*, x(1:10), z2(1:10), px(1:10), gamma(1:10)
-
-
-
-
-
-
-    print*, tProcInfo_G%rank, ' Got MPs from dists '
+                      chi_b(b_sts(ib):b_ends(ib)), chi(b_sts(ib):b_ends(ib)),sZ,nGam)
 
     deallocate(z2m, gm, gsig, xm, ym, pxm, pym, Ne, pxsig, pysig)
 
-
-
-
-
-
-    print*, tProcInfo_G%rank, ' loaded beam  ....  ', ib
-
-
   end do 
-
-
-  print*, tProcInfo_G%rank, 'made it to 2 ....'
 
 !     Remove MP's with chi weights below the threshold value.
 
-  call removeLowNC(chi_b, chi, b_sts, b_ends, sEThresh, &
+  call removeLowNC(chi_b, chi, b_sts, b_ends, sEThresh, npk, &
                    nbeams, x, y, z2, px,&
                    py, gamma, totMPs_b)
 
@@ -217,10 +169,6 @@ subroutine getLocalDists(fname, z2ml, gam_ml, xml, yml, pxml, &
 
   end if
 
-  !print*, tProcInfo_G%rank, '.... has for global z2 before sending...', z2m
-
-  print*, tProcInfo_G%rank, '.... read part dists!!!'
-
 !     Send to local arrays
 
   call scdists(xml, yml, z2ml, pxml, pyml, gam_ml, Nel, &
@@ -228,21 +176,10 @@ subroutine getLocalDists(fname, z2ml, gam_ml, xml, yml, pxml, &
                pxdl, pydl, gam_dl, pxd, pyd, gam_d, Ne, &
                nz2, nz2g)
 
-
-  print*, tProcInfo_G%rank, '.... sent dists aboot the shop!!!'
-
-  !print*, tProcInfo_G%rank, '.... has for global z2 ...', z2m
-
-  !print*, tProcInfo_G%rank, '.... has for z2 ...', z2ml
-  
-
 !     deallocate arrays
 
   deallocate(z2m, pxm, pym, xm, ym, &
              gam_m, gam_d, pxd, pyd, Ne)
-
-  print*, tProcInfo_G%rank, ' deallocated global dists arrays'
-
 
 end subroutine getLocalDists
 
@@ -308,7 +245,7 @@ end subroutine scdists
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 subroutine getMPsFDists(z2m,gm,gsig,xm,ym,pxm,pym,dz2,Ne,npk,qnoise, &
-                        x, y, px, py, z2, gamma, chi_b, chi, sZ)   !! For 1D ONLY!!!! for now.....
+                        x, y, px, py, z2, gamma, chi_b, chi, sZ, iNMPG)   !! For 1D ONLY!!!! for now.....
 
 
 ! This routine creates the macroparticles according to the beam dists 
@@ -337,27 +274,30 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,ym,pxm,pym,dz2,Ne,npk,qnoise, &
   real(kind=wp), intent(in) :: z2m(:), gm(:), gsig(:), xm(:), ym(:), &
                                pxm(:), pym(:), dz2, Ne(:), npk, sZ
 
+  integer(kind=ip), intent(in) :: iNMPG
+
   logical, intent(in) :: qnoise
 
   real(kind=wp), intent(inout) :: x(:), y(:), px(:), py(:), &
                                   z2(:), gamma(:), chi_b(:), chi(:)
 
-  integer(kind=ip) :: iNMPG, i, intTypeG, nMPs, NMZ2  ! Num MPs in gamma
+  integer(kind=ip) :: i, intTypeG, nMPs, NMZ2  ! Num MPs in gamma
 
   integer(kind=ipl) :: istart, iend, k, xin
 
-  real(kind=wp) :: ggrid(42_IP), gint(41_IP), z2grid(2_IP), &
+  real(kind=wp) :: z2grid(2_IP), &
                    z2int(1_IP), px0, py0, x0, y0
 
   integer(kind=ip), allocatable :: arrbs(:)
 
-  real(kind=wp), allocatable :: Nk(:), Vk(:)
+  real(kind=wp), allocatable :: Nk(:), Vk(:), ggrid(:), gint(:)
 
   logical :: qOKL
 
 !     Using 11 mp's and a gaussian distribution in p2 (gamma) 
 
-  iNMPG = 41_IP
+  allocate(ggrid(iNMPG+1), gint(iNMPG))
+
   intTypeG = iGaussianDistribution_CG  ! iTopHatDistribution_CG
 
   NMZ2 = size(z2m)
@@ -514,7 +454,7 @@ end subroutine getMPsFDists
 
 
 SUBROUTINE removeLowNC(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
-                       nbeams,x_tmpcoord,y_tmpcoord,z2_tmpcoord,px_tmpvector,&
+                       npk,nbeams,x_tmpcoord,y_tmpcoord,z2_tmpcoord,px_tmpvector,&
                        py_tmpvector, pz2_tmpvector,totalmps_b)
 
 ! Discard macroparticles with weights below a certain threshold.
@@ -535,7 +475,7 @@ SUBROUTINE removeLowNC(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold,
                                py_tmpvector(:), pz2_tmpvector(:)
   INTEGER(KIND=IPL), INTENT(IN) :: b_sts(:), b_ends(:)
   INTEGER(KIND=IP), INTENT(IN) :: nbeams
-  REAL(KIND=WP), INTENT(IN) :: sElectronThreshold
+  REAL(KIND=WP), INTENT(IN) :: sElectronThreshold, npk
   INTEGER(KIND=IPL), INTENT(IN) :: totalmps_b(:)
 
 !                  LOCAL ARGS
@@ -550,12 +490,13 @@ SUBROUTINE removeLowNC(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold,
   
   DO b_ind=1, nbeams
 
-    CALL getKeepNum(Tmp_chibar(b_sts(b_ind):b_ends(b_ind)),&
+    CALL getKeepNum(npk*Tmp_chibar(b_sts(b_ind):b_ends(b_ind)),&
                     sElectronThreshold,totalmps_b(b_ind), &
                     b_keepn(b_ind), b_neglectn(b_ind), &
                     ilowerElectron(b_ind))
 
   END DO
+
 
   ALLOCATE(sEl_X0Position_G(SUM(b_keepn)))
   ALLOCATE(sEl_Y0Position_G(SUM(b_keepn)))
@@ -573,7 +514,7 @@ SUBROUTINE removeLowNC(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold,
 
     ALLOCATE(ikeepos(b_keepn(b_ind)), iendpos(b_neglectn(b_ind)))
 
-    CALL getIndices(Tmp_chibar(b_sts(b_ind):b_ends(b_ind)), &
+    CALL getIndices(npk * Tmp_chibar(b_sts(b_ind):b_ends(b_ind)), &
                     ilowerElectron(b_ind),totalmps_b(b_ind), &
                     ikeepos, iendpos)
 

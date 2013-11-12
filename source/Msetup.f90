@@ -11,6 +11,7 @@ MODULE Setup
   USE resume
   USE electronInit
   USE Read_data
+  USE checks
 
 ! A module which allocates and initializes - or 
 ! destroys - the data used in Puffin.
@@ -86,6 +87,8 @@ MODULE Setup
   CALL Error_log('',tErrorLog_G)
 
 !     Read input file
+
+
 
   CALL read_in(zFileName, &
        zDataFileName,     &

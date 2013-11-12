@@ -1,9 +1,7 @@
 ! This module sets up types for variables
 ! Also sets up physical constants
+
 MODULE typesAndConstants
-!--------------------------------------------------------------------------------
-! Module to hold some global values used in general
-!--------------------------------------------------------------------------------
 
       USE paratype
       IMPLICIT NONE

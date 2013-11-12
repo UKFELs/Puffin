@@ -38,6 +38,7 @@ SUBROUTINE getTransformPlans4FEL(nnodes,qOK)
 ! qOKL - Local Logical error checker.
 
   LOGICAL  :: qOKL
+  integer error
 
 !                   Begin
 

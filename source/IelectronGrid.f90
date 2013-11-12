@@ -1081,15 +1081,16 @@ SUBROUTINE getKeepNum(s_tmp_macro,sElectronThreshold,TOTALMPS, &
   INTEGER :: error
 
   total_local_real_electrons = SUM(s_tmp_macro)
- 
+
   CALL MPI_ALLREDUCE(total_local_real_electrons,&
        n_real_electrons, 1, MPI_DOUBLE_PRECISION, &
-       MPI_SUM,tProcInfo_G%comm,error) 
-			
+       MPI_SUM,tProcInfo_G%comm,error)
+
   ilowerElectron=n_real_electrons/&
        REAL(TOTALMPS,KIND=WP)*(sElectronThreshold/100.0_WP)
 
   ikeepnumber=COUNT(s_tmp_macro>=ilowerElectron)
+
   iendnumber=TOTALMPS-ikeepnumber
 
 END SUBROUTINE getKeepNum

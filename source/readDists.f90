@@ -54,18 +54,11 @@ subroutine readPartDists(fname, z2m, gam_m, xm, ym, pxm, pym, &
 
   call readBlanks(fid, 2)
 
-  print*, tProcInfo_G%rank, '.... Read 2 lines!!!'
-
-
 !     Read in header
 
   call readDistHeader(fid, eta, rho, npk, dZ2)
 
-  print*, tProcInfo_G%rank, '.... Read headers!!'
-
   call readBlanks(fid, 4)  
-
-  print*, tProcInfo_G%rank, '.... Read 4 lines!!!'
 
   do k = 1,NZ2
 
@@ -79,14 +72,9 @@ subroutine readPartDists(fname, z2m, gam_m, xm, ym, pxm, pym, &
 
   end do
 
-  print*, tProcInfo_G%rank, '.... Read beam z2s!!!'
-
   close(unit=fid, iostat=ios, status="KEEP")
   if ( ios /= 0 ) stop "Error closing file unit fid"
   
-
-  print*, tProcInfo_G%rank, '.... closed file!!!'
-
 end subroutine readPartDists
 
 
@@ -145,7 +133,7 @@ subroutine getHeaders(fnames, npk, dz2, nZ2)
   end do    
 
 
-  nZ2(:) = 2000_IP    ! TEMP, THIS SHOULD BE READ IN 
+  nZ2(:) = 5000_IP    ! TEMP, THIS SHOULD BE READ IN 
                      ! BUT YOU MUST CHANGE THE FILE
                      ! FORMAT
 
