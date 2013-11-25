@@ -61,8 +61,6 @@ INTEGER(KIND=IP) :: NZ2_G
 REAL(KIND=WP)    :: sLengthOfElmX_G 
 REAL(KIND=WP)    :: sLengthOfElmY_G 
 REAL(KIND=WP)    :: sLengthOfElmZ2_G
-
-REAL(KIND=WP)    :: transA_G
 !
 LOGICAL          :: qElectronsEvolve_G
 LOGICAL          :: qFieldEvolve_G

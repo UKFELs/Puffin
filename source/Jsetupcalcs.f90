@@ -22,8 +22,8 @@ CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 SUBROUTINE passToGlobals(rho,eta,kbeta,iNN, &
-                         sRNX,sRNY,iNM, &
-                         sElmLen,sLenEPulse,sSigE,&
+                         sRNX,sRNY, &
+                         sElmLen,&
                          fx,fy,sFocusFactor,sFiltFrac, &
                          dStepFrac,sBeta,qSwitch,qOK)
 
@@ -43,20 +43,14 @@ SUBROUTINE passToGlobals(rho,eta,kbeta,iNN, &
 ! sRNX,sRNY          number of nodes in the inner reduced 'active'
 !                    set of nodes
 ! sElmLen            Length of ONE element in each dimension (x,y,z2)
-! sLenEPulse         Length of the electron pulse in each
-!                    dimension (x,y,z2,px,py,p2)
-! sSigE              Sigma spread of electron gaussian
-!                    distribution in each dimension
 ! qSwitch            If letting electrons evolve, field evolve,
 !                    diffraction and gaussian field
 ! qOK                Error flag
 
     REAL(KIND=WP),     INTENT(IN)    :: rho,eta,kbeta
-    INTEGER(KIND=IP),  INTENT(IN)    :: iNM(:,:),sRNX,sRNY
+    INTEGER(KIND=IP),  INTENT(IN)    :: sRNX,sRNY
     INTEGER(KIND=IP),  INTENT(IN)    :: iNN(:)
     REAL(KIND=WP),     INTENT(IN)    :: sElmLen(:)	
-    REAL(KIND=WP),     INTENT(INOUT) :: sLenEPulse(:,:)   
-    REAL(KIND=WP),     INTENT(IN)    :: sSigE(:,:)
     REAL(KIND=WP),     INTENT(IN)    :: fx,fy,sFocusFactor
     REAL(KIND=WP),     INTENT(IN)    :: sFiltFrac, dStepFrac, sBeta
     LOGICAL,           INTENT(IN)    :: qSwitch(nSwitches_CG)
@@ -88,32 +82,6 @@ SUBROUTINE passToGlobals(rho,eta,kbeta,iNN, &
     
     END IF
 
-    IF (tTransInfo_G%qOneD) THEN
-    
-       IF (iNM(1,iX_CG)==1_IP .AND. iNM(1,iY_CG)==1_IP) THEN
-    
-          transA_G=sLenEPulse(1,iX_CG)*sLenEPulse(1,iY_CG)
-    
-       ELSE IF (sLenEPulse(1,iX_CG)<6.0_WP*sSigE(1,iX_CG) .AND. &
-            sLenEPulse(1,iY_CG)<6.0_WP*sSigE(1,iY_CG)) THEN
-    
-          transA_G=sLenEPulse(1,iX_CG)*sLenEPulse(1,iY_CG)
-       
-       ELSE IF (sLenEPulse(1,iX_CG)<=1.0E-6_WP)  THEN
-       
-          transA_G=sLenEPulse(1,iX_CG)*sLenEPulse(1,iY_CG)
-       
-       ELSE
-       
-          transA_G=2.0_WP*pi*sSigE(1,iX_CG)**2.0_WP
-       
-       END IF
-    
-    ELSE
-    
-       transA_G=1.0_WP
-    
-    END IF
 
 
 
@@ -310,13 +278,15 @@ END SUBROUTINE SetUpInitialValues
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE PopMacroElectrons(sQe,NE,noise,Z,LenEPulse,&
+SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
                              sigma, beamCenZ2,gamma_d,eThresh, &
                              chirp,nbeams, &
                              sV,qOK)
 
 !                     ARGUMENTS
 
+    logical, intent(in) :: qSimple
+    character(*), intent(in) :: fname(:)
     REAL(KIND=WP),     INTENT(IN)    :: sQe(:), gamma_d(:), chirp(:)
     INTEGER(KIND=IP),  INTENT(IN)    :: NE(:,:),nbeams
     LOGICAL,           INTENT(IN)    :: noise
@@ -329,9 +299,6 @@ SUBROUTINE PopMacroElectrons(sQe,NE,noise,Z,LenEPulse,&
     LOGICAL,           INTENT(OUT)   :: qOK     
 
 !                   LOCAL ARGS
-
-    character(29_IP) :: fname(3)
-    integer(kind=ip) :: nbeams2
 
     INTEGER(KIND=IPL) :: NMacroE
     REAL(KIND=WP)     :: sQOneE
@@ -346,7 +313,7 @@ SUBROUTINE PopMacroElectrons(sQe,NE,noise,Z,LenEPulse,&
 
     qOK = .FALSE.
 
-    ALLOCATE(RealE(nbeams))
+    IF (qSimple) ALLOCATE(RealE(nbeams))
 
 !     Print a reminder to check whether shot-noise is
 !     being modelled or not
@@ -361,30 +328,32 @@ SUBROUTINE PopMacroElectrons(sQe,NE,noise,Z,LenEPulse,&
 
 !     Number of real electrons
 
-    RealE = sQe / sQOneE
+    IF (qSimple) RealE = sQe / sQOneE
 
 
 !     Change sig_gamma / gamma to sig_gamma
 
-  LenEPulse(:,iPZ2_CG) = gamma_d(:) * sGammaR_G * LenEPulse(:,iPZ2_CG)
-  sigma(:,iPZ2_CG) = gamma_d(:) * sGammaR_G * sigma(:,iPZ2_CG)
+    IF (qSimple) LenEPulse(:,iPZ2_CG) = gamma_d(:) * sGammaR_G * LenEPulse(:,iPZ2_CG)
+    IF (qSimple) sigma(:,iPZ2_CG) = gamma_d(:) * sGammaR_G * sigma(:,iPZ2_CG)
 
 !     Setup electrons
 
-!    CALL electron_grid(RealE,NE,noise, &
-!                       Z,nbeams, LenEPulse,sigma, beamCenZ2, gamma_d, &
-!                       eThresh,tTransInfo_G%qOneD, &
-!                       chirp,sV,qOKL)
-!    IF (.NOT. qOKL) GOTO 1000
 
 
-    fname(1) = 'troLi16_LiPlusElec_47_1.pufin'
-    fname(2) = 'troLi16_LiPlusElec_47_2.pufin'
-    fname(3) = 'troLi16_LiPlusElec_47_3.pufin'
 
-    nbeams2 = 3_IP
+    if (qSimple) then
 
-    call getMPs(fname, nbeams2, Z, noise, eThresh)
+      CALL electron_grid(RealE,NE,noise, &
+                         Z,nbeams, LenEPulse,sigma, beamCenZ2, gamma_d, &
+                         eThresh,tTransInfo_G%qOneD, &
+                         chirp,sV,qOKL)
+      IF (.NOT. qOKL) GOTO 1000
+
+    else 
+
+      call getMPs(fname, nbeams, Z, noise, eThresh)
+
+    end if
 
     IF(iGloNumElectrons_G <= 0_IPL) THEN
        CALL Error_log('iGloNumElectrons_G <=0.',tErrorLog_G)
@@ -436,7 +405,7 @@ SUBROUTINE PopMacroElectrons(sQe,NE,noise,Z,LenEPulse,&
 
     IF (iNumberElectrons_G==0) qEmpty=.TRUE. 
 
-    DEALLOCATE(RealE)
+    if (qSimple) DEALLOCATE(RealE)
 
 !    Set error flag and exit
 

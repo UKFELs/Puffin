@@ -467,29 +467,6 @@ CONTAINS
 
   END FUNCTION sMax_del
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  SUBROUTINE sum_mpi_int14(in1,o1)
-
-    IMPLICIT NONE
-
-    INTEGER(KIND=IPL), INTENT(IN) :: in1
-    INTEGER(KIND=IPL), INTENT(OUT) :: o1
-
-    INTEGER :: error ! for MPI errors
-
-    INTEGER(KIND=IPL), ALLOCATABLE :: trecv(:)
-
-    ALLOCATE(trecv(tProcInfo_G%size))
-
-    CALL MPI_ALLGATHER(in1,1,MPI_INT_HIGH, &
-                       trecv,1,MPI_INT_HIGH, &
-                       tProcInfo_G%comm,error)
-
-    o1 = sum(trecv)
-
-  END SUBROUTINE sum_mpi_int14
-
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 SUBROUTINE getChi(Nk, Vk, max_dens, chi_bar, chi)

@@ -14,7 +14,7 @@ CONTAINS
 SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
        sLengthofElm,iNodes,sWigglerLength,sStepSize,&
        nSteps,srho,sEta,sKBeta,focusfactor,sSigE,f_x, f_y, iRedNodesX,&
-       iRedNodesY,qSwitches,qOK)
+       iRedNodesY,qSwitches,qSimple,qOK)
 
   IMPLICIT NONE
 
@@ -43,6 +43,7 @@ SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
   REAL(KIND=WP), INTENT(INOUT) :: f_x, f_y
   INTEGER(KIND=IP),INTENT(INOUT) :: iRedNodesX,iRedNodesY
   LOGICAL, INTENT(INOUT) :: qSwitches(:)
+  logical, intent(in) :: qSimple
   LOGICAL, INTENT(OUT)  :: qOK
 
 !           Local vars
@@ -53,25 +54,25 @@ SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
   qOK = .FALSE.
 
-  call check1D(qSwitches(iOneD_CG), qSwitches(iDiffraction_CG), qSwitches(iFocussing_CG), &
-  	           iNodes)
+  if (qSimple) call check1D(qSwitches(iOneD_CG), qSwitches(iDiffraction_CG), qSwitches(iFocussing_CG), &
+  	                        iNodes)
 
   DO i = 1,nbeams
 
-    CALL chkESampleLens(sLenEPulse(i,:),iNumElectrons(i,:),srho,qSwitches(iOneD_CG),qOKL)
+  if (qSimple)  CALL chkESampleLens(sLenEPulse(i,:),iNumElectrons(i,:),srho,qSwitches(iOneD_CG),qOKL)
     IF (.NOT. qOKL) GOTO 1000
     
   END DO
 
   CALL stpFSampleLens(iNodes,sWigglerLength,sLengthOfElm,qSwitches(iOneD_CG),qOKL)
 
-  CALL chkFSampleLens(iNodes,sWigglerLength,sLengthOfElm,srho,qOKL)
+  if (qSimple) CALL chkFSampleLens(iNodes,sWigglerLength,sLengthOfElm,srho,qOKL)
   IF (.NOT. qOKL) GOTO 1000
 
-  CALL checkIntSampling(sStepSize,nSteps,sLengthOfElm,qSwitches,qOKL)
+  if (qSimple)  CALL checkIntSampling(sStepSize,nSteps,sLengthOfElm,qSwitches,qOKL)
   IF (.NOT. qOKL) GOTO 1000
 
-  CALL checkFreeParams(srho,sEta,sKBeta,f_x,f_y,focusfactor,qOKL)
+  if (qSimple) CALL checkFreeParams(srho,sEta,sKBeta,f_x,f_y,focusfactor,qOKL)
   IF (.NOT. qOKL) GOTO 1000
 
   IF(tProcInfo_G%qRoot) PRINT '(I5,1X,A17,1X,F8.4)',nsteps,&

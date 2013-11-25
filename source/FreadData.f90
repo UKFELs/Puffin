@@ -34,6 +34,8 @@ SUBROUTINE read_in(zfilename, &
        gamma_d, &
        chirp, &
        nbeams, &
+       dist_f, &
+       qSimple, &
        sA0_Re, &
        sA0_Im, &
        sFiltFact, &
@@ -150,6 +152,8 @@ SUBROUTINE read_in(zfilename, &
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: freqf(:), SmeanZ2(:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sSigmaF(:,:)
   LOGICAL, ALLOCATABLE, INTENT(OUT) :: qFlatTopS(:)
+  LOGICAL, INTENT(out) :: qSimple
+  CHARACTER(*), ALLOCATABLE, INTENT(INOUT) :: dist_f(:)
   
   REAL(KIND=WP),     INTENT(OUT)  :: sFiltFact,sDiffFrac,sBeta
   REAL(KIND=WP),     INTENT(OUT)  :: srho
@@ -332,7 +336,7 @@ SUBROUTINE read_in(zfilename, &
   CLOSE(UNIT=168,STATUS='KEEP')  
 
 
-  CALL read_beamfile(beam_file,sEmit_n,sSigmaGaussian,sLenEPulse, &
+  CALL read_beamfile(qSimple, dist_f, beam_file,sEmit_n,sSigmaGaussian,sLenEPulse, &
                      iNumElectrons,sQe,chirp,bcenter,gamma_d,nbeams, &
                      qMatched,qOKL)
 
@@ -359,7 +363,7 @@ END SUBROUTINE read_in
 
 
 
-SUBROUTINE read_beamfile(be_f, sEmit_n,sSigmaE,sLenE, &
+SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
                          iNumElectrons,sQe,chirp,bcenter,gammaf,nbeams,&
                          qMatched,qOK)
 
@@ -367,7 +371,9 @@ SUBROUTINE read_beamfile(be_f, sEmit_n,sSigmaE,sLenE, &
 
 !                     ARGUMENTS
 
+  LOGICAL, INTENT(OUT) :: qSimple
   CHARACTER(*), INTENT(INOUT) :: be_f     ! beam file name
+  CHARACTER(*), INTENT(INOUT), ALLOCATABLE :: dist_f(:)     ! dist file names
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sEmit_n(:),chirp(:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sSigmaE(:,:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sLenE(:,:)
@@ -380,6 +386,7 @@ SUBROUTINE read_beamfile(be_f, sEmit_n,sSigmaE,sLenE, &
 
   INTEGER(KIND=IP) :: b_ind
   INTEGER::ios
+  CHARACTER(96) :: dum1, dum2, dtype
 
   qOK = .FALSE.
   
@@ -393,67 +400,109 @@ SUBROUTINE read_beamfile(be_f, sEmit_n,sSigmaE,sLenE, &
 
 !     Read in file header to get number of beams
 
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*) nbeams
+  READ(UNIT=168,FMT=*) dum1, dum2, dtype
+  dtype = TRIM(ADJUSTL(dtype))
+
+  if (dtype == 'dist') then
+    qSimple = .false.
+  else
+    qsimple = .true.
+  end if
+
+  if (qSimple) then
 
 
-  ALLOCATE(sSigmaE(nbeams,6))
-  ALLOCATE(sLenE(nbeams,6))
-  ALLOCATE(iNumElectrons(nbeams,6))
-  ALLOCATE(sEmit_n(nbeams),sQe(nbeams),bcenter(nbeams),gammaf(nbeams))
-  ALLOCATE(chirp(nbeams))
+    READ(UNIT=168,FMT=*)
+    READ(UNIT=168,FMT=*)
+    READ(UNIT=168,FMT=*)
+    READ(UNIT=168,FMT=*)
+    READ(UNIT=168,FMT=*)
+    READ(UNIT=168,FMT=*) nbeams
+
+
+    ALLOCATE(sSigmaE(nbeams,6))
+    ALLOCATE(sLenE(nbeams,6))
+    ALLOCATE(iNumElectrons(nbeams,6))
+    ALLOCATE(sEmit_n(nbeams),sQe(nbeams),bcenter(nbeams),gammaf(nbeams))
+    ALLOCATE(chirp(nbeams))
     
 !     Loop round beams, reading in data
 
-  DO b_ind = 1,nbeams
+    DO b_ind = 1,nbeams
+
+      READ(UNIT=168,FMT=*)
+      READ(UNIT=168,FMT=*)
+      READ(UNIT=168,FMT=*)
+      READ(UNIT=168,FMT=*)
+      READ(UNIT=168,FMT=*)
+      READ(UNIT=168,FMT=*)
+      READ(UNIT=168,FMT=*)
+      READ(UNIT=168,FMT=*) sSigmaE(b_ind,iX_CG)
+      READ(UNIT=168,FMT=*) sSigmaE(b_ind,iY_CG)
+      READ(UNIT=168,FMT=*) sSigmaE(b_ind,iZ2_CG)
+      READ(UNIT=168,FMT=*) sSigmaE(b_ind,iPX_CG)
+      READ(UNIT=168,FMT=*) sSigmaE(b_ind,iPY_CG)
+      READ(UNIT=168,FMT=*) sSigmaE(b_ind,iPZ2_CG)
+      READ(UNIT=168,FMT=*)
+      READ(UNIT=168,FMT=*)
+      READ(UNIT=168,FMT=*)
+      READ(UNIT=168,FMT=*) sLenE(b_ind,iX_CG)
+      READ(UNIT=168,FMT=*) sLenE(b_ind,iY_CG)
+      READ(UNIT=168,FMT=*) sLenE(b_ind,iZ2_CG)
+      READ(UNIT=168,FMT=*) sLenE(b_ind,iPX_CG)
+      READ(UNIT=168,FMT=*) sLenE(b_ind,iPY_CG)
+      READ(UNIT=168,FMT=*) sLenE(b_ind,iPZ2_CG)
+      READ(UNIT=168,FMT=*)
+      READ(UNIT=168,FMT=*)
+      READ(UNIT=168,FMT=*)
+      READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iX_CG)
+      READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iY_CG)
+      READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iZ2_CG)
+      READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iPX_CG)
+      READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iPY_CG)
+      READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iPZ2_CG)
+      READ(UNIT=168,FMT=*)
+      READ(UNIT=168,FMT=*)
+      READ(UNIT=168,FMT=*)
+      READ(UNIT=168,FMT=*) qMatched
+      READ(UNIT=168,FMT=*) gammaf(b_ind)
+      READ(UNIT=168,FMT=*) sEmit_n(b_ind)
+      READ(UNIT=168,FMT=*) chirp(b_ind)
+      READ(UNIT=168,FMT=*) bcenter(b_ind)
+      READ(UNIT=168,FMT=*) sQe(b_ind)
+    
+    END DO
+
+  else
 
     READ(UNIT=168,FMT=*)
     READ(UNIT=168,FMT=*)
     READ(UNIT=168,FMT=*)
     READ(UNIT=168,FMT=*)
     READ(UNIT=168,FMT=*)
+    READ(UNIT=168,FMT=*) nbeams
+
+    allocate(dist_f(nbeams))
+    allocate(iNumElectrons(nbeams,6))
+    allocate(sLenE(nbeams,6))
+    allocate(sSigmaE(nbeams,6))
+    iNumElectrons = 1
+    sLenE = 1
+    sSigmaE = 1
+    !!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!! 
+    ! READ IN FNAMES
+    !!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!
+    READ(UNIT=168,FMT=*) 
     READ(UNIT=168,FMT=*)
     READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*) sSigmaE(b_ind,iX_CG)
-    READ(UNIT=168,FMT=*) sSigmaE(b_ind,iY_CG)
-    READ(UNIT=168,FMT=*) sSigmaE(b_ind,iZ2_CG)
-    READ(UNIT=168,FMT=*) sSigmaE(b_ind,iPX_CG)
-    READ(UNIT=168,FMT=*) sSigmaE(b_ind,iPY_CG)
-    READ(UNIT=168,FMT=*) sSigmaE(b_ind,iPZ2_CG)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*) sLenE(b_ind,iX_CG)
-    READ(UNIT=168,FMT=*) sLenE(b_ind,iY_CG)
-    READ(UNIT=168,FMT=*) sLenE(b_ind,iZ2_CG)
-    READ(UNIT=168,FMT=*) sLenE(b_ind,iPX_CG)
-    READ(UNIT=168,FMT=*) sLenE(b_ind,iPY_CG)
-    READ(UNIT=168,FMT=*) sLenE(b_ind,iPZ2_CG)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iX_CG)
-    READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iY_CG)
-    READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iZ2_CG)
-    READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iPX_CG)
-    READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iPY_CG)
-    READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iPZ2_CG)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*) qMatched
-    READ(UNIT=168,FMT=*) gammaf(b_ind)
-    READ(UNIT=168,FMT=*) sEmit_n(b_ind)
-    READ(UNIT=168,FMT=*) chirp(b_ind)
-    READ(UNIT=168,FMT=*) bcenter(b_ind)
-    READ(UNIT=168,FMT=*) sQe(b_ind)
-    
-  END DO
+
+    DO b_ind = 1, nbeams
+      READ(UNIT=168,FMT=*) dist_f(b_ind)
+    END DO
+
+  end if
 
   CLOSE(UNIT=168,STATUS='KEEP')
 

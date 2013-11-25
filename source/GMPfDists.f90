@@ -4,9 +4,13 @@ use paratype
 use readDists
 use MacrosGenNew
 use parallelInfoType
-use electronInit
-use readDists
 use DerivsGlobals
+use typesAndConstants
+use parBeam
+use grids
+use gtop2
+use initConds
+use remLow
 
 implicit none
 
@@ -87,6 +91,8 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
            chi_b(tnms), chi(tnms))
 
 
+  print*, tProcInfo_G%rank, '  has nZ2 array  = ', nZ2G, nZ2
+
 !     Loop around beams, reading in dist files for each beam.
 
   do ib = 1, nbeams    !  Loop over beams
@@ -147,7 +153,7 @@ subroutine getLocalDists(fname, z2ml, gam_ml, xml, yml, pxml, &
                                gam_ml(:), gam_dl(:), pxdl(:), pydl(:), &
                                Nel(:)
 
-  integer(kind=ip), intent(in) :: nz2, nz2g
+  integer(kind=ip), intent(inout) :: nz2, nz2g
 
 !                 Local args
 
@@ -447,109 +453,5 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,ym,pxm,pym,dz2,Ne,npk,qnoise, &
 
 
 end subroutine getMPsFDists
-
-!!!!!!!!!!!!!!!!!!!!!!!
-
-
-
-
-SUBROUTINE removeLowNC(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
-                       npk,nbeams,x_tmpcoord,y_tmpcoord,z2_tmpcoord,px_tmpvector,&
-                       py_tmpvector, pz2_tmpvector,totalmps_b)
-
-! Discard macroparticles with weights below a certain threshold.
-! This subroutine assigns macroparticle values to global arrays,
-! and removes macroparticles with a low weight in the process.
-! This is a modified version of the routine in IelectcronGrid.f90,
-! with the addition of the chirp onto the energy removed.
-! Eventually, that routine sould be replaced with this one,
-! and a new routine created which ads the chirp seperately.
-
-!                   ARGUMENTS
-
-  IMPLICIT NONE
-
-  REAL(KIND=WP), INTENT(IN) :: Tmp_chibar(:), Tmp_Normchi(:), &
-                               x_tmpcoord(:), y_tmpcoord(:), &
-                               z2_tmpcoord(:), px_tmpvector(:),&
-                               py_tmpvector(:), pz2_tmpvector(:)
-  INTEGER(KIND=IPL), INTENT(IN) :: b_sts(:), b_ends(:)
-  INTEGER(KIND=IP), INTENT(IN) :: nbeams
-  REAL(KIND=WP), INTENT(IN) :: sElectronThreshold, npk
-  INTEGER(KIND=IPL), INTENT(IN) :: totalmps_b(:)
-
-!                  LOCAL ARGS
-
-  INTEGER(KIND=IPL), ALLOCATABLE :: ikeepos(:), iendpos(:), b_keepn(:),&
-                                    b_neglectn(:)
-  REAL(KIND=WP), ALLOCATABLE :: ilowerElectron(:)
-  INTEGER(KIND=IPL) :: nsum, ist, ien, prev
-  INTEGER(KIND=IP) :: b_ind
-
-  ALLOCATE(b_keepn(nbeams),b_neglectn(nbeams),ilowerElectron(nbeams))
-  
-  DO b_ind=1, nbeams
-
-    CALL getKeepNum(npk*Tmp_chibar(b_sts(b_ind):b_ends(b_ind)),&
-                    sElectronThreshold,totalmps_b(b_ind), &
-                    b_keepn(b_ind), b_neglectn(b_ind), &
-                    ilowerElectron(b_ind))
-
-  END DO
-
-
-  ALLOCATE(sEl_X0Position_G(SUM(b_keepn)))
-  ALLOCATE(sEl_Y0Position_G(SUM(b_keepn)))
-  ALLOCATE(sEl_Z20Position_G(SUM(b_keepn)))
-  ALLOCATE(sEl_PX0Position_G(SUM(b_keepn)))
-  ALLOCATE(sEl_PY0Position_G(SUM(b_keepn)))
-  ALLOCATE(sEl_PZ20Position_G(SUM(b_keepn)))
-  ALLOCATE(s_chi_bar_G(SUM(b_keepn)))
-  ALLOCATE(s_Normalised_chi_G(SUM(b_keepn)))
-
-  nsum = 0_IPL
-  prev = 0_IPL
-
-  DO b_ind=1, nbeams
-
-    ALLOCATE(ikeepos(b_keepn(b_ind)), iendpos(b_neglectn(b_ind)))
-
-    CALL getIndices(npk * Tmp_chibar(b_sts(b_ind):b_ends(b_ind)), &
-                    ilowerElectron(b_ind),totalmps_b(b_ind), &
-                    ikeepos, iendpos)
-
-    ist = 1_IPL + NSUM
-    ien = NSUM + b_keepn(b_ind)
-
-    sEl_X0Position_G(ist:ien)   = x_tmpcoord(ikeepos + prev)
-    sEl_Y0Position_G(ist:ien)   = y_tmpcoord(ikeepos + prev)
-    sEl_Z20Position_G(ist:ien)  = z2_tmpcoord(ikeepos + prev)
-    sEl_PX0Position_G(ist:ien)  = px_tmpvector(ikeepos + prev)
-    sEl_PY0Position_G(ist:ien)  = py_tmpvector(ikeepos + prev)
-    sEl_PZ20Position_G(ist:ien) = pz2_tmpvector(ikeepos + prev)
-    s_chi_bar_G(ist:ien)        = Tmp_chibar(ikeepos + prev)
-    s_Normalised_chi_G(ist:ien) = Tmp_Normchi(ikeepos + prev)
-
-    nsum = nsum + b_keepn(b_ind)
-
-    DEALLOCATE(ikeepos,iendpos)
-
-    prev = prev + totalmps_b(b_ind)
-
-  END DO
-
-  iNumberElectrons_G = SUM(b_keepn)
-
-  call sum_mpi_int14(iNumberElectrons_G,iGloNumElectrons_G)
-
-
-!     We currently have gamma in the p2 position array -
-!     need to change to p2
-
-    sEl_PZ20Position_G = getP2(sEl_PZ20Position_G,sEl_PX0Position_G,&
-                               sEl_PY0Position_G,sEta_G,sAw_G)
-
-
-END SUBROUTINE removeLowNC
 
 END MODULE gMPsFromDists

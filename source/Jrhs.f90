@@ -92,7 +92,7 @@ CONTAINS
     REAL(KIND=WP) :: sXcoord 
     REAL(KIND=WP) :: sYcoord
     REAL(KIND=WP) :: sZ2coord,z2test 
-    REAL(KIND=WP) :: FieldConst,fconst,econst
+    REAL(KIND=WP) :: FieldConst,econst
     REAL(KIND=WP) :: stheta, kbeta, un, nc, nd, nb, fkb
     REAL(KIND=WP),DIMENSION(6) :: sendbuff, recvbuff 
     INTEGER(KIND=IP) :: x_inc, y_inc, z2_inc, istart, iend
@@ -164,9 +164,6 @@ CONTAINS
     sField4ElecImag = 0.0_WP
 
     fkb= sFocusfactor_G * kbeta
-    
-    fconst = sqrt(fx_G**2 + fy_G**2)*sGammaR_G/(sqrt(2.0_WP)*sAw_G)&
-         /transA_G
 
     econst = sAw_G/(sRho_G*SQRT(2.0_WP*(fx_G**2+fy_G**2)))
 
@@ -382,7 +379,6 @@ CONTAINS
 
     ENDDO
 
-
     IF (ioutside>0) THEN 
        Print*, 'WARNING: ',ioutside,&
             ' electrons are outside the inner driving core'
@@ -397,7 +393,7 @@ CONTAINS
        CALL PutValueInVector(iRe_Z2_CG,&
             Vector(iRe_Q_CG,sy),&
             sb,&	      
-            qOKL)
+            qOKL)    
 
 !     X
 

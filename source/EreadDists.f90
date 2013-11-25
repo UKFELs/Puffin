@@ -26,7 +26,7 @@ subroutine readPartDists(fname, z2m, gam_m, xm, ym, pxm, pym, &
 
   character(*), intent(in) :: fname
 
-  integer(kind=ip), intent(in) :: nZ2
+  integer(kind=ip), intent(inout) :: nZ2
 
   real(kind=wp), intent(inout) :: z2m(:), & 
                                pxm(:), pym(:), xm(:), ym(:), &
@@ -56,7 +56,7 @@ subroutine readPartDists(fname, z2m, gam_m, xm, ym, pxm, pym, &
 
 !     Read in header
 
-  call readDistHeader(fid, eta, rho, npk, dZ2)
+  call readDistHeader(fid, eta, rho, npk, dZ2, nZ2)
 
   call readBlanks(fid, 4)  
 
@@ -81,7 +81,7 @@ end subroutine readPartDists
 !!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-subroutine readDistHeader(fid, eta, rho, npk, dz2)
+subroutine readDistHeader(fid, eta, rho, npk, dz2, nZ2)
 
 ! Reads the header of the dist files
 
@@ -90,15 +90,17 @@ subroutine readDistHeader(fid, eta, rho, npk, dz2)
   real(kind=wp), intent(out) :: eta, rho, npk, dz2
   real(kind=wp) :: aw, lw, lr, Ipk 
 
+  integer(kind=ip), intent(inout) :: nZ2
+
   integer(kind=ip), intent(in) :: fid
 
   character(96) :: dum1, dum2, dum3, dum4, dum5, &
                    dum6, dum7, dum8 , dum9, dum10, dum11
 
-  read(UNIT=fid, FMT=*) dum1, dum2, dz2, dum3, dum4, aw, dum5, dum6, lw, &
-                        dum7, dum8, lr, dum9, dum10, dum11, Ipk
+  read(UNIT=fid, FMT=*) dum1, dum2, nZ2, dum3, dum4, dz2, dum5, dum6, aw, &
+                        dum7, dum8, lw, dum9, dum10, lr
 
-  read(UNIT=fid, FMT=*) dum1, dum2, eta, dum3, dum4, rho, dum5, dum6, npk
+  read(UNIT=fid, FMT=*) dum1, dum2, dum3, Ipk, dum4, dum5, eta, dum6, dum7, rho, dum8, dum9, npk
 
 end subroutine readDistHeader
 
@@ -108,7 +110,7 @@ subroutine getHeaders(fnames, npk, dz2, nZ2)
 
   character(*), intent(in) :: fnames(:)
   real(kind=wp), intent(out) :: npk, dz2(:)
-  integer(kind=ip), intent(out) :: nZ2(:)
+  integer(kind=ip), intent(inout) :: nZ2(:)
 
   real(kind=wp) :: rho, eta   ! dummy for now
   integer(kind=ip) :: ios, fid, ib, nbeams
@@ -125,7 +127,7 @@ subroutine getHeaders(fnames, npk, dz2, nZ2)
 
     call readBlanks(fid, 2)
 
-    call readDistHeader(fid, eta, rho, npk, dz2(ib))
+    call readDistHeader(fid, eta, rho, npk, dz2(ib),nZ2(ib))
 
     close(unit=fid, status="KEEP")
     if ( ios /= 0_IP ) stop "Error closing file unit 169"
@@ -133,7 +135,7 @@ subroutine getHeaders(fnames, npk, dz2, nZ2)
   end do    
 
 
-  nZ2(:) = 5000_IP    ! TEMP, THIS SHOULD BE READ IN 
+  !nZ2(:) = 5000_IP    ! TEMP, THIS SHOULD BE READ IN 
                      ! BUT YOU MUST CHANGE THE FILE
                      ! FORMAT
 

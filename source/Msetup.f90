@@ -118,6 +118,8 @@ MODULE Setup
        gamma_d,           &
        chirp,             &
        nbeams,            &
+       dist_f,            &
+       qSimple,           &
        sA0_Re,            &
        sA0_Im,            &
        sFiltFrac,         &
@@ -146,7 +148,7 @@ MODULE Setup
 
   CALL CheckParameters(sLenEPulse,iNumElectrons,nbeams,sLengthofElm,iNodes,&
        sWigglerLength,sStepSize,nSteps,srho,sEta,sKBeta,sFocusfactor, &
-       sSigmaGaussian,fx,fy,iRedNodesX,iRedNodesY,qSwitches,qOKL)
+       sSigmaGaussian,fx,fy,iRedNodesX,iRedNodesY,qSwitches,qSimple,qOKL)
   
   IF (.NOT. qOKL) GOTO 1000
 
@@ -160,7 +162,7 @@ MODULE Setup
 
   IF (qSwitches(iMatchedBeam_CG)) THEN
 
-    CALL MatchBeams(srho,sEmit_n,sKBeta,sFocusfactor,&
+    if (qSimple) CALL MatchBeams(srho,sEmit_n,sKBeta,sFocusfactor,&
                     sEta,iNumElectrons,sLenEPulse,&
                     sSigmaGaussian,sSeedSigma(1,:),iNodes,sWigglerLength,&
                     sLengthofElm,iRedNodesX,iRedNodesY,fx,fy,qOKL)
@@ -174,7 +176,7 @@ MODULE Setup
 
   IF (qSwitches(iDiffraction_CG)) THEN
 
-    CALL CheckSourceDiff(sStepSize,nSteps,srho,sSigmaGaussian,sWigglerLength,&
+    if (qSimple)  CALL CheckSourceDiff(sStepSize,nSteps,srho,sSigmaGaussian,sWigglerLength,&
                           sLengthofElm,iNodes,qOKL)
 
     IF (.NOT. qOKL) GOTO 1000
@@ -184,8 +186,8 @@ MODULE Setup
 !     Pass local vars to global vars
 
   CALL passToGlobals(srho,sEta,sKBeta,iNodes, &
-                     iredNodesX,iredNodesY,iNumElectrons, &
-                     sLengthOfElm,sLenEPulse,sSigmaGaussian,&
+                     iredNodesX,iredNodesY, &
+                     sLengthOfElm,&
                      fx,fy,sFocusFactor,sFiltFrac,sDiffFrac,sBeta, &
                      qSwitches,qOK)
 
@@ -193,7 +195,7 @@ MODULE Setup
 
 !     Generate macroelectrons
 
-  CALL PopMacroElectrons(sQe,iNumElectrons,q_noise,sZ,sLenEPulse,&
+  CALL PopMacroElectrons(qSimple, dist_f, sQe,iNumElectrons,q_noise,sZ,sLenEPulse,&
                          sSigmaGaussian,beamCenZ2,gamma_d,&
                          sElectronThreshold,chirp, &
                          nbeams,sV,qOK)

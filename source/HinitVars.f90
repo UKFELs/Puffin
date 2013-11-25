@@ -121,6 +121,9 @@ LOGICAL          :: qFormattedFiles
 
 REAL(KIND=WP)    :: sFiltFrac
 
+logical          :: qSimple
+character(32_IP), allocatable :: dist_f(:)
+
 CHARACTER(32_IP) :: zFileName
 CHARACTER(32_IP) :: zFile
 CHARACTER(32_IP) :: LattFile 
