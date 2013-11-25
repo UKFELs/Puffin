@@ -1,0 +1,13 @@
+type = dist
+
+DIST FILE FOR PUFFIN
+
+List of dist files for Puffin. The header must remain the same.  Alter the list and num of files below accordingly.
+
+3         # of beams / files. List files below.
+
+File List:
+
+troLi16_LiPlusElec_47_1.pufin
+troLi16_LiPlusElec_47_2.pufin
+troLi16_LiPlusElec_47_3.pufin
