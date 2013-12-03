@@ -150,6 +150,8 @@ SUBROUTINE passToGlobals(rho,eta,kbeta,iNN, &
     qElectronFieldCoupling_G = qSwitch(iElectronFieldCoupling_CG)
     qDiffraction_G           = qSwitch(iDiffraction_CG)
     qFocussing_G             = qSwitch(iFocussing_CG)
+    qResume_G                = qSwitch(iResume_CG)
+    qDump_G                  = qSwitch(iDump_CG)
 
 !     Set error flag and exit
 

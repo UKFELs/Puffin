@@ -476,7 +476,7 @@ MODULE Setup
 
 !    Dump data for resumption
 
-  CALL DUMPDATA(sA,sV,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
+  IF (qDump_G) CALL DUMPDATA(sA,sV,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
        iNumberElectrons_G,sZ,(istep-1),tArrayA(1)%tFileType%iPage)
 
 !    Deallocate electron and field arrays

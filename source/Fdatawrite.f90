@@ -502,8 +502,8 @@ CONTAINS
     GoTo 2000 
 ! Error Handler - Error log Subroutine in CIO.f90 line 709
 
-1000 call Error_log('Error in FEMethod:WriteChiData',tErrorLog_G)
-    Print*,'Error in FEMethod:WriteChiData'
+1000 call Error_log('Error in Fdatawrite:WriteChiData',tErrorLog_G)
+    Print*,'Error in Fdatawrite:WriteChiData'
 2000 CONTINUE
 
   END SUBROUTINE WriteData
@@ -603,8 +603,8 @@ CONTAINS
     qOK = .TRUE.				    
     GoTo 2000     
 ! Error Handler - Error log Subroutine in CIO.f90 line 709
-1000 call Error_log('Error in MathLib:WriteIntegrationData',tErrorLog_G)
-    Print*,'Error in MathLib:WriteIntegrationData'
+1000 call Error_log('Error in Fdatawrite:WriteIntegrationData',tErrorLog_G)
+    Print*,'Error in Fdatawrite:WriteIntegrationData'
 2000 CONTINUE
 
   END SUBROUTINE WriteIntegrationData
@@ -698,8 +698,8 @@ CONTAINS
 ! Error Handler - Error log Subroutine in CIO.f90 line 709
 !--------------------------------------------------------------------------------
 !            
-1000 call Error_log('Error in MathLib:OutputIntegrationData_RealArray',tErrorLog_G)
-      Print*,'Error in MathLib:OutputIntegrationData_RealArray'
+1000 call Error_log('Error in Fdatawrite:OutputIntegrationData_RealArray',tErrorLog_G)
+      Print*,'Error in Fdatawrite:OutputIntegrationData_RealArray'
       call CloseFile(tFileType, &
                      qOKL)
 	  !PRINT*,'ERRORS@@@@@@@@@@@@@@'
@@ -807,8 +807,8 @@ CONTAINS
       GoTo 2000   
 	    
 ! Error Handler - Error log Subroutine in CIO.f90 line 709
-1000 call Error_log('Error in MathLib:OutputIntegrationData_RealArray',tErrorLog_G)
-      Print*,'Error in MathLib:OutputIntegrationData_RealArray'
+1000 call Error_log('Error in Fdatawrite:OutputIntegrationData_RealArray',tErrorLog_G)
+      Print*,'Error in Fdatawrite:OutputIntegrationData_RealArray'
       call CloseFile(tFileType, &
                      qOKL)
 2000 CONTINUE

@@ -200,7 +200,7 @@ DO iStep = start_step, nSteps
      
      CALL innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
      
-     CALL DUMPDATA(sA,sV,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
+     if (qDump_G) CALL DUMPDATA(sA,sV,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
           iNumberElectrons_G,sZ,istep,tArrayA(1)%tFileType%iPage)
   END IF
 END DO

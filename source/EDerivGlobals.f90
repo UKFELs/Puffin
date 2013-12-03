@@ -68,6 +68,8 @@ LOGICAL          :: qElectronFieldCoupling_G
 LOGICAL          :: qDiffraction_G
 LOGICAL          :: qFocussing_G
 LOGICAL          :: qFilter
+logical   ::  qDump_G, qResume_G
+
 !
 INTEGER(KIND=IP) :: iOrderA_G
 INTEGER(KIND=IP) :: NNZA_G      
