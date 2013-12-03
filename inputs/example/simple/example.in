@@ -46,6 +46,7 @@ beam_file.in            CHARACTER   beam_file                  Name of the beam 
 1                       INTEGER     iRedNodesY           Length of central wiggler section in y where electrons will not leave
 3.000000000000000E-01   REAL        sFiltFrac            Specifies cutoff for high pass filter as fraction of resonant frequency
 1.000000000000000E+00   REAL        sDiffFrac                  Specifies diffraction step size as fraction of the undulator period
+1.0                     REAL        beta                       Absorption coefficient
 seed_file.in            CHARACTER   seed_file                  Name of the seed file
 
 
