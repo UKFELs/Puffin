@@ -344,7 +344,7 @@ py_shift = 0
      
                      IF(PRESENT(x_3_grid)) THEN
                         x_3_coord(index)=x_3_position(k)+(x_3_random(index)- 0.5_WP)*x_3_del(k)/SQRT(s_macro)
-                                           px_shift =  x_1_coord(index)**2 * kx**2 + x_2_coord(index)**2  * ky**2   
+                                           px_shift =  0.5_WP * x_1_coord(index)**2 * kx**2 + 0.5_WP * x_2_coord(index)**2  * ky**2   
                                            py_shift = kx**2 * x_1_coord(index) * x_2_coord(index)  
                      END IF
 
@@ -353,7 +353,7 @@ py_shift = 0
 
      
                      IF(PRESENT(p_1_grid)) THEN
-                        p_1_vector(index)=p_1_position(a)+(p_1_random(index)- 0.5_WP)*p_1_del(a)/SQRT(s_macro) + px_shift
+                        p_1_vector(index)=p_1_position(a)+(p_1_random(index)- 0.5_WP)*p_1_del(a)/SQRT(s_macro) - px_shift
                      END IF
       
                      IF(PRESENT(p_2_grid)) THEN

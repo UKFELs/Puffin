@@ -17,17 +17,20 @@ CONTAINS
 
 
 
-    REAL(KIND=WP) :: sInv2rho
-    REAL(KIND=WP) :: ZOver2rho,salphaSq
-    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE :: sField4ElecReal
-    REAL(KIND=WP),ALLOCATABLE :: Lj(:), dp2f(:)
-    REAL(KIND=WP) :: kbeta,nd,kx,ky
+    REAL(KIND=WP),INTENT(IN) :: sInv2rho
+    REAL(KIND=WP),INTENT(IN) :: ZOver2rho,salphaSq
+    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE ,INTENT(IN):: sField4ElecReal
+    REAL(KIND=WP),ALLOCATABLE ,INTENT(IN):: Lj(:), dp2f(:)
+    REAL(KIND=WP),INTENT(IN) :: kbeta,nd
     REAL(KIND=WP),INTENT(IN) :: sy(:)
     REAL(KIND=WP),INTENT(OUT) :: sb(:)
+    REAL(KIND=WP) :: kx,ky
+    
+    
     LOGICAL :: qOKL
 
-kx = SQRT(sEta_G/(8*sRho_G**2))
-ky = SQRT(sEta_G/(8*sRho_G**2))
+kx = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+ky = SQRT(sEta_G/(8.0_WP*sRho_G**2))
 !original Puffin p_x equations
 !        CALL PutValueInVector(iRe_PPerp_CG, &
 !            sInv2rho * (fy_G*sin(ZOver2rho) - &
@@ -46,13 +49,13 @@ ky = SQRT(sEta_G/(8*sRho_G**2))
 
 !Curved poles p_x equation
         CALL PutValueInVector(iRe_PPerp_CG, &
-            sInv2rho * (SQRT(2.0) * SQRT(sEta_G) * Lj * Vector(iIm_PPerp_CG,sy) * &
-                ( 1 + Vector(iRe_X_CG,sy)**2 * kx**2 /2) * &
-                Vector(iRe_Y_CG,sy) * ky * cos(ZOver2rho) &
-             / (SQRT(salphaSq) * ky) + sin(ZOver2rho) &
-              * ( 1 + Vector(iRe_X_CG,sy)**2 * kx**2)* &
-              ( 1 + Vector(iRe_Y_CG,sy)**2 * ky**2) - sEta_G * Vector(iRe_Q_CG,sy) &
-              * salphaSq * sField4ElecReal), &
+            sInv2rho * ((-1.0_WP - Vector(iRe_X_CG,sy)**2 * kx**2 /2) *SQRT(2.0) &
+             * SQRT(sEta_G) * Lj * Vector(iIm_PPerp_CG,sy) * &      
+                Vector(iRe_Y_CG,sy) *  cos(ZOver2rho) &
+             / SQRT(salphaSq)  +  &
+               ( 1 + 0.5_WP * Vector(iRe_X_CG,sy)**2 * kx**2 )* &
+              ( 1 + 0.5_WP * Vector(iRe_Y_CG,sy)**2 * ky**2 ) * sin(ZOver2rho) - &
+              sEta_G * Vector(iRe_Q_CG,sy) * salphaSq * sField4ElecReal), &
             sb,       &       
             qOKL)
 
@@ -67,17 +70,18 @@ ky = SQRT(sEta_G/(8*sRho_G**2))
 
 
 
-    REAL(KIND=WP) :: sInv2rho
-    REAL(KIND=WP) :: ZOver2rho,salphaSq
-    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE :: sField4ElecImag
-    REAL(KIND=WP),ALLOCATABLE :: Lj(:), dp2f(:)
-    REAL(KIND=WP) :: kbeta,nd,kx,ky
+    REAL(KIND=WP),INTENT(IN) :: sInv2rho
+    REAL(KIND=WP),INTENT(IN) :: ZOver2rho,salphaSq
+    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE ,INTENT(IN):: sField4ElecImag
+    REAL(KIND=WP),ALLOCATABLE,INTENT(IN) :: Lj(:), dp2f(:)
+    REAL(KIND=WP),INTENT(IN) :: kbeta,nd
     REAL(KIND=WP),INTENT(IN) :: sy(:)
     REAL(KIND=WP),INTENT(OUT) :: sb(:)
+    REAL(KIND=WP)            :: kx,ky    
     LOGICAL :: qOKL
 
-kx = SQRT(sEta_G/(8*sRho_G**2))
-ky = SQRT(sEta_G/(8*sRho_G**2))
+kx = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+ky = SQRT(sEta_G/(8.0_WP*sRho_G**2))
 !original Puffin p_y equations
 !       CALL PutValueInVector(iIm_PPerp_CG, &
 !            sInv2rho * (fx_G*cos(ZOver2rho) - &
@@ -94,12 +98,12 @@ ky = SQRT(sEta_G/(8*sRho_G**2))
 
 !curved poles equation for p_y
         CALL PutValueInVector(iRe_PPerp_CG, &
-            sInv2rho * (SQRT(2.0) * SQRT(sEta_G) * Lj * Vector(iRe_PPerp_CG,sy) &
-             * ( 1 + Vector(iRe_X_CG,sb)**2 * kx**2 /2) &
-             * Vector(iRe_Y_CG,sy) * ky * cos(ZOver2rho) &
-             / (SQRT(salphaSq) * ky) + sin(ZOver2rho) &
+            sInv2rho * ( SQRT(2.0_WP) * SQRT(sEta_G) * Lj * Vector(iRe_PPerp_CG,sy) &
+             * ( 1.0_WP + 0.5_WP * Vector(iRe_X_CG,sb)**2 * kx**2) &
+             * Vector(iRe_Y_CG,sy)  * cos(ZOver2rho) &
+             / SQRT(salphaSq)  - sin(ZOver2rho) &
               * Vector(iRe_X_CG,sy) * Vector(iRe_Y_CG,sy)* &
-               kx**2- sEta_G * Vector(iRe_Q_CG,sy) &
+               kx**2 - sEta_G * Vector(iRe_Q_CG,sy) &
               * salphaSq * sField4ElecImag), &
             sb,       &       
             qOKL)
@@ -115,18 +119,19 @@ ky = SQRT(sEta_G/(8*sRho_G**2))
 
 
 
-    REAL(KIND=WP) :: sInv2rho
-    REAL(KIND=WP) :: ZOver2rho,salphaSq
-    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE :: sField4ElecReal,sField4ElecImag
-    REAL(KIND=WP),ALLOCATABLE :: Lj(:), dp2f(:)
-    REAL(KIND=WP) :: kbeta,nd,nb,kx,ky
+    REAL(KIND=WP),INTENT(IN) :: sInv2rho
+    REAL(KIND=WP),INTENT(IN) :: ZOver2rho,salphaSq
+    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE ,INTENT(IN):: sField4ElecReal,sField4ElecImag
+    REAL(KIND=WP),ALLOCATABLE,INTENT(IN) :: Lj(:), dp2f(:)
+    REAL(KIND=WP),INTENT(IN) :: kbeta,nd,nb
     REAL(KIND=WP),INTENT(IN) :: sy(:)
     REAL(KIND=WP),INTENT(OUT) :: sb(:)
+    REAL(KIND=WP)           :: kx,ky    
     LOGICAL :: qOKL
 
 
-kx = SQRT(sEta_G/(8*sRho_G**2))
-ky = SQRT(sEta_G/(8*sRho_G**2)) 
+kx = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+ky = SQRT(sEta_G/(8.0_WP*sRho_G**2)) 
 !original Puffin p_2 equations
 !        CALL PutValueInVector(iRe_Q_CG, &
 !             2.0_WP * nb * Lj**2 * &
@@ -145,11 +150,11 @@ ky = SQRT(sEta_G/(8*sRho_G**2))
 
 !curved pole version of p_2 equation
        CALL PutValueInVector(iRe_Q_CG, &
-            (4 * sRho_G / sEta_G) * Lj**2 * ( (Vector(iRe_pPerp_CG,sy) * sField4ElecReal &
+            (4_WP * sRho_G / sEta_G) * Lj**2 * ( (Vector(iRe_pPerp_CG,sy) * sField4ElecReal &
             + Vector(iIm_pPerp_CG,sy) * sField4ElecImag) * Vector(iRe_Q_CG,sy) * sEta_G &
-            + (1/salphaSq) * (1 + sEta_G * Vector(iRe_Q_CG,sy)) * sin(ZOver2rho) * &
-            (Vector(iRe_pPerp_CG,sy) * (1 + kx**2 * Vector(iRe_X_CG,sy)**2 &
-                + ky**2 * Vector(iRe_Y_CG,sy)**2) - Vector(iIm_pPerp_CG,sy) &
+            + (1.0_WP/salphaSq) * (1 + sEta_G * Vector(iRe_Q_CG,sy)) * sin(ZOver2rho) * &
+            (Vector(iRe_pPerp_CG,sy) * (1.0_WP + 0.5_WP* kx**2 * Vector(iRe_X_CG,sy)**2 ) * &
+               (1.0_WP + 0.5_WP * ky**2 * Vector(iRe_Y_CG,sy)**2) - Vector(iIm_pPerp_CG,sy) &
             * kx**2 * Vector(iRe_X_CG,sy) * Vector(iRe_Y_CG,sy) ) ),&
             sb,&
             qOKL)
