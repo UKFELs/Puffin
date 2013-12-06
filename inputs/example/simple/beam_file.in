@@ -4,7 +4,7 @@ Describes electron beams for input into puffin. Multiple beams with
 different parameters can be used. Please refer to POP-REF for an
 explanation of the scaled variables used, such as z2 and p2.
 
-2         # of beams
+1         # of beams
 
 READ IN BEAM CHARACTERISTICS
 ========================================================================
@@ -26,16 +26,16 @@ TOTAL MODELLED LENGTH OF BEAM IN EACH DIMENSION    - REAL
 1.705184351394662E-01   LENZ2
 1.000000000000000E+00   LENPX      (overwritten for matched beam)
 1.000000000000000E+00   LENPY      (overwritten for matched beam)
-1.000000000000000E+00   LENGAMMA
+6.000000000000000E+00   LENGAMMA
 
 NUMBER OF MACROPARTICLES TO MODEL BEAM IN EACH DIMENSION (EQUISPACED BEFORE NOISE IS ADDED, IF USED)   - INTEGER
 
-1                       NUMX
-1                       NUMY
+6                       NUMX
+6                       NUMY
 400                     NUMZ2
-1                       NUMPX
-1                       NUMPY
-11                      NUMGAMMA
+6                       NUMPX
+6                       NUMPY
+1                      NUMGAMMA
 
 BEAM PARAMETERS
 
