@@ -58,8 +58,11 @@ ky = SQRT(sEta_G/(8.0_WP*sRho_G**2))
               sEta_G * Vector(iRe_Q_CG,sy) * salphaSq * sField4ElecReal), &
             sb,       &       
             qOKL)
-
-
+! testing p_x oscillates
+!~         CALL PutValueInVector(iRe_PPerp_CG, &
+!~             sInv2rho * sin(ZOver2rho) , &
+!~             sb,       &       
+!~             qOKL)
   END SUBROUTINE CALCULATE_PX
 
 
@@ -97,7 +100,7 @@ ky = SQRT(sEta_G/(8.0_WP*sRho_G**2))
 
 
 !curved poles equation for p_y
-        CALL PutValueInVector(iRe_PPerp_CG, &
+        CALL PutValueInVector(iIM_PPerp_CG, &
             sInv2rho * ( SQRT(2.0_WP) * SQRT(sEta_G) * Lj * Vector(iRe_PPerp_CG,sy) &
              * ( 1.0_WP + 0.5_WP * Vector(iRe_X_CG,sb)**2 * kx**2) &
              * Vector(iRe_Y_CG,sy)  * cos(ZOver2rho) &
