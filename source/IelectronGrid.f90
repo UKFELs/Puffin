@@ -113,7 +113,7 @@ CONTAINS
     REAL(KIND=WP),ALLOCATABLE :: s_tmp_Vk(:)
 
     REAL(KIND=WP), ALLOCATABLE :: s_tmp_max_av(:)
-    REAL(KIND=WP) :: local_start, local_end, afact, um
+    REAL(KIND=WP) :: local_start, local_end, afact, um, kx, ky
 
     REAL(KIND=WP) :: offsets(6)
 
@@ -256,8 +256,13 @@ CONTAINS
 
     DEALLOCATE(tconv)
 
-    sEl_PX0Position_G = sEl_PX0Position_G + pxOffset(sZ, srho_G, fy_G)
-    sEl_PY0Position_G = sEl_PY0Position_G + pyOffset(sZ, srho_G, fx_G)
+
+kx = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+ky = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+
+    sEl_PX0Position_G = sEl_PX0Position_G + pxOffset(sZ, srho_G, fy_G)  - 0.5_WP * kx**2 * sEl_X0Position_G**2 &
+     -  0.5_WP * kY**2 * sEl_Y0Position_G**2
+    sEl_PY0Position_G = sEl_PY0Position_G + pyOffset(sZ, srho_G, fx_G) - kx**2 *  sEl_X0Position_G  * sEl_Y0Position_G
 
 !     We currently have gamma in the p2 position array -
 !     need to change to p2
