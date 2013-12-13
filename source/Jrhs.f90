@@ -1,8 +1,15 @@
+!************* THIS HEADER MUST NOT BE REMOVED *******************!
+!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
+!** This program must not be copied, distributed or altered in  **!
+!** any way without the prior permission of the above authors.  **!
+!*****************************************************************!
+
 MODULE rhs
 
 ! Module to calculate the RHS of the field source equation
 ! and d/dz of electron equations.
 !
+
 USE paratype
 USE ArrayFunctions
 USE DerivsGlobals

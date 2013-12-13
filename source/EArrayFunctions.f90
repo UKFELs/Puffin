@@ -1,7 +1,12 @@
+!************* THIS HEADER MUST NOT BE REMOVED *******************!
+!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
+!** This program must not be copied, distributed or altered in  **!
+!** any way without the prior permission of the above authors.  **!
+!*****************************************************************!
+
 Module ArrayFunctions
-!--------------------------------------------------------------------------------
+
 ! Module to retrieve and populate array
-!--------------------------------------------------------------------------------
 
   USE paratype
   USE ParallelInfoType
