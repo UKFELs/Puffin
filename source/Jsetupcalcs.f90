@@ -11,7 +11,6 @@ USE ParallelInfoType
 USE TransformInfoType
 USE IO
 USE ArrayFunctions
-USE GlobalNodes
 USE extra
 USE typesAndConstants
 USE DerivsGlobals
