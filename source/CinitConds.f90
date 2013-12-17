@@ -48,7 +48,7 @@ contains
     
     nc = 2.0_WP*aw**2/(ux**2 + uy**2)
     
-    srBcoeff = 4.0_WP * sqrt(2.0) * ff * k_beta * & 
+    srBcoeff = uy * 4.0_WP * sqrt(2.0) * ff * k_beta * & 
               rho**2.0_WP / sqrt(ux**2 + uy**2) / sqrt(eta)* &
               (gamma_r / sqrt(gamma_j**2 - (1.0_WP + nc*(px**2 + py**2)))) !!!TEMP!!!
 
@@ -92,7 +92,7 @@ contains
 !
     nc = 2.0_WP*aw**2/(ux**2 + uy**2)
     
-    srBcoeff = 4.0_WP * sqrt(2.0_WP) * ff * k_beta * & 
+    srBcoeff = ux * 4.0_WP * sqrt(2.0_WP) * ff * k_beta * & 
               rho**2.0_WP / sqrt(ux**2 + uy**2) / sqrt(eta) * &
               (gamma_r / sqrt(gamma_j**2 - (1.0_WP + nc*(px**2 + py**2))))
           
