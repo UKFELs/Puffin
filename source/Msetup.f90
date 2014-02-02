@@ -13,7 +13,7 @@ MODULE Setup
   USE DataWrite
   USE lattice
   USE Stiffness
-  USE DerivsGlobals
+  USE Globals
   USE resume
   USE electronInit
   USE Read_data
@@ -139,6 +139,7 @@ MODULE Setup
        fy,                &
        Dfact,             &
        sFocusfactor,      &
+       taper,             &
        sSeedSigma,        &
        freqf, SmeanZ2,    &
        qFlatTopS, nseeds, &
@@ -189,12 +190,36 @@ MODULE Setup
   
   END IF
 
+!    If using wiggler lattice read in lattice file
+
+  IF (lattFile=='') THEN
+    qMod = .FALSE.
+    IF(tProcInfo_G%qRoot) PRINT*, 'There are no dispersive sections'
+  ELSE
+    qMod = .TRUE.
+    IF(tProcInfo_G%qRoot) PRINT*, 'There are dispersive sections'
+  END IF
+      
+  IF (qMod) THEN
+    modNum=numOfMods(lattFile)
+    !modNum=26
+    ALLOCATE(D(ModNum),zMod(ModNum),delta(modNum))
+    ALLOCATE(mf(ModNum),delmz(ModNum))
+
+!    Latt file name, number of wigg periods converted to z-bar,
+!    slippage in chicane in z-bar, 2 dispersive constants, 
+!    number of modules
+
+    CALL readLatt(lattFile,zMod,delta,D,Dfact,ModNum,sRho,sStepSize)
+    ModCount = 1
+  END IF
+
 !     Pass local vars to global vars
 
   CALL passToGlobals(srho,sEta,sKBeta,iNodes, &
                      iredNodesX,iredNodesY, &
                      sLengthOfElm,&
-                     fx,fy,sFocusFactor,sFiltFrac,sDiffFrac,sBeta, &
+                     fx,fy,sFocusFactor,taper,sFiltFrac,sDiffFrac,sBeta, &
                      qSwitches,qOK)
 
   IF (.NOT. qOKL) GOTO 1000
@@ -344,31 +369,6 @@ MODULE Setup
     CALL GetKValues(frecvs,fdispls,qOKL)
     IF (.NOT. qOKL) GOTO 1000
   
-  END IF
-
-
-
-!    If using wiggler lattice read in lattice file
-
-  IF (lattFile=='') THEN
-    qMod = .FALSE.
-    IF(tProcInfo_G%qRoot) PRINT*, 'There are no dispersive sections'
-  ELSE
-    qMod = .TRUE.
-    IF(tProcInfo_G%qRoot) PRINT*, 'There are dispersive sections'
-  END IF
-      
-  IF (qMod) THEN
-    modNum=lineCount(lattFile)
-    modNum=26
-    ALLOCATE(D(ModNum),zMod(ModNum),delta(modNum))
-
-!    Latt file name, number of wigg periods converted to z-bar,
-!    slippage in chicane in z-bar, 2 dispersive constants, 
-!    number of modules
-
-    CALL readLatt(lattFile,zMod,delta,D,Dfact,ModNum,sRho_G) 	
-    ModCount = 1
   END IF
 
 

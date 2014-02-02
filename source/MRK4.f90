@@ -9,7 +9,7 @@ MODULE RK4int
 USE ParallelInfoType
 USE TransformInfoType
 USE FFTW_Constants
-USE DerivsGlobals
+USE Globals
 USE Derivative
 USE IO
 CONTAINS

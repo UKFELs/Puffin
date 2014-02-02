@@ -8,7 +8,7 @@ MODULE DataWrite
 
 USE ArrayFunctions
 USE TypesandConstants
-USE DerivsGlobals
+USE Globals
 USE ParallelSetUp
 
 INTERFACE OutputIntegrationData

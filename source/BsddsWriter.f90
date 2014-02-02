@@ -25,6 +25,7 @@ IF (tFileType%qFormatted) Then
    WRITE(UNIT=tFileType%iUnit,FMT='(A,A)') 'SDDS',version
 ELSE
    Call C_WriteString(tFileType%zFileName,'SDDS' // Trim(version), qOKL, qNewLine=.TRUE.)
+   Call C_WriteString(tFileType%zFileName,'!# little-endian', qOKL, qNewLine=.TRUE.)
 END IF
 
 END SUBROUTINE SddsWriteVersion

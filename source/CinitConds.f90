@@ -10,7 +10,7 @@ module initConds
 ! electron macroparticle phase space conditions in Puffin.
 
 use paratype
-use derivsGlobals
+use Globals
 
 
 implicit none

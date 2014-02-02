@@ -11,7 +11,7 @@ module remLow
 ! the initially generated macroparticles.
 
 use paratype
-use DerivsGlobals
+use Globals
 use parallelSetup
 use gtop2
 

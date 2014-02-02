@@ -8,6 +8,7 @@ CONTAINS
 
 !********************************************************
 !*+*Return the error function*+*!
+
 FUNCTION erf(x)
 
   IMPLICIT NONE
@@ -22,6 +23,7 @@ FUNCTION erf(x)
 END FUNCTION erf
 !********************************************************
 !*+*Return the complementary error function*+*!
+
 FUNCTION erfc(x)
 
   IMPLICIT NONE
@@ -33,6 +35,7 @@ FUNCTION erfc(x)
 
 END FUNCTION erfc
 !********************************************************
+
 FUNCTION erfi(Y)			
 !-----------------------
 ! Inverse error function
@@ -105,6 +108,7 @@ FUNCTION erfi(Y)
   Return
 End Function erfi
 !********************************************************
+
 FUNCTION gammp(a,x)
 
   IMPLICIT NONE
@@ -122,6 +126,7 @@ FUNCTION gammp(a,x)
 
 END FUNCTION gammp
 !********************************************************
+
 FUNCTION gammq(a,x)
   
   IMPLICIT NONE
@@ -139,6 +144,7 @@ FUNCTION gammq(a,x)
   
 END FUNCTION gammq
 !********************************************************
+
 FUNCTION gser_s(A,X,GLN)
 
   REAL(KIND=WP),INTENT(IN) :: A,X
@@ -179,6 +185,7 @@ FUNCTION gser_s(A,X,GLN)
 
 END FUNCTION gser_s
 !********************************************************
+
 FUNCTION gcf(a,x,gln)
 
   REAL(KIND=WP),INTENT(IN)			:: a,x
@@ -224,6 +231,7 @@ FUNCTION gcf(a,x,gln)
   
 END FUNCTION gcf
 !********************************************************
+
 FUNCTION gammln(xx)
 
   USE paratype

@@ -12,7 +12,7 @@ MODULE rhs
 
 USE paratype
 USE ArrayFunctions
-USE DerivsGlobals
+USE Globals
 USE Functions
 USE extra
 USE basis_fn
@@ -169,6 +169,11 @@ CONTAINS
     sb = 0.0_WP
     sField4ElecReal = 0.0_WP
     sField4ElecImag = 0.0_WP
+
+
+!     Adjust undulator tuning
+
+    n2col = n2col0 * (1 + undgrad*(sz - sz0))
 
     fkb= sFocusfactor_G * kbeta
 
@@ -478,8 +483,8 @@ CONTAINS
 !     PX
 
        CALL PutValueInVector(iRe_PPerp_CG, &
-            sInv2rho * (fy_G*sin(ZOver2rho) - &
-            (salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
+            sInv2rho * (fy_G* n2col * sin(ZOver2rho) - &
+            ( salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
             sField4ElecReal ) ), &
             sb,	      & 	  
             qOKL)
@@ -488,16 +493,17 @@ CONTAINS
 !     -PY (Imaginary pperp)
 
        CALL PutValueInVector(iIm_PPerp_CG, &
-            sInv2rho * (fx_G*cos(ZOver2rho) - &
-            (salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
+            sInv2rho * (fx_G * n2col * cos(ZOver2rho) - &
+            ( salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
             sField4ElecImag ) ),&
             sb,	      & 	  
             qOKL)
+
 !     p2
 
        CALL PutValueInVector(iRe_Q_CG, &
             2.0_WP * nb * Lj**2 * &
-            ((sEta_G * Vector(iRe_Q_CG,sy) + 1.0_WP)/ salphaSq * &
+            ((sEta_G * Vector(iRe_Q_CG,sy) + 1.0_WP)/ salphaSq * n2col * &
             (Vector(iIm_pPerp_CG,sy) * fx_G*cos(ZOver2Rho) + &
             Vector(iRe_pPerp_CG,sy) * fy_G*sin(ZOver2rho)) +&
             sEta_G * Vector(iRe_Q_CG,sy) *&

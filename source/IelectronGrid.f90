@@ -8,7 +8,7 @@ MODULE ElectronInit
 
 USE paratype
 USE ParallelInfoType
-USE DerivsGlobals
+USE Globals
 USE MacrosGen
 use parBeam
 use remLow

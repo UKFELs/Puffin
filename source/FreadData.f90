@@ -8,7 +8,7 @@ MODULE Read_data
 
 USE ArrayFunctions
 USE TypesandConstants
-USE DerivsGlobals
+USE Globals
 USE ParallelSetUp
 
 CONTAINS
@@ -55,6 +55,7 @@ SUBROUTINE read_in(zfilename, &
        suy, &
        Dfact, &
        sFocusfactor, &
+       taper,    &
        sSigmaF, &
        freqf, SmeanZ2, &
        qFlatTopS, nseeds, &
@@ -168,7 +169,7 @@ SUBROUTINE read_in(zfilename, &
   REAL(KIND=WP),     INTENT(OUT)  :: sux
   REAL(KIND=WP),     INTENT(OUT)  :: suy
   REAL(KIND=WP),     INTENT(OUT)  :: Dfact
-  REAL(KIND=WP),     INTENT(OUT)  :: sFocusfactor
+  REAL(KIND=WP),     INTENT(OUT)  :: sFocusfactor, taper
   REAL(KIND=WP),     INTENT(OUT)  :: sPEOut
   INTEGER(KIND=IP),  INTENT(OUT)  :: iDumpNthSteps
   LOGICAL,           INTENT(OUT)  :: qSwitches(:)
@@ -307,7 +308,7 @@ SUBROUTINE read_in(zfilename, &
   READ(UNIT=168,FMT=*) sKBeta
   READ(UNIT=168,FMT=*) sFocusfactor
   READ(UNIT=168,FMT=*) Dfact
-  
+  READ(UNIT=168,FMT=*) taper
   
 !     Read whitespace...
 

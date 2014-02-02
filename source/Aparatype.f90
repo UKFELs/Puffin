@@ -8,7 +8,9 @@ MODULE paratype
 
 IMPLICIT NONE
 
-!Define the different types of data
+!              Definitions of data types
+!                  used in Puffin
+
 INTEGER, PARAMETER     ::      short   =SELECTED_INT_KIND(4), &
                                long    =SELECTED_INT_KIND(9), &
                                spec    =SELECTED_INT_KIND(14), &

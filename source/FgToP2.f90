@@ -10,7 +10,7 @@ module gtop2
 ! from the relativistic factor gamma to the scaled longitudinal 
 ! velocity p2, and vice-versa.
 
-use derivsGlobals
+use Globals
 use paratype
 
 implicit none

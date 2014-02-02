@@ -11,7 +11,7 @@ use paratype
 use readDists
 use MacrosGenNew
 use parallelInfoType
-use DerivsGlobals
+use Globals
 use typesAndConstants
 use parBeam
 use grids

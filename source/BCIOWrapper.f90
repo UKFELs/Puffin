@@ -5,16 +5,15 @@
 !*****************************************************************!
 
 MODULE CIOWrapper
-!--------------------------------------------------------------------------------
-! Module containing wrapper around C commands
-!--------------------------------------------------------------------------------
+
+! Module containing wrapper around C commands.
 
       USE paratype
 		
       IMPLICIT NONE
-!
+
       Private CString
-!
+
 !
 !--------------------------------------------------------------------------------
 ! This interface allows you to call the routine OutputIntegrationData
@@ -34,6 +33,7 @@ MODULE CIOWrapper
 !
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
+
       FUNCTION CString(zString)
 !
 !********************************************************************
@@ -74,6 +74,7 @@ MODULE CIOWrapper
       END FUNCTION CString
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
+
       SUBROUTINE C_OpenFileForOutput(zFileName,        &
 			            qOK)
 !
@@ -124,6 +125,7 @@ CHARACTER*9 :: zFile
       END SUBROUTINE C_OpenFileForOutput
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
+
       SUBROUTINE C_WriteInteger(zFileName,        &
                                 iNum,            &
 			        qOK)
@@ -230,6 +232,7 @@ CHARACTER*9 :: zFile
 
 
 !--------------------------------------------------------------------------------
+
       SUBROUTINE C_WriteReal(zFileName,        &
                              sNum,           &
 			     qOK)
@@ -349,6 +352,7 @@ CHARACTER*9 :: zFile
       END SUBROUTINE C_WriteString
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
+
       SUBROUTINE C_WriteIntegerArray1D(zFileName,        &
                                      iNum,            &
 			             qOK)
@@ -401,6 +405,7 @@ CHARACTER*9 :: zFile
       END SUBROUTINE C_WriteIntegerArray1D
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
+
       SUBROUTINE C_WriteIntegerArray2D(zFileName,        &
                                      iNum,            &
 			             qOK)
@@ -453,6 +458,7 @@ CHARACTER*9 :: zFile
       END SUBROUTINE C_WriteIntegerArray2D
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
+
       SUBROUTINE C_WriteIntegerArray3D(zFileName,        &
                                       iNum,            &
 			              qOK)
@@ -505,6 +511,7 @@ CHARACTER*9 :: zFile
       END SUBROUTINE C_WriteIntegerArray3D
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
+
       SUBROUTINE C_WriteRealArray1D(zFileName,        &
                                   sNum,           &
 			          qOK)
@@ -555,8 +562,10 @@ CHARACTER*9 :: zFile
 2000 CONTINUE
 !	      
       END SUBROUTINE C_WriteRealArray1D
+
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
+
       SUBROUTINE C_WriteRealArray2D(zFileName,        &
                                   sNum,           &
 			          qOK)
@@ -609,6 +618,7 @@ CHARACTER*9 :: zFile
       END SUBROUTINE C_WriteRealArray2D
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
+
       SUBROUTINE C_WriteRealArray3D(zFileName,        &
                                   sNum,           &
 			          qOK)

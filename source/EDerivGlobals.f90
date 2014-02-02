@@ -4,10 +4,9 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
-Module DerivsGlobals
+Module Globals
 
-! Module to calculate deerivative required to integrate
-! using rk4
+! Module containing shared variables used in Puffin
 
 USE paratype
 USE typesAndConstants
@@ -95,10 +94,14 @@ INTEGER(KIND=IPL), ALLOCATABLE  :: procelectrons_G(:)
 REAL(KIND=WP), ALLOCATABLE     :: s_chi_bar_G(:)
 REAL(KIND=WP), ALLOCATABLE     :: s_Normalised_chi_G(:)
 
+REAL(KIND=WP)    :: sRho_save_G,sAw_save_G
 REAL(KIND=WP)    :: sRho_G,sAw_G,sGammaR_G
 REAL(KIND=WP)    :: sEta_G,sKBeta_G
 REAL(KIND=WP)    :: sFocusfactor_G
+REAL(KIND=WP)    :: sFocusfactor_save_G
+
 !
+
 INTEGER(KIND=IPL) :: iNumberElectrons_G
 INTEGER(KIND=IPL) :: iGloNumElectrons_G
 INTEGER(KIND=IP) :: iNumberNodes_G,seedend
@@ -111,7 +114,7 @@ REAL(KIND=WP), ALLOCATABLE :: kz2_loc_G(:)
 
 REAL(KIND=WP) :: sBeta_G    ! Absorption coefficient
 
-REAL(KIND=WP)  :: sfilt
+REAL(KIND=WP)  :: sfilt, n2col, m2col, sz0, undgrad, n2col0
   
 REAL(KIND=WP) :: delta_G
 !!!!!
@@ -124,7 +127,8 @@ LOGICAL             :: qMod_G
 LOGICAL :: qResume, qWrite
 
 REAL(KIND=WP)       :: Dfact
-REAL(KIND=WP), ALLOCATABLE    :: D(:), delta(:), zMod(:)
+REAL(KIND=WP), ALLOCATABLE    :: D(:), delta(:), zMod(:), &
+                                 mf(:), delmz(:)
 INTEGER(KIND=IP)    :: ModNum, ModCount
 
 INTEGER(KIND=IP), ALLOCATABLE :: frecvs(:),fdispls(:),&
@@ -157,4 +161,4 @@ REAL(KIND=WP), ALLOCATABLE     :: sEl_PZ20Position_G(:)
 
 
 
-End Module DerivsGlobals
+End Module Globals

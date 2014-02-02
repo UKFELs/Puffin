@@ -9,7 +9,7 @@ MODULE STIFFNESS
 USE PARATYPE
 USE ParallelInfoType
 USE ParallelSetup
-USE DerivsGlobals
+USE Globals
 
 IMPLICIT NONE
 

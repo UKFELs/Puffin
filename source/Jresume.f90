@@ -8,7 +8,7 @@ MODULE RESUME
 
   USE paratype
   USE typesandconstants
-  USE DerivsGlobals
+  USE Globals
   USE ParallelInfoType
   USE DataWrite
 

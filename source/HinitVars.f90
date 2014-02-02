@@ -125,7 +125,7 @@ LOGICAL          :: qSwitches(nSwitches_CG)
 LOGICAL          :: qSeparateStepFiles
 LOGICAL          :: qFormattedFiles
 
-REAL(KIND=WP)    :: sFiltFrac
+REAL(KIND=WP)    :: sFiltFrac, taper
 
 logical          :: qSimple
 character(32_IP), allocatable :: dist_f(:)

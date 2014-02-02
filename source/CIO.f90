@@ -28,6 +28,7 @@ MODULE IO
       CONTAINS
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
+
       SUBROUTINE WriteLOGICINTEGER(qLogic,        &
 			      tFileType,    &
 			      qOK,          &
@@ -103,6 +104,7 @@ MODULE IO
 !	      
       END SUBROUTINE WriteLOGICINTEGER
 !--------------------------------------------------------------------------------
+
       SUBROUTINE WriteINTEGER(iInt,        &
 			      tFileType,    &
 			      qOK,          &
@@ -238,6 +240,7 @@ END SUBROUTINE WriteINTEGERL
 
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
+
       SUBROUTINE WriteRealNumber(sReal,        &
 			       tFileType,    &
 			       qOK,          &
@@ -370,6 +373,7 @@ END SUBROUTINE WriteINTEGERL
       END SUBROUTINE Write1DRealArray
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
+
       SUBROUTINE Write2DRealArray(sReal,        &
 			          tFileType,    &
 			          qOK,          &
@@ -435,6 +439,7 @@ END SUBROUTINE WriteINTEGERL
       END SUBROUTINE Write2DRealArray
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
+
       SUBROUTINE Write3DRealArray(sReal,        &
 			          tFileType,    &
 			          qOK,          &
@@ -546,6 +551,7 @@ END SUBROUTINE WriteINTEGERL
       End Function FreeFile
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
+
       SUBROUTINE OpenFileForOutput(zFileName, &
       				   tFileType, &
 			           qOK)
@@ -723,6 +729,7 @@ End SubRoutine CloseFile
       END SUBROUTINE WriteSDDSHeader 
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
+
       SUBROUTINE WriteSDDSNewPage(tFileType,  &
 			          qOK)
 !
@@ -781,6 +788,7 @@ End SubRoutine CloseFile
       END SUBROUTINE WriteSDDSNewPage
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
+
  SUBROUTINE Error_log(zError,tFileType)
 !
 !*************************************************
@@ -845,9 +853,10 @@ End SubRoutine CloseFile
 	
 END SUBROUTINE Error_log
 
+!--------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 
-
-      SUBROUTINE InitialiseSDDSFile(zOutFile,       &
+SUBROUTINE InitialiseSDDSFile(zOutFile,       &
                                     tFileType,      &
 			            qOK)
 !
@@ -913,8 +922,10 @@ END SUBROUTINE Error_log
    Print*,'Error in DIO: InitialiseSDDSFile'
 2000 CONTINUE
       END SUBROUTINE InitialiseSDDSFile
+      
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
+
       SUBROUTINE OpenFileForAppend(zFileName, &
       				   tFileType, &
 			           qOK)

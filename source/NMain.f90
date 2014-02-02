@@ -17,10 +17,15 @@ USE RK4int
 !!!!!!!!!!!!!!!!!!!Puffin Version 1.4.0 !!!!!!!!!!!!!!!!!!!
 !
 ! A program for solving an unaveraged 3D FEL system. This 
-! parallel code requires MPI, FFTW_2.5.1 and MUMPS.
+! parallel MPI code requires the MPI transforms in FFTW v2.5.1.
+! The system of equations and numerical solution is presented 
+! in:
+!
+! LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
 !
 ! Written by Lawrence Campbell, Cynthia Nam, and Dr. Pamela Johnston.
 ! University of Strathclyde, Glasgow
+!
 ! Contact: lawrence.campbell@strath.ac.uk
 !
 !                       ARGUMENTS 
@@ -90,10 +95,24 @@ nextDiff = 0.0_WP
 
 CALL Get_time(start_time)
 
+
+
+
+
+
+
+
+
+
 !!!!!!!!!!!!!!!!!!!!!!!  BEGIN INTEGRATION !!!!!!!!!!!!!!!!!!!!!!!!
 
 DO iStep = start_step, nSteps
   
+
+
+
+
+
 !   First step of split-step method:- field diffraction only
 
   IF (qDiffraction_G) THEN
@@ -107,30 +126,19 @@ DO iStep = start_step, nSteps
       CALL innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
       DEALLOCATE(Ar_local)
 
-  IF (tProcInfo_G%QROOT ) print*,' Got large from small local ',iStep, end_time-start_time
-
       CALL DiffractionStep(sStep,&
            frecvs,&
            fdispls,&
            sV,&
            sA,&
            qOKL)
-
-  IF (tProcInfo_G%QROOT ) print*,' did diffraction ',iStep, end_time-start_time
      
       ALLOCATE(sAr(2*ReducedNX_G*ReducedNY_G*NZ2_G))
       ALLOCATE(Ar_local(2*local_rows))
 
-  IF (tProcInfo_G%QROOT ) print*,' Allocated arrays ',iStep, end_time-start_time
-
       CALL getAlocalFL(sA,Ar_local)
-      
-    IF (tProcInfo_G%QROOT ) print*,' Got A local from Large ',iStep, end_time-start_time
-     
+
       CALL local2globalA(Ar_local,sAr,mrecvs,mdispls,tTransInfo_G%qOneD)
-
-  IF (tProcInfo_G%QROOT ) print*,' Got global small from local ',iStep, end_time-start_time
-
 
       IF(iStep==start_step) sStep = diffStep
       
@@ -142,6 +150,14 @@ DO iStep = start_step, nSteps
 
   END IF
 
+
+
+
+
+
+
+
+
 !   Second half of split step method: electron propagation
 !                    and field driving.
 
@@ -152,16 +168,40 @@ DO iStep = start_step, nSteps
 
   END IF 
 
+
+
+
+
+
+
 !                  Increment z position  
 !       (we now have solution at zbar + sStepsize) 
 
   sZ = sZ + sStepSize
-		
+
+
+
+
+
+
+!                 If at end of current undulator module, 
+!      propagate electron beam through a dispersive chicane, if present,
+!                 and move to the next undulator module.
+
   IF (qMod_G) THEN
      IF (sZ>(zMod(modCount)-sStepsize/100.0_WP)) THEN
-        CALL disperse(sV,D(modCount),delta(modCount))
 
-!            Write data if not already going to
+        IF (modCount /= ModNum) THEN
+
+          CALL disperse(sV,D(modCount),delta(modCount),&
+                   modCount,sStepSize,sZ)
+
+        END IF
+
+
+
+
+        !            Write data if not already going to
 
         IF ((iCount /= iWriteNthSteps).AND.&
              (iStep /= nSteps)) THEN
@@ -172,11 +212,21 @@ DO iStep = start_step, nSteps
                 zDataFileName,tArrayZ,tArrayA,&
                 tArrayE,&
                 iStep,sZ,sA,sV,.FALSE.,qFormattedFiles_G,&
-                qOKL)		  
+                qOKL)	
+
         END IF
-        modCount=modCount+1_IP
+  
+
+
+        modCount=modCount+1_IP   !      Update module count
+     
      END IF
+  
   END IF
+
+
+
+
 
 !                   Write result to file
  
@@ -199,6 +249,13 @@ DO iStep = start_step, nSteps
      print*,' finished step ',iStep, end_time-start_time
   END IF
   
+
+
+
+
+
+
+
 !                Dump data when time comes
 
   IF (mod(iStep,iDumpNthSteps)==0) THEN
@@ -209,16 +266,32 @@ DO iStep = start_step, nSteps
      if (qDump_G) CALL DUMPDATA(sA,sV,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
           iNumberElectrons_G,sZ,istep,tArrayA(1)%tFileType%iPage)
   END IF
-END DO
-
-!       Clear arrays and stucts used during integration
-
-CALL cleanup(sA,sV,sZ)
 
 
-!       Exit
 
-GOTO 2000     
+
+
+
+  IF (modCount > ModNum) EXIT
+
+
+END DO   ! End of integration loop
+
+
+
+
+
+
+
+CALL cleanup(sA,sV,sZ)   !     Clear arrays and stucts used during integration
+
+
+
+
+
+
+GOTO 2000     !       Exit
+
             
 1000 CALL Error_log('Error in Main',tErrorLog_G)
 PRINT*,'Error in Main'
