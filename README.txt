@@ -6,15 +6,98 @@ The code requires FFTW_2.5.1 and uses MPI.
 Puffin (Parallel Unaveraged Fel INtegrator) is described in:-
 LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
 
-The code has been improved since then, and no longer uses an
-external linear solver. The only external package now required is FFTW.
+The code has undergone many improvements and extended its
+functionality since then. It no longer uses an external linear 
+solver package. 
+
+The only external package now required is FFTW v2.1.5.
 
 The sub-directories include:
 
-  source/  -  This contains the main source code written in Fortran 90.
+
+  source/  -  This contains the main source code written in C 
+              and Fortran 90.
+
   compile/ -  Some example compilation and linking scripts.
-  submit/  -  Example subission script for the Archie-WEST HPC.  
+  
   inputs/  -  Some example input files.
+
+
+Basic operation involves 3 input files. The three files are:
+
+  1) The main input file, describing free parameters and the 
+     integration sampling
+
+  2) The beam input file, which can describe multiple electron 
+     beams if necessary
+
+  3) The seed input file, which can describe multiple radiation 
+     seeds if necessary
+
+The main input file points to the beam and seed file to be used.
+This main input file is then passed to Puffin at run time.
+This approach is (hopefully) quite flexible, allowing Puffin to 
+generate a simple, more conventional FEL, or a more esoteric 
+configuration with multiple seeds and electron beams, with different 
+powers, frequencies, energies, and distributions.
+
+The input parameters are in terms of the scaled, dimensionless 
+variables described in the Physics of Plasmas reference above.
+A python script, 'write_df.py' is located in the examples/gen
+directory which can generate the input files from commonly used
+SI experimental parameters.
+
+In addition, for more fun, a lattice file may be constructed to 
+describe a series of undulator modules seperated by chicane/slippage 
+sections. The name of this lattice file should be entered in the 
+'lattfile' variable in the input file. 2 or 3 example lattice 
+files can be found at inputs/example/simple/1D/lattice/ - the
+examples simulate a 2 colour scheme. The file header contains 
+the number of undulator modules. Each line of the lattice file 
+contains 4 numbers describing a complete undulator-chicane pair, 
+in the following format:
+
+Nw   Nc  aw_fact   stepsize
+
+where 
+
+Nw            is the number of undulator periods
+
+Nc            is the length of the chicane slippage section
+              expressed as the number of resonant wavelengths
+
+aw_f          is the undulator parameter expressed as a fraction
+              of the aw in the input file. So if aw_0 is the aw
+              given in the input file, then the undulator 
+              parameter for this module is aw = aw_f * aw_0.
+
+stepsize      is the stepsize used for the numerical integration
+              in this undulator section. The mesh describing the
+              radiation field does not alter as the undulator
+              tuning changes, but a larger aw wil cause the beam
+              to propagate more quickly in the radiation frame
+              i.e. the beam slips more quickly behind the radiation
+              field. This option will be necessary to stop the beam
+              skipping over nodes, see e.g. the Courant number.
+
+Also note that if aw is decreased in an undulator module you should
+ensure the radiation mesh is fine enough to model the higher frequency
+content which will arise.
+
+The strength of the dispersive chicanes can be given in the 'Dfact' 
+variable in the main input file. Currently, only this one strength 
+factor may be specified which will be shared by all chicanes.
+ 
+An undulator taper can also be added in the main input file.
+Presently, if a lattice file is used, this taper will be applied
+to ALL undulator modules, and the taper will be applied to the
+undulator parameter of each module. Only a linear taper may be
+supplied for now.
+
+
+
+COMPILATION ON HPC MACHINES
+===========================
 
 FFTW v2.1.5 and MPI compilers must be loaded into
 your environment before compiling. e.g. on Archie, do
@@ -37,7 +120,7 @@ less than this if you desire. You can technically use more
 MPI processes than physical processors, but this is probably
 not a good idea. The MPI job is launched with 
 
-mpirun -np 12 ~/bin/puffin1.4 hidding.in
+mpirun -np 12 ~/bin/puffin1.4 inputfile.in
 
 where the 2nd last argument points to the executable, and the
 last argument is the input file for Puffin. The option -np 
