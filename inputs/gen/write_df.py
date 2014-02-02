@@ -1,4 +1,6 @@
-# Temp script containing the code to write the 3 input files for 
+#!/usr/bin/python
+#
+# Python script containing the code to write the 3 input files for 
 # Puffin.
 #
 # The three files are:
@@ -11,14 +13,58 @@
 #
 #   3) The seed input file, which can describe multiple seeds
 #
-# This approach is quite flexible, allowing Puffin to generate
-# a simple, more conventional FEL, or a more esoteric configuration
-# with multiple seeds and electron beams, with different powers, 
-# frequencies, energies, and distributions.
+# This approach is (hopefully) quite flexible, allowing Puffin to 
+# generate a simple, more conventional FEL, or a more esoteric 
+# configuration with multiple seeds and electron beams, with different 
+# powers, frequencies, energies, and distributions.
 #
-# -Lawrence Campbell
-#  University of Strathclyde
-#  July 2013
+# In addition, for more fun, a lattice file may be constructed to 
+# describe a series of undulator modules seperated by chicane/slippage 
+# sections. The name of this lattice file should be entered in the 
+# 'lattfile' variable in the input file. Each line of the lattice file 
+# contains 4 numbers describing a complete undulator-chicane pair, 
+# in the following format:
+#
+# Nw   Nc  aw_fact   stepsize
+#
+# where 
+#
+# Nw            is the number of undulator periods
+#
+# Nc            is the length of the chicane slippage section
+#               expressed as the number of resonant wavelengths
+#
+# aw_f          is the undulator parameter expressed as a fraction
+#               of the aw in the input file. So if aw_0 is the aw
+#               given in the input file, then the undulator 
+#               parameter for this module is aw = aw_f * aw_0.
+#
+# stepsize      is the stepsize used for the numerical integration
+#               of this undulator section. The mesh describing the
+#               radiation field does not alter as the undulator
+#               tuning changes, but a larger aw wil cause the beam
+#               to propagate more quickly in the radiation frame
+#               i.e. the beam slips more quickly behind the radiation
+#               field. This option will be necessary to stop the beam
+#               skipping over nodes, see e.g. the Courant number.
+#
+# Also note that if aw is decreased in an undulator module you should
+# ensure the radiation mesh is fine enough to model the higher frequency
+# content which will arise.
+#
+# The strength of the dispersive chicanes can be given in the 'Dfact' 
+# variable in the main input file. Currently, only this one strength 
+# factor may be specified which will be shared by all chicanes.
+# 
+# An undulator taper can also be added in the main input file.
+# Presently, if a lattice file is used, this taper will be applied
+# to ALL undulator modules, and the taper will be applied to the
+# undulator parameter of each module. Only a linear taper may be
+# supplied.
+# 
+# - Lawrence Campbell
+#   University of Strathclyde
+#   July 2013
 
 import math
 import beamClass
@@ -47,8 +93,8 @@ inputfile = 'example.in'
 beamfile = 'beam_file.in'
 seedfile = 'seed_file.in'
 
-nbeams = 2
-nseeds = 2
+nbeams = 1
+nseeds = 1
 
 # Undulator and beam parameters
 
@@ -59,7 +105,7 @@ N_w = 4                # Number of undulator periods
 gamma = 587.08         # Relativistic factor
 ff = math.sqrt(2)      # Focus factor
 Q = 3e-12              # Charge
-qFlatTopZ2 = 0         # =1 if flat top, else gaussian.
+qFlatTopZ2 = 0         # =1 if flat top current profile, else gaussian.
 qHardEdgeX = 0         # =1 if disk (circle) in transverse plane, else gaussian.
 # E = 300e6            # Beam energy
 # gamma = E / (m_e * pow(c,2)) # Rel. factor
@@ -163,6 +209,8 @@ Nsteps = zbarprop / dz             # Number of steps
 
 ###################################################
 
+# Set up the beam and seed classes, which will contain
+# the data to write in the beam and seed files
 
 beam = [bm() for ib in range(nbeams)] # list of electron beams
 
@@ -170,38 +218,10 @@ seeds = [sd() for ic in range(nseeds)] # list of seeds
 
 # Assign electron pulse data to beams
 
-
-#
-#
-# ASSIGN DATA
-#
-#
-
-lex = 1
-ley = 1
 sigx = sigx / (sqrt(Lg) * sqrt(Lc))
 
-qoned = True
-qfieldevo = True
-qEevolve  = True
-qEFcouple = True
-qFocusing = True
-qMatchedBeam = True
-qDiffraction = True
-qFilter = True
-qNoise = True
-qDump = False
-qResume = False
-qStepFiles = True
-qFormatFiles = True
-qWriteZ = True
-qWriteA = True
-qWritePperp = True
-qWritep2 = True
-qWritez2 = True
-qWritex = True
-qWritey = True
-
+lex = 6*sigx
+ley = 6*sigy
 
 beam[0].lex = lex
 beam[0].ley = ley
@@ -212,11 +232,16 @@ beam[0].lep2 = 1E0
 
 beam[0].sigx = sigx
 beam[0].sigy = sigy
-beam[0].sigp2 = sig_gamma
 
+
+if qFlatTopZ2 == 1:
+    beam[0].sigz2 = 1e8          # Flat top case
+else:
+    beam[0].sigz2 = sigz2
 
 beam[0].sigpy = 1E0
-beam[0].sigp2 = 1E0
+beam[0].sigpy = 1E0
+beam[0].sigp2 = sig_gamma
 
 beam[0].NMPX = 1
 beam[0].NMPY = 1
@@ -230,7 +255,8 @@ beam[0].chirp = 0
 beam[0].bcenz2 = 0
 beam[0].Q = Q
 
-# for field
+##################################################
+# Field info
 
 NNodesX = 1 # Next, create a class for the field vars
 NNodesY = 1 # and a routine to write the seed file
@@ -241,9 +267,32 @@ lwy = 1E0
 lsys_x = lwx
 lsys_y = lwy
 
-
 filtFrac = 0.3
 diffFrac = 1.0
+
+#################################################
+# Flags
+
+qoned = True
+qfieldevo = True
+qEevolve  = True
+qEFcouple = True
+qFocusing = False
+qMatchedBeam = False
+qDiffraction = False
+qFilter = True
+qNoise = True
+qDump = False
+qResume = False
+qStepFiles = True
+qFormatFiles = True
+qWriteZ = True
+qWriteA = True
+qWritePperp = True
+qWritep2 = True
+qWritez2 = True
+qWritex = True
+qWritey = True
 
 
 ################################################
@@ -321,6 +370,7 @@ f.write('{:<24d}'.format(1)        + 'INTEGER     iRedNodesX           Length of
 f.write('{:<24d}'.format(1)        + 'INTEGER     iRedNodesY           Length of central wiggler section in y where electrons will not leave\n')
 f.write('{:<24.15E}'.format(filtFrac)   + 'REAL        sFiltFrac            Specifies cutoff for high pass filter as fraction of resonant frequency\n')
 f.write('{:<24.15E}'.format(diffFrac)   + 'REAL        sDiffFrac                  Specifies diffraction step size as fraction of the undulator period\n')
+f.write('{:<24.15E}'.format(diffFrac)   + 'REAL        beta                 Absorption coefficient\n')
 f.write('{:<24}'.format(seedfile) + 'CHARACTER   seed_file                  Name of the seed file\n')
 
 
@@ -344,6 +394,7 @@ f.write('{:<24.15E}'.format(k_beta_bar) + 'REAL        kbeta                Scal
 f.write('{:<24.15E}'.format(ff) + 'REAL        sFocusfactor         Focussing factor f, from the betatron wavenumber\n')
 f.write('{:<24.15E}'.format(emit_bar) + 'REAL        sEmit_n              scaled beam emittance\n')
 f.write('{:<24.15E}'.format(0.0)      + 'REAL        Dfact                Dispersive strength factor for chicane\n')
+f.write('{:<24.15E}'.format(0.0)      + 'REAL        taper                gradient of taper daw/dz\n')
 
 
 f.write('\n')

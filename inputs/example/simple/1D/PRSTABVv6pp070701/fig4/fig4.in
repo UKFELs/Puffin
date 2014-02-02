@@ -62,8 +62,8 @@ Input the scaled independant variables from [1] here
 2.50093789079475e-4 REAL        eta                        Scaled longitudinal velocity (1-beta_av) / beta_av
 8.88325101993150e-1 REAL        kbeta                      Scaled betatron wavenumber
 1.41213562373095    REAL        sFocusfactor               Focussing factor f, from the betatron wavenumber
-1.0                 REAL        sEmit_n                    scaled beam emittance
 0.0                 REAL        Dfact                      Dispersive strength factor for chicane
+0.0                 REAL        taper                      gradient of taper daw/dz
 
 
                       INTEGRATION AND OUTPUT
