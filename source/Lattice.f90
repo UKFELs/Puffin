@@ -46,7 +46,7 @@ CONTAINS
 
 !                LOCAL VARS
 
-  INTEGER(KIND=IP)   :: i,ios,nw,error
+  INTEGER(KIND=IP)   :: i,ios,nw,error,ri,NL
   REAL(KIND=WP)      :: pi,c1
 
   OPEN(1,FILE=lattFile, IOSTAT=ios, ACTION='READ', POSITION ='REWIND')
@@ -58,11 +58,13 @@ CONTAINS
 
 !     Read whitespace
 
-  READ (1,*)
-  READ (1,*)
-  READ (1,*)
-  READ (1,*)
-  READ (1,*)
+NL = 31_IP      !    Number of lines in header
+
+do ri = 1,NL
+
+  read (1,*)
+
+end do
 
 !     Read module data from lattice file
 
