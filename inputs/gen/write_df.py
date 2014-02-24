@@ -124,7 +124,7 @@ lambda_r = lambda_w / (2 * pow(gamma,2)) * (1 + pow(aw,2))
 sigx = sqrt(emit / k_beta)     # Beam standard deviation in x
 sigy = sigx                           # and y
 
-sig_av = sqrt(pow(sigx,2) + pow(sigy,2))
+sig_av = sqrt((pow(sigx,2) + pow(sigy,2))/2.0)
 
 
 ########################################
@@ -145,8 +145,7 @@ else:
 n_p = N / (tArea * lArea)              # Electron number density
 wp = sqrt(pow(q_e,2) * n_p / (eps_0 * m_e) )         # plasma frequency
 
-rho = 1 / gamma * pow((aw * wp / ( 4 * c * k_w )),(2/3))  # FEL parameter
-
+rho = 1.0 / gamma * pow((aw * wp / ( 4.0 * c * k_w )),(2.0/3.0))  # FEL parameter
 
 #######################################
 # Scaled parameters for Puffin
@@ -158,14 +157,14 @@ Lc = lambda_r / lambda_z2         # Cooperation length
 zbarprop = N_w * lambda_z2        # Length of undulator in zbar (gain lengths)
 sigz2 = sigz / Lc                 # Length of pulse in z2 (cooperation lengths)
 
-beta = sqrt(pow(gamma,2) - 1 - pow(aw,2))/gamma    # Average velocity over c
+beta = sqrt(pow(gamma,2) - 1.0 - pow(aw,2))/gamma    # Average velocity over c
 eta = (1-beta)/beta                                # Scaled average velocity
 
 k_beta_bar = k_beta * Lg                           # Scaled betatron wavenumber
 emit_bar = emit / (rho * Lc)                       # Scaled emittance
 Z_R = pi * pow(r_av,2) / lambda_r                  # Rayleigh range
-Z_bar_R = pow(r_av,2) / (Lg * Lc) / (4 * rho)      # Scaled Rayleigh Range
-B = pow((2 * Z_bar_R),(3/2))                       # Saldin diffraction parameter
+Z_bar_R = pow(r_av,2) / (Lg * Lc) / (4.0 * rho)      # Scaled Rayleigh Range
+B = pow((2 * Z_bar_R),(3.0/2.0))                       # Saldin diffraction parameter
 
 
 NL = N/sigz2 * lambda_z2                           # electrons per radiation period
@@ -177,8 +176,8 @@ Acse = 16 * pow(rho,2)                             # CSE estimate for flat-top c
 #################################################
 # Chirp - 1% per sigma_z
 
-dgamma = 0.01 * gamma    # Change in gamma per sigma_z
-chirp = dgamma / sigz    # Energy chirp in z
+dcgamma = 0.01 * gamma    # Change in gamma per sigma_z
+chirp = dcgamma / sigz    # Energy chirp in z
 chirpz2 = Lc * chirp     # Energy chirp in z2
 
 
@@ -208,6 +207,14 @@ Nsteps = zbarprop / dz             # Number of steps
 
 
 ###################################################
+# Chirp - 1% per sigma_z
+
+dcgamma = 0.01 * gamma;   # Change in gamma per sigma_z due to chirp
+chirp = -dcgamma / sigz;   # Energy chirp in z
+chirpz2 = Lc * chirp;    # Energy chirp in z2
+
+
+###################################################
 
 # Set up the beam and seed classes, which will contain
 # the data to write in the beam and seed files
@@ -219,6 +226,7 @@ seeds = [sd() for ic in range(nseeds)] # list of seeds
 # Assign electron pulse data to beams
 
 sigx = sigx / (sqrt(Lg) * sqrt(Lc))
+sigy = sigy / (sqrt(Lg) * sqrt(Lc))
 
 lex = 6*sigx
 ley = 6*sigy
@@ -228,7 +236,7 @@ beam[0].ley = ley
 beam[0].lez2 = lez2
 beam[0].lepx = 1E0
 beam[0].lepy = 1E0
-beam[0].lep2 = 1E0
+beam[0].lep2 = 6*sig_gamma
 
 beam[0].sigx = sigx
 beam[0].sigy = sigy
@@ -243,15 +251,17 @@ beam[0].sigpy = 1E0
 beam[0].sigpy = 1E0
 beam[0].sigp2 = sig_gamma
 
-beam[0].NMPX = 1
-beam[0].NMPY = 1
-beam[0].NMPPX = 1
-beam[0].NMPPY = 1
-beam[0].NMPP2 = 1
+beam[0].nmpx = 1
+beam[0].nmpy = 1
+beam[0].nmppx = 1
+beam[0].nmppy = 1
+
+beam[0].nmpz2 = NMElecsZ2
+beam[0].nmpp2 = 21
 
 beam[0].eratio = 1
 beam[0].emit_bar = 1
-beam[0].chirp = 0
+beam[0].chirp = chirpz2
 beam[0].bcenz2 = 0
 beam[0].Q = Q
 

@@ -4,8 +4,8 @@ import fBoolean
 class sd:
     """This class defines the seed data."""
     FreqFrac = 1       # Frequency as a fraction of resonant frequency
-    pkx = 1            # Peak of seed in A_x
-    pky = 1            # Peak of seed in A_y
+    pkx = 0            # Peak of seed in A_x
+    pky = 0            # Peak of seed in A_y
     sigx = 1
     sigy = 1
     sigz2 = 1
