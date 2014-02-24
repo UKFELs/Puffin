@@ -853,13 +853,13 @@ SUBROUTINE AbsorptionStep(sAl,work,h,loc_nz2,ffact)
               
         IF (kz2_loc_G(z2_inc)/=0.0_WP) THEN
 
-                sAl(ind)=exp(-posI*h*(kx_G(x_inc)**2 + &
-                           ky_G(y_inc)**2) / &
-                           (2.0_WP*kz2_loc_G(z2_inc)))*sAl(ind)
+              !  sAl(ind)=exp(-posI*h*(kx_G(x_inc)**2 + &
+              !             ky_G(y_inc)**2) / &
+              !             (2.0_WP*kz2_loc_G(z2_inc)))*sAl(ind)
 
-         ! sAl(ind) = exp(-h*sBeta_G*(abs(kx_G(x_inc)) + &
-         !                abs(ky_G(y_inc))) / &
-         !                (sqrt(abs(2.0_WP * kz2_loc_G(z2_inc))))) * sAl(ind)
+         sAl(ind) = exp(-h*sBeta_G*(abs(kx_G(x_inc)) + &
+                       abs(ky_G(y_inc))) / &
+                       (sqrt(abs(2.0_WP * kz2_loc_G(z2_inc))))) * sAl(ind)
 
 !          sAl(ind) = exp(-h*sBeta_G) * sAl(ind)
 

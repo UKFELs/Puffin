@@ -173,7 +173,8 @@ CONTAINS
 
 !     Adjust undulator tuning
 
-    n2col = n2col0 * (1 + undgrad*(sz - sz0))
+!    n2col = n2col0 * (1 + undgrad*(sz - sz0))
+    n2col = n2col0  + undgrad*(sz - sz0)
 
     fkb= sFocusfactor_G * kbeta
 

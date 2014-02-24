@@ -128,7 +128,7 @@ LOGICAL :: qResume, qWrite
 
 REAL(KIND=WP)       :: Dfact
 REAL(KIND=WP), ALLOCATABLE    :: D(:), delta(:), zMod(:), &
-                                 mf(:), delmz(:)
+                                 mf(:), delmz(:), tapers(:)
 INTEGER(KIND=IP)    :: ModNum, ModCount
 
 INTEGER(KIND=IP), ALLOCATABLE :: frecvs(:),fdispls(:),&

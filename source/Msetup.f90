@@ -204,13 +204,13 @@ MODULE Setup
     modNum=numOfMods(lattFile)
     !modNum=26
     ALLOCATE(D(ModNum),zMod(ModNum),delta(modNum))
-    ALLOCATE(mf(ModNum),delmz(ModNum))
+    ALLOCATE(mf(ModNum),delmz(ModNum),tapers(modNum))
 
 !    Latt file name, number of wigg periods converted to z-bar,
 !    slippage in chicane in z-bar, 2 dispersive constants, 
 !    number of modules
 
-    CALL readLatt(lattFile,zMod,delta,D,Dfact,ModNum,sRho,sStepSize)
+    CALL readLatt(lattFile,zMod,delta,D,Dfact,ModNum,taper,sRho,sStepSize)
     ModCount = 1
   END IF
 

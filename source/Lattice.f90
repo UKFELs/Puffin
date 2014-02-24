@@ -11,7 +11,7 @@ CONTAINS
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  SUBROUTINE readLatt(lattFile,zMod,delta,D,Dfact,ModNum,rho,&
+  SUBROUTINE readLatt(lattFile,zMod,delta,D,Dfact,ModNum,taper,rho,&
                       sStepSize)
 
   IMPLICIT NONE
@@ -39,6 +39,7 @@ CONTAINS
   CHARACTER(32_IP), INTENT(IN) :: lattFile
   REAL(KIND=WP), DIMENSION(:), INTENT(INOUT) :: zMod,delta,D
   REAL(KIND=WP), INTENT(IN) :: Dfact
+  REAL(KIND=WP), INTENT(INOUT)  ::  taper
   REAL(KIND=WP), INTENT(IN) :: rho
   INTEGER(KIND=IP), INTENT(IN) :: ModNum
   REAL(KIND=WP), INTENT(OUT)   :: sStepSize
@@ -67,7 +68,7 @@ CONTAINS
 
   DO i=1,ModNum
 
-    READ (1,*) nw, delta(i), mf(i), delmz(i)  !, resFactor(i) ! Wiggler periods, Chicane slippage periods, aw shift, stepsize
+    READ (1,*) nw, delta(i), mf(i), delmz(i), tapers(i)  !, resFactor(i) ! Wiggler periods, Chicane slippage periods, aw shift, stepsize
 
 !     Calculate cumulative interaction length of modules
 
@@ -88,6 +89,7 @@ CONTAINS
   D = Dfact*10.0/6.0*delta ! The Dispersion parameter
 
   sStepSize =  delmz(1)
+  taper = tapers(1)
 
   END SUBROUTINE readLatt
 
@@ -231,6 +233,7 @@ CONTAINS
 
     n2col0 = mf(i+1)
     n2col = mf(i+1)
+    undgrad = tapers(i+1)
     sz0 = sz
     
 

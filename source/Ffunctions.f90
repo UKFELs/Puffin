@@ -44,6 +44,9 @@ CONTAINS
 
 !********************************************************
 
+
+
+
   FUNCTION linspace(xstart,xend,n)
 
     IMPLICIT NONE
@@ -53,7 +56,9 @@ CONTAINS
     REAL(KIND=WP),INTENT(IN) ::xstart,xend
     INTEGER(KIND=IP),INTENT(IN) :: n
     REAL(KIND=WP),DIMENSION(n) :: linspace
+    
 ! Local vars:-
+
     REAL(KIND=WP) :: dx
     INTEGER(KIND=IP) :: i
 
@@ -72,6 +77,9 @@ CONTAINS
 
 !********************************************************
 
+
+
+
   FUNCTION getx(i,i_nmp,s_xc,sigma,s_xstart,s_h_in,&
        s_tol_in)
 
@@ -84,11 +92,14 @@ CONTAINS
     REAL(KIND=WP),INTENT(IN) :: s_xc,sigma,s_xstart
     REAL(KIND=WP),INTENT(IN),OPTIONAL :: s_h_in 
     REAL(KIND=WP),INTENT(IN),OPTIONAL :: s_tol_in 
+
 ! Local vars:-
+
     REAL(KIND=WP) :: s_h,s_tol,getx,s_A1,s_x,s_area, &
          s_integral,s_integralstart
-!********************************************************
+
 ! BEGIN:-
+
 ! Read in the input file name
     If (PRESENT(s_h_in)) then
        s_h = s_h_in
@@ -129,7 +140,12 @@ CONTAINS
     ENDIF
     
   END FUNCTION getx
+
 !********************************************************
+
+
+
+
   SUBROUTINE GaussianGrid(i_Macro,s_MeanGuass,s_SigmaGuass,s_start,s_end,sgrid)
 
     IMPLICIT NONE
@@ -138,13 +154,15 @@ CONTAINS
     REAL(KIND=WP),INTENT(IN) :: s_MeanGuass,s_SigmaGuass,s_start,s_end
 
     REAL(KIND=WP),INTENT(OUT) :: sgrid(:)
+
 ! Local vars:-
+
     INTEGER(KIND=IP) :: i
     INTEGER(KIND=IP) :: nHalfGridPoints,nGridPoints
     REAL(KIND=WP) :: sHalfLength
     REAL(KIND=WP) :: sX, sY
     LOGICAL :: qEven
-!--------------------------------------------------------
+
 ! BEGIN:-
 ! Number of grid points         
     nGridPoints = i_Macro + 1_IP   
@@ -203,7 +221,18 @@ CONTAINS
          sgrid(2_IP:(nGridPoints - 1_IP)) + s_MeanGuass
 
   END SUBROUTINE GaussianGrid
+
 !********************************************************
+
+
+
+
+
+
+
+
+
+
   SUBROUTINE GaussianDistribution(i_Macro,s_grid,&
        s_MeanGuass,s_SigmaGuass,s_func)
 
@@ -220,7 +249,7 @@ CONTAINS
     INTEGER(KIND=IP) :: i
     REAL(KIND=WP) :: s_new
     REAL(KIND=WP),ALLOCATABLE :: s_d(:)
-!--------------------------------------------------------
+
 ! BEGIN:-
     ALLOCATE(s_d(i_Macro))
     DO i=1,i_Macro
@@ -235,7 +264,20 @@ CONTAINS
     DEALLOCATE(s_d)
 
   END SUBROUTINE GaussianDistribution
+
 !--------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
   SUBROUTINE GaussianDistributionz2(i_Macro,s_grid,&
        s_MeanGuass,s_SigmaGuass,s_func,&
        MPI_DOUBLE_PRECISION,MPI_SUM)
@@ -255,8 +297,10 @@ CONTAINS
     INTEGER(KIND=IP) :: i,error
     REAL(KIND=WP) :: s_new,tdenom,denom
     REAL(KIND=WP),ALLOCATABLE :: s_d(:)
-!--------------------------------------------------------
+
+
 ! BEGIN:-
+
     ALLOCATE(s_d(i_Macro))
     DO i=1,i_Macro
        s_new=0.5*(s_grid(i+1)+s_grid(i))
@@ -275,7 +319,19 @@ CONTAINS
     DEALLOCATE(s_d)
 
   END SUBROUTINE GaussianDistributionz2
+
 !********************************************************
+
+
+
+
+
+
+
+
+
+
+
   SUBROUTINE hpsort(N,RA)
     
     IMPLICIT NONE
@@ -286,10 +342,14 @@ CONTAINS
     REAL(KIND=WP),INTENT(INOUT) :: RA(:)
 
 ! LOCAL PARAMETERS   
+
     INTEGER(KIND=IP) :: i,IR,J,L
     REAL(KIND=WP) :: RRA
-!--------------------------------------------------------
+
+
+
 ! BEGIN:-   
+
     IF (N.LT.2_IP) return
     L=N/2_IP+1_IP
     IR=N
@@ -325,61 +385,108 @@ CONTAINS
     GOTO 10
     
   END SUBROUTINE hpsort
+
 !********************************************************
+
+
+
+
+
+
+
+
   FUNCTION epsilonParameter(saw,sgamma_r,fx,fy)
 
     IMPLICIT NONE
 
     REAL(KIND=WP),INTENT(IN)  :: saw,sgamma_r,fx,fy
+
 ! Local vars:-
+
     REAL(KIND=WP) :: epsilonParameter
     REAL(KIND=WP) :: beta_av
-!--------------------------------------------------------
+
+
 ! BEGIN:-   
+
     beta_av = SQRT(sgamma_r**2 - 1.0_WP - saw**2)&
          /sgamma_r
 
     epsilonParameter=(1-beta_av)/beta_av
 
   END FUNCTION epsilonParameter
+
 !********************************************************
+
+
+
+
+
+
+
+
+
   FUNCTION GainLength(sWigglerWaveLength,rho)
 
     IMPLICIT NONE
 
     REAL(KIND=WP),INTENT(IN) :: sWigglerWaveLength,rho
+
 ! Local vars:-
+
     REAL(KIND=WP) :: GainLength
-!--------------------------------------------------------
+
 ! BEGIN:-
+
     GainLength = sWigglerWaveLength/(4.0_WP * pi * rho)
 
   END FUNCTION GainLength
 !********************************************************
+
+
+
+
+
+
+
+
+
   FUNCTION MatchedBeamRadius(srho,sEmit_n,k_beta)
 
     IMPLICIT NONE
 
     REAL(KIND=WP),INTENT(IN) :: srho,sEmit_n,k_beta
+
 ! Local vars:-
+
     REAL(KIND=WP) :: MatchedBeamRadius
-!--------------------------------------------------------
+
 ! BEGiN:-
 
     MatchedBeamRadius = SQRT( sRho * 18.0_WP * sEmit_n /&
         k_beta)
 
   END FUNCTION MatchedBeamRadius
+
 !********************************************************
+
+
+
+
+
+
   FUNCTION DiffractionLength(z,sRaleighLength,sigma)
 
     IMPLICIT NONE
 
     REAL(KIND=WP),INTENT(IN) :: z,sRaleighLength,sigma
+
 ! Local vars:-
+
     REAL(KIND=WP) :: DiffractionLength
-!--------------------------------------------------------
+
 ! BEGIN:-
+
     IF(tProcInfo_G%QROOT)print *, 'RaleighLength= ',&
          sRaleighLength
 
@@ -387,7 +494,16 @@ CONTAINS
          ((z/sRaleighLength)**2 + 1.0_WP)) * 6.0_WP*sigma
 
   END FUNCTION DiffractionLength
+
 !********************************************************
+
+
+
+
+
+
+
+
   FUNCTION RaleighLength(srho,sigma)
 
 ! sigma of the seed field
@@ -397,9 +513,11 @@ CONTAINS
     REAL(KIND=WP),INTENT(IN) :: srho,sigma
 
     REAL(KIND=WP) :: RaleighLength
-!--------------------------------------------------------
+
 ! BEGIN:-
+
     RaleighLength = sigma**2/(2.0_WP*srho)
 
   END FUNCTION RaleighLength
+
 END MODULE Functions
