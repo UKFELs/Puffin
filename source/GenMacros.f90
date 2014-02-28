@@ -268,8 +268,8 @@ CONTAINS
 !If (tParallelInfoType_G%qROOT) PRINT *, 'Radius= ', radius
 
 !workout kx and ky for 3D undulator
-kx = SQRT(sEta_G/(8*sRho_G**2))
-ky = SQRT(sEta_G/(8*sRho_G**2))
+kx = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+ky = SQRT(sEta_G/(8.0_WP*sRho_G**2))
 px_shift = 0
 py_shift = 0
   DO k=1,nx3
@@ -344,20 +344,24 @@ py_shift = 0
      
                      IF(PRESENT(x_3_grid)) THEN
                         x_3_coord(index)=x_3_position(k)+(x_3_random(index)- 0.5_WP)*x_3_del(k)/SQRT(s_macro)
-                                           px_shift =  0.5_WP * x_1_coord(index)**2 * kx**2 + 0.5_WP * x_2_coord(index)**2  * ky**2   
-                                           py_shift = kx**2 * x_1_coord(index) * x_2_coord(index)  
+!                                           px_shift =  0.5_WP * x_1_coord(index)**2 * kx**2 + 0.5_WP * x_2_coord(index)**2  * ky**2  
+!1st order approximation is used                                         
+                                          ! py_shift = kx**2 * x_1_coord(index) * x_2_coord(index)  
                      END IF
-
-                     
-
-
+!kx = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+!ky = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+!~                      write(*,*)'I am kx**2',kx**2
+!~                      write(*,*)'I am eta/(8 rho**2)', sEta_G/(8.0_WP*sRho_G**2)                  
+!~                      write(*,*)'I am py_shift',
+ !                    write(*,*)'py was',p_2_position(b),'at index',index
+!					 write(*,*)'I am py_shift',py_shift,'at index',index
      
                      IF(PRESENT(p_1_grid)) THEN
-                        p_1_vector(index)=p_1_position(a)+(p_1_random(index)- 0.5_WP)*p_1_del(a)/SQRT(s_macro) - px_shift
+                        p_1_vector(index)=p_1_position(a)+(p_1_random(index)- 0.5_WP)*p_1_del(a)/SQRT(s_macro) !- px_shift ! px_shift=0 for 1st order
                      END IF
       
                      IF(PRESENT(p_2_grid)) THEN
-                        p_2_vector(index)=p_2_position(b)+(p_2_random(index)- 0.5_WP)*p_2_del(b)/SQRT(s_macro) + py_shift
+                        p_2_vector(index)=p_2_position(b)+(p_2_random(index)- 0.5_WP)*p_2_del(b)/SQRT(s_macro) !+ py_shift
                      END IF
       
                      IF(PRESENT(p_3_grid)) THEN
@@ -389,7 +393,7 @@ py_shift = 0
 		      
                      s_macro = 0.0_WP
                   ENDIF
-		     
+		!     write(*,*)'py is now', p_2_vector(index),'at index',index
                   s_number_macro(index)=s_macro
                   s_mean_number_macro(index)=s_mean
                   s_spatial_macro(index)=s_spatial_mean

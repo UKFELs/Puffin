@@ -17,10 +17,10 @@ class bm:
     lep2 = 0.001
     nmpx  = 1
     nmpy  = 1
-    nmpz2 = 400
-    nmppx = 1
-    nmppy = 1
-    nmpp2 = 11
+    nmpz2 = 5
+    nmppx = 3
+    nmppy = 3
+    nmpp2 = 1
     qmatch = 1
     eratio = 1
     emit_bar = 1
