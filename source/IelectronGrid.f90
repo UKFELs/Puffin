@@ -256,6 +256,7 @@ CONTAINS
 
     DEALLOCATE(tconv)
 
+
 kx = SQRT(sEta_G/(8.0_WP*sRho_G**2))
 ky = SQRT(sEta_G/(8.0_WP*sRho_G**2))
 !used for curved pole puffin, the 2 order expansion of cosh and sinh
@@ -278,6 +279,7 @@ ky = SQRT(sEta_G/(8.0_WP*sRho_G**2))
 !no change to py initial conditions
     sEl_PY0Position_G = sEl_PY0Position_G &
     + pyOffset(sZ, srho_G, fx_G) 
+
 
 
 

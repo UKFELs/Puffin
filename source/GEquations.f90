@@ -60,6 +60,7 @@ ky = SQRT(sEta_G/(8.0_WP*sRho_G**2))
 !~             qOKL)
 
 
+
 !VERSION WITHOUT EXPANSION USING THE SINH AND COSH for curved pole undulator
 !this is the version to use for curved pole work
 !~         CALL PutValueInVector(iRe_PPerp_CG, &
@@ -82,6 +83,7 @@ ky = SQRT(sEta_G/(8.0_WP*sRho_G**2))
             COSH(sInv2rho * Vector(iRe_Y_CG,sy) * SQRT(sEta_G)) *sin(ZOver2rho)), &
             sb,       &       
             qOKL)
+
             
             
 !1st order version
@@ -143,6 +145,7 @@ ky = SQRT(sEta_G/(8.0_WP*sRho_G**2))
 !~               * salphaSq * sField4ElecImag), &
 !~             sb,       &       
 !~             qOKL)
+
 !VERSION WITHOUT EXPANSION USING THE SINH AND COSH for curved pole undulator   
 !this is the version to use for curved pole work        
 !~               CALL PutValueInVector(iIM_PPerp_CG, &
@@ -160,6 +163,7 @@ ky = SQRT(sEta_G/(8.0_WP*sRho_G**2))
              * SQRT(sEta_G)) * cos(ZOver2rho) * Lj * Vector(iRe_PPerp_CG,sy)) , &
             sb,       &       
             qOKL)    
+
             
             
 !1st order version
