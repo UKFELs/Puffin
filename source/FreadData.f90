@@ -348,7 +348,7 @@ SUBROUTINE read_in(zfilename, &
                      qMatched,qOKL)
 
   CALL read_seedfile(seed_file,nseeds,sSigmaF,sA0_Re,sA0_Im,freqf,&
-                     qFlatTopS,SmeanZ2,qOK)
+                     qFlatTopS,SmeanZ2,qOKL)
 
   IF  (.NOT. qOKL) GOTO 1000
 
