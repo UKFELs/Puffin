@@ -794,16 +794,18 @@ CONTAINS
 !  Cycle through processes and write data one by one - see CIO.f90 line 232       
     DO i = 0,tProcInfo_G%size-1
  		IF (rank == i) THEN
-			call OpenFileForAppend(tFileType%zFileName, &
-      			     			   tFileType, &
-			     				   qOKL)
-					
-		    call Write1DRealArray(sY,tFileType,qOKL)
-	  		If (.NOT. qOKL) Goto 1000
+                        if (procelectrons_G(1) > 0) then
 
-		 	call CloseFile(tFileType, &
-                           qOKL)
-        END IF 
+                          call OpenFileForAppend(tFileType%zFileName, &
+                                                 tFileType, qOKL)
+					
+                          call Write1DRealArray(sY,tFileType,qOKL)
+                          If (.NOT. qOKL) Goto 1000
+
+                          call CloseFile(tFileType, qOKL)
+
+                        end if
+                END IF
 !Synchronize
 		CALL MPI_BARRIER(tProcInfo_G%comm, error)
     END DO	
