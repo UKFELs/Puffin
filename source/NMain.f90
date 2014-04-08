@@ -101,8 +101,10 @@ CALL Get_time(start_time)
 
 
 
+IF (tProcInfo_G%qRoot) print*,' starting..... '
 
-
+IF (tProcInfo_G%qRoot) OPEN(UNIT=137,FILE='rec.out',STATUS='REPLACE',FORM='FORMATTED')
+IF (tProcInfo_G%qRoot) WRITE(137,*) ' starting..... '
 
 !!!!!!!!!!!!!!!!!!!!!!!  BEGIN INTEGRATION !!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -247,6 +249,7 @@ DO iStep = start_step, nSteps
   
   IF (tProcInfo_G%QROOT ) THEN
      print*,' finished step ',iStep, end_time-start_time
+     WRITE(137,*) ' finished step ',iStep, end_time-start_time
   END IF
   
 
@@ -285,6 +288,8 @@ END DO   ! End of integration loop
 
 CALL cleanup(sA,sV,sZ)   !     Clear arrays and stucts used during integration
 
+
+CLOSE(UNIT=137,STATUS='KEEP') 
 
 
 

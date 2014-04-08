@@ -271,7 +271,6 @@ MODULE Setup
                             sA,&
                             qOKL)
   
-    CALL DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
     start_step = 1_IP
   	
   END IF
@@ -332,8 +331,8 @@ MODULE Setup
 
   IF (qResume) THEN
     CALL READINCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
-  ELSE
-    CALL DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
+  !ELSE
+  !  CALL DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
   ENDIF
 
 
@@ -449,6 +448,12 @@ MODULE Setup
   qSeparateStepFiles_G = qSeparateStepFiles
   qFormattedFiles_G = qFormattedFiles
   qMod_G = qMod
+
+  if (qSwitches(iDump_CG)) call DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
+  if (qSwitches(iDump_CG)) call DUMPDATA(sA,sV,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
+                             iNumberElectrons_G,sZ,istep,tArrayA(1)%tFileType%iPage)
+
+
 
   DEALLOCATE(s_Normalised_chi_G)
 

@@ -982,6 +982,9 @@ SUBROUTINE DUMPDATA(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
  CHARACTER(32_IP) :: FileName
 
 ! FIELD
+
+if (rank==0) then
+
 ! Real part
  FileName = 'reA' // TRIM(IntegerToString(RANK))//'.dump'
  
@@ -995,7 +998,12 @@ SUBROUTINE DUMPDATA(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
  WRITE(213) sA(nnodes+1:2*nnodes)
  CLOSE(UNIT=213,STATUS='KEEP') 
 
+end if
+
 ! ELECTRONS
+
+if (nelectrons > 0) then
+
 ! re pperp
  FileName = 'rePPerp'//TRIM(IntegerToString(RANK))//'.dump'
  
@@ -1038,13 +1046,20 @@ SUBROUTINE DUMPDATA(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
  OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
  WRITE(213) sz
  CLOSE(UNIT=213,STATUS='KEEP')  
+
+end if
  
 ! step
+
+if (rank==0) then
+
  FileName = 'step'//TRIM(IntegerToString(RANK))//'.dump'
  
  OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
  WRITE(213) istep
  CLOSE(UNIT=213,STATUS='KEEP') 
+
+end if
 
  ! nelectrons
  FileName = 'nelectrons'//TRIM(IntegerToString(RANK))//'.dump'
@@ -1054,11 +1069,16 @@ SUBROUTINE DUMPDATA(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
  CLOSE(UNIT=213,STATUS='KEEP') 
  
 ! page
+
+if (rank==0) then
+
  FileName = 'page'//TRIM(IntegerToString(RANK))//'.dump'
  
  OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
  WRITE(213) page
  CLOSE(UNIT=213,STATUS='KEEP') 
+
+end if
         
 END SUBROUTINE DUMPDATA
 
@@ -1091,6 +1111,9 @@ SUBROUTINE READDUMP(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
  CHARACTER(32_IP) :: FileName
 
 ! FIELD
+
+if (rank==0) then
+
 ! Real part
  FileName = 'reA'//TRIM(IntegerToString(RANK))//'.dump'
  
@@ -1107,7 +1130,12 @@ SUBROUTINE READDUMP(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
  READ(213) sA(nnodes+1:2*nnodes)
  CLOSE(UNIT=213,STATUS='KEEP') 
 
+end if
+
 ! ELECTRONS
+
+if (nelectrons>0) then
+
 ! re pperp
  FileName = 'rePPerp'//TRIM(IntegerToString(RANK))//'.dump'
  
@@ -1152,13 +1180,18 @@ SUBROUTINE READDUMP(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
  CLOSE(UNIT=213,STATUS='KEEP') 
 ! Z
  FileName = 'Z'//TRIM(IntegerToString(RANK))//'.dump'
- 
+
  OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
  FORM='UNFORMATTED')
  READ(213) sz
  CLOSE(UNIT=213,STATUS='KEEP')  
+
+end if
  
 ! step
+
+if (rank==0) then
+
  FileName = 'step'//TRIM(IntegerToString(RANK))//'.dump'
  
  OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
@@ -1173,6 +1206,8 @@ SUBROUTINE READDUMP(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
  FORM='UNFORMATTED')
  READ(213) page
  CLOSE(UNIT=213,STATUS='KEEP') 
+
+end if
 
 END SUBROUTINE READDUMP
 !------------------------------------------------------------------
