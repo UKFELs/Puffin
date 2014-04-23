@@ -88,7 +88,19 @@ CALL local2globalA(Ar_local,sAr,mrecvs,mdispls,tTransInfo_G%qOneD)
 
 qDiffrctd = .false.
 
-iCount = 0_IP
+
+if (start_step==1_IP) then
+
+  iCount = 0_IP
+
+else
+
+  iCount = mod(start_step-1_IP,iWriteNthSteps)
+
+end if
+
+
+
 
 sStep = diffStep*0.5_WP ! Integration step size for first diffraction step
 nextDiff = 0.0_WP

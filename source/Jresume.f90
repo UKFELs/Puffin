@@ -59,7 +59,7 @@ MODULE RESUME
     ALLOCATE(sV(nElectronEquations_CG*iNumberElectrons_G), &
              sA(nFieldEquations_CG*iNumberNodes_G))
     
-    if (iNumberElectrons_G > 0_IP)
+    if (iNumberElectrons_G > 0_IP) then
       call READINCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
     end if
     
@@ -80,6 +80,12 @@ MODULE RESUME
     call MPI_BCAST(tArrayA(1)%tFileType%iPage,1, &
                    MPI_INTEGER,0,&
                    tProcInfo_G%comm,error)  
+
+!     MPI - send step number from root to all other processes
+
+    call MPI_BCAST(start_step,1, &
+                   MPI_INTEGER,0,&
+                   tProcInfo_G%comm,error) 
 
 !     Pass around most recent page numbers for SDDS
   
