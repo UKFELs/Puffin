@@ -713,8 +713,9 @@ CONTAINS
 !
       !PRINT*,'FINISHING))))))))(((((((('
 	  END SUBROUTINE OutputIntegrationData_RealArray     
+
 !---------------------------------------------------------------------------------!
-!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
+
       SUBROUTINE OutputIntegrationData_ParRealArray(tFileType, &
  				                       sY,     &
 						       rank,   &
@@ -919,58 +920,44 @@ CONTAINS
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 	
 FUNCTION IntegerToString(iInteger)
-!********************************************************************
+
 ! Convert an integer into a string
-!********************************************************************
-!
+
 ! iInteger    - INPUT  - Integer to convert
-!
-!====================================================================
+
 ! Define variables
-!
-!=====================================================================
-!	
+
 	IMPLICIT NONE
-!	
+
         INTEGER(KIND=IP),          INTENT(IN)                   :: iInteger
         CHARACTER(32_IP)               	                        :: IntegerToString                                          
-!====================================================================
+
 ! Define local variables
-!
-!=====================================================================
-!
+
         CHARACTER(32_IP) :: zCharacter
-!
-!--------------------------------------------------------------------------------	
+
 ! Write character to internal file      
-!--------------------------------------------------------------------------------	
-!
+
       write(zCharacter,*) iInteger
-!
-!--------------------------------------------------------------------------------	
+
 ! Output without blanks      
-!--------------------------------------------------------------------------------	
-!
+
       IntegerToString = TRIM(ADJUSTL(zCharacter))
-!
-!--------------------------------------------------------------------------------	
+
 !  Set error flag and exit         
-!--------------------------------------------------------------------------------	
-!
+
        GoTo 2000     
-!
-!--------------------------------------------------------------------------------
+
 ! Error Handler - Error log Subroutine in CIO.f90 line 709
-!--------------------------------------------------------------------------------
-!            
+         
 1000 call Error_log('Error in MathLib:IntegerToString',tErrorLog_G)
       Print*,'Error in MathLib:IntegerToString'
 2000 CONTINUE
-!	      
+     
 END FUNCTION IntegerToString
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
-!-------------------------------------------------------------------------------- 
+
 SUBROUTINE DUMPDATA(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
 
  REAL(KIND=WP),DIMENSION(:),INTENT(IN) :: sA
@@ -1083,6 +1070,7 @@ end if
 END SUBROUTINE DUMPDATA
 
 !==========================================================================
+
 SUBROUTINE READNELEC(rank,nelectrons)
 
   INTEGER(KIND=IP),INTENT(IN) :: rank
@@ -1097,6 +1085,7 @@ SUBROUTINE READNELEC(rank,nelectrons)
   CLOSE(UNIT=213,STATUS='KEEP')
 
 END SUBROUTINE
+
 !========================================================================== 
 
 SUBROUTINE READDUMP(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
