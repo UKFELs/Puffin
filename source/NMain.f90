@@ -102,8 +102,15 @@ end if
 
 
 
-sStep = diffStep*0.5_WP ! Integration step size for first diffraction step
-nextDiff = 0.0_WP
+if (start_step == 1) then
+  sStep = diffStep*0.5_WP ! Integration step size for first diffraction step
+  nextDiff = 0.0_WP
+else 
+  sStep = diffStep
+  nextDiff = ceiling(sZ/diffStep) * diffStep
+end if
+
+
 
 CALL Get_time(start_time)
 

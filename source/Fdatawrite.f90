@@ -1010,7 +1010,7 @@ if (nelectrons > 0) then
  WRITE(213) sV(2*nelectrons+1:3*nelectrons)
  CLOSE(UNIT=213,STATUS='KEEP') 
 ! Z2 
- FileName = 'Z2'//TRIM(IntegerToString(RANK))//'.dump'
+ FileName = 'Z2-'//TRIM(IntegerToString(RANK))//'.dump'
  
  OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
  WRITE(213) sV(3*nelectrons+1:4*nelectrons)
@@ -1027,12 +1027,6 @@ if (nelectrons > 0) then
  OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
  WRITE(213) sV(5*nelectrons+1:6*nelectrons)
  CLOSE(UNIT=213,STATUS='KEEP') 
-! Z
- FileName = 'Z'//TRIM(IntegerToString(RANK))//'.dump'
- 
- OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
- WRITE(213) sz
- CLOSE(UNIT=213,STATUS='KEEP')  
 
 end if
  
@@ -1045,6 +1039,13 @@ if (rank==0) then
  OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
  WRITE(213) istep
  CLOSE(UNIT=213,STATUS='KEEP') 
+
+ ! Z
+ FileName = 'Z'//TRIM(IntegerToString(RANK))//'.dump'
+ 
+ OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
+ WRITE(213) sz
+ CLOSE(UNIT=213,STATUS='KEEP')  
 
 end if
 
@@ -1147,7 +1148,7 @@ if (nelectrons>0) then
  READ(213) sV(2*nelectrons+1:3*nelectrons)
  CLOSE(UNIT=213,STATUS='KEEP') 
 ! Z2 
- FileName = 'Z2'//TRIM(IntegerToString(RANK))//'.dump'
+ FileName = 'Z2-'//TRIM(IntegerToString(RANK))//'.dump'
  
  OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
  FORM='UNFORMATTED')
@@ -1167,13 +1168,6 @@ if (nelectrons>0) then
  FORM='UNFORMATTED')
  READ(213) sV(5_IPL*nelectrons+1_IPL:6_IPL*nelectrons)
  CLOSE(UNIT=213,STATUS='KEEP') 
-! Z
- FileName = 'Z'//TRIM(IntegerToString(RANK))//'.dump'
-
- OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
- FORM='UNFORMATTED')
- READ(213) sz
- CLOSE(UNIT=213,STATUS='KEEP')  
 
 end if
  
@@ -1187,6 +1181,14 @@ if (rank==0) then
  FORM='UNFORMATTED')
  READ(213) istep
  CLOSE(UNIT=213,STATUS='KEEP') 
+
+! Z
+ FileName = 'Z'//TRIM(IntegerToString(RANK))//'.dump'
+
+ OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
+ FORM='UNFORMATTED')
+ READ(213) sz
+ CLOSE(UNIT=213,STATUS='KEEP')  
 
 ! page
  FileName = 'page'//TRIM(IntegerToString(RANK))//'.dump'

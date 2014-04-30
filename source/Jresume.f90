@@ -87,6 +87,11 @@ MODULE RESUME
                    MPI_INTEGER,0,&
                    tProcInfo_G%comm,error) 
 
+!     MPI - send position in undulator sZ from root to all other processes
+
+    call MPI_BCAST(sz,1, MPI_DOUBLE_PRECISION,0,&
+                   tProcInfo_G%comm,error) 
+
 !     Pass around most recent page numbers for SDDS
   
     tArrayA(2)%tFileType%iPage = tArrayA(1)%tFileType%iPage
