@@ -61,7 +61,7 @@ contains
 !               *  Vector(iRe_Y_CG,sy) *  cos(ZOver2rho) &
 !              / SQRT(salphaSq)  +  &
 !                ( 1 + 0.5_WP * Vector(iRe_X_CG,sy)**2 * kx_und_G**2 )* &
-!               ( 1 + 0.5_WP * Vector(iRe_Y_CG,sy)**2 * ky**2 ) * sin(ZOver2rho) - &
+!               ( 1 + 0.5_WP * Vector(iRe_Y_CG,sy)**2 * ky_und_G**2 ) * sin(ZOver2rho) - &
 !               sEta_G * Vector(iRe_Q_CG,sy) * salphaSq * sField4ElecReal), &
 !             sb,       &       
 !             qOKL)
@@ -273,8 +273,8 @@ contains
              (4_WP * sRho_G / sEta_G) * Lj**2 * ( (Vector(iRe_pPerp_CG,sy) * sField4ElecReal &
              + Vector(iIm_pPerp_CG,sy) * sField4ElecImag) * Vector(iRe_Q_CG,sy) * sEta_G &
              + (1.0_WP/salphaSq) * (1 + sEta_G * Vector(iRe_Q_CG,sy)) * sin(ZOver2rho) * &
-             (Vector(iRe_pPerp_CG,sy) * COSH(Vector(iRe_X_CG,sy) * kx_und_G) * COSH(Vector(iRe_Y_CG,sy) * ky) &
-              + Vector(iIm_pPerp_CG,sy) * kx_und_G/ky * SINH(Vector(iRe_X_CG,sy) * kx) * SINH(Vector(iRe_Y_CG,sy) * ky))),&
+             (Vector(iRe_pPerp_CG,sy) * COSH(Vector(iRe_X_CG,sy) * kx_und_G) * COSH(Vector(iRe_Y_CG,sy) * ky_und_G) &
+              + Vector(iIm_pPerp_CG,sy) * kx_und_G/ky_und_G * SINH(Vector(iRe_X_CG,sy) * kx_und_G) * SINH(Vector(iRe_Y_CG,sy) * ky_und_G))),&
              sb,&
              qOKL)
 
@@ -284,9 +284,9 @@ contains
 !             (4_WP * sRho_G / sEta_G) * Lj**2 * ( (Vector(iRe_pPerp_CG,sy) * sField4ElecReal &
 !             + Vector(iIm_pPerp_CG,sy) * sField4ElecImag) * Vector(iRe_Q_CG,sy) * sEta_G &
 !             + (1.0_WP/salphaSq) * (1 + sEta_G * Vector(iRe_Q_CG,sy)) * sin(ZOver2rho) * &
-!             (Vector(iRe_pPerp_CG,sy) * (1.0_WP + 0.5_WP* kx**2 * Vector(iRe_X_CG,sy)**2 ) * &
-!                (1.0_WP + 0.5_WP * ky**2 * Vector(iRe_Y_CG,sy)**2) + Vector(iIm_pPerp_CG,sy) &
-!             * kx**2 * Vector(iRe_X_CG,sy) * Vector(iRe_Y_CG,sy) ) ),&
+!             (Vector(iRe_pPerp_CG,sy) * (1.0_WP + 0.5_WP* kx_und_G**2 * Vector(iRe_X_CG,sy)**2 ) * &
+!                (1.0_WP + 0.5_WP * ky_und_G**2 * Vector(iRe_Y_CG,sy)**2) + Vector(iIm_pPerp_CG,sy) &
+!             * kx_und_G**2 * Vector(iRe_X_CG,sy) * Vector(iRe_Y_CG,sy) ) ),&
 !             sb,&
 !             qOKL)
 
