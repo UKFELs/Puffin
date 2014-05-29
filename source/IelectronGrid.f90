@@ -263,30 +263,61 @@ CONTAINS
     DEALLOCATE(tconv)
 
 
-kx = SQRT(sEta_G/(8.0_WP*sRho_G**2))
-ky = SQRT(sEta_G/(8.0_WP*sRho_G**2))
-!used for curved pole puffin, the 2 order expansion of cosh and sinh
-!allows us to simply add a correction term to the intial position
-!when calculating initial conditions, this may need change eventually
-!~     sEl_PX0Position_G = sEl_PX0Position_G + &
-!~     pxOffset(sZ, srho_G, fy_G) & 
-!~     - 0.5_WP * kx**2 * sEl_X0Position_G**2 &
-!~      -  0.5_WP * kY**2 * sEl_Y0Position_G**2
-!~     
-!~     sEl_PY0Position_G = sEl_PY0Position_G &
-!~     + pyOffset(sZ, srho_G, fx_G) &
-!~     - kx**2 *  sEl_X0Position_G  * sEl_Y0Position_G
-!plane pole initial conditions are calculated as a 2nd order expansion
-!and added as a correction term.
-    sEl_PX0Position_G = sEl_PX0Position_G + &
-    pxOffset(sZ, srho_G, fy_G) & 
-    - 0.5_WP * (sEta_G / (4 * sRho_G**2)) * sEl_X0Position_G**2 
-
-!no change to py initial conditions
-    sEl_PY0Position_G = sEl_PY0Position_G &
-    + pyOffset(sZ, srho_G, fx_G) 
+    kx = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+    ky = SQRT(sEta_G/(8.0_WP*sRho_G**2))
 
 
+
+
+    if (undType = 1_IP) then
+
+! used for curved pole puffin, the 2 order expansion of cosh and sinh
+! allows us to simply add a correction term to the intial position
+! when calculating initial conditions, this may need change eventually
+
+
+        sEl_PX0Position_G = sEl_PX0Position_G + &
+        pxOffset(sZ, srho_G, fy_G) & 
+        - 0.5_WP * kx**2 * sEl_X0Position_G**2 &
+        -  0.5_WP * kY**2 * sEl_Y0Position_G**2
+     
+        sEl_PY0Position_G = sEl_PY0Position_G &
+        + pyOffset(sZ, srho_G, fx_G) &
+        - kx**2 *  sEl_X0Position_G  * sEl_Y0Position_G
+
+
+
+
+
+    else if (undType = 2_IP) then 
+
+! plane pole initial conditions are calculated as a 2nd order expansion
+! and added as a correction term.
+
+
+
+        sEl_PX0Position_G = sEl_PX0Position_G + &
+        pxOffset(sZ, srho_G, fy_G) & 
+        - 0.5_WP * (sEta_G / (4 * sRho_G**2)) * sEl_X0Position_G**2 
+
+        sEl_PY0Position_G = sEl_PY0Position_G &
+        + pyOffset(sZ, srho_G, fx_G) 
+
+
+    else
+
+! "normal" PUFFIN case with no off-axis undulator
+! field variation
+
+
+        sEl_PX0Position_G = sEl_PX0Position_G &
+        + pxOffset(sZ, srho_G, fx_G) 
+
+        sEl_PY0Position_G = sEl_PY0Position_G &
+        + pyOffset(sZ, srho_G, fx_G) 
+
+
+    end if
 
 
 
