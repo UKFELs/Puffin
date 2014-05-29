@@ -102,6 +102,7 @@ REAL(KIND=WP), ALLOCATABLE    :: sSeedSigma(:,:)
 
 CHARACTER(32_IP) :: infile, emptstring
 
+CHARACTER(32_IP) :: zUndType
 
 
 REAL(KIND=WP)    :: sWigglerLength(nSpaceDimensions_CG)   

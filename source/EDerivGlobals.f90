@@ -149,7 +149,8 @@ TYPE(cArraySegment) :: tArrayZ
 REAL(KIND=WP)   :: start_time,end_time
 REAL(KIND=WP)   :: time1, time2 !!!FOR DEBUGGING!!!
 
-
+character(32_IP) :: zUndType_G
+real(kind=wp) :: kx_und_G, ky_und_G
 
 REAL(KIND=WP), ALLOCATABLE     :: sEl_X0Position_G(:)
 REAL(KIND=WP), ALLOCATABLE     :: sEl_Y0Position_G(:)

@@ -30,7 +30,7 @@ SUBROUTINE passToGlobals(rho,eta,kbeta,iNN, &
                          sRNX,sRNY, &
                          sElmLen,&
                          fx,fy,sFocusFactor,taper,sFiltFrac, &
-                         dStepFrac,sBeta,qSwitch,qOK)
+                         dStepFrac,sBeta,zUndType,qSwitch,qOK)
 
     IMPLICIT NONE
 
@@ -58,6 +58,7 @@ SUBROUTINE passToGlobals(rho,eta,kbeta,iNN, &
     REAL(KIND=WP),     INTENT(IN)    :: fx,fy,sFocusFactor, taper
     REAL(KIND=WP),     INTENT(IN)    :: sFiltFrac, dStepFrac, sBeta
     LOGICAL,           INTENT(IN)    :: qSwitch(nSwitches_CG)
+    character(32_ip),  intent(in)    :: zUndType
     LOGICAL,           INTENT(OUT)   :: qOK
 
 !                    LOCAL ARGS
@@ -165,6 +166,10 @@ SUBROUTINE passToGlobals(rho,eta,kbeta,iNN, &
     NBY_G = 16_IP
 
 
+    zUndType_G = zUndType
+
+    kx_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+    ky_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2))
 
 !     Get the number of nodes
 

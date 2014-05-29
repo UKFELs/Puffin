@@ -452,7 +452,7 @@ CONTAINS
 !            Vector(iRe_X_CG,sb) * dp2f ) ), &
 !            sb,	      & 	  
 !            qOKL)
-       CALL CALCULATE_PX(sInv2rho,ZOver2rho,salphaSq,sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
+       CALL getdppdz_r(sInv2rho,ZOver2rho,salphaSq,sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
 
 
 !     -PY (Imaginary pperp)
@@ -467,7 +467,7 @@ CONTAINS
 !             Vector(iRe_Y_CG,sb) * dp2f ) ), &
 !             sb,	      & 	  
 !             qOKL)
-       CALL CALCULATE_PY(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
+       CALL getdppdz_i(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
 
 !     Q
 
@@ -482,7 +482,7 @@ CONTAINS
 !             + dp2f,& ! New focusing term
 !             sb,&
 !             qOKL)
-       CALL CALCULATE_P2(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,nb,qOKL)
+       CALL getdp2dz(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,nb,qOKL)
        ELSE
 
 !     PX

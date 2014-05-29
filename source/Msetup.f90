@@ -140,6 +140,7 @@ MODULE Setup
        Dfact,             &
        sFocusfactor,      &
        taper,             &
+       zUndType,          &
        sSeedSigma,        &
        freqf, SmeanZ2,    &
        qFlatTopS, nseeds, &
@@ -220,7 +221,7 @@ MODULE Setup
                      iredNodesX,iredNodesY, &
                      sLengthOfElm,&
                      fx,fy,sFocusFactor,taper,sFiltFrac,sDiffFrac,sBeta, &
-                     qSwitches,qOK)
+                     zUndType,qSwitches,qOK)
 
   IF (.NOT. qOKL) GOTO 1000
 
