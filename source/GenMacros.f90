@@ -356,10 +356,10 @@ py_shift = 0
                      END IF
 !kx = SQRT(sEta_G/(8.0_WP*sRho_G**2))
 !ky = SQRT(sEta_G/(8.0_WP*sRho_G**2))
-!~                      write(*,*)'I am kx**2',kx**2
-!~                      write(*,*)'I am eta/(8 rho**2)', sEta_G/(8.0_WP*sRho_G**2)                  
-!~                      write(*,*)'I am py_shift',
- !                    write(*,*)'py was',p_2_position(b),'at index',index
+!                      write(*,*)'I am kx**2',kx**2
+!                      write(*,*)'I am eta/(8 rho**2)', sEta_G/(8.0_WP*sRho_G**2)                  
+!                      write(*,*)'I am py_shift',
+!                    write(*,*)'py was',p_2_position(b),'at index',index
 !					 write(*,*)'I am py_shift',py_shift,'at index',index
      
                      IF(PRESENT(p_1_grid)) THEN
