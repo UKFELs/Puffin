@@ -32,6 +32,7 @@ CONTAINS
        sElectronThreshold, &
        qOneD, &
        chirp, &
+       undType, &
        sV, &
        qOK)
 
@@ -60,6 +61,8 @@ CONTAINS
     INTEGER(KIND=IP), INTENT(IN):: iNMP(:,:)
     LOGICAL, INTENT(IN)         :: q_noise
     REAL(KIND=WP), INTENT(IN)	:: sZ, chirp(:)
+    integer(kind=ip), intent(in) :: undType
+
 
     INTEGER(KIND=IP), INTENT(IN) :: nbeams
     REAL(KIND=WP), INTENT(INOUT):: samLenE(:,:)    
