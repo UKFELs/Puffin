@@ -1,8 +1,16 @@
+!************* THIS HEADER MUST NOT BE REMOVED *******************!
+!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
+!** This program must not be copied, distributed or altered in  **!
+!** any way without the prior permission of the above authors.  **!
+!*****************************************************************!
+
 MODULE paratype
 
 IMPLICIT NONE
 
-!Define the different types of data
+!              Definitions of data types
+!                  used in Puffin
+
 INTEGER, PARAMETER     ::      short   =SELECTED_INT_KIND(4), &
                                long    =SELECTED_INT_KIND(9), &
                                spec    =SELECTED_INT_KIND(14), &

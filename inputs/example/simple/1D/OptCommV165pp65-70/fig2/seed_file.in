@@ -1,0 +1,35 @@
+PUFFIN SEED FILE
+
+Describes seed fields for input into puffin. Multiple seeds with
+different frequencies, profiles and positions can be used. Please 
+refer to POP-REF for an explanation of the scaled variables used, 
+such as z2.
+
+2         # of seeds
+
+READ IN SEED CHARACTERISTICS
+========================================================================
+SEED 1:-
+
+1.0                    FreqFrac            Ratio of seed to resonant frequency i.e. omega_s / omega_r
+0.0                    A0_X                Initial peak field value (real, also the x-polarized field)
+0.0                    A0_Y                Initial peak field value (imaginary, also the y-polarized field)
+0.7             SigmaX              Seed field sigma in x direction (Calculated in code for matched beam) =1E8 for flat top
+0.7             SigmaY              Seed field sigma in y direction (Calculated in code for matched beam) =1E8 for flat top
+0.7           SigmaZ2             Seed field sigma in z2 direction =1E8 for flat top
+.FALSE.                 qFlatTop            =.TRUE. if flat top seed, else gaussian is assumed
+1.0                    MeanZ2              Mean or center position of seed in Z2
+========================================================================
+
+========================================================================
+SEED 2:-
+
+1.5                    FreqFrac            Ratio of seed to resonant frequency i.e. omega_s / omega_r
+0.0                    A0_X                Initial peak field value (real, also the x-polarized field)
+0.0                    A0_Y                Initial peak field value (imaginary, also the y-polarized field)
+0.7             SigmaX              Seed field sigma in x direction (Calculated in code for matched beam) =1E8 for flat top
+0.7             SigmaY              Seed field sigma in y direction (Calculated in code for matched beam) =1E8 for flat top
+0.6666666666           SigmaZ2             Seed field sigma in z2 direction =1E8 for flat top
+.FALSE.                 qFlatTop            =.TRUE. if flat top seed, else gaussian is assumed
+3.0                    MeanZ2              Mean or center position of seed in Z2
+========================================================================

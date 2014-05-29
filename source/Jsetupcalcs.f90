@@ -1,3 +1,9 @@
+!************* THIS HEADER MUST NOT BE REMOVED *******************!
+!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
+!** This program must not be copied, distributed or altered in  **!
+!** any way without the prior permission of the above authors.  **!
+!*****************************************************************!
+
 MODULE setupcalcs
 
 USE Paratype
@@ -5,10 +11,9 @@ USE ParallelInfoType
 USE TransformInfoType
 USE IO
 USE ArrayFunctions
-USE GlobalNodes
 USE extra
 USE typesAndConstants
-USE DerivsGlobals
+USE Globals
 USE electronInit
 USE gMPsFromDists
 
@@ -24,7 +29,7 @@ CONTAINS
 SUBROUTINE passToGlobals(rho,eta,kbeta,iNN, &
                          sRNX,sRNY, &
                          sElmLen,&
-                         fx,fy,sFocusFactor,sFiltFrac, &
+                         fx,fy,sFocusFactor,taper,sFiltFrac, &
                          dStepFrac,sBeta,qSwitch,qOK)
 
     IMPLICIT NONE
@@ -34,15 +39,14 @@ SUBROUTINE passToGlobals(rho,eta,kbeta,iNN, &
 !
 !                    ARGUMENTS
 !
-! rho                Pierce parameter, describe the strngth of the field
-! aw                 Wiggler parameter
-! gamma_r            Mean electron velocity at resonance
-! nElements          number of elements in each dimension (x,y,z2,px,py,p2)
-! iNM                number of electrons in each dimension (x,y,z2,px,py,p2)
+! rho                Pierce parameter
+! eta                scaled z-velocity
+! kbeta              scaled betatron wavenumber
 ! iNN                number of nodes in each dimension (x,y,z2)
 ! sRNX,sRNY          number of nodes in the inner reduced 'active'
 !                    set of nodes
 ! sElmLen            Length of ONE element in each dimension (x,y,z2)
+! fx, fy             specifies undulator polarization
 ! qSwitch            If letting electrons evolve, field evolve,
 !                    diffraction and gaussian field
 ! qOK                Error flag
@@ -51,7 +55,7 @@ SUBROUTINE passToGlobals(rho,eta,kbeta,iNN, &
     INTEGER(KIND=IP),  INTENT(IN)    :: sRNX,sRNY
     INTEGER(KIND=IP),  INTENT(IN)    :: iNN(:)
     REAL(KIND=WP),     INTENT(IN)    :: sElmLen(:)	
-    REAL(KIND=WP),     INTENT(IN)    :: fx,fy,sFocusFactor
+    REAL(KIND=WP),     INTENT(IN)    :: fx,fy,sFocusFactor, taper
     REAL(KIND=WP),     INTENT(IN)    :: sFiltFrac, dStepFrac, sBeta
     LOGICAL,           INTENT(IN)    :: qSwitch(nSwitches_CG)
     LOGICAL,           INTENT(OUT)   :: qOK
@@ -61,7 +65,7 @@ SUBROUTINE passToGlobals(rho,eta,kbeta,iNN, &
 ! lambda_r           Resonant wavelength in scaled units
 ! qOKL               Local error flag
 
-    REAL(KIND=WP) :: lambda_r,LenZ2
+    REAL(KIND=WP) :: lambda_r,LenZ2,modfact1
     LOGICAL :: qOKL
 
     qOK = .FALSE.
@@ -111,22 +115,56 @@ SUBROUTINE passToGlobals(rho,eta,kbeta,iNN, &
     sFilt = Lenz2 / lambda_r * sFiltFrac
 
 !     Set up parameters
+    if (qMod_G) then
 
-    sRho_G = rho
+      modfact1 = mf(1)
+
+    else 
+
+      modfact1 = 1.0_WP
+
+    end if
+
+    n2col = modfact1
+    n2col0 = n2col
+    sz0 = 0.0_WP
+    undgrad = taper
+
+    sRho_save_G = rho
+
+    sRho_G = sRho_save_G ! * modfact1
+
     sEta_G = eta
     sKBeta_G = kbeta
-    sFocusfactor_G = sFocusfactor    
+
+    sFocusfactor_save_G = sFocusFactor
+
+    sFocusfactor_G = sFocusfactor_save_G ! * modfact1
+
+
     fx_G = fx
     fy_G = fy
-    sAw_G = ((1.0_WP / (2.0_WP*rho*sFocusFactor*kbeta)**2.0_WP) *   &
+
+    sAw_save_G = ((1 / (2.0_WP*rho*sFocusFactor*kbeta)**2) *   &
             (1.0_WP - (1.0_WP / ( 1.0_WP + eta )**2) ) - 1.0_WP) ** (-0.5_WP)
+
+
+    sAw_G = sAw_save_G ! * modfact1
+
+
+
     sGammaR_G = sAw_G / (2.0_WP * rho * sFocusFactor * kbeta)
 
-    diffStep = dStepFrac * 4.0_WP * pi * rho
 
+
+
+    diffstep = dStepFrac * 4.0_WP * pi * rho
     sBeta_G = sBeta
-    NBX_G = 16_IP
+
+    NBX_G = 16_IP   ! Nodes used in boundaries
     NBY_G = 16_IP
+
+
 
 !     Get the number of nodes
 
@@ -544,7 +582,7 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,rho,fr,dels,xfield,yfield)
 
 !     x and y polarized fields in z2
 
-  oscx = z2env * cos(fr * z2nds / (2.0_WP * rho))
+  oscx = -z2env * cos(fr * z2nds / (2.0_WP * rho))
   oscy = z2env * sin(fr * z2nds / (2.0_WP * rho))
 
 

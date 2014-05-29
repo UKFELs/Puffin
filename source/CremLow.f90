@@ -1,3 +1,9 @@
+!************* THIS HEADER MUST NOT BE REMOVED *******************!
+!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
+!** This program must not be copied, distributed or altered in  **!
+!** any way without the prior permission of the above authors.  **!
+!*****************************************************************!
+
 module remLow
 
 ! This module defines subroutines used to remove electron
@@ -5,7 +11,7 @@ module remLow
 ! the initially generated macroparticles.
 
 use paratype
-use DerivsGlobals
+use Globals
 use parallelSetup
 use gtop2
 

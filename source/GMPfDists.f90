@@ -1,10 +1,17 @@
+
+!************* THIS HEADER MUST NOT BE REMOVED *******************!
+!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
+!** This program must not be copied, distributed or altered in  **!
+!** any way without the prior permission of the above authors.  **!
+!*****************************************************************!
+
 module gMPsFromDists
 
 use paratype
 use readDists
 use MacrosGenNew
 use parallelInfoType
-use DerivsGlobals
+use Globals
 use typesAndConstants
 use parBeam
 use grids

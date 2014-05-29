@@ -1,3 +1,9 @@
+!************* THIS HEADER MUST NOT BE REMOVED *******************!
+!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
+!** This program must not be copied, distributed or altered in  **!
+!** any way without the prior permission of the above authors.  **!
+!*****************************************************************!
+
 Module ParallelSetUp
 
 ! Module containing routines to setup and deallocate MPI processes,
@@ -217,7 +223,9 @@ END SUBROUTINE InitializeProcessors
 !====================================================================== 
 
 SUBROUTINE gather2A(A_local,sA,nA_loc,nA,recvs,displs)
+
 ! Gather from A_local to A
+
 REAL(KIND=WP),INTENT(IN)  ::  A_local(:)
 INTEGER,INTENT(IN)  ::  nA_loc,nA
 INTEGER,INTENT(IN)  ::  recvs(:),displs(:)

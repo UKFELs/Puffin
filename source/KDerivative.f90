@@ -1,7 +1,14 @@
+!************* THIS HEADER MUST NOT BE REMOVED *******************!
+!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
+!** This program must not be copied, distributed or altered in  **!
+!** any way without the prior permission of the above authors.  **!
+!*****************************************************************!
+
 MODULE Derivative
 
 ! Module to calculate derivative required to integrate
 ! using rk4
+
 USE rhs
 IMPLICIT NONE
 

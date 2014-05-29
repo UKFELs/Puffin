@@ -1,10 +1,16 @@
+!************* THIS HEADER MUST NOT BE REMOVED *******************!
+!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
+!** This program must not be copied, distributed or altered in  **!
+!** any way without the prior permission of the above authors.  **!
+!*****************************************************************!
+
 module gtop2
 
 ! This module contains functions to transform macroparticle variables
 ! from the relativistic factor gamma to the scaled longitudinal 
 ! velocity p2, and vice-versa.
 
-use derivsGlobals
+use Globals
 use paratype
 
 implicit none

@@ -1,8 +1,14 @@
+!************* THIS HEADER MUST NOT BE REMOVED *******************!
+!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
+!** This program must not be copied, distributed or altered in  **!
+!** any way without the prior permission of the above authors.  **!
+!*****************************************************************!
+
 MODULE Read_data
 
 USE ArrayFunctions
 USE TypesandConstants
-USE DerivsGlobals
+USE Globals
 USE ParallelSetUp
 
 CONTAINS
@@ -49,6 +55,7 @@ SUBROUTINE read_in(zfilename, &
        suy, &
        Dfact, &
        sFocusfactor, &
+       taper,    &
        sSigmaF, &
        freqf, SmeanZ2, &
        qFlatTopS, nseeds, &
@@ -162,7 +169,7 @@ SUBROUTINE read_in(zfilename, &
   REAL(KIND=WP),     INTENT(OUT)  :: sux
   REAL(KIND=WP),     INTENT(OUT)  :: suy
   REAL(KIND=WP),     INTENT(OUT)  :: Dfact
-  REAL(KIND=WP),     INTENT(OUT)  :: sFocusfactor
+  REAL(KIND=WP),     INTENT(OUT)  :: sFocusfactor, taper
   REAL(KIND=WP),     INTENT(OUT)  :: sPEOut
   INTEGER(KIND=IP),  INTENT(OUT)  :: iDumpNthSteps
   LOGICAL,           INTENT(OUT)  :: qSwitches(:)
@@ -212,7 +219,7 @@ SUBROUTINE read_in(zfilename, &
   READ(UNIT=168,FMT=*) qfilter
   READ(UNIT=168,FMT=*) q_noise    ! qSwitches(iNoise_CG)
   READ(UNIT=168,FMT=*) qSwitches(iDump_CG)
-  READ(UNIT=168,FMT=*) qSwitches(iResume_CG)
+  READ(UNIT=168,FMT=*) qResume
   READ(UNIT=168,FMT=*) qSeparateFiles
   READ(UNIT=168,FMT=*) qFormattedFiles  
       
@@ -301,7 +308,7 @@ SUBROUTINE read_in(zfilename, &
   READ(UNIT=168,FMT=*) sKBeta
   READ(UNIT=168,FMT=*) sFocusfactor
   READ(UNIT=168,FMT=*) Dfact
-  
+  READ(UNIT=168,FMT=*) taper
   
 !     Read whitespace...
 
@@ -341,7 +348,7 @@ SUBROUTINE read_in(zfilename, &
                      qMatched,qOKL)
 
   CALL read_seedfile(seed_file,nseeds,sSigmaF,sA0_Re,sA0_Im,freqf,&
-                     qFlatTopS,SmeanZ2,qOK)
+                     qFlatTopS,SmeanZ2,qOKL)
 
   IF  (.NOT. qOKL) GOTO 1000
 

@@ -1,10 +1,16 @@
+!************* THIS HEADER MUST NOT BE REMOVED *******************!
+!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
+!** This program must not be copied, distributed or altered in  **!
+!** any way without the prior permission of the above authors.  **!
+!*****************************************************************!
+
 module initConds
 
 ! This module contains the functions calculating the initial
 ! electron macroparticle phase space conditions in Puffin.
 
 use paratype
-use derivsGlobals
+use Globals
 
 
 implicit none

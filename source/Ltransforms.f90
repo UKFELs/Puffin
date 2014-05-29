@@ -1,3 +1,9 @@
+!************* THIS HEADER MUST NOT BE REMOVED *******************!
+!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
+!** This program must not be copied, distributed or altered in  **!
+!** any way without the prior permission of the above authors.  **!
+!*****************************************************************!
+
 MODULE transforms
 
 ! This module contains subroutines called in Main.f90 dealing with
@@ -6,7 +12,7 @@ MODULE transforms
 USE ParallelInfoType
 USE TransformInfoType
 USE FFTW_Constants
-USE DerivsGlobals
+USE Globals
 USE Derivative
 USE IO
 USE masks
@@ -807,10 +813,13 @@ SUBROUTINE AbsorptionStep(sAl,work,h,loc_nz2,ffact)
 !               LOCAL ARGS
 
   REAL(KIND=WP) :: mask(NX_G*NY_G)
-  COMPLEX(KIND=WP) :: sAnb(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1)
+  COMPLEX(KIND=WP) :: sAnb(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1), posI
   INTEGER(KIND=IP) :: iz2, x_inc, y_inc, z2_inc, ind
   integer :: error
   LOGICAL :: qOKL
+
+
+  posI=CMPLX(0.0,1.0,KIND=WP)
 
   CALL getMask(NX_G, NY_G, sLengthOfElmX_G, sLengthOfElmY_G, &
                NBX_G, NBY_G, mask)
@@ -844,9 +853,13 @@ SUBROUTINE AbsorptionStep(sAl,work,h,loc_nz2,ffact)
               
         IF (kz2_loc_G(z2_inc)/=0.0_WP) THEN
 
-          sAl(ind) = exp(-h*sBeta_G*(abs(kx_G(x_inc)) + &
-                         abs(ky_G(y_inc))) / &
-                         (sqrt(abs(kz2_loc_G(z2_inc))))) * sAl(ind)
+              !  sAl(ind)=exp(-posI*h*(kx_G(x_inc)**2 + &
+              !             ky_G(y_inc)**2) / &
+              !             (2.0_WP*kz2_loc_G(z2_inc)))*sAl(ind)
+
+         sAl(ind) = exp(-h*sBeta_G*(abs(kx_G(x_inc)) + &
+                       abs(ky_G(y_inc))) / &
+                       (sqrt(abs(2.0_WP * kz2_loc_G(z2_inc))))) * sAl(ind)
 
 !          sAl(ind) = exp(-h*sBeta_G) * sAl(ind)
 

@@ -4,13 +4,13 @@
 !                       OPTIONS
 
 
-.TRUE.                  LOGICAL     qOneD                      If TRUE, model 1D FEL, with only 1 node and 1 macroparticle in transverse dimensions
-.TRUE.                  LOGICAL     qFieldEvolve               if letting the radiation field evolve
+.FALSE.                  LOGICAL     qOneD                      If TRUE, model 1D FEL, with only 1 node and 1 macroparticle in transverse dimensions
+.FALSE.                  LOGICAL     qFieldEvolve               if letting the radiation field evolve
 .TRUE.                  LOGICAL     qElectronsEvolve           if integrating electron equations
 .TRUE.                  LOGICAL     qElectronFieldCoupling     if allowing field to feedback onto the electron equations
 .TRUE.                  LOGICAL     qFocussing                 if focussing is included in the transverse plane
 .TRUE.                  LOGICAL     qMatchedBeam               if matching beam to undulator. If TRUE, electron pulse sigma and length in x,y,px,py are automatically calculated
-.TRUE.                  LOGICAL     qDiffraction               if modelling diffraction
+.FALSE.                  LOGICAL     qDiffraction               if modelling diffraction
 .TRUE.                  LOGICAL     qFilter                    TRUE to filter, if FALSE the low frequencies will just be ignored during diffraction
 .TRUE.                  LOGICAL     q_noise                    Shot noise in initial electron beam distribution
 .FALSE.                 LOGICAL     qDump                      Do you wish to dump data so the run can be resumed if anything goes wrong? .TRUE. for yes.
@@ -36,14 +36,14 @@ beam_file.in            CHARACTER   beam_file                  Name of the beam 
                   FIELD NODE SAMPLING
 
 
-1                       INTEGER     iNumNodes(1)         Number of Elements in x direction
-1                       INTEGER     iNumNodes(2)         Number of Elements in y direction
-56254                   INTEGER     iNumNodes(3)         Number of Elements in z2 direction
+21                       INTEGER     iNumNodes(1)         Number of Elements in x direction
+21                       INTEGER     iNumNodes(2)         Number of Elements in y direction
+1500                   INTEGER     iNumNodes(3)         Number of Elements in z2 direction
 1.000000000000000E+00   REAL        sFModelLengthX       Length of radiation field model in x direction
 1.000000000000000E+00   REAL        sFModelLengthY       Length of radiation field model in y direction
-5.017051843513946E+01   REAL        sWigglerLengthZ2     Length of wiggler in z2-bar direction
-1                       INTEGER     iRedNodesX           Length of central wiggler section in x where electrons will not leave
-1                       INTEGER     iRedNodesY           Length of central wiggler section in y where electrons will not leave
+1.017051843513946E+00   REAL        sWigglerLengthZ2     Length of wiggler in z2-bar direction
+15                       INTEGER     iRedNodesX           Length of central wiggler section in x where electrons will not leave
+15                       INTEGER     iRedNodesY           Length of central wiggler section in y where electrons will not leave
 3.000000000000000E-01   REAL        sFiltFrac            Specifies cutoff for high pass filter as fraction of resonant frequency
 1.000000000000000E+00   REAL        sDiffFrac                  Specifies diffraction step size as fraction of the undulator period
 1.0                     REAL        beta                       Absorption coefficient
@@ -62,8 +62,8 @@ Input the scaled independant variables from [1] here
 1.613952717266085E-05   REAL        eta                  Scaled longitudinal velocity (1-beta_av) / beta_av
 1.125006888867797E+00   REAL        kbeta                Scaled betatron wavenumber
 1.414213562373095E+00   REAL        sFocusfactor         Focussing factor f, from the betatron wavenumber
-1.894672906959569E-02   REAL        sEmit_n              scaled beam emittance
 0.000000000000000E+00   REAL        Dfact                Dispersive strength factor for chicane
+0.0                     REAL        taper                      gradient of taper daw/dz
 
 
                       INTEGRATION AND OUTPUT

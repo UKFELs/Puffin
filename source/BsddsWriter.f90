@@ -1,3 +1,9 @@
+!************* THIS HEADER MUST NOT BE REMOVED *******************!
+!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
+!** This program must not be copied, distributed or altered in  **!
+!** any way without the prior permission of the above authors.  **!
+!*****************************************************************!
+
 MODULE SddsWriter
 USE paratype
 USE FileType
@@ -19,6 +25,7 @@ IF (tFileType%qFormatted) Then
    WRITE(UNIT=tFileType%iUnit,FMT='(A,A)') 'SDDS',version
 ELSE
    Call C_WriteString(tFileType%zFileName,'SDDS' // Trim(version), qOKL, qNewLine=.TRUE.)
+   Call C_WriteString(tFileType%zFileName,'!# little-endian', qOKL, qNewLine=.TRUE.)
 END IF
 
 END SUBROUTINE SddsWriteVersion

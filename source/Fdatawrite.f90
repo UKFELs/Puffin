@@ -1,8 +1,14 @@
+!************* THIS HEADER MUST NOT BE REMOVED *******************!
+!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
+!** This program must not be copied, distributed or altered in  **!
+!** any way without the prior permission of the above authors.  **!
+!*****************************************************************!
+
 MODULE DataWrite
 
 USE ArrayFunctions
 USE TypesandConstants
-USE DerivsGlobals
+USE Globals
 USE ParallelSetUp
 
 INTERFACE OutputIntegrationData
@@ -707,8 +713,9 @@ CONTAINS
 !
       !PRINT*,'FINISHING))))))))(((((((('
 	  END SUBROUTINE OutputIntegrationData_RealArray     
+
 !---------------------------------------------------------------------------------!
-!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
+
       SUBROUTINE OutputIntegrationData_ParRealArray(tFileType, &
  				                       sY,     &
 						       rank,   &
@@ -788,16 +795,18 @@ CONTAINS
 !  Cycle through processes and write data one by one - see CIO.f90 line 232       
     DO i = 0,tProcInfo_G%size-1
  		IF (rank == i) THEN
-			call OpenFileForAppend(tFileType%zFileName, &
-      			     			   tFileType, &
-			     				   qOKL)
-					
-		    call Write1DRealArray(sY,tFileType,qOKL)
-	  		If (.NOT. qOKL) Goto 1000
+                        if (procelectrons_G(1) > 0) then
 
-		 	call CloseFile(tFileType, &
-                           qOKL)
-        END IF 
+                          call OpenFileForAppend(tFileType%zFileName, &
+                                                 tFileType, qOKL)
+					
+                          call Write1DRealArray(sY,tFileType,qOKL)
+                          If (.NOT. qOKL) Goto 1000
+
+                          call CloseFile(tFileType, qOKL)
+
+                        end if
+                END IF
 !Synchronize
 		CALL MPI_BARRIER(tProcInfo_G%comm, error)
     END DO	
@@ -911,58 +920,44 @@ CONTAINS
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 	
 FUNCTION IntegerToString(iInteger)
-!********************************************************************
+
 ! Convert an integer into a string
-!********************************************************************
-!
+
 ! iInteger    - INPUT  - Integer to convert
-!
-!====================================================================
+
 ! Define variables
-!
-!=====================================================================
-!	
+
 	IMPLICIT NONE
-!	
+
         INTEGER(KIND=IP),          INTENT(IN)                   :: iInteger
         CHARACTER(32_IP)               	                        :: IntegerToString                                          
-!====================================================================
+
 ! Define local variables
-!
-!=====================================================================
-!
+
         CHARACTER(32_IP) :: zCharacter
-!
-!--------------------------------------------------------------------------------	
+
 ! Write character to internal file      
-!--------------------------------------------------------------------------------	
-!
+
       write(zCharacter,*) iInteger
-!
-!--------------------------------------------------------------------------------	
+
 ! Output without blanks      
-!--------------------------------------------------------------------------------	
-!
+
       IntegerToString = TRIM(ADJUSTL(zCharacter))
-!
-!--------------------------------------------------------------------------------	
+
 !  Set error flag and exit         
-!--------------------------------------------------------------------------------	
-!
+
        GoTo 2000     
-!
-!--------------------------------------------------------------------------------
+
 ! Error Handler - Error log Subroutine in CIO.f90 line 709
-!--------------------------------------------------------------------------------
-!            
+         
 1000 call Error_log('Error in MathLib:IntegerToString',tErrorLog_G)
       Print*,'Error in MathLib:IntegerToString'
 2000 CONTINUE
-!	      
+     
 END FUNCTION IntegerToString
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
-!-------------------------------------------------------------------------------- 
+
 SUBROUTINE DUMPDATA(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
 
  REAL(KIND=WP),DIMENSION(:),INTENT(IN) :: sA
@@ -974,6 +969,9 @@ SUBROUTINE DUMPDATA(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
  CHARACTER(32_IP) :: FileName
 
 ! FIELD
+
+if (rank==0) then
+
 ! Real part
  FileName = 'reA' // TRIM(IntegerToString(RANK))//'.dump'
  
@@ -987,7 +985,12 @@ SUBROUTINE DUMPDATA(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
  WRITE(213) sA(nnodes+1:2*nnodes)
  CLOSE(UNIT=213,STATUS='KEEP') 
 
+end if
+
 ! ELECTRONS
+
+if (nelectrons > 0) then
+
 ! re pperp
  FileName = 'rePPerp'//TRIM(IntegerToString(RANK))//'.dump'
  
@@ -1007,7 +1010,7 @@ SUBROUTINE DUMPDATA(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
  WRITE(213) sV(2*nelectrons+1:3*nelectrons)
  CLOSE(UNIT=213,STATUS='KEEP') 
 ! Z2 
- FileName = 'Z2'//TRIM(IntegerToString(RANK))//'.dump'
+ FileName = 'Z2-'//TRIM(IntegerToString(RANK))//'.dump'
  
  OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
  WRITE(213) sV(3*nelectrons+1:4*nelectrons)
@@ -1024,19 +1027,27 @@ SUBROUTINE DUMPDATA(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
  OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
  WRITE(213) sV(5*nelectrons+1:6*nelectrons)
  CLOSE(UNIT=213,STATUS='KEEP') 
-! Z
- FileName = 'Z'//TRIM(IntegerToString(RANK))//'.dump'
- 
- OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
- WRITE(213) sz
- CLOSE(UNIT=213,STATUS='KEEP')  
+
+end if
  
 ! step
+
+if (rank==0) then
+
  FileName = 'step'//TRIM(IntegerToString(RANK))//'.dump'
  
  OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
  WRITE(213) istep
  CLOSE(UNIT=213,STATUS='KEEP') 
+
+ ! Z
+ FileName = 'Z'//TRIM(IntegerToString(RANK))//'.dump'
+ 
+ OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
+ WRITE(213) sz
+ CLOSE(UNIT=213,STATUS='KEEP')  
+
+end if
 
  ! nelectrons
  FileName = 'nelectrons'//TRIM(IntegerToString(RANK))//'.dump'
@@ -1046,15 +1057,21 @@ SUBROUTINE DUMPDATA(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
  CLOSE(UNIT=213,STATUS='KEEP') 
  
 ! page
+
+if (rank==0) then
+
  FileName = 'page'//TRIM(IntegerToString(RANK))//'.dump'
  
  OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
  WRITE(213) page
  CLOSE(UNIT=213,STATUS='KEEP') 
+
+end if
         
 END SUBROUTINE DUMPDATA
 
 !==========================================================================
+
 SUBROUTINE READNELEC(rank,nelectrons)
 
   INTEGER(KIND=IP),INTENT(IN) :: rank
@@ -1069,6 +1086,7 @@ SUBROUTINE READNELEC(rank,nelectrons)
   CLOSE(UNIT=213,STATUS='KEEP')
 
 END SUBROUTINE
+
 !========================================================================== 
 
 SUBROUTINE READDUMP(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
@@ -1083,6 +1101,9 @@ SUBROUTINE READDUMP(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
  CHARACTER(32_IP) :: FileName
 
 ! FIELD
+
+if (rank==0) then
+
 ! Real part
  FileName = 'reA'//TRIM(IntegerToString(RANK))//'.dump'
  
@@ -1099,7 +1120,12 @@ SUBROUTINE READDUMP(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
  READ(213) sA(nnodes+1:2*nnodes)
  CLOSE(UNIT=213,STATUS='KEEP') 
 
+end if
+
 ! ELECTRONS
+
+if (nelectrons>0) then
+
 ! re pperp
  FileName = 'rePPerp'//TRIM(IntegerToString(RANK))//'.dump'
  
@@ -1122,7 +1148,7 @@ SUBROUTINE READDUMP(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
  READ(213) sV(2*nelectrons+1:3*nelectrons)
  CLOSE(UNIT=213,STATUS='KEEP') 
 ! Z2 
- FileName = 'Z2'//TRIM(IntegerToString(RANK))//'.dump'
+ FileName = 'Z2-'//TRIM(IntegerToString(RANK))//'.dump'
  
  OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
  FORM='UNFORMATTED')
@@ -1142,21 +1168,27 @@ SUBROUTINE READDUMP(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
  FORM='UNFORMATTED')
  READ(213) sV(5_IPL*nelectrons+1_IPL:6_IPL*nelectrons)
  CLOSE(UNIT=213,STATUS='KEEP') 
-! Z
- FileName = 'Z'//TRIM(IntegerToString(RANK))//'.dump'
- 
- OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
- FORM='UNFORMATTED')
- READ(213) sz
- CLOSE(UNIT=213,STATUS='KEEP')  
+
+end if
  
 ! step
+
+if (rank==0) then
+
  FileName = 'step'//TRIM(IntegerToString(RANK))//'.dump'
  
  OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
  FORM='UNFORMATTED')
  READ(213) istep
  CLOSE(UNIT=213,STATUS='KEEP') 
+
+! Z
+ FileName = 'Z'//TRIM(IntegerToString(RANK))//'.dump'
+
+ OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
+ FORM='UNFORMATTED')
+ READ(213) sz
+ CLOSE(UNIT=213,STATUS='KEEP')  
 
 ! page
  FileName = 'page'//TRIM(IntegerToString(RANK))//'.dump'
@@ -1165,6 +1197,8 @@ SUBROUTINE READDUMP(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
  FORM='UNFORMATTED')
  READ(213) page
  CLOSE(UNIT=213,STATUS='KEEP') 
+
+end if
 
 END SUBROUTINE READDUMP
 !------------------------------------------------------------------

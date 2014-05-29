@@ -1,3 +1,9 @@
+!************* THIS HEADER MUST NOT BE REMOVED *******************!
+!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
+!** This program must not be copied, distributed or altered in  **!
+!** any way without the prior permission of the above authors.  **!
+!*****************************************************************!
+
 MODULE Setup
 
   USE SETUPTRANS
@@ -7,7 +13,7 @@ MODULE Setup
   USE DataWrite
   USE lattice
   USE Stiffness
-  USE DerivsGlobals
+  USE Globals
   USE resume
   USE electronInit
   USE Read_data
@@ -133,6 +139,7 @@ MODULE Setup
        fy,                &
        Dfact,             &
        sFocusfactor,      &
+       taper,             &
        sSeedSigma,        &
        freqf, SmeanZ2,    &
        qFlatTopS, nseeds, &
@@ -183,12 +190,36 @@ MODULE Setup
   
   END IF
 
+!    If using wiggler lattice read in lattice file
+
+  IF (lattFile=='') THEN
+    qMod = .FALSE.
+    IF(tProcInfo_G%qRoot) PRINT*, 'There are no dispersive sections'
+  ELSE
+    qMod = .TRUE.
+    IF(tProcInfo_G%qRoot) PRINT*, 'There are dispersive sections'
+  END IF
+      
+  IF (qMod) THEN
+    modNum=numOfMods(lattFile)
+    !modNum=26
+    ALLOCATE(D(ModNum),zMod(ModNum),delta(modNum))
+    ALLOCATE(mf(ModNum),delmz(ModNum),tapers(modNum))
+
+!    Latt file name, number of wigg periods converted to z-bar,
+!    slippage in chicane in z-bar, 2 dispersive constants, 
+!    number of modules
+
+    CALL readLatt(lattFile,zMod,delta,D,Dfact,ModNum,taper,sRho,sStepSize)
+    ModCount = 1
+  END IF
+
 !     Pass local vars to global vars
 
   CALL passToGlobals(srho,sEta,sKBeta,iNodes, &
                      iredNodesX,iredNodesY, &
                      sLengthOfElm,&
-                     fx,fy,sFocusFactor,sFiltFrac,sDiffFrac,sBeta, &
+                     fx,fy,sFocusFactor,taper,sFiltFrac,sDiffFrac,sBeta, &
                      qSwitches,qOK)
 
   IF (.NOT. qOKL) GOTO 1000
@@ -240,7 +271,6 @@ MODULE Setup
                             sA,&
                             qOKL)
   
-    CALL DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
     start_step = 1_IP
   	
   END IF
@@ -301,8 +331,8 @@ MODULE Setup
 
   IF (qResume) THEN
     CALL READINCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
-  ELSE
-    CALL DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
+  !ELSE
+  !  CALL DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
   ENDIF
 
 
@@ -338,31 +368,6 @@ MODULE Setup
     CALL GetKValues(frecvs,fdispls,qOKL)
     IF (.NOT. qOKL) GOTO 1000
   
-  END IF
-
-
-
-!    If using wiggler lattice read in lattice file
-
-  IF (lattFile=='') THEN
-    qMod = .FALSE.
-    IF(tProcInfo_G%qRoot) PRINT*, 'There are no dispersive sections'
-  ELSE
-    qMod = .TRUE.
-    IF(tProcInfo_G%qRoot) PRINT*, 'There are dispersive sections'
-  END IF
-      
-  IF (qMod) THEN
-    modNum=lineCount(lattFile)
-    modNum=26
-    ALLOCATE(D(ModNum),zMod(ModNum),delta(modNum))
-
-!    Latt file name, number of wigg periods converted to z-bar,
-!    slippage in chicane in z-bar, 2 dispersive constants, 
-!    number of modules
-
-    CALL readLatt(lattFile,zMod,delta,D,Dfact,ModNum,sRho_G) 	
-    ModCount = 1
   END IF
 
 
@@ -443,6 +448,12 @@ MODULE Setup
   qSeparateStepFiles_G = qSeparateStepFiles
   qFormattedFiles_G = qFormattedFiles
   qMod_G = qMod
+
+  if (qSwitches(iDump_CG)) call DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
+  if (qSwitches(iDump_CG)) call DUMPDATA(sA,sV,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
+                             iNumberElectrons_G,sZ,istep,tArrayA(1)%tFileType%iPage)
+
+
 
   DEALLOCATE(s_Normalised_chi_G)
 
