@@ -1093,7 +1093,8 @@ SUBROUTINE READDUMP(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
 
  REAL(KIND=WP),DIMENSION(:),INTENT(OUT) :: sA
  REAL(KIND=WP),DIMENSION(:),INTENT(OUT) :: sV
- INTEGER(KIND=IP),INTENT(OUT) :: rank,istep,page
+ INTEGER(KIND=IP),INTENT(OUT) :: istep,page
+ integer(kind=ip),intent(in) :: rank
  INTEGER(KIND=IP),INTENT(IN) :: nnodes
  INTEGER(KIND=IPL), INTENT(INOUT) :: nelectrons
  REAL(KIND=WP),INTENT(OUT) :: sz

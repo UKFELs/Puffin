@@ -9,7 +9,7 @@ module Equations
 
 use paratype
 use ArrayFunctions
-use DerivsGlobals
+use Globals
 
 
 implicit none

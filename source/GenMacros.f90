@@ -11,7 +11,7 @@ USE ParallelInfoType
 USE DataWrite
 USE randomGauss
 USE ParallelSetUp
-USE DerivsGlobals
+USE Globals
 !USE error_fn
 !USE Functions
 !USE particleFunctions

@@ -32,7 +32,6 @@ CONTAINS
        sElectronThreshold, &
        qOneD, &
        chirp, &
-       undType, &
        sV, &
        qOK)
 
@@ -61,7 +60,6 @@ CONTAINS
     INTEGER(KIND=IP), INTENT(IN):: iNMP(:,:)
     LOGICAL, INTENT(IN)         :: q_noise
     REAL(KIND=WP), INTENT(IN)	:: sZ, chirp(:)
-    integer(kind=ip), intent(in) :: undType
 
 
     INTEGER(KIND=IP), INTENT(IN) :: nbeams
@@ -272,7 +270,7 @@ CONTAINS
 
 
 
-    if (undType = 1_IP) then
+    if (zUndType_G == 'curved') then
 
 ! used for curved pole puffin, the 2 order expansion of cosh and sinh
 ! allows us to simply add a correction term to the intial position
@@ -292,7 +290,7 @@ CONTAINS
 
 
 
-    else if (undType = 2_IP) then 
+    else if (zUndType_G == 'planepole') then 
 
 ! plane pole initial conditions are calculated as a 2nd order expansion
 ! and added as a correction term.
