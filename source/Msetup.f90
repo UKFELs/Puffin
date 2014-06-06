@@ -106,6 +106,7 @@ MODULE Setup
        sZ,                &
        LattFile,          &
        iWriteNthSteps,    &
+       iIntWriteNthSteps, &
        tArrayZ,           &
        tArrayA,           &
        tArrayE,           &
@@ -452,8 +453,6 @@ MODULE Setup
   if (qSwitches(iDump_CG)) call DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
   if (qSwitches(iDump_CG)) call DUMPDATA(sA,sV,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
                              iNumberElectrons_G,sZ,istep,tArrayA(1)%tFileType%iPage)
-
-
 
   DEALLOCATE(s_Normalised_chi_G)
 

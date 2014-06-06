@@ -135,8 +135,9 @@ INTEGER(KIND=IP), ALLOCATABLE :: frecvs(:),fdispls(:),&
      lrecvs(:),ldispls(:),mrecvs(:),mdispls(:)
 INTEGER(KIND=IP) :: iCount, iStep, start_step
 REAL(KIND=WP) :: sStep, sStepSize
-INTEGER(KIND=IP) :: iWriteNthSteps, iDumpNthSteps
+INTEGER(KIND=IP) :: iWriteNthSteps, iDumpNthSteps, iIntWriteNthSteps
 INTEGER(KIND=IP) :: nSteps
+
 REAL(KIND=WP)       :: ffact
 REAL(KIND=WP)  :: diffStep
 
@@ -146,10 +147,12 @@ TYPE(cArraySegment) :: tArrayE(nElectronEquations_CG)
 TYPE(cArraySegment) :: tArrayA(nFieldEquations_CG)
 TYPE(cArraySegment) :: tArrayZ
 
+TYPE(cFileType) :: tPowF
+
 REAL(KIND=WP)   :: start_time,end_time
 REAL(KIND=WP)   :: time1, time2 !!!FOR DEBUGGING!!!
 
-
+real(kind=wp), allocatable :: x_ax_G(:), y_ax_G(:)
 
 REAL(KIND=WP), ALLOCATABLE     :: sEl_X0Position_G(:)
 REAL(KIND=WP), ALLOCATABLE     :: sEl_Y0Position_G(:)

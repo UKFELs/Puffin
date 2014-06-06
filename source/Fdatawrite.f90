@@ -653,7 +653,7 @@ CONTAINS
 !  Open the file - In CIO.f90 line 862
 !--------------------------------------------------------------------------------	
 !
-     ! PRINT*,'OPENING********'
+      PRINT*,'OPENING********'
 	  call OpenFileForAppend(tFileType%zFileName, &
       			     tFileType, &
 			     qOKL)
@@ -663,7 +663,7 @@ CONTAINS
 !  Set up new page - see CIO.f90 line 651        
 !--------------------------------------------------------------------------------	
 ! 
-     ! PRINT*,'WRITING NEW PAGE*****'
+      PRINT*,'WRITING NEW PAGE*****'
 	  call WriteSDDSNewPage(tFileType,qOKL)
 	  
       If (.NOT. qOKL) Goto 1000
@@ -672,7 +672,7 @@ CONTAINS
 !  Write length of column data - see CIO.f90 line 100          
 !--------------------------------------------------------------------------------	
 ! 
-     ! PRINT*,'WRITING INTEGER@@@@@@@@@@'
+      PRINT*,'WRITING INTEGER@@@@@@@@@@'
 	  call WriteINTEGER(iLenY,tFileType,qOKL)
       If (.NOT. qOKL) Goto 1000  
 !
@@ -680,7 +680,7 @@ CONTAINS
 !  Write real part - see CIO.f90 line 232        
 !--------------------------------------------------------------------------------	
 ! 	 
-     ! PRINT*,'WRITING ARRAY SIZE',iLenY,'@@@@@@@@@@@'
+      PRINT*,'WRITING ARRAY SIZE',iLenY,'@@@@@@@@@@@'
 	  call Write1DRealArray(sY,tFileType,qOKL)     
       If (.NOT. qOKL) Goto 1000
 !
@@ -688,7 +688,7 @@ CONTAINS
 !  Close the file - see CIO.f90 line 560
 !--------------------------------------------------------------------------------	
 !
-    !  PRINT*,'CLOSING FILE@@@@@@@@@@'
+      PRINT*,'CLOSING FILE@@@@@@@@@@'
 	  call CloseFile(tFileType, &
                      qOKL)
       If (.NOT. qOKL) Goto 1000

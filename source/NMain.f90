@@ -13,6 +13,7 @@ USE lattice
 USE Stiffness
 USE Setup
 USE RK4int
+use avwrite
 
 !!!!!!!!!!!!!!!!!!!Puffin Version 1.4.0 !!!!!!!!!!!!!!!!!!!
 !
@@ -263,6 +264,32 @@ DO iStep = start_step, nSteps
           iStep,sZ,sA,sV,.FALSE.,qFormattedFiles_G,&
           qOKL)
   END IF
+
+
+
+
+
+
+
+
+
+
+  if (mod(iStep,iIntWriteNthSteps)==0) then
+
+    call innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
+
+    call writeIntData(sA,sV)
+
+  end if
+
+
+
+
+
+
+
+
+
   
   CALL Get_time(end_time)
   

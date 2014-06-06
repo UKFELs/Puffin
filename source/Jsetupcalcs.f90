@@ -16,7 +16,7 @@ USE typesAndConstants
 USE Globals
 USE electronInit
 USE gMPsFromDists
-
+use avwrite
 
 IMPLICIT NONE
 
@@ -190,6 +190,12 @@ SUBROUTINE passToGlobals(rho,eta,kbeta,iNN, &
     qFocussing_G             = qSwitch(iFocussing_CG)
     qResume_G                = qSwitch(iResume_CG)
     qDump_G                  = qSwitch(iDump_CG)
+
+
+
+    call initPFile(tPowF) ! initialize power file type
+
+
 
 !     Set error flag and exit
 

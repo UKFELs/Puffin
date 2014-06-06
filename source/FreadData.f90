@@ -23,6 +23,7 @@ SUBROUTINE read_in(zfilename, &
        sZ, &
        LattFile,&
        iWriteNthSteps, &
+       iIntWriteNthSteps_l, &
        tArrayZ, &
        tArrayA, &
        tArrayVariables, &
@@ -128,7 +129,7 @@ SUBROUTINE read_in(zfilename, &
   REAL(KIND=WP) ,    INTENT(OUT)  :: sZ
   CHARACTER(32_IP),  INTENT(INOUT):: LattFile
     
-  INTEGER(KIND=IP),  INTENT(OUT)  :: iWriteNthSteps
+  INTEGER(KIND=IP),  INTENT(OUT)  :: iWriteNthSteps, iIntWriteNthSteps_l
   TYPE(cArraySegment)             :: tArrayZ
   TYPE(cArraySegment)             :: tArrayA(:)
   TYPE(cArraySegment)             :: tArrayVariables(:)
@@ -336,7 +337,8 @@ SUBROUTINE read_in(zfilename, &
   READ(UNIT=168,FMT=*) nSteps
   READ(UNIT=168,FMT=*) sZ
   READ(UNIT=168,FMT=*) zDataFileName 
-  READ(UNIT=168,FMT=*) iWriteNthSteps  
+  READ(UNIT=168,FMT=*) iWriteNthSteps 
+  READ(UNIT=168,FMT=*) iIntWriteNthSteps_l  
   READ(UNIT=168,FMT=*) iDumpNthSteps  
   READ(UNIT=168,FMT=*) sPEOut  ! Put to 100% if all are to be written
   
