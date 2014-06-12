@@ -185,7 +185,7 @@ SUBROUTINE chkESampleLens(sLenEPulse,iNumElectrons,rho,qOneD,qOK)
 
   REAL(KIND=WP), INTENT(INOUT) :: sLenEPulse(:)
   REAL(KIND=WP), INTENT(IN) ::  rho
-  INTEGER(KIND=IP), INTENT(IN) :: iNumElectrons(:)
+  INTEGER(KIND=IP), INTENT(OUT) :: iNumElectrons(:)
   LOGICAL, INTENT(IN) :: qOneD
   LOGICAL, INTENT(INOUT) :: qOK
 
@@ -195,6 +195,13 @@ SUBROUTINE chkESampleLens(sLenEPulse,iNumElectrons,rho,qOneD,qOK)
   REAL(KIND=WP) :: wlen, maxspcing, spcing
   
   qOK = .FALSE.
+
+  if (qOneD) then
+    iNumElectrons(iX_CG)  = 1_IP
+    iNumElectrons(iY_CG)  = 1_IP
+    iNumElectrons(iPX_CG) = 1_IP
+    iNumElectrons(iPY_CG) = 1_IP
+  end if
 
   wlen = 4.0_WP * pi * rho
   maxspcing = wlen / 8.0_WP
