@@ -1,0 +1,49 @@
+PUFFIN BEAM FILE
+
+Describes electron beams for input into puffin. Multiple beams with
+different parameters can be used. Please refer to POP-REF for an
+explanation of the scaled variables used, such as z2 and p2.
+
+1         # of beams
+
+READ IN BEAM CHARACTERISTICS
+========================================================================
+BEAM 1:-
+
+STANDARD DEVIATION OF BEAM IN EACH DIMENSION (=1E8 FOR FLAT TOP)   - REAL
+
+7.109099977692597E-02   SIGX       (overwritten for matched beam)
+7.109099977692597E-02   SIGY       (overwritten for matched beam)
+1.000000000000000E+08   SIGZ2
+5.000000000000000E-01   SIGPX      (overwritten for matched beam)
+1.000000000000000E+00   SIGPY      (overwritten for matched beam)
+1.000000000000000E-03   SIGGAMMA
+
+TOTAL MODELLED LENGTH OF BEAM IN EACH DIMENSION    - REAL
+
+4.265459986615558E-01   LENX       (overwritten for matched beam)
+4.265459986615558E-01   LENY       (overwritten for matched beam)
+3.999999999999758E+01   LENZ2
+1.000000000000000E+00   LENPX      (overwritten for matched beam)
+1.000000000000000E+00   LENPY      (overwritten for matched beam)
+6.000000000000000E-03   LENGAMMA
+
+NUMBER OF MACROPARTICLES TO MODEL BEAM IN EACH DIMENSION (EQUISPACED BEFORE NOISE IS ADDED, IF USED)   - INTEGER
+
+1                       NUMX
+1                       NUMY
+15279                   NUMZ2
+1                       NUMPX
+1                       NUMPY
+1                       NUMGAMMA
+
+BEAM PARAMETERS
+
+.TRUE.                  Match beam to undulator?
+1.000000000000000E+00   Ratio of average beam energy to resonant beam energy gamma / gamma_r
+3.573668350911747E-01   Scaled emittance (bar{epsilon})
+-0.000000000000000E+00  Energy chirp in z2 i.e. dgamma/dz2
+0.000000000000000E+00   Center of beam in z2
+2.000000000000000E-09   Charge in coulombs
+========================================================================
+

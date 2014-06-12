@@ -98,14 +98,14 @@ nseeds = 1
 
 # Undulator and beam parameters
 
-aw = 3.182             # 3.182 rms, 4.5 peak
-emit = 1e-6 / 587.08   # Unnormalised Emittance
+aw = 2.0               # 3.182 rms, 4.5 peak
+emit = 4.976711101413333e-07       # Unnormalised Emittance
 lambda_w = 0.07        # Undulator period
-N_w = 4                # Number of undulator periods
-gamma = 587.08         # Relativistic factor
+N_w = 200              # Number of undulator periods
+gamma = 100.0          # Relativistic factor
 ff = math.sqrt(2)      # Focus factor
-Q = 3e-12              # Charge
-qFlatTopZ2 = 0         # =1 if flat top current profile, else gaussian.
+Q = 2e-9               # Charge
+qFlatTopZ2 = 1         # =1 if flat top current profile, else gaussian.
 qHardEdgeX = 0         # =1 if disk (circle) in transverse plane, else gaussian.
 # E = 300e6            # Beam energy
 # gamma = E / (m_e * pow(c,2)) # Rel. factor
@@ -113,7 +113,7 @@ sig_gamma = 0.001      # Energy spread
 
 
 k_w = 2 * pi / lambda_w             # Get wiggler wavenumber
-sigt = 3.3356e-15                   # Get sigma in t dimension
+sigt = 0.005570423008216 / c        # Get sigma in t dimension
 sigz = c * sigt                     # Convert sigma in t to z
 k_beta = aw * k_w / ( ff * gamma )  # Betatron wavelength
 N = Q / q_e                         # Number of real electrons in pulse
@@ -209,7 +209,7 @@ Nsteps = zbarprop / dz             # Number of steps
 ###################################################
 # Chirp - 1% per sigma_z
 
-dcgamma = 0.01 * gamma;   # Change in gamma per sigma_z due to chirp
+dcgamma = 0.0 # 0.01 * gamma;   # Change in gamma per sigma_z due to chirp
 chirp = -dcgamma / sigz;   # Energy chirp in z
 chirpz2 = Lc * chirp;    # Energy chirp in z2
 
@@ -260,7 +260,7 @@ beam[0].nmpz2 = NMElecsZ2
 beam[0].nmpp2 = 21
 
 beam[0].eratio = 1
-beam[0].emit_bar = 1
+beam[0].emit_bar = emit_bar
 beam[0].chirp = chirpz2
 beam[0].bcenz2 = 0
 beam[0].Q = Q
@@ -402,7 +402,6 @@ f.write('{:<24.15E}'.format(1.0)   + 'REAL        uy                   Normalise
 f.write('{:<24.15E}'.format(eta) + 'REAL        eta                  Scaled longitudinal velocity (1-beta_av) / beta_av\n')
 f.write('{:<24.15E}'.format(k_beta_bar) + 'REAL        kbeta                Scaled betatron wavenumber\n')
 f.write('{:<24.15E}'.format(ff) + 'REAL        sFocusfactor         Focussing factor f, from the betatron wavenumber\n')
-f.write('{:<24.15E}'.format(emit_bar) + 'REAL        sEmit_n              scaled beam emittance\n')
 f.write('{:<24.15E}'.format(0.0)      + 'REAL        Dfact                Dispersive strength factor for chicane\n')
 f.write('{:<24.15E}'.format(0.0)      + 'REAL        taper                gradient of taper daw/dz\n')
 
@@ -445,9 +444,6 @@ f.close()
 # beam file
 
 f = open(beamfile, 'w')
-
-
-f.write('PUFFIN BEAM FILE')
 
 
 f.write('PUFFIN BEAM FILE\n')
