@@ -26,7 +26,7 @@ CONTAINS
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE passToGlobals(rho,eta,kbeta,iNN, &
+SUBROUTINE passToGlobals(rho,aw,gamr,iNN, &
                          sRNX,sRNY, &
                          sElmLen,&
                          fx,fy,sFocusFactor,taper,sFiltFrac, &
@@ -51,7 +51,7 @@ SUBROUTINE passToGlobals(rho,eta,kbeta,iNN, &
 !                    diffraction and gaussian field
 ! qOK                Error flag
 
-    REAL(KIND=WP),     INTENT(IN)    :: rho,eta,kbeta
+    REAL(KIND=WP),     INTENT(IN)    :: rho,aw,gamr
     INTEGER(KIND=IP),  INTENT(IN)    :: sRNX,sRNY
     INTEGER(KIND=IP),  INTENT(IN)    :: iNN(:)
     REAL(KIND=WP),     INTENT(IN)    :: sElmLen(:)	
@@ -65,7 +65,7 @@ SUBROUTINE passToGlobals(rho,eta,kbeta,iNN, &
 ! lambda_r           Resonant wavelength in scaled units
 ! qOKL               Local error flag
 
-    REAL(KIND=WP) :: lambda_r,LenZ2,modfact1
+    REAL(KIND=WP) :: lambda_r,LenZ2,modfact1,sbetaz
     LOGICAL :: qOKL
 
     qOK = .FALSE.
@@ -134,8 +134,11 @@ SUBROUTINE passToGlobals(rho,eta,kbeta,iNN, &
 
     sRho_G = sRho_save_G ! * modfact1
 
-    sEta_G = eta
-    sKBeta_G = kbeta
+    sbetaz = SQRT(gamr**2.0_WP - 1.0_WP - (aw)**2.0_WP) / &
+             gamr
+
+    sEta_G = (1.0_WP - sbetaz) / sbetaz
+    sKBeta_G = aw / 2.0_WP / sFocusFactor / rho / gamr
 
     sFocusfactor_save_G = sFocusFactor
 
@@ -145,15 +148,15 @@ SUBROUTINE passToGlobals(rho,eta,kbeta,iNN, &
     fx_G = fx
     fy_G = fy
 
-    sAw_save_G = ((1 / (2.0_WP*rho*sFocusFactor*kbeta)**2) *   &
-            (1.0_WP - (1.0_WP / ( 1.0_WP + eta )**2) ) - 1.0_WP) ** (-0.5_WP)
+    !sAw_save_G = ((1 / (2.0_WP*rho*sFocusFactor*kbeta)**2) *   &
+    !        (1.0_WP - (1.0_WP / ( 1.0_WP + eta )**2) ) - 1.0_WP) ** (-0.5_WP)
 
 
+
+    sAw_save_G = aw
     sAw_G = sAw_save_G ! * modfact1
 
-
-
-    sGammaR_G = sAw_G / (2.0_WP * rho * sFocusFactor * kbeta)
+    sGammaR_G = gamr
 
 
 

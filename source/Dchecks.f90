@@ -19,7 +19,7 @@ CONTAINS
 
 SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
        sLengthofElm,iNodes,sWigglerLength,sStepSize,&
-       nSteps,srho,sEta,sKBeta,focusfactor,sSigE,f_x, f_y, iRedNodesX,&
+       nSteps,srho,saw,sgammar,focusfactor,sSigE,f_x, f_y, iRedNodesX,&
        iRedNodesY,qSwitches,qSimple,qOK)
 
   IMPLICIT NONE
@@ -44,7 +44,7 @@ SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
   REAL(KIND=WP), INTENT(INOUT) :: sWigglerLength(:)
   REAL(KIND=WP), INTENT(INOUT) :: sStepSize
   INTEGER(KIND=IP), INTENT(INOUT) :: nSteps
-  REAL(KIND=WP), INTENT(IN) :: srho,sEta,sKBeta,focusfactor
+  REAL(KIND=WP), INTENT(IN) :: srho,saw,sgammar,focusfactor
   REAL(KIND=WP), INTENT(INOUT) :: sSigE(:,:)
   REAL(KIND=WP), INTENT(INOUT) :: f_x, f_y
   INTEGER(KIND=IP),INTENT(INOUT) :: iRedNodesX,iRedNodesY
@@ -78,7 +78,7 @@ SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
   if (qSimple)  CALL checkIntSampling(sStepSize,nSteps,sLengthOfElm,qSwitches,qOKL)
   IF (.NOT. qOKL) GOTO 1000
 
-  if (qSimple) CALL checkFreeParams(srho,sEta,sKBeta,f_x,f_y,focusfactor,qOKL)
+  if (qSimple) CALL checkFreeParams(srho,saw,sgammar,f_x,f_y,focusfactor,qOKL)
   IF (.NOT. qOKL) GOTO 1000
 
   IF(tProcInfo_G%qRoot) PRINT '(I5,1X,A17,1X,F8.4)',nsteps,&
@@ -391,9 +391,9 @@ END SUBROUTINE getElmLengths
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE checkFreeParams(srho,sEta,sKBeta,f_x,f_y,focusfactor,qOK)
+SUBROUTINE checkFreeParams(srho,saw,sgammar,f_x,f_y,focusfactor,qOK)
 
-  REAL(KIND=WP), INTENT(IN) :: srho,sEta,sKBeta,f_x,f_y,focusfactor
+  REAL(KIND=WP), INTENT(IN) :: srho,saw,sgammar,f_x,f_y,focusfactor
   LOGICAL, INTENT(OUT) :: qOK
 
   qOK = .FALSE.
@@ -405,22 +405,15 @@ SUBROUTINE checkFreeParams(srho,sEta,sKBeta,f_x,f_y,focusfactor,qOK)
     GOTO 1000    
   END IF
 
-!     Check got valid value for eta
+!     Check got valid value for aw and gamma
   
-  IF (sEta <= 0.0_WP) THEN
-    CALL Error_log('Parameter eta <=0.',tErrorLog_G)
+  IF (saw <= 0.0_WP) THEN
+    CALL Error_log('Parameter saw <=0.',tErrorLog_G)
     GOTO 1000    
   END IF
   
-  IF (sEta >= 1.0_WP) THEN
-    CALL Error_log('Parameter eta >=1.',tErrorLog_G)
-    GOTO 1000    
-  END IF
-
-!     Check got valid value for kBeta
-  
-  IF (sKBeta <= 0.0_WP) THEN
-    CALL Error_log('Parameter kBeta <=1.',tErrorLog_G)
+  IF (sgammar <= 0.0_WP) THEN
+    CALL Error_log('Parameter gamma_r <= 0.',tErrorLog_G)
     GOTO 1000    
   END IF
     
