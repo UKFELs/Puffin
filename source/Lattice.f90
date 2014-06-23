@@ -145,9 +145,7 @@ end do
   Q_start = iBStartPosition_G(iRe_Q_CG)
   Q_end = iBEndPosition_G(iRe_Q_CG)
 
-  y_e(z2_start:z2_end) = y_e(z2_start:z2_end) - &
-                         D*(1.0_WP-y_e(Q_start:Q_end)) &
-                         + delta
+
 
 
 
@@ -181,6 +179,23 @@ end do
                   (1.0_WP + sEta_G * Vector(iRe_Q_CG,y_e) )**2.0_WP / &
                   ( sEta_G * Vector(iRe_Q_CG,y_e) * &
                               (sEta_G * Vector(iRe_Q_CG,y_e) + 2.0_WP) ) )
+
+
+
+
+
+!          For chicanes 
+
+
+  y_e(z2_start:z2_end) = y_e(z2_start:z2_end) - &
+                         2.0_WP * D *  &
+                         (sgamma_j - sGammaR_G) / sGammaR_G &
+                         + delta
+
+
+
+
+
 
 
 
