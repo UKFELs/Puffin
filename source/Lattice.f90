@@ -203,7 +203,7 @@ end do
                  n2col * (sRho_G**2.0_WP) /  &
                  ( SQRT(fx_G**2.0_WP + fy_G**2.0_WP) * sEta_G ) * &
                  sGammaR_G / sgamma_j * (1.0_WP + sEta_G * Vector(iRe_Q_CG,y_e)) *  &
-                 fy_G * cos(sZ / (2.0_WP * sRho_G) )
+                 fx_G * cos(sZ / (2.0_WP * sRho_G) )
 
 
 !     Take off tranverse phase space offsets to center the beam
@@ -290,7 +290,7 @@ end do
                  n2col * (sRho_G**2.0_WP) /  &
                  ( SQRT(fx_G**2.0_WP + fy_G**2.0_WP) * sEta_G ) * &
                  sGammaR_G / sgamma_j * (1.0_WP + sEta_G * Vector(iRe_Q_CG,y_e)) *  &
-                 fy_G * cos(sZ / (2.0_WP * sRho_G) )  
+                 fx_G * cos(sZ / (2.0_WP * sRho_G) )  
 
 
 !     Add on new offsets to initialize beam for new undulator module

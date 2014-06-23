@@ -356,8 +356,8 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,ym,pxm,pym,dz2,Ne,npk,qnoise, &
 
 !---- for NOT adding mean px, py to each slice
 
-    px0 = pxOffset(sZ, sRho_G, fx_G)
-    py0 = pyOffset(sZ, sRho_G, fy_G)
+    px0 = pxOffset(sZ, sRho_G, fy_G)
+    py0 = pyOffset(sZ, sRho_G, fx_G)
 
     px(istart:iend) = px0    !  In 1D giving no deviation in px
     py(istart:iend) = py0    !  or py
