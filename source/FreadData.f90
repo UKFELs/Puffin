@@ -177,6 +177,7 @@ SUBROUTINE read_in(zfilename, &
 
 ! Define local variables
     
+  integer(kind=ip) :: stpsprlam ! Steps per lambda_w
   INTEGER::ios
   CHARACTER(32_IP) :: beam_file, seed_file
   LOGICAL :: qOKL, qMatched !   TEMP VAR FOR NOW, SHOULD MAKE FOR EACH BEAM
@@ -332,7 +333,7 @@ SUBROUTINE read_in(zfilename, &
 
 
   READ(UNIT=168,FMT=*) LattFile  
-  READ(UNIT=168,FMT=*) sStepSize
+  READ(UNIT=168,FMT=*) stpsprlam
   READ(UNIT=168,FMT=*) nSteps
   READ(UNIT=168,FMT=*) sZ
   READ(UNIT=168,FMT=*) zDataFileName 
@@ -341,6 +342,10 @@ SUBROUTINE read_in(zfilename, &
   READ(UNIT=168,FMT=*) sPEOut  ! Put to 100% if all are to be written
   
   CLOSE(UNIT=168,STATUS='KEEP')  
+
+  sStepSize = 4.0_WP * pi * srho / real(stpsprlam,kind=wp)
+
+  print*, 'step size is --- ', sStepSize
 
 
   CALL read_beamfile(qSimple, dist_f, beam_file,sEmit_n,sSigmaGaussian,sLenEPulse, &

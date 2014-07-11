@@ -47,12 +47,14 @@ CONTAINS
 !                LOCAL VARS
 
   INTEGER(KIND=IP)   :: i,ios,nw,error,ri,NL
-  REAL(KIND=WP)      :: pi,c1
+  REAL(KIND=WP)      :: c1
+
+  integer(kind=ip) :: nperlam(size(delmz))
 
   OPEN(1,FILE=lattFile, IOSTAT=ios, ACTION='READ', POSITION ='REWIND')
   IF (ios /= 0_IP) STOP "OPEN(input file) not performed correctly, IOSTAT /= 0"
 
-  pi = 4.0_WP*ATAN(1.0_WP)
+!   pi = 4.0_WP*ATAN(1.0_WP)
   c1 = 2.0_WP*rho
 
 
@@ -70,7 +72,9 @@ end do
 
   DO i=1,ModNum
 
-    READ (1,*) nw, delta(i), mf(i), delmz(i), tapers(i)  !, resFactor(i) ! Wiggler periods, Chicane slippage periods, aw shift, stepsize
+    READ (1,*) nw, delta(i), mf(i), nperlam(i), tapers(i)  !, resFactor(i) ! Wiggler periods, Chicane slippage periods, aw shift, stepsize
+
+    delmz(i) = 4.0_WP * pi * rho / REAL(nperlam(i),kind=wp)
 
 !     Calculate cumulative interaction length of modules
 
@@ -92,6 +96,12 @@ end do
 
   sStepSize =  delmz(1)
   taper = tapers(1)
+
+  print*, 'step sizes are   ', delmz
+
+  print*, 'tapers are   ', tapers
+
+  print*, 'deltas are   ', delta
 
   END SUBROUTINE readLatt
 
