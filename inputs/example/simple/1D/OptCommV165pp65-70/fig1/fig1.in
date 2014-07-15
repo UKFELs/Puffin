@@ -60,8 +60,8 @@ Input the scaled independant variables from [1] here
 1.0                 REAL        ux                         Normalised magnitude of wiggler magnetic field x-vector: H=1 is helical, H=0 is planar
 1.0                 REAL        uy                         Normalised magnitude of wiggler magnetic field y-vector: H=1 is helical, H=0 is planar
 1.0                 REAL        aw                         rms unduator parameter
-100.0               REAL        gamma                      Resonant Wavelength
-1.41213562373095    REAL        sFocusfactor               Focussing factor f, from the betatron wavenumber
+100.0               REAL        gamma                      Resonant Energy
+1.41213562373095    REAL        sFocusfactor               Focussing factor f
 1.0                 REAL        Dfact                      Dispersive strength factor for chicane
 0.0                 REAL        taper                      gradient of taper daw/dz
 
