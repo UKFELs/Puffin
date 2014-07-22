@@ -10,7 +10,7 @@ section.
 
 Columns for each section:
 
-Nw   Ns   aw/aw0   dz    taper
+Nw   Ns   aw/aw0   nperlam    taper
 
 where
 
@@ -22,14 +22,14 @@ Ns      Relative slippage between beam
 aw/aw0  Undulator parameter, normalised to
         undulator parameter in input file
 
-dz      Step size to use for this module
+nperlam Number of steps per undulator period for this module
 
 taper   gradient of undulator parameter as
         function of propagation distance z,
         daw/dz
 ========================
 
-25     0    1.0        1.308996938995747e-3    0.0
-25     0    1.0        1.308996938995747e-3    0.0
-25     0    1.945667391924941    3.272492347489368e-04    0.0
-50     0    0.64       1.308996938995747e-3    0.0
+25     0    1.0                  48    0.0
+25     0    1.0                  48    0.0
+25     0    1.945667391924941    192   0.0
+50     0    0.64                 48    0.0

@@ -36,9 +36,9 @@
                   FIELD NODE SAMPLING
 
 
-1                   INTEGER     iNumNodes(1)               Number of Elements in x direction
-1                   INTEGER     iNumNodes(2)               Number of Elements in y direction
-800                 INTEGER     iNumNodes(3)               Number of Elements in z2 direction
+1                   INTEGER     iNumNodesX               Number of nodes in x direction
+1                   INTEGER     iNumNodesY               Number of nodes in y direction
+26                  INTEGER     nodesPerLambdar            Number of nodes per resonant wavelength
 1.0                 REAL        sFModelLengthX             Length of radiation field model in x direction
 1.0                 REAL        sFModelLengthY             Length of radiation field model in y direction
 4.0                 REAL        sWigglerLengthZ2           Length of wiggler in z2-bar direction
@@ -59,9 +59,9 @@ Input the scaled independant variables from [1] here
 0.01                REAL        rho                        Pierce parameter, describe the strength of the field
 1.0                 REAL        ux                         Normalised magnitude of wiggler magnetic field x-vector: H=1 is helical, H=0 is planar
 1.0                 REAL        uy                         Normalised magnitude of wiggler magnetic field y-vector: H=1 is helical, H=0 is planar
-2.500937890796388E-4 REAL        eta                        Scaled longitudinal velocity (1-beta_av) / beta_av
-0.707106781186547   REAL        kbeta                      Scaled betatron wavenumber
-1.41213562373095    REAL        sFocusfactor               Focussing factor f, from the betatron wavenumber
+1.0                 REAL        aw                         rms unduator parameter
+100.0               REAL        gamma                      Resonant Energy
+1.41213562373095    REAL        sFocusfactor               Focussing factor f
 1.0                 REAL        Dfact                      Dispersive strength factor for chicane
 0.0                 REAL        taper                      gradient of taper daw/dz
 
@@ -79,11 +79,10 @@ What do we want to calculate in the code to output i.e. bunching, pulse current 
 
 
 ''                  CHARACTER   lattFile        Contents: N_w(periods), delta(periods) (!!! NO BLANK LINES AT END !!!)Blank if none.
-1.25-3              REAL        sStepSize       Step size for integration (if zero auto calculated)
-800                 INTEGER     nSteps          Number of steps (if zero,travel one raleigh length in z)
-0.0                 REAL        sZ              Starting z position
+100                 INTEGER     stepsPerPeriod  Number of steps per wiggler period
+8                   INTEGER     nPeriods        Number of wiggler periods
+0.0                 REAL        sZ0             Starting zbar position
 'DataFile.dat'      CHARACTER   zDataFileName   Data file name
 100                 INTEGER     iWriteNthSteps  Steps to write data at
 100                 INTEGER     iDumpNthSteps   Steps to dump data at (0 for no dumping)
 100                 REAL        sPEOut          Percentage of macroparticles to write out. Macroparticles are randomly selected.
-
