@@ -187,7 +187,7 @@ SUBROUTINE read_in(zfilename, &
   CHARACTER(32_IP) :: beam_file, seed_file
   LOGICAL :: qOKL, qMatched !   TEMP VAR FOR NOW, SHOULD MAKE FOR EACH BEAM
 
-!------------------------------------------------------	
+
 ! Begin subroutine:
 ! Set error flag to false         
 !

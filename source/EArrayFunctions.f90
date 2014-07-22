@@ -67,11 +67,11 @@ Module ArrayFunctions
 ! ie an array Y may be made up as
 !
 !              |-  -|
-!              |Re_A|
-!              |Im_A|
+!              |X   |
+!              |Y   |
 !       [Y] =  |Re_P|
 !              |Im_P|
-!              |Q   |
+!              |P2  |
 !              |Z2  |
 !              |-  -|
 !
@@ -81,13 +81,13 @@ Module ArrayFunctions
 ! qWrite         If writing this variables data out to file
 ! zVariable      Name of variable
 ! tFileType      File information if writing data to file
-!
+
   TYPE cArraySegment
     INTEGER(KIND=IP)    :: iStart = 0_IP
     INTEGER(KIND=IP)    :: iEnd   = 0_IP
     LOGICAL             :: qWrite = .FALSE.
     CHARACTER(32_IP)    :: zVariable = ''
-    TYPE(cFileType)     :: tFileType 
+    TYPE(cFileType)     :: tFileType
   END TYPE
 
   Private PutValueInVector_OneValue
@@ -566,222 +566,214 @@ Module ArrayFunctions
 !
       qOK = .TRUE.				    
       GoTo 2000     
-!
-!--------------------------------------------------------------------------------
+
 ! Error Handler
-!--------------------------------------------------------------------------------
-!            
+          
 1000 call Error_log('Error in EArrayFunctions:SetUpArraySegment',tErrorLog_G)
    Print*,'Error in EArrayFunctions:SetUpArraySegment'
 2000 CONTINUE
-!
-      END SUBROUTINE SetUpArraySegment
-!--------------------------------------------------------------------------------
-!--------------------------------------------------------------------------------
-!--------------------------------------------------------------------------------
-!--------------------------------------------------------------------------------
 
-      SUBROUTINE  SetUpDataFiles(zDataFileName,  &
-                                 qFormattedFiles, &
-                                 tWriteZData,    &
-				 tWriteAData,	 &
-                                 tArraySegment,  &
-                                 qOK,            &
-				 zOptionalString)
-!
-!********************************************************************
+  END SUBROUTINE SetUpArraySegment
+
+
+
+
+
+  SUBROUTINE  SetUpDataFiles(zDataFileName,  &
+                             qFormattedFiles, &
+                             tWriteZData,    &
+                             tWriteAData, &
+                             tArraySegment,  &
+                             qOK,            &
+                             zOptionalString)
+
 ! Open data files
-!********************************************************************
 !
 ! zDataFileName           - INPUT    - Data file name
 ! qFormattedFiles         - INPUT    - if output data files to be formatted or binary
 ! tArraySegment           - UPDATE   - Result data file info
 ! qOK                     - OUTPUT   - Error flag
-!
-!********************************************************************
-!	
-      IMPLICIT NONE
-!
-      CHARACTER(32_IP),        INTENT(IN)                :: zDataFileName
-      LOGICAL,                 INTENT(IN)                :: qFormattedFiles
-      TYPE(cArraySegment),     INTENT(INOUT)             :: tWriteZData
-      TYPE(cArraySegment),     INTENT(INOUT)             :: tWriteAData(:)
-      TYPE(cArraySegment),     INTENT(INOUT)             :: tArraySegment(:)
-      LOGICAL,                 INTENT(OUT)               :: qOK      
-      CHARACTER(*),            INTENT(IN), OPTIONAL      :: zOptionalString
-!
-!====================================================================
+
+    IMPLICIT NONE
+
+    CHARACTER(32_IP),        INTENT(IN)                :: zDataFileName
+    LOGICAL,                 INTENT(IN)                :: qFormattedFiles
+    TYPE(cArraySegment),     INTENT(INOUT)             :: tWriteZData
+    TYPE(cArraySegment),     INTENT(INOUT)             :: tWriteAData(:)
+    TYPE(cArraySegment),     INTENT(INOUT)             :: tArraySegment(:)
+    LOGICAL,                 INTENT(OUT)               :: qOK      
+    CHARACTER(*),            INTENT(IN), OPTIONAL      :: zOptionalString
+
 ! Define local variables
 ! 
 ! iSegment - Local loop variable
 ! zFileName - Filename to use 
 ! qOKL   - Local error flag
-!=====================================================================
-!	
-       INTEGER(KIND=IP)               :: iSegment
-       CHARACTER(32_IP)               :: zFileName
-       LOGICAL                        :: qOptional
-       LOGICAL                        :: qOKL
-!
-!--------------------------------------------------------------------------------	
-! Set error flag to false         
-! This type is defined is "ParallelInfoType.f90"
-!--------------------------------------------------------------------------------	
-!
-      qOK = .FALSE.    
-!
-      qOptional = .FALSE.
-      If (PRESENT(zOptionalString)) Then
-         If (Len(TRIM(ADJUSTL(zOptionalString))) > 0) Then
-            qOptional = .TRUE.
-	 End if
-      End if
-!
 
-!
-!
-!- ''tArraySegment'' type is defined in "AMathLibGlobals.f90"
-!--------------------------------------------------------------------------------	
-! Loop over allsegments and open data file if required        
-!--------------------------------------------------------------------------------	
-!
-         !PRINT*,SIZE(tArraySegment)
-		 Do iSegment = 1_IP, Size(tArraySegment)
-!
-!--------------------------------------------------------------------------------	
-! If to write data open file       
-!--------------------------------------------------------------------------------	
-!
-            If (tArraySegment(iSegment)%qWrite) Then
-!
-!--------------------------------------------------------------------------------	
-! Create filename      
-!--------------------------------------------------------------------------------	
-!
-!Pamela: need to put something sensible here
-	       zFilename = (TRIM(ADJUSTL(tArraySegment(iSegment)%zVariable)) // TRIM(ADJUSTL(zDataFileName)) )
-	       If (qOptional) Then
-	          zFilename = (TRIM(ADJUSTL(zOptionalString)) // '_' // TRIM(ADJUSTL(zFilename)) )
-	       End if
-!
-!--------------------------------------------------------------------------------	
-! Open file - This subroutine is in this file - line 517
-!--------------------------------------------------------------------------------	
-!	      
-	         IF (tProcInfo_G%qRoot) THEN
-		   call SetUpDataFile(zFilename,                         &
-	                          qFormattedFiles,                   &
-	                          tArraySegment(iSegment)%zVariable, &
-			          tArraySegment(iSegment)%tFileType, &
-			          qOKL)
-               If (.NOT. qOKL) Goto 1000
-!	       
-	    	END IF
-			CALL shareFileType(tArraySegment(iSegment)%tFileType)
-		End If
-!
-         End Do
-!
-!--------------------------------------------------------------------------------	
-!  Field Data files         
-!--------------------------------------------------------------------------------	
-!
-	 If (tWriteAData(iRe_A_CG)%qWrite) Then	      
-	    IF (tProcInfo_G%qRoot) THEN
-!
-!--------------------------------------------------------------------------------	
-! Create filename      
-!--------------------------------------------------------------------------------	
-!
-!Pamela: need to put something sensible here
-	       zFilename = (TRIM(ADJUSTL(tWriteAData(iRe_A_CG)%zVariable)) // TRIM(ADJUSTL(zDataFileName))) 
-		   If (qOptional) Then
-	          zFilename = (TRIM(ADJUSTL(zOptionalString)) // '_' // TRIM(ADJUSTL(zFilename)) )
-	       End if
-!
-!--------------------------------------------------------------------------------	
-! Open file - This subroutine is in this file - line 517
-!--------------------------------------------------------------------------------	
-!
-	       call SetUpDataFile(zFilename,             &
-                       	          qFormattedFiles,       &
-	                          tWriteAData(iRe_A_CG)%zVariable, &
-			          tWriteAData(iRe_A_CG)%tFileType, &
-			          qOKL)
+    INTEGER(KIND=IP)               :: iSegment
+    CHARACTER(32_IP)               :: zFileName
+    LOGICAL                        :: qOptional
+    LOGICAL                        :: qOKL
+
+!     Set error flag to false         
+!     This type is defined is "ParallelInfoType.f90"
+
+    qOK = .false.    
+
+    qOptional = .false.
+
+
+
+    if (present(zOptionalString)) then
+
+      if (len(trim(adjustl(zOptionalString))) > 0) then
+
+        qOptional = .TRUE.
     
-	      
-	       zFilename = (TRIM(ADJUSTL(tWriteAData(iIm_A_CG)%zVariable)) // TRIM(ADJUSTL(zDataFileName))) 
-	       If (qOptional) Then
-	          zFilename = (TRIM(ADJUSTL(zOptionalString)) // '_' // TRIM(ADJUSTL(zFilename)) )
-	       End if
+      end if
+  
+    end if
 
-	
-	       call SetUpDataFile(zFilename,             &
-                       	          qFormattedFiles,       &
-	                          tWriteAData(iIm_A_CG)%zVariable, &
-			          tWriteAData(iIm_A_CG)%tFileType, &
-			          qOKL)
-	
-	  END IF
-	END IF
-!
-!--------------------------------------------------------------------------------	
-!  z Data file         
-!--------------------------------------------------------------------------------	
-!				  
-				  
-	 If (tWriteZData%qWrite) Then			  
-				  
-	       zFilename = (TRIM(ADJUSTL(tWriteZData%zVariable)) // TRIM(ADJUSTL(zDataFileName))) 
-	       If (qOptional) Then
-	          zFilename = (TRIM(ADJUSTL(zOptionalString)) // '_' // TRIM(ADJUSTL(zFilename)) )
-	       End if
 
+!     ''tArraySegment'' type is defined in "AMathLibGlobals.f90"
+
+!     Loop over allsegments and open data file if required
+
+    do iSegment = 1_IP, size(tArraySegment)
+
+
+
+!     If to write data open file
+
+      if (tArraySegment(iSegment)%qWrite) Then
+
+!     Create filename
+
+!     Pamela: need to put something sensible here
+
+        zFilename = (trim(adjustl(tArraySegment(iSegment)%zVariable)) // trim(adjustl(zDataFileName)) )
+
+        if (qOptional) then
+          zFilename = (trim(adjustl(zOptionalString)) // '_' // trim(adjustl(zFilename)) )
+        end if
+
+!     Open file - This subroutine is in this file - line 517
+
+        if (tProcInfo_G%qRoot) then
+      
+          call SetUpDataFile(zFilename, qFormattedFiles, &
+                             tArraySegment(iSegment)%zVariable, &
+                             tArraySegment(iSegment)%tFileType, &
+                             qOKL)
+          If (.NOT. qOKL) Goto 1000
+
+        end if
+
+        call shareFileType(tArraySegment(iSegment)%tFileType)
+
+      end if
+
+
+    end do
+
+
+
+!      Field Data files
+
+    if (tWriteAData(iRe_A_CG)%qWrite) then
+      
+      if (tProcInfo_G%qRoot) then
+
+!     Create filename      
+
+!     Pamela: need to put something sensible here
+
+        zFilename = (trim(adjustl(tWriteAData(iRe_A_CG)%zVariable)) // trim(adjustl(zDataFileName))) 
+
+        if (qOptional) then
+
+          zFilename = (trim(adjustl(zOptionalString)) // '_' // trim(adjustl(zFilename)) )
+
+        end if
+
+!     Open file - This subroutine is in this file - line 517
+
+        call SetUpDataFile(zFilename, qFormattedFiles, &
+                           tWriteAData(iRe_A_CG)%zVariable, &
+                           tWriteAData(iRe_A_CG)%tFileType, &
+                           qOKL)
+
+        zFilename = (trim(adjustl(tWriteAData(iIm_A_CG)%zVariable)) // trim(adjustl(zDataFileName)))
+
+        if (qOptional) then
+          zFilename = (trim(adjustl(zOptionalString)) // '_' // trim(adjustl(zFilename)) )
+        end if
+
+
+        call SetUpDataFile(zFilename, qFormattedFiles,&
+                           tWriteAData(iIm_A_CG)%zVariable, &
+                           tWriteAData(iIm_A_CG)%tFileType, &
+                           qOKL)
+
+      end if
+
+    end if
+
+
+
+!     z Data file         
+
+    if (tWriteZData%qWrite) then
+
+      zFilename = (trim(adjustl(tWriteZData%zVariable)) // trim(adjustl(zDataFileName))) 
+      
+
+      if (qOptional) then
+      
+        zFilename = (trim(adjustl(zOptionalString)) // '_' // trim(adjustl(zFilename)) )
+      
+      end if
+
+
+
+      if (tProcInfo_G%qRoot) then
+
+        call SetUpDataFile(zFilename, qFormattedFiles,  &
+                           tWriteZData%zVariable, &
+                           tWriteZData%tFileType, &
+                           qOKL)
+        if (.not. qOKL) goto 1000
+      
+      end if
+
+
+    end if
+
+!     Set error flag and exit
+
+    qOK = .TRUE.
+    GoTo 2000
+
+!     Error Handler
            
-           IF (tProcInfo_G%qRoot) THEN
-	         call SetUpDataFile(zFilename,             &
-                                qFormattedFiles,       &
-	                            tWriteZData%zVariable, &
-			                    tWriteZData%tFileType, &
-			                    qOKL)
-               If (.NOT. qOKL) Goto 1000
-           End If
-!	   	 
-	 End if
-!      
-
-!
-!--------------------------------------------------------------------------------	
-!  Set error flag and exit         
-!--------------------------------------------------------------------------------	
-!
-      qOK = .TRUE.				    
-      GoTo 2000     
-!
-!--------------------------------------------------------------------------------
-! Error Handler
-!--------------------------------------------------------------------------------
-!            
 1000 call Error_log('Error in EArrayFunctions:SetUpDataFiles',tErrorLog_G)
-   Print*,'Error in EArrayFunctions:SetUpDataFiles'
-2000 CONTINUE
-!	      
-      END SUBROUTINE SetUpDataFiles
-!--------------------------------------------------------------------------------
-!--------------------------------------------------------------------------------
-      SUBROUTINE CloseDataFiles(tArraySegment,  &
-                                qOK)
-!
-!********************************************************************
+    Print*,'Error in EArrayFunctions:SetUpDataFiles'
+2000 continue
+
+  end subroutine SetUpDataFiles
+
+
+
+
+  subroutine CloseDataFiles(tArraySegment, qOK)
+
 ! close data files
-!********************************************************************
 !
 ! tArraySegment           - UPDATE   - Result data file info
 ! qOK                     - OUTPUT   - Error flag
-!
-!********************************************************************
 !	
-      IMPLICIT NONE
+
+      implicit none
 !
       TYPE(cArraySegment),     INTENT(INOUT)             :: tArraySegment(:)
       LOGICAL,                 INTENT(OUT)               :: qOK      
@@ -835,107 +827,101 @@ Module ArrayFunctions
 2000 CONTINUE
 !
 	      
-      END SUBROUTINE CloseDataFiles
+  END SUBROUTINE CloseDataFiles
 
-!--------------------------------------------------------------------------------
-!--------------------------------------------------------------------------------
 
-      SUBROUTINE  SetUpDataFile(zDataFileName,  &
-                                qFormattedFiles,&
-                                zVariable,      &
-                                tYDataFile,     &
-                                qOK)
-!
-!********************************************************************
+
+  SUBROUTINE  SetUpDataFile(zDataFileName,  &
+                            qFormattedFiles,&
+                            zVariable,      &
+                            tYDataFile,     &
+                            qOK)
+
 ! Set up data file to receive information
-!********************************************************************
-!
+
 ! zDataFileName           - INPUT    - Data file name
 ! qFormattedFiles         - INPUT    - if output data files to be formatted or binary
 ! zVariable               - INPUT    - Variable to write
 ! tYDataFile              - UPDATE   - Result data file info
 ! qOK                     - OUTPUT   - Error flag
-!
-!********************************************************************
-!	
-      IMPLICIT NONE
-!
-      CHARACTER(32_IP),        INTENT(IN)                :: zDataFileName
-      LOGICAL,                 INTENT(IN)                :: qFormattedFiles
-      CHARACTER(32_IP),        INTENT(IN)                :: zVariable
-      TYPE(cFileType),         INTENT(INOUT)             :: tYDataFile
-      LOGICAL,                 INTENT(OUT)               :: qOK      
-!
-!====================================================================
+
+
+    IMPLICIT NONE
+
+    CHARACTER(32_IP),        INTENT(IN)                :: zDataFileName
+    LOGICAL,                 INTENT(IN)                :: qFormattedFiles
+    CHARACTER(32_IP),        INTENT(IN)                :: zVariable
+    TYPE(cFileType),         INTENT(INOUT)             :: tYDataFile
+    LOGICAL,                 INTENT(OUT)               :: qOK      
+
 ! Define local variables
-! 
-! qOKL   - Local error flag
-!=====================================================================
-!	
+
+!     qOKL   - Local error flag
        
-       LOGICAL                        :: qOKL
-!
-!--------------------------------------------------------------------------------	
-! Set error flag to false         
-!--------------------------------------------------------------------------------	
-!
-      qOK = .FALSE.    
-!
-!--------------------------------------------------------------------------------	
-! Open the file to receive data output - This subroutine is in "IO.f90"        
-!--------------------------------------------------------------------------------	
-!
-      tYDataFile%qFormatted = qFormattedFiles
-!
-      call InitialiseSDDSFile(zDataFileName,     &
-      		       	      tYDataFile, &
-			      qOKL)
-      If (.NOT. qOKL) Goto 1000
-!
-!--------------------------------------------------------------------------------	
-! Write variables names that are going to be written to the files (in order of output)  
-! This subroutine is in "GSddsWriter.f90"
-!--------------------------------------------------------------------------------	
-!
-      call SddsWriteColumn(zVariable,'double',tFileType=tYDataFile)	   
-!
-!--------------------------------------------------------------------------------	
-! Write data mode - This subroutine is in "GSddsWriter.f90"
-!--------------------------------------------------------------------------------	
-!
-      If (tYDataFile%qFormatted) Then
-         call SddsWriteDataMode('ascii',tFileType=tYDataFile)	   
-      else
-         call SddsWriteDataMode('binary',tFileType=tYDataFile)	   
-      End if
+    LOGICAL                        :: qOKL
+
+
+
+!     Set error flag to false         
+
+    qOK = .FALSE.    
+
+
+
+!     Open the file to receive data output - This subroutine is in "IO.f90"
+
+    tYDataFile%qFormatted = qFormattedFiles
+
+    call InitialiseSDDSFile(zDataFileName, &
+                            tYDataFile, &
+                            qOKL)
+    if (.NOT. qOKL) Goto 1000
+
+
+
+!     Write variables names that are going to be written to the files (in order of output)  
+!     This subroutine is in "GSddsWriter.f90"
+
+    call SddsWriteColumn(zVariable,'double',tFileType=tYDataFile)	   
+
+
+
+!     Write data mode - This subroutine is in "GSddsWriter.f90"
+
+    If (tYDataFile%qFormatted) Then
+
+      call SddsWriteDataMode('ascii',tFileType=tYDataFile)	   
+
+    else
+
+      call SddsWriteDataMode('binary',tFileType=tYDataFile)	   
+
+    End if
       
-      !END IF
-!
-!--------------------------------------------------------------------------------	
-!  Close the file         
-!--------------------------------------------------------------------------------	
-!
-      call CloseFile(tYDataFile,qOKL)
-      If (.NOT. qOKL) Goto 1000
-!
-!--------------------------------------------------------------------------------	
-!  Set error flag and exit         
-!--------------------------------------------------------------------------------	
-!
-      qOK = .TRUE.				    
-      GoTo 2000     
-!
-!--------------------------------------------------------------------------------
-! Error Handler
-!--------------------------------------------------------------------------------
-!            
+!     Close the file
+
+    call CloseFile(tYDataFile,qOKL)
+    If (.NOT. qOKL) Goto 1000
+
+
+
+!     Set error flag and exit
+
+    qOK = .TRUE.				    
+    GoTo 2000     
+
+!     Error Handler
+            
 1000 call Error_log('Error in EArrayFunctions:SetUpDataFile',tErrorLog_G)
-   Print*,'Error in EArrayFunctions:SetUpDataFile'
+    Print*,'Error in EArrayFunctions:SetUpDataFile'
 2000 CONTINUE
-!	      
-      END SUBROUTINE SetUpDataFile
-!--------------------------------------------------------------------------------	
-!--------------------------------------------------------------------------------	
+	      
+  END SUBROUTINE SetUpDataFile
+
+
+
+
+
       SUBROUTINE SetPointer(iPointer,       &
                             iSize,          &
                             iStartPosition, &

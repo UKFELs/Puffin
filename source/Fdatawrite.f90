@@ -377,62 +377,86 @@ CONTAINS
   TYPE(cFileType) :: tParamFile
   INTEGER         :: error, i
   LOGICAL         :: qOKL
-!********************************************************
-! Set error flag to false         
+
+
+
+!     Set error flag to false
+
     qOK = .FALSE.    
 
-! Open the file to receive data output - 
-! This subroutine is in CIO.f90 line 793
+!     Open the file to receive data output - 
+!     This subroutine is in CIO.f90 line 793
+
     tParamFile%qFormatted = qFormatted
-!
-! Only the root process does the file initialization
+
+
+
+
+!     Only the root process does the file initialization
+
   IF (tProcInfo_G%rank==0) THEN
+
     call InitialiseSDDSFile(fname // TRIM(zDataFileName), &
          tParamFile, &
          qOKL)
     If (.NOT. qOKL) Goto 1000
 
-! Write variables names that are going to be written to 
-! the files (in order of output)   
-! This subroutine is in BsddsWriter.f90 line 228
+!     Write variables names that are going to be written to 
+!     the files (in order of output)   
+!     This subroutine is in BsddsWriter.f90 line 228
+    
     call SddsWriteColumn(vname,'double',tFileType=tParamFile)
     If (.NOT. qOKL) Goto 1000
 
-! Write data mode - This subroutine is in BsddsWriter.f90 line 316
+!     Write data mode - This subroutine is in BsddsWriter.f90 line 316
+    
     If (qFormatted) then
+    
        call SddsWriteDataMode('ascii',tFileType=tParamFile)	
+    
     Else
+    
        call SddsWriteDataMode('binary',tFileType=tParamFile)
+    
     End If
 
-!  Set up new page - see CIO.f90 line 651         
+!     Set up new page - see CIO.f90 line 651         
+    
     call WriteSDDSNewPage(tParamFile,qOKL)
     If (.NOT. qOKL) Goto 1000
 
-!  Write length of column data - see CIO.f90 line 100         
+!     Write length of column data - see CIO.f90 line 100         
+    
     call WriteINTEGERL(nelectrons,tParamFile,qOKL)
     If (.NOT. qOKL) Goto 1000	 
 
-! Write data - These subroutines is in CIO.f90 line 232
+!     Write data - These subroutines is in CIO.f90 line 232
+    
     call CloseFile(tParamFile, &
-         qOKL)
+                   qOKL)
     If (.NOT. qOKL) Goto 1000
 		
   END IF 
-! Loop over processes and take in turns to write data		 
+
+
+
+!     Loop over processes and take in turns to write data		 
+  
   CALL MPI_BARRIER(tProcInfo_G%comm, error)
 
-! File data was setup on process 0, need to share filetype with the
-! rest of the processors in the MPI communicator 
+!     File data was setup on process 0, need to share filetype with the
+!     rest of the processors in the MPI communicator 
+
   CALL shareFileType(tParamFile)
        
   DO i = 0,tProcInfo_G%size-1
+
     IF (tProcInfo_G%rank == i) THEN
+
       call OpenFileForAppend(tParamFile%zFileName, &
              tParamFile,qOKL)
 
-      call Write1DRealArray(edata,tParamFile,qOKL)
-      
+      call Write1DRealArray(edata,tParamFile,qOKL)      
       If (.NOT. qOKL) Goto 1000
           
       call CloseFile(tParamFile,qOKL)
@@ -440,39 +464,46 @@ CONTAINS
     END IF
     
     CALL MPI_BARRIER(tProcInfo_G%comm, error)
+
   END DO
 
-!  Set error flag and exit         
+
+
+!     Set error flag and exit
+
     qOK = .TRUE.				    
     GoTo 2000     
 
-! Error Handler - Error log Subroutine in CIO.f90 line 709
+
+
+!     Error Handler - Error log Subroutine in CIO.f90 line 709
 
 1000 call Error_log('Error in FEMethod:WriteChiData',tErrorLog_G)
     Print*,'Error in FEMethod:WriteChiData'
 2000 CONTINUE
+
   END SUBROUTINE WriteEleData
 
-!********************************************************
 
-  SUBROUTINE WriteData(qSeparateStepFiles,&
-       zDataFileName,tArrayZ,tArrayA,tArrayE,&
-       iStep,sZ,sA,sV,qStart,qFormattedFiles, &
-       qOK)
 
-    IMPLICIT NONE
+  subroutine WriteData(qSeparateStepFiles,&
+                       zDataFileName,tArrayZ,tArrayA,tArrayE,&
+                       iStep,sZ,sA,sV,qStart,qFormattedFiles, &
+                       qOK)
+
+    implicit none
 
 ! Subroutine to write the data to files
 ! inputs:
 
-    CHARACTER(*),INTENT(IN) :: zDataFileName
-    LOGICAL,INTENT(IN) :: qSeparateStepFiles
-    TYPE(cArraySegment), INTENT(INOUT) :: tArrayZ,&
-                               tArrayA(:),tArrayE(:)
-    INTEGER(KIND=IP),INTENT(IN) :: iStep
-    REAL(KIND=WP),INTENT(IN) :: sZ,sA(:),sV(:)
-    LOGICAL, INTENT(IN)  :: qStart,qFormattedFiles
-    LOGICAL, INTENT(OUT) :: qOK
+    CHARACTER(*),        INTENT(IN)  :: zDataFileName
+    LOGICAL,             INTENT(IN)  :: qSeparateStepFiles
+    TYPE(cArraySegment), INTENT(INOUT) :: tArrayZ, &
+                                          tArrayA(:),tArrayE(:)
+    INTEGER(KIND=IP),    INTENT(IN)  :: iStep
+    REAL(KIND=WP),       INTENT(IN)  :: sZ,sA(:),sV(:)
+    LOGICAL,             INTENT(IN)  :: qStart,qFormattedFiles
+    LOGICAL,             INTENT(OUT) :: qOK
 
 ! Local vars:
 
