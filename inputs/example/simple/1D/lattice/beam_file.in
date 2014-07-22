@@ -17,7 +17,7 @@ STANDARD DEVIATION OF BEAM IN EACH DIMENSION (=1E8 FOR FLAT TOP)   - REAL
 1E8                 SIGZ2
 1E-6                SIGPX      (overwritten for matched beam)
 1E-6                SIGPY      (overwritten for matched beam)
-1E8                 SIGP2
+1E8                 SIGGAMMA
 
 TOTAL MODELLED LENGTH OF BEAM IN EACH DIMENSION    - REAL
 
@@ -26,7 +26,7 @@ TOTAL MODELLED LENGTH OF BEAM IN EACH DIMENSION    - REAL
 125.0                 LENZ2
 1E-6                LENPX      (overwritten for matched beam)
 1E-6                LENPY      (overwritten for matched beam)
-1E-4                 LENP2
+1E-4                 LENGAMMA
 
 NUMBER OF MACROPARTICLES TO MODEL BEAM IN EACH DIMENSION (EQUISPACED BEFORE NOISE IS ADDED, IF USED)   - INTEGER
 
@@ -35,7 +35,7 @@ NUMBER OF MACROPARTICLES TO MODEL BEAM IN EACH DIMENSION (EQUISPACED BEFORE NOIS
 47750                NUMZ2
 1                  NUMPX
 1                  NUMPY
-9                  NUMP2
+9                  NUMGAMMA
 
 BEAM PARAMETERS
 

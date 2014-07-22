@@ -179,14 +179,14 @@ CONTAINS
 
     fkb= sFocusfactor_G * kbeta
 
-    econst = sAw_G/(sRho_G*SQRT(2.0_WP*(fx_G**2+fy_G**2)))
+    econst = sAw_G/(sRho_G*SQRT(2.0_WP*(fx_G**2.0_WP+fy_G**2.0_WP)))
 
-    nc = 2.0_WP*saw_G**2/(fx_G**2 + fy_G**2)
+    nc = 2.0_WP*saw_G**2/(fx_G**2.0_WP + fy_G**2.0_WP)
     
-    nd = SQRT((fx_G**2+fy_G**2)*(sEta_G))/(2.0_WP*SQRT(2.0_WP)* &
+    nd = SQRT((fx_G**2.0_WP+fy_G**2.0_WP)*(sEta_G))/(2.0_WP*SQRT(2.0_WP)* &
                              fkb*sRho_G)
     
-    nb = 2.0_WP * sRho_G / ((fx_G**2+fy_G**2)*sEta_G)
+    nb = 2.0_WP * sRho_G / ((fx_G**2.0_WP+fy_G**2.0_WP)*sEta_G)
     
     maxEl = maxval(procelectrons_G)
     qoutside=.FALSE.
@@ -276,7 +276,7 @@ CONTAINS
              STOP
           ENDIF
 	  	
-          sInvGamma_i = sqrt((1.0_WP - sBetaz_i**2)&
+          sInvGamma_i = sqrt((1.0_WP - sBetaz_i**2.0_WP)&
                / (1.0_WP + nc*spPerpSq))
 
 !     Calculate Lj term: full or approximated....
@@ -507,7 +507,7 @@ CONTAINS
 !     p2
 
        CALL PutValueInVector(iRe_Q_CG, &
-            2.0_WP * nb * Lj**2 * &
+            2.0_WP * nb * Lj**2.0_WP * &
             ((sEta_G * Vector(iRe_Q_CG,sy) + 1.0_WP)/ salphaSq * n2col * &
             (Vector(iIm_pPerp_CG,sy) * fx_G*cos(ZOver2Rho) + &
             Vector(iRe_pPerp_CG,sy) * fy_G*sin(ZOver2rho)) +&

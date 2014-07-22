@@ -19,7 +19,7 @@ CONTAINS
 
 SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
        sLengthofElm,iNodes,sWigglerLength,sStepSize,&
-       nSteps,srho,sEta,sKBeta,focusfactor,sSigE,f_x, f_y, iRedNodesX,&
+       nSteps,srho,saw,sgammar,focusfactor,sSigE,f_x, f_y, iRedNodesX,&
        iRedNodesY,qSwitches,qSimple,qOK)
 
   IMPLICIT NONE
@@ -44,7 +44,7 @@ SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
   REAL(KIND=WP), INTENT(INOUT) :: sWigglerLength(:)
   REAL(KIND=WP), INTENT(INOUT) :: sStepSize
   INTEGER(KIND=IP), INTENT(INOUT) :: nSteps
-  REAL(KIND=WP), INTENT(IN) :: srho,sEta,sKBeta,focusfactor
+  REAL(KIND=WP), INTENT(IN) :: srho,saw,sgammar,focusfactor
   REAL(KIND=WP), INTENT(INOUT) :: sSigE(:,:)
   REAL(KIND=WP), INTENT(INOUT) :: f_x, f_y
   INTEGER(KIND=IP),INTENT(INOUT) :: iRedNodesX,iRedNodesY
@@ -63,36 +63,44 @@ SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
   if (qSimple) call check1D(qSwitches(iOneD_CG), qSwitches(iDiffraction_CG), qSwitches(iFocussing_CG), &
   	                        iNodes)
 
-  DO i = 1,nbeams
+  do i = 1,nbeams
 
-  if (qSimple)  CALL chkESampleLens(sLenEPulse(i,:),iNumElectrons(i,:),srho,qSwitches(iOneD_CG),qOKL)
-    IF (.NOT. qOKL) GOTO 1000
-    
-  END DO
+    if (qSimple) then
 
-  CALL stpFSampleLens(iNodes,sWigglerLength,sLengthOfElm,qSwitches(iOneD_CG),qOKL)
+      call chkESampleLens(sLenEPulse(i,:),iNumElectrons(i,:),srho,qSwitches(iOneD_CG),qOKL)
+      if (.NOT. qOKL) goto 1000
 
-  if (qSimple) CALL chkFSampleLens(iNodes,sWigglerLength,sLengthOfElm,srho,qOKL)
-  IF (.NOT. qOKL) GOTO 1000
+    end if  
 
-  if (qSimple)  CALL checkIntSampling(sStepSize,nSteps,sLengthOfElm,qSwitches,qOKL)
-  IF (.NOT. qOKL) GOTO 1000
+  end do
 
-  if (qSimple) CALL checkFreeParams(srho,sEta,sKBeta,f_x,f_y,focusfactor,qOKL)
-  IF (.NOT. qOKL) GOTO 1000
+  call stpFSampleLens(iNodes,sWigglerLength,sLengthOfElm,qSwitches(iOneD_CG),qOKL)
 
-  IF(tProcInfo_G%qRoot) PRINT '(I5,1X,A17,1X,F8.4)',nsteps,&
+  if (qSimple) then
+
+    call chkFSampleLens(iNodes,sWigglerLength,sLengthOfElm,srho,qOKL)
+    if (.NOT. qOKL) goto 1000
+
+    call checkIntSampling(sStepSize,nSteps,sLengthOfElm,qSwitches,qOKL)
+    if (.NOT. qOKL) goto 1000
+
+    call checkFreeParams(srho,saw,sgammar,f_x,f_y,focusfactor,qOKL)
+    if (.NOT. qOKL) goto 1000
+
+  end if
+
+  if (tProcInfo_G%qRoot) print '(I5,1X,A17,1X,F8.4)',nsteps,&
        'Step(s) and z-bar=',nsteps*sStepSize
   
 !     Set error flag and exit
 
-  qOK = .TRUE.
+  qOK = .true.
 
-  GOTO 2000
+  goto 2000
 
-1000 CALL Error_log('Error in setupcalcs:CheckParameters',tErrorLog_G)
+1000 call Error_log('Error in setupcalcs:CheckParameters',tErrorLog_G)
 
-2000 CONTINUE
+2000 continue
 
 END SUBROUTINE CheckParameters
   
@@ -185,7 +193,7 @@ SUBROUTINE chkESampleLens(sLenEPulse,iNumElectrons,rho,qOneD,qOK)
 
   REAL(KIND=WP), INTENT(INOUT) :: sLenEPulse(:)
   REAL(KIND=WP), INTENT(IN) ::  rho
-  INTEGER(KIND=IP), INTENT(IN) :: iNumElectrons(:)
+  INTEGER(KIND=IP), INTENT(OUT) :: iNumElectrons(:)
   LOGICAL, INTENT(IN) :: qOneD
   LOGICAL, INTENT(INOUT) :: qOK
 
@@ -195,6 +203,13 @@ SUBROUTINE chkESampleLens(sLenEPulse,iNumElectrons,rho,qOneD,qOK)
   REAL(KIND=WP) :: wlen, maxspcing, spcing
   
   qOK = .FALSE.
+
+  if (qOneD) then
+    iNumElectrons(iX_CG)  = 1_IP
+    iNumElectrons(iY_CG)  = 1_IP
+    iNumElectrons(iPX_CG) = 1_IP
+    iNumElectrons(iPY_CG) = 1_IP
+  end if
 
   wlen = 4.0_WP * pi * rho
   maxspcing = wlen / 8.0_WP
@@ -384,9 +399,9 @@ END SUBROUTINE getElmLengths
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE checkFreeParams(srho,sEta,sKBeta,f_x,f_y,focusfactor,qOK)
+SUBROUTINE checkFreeParams(srho,saw,sgammar,f_x,f_y,focusfactor,qOK)
 
-  REAL(KIND=WP), INTENT(IN) :: srho,sEta,sKBeta,f_x,f_y,focusfactor
+  REAL(KIND=WP), INTENT(IN) :: srho,saw,sgammar,f_x,f_y,focusfactor
   LOGICAL, INTENT(OUT) :: qOK
 
   qOK = .FALSE.
@@ -398,22 +413,15 @@ SUBROUTINE checkFreeParams(srho,sEta,sKBeta,f_x,f_y,focusfactor,qOK)
     GOTO 1000    
   END IF
 
-!     Check got valid value for eta
+!     Check got valid value for aw and gamma
   
-  IF (sEta <= 0.0_WP) THEN
-    CALL Error_log('Parameter eta <=0.',tErrorLog_G)
+  IF (saw <= 0.0_WP) THEN
+    CALL Error_log('Parameter saw <=0.',tErrorLog_G)
     GOTO 1000    
   END IF
   
-  IF (sEta >= 1.0_WP) THEN
-    CALL Error_log('Parameter eta >=1.',tErrorLog_G)
-    GOTO 1000    
-  END IF
-
-!     Check got valid value for kBeta
-  
-  IF (sKBeta <= 0.0_WP) THEN
-    CALL Error_log('Parameter kBeta <=1.',tErrorLog_G)
+  IF (sgammar <= 0.0_WP) THEN
+    CALL Error_log('Parameter gamma_r <= 0.',tErrorLog_G)
     GOTO 1000    
   END IF
     

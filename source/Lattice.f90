@@ -47,12 +47,14 @@ CONTAINS
 !                LOCAL VARS
 
   INTEGER(KIND=IP)   :: i,ios,nw,error,ri,NL
-  REAL(KIND=WP)      :: pi,c1
+  REAL(KIND=WP)      :: c1
+
+  integer(kind=ip) :: nperlam(size(delmz))
 
   OPEN(1,FILE=lattFile, IOSTAT=ios, ACTION='READ', POSITION ='REWIND')
   IF (ios /= 0_IP) STOP "OPEN(input file) not performed correctly, IOSTAT /= 0"
 
-  pi = 4.0_WP*ATAN(1.0_WP)
+!   pi = 4.0_WP*ATAN(1.0_WP)
   c1 = 2.0_WP*rho
 
 
@@ -70,7 +72,9 @@ end do
 
   DO i=1,ModNum
 
-    READ (1,*) nw, delta(i), mf(i), delmz(i), tapers(i)  !, resFactor(i) ! Wiggler periods, Chicane slippage periods, aw shift, stepsize
+    READ (1,*) nw, delta(i), mf(i), nperlam(i), tapers(i)  !, resFactor(i) ! Wiggler periods, Chicane slippage periods, aw shift, stepsize
+
+    delmz(i) = 4.0_WP * pi * rho / REAL(nperlam(i),kind=wp)
 
 !     Calculate cumulative interaction length of modules
 
@@ -92,6 +96,12 @@ end do
 
   sStepSize =  delmz(1)
   taper = tapers(1)
+
+  print*, 'step sizes are   ', delmz
+
+  print*, 'tapers are   ', tapers
+
+  print*, 'deltas are   ', delta
 
   END SUBROUTINE readLatt
 
@@ -145,9 +155,7 @@ end do
   Q_start = iBStartPosition_G(iRe_Q_CG)
   Q_end = iBEndPosition_G(iRe_Q_CG)
 
-  y_e(z2_start:z2_end) = y_e(z2_start:z2_end) + &
-                       D*(1.0_WP-(((1-y_e(Q_start:Q_end))) &
-                       /(2.0_WP*sRho_G)))+delta
+
 
 
 
@@ -184,6 +192,23 @@ end do
 
 
 
+
+
+!          For chicanes 
+
+
+  y_e(z2_start:z2_end) = y_e(z2_start:z2_end) - &
+                         2.0_WP * D *  &
+                         (sgamma_j - sGammaR_G) / sGammaR_G &
+                         + delta
+
+
+
+
+
+
+
+
 !     Get p_perp and x, y offsets for this undulator module
 
     ALLOCATE(spx0_offset(iNumberElectrons_G), spy0_offset(iNumberElectrons_G))
@@ -203,7 +228,7 @@ end do
                  n2col * (sRho_G**2.0_WP) /  &
                  ( SQRT(fx_G**2.0_WP + fy_G**2.0_WP) * sEta_G ) * &
                  sGammaR_G / sgamma_j * (1.0_WP + sEta_G * Vector(iRe_Q_CG,y_e)) *  &
-                 fy_G * cos(sZ / (2.0_WP * sRho_G) )
+                 fx_G * cos(sZ / (2.0_WP * sRho_G) )
 
 
 !     Take off tranverse phase space offsets to center the beam
@@ -290,7 +315,7 @@ end do
                  n2col * (sRho_G**2.0_WP) /  &
                  ( SQRT(fx_G**2.0_WP + fy_G**2.0_WP) * sEta_G ) * &
                  sGammaR_G / sgamma_j * (1.0_WP + sEta_G * Vector(iRe_Q_CG,y_e)) *  &
-                 fy_G * cos(sZ / (2.0_WP * sRho_G) )  
+                 fx_G * cos(sZ / (2.0_WP * sRho_G) )  
 
 
 !     Add on new offsets to initialize beam for new undulator module

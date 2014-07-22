@@ -28,8 +28,8 @@ IMPLICIT NONE
 CONTAINS
 
 
-SUBROUTINE MatchBeams(srho,sEmit_n,sKbeta, &
-                      sFF,sEta,&
+SUBROUTINE MatchBeams(srho,sEmit_n,saw, &
+                      sFF,sgamr,&
                       iNNE,sLenE,sSigE, &
                       sSigF,iNNF,sLenF,&
                       sDelF,iRNX,iRNY, &
@@ -66,9 +66,9 @@ SUBROUTINE MatchBeams(srho,sEmit_n,sKbeta, &
 !                     in y
 ! qOK                 Error flag
 
-  REAL(KIND=WP), INTENT(IN) :: srho,sEmit_n(:),sKbeta, &
-                                 sFF,sEta, &
-                                 ux, uy
+  REAL(KIND=WP), INTENT(IN) :: srho,sEmit_n(:),saw, &
+                               sFF,sgamr, &
+                               ux, uy
 
   INTEGER(KIND=IP), INTENT(IN) :: iNNF(:),iNNE(:,:)
 
@@ -81,13 +81,28 @@ SUBROUTINE MatchBeams(srho,sEmit_n,sKbeta, &
   LOGICAL, INTENT(OUT) :: qOK
 
 !     LOCAL ARGS:-
+!
+! sKbeta             scaled betatron wavenumber
+! seta               Scaled longitudinal velocity
+! sBetaz             longitudinal velocity normalized to c
 ! qOKL               Local error flag
 
+  real(kind=wp) :: sbetaz, seta, sKbeta
   LOGICAL :: qOKL
   
 !     Set error flag
 
   qOK = .FALSE.
+
+!     Get k_beta and eta...
+
+  sKbeta = saw / 2.0_WP / sFF / sRho / sgamr
+
+  sbetaz = SQRT(sgamr**2.0_WP - 1.0_WP - (saw)**2.0_WP) / &
+                 sgamr
+
+  seta = (1.0_WP - sbetaz) / sbetaz
+
 
 !     Matching 1st beam only for now.....
 

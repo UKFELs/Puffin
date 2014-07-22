@@ -1,4 +1,4 @@
-PUFFIN BEAM FILEPUFFIN BEAM FILE
+PUFFIN BEAM FILE
 
 Describes electron beams for input into puffin. Multiple beams with
 different parameters can be used. Please refer to POP-REF for an
@@ -12,29 +12,29 @@ BEAM 1:-
 
 STANDARD DEVIATION OF BEAM IN EACH DIMENSION (=1E8 FOR FLAT TOP)   - REAL
 
-5.356003951848080E-03   SIGX       (overwritten for matched beam)
-7.036658865168611E-05   SIGY       (overwritten for matched beam)
+5.356003951848080E-03   SIGXBAR       (overwritten for matched beam)
+7.036658865168611E-05   SIGYBAR       (overwritten for matched beam)
 1.000000000000000E+08   SIGZ2
-5.000000000000000E-01   SIGPX      (overwritten for matched beam)
-1.000000000000000E+00   SIGPY      (overwritten for matched beam)
+5.000000000000000E-01   SIGPXBAR      (overwritten for matched beam)
+1.000000000000000E+00   SIGPYBAR      (overwritten for matched beam)
 1.000000000000000E+00   SIGGAMMA
 
 TOTAL MODELLED LENGTH OF BEAM IN EACH DIMENSION    - REAL
 
-1.000000000000000E+00   LENX       (overwritten for matched beam)
-1.000000000000000E+00   LENY       (overwritten for matched beam)
+1.000000000000000E+00   LENXBAR       (overwritten for matched beam)
+1.000000000000000E+00   LENYBAR       (overwritten for matched beam)
 1.705184351394662E-01   LENZ2
-1.000000000000000E+00   LENPX      (overwritten for matched beam)
-1.000000000000000E+00   LENPY      (overwritten for matched beam)
+1.000000000000000E+00   LENPXBAR      (overwritten for matched beam)
+1.000000000000000E+00   LENPYBAR      (overwritten for matched beam)
 6.000000000000000E+00   LENGAMMA
 
 NUMBER OF MACROPARTICLES TO MODEL BEAM IN EACH DIMENSION (EQUISPACED BEFORE NOISE IS ADDED, IF USED)   - INTEGER
 
-6                       NUMX
-6                       NUMY
+1                       NUMX
+1                       NUMY
 400                     NUMZ2
-6                       NUMPX
-6                       NUMPY
+1                       NUMPX
+1                       NUMPY
 1                      NUMGAMMA
 
 BEAM PARAMETERS
@@ -80,7 +80,7 @@ NUMBER OF MACROPARTICLES TO MODEL BEAM IN EACH DIMENSION (EQUISPACED BEFORE NOIS
 BEAM PARAMETERS
 
 .TRUE.                  Match beam to undulator?
-1.000000000000000E+00   Ratio of average beam energy to resonant beam energy gamma / gamma_r
+1.100000000000000E+00   Ratio of average beam energy to resonant beam energy gamma / gamma_r
 1.000000000000000E+00   Scaled emittance (bar{epsilon})
 0.000000000000000E+00   Energy chirp in z2 i.e. dgamma/dz2
 0.000000000000000E+00   Center of beam in z2

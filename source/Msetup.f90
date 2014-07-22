@@ -132,8 +132,8 @@ MODULE Setup
        sDiffFrac,         &
        sBeta,             &
        srho,              &
-       sEta,              &
-       sKBeta,            &
+       saw,               &
+       sgammar,           &
        sEmit_n,           &
        fx,                &
        fy,                &
@@ -155,7 +155,7 @@ MODULE Setup
 !    to avoid errors.
 
   CALL CheckParameters(sLenEPulse,iNumElectrons,nbeams,sLengthofElm,iNodes,&
-       sWigglerLength,sStepSize,nSteps,srho,sEta,sKBeta,sFocusfactor, &
+       sWigglerLength,sStepSize,nSteps,srho,saw,sgammar,sFocusfactor, &
        sSigmaGaussian,fx,fy,iRedNodesX,iRedNodesY,qSwitches,qSimple,qOKL)
   
   IF (.NOT. qOKL) GOTO 1000
@@ -170,8 +170,8 @@ MODULE Setup
 
   IF (qSwitches(iMatchedBeam_CG)) THEN
 
-    if (qSimple) CALL MatchBeams(srho,sEmit_n,sKBeta,sFocusfactor,&
-                    sEta,iNumElectrons,sLenEPulse,&
+    if (qSimple) CALL MatchBeams(srho,sEmit_n,saw,sFocusfactor,&
+                    sgammar,iNumElectrons,sLenEPulse,&
                     sSigmaGaussian,sSeedSigma(1,:),iNodes,sWigglerLength,&
                     sLengthofElm,iRedNodesX,iRedNodesY,fx,fy,qOKL)
 
@@ -184,8 +184,10 @@ MODULE Setup
 
   IF (qSwitches(iDiffraction_CG)) THEN
 
-    if (qSimple)  CALL CheckSourceDiff(sStepSize,nSteps,srho,sSigmaGaussian,sWigglerLength,&
-                          sLengthofElm,iNodes,qOKL)
+    if (qSimple)  CALL CheckSourceDiff(sStepSize,nSteps,srho, &
+                                       sSigmaGaussian, &
+                                       sWigglerLength,&
+                                       sLengthofElm,iNodes,qOKL)
 
     IF (.NOT. qOKL) GOTO 1000
   
@@ -217,11 +219,13 @@ MODULE Setup
 
 !     Pass local vars to global vars
 
-  CALL passToGlobals(srho,sEta,sKBeta,iNodes, &
+  CALL passToGlobals(srho,saw,sgammar,iNodes, &
                      iredNodesX,iredNodesY, &
                      sLengthOfElm,&
-                     fx,fy,sFocusFactor,taper,sFiltFrac,sDiffFrac,sBeta, &
+                     fx,fy,sFocusFactor,taper, &
+                     sFiltFrac,sDiffFrac,sBeta, &
                      zUndType,qSwitches,qOK)
+
 
   IF (.NOT. qOKL) GOTO 1000
 
