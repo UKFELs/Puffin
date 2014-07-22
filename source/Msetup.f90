@@ -226,7 +226,6 @@ MODULE Setup
                      sFiltFrac,sDiffFrac,sBeta, &
                      zUndType,qSwitches,qOK)
 
-
   IF (.NOT. qOKL) GOTO 1000
 
 !     Generate macroelectrons
