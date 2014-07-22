@@ -461,9 +461,10 @@ CONTAINS
        qOK)
 
     IMPLICIT NONE
+
 ! Subroutine to write the data to files
-! INS-
-!
+! inputs:
+
     CHARACTER(*),INTENT(IN) :: zDataFileName
     LOGICAL,INTENT(IN) :: qSeparateStepFiles
     TYPE(cArraySegment), INTENT(INOUT) :: tArrayZ,&
@@ -472,44 +473,54 @@ CONTAINS
     REAL(KIND=WP),INTENT(IN) :: sZ,sA(:),sV(:)
     LOGICAL, INTENT(IN)  :: qStart,qFormattedFiles
     LOGICAL, INTENT(OUT) :: qOK
-! Local vars
+
+! Local vars:
+
     LOGICAL  :: qOKL
-!**********************************
-! BEGIN:-
-! Set error flag to false
+
+
+!     Set error flag to false
 
     qOK = .FALSE. 
 
-! Open the file to receive data output - This
-! subroutine is in EArrayFunctions.f90 line 449  
-! IntegerToString FUNCTION see line 2469
-    IF (qSeparateStepFiles.OR.qStart) THEN
+!     Open the file to receive data output - This
+!     subroutine is in EArrayFunctions.f90 line 449  
+!     IntegerToString FUNCTION see line 2469
+    
+    if (qSeparateStepFiles .or. qStart) then
 
-       CALL SetUpDataFiles(zDataFileName,&
+       call SetUpDataFiles(zDataFileName,&
             qFormattedFiles,&
             tArrayZ,&
             tArrayA,&
             tArrayE,&
             qOKL,&
-            TRIM(IntegerToString(iStep)))   
-       IF (.NOT. qOKL) GOTO 1000
-    END IF
-    CALL WriteIntegrationData(sZ,&
-         sA,&
-         sV,&
-         tArrayZ,&
-         tArrayA,&
-         tArrayE,&
-         qOKL)
-    IF (.NOT. qOKL) GOTO 1000
+            trim(IntegerToString(iStep)))   
+            if (.not. qOKL) goto 1000
+    
+    end if
 
-!  Set error flag and exit         
+
+    
+    call WriteIntegrationData(sZ,&
+         sA, sV, &
+         tArrayZ, tArrayA,&
+         tArrayE, qOKL)
+    if (.not. qOKL) goto 1000
+
+
+!     Set error flag and exit         
+
     qOK = .TRUE.				    
-    GoTo 2000 
-! Error Handler - Error log Subroutine in CIO.f90 line 709
+    goto 2000 
+
+
+
+!     Error Handler - Error log Subroutine in CIO.f90 line 709
 
 1000 call Error_log('Error in Fdatawrite:WriteChiData',tErrorLog_G)
-    Print*,'Error in Fdatawrite:WriteChiData'
+    print*,'Error in Fdatawrite:WriteChiData'
+
 2000 CONTINUE
 
   END SUBROUTINE WriteData
@@ -528,7 +539,7 @@ CONTAINS
 !                                      making up sY 
 ! qOK                     - OUTPUT   - Error flag
 
-    IMPLICIT NONE
+    implicit none
 
     REAL(KIND=WP),      INTENT(IN)      :: sZ
     REAL(KIND=WP),      INTENT(IN)      :: sA(:)
@@ -538,90 +549,125 @@ CONTAINS
     TYPE(cArraySegment),INTENT(INOUT)   :: tArraySegment(:)
     LOGICAL,            INTENT(OUT)     :: qOK      
 
-!====================================================================
 ! Define local variables
 !
 ! iSegment   - Current segment number 
 ! iStart     - Start position of data in array Y
 ! iEnd       - End position of data in array Y
 ! qOKL       - Local error flag
-!
-!=====================================================================
-!
+
     INTEGER(KIND=IP)               :: iSegment
     INTEGER(KIND=IP)               :: iStart
     INTEGER(KIND=IP)               :: iEnd, fieldsize, error
     REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: write_in 
     LOGICAL                        :: qOKL
 
-! Set error flag to false
+!     Set error flag to false
+    
     qOK = .FALSE.
 
-! Write out field data:-only root processor needs to do this        
+!     Write out field data:-only root processor needs to do this
+    
     fieldsize = SIZE(sA)/2_IP
-     
-    IF(tProcInfo_G%qRoot) THEN
-       IF(tWriteAData(iRe_A_CG)%qWrite) THEN
-          ALLOCATE(write_in(fieldsize))
+
+
+
+    if (tProcInfo_G%qRoot) then
+       
+       if (tWriteAData(iRe_A_CG)%qWrite) then
+          
+          allocate(write_in(fieldsize))
+
           write_in = Vector(iRe_A_CG,sA)
         	
-          CALL OutputIntegrationData(tWriteAData(iRe_A_CG)%tFileType,&
-               write_in,fieldsize,qOKL)
-          
-          DEALLOCATE(write_in)		      
-       END IF
-    END IF
-		
-    IF(tProcInfo_G%qRoot) THEN
-       IF(tWriteAData(iIm_A_CG)%qWrite) THEN
-          ALLOCATE(write_in(fieldsize))
-          write_in = Vector(iIm_A_CG,sA)
-          call OutputIntegrationData(tWriteAData(iIm_A_CG)%tFileType,&
-               write_in,fieldsize,qOKL)
-          DEALLOCATE(write_in)
-       END IF
-    END IF
+          call OutputIntegrationData(tWriteAData(iRe_A_CG)%tFileType,&
+                                     write_in,fieldsize,qOKL)
 
-!  Write Electron Segments to file      
-!  OutputIntegrationData routines are
-!  either starts at line 491 or 585 in this file 
-    Do iSegment = 1_IP, SIZE(tArraySegment)
-       If (tArraySegment(iSegment)%qWrite) Then
+          deallocate(write_in)
+
+       end if
+
+    end if
+
+
+
+
+    if (tProcInfo_G%qRoot) then
+
+       if (tWriteAData(iIm_A_CG)%qWrite) then
+
+          allocate(write_in(fieldsize))
+
+          write_in = Vector(iIm_A_CG,sA)
+          
+          call OutputIntegrationData(tWriteAData(iIm_A_CG)%tFileType,&
+                                     write_in,fieldsize,qOKL)
+
+          deallocate(write_in)
+
+       end if
+
+    end if
+
+
+
+!     Write Electron Segments to file      
+!     OutputIntegrationData routines are
+!     either starts at line 491 or 585 in this file 
+
+    do iSegment = 1_IP, SIZE(tArraySegment)
+
+       if (tArraySegment(iSegment)%qWrite) then
+     
           iStart = tArraySegment(iSegment)%iStart
           iEnd   = tArraySegment(iSegment)%iEnd
 
-!  Write the data
+!     Write the data
+      
           call OutputIntegrationData(tArraySegment(iSegment)%tFileType, &
                sY(iStart:iEnd),tProcInfo_G%rank,iGloNumElectrons_G,&
                qOKL)
-          If (.NOT. qOKL) Goto 1000
-       End If
-    End Do
+          if (.NOT. qOKL) goto 1000
 
-!  Write out z data         
-    IF(tProcInfo_G%qRoot) THEN	
-       If (tWriteZData%qWrite) Then
+       end if
+
+    end do
+
+
+
+!     Write out z data
+
+    if (tProcInfo_G%qRoot) then
+
+       If (tWriteZData%qWrite) then
+
           call OutputIntegrationData(tWriteZData%tFileType, &
-               sZ,qOKL)
-          If (.NOT. qOKL) Goto 1000
-       End if
-    End If
+                                     sZ,qOKL)
+          if (.not. qOKL) goto 1000
+       
+       end if
 
-!  Set error flag and exit         
+    end if
+
+!     Set error flag and exit         
+
     qOK = .TRUE.				    
-    GoTo 2000     
-! Error Handler - Error log Subroutine in CIO.f90 line 709
+    goto 2000     
+
+!     Error Handler - Error log Subroutine in CIO.f90 line 709
+
 1000 call Error_log('Error in Fdatawrite:WriteIntegrationData',tErrorLog_G)
-    Print*,'Error in Fdatawrite:WriteIntegrationData'
-2000 CONTINUE
+    print*,'Error in Fdatawrite:WriteIntegrationData'
 
-  END SUBROUTINE WriteIntegrationData
+2000 continue
+
+  end subroutine WriteIntegrationData
 
 
 
 
-  SUBROUTINE OutputIntegrationData_RealArray(tFileType,sY,&
-       iLenY,qOK)
+  subroutine OutputIntegrationData_RealArray(tFileType,sY,&
+                                             iLenY,qOK)
 
 ! Output Integration data to file 
 !
@@ -630,44 +676,45 @@ CONTAINS
 ! iLenY                   - INPUT    - Length of Y
 ! qOK                     - OUTPUT   - Error flag
 !
-      IMPLICIT NONE
-      TYPE(cFileType),         INTENT(INOUT)   :: tFileType
-      REAL(KIND=WP),           INTENT(IN)      :: sY(:)
-      INTEGER(KIND=IP),        INTENT(IN)      :: iLenY
-      LOGICAL,                 INTENT(OUT)     :: qOK    
+    implicit none
+
+    type(cFileType),         intent(inout)   :: tFileType
+    real(KIND=WP),           intent(in)      :: sY(:)
+    integer(KIND=IP),        intent(in)      :: iLenY
+    logical,                 intent(out)     :: qOK    
 
 !     Define local variables
 
-      LOGICAL                        :: qOKL
+    logical                        :: qOKL
 
 !     Set error flag to false
 
-      qOK = .FALSE.
+    qOK = .FALSE.
 
 !     Open the file - In CIO.f90 line 862
 
-	  call OpenFileForAppend(tFileType%zFileName, &
+    call OpenFileForAppend(tFileType%zFileName, &
                            tFileType, qOKL)
     if (.NOT. qOKL) Goto 1000
 
 !     Set up new page - see CIO.f90 line 651 
 
-	  call WriteSDDSNewPage(tFileType,qOKL)
+    call WriteSDDSNewPage(tFileType,qOKL)
     if (.NOT. qOKL) Goto 1000
 
 !     Write length of column data - see CIO.f90 line 100
 
-	  call WriteINTEGER(iLenY,tFileType,qOKL)
+    call WriteINTEGER(iLenY,tFileType,qOKL)
     if (.NOT. qOKL) Goto 1000  
 
 !     Write real part - see CIO.f90 line 232        
 
-	  call Write1DRealArray(sY,tFileType,qOKL)
+    call Write1DRealArray(sY,tFileType,qOKL)
     if (.NOT. qOKL) Goto 1000
 
 !     Close the file - see CIO.f90 line 560
 
-	  call CloseFile(tFileType, qOKL)
+    call CloseFile(tFileType, qOKL)
     if (.NOT. qOKL) Goto 1000
 
 !     Set error flag and exit         
@@ -896,8 +943,8 @@ CONTAINS
 !
       END SUBROUTINE OutputIntegrationData_RealValue
 
-!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
-!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
+
+
 	
 FUNCTION IntegerToString(iInteger)
 
