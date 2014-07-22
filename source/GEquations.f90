@@ -274,7 +274,8 @@ contains
              + Vector(iIm_pPerp_CG,sy) * sField4ElecImag) * Vector(iRe_Q_CG,sy) * sEta_G &
              + (1.0_WP/salphaSq) * (1 + sEta_G * Vector(iRe_Q_CG,sy)) * sin(ZOver2rho) * &
              (Vector(iRe_pPerp_CG,sy) * COSH(Vector(iRe_X_CG,sy) * kx_und_G) * COSH(Vector(iRe_Y_CG,sy) * ky_und_G) &
-              + Vector(iIm_pPerp_CG,sy) * kx_und_G/ky_und_G * SINH(Vector(iRe_X_CG,sy) * kx_und_G) * SINH(Vector(iRe_Y_CG,sy) * ky_und_G))),&
+             + Vector(iIm_pPerp_CG,sy) * kx_und_G/ky_und_G * SINH(Vector(iRe_X_CG,sy) * kx_und_G) * &
+             SINH(Vector(iRe_Y_CG,sy) * ky_und_G))),&
              sb,&
              qOKL)
 
