@@ -889,95 +889,71 @@ CONTAINS
 
 
 
-      SUBROUTINE OutputIntegrationData_RealValue(tFileType,     &
-   				                 sY,            &
-			                         qOK)
-!
-!********************************************************************
+  subroutine OutputIntegrationData_RealValue(tFileType, sY, qOK)
+
 ! Output Integration data to file 
-!********************************************************************
 !
 ! tFileType               - INPUT    -File type properties
 ! sY                      - INPUT    - Result Y 
 ! qOK                     - OUTPUT   - Error flag
-!********************************************************************
-      IMPLICIT NONE
-      TYPE(cFileType),         INTENT(INOUT)   :: tFileType
-      REAL(KIND=WP),           INTENT(IN)      :: sY
-      LOGICAL,                 INTENT(OUT)     :: qOK      
-!
-!--------------------------------------------------------------------------------	
+
+    implicit none
+
+    type(cFileType), intent(inout)   :: tFileType
+    real(kind=wp),   intent(in)      :: sY
+    logical,         intent(out)     :: qOK      
+
 ! Local Scalars         
-!--------------------------------------------------------------------------------	
-!====================================================================
-! Define local variables
-!
-!=====================================================================
-!!
-      LOGICAL                        :: qOKL
-!
-!--------------------------------------------------------------------------------	
-! Set error flag to false         
-!--------------------------------------------------------------------------------	
-!
-      qOK = .FALSE.
-!
-!--------------------------------------------------------------------------------	
-!  Open the file - In CIO.f90 line 862
-!--------------------------------------------------------------------------------	
-!
-      call OpenFileForAppend(tFileType%zFileName, &
-      			     tFileType, &
-			     qOKL)
-      If (.NOT. qOKL) Goto 1000
-!
-!--------------------------------------------------------------------------------	
-!  Set up new page - see CIO.f90 line 651       
-!--------------------------------------------------------------------------------	
-! 
-      call WriteSDDSNewPage(tFileType,qOKL)
-      If (.NOT. qOKL) Goto 1000
-!
-!--------------------------------------------------------------------------------	
-!  Write length of column data - see CIO.f90 line 100         
-!--------------------------------------------------------------------------------	
-! 
-      call WriteINTEGER(1_IP,tFileType,qOKL)
-      If (.NOT. qOKL) Goto 1000
-!
-!--------------------------------------------------------------------------------	
-!  Write real part - see CIO.f90 line 166          
-!--------------------------------------------------------------------------------	
-! 	 
-      call WriteRealNumber(sY,tFileType,qOKL)     
-      If (.NOT. qOKL) Goto 1000
-!
-!--------------------------------------------------------------------------------	
-!  Close the file - see CIO.f90 line 560
-!--------------------------------------------------------------------------------	
-!
-      call CloseFile(tFileType, &
-                     qOKL)
-      If (.NOT. qOKL) Goto 1000
-!
-!--------------------------------------------------------------------------------	
-!  Set error flag and exit         
-!--------------------------------------------------------------------------------	
-!
-      qOK = .TRUE.				    
-      GoTo 2000     
-!
-!--------------------------------------------------------------------------------
-! Error Handler - Error log Subroutine in CIO.f90 line 709
-!--------------------------------------------------------------------------------
-!            
+
+    logical  :: qOKL
+
+
+
+!     Set error flag to false         
+
+    qOK = .FALSE.
+  
+!     Open the file - In CIO.f90 line 862
+
+    call OpenFileForAppend(tFileType%zFileName, &
+                           tFileType, qOKL)
+    If (.NOT. qOKL) Goto 1000
+  
+!     Set up new page - see CIO.f90 line 651
+
+    call WriteSDDSNewPage(tFileType,qOKL)
+    If (.NOT. qOKL) Goto 1000
+
+!     Write length of column data - see CIO.f90 line 100
+
+    call WriteINTEGER(1_IP,tFileType,qOKL)
+    If (.NOT. qOKL) Goto 1000
+
+!     Write real part - see CIO.f90 line 166          
+
+    call WriteRealNumber(sY,tFileType,qOKL)
+    If (.NOT. qOKL) Goto 1000
+ 
+!     Close the file - see CIO.f90 line 560
+
+    call CloseFile(tFileType, qOKL)
+    If (.NOT. qOKL) Goto 1000
+
+!     Set error flag and exit
+
+    qOK = .TRUE.
+    GoTo 2000
+
+!     Error Handler - Error log Subroutine in CIO.f90 line 709
+
 1000 call Error_log('Error in MathLib:OutputIntegrationData_RealValue',tErrorLog_G)
       Print*,'Error in MathLib:OutputIntegrationData_RealValue'
-      call CloseFile(tFileType, &
-                     qOKL)
+
+      call CloseFile(tFileType, qOKL)
+
 2000 CONTINUE
-!
-      END SUBROUTINE OutputIntegrationData_RealValue
+
+  end subroutine OutputIntegrationData_RealValue
 
 
 
