@@ -6,9 +6,9 @@
 
 MODULE FileType
 
-      USE paratype
+  USE paratype
 		
-      IMPLICIT NONE
+  IMPLICIT NONE
       
 !
 !*****************************************************
@@ -33,15 +33,17 @@ MODULE FileType
 ! mvar_iPage       - Page number in file
 !*****************************************************
  
-      TYPE cFileType
-         CHARACTER(32_IP)  :: zFileName = ''
-	 LOGICAL           :: qFormatted = .False.
-	 LOGICAL           :: qForInput = .False.
-	 LOGICAL           :: qAppend = .False.
-	 INTEGER(KIND=IP)  :: iPos = 0_IP
-	 INTEGER(KIND=IP)  :: iUnit = 0_IP
-	 INTEGER(KIND=IP)  :: iFileLength = 0_IP
-	 INTEGER(KIND=IP)  :: iPage = 0_IP
-      END TYPE cFileType
+  type cFileType
 
-END MODULE FileType
+    character(32_IP)  :: zFileName = ''
+    logical           :: qFormatted = .false.
+    logical           :: qForInput = .false.
+    logical           :: qAppend = .false.
+    integer(kind=ip)  :: iPos = 0_IP
+    integer(kind=ip)  :: iUnit = 0_IP
+    integer(kind=ip)  :: iFileLength = 0_IP
+    integer(kind=ip)  :: iPage = 0_IP
+
+  end type cFileType
+
+end module FileType

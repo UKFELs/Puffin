@@ -63,6 +63,7 @@ Input the scaled independant variables from [1] here
 550.0                 REAL        gamma                      Resonant Energy
 1.414213562373095E+00   REAL        sFocusfactor         Focussing factor f, from the betatron wavenumber
 0.000000000000000E+00   REAL        Dfact                Dispersive strength factor for chicane
+''                  CHARACTER   undType                    Undulator type - 'curved' , 'planepole' , else 1D (no off axis variation of aw)
 0.0                     REAL        taper                      gradient of taper daw/dz
 
 

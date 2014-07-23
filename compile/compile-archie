@@ -1,5 +1,5 @@
 FFTWLIB=/opt/gridware/libs/gcc/fftw2/double-mpi/2.1.5
 
-mpicc -DSECOND_UNDERSCORE -c ./*.c -L$FFTWLIB/lib -lfftw_mpi -lfftw -I$FFTWLIB/include -lmpi -lm
+mpicc -DSECOND_UNDERSCORE -c -O2 ../source/*.c -L$FFTWLIB/lib -lfftw_mpi -lfftw -I$FFTWLIB/include -lmpi -lm
 
-mpif90 -c ./*.f90 -fsecond-underscore -L$FFTWLIB/lib -lfftw_mpi -lfftw -I$FFTWLIB/include -lmpi -lm
+mpif90 -c -O2 ../source/*.f90 -fsecond-underscore -L$FFTWLIB/lib -lfftw_mpi -lfftw -I$FFTWLIB/include -lmpi -lm

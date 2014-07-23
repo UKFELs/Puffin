@@ -57,6 +57,7 @@ SUBROUTINE read_in(zfilename, &
        Dfact, &
        sFocusfactor, &
        taper,    &
+       zUndType, &
        sSigmaF, &
        freqf, SmeanZ2, &
        qFlatTopS, nseeds, &
@@ -171,6 +172,7 @@ SUBROUTINE read_in(zfilename, &
   REAL(KIND=WP),     INTENT(OUT)  :: suy
   REAL(KIND=WP),     INTENT(OUT)  :: Dfact
   REAL(KIND=WP),     INTENT(OUT)  :: sFocusfactor, taper
+  character(32_IP),  intent(out)  :: zUndType
   REAL(KIND=WP),     INTENT(OUT)  :: sPEOut
   INTEGER(KIND=IP),  INTENT(OUT)  :: iDumpNthSteps
   LOGICAL,           INTENT(OUT)  :: qSwitches(:)
@@ -186,7 +188,7 @@ SUBROUTINE read_in(zfilename, &
   CHARACTER(32_IP) :: beam_file, seed_file
   LOGICAL :: qOKL, qMatched !   TEMP VAR FOR NOW, SHOULD MAKE FOR EACH BEAM
 
-!------------------------------------------------------	
+
 ! Begin subroutine:
 ! Set error flag to false         
 !
@@ -313,6 +315,7 @@ SUBROUTINE read_in(zfilename, &
   READ(UNIT=168,FMT=*) sgamma
   READ(UNIT=168,FMT=*) sFocusfactor
   READ(UNIT=168,FMT=*) Dfact
+  READ(UNIT=168,FMT=*) zUndType
   READ(UNIT=168,FMT=*) taper
   
 !     Read whitespace...

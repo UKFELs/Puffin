@@ -19,6 +19,7 @@ USE basis_fn
 USE TransformInfoType
 USE ParallelInfoType
 USE stiffness
+USE Equations
 
 IMPLICIT NONE
 
@@ -436,49 +437,52 @@ CONTAINS
           dp2f=0.0_WP
        END IF
 
-!     PX (Real pperp) 	
+	
 
        IF (qFocussing_G) THEN
-
-       CALL PutValueInVector(iRe_PPerp_CG, &
-            sInv2rho * (fy_G*sin(ZOver2rho) - &
-            (salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
-            sField4ElecReal ) ) - & 
-            nd / Lj * & ! New focusing term
-            (  ( kbeta**2 * Vector(iRe_X_CG,sy)) + (sEta_G / &
-            ( 1.0_WP + (sEta_G * Vector(iRe_Q_CG,sy)) ) * &
-            Vector(iRe_X_CG,sb) * dp2f ) ), &
-            sb,	      & 	  
-            qOKL)
+       
+!     PX (Real pperp) 
+!        CALL PutValueInVector(iRe_PPerp_CG, &
+!            sInv2rho * (fy_G*sin(ZOver2rho) - &
+!            (salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
+!            sField4ElecReal ) ) - & 
+!            nd / Lj * & ! New focusing term
+!            (  ( kbeta**2 * Vector(iRe_X_CG,sy)) + (sEta_G / &
+!            ( 1.0_WP + (sEta_G * Vector(iRe_Q_CG,sy)) ) * &
+!            Vector(iRe_X_CG,sb) * dp2f ) ), &
+!            sb,	      & 	  
+!            qOKL)
+       CALL getdppdz_r(sInv2rho,ZOver2rho,salphaSq,sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
 
 
 !     -PY (Imaginary pperp)
 
-       CALL PutValueInVector(iIm_PPerp_CG, &
-            sInv2rho * (fx_G*cos(ZOver2rho) - &
-            (salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
-            sField4ElecImag ) ) + &
-            nd / Lj * & ! New focusing term
-            (  ( kbeta**2 * Vector(iRe_Y_CG,sy)) + (sEta_G / &
-            ( 1.0_WP + (sEta_G * Vector(iRe_Q_CG,sy)) ) * &
-            Vector(iRe_Y_CG,sb) * dp2f ) ), &
-            sb,	      & 	  
-            qOKL)
+!        CALL PutValueInVector(iIm_PPerp_CG, &
+!             sInv2rho * (fx_G*cos(ZOver2rho) - &
+!             (salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
+!             sField4ElecImag ) ) + &
+!             nd / Lj * & ! New focusing term
+!             (  ( kbeta**2 * Vector(iRe_Y_CG,sy)) + (sEta_G / &
+!             ( 1.0_WP + (sEta_G * Vector(iRe_Q_CG,sy)) ) * &
+!             Vector(iRe_Y_CG,sb) * dp2f ) ), &
+!             sb,	      & 	  
+!             qOKL)
+       CALL getdppdz_i(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
 
 !     Q
 
-       CALL PutValueInVector(iRe_Q_CG, &
-            2.0_WP * nb * Lj**2 * &
-            ((sEta_G * Vector(iRe_Q_CG,sy) + 1.0_WP)/ salphaSq * &
-            (Vector(iIm_pPerp_CG,sy) * fx_G*cos(ZOver2Rho) + &
-            Vector(iRe_pPerp_CG,sy) * fy_G*sin(ZOver2rho)) +&
-            sEta_G * Vector(iRe_Q_CG,sy) *&
-            (Vector(iRe_pPerp_CG,sy)*sField4ElecReal +&
-            Vector(iIm_pPerp_CG,sy)*sField4ElecImag)) &
-            + dp2f,& ! New focusing term
-            sb,&
-            qOKL)
-
+!        CALL PutValueInVector(iRe_Q_CG, &
+!             2.0_WP * nb * Lj**2 * &
+!             ((sEta_G * Vector(iRe_Q_CG,sy) + 1.0_WP)/ salphaSq * &
+!             (Vector(iIm_pPerp_CG,sy) * fx_G*cos(ZOver2Rho) + &
+!             Vector(iRe_pPerp_CG,sy) * fy_G*sin(ZOver2rho)) +&
+!             sEta_G * Vector(iRe_Q_CG,sy) *&
+!             (Vector(iRe_pPerp_CG,sy)*sField4ElecReal +&
+!             Vector(iIm_pPerp_CG,sy)*sField4ElecImag)) &
+!             + dp2f,& ! New focusing term
+!             sb,&
+!             qOKL)
+       CALL getdp2dz(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,nb,qOKL)
        ELSE
 
 !     PX

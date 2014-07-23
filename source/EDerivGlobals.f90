@@ -152,7 +152,11 @@ TYPE(cFileType) :: tPowF
 REAL(KIND=WP)   :: start_time,end_time
 REAL(KIND=WP)   :: time1, time2 !!!FOR DEBUGGING!!!
 
-real(kind=wp), allocatable :: x_ax_G(:), y_ax_G(:)
+
+real(kind=wp), allocatable :: x_ax_G(:), y_ax_G(:) ! x and y axis for field integration
+
+character(32_IP) :: zUndType_G         ! Selects undulator type
+real(kind=wp) :: kx_und_G, ky_und_G    ! kx and ky for 3D undulator B-field variation
 
 REAL(KIND=WP), ALLOCATABLE     :: sEl_X0Position_G(:)
 REAL(KIND=WP), ALLOCATABLE     :: sEl_Y0Position_G(:)
