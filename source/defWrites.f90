@@ -454,4 +454,306 @@ module defWrite
   end subroutine OutputIntegrationData_ParRealArray     
 
 
+
+  SUBROUTINE WriteEleData(zDataFileName,fname,vname,&
+       qFormatted,nelectrons,edata,qOK)                          
+
+  IMPLICIT NONE
+!
+! This subroutine writes the electron chi data to
+! file
+!
+! zDataFileName           - INPUT    - Data file name
+! qFormatted              - INPUT    - Write formatted or binary file
+! s_chi_bar     - INPUT    -
+! qOK                     - OUTPUT   - Error flag
+!
+  CHARACTER(*),INTENT(IN) :: zDataFileName
+  CHARACTER(*),INTENT(IN) :: fname,vname
+  LOGICAL, INTENT(IN) :: qFormatted
+  INTEGER(KIND=IPL), INTENT(IN) :: nelectrons
+  REAL(KIND=WP),   INTENT(IN) :: edata(:)
+  LOGICAL,         INTENT(OUT):: qOK      
+!
+! Define local variables
+! 
+! tParamFile   - Write Parameter data to file
+! qOKL         - Local error flag
+!
+  TYPE(cFileType) :: tParamFile
+  INTEGER         :: error, i
+  LOGICAL         :: qOKL
+
+
+
+!     Set error flag to false
+
+    qOK = .FALSE.    
+
+!     Open the file to receive data output - 
+!     This subroutine is in CIO.f90 line 793
+
+    tParamFile%qFormatted = qFormatted
+
+
+
+
+!     Only the root process does the file initialization
+
+  IF (tProcInfo_G%rank==0) THEN
+
+    call InitialiseSDDSFile(fname // TRIM(zDataFileName), &
+         tParamFile, &
+         qOKL)
+    If (.NOT. qOKL) Goto 1000
+
+
+!     Loop over processes and take in turns to write data    
+  
+  CALL MPI_BARRIER(tProcInfo_G%comm, error)
+
+!     File data was setup on process 0, need to share filetype with the
+!     rest of the processors in the MPI communicator 
+
+  CALL shareFileType(tParamFile)
+       
+  DO i = 0,tProcInfo_G%size-1
+
+    IF (tProcInfo_G%rank == i) THEN
+
+      call OpenFileForAppend(tParamFile%zFileName, &
+             tParamFile,qOKL)
+
+      call Write1DRealArray(edata,tParamFile,qOKL)      
+      If (.NOT. qOKL) Goto 1000
+          
+      call CloseFile(tParamFile,qOKL)
+       
+    END IF
+    
+    CALL MPI_BARRIER(tProcInfo_G%comm, error)
+
+  END DO
+
+
+
+!     Set error flag and exit
+
+    qOK = .TRUE.            
+    GoTo 2000     
+
+
+
+!     Error Handler - Error log Subroutine in CIO.f90 line 709
+
+1000 call Error_log('Error in FEMethod:WriteChiData',tErrorLog_G)
+    Print*,'Error in FEMethod:WriteChiData'
+2000 CONTINUE
+
+  END SUBROUTINE WriteEleData
+
+
+
+
+
+SUBROUTINE InitialiseSDDSFile(zOutFile,       &
+                                    tFileType,      &
+                  qOK)
+!
+!********************************************************************
+! Initialise output files 
+!********************************************************************
+!
+! zOutFile        - INPUT   - Output file name    
+! tFileType       - OUTPUT  -File type properties
+! qOK             - OUTPUT  - Error flag
+!
+!====================================================================
+! Define local variables
+!!
+!=====================================================================
+! 
+      IMPLICIT NONE
+      CHARACTER(*),   INTENT(IN)             :: zOutFile
+      TYPE(cFileType),INTENT(INOUT)          :: tFileType
+      LOGICAL,        INTENT(OUT)      :: qOK      
+!
+!-------------------------------------------------------------------------------- 
+! Local Scalars         
+!-------------------------------------------------------------------------------- 
+!
+      LOGICAL                        :: qOKL
+!
+!-------------------------------------------------------------------------------- 
+! Set error flag to false         
+!-------------------------------------------------------------------------------- 
+!
+      qOK = .FALSE.
+!
+!-------------------------------------------------------------------------------- 
+! Open the file to receive output     
+!! OpenFileForOutput subroutine starts on line 474 in this file   
+!-------------------------------------------------------------------------------- 
+!
+      call OpenFileForOutput(zOutFile,  &
+                     tFileType, &
+           qOKL)        
+      If (.NOT. qOKL) Goto 1000  
+!
+!-------------------------------------------------------------------------------- 
+! Write required header at the top of the file       
+!-------------------------------------------------------------------------------- 
+! 
+      call WriteSDDSHeader(tFileType,qOKL)
+      If (.NOT. qOKL) Goto 1000  
+!
+!-------------------------------------------------------------------------------- 
+!  Set error flag and exit         
+!-------------------------------------------------------------------------------- 
+!
+      qOK = .TRUE.            
+      GoTo 2000     
+!
+!--------------------------------------------------------------------------------
+! Error Handler
+!--------------------------------------------------------------------------------
+!            
+1000 call Error_log('Error in DIO: InitialiseSDDSFile',tErrorLog_G)
+   Print*,'Error in DIO: InitialiseSDDSFile'
+2000 CONTINUE
+      END SUBROUTINE InitialiseSDDSFile
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+SUBROUTINE DUMPDATA(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
+
+ REAL(KIND=WP),DIMENSION(:),INTENT(IN) :: sA
+ REAL(KIND=WP),DIMENSION(:),INTENT(IN) :: sV
+ INTEGER(KIND=IP),INTENT(IN) :: rank,nnodes,istep,page
+ INTEGER(KIND=IPL), INTENT(IN) :: nelectrons
+ REAL(KIND=WP),INTENT(IN) :: sz
+
+ CHARACTER(32_IP) :: FileName
+
+! FIELD
+
+if (rank==0) then
+
+! Real part
+ FileName = 'reA' // TRIM(IntegerToString(RANK))//'.dump'
+ 
+ OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
+ WRITE(213) sA(1:nnodes)
+ CLOSE(UNIT=213,STATUS='KEEP')
+! Imaginary part
+ FileName = 'imA' // TRIM(IntegerToString(RANK))//'.dump'
+ 
+ OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
+ WRITE(213) sA(nnodes+1:2*nnodes)
+ CLOSE(UNIT=213,STATUS='KEEP') 
+
+end if
+
+! ELECTRONS
+
+if (nelectrons > 0) then
+
+! re pperp
+ FileName = 'rePPerp'//TRIM(IntegerToString(RANK))//'.dump'
+ 
+ OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
+ WRITE(213) sV(1:nelectrons)
+ CLOSE(UNIT=213,STATUS='KEEP') 
+! Im pperp
+ FileName = 'imPPerp'//TRIM(IntegerToString(RANK))//'.dump'
+ 
+ OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
+ WRITE(213) sV(nelectrons+1:2*nelectrons)
+ CLOSE(UNIT=213,STATUS='KEEP') 
+! Q 
+ FileName = 'Q'//TRIM(IntegerToString(RANK))//'.dump'
+ 
+ OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
+ WRITE(213) sV(2*nelectrons+1:3*nelectrons)
+ CLOSE(UNIT=213,STATUS='KEEP') 
+! Z2 
+ FileName = 'Z2-'//TRIM(IntegerToString(RANK))//'.dump'
+ 
+ OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
+ WRITE(213) sV(3*nelectrons+1:4*nelectrons)
+ CLOSE(UNIT=213,STATUS='KEEP') 
+! X 
+ FileName = 'X'//TRIM(IntegerToString(RANK))//'.dump'
+ 
+ OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
+ WRITE(213) sV(4*nelectrons+1:5*nelectrons)
+ CLOSE(UNIT=213,STATUS='KEEP')
+! Y
+ FileName = 'Y'//TRIM(IntegerToString(RANK))//'.dump'
+ 
+ OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
+ WRITE(213) sV(5*nelectrons+1:6*nelectrons)
+ CLOSE(UNIT=213,STATUS='KEEP') 
+
+end if
+ 
+! step
+
+if (rank==0) then
+
+ FileName = 'step'//TRIM(IntegerToString(RANK))//'.dump'
+ 
+ OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
+ WRITE(213) istep
+ CLOSE(UNIT=213,STATUS='KEEP') 
+
+ ! Z
+ FileName = 'Z'//TRIM(IntegerToString(RANK))//'.dump'
+ 
+ OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
+ WRITE(213) sz
+ CLOSE(UNIT=213,STATUS='KEEP')  
+
+end if
+
+ ! nelectrons
+ FileName = 'nelectrons'//TRIM(IntegerToString(RANK))//'.dump'
+ 
+ OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
+ WRITE(213) nelectrons
+ CLOSE(UNIT=213,STATUS='KEEP') 
+ 
+! page
+
+if (rank==0) then
+
+ FileName = 'page'//TRIM(IntegerToString(RANK))//'.dump'
+ 
+ OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
+ WRITE(213) page
+ CLOSE(UNIT=213,STATUS='KEEP') 
+
+end if
+        
+END SUBROUTINE DUMPDATA
+
+
+
+
+
+
+
+
+
 end module defWrite
