@@ -1,15 +1,13 @@
+module createSDDS
+
+
+contains paratype
 
 
 
+! was SetUpDataFiles
 
-
-
-
-
-
-
-
-  SUBROUTINE  SetUpDataFiles(zDataFileName,  &
+  SUBROUTINE CreateSDDSFiles(zDataFileName,  &
                              qFormattedFiles, &
                              tWriteZData,    &
                              tWriteAData, &
@@ -91,10 +89,10 @@
 
         if (tProcInfo_G%qRoot) then
       
-          call SetUpDataFile(zFilename, qFormattedFiles, &
-                             tArraySegment(iSegment)%zVariable, &
-                             tArraySegment(iSegment)%tFileType, &
-                             qOKL)
+          call CreateSDDSFile(zFilename, qFormattedFiles, &
+                              tArraySegment(iSegment)%zVariable, &
+                              tArraySegment(iSegment)%tFileType, &
+                              qOKL)
           If (.NOT. qOKL) Goto 1000
 
         end if
@@ -128,10 +126,10 @@
 
 !     Open file - This subroutine is in this file - line 517
 
-        call SetUpDataFile(zFilename, qFormattedFiles, &
-                           tWriteAData(iRe_A_CG)%zVariable, &
-                           tWriteAData(iRe_A_CG)%tFileType, &
-                           qOKL)
+        call CreateSDDSFile(zFilename, qFormattedFiles, &
+                            tWriteAData(iRe_A_CG)%zVariable, &
+                            tWriteAData(iRe_A_CG)%tFileType, &
+                            qOKL)
 
         zFilename = (trim(adjustl(tWriteAData(iIm_A_CG)%zVariable)) // trim(adjustl(zDataFileName)))
 
@@ -140,10 +138,10 @@
         end if
 
 
-        call SetUpDataFile(zFilename, qFormattedFiles,&
-                           tWriteAData(iIm_A_CG)%zVariable, &
-                           tWriteAData(iIm_A_CG)%tFileType, &
-                           qOKL)
+        call CreateSDDSFile(zFilename, qFormattedFiles,&
+                            tWriteAData(iIm_A_CG)%zVariable, &
+                            tWriteAData(iIm_A_CG)%tFileType, &
+                            qOKL)
 
       end if
 
@@ -168,10 +166,10 @@
 
       if (tProcInfo_G%qRoot) then
 
-        call SetUpDataFile(zFilename, qFormattedFiles,  &
-                           tWriteZData%zVariable, &
-                           tWriteZData%tFileType, &
-                           qOKL)
+        call CreateSDDSFile(zFilename, qFormattedFiles,  &
+                            tWriteZData%zVariable, &
+                            tWriteZData%tFileType, &
+                            qOKL)
         if (.not. qOKL) goto 1000
       
       end if
@@ -190,7 +188,7 @@
     Print*,'Error in EArrayFunctions:SetUpDataFiles'
 2000 continue
 
-  end subroutine SetUpDataFiles
+  end subroutine CreateSDDSFiles
 
 
 
@@ -206,10 +204,10 @@
 
 
 
+! was SetUpDataFile
 
 
-
-  SUBROUTINE  SetUpDataFile(zDataFileName,  &
+  SUBROUTINE CreateSDDSFile(zDataFileName,  &
                             qFormattedFiles,&
                             zVariable,      &
                             tYDataFile,     &
@@ -250,7 +248,7 @@
 
     tYDataFile%qFormatted = qFormattedFiles
 
-    call InitialiseSDDSFile(zDataFileName, &
+    call InitBasicSDDSFile(zDataFileName, &
                             tYDataFile, &
                             qOKL)
     if (.NOT. qOKL) Goto 1000
@@ -294,7 +292,7 @@
     Print*,'Error in EArrayFunctions:SetUpDataFile'
 2000 CONTINUE
         
-  END SUBROUTINE SetUpDataFile
+  END SUBROUTINE CreateSDDSFile
 
 
 
@@ -370,3 +368,6 @@
         
   END SUBROUTINE CloseDataFiles
 
+
+
+end module createSDDS
