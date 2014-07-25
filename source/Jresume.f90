@@ -167,4 +167,174 @@ MODULE RESUME
   END SUBROUTINE initFD
 
 
+
+
+
+
+!==========================================================================
+
+SUBROUTINE READNELEC(rank,nelectrons)
+
+  INTEGER(KIND=IP),INTENT(IN) :: rank
+  INTEGER(KIND=IPL),INTENT(INOUT) :: nelectrons
+  CHARACTER(32_IP) :: FileName
+  
+  FileName = 'nelectrons'//TRIM(IntegerToString(RANK))//'.dump'
+ 
+  OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
+  FORM='UNFORMATTED')
+  READ(213) nelectrons
+  CLOSE(UNIT=213,STATUS='KEEP')
+
+END SUBROUTINE
+
+!========================================================================== 
+
+SUBROUTINE READDUMP(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
+
+ REAL(KIND=WP),DIMENSION(:),INTENT(OUT) :: sA
+ REAL(KIND=WP),DIMENSION(:),INTENT(OUT) :: sV
+ INTEGER(KIND=IP),INTENT(OUT) :: istep,page
+ integer(kind=ip),intent(in) :: rank
+ INTEGER(KIND=IP),INTENT(IN) :: nnodes
+ INTEGER(KIND=IPL), INTENT(INOUT) :: nelectrons
+ REAL(KIND=WP),INTENT(OUT) :: sz
+
+ CHARACTER(32_IP) :: FileName
+
+! FIELD
+
+if (rank==0) then
+
+! Real part
+ FileName = 'reA'//TRIM(IntegerToString(RANK))//'.dump'
+ 
+
+ OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
+ FORM='UNFORMATTED')
+ READ(213) sA(1:nnodes)
+ CLOSE(UNIT=213,STATUS='KEEP')
+! Imaginary part
+ FileName = 'imA'//TRIM(IntegerToString(RANK))//'.dump'
+ 
+ OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
+ FORM='UNFORMATTED')
+ READ(213) sA(nnodes+1:2*nnodes)
+ CLOSE(UNIT=213,STATUS='KEEP') 
+
+end if
+
+! ELECTRONS
+
+if (nelectrons>0) then
+
+! re pperp
+ FileName = 'rePPerp'//TRIM(IntegerToString(RANK))//'.dump'
+ 
+ OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
+ FORM='UNFORMATTED')
+ READ(213) sV(1:nelectrons)
+ CLOSE(UNIT=213,STATUS='KEEP') 
+! Im pperp
+ FileName = 'imPPerp'//TRIM(IntegerToString(RANK))//'.dump'
+ 
+ OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
+ FORM='UNFORMATTED')
+ READ(213) sV(nelectrons+1:2*nelectrons)
+ CLOSE(UNIT=213,STATUS='KEEP') 
+! Q 
+ FileName = 'Q'//TRIM(IntegerToString(RANK))//'.dump'
+ 
+ OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
+ FORM='UNFORMATTED')
+ READ(213) sV(2*nelectrons+1:3*nelectrons)
+ CLOSE(UNIT=213,STATUS='KEEP') 
+! Z2 
+ FileName = 'Z2-'//TRIM(IntegerToString(RANK))//'.dump'
+ 
+ OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
+ FORM='UNFORMATTED')
+ READ(213) sV(3*nelectrons+1:4*nelectrons)
+ CLOSE(UNIT=213,STATUS='KEEP') 
+! X 
+ FileName = 'X'//TRIM(IntegerToString(RANK))//'.dump'
+ 
+ OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
+ FORM='UNFORMATTED')
+ READ(213) sV(4*nelectrons+1:5*nelectrons)
+ CLOSE(UNIT=213,STATUS='KEEP')
+! Y
+ FileName = 'Y'//TRIM(IntegerToString(RANK))//'.dump'
+ 
+ OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
+ FORM='UNFORMATTED')
+ READ(213) sV(5_IPL*nelectrons+1_IPL:6_IPL*nelectrons)
+ CLOSE(UNIT=213,STATUS='KEEP') 
+
+end if
+ 
+! step
+
+if (rank==0) then
+
+ FileName = 'step'//TRIM(IntegerToString(RANK))//'.dump'
+ 
+ OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
+ FORM='UNFORMATTED')
+ READ(213) istep
+ CLOSE(UNIT=213,STATUS='KEEP') 
+
+! Z
+ FileName = 'Z'//TRIM(IntegerToString(RANK))//'.dump'
+
+ OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
+ FORM='UNFORMATTED')
+ READ(213) sz
+ CLOSE(UNIT=213,STATUS='KEEP')  
+
+! page
+ FileName = 'page'//TRIM(IntegerToString(RANK))//'.dump'
+ 
+ OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
+ FORM='UNFORMATTED')
+ READ(213) page
+ CLOSE(UNIT=213,STATUS='KEEP') 
+
+end if
+
+END SUBROUTINE READDUMP
+!------------------------------------------------------------------
+
+!===================================================================
+
+SUBROUTINE READINCHIDATA(chibar,normchi,rank)
+
+ REAL(KIND=WP),DIMENSION(:),INTENT(OUT) :: chibar
+ REAL(KIND=WP),DIMENSION(:),INTENT(OUT) :: normchi
+ INTEGER(KIND=IP),INTENT(IN) :: rank
+
+ CHARACTER(32_IP) :: FileName
+
+! FIELD
+! Real part
+ FileName = 'chibar' // TRIM(IntegerToString(RANK))//'.dump'
+ 
+ OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
+ FORM='UNFORMATTED')
+ READ(213) chibar
+ CLOSE(UNIT=213,STATUS='KEEP')
+! Imaginary part
+ FileName = 'normchi' // TRIM(IntegerToString(RANK))//'.dump'
+ 
+ OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
+ FORM='UNFORMATTED')
+ READ(213) normchi
+ CLOSE(UNIT=213,STATUS='KEEP') 
+
+        
+END SUBROUTINE READINCHIDATA
+
+!___________--------------------------=============++++++++++++++++++++===
+!-----------------++=========________________=====================+++++++++
+
 END MODULE RESUME
