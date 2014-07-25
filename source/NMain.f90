@@ -253,6 +253,7 @@ DO iStep = start_step, nSteps
 !                   Write result to file
  
   iCount = iCount + 1_IP
+  
   IF ((iCount == iWriteNthSteps).OR.&
        (iStep == nSteps)) THEN
      iCount = 0_IP

@@ -1,5 +1,14 @@
+module sddsSetup
+
+use paratype
 
 
+
+
+contains
+
+
+  
   subroutine InitBasicSDDSFile(zOutFile, tFileType, qOK)
 
     implicit none
@@ -150,7 +159,10 @@
 1000 call Error_log('Error in DIO:  WriteSDDSNewPage',tErrorLog_G)
     print*,'Error in DIO: WriteSDDSNewPage'
 
-2000 CONTINUE     
+2000 continue     
 
 
-      END SUBROUTINE WriteSDDSNewPage
+  end subroutine WriteSDDSNewPage
+
+
+end module sddsSetup

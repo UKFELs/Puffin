@@ -1,13 +1,15 @@
 module createSDDS
 
 
-contains paratype
+use paratype
 
 
+
+contains
 
 ! was SetUpDataFiles
 
-  SUBROUTINE CreateSDDSFiles(zDataFileName,  &
+  subroutine CreateSDDSFiles(zDataFileName,  &
                              qFormattedFiles, &
                              tWriteZData,    &
                              tWriteAData, &
@@ -24,13 +26,13 @@ contains paratype
 
     IMPLICIT NONE
 
-    CHARACTER(32_IP),        INTENT(IN)                :: zDataFileName
-    LOGICAL,                 INTENT(IN)                :: qFormattedFiles
+    character(32_IP),        INTENT(IN)                :: zDataFileName
+    logical,                 INTENT(IN)                :: qFormattedFiles
     TYPE(cArraySegment),     INTENT(INOUT)             :: tWriteZData
     TYPE(cArraySegment),     INTENT(INOUT)             :: tWriteAData(:)
     TYPE(cArraySegment),     INTENT(INOUT)             :: tArraySegment(:)
     LOGICAL,                 INTENT(OUT)               :: qOK      
-    CHARACTER(*),            INTENT(IN), OPTIONAL      :: zOptionalString
+    character(*),            INTENT(IN), OPTIONAL      :: zOptionalString
 
 ! Define local variables
 ! 
@@ -39,7 +41,7 @@ contains paratype
 ! qOKL   - Local error flag
 
     INTEGER(KIND=IP)               :: iSegment
-    CHARACTER(32_IP)               :: zFileName
+    character(32_IP)               :: zFileName
     LOGICAL                        :: qOptional
     LOGICAL                        :: qOKL
 
@@ -207,11 +209,13 @@ contains paratype
 ! was SetUpDataFile
 
 
-  SUBROUTINE CreateSDDSFile(zDataFileName,  &
+  subroutine CreateSDDSFile(zDataFileName,  &
                             qFormattedFiles,&
                             zVariable,      &
                             tYDataFile,     &
                             qOK)
+
+    implicit none
 
 ! Set up data file to receive information
 
@@ -222,25 +226,25 @@ contains paratype
 ! qOK                     - OUTPUT   - Error flag
 
 
-    IMPLICIT NONE
 
-    CHARACTER(32_IP),        INTENT(IN)                :: zDataFileName
-    LOGICAL,                 INTENT(IN)                :: qFormattedFiles
-    CHARACTER(32_IP),        INTENT(IN)                :: zVariable
-    TYPE(cFileType),         INTENT(INOUT)             :: tYDataFile
-    LOGICAL,                 INTENT(OUT)               :: qOK      
+
+    character(32_IP),  intent(in)      :: zDataFileName
+    logical,           intent(in)      :: qFormattedFiles
+    character(32_IP),  intent(in)      :: zVariable
+    type(cFileType),   intent(inout)   :: tYDataFile
+    logical,           intent(out)     :: qOK      
 
 ! Define local variables
 
 !     qOKL   - Local error flag
        
-    LOGICAL                        :: qOKL
+    logical :: qOKL
 
 
 
 !     Set error flag to false         
 
-    qOK = .FALSE.    
+    qOK = .false.    
 
 
 
@@ -251,7 +255,7 @@ contains paratype
     call InitBasicSDDSFile(zDataFileName, &
                             tYDataFile, &
                             qOKL)
-    if (.NOT. qOKL) Goto 1000
+    if (.not. qOKL) goto 1000
 
 
 
@@ -264,7 +268,7 @@ contains paratype
 
 !     Write data mode - This subroutine is in "GSddsWriter.f90"
 
-    If (tYDataFile%qFormatted) Then
+    if (tYDataFile%qFormatted) then
 
       call SddsWriteDataMode('ascii',tFileType=tYDataFile)     
 
@@ -272,12 +276,12 @@ contains paratype
 
       call SddsWriteDataMode('binary',tFileType=tYDataFile)    
 
-    End if
+    end if
       
 !     Close the file
 
     call CloseFile(tYDataFile,qOKL)
-    If (.NOT. qOKL) Goto 1000
+    if (.not. qOKL) goto 1000
 
 
 
@@ -290,9 +294,16 @@ contains paratype
             
 1000 call Error_log('Error in EArrayFunctions:SetUpDataFile',tErrorLog_G)
     Print*,'Error in EArrayFunctions:SetUpDataFile'
-2000 CONTINUE
+
+2000 continue
         
-  END SUBROUTINE CreateSDDSFile
+  end subroutine CreateSDDSFile
+
+
+
+
+
+
 
 
 
@@ -306,67 +317,70 @@ contains paratype
 
   subroutine CloseDataFiles(tArraySegment, qOK)
 
+    implicit none
+
 ! close data files
 !
 ! tArraySegment           - UPDATE   - Result data file info
 ! qOK                     - OUTPUT   - Error flag
 ! 
 
-      implicit none
-!
-      TYPE(cArraySegment),     INTENT(INOUT)             :: tArraySegment(:)
-      LOGICAL,                 INTENT(OUT)               :: qOK      
-!
-!====================================================================
+    type(cArraySegment), intent(inout) :: tArraySegment(:)
+    logical,             intent(out)   :: qOK      
+
+
 ! Define local variables
 ! 
 ! iSegment - Local loop variable
 ! qOKL   - Local error flag
-!=====================================================================
-! 
-       INTEGER(KIND=IP)               :: iSegment
-       LOGICAL                        :: qOKL
-!
-!-------------------------------------------------------------------------------- 
-! Set error flag to false         
-!-------------------------------------------------------------------------------- 
-!
-      qOK = .FALSE.    
-!
-!-------------------------------------------------------------------------------- 
-! Close all required files - ''CloseFile'' subroutine is in "IO.f90"      
-!-------------------------------------------------------------------------------- 
-!
-      If (tProcInfo_G%qROOT) Then
 
-      Do iSegment = 1_IP, Size(tArraySegment)
-         If (tArraySegment(iSegment)%qWrite) Then
-!
-      Call CloseFile(tArraySegment(iSegment)%tFileType,qOKL)
-            If (.NOT. qOKL) Goto 1000
-!
-   End If
-      End Do
-!
-      End If
-!
-!-------------------------------------------------------------------------------- 
-!  Set error flag and exit         
-!-------------------------------------------------------------------------------- 
-!
-      qOK = .TRUE.            
-      GoTo 2000     
-!
-!--------------------------------------------------------------------------------
-! Error Handler
-!--------------------------------------------------------------------------------
-!            
+    integer(kind=ip)   :: iSegment
+    logical            :: qOKL
+
+
+
+
+!     Set error flag to false         
+
+    qOK = .FALSE.    
+
+
+
+!     Close all required files - ''CloseFile'' subroutine is in "IO.f90"      
+
+    if (tProcInfo_G%qROOT) then
+
+      do iSegment = 1_IP, size(tArraySegment)
+      
+        if (tArraySegment(iSegment)%qWrite) then
+
+          Call CloseFile(tArraySegment(iSegment)%tFileType,qOKL)
+          if (.not. qOKL) goto 1000
+
+        end if
+
+      end do
+
+    end if
+
+
+
+
+
+!     Set error flag and exit         
+
+    qOK = .TRUE.            
+    goto 2000     
+
+!     Error Handler
+
 1000 call Error_log('Error in EArrayFunctions:CloseDataFiles',tErrorLog_G)
-   Print*,'Error in EArrayFunctions:CloseDataFiles'
-2000 CONTINUE
-!
+    print*,'Error in EArrayFunctions:CloseDataFiles'
+
+2000 continue
+
         
-  END SUBROUTINE CloseDataFiles
+  end subroutine CloseDataFiles
 
 
 
