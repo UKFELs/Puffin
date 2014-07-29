@@ -6,6 +6,16 @@
 
 MODULE RESUME
 
+
+! This module contains the subroutines for dumping 
+! the data in Puffin. The dumping is very dirty, and
+! creates a file for each variable, for each process.
+! This enables Puffin to resume from these dump files
+! in the even of a crash. This is the only purpose
+! of these dump files, and they are not intended for
+! any post-processing.
+
+
   USE paratype
   USE typesandconstants
   USE Globals
