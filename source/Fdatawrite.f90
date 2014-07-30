@@ -4,7 +4,7 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
-MODULE DataWrite
+MODULE sddsPuffin
 
 USE ArrayFunctions
 USE TypesandConstants
@@ -347,7 +347,343 @@ CONTAINS
     Print*,'Error in FEMethod:WriteParameterData'
 2000 CONTINUE
   END SUBROUTINE WriteParameterData
-!********************************************************
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  subroutine wdfs(sA, sV, sZ, step, etc...)
+
+    implicit none
+
+! Write Data FileS
+
+
+
+    if (timetowrite) then
+
+      outputBeamFiles(sV)
+
+    end if
+
+
+    if (timetowrite) then 
+
+      outputField(sA)
+
+    end if
+    
+    if (timetowrite) then
+
+      outputPower()
+    
+    end if
+
+!     etc...
+
+!     So writeData below will become redundant
+
+  end subroutine wdfs
+
+
+
+
+
+
+
+
+
+
+  subroutine createFFiles(tArrayY, zDFName, qFormattedFiles, zOptionalString)
+
+! Create "Full" files - creates either 
+! the full data sets for the field and 
+! electron phase space.
+
+    type(cArraySegment), intent(inout) :: tArrayY
+    character(32_IP), intent(in)   ::   zDFName
+    character(*), intent(in), optional  :: zOptionalString
+    logical, intent(in) :: qFormattedFiles
+
+    integer(kind=ip) :: iap
+    character(32_IP) :: zFileName
+    logical :: qOptional, qOKL
+
+
+    if (present(zOptionalString)) then
+
+      if (len(trim(adjustl(zOptionalString))) > 0) then
+
+        qOptional = .TRUE.
+    
+      end if
+  
+    end if
+
+!     Loop around array segments, creating files
+
+    do iap = 1, size(tArrayY)
+
+      if (tArrayY(iap)%qWrite) then
+        
+        if (tProcInfo_G%qRoot) then
+
+!     Prepare filename      
+
+          zFilename = (trim(adjustl(tArrayY(iap)%zVariable)) // trim(adjustl(zDataFileName))) 
+
+          if (qOptional) then
+
+            zFilename = (trim(adjustl(zOptionalString)) // '_' // trim(adjustl(zFilename)) )
+
+          end if
+
+
+          call CreateSDDSFile(zFilename, qFormattedFiles, &
+                              tArrayY(iap)%zVariable, &
+                              tArrayY(iap)%tFileType, &
+                              qOKL)    
+      
+
+        end if
+
+
+      end if
+
+    end do
+
+
+
+  end subroutine createFFiles
+
+
+
+
+
+
+
+
+
+  subroutine outputField(sA, tArrayA, iStep, qSeparate)
+
+    implicit none
+
+! Output radiation field from Puffin
+
+! Arguments
+
+    real(kind=wp), intent(in) :: sA
+    type(cArraySegment), intent(inout) :: tArrayA(:)
+    integer(kind=ip). intent(in) :: iStep
+    logical, intent(in) :: qSeparate
+
+! Local vars...
+
+    integer(kind=ip) :: ifp, fieldsize
+    logical :: qOKL
+
+
+
+
+    if (qSeparate) call createFFiles(tArrayY, zDFName, qFormattedFiles, iStep)
+
+
+
+!     Write out field data:-only root processor needs to do this
+    
+    fieldsize = SIZE(sA)/2_IP
+
+
+
+    if (tProcInfo_G%qRoot) then
+
+      do ifp = 1_IP, size(tArrayA)
+
+        if (tArrayA(ifp)%qWrite) then
+
+!     Write the data
+      
+          call OutputIntegrationData(tArrayA(ifp)%tFileType, &
+                                     Vector(iRe_A_CG,sA), &
+                                     fieldsize, &
+                                     qOKL)
+
+          if (.not. qOKL) goto 1000
+
+        end if
+
+      end do
+
+    end if
+
+
+
+!     Set error flag and exit
+
+    qOK = .true.            
+    goto 2000
+
+
+!     Error Handler - Error log Subroutine in CIO.f90 line 709
+
+1000 call Error_log('Error in sddsPuffin:outputField',tErrorLog_G)
+    print*,'Error in sddsPuffin:outputField'
+
+2000 continue
+
+  end subroutine outputField
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  subroutine outputBeamFiles(sV, tArrayE)
+
+    implicit none
+
+! Output the electron bean macroparticle 
+! 6D phase space coordinates in Puffin.
+! 
+! sV        -      Electron coordinates
+!
+! tArrayE   -      Array describing the 
+!                  layout of data in 
+!                  sV
+!
+ 
+    real(kind=wp), intent(in) :: sV(:)
+    type(cArraySegment), intent(inout) :: tArrayE(:)
+
+! Local vars
+
+    integer(kind=ip) :: iep, istart, iend
+    logical :: qOKL
+
+
+!     Create data files
+
+
+    if (seperate) call createFiles(tArrayE)
+
+    call OutputIntegrationData(sV)
+
+
+!     Write full 6D electron phase space
+!     to file. This will create very large
+!     files!!!
+
+    do iep = 1_IP, SIZE(tArrayE)
+
+      if (tArrayE(iep)%qWrite) then
+     
+        iStart = tArrayE(iep)%iStart
+        iEnd   = tArrayE(iep)%iEnd
+
+!     Write the data
+      
+        call OutputIntegrationData(tArrayE(iep)%tFileType, &
+                                   sY(iStart:iEnd), &
+                                   tProcInfo_G%rank, &
+                                   iGloNumElectrons_G, &
+                                   qOKL)
+
+        if (.NOT. qOKL) goto 1000
+
+      end if
+
+    end do
+
+
+
+
+!     Set error flag and exit
+
+    qOK = .true.            
+    goto 2000
+
+
+!     Error Handler - Error log Subroutine in CIO.f90 line 709
+
+1000 call Error_log('Error in sddsPuffin:outputBeamFiles',tErrorLog_G)
+    print*,'Error in sddsPuffin:outputBeamFiles'
+
+2000 continue
+
+
+  end subroutine outputBeamFiles
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   SUBROUTINE WriteEleData(zDataFileName,fname,vname,&
        qFormatted,nelectrons,edata,qOK)                          
@@ -520,7 +856,7 @@ CONTAINS
     
     if (qSeparateStepFiles .or. qStart) then
 
-       call SetUpDataFiles(zDataFileName,&
+       call CreateSDDSFiles(zDataFileName,&
             qFormattedFiles,&
             tArrayZ,&
             tArrayA,&
@@ -999,4 +1335,4 @@ END FUNCTION IntegerToString
 
 
 
-END MODULE DataWrite
+END MODULE sddsPuffin
