@@ -218,7 +218,6 @@ contains
 
 
   subroutine CreateSDDSFile(zDataFileName,  &
-                            qFormattedFiles,&
                             zVariable,      &
                             tYDataFile,     &
                             qOK)
@@ -237,7 +236,6 @@ contains
 
 
     character(32_IP),  intent(in)      :: zDataFileName
-    logical,           intent(in)      :: qFormattedFiles
     character(32_IP),  intent(in)      :: zVariable
     type(cFileType),   intent(inout)   :: tYDataFile
     logical,           intent(out)     :: qOK      
@@ -258,7 +256,7 @@ contains
 
 !     Open the file to receive data output - This subroutine is in "IO.f90"
 
-    tYDataFile%qFormatted = qFormattedFiles
+!    tYDataFile%qFormatted = qFormattedFiles   ! Redundant now....
 
     call InitBasicSDDSFile(zDataFileName, &
                             tYDataFile, &

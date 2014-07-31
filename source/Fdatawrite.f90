@@ -379,27 +379,43 @@ CONTAINS
 
 
 
-  subroutine wdfs(sA, sV, sZ, step, etc...)
+  subroutine wdfs(sA, sV, sZ, istep, tArrayA, tArrayE, tArrayZ, qOK)
 
     implicit none
 
 ! Write Data FileS
 
 
+    real(kind=wp), intent(in) :: sA(:), sV(:), sZ
+    type(cArraySegment), intent(inout) :: tArrayA(:), tArrayE(:), tArrayZ
+    integer(kind=ip), intent(in) :: istep
+    logical, intent(inout) :: qOK
+
+
+
+    qOK = .false.
+
+
 
     if (timetowrite) then
 
-      outputBeamFiles(sV)
+      call outputBeamFiles(sV, tArrayE, iStep, qSeparate, zDFName)
 
     end if
 
 
     if (timetowrite) then 
 
-      outputField(sA)
+      call outputField(sA, tArrayA, iStep, qSeparate, zDFName)
 
     end if
-    
+
+    if (timetowrite) then
+
+      call outputZ(sZ, tArrayZ, iStep, qSeparate, zDFName)
+
+    end if
+
     if (timetowrite) then
 
       outputPower()
@@ -409,6 +425,23 @@ CONTAINS
 !     etc...
 
 !     So writeData below will become redundant
+
+
+
+
+!     Set error flag and exit
+
+    qOK = .true.
+    goto 2000
+
+
+!     Error Handler - Error log Subroutine in CIO.f90 line 709
+
+1000 call Error_log('Error in sddsPuffin:createFFiles',tErrorLog_G)
+    print*,'Error in sddsPuffin:createFFiles'
+
+2000 continue
+
 
   end subroutine wdfs
 
@@ -421,20 +454,26 @@ CONTAINS
 
 
 
-  subroutine createFFiles(tArrayY, zDFName, qFormattedFiles, zOptionalString)
+  subroutine createFFiles(tArrayY, zDFName, zOptionalString, qOK)
 
-! Create "Full" files - creates either 
+    implicit none
+
+! Create "Full" Files - creates either 
 ! the full data sets for the field and 
 ! electron phase space.
 
-    type(cArraySegment), intent(inout) :: tArrayY
+    type(cArraySegment), intent(inout) :: tArrayY(:)
     character(32_IP), intent(in)   ::   zDFName
     character(*), intent(in), optional  :: zOptionalString
-    logical, intent(in) :: qFormattedFiles
+    logical, intent(inout) :: qOK
 
     integer(kind=ip) :: iap
     character(32_IP) :: zFileName
     logical :: qOptional, qOKL
+
+
+
+    qOK = .false.
 
 
     if (present(zOptionalString)) then
@@ -457,7 +496,7 @@ CONTAINS
 
 !     Prepare filename      
 
-          zFilename = (trim(adjustl(tArrayY(iap)%zVariable)) // trim(adjustl(zDataFileName))) 
+          zFilename = (trim(adjustl(tArrayY(iap)%zVariable)) // trim(adjustl(zDFName))) 
 
           if (qOptional) then
 
@@ -466,7 +505,7 @@ CONTAINS
           end if
 
 
-          call CreateSDDSFile(zFilename, qFormattedFiles, &
+          call CreateSDDSFile(zFilename, &
                               tArrayY(iap)%zVariable, &
                               tArrayY(iap)%tFileType, &
                               qOKL)    
@@ -479,6 +518,18 @@ CONTAINS
 
     end do
 
+!     Set error flag and exit
+
+    qOK = .true.
+    goto 2000
+
+
+!     Error Handler - Error log Subroutine in CIO.f90 line 709
+
+1000 call Error_log('Error in sddsPuffin:createFFiles',tErrorLog_G)
+    print*,'Error in sddsPuffin:createFFiles'
+
+2000 continue
 
 
   end subroutine createFFiles
@@ -491,7 +542,7 @@ CONTAINS
 
 
 
-  subroutine outputField(sA, tArrayA, iStep, qSeparate)
+  subroutine outputField(sA, tArrayA, iStep, qSeparate, zDFName, qOK)
 
     implicit none
 
@@ -503,6 +554,9 @@ CONTAINS
     type(cArraySegment), intent(inout) :: tArrayA(:)
     integer(kind=ip). intent(in) :: iStep
     logical, intent(in) :: qSeparate
+    character(32_IP), intent(in) :: zDFName
+    logical, intent(inout) :: qOK
+
 
 ! Local vars...
 
@@ -511,10 +565,17 @@ CONTAINS
 
 
 
+    qOK = .false.
 
-    if (qSeparate) call createFFiles(tArrayY, zDFName, qFormattedFiles, iStep)
 
 
+
+    if (qSeparate) then
+
+      call createFFiles(tArrayA, zDFName, trim(IntegerToString(iStep)),qOKL)
+      if (.not. qOKL) goto 1000
+
+    end if
 
 !     Write out field data:-only root processor needs to do this
     
@@ -531,7 +592,7 @@ CONTAINS
 !     Write the data
       
           call OutputIntegrationData(tArrayA(ifp)%tFileType, &
-                                     Vector(iRe_A_CG,sA), &
+                                     Vector(ifp,sA), &
                                      fieldsize, &
                                      qOKL)
 
@@ -580,7 +641,8 @@ CONTAINS
 
 
 
-  subroutine outputBeamFiles(sV, tArrayE)
+  subroutine outputBeamFiles(sV, tArrayE, iStep, qSeparate, zDFName, qOK)
+
 
     implicit none
 
@@ -596,6 +658,10 @@ CONTAINS
  
     real(kind=wp), intent(in) :: sV(:)
     type(cArraySegment), intent(inout) :: tArrayE(:)
+    integer(kind=ip). intent(in) :: iStep
+    logical, intent(in) :: qSeparate
+    character(32_IP), intent(in) :: zDFName
+    logical, intent(inout) :: qOK
 
 ! Local vars
 
@@ -603,10 +669,20 @@ CONTAINS
     logical :: qOKL
 
 
+
+
+    qOK = .false.
+
 !     Create data files
 
 
-    if (seperate) call createFiles(tArrayE)
+
+    if (qSeparate) 
+
+      call createFFiles(tArrayE, zDFName, iStep, qOKL)
+      if (.not. qOKL) goto 1000
+
+    end if
 
     call OutputIntegrationData(sV)
 
@@ -654,6 +730,189 @@ CONTAINS
 
 
   end subroutine outputBeamFiles
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  subroutine outputZ(sZ, tArrayZ, iStep, qSeparate, zDFName, qOK)
+
+    implicit none
+
+! Output radiation field from Puffin
+
+! Arguments
+
+    real(kind=wp), intent(in) :: sZ
+    type(cArraySegment), intent(inout) :: tArrayZ
+    integer(kind=ip). intent(in) :: iStep
+    logical, intent(in) :: qSeparate
+    character(32_IP), intent(in) :: zDFName
+    logical, intent(inout) :: qOK
+
+! Local vars...
+
+    logical :: qOKL
+
+
+
+
+
+    qOK = .false.
+
+    if (qSeparate) call createZFile(tArrayZ, zDFName, trim(IntegerToString(iStep)))
+
+
+!     Write out Zbar data:-only root processor needs to do this
+    
+
+
+
+    if (tProcInfo_G%qRoot) then
+
+      if (tArrayZ%qWrite) then
+
+!     Write the data
+      
+        call OutputIntegrationData(tArrayZ%tFileType, sZ, qOKL)
+
+          if (.not. qOKL) goto 1000
+
+      end if
+
+    end if
+
+!     Set error flag and exit
+
+    qOK = .true.            
+    goto 2000
+
+
+!     Error Handler - Error log Subroutine in CIO.f90 line 709
+
+1000 call Error_log('Error in sddsPuffin:outputZ',tErrorLog_G)
+    print*,'Error in sddsPuffin:outputZ'
+
+2000 continue
+
+  end subroutine outputZ
+
+
+
+
+
+
+
+
+
+
+  subroutine createZFile(tArrayY, zDFName, zOptionalString, qOK)
+
+    implicit none
+
+! Create Files - creates file for Zbar
+
+    type(cArraySegment), intent(inout) :: tArrayY
+    character(32_IP), intent(in)   ::   zDFName
+    character(*), intent(in), optional  :: zOptionalString
+    logical, intent(inout) :: qOK
+
+
+    character(32_IP) :: zFileName
+    logical :: qOptional, qOKL
+
+
+
+    qOK = .false.
+
+
+
+    if (present(zOptionalString)) then
+
+      if (len(trim(adjustl(zOptionalString))) > 0) then
+
+        qOptional = .TRUE.
+
+      end if
+  
+    end if
+
+!     create files
+
+    if (tArrayY%qWrite) then
+        
+      if (tProcInfo_G%qRoot) then
+
+!     Prepare filename      
+
+        zFilename = (trim(adjustl(tArrayY%zVariable)) // trim(adjustl(zDFName))) 
+
+        if (qOptional) then
+
+          zFilename = (trim(adjustl(zOptionalString)) // '_' // trim(adjustl(zFilename)) )
+
+        end if
+
+
+        call CreateSDDSFile(zFilename, &
+                            tArrayY%zVariable, &
+                            tArrayY%tFileType, &
+                            qOKL)    
+    
+
+      end if
+
+
+    end if
+
+
+
+
+!     Set error flag and exit
+
+    qOK = .true.
+    goto 2000
+
+
+!     Error Handler - Error log Subroutine in CIO.f90 line 709
+
+1000 call Error_log('Error in sddsPuffin:createZFile',tErrorLog_G)
+    print*,'Error in sddsPuffin:createZFile'
+
+2000 continue
+
+  end subroutine createZFile
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

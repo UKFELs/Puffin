@@ -135,11 +135,21 @@ INTEGER(KIND=IP), ALLOCATABLE :: frecvs(:),fdispls(:),&
      lrecvs(:),ldispls(:),mrecvs(:),mdispls(:)
 INTEGER(KIND=IP) :: iCount, iStep, start_step
 REAL(KIND=WP) :: sStep, sStepSize
-INTEGER(KIND=IP) :: iWriteNthSteps, iDumpNthSteps, iIntWriteNthSteps
+
 INTEGER(KIND=IP) :: nSteps
 
 REAL(KIND=WP)       :: ffact
 REAL(KIND=WP)  :: diffStep
+
+
+
+
+
+
+
+
+
+!!!!!!    FOR DATA WRITING
 
 CHARACTER(32_IP) :: zDataFileName
 
@@ -147,7 +157,22 @@ TYPE(cArraySegment) :: tArrayE(nElectronEquations_CG)
 TYPE(cArraySegment) :: tArrayA(nFieldEquations_CG)
 TYPE(cArraySegment) :: tArrayZ
 
+
 TYPE(cFileType) :: tPowF
+
+
+
+INTEGER(KIND=IP) :: iWriteNthSteps, iDumpNthSteps, iIntWriteNthSteps
+
+!!!!!!
+
+
+
+
+
+
+
+
 
 REAL(KIND=WP)   :: start_time,end_time
 REAL(KIND=WP)   :: time1, time2 !!!FOR DEBUGGING!!!
