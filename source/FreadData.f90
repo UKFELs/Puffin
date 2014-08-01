@@ -20,7 +20,7 @@ SUBROUTINE read_in(zfilename, &
        qResume, &
        sStepSize, &
        nSteps, &
-       sZ, &
+       sZ0, &
        LattFile,&
        iWriteNthSteps, &
        tArrayZ, &
@@ -126,7 +126,7 @@ SUBROUTINE read_in(zfilename, &
   LOGICAL,           INTENT(OUT)  :: qResume
   REAL(KIND=WP),     INTENT(OUT)  :: sStepSize
   INTEGER(KIND=IP),  INTENT(OUT)  :: nSteps
-  REAL(KIND=WP) ,    INTENT(OUT)  :: sZ
+  REAL(KIND=WP) ,    INTENT(OUT)  :: sZ0
   CHARACTER(32_IP),  INTENT(INOUT):: LattFile
     
   INTEGER(KIND=IP),  INTENT(OUT)  :: iWriteNthSteps
@@ -179,11 +179,15 @@ SUBROUTINE read_in(zfilename, &
 
 ! Define local variables
     
+  integer(kind=ip) :: stpsprlam, nodesperlambda, nperiods ! Steps per lambda_w, nodes per lambda_r
+  real(kind=wp) :: dz2, zbar
+  integer(kind=ip) :: nwaves
+
   INTEGER::ios
   CHARACTER(32_IP) :: beam_file, seed_file
   LOGICAL :: qOKL, qMatched !   TEMP VAR FOR NOW, SHOULD MAKE FOR EACH BEAM
 
-!------------------------------------------------------	
+
 ! Begin subroutine:
 ! Set error flag to false         
 !
@@ -278,7 +282,7 @@ SUBROUTINE read_in(zfilename, &
     
   READ(UNIT=168,FMT=*) iNumNodes(iX_CG)
   READ(UNIT=168,FMT=*) iNumNodes(iY_CG)
-  READ(UNIT=168,FMT=*) iNumNodes(iZ2_CG)
+  READ(UNIT=168,FMT=*) nodesperlambda
   READ(UNIT=168,FMT=*) sWigglerLength(iX_CG)
   READ(UNIT=168,FMT=*) sWigglerLength(iY_CG)
   READ(UNIT=168,FMT=*) sWigglerLength(iZ2_CG)
@@ -335,15 +339,37 @@ SUBROUTINE read_in(zfilename, &
 
 
   READ(UNIT=168,FMT=*) LattFile  
-  READ(UNIT=168,FMT=*) sStepSize
-  READ(UNIT=168,FMT=*) nSteps
-  READ(UNIT=168,FMT=*) sZ
+  READ(UNIT=168,FMT=*) stpsprlam
+  READ(UNIT=168,FMT=*) nperiods
+  READ(UNIT=168,FMT=*) sZ0
   READ(UNIT=168,FMT=*) zDataFileName 
   READ(UNIT=168,FMT=*) iWriteNthSteps  
   READ(UNIT=168,FMT=*) iDumpNthSteps  
   READ(UNIT=168,FMT=*) sPEOut  ! Put to 100% if all are to be written
   
   CLOSE(UNIT=168,STATUS='KEEP')  
+
+
+
+  sStepSize = 4.0_WP * pi * srho / real(stpsprlam,kind=wp)
+  nSteps = nperiods * stpsprlam
+
+  if (tProcInfo_G%qRoot) print*, 'step size is --- ', sStepSize
+
+
+
+
+
+
+  dz2 = 4.0_WP * pi * srho / real(nodesperlambda-1_IP,kind=wp)
+
+  iNumNodes(iZ2_CG) = ceiling(sWigglerLength(iZ2_CG) / dz2) + 1_IP
+
+  if (tProcInfo_G%qRoot) print*, 'number of nodes in z2 --- ', iNumNodes(iZ2_CG)
+
+
+
+
 
 
   CALL read_beamfile(qSimple, dist_f, beam_file,sEmit_n,sSigmaGaussian,sLenEPulse, &

@@ -221,7 +221,7 @@ MODULE Setup
 
   CALL passToGlobals(srho,saw,sgammar,iNodes, &
                      iredNodesX,iredNodesY, &
-                     sLengthOfElm, &
+                     sLengthOfElm,&
                      fx,fy,sFocusFactor,taper, &
                      sFiltFrac,sDiffFrac,sBeta, &
                      zUndType,qSwitches,qOK)

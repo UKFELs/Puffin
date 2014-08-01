@@ -63,36 +63,44 @@ SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
   if (qSimple) call check1D(qSwitches(iOneD_CG), qSwitches(iDiffraction_CG), qSwitches(iFocussing_CG), &
   	                        iNodes)
 
-  DO i = 1,nbeams
+  do i = 1,nbeams
 
-  if (qSimple)  CALL chkESampleLens(sLenEPulse(i,:),iNumElectrons(i,:),srho,qSwitches(iOneD_CG),qOKL)
-    IF (.NOT. qOKL) GOTO 1000
-    
-  END DO
+    if (qSimple) then
 
-  CALL stpFSampleLens(iNodes,sWigglerLength,sLengthOfElm,qSwitches(iOneD_CG),qOKL)
+      call chkESampleLens(sLenEPulse(i,:),iNumElectrons(i,:),srho,qSwitches(iOneD_CG),qOKL)
+      if (.NOT. qOKL) goto 1000
 
-  if (qSimple) CALL chkFSampleLens(iNodes,sWigglerLength,sLengthOfElm,srho,qOKL)
-  IF (.NOT. qOKL) GOTO 1000
+    end if  
 
-  if (qSimple)  CALL checkIntSampling(sStepSize,nSteps,sLengthOfElm,qSwitches,qOKL)
-  IF (.NOT. qOKL) GOTO 1000
+  end do
 
-  if (qSimple) CALL checkFreeParams(srho,saw,sgammar,f_x,f_y,focusfactor,qOKL)
-  IF (.NOT. qOKL) GOTO 1000
+  call stpFSampleLens(iNodes,sWigglerLength,sLengthOfElm,qSwitches(iOneD_CG),qOKL)
 
-  IF(tProcInfo_G%qRoot) PRINT '(I5,1X,A17,1X,F8.4)',nsteps,&
+  if (qSimple) then
+
+    call chkFSampleLens(iNodes,sWigglerLength,sLengthOfElm,srho,qOKL)
+    if (.NOT. qOKL) goto 1000
+
+    call checkIntSampling(sStepSize,nSteps,sLengthOfElm,qSwitches,qOKL)
+    if (.NOT. qOKL) goto 1000
+
+    call checkFreeParams(srho,saw,sgammar,f_x,f_y,focusfactor,qOKL)
+    if (.NOT. qOKL) goto 1000
+
+  end if
+
+  if (tProcInfo_G%qRoot) print '(I5,1X,A17,1X,F8.4)',nsteps,&
        'Step(s) and z-bar=',nsteps*sStepSize
   
 !     Set error flag and exit
 
-  qOK = .TRUE.
+  qOK = .true.
 
-  GOTO 2000
+  goto 2000
 
-1000 CALL Error_log('Error in setupcalcs:CheckParameters',tErrorLog_G)
+1000 call Error_log('Error in setupcalcs:CheckParameters',tErrorLog_G)
 
-2000 CONTINUE
+2000 continue
 
 END SUBROUTINE CheckParameters
   

@@ -36,12 +36,12 @@
                   FIELD NODE SAMPLING
 
 
-65                  INTEGER     iNumNodes(1)               Number of Elements in x direction
-65                  INTEGER     iNumNodes(2)               Number of Elements in y direction
-2084                INTEGER     iNumNodes(3)               Number of Elements in z2 direction
+65                  INTEGER     iNumNodesX                 Number of Elements in x direction
+65                  INTEGER     iNumNodesY                 Number of Elements in y direction
+14                  INTEGER     nodesPerLambdar            Number of nodes per resonant wavelength
 44.49088            REAL        sFModelLengthX             Length of radiation field model in x direction
 44.49088            REAL        sFModelLengthY             Length of radiation field model in y direction
-14.5                 REAL        sWigglerLengthZ2           Length of wiggler in z2-bar direction
+14.5                REAL        sWigglerLengthZ2           Length of wiggler in z2-bar direction
 30                  REAL        iRedNodesX                 Length of central wiggler section in x where electrons will not leave
 30                  REAL        iRedNodesY                 Length of central wiggler section in y where electrons will not leave
 0.4                 REAL        sFiltFrac                  Specifies cutoff for high pass filter as fraction of resonant frequency
@@ -59,10 +59,11 @@ Input the scaled independant variables from [1] here
 0.0055555555        REAL        rho                        Pierce parameter, describe the strength of the field
 1.0                 REAL        ux                         Normalised magnitude of wiggler magnetic field x-vector: H=1 is helical, H=0 is planar
 1.0                 REAL        uy                         Normalised magnitude of wiggler magnetic field y-vector: H=1 is helical, H=0 is planar
-2.04082257399197E-6 REAL        eta                        Scaled longitudinal velocity (1-beta_av) / beta_av
-9.09137381010728E-2 REAL        kbeta                      Scaled betatron wavenumber
+1.0                 REAL        aw                         rms unduator parameter
+700.0               REAL        gamma                      Resonant Energy
 1.41213562373095    REAL        sFocusfactor               Focussing factor f, from the betatron wavenumber
 1.0                 REAL        Dfact                      Dispersive strength factor for chicane
+''                  CHARACTER   undType                    Undulator type - 'curved' , 'planepole' , else 1D (no off axis variation of aw)
 0.0                 REAL        taper                      gradient of taper daw/dz
 
 
@@ -79,9 +80,9 @@ What do we want to calculate in the code to output i.e. bunching, pulse current 
 
 
 ''                  CHARACTER   lattFile        Contents: N_w(periods), delta(periods) (!!! NO BLANK LINES AT END !!!)Blank if none.
-1.730283137138-3    REAL        sStepSize       Step size for integration (if zero auto calculated)
-4640                INTEGER     nSteps          Number of steps (if zero,travel one raleigh length in z)
-0.0                 REAL        sZ              Starting z position
+60                  INTEGER     stepsPerPeriod  Number of steps per wiggler period
+115                 INTEGER     nPeriods        Number of wiggler periods
+0.0                 REAL        sZ0              Starting z position
 'DataFile.dat'      CHARACTER   zDataFileName   Data file name
 2300                INTEGER     iWriteNthSteps  Steps to write data at
 1000                INTEGER     iDumpNthSteps   Steps to dump data at (0 for no dumping)
