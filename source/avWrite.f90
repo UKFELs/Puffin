@@ -126,7 +126,7 @@ contains
 
 
 
-  subroutine initPFile(powFType)
+  subroutine initPFile(powFType, qForm)
 
     implicit none
 
@@ -135,13 +135,14 @@ contains
 ! inputs
 
     type(cFileType), intent(inout) :: powFType
+    logical, intent(in) :: qForm
 
     character(32_IP) :: fname, vname
     logical :: qOKL
 
     real(kind=wp) :: lx, ly
 
-    powFType%qformatted = .TRUE.
+    powFType%qformatted = qForm
     powFType%zFileName = 'power.sdds' !  filename
     vname = 'power' !  SDDS variable name
 

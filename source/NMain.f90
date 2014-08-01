@@ -254,37 +254,19 @@ DO iStep = start_step, nSteps
  
   iCount = iCount + 1_IP
   
-  IF ((iCount == iWriteNthSteps).OR.&
-       (iStep == nSteps)) THEN
-     iCount = 0_IP
-     
-     CALL innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
-     
-     CALL WriteData(qSeparateStepFiles_G,&
-          zDataFileName,tArrayZ,tArrayA,tArrayE,&
-          iStep,sZ,sA,sV,.FALSE.,qFormattedFiles_G,&
-          qOKL)
-  END IF
 
 
 
-
-
-
-
-
-
-
-  if (mod(iStep,iIntWriteNthSteps)==0) then
+  if ( (mod(iStep,iIntWriteNthSteps)==0) .or. (iStep == nSteps) .or. &
+                            (mod(iStep,iWriteNthSteps)==0) ) then
 
     call innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
 
-    call writeIntData(sA,sV)
+    call wdfs(sA, sV, sZ, istep, tArrayA, tArrayE, tArrayZ, &
+              iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
+              qOK)
 
   end if
-
-
-
 
 
 

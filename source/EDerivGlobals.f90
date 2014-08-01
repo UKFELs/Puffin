@@ -121,7 +121,7 @@ REAL(KIND=WP) :: delta_G
 !!!!! NEW FOR NMAIN
 
 LOGICAL          :: qSeparateStepFiles_G
-LOGICAL          :: qFormattedFiles_G
+
 LOGICAL             :: qMod_G
 
 LOGICAL :: qResume, qWrite
@@ -140,6 +140,11 @@ INTEGER(KIND=IP) :: nSteps
 
 REAL(KIND=WP)       :: ffact
 REAL(KIND=WP)  :: diffStep
+
+
+real(kind=wp) :: lam_w_G, lam_r_G   ! wiggler period, resonant wavelength
+
+real(kind=wp) :: lg_G, lc_G  ! gain length, cooperation length
 
 
 

@@ -135,6 +135,7 @@ MODULE Setup
        srho,              &
        saw,               &
        sgammar,           &
+       lambda_w,          &
        sEmit_n,           &
        fx,                &
        fy,                &
@@ -220,12 +221,12 @@ MODULE Setup
 
 !     Pass local vars to global vars
 
-  CALL passToGlobals(srho,saw,sgammar,iNodes, &
+  CALL passToGlobals(srho,saw,sgammar,lambda_w,iNodes, &
                      iredNodesX,iredNodesY, &
                      sLengthOfElm,&
                      fx,fy,sFocusFactor,taper, &
                      sFiltFrac,sDiffFrac,sBeta, &
-                     zUndType,qSwitches,qOK)
+                     zUndType,qFormattedFiles, qSwitches,qOK)
 
   IF (.NOT. qOKL) GOTO 1000
 
@@ -405,11 +406,16 @@ MODULE Setup
          saw_G,&
          sEta_G,&
          sGammaR_G,&
+         sKBeta_G, &
+         sFocusfactor_G, &
+         lam_w_G, lam_r_G, &
+         lg_G, lc_G, &
          iGloNumElectrons_G,&
          nFieldEquations_CG,&
          nElectronEquations_CG,&  
          sZ,&
-         iWriteNthSteps,&
+         iWriteNthSteps, &
+         iIntWriteNthSteps, &
          sSeedSigma(1,:),&
          qSwitches,&
          fx,fy,&
@@ -423,27 +429,35 @@ MODULE Setup
 !    file - In EArrayFunctions.f90 line 449
 
   CALL MPI_BARRIER(tProcInfo_G%comm,error)
-  
-  IF (qWrite.AND.(.NOT.(qSeparateStepFiles))) THEN
-    IF(tProcInfo_G%qROOT) PRINT *,&
-         'Writing field and electron values to a single file'
-    CALL SetUpDataFiles(zDataFileName, &
-         qFormattedFiles, &
-         tArrayZ, &
-         tArrayA, &
-         tArrayE, &
-         qOKL)   
-    IF (.NOT. qOKL) GOTO 1000
-  
-  END IF
-     
-!    Write initial result to file - see line 374 for 
-!    "WriteIntegrationData" routine
 
-  CALL WriteData(qSeparateStepFiles,&
-      zDataFileName,tArrayZ,tArrayA,tArrayE,&
-      iStep,sZ,sA,sV,.TRUE.,qFormattedFiles,qOKL)
-  IF (.NOT. qOKL) GOTO 1000
+
+
+  if (qWrite) call wdfs(sA, sV, sZ, 0, tArrayA, tArrayE, tArrayZ, &
+                        iIntWriteNthSteps, iWriteNthSteps, &
+                        qSeparateStepFiles, qOKL)
+
+  if (.not. qOKL) goto 1000
+
+!   IF (qWrite.AND.(.NOT.(qSeparateStepFiles))) THEN
+!     IF(tProcInfo_G%qROOT) PRINT *,&
+!          'Writing field and electron values to a single file'
+!     CALL SetUpDataFiles(zDataFileName, &
+!          qFormattedFiles, &
+!          tArrayZ, &
+!          tArrayA, &
+!          tArrayE, &
+!          qOKL)   
+!     IF (.NOT. qOKL) GOTO 1000
+  
+!   END IF
+     
+! !    Write initial result to file - see line 374 for 
+! !    "WriteIntegrationData" routine
+
+!   CALL WriteData(qSeparateStepFiles,&
+!       zDataFileName,tArrayZ,tArrayA,tArrayE,&
+!       iStep,sZ,sA,sV,.TRUE.,qFormattedFiles,qOKL)
+!   IF (.NOT. qOKL) GOTO 1000
    
   CALL MPI_BARRIER(tProcInfo_G%comm,error)
   
@@ -451,7 +465,7 @@ MODULE Setup
   
   
   qSeparateStepFiles_G = qSeparateStepFiles
-  qFormattedFiles_G = qFormattedFiles
+
   qMod_G = qMod
 
   if (qSwitches(iDump_CG)) call DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)

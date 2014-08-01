@@ -31,11 +31,15 @@ CONTAINS
        sA0_Re, &
        sA0_Im, &
        rho,aw,epsilon,gamma_r, &
+       kbeta, ff, &
+       lam_w, lam_r, &
+       l_g, l_c, &
        totalNumberElectrons, &
        nWaveEquations, &
        nElectronEquations, &  
        sZ, &
        iWriteNthSteps, &
+       iIntWriteNthSteps, &
        sSeedSigma, &
        qSwitch, &
        fx, &
@@ -83,11 +87,13 @@ CONTAINS
     REAL(KIND=WP),    INTENT(IN) :: sA0_Re   
     REAL(KIND=WP),    INTENT(IN) :: sA0_Im   
     REAL(KIND=WP),    INTENT(IN) :: rho,aw,epsilon,gamma_r
+    REAL(KIND=WP),    INTENT(IN) :: kbeta, ff
+    real(kind=wp),    intent(in) :: lam_w, lam_r, l_g, l_c
     INTEGER(KIND=IPL), INTENT(IN) :: totalNumberElectrons
     INTEGER(KIND=IP), INTENT(IN) :: nWaveEquations    
     INTEGER(KIND=IP), INTENT(IN) :: nElectronEquations
     REAL(KIND=WP),    INTENT(IN) :: sZ
-    INTEGER(KIND=IP), INTENT(IN) :: iWriteNthSteps
+    INTEGER(KIND=IP), INTENT(IN) :: iWriteNthSteps, iIntWriteNthSteps
     REAL(KIND=WP),    INTENT(IN) :: sSeedSigma(:)
     LOGICAL,          INTENT(IN) :: qSwitch(:)
     REAL(KIND=WP),    INTENT(IN) :: fx,fy
@@ -189,6 +195,18 @@ CONTAINS
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('gamma_r','double',tFileType=tParamFile)	  
        If (.NOT. qOKL) Goto 1000
+       call SddsWriteParameter('k_beta','double',tFileType=tParamFile)   
+       If (.NOT. qOKL) Goto 1000
+       call SddsWriteParameter('ff','double',tFileType=tParamFile)   
+       If (.NOT. qOKL) Goto 1000
+       call SddsWriteParameter('lambda_w','double',tFileType=tParamFile)   
+       If (.NOT. qOKL) Goto 1000
+       call SddsWriteParameter('lambda_r','double',tFileType=tParamFile)   
+       If (.NOT. qOKL) Goto 1000
+       call SddsWriteParameter('Lg','double',tFileType=tParamFile)   
+       If (.NOT. qOKL) Goto 1000
+       call SddsWriteParameter('Lc','double',tFileType=tParamFile)   
+       If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('totalNumberElectrons','long',&
             tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
@@ -199,6 +217,8 @@ CONTAINS
        call SddsWriteParameter('sZ','double',tFileType=tParamFile)	  
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('iWriteNthSteps','long',tFileType=tParamFile)
+       If (.NOT. qOKL) Goto 1000
+       call SddsWriteParameter('iIntWriteNthSteps','long',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('sSeedSigmaX','double',tFileType=tParamFile)	
        If (.NOT. qOKL) Goto 1000
@@ -297,6 +317,18 @@ CONTAINS
        If (.NOT. qOKL) Goto 1000
        call WriteRealNumber(gamma_r,tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
+       call WriteRealNumber(kbeta,tParamFile,qOKL)
+       If (.NOT. qOKL) Goto 1000
+       call WriteRealNumber(ff,tParamFile,qOKL)
+       If (.NOT. qOKL) Goto 1000
+       call WriteRealNumber(lam_w,tParamFile,qOKL)
+       If (.NOT. qOKL) Goto 1000
+       call WriteRealNumber(lam_r,tParamFile,qOKL)
+       If (.NOT. qOKL) Goto 1000
+       call WriteRealNumber(l_g,tParamFile,qOKL)
+       If (.NOT. qOKL) Goto 1000
+       call WriteRealNumber(l_c,tParamFile,qOKL)
+       If (.NOT. qOKL) Goto 1000
        call WriteINTEGERL(totalNumberElectrons,tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
        call WriteINTEGER(nWaveEquations,tParamFile,qOKL) 
@@ -306,6 +338,8 @@ CONTAINS
        call WriteRealNumber(sZ,tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
        call WriteINTEGER(iWriteNthSteps,tParamFile,qOKL) 
+       If (.NOT. qOKL) Goto 1000
+       call WriteINTEGER(iIntWriteNthSteps,tParamFile,qOKL) 
        If (.NOT. qOKL) Goto 1000
        call WriteRealNumber(sSeedSigma(iX_CG),tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
@@ -362,6 +396,38 @@ CONTAINS
 
 
 
+!                   Write result to file
+ 
+  iCount = iCount + 1_IP
+  
+  IF ((iCount == iWriteNthSteps).OR.&
+       (iStep == nSteps)) THEN
+     iCount = 0_IP
+     
+     CALL innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
+     
+     CALL WriteData(qSeparateStepFiles_G,&
+          zDataFileName,tArrayZ,tArrayA,tArrayE,&
+          iStep,sZ,sA,sV,.FALSE.,qFormattedFiles_G,&
+          qOKL)
+  END IF
+
+
+
+
+
+
+
+
+
+
+  if ((mod(iStep,iIntWriteNthSteps)==0) .or. (iStep == nSteps) ) then
+
+    call innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
+
+    call writeIntData(sA,sV)
+
+  end if
 
 
 
@@ -379,7 +445,15 @@ CONTAINS
 
 
 
-  subroutine wdfs(sA, sV, sZ, istep, tArrayA, tArrayE, tArrayZ, qOK)
+
+
+
+
+
+
+
+  subroutine wdfs(sA, sV, sZ, istep, tArrayA, tArrayE, tArrayZ, &
+                  iIntWr, iWr, qSep, qOK)
 
     implicit none
 
@@ -389,36 +463,58 @@ CONTAINS
     real(kind=wp), intent(in) :: sA(:), sV(:), sZ
     type(cArraySegment), intent(inout) :: tArrayA(:), tArrayE(:), tArrayZ
     integer(kind=ip), intent(in) :: istep
+    integer(kind=ip), intent(in) :: iIntWr, iWr
+    logical, intent(in) :: qSep
     logical, intent(inout) :: qOK
 
-
+    logical :: qWriteInt, qWriteFull, qOKL
 
     qOK = .false.
 
 
 
-    if (timetowrite) then
+    if ((mod(iStep,iIntWr)==0) .or. (iStep == nSteps) .or. (iStep == 0) ) then
 
-      call outputBeamFiles(sV, tArrayE, iStep, qSeparate, zDFName)
+      qWriteInt = .true.
+
+    end if
+
+
+
+
+    if ((mod(iStep,iWr)==0) .or. (iStep == nSteps) .or. (iStep == 0) ) then
+
+      qWriteFull = .true.
 
     end if
 
 
-    if (timetowrite) then 
 
-      call outputField(sA, tArrayA, iStep, qSeparate, zDFName)
+    if (qWriteFull) then
 
-    end if
-
-    if (timetowrite) then
-
-      call outputZ(sZ, tArrayZ, iStep, qSeparate, zDFName)
+      call outputBeamFiles(sV, tArrayE, iStep, qSep, zDFName, qOKL)
+      if (.not. qOKL) goto 1000
 
     end if
 
-    if (timetowrite) then
 
-      outputPower()
+    if (qWriteFull) then 
+
+      call outputField(sA, tArrayA, iStep, qSep, zDFName, qOKL)
+      if (.not. qOKL) goto 1000
+
+    end if
+
+    if (qWriteFull) then
+
+      call outputZ(sZ, tArrayZ, iStep, qSep, zDFName, qOKL)
+      if (.not. qOKL) goto 1000
+
+    end if
+
+    if (qWriteInt) then
+
+      call writeIntData(sA,sV)
     
     end if
 
@@ -437,15 +533,13 @@ CONTAINS
 
 !     Error Handler - Error log Subroutine in CIO.f90 line 709
 
-1000 call Error_log('Error in sddsPuffin:createFFiles',tErrorLog_G)
-    print*,'Error in sddsPuffin:createFFiles'
+1000 call Error_log('Error in sddsPuffin:wdfs',tErrorLog_G)
+    print*,'Error in sddsPuffin:wdfs'
 
 2000 continue
 
 
   end subroutine wdfs
-
-
 
 
 
@@ -1081,213 +1175,239 @@ CONTAINS
 
 
 
-  subroutine WriteData(qSeparateStepFiles,&
-                       zDataFileName,tArrayZ,tArrayA,tArrayE,&
-                       iStep,sZ,sA,sV,qStart,qFormattedFiles, &
-                       qOK)
-
-    implicit none
-
-! Subroutine to write the data to files
-! inputs:
-
-    CHARACTER(*),        INTENT(IN)  :: zDataFileName
-    LOGICAL,             INTENT(IN)  :: qSeparateStepFiles
-    TYPE(cArraySegment), INTENT(INOUT) :: tArrayZ, &
-                                          tArrayA(:),tArrayE(:)
-    INTEGER(KIND=IP),    INTENT(IN)  :: iStep
-    REAL(KIND=WP),       INTENT(IN)  :: sZ,sA(:),sV(:)
-    LOGICAL,             INTENT(IN)  :: qStart,qFormattedFiles
-    LOGICAL,             INTENT(OUT) :: qOK
-
-! Local vars:
-
-    LOGICAL  :: qOKL
 
 
-!     Set error flag to false
 
-    qOK = .FALSE. 
 
-!     Open the file to receive data output - This
-!     subroutine is in EArrayFunctions.f90 line 449  
-!     IntegerToString FUNCTION see line 2469
+
+
+!!!!!!!!!!!!!!!!!!!!   REDUNDANT ROUTINES
+
+!   subroutine WriteData(qSeparateStepFiles,&
+!                        zDataFileName,tArrayZ,tArrayA,tArrayE,&
+!                        iStep,sZ,sA,sV,qStart,qFormattedFiles, &
+!                        qOK)
+
+!     implicit none
+
+! ! Subroutine to write the data to files
+! ! inputs:
+
+!     CHARACTER(*),        INTENT(IN)  :: zDataFileName
+!     LOGICAL,             INTENT(IN)  :: qSeparateStepFiles
+!     TYPE(cArraySegment), INTENT(INOUT) :: tArrayZ, &
+!                                           tArrayA(:),tArrayE(:)
+!     INTEGER(KIND=IP),    INTENT(IN)  :: iStep
+!     REAL(KIND=WP),       INTENT(IN)  :: sZ,sA(:),sV(:)
+!     LOGICAL,             INTENT(IN)  :: qStart,qFormattedFiles
+!     LOGICAL,             INTENT(OUT) :: qOK
+
+! ! Local vars:
+
+!     LOGICAL  :: qOKL
+
+
+! !     Set error flag to false
+
+!     qOK = .FALSE. 
+
+! !     Open the file to receive data output - This
+! !     subroutine is in EArrayFunctions.f90 line 449  
+! !     IntegerToString FUNCTION see line 2469
     
-    if (qSeparateStepFiles .or. qStart) then
+!     if (qSeparateStepFiles .or. qStart) then
 
-       call CreateSDDSFiles(zDataFileName,&
-            qFormattedFiles,&
-            tArrayZ,&
-            tArrayA,&
-            tArrayE,&
-            qOKL,&
-            trim(IntegerToString(iStep)))   
-            if (.not. qOKL) goto 1000
+!        call CreateSDDSFiles(zDataFileName,&
+!             qFormattedFiles,&
+!             tArrayZ,&
+!             tArrayA,&
+!             tArrayE,&
+!             qOKL,&
+!             trim(IntegerToString(iStep)))   
+!             if (.not. qOKL) goto 1000
     
-    end if
+!     end if
 
 
     
-    call WriteIntegrationData(sZ,&
-         sA, sV, &
-         tArrayZ, tArrayA,&
-         tArrayE, qOKL)
-    if (.not. qOKL) goto 1000
+!     call WriteIntegrationData(sZ,&
+!          sA, sV, &
+!          tArrayZ, tArrayA,&
+!          tArrayE, qOKL)
+!     if (.not. qOKL) goto 1000
 
 
-!     Set error flag and exit         
+! !     Set error flag and exit         
 
-    qOK = .TRUE.				    
-    goto 2000 
+!     qOK = .TRUE.				    
+!     goto 2000 
 
 
 
-!     Error Handler - Error log Subroutine in CIO.f90 line 709
+! !     Error Handler - Error log Subroutine in CIO.f90 line 709
 
-1000 call Error_log('Error in Fdatawrite:WriteChiData',tErrorLog_G)
-    print*,'Error in Fdatawrite:WriteChiData'
+! 1000 call Error_log('Error in Fdatawrite:WriteChiData',tErrorLog_G)
+!     print*,'Error in Fdatawrite:WriteChiData'
 
-2000 CONTINUE
+! 2000 CONTINUE
 
-  END SUBROUTINE WriteData
+!   END SUBROUTINE WriteData
   
-!**********************************************************
+! !**********************************************************
 
-  SUBROUTINE WriteIntegrationData(sZ,sA,sY,tWriteZData,&
-       tWriteAData,tArraySegment,qOK)
+!   SUBROUTINE WriteIntegrationData(sZ,sA,sY,tWriteZData,&
+!        tWriteAData,tArraySegment,qOK)
 
-! Write Integration data to file 
-!
-! sZ                      - INPUT    - At Z
-! sY                      - INPUT    - Result Y 
-! iLenY                   - INPUT    - Length of Y
-! tArraySegment           - UPDATE   - Description of segments 
-!                                      making up sY 
-! qOK                     - OUTPUT   - Error flag
+! ! Write Integration data to file 
+! !
+! ! sZ                      - INPUT    - At Z
+! ! sY                      - INPUT    - Result Y 
+! ! iLenY                   - INPUT    - Length of Y
+! ! tArraySegment           - UPDATE   - Description of segments 
+! !                                      making up sY 
+! ! qOK                     - OUTPUT   - Error flag
 
-    implicit none
+!     implicit none
 
-    REAL(KIND=WP),      INTENT(IN)      :: sZ
-    REAL(KIND=WP),      INTENT(IN)      :: sA(:)
-    REAL(KIND=WP),      INTENT(IN)      :: sY(:)
-    TYPE(cArraySegment),INTENT(INOUT)   :: tWriteZData
-    TYPE(cArraySegment),INTENT(INOUT)   :: tWriteAData(:)
-    TYPE(cArraySegment),INTENT(INOUT)   :: tArraySegment(:)
-    LOGICAL,            INTENT(OUT)     :: qOK      
+!     REAL(KIND=WP),      INTENT(IN)      :: sZ
+!     REAL(KIND=WP),      INTENT(IN)      :: sA(:)
+!     REAL(KIND=WP),      INTENT(IN)      :: sY(:)
+!     TYPE(cArraySegment),INTENT(INOUT)   :: tWriteZData
+!     TYPE(cArraySegment),INTENT(INOUT)   :: tWriteAData(:)
+!     TYPE(cArraySegment),INTENT(INOUT)   :: tArraySegment(:)
+!     LOGICAL,            INTENT(OUT)     :: qOK      
 
-! Define local variables
-!
-! iSegment   - Current segment number 
-! iStart     - Start position of data in array Y
-! iEnd       - End position of data in array Y
-! qOKL       - Local error flag
+! ! Define local variables
+! !
+! ! iSegment   - Current segment number 
+! ! iStart     - Start position of data in array Y
+! ! iEnd       - End position of data in array Y
+! ! qOKL       - Local error flag
 
-    INTEGER(KIND=IP)               :: iSegment
-    INTEGER(KIND=IP)               :: iStart
-    INTEGER(KIND=IP)               :: iEnd, fieldsize, error
-    REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: write_in 
-    LOGICAL                        :: qOKL
+!     INTEGER(KIND=IP)               :: iSegment
+!     INTEGER(KIND=IP)               :: iStart
+!     INTEGER(KIND=IP)               :: iEnd, fieldsize, error
+!     REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: write_in 
+!     LOGICAL                        :: qOKL
 
-!     Set error flag to false
+! !     Set error flag to false
     
-    qOK = .FALSE.
+!     qOK = .FALSE.
 
-!     Write out field data:-only root processor needs to do this
+! !     Write out field data:-only root processor needs to do this
     
-    fieldsize = SIZE(sA)/2_IP
+!     fieldsize = SIZE(sA)/2_IP
 
 
 
-    if (tProcInfo_G%qRoot) then
+!     if (tProcInfo_G%qRoot) then
        
-       if (tWriteAData(iRe_A_CG)%qWrite) then
+!        if (tWriteAData(iRe_A_CG)%qWrite) then
           
-          allocate(write_in(fieldsize))
+!           allocate(write_in(fieldsize))
 
-          write_in = Vector(iRe_A_CG,sA)
+!           write_in = Vector(iRe_A_CG,sA)
         	
-          call OutputIntegrationData(tWriteAData(iRe_A_CG)%tFileType,&
-                                     write_in,fieldsize,qOKL)
+!           call OutputIntegrationData(tWriteAData(iRe_A_CG)%tFileType,&
+!                                      write_in,fieldsize,qOKL)
 
-          deallocate(write_in)
+!           deallocate(write_in)
 
-       end if
+!        end if
 
-    end if
-
-
+!     end if
 
 
-    if (tProcInfo_G%qRoot) then
 
-       if (tWriteAData(iIm_A_CG)%qWrite) then
 
-          allocate(write_in(fieldsize))
+!     if (tProcInfo_G%qRoot) then
 
-          write_in = Vector(iIm_A_CG,sA)
+!        if (tWriteAData(iIm_A_CG)%qWrite) then
+
+!           allocate(write_in(fieldsize))
+
+!           write_in = Vector(iIm_A_CG,sA)
           
-          call OutputIntegrationData(tWriteAData(iIm_A_CG)%tFileType,&
-                                     write_in,fieldsize,qOKL)
+!           call OutputIntegrationData(tWriteAData(iIm_A_CG)%tFileType,&
+!                                      write_in,fieldsize,qOKL)
 
-          deallocate(write_in)
+!           deallocate(write_in)
 
-       end if
+!        end if
 
-    end if
+!     end if
 
 
 
-!     Write Electron Segments to file      
-!     OutputIntegrationData routines are
-!     either starts at line 491 or 585 in this file 
+! !     Write Electron Segments to file      
+! !     OutputIntegrationData routines are
+! !     either starts at line 491 or 585 in this file 
 
-    do iSegment = 1_IP, SIZE(tArraySegment)
+!     do iSegment = 1_IP, SIZE(tArraySegment)
 
-       if (tArraySegment(iSegment)%qWrite) then
+!        if (tArraySegment(iSegment)%qWrite) then
      
-          iStart = tArraySegment(iSegment)%iStart
-          iEnd   = tArraySegment(iSegment)%iEnd
+!           iStart = tArraySegment(iSegment)%iStart
+!           iEnd   = tArraySegment(iSegment)%iEnd
 
-!     Write the data
+! !     Write the data
       
-          call OutputIntegrationData(tArraySegment(iSegment)%tFileType, &
-               sY(iStart:iEnd),tProcInfo_G%rank,iGloNumElectrons_G,&
-               qOKL)
-          if (.NOT. qOKL) goto 1000
+!           call OutputIntegrationData(tArraySegment(iSegment)%tFileType, &
+!                sY(iStart:iEnd),tProcInfo_G%rank,iGloNumElectrons_G,&
+!                qOKL)
+!           if (.NOT. qOKL) goto 1000
 
-       end if
+!        end if
 
-    end do
+!     end do
 
 
 
-!     Write out z data
+! !     Write out z data
 
-    if (tProcInfo_G%qRoot) then
+!     if (tProcInfo_G%qRoot) then
 
-       If (tWriteZData%qWrite) then
+!        If (tWriteZData%qWrite) then
 
-          call OutputIntegrationData(tWriteZData%tFileType, &
-                                     sZ,qOKL)
-          if (.not. qOKL) goto 1000
+!           call OutputIntegrationData(tWriteZData%tFileType, &
+!                                      sZ,qOKL)
+!           if (.not. qOKL) goto 1000
        
-       end if
+!        end if
 
-    end if
+!     end if
 
-!     Set error flag and exit         
+! !     Set error flag and exit         
 
-    qOK = .TRUE.				    
-    goto 2000     
+!     qOK = .TRUE.				    
+!     goto 2000     
 
-!     Error Handler - Error log Subroutine in CIO.f90 line 709
+! !     Error Handler - Error log Subroutine in CIO.f90 line 709
 
-1000 call Error_log('Error in Fdatawrite:WriteIntegrationData',tErrorLog_G)
-    print*,'Error in Fdatawrite:WriteIntegrationData'
+! 1000 call Error_log('Error in Fdatawrite:WriteIntegrationData',tErrorLog_G)
+!     print*,'Error in Fdatawrite:WriteIntegrationData'
 
-2000 continue
+! 2000 continue
 
-  end subroutine WriteIntegrationData
+!   end subroutine WriteIntegrationData
+
+!!!!!!!!!!!!!!!!!!!!!!! END REDUNDANT ROUTINES
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
