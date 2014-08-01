@@ -10,6 +10,8 @@ USE ArrayFunctions
 USE TypesandConstants
 USE Globals
 USE ParallelSetUp
+Use avWrite
+
 
 INTERFACE OutputIntegrationData
    MODULE PROCEDURE OutputIntegrationData_RealValue, &
@@ -117,7 +119,7 @@ CONTAINS
 ! Open the file to receive data output -
 ! This subroutine is in IO.f90 line 793
        tParamFile%qFormatted = .TRUE.
-       call InitialiseSDDSFile('Param' // TRIM(zDataFileName), &
+       call InitBasicSDDSFile('Param' // TRIM(zDataFileName), &
             tParamFile, &
             qOKL)
        If (.NOT. qOKL) Goto 1000
@@ -1085,7 +1087,7 @@ CONTAINS
 
   IF (tProcInfo_G%rank==0) THEN
 
-    call InitialiseSDDSFile(fname // TRIM(zDataFileName), &
+    call InitBasicSDDSFile(fname // TRIM(zDataFileName), &
          tParamFile, &
          qOKL)
     If (.NOT. qOKL) Goto 1000

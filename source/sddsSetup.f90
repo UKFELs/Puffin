@@ -10,8 +10,8 @@
 module sddsSetup
 
 use paratype
-
-
+use IO
+use FileType
 
 
 contains
@@ -63,8 +63,8 @@ contains
 
 !     Error Handler
 
-1000 call Error_log('Error in DIO: InitialiseSDDSFile',tErrorLog_G)
-    print*,'Error in DIO: InitialiseSDDSFile'
+1000 call Error_log('Error in sddsSetup: InitBasicSDDSFile',tErrorLog_G)
+    print*,'Error in sddsSetup: InitBasicSDDSFile'
 
 2000 continue
 
@@ -110,8 +110,8 @@ contains
 
 !     Error Handler
 
-1000 call Error_log('Error in DIO:  WriteSDDSHeader',tErrorLog_G)
-    Print*,'Error in DIO: WriteSDDSHeader'
+1000 call Error_log('Error in sddsSetup:  WriteSDDSHeader',tErrorLog_G)
+    Print*,'Error in sddsSetup: WriteSDDSHeader'
 
 2000 CONTINUE     
 
@@ -165,8 +165,8 @@ contains
 
 !     Error Handler
 
-1000 call Error_log('Error in DIO:  WriteSDDSNewPage',tErrorLog_G)
-    print*,'Error in DIO: WriteSDDSNewPage'
+1000 call Error_log('Error in sddsSetup:  WriteSDDSNewPage',tErrorLog_G)
+    print*,'Error in sddsSetup: WriteSDDSNewPage'
 
 2000 continue     
 

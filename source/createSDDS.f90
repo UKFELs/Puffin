@@ -10,195 +10,197 @@ module createSDDS
 
 
 use paratype
-
-
+use arrayfunctions
+use CIOWrapper
+use IO
+use ParallelInfoType
 
 contains
 
 ! was SetUpDataFiles
 
-  subroutine CreateSDDSFiles(zDataFileName,  &
-                             qFormattedFiles, &
-                             tWriteZData,    &
-                             tWriteAData, &
-                             tArraySegment,  &
-                             qOK,            &
-                             zOptionalString)
+!   subroutine CreateSDDSFiles(zDataFileName,  &
+!                              qFormattedFiles, &
+!                              tWriteZData,    &
+!                              tWriteAData, &
+!                              tArraySegment,  &
+!                              qOK,            &
+!                              zOptionalString)
 
-! Open data files
-!
-! zDataFileName           - INPUT    - Data file name
-! qFormattedFiles         - INPUT    - if output data files to be formatted or binary
-! tArraySegment           - UPDATE   - Result data file info
-! qOK                     - OUTPUT   - Error flag
+! ! Open data files
+! !
+! ! zDataFileName           - INPUT    - Data file name
+! ! qFormattedFiles         - INPUT    - if output data files to be formatted or binary
+! ! tArraySegment           - UPDATE   - Result data file info
+! ! qOK                     - OUTPUT   - Error flag
 
-    IMPLICIT NONE
+!     IMPLICIT NONE
 
-    character(32_IP),        INTENT(IN)                :: zDataFileName
-    logical,                 INTENT(IN)                :: qFormattedFiles
-    TYPE(cArraySegment),     INTENT(INOUT)             :: tWriteZData
-    TYPE(cArraySegment),     INTENT(INOUT)             :: tWriteAData(:)
-    TYPE(cArraySegment),     INTENT(INOUT)             :: tArraySegment(:)
-    LOGICAL,                 INTENT(OUT)               :: qOK      
-    character(*),            INTENT(IN), OPTIONAL      :: zOptionalString
+!     character(32_IP),        INTENT(IN)                :: zDataFileName
+!     logical,                 INTENT(IN)                :: qFormattedFiles
+!     TYPE(cArraySegment),     INTENT(INOUT)             :: tWriteZData
+!     TYPE(cArraySegment),     INTENT(INOUT)             :: tWriteAData(:)
+!     TYPE(cArraySegment),     INTENT(INOUT)             :: tArraySegment(:)
+!     LOGICAL,                 INTENT(OUT)               :: qOK      
+!     character(*),            INTENT(IN), OPTIONAL      :: zOptionalString
 
-! Define local variables
-! 
-! iSegment - Local loop variable
-! zFileName - Filename to use 
-! qOKL   - Local error flag
+! ! Define local variables
+! ! 
+! ! iSegment - Local loop variable
+! ! zFileName - Filename to use 
+! ! qOKL   - Local error flag
 
-    INTEGER(KIND=IP)               :: iSegment
-    character(32_IP)               :: zFileName
-    LOGICAL                        :: qOptional
-    LOGICAL                        :: qOKL
+!     INTEGER(KIND=IP)               :: iSegment
+!     character(32_IP)               :: zFileName
+!     LOGICAL                        :: qOptional
+!     LOGICAL                        :: qOKL
 
-!     Set error flag to false         
-!     This type is defined is "ParallelInfoType.f90"
+! !     Set error flag to false         
+! !     This type is defined is "ParallelInfoType.f90"
 
-    qOK = .false.    
+!     qOK = .false.    
 
-    qOptional = .false.
+!     qOptional = .false.
 
 
 
-    if (present(zOptionalString)) then
+!     if (present(zOptionalString)) then
 
-      if (len(trim(adjustl(zOptionalString))) > 0) then
+!       if (len(trim(adjustl(zOptionalString))) > 0) then
 
-        qOptional = .TRUE.
+!         qOptional = .TRUE.
     
-      end if
+!       end if
   
-    end if
+!     end if
 
 
-!     ''tArraySegment'' type is defined in "AMathLibGlobals.f90"
+! !     ''tArraySegment'' type is defined in "AMathLibGlobals.f90"
 
-!     Loop over allsegments and open data file if required
+! !     Loop over allsegments and open data file if required
 
-    do iSegment = 1_IP, size(tArraySegment)
+!     do iSegment = 1_IP, size(tArraySegment)
 
 
 
-!     If to write data open file
+! !     If to write data open file
 
-      if (tArraySegment(iSegment)%qWrite) Then
+!       if (tArraySegment(iSegment)%qWrite) Then
 
-!     Create filename
+! !     Create filename
 
-!     Pamela: need to put something sensible here
+! !     Pamela: need to put something sensible here
 
-        zFilename = (trim(adjustl(tArraySegment(iSegment)%zVariable)) // trim(adjustl(zDataFileName)) )
+!         zFilename = (trim(adjustl(tArraySegment(iSegment)%zVariable)) // trim(adjustl(zDataFileName)) )
 
-        if (qOptional) then
-          zFilename = (trim(adjustl(zOptionalString)) // '_' // trim(adjustl(zFilename)) )
-        end if
+!         if (qOptional) then
+!           zFilename = (trim(adjustl(zOptionalString)) // '_' // trim(adjustl(zFilename)) )
+!         end if
 
-!     Open file - This subroutine is in this file - line 517
+! !     Open file - This subroutine is in this file - line 517
 
-        if (tProcInfo_G%qRoot) then
+!         if (tProcInfo_G%qRoot) then
       
-          call CreateSDDSFile(zFilename, qFormattedFiles, &
-                              tArraySegment(iSegment)%zVariable, &
-                              tArraySegment(iSegment)%tFileType, &
-                              qOKL)
-          If (.NOT. qOKL) Goto 1000
+!           call CreateSDDSFile(zFilename, qFormattedFiles, &
+!                               tArraySegment(iSegment)%zVariable, &
+!                               tArraySegment(iSegment)%tFileType, &
+!                               qOKL)
+!           If (.NOT. qOKL) Goto 1000
 
-        end if
+!         end if
 
-        call shareFileType(tArraySegment(iSegment)%tFileType)
+!         call shareFileType(tArraySegment(iSegment)%tFileType)
 
-      end if
-
-
-    end do
+!       end if
 
 
+!     end do
 
-!      Field Data files
 
-    if (tWriteAData(iRe_A_CG)%qWrite) then
+
+! !      Field Data files
+
+!     if (tWriteAData(iRe_A_CG)%qWrite) then
       
-      if (tProcInfo_G%qRoot) then
+!       if (tProcInfo_G%qRoot) then
 
-!     Create filename      
+! !     Create filename      
 
-!     Pamela: need to put something sensible here
+! !     Pamela: need to put something sensible here
 
-        zFilename = (trim(adjustl(tWriteAData(iRe_A_CG)%zVariable)) // trim(adjustl(zDataFileName))) 
+!         zFilename = (trim(adjustl(tWriteAData(iRe_A_CG)%zVariable)) // trim(adjustl(zDataFileName))) 
 
-        if (qOptional) then
+!         if (qOptional) then
 
-          zFilename = (trim(adjustl(zOptionalString)) // '_' // trim(adjustl(zFilename)) )
+!           zFilename = (trim(adjustl(zOptionalString)) // '_' // trim(adjustl(zFilename)) )
 
-        end if
+!         end if
 
-!     Open file - This subroutine is in this file - line 517
+! !     Open file - This subroutine is in this file - line 517
 
-        call CreateSDDSFile(zFilename, qFormattedFiles, &
-                            tWriteAData(iRe_A_CG)%zVariable, &
-                            tWriteAData(iRe_A_CG)%tFileType, &
-                            qOKL)
+!         call CreateSDDSFile(zFilename, qFormattedFiles, &
+!                             tWriteAData(iRe_A_CG)%zVariable, &
+!                             tWriteAData(iRe_A_CG)%tFileType, &
+!                             qOKL)
 
-        zFilename = (trim(adjustl(tWriteAData(iIm_A_CG)%zVariable)) // trim(adjustl(zDataFileName)))
+!         zFilename = (trim(adjustl(tWriteAData(iIm_A_CG)%zVariable)) // trim(adjustl(zDataFileName)))
 
-        if (qOptional) then
-          zFilename = (trim(adjustl(zOptionalString)) // '_' // trim(adjustl(zFilename)) )
-        end if
-
-
-        call CreateSDDSFile(zFilename, qFormattedFiles,&
-                            tWriteAData(iIm_A_CG)%zVariable, &
-                            tWriteAData(iIm_A_CG)%tFileType, &
-                            qOKL)
-
-      end if
-
-    end if
+!         if (qOptional) then
+!           zFilename = (trim(adjustl(zOptionalString)) // '_' // trim(adjustl(zFilename)) )
+!         end if
 
 
+!         call CreateSDDSFile(zFilename, qFormattedFiles,&
+!                             tWriteAData(iIm_A_CG)%zVariable, &
+!                             tWriteAData(iIm_A_CG)%tFileType, &
+!                             qOKL)
 
-!     z Data file         
+!       end if
 
-    if (tWriteZData%qWrite) then
+!     end if
 
-      zFilename = (trim(adjustl(tWriteZData%zVariable)) // trim(adjustl(zDataFileName))) 
+
+
+! !     z Data file         
+
+!     if (tWriteZData%qWrite) then
+
+!       zFilename = (trim(adjustl(tWriteZData%zVariable)) // trim(adjustl(zDataFileName))) 
       
 
-      if (qOptional) then
+!       if (qOptional) then
       
-        zFilename = (trim(adjustl(zOptionalString)) // '_' // trim(adjustl(zFilename)) )
+!         zFilename = (trim(adjustl(zOptionalString)) // '_' // trim(adjustl(zFilename)) )
       
-      end if
+!       end if
 
 
 
-      if (tProcInfo_G%qRoot) then
+!       if (tProcInfo_G%qRoot) then
 
-        call CreateSDDSFile(zFilename, qFormattedFiles,  &
-                            tWriteZData%zVariable, &
-                            tWriteZData%tFileType, &
-                            qOKL)
-        if (.not. qOKL) goto 1000
+!         call CreateSDDSFile(zFilename, qFormattedFiles,  &
+!                             tWriteZData%zVariable, &
+!                             tWriteZData%tFileType, &
+!                             qOKL)
+!         if (.not. qOKL) goto 1000
       
-      end if
+!       end if
 
 
-    end if
+!     end if
 
-!     Set error flag and exit
+! !     Set error flag and exit
 
-    qOK = .TRUE.
-    GoTo 2000
+!     qOK = .TRUE.
+!     GoTo 2000
 
-!     Error Handler
+! !     Error Handler
            
-1000 call Error_log('Error in EArrayFunctions:SetUpDataFiles',tErrorLog_G)
-    Print*,'Error in EArrayFunctions:SetUpDataFiles'
-2000 continue
+! 1000 call Error_log('Error in EArrayFunctions:SetUpDataFiles',tErrorLog_G)
+!     Print*,'Error in EArrayFunctions:SetUpDataFiles'
+! 2000 continue
 
-  end subroutine CreateSDDSFiles
+!   end subroutine CreateSDDSFiles
 
 
 
