@@ -312,7 +312,7 @@ CONTAINS
 
 
         sEl_PX0Position_G = sEl_PX0Position_G &
-        + pxOffset(sZ, srho_G, fx_G) 
+        + pxOffset(sZ, srho_G, fy_G) 
 
         sEl_PY0Position_G = sEl_PY0Position_G &
         + pyOffset(sZ, srho_G, fx_G) 
