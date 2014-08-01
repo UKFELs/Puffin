@@ -8,7 +8,7 @@ PROGRAM main
 
 USE FFTW_Constants
 USE transforms
-USE DataWrite
+USE sddsPuffin
 USE lattice
 USE Stiffness
 USE Setup

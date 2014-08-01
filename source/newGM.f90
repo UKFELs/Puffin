@@ -8,7 +8,7 @@ MODULE MacrosGenNew
 
 USE paratype
 USE ParallelInfoType
-USE DataWrite
+USE sddsPuffin
 USE randomGauss
 USE ParallelSetUp
 USE macrosGen

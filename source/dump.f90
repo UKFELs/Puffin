@@ -20,7 +20,7 @@ MODULE RESUME
   USE typesandconstants
   USE Globals
   USE ParallelInfoType
-  USE DataWrite
+  USE sddsPuffin
 
   IMPLICIT NONE
 

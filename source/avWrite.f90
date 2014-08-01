@@ -9,10 +9,9 @@ module avwrite
 
 use paratype
 use arrayfunctions
-use datawrite
+use sddsPuffin
 use globals
 use functions
-use datawrite
 
 
 implicit none

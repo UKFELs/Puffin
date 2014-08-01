@@ -10,7 +10,7 @@ MODULE Setup
   USE FFTW_Constants
   USE setupcalcs
   USE transforms
-  USE DataWrite
+  USE sddsPuffin
   USE lattice
   USE Stiffness
   USE Globals

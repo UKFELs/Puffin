@@ -376,9 +376,9 @@ CONTAINS
     GoTo 2000     
 
 ! Error Handler - Error log Subroutine in CIO.f90 line 709
-1000 call Error_log('Error in FEMethod:WriteParameterData',&
+1000 call Error_log('Error in sddsPuffin:WriteParameterData',&
           tErrorLog_G)
-    Print*,'Error in FEMethod:WriteParameterData'
+    Print*,'Error in sddsPuffin:WriteParameterData'
 2000 CONTINUE
   END SUBROUTINE WriteParameterData
 
@@ -1246,8 +1246,8 @@ CONTAINS
 
 ! !     Error Handler - Error log Subroutine in CIO.f90 line 709
 
-! 1000 call Error_log('Error in Fdatawrite:WriteChiData',tErrorLog_G)
-!     print*,'Error in Fdatawrite:WriteChiData'
+! 1000 call Error_log('Error in FsddsPuffin:WriteChiData',tErrorLog_G)
+!     print*,'Error in FsddsPuffin:WriteChiData'
 
 ! 2000 CONTINUE
 
@@ -1384,8 +1384,8 @@ CONTAINS
 
 ! !     Error Handler - Error log Subroutine in CIO.f90 line 709
 
-! 1000 call Error_log('Error in Fdatawrite:WriteIntegrationData',tErrorLog_G)
-!     print*,'Error in Fdatawrite:WriteIntegrationData'
+! 1000 call Error_log('Error in FsddsPuffin:WriteIntegrationData',tErrorLog_G)
+!     print*,'Error in FsddsPuffin:WriteIntegrationData'
 
 ! 2000 continue
 
@@ -1475,8 +1475,8 @@ CONTAINS
 
 !     Error Handler - Error log Subroutine in CIO.f90 line 709
 
-1000 call Error_log('Error in Fdatawrite:OutputIntegrationData_RealArray',tErrorLog_G)
-    Print*,'Error in Fdatawrite:OutputIntegrationData_RealArray'
+1000 call Error_log('Error in FsddsPuffin:OutputIntegrationData_RealArray',tErrorLog_G)
+    Print*,'Error in FsddsPuffin:OutputIntegrationData_RealArray'
 
     call CloseFile(tFileType, qOKL)
 
@@ -1592,8 +1592,8 @@ CONTAINS
 	    
 !     Error Handler - Error log Subroutine in CIO.f90 line 709
 
-1000 call Error_log('Error in Fdatawrite:OutputIntegrationData_RealArray',tErrorLog_G)
-      Print*,'Error in Fdatawrite:OutputIntegrationData_RealArray'
+1000 call Error_log('Error in FsddsPuffin:OutputIntegrationData_RealArray',tErrorLog_G)
+      Print*,'Error in FsddsPuffin:OutputIntegrationData_RealArray'
       call CloseFile(tFileType, &
                      qOKL)
 2000 CONTINUE
@@ -1661,8 +1661,8 @@ CONTAINS
 
 !     Error Handler - Error log Subroutine in CIO.f90 line 709
 
-1000 call Error_log('Error in MathLib:OutputIntegrationData_RealValue',tErrorLog_G)
-      Print*,'Error in MathLib:OutputIntegrationData_RealValue'
+1000 call Error_log('Error in sddsPuffin:OutputIntegrationData_RealValue',tErrorLog_G)
+      Print*,'Error in sddsPuffin:OutputIntegrationData_RealValue'
 
       call CloseFile(tFileType, qOKL)
 
@@ -1704,8 +1704,8 @@ FUNCTION IntegerToString(iInteger)
 
 ! Error Handler - Error log Subroutine in CIO.f90 line 709
          
-1000 call Error_log('Error in MathLib:IntegerToString',tErrorLog_G)
-      Print*,'Error in MathLib:IntegerToString'
+1000 call Error_log('Error in sddsPuffin:IntegerToString',tErrorLog_G)
+      Print*,'Error in sddsPuffin:IntegerToString'
 2000 CONTINUE
      
 END FUNCTION IntegerToString
