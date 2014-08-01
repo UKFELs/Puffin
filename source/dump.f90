@@ -4,7 +4,7 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
-MODULE RESUME
+MODULE dumpData
 
 
 ! This module contains the subroutines for dumping 
@@ -171,4 +171,4 @@ END SUBROUTINE DUMPCHIDATA
 
 
 
-END SUBROUTINE DUMPDATA
+END SUBROUTINE dumpData

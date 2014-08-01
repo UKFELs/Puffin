@@ -14,6 +14,7 @@ USE Stiffness
 USE Setup
 USE RK4int
 use avwrite
+use dumpData
 
 !!!!!!!!!!!!!!!!!!!Puffin Version 1.4.0 !!!!!!!!!!!!!!!!!!!
 !
