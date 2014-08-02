@@ -9,9 +9,10 @@ module avwrite
 
 use paratype
 use arrayfunctions
-use sddsPuffin
 use globals
 use functions
+use sddsROutput
+
 
 
 implicit none

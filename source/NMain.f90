@@ -13,7 +13,7 @@ USE lattice
 USE Stiffness
 USE Setup
 USE RK4int
-use dumpData
+use dumpFiles
 
 !!!!!!!!!!!!!!!!!!!Puffin Version 1.4.0 !!!!!!!!!!!!!!!!!!!
 !
@@ -264,7 +264,7 @@ DO iStep = start_step, nSteps
 
     call wdfs(sA, sV, sZ, istep, tArrayA, tArrayE, tArrayZ, &
               iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
-              qOK)
+              zDataFileName, qOK)
 
   end if
 
