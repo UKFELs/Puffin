@@ -12,6 +12,7 @@ use arrayfunctions
 use globals
 use functions
 use sddsROutput
+use createSDDS
 
 
 
@@ -149,8 +150,8 @@ contains
 
     if (tProcInfo_G%qRoot) then
 
-      call SetUpDataFile(powFType%zFileName, powFType%qformatted, &
-                         vname, powFType, qOKL)
+      call CreateSDDSFile(powFType%zFileName, &
+                          vname, powFType, qOKL)
 
     end if
   

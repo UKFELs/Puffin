@@ -14,6 +14,8 @@ use arrayfunctions
 use CIOWrapper
 use IO
 use ParallelInfoType
+use sddsSetup
+
 
 contains
 

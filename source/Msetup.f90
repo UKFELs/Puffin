@@ -18,6 +18,7 @@ MODULE Setup
   USE electronInit
   USE Read_data
   USE checks
+  use dumpFiles
 
 ! A module which allocates and initializes - or 
 ! destroys - the data used in Puffin.
@@ -434,7 +435,7 @@ MODULE Setup
 
   if (qWrite) call wdfs(sA, sV, sZ, 0, tArrayA, tArrayE, tArrayZ, &
                         iIntWriteNthSteps, iWriteNthSteps, &
-                        qSeparateStepFiles, qOKL)
+                        qSeparateStepFiles, zDataFileName, .false., qOKL)
 
   if (.not. qOKL) goto 1000
 

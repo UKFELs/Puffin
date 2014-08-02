@@ -343,8 +343,8 @@ CONTAINS
 
 !     Error Handler
 
-1000 CALL Error_log('Error in Chow:electron_grid',tErrorLog_G)
-    PRINT*,'Error in Chow:electron_grid'
+1000 CALL Error_log('Error in ElectronInit:electron_grid',tErrorLog_G)
+    PRINT*,'Error in ElectronInit:electron_grid'
 2000 CONTINUE
   END SUBROUTINE electron_grid
 

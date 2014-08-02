@@ -12,6 +12,7 @@ USE Globals
 USE ParallelSetUp
 Use avWrite
 use sddsROutput
+use createSDDS
 
 
 implicit none
@@ -416,7 +417,7 @@ CONTAINS
 
 
   subroutine wdfs(sA, sV, sZ, istep, tArrayA, tArrayE, tArrayZ, &
-                  iIntWr, iWr, qSep, zDFname, qOK)
+                  iIntWr, iWr, qSep, zDFname, qWDisp, qOK)
 
     implicit none
 
@@ -428,7 +429,7 @@ CONTAINS
     integer(kind=ip), intent(in) :: istep
     integer(kind=ip), intent(in) :: iIntWr, iWr
     character(32_IP), intent(in) :: zDFName
-    logical, intent(in) :: qSep
+    logical, intent(in) :: qSep, qWDisp
     logical, intent(inout) :: qOK
 
     logical :: qWriteInt, qWriteFull, qOKL
@@ -437,7 +438,7 @@ CONTAINS
 
 
 
-    if ((mod(iStep,iIntWr)==0) .or. (iStep == nSteps) .or. (iStep == 0) ) then
+    if ((mod(iStep,iIntWr)==0) .or. (iStep == nSteps) .or. (iStep == 0) .or. (qWDisp) ) then
 
       qWriteInt = .true.
 
@@ -446,7 +447,7 @@ CONTAINS
 
 
 
-    if ((mod(iStep,iWr)==0) .or. (iStep == nSteps) .or. (iStep == 0) ) then
+    if ((mod(iStep,iWr)==0) .or. (iStep == nSteps) .or. (iStep == 0) .or. (qWDisp) ) then
 
       qWriteFull = .true.
 

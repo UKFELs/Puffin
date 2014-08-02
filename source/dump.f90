@@ -28,6 +28,7 @@ MODULE dumpFiles
 
 
 
+
 SUBROUTINE DUMPDATA(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
 
  REAL(KIND=WP),DIMENSION(:),INTENT(IN) :: sA
@@ -137,6 +138,8 @@ if (rank==0) then
  CLOSE(UNIT=213,STATUS='KEEP') 
 
 end if
+        
+END SUBROUTINE DUMPDATA
 
 
 
@@ -166,9 +169,9 @@ SUBROUTINE DUMPCHIDATA(chibar,normchi,rank)
         
 END SUBROUTINE DUMPCHIDATA
 
-!------------------------------------------------------------------
 
 
 
 
-END SUBROUTINE dumpFiles
+
+end module dumpFiles
