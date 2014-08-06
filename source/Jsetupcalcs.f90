@@ -208,6 +208,14 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 
 
     call initPFile(tPowF, qFormatted) ! initialize power file type
+    
+
+
+    tArrayE(:)%tFileType%qFormatted = qFormatted
+    tArrayA(:)%tFileType%qFormatted = qFormatted
+    tArrayZ%tFileType%qFormatted = qFormatted
+
+
 
 
 
