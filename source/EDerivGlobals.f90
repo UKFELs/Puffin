@@ -116,7 +116,7 @@ REAL(KIND=WP) :: sBeta_G    ! Absorption coefficient
 
 REAL(KIND=WP)  :: sfilt, n2col, m2col, sz0, undgrad, n2col0
   
-REAL(KIND=WP) :: delta_G
+REAL(KIND=WP) :: delta_G, npk_bar_G
 !!!!!
 !!!!! NEW FOR NMAIN
 

@@ -34,6 +34,7 @@ CONTAINS
        kbeta, ff, &
        lam_w, lam_r, &
        l_g, l_c, &
+       npk_bar, &
        totalNumberElectrons, &
        nWaveEquations, &
        nElectronEquations, &  
@@ -89,6 +90,7 @@ CONTAINS
     REAL(KIND=WP),    INTENT(IN) :: rho,aw,epsilon,gamma_r
     REAL(KIND=WP),    INTENT(IN) :: kbeta, ff
     real(kind=wp),    intent(in) :: lam_w, lam_r, l_g, l_c
+    real(kind=wp),    intent(in) :: npk_bar
     INTEGER(KIND=IPL), INTENT(IN) :: totalNumberElectrons
     INTEGER(KIND=IP), INTENT(IN) :: nWaveEquations    
     INTEGER(KIND=IP), INTENT(IN) :: nElectronEquations
@@ -206,6 +208,8 @@ CONTAINS
        call SddsWriteParameter('Lg','double',tFileType=tParamFile)   
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('Lc','double',tFileType=tParamFile)   
+       If (.NOT. qOKL) Goto 1000
+       call SddsWriteParameter('npk_bar','double',tFileType=tParamFile)   
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('totalNumberElectrons','long',&
             tFileType=tParamFile)
@@ -328,6 +332,8 @@ CONTAINS
        call WriteRealNumber(l_g,tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
        call WriteRealNumber(l_c,tParamFile,qOKL)
+       If (.NOT. qOKL) Goto 1000
+       call WriteRealNumber(npk_bar,tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
        call WriteINTEGERL(totalNumberElectrons,tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000

@@ -218,7 +218,9 @@ CONTAINS
                       
     END DO
 
-
+    npk_bar_G = maxval(s_tmp_max_av) ! record peak density
+    
+    
     CALL getChi(s_tmp_macro, s_tmp_Vk, maxval(s_tmp_max_av), &
                 Tmp_chibar, Tmp_Normchi)
     

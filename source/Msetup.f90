@@ -411,6 +411,7 @@ MODULE Setup
          sFocusfactor_G, &
          lam_w_G, lam_r_G, &
          lg_G, lc_G, &
+         npk_bar_G, &  
          iGloNumElectrons_G,&
          nFieldEquations_CG,&
          nElectronEquations_CG,&  
