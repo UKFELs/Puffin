@@ -812,7 +812,7 @@ SUBROUTINE AbsorptionStep(sAl,work,h,loc_nz2,ffact)
 
 !               LOCAL ARGS
 
-  REAL(KIND=WP) :: mask(NX_G*NY_G)
+  REAL(KIND=WP) :: mask(NX_G*NY_G), mask_z2(0:tTransInfo_G%loc_nz2-1)
   COMPLEX(KIND=WP) :: sAnb(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1), posI
   INTEGER(KIND=IP) :: iz2, x_inc, y_inc, z2_inc, ind
   integer :: error
@@ -823,7 +823,15 @@ SUBROUTINE AbsorptionStep(sAl,work,h,loc_nz2,ffact)
 
   CALL getMask(NX_G, NY_G, sLengthOfElmX_G, sLengthOfElmY_G, &
                NBX_G, NBY_G, mask)
-  
+ 
+
+
+!  Now also using boundary in z2....so mask in z2 is....
+
+
+  mask_z2 = getZ2Mask(sLengthOfElmZ2_G, nZ2_G, tTransInfo_G%loc_nz2,   &
+                       nBZ2_G, tTransInfo_G%loc_z2_start)
+
 !!!!!      sAl is local      !!!!!
 !!!!!      goes from 0,total_local_size     !!!!!!!
 
@@ -831,8 +839,19 @@ SUBROUTINE AbsorptionStep(sAl,work,h,loc_nz2,ffact)
 
   DO iz2 = 0_IP, loc_nz2 - 1_IP
 
-    sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)  = (1.0_WP - mask) * sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
-    sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP) =  mask * sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
+    sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)  = (1.0_WP - (mask   +  ( mask_z2(iz2) *  (1.0_WP - mask) ) ) ) * &
+                                                          sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
+
+
+
+
+!    sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP) =   (1.0_WP - mask_z2(iz2)) * sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
+
+
+
+    sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP) =  (mask   +  ( mask_z2(iz2) *  (1.0_WP - mask) ) ) * &
+                                                         sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
+
 
   END DO
 

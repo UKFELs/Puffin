@@ -168,6 +168,8 @@ SUBROUTINE passToGlobals(rho,aw,gamr,iNN, &
     NBX_G = 16_IP   ! Nodes used in boundaries
     NBY_G = 16_IP
 
+    NBZ2_G = 37_IP
+
 
     zUndType_G = zUndType
 
