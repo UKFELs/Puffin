@@ -34,14 +34,16 @@ MODULE TransformInfoType
 !--------------------------------------------------------------------
 
       TYPE cTransformInfoType
-         INTEGER*8		    :: fplan
-         INTEGER*8		    :: bplan	 
- 	 INTEGER(KIND=IP)           :: loc_nz2
-	 INTEGER(KIND=IP)           :: loc_z2_start
-	 INTEGER(KIND=IP)           :: loc_nz2_aft_trans
-	 INTEGER(KIND=IP)	    :: loc_z2_start_aft_trans
-	 INTEGER(KIND=IP)	    :: total_local_size
-	 LOGICAL				:: qOneD
+
+         INTEGER*8            :: fplan
+         INTEGER*8            :: bplan	 
+         INTEGER(KIND=IP)     :: loc_nz2
+         INTEGER(KIND=IP)     :: loc_z2_start
+         INTEGER(KIND=IP)     :: loc_nz2_aft_trans
+         INTEGER(KIND=IP)     :: loc_z2_start_aft_trans
+         INTEGER(KIND=IP)     :: total_local_size
+         LOGICAL              :: qOneD
+         
       END TYPE cTransformInfoType
       
 !

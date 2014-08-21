@@ -162,11 +162,20 @@ DO iStep = start_step, nSteps
 
       CALL local2globalA(Ar_local,sAr,mrecvs,mdispls,tTransInfo_G%qOneD)
 
-      IF(iStep==start_step) sStep = diffStep
-      
+      IF(iStep==start_step) then 
+
+        sStep = diffStep
+        nextDiff = nextDiff + (diffStep * 0.5_WP)
+
+      else 
+
+        nextDiff = nextDiff + diffStep
+
+      end if
+
       qDiffrctd = .true.
 
-      nextDiff = nextDiff + diffStep
+      
 
     END IF
 
@@ -200,6 +209,91 @@ DO iStep = start_step, nSteps
 !       (we now have solution at zbar + sStepsize) 
 
   sZ = sZ + sStepSize
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!   split-step method:- field diffraction only for last step
+
+  IF (qDiffraction_G) THEN
+
+    IF(iStep == nSteps) then 
+
+      sStep = diffStep*0.5_WP
+
+      DEALLOCATE(sAr)
+      CALL innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
+      DEALLOCATE(Ar_local)
+
+      CALL DiffractionStep(sStep,&
+           frecvs,&
+           fdispls,&
+           sV,&
+           sA,&
+           qOKL)
+     
+      ALLOCATE(sAr(2*ReducedNX_G*ReducedNY_G*NZ2_G))
+      ALLOCATE(Ar_local(2*local_rows))
+
+      CALL getAlocalFL(sA,Ar_local)
+
+      CALL local2globalA(Ar_local,sAr,mrecvs,mdispls,tTransInfo_G%qOneD)
+
+      IF(iStep==start_step) sStep = diffStep
+      
+      qDiffrctd = .true.
+
+      nextDiff = nextDiff + diffStep
+
+    END IF
+
+  END IF
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
