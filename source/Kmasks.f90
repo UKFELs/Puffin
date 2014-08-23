@@ -368,8 +368,11 @@ FUNCTION getZ2Mask(dx,nx,loc_nx,nb,loc_start)
   integer(kind=ip) :: ind
 
 
+  x = linspace(real(loc_start,kind=wp) * dx, &
+          real(loc_start+loc_nx-1,kind=wp) * dx, &
+                   loc_nx) ! Values in space
 
-  x = (/loc_start:loc_start+loc_nx-1:1/) * dx  ! Values in space
+  !x = (/loc_start:loc_start+loc_nx-1:1/) * dx  ! Values in space
 
 
 !     Get the length of the boundary, Lb
