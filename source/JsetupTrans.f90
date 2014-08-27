@@ -32,7 +32,7 @@ SUBROUTINE MatchBeams(srho,sEmit_n,saw, &
                       sFF,sgamr,&
                       iNNE,sLenE,sSigE, &
                       sSigF,iNNF,sLenF,&
-                      sDelF,iRNX,iRNY, &
+                      sDelF,zUndType,iRNX,iRNY, &
                       ux,uy,qOK)
 
 ! Subroutine which matches the beam in x and y
@@ -76,6 +76,7 @@ SUBROUTINE MatchBeams(srho,sEmit_n,saw, &
                                   sSigF(:), sLenF(:),&
                                   sDelF(:) 
 
+  character(32_IP),  intent(in)  :: zUndType
   INTEGER(KIND=IP), INTENT(INOUT) :: iRNX,iRNY
 
   LOGICAL, INTENT(OUT) :: qOK
@@ -96,6 +97,8 @@ SUBROUTINE MatchBeams(srho,sEmit_n,saw, &
 
 !     Get k_beta and eta...
 
+
+
   sKbeta = saw / 2.0_WP / sFF / sRho / sgamr
 
   sbetaz = SQRT(sgamr**2.0_WP - 1.0_WP - (saw)**2.0_WP) / &
@@ -111,7 +114,7 @@ SUBROUTINE MatchBeams(srho,sEmit_n,saw, &
                  iNNE(1,:),sLenE(1,:),sSigE(1,:), &
                  sSigF,iNNF,sLenF,&
                  sDelF,iRNX,iRNY, &
-                 ux,uy,qOKL)
+                 zUndType,ux,uy,qOKL)
 
   IF (.NOT. qOKL) GOTO 1000
   
@@ -133,7 +136,7 @@ SUBROUTINE MatchBeam(srho,sEmit_n,sKbeta, &
                       iNNE,sLenE,sSigE, &
                       sSigF,iNNF,sLenF,&
                       sDelF,iRNX,iRNY, &
-                      ux,uy,qOK)
+                      zUndType,ux,uy,qOK)
 
 ! Subroutine which matches the beam in x and y
 ! and defines the inner field nodes to use in
@@ -176,6 +179,8 @@ SUBROUTINE MatchBeam(srho,sEmit_n,sKbeta, &
                                   sSigF(:), sLenF(:),&
                                   sDelF(:) 
 
+  character(32_IP),  intent(in)  :: zUndType
+
   INTEGER(KIND=IP), INTENT(INOUT) :: iRNX,iRNY
 
   LOGICAL, INTENT(OUT) :: qOK
@@ -193,7 +198,7 @@ SUBROUTINE MatchBeam(srho,sEmit_n,sKbeta, &
                         
   CALL GetMBParams(srho,sEmit_n,sKbeta,&
                    sFF,sEta,sLenE,sSigE, &
-                   sSigF,ux,uy,qOKL)
+                   sSigF,ux,uy,zUndType,qOKL)
 
   IF (.NOT. qOKL) GOTO 1000
 
@@ -334,7 +339,7 @@ END SUBROUTINE GetInnerNodes
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 SUBROUTINE GetMBParams(srho,sEmit_n,k_beta,sFF,sEta,sLenE, &
-                        sSigE,sSigF,ux,uy,qOK)
+                        sSigE,sSigF,ux,uy,zUndType,qOK)
 
     IMPLICIT NONE
 
@@ -343,7 +348,7 @@ SUBROUTINE GetMBParams(srho,sEmit_n,k_beta,sFF,sEta,sLenE, &
 !               ARGUMENTS
 !
 ! srho               FEL parameter
-! sEmit_n            Normalised beam emittance
+! sEmit_n            Scaled beam emittance
 ! saw                RMS undulator parameter
 ! sgamma_r           Relativistic factor of beam energy
 ! sFF                Focussing factor - sqrt(2) for natural helical
@@ -364,7 +369,8 @@ SUBROUTINE GetMBParams(srho,sEmit_n,k_beta,sFF,sEta,sLenE, &
   REAL(KIND=WP), INTENT(INOUT) :: sLenE(:)	   
   REAL(KIND=WP), INTENT(INOUT) :: sSigE(:)    
   REAL(KIND=WP), INTENT(INOUT) :: sSigF(:)
-  REAL(KIND=WP), INTENT(IN)    :: ux, uy	   
+  REAL(KIND=WP), INTENT(IN)    :: ux, uy	
+  character(32_IP),  intent(in)  :: zUndType
   LOGICAL,       INTENT(OUT)   :: qOK
 
 !          LOCAL VARS
@@ -382,11 +388,21 @@ SUBROUTINE GetMBParams(srho,sEmit_n,k_beta,sFF,sEta,sLenE, &
 
 !     p spread
 
-  sSigE(iPX_CG:iPY_CG) = 18.0_WP*sEmit_n* &
-            SQRT(ux**2 + uy**2) / (2.0_WP * SQRT(2.0_WP)) * &
-            SQRT(sEta) / &
-            (sFF*k_beta*sSigE(iX_CG:iY_CG))
+  if (zUndType == 'curved' .or. zUndType == 'planepole') then
 
+    sSigE(iPX_CG:iPY_CG) = 18.0_WP*sEmit_n* &
+              SQRT(ux**2 + uy**2) / (2.0_WP * SQRT(2.0_WP)) * &
+              SQRT(sEta) / &
+              (sFF*k_beta*sSigE(iX_CG:iY_CG))
+
+  else
+
+    sSigE(iPX_CG:iPY_CG) = 18.0_WP*sEmit_n* &
+              SQRT(ux**2 + uy**2) / (2.0_WP * SQRT(2.0_WP)) * &
+              SQRT(sEta) / &
+              (sFF*k_beta*sSigE(iX_CG:iY_CG))
+
+  end if
 !     The sigma values above are the rms radii
 !     Need to change to sigma of current distribution
 !     Here it is assumed lex=6sigma
