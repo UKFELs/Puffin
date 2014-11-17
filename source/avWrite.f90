@@ -71,11 +71,7 @@ contains
 !    wfield = complex(reshape(sA(1:nnodes),(/nx,ny,nz2/)), &
 !                reshape(sA(nnodes+1:2*nnodes),(/nx,ny,nz2/)))
 
-    PRINT*,'GETTING POWER *******'
-
     call gPower(sA, power)
-
-    PRINT*,'GOT POWER *******'
 
     call writePower(power,tPowF)
 
@@ -210,8 +206,6 @@ contains
 
     if ((NX_G == 1_IP) .and. (NY_G == 1_IP)) then
 
-      PRINT*,'WE ARE 1D!!!! *******'
-
       call fPower_1D(field, power)
 
     else 
@@ -242,12 +236,8 @@ contains
     integer(kind=ip) :: nno
 
     nno = size(field) / 2_IP
-   
-    PRINT*,'GOT NNO *******'
 
     power = abs(field(1:nno))**2.0_WP + abs(field(nno+1:2*nno))**2.0_WP
-
-    PRINT*,'GOT POWER 1 *******'
 
   end subroutine fPower_1D
 
