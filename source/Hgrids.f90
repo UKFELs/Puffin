@@ -15,6 +15,7 @@ use paratype
 use particleFunctions
 use parallelsetup
 use parBeam
+use globals
 
 implicit none
 
@@ -154,7 +155,8 @@ SUBROUTINE genGrid(inttype,gridtype,centre,sigma,length,&
 
 !         LOCAL VARS
 
-  REAL(KIND=WP) :: start, final, local_start, local_fin, shift
+  REAL(KIND=WP) :: start, final, local_start, local_fin, shift, &
+                   sige, flat_len
   INTEGER(KIND=IP) :: locN
   LOGICAL :: qOKL
 
@@ -180,16 +182,21 @@ SUBROUTINE genGrid(inttype,gridtype,centre,sigma,length,&
 
     IF (.NOT. qOKL) GOTO 1000
 		  
-    CALL DistributionIntegralZ2(inttype, &
-                                locN, &
-                                iNMP, &
-                                Grid, &
-                                centre, &
-                                sigma, &
-                                MPI_DOUBLE_PRECISION, &
-                                MPI_SUM, &
-                                Integral, &
-                                qOKL)
+!     CALL DistributionIntegralZ2(inttype, &
+!                                 locN, &
+!                                 iNMP, &
+!                                 Grid, &
+!                                 centre, &
+!                                 sigma, &
+!                                 MPI_DOUBLE_PRECISION, &
+!                                 MPI_SUM, &
+!                                 Integral, &
+!                                 qOKL)
+
+
+    sige = 4.0_wp * 4.0_wp * pi * sRho_G
+    flat_len = length - ( 2.0_wp * (sige * 7.5_wp) )
+    call flattop2(sige, flat_len, Grid, iNMP, iNMP_loc, .true., Integral)
 
   ELSE
 
