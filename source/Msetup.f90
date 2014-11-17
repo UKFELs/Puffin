@@ -156,7 +156,7 @@ MODULE Setup
 
   CALL CheckParameters(sLenEPulse,iNumElectrons,nbeams,sLengthofElm,iNodes,&
        sWigglerLength,sStepSize,nSteps,srho,saw,sgammar,sFocusfactor, &
-       sSigmaGaussian,fx,fy, zUndType, iRedNodesX,iRedNodesY,qSwitches,qSimple,qOKL)
+       sSigmaGaussian,fx,fy, iRedNodesX,iRedNodesY,qSwitches,qSimple,qOKL)
   
   IF (.NOT. qOKL) GOTO 1000
 
@@ -173,7 +173,7 @@ MODULE Setup
     if (qSimple) CALL MatchBeams(srho,sEmit_n,saw,sFocusfactor,&
                     sgammar,iNumElectrons,sLenEPulse,&
                     sSigmaGaussian,sSeedSigma(1,:),iNodes,sWigglerLength,&
-                    sLengthofElm,iRedNodesX,iRedNodesY,fx,fy,qOKL)
+                    sLengthofElm,zUndType,iRedNodesX,iRedNodesY,fx,fy,qOKL)
 
     IF (.NOT. qOKL) GOTO 1000
   
