@@ -319,6 +319,8 @@ SUBROUTINE read_in(zfilename, &
   READ(UNIT=168,FMT=*) Dfact
   READ(UNIT=168,FMT=*) zUndType
   READ(UNIT=168,FMT=*) taper
+  READ(UNIT=168,FMT=*) t_mag_G   ! Magnitude of frequency oscillation from taper
+  READ(UNIT=168,FMT=*) t_fr_G    ! Frequency of oscillation
   
 !     Read whitespace...
 

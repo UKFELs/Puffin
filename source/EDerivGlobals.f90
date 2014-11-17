@@ -198,4 +198,12 @@ REAL(KIND=WP), ALLOCATABLE     :: sEl_PZ20Position_G(:)
 
 
 
+
+!    New for frequency oscillation
+
+real(kind=wp) :: t_mag_G 
+real(kind=wp) :: t_fr_G  
+
+
+
 End Module Globals

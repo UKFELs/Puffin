@@ -175,7 +175,14 @@ CONTAINS
 !     Adjust undulator tuning
 
 !    n2col = n2col0 * (1 + undgrad*(sz - sz0))
-    n2col = n2col0  + undgrad*(sz - sz0)
+!    n2col = n2col0  + undgrad*(sz - sz0)
+
+    
+    ! For continuous sinusoidal frequency modulation around resonance
+    n2col = sqrt(  ( ( 1 + sAw_G**2.0_wp ) / (sAw_G**2.0_wp * (1 + t_mag_G*sin(t_fr_G * sz))) ) - (1.0_wp /sAw_G**2.0_wp) ) 
+
+    ! For new sinusoidal frequency modulation around resonance, for each undulator module
+!    n2col = sqrt(  ( 1 + sAw_G**2.0_wp/ (sAw_G**2.0_wp * (1 + t_mag_G*sin(t_fr_G * (sz - sz0)  ))) ) - 1.0_wp /sAw_G**2.0_wp ) 
 
     fkb= sFocusfactor_G * kbeta
 
