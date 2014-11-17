@@ -62,6 +62,7 @@ Input the scaled independant variables from [1] here
 1.0                 REAL        aw                         rms unduator parameter
 100.0               REAL        gamma_r                    Resonant Wavelength
 1.41213562373095    REAL        sFocusfactor               Focussing factor f, from the betatron wavenumber
+0.04                REAL        lambda_w                   Undulator period
 0.0                 REAL        Dfact                      Dispersive strength factor for chicane
 ''                  CHARACTER   undType                    Undulator type - 'curved' , 'planepole' , else 1D (no off axis variation of aw)
 0.0                 REAL        taper                      gradient of taper daw/dz
@@ -84,7 +85,8 @@ What do we want to calculate in the code to output i.e. bunching, pulse current 
 240                 INTEGER     nPeriods        Number of wiggler periods
 0.0                 REAL        sZ0             Starting zbar position
 'DataFile.dat'      CHARACTER   zDataFileName   Data file name
-2000                INTEGER     iWriteNthSteps  Steps to write data at
+24000                INTEGER     iWriteNthSteps  Steps to write data at
+1000                 INTEGER     iWriteIntNthSteps  Steps to write integrated data at
 1000                INTEGER     iDumpNthSteps   Steps to dump data at (0 for no dumping)
 100                 REAL        sPEOut          Percentage of macroparticles to write out. Macroparticles are randomly selected. (doesn't work yet)
 
