@@ -16,7 +16,7 @@ USE typesAndConstants
 USE Globals
 USE electronInit
 USE gMPsFromDists
-
+use avwrite
 
 IMPLICIT NONE
 
@@ -26,11 +26,11 @@ CONTAINS
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE passToGlobals(rho,aw,gamr,iNN, &
+SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
                          sRNX,sRNY, &
                          sElmLen,&
                          fx,fy,sFocusFactor,taper,sFiltFrac, &
-                         dStepFrac,sBeta,zUndType,qSwitch,qOK)
+                         dStepFrac,sBeta,zUndType,qFormatted, qSwitch,qOK)
 
     IMPLICIT NONE
 
@@ -51,22 +51,22 @@ SUBROUTINE passToGlobals(rho,aw,gamr,iNN, &
 !                    diffraction and gaussian field
 ! qOK                Error flag
 
-    REAL(KIND=WP),     INTENT(IN)    :: rho,aw,gamr
+    REAL(KIND=WP),     INTENT(IN)    :: rho,aw,gamr, lam_w
     INTEGER(KIND=IP),  INTENT(IN)    :: sRNX,sRNY
     INTEGER(KIND=IP),  INTENT(IN)    :: iNN(:)
     REAL(KIND=WP),     INTENT(IN)    :: sElmLen(:)	
     REAL(KIND=WP),     INTENT(IN)    :: fx,fy,sFocusFactor, taper
     REAL(KIND=WP),     INTENT(IN)    :: sFiltFrac, dStepFrac, sBeta
-    LOGICAL,           INTENT(IN)    :: qSwitch(nSwitches_CG)
+    LOGICAL,           INTENT(IN)    :: qSwitch(nSwitches_CG), qFormatted
     character(32_ip),  intent(in)    :: zUndType
     LOGICAL,           INTENT(OUT)   :: qOK
 
 !                    LOCAL ARGS
 !
-! lambda_r           Resonant wavelength in scaled units
+! lam_r_bar          Resonant wavelength in scaled units
 ! qOKL               Local error flag
 
-    REAL(KIND=WP) :: lambda_r,LenZ2,modfact1,sbetaz
+    REAL(KIND=WP) :: lam_r_bar, LenZ2, modfact1, sbetaz
     LOGICAL :: qOKL
 
     qOK = .FALSE.
@@ -112,8 +112,8 @@ SUBROUTINE passToGlobals(rho,aw,gamr,iNN, &
 !     Filter fraction to frequency in Fourier space
 
     Lenz2 = sLengthOfElmZ2_G * NZ2_G
-    lambda_r = 4*pi*rho
-    sFilt = Lenz2 / lambda_r * sFiltFrac
+    lam_r_bar = 4*pi*rho
+    sFilt = Lenz2 / lam_r_bar * sFiltFrac
 
 !     Set up parameters
     if (qMod_G) then
@@ -160,6 +160,12 @@ SUBROUTINE passToGlobals(rho,aw,gamr,iNN, &
     sGammaR_G = gamr
 
 
+    lam_w_G = lam_w
+    lam_r_G = lam_w * sEta_G
+
+    lg_G = lam_w_G / 4.0_WP / pi / rho
+    lc_G = lam_r_G / 4.0_WP / pi / rho
+
 
 
     diffstep = dStepFrac * 4.0_WP * pi * rho
@@ -200,6 +206,20 @@ SUBROUTINE passToGlobals(rho,aw,gamr,iNN, &
     qFocussing_G             = qSwitch(iFocussing_CG)
     qResume_G                = qSwitch(iResume_CG)
     qDump_G                  = qSwitch(iDump_CG)
+
+
+
+    call initPFile(tPowF, qFormatted) ! initialize power file type
+    
+
+
+    tArrayE(:)%tFileType%qFormatted = qFormatted
+    tArrayA(:)%tFileType%qFormatted = qFormatted
+    tArrayZ%tFileType%qFormatted = qFormatted
+
+
+
+
 
 !     Set error flag and exit
 

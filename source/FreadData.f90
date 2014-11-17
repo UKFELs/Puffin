@@ -23,6 +23,7 @@ SUBROUTINE read_in(zfilename, &
        sZ0, &
        LattFile,&
        iWriteNthSteps, &
+       iIntWriteNthSteps_l, &
        tArrayZ, &
        tArrayA, &
        tArrayVariables, &
@@ -50,6 +51,7 @@ SUBROUTINE read_in(zfilename, &
        srho, &
        saw, &
        sgamma, &
+       lambda_w, &
        sEmit_n, &
        sux, &
        suy, &
@@ -129,7 +131,7 @@ SUBROUTINE read_in(zfilename, &
   REAL(KIND=WP) ,    INTENT(OUT)  :: sZ0
   CHARACTER(32_IP),  INTENT(INOUT):: LattFile
     
-  INTEGER(KIND=IP),  INTENT(OUT)  :: iWriteNthSteps
+  INTEGER(KIND=IP),  INTENT(OUT)  :: iWriteNthSteps, iIntWriteNthSteps_l
   TYPE(cArraySegment)             :: tArrayZ
   TYPE(cArraySegment)             :: tArrayA(:)
   TYPE(cArraySegment)             :: tArrayVariables(:)
@@ -166,7 +168,7 @@ SUBROUTINE read_in(zfilename, &
   REAL(KIND=WP),     INTENT(OUT)  :: sFiltFact,sDiffFrac,sBeta
   REAL(KIND=WP),     INTENT(OUT)  :: srho
   REAL(KIND=WP),     INTENT(OUT)  :: saw
-  REAL(KIND=WP),     INTENT(OUT)  :: sgamma
+  REAL(KIND=WP),     INTENT(OUT)  :: sgamma, lambda_w
   REAL(KIND=WP),     INTENT(OUT)  :: sux
   REAL(KIND=WP),     INTENT(OUT)  :: suy
   REAL(KIND=WP),     INTENT(OUT)  :: Dfact
@@ -313,6 +315,7 @@ SUBROUTINE read_in(zfilename, &
   READ(UNIT=168,FMT=*) saw
   READ(UNIT=168,FMT=*) sgamma
   READ(UNIT=168,FMT=*) sFocusfactor
+  READ(UNIT=168,FMT=*) lambda_w
   READ(UNIT=168,FMT=*) Dfact
   READ(UNIT=168,FMT=*) zUndType
   READ(UNIT=168,FMT=*) taper
@@ -343,7 +346,8 @@ SUBROUTINE read_in(zfilename, &
   READ(UNIT=168,FMT=*) nperiods
   READ(UNIT=168,FMT=*) sZ0
   READ(UNIT=168,FMT=*) zDataFileName 
-  READ(UNIT=168,FMT=*) iWriteNthSteps  
+  READ(UNIT=168,FMT=*) iWriteNthSteps 
+  READ(UNIT=168,FMT=*) iIntWriteNthSteps_l  
   READ(UNIT=168,FMT=*) iDumpNthSteps  
   READ(UNIT=168,FMT=*) sPEOut  ! Put to 100% if all are to be written
   

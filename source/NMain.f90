@@ -8,11 +8,12 @@ PROGRAM main
 
 USE FFTW_Constants
 USE transforms
-USE DataWrite
+USE sddsPuffin
 USE lattice
 USE Stiffness
 USE Setup
 USE RK4int
+use dumpFiles
 
 !!!!!!!!!!!!!!!!!!!Puffin Version 1.4.0 !!!!!!!!!!!!!!!!!!!
 !
@@ -65,7 +66,7 @@ REAL(KIND=WP), ALLOCATABLE  :: sV(:)
 REAL(KIND=WP), ALLOCATABLE  :: sA(:), sAr(:), Ar_local(:)
 REAL(KIND=WP)    :: sZ, nextDiff
 
-LOGICAL          :: qOKL, qDiffrctd
+LOGICAL          :: qOKL, qDiffrctd, qWDisp
 
 !           Read in data file and initialize system
 
@@ -87,7 +88,7 @@ ALLOCATE(Ar_local(2*local_rows))
 CALL local2globalA(Ar_local,sAr,mrecvs,mdispls,tTransInfo_G%qOneD)
 
 qDiffrctd = .false.
-
+qWDisp = .false.
 
 if (start_step==1_IP) then
 
@@ -315,24 +316,23 @@ DO iStep = start_step, nSteps
 
 
 
-
         !            Write data if not already going to
 
-        IF ((iCount /= iWriteNthSteps).AND.&
-             (iStep /= nSteps)) THEN
+!         IF ((iCount /= iWriteNthSteps).AND.&
+!              (iStep /= nSteps)) THEN
              
-           CALL innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
+!            CALL innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
              
-           CALL WriteData(qSeparateStepFiles_G,&
-                zDataFileName,tArrayZ,tArrayA,&
-                tArrayE,&
-                iStep,sZ,sA,sV,.FALSE.,qFormattedFiles_G,&
-                qOKL)	
+!            CALL WriteData(qSeparateStepFiles_G,&
+!                 zDataFileName,tArrayZ,tArrayA,&
+!                 tArrayE,&
+!                 iStep,sZ,sA,sV,.FALSE.,qFormattedFiles_G,&
+!                 qOKL)	
 
-        END IF
+!         END IF
   
 
-
+        qWDisp = .true.
         modCount=modCount+1_IP   !      Update module count
      
      END IF
@@ -346,17 +346,28 @@ DO iStep = start_step, nSteps
 !                   Write result to file
  
   iCount = iCount + 1_IP
-  IF ((iCount == iWriteNthSteps).OR.&
-       (iStep == nSteps)) THEN
-     iCount = 0_IP
-     
-     CALL innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
-     
-     CALL WriteData(qSeparateStepFiles_G,&
-          zDataFileName,tArrayZ,tArrayA,tArrayE,&
-          iStep,sZ,sA,sV,.FALSE.,qFormattedFiles_G,&
-          qOKL)
-  END IF
+  
+
+
+
+  if ( (mod(iStep,iIntWriteNthSteps)==0) .or. (iStep == nSteps) .or. &
+               (qWDisp)   .or. (mod(iStep,iWriteNthSteps)==0) ) then
+
+    call innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
+
+    call wdfs(sA, sV, sZ, istep, tArrayA, tArrayE, tArrayZ, &
+              iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
+              zDataFileName, qWDisp, qOKL)
+
+    if (qWDisp) qWDisp = .false.
+
+  end if
+
+
+
+
+
+
   
   CALL Get_time(end_time)
   

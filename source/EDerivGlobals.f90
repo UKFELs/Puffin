@@ -116,12 +116,12 @@ REAL(KIND=WP) :: sBeta_G    ! Absorption coefficient
 
 REAL(KIND=WP)  :: sfilt, n2col, m2col, sz0, undgrad, n2col0
   
-REAL(KIND=WP) :: delta_G
+REAL(KIND=WP) :: delta_G, npk_bar_G
 !!!!!
 !!!!! NEW FOR NMAIN
 
 LOGICAL          :: qSeparateStepFiles_G
-LOGICAL          :: qFormattedFiles_G
+
 LOGICAL             :: qMod_G
 
 LOGICAL :: qResume, qWrite
@@ -135,10 +135,26 @@ INTEGER(KIND=IP), ALLOCATABLE :: frecvs(:),fdispls(:),&
      lrecvs(:),ldispls(:),mrecvs(:),mdispls(:)
 INTEGER(KIND=IP) :: iCount, iStep, start_step
 REAL(KIND=WP) :: sStep, sStepSize
-INTEGER(KIND=IP) :: iWriteNthSteps, iDumpNthSteps
+
 INTEGER(KIND=IP) :: nSteps
+
 REAL(KIND=WP)       :: ffact
 REAL(KIND=WP)  :: diffStep
+
+
+real(kind=wp) :: lam_w_G, lam_r_G   ! wiggler period, resonant wavelength
+
+real(kind=wp) :: lg_G, lc_G  ! gain length, cooperation length
+
+
+
+
+
+
+
+
+
+!!!!!!    FOR DATA WRITING
 
 CHARACTER(32_IP) :: zDataFileName
 
@@ -146,11 +162,31 @@ TYPE(cArraySegment) :: tArrayE(nElectronEquations_CG)
 TYPE(cArraySegment) :: tArrayA(nFieldEquations_CG)
 TYPE(cArraySegment) :: tArrayZ
 
+
+TYPE(cFileType) :: tPowF
+
+
+
+INTEGER(KIND=IP) :: iWriteNthSteps, iDumpNthSteps, iIntWriteNthSteps
+
+!!!!!!
+
+
+
+
+
+
+
+
+
 REAL(KIND=WP)   :: start_time,end_time
 REAL(KIND=WP)   :: time1, time2 !!!FOR DEBUGGING!!!
 
-character(32_IP) :: zUndType_G
-real(kind=wp) :: kx_und_G, ky_und_G
+
+real(kind=wp), allocatable :: x_ax_G(:), y_ax_G(:) ! x and y axis for field integration
+
+character(32_IP) :: zUndType_G         ! Selects undulator type
+real(kind=wp) :: kx_und_G, ky_und_G    ! kx and ky for 3D undulator B-field variation
 
 REAL(KIND=WP), ALLOCATABLE     :: sEl_X0Position_G(:)
 REAL(KIND=WP), ALLOCATABLE     :: sEl_Y0Position_G(:)
