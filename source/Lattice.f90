@@ -97,12 +97,6 @@ end do
   sStepSize =  delmz(1)
   taper = tapers(1)
 
-  print*, 'step sizes are   ', delmz
-
-  print*, 'tapers are   ', tapers
-
-  print*, 'deltas are   ', delta
-
   END SUBROUTINE readLatt
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

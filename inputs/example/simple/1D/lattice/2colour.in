@@ -28,7 +28,7 @@
               ELECTRON MACROPARTICLE SAMPLING
 
 
-'beam_file2.in'      CHARACTER   beam_file                  Name of the beam file
+'beam_file.in'      CHARACTER   beam_file                  Name of the beam file
 0.0                 REAL        sEThreshold                Beyond the threshold level(%) * the average of real electrons are removed(ignored)
 
 
@@ -47,7 +47,7 @@
 0.3                 REAL        sFiltFrac                  Specifies cutoff for high pass filter as fraction of resonant frequency
 1.000000000000000E+00   REAL        sDiffFrac                  Specifies diffraction step size as fraction of the undulator period
 1.0                     REAL        beta                       Absorption coefficient
-'seed_file2.in'      CHARACTER   seed_file                  Name of the seed file
+'seed_file.in'      CHARACTER   seed_file                  Name of the seed file
 
 
                  INDEPENDANT VARIABLES
