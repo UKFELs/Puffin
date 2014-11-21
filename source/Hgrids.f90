@@ -69,7 +69,7 @@ END SUBROUTINE getIntTypes
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE genGrids(sigmas,offsets,slens,intType,iNMPs,iNMPs_loc, &
+SUBROUTINE genGrids(ib, sigmas,offsets,slens,intType,iNMPs,iNMPs_loc, &
                     sx_grid, sy_grid, sz2_grid, &
                     spx_grid, spy_grid, spz2_grid, &
                     sX_integral, sY_integral, sz2_integral, &
@@ -80,7 +80,7 @@ SUBROUTINE genGrids(sigmas,offsets,slens,intType,iNMPs,iNMPs_loc, &
 !           ARGUMENTS
 
   REAL(KIND=WP), INTENT(IN) :: sigmas(:), offsets(:), slens(:)
-  INTEGER(KIND=IP), INTENT(IN) :: iNMPs(:), iNMPs_loc(:), intType(:)
+  INTEGER(KIND=IP), INTENT(IN) :: iNMPs(:), iNMPs_loc(:), intType(:), ib
   REAL(KIND=WP), INTENT(INOUT) :: sx_grid(:), sy_grid(:), sz2_grid(:), &
                                   spx_grid(:), spy_grid(:), spz2_grid(:), &
                                   sX_integral(:), sY_integral(:), sz2_integral(:), &
@@ -93,32 +93,32 @@ SUBROUTINE genGrids(sigmas,offsets,slens,intType,iNMPs,iNMPs_loc, &
   
 ! Generate grids and integrals in each dimension
 
-  CALL genGrid(intType(iX_CG),iLinear_CG,offsets(iX_CG), &
+  CALL genGrid(ib,intType(iX_CG),iLinear_CG,offsets(iX_CG), &
                sigmas(iX_CG),slens(iX_CG),&
                iNMPs(iX_CG),iNMPs_loc(iX_CG),sx_grid,sX_integral,.FALSE., &
                qOKL)
 
-  CALL genGrid(intType(iY_CG),iLinear_CG,offsets(iY_CG), &
+  CALL genGrid(ib,intType(iY_CG),iLinear_CG,offsets(iY_CG), &
                sigmas(iY_CG),slens(iY_CG),&
                iNMPs(iY_CG),iNMPs_loc(iY_CG),sy_grid,sY_integral,.FALSE., &
                qOKL)
 
-  CALL genGrid(intType(iZ2_CG),iLinear_CG,offsets(iZ2_CG), &
+  CALL genGrid(ib,intType(iZ2_CG),iLinear_CG,offsets(iZ2_CG), &
                sigmas(iZ2_CG),slens(iZ2_CG),&
                iNMPs(iZ2_CG),iNMPs_loc(iZ2_CG),sz2_grid,sZ2_integral,.TRUE., &
                qOKL)
 
-  CALL genGrid(intType(iPX_CG),iLinear_CG,offsets(iPX_CG), &
+  CALL genGrid(ib,intType(iPX_CG),iLinear_CG,offsets(iPX_CG), &
                sigmas(iPX_CG),slens(iPX_CG),&
                iNMPs(iPX_CG),iNMPs_loc(iPX_CG),spx_grid,sPX_integral,.FALSE., &
                qOKL)
 
-  CALL genGrid(intType(iPY_CG),iLinear_CG,offsets(iPY_CG), &
+  CALL genGrid(ib,intType(iPY_CG),iLinear_CG,offsets(iPY_CG), &
                sigmas(iPY_CG),slens(iPY_CG),&
                iNMPs(iPY_CG),iNMPs_loc(iPY_CG),spy_grid,sPY_integral,.FALSE., &
                qOKL)
 
-  CALL genGrid(intType(iPZ2_CG),iLinear_CG,offsets(iPZ2_CG), &
+  CALL genGrid(ib,intType(iPZ2_CG),iLinear_CG,offsets(iPZ2_CG), &
                sigmas(iPZ2_CG),slens(iPZ2_CG),&
                iNMPs(iPZ2_CG),iNMPs_loc(iPZ2_CG),spz2_grid,sPZ2_integral,.FALSE., &
                qOKL)

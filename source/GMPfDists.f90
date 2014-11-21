@@ -64,6 +64,8 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
   integer :: error
 
 
+  qRndEj_G(:) = .false.
+
 ! nZ2 is local, nZ2G is full
 
   allocate(dz2(nbeams), nZ2G(nbeams), nZ2(nbeams))
@@ -338,7 +340,7 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,ym,pxm,pym,dz2,Ne,npk,qnoise, &
 ! what should the length of the grid in gamma be?
 ! since we have a different sigGam for each?.....
 
-    call genGrid(intTypeG, iLinear_CG, gm(k), &         
+    call genGrid(1_ip, intTypeG, iLinear_CG, gm(k), &         
                  gsig(k), 6.0_WP*gsig(k), iNMPG, iNMPG, &
                  ggrid, gint, .FALSE., &
                  qOKL)

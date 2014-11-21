@@ -14,6 +14,7 @@ USE typesAndConstants
 USE FileType
 USE IO
 use parallelsetup
+use globals
 
 IMPLICIT NONE
 

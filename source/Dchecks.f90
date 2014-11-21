@@ -12,7 +12,8 @@ USE TransformInfoType
 USE IO
 USE typesAndConstants
 use Globals
-
+use particleFunctions
+use grids
 
 IMPLICIT NONE
 
@@ -92,7 +93,7 @@ SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
 
 
-  call checkRndEjLens(iNumElectrons, eSamLen, sigs, nbeams)
+  call checkRndEjLens(iNumElectrons, sLenEPulse, sSigE, nbeams)
 
 
 
@@ -206,7 +207,7 @@ SUBROUTINE chkESampleLens(sLenEPulse,iNumElectrons,rho,qOneD,qOK)
 
 !                 LOCAL ARGS
 
-  INTEGER(KIND=IP) :: i, inttypes(:)
+  INTEGER(KIND=IP) :: i
   REAL(KIND=WP) :: wlen, maxspcing, spcing
   
   qOK = .FALSE.
@@ -273,7 +274,7 @@ END SUBROUTINE chkESampleLens
     
     integer(kind=ip) :: inttypes(6_ip), ib
     real(kind=wp) :: gausslen
-    logical : qOKL
+    logical :: qOKL
 
 
 
