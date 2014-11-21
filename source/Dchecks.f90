@@ -11,6 +11,7 @@ USE ParallelInfoType
 USE TransformInfoType
 USE IO
 USE typesAndConstants
+use Globals
 
 
 IMPLICIT NONE
@@ -67,7 +68,7 @@ SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
     if (qSimple) then
 
-      call chkESampleLens(sLenEPulse(i,:),iNumElectrons(i,:),srho,qSwitches(iOneD_CG),qOKL)
+      call chkESampleLens(sLenEPulse(i,:),iNumElectrons(i,:), srho,qSwitches(iOneD_CG),qOKL)
       if (.NOT. qOKL) goto 1000
 
     end if  
@@ -88,6 +89,12 @@ SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
     if (.NOT. qOKL) goto 1000
 
   end if
+
+
+
+  call checkRndEjLens(iNumElectrons, eSamLen, sigs, nbeams)
+
+
 
   if (tProcInfo_G%qRoot) print '(I5,1X,A17,1X,F8.4)',nsteps,&
        'Step(s) and z-bar=',nsteps*sStepSize
@@ -199,7 +206,7 @@ SUBROUTINE chkESampleLens(sLenEPulse,iNumElectrons,rho,qOneD,qOK)
 
 !                 LOCAL ARGS
 
-  INTEGER(KIND=IP) :: i
+  INTEGER(KIND=IP) :: i, inttypes(:)
   REAL(KIND=WP) :: wlen, maxspcing, spcing
   
   qOK = .FALSE.
@@ -243,6 +250,7 @@ SUBROUTINE chkESampleLens(sLenEPulse,iNumElectrons,rho,qOneD,qOK)
 
   END DO
 
+
 !     Set error flag and exit
 
   qOK = .TRUE.
@@ -256,6 +264,53 @@ SUBROUTINE chkESampleLens(sLenEPulse,iNumElectrons,rho,qOneD,qOK)
 END SUBROUTINE chkESampleLens
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+  subroutine checkRndEjLens(iNMP, eSamLen, sigs, nbeams)
+
+    integer(kind=ip), intent(in) :: iNMP(:,:), nbeams
+    real(kind=wp), intent(in) :: eSamLen(:,:), sigs(:,:)
+    
+    integer(kind=ip) :: inttypes(6_ip), ib
+    real(kind=wp) :: gausslen
+    logical : qOKL
+
+
+
+    do ib = 1, nBeams
+
+      call getIntTypes(iNMP(ib,:), eSamLen(ib,:), sigs(ib,:), inttypes)
+      
+      if (inttypes(iZ2_CG) == iTopHatDistribution_CG) then
+
+        if (qRndEj_G(ib)) then
+
+          gausslen = 2_wp * sSigEj_G(ib) * gExtEj_G !    Check if there is enough room for the rounded edges
+          
+          if ((eSamLen(ib,iZ2_CG) - gausslen) <= 0) then
+
+            print*, 'ERROR:- electron beam model not long enough in z2 to include the gaussian tails'
+            call UnDefineParallelLibrary(qOKL)
+            stop
+
+          end if
+
+        end if
+
+      end if
+
+    end do
+
+
+end subroutine checkRndEjLens
+
+
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
 
 SUBROUTINE chkFSampleLens(iNodes,sWigglerLength,sLengthOfElm,rho,qOK)
 

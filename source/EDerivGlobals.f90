@@ -196,6 +196,14 @@ REAL(KIND=WP), ALLOCATABLE     :: sEl_PY0Position_G(:)
 REAL(KIND=WP), ALLOCATABLE     :: sEl_PZ20Position_G(:)
 
 
+!   ---   For rounded edge beam   ---   !
+
+logical, allocatable :: qRndEj_G(:)
+real(kind=wp), allocatable :: sSigEj_G(:) 
+real(kind=wp), parameter :: gExtEj_G = 7.5_wp
+
+
+
 
 
 End Module Globals

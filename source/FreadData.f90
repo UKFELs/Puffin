@@ -465,6 +465,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
     ALLOCATE(iNumElectrons(nbeams,6))
     ALLOCATE(sEmit_n(nbeams),sQe(nbeams),bcenter(nbeams),gammaf(nbeams))
     ALLOCATE(chirp(nbeams))
+    allocate(qRndEj_G(nbeams), sSigEj_G(nbeams))
     
 !     Loop round beams, reading in data
 
@@ -509,6 +510,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
       READ(UNIT=168,FMT=*) sEmit_n(b_ind)
       READ(UNIT=168,FMT=*) chirp(b_ind)
       READ(UNIT=168,FMT=*) bcenter(b_ind)
+      READ(UNIT=168,FMT=*) qRndEj_G(b_ind)
+      READ(UNIT=168,FMT=*) sSigEj_G(b_ind)
       READ(UNIT=168,FMT=*) sQe(b_ind)
     
     END DO

@@ -214,7 +214,7 @@ CONTAINS
                     pz2_tmpvector(b_sts(b_ind):b_ends(b_ind)), &
                     s_tmp_max_av(b_ind), &
                     s_tmp_macro(b_sts(b_ind):b_ends(b_ind)), &
-                    s_tmp_Vk(b_sts(b_ind):b_ends(b_ind)))
+                    s_tmp_Vk(b_sts(b_ind):b_ends(b_ind)), b_ind)
                       
     END DO
 
@@ -355,13 +355,13 @@ CONTAINS
 SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, &
                    i_RealE, q_noise, qOneD, sZ, x_tmpcoord, &
                    y_tmpcoord,z2_tmpcoord,px_tmpvector,py_tmpvector,&
-                   pz2_tmpvector,s_tmp_max_av,s_tmp_macro,s_tmp_Vk)
+                   pz2_tmpvector,s_tmp_max_av,s_tmp_macro,s_tmp_Vk, b_num)
 
   IMPLICIT NONE
 
 !                   ARGUMENTS
 
-  INTEGER(KIND=IP), INTENT(IN) :: iNMP(:),iNMP_loc(:)
+  INTEGER(KIND=IP), INTENT(IN) :: iNMP(:),iNMP_loc(:), b_num
   REAL(KIND=WP), INTENT(IN) :: samLenE(:), sigE(:), i_realE, &
                                gamma_d, sZ
                                
@@ -420,7 +420,7 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
   
 !    sZ2_center = offsets(iZ2_CG)
     
-  CALL genGrids(sigE,offsets,samLenE,iLocalIntegralType,iNMP, iNMP_loc, &
+  CALL genGrids(b_num, sigE,offsets,samLenE,iLocalIntegralType,iNMP, iNMP_loc, &
                 sx_grid, sy_grid, sz2_grid, spx_grid, spy_grid, spz2_grid, &
                 sX_integral, sY_integral, sz2_integral, &
                 sPX_integral, sPY_integral, sPZ2_integral)

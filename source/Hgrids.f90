@@ -41,7 +41,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 SUBROUTINE getIntTypes(iNMPs, samplens, sigmas, &
-                     inttypes)
+                       inttypes)
 
 
 !                   ARGUMENTS
@@ -137,7 +137,7 @@ END SUBROUTINE genGrids
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE genGrid(inttype,gridtype,centre,sigma,length,&
+SUBROUTINE genGrid(b_num, inttype,gridtype,centre,sigma,length,&
                    iNMP,iNMP_loc,Grid,Integral,qParallel,qOK)
 
   IMPLICIT NONE
@@ -146,7 +146,7 @@ SUBROUTINE genGrid(inttype,gridtype,centre,sigma,length,&
 !
 !          ARGUMENTS
 
-  INTEGER(KIND=IP), INTENT(IN) :: inttype, gridtype
+  INTEGER(KIND=IP), INTENT(IN) :: inttype, gridtype, b_num
   REAL(KIND=WP), INTENT(IN) :: centre, sigma, length
   INTEGER(KIND=IP), INTENT(IN) :: iNMP, iNMP_loc
   REAL(KIND=WP), INTENT(INOUT) :: Grid(:), Integral(:)
@@ -164,7 +164,7 @@ SUBROUTINE genGrid(inttype,gridtype,centre,sigma,length,&
 
   IF (qParallel) THEN
 
-    if (qRndEj_G) then !!!  If rounding edges of flat-top
+    if (qRndEj_G(b_num)) then !!!  If rounding edges of flat-top
   
       CALL splitBeam(iNMP, length, tProcInfo_G%size, tProcInfo_G%rank, &
                      locN, local_start, local_fin)
@@ -196,9 +196,9 @@ SUBROUTINE genGrid(inttype,gridtype,centre,sigma,length,&
 !                                 qOKL)
 
 
-      sige = 4.0_wp * 4.0_wp * pi * sRho_G
-      flat_len = length - ( 2.0_wp * (sige * 7.5_wp) )
-      call flattop2(sige, flat_len, Grid, iNMP, iNMP_loc, .true., Integral)
+      ! sige = 4.0_wp * 4.0_wp * pi * sRho_G
+      flat_len = length - ( 2.0_wp * (sSigEj_G(b_num) * gExtEj_G) )
+      call flattop2(sSigEj_G(b_num), flat_len, Grid, iNMP, iNMP_loc, .true., Integral)
 
 
 

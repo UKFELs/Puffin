@@ -266,7 +266,7 @@ subroutine flattop2(sig_edj, len_f, sGrid, iNumMP, iLocNumMP, qPara, s_Integral)
 !!! Get grid pts assigned to each section - gaussian -> flat -> gaussian
 
 
-  len_gauss = 7.5_wp * sig_edj   ! model out 7.5 sigma 
+  len_gauss = gExtEj_G * sig_edj   ! model out how many sigma?? 
 
 ! Get start and end of gaussian (need to send data around to determine global sts and ends in parallel version)
 
