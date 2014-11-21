@@ -15,6 +15,7 @@ use paratype
 use particleFunctions
 use parallelsetup
 use parBeam
+use globals
 
 implicit none
 
@@ -154,42 +155,89 @@ SUBROUTINE genGrid(inttype,gridtype,centre,sigma,length,&
 
 !         LOCAL VARS
 
-  REAL(KIND=WP) :: start, final, local_start, local_fin, shift
+  REAL(KIND=WP) :: start, final, local_start, local_fin, shift, &
+                   sige, flat_len
   INTEGER(KIND=IP) :: locN
   LOGICAL :: qOKL
 
   qOK = .FALSE.
 
   IF (qParallel) THEN
+
+    if (qRndEj_G) then !!!  If rounding edges of flat-top
   
-    CALL splitBeam(iNMP, length, tProcInfo_G%size, tProcInfo_G%rank, &
-                   locN, local_start, local_fin)
+      CALL splitBeam(iNMP, length, tProcInfo_G%size, tProcInfo_G%rank, &
+                     locN, local_start, local_fin)
 
-    shift = centre - (length / 2.0_WP) ! Amount the beam is shifted from 
-                                       ! having the head at z2=0
+      shift = centre - (length / 2.0_WP) ! Amount the beam is shifted from 
+                                         ! having the head at z2=0
 
-    local_start = local_start + shift
-    local_fin = local_fin + shift
+      local_start = local_start + shift
+      local_fin = local_fin + shift
 
-    CALL PulseGrid(iGridType=gridtype, &
-                   iNumMP=locN, &
-                   sStart=local_start, &
-                   sEnd=local_fin, &
-                   sGrid=Grid, &
-                   qOK = qOKL)
+      CALL PulseGrid(iGridType=gridtype, &
+                     iNumMP=locN, &
+                     sStart=local_start, &
+                     sEnd=local_fin, &
+                     sGrid=Grid, &
+                     qOK = qOKL)
 
-    IF (.NOT. qOKL) GOTO 1000
-		  
-    CALL DistributionIntegralZ2(inttype, &
-                                locN, &
-                                iNMP, &
-                                Grid, &
-                                centre, &
-                                sigma, &
-                                MPI_DOUBLE_PRECISION, &
-                                MPI_SUM, &
-                                Integral, &
-                                qOKL)
+      IF (.NOT. qOKL) GOTO 1000
+      
+!     CALL DistributionIntegralZ2(inttype, &
+!                                 locN, &
+!                                 iNMP, &
+!                                 Grid, &
+!                                 centre, &
+!                                 sigma, &
+!                                 MPI_DOUBLE_PRECISION, &
+!                                 MPI_SUM, &
+!                                 Integral, &
+!                                 qOKL)
+
+
+      sige = 4.0_wp * 4.0_wp * pi * sRho_G
+      flat_len = length - ( 2.0_wp * (sige * 7.5_wp) )
+      call flattop2(sige, flat_len, Grid, iNMP, iNMP_loc, .true., Integral)
+
+
+
+    else 
+
+      CALL splitBeam(iNMP, length, tProcInfo_G%size, tProcInfo_G%rank, &
+                     locN, local_start, local_fin)
+  
+      shift = centre - (length / 2.0_WP) ! Amount the beam is shifted from 
+                                         ! having the head at z2=0
+  
+      local_start = local_start + shift
+      local_fin = local_fin + shift
+  
+      CALL PulseGrid(iGridType=gridtype, &
+                     iNumMP=locN, &
+                     sStart=local_start, &
+                     sEnd=local_fin, &
+                     sGrid=Grid, &
+                     qOK = qOKL)
+  
+      IF (.NOT. qOKL) GOTO 1000
+        
+      CALL DistributionIntegralZ2(inttype, &
+                                  locN, &
+                                  iNMP, &
+                                  Grid, &
+                                  centre, &
+                                  sigma, &
+                                  MPI_DOUBLE_PRECISION, &
+                                  MPI_SUM, &
+                                  Integral, &
+                                  qOKL)
+
+
+    end if
+
+
+
 
   ELSE
 
