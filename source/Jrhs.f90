@@ -175,7 +175,7 @@ CONTAINS
 !     Adjust undulator tuning
 
 !    n2col = n2col0 * (1 + undgrad*(sz - sz0))
-    n2col = n2col0  + undgrad*(sz - sz0)
+!    n2col = n2col0  + undgrad*(sz - sz0)   ! commented out for this build (match-taper) 
 
     fkb= sFocusfactor_G * kbeta
 

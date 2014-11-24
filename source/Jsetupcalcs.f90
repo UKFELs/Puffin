@@ -131,6 +131,40 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
     sz0 = 0.0_WP
     undgrad = taper
 
+
+
+
+
+
+
+!!!!!!!!!
+!!!!!!!!!
+!!!!    
+!!!!
+!       TEMP FOR THIS BUILD
+
+    dp20 = -2.0_WP / gamr * chirp  ! Initial chirp in p2
+
+!    n2col = (1 + aw**2.0_WP) / 2.0_WP / aw**2.0_WP * &
+!                                dp20 / (1 + dp20*sz)
+
+    n2colL = n2col
+
+
+!
+!!!!
+!!!!
+!!!!!!!!!
+!!!!!!!!!
+
+
+
+
+
+
+
+
+
     sRho_save_G = rho
 
     sRho_G = sRho_save_G ! * modfact1

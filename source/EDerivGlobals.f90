@@ -203,7 +203,16 @@ real(kind=wp), allocatable :: sSigEj_G(:)
 real(kind=wp), parameter :: gExtEj_G = 7.5_wp
 
 
+!      -------------------------------------      !
+!      -------------------------------------      !
 
+!      ----- New for this custom build. ----      !
+!      ----- Using a non-linear taper   ----      !
+!      ----- lwfa beam dispersion.      ----      !
 
+real(kind=wp) :: dp20, n2colL
+
+!      -------------------------------------      !
+!      -------------------------------------      !
 
 End Module Globals

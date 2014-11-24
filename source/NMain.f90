@@ -201,6 +201,17 @@ DO iStep = start_step, nSteps
 
 
 
+!    ------------------   Temp for this build  (matched taper)       !!!!!!
+
+  undgrad = (1 + sAw_G**2.0_WP) / 2.0_WP / sAw_G**2.0_WP * &
+                                dp20 / (1 + dp20*sz)
+
+  n2col = n2colL  + undgrad * sStepSize
+
+  n2colL = n2col
+
+!    ------------------   End temp for this build  (matched taper)   !!!!!!
+
 
 
 
