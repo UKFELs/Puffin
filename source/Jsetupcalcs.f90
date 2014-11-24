@@ -30,7 +30,7 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
                          sRNX,sRNY, &
                          sElmLen,&
                          fx,fy,sFocusFactor,taper,sFiltFrac, &
-                         dStepFrac,sBeta,zUndType,qFormatted, qSwitch,qOK)
+                         dStepFrac,chirp,sBeta,zUndType,qFormatted, qSwitch,qOK)
 
     IMPLICIT NONE
 
@@ -54,7 +54,7 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
     REAL(KIND=WP),     INTENT(IN)    :: rho,aw,gamr, lam_w
     INTEGER(KIND=IP),  INTENT(IN)    :: sRNX,sRNY
     INTEGER(KIND=IP),  INTENT(IN)    :: iNN(:)
-    REAL(KIND=WP),     INTENT(IN)    :: sElmLen(:)	
+    REAL(KIND=WP),     INTENT(IN)    :: sElmLen(:), chirp
     REAL(KIND=WP),     INTENT(IN)    :: fx,fy,sFocusFactor, taper
     REAL(KIND=WP),     INTENT(IN)    :: sFiltFrac, dStepFrac, sBeta
     LOGICAL,           INTENT(IN)    :: qSwitch(nSwitches_CG), qFormatted

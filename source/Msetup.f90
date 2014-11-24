@@ -226,7 +226,7 @@ MODULE Setup
                      iredNodesX,iredNodesY, &
                      sLengthOfElm,&
                      fx,fy,sFocusFactor,taper, &
-                     sFiltFrac,sDiffFrac,sBeta, &
+                     sFiltFrac,sDiffFrac,chirp(1),sBeta, &
                      zUndType,qFormattedFiles, qSwitches,qOK)
 
   IF (.NOT. qOKL) GOTO 1000
