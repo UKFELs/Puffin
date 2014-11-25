@@ -107,6 +107,8 @@ ff = math.sqrt(2)      # Focus factor
 Q = 2e-9               # Charge
 qFlatTopZ2 = 1         # =1 if flat top current profile, else gaussian.
 qHardEdgeX = 0         # =1 if disk (circle) in transverse plane, else gaussian.
+qRoundZ2 = 1           # If rounding off edges of flat top in z2
+sigRoundZ2 = 6           # Sigma of gaussian used to round off the flat top edges, in resonant wavelengths
 # E = 300e6            # Beam energy
 # gamma = E / (m_e * pow(c,2)) # Rel. factor
 sig_gamma = 0.001      # Energy spread
@@ -138,7 +140,10 @@ else:
 tArea = pi * pow(r_av,2)          # Tranverse beam area
 
 if qFlatTopZ2 == 1:
-    lArea = sigz                  # longitudinal integral over charge dist (flat top)
+    if qRoundZ2 == 1:
+        lArea = sqrt(2*pi) * sigRoundZ2  + sigz     # flat top + gaussian
+    else:
+        lArea = sigz                  # longitudinal integral over charge dist (flat top)
 else:
     lArea = sqrt(2*pi) * sigz     # longitudinal integral over charge dist(gaussian)
 
