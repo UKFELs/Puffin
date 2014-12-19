@@ -108,7 +108,7 @@ Q = 2e-9               # Charge
 qFlatTopZ2 = 1         # =1 if flat top current profile, else gaussian.
 qHardEdgeX = 0         # =1 if disk (circle) in transverse plane, else gaussian.
 qRoundZ2 = 1           # If rounding off edges of flat top in z2
-sigRoundZ2 = 6           # Sigma of gaussian used to round off the flat top edges, in resonant wavelengths
+sigRound_lam = 6           # Sigma of gaussian used to round off the flat top edges, in resonant wavelengths
 #E = 300e6            # Beam energy
 #gamma = E / (m_e * pow(c,2)) # Rel. factor
 sig_gamma = 0.001      # Energy spread
@@ -122,7 +122,7 @@ N = Q / q_e                         # Number of real electrons in pulse
 lambda_r = lambda_w / (2 * pow(gamma,2)) * (1 + pow(aw,2))
                                     # ^ Resonant wavelength
 
-sigRoundZ2 = sigRoundZ2 * lambda_r
+sigRoundz = sigRound_lam * lambda_r
 
 sigx = sqrt(emit / k_beta)     # Beam standard deviation in x
 sigy = sigx                           # and y
@@ -142,7 +142,7 @@ tArea = pi * pow(r_av,2)          # Tranverse beam area
 
 if qFlatTopZ2 == 1:
     if qRoundZ2 == 1:
-        lArea = sqrt(2*pi) * sigRoundZ2  + sigz     # flat top + gaussian
+        lArea = sqrt(2*pi) * sigRoundz  + sigz     # flat top + gaussian
     else:
         lArea = sigz                  # longitudinal integral over charge dist (flat top)
 else:
@@ -162,6 +162,8 @@ Lg = lambda_w / lambda_z2         # Gain length
 Lc = lambda_r / lambda_z2         # Cooperation length
 zbarprop = N_w * lambda_z2        # Length of undulator in zbar (gain lengths)
 sigz2 = sigz / Lc                 # Length of pulse in z2 (cooperation lengths)
+
+sigRoundZ2 = sigRoundz / Lc       # Sigma of tail off in z2 (cooperation lengths)
 
 beta = sqrt(pow(gamma,2) - 1.0 - pow(aw,2))/gamma    # Average velocity over c
 eta = (1-beta)/beta                                # Scaled average velocity
@@ -196,8 +198,11 @@ elms_per_wave = 24         # Elements per resonant wavelength
 steps_per_per = 96         # should be roughly 4-5* elms_per_wave
 
 if qFlatTopZ2 == 1:
-    lez2     = sigz2       # flat-top
-    sigz2_in = 1e8 
+    if qRoundZ2 == 1:
+        lez2 = (7.5 * sigRoundZ2)  + sigz2     # flat top + gaussian
+    else:
+        lez2     = sigz2       # flat-top
+        sigz2_in = 1e8 
 else:
     lez2     = 9*sigz2     # gaussian
     sigz2_in = sigz2 
