@@ -286,7 +286,7 @@ END SUBROUTINE chkESampleLens
 
         if (qRndEj_G(ib)) then
 
-          gausslen = 2_wp * sSigEj_G(ib) * gExtEj_G !    Check if there is enough room for the rounded edges
+          gausslen = sSigEj_G(ib) * gExtEj_G !    Check if there is enough room for the rounded edges
           
           if ((eSamLen(ib,iZ2_CG) - gausslen) <= 0) then
 

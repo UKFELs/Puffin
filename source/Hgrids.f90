@@ -197,7 +197,7 @@ SUBROUTINE genGrid(b_num, inttype,gridtype,centre,sigma,length,&
 
 
       ! sige = 4.0_wp * 4.0_wp * pi * sRho_G
-      flat_len = length - ( 2.0_wp * (sSigEj_G(b_num) * gExtEj_G) )
+      flat_len = length - (sSigEj_G(b_num) * gExtEj_G)
       call flattop2(sSigEj_G(b_num), flat_len, Grid, iNMP, iNMP_loc, .true., Integral)
 
 
