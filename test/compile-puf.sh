@@ -3,7 +3,7 @@
 # compile-puf.sh
 # Compiles Puffin on Linux Mint install.
 
-PUFDIR=~/src/puffin-github/source
+PUFDIR=~/src/puffin/source
 
 mpicc -DONE_UNDERSCORE -c $PUFDIR/*.c -lfftw_mpi -lfftw -lmpi -lm
 

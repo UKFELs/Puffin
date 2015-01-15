@@ -96,6 +96,12 @@ seedfile = 'seed_file.in'
 nbeams = 1
 nseeds = 1
 
+### Sampling
+
+elms_per_wave = 20         # Field nodes per resonant wavelength 
+emps_per_wave = 24         # Electron macroparticles per resonant wavelength
+steps_per_per = 100        # should be roughly 4-5* elms_per_wave
+
 # Undulator and beam parameters
 
 aw = 2.0               # 3.182 rms, 4.5 peak
@@ -194,9 +200,6 @@ chirpz2 = Lc * chirp     # Energy chirp in z2
 ##################################################
 # Sampling
 
-elms_per_wave = 24         # Elements per resonant wavelength
-steps_per_per = 96         # should be roughly 4-5* elms_per_wave
-
 if qFlatTopZ2 == 1:
     if qRoundZ2 == 1:
         lez2 = (7.5 * sigRoundZ2)  + sigz2     # flat top + gaussian
@@ -212,7 +215,12 @@ lsys_z2 = lwz2 + lez2      # Total length of sampled system in z2
 
 dz2 = lambda_z2 / elms_per_wave    # Node spacing in z2
 NNodesZ2 = lsys_z2 / dz2 + 1       # Number of radiation field nodes
-NMElecsZ2 = lez2 / dz2 * 2         # MINIMUM number of macroparticles
+
+dz2e = lambda_z2 / emps_per_wave   # Macroparticle spacing in z2
+NMElecsZ2 = lez2 / dz2e            # Number of macroparticles in z2
+
+NMElecsP2 = 19                     # Number of macroparticles to sample energy spread
+
 dz = lambda_z2 / steps_per_per     # Step size in zbar
 Nsteps = zbarprop / dz             # Number of steps
 
@@ -268,7 +276,7 @@ beam[0].nmppx = 1
 beam[0].nmppy = 1
 
 beam[0].nmpz2 = NMElecsZ2
-beam[0].nmpp2 = 21
+beam[0].nmpp2 = NMElecsP2
 
 beam[0].eratio = 1
 beam[0].emit_bar = emit_bar
@@ -385,7 +393,7 @@ f.write('\n')
 f.write('\n')
 f.write('{:<24d}'.format(int(math.floor(NNodesX)))        + 'INTEGER     iNumNodes(1)         Number of Elements in x direction\n')
 f.write('{:<24d}'.format(int(math.floor(NNodesY)))        + 'INTEGER     iNumNodes(2)         Number of Elements in y direction\n')
-f.write('{:<24d}'.format(int(math.floor(NNodesZ2)))      + 'INTEGER     iNumNodes(3)         Number of Elements in z2 direction\n')
+f.write('{:<24d}'.format(int(math.floor(elms_per_wave)))      + 'INTEGER     nodesperlambda         Number of nodes per resonant wavelength in z2\n')
 f.write('{:<24.15E}'.format(lsys_y)   + 'REAL        sFModelLengthX       Length of radiation field model in x direction\n')
 f.write('{:<24.15E}'.format(lsys_x)   + 'REAL        sFModelLengthY       Length of radiation field model in y direction\n')
 f.write('{:<24.15E}'.format(lsys_z2)  + 'REAL        sWigglerLengthZ2     Length of wiggler in z2-bar direction\n')
@@ -410,8 +418,8 @@ f.write('Input the scaled independant variables from [1] here\n')
 f.write('\n')
 f.write('\n')
 f.write('{:<24.15E}'.format(rho) + 'REAL        rho                  Pierce parameter, describe the strength of the field\n')
-f.write('{:<24.15E}'.format(1.0)   + 'REAL        ux                   Normalised magnitude of wiggler magnetic field x-vector: H=1 is helical, H=0 is planar\n')
-f.write('{:<24.15E}'.format(1.0)   + 'REAL        uy                   Normalised magnitude of wiggler magnetic field y-vector: H=1 is helical, H=0 is planar\n')
+f.write('{:<24.15E}'.format(1.0)   + 'REAL        ux                   Normalised magnitude of wiggler magnetic field x-vector\n')
+f.write('{:<24.15E}'.format(1.0)   + 'REAL        uy                   Normalised magnitude of wiggler magnetic field y-vector\n')
 f.write('{:<24.15E}'.format(aw) + 'REAL        aw                  rms unduator parameter\n')
 f.write('{:<24.15E}'.format(gamma) + 'REAL        gamma                      Resonant Energy\n')
 f.write('{:<24.15E}'.format(ff) + 'REAL        sFocusfactor         Focussing factor f, from the betatron wavenumber\n')
