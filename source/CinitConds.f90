@@ -19,18 +19,9 @@ contains
 
 !********************************************************
 
-  FUNCTION xOffSet(rho, &
-       aw,  &
-       gamma_r, &
-       gamma_j, &
-       eta, &
-       k_beta,&
-       ff, &
-       px,&
-       py,&
-       ux,&
-       uy,&
-       sZ0)
+  FUNCTION xOffSet(rho, aw, gamma_r, gamma_j, &
+                   eta, k_beta, ff, px, py, &
+                   ux, uy, sZ0)
 !
 ! Calculate xOffset value
 ! Value of Range mid point offset from origin
@@ -60,19 +51,10 @@ contains
 
 !********************************************************
 
-  FUNCTION yOffSet(rho, &
-       aw,  &
-       gamma_r, &
-       gamma_j, &
-       eta, &
-       k_beta, &
-       ff, &
-       px, &
-       py, &
-       ux,&
-       uy,&
-       sZ0)
-!
+  FUNCTION yOffSet(rho, aw, gamma_r, gamma_j, &
+                   eta, k_beta, ff, px, py, &
+                   ux, uy, sZ0)
+
 ! Calculate xOffset value
 ! Value of Range mid point offset from origin
 !
