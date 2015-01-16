@@ -45,7 +45,7 @@ contains
 
     s_Sin_zOver2rho = SIN(sZ0 / (2.0_WP * rho))
 
-    xOffSet = -srBcoeff * s_Sin_zOver2rho
+    xOffSet = -srBcoeff * n2col * s_Sin_zOver2rho
 
   END FUNCTION xOffSet
 
@@ -80,7 +80,7 @@ contains
           
     s_Cos_zOver2rho = COS(sZ0 / (2.0_WP * rho))	
 ! Initial values for the electron pulse in all direction
-    yOffSet         = srBcoeff * s_Cos_zOver2rho
+    yOffSet         = srBcoeff * n2col * s_Cos_zOver2rho
       
   END FUNCTION yOffSet
 !********************************************************
@@ -98,7 +98,7 @@ contains
 
     REAL(KIND=WP) :: pxOffset
 
-    pxOffset = -uy*COS(z / (2.0_WP * rho))
+    pxOffset = -uy * n2col * COS(z / (2.0_WP * rho))
   
   END FUNCTION pxOffset
 
@@ -117,7 +117,7 @@ contains
 
     REAL(KIND=WP) :: pyOffset
 
-    pyOffset = -ux * SIN(z / (2.0_WP * rho))
+    pyOffset = -ux * n2col * SIN(z / (2.0_WP * rho))
     
   END FUNCTION pyOffset
 
@@ -125,8 +125,8 @@ contains
 
   FUNCTION pz2Offset(gamma, px, py, eta, aw)
 
-! Equation for the initial electron py offset due to
-! the undulator field.  
+! Equation for the initial electron p2 offset due to
+! the undulator field. (Doesn't work for n2col /= 1)  
 ! 
 !               ARGUMENTS
 
