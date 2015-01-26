@@ -350,7 +350,7 @@ END SUBROUTINE SetUpInitialValues
 
 SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
                              sigma, beamCenZ2,gamma_d,eThresh, &
-                             chirp,nbeams, &
+                             chirp,mag,fr,nbeams, &
                              sV,qOK)
 
 !                     ARGUMENTS
@@ -358,6 +358,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
     logical, intent(in) :: qSimple
     character(*), intent(in) :: fname(:)
     REAL(KIND=WP),     INTENT(IN)    :: sQe(:), gamma_d(:), chirp(:)
+    REAL(KIND=WP),     INTENT(IN)    :: mag(:), fr(:)
     INTEGER(KIND=IP),  INTENT(IN)    :: NE(:,:),nbeams
     LOGICAL,           INTENT(IN)    :: noise
     REAL(KIND=WP),     INTENT(IN)    :: Z
@@ -416,7 +417,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
       CALL electron_grid(RealE,NE,noise, &
                          Z,nbeams, LenEPulse,sigma, beamCenZ2, gamma_d, &
                          eThresh,tTransInfo_G%qOneD, &
-                         chirp,sV,qOKL)
+                         chirp,mag,fr,sV,qOKL)
       IF (.NOT. qOKL) GOTO 1000
 
     else 

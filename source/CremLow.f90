@@ -14,6 +14,7 @@ use paratype
 use Globals
 use parallelSetup
 use gtop2
+use beamPrep
 
 implicit none
 
@@ -121,7 +122,7 @@ END SUBROUTINE removeLowNC
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 SUBROUTINE removeLow(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
-                     chirp,nbeams,x_tmpcoord,y_tmpcoord,z2_tmpcoord,px_tmpvector,&
+                     chirp,mag,fr,nbeams,x_tmpcoord,y_tmpcoord,z2_tmpcoord,px_tmpvector,&
                      py_tmpvector, pz2_tmpvector,totalmps_b,&
                      sZ2_center)
                    
@@ -139,7 +140,7 @@ SUBROUTINE removeLow(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
                                py_tmpvector(:), pz2_tmpvector(:)
   INTEGER(KIND=IPL), INTENT(IN) :: b_sts(:), b_ends(:)
   INTEGER(KIND=IP), INTENT(IN) :: nbeams
-  REAL(KIND=WP), INTENT(IN) :: chirp(:)
+  REAL(KIND=WP), INTENT(IN) :: chirp(:), mag(:), fr(:)
   REAL(KIND=WP), INTENT(IN) :: sElectronThreshold
   INTEGER(KIND=IPL), INTENT(IN) :: totalmps_b(:)
   REAL(KIND=WP), INTENT(IN) :: sZ2_center(:)
@@ -202,10 +203,13 @@ SUBROUTINE removeLow(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
 
 !     Add linear chirp to the beam....TEMP
 
-    Qchoff = chirp(b_ind)*(sEl_Z20Position_G(ist:ien)-sZ2_center(b_ind))
-    sEl_PZ20Position_G(ist:ien) = sEl_PZ20Position_G(ist:ien) + Qchoff
 
-    DEALLOCATE(Qchoff)
+    call addChirp(sEl_PZ20Position_G(ist:ien), sEl_Z20Position_G(ist:ien), &
+                  b_keepn(b_ind), sZ2_center(b_ind), chirp(b_ind))
+
+
+    call addModulation(sEl_PZ20Position_G(ist:ien), sEl_Z20Position_G(ist:ien), &
+                       b_keepn(b_ind), mag(b_ind), fr(b_ind))
 
     prev = prev + totalmps_b(b_ind)
 

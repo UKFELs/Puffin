@@ -21,7 +21,7 @@ CONTAINS
 
 SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
        sLengthofElm,iNodes,sWigglerLength,sStepSize,&
-       nSteps,srho,saw,sgammar,focusfactor,sSigE,f_x, f_y, iRedNodesX,&
+       nSteps,srho,saw,sgammar,focusfactor,mag,sSigE,f_x, f_y, iRedNodesX,&
        iRedNodesY,qSwitches,qSimple,qOK)
 
   IMPLICIT NONE
@@ -47,6 +47,7 @@ SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
   REAL(KIND=WP), INTENT(INOUT) :: sStepSize
   INTEGER(KIND=IP), INTENT(INOUT) :: nSteps
   REAL(KIND=WP), INTENT(IN) :: srho,saw,sgammar,focusfactor
+  real(kind=wp), intent(in) :: mag(:)
   REAL(KIND=WP), INTENT(INOUT) :: sSigE(:,:)
   REAL(KIND=WP), INTENT(INOUT) :: f_x, f_y
   INTEGER(KIND=IP),INTENT(INOUT) :: iRedNodesX,iRedNodesY
@@ -88,6 +89,8 @@ SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
     call checkFreeParams(srho,saw,sgammar,f_x,f_y,focusfactor,qOKL)
     if (.NOT. qOKL) goto 1000
+
+    call checkOscMag(sgammar, mag, nbeams)
 
   end if
 
@@ -191,6 +194,33 @@ SUBROUTINE stpFSampleLens(iNodes,sWigglerLength,sLengthOfElm,qOneD,qOK)
 2000 CONTINUE
 
 END SUBROUTINE stpFSampleLens
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+subroutine checkOscMag(sgammar, mag, nbeams)
+
+  real(kind=wp), intent(in) :: sgammar, mag(:)
+  integer(kind=ip), intent(in) :: nbeams
+
+  integer(kind=ip) :: ii, error
+
+  do ii = 1, nbeams
+
+    if (sgammar <= mag(ii)) then
+
+      PRINT*, 'ERROR: Magnitude of beam oscillation is too large in beam number ', ii
+      print*, 'ERROR: Ensure magnitude of beam energy modulation is < gamma_r'
+  
+      call MPI_FINALIZE(error)
+      STOP
+
+    end if
+
+  end do
+
+end subroutine checkOscMag
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

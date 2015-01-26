@@ -76,7 +76,7 @@ REAL(KIND=WP), ALLOCATABLE  :: sLenEPulse(:,:)
 INTEGER(KIND=IP), ALLOCATABLE  :: iNumElectrons(:,:)
 REAL(KIND=WP), ALLOCATABLE     :: sSigmaGaussian(:,:)
 REAL(KIND=WP), ALLOCATABLE    :: sQe(:), beamCenZ2(:), gamma_d(:), &
-                                 chirp(:), sEmit_n(:)
+                                 chirp(:), sEmit_n(:), mag(:), fr(:)
 
 REAL(KIND=WP), ALLOCATABLE :: sA0_Re(:),sA0_Im(:)
 

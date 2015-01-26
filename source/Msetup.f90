@@ -125,6 +125,7 @@ MODULE Setup
        beamCenZ2,         &
        gamma_d,           &
        chirp,             &
+       mag, fr,           &
        nbeams,            &
        dist_f,            &
        qSimple,           &
@@ -158,7 +159,7 @@ MODULE Setup
 !    to avoid errors.
 
   CALL CheckParameters(sLenEPulse,iNumElectrons,nbeams,sLengthofElm,iNodes,&
-       sWigglerLength,sStepSize,nSteps,srho,saw,sgammar,sFocusfactor, &
+       sWigglerLength,sStepSize,nSteps,srho,saw,sgammar,sFocusfactor, mag, &
        sSigmaGaussian,fx,fy, iRedNodesX,iRedNodesY,qSwitches,qSimple,qOKL)
   
   IF (.NOT. qOKL) GOTO 1000
@@ -235,7 +236,7 @@ MODULE Setup
 
   CALL PopMacroElectrons(qSimple, dist_f, sQe,iNumElectrons,q_noise,sZ,sLenEPulse,&
                          sSigmaGaussian,beamCenZ2,gamma_d,&
-                         sElectronThreshold,chirp, &
+                         sElectronThreshold,chirp, mag, fr, &
                          nbeams,sV,qOK)
 
   IF (.NOT. qOKL) GOTO 1000  

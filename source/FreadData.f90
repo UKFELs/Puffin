@@ -40,6 +40,7 @@ SUBROUTINE read_in(zfilename, &
        bcenter, &
        gamma_d, &
        chirp, &
+       mag, fr, &
        nbeams, &
        dist_f, &
        qSimple, &
@@ -153,7 +154,8 @@ SUBROUTINE read_in(zfilename, &
   
   REAL(KIND=WP),     INTENT(OUT)  :: sElectronThreshold
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: bcenter(:), gamma_d(:), &
-                                              chirp(:), sEmit_n(:)
+                                              chirp(:), sEmit_n(:), &
+                                              mag(:), fr(:)
   
   INTEGER(KIND=IP), INTENT(INOUT) :: nbeams, nseeds
 
@@ -377,7 +379,7 @@ SUBROUTINE read_in(zfilename, &
 
 
   CALL read_beamfile(qSimple, dist_f, beam_file,sEmit_n,sSigmaGaussian,sLenEPulse, &
-                     iNumElectrons,sQe,chirp,bcenter,gamma_d,nbeams, &
+                     iNumElectrons,sQe,chirp,bcenter, mag, fr, gamma_d,nbeams, &
                      qMatched,qOKL)
 
   CALL read_seedfile(seed_file,nseeds,sSigmaF,sA0_Re,sA0_Im,freqf,&
@@ -404,7 +406,7 @@ END SUBROUTINE read_in
 
 
 SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
-                         iNumElectrons,sQe,chirp,bcenter,gammaf,nbeams,&
+                         iNumElectrons,sQe,chirp, bcenter, mag, fr,gammaf,nbeams,&
                          qMatched,qOK)
 
   IMPLICIT NONE
@@ -414,7 +416,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   LOGICAL, INTENT(OUT) :: qSimple
   CHARACTER(*), INTENT(INOUT) :: be_f     ! beam file name
   CHARACTER(*), INTENT(INOUT), ALLOCATABLE :: dist_f(:)     ! dist file names
-  REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sEmit_n(:),chirp(:)
+  REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sEmit_n(:),chirp(:), mag(:), fr(:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sSigmaE(:,:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sLenE(:,:)
   INTEGER(KIND=IP), ALLOCATABLE, INTENT(OUT) :: iNumElectrons(:,:)
@@ -465,6 +467,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
     ALLOCATE(iNumElectrons(nbeams,6))
     ALLOCATE(sEmit_n(nbeams),sQe(nbeams),bcenter(nbeams),gammaf(nbeams))
     ALLOCATE(chirp(nbeams))
+    allocate(mag(nbeams), fr(nbeams))
     allocate(qRndEj_G(nbeams), sSigEj_G(nbeams))
     
 !     Loop round beams, reading in data
@@ -510,6 +513,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
       READ(UNIT=168,FMT=*) sEmit_n(b_ind)
       READ(UNIT=168,FMT=*) chirp(b_ind)
       READ(UNIT=168,FMT=*) bcenter(b_ind)
+      READ(UNIT=168,FMT=*) mag(b_ind)
+      READ(UNIT=168,FMT=*) fr(b_ind)      
       READ(UNIT=168,FMT=*) qRndEj_G(b_ind)
       READ(UNIT=168,FMT=*) sSigEj_G(b_ind)
       READ(UNIT=168,FMT=*) sQe(b_ind)

@@ -32,6 +32,7 @@ CONTAINS
        sElectronThreshold, &
        qOneD, &
        chirp, &
+       mag, fr, &
        sV, &
        qOK)
 
@@ -59,7 +60,7 @@ CONTAINS
     REAL(KIND=WP), INTENT(INOUT):: beamCenZ2(:)
     INTEGER(KIND=IP), INTENT(IN):: iNMP(:,:)
     LOGICAL, INTENT(IN)         :: q_noise
-    REAL(KIND=WP), INTENT(IN)	:: sZ, chirp(:)
+    REAL(KIND=WP), INTENT(IN)	:: sZ, chirp(:), mag(:), fr(:)
 
 
     INTEGER(KIND=IP), INTENT(IN) :: nbeams
@@ -227,7 +228,7 @@ CONTAINS
     DEALLOCATE(s_tmp_macro,s_tmp_Vk)
 
     CALL removeLow(Tmp_chibar, Tmp_Normchi, b_sts, b_ends, sElectronThreshold, &
- chirp,nbeams,x_tmpcoord,y_tmpcoord,z2_tmpcoord,px_tmpvector,&
+                   chirp,mag,fr,nbeams,x_tmpcoord,y_tmpcoord,z2_tmpcoord,px_tmpvector,&
                    py_tmpvector, pz2_tmpvector,totalmps_b,beamCenZ2)
 
     DEALLOCATE(x_tmpcoord)
