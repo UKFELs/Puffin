@@ -611,6 +611,7 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,qFlatTop, &
   ALLOCATE(sSigmaF(nseeds,3))
   ALLOCATE(sA0_X(nseeds), sA0_Y(nseeds))
   ALLOCATE(freqf(nseeds),qFlatTop(nseeds),meanZ2(nseeds))
+  allocate(qRndFj_G(nseeds), sSigFj_G(nseeds))
     
 !     Loop round seeds, reading in data
 
@@ -629,6 +630,8 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,qFlatTop, &
     READ(UNIT=168,FMT=*) sSigmaF(s_ind,iZ2_CG)
     READ(UNIT=168,FMT=*) qFlatTop(s_ind)
     READ(UNIT=168,FMT=*) meanZ2(s_ind)
+    READ(UNIT=168,FMT=*) qRndFj_G(s_ind)
+    READ(UNIT=168,FMT=*) sSigFj_G(s_ind)
     
   END DO
 

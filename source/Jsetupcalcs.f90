@@ -514,8 +514,8 @@ SUBROUTINE getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,frs,nSeeds,dels,xfieldt,yf
 
   DO ind = 1, nSeeds
   
-    CALL getSeed(NN(:),sigs(ind,:),cens(ind),magxs(ind),magys(ind),qFTs(ind),rho,frs(ind), &
-                   dels,xfield,yfield)
+    CALL getSeed(NN(:),sigs(ind,:),cens(ind),magxs(ind),magys(ind),qFTs(ind), &
+                 qRndFj_G(ind), sSigFj_G(ind), rho,frs(ind), dels,xfield,yfield)
 
     xfieldt = xfieldt + xfield
     yfieldt = yfieldt + yfield
@@ -526,15 +526,15 @@ END SUBROUTINE getSeeds
 
 !*****************************************************
 
-SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,rho,fr,dels,xfield,yfield)
+SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, sSigR, rho,fr,dels,xfield,yfield)
 
   IMPLICIT NONE
 
 !             ARGUMENTS
 
   INTEGER(KIND=IP), INTENT(IN) :: NN(:)
-  REAL(KIND=WP), INTENT(IN) :: sig(:), cen, rho, fr, magx, magy, dels(:)
-  LOGICAL, INTENT(IN) :: qFT
+  REAL(KIND=WP), INTENT(IN) :: sig(:), cen, sSigR, rho, fr, magx, magy, dels(:)
+  LOGICAL, INTENT(IN) :: qFT, qRnd
   REAL(KIND=WP), INTENT(OUT) :: xfield(:), yfield(:)
 
 !             LOCAL ARGS
@@ -589,20 +589,35 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,rho,fr,dels,xfield,yfield)
    
 
   IF (qFT) THEN
-    
-    WHERE (z2nds < (cen - sig(iZ2_CG)))
+ 
 
-      z2env = 0.0_WP
 
-    ELSEWHERE (z2nds > (cen + sig(iZ2_CG)))
+
+    if (qRnd) then
+ 
+      call ftron(z2env, 2*sig(iZ2_CG), sSigR, cen, z2nds)
+ 
+    else 
+
+
+      WHERE (z2nds < (cen - sig(iZ2_CG)))
 
         z2env = 0.0_WP
 
-    ELSEWHERE
+      ELSEWHERE (z2nds > (cen + sig(iZ2_CG)))
 
-      z2env = 1.0_WP
+        z2env = 0.0_WP
 
-    END WHERE
+      ELSEWHERE
+
+        z2env = 1.0_WP
+
+      END WHERE
+
+    end if
+
+
+
 
   ELSE
   
@@ -632,5 +647,68 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,rho,fr,dels,xfield,yfield)
   end do
 
 END SUBROUTINE getSeed
+
+
+
+
+
+
+
+subroutine ftron(env, fl_len, rn_sig, cen, z2nds)
+
+
+  real(kind=wp), intent(inout) :: env(:)
+  real(kind=wp), intent(in) :: fl_len, rn_len, cen, z2nds(:)
+    
+
+  real(kind=wp) :: len_gauss, sSt, sEd, sg1cen, sg1st, &
+                   sg2cen, sg2st
+
+  integer(kind=ip) :: nnz2
+
+
+
+  len_gauss = gExtEj_G * rn_sig /2.0_wp  ! model out how many sigma?? 
+  
+
+
+  sSt = cen - (fl_len / 2.0_wp) - len_gauss  ! 
+  sEd = cen + (fl_len / 2.0_wp) + len_gauss 
+
+
+
+  sg1st = sSt              ! Start of 1st half gauss
+  sftst = sSt + len_gauss  ! Start of flat-top section
+  sg2st = sftst + fl_len    ! Start of second half-gaussian
+
+  sg1cen = sftst      ! mean of 1st gauss
+  sg2cen = sg2st      ! mean of 2nd gauss
+
+
+
+
+  where ((z2nds >= sSt) .and. (z2nds <= sftst)) 
+
+    env = gaussian(z2nds, sg1cen, rn_sig)
+
+  elsewhere ((z2nds > sg1cen) .and. (z2nds <= sg2cen)) 
+
+    env = 1.0_wp
+
+  elsewhere ((z2nds > sg2cen) .and.  (z2nds <= sg2st + len_gauss))
+
+    env = gaussian(z2nds, sg2cen, rn_sig)
+
+  elsewhere
+
+    env = 0.0_wp
+
+  end where
+
+
+
+end subroutine ftron
+
+
 
 END MODULE setupcalcs

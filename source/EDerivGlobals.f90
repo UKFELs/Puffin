@@ -204,6 +204,10 @@ real(kind=wp), parameter :: gExtEj_G = 7.5_wp
 
 
 
+!   ---   For rounded edge seed field   ---   !
+
+logical, allocatable :: qRndFj_G(:)
+real(kind=wp), allocatable :: sSigFj_G(:) 
 
 
 End Module Globals
