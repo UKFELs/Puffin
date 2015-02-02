@@ -159,8 +159,10 @@ MODULE Setup
 !    to avoid errors.
 
   CALL CheckParameters(sLenEPulse,iNumElectrons,nbeams,sLengthofElm,iNodes,&
-       sWigglerLength,sStepSize,nSteps,srho,saw,sgammar,sFocusfactor, mag, &
-       sSigmaGaussian,fx,fy, iRedNodesX,iRedNodesY,qSwitches,qSimple,qOKL)
+                       sWigglerLength,sStepSize,nSteps,srho,saw,sgammar, &
+                       sFocusfactor, mag, sSigmaGaussian,fx,fy, iRedNodesX, &
+                       iRedNodesY,qSwitches,qSimple, sSeedSigma, freqf, & 
+                       SmeanZ2, qFlatTopS, nseeds, qOKL)
   
   IF (.NOT. qOKL) GOTO 1000
 

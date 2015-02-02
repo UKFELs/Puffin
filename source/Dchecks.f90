@@ -21,8 +21,9 @@ CONTAINS
 
 SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
        sLengthofElm,iNodes,sWigglerLength,sStepSize,&
-       nSteps,srho,saw,sgammar,focusfactor,mag,sSigE,f_x, f_y, iRedNodesX,&
-       iRedNodesY,qSwitches,qSimple,qOK)
+       nSteps,srho,saw,sgammar,focusfactor,mag,sSigE,f_x, f_y, &
+       iRedNodesX, iRedNodesY,qSwitches,qSimple,sSigF, &
+       freqf, SmeanZ2, qFlatTopS, nseeds,qOK)
 
   IMPLICIT NONE
 
@@ -40,7 +41,7 @@ SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
   REAL(KIND=WP),INTENT(INOUT) :: sLenEPulse(:,:)
   INTEGER(KIND=IP),INTENT(INOUT) :: iNumElectrons(:,:)
-  INTEGER(KIND=IP), INTENT(IN) :: nbeams
+  INTEGER(KIND=IP), INTENT(IN) :: nbeams, nseeds
   REAL(KIND=WP),INTENT(INOUT) :: sLengthofElm(:)
   INTEGER(KIND=IP),INTENT(INOUT) :: iNodes(:)
   REAL(KIND=WP), INTENT(INOUT) :: sWigglerLength(:)
@@ -48,11 +49,12 @@ SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
   INTEGER(KIND=IP), INTENT(INOUT) :: nSteps
   REAL(KIND=WP), INTENT(IN) :: srho,saw,sgammar,focusfactor
   real(kind=wp), intent(in) :: mag(:)
-  REAL(KIND=WP), INTENT(INOUT) :: sSigE(:,:)
+  REAL(KIND=WP), INTENT(INOUT) :: sSigE(:,:), sSigF(:,:), &
+                                  freqf(:), SmeanZ2(:)
   REAL(KIND=WP), INTENT(INOUT) :: f_x, f_y
   INTEGER(KIND=IP),INTENT(INOUT) :: iRedNodesX,iRedNodesY
   LOGICAL, INTENT(INOUT) :: qSwitches(:)
-  logical, intent(in) :: qSimple
+  logical, intent(in) :: qSimple, qFlatTopS(:)
   LOGICAL, INTENT(OUT)  :: qOK
 
 !           Local vars
@@ -92,11 +94,19 @@ SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
     call checkOscMag(sgammar, mag, nbeams)
 
+    call checkRndEjLens(iNumElectrons, sLenEPulse, sSigE, nbeams)
+
+
+ 
+    do i = 1, nSeeds
+  
+      call chkFldBnds(qFlatTopS(i), qRndFj_G(i), sSigF(i,iZ2_CG), sSigFj_G(i), & 
+                      SmeanZ2(i))
+  
+    end do
+
+
   end if
-
-
-
-  call checkRndEjLens(iNumElectrons, sLenEPulse, sSigE, nbeams)
 
 
 
@@ -115,6 +125,66 @@ SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
 END SUBROUTINE CheckParameters
   
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+subroutine chkFldBnds(qF, qR, sig, sigEj, cen)
+
+  real(kind=wp), intent(in) :: sig, sigEj
+  logical, intent(in) :: qF, qR  
+  real(kind=wp), intent(inout) :: cen
+
+  real(kind=wp) :: start, tl, shft
+
+
+  if (qF) then
+
+    if (qR) then
+
+      tl = sigEj * gExtEj_G  +  2.0_wp * sig
+
+    else 
+
+      tl = 2.0_wp * sig
+
+    end if
+
+  else 
+
+    tl = sig * gExtEj_G
+
+  end if
+
+  start =  cen - tl / 2.0_wp
+
+
+  if (start < 0.0_wp) then
+
+    shft = 0.0_wp - start
+    cen = cen + shft
+
+
+  end if 
+
+
+
+end subroutine chkFldBnds
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 subroutine check1D(qOneD, qDiffraction, qfocusing, iNodes)
