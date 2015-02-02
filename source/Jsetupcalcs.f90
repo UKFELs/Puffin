@@ -657,12 +657,15 @@ END SUBROUTINE getSeed
 subroutine ftron(env, fl_len, rn_sig, cen, z2nds)
 
 
+  implicit none
+
+
   real(kind=wp), intent(inout) :: env(:)
-  real(kind=wp), intent(in) :: fl_len, rn_len, cen, z2nds(:)
+  real(kind=wp), intent(in) :: fl_len, rn_sig, cen, z2nds(:)
     
 
   real(kind=wp) :: len_gauss, sSt, sEd, sg1cen, sg1st, &
-                   sg2cen, sg2st
+                   sg2cen, sg2st, sftst
 
   integer(kind=ip) :: nnz2
 
