@@ -114,7 +114,9 @@ Q = 2e-9               # Charge
 qFlatTopZ2 = 1         # =1 if flat top current profile, else gaussian.
 qHardEdgeX = 0         # =1 if disk (circle) in transverse plane, else gaussian.
 qRoundZ2 = 1           # If rounding off edges of flat top in z2
-sigRound_lam = 6           # Sigma of gaussian used to round off the flat top edges, in resonant wavelengths
+sigRound_lam = 6       # Sigma of gaussian used to round off the flat top edges, in resonant wavelengths
+bEnOscMag = 0          # Magnitude of oscillation on beam energy | Units of gamma
+bEnOscFr = 7E3         # Frequency (2pi/lambda, where lambda in units of ct) of oscillation on beam energy 
 #E = 300e6            # Beam energy
 #gamma = E / (m_e * pow(c,2)) # Rel. factor
 sig_gamma = 0.001      # Energy spread
@@ -170,6 +172,8 @@ zbarprop = N_w * lambda_z2        # Length of undulator in zbar (gain lengths)
 sigz2 = sigz / Lc                 # Length of pulse in z2 (cooperation lengths)
 
 sigRoundZ2 = sigRoundz / Lc       # Sigma of tail off in z2 (cooperation lengths)
+
+bEnOscFr = bEnOscFr * Lc
 
 beta = sqrt(pow(gamma,2) - 1.0 - pow(aw,2))/gamma    # Average velocity over c
 eta = (1-beta)/beta                                # Scaled average velocity
@@ -285,6 +289,10 @@ beam[0].bcenz2 = 0
 beam[0].Q = Q
 beam[0].qRoundEj = qRoundZ2
 beam[0].sigEj = sigRoundZ2
+
+beam[0].bosc_Mag = bEnOscMag
+beam[0].bosc_Fr  = bEnOscFr
+
 
 ##################################################
 # Field info

@@ -29,6 +29,8 @@ class bm:
     Q = 1e-12
     qRoundEj = 1
     sigEj = 1
+    bosc_Mag = 0
+    bosc_Fr = 1
     
     
     def wrbeam(self,f,no):
@@ -70,6 +72,8 @@ class bm:
         f.write('{:<24.15E}'.format(self.emit_bar)  + 'Scaled emittance (bar{epsilon})\n')
         f.write('{:<24.15E}'.format(self.chirp) + 'Energy chirp in z2 i.e. dgamma/dz2\n')
         f.write('{:<24.15E}'.format(self.bcenz2) + 'Center of beam in z2\n')
+        f.write('{:<24.15E}'.format(self.bosc_Mag) + 'Magnitude of oscillation of gamma in z2\n')
+        f.write('{:<24.15E}'.format(self.bosc_Fr) + 'Frequency of oscillation of gamma in z2 (kz2 = 2pi / lamda_z2)\n')
         f.write('{:<24}'.format(torf(self.qRoundEj)) + 'Round edge if flat top?\n')
         f.write('{:<24.15E}'.format(self.sigEj) + 'Sigma or rounded edge in z2 (if round edged flat top)\n')
         f.write('{:<24.15E}'.format(self.Q) + 'Charge in coulombs\n')
