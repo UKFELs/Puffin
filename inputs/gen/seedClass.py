@@ -11,7 +11,9 @@ class sd:
     sigz2 = 1
     qFlat = 1
     meanz2 = 1        
-    
+    qFRoundEj = 1
+    sigFEj = 0.5
+
     def wrseed(self,f,no):
         torf = fBoolean.torf
         f.write('========================================================================\n')
@@ -25,5 +27,7 @@ class sd:
         f.write('{:<24.15E}'.format(self.sigz2)     + 'SigmaZ2             Seed field sigma in z2 direction =1E8 for flat top\n')
         f.write('{:<24}'.format(torf(self.qFlat))   + 'qFlatTop            =.TRUE. if flat top seed, else gaussian is assumed\n')
         f.write('{:<24.15E}'.format(self.meanz2)    + 'MeanZ2              Mean or center position of seed in Z2\n')
+        f.write('{:<24.15E}'.format(self.qFRoundEj)    + 'qRoundEj            Round the edge of the seed envelope if flat top?\n')
+        f.write('{:<24.15E}'.format(self.sigFEj)    + 'sigma_ej            Sigma of the rounded edge, if above is true\n')
         f.write('========================================================================\n')
         f.write('\n')
