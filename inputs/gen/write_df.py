@@ -386,7 +386,7 @@ f.write('\n')
 f.write('              ELECTRON MACROPARTICLE SAMPLING\n')
 f.write('\n')
 f.write('\n')
-f.write('{:<24}'.format(beamfile) + 'CHARACTER   beam_file                  Name of the beam file\n')
+f.write('{:<24}'.format('\'' + beamfile + '\'') + 'CHARACTER   beam_file                  Name of the beam file\n')
 f.write('{:<24.15E}'.format(0.5)   + 'REAL        sEThreshold          Beyond the threshold level(%) * the average of real electrons are removed(ignored)\n')
 
 
@@ -410,7 +410,7 @@ f.write('{:<24d}'.format(1)        + 'INTEGER     iRedNodesY           Length of
 f.write('{:<24.15E}'.format(filtFrac)   + 'REAL        sFiltFrac            Specifies cutoff for high pass filter as fraction of resonant frequency\n')
 f.write('{:<24.15E}'.format(diffFrac)   + 'REAL        sDiffFrac                  Specifies diffraction step size as fraction of the undulator period\n')
 f.write('{:<24.15E}'.format(diffFrac)   + 'REAL        beta                 Absorption coefficient\n')
-f.write('{:<24}'.format(seedfile) + 'CHARACTER   seed_file                  Name of the seed file\n')
+f.write('{:<24}'.format('\'' + seedfile + '\'') + 'CHARACTER   seed_file                  Name of the seed file\n')
 
 
 f.write('\n')
