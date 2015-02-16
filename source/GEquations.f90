@@ -109,10 +109,10 @@ contains
 !     field variation
 
         CALL PutValueInVector(iRe_PPerp_CG, &
-            sInv2rho * (fy_G*sin(ZOver2rho) - &
+            sInv2rho * (fy_G*n2col*sin(ZOver2rho) - &
             (salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
             sField4ElecReal ) ) - & 
-            nd / Lj * & ! New focusing term
+            nd * n2col / Lj * & ! New focusing term
             (  ( kbeta**2 * Vector(iRe_X_CG,sy)) + (sEta_G / &
             ( 1.0_WP + (sEta_G * Vector(iRe_Q_CG,sy)) ) * &
             Vector(iRe_X_CG,sb) * dp2f ) ), &
@@ -223,10 +223,10 @@ contains
 
 
        call PutValueInVector(iIm_PPerp_CG, &
-            sInv2rho * (fx_G*cos(ZOver2rho) - &
+            sInv2rho * (fx_G*n2col*cos(ZOver2rho) - &
             (salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
             sField4ElecImag ) ) + &
-            nd / Lj * & ! New focusing term
+            nd * n2col / Lj * & ! New focusing term
             (  ( kbeta**2 * Vector(iRe_Y_CG,sy)) + (sEta_G / &
             ( 1.0_WP + (sEta_G * Vector(iRe_Q_CG,sy)) ) * &
             Vector(iRe_Y_CG,sb) * dp2f ) ), &
@@ -326,7 +326,7 @@ contains
 
         call PutValueInVector(iRe_Q_CG, &
              2.0_WP * nb * Lj**2 * &
-             ((sEta_G * Vector(iRe_Q_CG,sy) + 1.0_WP)/ salphaSq * &
+             ((sEta_G * Vector(iRe_Q_CG,sy) + 1.0_WP)/ salphaSq * n2col * &
              (Vector(iIm_pPerp_CG,sy) * fx_G*cos(ZOver2Rho) + &
              Vector(iRe_pPerp_CG,sy) * fy_G*sin(ZOver2rho)) +&
              sEta_G * Vector(iRe_Q_CG,sy) *&
