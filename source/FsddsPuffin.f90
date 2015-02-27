@@ -441,8 +441,9 @@ CONTAINS
     logical :: qWriteInt, qWriteFull, qOKL
 
     qOK = .false.
-
-
+    
+    qWriteInt = .false.
+    qWriteFull = .false.
 
     if ((mod(iStep,iIntWr)==0) .or. (iStep == nSteps) .or. (iStep == 0) .or. (qWDisp) ) then
 
