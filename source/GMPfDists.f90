@@ -72,7 +72,9 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
 
   call getHeaders(fname, npk, dz2, nZ2G)
 
-  nGam = 149_IP  !!!  TEMP, SHOULD BE READ IN
+  nGam = 19_IP  !!!  TEMP, SHOULD BE READ IN
+
+
 
   do ib = 1, nbeams
 
@@ -81,11 +83,17 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
 
   end do
 
+
+
   tnms   = sum(int(nZ2(:),kind=ipl) * int((nGam),kind=ipl))
+
+
 
 !!!!    temp
 
   allocate(totMPs_b(nbeams), b_sts(nbeams), b_ends(nbeams))
+
+
 
 !  getTotalMPS(for each beam)
 
@@ -140,6 +148,8 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
   call removeLowNC(chi_b, chi, b_sts, b_ends, sEThresh, npk, &
                    nbeams, x, y, z2, px,&
                    py, gamma, totMPs_b)
+
+  npk_bar_G = npk
 
   deallocate(totMPs_b, b_sts, b_ends)
 
