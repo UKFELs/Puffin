@@ -534,6 +534,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
     allocate(iNumElectrons(nbeams,6))
     allocate(sLenE(nbeams,6))
     allocate(sSigmaE(nbeams,6))
+    allocate(qRndEj_G(nbeams))
     iNumElectrons = 1
     sLenE = 1
     sSigmaE = 1
