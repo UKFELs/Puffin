@@ -155,7 +155,7 @@ CONTAINS
     kbeta = sAw_G / (2.0_WP * sFocusFactor_G * sRho_G * sGammaR_G)
     un = sqrt(fx_G**2.0_WP + fy_G**2.0_WP)
 
-!     Nodes in X and Z2 directions
+!     Nodes in X, Y and Z2 dimensions
 
     iNodesX = NX_G
     iNodesY=NY_G
@@ -172,7 +172,7 @@ CONTAINS
     sField4ElecImag = 0.0_WP
 
 
-!     Adjust undulator tuning
+!     Adjust undulator tuning (linear taper)
 
 !    n2col = n2col0 * (1 + undgrad*(sz - sz0))
     n2col = n2col0  + undgrad*(sz - sz0)
@@ -232,6 +232,7 @@ CONTAINS
 
           sYcoord = GetValueFromVector(iRe_Y_CG,i,sy,qOKL)&
                + halfy
+
        ENDIF
 
 !     Get info for dydz of ith electron
@@ -369,6 +370,7 @@ CONTAINS
              sField4ElecReal(i) = SUM( sA(iNodeList_Re) * N )
              sField4ElecImag(i) = SUM( sA(iNodeList_Im) * N )
           END IF
+
        END IF
 
 !     Field eqn RHS
@@ -398,139 +400,127 @@ CONTAINS
             ' electrons are outside the inner driving core'
     END IF
 
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !      Calculate electron d/dz of electron equations - if needed
 
-    IF (qElectronsEvolve_G) THEN
+    IF (qElectronsEvolve_G) THEN   
 
 !     z2
 
-       CALL PutValueInVector(iRe_Z2_CG,&
-            Vector(iRe_Q_CG,sy),&
-            sb,&	      
-            qOKL)    
+        CALL PutValueInVector(iRe_Z2_CG,&
+                    Vector(iRe_Q_CG,sy),&
+                    sb,&	      
+                    qOKL)    
 
 !     X
 
-       CALL PutValueInVector(iRe_X_CG,&
-            Vector(iRe_pPerp_CG,sy) * Lj / nd,&
-            sb,&	      
-            qOKL)
+        CALL PutValueInVector(iRe_X_CG,&
+                    Vector(iRe_pPerp_CG,sy) * Lj / nd, &
+                    sb,&	      
+                    qOKL)                
 
 !     Y
 
-       CALL PutValueInVector(iRe_Y_CG, &
-            -Vector(iIm_pPerp_CG,sy) * Lj / nd,&
-            sb,&	      
-            qOKL)
+        CALL PutValueInVector(iRe_Y_CG, &
+                    -Vector(iIm_pPerp_CG,sy) * Lj / nd, &
+                    sb,&	      
+                    qOKL)
 
 !     dp2f is the focusing correction for dp2/dz
 
-       IF (qFocussing_G) THEN
+        IF (qFocussing_G) THEN
 
-          dp2f = -(kbeta**2.0_WP) * &   ! New focusing term
-               (1.0_WP + (sEta_G*Vector(iRe_Q_CG,sy))) * &
-               ((Vector(iRe_X_CG,sy)*Vector(iRe_X_CG,sb)) + & 
-               (Vector(iRe_Y_CG,sy)*Vector(iRe_Y_CG,sb))) / &
-               (1.0_WP + sEta_G * ( (Vector(iRe_X_CG,sb))**2.0_WP  + &
-               (Vector(iRe_Y_CG,sb))**2.0_WP ) )
-       ELSE 
-          dp2f=0.0_WP
-       END IF
+            dp2f = -(kbeta**2.0_WP) * &   ! New focusing term
+                   (1.0_WP + (sEta_G*Vector(iRe_Q_CG,sy))) * &
+                   ((Vector(iRe_X_CG,sy)*Vector(iRe_X_CG,sb)) + & 
+                   (Vector(iRe_Y_CG,sy)*Vector(iRe_Y_CG,sb))) / &
+                   (1.0_WP + sEta_G * ( (Vector(iRe_X_CG,sb))**2.0_WP  + &
+                   (Vector(iRe_Y_CG,sb))**2.0_WP ) )
+
+        ELSE 
+
+            dp2f=0.0_WP
+
+        END IF
 
 	
 
-       IF (qFocussing_G) THEN
+        IF (qFocussing_G) THEN
+
+!     PX (Real pperp)
        
-!     PX (Real pperp) 
-!        CALL PutValueInVector(iRe_PPerp_CG, &
-!            sInv2rho * (fy_G*sin(ZOver2rho) - &
-!            (salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
-!            sField4ElecReal ) ) - & 
-!            nd / Lj * & ! New focusing term
-!            (  ( kbeta**2 * Vector(iRe_X_CG,sy)) + (sEta_G / &
-!            ( 1.0_WP + (sEta_G * Vector(iRe_Q_CG,sy)) ) * &
-!            Vector(iRe_X_CG,sb) * dp2f ) ), &
-!            sb,	      & 	  
-!            qOKL)
-       CALL getdppdz_r(sInv2rho,ZOver2rho,salphaSq,sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
+            CALL getdpp_r(sInv2rho,ZOver2rho,salphaSq,sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
 
 
 !     -PY (Imaginary pperp)
 
-!        CALL PutValueInVector(iIm_PPerp_CG, &
-!             sInv2rho * (fx_G*cos(ZOver2rho) - &
-!             (salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
-!             sField4ElecImag ) ) + &
-!             nd / Lj * & ! New focusing term
-!             (  ( kbeta**2 * Vector(iRe_Y_CG,sy)) + (sEta_G / &
-!             ( 1.0_WP + (sEta_G * Vector(iRe_Q_CG,sy)) ) * &
-!             Vector(iRe_Y_CG,sb) * dp2f ) ), &
-!             sb,	      & 	  
-!             qOKL)
-       CALL getdppdz_i(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
 
-!     Q
+            CALL getdpp_i(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
 
-!        CALL PutValueInVector(iRe_Q_CG, &
-!             2.0_WP * nb * Lj**2 * &
-!             ((sEta_G * Vector(iRe_Q_CG,sy) + 1.0_WP)/ salphaSq * &
-!             (Vector(iIm_pPerp_CG,sy) * fx_G*cos(ZOver2Rho) + &
-!             Vector(iRe_pPerp_CG,sy) * fy_G*sin(ZOver2rho)) +&
-!             sEta_G * Vector(iRe_Q_CG,sy) *&
-!             (Vector(iRe_pPerp_CG,sy)*sField4ElecReal +&
-!             Vector(iIm_pPerp_CG,sy)*sField4ElecImag)) &
-!             + dp2f,& ! New focusing term
-!             sb,&
-!             qOKL)
-       CALL getdp2dz(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,nb,qOKL)
-       ELSE
+!     P2
+
+
+            CALL getdp2(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,nb,qOKL)
+    
+        ELSE
 
 !     PX
 
-       CALL PutValueInVector(iRe_PPerp_CG, &
-            sInv2rho * (fy_G* n2col * sin(ZOver2rho) - &
-            ( salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
-            sField4ElecReal ) ), &
-            sb,	      & 	  
-            qOKL)
+            CALL PutValueInVector(iRe_PPerp_CG, &
+                          sInv2rho * (fy_G* n2col * sin(ZOver2rho) - &
+                          ( salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
+                          sField4ElecReal ) ), &
+                          sb,	      & 	  
+                          qOKL)
 
 
 !     -PY (Imaginary pperp)
 
-       CALL PutValueInVector(iIm_PPerp_CG, &
-            sInv2rho * (fx_G * n2col * cos(ZOver2rho) - &
-            ( salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
-            sField4ElecImag ) ),&
-            sb,	      & 	  
-            qOKL)
+            CALL PutValueInVector(iIm_PPerp_CG, &
+                          sInv2rho * (fx_G * n2col * cos(ZOver2rho) - &
+                          ( salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
+                          sField4ElecImag ) ),&
+                          sb,	      & 	  
+                          qOKL)
 
 !     p2
 
-       CALL PutValueInVector(iRe_Q_CG, &
-            2.0_WP * nb * Lj**2.0_WP * &
-            ((sEta_G * Vector(iRe_Q_CG,sy) + 1.0_WP)/ salphaSq * n2col * &
-            (Vector(iIm_pPerp_CG,sy) * fx_G*cos(ZOver2Rho) + &
-            Vector(iRe_pPerp_CG,sy) * fy_G*sin(ZOver2rho)) +&
-            sEta_G * Vector(iRe_Q_CG,sy) *&
-            (Vector(iRe_pPerp_CG,sy)*sField4ElecReal +&
-            Vector(iIm_pPerp_CG,sy)*sField4ElecImag)), &
-            sb,&
-            qOKL)
+            CALL PutValueInVector(iRe_Q_CG, &
+                          2.0_WP * nb * Lj**2.0_WP * &
+                          ((sEta_G * Vector(iRe_Q_CG,sy) + 1.0_WP)/ salphaSq * n2col * &
+                          (Vector(iIm_pPerp_CG,sy) * fx_G*cos(ZOver2Rho) + &
+                          Vector(iRe_pPerp_CG,sy) * fy_G*sin(ZOver2rho)) +&
+                          sEta_G * Vector(iRe_Q_CG,sy) *&
+                          (Vector(iRe_pPerp_CG,sy)*sField4ElecReal +&
+                          Vector(iIm_pPerp_CG,sy)*sField4ElecImag)), &
+                          sb,&
+                          qOKL)
 
        END IF
 
     END IF 
-    
+
+
+
+
+
+
     IF (qFieldEvolve_G) THEN
 
-       CALL sum2RootArr(sDADz,ReducedNX_G*ReducedNY_G*NZ2_G*2,0)
-       IF (tProcInfo_G%qRoot) sDADz(1:ReducedNX_G*ReducedNY_G)=0.0_WP
+!     Sum dadz from different MPI processes together
 
-       !IF (tTransInfo_G%qOneD) THEN
-       !  IF (tProcInfo_G%qRoot) sDADz=sDADz !sDADz=6.0_WP*sDADz
-       !ELSE
-       !   IF (tProcInfo_G%qRoot) sDADz=sDADz !216.0_WP/8.0_WP*sDADz
-       !END IF
+        CALL sum2RootArr(sDADz,ReducedNX_G*ReducedNY_G*NZ2_G*2,0)
+
+!     Boundary condition dadz = 0 at head of field
+
+        IF (tProcInfo_G%qRoot) sDADz(1:ReducedNX_G*ReducedNY_G)=0.0_WP
+ 
+        !IF (tTransInfo_G%qOneD) THEN
+        !  IF (tProcInfo_G%qRoot) sDADz=sDADz !sDADz=6.0_WP*sDADz
+        !ELSE
+        !   IF (tProcInfo_G%qRoot) sDADz=sDADz !216.0_WP/8.0_WP*sDADz
+        !END IF
 
     END IF
     

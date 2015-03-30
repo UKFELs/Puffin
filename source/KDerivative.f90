@@ -34,7 +34,7 @@ CONTAINS
     REAL(KIND=WP),DIMENSION(:), INTENT(IN)  :: sA
     REAL(KIND=WP),DIMENSION(:), INTENT(IN)  :: sy
     REAL(KIND=WP),DIMENSION(:), INTENT(OUT) :: sdydz
-    REAL(KIND=WP),DIMENSION(:), INTENT(OUT)  :: sDADz
+    REAL(KIND=WP),DIMENSION(:), INTENT(OUT) :: sDADz
 
 !                 LOCAL ARGS
 !
@@ -46,23 +46,26 @@ CONTAINS
     LOGICAL :: qOKL
 
     ALLOCATE(LDADz(ReducedNX_G*ReducedNY_G*NZ2_G*2))
-    LDADz = 0.0_WP
+    LDADz = 0.0_WP   ! Local dadz (MPI)
+
+
+
 
 !     Get RHS of field eqn and d/dz of electron variables
 
-    CALL ifrhs(sz,&
-         sA,&
-         sy,&
-         sdydz,&
-         LDADz)
-    
-    !IF (qFieldEvolve_G) THEN
-    !   CALL Solve4RHS(LDADz)
-    !ELSE
-    !   LDADz = 0.0_WP
-    !END IF
+    CALL getrhs(sz,&
+                sA,&
+                sy,&
+                sdydz,&
+                LDADz)
+
+
+
+
+!    Sum up dadz on each MPI process
 
     CALL scatter2Loc(sDADz,LDADz,local_rows,ReducedNX_G*ReducedNY_G*NZ2_G,mrecvs,mdispls,0)
+
 
     DEALLOCATE(LDADz)
     

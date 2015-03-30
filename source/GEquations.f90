@@ -16,7 +16,7 @@ implicit none
 
 contains
 
-  subroutine getdppdz_r(sInv2rho,ZOver2rho,salphaSq,&
+  subroutine getdpp_r(sInv2rho,ZOver2rho,salphaSq,&
     sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
 
 
@@ -122,7 +122,7 @@ contains
 
     end if
 
-  end subroutine getdppdz_r
+  end subroutine getdpp_r
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -132,7 +132,7 @@ contains
 
 
 
-  SUBROUTINE getdppdz_i(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
+  SUBROUTINE getdpp_i(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
 
 
   	IMPLICIT NONE
@@ -235,7 +235,7 @@ contains
 
     end if
 
-  end subroutine getdppdz_i
+  end subroutine getdpp_i
 
 
 
@@ -243,7 +243,7 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine getdp2dz(sInv2rho,ZOver2rho,salphaSq, &
+  subroutine getdp2(sInv2rho,ZOver2rho,salphaSq, &
                       sField4ElecImag,sField4ElecReal, &
                       nd,Lj,kbeta,sb,sy,dp2f,nb,qOKL)
 
@@ -340,6 +340,6 @@ contains
 
 
 
-end subroutine getdp2dz
+end subroutine getdp2
 
 end module equations
