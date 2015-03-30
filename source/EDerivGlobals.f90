@@ -145,7 +145,7 @@ integer(kind=ip)    :: ModNum, ModCount
 
 
 
-real(kind=wp) :: n2col   ! alpha, fractional change in aw (see 
+real(kind=wp) :: n2col ! alpha, fractional change in aw (see 
 	                     ! LT Campbell, BWJ McNeil and S Reiche, 
 	                     ! New Journal of Physics 16 (2014) 103019)
 
