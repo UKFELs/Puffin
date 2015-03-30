@@ -88,7 +88,7 @@ MODULE Setup
 
 !     Initialise Error log for this run
 
-  tErrorLog_G%zFileName = TRIM(ADJUSTL(zFile))//"_Error.log"		
+  tErrorLog_G%zFileName = TRIM(ADJUSTL(zFile))//"_Error.log"
   tErrorLog_G%qFormatted = .TRUE.
 
   CALL Error_log('',tErrorLog_G)

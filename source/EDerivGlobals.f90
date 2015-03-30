@@ -217,7 +217,8 @@ integer(kind=ip) :: iWriteNthSteps, iDumpNthSteps, iIntWriteNthSteps
 ! Parallel Vars
 
 integer(kind=ip), allocatable :: frecvs(:),fdispls(:),&
-     lrecvs(:),ldispls(:),mrecvs(:),mdispls(:)
+                                 lrecvs(:),ldispls(:),&
+                                 mrecvs(:),mdispls(:)
 
 
 
@@ -226,22 +227,33 @@ integer(kind=ip), allocatable :: frecvs(:),fdispls(:),&
 
 
 
-logical   ::  qElectronsEvolve_G
-logical   ::  qFieldEvolve_G
-logical   ::  qElectronFieldCoupling_G
-logical   ::  qDiffraction_G
-logical   ::  qFocussing_G
-logical   ::  qFilter
-logical   ::  qDump_G, qResume_G
+logical   ::  qElectronsEvolve_G ! Integrate electron equations?
+
+logical   ::  qFieldEvolve_G     ! Integrate field equations?
+
+logical   ::  qElectronFieldCoupling_G  ! Electron-field coupling?
+
+logical   ::  qDiffraction_G     ! Model diffraction?
+
+logical   ::  qFocussing_G       ! Provide Focusing for electron beam?
+
+logical   ::  qFilter            ! High pass filter for radiation field
+                                 ! during diffraction? If not, the frequencies
+                                 ! below the cutoff are simply not diffracted.
 
 
+logical   ::  qDump_G            ! Dump data in case of crash?
 
-logical   ::  qSeparateStepFiles_G
+logical   ::  qResume_G          ! Reading from previously crashed runs dump files? (REDUNDANT)
+
+logical   ::  qSeparateStepFiles_G  ! Make seperate sdds files for each phase space coordinate? 
 
 
 logical   ::  qMod_G  ! Using undulator modules and chicanes?
 
-logical   ::  qResume, qWrite
+logical   ::  qResume            ! Reading from previously crashed runs dump files? (ACTUALLY IN USE!!)
+
+logical   ::  qWrite             ! Write data?
 
 
 
