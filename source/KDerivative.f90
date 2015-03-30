@@ -62,7 +62,7 @@ CONTAINS
 
 
 
-!    Sum up dadz on each MPI process
+!    scatter dadz to local MPI process (split amongst processors)
 
     CALL scatter2Loc(sDADz,LDADz,local_rows,ReducedNX_G*ReducedNY_G*NZ2_G,mrecvs,mdispls,0)
 

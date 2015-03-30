@@ -25,7 +25,7 @@ IMPLICIT NONE
 
 CONTAINS
 
-  SUBROUTINE ifrhs(sz,&
+  SUBROUTINE getrhs(sz,&
        sA,&
        sy,&
        sb,&
@@ -546,6 +546,6 @@ CONTAINS
     DEALLOCATE(i_n4e,N,iNodeList_Re,iNodeList_Im,i_n4ered)
     DEALLOCATE(sField4ElecReal,sField4ElecImag,Lj,dp2f)
 
-  END SUBROUTINE ifrhs
+  END SUBROUTINE getrhs
 
 END MODULE rhs
