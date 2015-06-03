@@ -216,9 +216,24 @@ integer(kind=ip) :: iWriteNthSteps, iDumpNthSteps, iIntWriteNthSteps
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Parallel Vars
 
-integer(kind=ip), allocatable :: frecvs(:),fdispls(:),&
-                                 lrecvs(:),ldispls(:),&
-                                 mrecvs(:),mdispls(:)
+! These describe the displacement of data across MPI processes (see 
+! MPI dcumentation, e.g. inputs of MPI_ALLGATHERV)...
+
+
+
+! ...for the full field, when split according to FFTW...
+
+integer(kind=ip), allocatable :: frecvs(:), fdispls(:)
+
+! ...for the full (or 'large') field array, when spread as 
+! evenly as possible across processes...
+
+integer(kind=ip), allocatable :: lrecvs(:), ldispls(:)
+
+! ...and for the reduced or active field nodes, split 
+! evenly across processes.
+
+integer(kind=ip), allocatable :: mrecvs(:), mdispls(:)
 
 
 
