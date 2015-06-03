@@ -308,9 +308,9 @@ MODULE Setup
 
 
 
-!     Initialize stiffness matrix
+!     Calculate Field Spread across MPI processes
   	
-  CALL SETUPSTIFFMAT(ReducedNX_G,ReducedNY_G,NZ2_G,delta_G)
+  CALL CalcFldSpd(ReducedNX_G,ReducedNY_G,NZ2_G,delta_G)
   	
   CALL MPI_BARRIER(tProcInfo_G%comm,error)
   IF (tProcInfo_G%qRoot) PRINT*, 'Setup active field'
