@@ -404,102 +404,41 @@ CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !      Calculate electron d/dz of electron equations - if needed
 
-    IF (qElectronsEvolve_G) THEN   
+    if (qElectronsEvolve_G) then   
 
 !     z2
 
-        CALL PutValueInVector(iRe_Z2_CG,&
-                    Vector(iRe_Q_CG,sy),&
-                    sb,&	      
-                    qOKL)    
+        CALL dz2dz(sy, sb, qOK) 
 
 !     X
 
-        CALL PutValueInVector(iRe_X_CG,&
-                    Vector(iRe_pPerp_CG,sy) * Lj / nd, &
-                    sb,&	      
-                    qOKL)                
+        call dxdz(sy, Lj, sb, qOK)              
 
 !     Y
 
-        CALL PutValueInVector(iRe_Y_CG, &
-                    -Vector(iIm_pPerp_CG,sy) * Lj / nd, &
-                    sb,&	      
-                    qOKL)
+        call dydz(sy, Lj, sb, qOK)
+
 
 !     dp2f is the focusing correction for dp2/dz
 
-        IF (qFocussing_G) THEN
+        call caldp2f(kbeta, sy, sb, dp2f)	
 
-            dp2f = -(kbeta**2.0_WP) * &   ! New focusing term
-                   (1.0_WP + (sEta_G*Vector(iRe_Q_CG,sy))) * &
-                   ((Vector(iRe_X_CG,sy)*Vector(iRe_X_CG,sb)) + & 
-                   (Vector(iRe_Y_CG,sy)*Vector(iRe_Y_CG,sb))) / &
-                   (1.0_WP + sEta_G * ( (Vector(iRe_X_CG,sb))**2.0_WP  + &
-                   (Vector(iRe_Y_CG,sb))**2.0_WP ) )
 
-        ELSE 
-
-            dp2f=0.0_WP
-
-        END IF
-
-	
-
-        IF (qFocussing_G) THEN
 
 !     PX (Real pperp)
        
-            CALL getdpp_r(sInv2rho,ZOver2rho,salphaSq,sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
+        call dppdz_r(sInv2rho,ZOver2rho,salphaSq,sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
 
 
 !     -PY (Imaginary pperp)
 
-
-            CALL getdpp_i(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
+        call dppdz_i(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
 
 !     P2
 
+        call dp2dz(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,nb,qOKL)
 
-            CALL getdp2(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,nb,qOKL)
-    
-        ELSE
-
-!     PX
-
-            CALL PutValueInVector(iRe_PPerp_CG, &
-                          sInv2rho * (fy_G* n2col * sin(ZOver2rho) - &
-                          ( salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
-                          sField4ElecReal ) ), &
-                          sb,	      & 	  
-                          qOKL)
-
-
-!     -PY (Imaginary pperp)
-
-            CALL PutValueInVector(iIm_PPerp_CG, &
-                          sInv2rho * (fx_G * n2col * cos(ZOver2rho) - &
-                          ( salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
-                          sField4ElecImag ) ),&
-                          sb,	      & 	  
-                          qOKL)
-
-!     p2
-
-            CALL PutValueInVector(iRe_Q_CG, &
-                          2.0_WP * nb * Lj**2.0_WP * &
-                          ((sEta_G * Vector(iRe_Q_CG,sy) + 1.0_WP)/ salphaSq * n2col * &
-                          (Vector(iIm_pPerp_CG,sy) * fx_G*cos(ZOver2Rho) + &
-                          Vector(iRe_pPerp_CG,sy) * fy_G*sin(ZOver2rho)) +&
-                          sEta_G * Vector(iRe_Q_CG,sy) *&
-                          (Vector(iRe_pPerp_CG,sy)*sField4ElecReal +&
-                          Vector(iIm_pPerp_CG,sy)*sField4ElecImag)), &
-                          sb,&
-                          qOKL)
-
-       END IF
-
-    END IF 
+    end if 
 
 
 
@@ -510,7 +449,7 @@ CONTAINS
 
 !     Sum dadz from different MPI processes together
 
-        CALL sum2RootArr(sDADz,ReducedNX_G*ReducedNY_G*NZ2_G*2,0)
+        call sum2RootArr(sDADz,ReducedNX_G*ReducedNY_G*NZ2_G*2,0)
 
 !     Boundary condition dadz = 0 at head of field
 
