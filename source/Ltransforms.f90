@@ -828,19 +828,20 @@ SUBROUTINE AbsorptionStep(sAl,work,h,loc_nz2,ffact)
 
 !  Now also using boundary in z2....so mask in z2 is....
 
+  IF (loc_nz2 > 0) THEN
 
-  mask_z2 = getZ2Mask(sLengthOfElmZ2_G, nZ2_G, tTransInfo_G%loc_nz2,   &
-                       nBZ2_G, tTransInfo_G%loc_z2_start)
+    mask_z2 = getZ2Mask(sLengthOfElmZ2_G, nZ2_G, tTransInfo_G%loc_nz2,   &
+                         nBZ2_G, tTransInfo_G%loc_z2_start)
 
 !!!!!      sAl is local      !!!!!
 !!!!!      goes from 0,total_local_size     !!!!!!!
 
-  IF (loc_nz2 > 0) THEN
+  
 
-  DO iz2 = 0_IP, loc_nz2 - 1_IP
-
-    sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)  = (1.0_WP - (mask   +  ( mask_z2(iz2) *  (1.0_WP - mask) ) ) ) * &
-                                                          sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
+    DO iz2 = 0_IP, loc_nz2 - 1_IP
+  
+      sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)  = (1.0_WP - (mask   +  ( mask_z2(iz2) *  (1.0_WP - mask) ) ) ) * &
+                                                            sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
 
 
 
@@ -849,12 +850,12 @@ SUBROUTINE AbsorptionStep(sAl,work,h,loc_nz2,ffact)
 
 
 
-    sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP) =  (mask   +  ( mask_z2(iz2) *  (1.0_WP - mask) ) ) * &
-                                                         sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
-
-
-  END DO
-
+      sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP) =  (mask   +  ( mask_z2(iz2) *  (1.0_WP - mask) ) ) * &
+                                                           sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
+  
+  
+    END DO
+  
   END IF
 
 !     FFT sAb
