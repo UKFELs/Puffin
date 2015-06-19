@@ -418,20 +418,12 @@ SUBROUTINE GetMBParams(srho,sEmit_n,k_beta,sFF,sEta,sLenE, &
 
 !     Seed field sigma spread made equal to electron 
 !     sigma spread         
-!     NOTE: the seed field length must be <= electron
-!     beam length this only applies in x and y
 
-  IF  (sSigF(iX_CG) > sSigE(iX_CG)) THEN
 
-    sSigF(iX_CG) = sSigE(iX_CG)
-       
-  END IF
-
-  IF  (sSigF(iY_CG) > sSigE(iY_CG)) THEN
+  sSigF(iX_CG) = sSigE(iX_CG)
+         
+  sSigF(iY_CG) = sSigE(iY_CG)
   
-    sSigF(iY_CG) = sSigE(iY_CG)
-  
-  END IF
 	  
   IF (tProcInfo_G%qRoot) PRINT*, 'NEW SEED SIGMA IS', sSigF(iX_CG)
 
