@@ -57,7 +57,8 @@ CONTAINS
                 sA,&
                 sy,&
                 sdydz,&
-                LDADz)
+                LDADz, &
+                qOKL)
 
 
 

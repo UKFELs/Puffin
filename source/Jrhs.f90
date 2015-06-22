@@ -29,7 +29,8 @@ CONTAINS
        sA,&
        sy,&
        sb,&
-       sDADz)
+       sDADz,&
+       qOK)
 
     IMPLICIT NONE
 
@@ -48,6 +49,7 @@ CONTAINS
     REAL(KIND=WP),INTENT(IN) :: sy(:)
     REAL(KIND=WP),INTENT(OUT) :: sb(:)
     REAL(KIND=WP), INTENT(INOUT) :: sDADz(:) !!!!!!!
+    logical, intent(inout) :: qOK
 
 ! i
 ! dx,dy,dz2 - step size in x y z2
@@ -118,6 +120,7 @@ CONTAINS
 
 !     Begin
 
+    qOK = .false.
     qOKL = .FALSE.
     
 !     SETUP AND INITIALISE THE PARTICLE'S POSITION
@@ -206,16 +209,19 @@ CONTAINS
           sPPerp_Re = GetValueFromVector(iRe_pPerp_CG, i, sy, qOKL)
           IF (.NOT. qOKL) THEN
               CALL Error_log('Error retrieving pperpre in RHS:ifrhs',tErrorLog_G)
+              goto 1000
           END IF              
 
           sPPerp_Im = GetValueFromVector(iIm_pPerp_CG, i, sy, qOKL)
           IF (.NOT. qOKL) THEN
               CALL Error_log('Error retrieving pperpim in RHS:ifrhs',tErrorLog_G)
+              goto 1000
           END IF
 
           sQ_Re     = GetValueFromVector(iRe_Q_CG,     i, sy, qOKL)
           IF (.NOT. qOKL) THEN
               CALL Error_log('Error retrieving p2 in RHS:ifrhs',tErrorLog_G)
+              goto 1000
           END IF
 		
           sPperpSq = sPPerp_Re**2 + sPPerp_Im**2		
@@ -223,6 +229,7 @@ CONTAINS
           sZ2coord = GetValueFromVector(iRe_Z2_CG,i,sy,qOKL)
           IF (.NOT. qOKL) THEN
               CALL Error_log('Error retrieving z2 in RHS:ifrhs',tErrorLog_G)
+              goto 1000
           END IF
 
           stheta    = sZ2coord * sinv2rho	
@@ -251,31 +258,32 @@ CONTAINS
 
 !     If s_lez2 is outside the boundary then let it = nearest boundary
 
-          IF (s_Lez2<0.0_WP) THEN
+          if (s_Lez2<0.0_WP) then
              s_Lez2=0.0_WP
-          END IF
+          end if
 		 
-          IF (s_Lez2>sLengthOfElmZ2_G) THEN 
+          if (s_Lez2>sLengthOfElmZ2_G) then 
              s_Lez2=sLengthOfElmZ2_G
-          END IF
+          end if
 
 !     Calculate pperpsq, betaz, and 1/gamma, and perform checks.
 
-          IF (sEta_G * sQ_Re == -1.0_WP) THEN
-             PRINT *, 'EPSILON +Q=-1,divide by zero need to exit'
-             STOP	
-          ENDIF
+          if (sEta_G * sQ_Re == -1.0_WP) then
+            CALL Error_log('EPSILON +Q=-1,divide by zero need to exit',tErrorLog_G)
+            goto 1000
+          end if
+          
           sBetaz_i    =  1.0_WP / ( 1.0_WP + (sEta_G * sQ_Re)) 
 		
-          IF (sBetaz_i > 1.0_WP) THEN
-             PRINT *, 'BETA_I > 1, sqrt of negative need to exit'
-             STOP
-          ENDIF
-          IF (spPerpSq==-1.0_WP) THEN
-             IF (tProcInfo_G%qRoot) PRINT*, 'electron', i,'ppsq=-1!!'
-            ! CALL MPI_FINALIZE(error)
-             STOP
-          ENDIF
+          if (sBetaz_i > 1.0_WP) then
+            CALL Error_log('BETA_I > 1, sqrt of negative need to exit',tErrorLog_G)
+            goto 1000
+          end if
+
+          if (spPerpSq==-1.0_WP) then
+            CALL Error_log('electron ppsq=-1!!',tErrorLog_G)
+            goto 1000
+          end if
 	  	
           sInvGamma_i = sqrt((1.0_WP - sBetaz_i**2.0_WP)&
                / (1.0_WP + nc*spPerpSq))
@@ -409,34 +417,41 @@ CONTAINS
 !     z2
 
         CALL dz2dz(sy, sb, qOKL) 
+        if (.not. qOKL) goto 1000
 
 !     X
 
-        call dxdz(sy, Lj, nd, sb, qOKL)              
+        call dxdz(sy, Lj, nd, sb, qOKL) 
+        if (.not. qOKL) goto 1000             
 
 !     Y
 
         call dydz(sy, Lj, nd, sb, qOKL)
+        if (.not. qOKL) goto 1000
 
 
 !     dp2f is the focusing correction for dp2/dz
 
-        call caldp2f(kbeta, sy, sb, dp2f)	
+        call caldp2f(kbeta, sy, sb, dp2f, qOKL)	
+        if (.not. qOKL) goto 1000
 
 
 
 !     PX (Real pperp)
        
         call dppdz_r(sInv2rho,ZOver2rho,salphaSq,sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
+        if (.not. qOKL) goto 1000
 
 
 !     -PY (Imaginary pperp)
 
         call dppdz_i(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
+        if (.not. qOKL) goto 1000
 
 !     P2
 
         call dp2dz(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,nb,qOKL)
+        if (.not. qOKL) goto 1000
 
     end if 
 
@@ -484,6 +499,17 @@ CONTAINS
 
     DEALLOCATE(i_n4e,N,iNodeList_Re,iNodeList_Im,i_n4ered)
     DEALLOCATE(sField4ElecReal,sField4ElecImag,Lj,dp2f)
+
+
+    ! Set the error flag and exit
+
+    qOK = .true.
+
+    goto 2000 
+
+1000 call Error_log('Error in rhs:getrhs',tErrorLog_G)
+    print*,'Error in rhs:getrhs'
+2000 continue
 
   END SUBROUTINE getrhs
 

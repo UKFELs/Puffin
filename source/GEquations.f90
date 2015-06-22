@@ -17,7 +17,7 @@ implicit none
 contains
 
   subroutine dppdz_r(sInv2rho,ZOver2rho,salphaSq,&
-    sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
+    sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,qOK)
 
 
   	implicit none
@@ -31,10 +31,12 @@ contains
     REAL(KIND=WP),INTENT(IN) :: kbeta,nd
     REAL(KIND=WP),INTENT(IN) :: sy(:)
     REAL(KIND=WP),INTENT(OUT) :: sb(:)
+    logical, intent(inout) :: qOK
 
     
     LOGICAL :: qOKL
 
+    qOK = .false.
 
     if (zUndType_G == 'curved') then
 
@@ -51,7 +53,7 @@ contains
                 sEta_G * Vector(iRe_Q_CG,sy) * salphaSq * sField4ElecReal), &
                 sb, &
                 qOKL)
-
+         if (.not. qOKL) goto 1000
 
 
     else if (zUndType_G == 'planepole')  then
@@ -69,6 +71,7 @@ contains
                 sqrt(sEta_G)) *sin(ZOver2rho)), &
                 sb,       &       
                 qOKL)
+        if (.not. qOKL) goto 1000
 
     else 
 
@@ -87,6 +90,7 @@ contains
                 Vector(iRe_X_CG,sb) * dp2f ) ), &
                 sb,       &     
                 qOKL)
+        if (.not. qOKL) goto 1000
 
       else 
 
@@ -96,12 +100,24 @@ contains
               sField4ElecReal ) ), &
               sb,         &       
               qOKL)
+        if (.not. qOKL) goto 1000
 
       end if
 
 
     end if
 
+    ! Set the error flag and exit
+
+    qOK = .true.
+
+    goto 2000 
+
+    1000 call Error_log('Error in equations:dppdz_r',tErrorLog_G)
+    
+    print*,'Error in equations:dppdz_r'
+
+    2000 continue
 
   end subroutine dppdz_r
 
@@ -113,7 +129,7 @@ contains
 
 
 
-  subroutine dppdz_i(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
+  subroutine dppdz_i(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,nd,Lj,kbeta,sb,sy,dp2f,qOK)
 
 
   	implicit none
@@ -127,9 +143,12 @@ contains
     REAL(KIND=WP),INTENT(IN) :: kbeta,nd
     REAL(KIND=WP),INTENT(IN) :: sy(:)
     REAL(KIND=WP),INTENT(OUT) :: sb(:)
+    logical, intent(inout) :: qOK
+
     LOGICAL :: qOKL                   
 
 
+    qOK = .false.
 
 
     if (zUndType_G == 'curved') then
@@ -150,7 +169,7 @@ contains
                 sField4ElecImag), &
                 sb, &
                 qOKL)
-
+        if (.not. qOKL) goto 1000
 
     else if (zUndType_G == 'planepole') then 
 
@@ -167,6 +186,7 @@ contains
                 Vector(iRe_PPerp_CG,sy)) , &
                 sb, &
                 qOKL)
+        if (.not. qOKL) goto 1000
 
     else
 
@@ -186,6 +206,7 @@ contains
                 Vector(iRe_Y_CG,sb) * dp2f ) ), &
                 sb,       &     
                 qOKL)
+        if (.not. qOKL) goto 1000
 
       else
 
@@ -195,11 +216,25 @@ contains
                       sField4ElecImag ) ),&
                       sb,         &       
                       qOKL)
+        if (.not. qOKL) goto 1000
 
       end if
 
 
     end if
+
+    ! Set the error flag and exit
+
+    qOK = .true.
+
+    goto 2000 
+
+    1000 call Error_log('Error in equations:dppdz_i',tErrorLog_G)
+    
+    print*,'Error in equations:dppdz_i'
+    
+    2000 continue
+
 
   end subroutine dppdz_i
 
@@ -213,7 +248,7 @@ contains
 
   subroutine dp2dz(sInv2rho,ZOver2rho,salphaSq, &
                       sField4ElecImag,sField4ElecReal, &
-                      nd,Lj,kbeta,sb,sy,dp2f,nb,qOKL)
+                      nd,Lj,kbeta,sb,sy,dp2f,nb,qOK)
 
 
   	implicit none
@@ -227,10 +262,12 @@ contains
     REAL(KIND=WP),INTENT(IN) :: kbeta,nd,nb
     REAL(KIND=WP),INTENT(IN) :: sy(:)
     REAL(KIND=WP),INTENT(OUT) :: sb(:)   
+    logical, intent(inout) :: qOK
+
     LOGICAL :: qOKL
 
 
-
+    qOK = .false.
 
     if (zUndType_G == 'curved') then
 
@@ -251,7 +288,7 @@ contains
                 sinh(Vector(iRe_Y_CG,sy) * ky_und_G))),&
                 sb,&
                 qOKL)
-
+        if (.not. qOKL) goto 1000
 
 
     else if (zUndType_G == 'planepole') then 
@@ -269,7 +306,7 @@ contains
                 * sin(ZOver2rho) *  Vector(iRe_pPerp_CG,sy)  ) , &
                 sb,&
                 qOKL)
-
+        if (.not. qOKL) goto 1000
 
  
     else
@@ -291,6 +328,7 @@ contains
                 + dp2f, & 
                 sb,&
                 qOKL)
+        if (.not. qOKL) goto 1000
 
       else
 
@@ -305,12 +343,23 @@ contains
                 Vector(iIm_pPerp_CG,sy)*sField4ElecImag)), &
                 sb,&
                 qOKL)
-
+        if (.not. qOKL) goto 1000
 
       end if
 
     end if
 
+    ! Set the error flag and exit
+
+    qOK = .true.
+
+    goto 2000 
+
+    1000 call Error_log('Error in equations:dp2dz',tErrorLog_G)
+    
+    print*,'Error in equations:dp2dz'
+
+    2000 continue
 
 
   end subroutine dp2dz
@@ -350,7 +399,7 @@ contains
     
     goto 2000
     
-    1000 call Error_log('Error in equations:dz2dz',tErrorLog_G)
+    1000 call Error_log('Error in equations:dxdz',tErrorLog_G)
     
     2000 continue
 
@@ -363,7 +412,7 @@ contains
 
   subroutine dydz(sy, Lj, nd, sb, qOK)
 
-!   Calculate dz2/dz
+!   Calculate dy/dz
 !
 !              Arguments:
 
@@ -390,7 +439,7 @@ contains
     
     goto 2000
     
-    1000 call Error_log('Error in equations:dz2dz',tErrorLog_G)
+    1000 call Error_log('Error in equations:dydz',tErrorLog_G)
     
     2000 continue
 
@@ -441,10 +490,14 @@ contains
 
 
 
-  subroutine caldp2f(kbeta, sy, sb, dp2f)
+  subroutine caldp2f(kbeta, sy, sb, dp2f, qOK)
 
     real(kind=wp), intent(in) :: kbeta, sy(:), sb(:)
     real(kind=wp), intent(out) :: dp2f(:)
+
+    logical, intent(inout) :: qOK
+
+    qOK = .false.
 
     if (qFocussing_G) then
 
@@ -460,6 +513,14 @@ contains
         dp2f=0.0_WP
 
     end if
+
+    qOK = .true.
+    
+    goto 2000
+    
+    1000 call Error_log('Error in equations:caldp2f',tErrorLog_G)
+    
+    2000 continue
 
   end subroutine caldp2f
 
