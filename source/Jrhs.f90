@@ -408,15 +408,15 @@ CONTAINS
 
 !     z2
 
-        CALL dz2dz(sy, sb, qOK) 
+        CALL dz2dz(sy, sb, qOKL) 
 
 !     X
 
-        call dxdz(sy, Lj, sb, qOK)              
+        call dxdz(sy, Lj, nd, sb, qOKL)              
 
 !     Y
 
-        call dydz(sy, Lj, sb, qOK)
+        call dydz(sy, Lj, nd, sb, qOKL)
 
 
 !     dp2f is the focusing correction for dp2/dz

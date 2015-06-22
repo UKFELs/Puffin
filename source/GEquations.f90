@@ -321,13 +321,13 @@ contains
 
 
 
-  subroutine dxdz(sy, Lj, sb, qOK)
+  subroutine dxdz(sy, Lj, nd, sb, qOK)
 
 !   Calculate dx/dz
 !
 !              Arguments:
 
-    real(kind=wp), intent(in) :: sy(:), Lj(:)
+    real(kind=wp), intent(in) :: sy(:), Lj(:), nd
     real(kind=wp), intent(inout) :: sb(:)
     logical, intent(inout) :: qOK
 
@@ -343,7 +343,7 @@ contains
                 sb,&          
                 qOKL)    
 
-    if (qOKL = .false.) goto 1000  ! Error checking
+    if (.not. qOKL) goto 1000  ! Error checking
 
 
     qOK = .true.
@@ -361,13 +361,13 @@ contains
 
 
 
-  subroutine dydz(sy, Lj, sb, qOK)
+  subroutine dydz(sy, Lj, nd, sb, qOK)
 
 !   Calculate dz2/dz
 !
 !              Arguments:
 
-    real(kind=wp), intent(in) :: sy(:), Lj(:)
+    real(kind=wp), intent(in) :: sy(:), Lj(:), nd
     real(kind=wp), intent(inout) :: sb(:)
     logical, intent(inout) :: qOK
 
@@ -383,7 +383,7 @@ contains
                           sb,&          
                           qOKL)
 
-    if (qOKL = .false.) goto 1000  ! Error checking
+    if (.not. qOKL) goto 1000  ! Error checking
 
 
     qOK = .true.
@@ -422,7 +422,7 @@ contains
                           sb,&          
                           qOKL)
 
-    if (qOKL = .false.) goto 1000  ! Error checking
+    if (.not. qOKL) goto 1000  ! Error checking
 
 
     qOK = .true.
