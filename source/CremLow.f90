@@ -149,7 +149,7 @@ SUBROUTINE removeLow(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
 
   INTEGER(KIND=IPL), ALLOCATABLE :: ikeepos(:), iendpos(:), b_keepn(:),&
                                     b_neglectn(:)
-  REAL(KIND=WP), ALLOCATABLE :: ilowerElectron(:), Qchoff(:)
+  REAL(KIND=WP), ALLOCATABLE :: ilowerElectron(:)
   INTEGER(KIND=IPL) :: nsum, ist, ien, prev
   INTEGER(KIND=IP) :: b_ind
 
@@ -179,7 +179,6 @@ SUBROUTINE removeLow(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
   DO b_ind=1, nbeams
 
     ALLOCATE(ikeepos(b_keepn(b_ind)), iendpos(b_neglectn(b_ind)))
-    ALLOCATE(Qchoff(b_keepn((b_ind))))
 
     CALL getIndices(Tmp_chibar(b_sts(b_ind):b_ends(b_ind)), &
                     ilowerElectron(b_ind),totalmps_b(b_ind), &
