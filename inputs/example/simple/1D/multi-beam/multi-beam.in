@@ -41,7 +41,7 @@ beam_file.in            CHARACTER   beam_file                  Name of the beam 
 32                  INTEGER     nodesPerLambdar            Number of nodes per resonant wavelength
 1.000000000000000E+00   REAL        sFModelLengthX       Length of radiation field model in x direction
 1.000000000000000E+00   REAL        sFModelLengthY       Length of radiation field model in y direction
-4.0                      REAL        sFModelLengthZ2      Length of radiation field model in z2 dimension
+20.0                      REAL        sFModelLengthZ2      Length of radiation field model in z2 dimension
 1                       INTEGER     iRedNodesX           Length of central wiggler section in x where electrons will not leave
 1                       INTEGER     iRedNodesY           Length of central wiggler section in y where electrons will not leave
 3.000000000000000E-01   REAL        sFiltFrac            Specifies cutoff for high pass filter as fraction of resonant frequency
@@ -62,6 +62,7 @@ Input the scaled independant variables from [1] here
 2.0                   REAL        aw                         rms unduator parameter
 550.0                 REAL        gamma                      Resonant Energy
 1.414213562373095E+00   REAL        sFocusfactor         Focussing factor f, from the betatron wavenumber
+0.07                REAL        lambda_w                   undulator period
 0.000000000000000E+00   REAL        Dfact                Dispersive strength factor for chicane
 ''                  CHARACTER   undType                    Undulator type - 'curved' , 'planepole' , else 1D (no off axis variation of aw)
 0.0                     REAL        taper                      gradient of taper daw/dz
@@ -81,10 +82,11 @@ What do we want to calculate in the code to output i.e. bunching, pulse current 
 
 ''                      CHARACTER   lattFile             Contents: N_w(periods), delta(periods) (!!! NO BLANK LINES AT END !!!)Blank if none.
 96                  INTEGER     stepsPerPeriod  Number of steps per wiggler period
-4                   INTEGER     nPeriods        Number of wiggler periods
+200                   INTEGER     nPeriods        Number of wiggler periods
 0.000000000000000E+00   REAL        sZ                   Starting z position
 'DataFile.dat'          CHARACTER   zDataFileName        Data file name
 100                     INTEGER     iWriteNthSteps       Steps to write data at
+100                     INTEGER     iIntWriteNthSteps    Steps to write integrated data at
 100                     INTEGER     iDumpNthSteps        Steps to dump data at (0 for no dumping)
 1.000000000000000E+02   REAL        sPEOut               Percentage of macroparticles to write out. Macroparticles are randomly selected.
 
