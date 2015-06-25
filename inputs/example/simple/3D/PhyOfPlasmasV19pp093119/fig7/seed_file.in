@@ -19,8 +19,8 @@ SEED 1:-
 0.6666666666           SigmaZ2             Seed field sigma in z2 direction =1E8 for flat top
 .TRUE.                 qFlatTop            =.TRUE. if flat top seed, else gaussian is assumed
 2.0                    MeanZ2              Mean or center position of seed in Z2
-.true.
-1.0
+.true.                 qRound              round edge of flat top? 
+1.0                    sSigEj              Sigma of gaussian roll off for flat top
 ========================================================================
 
 ========================================================================
@@ -34,6 +34,6 @@ SEED 2:-
 0.6666666666           SigmaZ2             Seed field sigma in z2 direction =1E8 for flat top
 .TRUE.                 qFlatTop            =.TRUE. if flat top seed, else gaussian is assumed
 4.0                    MeanZ2              Mean or center position of seed in Z2
-.true.
-1.0
+.true.                 qRound              round edge of flat top? 
+1.0                    sSigEj              Sigma of gaussian roll off for flat top
 ========================================================================

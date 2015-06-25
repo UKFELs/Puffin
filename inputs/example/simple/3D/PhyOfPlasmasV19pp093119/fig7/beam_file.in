@@ -47,7 +47,7 @@ BEAM PARAMETERS
 0.0                 Center of beam in z2
 0.0    mag
 1.0    freq
-.true.              round edges of flat top?
+.false.              round edges of flat top?
 1.0                 sigma roll off for edge
 1.0E-9              Charge in coulombs
 ========================================================================

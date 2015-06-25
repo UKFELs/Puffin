@@ -81,7 +81,7 @@ What do we want to calculate in the code to output i.e. bunching, pulse current 
 
 
 ''                      CHARACTER   lattFile             Contents: N_w(periods), delta(periods) (!!! NO BLANK LINES AT END !!!)Blank if none.
-96                  INTEGER     stepsPerPeriod  Number of steps per wiggler period
+100                  INTEGER     stepsPerPeriod  Number of steps per wiggler period
 200                   INTEGER     nPeriods        Number of wiggler periods
 0.000000000000000E+00   REAL        sZ                   Starting z position
 'DataFile.dat'          CHARACTER   zDataFileName        Data file name
