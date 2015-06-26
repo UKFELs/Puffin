@@ -5,7 +5,7 @@ different frequencies, profiles and positions can be used. Please
 refer to POP-REF for an explanation of the scaled variables used, 
 such as z2.
 
-2         # of beams
+1         # of beams
 
 READ IN SEED CHARACTERISTICS
 ========================================================================
@@ -19,6 +19,8 @@ SEED 1:-
 1.000000000000000E+00   SigmaZ2             Seed field sigma in z2 direction =1E8 for flat top
 .TRUE.                  qFlatTop            =.TRUE. if flat top seed, else gaussian is assumed
 1.000000000000000E+00   MeanZ2              Mean or center position of seed in Z2
+.false.                 round edge of flat top? 
+0.1                     sSigEj Sigma of gaussian roll off for flat top
 ========================================================================
 
 ========================================================================
@@ -32,5 +34,7 @@ SEED 2:-
 1.000000000000000E+00   SigmaZ2             Seed field sigma in z2 direction =1E8 for flat top
 .TRUE.                  qFlatTop            =.TRUE. if flat top seed, else gaussian is assumed
 1.000000000000000E+00   MeanZ2              Mean or center position of seed in Z2
+.false.                 round edge of flat top? 
+0.1                     sSigEj Sigma of gaussian roll off for flat top
 ========================================================================
 
