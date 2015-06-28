@@ -60,34 +60,34 @@ CONTAINS
 
 !     Read whitespace
 
-NL = 31_IP      !    Number of lines in header
-
-do ri = 1,NL
-
-  read (1,*)
-
-end do
+  NL = 31_IP      !    Number of lines in header
+  
+  do ri = 1,NL
+  
+    read (1,*)
+  
+  end do
 
 !     Read module data from lattice file
 
-  DO i=1,ModNum
+  do i=1,ModNum
 
-    READ (1,*) nw, delta(i), mf(i), nperlam(i), tapers(i)  !, resFactor(i) ! Wiggler periods, Chicane slippage periods, aw shift, stepsize
+    read (1,*) nw, delta(i), mf(i), nperlam(i), tapers(i)  !, resFactor(i) ! Wiggler periods, Chicane slippage periods, aw shift, stepsize
 
-    delmz(i) = 4.0_WP * pi * rho / REAL(nperlam(i),kind=wp)
+    delmz(i) = 4.0_WP * pi * rho / real(nperlam(i),kind=wp)
 
 !     Calculate cumulative interaction length of modules
 
-    IF (i==1) THEN  
-      zMod(i) = REAL(nw,KIND=WP)
+    if (i==1) then  
+      zMod(i) = real(nw,KIND=WP)
       zMod(i) = 2.0_WP*pi*c1*zMod(i)
-    ELSE
-      zMod(i) = zMod(i-1)+2.0_WP*pi*c1*REAL(nw,KIND=WP) 
-    END IF
+    else
+      zMod(i) = zMod(i-1)+2.0_WP*pi*c1*real(nw,KIND=WP) 
+    end if
 
-  END DO
+  end do
 	
-  CLOSE(1, STATUS='KEEP')
+  close(1, STATUS='KEEP')
 
 !     Convert from # undulator periods to z-bar
 

@@ -20,6 +20,8 @@ USE TransformInfoType
 USE ParallelInfoType
 USE stiffness
 USE Equations
+use wigglerVar
+
 
 IMPLICIT NONE
 
@@ -178,7 +180,7 @@ CONTAINS
 !     Adjust undulator tuning (linear taper)
 
 !    n2col = n2col0 * (1 + undgrad*(sz - sz0))
-    n2col = n2col0  + undgrad*(sz - sz0)
+    call getAlpha(sZ)
 
     fkb= sFocusfactor_G * kbeta
 
