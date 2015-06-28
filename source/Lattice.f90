@@ -188,18 +188,6 @@ CONTAINS
 
 
 
-!          For chicanes 
-
-
-  y_e(z2_start:z2_end) = y_e(z2_start:z2_end) - &
-                         2.0_WP * D *  &
-                         (sgamma_j - sGammaR_G) / sGammaR_G &
-                         + delta
-
-
-
-
-
 
 
 
@@ -208,21 +196,18 @@ CONTAINS
     ALLOCATE(spx0_offset(iNumberElectrons_G), spy0_offset(iNumberElectrons_G))
     ALLOCATE(sx_offset(iNumberElectrons_G),sy_offset(iNumberElectrons_G))
 
-    spx0_offset    = -fy_G * n2col * COS(sZ / (2.0_WP * sRho_G))
-    spy0_offset    = fx_G * n2col * SIN(sZ / (2.0_WP * sRho_G))
+    spx0_offset    = pxOffset(sZ, sRho_G, fy_G)
+    spy0_offset    = -1.0_wp * pyOffset(sZ, sRho_G, fx_G)
 
 
-    sx_offset = -4.0_WP * SQRT(2.0_WP) * sFocusfactor_G * sKBeta_G * &
-                 n2col * (sRho_G**2.0_WP) /  &
-                 ( SQRT(fx_G**2.0_WP + fy_G**2.0_WP) * sEta_G ) * &
-                 sGammaR_G / sgamma_j * (1.0_WP + sEta_G * Vector(iRe_Q_CG,y_e)) *  &
-                 fy_G * sin(sZ / (2.0_WP * sRho_G) )
 
-    sy_offset = 4.0_WP * SQRT(2.0_WP) * sFocusfactor_G * sKBeta_G * &
-                 n2col * (sRho_G**2.0_WP) /  &
-                 ( SQRT(fx_G**2.0_WP + fy_G**2.0_WP) * sEta_G ) * &
-                 sGammaR_G / sgamma_j * (1.0_WP + sEta_G * Vector(iRe_Q_CG,y_e)) *  &
-                 fx_G * cos(sZ / (2.0_WP * sRho_G) )
+    sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
+                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
+                           fx_G, fy_G, sZ)
+
+    sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
+                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
+                           fx_G, fy_G, sZ)
 
 
 !     Take off tranverse phase space offsets to center the beam
@@ -250,6 +235,15 @@ CONTAINS
 
 
 
+
+!     Propagate through chicane
+
+    y_e(z2_start:z2_end) = y_e(z2_start:z2_end) - &
+                           2.0_WP * D *  &
+                           (sgamma_j - sGammaR_G) / sGammaR_G &
+                           + delta
+
+
 !     Change undulator tuning factor to next undulator module
 
     n2col0 = mf(i+1)
@@ -260,8 +254,18 @@ CONTAINS
 
 !     Get new pperp offsets with new undulator tuning factors
 
-    spx0_offset    = -fy_G * n2col * COS(sZ / (2.0_WP * sRho_G))
-    spy0_offset    = fx_G * n2col * SIN(sZ / (2.0_WP * sRho_G))
+    spx0_offset    = pxOffset(sZ, sRho_G, fy_G)
+    spy0_offset    = -1.0_wp * pyOffset(sZ, sRho_G, fx_G)
+
+
+
+    sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
+                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
+                           fx_G, fy_G, sZ)
+
+    sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
+                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
+                           fx_G, fy_G, sZ)
 
 
 !     Add on new offset to perp momentum
@@ -293,23 +297,6 @@ CONTAINS
              ) ) ) ) - 1.0_WP   )   , &
             y_e,    &
             qOKL) 
-
-
-!     Get new x offsets and add on to centered beam
-
-
-
-    sx_offset = -4.0_WP * SQRT(2.0_WP) * sFocusfactor_G * sKBeta_G * &
-                 n2col * (sRho_G**2.0_WP) /  &
-                 ( SQRT(fx_G**2.0_WP + fy_G**2.0_WP) * sEta_G ) * &
-                 sGammaR_G / sgamma_j * (1.0_WP + sEta_G * Vector(iRe_Q_CG,y_e)) *  &
-                 fy_G * sin(sZ / (2.0_WP * sRho_G) )
-
-    sy_offset = 4.0_WP * SQRT(2.0_WP) * sFocusfactor_G * sKBeta_G * &
-                 n2col * (sRho_G**2.0_WP) /  &
-                 ( SQRT(fx_G**2.0_WP + fy_G**2.0_WP) * sEta_G ) * &
-                 sGammaR_G / sgamma_j * (1.0_WP + sEta_G * Vector(iRe_Q_CG,y_e)) *  &
-                 fx_G * cos(sZ / (2.0_WP * sRho_G) )  
 
 
 !     Add on new offsets to initialize beam for new undulator module
