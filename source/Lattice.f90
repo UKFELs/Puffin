@@ -4,6 +4,8 @@ USE paratype
 USE Globals
 USE ArrayFunctions
 USE ElectronInit
+use gtop2
+use initConds
 
 IMPLICIT NONE
 
@@ -202,11 +204,13 @@ CONTAINS
 
 
     sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
+                           sEta_G, sKBeta_G, sFocusfactor_G, pxOffset(sZ, sRho_G, fy_G), &
+                           -1.0_wp * pyOffset(sZ, sRho_G, fx_G), &
                            fx_G, fy_G, sZ)
 
     sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
+                           sEta_G, sKBeta_G, sFocusfactor_G, pxOffset(sZ, sRho_G, fy_G), &
+                           -1.0_wp * pyOffset(sZ, sRho_G, fx_G), &
                            fx_G, fy_G, sZ)
 
 
@@ -260,11 +264,13 @@ CONTAINS
 
 
     sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
+                           sEta_G, sKBeta_G, sFocusfactor_G, pxOffset(sZ, sRho_G, fy_G), &
+                           -1.0_wp * pyOffset(sZ, sRho_G, fx_G), &
                            fx_G, fy_G, sZ)
 
     sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
+                           sEta_G, sKBeta_G, sFocusfactor_G, pxOffset(sZ, sRho_G, fy_G), &
+                           -1.0_wp * pyOffset(sZ, sRho_G, fx_G), &
                            fx_G, fy_G, sZ)
 
 
@@ -290,13 +296,13 @@ CONTAINS
 !     p2 = (1/eta) * ( (1/beta_z)  - 1)
 
 
+
+
     CALL PutValueInVector(iRe_Q_CG, &
-            1.0_WP/sEta_G * ( ( 1.0_WP / ( SQRT( 1.0_WP - ((1.0_WP/sgamma_j**2) * &
-            (1.0_WP + ( sl1 * &
-            ( Vector(iRe_PPerp_CG,y_e)**2.0_WP + Vector(iIm_PPerp_CG,y_e)**2.0_WP  ) ) ) &
-             ) ) ) ) - 1.0_WP   )   , &
-            y_e,    &
-            qOKL) 
+                          getP2(sgamma_j, Vector(iRe_PPerp_CG,y_e), &
+                                -Vector(iIm_PPerp_CG,y_e), sEta_G, sAw_G), &
+                          y_e,    &
+                          qOKL) 
 
 
 !     Add on new offsets to initialize beam for new undulator module
