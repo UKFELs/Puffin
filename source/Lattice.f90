@@ -204,13 +204,11 @@ CONTAINS
 
 
     sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, pxOffset(sZ, sRho_G, fy_G), &
-                           -1.0_wp * pyOffset(sZ, sRho_G, fx_G), &
+                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
                            fx_G, fy_G, sZ)
 
     sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, pxOffset(sZ, sRho_G, fy_G), &
-                           -1.0_wp * pyOffset(sZ, sRho_G, fx_G), &
+                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
                            fx_G, fy_G, sZ)
 
 
@@ -264,13 +262,11 @@ CONTAINS
 
 
     sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, pxOffset(sZ, sRho_G, fy_G), &
-                           -1.0_wp * pyOffset(sZ, sRho_G, fx_G), &
+                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
                            fx_G, fy_G, sZ)
 
     sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, pxOffset(sZ, sRho_G, fy_G), &
-                           -1.0_wp * pyOffset(sZ, sRho_G, fx_G), &
+                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
                            fx_G, fy_G, sZ)
 
 
