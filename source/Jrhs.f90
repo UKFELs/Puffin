@@ -237,10 +237,10 @@ CONTAINS
 		
           sZ2coord = sy(iZ2s + i - 1)
 
-          IF (.NOT. qOKL) THEN
-              CALL Error_log('Error retrieving z2 in RHS:ifrhs',tErrorLog_G)
-              goto 1000
-          END IF
+          !IF (.NOT. qOKL) THEN
+          !    CALL Error_log('Error retrieving z2 in RHS:ifrhs',tErrorLog_G)
+          !    goto 1000
+          !END IF
 
 !          stheta    = sZ2coord * sinv2rho	
 		 
@@ -399,11 +399,11 @@ CONTAINS
                 IF (.NOT. tTransInfo_G%qOneD) iNodeList_Re = i_n4e
 
                 sDADz(iNodeList_Re) = ((s_chi_bar_G(i)/dV3) * Lj(i)&
-                      *  N * sy(iPXs + i - 1) + &
+                      *  N * sy(iPXs + i - 1) ) + &
                      sDADz(iNodeList_Re)
                      
                 sDADz(iNodeList_Re+retim) = &
-                     ((s_chi_bar_G(i)/dV3) *&
+                     ((s_chi_bar_G(i)/dV3) * &
                      Lj(i) * N * sy(iPYs + i - 1) ) + &
                      sDADz(iNodeList_Re+retim)
  

@@ -195,14 +195,14 @@ Module ArrayFunctions
   
     implicit none
 
-    iXs = iBStartPosition_G(iX_CG)
-    iXe = iBEndPosition_G(iX_CG)
+    iXs = iBStartPosition_G(iRe_X_CG)
+    iXe = iBEndPosition_G(iRe_X_CG)
     
-    iYs = iBStartPosition_G(iY_CG)
-    iYe = iBEndPosition_G(iY_CG)
+    iYs = iBStartPosition_G(iRe_Y_CG)
+    iYe = iBEndPosition_G(iRe_Y_CG)
     
-    iZ2s = iBStartPosition_G(iZ2_CG)
-    iZ2e = iBEndPosition_G(iZ2_CG)
+    iZ2s = iBStartPosition_G(iRe_Z2_CG)
+    iZ2e = iBEndPosition_G(iRe_Z2_CG)
     
     
     iPXs = iBStartPosition_G(iRe_PPerp_CG)
