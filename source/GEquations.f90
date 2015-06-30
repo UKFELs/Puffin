@@ -94,13 +94,11 @@ contains
 
       else 
 
-        call PutValueInVector(iRe_PPerp_CG, &
-              sInv2rho * (fy_G* n2col * sin(ZOver2rho) - &
-              ( salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
-              sField4ElecReal ) ), &
-              sb,         &       
-              qOKL)
-        if (.not. qOKL) goto 1000
+
+        sb(iPXs:iPXe) = sInv2rho * (fy_G* n2col * sin(ZOver2rho) - &
+              ( salphaSq * sEta_G * sy(iP2s:iP2e) * &
+              sField4ElecReal ) )
+
 
       end if
 
@@ -210,13 +208,10 @@ contains
 
       else
 
-        call PutValueInVector(iIm_PPerp_CG, &
-                      sInv2rho * (fx_G * n2col * cos(ZOver2rho) - &
-                      ( salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
-                      sField4ElecImag ) ),&
-                      sb,         &       
-                      qOKL)
-        if (.not. qOKL) goto 1000
+
+        sb(iPYs:iPYe) = sInv2rho * (fx_G * n2col * cos(ZOver2rho) - &
+                      ( salphaSq * sEta_G * sy(iP2s:iP2e) * &
+                      sField4ElecImag ) )
 
       end if
 
@@ -333,17 +328,13 @@ contains
       else
 
 
-        CALL PutValueInVector(iRe_Q_CG, &
-                2.0_WP * nb * Lj**2.0_WP * &
-                ((sEta_G * Vector(iRe_Q_CG,sy) + 1.0_WP)/ salphaSq * n2col * &
-                (Vector(iIm_pPerp_CG,sy) * fx_G*cos(ZOver2Rho) + &
-                Vector(iRe_pPerp_CG,sy) * fy_G*sin(ZOver2rho)) +&
-                sEta_G * Vector(iRe_Q_CG,sy) *&
-                (Vector(iRe_pPerp_CG,sy)*sField4ElecReal +&
-                Vector(iIm_pPerp_CG,sy)*sField4ElecImag)), &
-                sb,&
-                qOKL)
-        if (.not. qOKL) goto 1000
+        sb(iP2s:iP2e) = 2.0_WP * nb * Lj**2.0_WP * &
+                ((sEta_G * sy(iP2s:iP2e) + 1.0_WP)/ salphaSq * n2col * &
+                (sy(iPYs:iPYe) * fx_G*cos(ZOver2Rho) + &
+                sy(iPXs:iPXe) * fy_G*sin(ZOver2rho)) + &
+                sEta_G * sy(iP2s:iP2e) * &
+                (sy(iPXs:iPXe) * sField4ElecReal + &
+                sy(iPYs:iPYe) * sField4ElecImag))
 
       end if
 
@@ -387,12 +378,8 @@ contains
 
     qOK = .false.
 
-    CALL PutValueInVector(iRe_X_CG,&
-                Vector(iRe_pPerp_CG,sy) * Lj / nd, &
-                sb,&          
-                qOKL)    
 
-    if (.not. qOKL) goto 1000  ! Error checking
+    sb(iXs:iXe) = sy(iPXs:iPXe) * Lj / nd
 
 
     qOK = .true.
@@ -427,12 +414,7 @@ contains
 
     qOK = .false.
 
-    CALL PutValueInVector(iRe_Y_CG, &
-                          -Vector(iIm_pPerp_CG,sy) * Lj / nd, &
-                          sb,&          
-                          qOKL)
-
-    if (.not. qOKL) goto 1000  ! Error checking
+    sb(iPYs:iPYe) = - sy(iPYs:iPYe) * Lj / nd
 
 
     qOK = .true.
@@ -466,12 +448,7 @@ contains
 
     qOK = .false.
 
-    call PutValueInVector(iRe_Z2_CG,&
-                          Vector(iRe_Q_CG,sy),&
-                          sb,&          
-                          qOKL)
-
-    if (.not. qOKL) goto 1000  ! Error checking
+    sb(iZ2s:iZ2e) = sy(iP2s:iP2e)
 
 
     qOK = .true.
@@ -502,11 +479,11 @@ contains
     if (qFocussing_G) then
 
         dp2f = -(kbeta**2.0_WP) * &   ! New focusing term
-               (1.0_WP + (sEta_G*Vector(iRe_Q_CG,sy))) * &
-               ((Vector(iRe_X_CG,sy)*Vector(iRe_X_CG,sb)) + & 
-               (Vector(iRe_Y_CG,sy)*Vector(iRe_Y_CG,sb))) / &
-               (1.0_WP + sEta_G * ( (Vector(iRe_X_CG,sb))**2.0_WP  + &
-               (Vector(iRe_Y_CG,sb))**2.0_WP ) )
+               (1.0_WP + (sEta_G * sy(iP2s:iP2e)  ) ) * &
+               ( ( sy(iXs:iXe) * sb(iXs:iXe)  ) + & 
+               ( sy(iYs:iYe) * sb(iYs:iYe)  ) ) / &
+               (1.0_WP + sEta_G * ( ( sb(iXs:iXe) )**2.0_WP  + &
+               ( sb(iYs:iYe) )**2.0_WP ) )
 
     else 
 

@@ -202,8 +202,8 @@ CONTAINS
 
 
     Lj = sqrt((1.0_WP - (1.0_WP / ( 1.0_WP + (sEta_G * sQ_Re)) )**2.0_WP) &
-               / (1.0_WP + nc* ( Vector(iRe_PPerp_CG,sy)**2.0_wp  +  &
-                                 Vector(iIm_PPerp_CG,sy)**2.0_wp )   )) &
+               / (1.0_WP + nc* ( sy(iPXs:iPXe)**2.0_wp  +  &
+                                 sy(iPYs:iPYe)**2.0_wp )   )) &
             * (1.0_WP + sEta_G * sQ_Re ) * sGammaR_G
 
 
@@ -235,18 +235,19 @@ CONTAINS
 		
 !           sPperpSq = sPPerp_Re**2 + sPPerp_Im**2		
 		
-          sZ2coord = GetValueFromVector(iRe_Z2_CG,i,sy,qOKL)
+          sZ2coord = sy(iZ2s + i - 1)
+
           IF (.NOT. qOKL) THEN
               CALL Error_log('Error retrieving z2 in RHS:ifrhs',tErrorLog_G)
               goto 1000
           END IF
 
-          stheta    = sZ2coord * sinv2rho	
+!          stheta    = sZ2coord * sinv2rho	
 		 
-          sXcoord = GetValueFromVector(iRe_X_CG,i,sy,qOKL)&
+          sXcoord = sy(iXs + i - 1) &
                + halfx
 
-          sYcoord = GetValueFromVector(iRe_Y_CG,i,sy,qOKL)&
+          sYcoord = sy(iYs + i - 1) &
                + halfy
 
        ENDIF
@@ -316,13 +317,13 @@ CONTAINS
              i_n4e(1) = CEILING(sZ2coord/sLengthOfElmZ2_G)
              i_n4e(2) = i_n4e(1) + 1_IP
 
-             IF (i_n4e(1)>SIZE(sA)) THEN
+             IF (i_n4e(1)>SIZE(sA)/2) THEN
                 IF (tProcInfo_G%qRoot) PRINT*, 'electron',&
                      i,'out of bounds of system'
                 CALL MPI_FINALIZE(error)
                 STOP
              ENDIF	
-             IF (i_n4e(2)>SIZE(sA)) THEN
+             IF (i_n4e(2)>SIZE(sA)/2) THEN
                 IF (tProcInfo_G%qRoot) PRINT*,&
                      'electron', i,'out of bounds of system'
                 CALL MPI_FINALIZE(error)
@@ -398,12 +399,12 @@ CONTAINS
                 IF (.NOT. tTransInfo_G%qOneD) iNodeList_Re = i_n4e
 
                 sDADz(iNodeList_Re) = ((s_chi_bar_G(i)/dV3) * Lj(i)&
-                      *  N * GetValueFromVector(iRe_pPerp_CG, i, sy, qOKL) ) + &
+                      *  N * sy(iPXs + i - 1) + &
                      sDADz(iNodeList_Re)
                      
                 sDADz(iNodeList_Re+retim) = &
                      ((s_chi_bar_G(i)/dV3) *&
-                     Lj(i) * N * GetValueFromVector(iIm_pPerp_CG, i, sy, qOKL) ) + &
+                     Lj(i) * N * sy(iPYs + i - 1) ) + &
                      sDADz(iNodeList_Re+retim)
  
              END IF

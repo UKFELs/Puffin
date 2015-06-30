@@ -56,7 +56,19 @@ Module ArrayFunctions
   INTEGER(KIND=IP), PARAMETER    :: iIm_A_CG	       = 2_IP
  
   INTEGER(KIND=IP), PARAMETER    :: nElectronEquations_CG  = 6_IP
-	  
+
+
+!=====================!
+
+  INTEGER(KIND=IP)    :: iXs, iXe, iYs, iYe, iZ2s, iZ2e, &
+                         iPXs, iPXe, iPYs, iPYe, iP2s, iP2e
+
+
+
+
+
+
+  
   LOGICAL  :: qEmpty
 
 !                 Define type cArraySegment
@@ -120,20 +132,25 @@ Module ArrayFunctions
 !
 ! Define local variables
 ! i - Loop counter
-!
+
     TYPE(cArraySegment), INTENT(INOUT) :: tArraySegment(:),tArrayA(:)
     INTEGER(KIND=IPL), INTENT(IN)   ::   iNME
     INTEGER(KIND=IP), INTENT(IN)   ::   iNNF
     LOGICAL, INTENT(OUT) :: qOK
+
 ! Local Scalars         
+
     INTEGER(KIND=IP)               :: i
     LOGICAL                        :: qOKL
-!-------------------------------------------------------------------
+
 ! START:-
 ! Set error flag to false         
+
     qOK = .FALSE.       
+
 ! Set up array pointers for local electron array
 ! These subroutines can be found in EArrayFunctions.f90
+
     ALLOCATE(iBStartPosition_G(nElectronEquations_CG+nFieldEquations_CG))
     ALLOCATE(iBEndPosition_G(nElectronEquations_CG+nFieldEquations_CG))
        
@@ -151,17 +168,62 @@ Module ArrayFunctions
           IF (.NOT. qOKL) GOTO 1000
        END IF
     END DO
-!----------------------------------------------------------
+
+    call getMarkers()
+
 !  Set error flag and exit         
+    
     qOK = .TRUE.
     GOTO 2000     
+
 ! Error Handler - Error log Subroutine in CIO.f90 line 709
+
 1000 CALL Error_log('Error in FEMethod:SetUpStiffnessMatrix',tErrorLog_G)
     PRINT*,'Error in FEMethod:SetUpStiffnessMatrix'
 2000 CONTINUE
+
   END SUBROUTINE SetUpElectronArray
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+
+
+
+  subroutine getMarkers()
+  
+    implicit none
+
+    iXs = iBStartPosition_G(iX_CG)
+    iXe = iBEndPosition_G(iX_CG)
+    
+    iYs = iBStartPosition_G(iY_CG)
+    iYe = iBEndPosition_G(iY_CG)
+    
+    iZ2s = iBStartPosition_G(iZ2_CG)
+    iZ2e = iBEndPosition_G(iZ2_CG)
+    
+    
+    iPXs = iBStartPosition_G(iRe_PPerp_CG)
+    iPXe = iBEndPosition_G(iRe_PPerp_CG)
+    
+    iPYs = iBStartPosition_G(iIm_PPerp_CG)
+    iPYe = iBEndPosition_G(iIm_PPerp_CG)
+    
+    iP2s = iBStartPosition_G(iRe_Q_CG)
+    iP2e = iBEndPosition_G(iRe_Q_CG)
+  
+  end subroutine getMarkers
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+
+
+
 
   SUBROUTINE  PutValueInVector_OneValue(iPointer,sValue, &
                                         sVector, qOK)
