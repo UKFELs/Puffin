@@ -200,6 +200,13 @@ CONTAINS
     halfx = ((ReducedNX_G-1) / 2.0_WP) * sLengthOfElmX_G
     halfy = ((ReducedNY_G-1) / 2.0_WP) * sLengthOfElmY_G
 
+
+    Lj = sqrt((1.0_WP - (1.0_WP / ( 1.0_WP + (sEta_G * sQ_Re)) )**2.0_WP) &
+               / (1.0_WP + nc* ( Vector(iRe_PPerp_CG,sy)**2.0_wp  +  &
+                                 Vector(iIm_PPerp_CG,sy)**2.0_wp )   )) &
+            * (1.0_WP + sEta_G * sQ_Re ) * sGammaR_G
+
+
 !     Looping (summing) over all the electrons
 
     DO i=1,maxEl
@@ -208,25 +215,25 @@ CONTAINS
        
 !     Get electron variables for electron and field evolution.
 
-          sPPerp_Re = GetValueFromVector(iRe_pPerp_CG, i, sy, qOKL)
-          IF (.NOT. qOKL) THEN
-              CALL Error_log('Error retrieving pperpre in RHS:ifrhs',tErrorLog_G)
-              goto 1000
-          END IF              
+!           sPPerp_Re = GetValueFromVector(iRe_pPerp_CG, i, sy, qOKL)
+!           IF (.NOT. qOKL) THEN
+!               CALL Error_log('Error retrieving pperpre in RHS:ifrhs',tErrorLog_G)
+!               goto 1000
+!           END IF              
 
-          sPPerp_Im = GetValueFromVector(iIm_pPerp_CG, i, sy, qOKL)
-          IF (.NOT. qOKL) THEN
-              CALL Error_log('Error retrieving pperpim in RHS:ifrhs',tErrorLog_G)
-              goto 1000
-          END IF
+!           sPPerp_Im = GetValueFromVector(iIm_pPerp_CG, i, sy, qOKL)
+!           IF (.NOT. qOKL) THEN
+!               CALL Error_log('Error retrieving pperpim in RHS:ifrhs',tErrorLog_G)
+!               goto 1000
+!           END IF
 
-          sQ_Re     = GetValueFromVector(iRe_Q_CG,     i, sy, qOKL)
-          IF (.NOT. qOKL) THEN
-              CALL Error_log('Error retrieving p2 in RHS:ifrhs',tErrorLog_G)
-              goto 1000
-          END IF
+!           sQ_Re     = GetValueFromVector(iRe_Q_CG,     i, sy, qOKL)
+!           IF (.NOT. qOKL) THEN
+!               CALL Error_log('Error retrieving p2 in RHS:ifrhs',tErrorLog_G)
+!               goto 1000
+!           END IF
 		
-          sPperpSq = sPPerp_Re**2 + sPPerp_Im**2		
+!           sPperpSq = sPPerp_Re**2 + sPPerp_Im**2		
 		
           sZ2coord = GetValueFromVector(iRe_Z2_CG,i,sy,qOKL)
           IF (.NOT. qOKL) THEN
@@ -270,32 +277,32 @@ CONTAINS
 
 !     Calculate pperpsq, betaz, and 1/gamma, and perform checks.
 
-          if (sEta_G * sQ_Re == -1.0_WP) then
-            CALL Error_log('EPSILON +Q=-1,divide by zero need to exit',tErrorLog_G)
-            goto 1000
-          end if
+!           if (sEta_G * sQ_Re == -1.0_WP) then
+!             CALL Error_log('EPSILON +Q=-1,divide by zero need to exit',tErrorLog_G)
+!             goto 1000
+!           end if
           
-          sBetaz_i    =  1.0_WP / ( 1.0_WP + (sEta_G * sQ_Re)) 
+!           sBetaz_i    =  1.0_WP / ( 1.0_WP + (sEta_G * sQ_Re)) 
 		
-          if (sBetaz_i > 1.0_WP) then
-            CALL Error_log('BETA_I > 1, sqrt of negative need to exit',tErrorLog_G)
-            goto 1000
-          end if
+!           if (sBetaz_i > 1.0_WP) then
+!             CALL Error_log('BETA_I > 1, sqrt of negative need to exit',tErrorLog_G)
+!             goto 1000
+!           end if
 
-          if (spPerpSq==-1.0_WP) then
-            CALL Error_log('electron ppsq=-1!!',tErrorLog_G)
-            goto 1000
-          end if
+!           if (spPerpSq==-1.0_WP) then
+!             CALL Error_log('electron ppsq=-1!!',tErrorLog_G)
+!             goto 1000
+!           end if
 	  	
-          sInvGamma_i = sqrt((1.0_WP - sBetaz_i**2.0_WP)&
-               / (1.0_WP + nc*spPerpSq))
+!           sInvGamma_i = sqrt((1.0_WP - sBetaz_i**2.0_WP)&
+!                / (1.0_WP + nc*spPerpSq))
 
-!     Calculate Lj term: full or approximated....
+! !     Calculate Lj term: full or approximated....
 
-          !Lj(i) = 2.0_WP*(1.0_WP + sEta_G * sQ_Re ) / &
-          !       (3.0_WP - sQ_Re)
+!           !Lj(i) = 2.0_WP*(1.0_WP + sEta_G * sQ_Re ) / &
+!           !       (3.0_WP - sQ_Re)
 
-          Lj(i) = sInvGamma_i*(1.0_WP + sEta_G * sQ_Re ) * sGammaR_G
+!           Lj(i) = sInvGamma_i*(1.0_WP + sEta_G * sQ_Re ) * sGammaR_G
 
 !     Calculate the nodes surrounding the ith electron and the corresponding
 !     interpolation function.
@@ -391,12 +398,12 @@ CONTAINS
                 IF (.NOT. tTransInfo_G%qOneD) iNodeList_Re = i_n4e
 
                 sDADz(iNodeList_Re) = ((s_chi_bar_G(i)/dV3) * Lj(i)&
-                      *  N * sPPerp_Re ) + &
+                      *  N * GetValueFromVector(iRe_pPerp_CG, i, sy, qOKL) ) + &
                      sDADz(iNodeList_Re)
                      
                 sDADz(iNodeList_Re+retim) = &
                      ((s_chi_bar_G(i)/dV3) *&
-                     Lj(i) * N * sPPerp_Im ) + &
+                     Lj(i) * N * GetValueFromVector(iIm_pPerp_CG, i, sy, qOKL) ) + &
                      sDADz(iNodeList_Re+retim)
  
              END IF
