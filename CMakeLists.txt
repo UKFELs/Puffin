@@ -46,14 +46,5 @@ message ("-- FFTW_MPI_LIB: " ${FFTW_MPI_LIB})
 message ("-- FFTW_LIB_DIR: " ${FFTW_LIB_DIR})
 find_package(MPI REQUIRED)
 add_subdirectory(source)
-
-# todo - simply needs install instructions
-#add_subdirectory(inputs)
-#
-# todo - something to install, something to pack, something to test.
-#
-# install executables and scripts
-#install (TARGETS ${EXECUTABLES} 
-#         RUNTIME DESTINATION "bin")
-#install (PROGRAMS ${SCRIPTS}
-#         DESTINATION "bin")
+install (DIRECTORY inputs/example/ DESTINATION examples)
+install (DIRECTORY inputs/gen/ DESTINATION python)
