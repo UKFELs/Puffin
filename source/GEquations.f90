@@ -42,36 +42,29 @@ contains
 
 !     For curved pole undulator
 
-        call PutValueInVector(iRe_PPerp_CG, &
-                sInv2rho * ( cosh(Vector(iRe_X_CG,sy) * kx_und_G) * &
-                sinh(Vector(iRe_Y_CG,sy) * ky_und_G) * sqrt(2.0_WP) &
-                * sqrt(sEta_G) * Lj * Vector(iIm_PPerp_CG,sy)  &      
-                *  cos(ZOver2rho) &
-                / (sqrt(salphaSq) * ky_und_G) + &
-                cosh(Vector(iRe_X_CG,sy) * kx_und_G) &
-                * cosh(Vector(iRe_Y_CG,sy) * ky_und_G) * sin(ZOver2rho) - &
-                sEta_G * Vector(iRe_Q_CG,sy) * salphaSq * sField4ElecReal), &
-                sb, &
-                qOKL)
-         if (.not. qOKL) goto 1000
+        sb(iPXs:iPXe) = sInv2rho * ( cosh(sy(iXs:iXe) * kx_und_G) * &
+                        sinh(sy(iYs:iYe) * ky_und_G) * sqrt(2.0_WP) &
+                        * sqrt(sEta_G) * Lj * sy(iPYs:iPYe)  &      
+                        *  cos(ZOver2rho) &
+                        / (sqrt(salphaSq) * ky_und_G) + &
+                        cosh(sy(iXs:iXe) * kx_und_G) &
+                        * cosh(sy(iYs:iYe) * ky_und_G) * sin(ZOver2rho) - &
+                        sEta_G * sy(iP2s:iP2e) * salphaSq * sField4ElecReal)
 
+        
 
     else if (zUndType_G == 'planepole')  then
 
 !     Re(p_perp) equation for plane-poled undulator
 
-        call PutValueInVector(iRe_PPerp_CG, &
-                sInv2rho * (-sField4ElecReal*salphaSq * &
-                sEta_G * Vector(iRe_Q_CG,sy) &
-                + ((sqrt(6.0_WP) *sRho_G) /sqrt(salphaSq)) * &
-                sinh(sInv2rho * Vector(iRe_Y_CG,sy) &
-                * sqrt(sEta_G))  * cos(ZOver2rho) * Lj * &
-                Vector(iIm_PPerp_CG,sy) + &
-                cosh(sInv2rho * Vector(iRe_Y_CG,sy) * &
-                sqrt(sEta_G)) *sin(ZOver2rho)), &
-                sb,       &       
-                qOKL)
-        if (.not. qOKL) goto 1000
+        sb(iPXs:iPXe) = sInv2rho * (-sField4ElecReal*salphaSq * &
+                        sEta_G * sy(iP2s:iP2e) &
+                        + ((sqrt(6.0_WP) *sRho_G) /sqrt(salphaSq)) * &
+                        sinh(sInv2rho * sy(iYs:iYe) &
+                        * sqrt(sEta_G))  * cos(ZOver2rho) * Lj * &
+                        sy(iPYs:iPYe) + &
+                        cosh(sInv2rho * sy(iYs:iYe) * &
+                        sqrt(sEta_G)) *sin(ZOver2rho))
 
     else 
 
@@ -80,17 +73,13 @@ contains
 
       if (qFocussing_G) then
 
-        call PutValueInVector(iRe_PPerp_CG, &
-                sInv2rho * (fy_G*n2col*sin(ZOver2rho) - &
-                (salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
-                sField4ElecReal ) ) - & 
-                nd / Lj * & ! focusing term
-                (  ( kbeta**2 * Vector(iRe_X_CG,sy)) + (sEta_G / &
-                ( 1.0_WP + (sEta_G * Vector(iRe_Q_CG,sy)) ) * &
-                Vector(iRe_X_CG,sb) * dp2f ) ), &
-                sb,       &     
-                qOKL)
-        if (.not. qOKL) goto 1000
+        sb(iPXs:iPXe) = sInv2rho * (fy_G*n2col*sin(ZOver2rho) - &
+                        (salphaSq * sEta_G * sy(iP2s:iP2e) * &
+                        sField4ElecReal ) ) - & 
+                        nd / Lj * & ! focusing term
+                        (  ( kbeta**2 * sy(iXs:iXe)) + (sEta_G / &
+                        ( 1.0_WP + (sEta_G * sy(iP2s:iP2e)) ) * &
+                        sb(iXs:iXe) * dp2f ) )
 
       else 
 
@@ -154,20 +143,17 @@ contains
 
 !     For curved pole undulator
 
-        call PutValueInVector(iIM_PPerp_CG, &
-                sInv2rho * ( -1.0_WP * sqrt(2.0_WP) * sqrt(sEta_G) &
-                * Lj * Vector(iRe_PPerp_CG,sy) &
-                * cosh(Vector(iRe_X_CG,sy) * kx_und_G) &
-                * sinh(Vector(iRe_Y_CG,sy) * ky_und_G) &
-                * cos(ZOver2rho)  / (sqrt(salphaSq) * ky_und_G) &
-                + sin(ZOver2rho) * kx_und_G/ky_und_G * &
-                sinh(Vector(iRe_X_CG,sy) * kx_und_G) * &
-                sinh(Vector(iRe_Y_CG,sy) * ky_und_G) & 
-                - sEta_G * Vector(iRe_Q_CG,sy) * salphaSq * &
-                sField4ElecImag), &
-                sb, &
-                qOKL)
-        if (.not. qOKL) goto 1000
+        sb(iPYs:iPYe) = sInv2rho * ( -1.0_WP * sqrt(2.0_WP) * sqrt(sEta_G) &
+                        * Lj * sy(iPXs:iPXe) &
+                        * cosh(sy(iXs:iXe) * kx_und_G) &
+                        * sinh(sy(iYs:iYe) * ky_und_G) &
+                        * cos(ZOver2rho)  / (sqrt(salphaSq) * ky_und_G) &
+                        + sin(ZOver2rho) * kx_und_G/ky_und_G * &
+                        sinh(sy(iXs:iXe) * kx_und_G) * &
+                        sinh(sy(iYs:iYe) * ky_und_G) & 
+                        - sEta_G * sy(iP2s:iP2e) * salphaSq * &
+                        sField4ElecImag)
+
 
     else if (zUndType_G == 'planepole') then 
 
@@ -175,16 +161,13 @@ contains
 
 
 
-        call PutValueInVector(iIM_PPerp_CG, &
-                sInv2rho * (- sField4ElecImag * salphaSq * &
-                sEta_G * Vector(iRe_Q_CG,sy)  &
-                - ((sqrt(6.0_WP) * sRho_G)/ sqrt(salphaSq)) * &
-                sinh(sInv2rho * Vector(iRe_Y_CG,sy) &
-                * sqrt(sEta_G)) * cos(ZOver2rho) * Lj * &
-                Vector(iRe_PPerp_CG,sy)) , &
-                sb, &
-                qOKL)
-        if (.not. qOKL) goto 1000
+        sb(iPYs:iPYe) = sInv2rho * (- sField4ElecImag * salphaSq * &
+                        sEta_G * sy(iP2s:iP2e)  &
+                        - ((sqrt(6.0_WP) * sRho_G)/ sqrt(salphaSq)) * &
+                        sinh(sInv2rho * sy(iYs:iYe) &
+                        * sqrt(sEta_G)) * cos(ZOver2rho) * Lj * &
+                        sy(iPXs:iPXe))
+
 
     else
 
@@ -194,17 +177,14 @@ contains
 
       if (qFocussing_G) then
 
-        call PutValueInVector(iIm_PPerp_CG, &
-                sInv2rho * (fx_G*n2col*cos(ZOver2rho) - &
-                (salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
-                sField4ElecImag ) ) + &
-                nd / Lj * & ! focusing term
-                (  ( kbeta**2 * Vector(iRe_Y_CG,sy)) + (sEta_G / &
-                ( 1.0_WP + (sEta_G * Vector(iRe_Q_CG,sy)) ) * &
-                Vector(iRe_Y_CG,sb) * dp2f ) ), &
-                sb,       &     
-                qOKL)
-        if (.not. qOKL) goto 1000
+        sb(iPYs:iPYe) = sInv2rho * (fx_G*n2col*cos(ZOver2rho) - &
+                        (salphaSq * sEta_G * sy(iP2s:iP2e) * &
+                        sField4ElecImag ) ) + &
+                        nd / Lj * & ! focusing term
+                        (  ( kbeta**2 * sy(iYs:iYe)) + (sEta_G / &
+                        ( 1.0_WP + (sEta_G * sy(iP2s:iP2e)) ) * &
+                        sb(iYs:iYe) * dp2f ) )
+
 
       else
 
@@ -269,21 +249,17 @@ contains
 
 !     For curved pole undulator
 
-        call PutValueInVector(iRe_Q_CG, &
-                (4_WP * sRho_G / sEta_G) * Lj**2 * &
-                ( (Vector(iRe_pPerp_CG,sy) * sField4ElecReal &
-                + Vector(iIm_pPerp_CG,sy) * sField4ElecImag) * &
-                Vector(iRe_Q_CG,sy) * sEta_G &
-                + (1.0_WP/salphaSq) * (1 + sEta_G * Vector(iRe_Q_CG,sy)) &
-                * sin(ZOver2rho) * &
-                (Vector(iRe_pPerp_CG,sy) * cosh(Vector(iRe_X_CG,sy) &
-                * kx_und_G) * cosh(Vector(iRe_Y_CG,sy) * ky_und_G) &
-                + Vector(iIm_pPerp_CG,sy) * kx_und_G/ky_und_G * &
-                sinh(Vector(iRe_X_CG,sy) * kx_und_G) * &
-                sinh(Vector(iRe_Y_CG,sy) * ky_und_G))),&
-                sb,&
-                qOKL)
-        if (.not. qOKL) goto 1000
+        sb(iP2s:iP2e) = (4_WP * sRho_G / sEta_G) * Lj**2 * &
+                        ( (sy(iPXs:iPXe) * sField4ElecReal &
+                        + sy(iPYs:iPYe) * sField4ElecImag) * &
+                        sy(iP2s:iP2e) * sEta_G &
+                        + (1.0_WP/salphaSq) * (1 + sEta_G * sy(iP2s:iP2e)) &
+                        * sin(ZOver2rho) * &
+                        (sy(iPXs:iPXe) * cosh(sy(iXs:iXe) &
+                        * kx_und_G) * cosh(sy(iYs:iYe) * ky_und_G) &
+                        + sy(iPYs:iPYe) * kx_und_G/ky_und_G * &
+                        sinh(sy(iXs:iXe) * kx_und_G) * &
+                        sinh(sy(iYs:iYe) * ky_und_G)))
 
 
     else if (zUndType_G == 'planepole') then 
@@ -291,17 +267,13 @@ contains
 !     p2 equation for plane-poled undulator
 
  
-        call PutValueInVector(iRe_Q_CG, &
-                (4_WP * sRho_G / sEta_G) * Lj**2 * &
-                ( (Vector(iRe_pPerp_CG,sy) * sField4ElecReal &
-                + Vector(iIm_pPerp_CG,sy) * sField4ElecImag) * &
-                Vector(iRe_Q_CG,sy) * sEta_G &
-                + (1.0_WP/salphaSq) * (1 + sEta_G * Vector(iRe_Q_CG,sy)) &
-                * cosh(sInv2rho * Vector(iRe_Y_CG,sy) * sqrt(sEta_G)) &
-                * sin(ZOver2rho) *  Vector(iRe_pPerp_CG,sy)  ) , &
-                sb,&
-                qOKL)
-        if (.not. qOKL) goto 1000
+        sb(iP2s:iP2e) = (4_WP * sRho_G / sEta_G) * Lj**2 * &
+                        ( (sy(iPXs:iPXe) * sField4ElecReal &
+                        + sy(iPYs:iPYe) * sField4ElecImag) * &
+                        sy(iP2s:iP2e) * sEta_G &
+                        + (1.0_WP/salphaSq) * (1 + sEta_G * sy(iP2s:iP2e)) &
+                        * cosh(sInv2rho * sy(iYs:iYe) * sqrt(sEta_G)) &
+                        * sin(ZOver2rho) *  sy(iPXs:iPXe)  )
 
  
     else
@@ -311,19 +283,15 @@ contains
 
       if (qFocussing_G) then
 
-        call PutValueInVector(iRe_Q_CG, &
-                2.0_WP * nb * Lj**2 * &
-                ((sEta_G * Vector(iRe_Q_CG,sy) + 1.0_WP) &
-                / salphaSq * n2col * &
-                (Vector(iIm_pPerp_CG,sy) * fx_G*cos(ZOver2Rho) + &
-                Vector(iRe_pPerp_CG,sy) * fy_G*sin(ZOver2rho)) + &
-                sEta_G * Vector(iRe_Q_CG,sy) * &
-                (Vector(iRe_pPerp_CG,sy)*sField4ElecReal + &
-                Vector(iIm_pPerp_CG,sy)*sField4ElecImag)) &
-                + dp2f, & 
-                sb,&
-                qOKL)
-        if (.not. qOKL) goto 1000
+        sb(iP2s:iP2e) = 2.0_WP * nb * Lj**2 * &
+                        ((sEta_G * sy(iP2s:iP2e) + 1.0_WP) &
+                        / salphaSq * n2col * &
+                        (sy(iPYs:iPYe) * fx_G*cos(ZOver2Rho) + &
+                        sy(iPXs:iPXe) * fy_G*sin(ZOver2rho)) + &
+                        sEta_G * sy(iP2s:iP2e) * &
+                        (sy(iPXs:iPXe)*sField4ElecReal + &
+                        sy(iPYs:iPYe)*sField4ElecImag)) &
+                        + dp2f
 
       else
 
@@ -414,7 +382,7 @@ contains
 
     qOK = .false.
 
-    sb(iPYs:iPYe) = - sy(iPYs:iPYe) * Lj / nd
+    sb(iYs:iYe) = - sy(iPYs:iPYe) * Lj / nd
 
 
     qOK = .true.
