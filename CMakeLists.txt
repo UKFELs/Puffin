@@ -10,7 +10,7 @@ enable_language (Fortran)
 set (Puffin_VERSION_MAJOR 1)
 set (Puffin_VERSION_MINOR 4)
 # And because I don't know better
-set (Puffin_VERSION_PATCH 1)
+set (Puffin_VERSION_PATCH 2)
 # FFLAGS depend on the compiler
 get_filename_component (Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
 
@@ -48,3 +48,11 @@ find_package(MPI REQUIRED)
 add_subdirectory(source)
 install (DIRECTORY inputs/example/ DESTINATION examples)
 install (DIRECTORY inputs/gen/ DESTINATION python)
+# build a CPack driven installer package
+include (InstallRequiredSystemLibraries)
+set (CPACK_RESOURCE_FILE_LICENSE  
+     "${CMAKE_CURRENT_SOURCE_DIR}/License.txt")
+set (CPACK_PACKAGE_VERSION_MAJOR "${Puffin_VERSION_MAJOR}")
+set (CPACK_PACKAGE_VERSION_MINOR "${Puffin_VERSION_MINOR}")
+set (CPACK_PACKAGE_VERSION_PATCH "${Puffin_VERSION_PATCH}")
+include (CPack)
