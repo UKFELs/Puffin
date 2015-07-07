@@ -405,7 +405,7 @@ CONTAINS
                 sDADz(iNodeList_Re+retim) = &
                      ((s_chi_bar_G(i)/dV3) * &
                      Lj(i) * N * sy(iPYs + i - 1) ) + &
-                     sDADz(iNodeList_Re+retim)
+                     sDADz(iNodeList_Im)
  
              END IF
           END IF
