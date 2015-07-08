@@ -10,7 +10,7 @@ enable_language (Fortran)
 set (Puffin_VERSION_MAJOR 1)
 set (Puffin_VERSION_MINOR 4)
 # And because I don't know better
-set (Puffin_VERSION_PATCH 2)
+set (Puffin_VERSION_PATCH 3)
 # FFLAGS depend on the compiler
 get_filename_component (Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
 
