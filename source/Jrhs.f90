@@ -201,10 +201,10 @@ CONTAINS
     halfy = ((ReducedNY_G-1) / 2.0_WP) * sLengthOfElmY_G
 
 
-    Lj = sqrt((1.0_WP - (1.0_WP / ( 1.0_WP + (sEta_G * sQ_Re)) )**2.0_WP) &
+    Lj = sqrt((1.0_WP - (1.0_WP / ( 1.0_WP + (sEta_G * sy(iP2s:iP2e))) )**2.0_WP) &
                / (1.0_WP + nc* ( sy(iPXs:iPXe)**2.0_wp  +  &
                                  sy(iPYs:iPYe)**2.0_wp )   )) &
-            * (1.0_WP + sEta_G * sQ_Re ) * sGammaR_G
+            * (1.0_WP + sEta_G *  sy(iP2s:iP2e)) * sGammaR_G
 
 
 !     Looping (summing) over all the electrons
@@ -402,7 +402,7 @@ CONTAINS
                       *  N * sy(iPXs + i - 1) ) + &
                      sDADz(iNodeList_Re)
                      
-                sDADz(iNodeList_Re+retim) = &
+                sDADz(iNodeList_Im) = &
                      ((s_chi_bar_G(i)/dV3) * &
                      Lj(i) * N * sy(iPYs + i - 1) ) + &
                      sDADz(iNodeList_Im)
@@ -470,7 +470,7 @@ CONTAINS
 
 
 
-    IF (qFieldEvolve_G) THEN
+    if (qFieldEvolve_G) then
 
 !     Sum dadz from different MPI processes together
 
@@ -478,37 +478,37 @@ CONTAINS
 
 !     Boundary condition dadz = 0 at head of field
 
-        IF (tProcInfo_G%qRoot) sDADz(1:ReducedNX_G*ReducedNY_G)=0.0_WP
+        if (tProcInfo_G%qRoot) sDADz(1:ReducedNX_G*ReducedNY_G) = 0.0_WP
  
-        !IF (tTransInfo_G%qOneD) THEN
-        !  IF (tProcInfo_G%qRoot) sDADz=sDADz !sDADz=6.0_WP*sDADz
-        !ELSE
-        !   IF (tProcInfo_G%qRoot) sDADz=sDADz !216.0_WP/8.0_WP*sDADz
-        !END IF
+        !if (tTransInfo_G%qOneD) then
+        !  if (tProcInfo_G%qRoot) sDADz=sDADz !sDADz=6.0_WP*sDADz
+        !else
+        !   if (tProcInfo_G%qRoot) sDADz=sDADz !216.0_WP/8.0_WP*sDADz
+        !end if
 
-    END IF
+    end if
     
 !     Switch field off
 
-    IF (.NOT. qFieldEvolve_G) THEN
+    if (.not. qFieldEvolve_G) then
        sDADz = 0.0_WP
-    END IF
+    end if
 
-!     If electrons not allowed to evolve then      
+!     if electrons not allowed to evolve then      
 
-    IF (.NOT. qElectronsEvolve_G) THEN
-       CALL PutValueInVector(iRe_pPerp_CG, 0.0_WP, sb, qOKL)
-       CALL PutValueInVector(iIm_pPerp_CG, 0.0_WP, sb, qOKL)
-       CALL PutValueInVector(iRe_Q_CG,     0.0_WP, sb, qOKL)
-       CALL PutValueInVector(iRe_Z2_CG,    0.0_WP, sb, qOKL)
-       CALL PutValueInVector(iRe_X_CG,     0.0_WP, sb, qOKL)
-       CALL PutValueInVector(iRe_Y_CG,     0.0_WP, sb, qOKL)
-    END IF
+    if (.not. qElectronsEvolve_G) then
+       sb(iPXs:iPXe) = 0.0_wp
+       sb(iPYs:iPYe) = 0.0_wp
+       sb(iP2s:iP2e) = 0.0_wp
+       sb(iXs:iXe)   = 0.0_wp
+       sb(iYs:iYe)   = 0.0_wp
+       sb(iZ2s:iZ2e) = 0.0_wp
+    end if
 
 !     Deallocate arrays
 
-    DEALLOCATE(i_n4e,N,iNodeList_Re,iNodeList_Im,i_n4ered)
-    DEALLOCATE(sField4ElecReal,sField4ElecImag,Lj,dp2f)
+    deallocate(i_n4e,N,iNodeList_Re,iNodeList_Im,i_n4ered)
+    deallocate(sField4ElecReal,sField4ElecImag,Lj,dp2f)
 
 
     ! Set the error flag and exit
