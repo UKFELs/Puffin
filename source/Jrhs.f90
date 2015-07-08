@@ -213,37 +213,10 @@ CONTAINS
     
        IF (i<=procelectrons_G(1)) THEN	
        
-!     Get electron variables for electron and field evolution.
-
-!           sPPerp_Re = GetValueFromVector(iRe_pPerp_CG, i, sy, qOKL)
-!           IF (.NOT. qOKL) THEN
-!               CALL Error_log('Error retrieving pperpre in RHS:ifrhs',tErrorLog_G)
-!               goto 1000
-!           END IF              
-
-!           sPPerp_Im = GetValueFromVector(iIm_pPerp_CG, i, sy, qOKL)
-!           IF (.NOT. qOKL) THEN
-!               CALL Error_log('Error retrieving pperpim in RHS:ifrhs',tErrorLog_G)
-!               goto 1000
-!           END IF
-
-!           sQ_Re     = GetValueFromVector(iRe_Q_CG,     i, sy, qOKL)
-!           IF (.NOT. qOKL) THEN
-!               CALL Error_log('Error retrieving p2 in RHS:ifrhs',tErrorLog_G)
-!               goto 1000
-!           END IF
-		
-!           sPperpSq = sPPerp_Re**2 + sPPerp_Im**2		
+!     Get electron variables for electron and field evolution.	
 		
           sZ2coord = sy(iZ2s + i - 1)
 
-          !IF (.NOT. qOKL) THEN
-          !    CALL Error_log('Error retrieving z2 in RHS:ifrhs',tErrorLog_G)
-          !    goto 1000
-          !END IF
-
-!          stheta    = sZ2coord * sinv2rho	
-		 
           sXcoord = sy(iXs + i - 1) &
                + halfx
 
@@ -275,35 +248,6 @@ CONTAINS
           if (s_Lez2>sLengthOfElmZ2_G) then 
              s_Lez2=sLengthOfElmZ2_G
           end if
-
-!     Calculate pperpsq, betaz, and 1/gamma, and perform checks.
-
-!           if (sEta_G * sQ_Re == -1.0_WP) then
-!             CALL Error_log('EPSILON +Q=-1,divide by zero need to exit',tErrorLog_G)
-!             goto 1000
-!           end if
-          
-!           sBetaz_i    =  1.0_WP / ( 1.0_WP + (sEta_G * sQ_Re)) 
-		
-!           if (sBetaz_i > 1.0_WP) then
-!             CALL Error_log('BETA_I > 1, sqrt of negative need to exit',tErrorLog_G)
-!             goto 1000
-!           end if
-
-!           if (spPerpSq==-1.0_WP) then
-!             CALL Error_log('electron ppsq=-1!!',tErrorLog_G)
-!             goto 1000
-!           end if
-	  	
-!           sInvGamma_i = sqrt((1.0_WP - sBetaz_i**2.0_WP)&
-!                / (1.0_WP + nc*spPerpSq))
-
-! !     Calculate Lj term: full or approximated....
-
-!           !Lj(i) = 2.0_WP*(1.0_WP + sEta_G * sQ_Re ) / &
-!           !       (3.0_WP - sQ_Re)
-
-!           Lj(i) = sInvGamma_i*(1.0_WP + sEta_G * sQ_Re ) * sGammaR_G
 
 !     Calculate the nodes surrounding the ith electron and the corresponding
 !     interpolation function.
