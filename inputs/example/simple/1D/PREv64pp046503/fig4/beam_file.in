@@ -44,6 +44,10 @@ BEAM PARAMETERS
 3.573668350911747E-01   Scaled emittance (bar{epsilon})
 -0.000000000000000E+00  Energy chirp in z2 i.e. dgamma/dz2
 0.000000000000000E+00   Center of beam in z2
+0.0                     magnitude of energy oscillation in beam 
+1.0                     frequency of energy oscillation in beam (k = 2pi/lambda)
+.true.                 Round edge of flat top?
+0.1                     sigma of gaussian edge for flat top
 2.000000000000000E-09   Charge in coulombs
 ========================================================================
 
