@@ -104,7 +104,7 @@ steps_per_per = 100        # should be roughly 4-5* elms_per_wave
 
 # Undulator and beam parameters
 
-aw = 2.0               # 3.182 rms, 4.5 peak
+aw = 2.0               # rms wiggler parameter
 emit = 4.976711101413333e-07       # Unnormalised Emittance
 lambda_w = 0.07        # Undulator period
 N_w = 200              # Number of undulator periods
