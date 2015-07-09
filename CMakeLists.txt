@@ -9,10 +9,9 @@ enable_language (Fortran)
 # The version number.
 set (Puffin_VERSION_MAJOR 1)
 set (Puffin_VERSION_MINOR 4)
-# And because I don't know better
 set (Puffin_VERSION_PATCH 3)
 include(${CMAKE_SOURCE_DIR}/scimake/SciInit.cmake)
-option(ENABLE_PARALLEL "whether to build parallel PUFFIN" ON)
+#option(ENABLE_PARALLEL "whether to build parallel PUFFIN" ON)
 
 
 ######################################################################
@@ -20,36 +19,36 @@ option(ENABLE_PARALLEL "whether to build parallel PUFFIN" ON)
 # Find packages
 #
 ######################################################################
-if(ENABLE_PARALLEL)
-  find_package(SciMpi REQUIRED)
-  set(USE_MPI 1 CACHE BOOL "setting USE_MPI to 1" FORCE)
-endif()
+#if(ENABLE_PARALLEL)
+#  find_package(SciMpi REQUIRED)
+#  set(USE_MPI 1 CACHE BOOL "setting USE_MPI to 1" FORCE)
+#endif()
 find_package(SciFftw REQUIRED)
 find_package(SciMkl)
 
 
-# FFLAGS depend on the compiler
-get_filename_component (Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
-
-if (Fortran_COMPILER_NAME MATCHES "gfortran.*")
-  # gfortran
-  set (CMAKE_Fortran_FLAGS_RELEASE "-funroll-all-loops -fno-f2c -O3")
-  set (CMAKE_Fortran_FLAGS_DEBUG   "-fno-f2c -O0 -g")
-elseif (Fortran_COMPILER_NAME MATCHES "ifort.*")
-  # ifort (untested)
-  set (CMAKE_Fortran_FLAGS_RELEASE "-f77rtl -O3")
-  set (CMAKE_Fortran_FLAGS_DEBUG   "-f77rtl -O0 -g")
-elseif (Fortran_COMPILER_NAME MATCHES "g77")
-  # g77
-  set (CMAKE_Fortran_FLAGS_RELEASE "-funroll-all-loops -fno-f2c -O3 -m32")
-  set (CMAKE_Fortran_FLAGS_DEBUG   "-fno-f2c -O0 -g -m32")
-else (Fortran_COMPILER_NAME MATCHES "gfortran.*")
-  message ("CMAKE_Fortran_COMPILER full path: " ${CMAKE_Fortran_COMPILER})
-  message ("Fortran compiler: " ${Fortran_COMPILER_NAME})
-  message ("No optimized Fortran compiler flags are known, we just try -O2...")
-  set (CMAKE_Fortran_FLAGS_RELEASE "-O2")
-  set (CMAKE_Fortran_FLAGS_DEBUG   "-O0 -g")
-endif (Fortran_COMPILER_NAME MATCHES "gfortran.*")
+## FFLAGS depend on the compiler
+#get_filename_component (Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)#
+#
+#if (Fortran_COMPILER_NAME MATCHES "gfortran.*")
+#  # gfortran
+#  set (CMAKE_Fortran_FLAGS_RELEASE "-funroll-all-loops -fno-f2c -O3")
+#  set (CMAKE_Fortran_FLAGS_DEBUG   "-fno-f2c -O0 -g")
+#elseif (Fortran_COMPILER_NAME MATCHES "ifort.*")
+#  # ifort (untested)
+#  set (CMAKE_Fortran_FLAGS_RELEASE "-f77rtl -O3")
+#  set (CMAKE_Fortran_FLAGS_DEBUG   "-f77rtl -O0 -g")
+#elseif (Fortran_COMPILER_NAME MATCHES "g77")
+#  # g77
+#  set (CMAKE_Fortran_FLAGS_RELEASE "-funroll-all-loops -fno-f2c -O3 -m32")
+#  set (CMAKE_Fortran_FLAGS_DEBUG   "-fno-f2c -O0 -g -m32")
+#else (Fortran_COMPILER_NAME MATCHES "gfortran.*")
+#  message ("CMAKE_Fortran_COMPILER full path: " ${CMAKE_Fortran_COMPILER})
+#  message ("Fortran compiler: " ${Fortran_COMPILER_NAME})
+#  message ("No optimized Fortran compiler flags are known, we just try -O2...")
+#  set (CMAKE_Fortran_FLAGS_RELEASE "-O2")
+#  set (CMAKE_Fortran_FLAGS_DEBUG   "-O0 -g")
+#endif (Fortran_COMPILER_NAME MATCHES "gfortran.*")
 
 ### line below is not working, but harmless.
 # todo - find FFTW with scimake
