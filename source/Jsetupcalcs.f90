@@ -304,36 +304,49 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, SmeanZ2, qFlatTopS, sSigmaF, &
 
     DEALLOCATE(sAreal,sAimag)
 
-!     Set up initial electron perp values
+!     Assign initial mactroparticle positions to relevent 
+!     sections of sV array
 
-    CALL PutValueInVector(iRe_PPerp_CG, sEl_PX0Position_G,&
-         sV, qOKL)
-    IF (.NOT. qOKL) GOTO 1000
+    sV(iPXs:iPXe) = sEl_PX0Position_G
 
-    CALL PutValueInVector(iIm_PPerp_CG,-sEl_PY0Position_G,&
-         sV, qOKL)		
-    IF (.NOT. qOKL) GOTO 1000
+    sV(iPYs:iPYe) = -sEl_PY0Position_G
+    
+    sV(iP2s:iP2e) = sEl_PZ20Position_G
+    
+    sV(iXs:iXe) = sX0
+    
+    sV(iYs:iYe) = sY0
+    
+    sV(iZ2s:iZ2e) = sz20
+
+    !CALL PutValueInVector(iRe_PPerp_CG, sEl_PX0Position_G,&
+    !     sV, qOKL)
+    !IF (.NOT. qOKL) GOTO 1000
+
+    !CALL PutValueInVector(iIm_PPerp_CG,-sEl_PY0Position_G,&
+    !     sV, qOKL)		
+    !IF (.NOT. qOKL) GOTO 1000
 
 !     Set up initial electron Q values
 
-    CALL PutValueInVector(iRe_Q_CG, sEl_PZ20Position_G,&
-         sV, qOKL)
-    IF (.NOT. qOKL) GOTO 1000
+    !CALL PutValueInVector(iRe_Q_CG, sEl_PZ20Position_G,&
+    !     sV, qOKL)
+    !IF (.NOT. qOKL) GOTO 1000
 
 !     Set up initial electron starting positions in z2 direction
 
-    CALL PutValueInVector(iRe_Z2_CG, sz20, sV, qOKL)
-    IF (.NOT. qOKL) GOTO 1000
+    !CALL PutValueInVector(iRe_Z2_CG, sz20, sV, qOKL)
+    !IF (.NOT. qOKL) GOTO 1000
 
 !     Set up initial electron starting positions in x direction
 
-    CALL PutValueInVector(iRe_X_CG, sX0, sV, qOKL)
-    IF (.NOT. qOKL) GOTO 1000
+    !CALL PutValueInVector(iRe_X_CG, sX0, sV, qOKL)
+    !IF (.NOT. qOKL) GOTO 1000
 
 !     Set up initial electron starting positions in y direction
 
-    CALL PutValueInVector(iRe_Y_CG, sY0, sV, qOKL)
-    IF (.NOT. qOKL) GOTO 1000
+    !CALL PutValueInVector(iRe_Y_CG, sY0, sV, qOKL)
+    !IF (.NOT. qOKL) GOTO 1000
 
 !     Set error flag and exit
 
@@ -505,8 +518,18 @@ SUBROUTINE getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,frs,nSeeds,dels,xfieldt,yf
 
 !            LOCAL ARGS
 
-  INTEGER(KIND=IP) :: ind
-  REAL(KIND=WP) :: xfield(size(xfieldt)), yfield(size(yfieldt))
+  INTEGER(KIND=IP) :: ind, fsz
+  REAL(KIND=WP), allocatable :: xfield(:), yfield(:)
+
+  fsz = size(xfieldt)
+
+  !  if (fsz .ne. size(yfieldt)) then
+  
+  !  Cause error
+
+  !  end if
+
+  allocate(xfield(fsz), yfield(fsz))
 
 
   xfieldt = 0.0_WP
@@ -521,6 +544,8 @@ SUBROUTINE getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,frs,nSeeds,dels,xfieldt,yf
     yfieldt = yfieldt + yfield
     
   END DO
+
+  deallocate(xfield, yfield)
 
 END SUBROUTINE getSeeds
 
