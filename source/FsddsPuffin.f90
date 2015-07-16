@@ -658,7 +658,7 @@ CONTAINS
 !     Write the data
       
           call OutputIntegrationData(tArrayA(ifp)%tFileType, &
-                                     Vector(ifp,sA), &
+                                     sA(((ifp-1)*fieldsize) + 1: ifp*fieldsize), &
                                      fieldsize, &
                                      qOKL)
 
