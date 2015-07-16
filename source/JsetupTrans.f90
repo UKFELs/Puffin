@@ -424,19 +424,22 @@ SUBROUTINE GetMBParams(srho,sEmit_n,k_beta,sFF,sEta,sLenE, &
          
   sSigF(iY_CG) = sSigE(iY_CG)
   
+
+  if (tProcInfo_G%qRoot) print*,''
+  if (tProcInfo_G%qRoot) print*, '---------------------'
+  IF (tProcInfo_G%qRoot) PRINT*, 'Matching field grid sampling to beam sampling...'
 	  
-  IF (tProcInfo_G%qRoot) PRINT*, 'NEW SEED SIGMA IS', sSigF(iX_CG)
+  IF (tProcInfo_G%qRoot) PRINT*, 'New Gaussian sigma of field in x is', sSigF(iX_CG)
+  
+  IF (tProcInfo_G%qRoot) PRINT*, 'New Gaussian sigma of electron beam in x is ',sSigE(iX_CG)
 
-  IF (tProcInfo_G%qRoot) PRINT*, 'NEW ELECTRON SIGMA IS',sSigE(iX_CG)
+  IF (tProcInfo_G%qRoot) PRINT*, '...so total sampled length of beam is ', sLenE(iX_CG)
+  if (tProcInfo_G%qRoot) print*,''
+  IF (tProcInfo_G%qRoot) PRINT*, 'New Gaussian sigma of e-beam in px is ', sSigE(iPX_CG:iPY_CG)
+  if (tProcInfo_G%qRoot) print*,''
+  IF (tProcInfo_G%qRoot) PRINT*, 'Scaled Rayleigh length (in gain lengths) = ', sEmit_n/k_beta/2.0_wp
 
-  IF (tProcInfo_G%qRoot) PRINT*, 'NEW ELECTRON LENGTH IS', sLenE(iX_CG)
-
-  IF (tProcInfo_G%qRoot) PRINT*, 'NEW ELECTRON p SIGMA IS', &
-                                   sSigE(iPX_CG:iPY_CG)
-
-  IF (tProcInfo_G%qRoot) PRINT*, 'RAYLEIGH RANGE IS', sEmit_n/k_beta
-
-  IF (tProcInfo_G%qRoot) PRINT*, 'LAMBDA_BETA IS ', 2.0_WP*pi/k_beta
+  IF (tProcInfo_G%qRoot) PRINT*, 'Scaled betatron wavelength (in gain lengths) = ', 2.0_WP*pi/k_beta
 
 ! Set error flag and exit         
 

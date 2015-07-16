@@ -58,10 +58,10 @@ SUBROUTINE getIntTypes(iNMPs, samplens, sigmas, &
        IF (iNMPs(iLIT) == 1_IP .OR. samplens(iLIT)<=1.0E-6_WP &
             .OR. samplens(iLIT)<6.0_WP*sigmas(iLIT) ) THEN
           inttypes(iLIT)=iTopHatDistribution_CG
-          IF (tProcInfo_G%qROOT) PRINT *, 'tophat'
+          !IF (tProcInfo_G%qROOT) PRINT *, 'tophat'
        ELSE
           inttypes(iLIT)=iGaussianDistribution_CG
-          IF (tProcInfo_G%qROOT) PRINT *, 'gauss'
+          !IF (tProcInfo_G%qROOT) PRINT *, 'gauss'
        END IF
     ENDDO
 
