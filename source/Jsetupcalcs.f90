@@ -385,7 +385,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
 !                   LOCAL ARGS
 
     INTEGER(KIND=IPL) :: NMacroE
-    REAL(KIND=WP)     :: sQOneE
+    REAL(KIND=WP)     :: sQOneE, totNk_glob, totNk_loc
     REAL(KIND=WP), ALLOCATABLE  :: RealE(:)
     INTEGER(KIND=IP) :: j,error, req, lrank, rrank
     INTEGER(KIND=IPL) :: sendbuff, recvbuff
@@ -444,8 +444,25 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
        GOTO 1000    
     END IF
 
-    IF (tProcInfo_G%qROOT) PRINT *,&
-         'TOTAL NUM OF MACROPARTICLES = ', iGloNumElectrons_G
+
+    totNk_loc = sum(s_chi_bar_G) * npk_bar_G
+    CALL MPI_ALLREDUCE(totNk_loc, totNk_glob, 1, MPI_DOUBLE_PRECISION, &
+                       MPI_SUM, MPI_COMM_WORLD, error)
+
+
+iNumberElectrons_G,iGloNumElectrons_G
+
+    if (tProcInfo_G%qRoot) then
+
+      print*, ''
+      print*, '-----------------------------------------'
+      print*, 'Total number of macroparticles = ', iGloNumElectrons_G
+      print*, 'Avg num of real electrons per macroparticle Nk = ', &
+                                    totNk_glob / iGloNumElectrons_G
+      print*, 'Total number of electrons modelled = ', totNk_glob
+
+
+    end if
 
     allocate(sV(iNumberElectrons_G * 6_IP))
 
