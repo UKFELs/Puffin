@@ -246,7 +246,7 @@ CONTAINS
         locz2 = sy(iZ2s + i - 1_ip) - REAL(z2node  - 1_IP, kind=wp) * sLengthOfElmZ2_G
     
         li1 = (1.0_wp - locz2/sLengthOfElmZ2_G)
-        li2 = 1 - z2_in1
+        li2 = 1 - li1
     
         sField4ElecReal(i) = li1 * sA(p_nodes(i)) + sField4ElecReal(i)
         sField4ElecReal(i) = li2 * sA(p_nodes(i) + 1_ip) + sField4ElecReal(i)
