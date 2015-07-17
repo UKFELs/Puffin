@@ -217,12 +217,18 @@ CONTAINS
 
   allocate(p_nodes(iNumberElectrons_G))
   
-  p_nodes = ((floor( (sy(iXs:iXe)+halfx)  / dx)  + 1_IP) + &
-            ( (floor( (sy(iYs:iYe)+halfy)  / dy)  + 1_IP)   - 1) * (ReducedNX_G - 1) + &
-            (ReducedNX_G - 1) * (ReducedNY_G - 1) * &
-                            ( (floor(sy(iZ2s:iZ2e)  / dz2)  + 1_IP)  -   1))
+  if (tTransInfo_G%qOneD) then
+ 
+    p_nodes = floor(sy(iZ2s:iZ2e) / dz2) + 1_IP
 
-  
+  else
+
+    p_nodes = ((floor( (sy(iXs:iXe)+halfx)  / dx)  + 1_IP) + &
+              ( (floor( (sy(iYs:iYe)+halfy)  / dy)  + 1_IP)   - 1) * (ReducedNX_G - 1) + &
+              (ReducedNX_G - 1) * (ReducedNY_G - 1) * &
+                              ( (floor(sy(iZ2s:iZ2e)  / dz2)  + 1_IP)  -   1))
+
+  end if  
 
 
   if (tTransInfo_G%qOneD) then
