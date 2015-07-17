@@ -1,0 +1,12 @@
+TO build...
+
+1) Make a new dir
+mkdir ~/testpuffinbuild; cd ~/testpuffinbuild
+
+2) Run cmake (below on ARCHIE-WEST, refering to visitall built fftw)
+cmake -DCMAKE_PREFIX_PATH=/path/to/contrib-gcc482/fftw-par/ ../Puffin
+
+3) make
+
+You should get a puffin binary.
+#TODO Automatic installation of binary and files.

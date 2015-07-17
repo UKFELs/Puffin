@@ -7,13 +7,13 @@
    We provide below for one underscore and two underscores.
 */
 
-#ifdef ONE_UNDERSCORE
-  #define OPENFILEFOROUTPUT openfileforoutput_c_
-  #define WRITEINTEGER      writeinteger_c_
-  #define WRITEDOUBLE       writedouble_c_
-  #define WRITESTRING       writestring_c_
-  #define WRITELONGARRAY    writelongarray_c_
-  #define WRITEDOUBLEARRAY  writedoublearray_c_
+#ifdef NO_UNDERSCORE
+  #define OPENFILEFOROUTPUT openfileforoutput_c
+  #define WRITEINTEGER      writeinteger_c
+  #define WRITEDOUBLE       writedouble_c
+  #define WRITESTRING       writestring_c
+  #define WRITELONGARRAY    writelongarray_c
+  #define WRITEDOUBLEARRAY  writedoublearray_c
 #elif SECOND_UNDERSCORE
   #define OPENFILEFOROUTPUT openfileforoutput_c__
   #define WRITEINTEGER      writeinteger_c__
@@ -21,13 +21,15 @@
   #define WRITESTRING       writestring_c__
   #define WRITELONGARRAY    writelongarray_c__
   #define WRITEDOUBLEARRAY  writedoublearray_c__
+
+// default of one underscore
 #else
-  #define OPENFILEFOROUTPUT openfileforoutput_c
-  #define WRITEINTEGER      writeinteger_c
-  #define WRITEDOUBLE       writedouble_c
-  #define WRITESTRING       writestring_c
-  #define WRITELONGARRAY    writelongarray_c
-  #define WRITEDOUBLEARRAY  writedoublearray_c
+  #define OPENFILEFOROUTPUT openfileforoutput_c_
+  #define WRITEINTEGER      writeinteger_c_
+  #define WRITEDOUBLE       writedouble_c_
+  #define WRITESTRING       writestring_c_
+  #define WRITELONGARRAY    writelongarray_c_
+  #define WRITEDOUBLEARRAY  writedoublearray_c_
 #endif
 
 void OPENFILEFOROUTPUT (char *zFileName, int iFileNameLength)

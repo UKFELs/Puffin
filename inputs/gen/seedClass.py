@@ -27,7 +27,7 @@ class sd:
         f.write('{:<24.15E}'.format(self.sigz2)     + 'SigmaZ2             Seed field sigma in z2 direction =1E8 for flat top\n')
         f.write('{:<24}'.format(torf(self.qFlat))   + 'qFlatTop            =.TRUE. if flat top seed, else gaussian is assumed\n')
         f.write('{:<24.15E}'.format(self.meanz2)    + 'MeanZ2              Mean or center position of seed in Z2\n')
-        f.write('{:<24.15E}'.format(self.qFRoundEj)    + 'qRoundEj            Round the edge of the seed envelope if flat top?\n')
+        f.write('{:<24}'.format(torf(self.qFRoundEj))    + 'qRoundEj            Round the edge of the seed envelope if flat top?\n')
         f.write('{:<24.15E}'.format(self.sigFEj)    + 'sigma_ej            Sigma of the rounded edge, if above is true\n')
         f.write('========================================================================\n')
         f.write('\n')

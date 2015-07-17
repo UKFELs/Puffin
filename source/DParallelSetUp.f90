@@ -76,7 +76,9 @@ SUBROUTINE  InitializeProcessors(tProcInfo, &
 
 !     Define MPI type for high precision integers
 
-  CALL MPI_TYPE_CREATE_F90_INTEGER(14,MPI_INT_HIGH,error)
+!  CALL MPI_TYPE_CREATE_F90_INTEGER(14,MPI_INT_HIGH,error)
+  MPI_INT_HIGH = MPI_INTEGER
+
 
 !     Set error flag and exit
       
