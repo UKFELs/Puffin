@@ -205,12 +205,14 @@ CONTAINS
   halfy = ((ReducedNY_G-1) / 2.0_WP) * sLengthOfElmY_G
 
 
+!DIR$ SIMD
+
   Lj = sqrt((1.0_WP - (1.0_WP / ( 1.0_WP + (sEta_G * sy(iP2s:iP2e))) )**2.0_WP) &
              / (1.0_WP + nc* ( sy(iPXs:iPXe)**2.0_wp  +  &
                                sy(iPYs:iPYe)**2.0_wp )   )) &
           * (1.0_WP + sEta_G *  sy(iP2s:iP2e)) * sGammaR_G
 
-
+!DIR$ END SIMD
 
 
 
@@ -218,8 +220,13 @@ CONTAINS
   allocate(p_nodes(iNumberElectrons_G))
   
   if (tTransInfo_G%qOneD) then
+
+!DIR$ SIMD
  
     p_nodes = floor(sy(iZ2s:iZ2e) / dz2) + 1_IP
+
+!DIR$ END SIMD
+
 
   else
 
@@ -233,6 +240,10 @@ CONTAINS
 
   if (tTransInfo_G%qOneD) then
 
+
+!$OMP PARALLEL DO PRIVATE(dadzRInst, dadzIInst, z2node, locz2, li1, li2) &
+!$OMP REDUCTION(+:sDADz)
+
     do i = 1, maxEl
       IF (i<=procelectrons_G(1)) THEN 
     
@@ -241,7 +252,8 @@ CONTAINS
         !   Interpolate
     
         !   
-    
+
+
         dadzRInst = ((s_chi_bar_G(i)/dV3) * Lj(i) &
                           * sy(iPXs + i - 1) )
     
@@ -260,14 +272,16 @@ CONTAINS
         sField4ElecImag(i) = li1 * sA(p_nodes(i) + retim) + sField4ElecImag(i)
         sField4ElecImag(i) = li2 * sA(p_nodes(i) + retim + 1_ip) + sField4ElecImag(i)
     
-        sDADz(p_nodes(i)) =                            li1 * dadzRInst + sDADz(p_nodes(i))
-        sDADz(p_nodes(i) + 1_ip) =                     li2 * dadzRInst + sDADz(p_nodes(i) + 1_ip)                
+        sDADz(p_nodes(i)) =                li1 * dadzRInst + sDADz(p_nodes(i))
+        sDADz(p_nodes(i) + 1_ip) =         li2 * dadzRInst + sDADz(p_nodes(i) + 1_ip)                
     
-        sDADz(p_nodes(i) + retim) =                             li1 * dadzIInst + sDADz(p_nodes(i) + retim)                        
-        sDADz(p_nodes(i) + 1_ip + retim) =                      li2 * dadzIInst + sDADz(p_nodes(i) + 1_ip + retim)           
+        sDADz(p_nodes(i) + retim) =        li1 * dadzIInst + sDADz(p_nodes(i) + retim)                        
+        sDADz(p_nodes(i) + 1_ip + retim) = li2 * dadzIInst + sDADz(p_nodes(i) + 1_ip + retim)           
     
       end if
     end do
+
+!$OMP END PARALLEL DO
 
   else
 
@@ -335,23 +349,39 @@ CONTAINS
         sField4ElecImag(i) = li8 * sA(p_nodes(i) + retim + ntrans + ReducedNX_G + 1) + sField4ElecImag(i)
     
     
-        sDADz(p_nodes(i)) =                            li1 * dadzRInst + sDADz(p_nodes(i))
-        sDADz(p_nodes(i) + 1_ip) =                     li2 * dadzRInst + sDADz(p_nodes(i) + 1_ip)                
-        sDADz(p_nodes(i) + ReducedNX_G) =              li3 * dadzRInst + sDADz(p_nodes(i) + ReducedNX_G)          
-        sDADz(p_nodes(i) + ReducedNX_G + 1_ip) =       li4 * dadzRInst + sDADz(p_nodes(i) + ReducedNX_G + 1_ip)   
-        sDADz(p_nodes(i) + ntrans) =                   li5 * dadzRInst + sDADz(p_nodes(i) + ntrans)               
-        sDADz(p_nodes(i) + ntrans + 1_ip) =            li6 * dadzRInst + sDADz(p_nodes(i) + ntrans + 1_ip)         
-        sDADz(p_nodes(i) + ntrans + ReducedNX_G) =     li7 * dadzRInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G)   
-        sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1) = li8 * dadzRInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1)
+        sDADz(p_nodes(i)) =                            & 
+                           li1 * dadzRInst + sDADz(p_nodes(i))
+        sDADz(p_nodes(i) + 1_ip) =                     & 
+                           li2 * dadzRInst + sDADz(p_nodes(i) + 1_ip)                
+        sDADz(p_nodes(i) + ReducedNX_G) =              & 
+                           li3 * dadzRInst + sDADz(p_nodes(i) + ReducedNX_G)          
+        sDADz(p_nodes(i) + ReducedNX_G + 1_ip) =       & 
+                           li4 * dadzRInst + sDADz(p_nodes(i) + ReducedNX_G + 1_ip)   
+        sDADz(p_nodes(i) + ntrans) =                   & 
+                           li5 * dadzRInst + sDADz(p_nodes(i) + ntrans)               
+        sDADz(p_nodes(i) + ntrans + 1_ip) =            & 
+                           li6 * dadzRInst + sDADz(p_nodes(i) + ntrans + 1_ip)         
+        sDADz(p_nodes(i) + ntrans + ReducedNX_G) =     & 
+                           li7 * dadzRInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G)   
+        sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1) = & 
+                           li8 * dadzRInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1)
     
-        sDADz(p_nodes(i) + retim) =                             li1 * dadzIInst + sDADz(p_nodes(i) + retim)                        
-        sDADz(p_nodes(i) + 1_ip + retim) =                      li2 * dadzIInst + sDADz(p_nodes(i) + 1_ip + retim)           
-        sDADz(p_nodes(i) + ReducedNX_G + retim) =               li3 * dadzIInst + sDADz(p_nodes(i) + ReducedNX_G + retim)           
-        sDADz(p_nodes(i) + ReducedNX_G + 1_ip + retim) =        li4 * dadzIInst + sDADz(p_nodes(i) + ReducedNX_G + 1_ip + retim)    
-        sDADz(p_nodes(i) + ntrans + retim) =                    li5 * dadzIInst + sDADz(p_nodes(i) + ntrans + retim)               
-        sDADz(p_nodes(i) + ntrans + 1_ip + retim) =             li6 * dadzIInst + sDADz(p_nodes(i) + ntrans + 1_ip + retim)       
-        sDADz(p_nodes(i) + ntrans + ReducedNX_G + retim) =      li7 * dadzIInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + retim)  
-        sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1 + retim) =  li8 * dadzIInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1 + retim)
+        sDADz(p_nodes(i) + retim) =                             &
+                           li1 * dadzIInst + sDADz(p_nodes(i) + retim)                        
+        sDADz(p_nodes(i) + 1_ip + retim) =                      &
+                           li2 * dadzIInst + sDADz(p_nodes(i) + 1_ip + retim)           
+        sDADz(p_nodes(i) + ReducedNX_G + retim) =               &
+                           li3 * dadzIInst + sDADz(p_nodes(i) + ReducedNX_G + retim)           
+        sDADz(p_nodes(i) + ReducedNX_G + 1_ip + retim) =        &
+                           li4 * dadzIInst + sDADz(p_nodes(i) + ReducedNX_G + 1_ip + retim)    
+        sDADz(p_nodes(i) + ntrans + retim) =                    &
+                           li5 * dadzIInst + sDADz(p_nodes(i) + ntrans + retim)               
+        sDADz(p_nodes(i) + ntrans + 1_ip + retim) =             &
+                           li6 * dadzIInst + sDADz(p_nodes(i) + ntrans + 1_ip + retim)       
+        sDADz(p_nodes(i) + ntrans + ReducedNX_G + retim) =      &
+                           li7 * dadzIInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + retim)  
+        sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1 + retim) =  &
+                           li8 * dadzIInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1 + retim)
   
       end if
     end do
@@ -533,26 +563,22 @@ CONTAINS
 !     X
 
         call dxdz(sy, Lj, nd, sb, qOKL) 
-        if (.not. qOKL) goto 1000             
+        if (.not. qOKL) goto 1000
 
 !     Y
 
         call dydz(sy, Lj, nd, sb, qOKL)
         if (.not. qOKL) goto 1000
 
-
 !     dp2f is the focusing correction for dp2/dz
 
         call caldp2f(kbeta, sy, sb, dp2f, qOKL)	
         if (.not. qOKL) goto 1000
 
-
-
 !     PX (Real pperp)
        
         call dppdz_r(sInv2rho,ZOver2rho,salphaSq,sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
         if (.not. qOKL) goto 1000
-
 
 !     -PY (Imaginary pperp)
 
@@ -610,7 +636,6 @@ CONTAINS
 
     deallocate(i_n4e,N,iNodeList_Re,iNodeList_Im,i_n4ered)
     deallocate(sField4ElecReal,sField4ElecImag,Lj,dp2f)
-
 
     ! Set the error flag and exit
 
