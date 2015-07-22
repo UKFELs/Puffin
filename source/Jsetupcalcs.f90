@@ -450,8 +450,6 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
                        MPI_SUM, MPI_COMM_WORLD, error)
 
 
-iNumberElectrons_G,iGloNumElectrons_G
-
     if (tProcInfo_G%qRoot) then
 
       print*, ''
