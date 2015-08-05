@@ -285,6 +285,10 @@ CONTAINS
 
   else
 
+!$OMP PARALLEL DO PRIVATE(dadzRInst, dadzIInst, xnode, ynode, z2node, locx, locy, locz2, &
+!$OMP li1, li2, li3, li4, li5, li6, li7, li8, x_in1, x_in2, y_in1, y_in2, z2_in1, z2_in2) &
+!$OMP REDUCTION(+:sDADz)
+
     do i = 1, maxEl
       IF (i<=procelectrons_G(1)) THEN 
   
@@ -385,6 +389,8 @@ CONTAINS
   
       end if
     end do
+
+!$OMP END PARALLEL DO
 
   end if
 
