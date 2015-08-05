@@ -93,14 +93,14 @@ real(kind=wp), allocatable :: sSigEj_G(:)
 real(kind=wp), parameter :: gExtEj_G = 7.5_wp
 
 
-! Electron macroparticle initial phase space coordinates 
+! Electron macroparticle phase space coordinates 
 
-real(kind=wp), allocatable     :: sEl_X0Position_G(:)
-real(kind=wp), allocatable     :: sEl_Y0Position_G(:)
-real(kind=wp), allocatable     :: sEl_Z20Position_G(:)
-real(kind=wp), allocatable     :: sEl_PX0Position_G(:)
-real(kind=wp), allocatable     :: sEl_PY0Position_G(:)
-real(kind=wp), allocatable     :: sEl_PZ20Position_G(:)
+real(kind=wp), allocatable     :: sElX_G(:)
+real(kind=wp), allocatable     :: sElY_G(:)
+real(kind=wp), allocatable     :: sElZ2_G(:)
+real(kind=wp), allocatable     :: sElPX_G(:)
+real(kind=wp), allocatable     :: sElPY_G(:)
+real(kind=wp), allocatable     :: sElPZ2_G(:)
 
 
 

@@ -15,7 +15,7 @@ subroutine addChirp(gamj, z2, Nk, center, chirp)
 
     allocate(Qchoff(Nk))
 
-! Remember - sEl_PZ20Position_G is actually gamma atm
+! Remember - sElPZ2_G is actually gamma atm
 
 !     Add linear chirp to the beam....TEMP
 
@@ -34,7 +34,7 @@ subroutine addModulation(gamj, z2, Nk, mag, fr)
     real(kind=wp), intent(in) :: mag, fr
 
 
-! Remember - sEl_PZ20Position_G is actually gamma atm
+! Remember - sElPZ2_G is actually gamma atm
 
 !     Add linear chirp to the beam....TEMP
 

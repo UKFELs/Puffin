@@ -29,7 +29,7 @@ MODULE Setup
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  SUBROUTINE init(sA,sV,sZ,qOK)
+  SUBROUTINE init(sA, sZ, qOK)
 
   USE InitVars
 
@@ -41,8 +41,6 @@ MODULE Setup
 !
 !                     ARGUMENTS
 !
-! sV             Electron macro-particle phase space
-!                coordinates.
 !
 ! sA             Radiation field.
 !
@@ -51,7 +49,6 @@ MODULE Setup
 ! 
 ! qOK            Error flag; .false. if no error
 
-  REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sV(:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sA(:)
   REAL(KIND=WP), INTENT(OUT) :: sZ
   LOGICAL, INTENT(OUT)   ::  qOK
@@ -239,7 +236,7 @@ MODULE Setup
   CALL PopMacroElectrons(qSimple, dist_f, sQe,iNumElectrons,q_noise,sZ,sLenEPulse,&
                          sSigmaGaussian,beamCenZ2,gamma_d,&
                          sElectronThreshold,chirp, mag, fr, &
-                         nbeams,sV,qOK)
+                         nbeams, qOK)
 
   IF (.NOT. qOKL) GOTO 1000  
 
@@ -250,7 +247,7 @@ MODULE Setup
 
   IF (qResume) THEN
 
-    CALL InitFD(sV,sA,sZ,qOKL)
+    CALL InitFD(sA,sZ,qOKL)
 
     IF (.NOT. qOKL) GOTO 1000  
   
@@ -274,19 +271,12 @@ MODULE Setup
                             sSeedSigma, sLengthOfElm,&
                             sA0_Re,&
                             sA0_Im,&
-                            sEl_X0Position_G,&
-                            sEl_Y0Position_G,&
-                            sEl_Z20Position_G,&
-                            sV,&
                             sA,&
                             qOKL)
   
     start_step = 1_IP
   	
   END IF
-
-  DEALLOCATE(sEl_X0Position_G,sEl_Y0Position_G,sEl_Z20Position_G)
-  DEALLOCATE(sEl_PX0Position_G,sEl_PY0Position_G,sEl_PZ20Position_G)
 
 
 
