@@ -198,12 +198,12 @@ character(32_IP) :: zDataFileName ! filename extension for
 ! Type arrays describing electron, field and z output files,
 ! respectively
 
-TYPE(cArraySegment) :: tArrayE(nElectronEquations_CG)
-TYPE(cArraySegment) :: tArrayA(nFieldEquations_CG)
-TYPE(cArraySegment) :: tArrayZ
+TYPE(cArraySegment), save :: tArrayE(nElectronEquations_CG)
+TYPE(cArraySegment), save :: tArrayA(nFieldEquations_CG)
+TYPE(cArraySegment), save :: tArrayZ
 
 
-TYPE(cFileType) :: tPowF   ! Type array describing the power file
+TYPE(cFileType), save :: tPowF   ! Type array describing the power file
 	                       ! output
 
 
