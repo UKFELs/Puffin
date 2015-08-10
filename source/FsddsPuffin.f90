@@ -422,7 +422,7 @@ CONTAINS
 
 
 
-  subroutine wdfs(sA, sV, sZ, istep, tArrayA, tArrayE, tArrayZ, &
+  subroutine wdfs(sA, sZ, istep, tArrayA, tArrayE, tArrayZ, &
                   iIntWr, iWr, qSep, zDFname, qWDisp, qOK)
 
     implicit none
@@ -430,7 +430,7 @@ CONTAINS
 ! Write Data FileS
 
 
-    real(kind=wp), intent(in) :: sA(:), sV(:), sZ
+    real(kind=wp), intent(in) :: sA(:), sZ
     type(cArraySegment), intent(inout) :: tArrayA(:), tArrayE(:), tArrayZ
     integer(kind=ip), intent(in) :: istep
     integer(kind=ip), intent(in) :: iIntWr, iWr
@@ -464,7 +464,7 @@ CONTAINS
 
     if (qWriteFull) then
 
-      call outputBeamFiles(sV, tArrayE, iStep, qSep, zDFName, qOKL)
+      call outputBeamFiles(tArrayE, iStep, qSep, zDFName, qOKL)
       if (.not. qOKL) goto 1000
 
     end if
@@ -707,7 +707,7 @@ CONTAINS
 
 
 
-  subroutine outputBeamFiles(sV, tArrayE, iStep, qSeparate, zDFName, qOK)
+  subroutine outputBeamFiles(tArrayE, iStep, qSeparate, zDFName, qOK)
 
 
     implicit none
@@ -759,9 +759,6 @@ CONTAINS
     do iep = 1_IP, SIZE(tArrayE)
 
       if (tArrayE(iep)%qWrite) then
-     
-        iStart = tArrayE(iep)%iStart
-        iEnd   = tArrayE(iep)%iEnd
 
 !     Write the data
       

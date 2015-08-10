@@ -251,19 +251,11 @@ MODULE Setup
 
     IF (.NOT. qOKL) GOTO 1000  
   
-!    ...or if qResume is .FALSE. then we are setting up the data
-!    ourselves....
 
   ELSE
 
-!    Set up tArrayE and tArrayA - these are arrays of 
-!    pointers describing the layout of data
-
-    CALL SetUpElectronArray(tArrayE,tArrayA,iNumberElectrons_G, &
-         iNumberNodes_G , qOKL)
-    IF (.NOT. qOKL) Goto 1000
-
-!     Set up initial values     
+!    ...or if qResume is .FALSE. then we are setting up the data
+!    ourselves....
 
     ALLOCATE(sA(nFieldEquations_CG*iNumberNodes_G)) 
         
@@ -427,7 +419,7 @@ MODULE Setup
 
 
 
-  if (qWrite) call wdfs(sA, sV, sZ, 0, tArrayA, tArrayE, tArrayZ, &
+  if (qWrite) call wdfs(sA, sZ, 0, tArrayA, tArrayE, tArrayZ, &
                         iIntWriteNthSteps, iWriteNthSteps, &
                         qSeparateStepFiles, zDataFileName, .false., qOKL)
 
