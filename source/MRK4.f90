@@ -14,7 +14,7 @@ USE Derivative
 USE IO
 CONTAINS
 
-SUBROUTINE rk4par(y,sA,A_local,x,h,recvs,displs,qD)
+SUBROUTINE rk4par(sA,A_local,x,h,recvs,displs,qD)
 
   IMPLICIT NONE
 !
@@ -32,7 +32,6 @@ SUBROUTINE rk4par(y,sA,A_local,x,h,recvs,displs,qD)
 ! x       INPUT          Propagation distance zbar
 ! h       INPUT          Step size in zbar
       
-  REAL(KIND=WP),  DIMENSION(:), INTENT(INOUT) :: y
   REAL(KIND=WP),  DIMENSION(:), INTENT(INOUT) :: sA, A_local
   REAL(KIND=WP),  INTENT(IN)                  :: x
   REAL(KIND=WP),                INTENT(IN)  :: h
@@ -52,9 +51,17 @@ SUBROUTINE rk4par(y,sA,A_local,x,h,recvs,displs,qD)
 
   INTEGER(KIND=IP) :: iy,idydx,iyout,i,p
   REAL(KIND=WP)    :: h6, hh, xh
-  REAL(KIND=WP), DIMENSION(size(y)) :: dym, dyt, yt
+  !REAL(KIND=WP), DIMENSION(size(y)) :: dym, dyt, yt
+
+  REAL(KIND=WP), DIMENSION(iNumberElectrons_G) :: dxm, dxt, xt
+  REAL(KIND=WP), DIMENSION(iNumberElectrons_G) :: dym, dyt, yt
+  REAL(KIND=WP), DIMENSION(iNumberElectrons_G) :: dpxm, dpxt, pxt
+  REAL(KIND=WP), DIMENSION(iNumberElectrons_G) :: dpym, dpyt, pyt
+  REAL(KIND=WP), DIMENSION(iNumberElectrons_G) :: dz2m, dz2t, z2t
+  REAL(KIND=WP), DIMENSION(iNumberElectrons_G) :: dpz2m, dpz2t, pz2t  
+
   REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dAm, dAt
-  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dydx
+  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dxdx, dydx, dz2dx, dpxdx, dpydx, dpz2dx
   REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dAdx
   REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localt 
   INTEGER(KIND=IP) :: error, trans
@@ -69,7 +76,15 @@ SUBROUTINE rk4par(y,sA,A_local,x,h,recvs,displs,qD)
   h6 = h / 6.0_WP
   xh = x + hh
 
-  ALLOCATE(DyDx(nElectronEquations_CG*iNumberElectrons_G))	  
+  ALLOCATE(DxDx(iNumberElectrons_G))	  
+  ALLOCATE(DyDx(iNumberElectrons_G))    
+  ALLOCATE(DpxDx(iNumberElectrons_G))    
+  ALLOCATE(DpyDx(iNumberElectrons_G))    
+  ALLOCATE(Dz2Dx(iNumberElectrons_G))    
+  ALLOCATE(Dpz2Dx(iNumberElectrons_G))    
+
+
+
   ALLOCATE(DADx(2*local_rows))
   ALLOCATE(A_localt(2*local_rows))
 
@@ -93,8 +108,8 @@ SUBROUTINE rk4par(y,sA,A_local,x,h,recvs,displs,qD)
 !    Incrementing Y and A
 !    Error checking         
 
-  iy =size(y)
-  idydx =size(dydx)
+  iy = size(sElX_G)
+  idydx = size(dxdx)
       
   IF (iy /= idydx ) THEN
      GOTO 1000
@@ -104,7 +119,6 @@ SUBROUTINE rk4par(y,sA,A_local,x,h,recvs,displs,qD)
 
   CALL derivs(x, &
        sA, &
-       y, &
        dydx,&
        dAdx)
 

@@ -456,7 +456,7 @@ MODULE Setup
   qMod_G = qMod
 
   if (qSwitches(iDump_CG)) call DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
-  if (qSwitches(iDump_CG)) call DUMPDATA(sA,sV,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
+  if (qSwitches(iDump_CG)) call DUMPDATA(sA,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
                              iNumberElectrons_G,sZ,istep,tArrayA(1)%tFileType%iPage)
 
   DEALLOCATE(s_Normalised_chi_G)
@@ -473,7 +473,7 @@ MODULE Setup
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  SUBROUTINE cleanup(sA,sV,sZ)
+  SUBROUTINE cleanup(sA,sZ)
   
   IMPLICIT NONE
 
@@ -481,7 +481,6 @@ MODULE Setup
 !
 ! -Lawrence
 
-  REAL(KIND=WP), ALLOCATABLE, INTENT(INOUT)  :: sV(:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(INOUT)  :: sA(:)
   REAL(KIND=WP), INTENT(IN) :: sZ
 
@@ -491,12 +490,13 @@ MODULE Setup
 
 !    Dump data for resumption
 
-  IF (qDump_G) CALL DUMPDATA(sA,sV,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
+  IF (qDump_G) CALL DUMPDATA(sA,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
        iNumberElectrons_G,sZ,(istep-1),tArrayA(1)%tFileType%iPage)
 
 !    Deallocate electron and field arrays
 
-  DEALLOCATE(sV)
+  DEALLOCATE(sElPX_G, sElPY_G, sElPZ2_G)
+  DEALLOCATE(sElX_G, sElY_G, sElZ2_G)
   DEALLOCATE(sA)
 
 !    Deallocate global positioning arrays

@@ -38,12 +38,12 @@ Module ArrayFunctions
 !
 
   INTEGER(KIND=IP), PARAMETER    :: nArrayVariables_CG = 8_IP
-  INTEGER(KIND=IP), PARAMETER    :: iRe_PPerp_CG       = 3_IP
-  INTEGER(KIND=IP), PARAMETER    :: iIm_PPerp_CG       = 4_IP
-  INTEGER(KIND=IP), PARAMETER    :: iRe_Q_CG           = 5_IP
-  INTEGER(KIND=IP), PARAMETER    :: iRe_z2_CG          = 6_IP
-  INTEGER(KIND=IP), PARAMETER    :: iRe_X_CG           = 7_IP
-  INTEGER(KIND=IP), PARAMETER    :: iRe_Y_CG           = 8_IP
+  INTEGER(KIND=IP), PARAMETER    :: iRe_PPerp_CG       = 1_IP
+  INTEGER(KIND=IP), PARAMETER    :: iIm_PPerp_CG       = 2_IP
+  INTEGER(KIND=IP), PARAMETER    :: iRe_Q_CG           = 3_IP
+  INTEGER(KIND=IP), PARAMETER    :: iRe_z2_CG          = 4_IP
+  INTEGER(KIND=IP), PARAMETER    :: iRe_X_CG           = 5_IP
+  INTEGER(KIND=IP), PARAMETER    :: iRe_Y_CG           = 6_IP
       
   INTEGER(KIND=IP), PARAMETER    :: nFieldEquations_CG = 2_IP
   INTEGER(KIND=IP), PARAMETER    :: iRe_A_CG	       = 1_IP

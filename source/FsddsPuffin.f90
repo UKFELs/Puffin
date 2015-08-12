@@ -722,7 +722,6 @@ CONTAINS
 !                  sV
 !
  
-    real(kind=wp), intent(in) :: sV(:)
     type(cArraySegment), intent(inout) :: tArrayE(:)
     integer(kind=ip), intent(in) :: iStep
     logical, intent(in) :: qSeparate
@@ -731,7 +730,7 @@ CONTAINS
 
 ! Local vars
 
-    integer(kind=ip) :: iep, istart, iend
+    integer(kind=ip) :: iep
     logical :: qOKL
 
 
@@ -756,25 +755,12 @@ CONTAINS
 !     to file. This will create very large
 !     files!!!
 
-    do iep = 1_IP, SIZE(tArrayE)
-
-      if (tArrayE(iep)%qWrite) then
-
-!     Write the data
-      
-        call OutputIntegrationData(tArrayE(iep)%tFileType, &
-                                   sV(iStart:iEnd), &
-                                   tProcInfo_G%rank, &
-                                   iGloNumElectrons_G, &
-                                   qOKL)
-
-        if (.NOT. qOKL) goto 1000
-
-      end if
-
-    end do
-
-
+    call wrt_phs_coord(iRe_X_CG, sElX_G)
+    call wrt_phs_coord(iRe_Y_CG, sElY_G)
+    call wrt_phs_coord(iRe_Z2_CG, sElZ2_G)
+    call wrt_phs_coord(iRe_PPerp_CG, sElPX_G)
+    call wrt_phs_coord(iIm_PPerp_CG, sElPY_G)
+    call wrt_phs_coord(iRe_Q_CG, sElPZ2_G)
 
 
 !     Set error flag and exit
@@ -798,7 +784,43 @@ CONTAINS
 
 
 
+  subroutine wrt_phs_coord(iPh_id,ph_coord,qOK)
 
+    integer(kind=ip), intent(in) :: iPh_id
+    real(kind=wp), intent(in) :: ph_coord
+    logical, intent(out) :: qOK
+
+    logical :: qOKL
+
+    qOK = .false.
+
+    if (tArrayE(iPh_id)%qWrite) then
+
+!     Write the data
+      
+      call OutputIntegrationData(tArrayE(iPh_id)%tFileType, &
+                                 ph_coord, &
+                                 tProcInfo_G%rank, &
+                                 iGloNumElectrons_G, &
+                                 qOKL)
+
+      if (.NOT. qOKL) goto 1000
+
+    end if
+
+
+!     Set error flag and exit
+
+    qOK = .true.            
+    goto 2000
+
+
+1000 call Error_log('Error in sddsPuffin:wrt_phs_coord',tErrorLog_G)
+    print*,'Error in sddsPuffin:wrt_phs_coord'
+
+2000 continue
+
+  end subroutine wrt_phs_coord
 
 
 
