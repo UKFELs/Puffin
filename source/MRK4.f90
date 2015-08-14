@@ -225,8 +225,15 @@ SUBROUTINE rk4par(sA,A_local,x,h,recvs,displs,qD)
 !    Deallocating temp arrays
 
   DEALLOCATE(dAm,dAt,A_localt)
-  DEALLOCATE(DyDx)
+
   DEALLOCATE(DADx)
+
+  DEALLOCATE(DxDx)    
+  DEALLOCATE(DyDx)    
+  DEALLOCATE(DpxDx)    
+  DEALLOCATE(DpyDx)    
+  DEALLOCATE(Dz2Dx)    
+  DEALLOCATE(Dpz2Dx)    
 
 !   Set error flag and exit         
 
