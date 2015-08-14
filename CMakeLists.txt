@@ -19,16 +19,22 @@ include(${CMAKE_SOURCE_DIR}/scimake/SciInit.cmake)
 # Find packages
 #
 ######################################################################
-#if(ENABLE_PARALLEL)
-#  find_package(SciMpi REQUIRED)
-#  set(USE_MPI 1 CACHE BOOL "setting USE_MPI to 1" FORCE)
-#endif()
+if(ENABLE_PARALLEL)
+  find_package(SciMpi REQUIRED)
+  set(USE_MPI 1 CACHE BOOL "setting USE_MPI to 1" FORCE)
+endif()
 if (USE_MKL)
-find_package(SciMkl)
+  find_package(SciMkl)
 else()
 find_package(SciFftw REQUIRED)
 endif()
 
+find_package(OpenMP)
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
+endif()
 ## FFLAGS depend on the compiler
 #get_filename_component (Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)#
 #
@@ -51,13 +57,6 @@ endif()
 #  set (CMAKE_Fortran_FLAGS_RELEASE "-O2")
 #  set (CMAKE_Fortran_FLAGS_DEBUG   "-O0 -g")
 #endif (Fortran_COMPILER_NAME MATCHES "gfortran.*")
-
-### line below is not working, but harmless.
-# todo - find FFTW with scimake
-#find_library(FFTW_MPI_LIB fftw_mpi)
-#find_library(FFTW_LIB fftw)
-#find_path(FFTW_INC_DIR fftw_mpi.h)
-#set (FFTW_LIB_DIR ${FFTW_INC_DIR}/../lib)
 
 #message ("-- FFTW_LIB: " ${FFTW_LIB})
 #message ("-- FFTW_MPI_LIB: " ${FFTW_MPI_LIB})

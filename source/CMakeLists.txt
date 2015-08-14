@@ -36,18 +36,23 @@ endif ()
 
 
 if (USE_MKL)
-add_definitions(${MPI_C_COMPILE_FLAGS} "-openmp")
+add_definitions(${MPI_C_COMPILE_FLAGS} ${OpenMP_C_FLAGS})
 else()
-add_definitions(${MPI_C_COMPILE_FLAGS})
+add_definitions(${MPI_C_COMPILE_FLAGS} ${OpenMP_C_FLAGS})
 endif()
 
 #  add_definitions(${MPI_C_COMPILE_FLAGS} "-DMKL_ILP64")
  
 add_library(AIO ${C_SOURCES})
+
+#C definitions are not needed for Fortran apps.
+#remove_definitions(${MPI_C_COMPILE_FLAGS} ${OpenMP_C_FLAGS})
+
+
 if (USE_MKL)
-  add_definitions(${MPI_Fortran_COMPILE_FLAGS} "-openmp")
+  add_definitions(${OpenMP_Fortran_FLAGS} ${MPI_Fortran_COMPILE_FLAGS})
 else()
-  add_definitions(${MPI_Fortran_COMPILE_FLAGS})
+  add_definitions(${OpenMP_Fortran_FLAGS} ${MPI_Fortran_COMPILE_FLAGS})
 endif()
 
 add_executable(puffin ${F_SOURCES})
