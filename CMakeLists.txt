@@ -23,9 +23,11 @@ include(${CMAKE_SOURCE_DIR}/scimake/SciInit.cmake)
 #  find_package(SciMpi REQUIRED)
 #  set(USE_MPI 1 CACHE BOOL "setting USE_MPI to 1" FORCE)
 #endif()
-find_package(SciFftw REQUIRED)
+if (USE_MKL)
 find_package(SciMkl)
-
+else()
+find_package(SciFftw REQUIRED)
+endif()
 
 ## FFLAGS depend on the compiler
 #get_filename_component (Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)#
@@ -61,9 +63,6 @@ find_package(SciMkl)
 #message ("-- FFTW_MPI_LIB: " ${FFTW_MPI_LIB})
 #message ("-- FFTW_LIB_DIR: " ${FFTW_LIB_DIR})
 #find_package(MPI REQUIRED)
-add_subdirectory(source)
-install (DIRECTORY inputs/example/ DESTINATION examples)
-install (DIRECTORY inputs/gen/ DESTINATION python)
 
 ######################################################################
 #
@@ -82,13 +81,19 @@ set(HAVE_CMAKE 1 CACHE STRING "Whether built with CMake")
 ######################################################################
 configure_file(config-cmake.h.in config.h)
 
+add_subdirectory(source)
+install (DIRECTORY inputs/example/ DESTINATION examples)
+install (DIRECTORY inputs/gen/ DESTINATION python)
+
+
+
 ######################################################################
 #
 # Finalize (installation, packaging)
 #
 ######################################################################
 set(COMMON_INSTALL TRUE)
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Elegant")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Puffin")
 set(CONFIG_FILES)  # Clear out
 include(${CMAKE_SOURCE_DIR}/scimake/SciFinalize.cmake)
 
