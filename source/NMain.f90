@@ -14,6 +14,7 @@ USE Stiffness
 USE Setup
 USE RK4int
 use dumpFiles
+use dummyf
 
 !!!!!!!!!!!!!!!!!!!Puffin Version 1.4.0 !!!!!!!!!!!!!!!!!!!
 !
@@ -137,49 +138,65 @@ DO iStep = start_step, nSteps
 
 !   First step of split-step method:- field diffraction only
 
-  IF (qDiffraction_G) THEN
+  if (qDiffraction_G) then
 
-    IF (sZ>(nextDiff-sStepsize/100.0_WP)) THEN
+    if (iStep==0) then
+
+      call diffractIM(sA, sAr, Ar_local, local_rows, sV, &
+                      diffStep*0.5_WP, frecvs, fdispls, lrecvs, ldispls, &
+                      qDiffrctd, qOKL)
+
+      nextDiff = nextDiff + diffStep
+
+    end if
+
+  end if
+
+
+
+
+
+!     IF (sZ>(nextDiff-sStepsize/100.0_WP)) THEN
     
 
-      IF(iStep == nSteps) sStep = diffStep*0.5_WP
+!       IF(iStep == nSteps) sStep = diffStep*0.5_WP
 
-      DEALLOCATE(sAr)
-      CALL innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
-      DEALLOCATE(Ar_local)
+!       DEALLOCATE(sAr)
+!       CALL innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
+!       DEALLOCATE(Ar_local)
 
-      CALL DiffractionStep(sStep,&
-           frecvs,&
-           fdispls,&
-           sV,&
-           sA,&
-           qOKL)
+!       CALL DiffractionStep(sStep,&
+!            frecvs,&
+!            fdispls,&
+!            sV,&
+!            sA,&
+!            qOKL)
      
-      ALLOCATE(sAr(2*ReducedNX_G*ReducedNY_G*NZ2_G))
-      ALLOCATE(Ar_local(2*local_rows))
+!       ALLOCATE(sAr(2*ReducedNX_G*ReducedNY_G*NZ2_G))
+!       ALLOCATE(Ar_local(2*local_rows))
 
-      CALL getAlocalFL(sA,Ar_local)
+!       CALL getAlocalFL(sA,Ar_local)
 
-      CALL local2globalA(Ar_local,sAr,mrecvs,mdispls,tTransInfo_G%qOneD)
+!       CALL local2globalA(Ar_local,sAr,mrecvs,mdispls,tTransInfo_G%qOneD)
 
-      IF(iStep==start_step) then 
+!       IF(iStep==start_step) then 
 
-        sStep = diffStep
-        nextDiff = nextDiff + (diffStep * 0.5_WP)
+!         sStep = diffStep
+!         nextDiff = nextDiff + (diffStep * 0.5_WP)
 
-      else 
+!       else 
 
-        nextDiff = nextDiff + diffStep
+!         nextDiff = nextDiff + diffStep
 
-      end if
+!       end if
 
-      qDiffrctd = .true.
+!       qDiffrctd = .true.
 
       
 
-    END IF
+!     END IF
 
-  END IF
+!   END IF
 
 
 
@@ -220,53 +237,38 @@ DO iStep = start_step, nSteps
 
 
 
+!   diffract field to complete diffraction step
 
+  if (qDiffraction_G) then
 
+    if ((sZ>(nextDiff-sStepsize/100.0_WP)) .or. (iStep == nSteps))  then
 
+      if ((iStep == nSteps) .or.  qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps, &
+                   qWDisp) ) then
+  
+        call diffractIM(sA, sAr, Ar_local, local_rows, sV, &
+                        diffStep * 0.5_wp, frecvs, fdispls, lrecvs, ldispls, &
+                        qDiffrctd, qOKL)
 
-
-
-
-
-
-
-
-
-!   split-step method:- field diffraction only for last step
-
-  IF (qDiffraction_G) THEN
-
-    IF(iStep == nSteps) then 
-
-      sStep = diffStep*0.5_WP
-
-      DEALLOCATE(sAr)
-      CALL innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
-      DEALLOCATE(Ar_local)
-
-      CALL DiffractionStep(sStep,&
-           frecvs,&
-           fdispls,&
-           sV,&
-           sA,&
-           qOKL)
-     
-      ALLOCATE(sAr(2*ReducedNX_G*ReducedNY_G*NZ2_G))
-      ALLOCATE(Ar_local(2*local_rows))
-
-      CALL getAlocalFL(sA,Ar_local)
-
-      CALL local2globalA(Ar_local,sAr,mrecvs,mdispls,tTransInfo_G%qOneD)
-
-      IF(iStep==start_step) sStep = diffStep
-      
-      qDiffrctd = .true.
+      else
+  
+        call diffractIM(sA, sAr, Ar_local, local_rows, sV, &
+                        diffStep, frecvs, fdispls, lrecvs, ldispls, &
+                        qDiffrctd, qOKL)
+  
+      end if
 
       nextDiff = nextDiff + diffStep
+  
+    end if
 
-    END IF
+  end if
 
-  END IF
+
+
+
+
+
 
 
 
@@ -350,18 +352,46 @@ DO iStep = start_step, nSteps
 
 
 
-  if ( (mod(iStep,iIntWriteNthSteps)==0) .or. (iStep == nSteps) .or. &
-               (qWDisp)   .or. (mod(iStep,iWriteNthSteps)==0) ) then
 
-    call innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
 
-    call wdfs(sA, sV, sZ, istep, tArrayA, tArrayE, tArrayZ, &
-              iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
-              zDataFileName, qWDisp, qOKL)
+if ( qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps, &
+             qWDisp) ) then
 
-    if (qWDisp) qWDisp = .false.
+  call writeIM(sA, Ar_local, sV, sZ, &
+               zDataFileName, iStep, iWriteNthSteps, &
+               lrecvs, ldispls, &
+               iIntWriteNthSteps, nSteps, qWDisp, qOKL)
+
+
+  if (qDiffraction_G) then
+
+!             If field diffraction occurred this step, need to complete it....  
+!             ...the diffraction only diffracts a half step if data is going
+!             to be written (to match up the split-step data)
+
+     if (qDiffrctd) call diffractIM(sA, sAr, Ar_local, local_rows, sV, &
+                      diffStep * 0.5_wp, frecvs, fdispls, lrecvs, ldispls, &
+                      qDiffrctd, qOKL)
 
   end if
+
+  if (qWDisp) qWDisp = .false.
+
+end if
+
+
+!  if ( (mod(iStep,iIntWriteNthSteps)==0) .or. (iStep == nSteps) .or. &
+!               (qWDisp)   .or. (mod(iStep,iWriteNthSteps)==0) ) then
+!
+!    call innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
+!
+!    call wdfs(sA, sV, sZ, istep, tArrayA, tArrayE, tArrayZ, &
+!              iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
+!              zDataFileName, qWDisp, qOKL)
+!
+!    if (qWDisp) qWDisp = .false.
+!
+!  end if
 
 
 
@@ -432,3 +462,5 @@ CALL UnDefineParallelLibrary(qOKL)
 IF (tProcInfo_G%qRoot) PRINT*,'Exited successfully'
 
 END PROGRAM main
+
+
