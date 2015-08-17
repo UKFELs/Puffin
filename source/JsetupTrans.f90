@@ -203,9 +203,15 @@ SUBROUTINE MatchBeam(srho,sEmit_n,sKbeta, &
   IF (.NOT. qOKL) GOTO 1000
 
 !     Define inner 'active' node set based on max
-!     transverse radius of beam
+!     transverse radius of beam...
 
 !     in x...
+
+  IF(tProcInfo_G%qRoot) THEN
+
+    PRINT*, 'Matching field grid sampling to beam sampling in xbar...'
+
+  END IF
 
   CALL GetInnerNodes(iNNF(iX_CG),iNNE(iX_CG),&
                      sLenE(iX_CG),sLenF(iX_CG),&
@@ -215,6 +221,13 @@ SUBROUTINE MatchBeam(srho,sEmit_n,sKbeta, &
   IF (.NOT. qOKL) GOTO 1000
   
 !     ...and y.
+
+  IF(tProcInfo_G%qRoot) THEN
+
+    PRINT*, 'Matching field grid sampling to beam sampling in ybar...'
+
+  END IF
+
 
   CALL GetInnerNodes(iNNF(iY_CG),iNNE(iY_CG),&
                      sLenE(iY_CG),sLenF(iY_CG),&
@@ -295,8 +308,8 @@ IMPLICIT NONE
 
   IF(tProcInfo_G%qRoot) THEN
 
-    PRINT*, 'le/ne= ', sLenEPulse/iNumElectrons
-    PRINT*, 'lw/nn= ', sWigglerLength/REAL(iNodes-1,KIND=WP)
+    PRINT*, ' electron macroparticle spacing = ', sLenEPulse/iNumElectrons
+    PRINT*, ' field node spacing = ', sWigglerLength/REAL(iNodes-1,KIND=WP)
 
   END IF
 
@@ -381,6 +394,11 @@ SUBROUTINE GetMBParams(srho,sEmit_n,k_beta,sFF,sEta,sLenE, &
 
   qOK = .FALSE.
 
+  if (tProcInfo_G%qRoot) print*,''
+  if (tProcInfo_G%qRoot) print*, '---------------------'
+  IF (tProcInfo_G%qRoot) PRINT*, 'Matching transverse beam area to focusing channel...'
+
+
 !     Matched beam radius used for electron sigma spread        
 
   sSigE(iX_CG:iY_CG) = MatchedBeamRadius(srho,&
@@ -416,6 +434,14 @@ SUBROUTINE GetMBParams(srho,sEmit_n,k_beta,sFF,sEta,sLenE, &
          
   sLenE(iPX_CG:iPY_CG) = 6.0_WP * sSigE(iPX_CG:iPY_CG)
 
+
+  IF (tProcInfo_G%qRoot) PRINT*, 'New Gaussian sigma of electron beam in x is ',sSigE(iX_CG)
+  IF (tProcInfo_G%qRoot) PRINT*, '...so total sampled length of beam in x is ', sLenE(iX_CG)
+  if (tProcInfo_G%qRoot) print*,''
+  IF (tProcInfo_G%qRoot) PRINT*, 'New Gaussian sigma of e-beam in px is ', sSigE(iPX_CG)
+  IF (tProcInfo_G%qRoot) PRINT*, 'New Gaussian sigma of e-beam in py is ', sSigE(iPY_CG)
+
+
 !     Seed field sigma spread made equal to electron 
 !     sigma spread         
 
@@ -424,19 +450,16 @@ SUBROUTINE GetMBParams(srho,sEmit_n,k_beta,sFF,sEta,sLenE, &
          
   sSigF(iY_CG) = sSigE(iY_CG)
   
-	  
-  IF (tProcInfo_G%qRoot) PRINT*, 'NEW SEED SIGMA IS', sSigF(iX_CG)
 
-  IF (tProcInfo_G%qRoot) PRINT*, 'NEW ELECTRON SIGMA IS',sSigE(iX_CG)
+  if (tProcInfo_G%qRoot) print*,''
+  if (tProcInfo_G%qRoot) print*, '---------------------'
+  IF (tProcInfo_G%qRoot) PRINT*, 'Matching transverse seed field area to transverse e-beam area...'
+	if (tProcInfo_G%qRoot) print*,''
+  IF (tProcInfo_G%qRoot) PRINT*, 'New Gaussian sigma of field in x is', sSigF(iX_CG)  
+  if (tProcInfo_G%qRoot) print*,''
+  IF (tProcInfo_G%qRoot) PRINT*, 'Scaled Rayleigh length (in gain lengths) = ', sEmit_n/k_beta/2.0_wp
 
-  IF (tProcInfo_G%qRoot) PRINT*, 'NEW ELECTRON LENGTH IS', sLenE(iX_CG)
-
-  IF (tProcInfo_G%qRoot) PRINT*, 'NEW ELECTRON p SIGMA IS', &
-                                   sSigE(iPX_CG:iPY_CG)
-
-  IF (tProcInfo_G%qRoot) PRINT*, 'RAYLEIGH RANGE IS', sEmit_n/k_beta
-
-  IF (tProcInfo_G%qRoot) PRINT*, 'LAMBDA_BETA IS ', 2.0_WP*pi/k_beta
+  IF (tProcInfo_G%qRoot) PRINT*, 'Scaled betatron wavelength (in gain lengths) = ', 2.0_WP*pi/k_beta
 
 ! Set error flag and exit         
 

@@ -479,8 +479,8 @@ CONTAINS
 
 ! BEGIN:-
 
-    IF(tProcInfo_G%QROOT)print *, 'RaleighLength= ',&
-         sRaleighLength
+    !IF(tProcInfo_G%QROOT)print *, 'RaleighLength= ',&
+    !     sRaleighLength
 
     DiffractionLength = SQRT(2.0_WP*&
          ((z/sRaleighLength)**2 + 1.0_WP)) * 6.0_WP*sigma

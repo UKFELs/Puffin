@@ -15,13 +15,22 @@ use Globals
 
 implicit none
 
+  INTERFACE xOffSet
+    MODULE PROCEDURE xOffSet_OneValue, xOffSet_Array   
+  END INTERFACE 
+
+
+  INTERFACE yOffSet
+    MODULE PROCEDURE yOffSet_OneValue, yOffSet_Array   
+  END INTERFACE 
+
 contains
 
 !********************************************************
 
-  FUNCTION xOffSet(rho, aw, gamma_r, gamma_j, &
-                   eta, k_beta, ff, px, py, &
-                   ux, uy, sZ0)
+  FUNCTION xOffSet_OneValue(rho, aw, gamma_r, gamma_j, &
+                            eta, k_beta, ff, px, py, &
+                            ux, uy, sZ0)
 !
 ! Calculate xOffset value
 ! Value of Range mid point offset from origin
@@ -34,7 +43,7 @@ contains
 ! sZ0      - Starting z position
     REAL(KIND=WP), INTENT(IN) :: rho,aw,gamma_r,gamma_j, &
          eta,px,py,k_beta,ff,ux,uy,sZ0
-    REAL(KIND=WP) :: xOffSet, nc
+    REAL(KIND=WP) :: xOffSet_OneValue, nc
     REAL(KIND=WP) ::srBcoeff,s_Sin_zOver2rho
     
     nc = 2.0_WP*aw**2/(ux**2 + uy**2)
@@ -45,15 +54,47 @@ contains
 
     s_Sin_zOver2rho = SIN(sZ0 / (2.0_WP * rho))
 
-    xOffSet = -srBcoeff * n2col * s_Sin_zOver2rho
+    xOffSet_OneValue = -srBcoeff * n2col * s_Sin_zOver2rho
 
-  END FUNCTION xOffSet
+  END FUNCTION xOffSet_OneValue
+
+
+
+
+  FUNCTION xOffSet_Array(rho, aw, gamma_r, gamma_j, &
+                         eta, k_beta, ff, px, py, &
+                         ux, uy, sZ0)
+!
+! Calculate xOffset value
+! Value of Range mid point offset from origin
+!
+! srho     - Pierce parameter, describe the strength
+!            of the field
+! saw      - Wiggler parameter
+! sgammar  - Mean electron velocity at resonance
+! sEpsilon - (1+aw^2)/(2*gammar^2) 
+! sZ0      - Starting z position
+    REAL(KIND=WP), INTENT(IN) :: rho,aw,gamma_r,gamma_j, &
+         eta,px(:),py(:),k_beta,ff,ux,uy,sZ0
+    REAL(KIND=WP) :: xOffSet_Array(size(px)), nc
+    
+    nc = 2.0_WP*aw**2/(ux**2 + uy**2)
+    
+    xOffSet_Array = -uy * 4.0_WP * sqrt(2.0) * ff * k_beta * & 
+                    rho**2.0_WP / sqrt(ux**2 + uy**2) / sqrt(eta)* &
+                    (gamma_r / sqrt(gamma_j**2 - (1.0_WP + &
+                    nc*(px**2 + py**2)))) * &
+                    n2col * SIN(sZ0 / (2.0_WP * rho))
+
+
+  END FUNCTION xOffSet_Array
+
 
 !********************************************************
 
-  FUNCTION yOffSet(rho, aw, gamma_r, gamma_j, &
-                   eta, k_beta, ff, px, py, &
-                   ux, uy, sZ0)
+  FUNCTION yOffSet_OneValue(rho, aw, gamma_r, gamma_j, &
+                            eta, k_beta, ff, px, py, &
+                            ux, uy, sZ0)
 
 ! Calculate xOffset value
 ! Value of Range mid point offset from origin
@@ -69,7 +110,7 @@ contains
 !	
     REAL(KIND=WP), INTENT(IN) :: rho,aw,gamma_r,gamma_j, &
          eta,px,py,k_beta,ff,ux,uy,sZ0
-    REAL(KIND=WP) :: yOffSet, nc
+    REAL(KIND=WP) :: yOffSet_OneValue, nc
     REAL(KIND=WP) ::srBcoeff,s_Cos_zOver2rho
 !
     nc = 2.0_WP*aw**2/(ux**2 + uy**2)
@@ -80,9 +121,42 @@ contains
           
     s_Cos_zOver2rho = COS(sZ0 / (2.0_WP * rho))	
 ! Initial values for the electron pulse in all direction
-    yOffSet         = srBcoeff * n2col * s_Cos_zOver2rho
+    yOffSet_OneValue         = srBcoeff * n2col * s_Cos_zOver2rho
       
-  END FUNCTION yOffSet
+  END FUNCTION yOffSet_OneValue
+
+
+
+  FUNCTION yOffSet_Array(rho, aw, gamma_r, gamma_j, &
+                         eta, k_beta, ff, px, py, &
+                         ux, uy, sZ0)
+!
+! Calculate xOffset value
+! Value of Range mid point offset from origin
+!
+! srho     - Pierce parameter, describe the strength
+!            of the field
+! saw      - Wiggler parameter
+! sgammar  - Mean electron velocity at resonance
+! sEpsilon - (1+aw^2)/(2*gammar^2) 
+! sZ0      - Starting z position
+
+    REAL(KIND=WP), INTENT(IN) :: rho,aw,gamma_r,gamma_j, &
+         eta,px(:),py(:),k_beta,ff,ux,uy,sZ0
+    REAL(KIND=WP) :: yOffSet_Array(size(px)), nc
+    
+    nc = 2.0_WP*aw**2/(ux**2 + uy**2)
+    
+    yOffSet_Array = ux * 4.0_WP * sqrt(2.0_wp) * ff * k_beta * & 
+                    rho**2.0_WP / sqrt(ux**2 + uy**2) / sqrt(eta)* &
+                    (gamma_r / sqrt(gamma_j**2 - (1.0_WP + &
+                    nc*(px**2 + py**2)))) * &
+                    n2col * cos(sZ0 / (2.0_WP * rho))
+
+
+  END FUNCTION yOffSet_Array
+
+
 !********************************************************
 
   FUNCTION pxOffset(z, rho, uy)

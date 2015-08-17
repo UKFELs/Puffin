@@ -15,6 +15,7 @@ use remLow
 use grids
 use initConds
 use parallelSetup
+use gtop2
 
 IMPLICIT NONE
 

@@ -9,6 +9,7 @@ MODULE InitVars
 USE paratype
 USE typesAndConstants
 USE ArrayFunctions
+
 IMPLICIT NONE
 
 !====================================================================
@@ -134,6 +135,7 @@ character(32_IP), allocatable :: dist_f(:)
 CHARACTER(32_IP) :: zFileName
 CHARACTER(32_IP) :: zFile
 CHARACTER(32_IP) :: LattFile 
+
 !===============================================================
 ! The following variables are used to store the electron
 ! and field values.
@@ -144,7 +146,7 @@ CHARACTER(32_IP) :: LattFile
 ! iTransNodes   - Number of field nodes in each direction.
 ! ndims		- Number of space dimensions.
 !------------------------------------------------------------- 
-!     
+
 REAL(KIND=WP)    :: sLengthOfElm(nSpaceDimensions_CG)
 INTEGER,DIMENSION(3)  :: iNodes
 
@@ -153,7 +155,7 @@ INTEGER  :: ndims
 INTEGER(KIND=IP)  :: iRedNodesX,iRedNodesY
 REAL(KIND=WP)  :: redwigglengthX,redwigglengthY
 
-!
+
 !=============================================================
 ! Variables used for propagation of electron and field values.
 !
@@ -165,18 +167,22 @@ REAL(KIND=WP)  :: redwigglengthX,redwigglengthY
 ! qWrite - If to write result to a file
 ! qAllSteps - If to write out all steps
 !=============================================================
+
 INTEGER(KIND=IP)  :: iCount
 INTEGER(KIND=IP)  :: iStep, p
 REAL(KIND=WP)     :: sStep
 LOGICAL           :: qWrite,qResume
+
 !=============================================================
 ! MPI variables
 !============================================================= 
+
 INTEGER(KIND=IP)  :: error, i
 ! Gathering arrays: specify size of distributed data on each
 ! process.   
 
 INTEGER(KIND=IP) :: sendbuff,recvbuff,statr,req,lrank,rrank
+
 !=============================================================
 ! FFTW-MPI variables
 !=============================================================

@@ -433,7 +433,7 @@ py_shift = 0
     IF (icount==0) THEN
        IF (tProcInfo_G%qROOT)  STOP "Error in GenMacros.f90, no macroparticles exist\!"
     ENDIF
-    IF (tProcInfo_G%qRoot)  PRINT*, 'got the electrons'
+    !IF (tProcInfo_G%qRoot)  PRINT*, 'got the electrons'
 
 ! Calculate the scaled weighting (chi_bar) and weighting(chichi) of all macro particles
 
