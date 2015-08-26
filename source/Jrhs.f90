@@ -223,10 +223,10 @@ CONTAINS
 
   else
 
-    p_nodes = ((floor( (sy(iXs:iXe)+halfx)  / dx)  + 1_IP) + &
-              ( (floor( (sy(iYs:iYe)+halfy)  / dy)  + 1_IP)   - 1) * (ReducedNX_G - 1) + &
-              (ReducedNX_G - 1) * (ReducedNY_G - 1) * &
-                              ( (floor(sy(iZ2s:iZ2e)  / dz2)  + 1_IP)  -   1))
+    p_nodes = (floor( (sy(iXs:iXe)+halfx)  / dx)  + 1_IP) + &
+              (floor( (sy(iYs:iYe)+halfy)  / dy) * ReducedNX_G )  + &   !  y 'slices' before primary node
+              (ReducedNX_G * ReducedNY_G * &
+                              floor(sy(iZ2s:iZ2e)  / dz2) )  ! transverse slices before primary node
 
   end if  
 
