@@ -4,19 +4,20 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
-MODULE RK4int
+module RK4int
 
-USE ParallelInfoType
-USE TransformInfoType
-USE FFTW_Constants
-USE Globals
-USE Derivative
-USE IO
-CONTAINS
+use ParallelInfoType
+use TransformInfoType
+use FFTW_Constants
+use Globals
+use Derivative
+use IO
 
-SUBROUTINE rk4par(sA,A_local,x,h,recvs,displs,qD)
+contains
 
-  IMPLICIT NONE
+subroutine rk4par(sA,A_local,x,h,recvs,displs,qD)
+
+  implicit none
 !
 ! Perform 4th order Runge-Kutta integration, tailored
 ! to Puffin and its method of parallelization: 
@@ -76,33 +77,33 @@ SUBROUTINE rk4par(sA,A_local,x,h,recvs,displs,qD)
   h6 = h / 6.0_WP
   xh = x + hh
 
-  ALLOCATE(DxDx(iNumberElectrons_G))	  
-  ALLOCATE(DyDx(iNumberElectrons_G))    
-  ALLOCATE(DpxDx(iNumberElectrons_G))    
-  ALLOCATE(DpyDx(iNumberElectrons_G))    
-  ALLOCATE(Dz2Dx(iNumberElectrons_G))    
-  ALLOCATE(Dpz2Dx(iNumberElectrons_G))    
+  allocate(DxDx(iNumberElectrons_G))	  
+  allocate(DyDx(iNumberElectrons_G))    
+  allocate(DpxDx(iNumberElectrons_G))    
+  allocate(DpyDx(iNumberElectrons_G))    
+  allocate(Dz2Dx(iNumberElectrons_G))    
+  allocate(Dpz2Dx(iNumberElectrons_G))    
 
 
 
-  ALLOCATE(DADx(2*local_rows))
-  ALLOCATE(A_localt(2*local_rows))
+  allocate(DADx(2*local_rows))
+  allocate(A_localt(2*local_rows))
 
 !    A_local from A_big	  
 
-  IF (qD) THEN
+  if (qD) then
 
-!    IF (tTransInfo_G%qOneD) THEN
+!    if (tTransInfo_G%qOneD) then
 !       A_local(1:local_rows)=sA(fst_row:lst_row)
 !       A_local(local_rows+1:2*local_rows)=&
 !            sA(fst_row+iNumberNodes_G:lst_row+iNumberNodes_G)
 !    ELSE
 !       CALL getAlocalFS(sA,A_local)
-!    END IF
+!    END if
 !
     qD = .false.
 !
-  END IF
+  end if
 
 !    First step       
 !    Incrementing Y and A
@@ -111,19 +112,19 @@ SUBROUTINE rk4par(sA,A_local,x,h,recvs,displs,qD)
   iy = size(sElX_G)
   idydx = size(dxdx)
       
-  IF (iy /= idydx ) THEN
-     GOTO 1000
-  END IF
+  if (iy /= idydx ) then
+     goto 1000
+  end if
   
 !    Get derivatives
 
-  CALL derivs(x, &
+  call derivs(x, &
        sA, &
        sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElPZ2_G, &
        dxdx, dydx, dz2dx, dpxdx, dpydx, dpz2dx, &
        dAdx)
 
-  ALLOCATE(dAm(2*local_rows),dAt(2*local_rows))
+  allocate(dAm(2*local_rows),dAt(2*local_rows))
 
 !    Increment local electron and field values
   
@@ -138,12 +139,12 @@ SUBROUTINE rk4par(sA,A_local,x,h,recvs,displs,qD)
   A_localt = A_local + hh * dAdx  	  
 
 !    Update large field array with new values 
-  CALL local2globalA(A_localt,sA,recvs,displs,tTransInfo_G%qOneD)
+  call local2globalA(A_localt,sA,recvs,displs,tTransInfo_G%qOneD)
 
 !    Second step       
 !    Get derivatives
 
-  CALL derivs(xh, &
+  call derivs(xh, &
        sA, &
        xt, yt, z2t, pxt, py2, pz2t, &
        dxt, dyt, dz2t, dpxt, dpyt, dz2t, &
@@ -162,12 +163,12 @@ SUBROUTINE rk4par(sA,A_local,x,h,recvs,displs,qD)
 
 !    Update full field array
 
-  CALL local2globalA(A_localt,sA,recvs,displs,tTransInfo_G%qOneD)
+  call local2globalA(A_localt,sA,recvs,displs,tTransInfo_G%qOneD)
 
 !    Third step       
 !    Get derivatives
 
-  CALL derivs(xh, &
+  call derivs(xh, &
        sA, &
        xt, yt, z2t, pxt, py2, pz2t, &
        dxm, dym, dz2m, dpxm, dpym, dz2m, &
@@ -184,7 +185,7 @@ SUBROUTINE rk4par(sA,A_local,x,h,recvs,displs,qD)
 
   A_localt=A_local + h * dAm
 
-  CALL local2globalA(A_localt,sA,recvs,displs,tTransInfo_G%qOneD)
+  call local2globalA(A_localt,sA,recvs,displs,tTransInfo_G%qOneD)
 
   dxm = dxt + dxm
   dym = dyt + dym
@@ -201,7 +202,7 @@ SUBROUTINE rk4par(sA,A_local,x,h,recvs,displs,qD)
 
 !    Get derivatives
 
-  CALL derivs(xh, &
+  call derivs(xh, &
        sA, &
        xt, yt, z2t, pxt, py2, pz2t, &
        dxt, dyt, dz2t, dpxt, dpyt, dz2t, &
@@ -220,20 +221,20 @@ SUBROUTINE rk4par(sA,A_local,x,h,recvs,displs,qD)
 
   A_local = A_local + h6 * (dAdx + dAt + 2.0_WP * dAm)
 
-  CALL local2globalA(A_local,sA,recvs,displs,tTransInfo_G%qOneD)
+  call local2globalA(A_local,sA,recvs,displs,tTransInfo_G%qOneD)
 
 !    Deallocating temp arrays
 
-  DEALLOCATE(dAm,dAt,A_localt)
+  deallocate(dAm,dAt,A_localt)
 
-  DEALLOCATE(DADx)
+  deallocate(DADx)
 
-  DEALLOCATE(DxDx)    
-  DEALLOCATE(DyDx)    
-  DEALLOCATE(DpxDx)    
-  DEALLOCATE(DpyDx)    
-  DEALLOCATE(Dz2Dx)    
-  DEALLOCATE(Dpz2Dx)    
+  deallocate(DxDx)    
+  deallocate(DyDx)    
+  deallocate(DpxDx)    
+  deallocate(DpyDx)    
+  deallocate(Dz2Dx)    
+  deallocate(Dpz2Dx)    
 
 !   Set error flag and exit         
 
@@ -245,6 +246,27 @@ SUBROUTINE rk4par(sA,A_local,x,h,recvs,displs,qD)
   PRINT*,'Error in MathLib:rk4'
 2000 CONTINUE
 
-END SUBROUTINE rk4par
+end subroutine rk4par
 
-END MODULE rk4int
+
+subroutine RK4_inc
+
+
+
+end subroutine RK4_inc
+
+! Note - the dxdz ad intermediates should all be global,
+! if allocating outside of RK4 routine.
+!
+! They should be passed through to rhs / derivs, and
+! be local in there, I think....
+!
+! All those vars being passed into rhs? GLOBAL.
+! Only the arrays should be global.
+! Same for the equations module...
+!
+! Scoop out preamble of rhs, defining temp vars.
+! These can all be defined outside this routine to make
+! it more readable
+
+end module rk4int
