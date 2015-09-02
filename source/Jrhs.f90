@@ -28,11 +28,14 @@ IMPLICIT NONE
 CONTAINS
 
   SUBROUTINE getrhs(sz,&
-       sA,&
-       sy,&
-       sb,&
-       sDADz,&
-       qOK)
+                    sA,&
+                    sx, sy, sz2, &
+                    spx, spy, sz2, &
+                    sdx, sdy, sdz2, &
+                    sdpx, sdpy, sdz2, &
+                    sb,&
+                    sDADz,&
+                    qOK)
 
   IMPLICIT NONE
 
@@ -48,8 +51,12 @@ CONTAINS
 
   REAL(KIND=WP),INTENT(IN) :: sz
   REAL(KIND=WP),INTENT(IN) :: sA(:)
-  REAL(KIND=WP),INTENT(IN) :: sy(:)
-  REAL(KIND=WP),INTENT(OUT) :: sb(:)
+  real(kind=wp), intent(in)  :: sx(:), sdx(:)
+  real(kind=wp), intent(in)  :: sy(:), sdy(:)
+  real(kind=wp), intent(in)  :: sz2(:), sdz2(:)
+  real(kind=wp), intent(in)  :: spr(:), sdpr(:)
+  real(kind=wp), intent(in)  :: spi(:), sdpi(:)
+  real(kind=wp), intent(in)  :: sp2(:), sdp2(:)
   REAL(KIND=WP), INTENT(INOUT) :: sDADz(:) !!!!!!!
   logical, intent(inout) :: qOK
 
@@ -205,10 +212,16 @@ CONTAINS
   halfy = ((ReducedNY_G-1) / 2.0_WP) * sLengthOfElmY_G
 
 
-  Lj = sqrt((1.0_WP - (1.0_WP / ( 1.0_WP + (sEta_G * sElPZ2_G)) )**2.0_WP) &
-             / (1.0_WP + nc* ( sElPX_G**2.0_wp  +  &
-                               sElPY_G**2.0_wp )   )) &
-          * (1.0_WP + sEta_G *  sElPZ2_G) * sGammaR_G
+
+
+! Calculate Lj term
+
+
+
+  Lj = sqrt((1.0_WP - (1.0_WP / ( 1.0_WP + (sEta_G * sp2)) )**2.0_WP) &
+             / (1.0_WP + nc* ( spr**2.0_wp  +  &
+                               spi**2.0_wp )   )) &
+          * (1.0_WP + sEta_G *  sp2) * sGammaR_G
 
 
 
@@ -219,14 +232,14 @@ CONTAINS
   
   if (tTransInfo_G%qOneD) then
  
-    p_nodes = floor(sElZ2_G / dz2) + 1_IP
+    p_nodes = floor(sz2 / dz2) + 1_IP
 
   else
 
-    p_nodes = ((floor( (sElX_G+halfx)  / dx)  + 1_IP) + &
-              ( (floor( (sElY_G+halfy)  / dy)  + 1_IP)   - 1) * (ReducedNX_G - 1) + &
+    p_nodes = ((floor( (sx+halfx)  / dx)  + 1_IP) + &
+              ( (floor( (sy+halfy)  / dy)  + 1_IP)   - 1) * (ReducedNX_G - 1) + &
               (ReducedNX_G - 1) * (ReducedNY_G - 1) * &
-                              ( (floor(sElZ2_G  / dz2)  + 1_IP)  -   1))
+                              ( (floor(sz2  / dz2)  + 1_IP)  -   1))
 
   end if  
 
@@ -243,13 +256,15 @@ CONTAINS
         !   
     
         dadzRInst = ((s_chi_bar_G(i)/dV3) * Lj(i) &
-                          * sElPX_G(i) )
+                          * spr(i) )
     
         dadzIInst = ((s_chi_bar_G(i)/dV3) * Lj(i) &
-                          * sElPY_G(i) )
+                          * spi(i) )
+
+
     
-        z2node = sElZ2_G(i)  + 1_IP
-        locz2 = sElZ2_G(i) - REAL(z2node  - 1_IP, kind=wp) * sLengthOfElmZ2_G
+        z2node = floor(sz2(i)  / dz2)  + 1_IP
+        locz2 = sz2(i) - REAL(z2node  - 1_IP, kind=wp) * sLengthOfElmZ2_G
     
         li1 = (1.0_wp - locz2/sLengthOfElmZ2_G)
         li2 = 1 - li1
@@ -260,11 +275,11 @@ CONTAINS
         sField4ElecImag(i) = li1 * sA(p_nodes(i) + retim) + sField4ElecImag(i)
         sField4ElecImag(i) = li2 * sA(p_nodes(i) + retim + 1_ip) + sField4ElecImag(i)
     
-        sDADz(p_nodes(i)) =                            li1 * dadzRInst + sDADz(p_nodes(i))
-        sDADz(p_nodes(i) + 1_ip) =                     li2 * dadzRInst + sDADz(p_nodes(i) + 1_ip)                
+        sDADz(p_nodes(i)) =         li1 * dadzRInst + sDADz(p_nodes(i))
+        sDADz(p_nodes(i) + 1_ip) =  li2 * dadzRInst + sDADz(p_nodes(i) + 1_ip)                
     
-        sDADz(p_nodes(i) + retim) =                             li1 * dadzIInst + sDADz(p_nodes(i) + retim)                        
-        sDADz(p_nodes(i) + 1_ip + retim) =                      li2 * dadzIInst + sDADz(p_nodes(i) + 1_ip + retim)           
+        sDADz(p_nodes(i) + retim) =         li1 * dadzIInst + sDADz(p_nodes(i) + retim)                        
+        sDADz(p_nodes(i) + 1_ip + retim) =  li2 * dadzIInst + sDADz(p_nodes(i) + 1_ip + retim)           
     
       end if
     end do
@@ -281,19 +296,19 @@ CONTAINS
       !   
   
         dadzRInst = ((s_chi_bar_G(i)/dV3) * Lj(i) &
-                          * sElPX_G(i) )
+                          * spr(i) )
     
         dadzIInst = ((s_chi_bar_G(i)/dV3) * Lj(i) &
-                          * sElPY_G(i) )
+                          * spi(i) )
     
     
     
-        xnode = floor( (sElX_G(i) + halfx ) / dx)  + 1_IP
-        locx = sElX_G(i) + halfx - REAL(xnode  - 1_IP, kind=wp) * sLengthOfElmX_G
-        ynode = floor( (sElY_G(i) + halfy )  / dy)  + 1_IP
-        locy = sElY_G(i) + halfy - REAL(ynode  - 1_IP, kind=wp) * sLengthOfElmY_G
-        z2node = sElZ2_G(i)  + 1_IP
-        locz2 = sElZ2_G(i) - REAL(z2node  - 1_IP, kind=wp) * sLengthOfElmZ2_G
+        xnode = floor( (sx(i) + halfx ) / dx)  + 1_IP
+        locx = sx(i) + halfx - REAL(xnode  - 1_IP, kind=wp) * sLengthOfElmX_G
+        ynode = floor( (sy(i) + halfy )  / dy)  + 1_IP
+        locy = sy(i) + halfy - REAL(ynode  - 1_IP, kind=wp) * sLengthOfElmY_G
+        z2node = floor(sz2(i)  / dz2)  + 1_IP
+        locz2 = sz2(i) - REAL(z2node  - 1_IP, kind=wp) * sLengthOfElmZ2_G
     
     
     
