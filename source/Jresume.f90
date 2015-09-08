@@ -117,9 +117,9 @@ MODULE RESUME
 
 !    Set up arrays of pointers to locations of data
 
-    CALL SetUpElectronArray(tArrayE,tArrayA,iNumberElectrons_G, &
-                            iNumberNodes_G,qOKL)
-    IF (.NOT. qOKL) Goto 1000
+!    CALL SetUpElectronArray(tArrayE,tArrayA,iNumberElectrons_G, &
+!                            iNumberNodes_G,qOKL)
+!    IF (.NOT. qOKL) Goto 1000
 
 !     Define processes to the left and right, for 
 !     a ring communication

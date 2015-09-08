@@ -51,7 +51,7 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
 ! dydx       Electron derivatives
 
   INTEGER(KIND=IP) :: iy,idydx,iyout,i,p
-  REAL(KIND=WP)    :: h6, hh, xh
+  REAL(KIND=WP)    :: h6, hh, szh
   !REAL(KIND=WP), DIMENSION(size(y)) :: dym, dyt, yt
 
   REAL(KIND=WP), DIMENSION(iNumberElectrons_G) :: dxm, dxt, xt    ! *t is 'temp', for use in next rhs call...
@@ -126,6 +126,7 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
 
   allocate(dAm(2*local_rows),dAt(2*local_rows))
 
+
 !    Increment local electron and field values
   
   xt = sElX_G      +  hh*dxdx
@@ -134,6 +135,7 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
   pxt = sElPX_G    +  hh*dpxdx
   pyt = sElPY_G    +  hh*dpydx
   pz2t = sElPZ2_G  +  hh*dpz2dx
+
 
 
   A_localt = A_local + hh * dAdx  	  
@@ -146,8 +148,8 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
 
   call derivs(szh, &
        sA, &
-       xt, yt, z2t, pxt, py2, pz2t, &
-       dxt, dyt, dz2t, dpxt, dpyt, dz2t, &
+       xt, yt, z2t, pxt, pyt, pz2t, &
+       dxt, dyt, dz2t, dpxt, dpyt, dpz2t, &
        dAt)
 
 !    Incrementing with newest derivative value...
@@ -170,8 +172,8 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
 
   call derivs(szh, &
        sA, &
-       xt, yt, z2t, pxt, py2, pz2t, &
-       dxm, dym, dz2m, dpxm, dpym, dz2m, &
+       xt, yt, z2t, pxt, pyt, pz2t, &
+       dxm, dym, dz2m, dpxm, dpym, dpz2m, &
        dAm)
 
 !    Incrementing
@@ -200,12 +202,13 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
 
   szh = sz + h
 
+
 !    Get derivatives
 
   call derivs(szh, &
        sA, &
-       xt, yt, z2t, pxt, py2, pz2t, &
-       dxt, dyt, dz2t, dpxt, dpyt, dz2t, &
+       xt, yt, z2t, pxt, pyt, pz2t, &
+       dxt, dyt, dz2t, dpxt, dpyt, dpz2t, &
        dAt)  
 
 !    Accumulate increments with proper weights       
@@ -217,9 +220,8 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
   sElPY_G   = sElPY_G  + h6 * ( dpydx  + dpyt  + 2.0_WP * dpym )
   sElPZ2_G  = sElPZ2_G + h6 * ( dpz2dx + dpz2t + 2.0_WP * dpz2m)
 
-
-
   A_local = A_local + h6 * (dAdx + dAt + 2.0_WP * dAm)
+
 
   call local2globalA(A_local,sA,recvs,displs,tTransInfo_G%qOneD)
 
@@ -249,11 +251,11 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
 end subroutine rk4par
 
 
-subroutine RK4_inc
+!subroutine RK4_inc
 
 
 
-end subroutine RK4_inc
+!end subroutine RK4_inc
 
 ! Note - the dxdz ad intermediates should all be global,
 ! if allocating outside of RK4 routine.

@@ -1,6 +1,6 @@
 module rhs_vars
 
-
+use paratype
 
 !!!!!!!!!!!
 
@@ -30,13 +30,13 @@ module rhs_vars
 !    Shortcuts
 
   real(kind=wp) :: kbeta, nc, nd, nb, ZOver2rho, &
-                   salphaSq, sInv2rho
+                   salphaSq, sInv2rho, fkb, econst, un
   real(kind=wp), allocatable :: Lj(:)
-  real(kind=wp) :: dV3
+  real(kind=wp) :: dV3, dx, dy, dz2
 
 !    Error flags
 
-  logical :: qOKL, qoutside
+  logical :: qoutside
 
 !!!!!!!!!!!!!
 

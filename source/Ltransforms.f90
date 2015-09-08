@@ -708,8 +708,8 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sA,qOK)
   ALLOCATE(sA_local(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1))
   ALLOCATE(work(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1))
 	 
-  CALL setupParallelFourierField(CMPLX(Vector(iRe_A_CG,sA),&
-       Vector(iIm_A_CG,sA),KIND=WP),&
+  CALL setupParallelFourierField(CMPLX(sA(1:iNumberNodes_G),&
+       sA(iNumberNodes_G+1:2*iNumberNodes_G),KIND=WP),&
        sA_local,work,qOKL) 
 
 !    Multiply field by the exp factor to obtain A(kx,ky,kz2,zbar+h)

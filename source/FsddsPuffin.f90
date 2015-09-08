@@ -787,7 +787,7 @@ CONTAINS
   subroutine wrt_phs_coord(iPh_id,ph_coord,qOK)
 
     integer(kind=ip), intent(in) :: iPh_id
-    real(kind=wp), intent(in) :: ph_coord
+    real(kind=wp), intent(in) :: ph_coord(:)
     logical, intent(out) :: qOK
 
     logical :: qOKL

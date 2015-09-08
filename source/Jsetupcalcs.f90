@@ -450,6 +450,8 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
        sendbuff=recvbuff
     END DO
 
+!    print*, 'procelectrons = ', procelectrons_G
+!    stop 
     IF (iNumberElectrons_G==0) qEmpty=.TRUE. 
 
     if (qSimple) DEALLOCATE(RealE)

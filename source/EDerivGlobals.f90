@@ -120,21 +120,21 @@ real(kind=wp), allocatable     :: sElPZ2_G(:)
 
 
 
-real(kind=wp), allocatable :: dxm(:), dxt(:), xt(:)    
-real(kind=wp), allocatable :: dym(:), dyt(:), yt(:)
-real(kind=wp), allocatable :: dpxm(:), dpxt(:), pxt(:)
-real(kind=wp), allocatable :: dpym(:), dpyt(:), pyt(:)
-real(kind=wp), allocatable :: dz2m(:), dz2t(:), z2t(:)
-real(kind=wp), allocatable :: dpz2m(:), dpz2t(:), pz2t(:) 
+!real(kind=wp), allocatable :: dxm(:), dxt(:), xt(:)    
+!real(kind=wp), allocatable :: dym(:), dyt(:), yt(:)
+!real(kind=wp), allocatable :: dpxm(:), dpxt(:), pxt(:)
+!real(kind=wp), allocatable :: dpym(:), dpyt(:), pyt(:)
+!real(kind=wp), allocatable :: dz2m(:), dz2t(:), z2t(:)
+!real(kind=wp), allocatable :: dpz2m(:), dpz2t(:), pz2t(:) 
 
 
 
-real(kind=wp), allocatable :: dAm(:), dAt(:), A_localt(:) 
+!real(kind=wp), allocatable :: dAm(:), dAt(:), A_localt(:) 
 
 
 
-real(kind=wp), allocatable :: dxdz(:), dydz(:), dz2dz(:), dpxdz(:), dpydz(:), dpz2dz(:)
-real(kind=wp), allocatable :: dAdz(:)
+!real(kind=wp), allocatable :: dxdz(:), dydz(:), dz2dz(:), dpxdz(:), dpydz(:), dpz2dz(:)
+!real(kind=wp), allocatable :: dAdz(:)
 
 
 

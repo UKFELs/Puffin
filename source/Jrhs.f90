@@ -38,7 +38,7 @@ CONTAINS
 
   use rhs_vars
 
-  IMPLICIT NONE
+  implicit none
 
 ! Inputs %%%
 !
@@ -50,15 +50,16 @@ CONTAINS
 ! sb  - d/dz of electron phase space positions
 ! sDADz - RHS of field source term
 
-  REAL(KIND=WP),INTENT(IN) :: sz
-  REAL(KIND=WP),INTENT(IN) :: sA(:)
-  real(kind=wp), intent(in)  :: sx(:), sdx(:)
-  real(kind=wp), intent(in)  :: sy(:), sdy(:)
-  real(kind=wp), intent(in)  :: sz2(:), sdz2(:)
-  real(kind=wp), intent(in)  :: spr(:), sdpr(:)
-  real(kind=wp), intent(in)  :: spi(:), sdpi(:)
-  real(kind=wp), intent(in)  :: sp2(:), sdp2(:)
-  REAL(KIND=WP), INTENT(INOUT) :: sDADz(:) !!!!!!!
+  real(kind=wp), intent(in) :: sz
+  real(kind=wp), intent(in) :: sA(:)
+  real(kind=wp), intent(in)  :: sx(:), sy(:), sz2(:), &
+                                spr(:), spi(:), sp2(:)
+
+  
+  real(kind=wp), intent(inout)  :: sdx(:), sdy(:), sdz2(:), &
+                                   sdpr(:), sdpi(:), sdp2(:)
+
+  real(kind=wp), intent(inout) :: sDADz(:) !!!!!!!
   logical, intent(inout) :: qOK
 
 
@@ -128,6 +129,7 @@ CONTAINS
 !
 !  REAL(KIND=WP) :: time1, start_time
 !  LOGICAL :: qOKL,qoutside
+  logical qOKL
 
 !     Begin
 
@@ -145,6 +147,10 @@ CONTAINS
 
 
 !     Define the size of each element
+
+  dx = sLengthOfElmX_G
+  dy = sLengthOfElmY_G
+  dz2 = sLengthOfElmZ2_G
 
   dV3 = sLengthOfElmX_G*sLengthOfElmY_G*sLengthOfElmZ2_G
 
@@ -230,6 +236,7 @@ CONTAINS
   end if  
 
 
+
   if (tTransInfo_G%qOneD) then
 
     do i = 1, maxEl
@@ -254,7 +261,7 @@ CONTAINS
     
         li1 = (1.0_wp - locz2/sLengthOfElmZ2_G)
         li2 = 1 - li1
-    
+
         sField4ElecReal(i) = li1 * sA(p_nodes(i)) + sField4ElecReal(i)
         sField4ElecReal(i) = li2 * sA(p_nodes(i) + 1_ip) + sField4ElecReal(i)
     
@@ -373,25 +380,31 @@ CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !      Calculate electron d/dz of electron equations - if needed
 
+  if (.not. qElectronFieldCoupling_G) then
+    sField4ElecReal = 0.0_WP
+    sField4ElecImag = 0.0_WP
+  end if
+
+
     if (qElectronsEvolve_G) then   
 
 !     z2
 
-        CALL dz2dz(sx, sy, sz2, spr, spi, sp2, &
+        CALL dz2dz_f(sx, sy, sz2, spr, spi, sp2, &
                    sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
                    Lj,qOKL)
         if (.not. qOKL) goto 1000
 
 !     X
 
-        call dxdz(sx, sy, sz2, spr, spi, sp2, &
+        call dxdz_f(sx, sy, sz2, spr, spi, sp2, &
                   sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
                   Lj,qOKL)
         if (.not. qOKL) goto 1000             
 
 !     Y
 
-        call dydz(sx, sy, sz2, spr, spi, sp2, &
+        call dydz_f(sx, sy, sz2, spr, spi, sp2, &
                   sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
                   Lj,qOKL)
         if (.not. qOKL) goto 1000
@@ -399,14 +412,14 @@ CONTAINS
 
 !     dp2f is the focusing correction for dp2/dz
 
-        call caldp2f(sx, sy, sdx, sdy, sp2, kbeta, qOKL)
+        call caldp2f_f(sx, sy, sdx, sdy, sp2, kbeta, qOKL)
         if (.not. qOKL) goto 1000
 
 
 
 !     PX (Real pperp)
        
-        call dppdz_r(sx, sy, sz2, spr, spi, sp2, &
+        call dppdz_r_f(sx, sy, sz2, spr, spi, sp2, &
                      sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
                      Lj,qOKL)
         if (.not. qOKL) goto 1000
@@ -414,18 +427,18 @@ CONTAINS
 
 !     -PY (Imaginary pperp)
 
-        call dppdz_i(sx, sy, sz2, spr, spi, sp2, &
+        call dppdz_i_f(sx, sy, sz2, spr, spi, sp2, &
                      sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
                      Lj,qOKL)
         if (.not. qOKL) goto 1000
 
 !     P2
 
-        call dp2dz(sx, sy, sz2, spr, spi, sp2, &
+        call dp2dz_f(sx, sy, sz2, spr, spi, sp2, &
                    sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
                    Lj,qOKL)
         if (.not. qOKL) goto 1000
-
+ 
     end if 
 
 
@@ -460,19 +473,21 @@ CONTAINS
 !     if electrons not allowed to evolve then      
 
     if (.not. qElectronsEvolve_G) then
-       sb(iPXs:iPXe) = 0.0_wp
-       sb(iPYs:iPYe) = 0.0_wp
-       sb(iP2s:iP2e) = 0.0_wp
-       sb(iXs:iXe)   = 0.0_wp
-       sb(iYs:iYe)   = 0.0_wp
-       sb(iZ2s:iZ2e) = 0.0_wp
+       sdpr = 0.0_wp
+       sdpi = 0.0_wp
+       sdp2 = 0.0_wp
+       sdx   = 0.0_wp
+       sdy   = 0.0_wp
+       sdz2 = 0.0_wp
     end if
 
 !     Deallocate arrays
 
-    deallocate(i_n4e,N,iNodeList_Re,iNodeList_Im,i_n4ered)
-    deallocate(sField4ElecReal,sField4ElecImag,Lj,dp2f)
+!    deallocate(i_n4e,N,iNodeList_Re,iNodeList_Im,i_n4ered)
+!    deallocate(sField4ElecReal,sField4ElecImag,Lj,dp2f)
+    deallocate(Lj)
 
+    call dalct_e_srtcts()
 
     ! Set the error flag and exit
 

@@ -20,14 +20,6 @@ contains
 
 
 
-  call derivs(x, &
-       sA, &
-       sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElPZ2_G, &
-       dxdx, dydx, dz2dx, dpxdx, dpydx, dpz2dx, &
-       dAdx)
-
-
-
 
   subroutine derivs(sz, sA, sx, sy, sz2, spr, spi, sp2, &
                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, sdA)
@@ -44,12 +36,11 @@ contains
 	
     real(kind=wp), intent(in)  :: sz
     real(kind=wp), intent(in)  :: sA(:)
-    real(kind=wp), intent(in)  :: sx(:), sdx(:)
-    real(kind=wp), intent(in)  :: sy(:), sdy(:)
-    real(kind=wp), intent(in)  :: sz2(:), sdz2(:)
-    real(kind=wp), intent(in)  :: spr(:), sdpr(:)
-    real(kind=wp), intent(in)  :: spi(:), sdpi(:)
-    real(kind=wp), intent(in)  :: sp2(:), sdp2(:)
+    real(kind=wp), intent(in)  :: sx(:), sy(:), sz2(:), &
+                                  spr(:), spi(:), sp2(:)
+
+    real(kind=wp), intent(inout)  :: sdx(:), sdy(:), sdz2(:), &
+                                  sdpr(:), sdpi(:), sdp2(:)
 
     real(kind=wp), intent(out) :: sda(:)
 

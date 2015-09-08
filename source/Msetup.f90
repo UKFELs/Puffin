@@ -501,9 +501,7 @@ MODULE Setup
 
 !    Deallocate global positioning arrays
 
-  DEALLOCATE(iBStartPosition_G,&
-       iBEndPosition_G, &
-       s_chi_bar_G)
+  DEALLOCATE(s_chi_bar_G)
 
 !    Deallocate k-value arrays
 

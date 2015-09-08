@@ -202,7 +202,6 @@ DO iStep = start_step, nSteps
 
 
 
-
 !                  Increment z position  
 !       (we now have solution at zbar + sStepsize) 
 
@@ -359,7 +358,6 @@ DO iStep = start_step, nSteps
     if (qWDisp) qWDisp = .false.
 
   end if
-
 
 
 

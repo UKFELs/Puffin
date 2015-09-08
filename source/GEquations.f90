@@ -10,7 +10,7 @@ module Equations
 use paratype
 use ArrayFunctions
 use Globals
-
+use rhs_vars
 
 implicit none
 
@@ -33,16 +33,16 @@ contains
 !  subroutine dppdz_r(sInv2rho,ZOver2rho,salphaSq,&
 !    sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,qOK)
 
-  subroutine dppdz_r(sx, sy, sz2, spr, spi, sp2, &
-                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
-                     Lj, qOK)
+  subroutine dppdz_r_f(sx, sy, sz2, spr, spi, sp2, &
+                       sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
+                       Lj, qOK)
 
   	implicit none
 
 
     real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sp2(:)
     real(kind=wp), intent(in) :: sdx(:), sdy(:), sdz2(:), sdpi(:), sdp2(:)
-    real(kinf=wp), intent(in) :: Lj(:)
+    real(kind=wp), intent(in) :: Lj(:)
     real(kind=wp), intent(out) :: sdpr(:)
 
 !    REAL(KIND=WP),INTENT(IN) :: sInv2rho
@@ -127,7 +127,7 @@ contains
 
     2000 continue
 
-  end subroutine dppdz_r
+  end subroutine dppdz_r_f
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -137,7 +137,7 @@ contains
 
 
 
-  subroutine dppdz_i(sx, sy, sz2, spr, spi, sp2, &
+  subroutine dppdz_i_f(sx, sy, sz2, spr, spi, sp2, &
                      sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
                      Lj, qOK)
 
@@ -146,7 +146,7 @@ contains
 
     real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sp2(:)
     real(kind=wp), intent(in) :: sdx(:), sdy(:), sdz2(:), sdpr(:), sdp2(:)
-    real(kinf=wp), intent(in) :: Lj(:)
+    real(kind=wp), intent(in) :: Lj(:)
     real(kind=wp), intent(out) :: sdpi(:)
 
 
@@ -242,7 +242,7 @@ contains
     2000 continue
 
 
-  end subroutine dppdz_i
+  end subroutine dppdz_i_f
 
 
 
@@ -252,7 +252,7 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine dp2dz(sx, sy, sz2, spr, spi, sp2, &
+  subroutine dp2dz_f(sx, sy, sz2, spr, spi, sp2, &
                      sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
                      Lj, qOK)
 
@@ -261,7 +261,7 @@ contains
 
     real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sp2(:)
     real(kind=wp), intent(in) :: sdx(:), sdy(:), sdz2(:), sdpr(:), sdpi(:)
-    real(kinf=wp), intent(in) :: Lj(:)
+    real(kind=wp), intent(in) :: Lj(:)
     real(kind=wp), intent(out) :: sdp2(:)
 
 
@@ -360,7 +360,7 @@ contains
     2000 continue
 
 
-  end subroutine dp2dz
+  end subroutine dp2dz_f
 
 
 
@@ -368,7 +368,7 @@ contains
 
 
 
-  subroutine dxdz(sx, sy, sz2, spr, spi, sp2, &
+  subroutine dxdz_f(sx, sy, sz2, spr, spi, sp2, &
                      sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
                      Lj, qOK)
 
@@ -381,7 +381,7 @@ contains
 
     real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sp2(:)
     real(kind=wp), intent(in) :: sdy(:), sdz2(:), sdpr(:), sdpi(:), sdp2(:)
-    real(kinf=wp), intent(in) :: Lj(:)
+    real(kind=wp), intent(in) :: Lj(:)
     real(kind=wp), intent(out) :: sdx(:)
 
 
@@ -409,13 +409,13 @@ contains
     2000 continue
 
 
-  end subroutine dxdz
+  end subroutine dxdz_f
 
 
 
 
 
-  subroutine dydz(sx, sy, sz2, spr, spi, sp2, &
+  subroutine dydz_f(sx, sy, sz2, spr, spi, sp2, &
                      sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
                      Lj, qOK)
 
@@ -455,12 +455,12 @@ contains
     2000 continue
 
 
-  end subroutine dydz
+  end subroutine dydz_f
 
 
 
 
-  subroutine dz2dz(sx, sy, sz2, spr, spi, sp2, &
+  subroutine dz2dz_f(sx, sy, sz2, spr, spi, sp2, &
                      sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
                      Lj, qOK)
 
@@ -473,7 +473,7 @@ contains
 
     real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sp2(:)
     real(kind=wp), intent(in) :: sdx(:), sdy(:), sdpr(:), sdpi(:), sdp2(:)
-    real(kinf=wp), intent(in) :: Lj(:)
+    real(kind=wp), intent(in) :: Lj(:)
     real(kind=wp), intent(out) :: sdz2(:)
 
 
@@ -499,7 +499,7 @@ contains
     
     2000 continue
 
-  end subroutine dz2dz
+  end subroutine dz2dz_f
   
 
 
@@ -507,7 +507,7 @@ contains
 
 
 
-  subroutine caldp2f(sx, sy, sdx, sdy, sp2, kbeta, qOK)
+  subroutine caldp2f_f(sx, sy, sdx, sdy, sp2, kbeta, qOK)
 
     real(kind=wp), intent(in) :: sx(:), sy(:), sdx(:), sdy(:), sp2(:)
     real(kind=wp), intent(in) :: kbeta
@@ -539,7 +539,7 @@ contains
     
     2000 continue
 
-  end subroutine caldp2f
+  end subroutine caldp2f_f
 
 
 
@@ -558,6 +558,21 @@ contains
 
 
   end subroutine alct_e_srtcts
+
+
+
+  subroutine dalct_e_srtcts()
+
+    implicit none
+
+! Allocate the arrays used in the calculation of
+! the electron eqns  
+
+    deallocate(dp2f, sField4ElecReal, &
+             sField4ElecImag)! , Lj(ar_sz))
+
+
+  end subroutine dalct_e_srtcts
 
 
 end module equations
