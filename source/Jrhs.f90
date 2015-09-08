@@ -27,14 +27,13 @@ IMPLICIT NONE
 
 CONTAINS
 
-  SUBROUTINE getrhs(sz,&
-                    sA,&
+  SUBROUTINE getrhs(sz, &
+                    sA, &
                     sx, sy, sz2, &
-                    spx, spy, sz2, &
+                    spr, spi, sp2, &
                     sdx, sdy, sdz2, &
-                    sdpx, sdpy, sdz2, &
-                    sb,&
-                    sDADz,&
+                    sdpr, sdpi, sdp2, &                    
+                    sDADz, &
                     qOK)
 
   IMPLICIT NONE
@@ -98,19 +97,15 @@ CONTAINS
   REAL(KIND=WP),DIMENSION(:),ALLOCATABLE :: N
   REAL(KIND=WP) :: sInv2rho,sInv4rho
   REAL(KIND=WP) :: ZOver2rho,salphaSq
-  REAL(KIND=WP),DIMENSION(:),ALLOCATABLE ::&
-       sField4ElecReal,sField4ElecImag
+!  REAL(KIND=WP),DIMENSION(:),ALLOCATABLE ::&
+!       sField4ElecReal,sField4ElecImag
   INTEGER(KIND=IP) :: iAstartR,&
        iAstartI,NN
   REAL(KIND=WP) :: spPerpSq			   
-  REAL(KIND=WP),ALLOCATABLE :: Lj(:), dp2f(:)
+  REAL(KIND=WP),ALLOCATABLE :: Lj(:)! , dp2f(:)
   REAL(KIND=WP) :: sBetaz_i,sInvGamma_i
-  REAL(KIND=WP) :: sPPerp_Re
-  REAL(KIND=WP) :: sPPerp_Im
-  REAL(KIND=WP) :: sQ_Re 
-  REAL(KIND=WP) :: sXcoord 
-  REAL(KIND=WP) :: sYcoord
-  REAL(KIND=WP) :: sZ2coord,z2test 
+
+  REAL(KIND=WP) :: z2test 
   REAL(KIND=WP) :: FieldConst,econst
   REAL(KIND=WP) :: stheta, kbeta, un, nc, nd, nb, fkb
   REAL(KIND=WP),DIMENSION(6) :: sendbuff, recvbuff 
@@ -133,48 +128,36 @@ CONTAINS
 !     Begin
 
   qOK = .false.
-  qOKL = .FALSE.
+  qOKL = .false.
     
 !     SETUP AND INITIALISE THE PARTICLE'S POSITION
 !     ALLOCATE THE ARRAYS
 
-  ALLOCATE(i_n4e(iNodesPerElement_G),N(iNodesPerElement_G),&
-           iNodeList_Re(iNodesPerElement_G),&
-           iNodeList_Im(iNodesPerElement_G))
-  AlLOCATE(i_n4ered(iNodesPerElement_G))
-  ALLOCATE(sField4ElecReal(iNumberElectrons_G),&
-           sField4ElecImag(iNumberElectrons_G))
-  ALLOCATE(Lj(iNumberElectrons_G),dp2f(iNumberElectrons_G))
+  ALLOCATE(Lj(iNumberElectrons_G))!,dp2f(iNumberElectrons_G))
+
+  call alct_e_srtcts(iNumberElectrons_G)
 
   ioutside=0
 
-!     Set up Pointers to the field equations
-
-  iAstartR = iBStartPosition_G(iRe_A_CG)
-  iAstartI = iBStartPosition_G(iIm_A_CG)
 
 !     Define the size of each element
 
-  dx  = sLengthOfElmX_G
-  dy  = sLengthOfElmY_G
-  dz2 = sLengthOfElmZ2_G
   dV3 = sLengthOfElmX_G*sLengthOfElmY_G*sLengthOfElmZ2_G
+
 
 !     Time savers
 
   sInv2rho    = 1.0_WP/(2.0_WP * sRho_G)
-  sInv4rho    = 1.0_WP/(4.0_WP * sRho_G)
+
   ZOver2rho   = sz * sInv2rho
   salphaSq    = (2.0_WP * sGammaR_G * sRho_G / sAw_G)**2
 
   kbeta = sAw_G / (2.0_WP * sFocusFactor_G * sRho_G * sGammaR_G)
   un = sqrt(fx_G**2.0_WP + fy_G**2.0_WP)
 
-!     Nodes in X, Y and Z2 dimensions
 
-  iNodesX = NX_G
-  iNodesY=NY_G
-  iNodesZ2 = NZ2_G
+!     number of transverse nodes
+
   ntrans = ReducedNX_G * ReducedNY_G
 
 !     Diff between real and imaginary nodes in the reduced system
@@ -183,7 +166,6 @@ CONTAINS
 
 !     Initialise right hand side to zero
 
-  sb = 0.0_WP
   sField4ElecReal = 0.0_WP
   sField4ElecImag = 0.0_WP
 
@@ -391,41 +373,53 @@ CONTAINS
 
 !     z2
 
-        CALL dz2dz(sy, sb, qOKL) 
+        CALL dz2dz(sx, sy, sz2, spr, spi, sp2, &
+                   sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
+                   Lj,qOKL)
         if (.not. qOKL) goto 1000
 
 !     X
 
-        call dxdz(sy, Lj, nd, sb, qOKL) 
+        call dxdz(sx, sy, sz2, spr, spi, sp2, &
+                  sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
+                  Lj,qOKL)
         if (.not. qOKL) goto 1000             
 
 !     Y
 
-        call dydz(sy, Lj, nd, sb, qOKL)
+        call dydz(sx, sy, sz2, spr, spi, sp2, &
+                  sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
+                  Lj,qOKL)
         if (.not. qOKL) goto 1000
 
 
 !     dp2f is the focusing correction for dp2/dz
 
-        call caldp2f(kbeta, sy, sb, dp2f, qOKL)	
+        call caldp2f(sx, sy, sdx, sdy, sp2, kbeta, qOKL)
         if (.not. qOKL) goto 1000
 
 
 
 !     PX (Real pperp)
        
-        call dppdz_r(sInv2rho,ZOver2rho,salphaSq,sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
+        call dppdz_r(sx, sy, sz2, spr, spi, sp2, &
+                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
+                     Lj,qOKL)
         if (.not. qOKL) goto 1000
 
 
 !     -PY (Imaginary pperp)
 
-        call dppdz_i(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
+        call dppdz_i(sx, sy, sz2, spr, spi, sp2, &
+                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
+                     Lj,qOKL)
         if (.not. qOKL) goto 1000
 
 !     P2
 
-        call dp2dz(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,nb,qOKL)
+        call dp2dz(sx, sy, sz2, spr, spi, sp2, &
+                   sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
+                   Lj,qOKL)
         if (.not. qOKL) goto 1000
 
     end if 

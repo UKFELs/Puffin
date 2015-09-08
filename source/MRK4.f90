@@ -268,5 +268,29 @@ end subroutine RK4_inc
 ! Scoop out preamble of rhs, defining temp vars.
 ! These can all be defined outside this routine to make
 ! it more readable
+! 
+! label consistently - *_g for main global,
+!                      *_rg for rhs global,
+!                      *_dg for diffraction global
+!
+! Check 3D und eqns - are they general? i.e. can kx and ky be anything?
+! 
+! Lj, field4elec (real and imag) and dp2f should be global?
+!
+! Interface for private var access??
+! So have dp2f, field4elec and Lj private arrays in the equations module,
+! and interface dp2f and field4elec to rhs.f90 to alter them...
+! OR alter them through a subroutine....
+! SO Lj is common to both field and e eqns...
+! whereas field4elec and dp2f are e only.
+! So only making Lj and dp2f private to eqns for now
+! In fact, they are just globallay defined ATM until
+! we get this working....
+! Rename eqns to electron eqns or something...
+!
+! Make rhs / eqns vars global
+! fix dp2f interface in rhs.f90 ... DONE 
+! only allocate / calc dp2f when it will be used!
+!
 
 end module rk4int
