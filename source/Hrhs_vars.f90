@@ -32,6 +32,7 @@ module rhs_vars
   real(kind=wp) :: kbeta, nc, nd, nb, ZOver2rho, &
                    salphaSq, sInv2rho
   real(kind=wp), allocatable :: Lj(:)
+  real(kind=wp) :: dV3
 
 !    Error flags
 
@@ -42,29 +43,29 @@ module rhs_vars
 
 
 
-  INTEGER(KIND=IP) :: icheck
-  REAL(KIND=WP) :: dx,dy,dz2
-  REAL(KIND=WP) :: dV3
-  INTEGER(KIND=IP) :: xx,yy,xred,yred,zz2
-  REAL(KIND=WP) :: s_Lex,s_Ley,s_Lez2
-  INTEGER(KIND=IP),DIMENSION(:),ALLOCATABLE ::&
-              i_n4e,iNodeList_Re,iNodeList_Im,&
-              i_n4ered
-  REAL(KIND=WP),DIMENSION(:),ALLOCATABLE :: N
-
-
-
-  
-
-
-  INTEGER(KIND=IP) :: iNodesX,iNodesZ2,iNodesY, j, ntrans
-
-
-  INTEGER :: stat,req,error,lrank,rrank
-  REAL(KIND=WP),DIMENSION(10)	:: couple 
-
-
-  REAL(KIND=WP) :: time1, start_time
+!   INTEGER(KIND=IP) :: icheck
+!   REAL(KIND=WP) :: dx,dy,dz2
+!   
+!   INTEGER(KIND=IP) :: xx,yy,xred,yred,zz2
+!   REAL(KIND=WP) :: s_Lex,s_Ley,s_Lez2
+!   INTEGER(KIND=IP),DIMENSION(:),ALLOCATABLE ::&
+!               i_n4e,iNodeList_Re,iNodeList_Im,&
+!               i_n4ered
+!   REAL(KIND=WP),DIMENSION(:),ALLOCATABLE :: N
+! 
+! 
+! 
+!   
+! 
+! 
+!   INTEGER(KIND=IP) :: iNodesX,iNodesZ2,iNodesY, j, ntrans
+! 
+! 
+!   INTEGER :: stat,req,error,lrank,rrank
+!   REAL(KIND=WP),DIMENSION(10)	:: couple 
+! 
+! 
+!   REAL(KIND=WP) :: time1, start_time
 
 
 
