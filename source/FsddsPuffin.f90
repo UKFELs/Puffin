@@ -486,7 +486,7 @@ CONTAINS
 
     if (qWriteInt) then
 
-      call writeIntData(sA,sV)
+      call writeIntData(sA)
     
     end if
 
@@ -755,13 +755,13 @@ CONTAINS
 !     to file. This will create very large
 !     files!!!
 
-    call wrt_phs_coord(iRe_X_CG, sElX_G)
-    call wrt_phs_coord(iRe_Y_CG, sElY_G)
-    call wrt_phs_coord(iRe_Z2_CG, sElZ2_G)
-    call wrt_phs_coord(iRe_PPerp_CG, sElPX_G)
-    call wrt_phs_coord(iIm_PPerp_CG, sElPY_G)
-    call wrt_phs_coord(iRe_Q_CG, sElPZ2_G)
-
+    call wrt_phs_coord(iRe_X_CG, sElX_G, qOKL)
+    call wrt_phs_coord(iRe_Y_CG, sElY_G, qOKL)
+    call wrt_phs_coord(iRe_Z2_CG, sElZ2_G, qOKL)
+    call wrt_phs_coord(iRe_PPerp_CG, sElPX_G, qOKL)
+    call wrt_phs_coord(iIm_PPerp_CG, sElPY_G, qOKL)
+    call wrt_phs_coord(iRe_Q_CG, sElPZ2_G, qOKL)
+    if (.not. qOKL) goto 1000
 
 !     Set error flag and exit
 
