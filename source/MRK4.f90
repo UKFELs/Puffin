@@ -15,7 +15,7 @@ use IO
 
 contains
 
-subroutine rk4par(sA,A_local,x,h,recvs,displs,qD)
+subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
 
   implicit none
 !
@@ -34,7 +34,7 @@ subroutine rk4par(sA,A_local,x,h,recvs,displs,qD)
 ! h       INPUT          Step size in zbar
       
   REAL(KIND=WP),  DIMENSION(:), INTENT(INOUT) :: sA, A_local
-  REAL(KIND=WP),  INTENT(IN)                  :: x
+  REAL(KIND=WP),  INTENT(IN)                  :: sZ
   REAL(KIND=WP),                INTENT(IN)  :: h
   INTEGER(KIND=IP),DIMENSION(:),INTENT(IN)  :: recvs,displs
   LOGICAL, INTENT(INOUT) :: qD
@@ -75,7 +75,7 @@ subroutine rk4par(sA,A_local,x,h,recvs,displs,qD)
 
   hh = h * 0.5_WP    
   h6 = h / 6.0_WP
-  xh = x + hh
+  szh = sz + hh
 
   allocate(DxDx(iNumberElectrons_G))	  
   allocate(DyDx(iNumberElectrons_G))    
@@ -118,11 +118,11 @@ subroutine rk4par(sA,A_local,x,h,recvs,displs,qD)
   
 !    Get derivatives
 
-  call derivs(x, &
-       sA, &
-       sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElPZ2_G, &
-       dxdx, dydx, dz2dx, dpxdx, dpydx, dpz2dx, &
-       dAdx)
+  call derivs(sZ, &
+              sA, &
+              sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElPZ2_G, &
+              dxdx, dydx, dz2dx, dpxdx, dpydx, dpz2dx, &
+              dAdx)
 
   allocate(dAm(2*local_rows),dAt(2*local_rows))
 
@@ -144,7 +144,7 @@ subroutine rk4par(sA,A_local,x,h,recvs,displs,qD)
 !    Second step       
 !    Get derivatives
 
-  call derivs(xh, &
+  call derivs(szh, &
        sA, &
        xt, yt, z2t, pxt, py2, pz2t, &
        dxt, dyt, dz2t, dpxt, dpyt, dz2t, &
@@ -168,7 +168,7 @@ subroutine rk4par(sA,A_local,x,h,recvs,displs,qD)
 !    Third step       
 !    Get derivatives
 
-  call derivs(xh, &
+  call derivs(szh, &
        sA, &
        xt, yt, z2t, pxt, py2, pz2t, &
        dxm, dym, dz2m, dpxm, dpym, dz2m, &
@@ -198,11 +198,11 @@ subroutine rk4par(sA,A_local,x,h,recvs,displs,qD)
 
 !    Fourth step       
 
-  xh=x+h
+  szh = sz + h
 
 !    Get derivatives
 
-  call derivs(xh, &
+  call derivs(szh, &
        sA, &
        xt, yt, z2t, pxt, py2, pz2t, &
        dxt, dyt, dz2t, dpxt, dpyt, dz2t, &

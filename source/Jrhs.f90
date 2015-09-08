@@ -36,6 +36,8 @@ CONTAINS
                     sDADz, &
                     qOK)
 
+  use rhs_vars
+
   IMPLICIT NONE
 
 ! Inputs %%%
@@ -58,6 +60,8 @@ CONTAINS
   real(kind=wp), intent(in)  :: sp2(:), sdp2(:)
   REAL(KIND=WP), INTENT(INOUT) :: sDADz(:) !!!!!!!
   logical, intent(inout) :: qOK
+
+
 
 ! i
 ! dx,dy,dz2 - step size in x y z2
@@ -86,44 +90,44 @@ CONTAINS
 ! sQ_Re            - Real Q value for ithelectron
 ! qOKL             - Local error flag
 
-  INTEGER(KIND=IP) :: icheck
-  REAL(KIND=WP) :: dx,dy,dz2
-  REAL(KIND=WP) :: dV3
-  INTEGER(KIND=IP) :: xx,yy,xred,yred,zz2
-  REAL(KIND=WP) :: s_Lex,s_Ley,s_Lez2
-  INTEGER(KIND=IP),DIMENSION(:),ALLOCATABLE ::&
-              i_n4e,iNodeList_Re,iNodeList_Im,&
-              i_n4ered
-  REAL(KIND=WP),DIMENSION(:),ALLOCATABLE :: N
-  REAL(KIND=WP) :: sInv2rho,sInv4rho
-  REAL(KIND=WP) :: ZOver2rho,salphaSq
-!  REAL(KIND=WP),DIMENSION(:),ALLOCATABLE ::&
-!       sField4ElecReal,sField4ElecImag
-  INTEGER(KIND=IP) :: iAstartR,&
-       iAstartI,NN
-  REAL(KIND=WP) :: spPerpSq			   
-  REAL(KIND=WP),ALLOCATABLE :: Lj(:)! , dp2f(:)
-  REAL(KIND=WP) :: sBetaz_i,sInvGamma_i
-
-  REAL(KIND=WP) :: z2test 
-  REAL(KIND=WP) :: FieldConst,econst
-  REAL(KIND=WP) :: stheta, kbeta, un, nc, nd, nb, fkb
-  REAL(KIND=WP),DIMENSION(6) :: sendbuff, recvbuff 
-  INTEGER(KIND=IP) :: x_inc, y_inc, z2_inc, istart, iend
-  INTEGER(KIND=IP) :: iNodesX,iNodesZ2,iNodesY, j, ntrans
-  INTEGER(KIND=IPL) :: maxEl,i
-  INTEGER(KIND=IP) :: local_z2_start, local_nz2, index, ti
-  INTEGER(KIND=IP) :: iOutside
-  INTEGER :: stat,req,error,lrank,rrank
-  REAL(KIND=WP),DIMENSION(10)	:: couple 
-  INTEGER(KIND=IP) :: retim, xnode, ynode, z2node 
-  integer(kind=ip) :: x_in1, x_in2, y_in1, y_in2, z2_in1, z2_in2
-  integer(kind=ip), allocatable :: p_nodes(:)
-  REAL(KIND=WP) :: halfx, halfy, dadzRInst, dadzIInst
-  real(kind=wp) :: li1, li2, li3, li4, li5, li6, li7, li8, locx, locy, locz2
-
-  REAL(KIND=WP) :: time1, start_time
-  LOGICAL :: qOKL,qoutside
+!  INTEGER(KIND=IP) :: icheck
+!  REAL(KIND=WP) :: dx,dy,dz2
+!  REAL(KIND=WP) :: dV3
+!  INTEGER(KIND=IP) :: xx,yy,xred,yred,zz2
+!  REAL(KIND=WP) :: s_Lex,s_Ley,s_Lez2
+!  INTEGER(KIND=IP),DIMENSION(:),ALLOCATABLE ::&
+!              i_n4e,iNodeList_Re,iNodeList_Im,&
+!              i_n4ered
+!  REAL(KIND=WP),DIMENSION(:),ALLOCATABLE :: N
+!  REAL(KIND=WP) :: sInv2rho,sInv4rho
+!  REAL(KIND=WP) :: ZOver2rho,salphaSq
+!!  REAL(KIND=WP),DIMENSION(:),ALLOCATABLE ::&
+!!       sField4ElecReal,sField4ElecImag
+!  INTEGER(KIND=IP) :: iAstartR,&
+!       iAstartI,NN
+!  REAL(KIND=WP) :: spPerpSq			   
+!  REAL(KIND=WP),ALLOCATABLE :: Lj(:)! , dp2f(:)
+!  REAL(KIND=WP) :: sBetaz_i,sInvGamma_i
+!
+!  REAL(KIND=WP) :: z2test 
+!  REAL(KIND=WP) :: FieldConst,econst
+!  REAL(KIND=WP) :: stheta, kbeta, un, nc, nd, nb, fkb
+!  REAL(KIND=WP),DIMENSION(6) :: sendbuff, recvbuff 
+!  INTEGER(KIND=IP) :: x_inc, y_inc, z2_inc, istart, iend
+!  INTEGER(KIND=IP) :: iNodesX,iNodesZ2,iNodesY, j, ntrans
+!  INTEGER(KIND=IPL) :: maxEl,i
+!  INTEGER(KIND=IP) :: local_z2_start, local_nz2, index, ti
+!  INTEGER(KIND=IP) :: iOutside
+!  INTEGER :: stat,req,error,lrank,rrank
+!  REAL(KIND=WP),DIMENSION(10)	:: couple 
+!  INTEGER(KIND=IP) :: retim, xnode, ynode, z2node 
+!  integer(kind=ip) :: x_in1, x_in2, y_in1, y_in2, z2_in1, z2_in2
+!  integer(kind=ip), allocatable :: p_nodes(:)
+!  REAL(KIND=WP) :: halfx, halfy, dadzRInst, dadzIInst
+!  real(kind=wp) :: li1, li2, li3, li4, li5, li6, li7, li8, locx, locy, locz2
+!
+!  REAL(KIND=WP) :: time1, start_time
+!  LOGICAL :: qOKL,qoutside
 
 !     Begin
 
