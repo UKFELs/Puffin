@@ -388,7 +388,7 @@ subroutine flattop2(sig_edj, len_f, sGrid, iNumMP, iLocNumMP, qPara, s_Integral)
 
   s_integral = s_integral / tot_ar
 
-  print*, tot_ar
+!  print*, tot_ar
 
 end subroutine flattop2
 
