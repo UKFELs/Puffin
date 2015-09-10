@@ -116,7 +116,7 @@ subroutine writeIM(sA, Ar_local, sZ, &
 
   call innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
 
-  call wdfs(sA, sV, sZ, istep, tArrayA, tArrayE, tArrayZ, &
+  call wdfs(sA, sZ, istep, tArrayA, tArrayE, tArrayZ, &
             iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
             zDataFileName, qWDisp, qOKL)
 
