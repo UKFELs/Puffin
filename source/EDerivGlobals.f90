@@ -93,14 +93,48 @@ real(kind=wp), allocatable :: sSigEj_G(:)
 real(kind=wp), parameter :: gExtEj_G = 7.5_wp
 
 
-! Electron macroparticle initial phase space coordinates 
+! Electron macroparticle phase space coordinates 
 
-real(kind=wp), allocatable     :: sEl_X0Position_G(:)
-real(kind=wp), allocatable     :: sEl_Y0Position_G(:)
-real(kind=wp), allocatable     :: sEl_Z20Position_G(:)
-real(kind=wp), allocatable     :: sEl_PX0Position_G(:)
-real(kind=wp), allocatable     :: sEl_PY0Position_G(:)
-real(kind=wp), allocatable     :: sEl_PZ20Position_G(:)
+real(kind=wp), allocatable     :: sElX_G(:)
+real(kind=wp), allocatable     :: sElY_G(:)
+real(kind=wp), allocatable     :: sElZ2_G(:)
+real(kind=wp), allocatable     :: sElPX_G(:)
+real(kind=wp), allocatable     :: sElPY_G(:)
+real(kind=wp), allocatable     :: sElPZ2_G(:)
+
+
+
+
+
+
+
+
+
+! Temporary intermediate arrays for RK4
+
+! *t is 'temp', for intermediate stages of RK4
+! d*t and d*m are temp intermediate d/dz of each variable 
+
+
+! allocate with size iNumberElectrons_G
+
+
+
+!real(kind=wp), allocatable :: dxm(:), dxt(:), xt(:)    
+!real(kind=wp), allocatable :: dym(:), dyt(:), yt(:)
+!real(kind=wp), allocatable :: dpxm(:), dpxt(:), pxt(:)
+!real(kind=wp), allocatable :: dpym(:), dpyt(:), pyt(:)
+!real(kind=wp), allocatable :: dz2m(:), dz2t(:), z2t(:)
+!real(kind=wp), allocatable :: dpz2m(:), dpz2t(:), pz2t(:) 
+
+
+
+!real(kind=wp), allocatable :: dAm(:), dAt(:), A_localt(:) 
+
+
+
+!real(kind=wp), allocatable :: dxdz(:), dydz(:), dz2dz(:), dpxdz(:), dpydz(:), dpz2dz(:)
+!real(kind=wp), allocatable :: dAdz(:)
 
 
 

@@ -63,7 +63,6 @@ use dummyf
 
 IMPLICIT NONE
 
-REAL(KIND=WP), ALLOCATABLE  :: sV(:)
 REAL(KIND=WP), ALLOCATABLE  :: sA(:), sAr(:), Ar_local(:)
 REAL(KIND=WP)    :: sZ, nextDiff
 
@@ -71,7 +70,7 @@ LOGICAL          :: qOKL, qDiffrctd, qWDisp
 
 !           Read in data file and initialize system
 
-CALL init(sA,sV,sZ,qOKL)
+CALL init(sA,sZ,qOKL)
 
 ALLOCATE(sAr(2*ReducedNX_G*ReducedNY_G*NZ2_G))
 ALLOCATE(Ar_local(2*local_rows))
@@ -142,7 +141,7 @@ DO iStep = start_step, nSteps
 
     if (iStep==0) then
 
-      call diffractIM(sA, sAr, Ar_local, local_rows, sV, &
+      call diffractIM(sA, sAr, Ar_local, local_rows, &
                       diffStep*0.5_WP, frecvs, fdispls, lrecvs, ldispls, &
                       qDiffrctd, qOKL)
 
@@ -171,6 +170,7 @@ DO iStep = start_step, nSteps
 !            sV,&
 !            sA,&
 !            qOKL)
+
      
 !       ALLOCATE(sAr(2*ReducedNX_G*ReducedNY_G*NZ2_G))
 !       ALLOCATE(Ar_local(2*local_rows))
@@ -212,10 +212,9 @@ DO iStep = start_step, nSteps
   IF (qElectronsEvolve_G .OR. qFieldEvolve_G &
        .OR. qElectronFieldCoupling_G) THEN
 
-     CALL rk4par(sV,sAr,Ar_local,sZ,sStepSize,mrecvs,mdispls,qDiffrctd)
+     CALL rk4par(sAr,Ar_local,sZ,sStepSize,mrecvs,mdispls,qDiffrctd)
 
   END IF 
-
 
 
 
@@ -246,13 +245,13 @@ DO iStep = start_step, nSteps
       if ((iStep == nSteps) .or.  qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps, &
                    qWDisp) ) then
   
-        call diffractIM(sA, sAr, Ar_local, local_rows, sV, &
+        call diffractIM(sA, sAr, Ar_local, local_rows, &
                         diffStep * 0.5_wp, frecvs, fdispls, lrecvs, ldispls, &
                         qDiffrctd, qOKL)
 
       else
   
-        call diffractIM(sA, sAr, Ar_local, local_rows, sV, &
+        call diffractIM(sA, sAr, Ar_local, local_rows, &
                         diffStep, frecvs, fdispls, lrecvs, ldispls, &
                         qDiffrctd, qOKL)
   
@@ -269,7 +268,40 @@ DO iStep = start_step, nSteps
 
 
 
+! !   split-step method:- field diffraction only for last step
 
+!   IF (qDiffraction_G) THEN
+
+!     IF(iStep == nSteps) then 
+
+!       sStep = diffStep*0.5_WP
+
+!       DEALLOCATE(sAr)
+!       CALL innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
+!       DEALLOCATE(Ar_local)
+
+!       CALL DiffractionStep(sStep,&
+!            frecvs,&
+!            fdispls,&
+!            sA,&
+!            qOKL)
+     
+!       ALLOCATE(sAr(2*ReducedNX_G*ReducedNY_G*NZ2_G))
+!       ALLOCATE(Ar_local(2*local_rows))
+
+!       CALL getAlocalFL(sA,Ar_local)
+
+!       CALL local2globalA(Ar_local,sAr,mrecvs,mdispls,tTransInfo_G%qOneD)
+
+!       IF(iStep==start_step) sStep = diffStep
+      
+!       qDiffrctd = .true.
+
+!       nextDiff = nextDiff + diffStep
+
+!     END IF
+
+!   END IF
 
 
 
@@ -311,7 +343,7 @@ DO iStep = start_step, nSteps
 
         IF (modCount /= ModNum) THEN
 
-          CALL disperse(sV,D(modCount),delta(modCount),&
+          CALL disperse(D(modCount),delta(modCount),&
                    modCount,sStepSize,sZ)
 
         END IF
@@ -357,7 +389,7 @@ DO iStep = start_step, nSteps
 if ( qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps, &
              qWDisp) ) then
 
-  call writeIM(sA, Ar_local, sV, sZ, &
+  call writeIM(sA, Ar_local, sZ, &
                zDataFileName, iStep, iWriteNthSteps, &
                lrecvs, ldispls, &
                iIntWriteNthSteps, nSteps, qWDisp, qOKL)
@@ -365,11 +397,16 @@ if ( qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps, &
 
   if (qDiffraction_G) then
 
+!    call wdfs(sA, sZ, istep, tArrayA, tArrayE, tArrayZ, &
+!              iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
+!              zDataFileName, qWDisp, qOKL)
+
+
 !             If field diffraction occurred this step, need to complete it....  
 !             ...the diffraction only diffracts a half step if data is going
 !             to be written (to match up the split-step data)
 
-     if (qDiffrctd) call diffractIM(sA, sAr, Ar_local, local_rows, sV, &
+     if (qDiffrctd) call diffractIM(sA, sAr, Ar_local, local_rows, &
                       diffStep * 0.5_wp, frecvs, fdispls, lrecvs, ldispls, &
                       qDiffrctd, qOKL)
 
@@ -397,7 +434,6 @@ end if
 
 
 
-
   
   CALL Get_time(end_time)
   
@@ -420,7 +456,7 @@ end if
      
      CALL innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
      
-     if (qDump_G) CALL DUMPDATA(sA,sV,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
+     if (qDump_G) CALL DUMPDATA(sA,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
           iNumberElectrons_G,sZ,istep,tArrayA(1)%tFileType%iPage)
   END IF
 
@@ -440,7 +476,7 @@ END DO   ! End of integration loop
 
 
 
-CALL cleanup(sA,sV,sZ)   !     Clear arrays and stucts used during integration
+CALL cleanup(sA, sZ)   !     Clear arrays and stucts used during integration
 
 
 CLOSE(UNIT=137,STATUS='KEEP') 

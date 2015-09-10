@@ -242,23 +242,23 @@ SUBROUTINE read_in(zfilename, &
   tArrayA(iIm_A_CG)%qWrite = tArrayA(iRe_A_CG)%qWrite	   
   tArrayA(iIm_A_CG)%zVariable = 'IM_A'
     
-  READ(UNIT=168,FMT=*) tArrayVariables(iRe_PPerp_CG-2)%qWrite
-  tArrayVariables(iRe_PPerp_CG-2)%zVariable = 'RE_PPerp'
-      tArrayVariables(iIm_PPerp_CG-2)%qWrite = &
-       tArrayVariables(iRe_PPerp_CG-2)%qWrite
-  tArrayVariables(iIm_PPerp_CG-2)%zVariable = 'IM_PPerp'
+  READ(UNIT=168,FMT=*) tArrayVariables(iRe_PPerp_CG)%qWrite
+  tArrayVariables(iRe_PPerp_CG)%zVariable = 'RE_PPerp'
+      tArrayVariables(iIm_PPerp_CG)%qWrite = &
+       tArrayVariables(iRe_PPerp_CG)%qWrite
+  tArrayVariables(iIm_PPerp_CG)%zVariable = 'IM_PPerp'
     
-  READ(UNIT=168,FMT=*) tArrayVariables(iRe_Q_CG-2)%qWrite
-  tArrayVariables(iRe_Q_CG-2)%zVariable = 'Q'
+  READ(UNIT=168,FMT=*) tArrayVariables(iRe_Q_CG)%qWrite
+  tArrayVariables(iRe_Q_CG)%zVariable = 'Q'
     
-  READ(UNIT=168,FMT=*) tArrayVariables(iRe_Z2_CG-2)%qWrite
-  tArrayVariables(iRe_Z2_CG-2)%zVariable = 'Z2'
+  READ(UNIT=168,FMT=*) tArrayVariables(iRe_Z2_CG)%qWrite
+  tArrayVariables(iRe_Z2_CG)%zVariable = 'Z2'
     
-  READ(UNIT=168,FMT=*) tArrayVariables(iRe_X_CG-2)%qWrite
-  tArrayVariables(iRe_X_CG-2)%zVariable = 'X'	
+  READ(UNIT=168,FMT=*) tArrayVariables(iRe_X_CG)%qWrite
+  tArrayVariables(iRe_X_CG)%zVariable = 'X'	
     	
-  READ(UNIT=168,FMT=*) tArrayVariables(iRe_Y_CG-2)%qWrite
-  tArrayVariables(iRe_Y_CG-2)%zVariable = 'Y'	
+  READ(UNIT=168,FMT=*) tArrayVariables(iRe_Y_CG)%qWrite
+  tArrayVariables(iRe_Y_CG)%zVariable = 'Y'	
 
 
 !     Read whitespace...

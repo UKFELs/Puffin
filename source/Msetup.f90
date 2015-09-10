@@ -29,7 +29,7 @@ MODULE Setup
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  SUBROUTINE init(sA,sV,sZ,qOK)
+  SUBROUTINE init(sA, sZ, qOK)
 
   USE InitVars
 
@@ -41,8 +41,6 @@ MODULE Setup
 !
 !                     ARGUMENTS
 !
-! sV             Electron macro-particle phase space
-!                coordinates.
 !
 ! sA             Radiation field.
 !
@@ -51,7 +49,6 @@ MODULE Setup
 ! 
 ! qOK            Error flag; .false. if no error
 
-  REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sV(:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sA(:)
   REAL(KIND=WP), INTENT(OUT) :: sZ
   LOGICAL, INTENT(OUT)   ::  qOK
@@ -239,7 +236,7 @@ MODULE Setup
   CALL PopMacroElectrons(qSimple, dist_f, sQe,iNumElectrons,q_noise,sZ,sLenEPulse,&
                          sSigmaGaussian,beamCenZ2,gamma_d,&
                          sElectronThreshold,chirp, mag, fr, &
-                         nbeams,sV,qOK)
+                         nbeams, qOK)
 
   IF (.NOT. qOKL) GOTO 1000  
 
@@ -250,23 +247,15 @@ MODULE Setup
 
   IF (qResume) THEN
 
-    CALL InitFD(sV,sA,sZ,qOKL)
+    CALL InitFD(sA,sZ,qOKL)
 
     IF (.NOT. qOKL) GOTO 1000  
   
-!    ...or if qResume is .FALSE. then we are setting up the data
-!    ourselves....
 
   ELSE
 
-!    Set up tArrayE and tArrayA - these are arrays of 
-!    pointers describing the layout of data
-
-    CALL SetUpElectronArray(tArrayE,tArrayA,iNumberElectrons_G, &
-         iNumberNodes_G , qOKL)
-    IF (.NOT. qOKL) Goto 1000
-
-!     Set up initial values     
+!    ...or if qResume is .FALSE. then we are setting up the data
+!    ourselves....
 
     ALLOCATE(sA(nFieldEquations_CG*iNumberNodes_G)) 
         
@@ -274,19 +263,12 @@ MODULE Setup
                             sSeedSigma, sLengthOfElm,&
                             sA0_Re,&
                             sA0_Im,&
-                            sEl_X0Position_G,&
-                            sEl_Y0Position_G,&
-                            sEl_Z20Position_G,&
-                            sV,&
                             sA,&
                             qOKL)
   
     start_step = 1_IP
   	
   END IF
-
-  DEALLOCATE(sEl_X0Position_G,sEl_Y0Position_G,sEl_Z20Position_G)
-  DEALLOCATE(sEl_PX0Position_G,sEl_PY0Position_G,sEl_PZ20Position_G)
 
 
 
@@ -437,7 +419,7 @@ MODULE Setup
 
 
 
-  if (qWrite) call wdfs(sA, sV, sZ, 0, tArrayA, tArrayE, tArrayZ, &
+  if (qWrite) call wdfs(sA, sZ, 0, tArrayA, tArrayE, tArrayZ, &
                         iIntWriteNthSteps, iWriteNthSteps, &
                         qSeparateStepFiles, zDataFileName, .false., qOKL)
 
@@ -474,7 +456,7 @@ MODULE Setup
   qMod_G = qMod
 
   if (qSwitches(iDump_CG)) call DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
-  if (qSwitches(iDump_CG)) call DUMPDATA(sA,sV,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
+  if (qSwitches(iDump_CG)) call DUMPDATA(sA,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
                              iNumberElectrons_G,sZ,istep,tArrayA(1)%tFileType%iPage)
 
   DEALLOCATE(s_Normalised_chi_G)
@@ -491,7 +473,7 @@ MODULE Setup
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  SUBROUTINE cleanup(sA,sV,sZ)
+  SUBROUTINE cleanup(sA,sZ)
   
   IMPLICIT NONE
 
@@ -499,7 +481,6 @@ MODULE Setup
 !
 ! -Lawrence
 
-  REAL(KIND=WP), ALLOCATABLE, INTENT(INOUT)  :: sV(:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(INOUT)  :: sA(:)
   REAL(KIND=WP), INTENT(IN) :: sZ
 
@@ -509,19 +490,18 @@ MODULE Setup
 
 !    Dump data for resumption
 
-  IF (qDump_G) CALL DUMPDATA(sA,sV,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
+  IF (qDump_G) CALL DUMPDATA(sA,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
        iNumberElectrons_G,sZ,(istep-1),tArrayA(1)%tFileType%iPage)
 
 !    Deallocate electron and field arrays
 
-  DEALLOCATE(sV)
+  DEALLOCATE(sElPX_G, sElPY_G, sElPZ2_G)
+  DEALLOCATE(sElX_G, sElY_G, sElZ2_G)
   DEALLOCATE(sA)
 
 !    Deallocate global positioning arrays
 
-  DEALLOCATE(iBStartPosition_G,&
-       iBEndPosition_G, &
-       s_chi_bar_G)
+  DEALLOCATE(s_chi_bar_G)
 
 !    Deallocate k-value arrays
 

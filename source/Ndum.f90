@@ -13,7 +13,7 @@ implicit none
 
 contains
 
-subroutine diffractIM(sA, sAr, Ar_local, local_rows, sV, sStep,&
+subroutine diffractIM(sA, sAr, Ar_local, local_rows, sStep,&
                       frecvs, fdispls, lrecvs, ldispls, &
                       qDiffrctd, qOK)
 
@@ -30,7 +30,6 @@ subroutine diffractIM(sA, sAr, Ar_local, local_rows, sV, sStep,&
 
   real(kind=wp), intent(inout) :: sA(:)
   real(kind=wp), intent(inout), allocatable :: sAr(:), Ar_local(:)
-  real(kind=wp), intent(in) :: sV(:)
   real(kind=wp), intent(in) :: sStep
   integer(kind=ip), intent(in) :: local_rows
   integer(kind=ip), intent(in) :: frecvs(:), fdispls(:), lrecvs(:), ldispls(:)
@@ -50,7 +49,6 @@ subroutine diffractIM(sA, sAr, Ar_local, local_rows, sV, sStep,&
   CALL DiffractionStep(sStep,&
        frecvs,&
        fdispls,&
-       sV,&
        sA,&
        qOKL)
   if (.not. qOKL) goto 1000
@@ -89,7 +87,7 @@ end subroutine diffractIM
 
 
 
-subroutine writeIM(sA, Ar_local, sV, sZ, &
+subroutine writeIM(sA, Ar_local, sZ, &
                    zDataFileName, iStep, iWriteNthSteps, &
                    lrecvs, ldispls, &
                    iIntWriteNthSteps, nSteps, qWDisp, qOK)
@@ -105,7 +103,7 @@ subroutine writeIM(sA, Ar_local, sV, sZ, &
 
   implicit none
 
-  real(kind=wp), intent(inout) :: sA(:), Ar_local(:), sV(:), sZ
+  real(kind=wp), intent(inout) :: sA(:), Ar_local(:), sZ
   integer(kind=ip), intent(in) :: iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps
   integer(kind=ip), intent(in) :: lrecvs(:), ldispls(:)
   character(32_IP), intent(in) :: zDataFileName
