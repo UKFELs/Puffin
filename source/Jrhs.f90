@@ -27,14 +27,18 @@ IMPLICIT NONE
 
 CONTAINS
 
-  SUBROUTINE getrhs(sz,&
-       sA,&
-       sy,&
-       sb,&
-       sDADz,&
-       qOK)
+  SUBROUTINE getrhs(sz, &
+                    sA, &
+                    sx, sy, sz2, &
+                    spr, spi, sp2, &
+                    sdx, sdy, sdz2, &
+                    sdpr, sdpi, sdp2, &                    
+                    sDADz, &
+                    qOK)
 
-  IMPLICIT NONE
+  use rhs_vars
+
+  implicit none
 
 ! Inputs %%%
 !
@@ -46,12 +50,19 @@ CONTAINS
 ! sb  - d/dz of electron phase space positions
 ! sDADz - RHS of field source term
 
-  REAL(KIND=WP),INTENT(IN) :: sz
-  REAL(KIND=WP),INTENT(IN) :: sA(:)
-  REAL(KIND=WP),INTENT(IN) :: sy(:)
-  REAL(KIND=WP),INTENT(OUT) :: sb(:)
-  REAL(KIND=WP), INTENT(INOUT) :: sDADz(:) !!!!!!!
+  real(kind=wp), intent(in) :: sz
+  real(kind=wp), intent(in) :: sA(:)
+  real(kind=wp), intent(in)  :: sx(:), sy(:), sz2(:), &
+                                spr(:), spi(:), sp2(:)
+
+  
+  real(kind=wp), intent(inout)  :: sdx(:), sdy(:), sdz2(:), &
+                                   sdpr(:), sdpi(:), sdp2(:)
+
+  real(kind=wp), intent(inout) :: sDADz(:) !!!!!!!
   logical, intent(inout) :: qOK
+
+
 
 ! i
 ! dx,dy,dz2 - step size in x y z2
@@ -80,94 +91,83 @@ CONTAINS
 ! sQ_Re            - Real Q value for ithelectron
 ! qOKL             - Local error flag
 
-  INTEGER(KIND=IP) :: icheck
-  REAL(KIND=WP) :: dx,dy,dz2
-  REAL(KIND=WP) :: dV3
-  INTEGER(KIND=IP) :: xx,yy,xred,yred,zz2
-  REAL(KIND=WP) :: s_Lex,s_Ley,s_Lez2
-  INTEGER(KIND=IP),DIMENSION(:),ALLOCATABLE ::&
-              i_n4e,iNodeList_Re,iNodeList_Im,&
-              i_n4ered
-  REAL(KIND=WP),DIMENSION(:),ALLOCATABLE :: N
-  REAL(KIND=WP) :: sInv2rho,sInv4rho
-  REAL(KIND=WP) :: ZOver2rho,salphaSq
-  REAL(KIND=WP),DIMENSION(:),ALLOCATABLE ::&
-       sField4ElecReal,sField4ElecImag
-  INTEGER(KIND=IP) :: iAstartR,&
-       iAstartI,NN
-  REAL(KIND=WP) :: spPerpSq			   
-  REAL(KIND=WP),ALLOCATABLE :: Lj(:), dp2f(:)
-  REAL(KIND=WP) :: sBetaz_i,sInvGamma_i
-  REAL(KIND=WP) :: sPPerp_Re
-  REAL(KIND=WP) :: sPPerp_Im
-  REAL(KIND=WP) :: sQ_Re 
-  REAL(KIND=WP) :: sXcoord 
-  REAL(KIND=WP) :: sYcoord
-  REAL(KIND=WP) :: sZ2coord,z2test 
-  REAL(KIND=WP) :: FieldConst,econst
-  REAL(KIND=WP) :: stheta, kbeta, un, nc, nd, nb, fkb
-  REAL(KIND=WP),DIMENSION(6) :: sendbuff, recvbuff 
-  INTEGER(KIND=IP) :: x_inc, y_inc, z2_inc, istart, iend
-  INTEGER(KIND=IP) :: iNodesX,iNodesZ2,iNodesY, j, ntrans
-  INTEGER(KIND=IPL) :: maxEl,i
-  INTEGER(KIND=IP) :: local_z2_start, local_nz2, index, ti
-  INTEGER(KIND=IP) :: iOutside
-  INTEGER :: stat,req,error,lrank,rrank
-  REAL(KIND=WP),DIMENSION(10)	:: couple 
-  INTEGER(KIND=IP) :: retim, xnode, ynode, z2node 
-  integer(kind=ip) :: x_in1, x_in2, y_in1, y_in2, z2_in1, z2_in2
-  integer(kind=ip), allocatable :: p_nodes(:)
-  REAL(KIND=WP) :: halfx, halfy, dadzRInst, dadzIInst
-  real(kind=wp) :: li1, li2, li3, li4, li5, li6, li7, li8, locx, locy, locz2
-
-  REAL(KIND=WP) :: time1, start_time
-  LOGICAL :: qOKL,qoutside
+!  INTEGER(KIND=IP) :: icheck
+!  REAL(KIND=WP) :: dx,dy,dz2
+!  REAL(KIND=WP) :: dV3
+!  INTEGER(KIND=IP) :: xx,yy,xred,yred,zz2
+!  REAL(KIND=WP) :: s_Lex,s_Ley,s_Lez2
+!  INTEGER(KIND=IP),DIMENSION(:),ALLOCATABLE ::&
+!              i_n4e,iNodeList_Re,iNodeList_Im,&
+!              i_n4ered
+!  REAL(KIND=WP),DIMENSION(:),ALLOCATABLE :: N
+!  REAL(KIND=WP) :: sInv2rho,sInv4rho
+!  REAL(KIND=WP) :: ZOver2rho,salphaSq
+!!  REAL(KIND=WP),DIMENSION(:),ALLOCATABLE ::&
+!!       sField4ElecReal,sField4ElecImag
+!  INTEGER(KIND=IP) :: iAstartR,&
+!       iAstartI,NN
+!  REAL(KIND=WP) :: spPerpSq			   
+!  REAL(KIND=WP),ALLOCATABLE :: Lj(:)! , dp2f(:)
+!  REAL(KIND=WP) :: sBetaz_i,sInvGamma_i
+!
+!  REAL(KIND=WP) :: z2test 
+!  REAL(KIND=WP) :: FieldConst,econst
+!  REAL(KIND=WP) :: stheta, kbeta, un, nc, nd, nb, fkb
+!  REAL(KIND=WP),DIMENSION(6) :: sendbuff, recvbuff 
+!  INTEGER(KIND=IP) :: x_inc, y_inc, z2_inc, istart, iend
+!  INTEGER(KIND=IP) :: iNodesX,iNodesZ2,iNodesY, j, ntrans
+!  INTEGER(KIND=IPL) :: maxEl,i
+!  INTEGER(KIND=IP) :: local_z2_start, local_nz2, index, ti
+!  INTEGER(KIND=IP) :: iOutside
+!  INTEGER :: stat,req,error,lrank,rrank
+!  REAL(KIND=WP),DIMENSION(10)	:: couple 
+!  INTEGER(KIND=IP) :: retim, xnode, ynode, z2node 
+!  integer(kind=ip) :: x_in1, x_in2, y_in1, y_in2, z2_in1, z2_in2
+!  integer(kind=ip), allocatable :: p_nodes(:)
+!  REAL(KIND=WP) :: halfx, halfy, dadzRInst, dadzIInst
+!  real(kind=wp) :: li1, li2, li3, li4, li5, li6, li7, li8, locx, locy, locz2
+!
+!  REAL(KIND=WP) :: time1, start_time
+!  LOGICAL :: qOKL,qoutside
+  logical qOKL
 
 !     Begin
 
   qOK = .false.
-  qOKL = .FALSE.
+  qOKL = .false.
     
 !     SETUP AND INITIALISE THE PARTICLE'S POSITION
 !     ALLOCATE THE ARRAYS
 
-  ALLOCATE(i_n4e(iNodesPerElement_G),N(iNodesPerElement_G),&
-           iNodeList_Re(iNodesPerElement_G),&
-           iNodeList_Im(iNodesPerElement_G))
-  AlLOCATE(i_n4ered(iNodesPerElement_G))
-  ALLOCATE(sField4ElecReal(iNumberElectrons_G),&
-           sField4ElecImag(iNumberElectrons_G))
-  ALLOCATE(Lj(iNumberElectrons_G),dp2f(iNumberElectrons_G))
+  ALLOCATE(Lj(iNumberElectrons_G))!,dp2f(iNumberElectrons_G))
+
+  call alct_e_srtcts(iNumberElectrons_G)
 
   ioutside=0
 
-!     Set up Pointers to the field equations
-
-  iAstartR = iBStartPosition_G(iRe_A_CG)
-  iAstartI = iBStartPosition_G(iIm_A_CG)
 
 !     Define the size of each element
 
-  dx  = sLengthOfElmX_G
-  dy  = sLengthOfElmY_G
+  dx = sLengthOfElmX_G
+  dy = sLengthOfElmY_G
   dz2 = sLengthOfElmZ2_G
+
   dV3 = sLengthOfElmX_G*sLengthOfElmY_G*sLengthOfElmZ2_G
+
 
 !     Time savers
 
   sInv2rho    = 1.0_WP/(2.0_WP * sRho_G)
-  sInv4rho    = 1.0_WP/(4.0_WP * sRho_G)
+
   ZOver2rho   = sz * sInv2rho
   salphaSq    = (2.0_WP * sGammaR_G * sRho_G / sAw_G)**2
 
   kbeta = sAw_G / (2.0_WP * sFocusFactor_G * sRho_G * sGammaR_G)
   un = sqrt(fx_G**2.0_WP + fy_G**2.0_WP)
 
-!     Nodes in X, Y and Z2 dimensions
 
-  iNodesX = NX_G
-  iNodesY=NY_G
-  iNodesZ2 = NZ2_G
+!     number of transverse nodes
+
   ntrans = ReducedNX_G * ReducedNY_G
 
 !     Diff between real and imaginary nodes in the reduced system
@@ -176,7 +176,6 @@ CONTAINS
 
 !     Initialise right hand side to zero
 
-  sb = 0.0_WP
   sField4ElecReal = 0.0_WP
   sField4ElecImag = 0.0_WP
 
@@ -205,12 +204,14 @@ CONTAINS
   halfy = ((ReducedNY_G-1) / 2.0_WP) * sLengthOfElmY_G
 
 
+! Calculate Lj term
+
 !DIR$ SIMD
 
-  Lj = sqrt((1.0_WP - (1.0_WP / ( 1.0_WP + (sEta_G * sy(iP2s:iP2e))) )**2.0_WP) &
-             / (1.0_WP + nc* ( sy(iPXs:iPXe)**2.0_wp  +  &
-                               sy(iPYs:iPYe)**2.0_wp )   )) &
-          * (1.0_WP + sEta_G *  sy(iP2s:iP2e)) * sGammaR_G
+  Lj = sqrt((1.0_WP - (1.0_WP / ( 1.0_WP + (sEta_G * sp2)) )**2.0_WP) &
+             / (1.0_WP + nc* ( spr**2.0_wp  +  &
+                               spi**2.0_wp )   )) &
+          * (1.0_WP + sEta_G *  sp2) * sGammaR_G
 
 !DIR$ END SIMD
 
@@ -223,19 +224,21 @@ CONTAINS
 
 !DIR$ SIMD
  
-    p_nodes = floor(sy(iZ2s:iZ2e) / dz2) + 1_IP
+    p_nodes = floor(sz2 / dz2) + 1_IP
 
 !DIR$ END SIMD
 
 
   else
 
-    p_nodes = ((floor( (sy(iXs:iXe)+halfx)  / dx)  + 1_IP) + &
-              ( (floor( (sy(iYs:iYe)+halfy)  / dy)  + 1_IP)   - 1) * (ReducedNX_G - 1) + &
-              (ReducedNX_G - 1) * (ReducedNY_G - 1) * &
-                              ( (floor(sy(iZ2s:iZ2e)  / dz2)  + 1_IP)  -   1))
+    p_nodes = (floor( (sx+halfx)  / dx)  + 1_IP) + &
+              (floor( (sy+halfy)  / dy) * ReducedNX_G )  + &   !  y 'slices' before primary node
+              (ReducedNX_G * ReducedNY_G * &
+                              floor(sz2  / dz2) )  ! transverse slices before primary node
+
 
   end if  
+
 
 
   if (tTransInfo_G%qOneD) then
@@ -255,28 +258,31 @@ CONTAINS
 
 
         dadzRInst = ((s_chi_bar_G(i)/dV3) * Lj(i) &
-                          * sy(iPXs + i - 1) )
+                          * spr(i) )
     
         dadzIInst = ((s_chi_bar_G(i)/dV3) * Lj(i) &
-                          * sy(iPYs + i - 1) )
+                          * spi(i) )
+
+
     
-        z2node = floor(sy(iZ2s + i -1_ip)  / dz2)  + 1_IP
-        locz2 = sy(iZ2s + i - 1_ip) - REAL(z2node  - 1_IP, kind=wp) * sLengthOfElmZ2_G
+        z2node = floor(sz2(i)  / dz2)  + 1_IP
+        locz2 = sz2(i) - REAL(z2node  - 1_IP, kind=wp) * sLengthOfElmZ2_G
     
         li1 = (1.0_wp - locz2/sLengthOfElmZ2_G)
         li2 = 1 - li1
-    
+
         sField4ElecReal(i) = li1 * sA(p_nodes(i)) + sField4ElecReal(i)
         sField4ElecReal(i) = li2 * sA(p_nodes(i) + 1_ip) + sField4ElecReal(i)
     
         sField4ElecImag(i) = li1 * sA(p_nodes(i) + retim) + sField4ElecImag(i)
         sField4ElecImag(i) = li2 * sA(p_nodes(i) + retim + 1_ip) + sField4ElecImag(i)
     
-        sDADz(p_nodes(i)) =                li1 * dadzRInst + sDADz(p_nodes(i))
-        sDADz(p_nodes(i) + 1_ip) =         li2 * dadzRInst + sDADz(p_nodes(i) + 1_ip)                
+
+        sDADz(p_nodes(i)) =         li1 * dadzRInst + sDADz(p_nodes(i))
+        sDADz(p_nodes(i) + 1_ip) =  li2 * dadzRInst + sDADz(p_nodes(i) + 1_ip)                
     
-        sDADz(p_nodes(i) + retim) =        li1 * dadzIInst + sDADz(p_nodes(i) + retim)                        
-        sDADz(p_nodes(i) + 1_ip + retim) = li2 * dadzIInst + sDADz(p_nodes(i) + 1_ip + retim)           
+        sDADz(p_nodes(i) + retim) =         li1 * dadzIInst + sDADz(p_nodes(i) + retim)                        
+        sDADz(p_nodes(i) + 1_ip + retim) =  li2 * dadzIInst + sDADz(p_nodes(i) + 1_ip + retim)           
     
       end if
     end do
@@ -299,19 +305,19 @@ CONTAINS
       !   
   
         dadzRInst = ((s_chi_bar_G(i)/dV3) * Lj(i) &
-                          * sy(iPXs + i - 1) )
+                          * spr(i) )
     
         dadzIInst = ((s_chi_bar_G(i)/dV3) * Lj(i) &
-                          * sy(iPYs + i - 1) )
+                          * spi(i) )
     
     
     
-        xnode = floor( (sy(iXs + i - 1_ip) + halfx ) / dx)  + 1_IP
-        locx = sy(iXs + i - 1_ip) + halfx - REAL(xnode  - 1_IP, kind=wp) * sLengthOfElmX_G
-        ynode = floor( (sy(iYs + i - 1_ip) + halfy )  / dy)  + 1_IP
-        locy = sy(iYs + i - 1_ip) + halfy - REAL(ynode  - 1_IP, kind=wp) * sLengthOfElmY_G
-        z2node = floor(sy(iZ2s + i -1_ip)  / dz2)  + 1_IP
-        locz2 = sy(iZ2s + i - 1_ip) - REAL(z2node  - 1_IP, kind=wp) * sLengthOfElmZ2_G
+        xnode = floor( (sx(i) + halfx ) / dx)  + 1_IP
+        locx = sx(i) + halfx - REAL(xnode  - 1_IP, kind=wp) * sLengthOfElmX_G
+        ynode = floor( (sy(i) + halfy )  / dy)  + 1_IP
+        locy = sy(i) + halfy - REAL(ynode  - 1_IP, kind=wp) * sLengthOfElmY_G
+        z2node = floor(sz2(i)  / dz2)  + 1_IP
+        locz2 = sz2(i) - REAL(z2node  - 1_IP, kind=wp) * sLengthOfElmZ2_G
     
     
     
@@ -353,39 +359,26 @@ CONTAINS
         sField4ElecImag(i) = li8 * sA(p_nodes(i) + retim + ntrans + ReducedNX_G + 1) + sField4ElecImag(i)
     
     
-        sDADz(p_nodes(i)) =                            & 
-                           li1 * dadzRInst + sDADz(p_nodes(i))
-        sDADz(p_nodes(i) + 1_ip) =                     & 
-                           li2 * dadzRInst + sDADz(p_nodes(i) + 1_ip)                
-        sDADz(p_nodes(i) + ReducedNX_G) =              & 
-                           li3 * dadzRInst + sDADz(p_nodes(i) + ReducedNX_G)          
-        sDADz(p_nodes(i) + ReducedNX_G + 1_ip) =       & 
-                           li4 * dadzRInst + sDADz(p_nodes(i) + ReducedNX_G + 1_ip)   
-        sDADz(p_nodes(i) + ntrans) =                   & 
-                           li5 * dadzRInst + sDADz(p_nodes(i) + ntrans)               
-        sDADz(p_nodes(i) + ntrans + 1_ip) =            & 
-                           li6 * dadzRInst + sDADz(p_nodes(i) + ntrans + 1_ip)         
-        sDADz(p_nodes(i) + ntrans + ReducedNX_G) =     & 
-                           li7 * dadzRInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G)   
-        sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1) = & 
-                           li8 * dadzRInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1)
+
+        sDADz(p_nodes(i)) =                            li1 * dadzRInst + sDADz(p_nodes(i))
+        sDADz(p_nodes(i) + 1_ip) =                     li2 * dadzRInst + sDADz(p_nodes(i) + 1_ip)                
+        sDADz(p_nodes(i) + ReducedNX_G) =              li3 * dadzRInst + sDADz(p_nodes(i) + ReducedNX_G)          
+        sDADz(p_nodes(i) + ReducedNX_G + 1_ip) =       li4 * dadzRInst + sDADz(p_nodes(i) + ReducedNX_G + 1_ip)   
+        sDADz(p_nodes(i) + ntrans) =                   li5 * dadzRInst + sDADz(p_nodes(i) + ntrans)               
+        sDADz(p_nodes(i) + ntrans + 1_ip) =            li6 * dadzRInst + sDADz(p_nodes(i) + ntrans + 1_ip)         
+        sDADz(p_nodes(i) + ntrans + ReducedNX_G) =     li7 * dadzRInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G)   
+        sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1) = li8 * dadzRInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1)
     
-        sDADz(p_nodes(i) + retim) =                             &
-                           li1 * dadzIInst + sDADz(p_nodes(i) + retim)                        
-        sDADz(p_nodes(i) + 1_ip + retim) =                      &
-                           li2 * dadzIInst + sDADz(p_nodes(i) + 1_ip + retim)           
-        sDADz(p_nodes(i) + ReducedNX_G + retim) =               &
-                           li3 * dadzIInst + sDADz(p_nodes(i) + ReducedNX_G + retim)           
-        sDADz(p_nodes(i) + ReducedNX_G + 1_ip + retim) =        &
-                           li4 * dadzIInst + sDADz(p_nodes(i) + ReducedNX_G + 1_ip + retim)    
-        sDADz(p_nodes(i) + ntrans + retim) =                    &
-                           li5 * dadzIInst + sDADz(p_nodes(i) + ntrans + retim)               
-        sDADz(p_nodes(i) + ntrans + 1_ip + retim) =             &
-                           li6 * dadzIInst + sDADz(p_nodes(i) + ntrans + 1_ip + retim)       
-        sDADz(p_nodes(i) + ntrans + ReducedNX_G + retim) =      &
-                           li7 * dadzIInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + retim)  
-        sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1 + retim) =  &
-                           li8 * dadzIInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1 + retim)
+        sDADz(p_nodes(i) + retim) =                             li1 * dadzIInst + sDADz(p_nodes(i) + retim)                        
+        sDADz(p_nodes(i) + 1_ip + retim) =                      li2 * dadzIInst + sDADz(p_nodes(i) + 1_ip + retim)           
+        sDADz(p_nodes(i) + ReducedNX_G + retim) =               li3 * dadzIInst + sDADz(p_nodes(i) + ReducedNX_G + retim)           
+        sDADz(p_nodes(i) + ReducedNX_G + 1_ip + retim) =        li4 * dadzIInst + sDADz(p_nodes(i) + ReducedNX_G + 1_ip + retim)    
+        sDADz(p_nodes(i) + ntrans + retim) =                    li5 * dadzIInst + sDADz(p_nodes(i) + ntrans + retim)               
+        sDADz(p_nodes(i) + ntrans + 1_ip + retim) =             li6 * dadzIInst + sDADz(p_nodes(i) + ntrans + 1_ip + retim)       
+        sDADz(p_nodes(i) + ntrans + ReducedNX_G + retim) =      li7 * dadzIInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + retim)  
+        sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1 + retim) =  li8 * dadzIInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1 & 
+                                                                       + retim)
+
   
       end if
     end do
@@ -398,204 +391,71 @@ CONTAINS
 
 
 
-
-
-! !     Looping (summing) over all the electrons
-
-!     DO i=1,maxEl
-    
-!        IF (i<=procelectrons_G(1)) THEN	
-       
-! !     Get electron variables for electron and field evolution.	
-		
-!           sZ2coord = sy(iZ2s + i - 1)
-
-!           sXcoord = sy(iXs + i - 1) &
-!                + halfx
-
-!           sYcoord = sy(iYs + i - 1) &
-!                + halfy
-
-!        ENDIF
-
-! !     Get info for dydz of ith electron
-
-!        IF (i<=procelectrons_G(1)) THEN
-
-! !     Calculate the coordinates of the principle node for
-! !     each electron 
-
-!           zz2 = floor(sZ2coord / dz2) + 1_IP
-
-! !     Calculate the co-ordinate for each electron locally
-
-!           s_Lez2 = sZ2coord - REAL(zz2 - 1_IP, KIND=WP)&
-!                * sLengthOfElmZ2_G
-
-! !     If s_lez2 is outside the boundary then let it = nearest boundary
-
-!           if (s_Lez2<0.0_WP) then
-!              s_Lez2=0.0_WP
-!           end if
-		 
-!           if (s_Lez2>sLengthOfElmZ2_G) then 
-!              s_Lez2=sLengthOfElmZ2_G
-!           end if
-
-! !     Calculate the nodes surrounding the ith electron and the corresponding
-! !     interpolation function.
-! !     Work out what is the principal node for each electron and 7 
-! !     other nodes in the same element. See extra.f90
-
-!           IF (tTransInfo_G%qOneD) THEN
-
-! !     Work out the indices of the two surrounding nodes for this electron.
-
-!              i_n4e(1) = CEILING(sZ2coord/sLengthOfElmZ2_G)
-!              i_n4e(2) = i_n4e(1) + 1_IP
-
-!              IF (i_n4e(1)>SIZE(sA)/2) THEN
-!                 IF (tProcInfo_G%qRoot) PRINT*, 'electron',&
-!                      i,'out of bounds of system'
-!                 CALL MPI_FINALIZE(error)
-!                 STOP
-!              ENDIF	
-!              IF (i_n4e(2)>SIZE(sA)/2) THEN
-!                 IF (tProcInfo_G%qRoot) PRINT*,&
-!                      'electron', i,'out of bounds of system'
-!                 CALL MPI_FINALIZE(error)
-!                 STOP
-!              ENDIF
-		
-		
-!              CALL intpl_fn(s_Lez2,2_IP,sLengthOfElmZ2_G,N)			
-		
-!           ELSE
-!              xx  = floor(sXcoord  / dx)  + 1_IP
-!              yy  = floor(sYcoord  / dy)  + 1_IP 			
-!              !xred=xx-(outnodex_G/2_IP)
-!              !yred=yy-(outnodey_G/2_IP)
-			
-!              s_Lex  = sXcoord  - REAL(xx  - 1_IP,&
-!                   KIND=WP) * sLengthOfElmX_G
-!              s_Ley  = sYcoord  - REAL(yy  - 1_IP,&
-!                   KIND=WP) * sLengthOfElmY_G
-
-!              CALL principal(ReducedNX_G,ReducedNY_G,iNodesPerElement_G,&
-!                   iGloNumA_G,iNodCodA_G,xx,yy,zz2,i_n4e)
-
-!              qoutside=.false.
-!              !CALL principal2(ReducedNX_G,ReducedNY_G,&
-!              !     iNodesPerElement_G,xred,yred,zz2,i_n4ered,qoutside)
-
-!              IF (qoutside) ioutside=ioutside+1
-			
-! !     Calculate how much the macroparticle contributes to each node in 
-! !     its current element. See basis_fn.f90
-
-!              CALL intpl_fn(s_Lex,&
-!                   s_Ley,&
-!                   s_Lez2,&
-!                   iNodesPerElement_G,&
-!                   sLengthOfElmX_G,&
-!                   sLengthOfElmY_G,&
-!                   sLengthOfElmZ2_G,&
-!                   N)						  
-!           END IF
-
-!           IF (SUM(N) > (1.0+1E-4) .OR. SUM(N) < (1.0-1E-4) ) THEN
-!              PRINT *,&
-!              'THE SUM OF INTERPOLATION FUNCTION IS WRONG',i,SUM(N)
-!              DO icheck=1,8
-!                 IF (N(icheck)<0.0_WP) THEN
-!                    PRINT *,&
-!                    'INTERPOLATION FUNCTION HAS NEGATIVE VALUE(S)',&
-!                    icheck 
-!                 ENDIF
-!              ENDDO
-!           ENDIF
-
-!           iNodeList_Re = i_n4e
-!           iNodeList_Im = i_n4e+retim
-
-! !     Get radiation field for coupling terms in electron macroparticle
-! !     equations.
-
-!           IF (qElectronFieldCoupling_G) THEN
-!              sField4ElecReal(i) = SUM( sA(iNodeList_Re) * N )
-!              sField4ElecImag(i) = SUM( sA(iNodeList_Im) * N )
-!           END IF
-
-!        END IF
-
-! !     Field eqn RHS
-
-!        IF ((qFieldEvolve_G) .AND. (.not. qoutside)) THEN
-!           IF (i<=procelectrons_G(1)) THEN
-!              IF (.NOT. qoutside) THEN
-!                 IF (.NOT. tTransInfo_G%qOneD) iNodeList_Re = i_n4e
-
-!                 sDADz(iNodeList_Re) = ((s_chi_bar_G(i)/dV3) * Lj(i)&
-!                       *  N * sy(iPXs + i - 1) ) + &
-!                      sDADz(iNodeList_Re)
-                     
-!                 sDADz(iNodeList_Im) = &
-!                      ((s_chi_bar_G(i)/dV3) * &
-!                      Lj(i) * N * sy(iPYs + i - 1) ) + &
-!                      sDADz(iNodeList_Im)
- 
-!              END IF
-!           END IF
-!        END IF
-
-!     ENDDO
-
-    IF (ioutside>0) THEN 
-       Print*, 'WARNING: ',ioutside,&
-            ' electrons are outside the inner driving core'
-    END IF
+!    IF (ioutside>0) THEN 
+!       Print*, 'WARNING: ',ioutside,&
+!            ' electrons are outside the inner driving core'
+!    END IF
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !      Calculate electron d/dz of electron equations - if needed
 
+  if (.not. qElectronFieldCoupling_G) then
+    sField4ElecReal = 0.0_WP
+    sField4ElecImag = 0.0_WP
+  end if
+
+
     if (qElectronsEvolve_G) then   
 
 !     z2
 
-        CALL dz2dz(sy, sb, qOKL) 
+        CALL dz2dz_f(sx, sy, sz2, spr, spi, sp2, &
+                   sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
+                   Lj,qOKL)
         if (.not. qOKL) goto 1000
 
 !     X
 
-        call dxdz(sy, Lj, nd, sb, qOKL) 
-        if (.not. qOKL) goto 1000
+
+        call dxdz_f(sx, sy, sz2, spr, spi, sp2, &
+                  sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
+                  Lj,qOKL)
+        if (.not. qOKL) goto 1000             
 
 !     Y
 
-        call dydz(sy, Lj, nd, sb, qOKL)
+        call dydz_f(sx, sy, sz2, spr, spi, sp2, &
+                  sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
+                  Lj,qOKL)
         if (.not. qOKL) goto 1000
 
 !     dp2f is the focusing correction for dp2/dz
 
-        call caldp2f(kbeta, sy, sb, dp2f, qOKL)	
+        call caldp2f_f(sx, sy, sdx, sdy, sp2, kbeta, qOKL)
         if (.not. qOKL) goto 1000
 
 !     PX (Real pperp)
        
-        call dppdz_r(sInv2rho,ZOver2rho,salphaSq,sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
+        call dppdz_r_f(sx, sy, sz2, spr, spi, sp2, &
+                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
+                     Lj,qOKL)
         if (.not. qOKL) goto 1000
 
 !     -PY (Imaginary pperp)
 
-        call dppdz_i(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
+        call dppdz_i_f(sx, sy, sz2, spr, spi, sp2, &
+                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
+                     Lj,qOKL)
         if (.not. qOKL) goto 1000
 
 !     P2
 
-        call dp2dz(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,nb,qOKL)
+        call dp2dz_f(sx, sy, sz2, spr, spi, sp2, &
+                   sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
+                   Lj,qOKL)
         if (.not. qOKL) goto 1000
-
+ 
     end if 
 
 
@@ -630,18 +490,22 @@ CONTAINS
 !     if electrons not allowed to evolve then      
 
     if (.not. qElectronsEvolve_G) then
-       sb(iPXs:iPXe) = 0.0_wp
-       sb(iPYs:iPYe) = 0.0_wp
-       sb(iP2s:iP2e) = 0.0_wp
-       sb(iXs:iXe)   = 0.0_wp
-       sb(iYs:iYe)   = 0.0_wp
-       sb(iZ2s:iZ2e) = 0.0_wp
+       sdpr = 0.0_wp
+       sdpi = 0.0_wp
+       sdp2 = 0.0_wp
+       sdx   = 0.0_wp
+       sdy   = 0.0_wp
+       sdz2 = 0.0_wp
     end if
 
 !     Deallocate arrays
 
-    deallocate(i_n4e,N,iNodeList_Re,iNodeList_Im,i_n4ered)
-    deallocate(sField4ElecReal,sField4ElecImag,Lj,dp2f)
+!    deallocate(i_n4e,N,iNodeList_Re,iNodeList_Im,i_n4ered)
+!    deallocate(sField4ElecReal,sField4ElecImag,Lj,dp2f)
+    deallocate(Lj)
+
+    call dalct_e_srtcts()
+
 
     ! Set the error flag and exit
 

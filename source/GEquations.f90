@@ -10,27 +10,48 @@ module Equations
 use paratype
 use ArrayFunctions
 use Globals
-
+use rhs_vars
 
 implicit none
 
+
+
+!private real(kind=wp), allocatable :: dp2f(:), sField4ElecReal(:), &
+!                                      sField4ElecImag(:) !, &
+!                                      !Lj(:)
+
+
+
+real(kind=wp), allocatable :: dp2f(:), sField4ElecReal(:), &
+                              sField4ElecImag(:) !, &
+                              !Lj(:)
+
+
+
 contains
 
-  subroutine dppdz_r(sInv2rho,ZOver2rho,salphaSq,&
-    sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,qOK)
+!  subroutine dppdz_r(sInv2rho,ZOver2rho,salphaSq,&
+!    sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,qOK)
 
+  subroutine dppdz_r_f(sx, sy, sz2, spr, spi, sp2, &
+                       sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
+                       Lj, qOK)
 
   	implicit none
 
 
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sp2(:)
+    real(kind=wp), intent(in) :: sdx(:), sdy(:), sdz2(:), sdpi(:), sdp2(:)
+    real(kind=wp), intent(in) :: Lj(:)
+    real(kind=wp), intent(out) :: sdpr(:)
 
-    REAL(KIND=WP),INTENT(IN) :: sInv2rho
-    REAL(KIND=WP),INTENT(IN) :: ZOver2rho,salphaSq
-    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE ,INTENT(IN):: sField4ElecReal
-    REAL(KIND=WP),ALLOCATABLE ,INTENT(IN):: Lj(:), dp2f(:)
-    REAL(KIND=WP),INTENT(IN) :: kbeta,nd
-    REAL(KIND=WP),INTENT(IN) :: sy(:)
-    REAL(KIND=WP),INTENT(OUT) :: sb(:)
+!    REAL(KIND=WP),INTENT(IN) :: sInv2rho
+!    REAL(KIND=WP),INTENT(IN) :: ZOver2rho,salphaSq
+!    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE ,INTENT(IN):: sField4ElecReal
+!    REAL(KIND=WP),ALLOCATABLE ,INTENT(IN):: Lj(:), dp2f(:)
+!    REAL(KIND=WP),INTENT(IN) :: kbeta,nd
+!    REAL(KIND=WP),INTENT(IN) :: sy(:)
+!    REAL(KIND=WP),INTENT(OUT) :: sb(:)
     logical, intent(inout) :: qOK
 
     
@@ -42,14 +63,14 @@ contains
 
 !     For curved pole undulator
 
-        sb(iPXs:iPXe) = sInv2rho * ( cosh(sy(iXs:iXe) * kx_und_G) * &
-                        sinh(sy(iYs:iYe) * ky_und_G) * sqrt(2.0_WP) &
-                        * sqrt(sEta_G) * Lj * sy(iPYs:iPYe)  &      
+        sdpr = sInv2rho * ( cosh(sx * kx_und_G) * &
+                        sinh(sy * ky_und_G) * sqrt(2.0_WP) &
+                        * sqrt(sEta_G) * Lj * spi  &      
                         *  cos(ZOver2rho) &
                         / (sqrt(salphaSq) * ky_und_G) + &
-                        cosh(sy(iXs:iXe) * kx_und_G) &
-                        * cosh(sy(iYs:iYe) * ky_und_G) * sin(ZOver2rho) - &
-                        sEta_G * sy(iP2s:iP2e) * salphaSq * sField4ElecReal)
+                        cosh(sx * kx_und_G) &
+                        * cosh(sy * ky_und_G) * sin(ZOver2rho) - &
+                        sEta_G * sp2 * salphaSq * sField4ElecReal)
 
         
 
@@ -57,13 +78,13 @@ contains
 
 !     Re(p_perp) equation for plane-poled undulator
 
-        sb(iPXs:iPXe) = sInv2rho * (-sField4ElecReal*salphaSq * &
-                        sEta_G * sy(iP2s:iP2e) &
+        sdpr = sInv2rho * (-sField4ElecReal*salphaSq * &
+                        sEta_G * sp2 &
                         + ((sqrt(6.0_WP) *sRho_G) /sqrt(salphaSq)) * &
-                        sinh(sInv2rho * sy(iYs:iYe) &
+                        sinh(sInv2rho * sy &
                         * sqrt(sEta_G))  * cos(ZOver2rho) * Lj * &
-                        sy(iPYs:iPYe) + &
-                        cosh(sInv2rho * sy(iYs:iYe) * &
+                        spi + &
+                        cosh(sInv2rho * sy * &
                         sqrt(sEta_G)) *sin(ZOver2rho))
 
     else 
@@ -73,19 +94,19 @@ contains
 
       if (qFocussing_G) then
 
-        sb(iPXs:iPXe) = sInv2rho * (fy_G*n2col*sin(ZOver2rho) - &
-                        (salphaSq * sEta_G * sy(iP2s:iP2e) * &
+        sdpr = sInv2rho * (fy_G*n2col*sin(ZOver2rho) - &
+                        (salphaSq * sEta_G * sp2 * &
                         sField4ElecReal ) ) - & 
                         nd / Lj * & ! focusing term
-                        (  ( kbeta**2 * sy(iXs:iXe)) + (sEta_G / &
-                        ( 1.0_WP + (sEta_G * sy(iP2s:iP2e)) ) * &
-                        sb(iXs:iXe) * dp2f ) )
+                        (  ( kbeta**2 * sx) + (sEta_G / &
+                        ( 1.0_WP + (sEta_G * sp2) ) * &
+                        sdx * dp2f ) )
 
       else 
 
 
-        sb(iPXs:iPXe) = sInv2rho * (fy_G* n2col * sin(ZOver2rho) - &
-              ( salphaSq * sEta_G * sy(iP2s:iP2e) * &
+        sdpr = sInv2rho * (fy_G* n2col * sin(ZOver2rho) - &
+              ( salphaSq * sEta_G * sp2 * &
               sField4ElecReal ) )
 
 
@@ -106,7 +127,7 @@ contains
 
     2000 continue
 
-  end subroutine dppdz_r
+  end subroutine dppdz_r_f
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -116,20 +137,30 @@ contains
 
 
 
-  subroutine dppdz_i(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,nd,Lj,kbeta,sb,sy,dp2f,qOK)
+  subroutine dppdz_i_f(sx, sy, sz2, spr, spi, sp2, &
+                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
+                     Lj, qOK)
+
+    implicit none
 
 
-  	implicit none
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sp2(:)
+    real(kind=wp), intent(in) :: sdx(:), sdy(:), sdz2(:), sdpr(:), sdp2(:)
+    real(kind=wp), intent(in) :: Lj(:)
+    real(kind=wp), intent(out) :: sdpi(:)
+
+
+!  	implicit none
 
 
 
-    REAL(KIND=WP),INTENT(IN) :: sInv2rho
-    REAL(KIND=WP),INTENT(IN) :: ZOver2rho,salphaSq
-    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE ,INTENT(IN):: sField4ElecImag
-    REAL(KIND=WP),ALLOCATABLE,INTENT(IN) :: Lj(:), dp2f(:)
-    REAL(KIND=WP),INTENT(IN) :: kbeta,nd
-    REAL(KIND=WP),INTENT(IN) :: sy(:)
-    REAL(KIND=WP),INTENT(OUT) :: sb(:)
+!    REAL(KIND=WP),INTENT(IN) :: sInv2rho
+!    REAL(KIND=WP),INTENT(IN) :: ZOver2rho,salphaSq
+!    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE ,INTENT(IN):: sField4ElecImag
+!    REAL(KIND=WP),ALLOCATABLE,INTENT(IN) :: Lj(:), dp2f(:)
+!    REAL(KIND=WP),INTENT(IN) :: kbeta,nd
+!    REAL(KIND=WP),INTENT(IN) :: sy(:)
+!    REAL(KIND=WP),INTENT(OUT) :: sb(:)
     logical, intent(inout) :: qOK
 
     LOGICAL :: qOKL                   
@@ -143,15 +174,15 @@ contains
 
 !     For curved pole undulator
 
-        sb(iPYs:iPYe) = sInv2rho * ( -1.0_WP * sqrt(2.0_WP) * sqrt(sEta_G) &
-                        * Lj * sy(iPXs:iPXe) &
-                        * cosh(sy(iXs:iXe) * kx_und_G) &
-                        * sinh(sy(iYs:iYe) * ky_und_G) &
+        sdpi = sInv2rho * ( -1.0_WP * sqrt(2.0_WP) * sqrt(sEta_G) &
+                        * Lj * spr &
+                        * cosh(sx * kx_und_G) &
+                        * sinh(sy * ky_und_G) &
                         * cos(ZOver2rho)  / (sqrt(salphaSq) * ky_und_G) &
                         + sin(ZOver2rho) * kx_und_G/ky_und_G * &
-                        sinh(sy(iXs:iXe) * kx_und_G) * &
-                        sinh(sy(iYs:iYe) * ky_und_G) & 
-                        - sEta_G * sy(iP2s:iP2e) * salphaSq * &
+                        sinh(sx * kx_und_G) * &
+                        sinh(sy * ky_und_G) & 
+                        - sEta_G * sp2 * salphaSq * &
                         sField4ElecImag)
 
 
@@ -161,12 +192,12 @@ contains
 
 
 
-        sb(iPYs:iPYe) = sInv2rho * (- sField4ElecImag * salphaSq * &
-                        sEta_G * sy(iP2s:iP2e)  &
+        sdpi = sInv2rho * (- sField4ElecImag * salphaSq * &
+                        sEta_G * sp2  &
                         - ((sqrt(6.0_WP) * sRho_G)/ sqrt(salphaSq)) * &
-                        sinh(sInv2rho * sy(iYs:iYe) &
+                        sinh(sInv2rho * sy &
                         * sqrt(sEta_G)) * cos(ZOver2rho) * Lj * &
-                        sy(iPXs:iPXe))
+                        spr)
 
 
     else
@@ -177,20 +208,20 @@ contains
 
       if (qFocussing_G) then
 
-        sb(iPYs:iPYe) = sInv2rho * (fx_G*n2col*cos(ZOver2rho) - &
-                        (salphaSq * sEta_G * sy(iP2s:iP2e) * &
+        sdpi = sInv2rho * (fx_G*n2col*cos(ZOver2rho) - &
+                        (salphaSq * sEta_G * sp2 * &
                         sField4ElecImag ) ) + &
                         nd / Lj * & ! focusing term
-                        (  ( kbeta**2 * sy(iYs:iYe)) + (sEta_G / &
-                        ( 1.0_WP + (sEta_G * sy(iP2s:iP2e)) ) * &
-                        sb(iYs:iYe) * dp2f ) )
+                        (  ( kbeta**2 * sy) + (sEta_G / &
+                        ( 1.0_WP + (sEta_G * sp2) ) * &
+                        sdy * dp2f ) )
 
 
       else
 
 
-        sb(iPYs:iPYe) = sInv2rho * (fx_G * n2col * cos(ZOver2rho) - &
-                      ( salphaSq * sEta_G * sy(iP2s:iP2e) * &
+        sdpi = sInv2rho * (fx_G * n2col * cos(ZOver2rho) - &
+                      ( salphaSq * sEta_G * sp2 * &
                       sField4ElecImag ) )
 
       end if
@@ -211,7 +242,7 @@ contains
     2000 continue
 
 
-  end subroutine dppdz_i
+  end subroutine dppdz_i_f
 
 
 
@@ -221,22 +252,30 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine dp2dz(sInv2rho,ZOver2rho,salphaSq, &
-                      sField4ElecImag,sField4ElecReal, &
-                      nd,Lj,kbeta,sb,sy,dp2f,nb,qOK)
+  subroutine dp2dz_f(sx, sy, sz2, spr, spi, sp2, &
+                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
+                     Lj, qOK)
+
+    implicit none
 
 
-  	implicit none
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sp2(:)
+    real(kind=wp), intent(in) :: sdx(:), sdy(:), sdz2(:), sdpr(:), sdpi(:)
+    real(kind=wp), intent(in) :: Lj(:)
+    real(kind=wp), intent(out) :: sdp2(:)
 
 
-
-    REAL(KIND=WP),INTENT(IN) :: sInv2rho
-    REAL(KIND=WP),INTENT(IN) :: ZOver2rho,salphaSq
-    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE ,INTENT(IN):: sField4ElecReal,sField4ElecImag
-    REAL(KIND=WP),ALLOCATABLE,INTENT(IN) :: Lj(:), dp2f(:)
-    REAL(KIND=WP),INTENT(IN) :: kbeta,nd,nb
-    REAL(KIND=WP),INTENT(IN) :: sy(:)
-    REAL(KIND=WP),INTENT(OUT) :: sb(:)   
+!  	implicit none
+!
+!
+!
+!    REAL(KIND=WP),INTENT(IN) :: sInv2rho
+!    REAL(KIND=WP),INTENT(IN) :: ZOver2rho,salphaSq
+!    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE ,INTENT(IN):: sField4ElecReal,sField4ElecImag
+!    REAL(KIND=WP),ALLOCATABLE,INTENT(IN) :: Lj(:), dp2f(:)
+!    REAL(KIND=WP),INTENT(IN) :: kbeta,nd,nb
+!    REAL(KIND=WP),INTENT(IN) :: sy(:)
+!    REAL(KIND=WP),INTENT(OUT) :: sb(:)   
     logical, intent(inout) :: qOK
 
     LOGICAL :: qOKL
@@ -249,17 +288,17 @@ contains
 
 !     For curved pole undulator
 
-        sb(iP2s:iP2e) = (4_WP * sRho_G / sEta_G) * Lj**2 * &
-                        ( (sy(iPXs:iPXe) * sField4ElecReal &
-                        + sy(iPYs:iPYe) * sField4ElecImag) * &
-                        sy(iP2s:iP2e) * sEta_G &
-                        + (1.0_WP/salphaSq) * (1 + sEta_G * sy(iP2s:iP2e)) &
+        sdp2 = (4_WP * sRho_G / sEta_G) * Lj**2 * &
+                        ( (spr * sField4ElecReal &
+                        + spi * sField4ElecImag) * &
+                        sp2 * sEta_G &
+                        + (1.0_WP/salphaSq) * (1 + sEta_G * sp2) &
                         * sin(ZOver2rho) * &
-                        (sy(iPXs:iPXe) * cosh(sy(iXs:iXe) &
-                        * kx_und_G) * cosh(sy(iYs:iYe) * ky_und_G) &
-                        + sy(iPYs:iPYe) * kx_und_G/ky_und_G * &
-                        sinh(sy(iXs:iXe) * kx_und_G) * &
-                        sinh(sy(iYs:iYe) * ky_und_G)))
+                        (spr * cosh(sx &
+                        * kx_und_G) * cosh(sy * ky_und_G) &
+                        + spi * kx_und_G/ky_und_G * &
+                        sinh(sx * kx_und_G) * &
+                        sinh(sy * ky_und_G)))
 
 
     else if (zUndType_G == 'planepole') then 
@@ -267,13 +306,13 @@ contains
 !     p2 equation for plane-poled undulator
 
  
-        sb(iP2s:iP2e) = (4_WP * sRho_G / sEta_G) * Lj**2 * &
-                        ( (sy(iPXs:iPXe) * sField4ElecReal &
-                        + sy(iPYs:iPYe) * sField4ElecImag) * &
-                        sy(iP2s:iP2e) * sEta_G &
-                        + (1.0_WP/salphaSq) * (1 + sEta_G * sy(iP2s:iP2e)) &
-                        * cosh(sInv2rho * sy(iYs:iYe) * sqrt(sEta_G)) &
-                        * sin(ZOver2rho) *  sy(iPXs:iPXe)  )
+        sdp2 = (4_WP * sRho_G / sEta_G) * Lj**2 * &
+                        ( (spr * sField4ElecReal &
+                        + spi * sField4ElecImag) * &
+                        sp2 * sEta_G &
+                        + (1.0_WP/salphaSq) * (1 + sEta_G * sp2) &
+                        * cosh(sInv2rho * sy * sqrt(sEta_G)) &
+                        * sin(ZOver2rho) *  spr  )
 
  
     else
@@ -283,26 +322,26 @@ contains
 
       if (qFocussing_G) then
 
-        sb(iP2s:iP2e) = 2.0_WP * nb * Lj**2 * &
-                        ((sEta_G * sy(iP2s:iP2e) + 1.0_WP) &
+        sdp2 = 2.0_WP * nb * Lj**2 * &
+                        ((sEta_G * sp2 + 1.0_WP) &
                         / salphaSq * n2col * &
-                        (sy(iPYs:iPYe) * fx_G*cos(ZOver2Rho) + &
-                        sy(iPXs:iPXe) * fy_G*sin(ZOver2rho)) + &
-                        sEta_G * sy(iP2s:iP2e) * &
-                        (sy(iPXs:iPXe)*sField4ElecReal + &
-                        sy(iPYs:iPYe)*sField4ElecImag)) &
+                        (spi * fx_G*cos(ZOver2Rho) + &
+                        spr * fy_G*sin(ZOver2rho)) + &
+                        sEta_G * sp2 * &
+                        (spr*sField4ElecReal + &
+                        spi*sField4ElecImag)) &
                         + dp2f
 
       else
 
 
-        sb(iP2s:iP2e) = 2.0_WP * nb * Lj**2.0_WP * &
-                ((sEta_G * sy(iP2s:iP2e) + 1.0_WP)/ salphaSq * n2col * &
-                (sy(iPYs:iPYe) * fx_G*cos(ZOver2Rho) + &
-                sy(iPXs:iPXe) * fy_G*sin(ZOver2rho)) + &
-                sEta_G * sy(iP2s:iP2e) * &
-                (sy(iPXs:iPXe) * sField4ElecReal + &
-                sy(iPYs:iPYe) * sField4ElecImag))
+        sdp2 = 2.0_WP * nb * Lj**2.0_WP * &
+                ((sEta_G * sp2 + 1.0_WP)/ salphaSq * n2col * &
+                (spi * fx_G*cos(ZOver2Rho) + &
+                spr * fy_G*sin(ZOver2rho)) + &
+                sEta_G * sp2 * &
+                (spr * sField4ElecReal + &
+                spi * sField4ElecImag))
 
       end if
 
@@ -321,7 +360,7 @@ contains
     2000 continue
 
 
-  end subroutine dp2dz
+  end subroutine dp2dz_f
 
 
 
@@ -329,14 +368,25 @@ contains
 
 
 
-  subroutine dxdz(sy, Lj, nd, sb, qOK)
+  subroutine dxdz_f(sx, sy, sz2, spr, spi, sp2, &
+                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
+                     Lj, qOK)
+
+    implicit none
 
 !   Calculate dx/dz
 !
 !              Arguments:
 
-    real(kind=wp), intent(in) :: sy(:), Lj(:), nd
-    real(kind=wp), intent(inout) :: sb(:)
+
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sp2(:)
+    real(kind=wp), intent(in) :: sdy(:), sdz2(:), sdpr(:), sdpi(:), sdp2(:)
+    real(kind=wp), intent(in) :: Lj(:)
+    real(kind=wp), intent(out) :: sdx(:)
+
+
+!    real(kind=wp), intent(in) :: sy(:), Lj(:), nd
+!    real(kind=wp), intent(inout) :: sb(:)
     logical, intent(inout) :: qOK
 
 !              Local vars
@@ -347,7 +397,7 @@ contains
     qOK = .false.
 
 
-    sb(iXs:iXe) = sy(iPXs:iPXe) * Lj / nd
+    sdx = spr * Lj / nd
 
 
     qOK = .true.
@@ -359,20 +409,31 @@ contains
     2000 continue
 
 
-  end subroutine dxdz
+  end subroutine dxdz_f
 
 
 
 
 
-  subroutine dydz(sy, Lj, nd, sb, qOK)
+  subroutine dydz_f(sx, sy, sz2, spr, spi, sp2, &
+                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
+                     Lj, qOK)
+
+    implicit none
 
 !   Calculate dy/dz
 !
 !              Arguments:
 
-    real(kind=wp), intent(in) :: sy(:), Lj(:), nd
-    real(kind=wp), intent(inout) :: sb(:)
+
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sp2(:)
+    real(kind=wp), intent(in) :: sdx(:), sdz2(:), sdpr(:), sdpi(:), sdp2(:)
+    real(kind=wp), intent(in) :: Lj(:)
+    real(kind=wp), intent(out) :: sdy(:)
+
+
+!    real(kind=wp), intent(in) :: sy(:), Lj(:), nd
+!    real(kind=wp), intent(inout) :: sb(:)
     logical, intent(inout) :: qOK
 
 !              Local vars
@@ -382,7 +443,7 @@ contains
 
     qOK = .false.
 
-    sb(iYs:iYe) = - sy(iPYs:iPYe) * Lj / nd
+    sdy = - spi * Lj / nd
 
 
     qOK = .true.
@@ -394,19 +455,30 @@ contains
     2000 continue
 
 
-  end subroutine dydz
+  end subroutine dydz_f
 
 
 
 
-  subroutine dz2dz(sy, sb, qOK)
+  subroutine dz2dz_f(sx, sy, sz2, spr, spi, sp2, &
+                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
+                     Lj, qOK)
+
+    implicit none
 
 !   Calculate dz2/dz
 !
 !              Arguments:
 
-    real(kind=wp), intent(in) :: sy(:)
-    real(kind=wp), intent(inout) :: sb(:)
+
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sp2(:)
+    real(kind=wp), intent(in) :: sdx(:), sdy(:), sdpr(:), sdpi(:), sdp2(:)
+    real(kind=wp), intent(in) :: Lj(:)
+    real(kind=wp), intent(out) :: sdz2(:)
+
+
+!    real(kind=wp), intent(in) :: sy(:), Lj(:), nd
+!    real(kind=wp), intent(inout) :: sb(:)
     logical, intent(inout) :: qOK
 
 !              Local vars
@@ -416,7 +488,7 @@ contains
 
     qOK = .false.
 
-    sb(iZ2s:iZ2e) = sy(iP2s:iP2e)
+    sdz2 = sp2
 
 
     qOK = .true.
@@ -427,7 +499,7 @@ contains
     
     2000 continue
 
-  end subroutine dz2dz
+  end subroutine dz2dz_f
   
 
 
@@ -435,10 +507,10 @@ contains
 
 
 
-  subroutine caldp2f(kbeta, sy, sb, dp2f, qOK)
+  subroutine caldp2f_f(sx, sy, sdx, sdy, sp2, kbeta, qOK)
 
-    real(kind=wp), intent(in) :: kbeta, sy(:), sb(:)
-    real(kind=wp), intent(out) :: dp2f(:)
+    real(kind=wp), intent(in) :: sx(:), sy(:), sdx(:), sdy(:), sp2(:)
+    real(kind=wp), intent(in) :: kbeta
 
     logical, intent(inout) :: qOK
 
@@ -447,11 +519,11 @@ contains
     if (qFocussing_G) then
 
         dp2f = -(kbeta**2.0_WP) * &   ! New focusing term
-               (1.0_WP + (sEta_G * sy(iP2s:iP2e)  ) ) * &
-               ( ( sy(iXs:iXe) * sb(iXs:iXe)  ) + & 
-               ( sy(iYs:iYe) * sb(iYs:iYe)  ) ) / &
-               (1.0_WP + sEta_G * ( ( sb(iXs:iXe) )**2.0_WP  + &
-               ( sb(iYs:iYe) )**2.0_WP ) )
+               (1.0_WP + (sEta_G * sp2  ) ) * &
+               ( ( sx * sdx  ) + & 
+               ( sy * sdy  ) ) / &
+               (1.0_WP + sEta_G * ( ( sdx )**2.0_WP  + &
+               sdy**2.0_WP ) )
 
     else 
 
@@ -467,7 +539,40 @@ contains
     
     2000 continue
 
-  end subroutine caldp2f
+  end subroutine caldp2f_f
+
+
+
+
+  subroutine alct_e_srtcts(ar_sz)
+
+    implicit none
+
+! Allocate the arrays used in the calculation of
+! the electron eqns  
+
+    integer(kind=ip), intent(in) :: ar_sz
+
+    allocate(dp2f(ar_sz), sField4ElecReal(ar_sz), &
+             sField4ElecImag(ar_sz))! , Lj(ar_sz))
+
+
+  end subroutine alct_e_srtcts
+
+
+
+  subroutine dalct_e_srtcts()
+
+    implicit none
+
+! Allocate the arrays used in the calculation of
+! the electron eqns  
+
+    deallocate(dp2f, sField4ElecReal, &
+             sField4ElecImag)! , Lj(ar_sz))
+
+
+  end subroutine dalct_e_srtcts
 
 
 end module equations

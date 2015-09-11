@@ -24,14 +24,14 @@ contains
 
 
 
-  subroutine writeIntData(sA, sV)
+  subroutine writeIntData(sA)
 
     implicit none
 
 ! Outputs integrated data e.g. power, current
 ! bunching, etc
 
-    real(kind=wp), intent(in) :: sA(:), sV(:)
+    real(kind=wp), intent(in) :: sA(:)
 
     call oPower(sA)
 

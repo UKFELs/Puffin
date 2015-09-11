@@ -236,8 +236,7 @@ END SUBROUTINE passToGlobals
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                             
 SUBROUTINE SetUpInitialValues(nseeds, freqf, SmeanZ2, qFlatTopS, sSigmaF, &
-                              sLengthOfElm, sA0_x, sA0_y, sX0, sY0, sZ20, &
-                              sV, sA, qOK)
+                              sLengthOfElm, sA0_x, sA0_y, sA, qOK)
 
     IMPLICIT NONE
 !
@@ -262,10 +261,6 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, SmeanZ2, qFlatTopS, sSigmaF, &
     REAL(KIND=WP), INTENT(IN)    :: sLengthOfElm(:)
     REAL(KIND=WP), INTENT(IN)    :: sA0_x(:)
     REAL(KIND=WP), INTENT(IN)    :: sA0_y(:)
-    REAL(KIND=WP), INTENT(IN)    :: sX0(:)      
-    REAL(KIND=WP), INTENT(IN)    :: sY0(:)      
-    REAL(KIND=WP), INTENT(IN)    :: sz20(:)      
-    REAL(KIND=WP), INTENT(INOUT) :: sV(:)
     REAL(KIND=WP), INTENT(INOUT) :: sA(:)
     LOGICAL,       INTENT(OUT)   :: qOK
 
@@ -304,49 +299,6 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, SmeanZ2, qFlatTopS, sSigmaF, &
 
     DEALLOCATE(sAreal,sAimag)
 
-!     Assign initial mactroparticle positions to relevent 
-!     sections of sV array
-
-    sV(iPXs:iPXe) = sEl_PX0Position_G
-
-    sV(iPYs:iPYe) = -sEl_PY0Position_G
-    
-    sV(iP2s:iP2e) = sEl_PZ20Position_G
-    
-    sV(iXs:iXe) = sX0
-    
-    sV(iYs:iYe) = sY0
-    
-    sV(iZ2s:iZ2e) = sz20
-
-    !CALL PutValueInVector(iRe_PPerp_CG, sEl_PX0Position_G,&
-    !     sV, qOKL)
-    !IF (.NOT. qOKL) GOTO 1000
-
-    !CALL PutValueInVector(iIm_PPerp_CG,-sEl_PY0Position_G,&
-    !     sV, qOKL)		
-    !IF (.NOT. qOKL) GOTO 1000
-
-!     Set up initial electron Q values
-
-    !CALL PutValueInVector(iRe_Q_CG, sEl_PZ20Position_G,&
-    !     sV, qOKL)
-    !IF (.NOT. qOKL) GOTO 1000
-
-!     Set up initial electron starting positions in z2 direction
-
-    !CALL PutValueInVector(iRe_Z2_CG, sz20, sV, qOKL)
-    !IF (.NOT. qOKL) GOTO 1000
-
-!     Set up initial electron starting positions in x direction
-
-    !CALL PutValueInVector(iRe_X_CG, sX0, sV, qOKL)
-    !IF (.NOT. qOKL) GOTO 1000
-
-!     Set up initial electron starting positions in y direction
-
-    !CALL PutValueInVector(iRe_Y_CG, sY0, sV, qOKL)
-    !IF (.NOT. qOKL) GOTO 1000
 
 !     Set error flag and exit
 
@@ -363,8 +315,7 @@ END SUBROUTINE SetUpInitialValues
 
 SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
                              sigma, beamCenZ2,gamma_d,eThresh, &
-                             chirp,mag,fr,nbeams, &
-                             sV,qOK)
+                             chirp,mag,fr,nbeams, qOK)
 
 !                     ARGUMENTS
 
@@ -379,7 +330,6 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
     REAL(KIND=WP),     INTENT(INOUT) :: sigma(:,:)
     REAL(KIND=WP),     INTENT(INOUT) :: beamCenZ2(:)
     REAL(KIND=WP),     INTENT(IN)    :: eThresh
-    REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sV(:)
     LOGICAL,           INTENT(OUT)   :: qOK     
 
 !                   LOCAL ARGS
@@ -430,7 +380,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
       CALL electron_grid(RealE,NE,noise, &
                          Z,nbeams, LenEPulse,sigma, beamCenZ2, gamma_d, &
                          eThresh,tTransInfo_G%qOneD, &
-                         chirp,mag,fr,sV,qOKL)
+                         chirp,mag,fr,qOKL)
       IF (.NOT. qOKL) GOTO 1000
 
     else 
@@ -461,8 +411,6 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
 
 
     end if
-
-    allocate(sV(iNumberElectrons_G * 6_IP))
 
 !    Set up the array describing the number of electrons
 !    on each processor
@@ -502,6 +450,8 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
        sendbuff=recvbuff
     END DO
 
+!    print*, 'procelectrons = ', procelectrons_G
+!    stop 
     IF (iNumberElectrons_G==0) qEmpty=.TRUE. 
 
     if (qSimple) DEALLOCATE(RealE)

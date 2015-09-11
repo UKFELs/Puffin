@@ -34,7 +34,6 @@ CONTAINS
        qOneD, &
        chirp, &
        mag, fr, &
-       sV, &
        qOK)
 
 ! Calculate the electron grid positions
@@ -73,7 +72,6 @@ CONTAINS
 
     LOGICAL,         INTENT(IN):: qOneD
 
-    REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sV(:)
     LOGICAL,         INTENT(OUT):: qOK
 
 !              LOCAL ARGUMENTS
@@ -252,17 +250,17 @@ CONTAINS
 !!!!!!! IS - AND DXDZ OFFSET *IS* DEPENDANT ON GAMMA, BUT SIGMA_DXDZ
 !!!!!!! IS NOT
 
-    ALLOCATE(tconv(size(sEl_PX0Position_G)))
+    ALLOCATE(tconv(size(sElPX_G)))
     
-    tconv = sEl_PX0Position_G**2.0_WP + sEl_PY0Position_G**2.0_WP
+    tconv = sElPX_G**2.0_WP + sElPY_G**2.0_WP
 
-    sEl_PX0Position_G = sqrt((sEl_PZ20Position_G**2.0_WP - 1.0_WP) / &
+    sElPX_G = sqrt((sElPZ2_G**2.0_WP - 1.0_WP) / &
                             (1.0_WP + tconv))  &
-                        / afact * sEl_PX0Position_G
+                        / afact * sElPX_G
 
-    sEl_PY0Position_G = sqrt((sEl_PZ20Position_G**2.0_WP - 1.0_WP) / &
+    sElPY_G = sqrt((sElPZ2_G**2.0_WP - 1.0_WP) / &
                             (1.0_WP + tconv))  &
-                        / afact * sEl_PY0Position_G
+                        / afact * sElPY_G
 
 
     DEALLOCATE(tconv)
@@ -281,14 +279,14 @@ CONTAINS
 ! when calculating initial conditions, this may need change eventually
 
 
-        sEl_PX0Position_G = sEl_PX0Position_G + &
+        sElPX_G = sElPX_G + &
         pxOffset(sZ, srho_G, fy_G) & 
-        - 0.5_WP * kx**2 * sEl_X0Position_G**2 &
-        -  0.5_WP * kY**2 * sEl_Y0Position_G**2
+        - 0.5_WP * kx**2 * sElX_G**2 &
+        -  0.5_WP * kY**2 * sElY_G**2
      
-        sEl_PY0Position_G = sEl_PY0Position_G &
+        sElPY_G = sElPY_G &
         + pyOffset(sZ, srho_G, fx_G) &
-        - kx**2 *  sEl_X0Position_G  * sEl_Y0Position_G
+        - kx**2 *  sElX_G  * sElY_G
 
 
 
@@ -301,11 +299,11 @@ CONTAINS
 
 
 
-        sEl_PX0Position_G = sEl_PX0Position_G + &
+        sElPX_G = sElPX_G + &
         pxOffset(sZ, srho_G, fy_G) & 
-        - 0.5_WP * (sEta_G / (4 * sRho_G**2)) * sEl_X0Position_G**2 
+        - 0.5_WP * (sEta_G / (4 * sRho_G**2)) * sElX_G**2 
 
-        sEl_PY0Position_G = sEl_PY0Position_G &
+        sElPY_G = sElPY_G &
         + pyOffset(sZ, srho_G, fx_G) 
 
 
@@ -315,10 +313,10 @@ CONTAINS
 ! field variation
 
 
-        sEl_PX0Position_G = sEl_PX0Position_G &
+        sElPX_G = sElPX_G &
         + pxOffset(sZ, srho_G, fy_G) 
 
-        sEl_PY0Position_G = sEl_PY0Position_G &
+        sElPY_G = sElPY_G &
         + pyOffset(sZ, srho_G, fx_G) 
 
 
@@ -329,12 +327,12 @@ CONTAINS
 !     We currently have gamma in the p2 position array -
 !     need to change to p2
 
-    sEl_PZ20Position_G = getP2(sEl_PZ20Position_G,sEl_PX0Position_G,&
-                               sEl_PY0Position_G,sEta_G,sAw_G)
+    sElPZ2_G = getP2(sElPZ2_G, sElPX_G,&
+                               sElPY_G, sEta_G, sAw_G)
 
-!     Allocate electron array
 
-    !ALLOCATE(sV(iNumberElectrons_G * 6_IPL))
+
+    sElPY_G = - sElPY_G
 
 !     Sum the local num of macroparticles to a global number
 

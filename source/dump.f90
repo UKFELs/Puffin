@@ -29,10 +29,9 @@ MODULE dumpFiles
 
 
 
-SUBROUTINE DUMPDATA(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
+SUBROUTINE DUMPDATA(sA,rank,nnodes,nelectrons,sz,istep,page)
 
  REAL(KIND=WP),DIMENSION(:),INTENT(IN) :: sA
- REAL(KIND=WP),DIMENSION(:),INTENT(IN) :: sV
  INTEGER(KIND=IP),INTENT(IN) :: rank,nnodes,istep,page
  INTEGER(KIND=IPL), INTENT(IN) :: nelectrons
  REAL(KIND=WP),INTENT(IN) :: sz
@@ -66,37 +65,37 @@ if (nelectrons > 0) then
  FileName = 'rePPerp'//TRIM(IntegerToString(RANK))//'.dump'
  
  OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
- WRITE(213) sV(1:nelectrons)
+ WRITE(213) sElPX_G
  CLOSE(UNIT=213,STATUS='KEEP') 
 ! Im pperp
  FileName = 'imPPerp'//TRIM(IntegerToString(RANK))//'.dump'
  
  OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
- WRITE(213) sV(nelectrons+1:2*nelectrons)
+ WRITE(213) sElPY_G
  CLOSE(UNIT=213,STATUS='KEEP') 
 ! Q 
  FileName = 'Q'//TRIM(IntegerToString(RANK))//'.dump'
  
  OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
- WRITE(213) sV(2*nelectrons+1:3*nelectrons)
+ WRITE(213) sElPZ2_G
  CLOSE(UNIT=213,STATUS='KEEP') 
 ! Z2 
  FileName = 'Z2-'//TRIM(IntegerToString(RANK))//'.dump'
  
  OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
- WRITE(213) sV(3*nelectrons+1:4*nelectrons)
+ WRITE(213) sElZ2_G
  CLOSE(UNIT=213,STATUS='KEEP') 
 ! X 
  FileName = 'X'//TRIM(IntegerToString(RANK))//'.dump'
  
  OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
- WRITE(213) sV(4*nelectrons+1:5*nelectrons)
+ WRITE(213) sElX_G
  CLOSE(UNIT=213,STATUS='KEEP')
 ! Y
  FileName = 'Y'//TRIM(IntegerToString(RANK))//'.dump'
  
  OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
- WRITE(213) sV(5*nelectrons+1:6*nelectrons)
+ WRITE(213) sElY_G
  CLOSE(UNIT=213,STATUS='KEEP') 
 
 end if

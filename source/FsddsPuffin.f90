@@ -422,7 +422,7 @@ CONTAINS
 
 
 
-  subroutine wdfs(sA, sV, sZ, istep, tArrayA, tArrayE, tArrayZ, &
+  subroutine wdfs(sA, sZ, istep, tArrayA, tArrayE, tArrayZ, &
                   iIntWr, iWr, qSep, zDFname, qWDisp, qOK)
 
     implicit none
@@ -430,7 +430,7 @@ CONTAINS
 ! Write Data FileS
 
 
-    real(kind=wp), intent(in) :: sA(:), sV(:), sZ
+    real(kind=wp), intent(in) :: sA(:), sZ
     type(cArraySegment), intent(inout) :: tArrayA(:), tArrayE(:), tArrayZ
     integer(kind=ip), intent(in) :: istep
     integer(kind=ip), intent(in) :: iIntWr, iWr
@@ -464,7 +464,7 @@ CONTAINS
 
     if (qWriteFull) then
 
-      call outputBeamFiles(sV, tArrayE, iStep, qSep, zDFName, qOKL)
+      call outputBeamFiles(tArrayE, iStep, qSep, zDFName, qOKL)
       if (.not. qOKL) goto 1000
 
     end if
@@ -486,7 +486,7 @@ CONTAINS
 
     if (qWriteInt) then
 
-      call writeIntData(sA,sV)
+      call writeIntData(sA)
     
     end if
 
@@ -707,7 +707,7 @@ CONTAINS
 
 
 
-  subroutine outputBeamFiles(sV, tArrayE, iStep, qSeparate, zDFName, qOK)
+  subroutine outputBeamFiles(tArrayE, iStep, qSeparate, zDFName, qOK)
 
 
     implicit none
@@ -722,7 +722,6 @@ CONTAINS
 !                  sV
 !
  
-    real(kind=wp), intent(in) :: sV(:)
     type(cArraySegment), intent(inout) :: tArrayE(:)
     integer(kind=ip), intent(in) :: iStep
     logical, intent(in) :: qSeparate
@@ -731,7 +730,7 @@ CONTAINS
 
 ! Local vars
 
-    integer(kind=ip) :: iep, istart, iend
+    integer(kind=ip) :: iep
     logical :: qOKL
 
 
@@ -756,29 +755,13 @@ CONTAINS
 !     to file. This will create very large
 !     files!!!
 
-    do iep = 1_IP, SIZE(tArrayE)
-
-      if (tArrayE(iep)%qWrite) then
-     
-        iStart = tArrayE(iep)%iStart
-        iEnd   = tArrayE(iep)%iEnd
-
-!     Write the data
-      
-        call OutputIntegrationData(tArrayE(iep)%tFileType, &
-                                   sV(iStart:iEnd), &
-                                   tProcInfo_G%rank, &
-                                   iGloNumElectrons_G, &
-                                   qOKL)
-
-        if (.NOT. qOKL) goto 1000
-
-      end if
-
-    end do
-
-
-
+    call wrt_phs_coord(iRe_X_CG, sElX_G, qOKL)
+    call wrt_phs_coord(iRe_Y_CG, sElY_G, qOKL)
+    call wrt_phs_coord(iRe_Z2_CG, sElZ2_G, qOKL)
+    call wrt_phs_coord(iRe_PPerp_CG, sElPX_G, qOKL)
+    call wrt_phs_coord(iIm_PPerp_CG, sElPY_G, qOKL)
+    call wrt_phs_coord(iRe_Q_CG, sElPZ2_G, qOKL)
+    if (.not. qOKL) goto 1000
 
 !     Set error flag and exit
 
@@ -801,7 +784,43 @@ CONTAINS
 
 
 
+  subroutine wrt_phs_coord(iPh_id,ph_coord,qOK)
 
+    integer(kind=ip), intent(in) :: iPh_id
+    real(kind=wp), intent(in) :: ph_coord(:)
+    logical, intent(out) :: qOK
+
+    logical :: qOKL
+
+    qOK = .false.
+
+    if (tArrayE(iPh_id)%qWrite) then
+
+!     Write the data
+      
+      call OutputIntegrationData(tArrayE(iPh_id)%tFileType, &
+                                 ph_coord, &
+                                 tProcInfo_G%rank, &
+                                 iGloNumElectrons_G, &
+                                 qOKL)
+
+      if (.NOT. qOKL) goto 1000
+
+    end if
+
+
+!     Set error flag and exit
+
+    qOK = .true.            
+    goto 2000
+
+
+1000 call Error_log('Error in sddsPuffin:wrt_phs_coord',tErrorLog_G)
+    print*,'Error in sddsPuffin:wrt_phs_coord'
+
+2000 continue
+
+  end subroutine wrt_phs_coord
 
 
 
