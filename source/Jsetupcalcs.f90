@@ -217,7 +217,10 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
     tArrayA(:)%tFileType%qFormatted = qFormatted
     tArrayZ%tFileType%qFormatted = qFormatted
 
+!    Set output data file format:
+!    Can be sdds, hdf5 or blank (plain data)
 
+    wrMeth_G = 'sdds'
 
 
 
