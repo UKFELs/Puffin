@@ -244,6 +244,8 @@ TYPE(cFileType), save :: tPowF   ! Type array describing the power file
 
 integer(kind=ip) :: iWriteNthSteps, iDumpNthSteps, iIntWriteNthSteps
 
+character(32_ip) :: wrMeth_G
+
 
 
 

@@ -8,6 +8,9 @@ USE Stiffness
 USE Setup
 USE RK4int
 use dumpFiles 
+use hdf5_puff
+use pln_puff
+
 
 implicit none
 
@@ -81,7 +84,7 @@ end subroutine diffractIM
 
 
 
-
+!     ###################################################### 
 
 
 
@@ -110,25 +113,41 @@ subroutine writeIM(sA, Ar_local, sZ, &
   logical, intent(inout) :: qWDisp
   logical, intent(inout) :: qOK
 
-  logical :: qOKL
+  logical :: qOKL, qWriteInt, qWriteFull
 
   qOK = .false.
 
   call innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
 
-  call wdfs(sA, sZ, istep, tArrayA, tArrayE, tArrayZ, &
-            iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
-            zDataFileName, qWDisp, qOKL)
+  call int_or_full(istep, iIntWriteNthSteps, iWriteNthSteps, qWDisp, &
+                   qWriteInt, qWriteFull, qOK)
+
+  if (wrMeth_G == 'sdds') then
+
+    call wr_sdds(sA, sZ, istep, tArrayA, tArrayE, tArrayZ, &
+                 iIntWriteNthSteps, iWriteNthSteps, qSep, zDFname, &
+                 qWDisp, qWriteFull, &
+                 qWriteInt, qOK)
+
+  else if (wrMeth_G == 'hdf5') then
+
+    call wr_h5()
+
+  else 
+
+    call wr_pln()
+
+  end if
 
 !              Set error flag and exit
 
   qOK = .TRUE.
 
-  GOTO 2000
+  goto 2000
 
-1000  CALL Error_log('Error in writeIM',tErrorLog_G)
+1000  call Error_log('Error in writeIM',tErrorLog_G)
 
-2000 CONTINUE
+2000 continue
 
 
 
@@ -136,18 +155,49 @@ end subroutine writeIM
 
 
 
+!          ##################################################################
 
 
 
+  subroutine int_or_full(istep, iIntWr, iWr, qWDisp, &
+                         qWriteInt, qWriteFull, qOK)
+
+    implicit none
+
+!   Figure out whether to write integrated data or 
+!   full particle dump
 
 
+    integer(kind=ip), intent(in) :: istep
+    integer(kind=ip), intent(in) :: iIntWr, iWr
+    logical, intent(in) :: qWDisp
+    logical, intent(inout) :: qWriteInt, qWriteFull, qOK
+
+    logical ::  qOKL
+
+    qOK = .false.
+    
+    qWriteInt = .false.
+    qWriteFull = .false.
+
+    if ((mod(iStep,iIntWr)==0) .or. (iStep == nSteps) .or. (iStep == 0) .or. (qWDisp) ) then
+
+      qWriteInt = .true.
+
+    end if
 
 
+    if ((mod(iStep,iWr)==0) .or. (iStep == nSteps) .or. (iStep == 0) .or. (qWDisp) ) then
+
+      qWriteFull = .true.
+
+    end if
 
 
+  end subroutine int_or_full
 
 
-
+!########################################################################
 
 
 function qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps, &

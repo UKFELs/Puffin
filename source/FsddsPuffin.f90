@@ -414,16 +414,9 @@ CONTAINS
 
 
 
-
-
-
-
-
-
-
-
-  subroutine wdfs(sA, sZ, istep, tArrayA, tArrayE, tArrayZ, &
-                  iIntWr, iWr, qSep, zDFname, qWDisp, qOK)
+  subroutine wr_sdds(sA, sZ, istep, tArrayA, tArrayE, tArrayZ, &
+                     iIntWr, iWr, qSep, zDFname, qWDisp, qWriteFull, &
+                     qWriteInt, qOK)
 
     implicit none
 
@@ -440,44 +433,13 @@ CONTAINS
 
     logical :: qWriteInt, qWriteFull, qOKL
 
-    qOK = .false.
-    
-    qWriteInt = .false.
-    qWriteFull = .false.
-
-    if ((mod(iStep,iIntWr)==0) .or. (iStep == nSteps) .or. (iStep == 0) .or. (qWDisp) ) then
-
-      qWriteInt = .true.
-
-    end if
-
-
-
-
-    if ((mod(iStep,iWr)==0) .or. (iStep == nSteps) .or. (iStep == 0) .or. (qWDisp) ) then
-
-      qWriteFull = .true.
-
-    end if
-
-
-
     if (qWriteFull) then
 
       call outputBeamFiles(tArrayE, iStep, qSep, zDFName, qOKL)
       if (.not. qOKL) goto 1000
 
-    end if
-
-
-    if (qWriteFull) then 
-
       call outputField(sA, tArrayA, iStep, qSep, zDFName, qOKL)
       if (.not. qOKL) goto 1000
-
-    end if
-
-    if (qWriteFull) then
 
       call outputZ(sZ, tArrayZ, iStep, qSep, zDFName, qOKL)
       if (.not. qOKL) goto 1000
@@ -490,28 +452,104 @@ CONTAINS
     
     end if
 
-!     etc...
-
-!     So writeData below will become redundant
+  end subroutine wr_sdds
 
 
 
 
-!     Set error flag and exit
-
-    qOK = .true.
-    goto 2000
 
 
-!     Error Handler - Error log Subroutine in CIO.f90 line 709
 
-1000 call Error_log('Error in sddsPuffin:wdfs',tErrorLog_G)
-    print*,'Error in sddsPuffin:wdfs'
+!   subroutine wdfs(sA, sZ, istep, tArrayA, tArrayE, tArrayZ, &
+!                   iIntWr, iWr, qSep, zDFname, qWDisp, qOK)
 
-2000 continue
+!     implicit none
+
+! ! Write Data FileS
 
 
-  end subroutine wdfs
+!     real(kind=wp), intent(in) :: sA(:), sZ
+!     type(cArraySegment), intent(inout) :: tArrayA(:), tArrayE(:), tArrayZ
+!     integer(kind=ip), intent(in) :: istep
+!     integer(kind=ip), intent(in) :: iIntWr, iWr
+!     character(32_IP), intent(in) :: zDFName
+!     logical, intent(in) :: qSep, qWDisp
+!     logical, intent(inout) :: qOK
+
+!     logical :: qWriteInt, qWriteFull, qOKL
+
+!     qOK = .false.
+    
+!     qWriteInt = .false.
+!     qWriteFull = .false.
+
+!     if ((mod(iStep,iIntWr)==0) .or. (iStep == nSteps) .or. (iStep == 0) .or. (qWDisp) ) then
+
+!       qWriteInt = .true.
+
+!     end if
+
+
+
+
+!     if ((mod(iStep,iWr)==0) .or. (iStep == nSteps) .or. (iStep == 0) .or. (qWDisp) ) then
+
+!       qWriteFull = .true.
+
+!     end if
+
+
+
+!     if (qWriteFull) then
+
+!       call outputBeamFiles(tArrayE, iStep, qSep, zDFName, qOKL)
+!       if (.not. qOKL) goto 1000
+
+!     end if
+
+
+!     if (qWriteFull) then 
+
+!       call outputField(sA, tArrayA, iStep, qSep, zDFName, qOKL)
+!       if (.not. qOKL) goto 1000
+
+!     end if
+
+!     if (qWriteFull) then
+
+!       call outputZ(sZ, tArrayZ, iStep, qSep, zDFName, qOKL)
+!       if (.not. qOKL) goto 1000
+
+!     end if
+
+!     if (qWriteInt) then
+
+!       call writeIntData(sA)
+    
+!     end if
+
+! !     etc...
+
+! !     So writeData below will become redundant
+
+
+
+
+! !     Set error flag and exit
+
+!     qOK = .true.
+!     goto 2000
+
+
+! !     Error Handler - Error log Subroutine in CIO.f90 line 709
+
+! 1000 call Error_log('Error in sddsPuffin:wdfs',tErrorLog_G)
+!     print*,'Error in sddsPuffin:wdfs'
+
+! 2000 continue
+
+
+!   end subroutine wdfs
 
 
 
