@@ -206,14 +206,14 @@ CONTAINS
 
 ! Calculate Lj term
 
-!DIR$ SIMD
+! !DIR$ SIMD
 
   Lj = sqrt((1.0_WP - (1.0_WP / ( 1.0_WP + (sEta_G * sp2)) )**2.0_WP) &
              / (1.0_WP + nc* ( spr**2.0_wp  +  &
                                spi**2.0_wp )   )) &
           * (1.0_WP + sEta_G *  sp2) * sGammaR_G
 
-!DIR$ END SIMD
+! !DIR$ END SIMD
 
 
 
@@ -222,11 +222,11 @@ CONTAINS
   
   if (tTransInfo_G%qOneD) then
 
-!DIR$ SIMD
+! !DIR$ SIMD
  
     p_nodes = floor(sz2 / dz2) + 1_IP
 
-!DIR$ END SIMD
+! !DIR$ END SIMD
 
 
   else
@@ -244,8 +244,8 @@ CONTAINS
   if (tTransInfo_G%qOneD) then
 
 
-!$OMP PARALLEL DO PRIVATE(dadzRInst, dadzIInst, z2node, locz2, li1, li2) &
-!$OMP REDUCTION(+:sDADz)
+! !$OMP PARALLEL DO PRIVATE(dadzRInst, dadzIInst, z2node, locz2, li1, li2) &
+! !$OMP REDUCTION(+:sDADz)
 
     do i = 1, maxEl
       IF (i<=procelectrons_G(1)) THEN 
@@ -287,13 +287,13 @@ CONTAINS
       end if
     end do
 
-!$OMP END PARALLEL DO
+! !$OMP END PARALLEL DO
 
   else
 
 !$OMP PARALLEL DO PRIVATE(dadzRInst, dadzIInst, xnode, ynode, z2node, locx, locy, locz2, &
-!$OMP li1, li2, li3, li4, li5, li6, li7, li8, x_in1, x_in2, y_in1, y_in2, z2_in1, z2_in2) &
-!$OMP REDUCTION(+:sDADz)
+!$OMP li1, li2, li3, li4, li5, li6, li7, li8, x_in1, x_in2, y_in1, y_in2, z2_in1, z2_in2)   ! &
+! !$OMP REDUCTION(+:sDADz)
 
     do i = 1, maxEl
       IF (i<=procelectrons_G(1)) THEN 
@@ -359,23 +359,38 @@ CONTAINS
         sField4ElecImag(i) = li8 * sA(p_nodes(i) + retim + ntrans + ReducedNX_G + 1) + sField4ElecImag(i)
     
     
-
+!$OMP ATOMIC
         sDADz(p_nodes(i)) =                            li1 * dadzRInst + sDADz(p_nodes(i))
-        sDADz(p_nodes(i) + 1_ip) =                     li2 * dadzRInst + sDADz(p_nodes(i) + 1_ip)                
-        sDADz(p_nodes(i) + ReducedNX_G) =              li3 * dadzRInst + sDADz(p_nodes(i) + ReducedNX_G)          
-        sDADz(p_nodes(i) + ReducedNX_G + 1_ip) =       li4 * dadzRInst + sDADz(p_nodes(i) + ReducedNX_G + 1_ip)   
-        sDADz(p_nodes(i) + ntrans) =                   li5 * dadzRInst + sDADz(p_nodes(i) + ntrans)               
-        sDADz(p_nodes(i) + ntrans + 1_ip) =            li6 * dadzRInst + sDADz(p_nodes(i) + ntrans + 1_ip)         
-        sDADz(p_nodes(i) + ntrans + ReducedNX_G) =     li7 * dadzRInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G)   
+!$OMP ATOMIC
+        sDADz(p_nodes(i) + 1_ip) =                     li2 * dadzRInst + sDADz(p_nodes(i) + 1_ip)      
+!$OMP ATOMIC                  
+        sDADz(p_nodes(i) + ReducedNX_G) =              li3 * dadzRInst + sDADz(p_nodes(i) + ReducedNX_G)   
+!$OMP ATOMIC               
+        sDADz(p_nodes(i) + ReducedNX_G + 1_ip) =       li4 * dadzRInst + sDADz(p_nodes(i) + ReducedNX_G + 1_ip) 
+!$OMP ATOMIC          
+        sDADz(p_nodes(i) + ntrans) =                   li5 * dadzRInst + sDADz(p_nodes(i) + ntrans)     
+!$OMP ATOMIC                  
+        sDADz(p_nodes(i) + ntrans + 1_ip) =            li6 * dadzRInst + sDADz(p_nodes(i) + ntrans + 1_ip)  
+!$OMP ATOMIC               
+        sDADz(p_nodes(i) + ntrans + ReducedNX_G) =     li7 * dadzRInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G) 
+!$OMP ATOMIC          
         sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1) = li8 * dadzRInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1)
-    
-        sDADz(p_nodes(i) + retim) =                             li1 * dadzIInst + sDADz(p_nodes(i) + retim)                        
-        sDADz(p_nodes(i) + 1_ip + retim) =                      li2 * dadzIInst + sDADz(p_nodes(i) + 1_ip + retim)           
-        sDADz(p_nodes(i) + ReducedNX_G + retim) =               li3 * dadzIInst + sDADz(p_nodes(i) + ReducedNX_G + retim)           
-        sDADz(p_nodes(i) + ReducedNX_G + 1_ip + retim) =        li4 * dadzIInst + sDADz(p_nodes(i) + ReducedNX_G + 1_ip + retim)    
-        sDADz(p_nodes(i) + ntrans + retim) =                    li5 * dadzIInst + sDADz(p_nodes(i) + ntrans + retim)               
-        sDADz(p_nodes(i) + ntrans + 1_ip + retim) =             li6 * dadzIInst + sDADz(p_nodes(i) + ntrans + 1_ip + retim)       
+
+!$OMP ATOMIC    
+        sDADz(p_nodes(i) + retim) =                             li1 * dadzIInst + sDADz(p_nodes(i) + retim)  
+!$OMP ATOMIC                              
+        sDADz(p_nodes(i) + 1_ip + retim) =                      li2 * dadzIInst + sDADz(p_nodes(i) + 1_ip + retim) 
+!$OMP ATOMIC                  
+        sDADz(p_nodes(i) + ReducedNX_G + retim) =               li3 * dadzIInst + sDADz(p_nodes(i) + ReducedNX_G + retim)   
+!$OMP ATOMIC                
+        sDADz(p_nodes(i) + ReducedNX_G + 1_ip + retim) =        li4 * dadzIInst + sDADz(p_nodes(i) + ReducedNX_G + 1_ip + retim)  
+!$OMP ATOMIC          
+        sDADz(p_nodes(i) + ntrans + retim) =                    li5 * dadzIInst + sDADz(p_nodes(i) + ntrans + retim)  
+!$OMP ATOMIC                     
+        sDADz(p_nodes(i) + ntrans + 1_ip + retim) =             li6 * dadzIInst + sDADz(p_nodes(i) + ntrans + 1_ip + retim)  
+!$OMP ATOMIC             
         sDADz(p_nodes(i) + ntrans + ReducedNX_G + retim) =      li7 * dadzIInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + retim)  
+!$OMP ATOMIC
         sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1 + retim) =  li8 * dadzIInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1 & 
                                                                        + retim)
 
