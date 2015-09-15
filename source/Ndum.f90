@@ -125,8 +125,8 @@ subroutine writeIM(sA, Ar_local, sZ, &
   if (wrMeth_G == 'sdds') then
 
     call wr_sdds(sA, sZ, istep, tArrayA, tArrayE, tArrayZ, &
-                 iIntWriteNthSteps, iWriteNthSteps, qSep, zDFname, &
-                 qWDisp, qWriteFull, &
+                 iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
+                 zDataFileName, qWDisp, qWriteFull, &
                  qWriteInt, qOK)
 
   else if (wrMeth_G == 'hdf5') then

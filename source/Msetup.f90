@@ -418,10 +418,18 @@ MODULE Setup
   CALL MPI_BARRIER(tProcInfo_G%comm,error)
 
 
+!  call writeIM(sA, Ar_local, sZ, &
+!               zDataFileName, iStep, iWriteNthSteps, &
+!               lrecvs, ldispls, &
+!               iIntWriteNthSteps, nSteps, qWDisp, qOKL)
 
-  if (qWrite) call wdfs(sA, sZ, 0, tArrayA, tArrayE, tArrayZ, &
-                        iIntWriteNthSteps, iWriteNthSteps, &
-                        qSeparateStepFiles, zDataFileName, .false., qOKL)
+  if (qWrite)  call wr_sdds(sA, sZ, 0, tArrayA, tArrayE, tArrayZ, &
+                 iIntWriteNthSteps, iWriteNthSteps, .true., &
+                 zDataFileName, .false., .true., .true., qOK)
+
+!  if (qWrite) call wdfs(sA, sZ, 0, tArrayA, tArrayE, tArrayZ, &
+!                        iIntWriteNthSteps, iWriteNthSteps, &
+!                        qSeparateStepFiles, zDataFileName, .false., qOKL)
 
   if (.not. qOKL) goto 1000
 

@@ -452,6 +452,17 @@ CONTAINS
     
     end if
 
+!  Set error flag and exit         
+    qOK = .TRUE.            
+    goto 2000     
+
+! Error Handler - Error log Subroutine in CIO.f90 line 709
+
+1000 call Error_log('Error in sddsPuffin:wr_sdds',&
+          tErrorLog_G)
+    print*,'Error in sddsPuffin:wr_sdds'
+2000 continue
+
   end subroutine wr_sdds
 
 
