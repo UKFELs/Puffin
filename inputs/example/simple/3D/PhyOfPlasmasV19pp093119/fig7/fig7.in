@@ -86,7 +86,7 @@ What do we want to calculate in the code to output i.e. bunching, pulse current 
 0.0                 REAL        sZ0              Starting z position
 'DataFile.dat'      CHARACTER   zDataFileName   Data file name
 2300                INTEGER     iWriteNthSteps  Steps to write data at
-100                 INTEGER     iIntWriteNthSteps  Steps to write integrated data at
+120                 INTEGER     iIntWriteNthSteps  Steps to write integrated data at
 1000                INTEGER     iDumpNthSteps   Steps to dump data at (0 for no dumping)
 100                 REAL        sPEOut          Percentage of macroparticles to write out. Macroparticles are randomly selected.
 
