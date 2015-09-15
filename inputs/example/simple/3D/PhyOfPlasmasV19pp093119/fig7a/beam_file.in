@@ -1,0 +1,52 @@
+PUFFIN BEAM FILE
+
+Describes electron beams for input into puffin. Multiple beams with
+different parameters can be used. Please refer to POP-REF for an
+explanation of the scaled variables used, such as z2 and p2.
+
+1         # of beams
+
+READ IN BEAM CHARACTERISTICS
+========================================================================
+BEAM 1:-
+
+STANDARD DEVIATION OF BEAM IN EACH DIMENSION (=1E8 FOR FLAT TOP)   - REAL
+
+1.0                 SIGX       (overwritten for matched beam)
+1.0                 SIGY       (overwritten for matched beam)
+1E8                 SIGZ2
+1E-6                SIGPX      (overwritten for matched beam)
+1E-6                SIGPY      (overwritten for matched beam)
+0.001                SIGP2
+
+TOTAL MODELLED LENGTH OF BEAM IN EACH DIMENSION    - REAL
+
+1E-6                 LENX       (overwritten for matched beam)
+1E-6                 LENY       (overwritten for matched beam)
+6.0                 LENZ2
+1E-6                LENPX      (overwritten for matched beam)
+1E-6                LENPY      (overwritten for matched beam)
+0.006                LENP2
+
+NUMBER OF MACROPARTICLES TO MODEL BEAM IN EACH DIMENSION (EQUISPACED BEFORE NOISE IS ADDED, IF USED)   - INTEGER
+
+9                  NUMX
+9                  NUMY
+900                NUMZ2
+9                  NUMPX
+9                  NUMPY
+5                  NUMP2
+
+BEAM PARAMETERS
+
+.TRUE.              Match beam to undulator?
+1.0                 Ratio of average beam energy to resonant beam energy gamma / gamma_r
+1.0                 Scaled emittance (\bar{epsilon})
+0.0                 Energy chirp in z2 i.e. dgamma/dz2
+0.0                 Center of beam in z2
+0.0    mag
+1.0    freq
+.false.              round edges of flat top?
+1.0                 sigma roll off for edge
+1.0E-9              Charge in coulombs
+========================================================================
