@@ -21,9 +21,7 @@ use paratype
 
 !     For interpolation
 
-  integer(kind=ip) :: x_in1, x_in2, y_in1, y_in2, z2_in1, z2_in2
-  real(kind=wp) :: li1, li2, li3, li4, li5, li6, li7, li8, locx, locy, locz2
-  REAL(kind=wp) :: halfx, halfy, dadzRInst, dadzIInst
+  real(kind=wp) :: halfx, halfy
 
 
 
@@ -31,7 +29,7 @@ use paratype
 
   real(kind=wp) :: kbeta, nc, nd, nb, ZOver2rho, &
                    salphaSq, sInv2rho, fkb, econst, un
-  real(kind=wp), allocatable :: Lj(:)
+  real(kind=wp), allocatable :: Lj(:), lis_GR(:,:)
   real(kind=wp) :: dV3, dx, dy, dz2
 
 !    Error flags

@@ -4,28 +4,28 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
-MODULE checks
+module checks
 
-USE Paratype
-USE ParallelInfoType
-USE TransformInfoType
-USE IO
-USE typesAndConstants
+use Paratype
+use ParallelInfoType
+use TransformInfoType
+use IO
+use typesAndConstants
 use Globals
 use particleFunctions
 use grids
 
-IMPLICIT NONE
+implicit none
 
-CONTAINS
+contains
 
-SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
+subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
        sLengthofElm,iNodes,sWigglerLength,sStepSize,&
        nSteps,srho,saw,sgammar,focusfactor,mag,sSigE,f_x, f_y, &
        iRedNodesX, iRedNodesY,qSwitches,qSimple,sSigF, &
        freqf, SmeanZ2, qFlatTopS, nseeds,qOK)
 
-  IMPLICIT NONE
+  implicit none
 
 ! Subroutine to check that the electron and field
 ! parameters are sensible.
@@ -123,13 +123,20 @@ SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
 2000 continue
 
-END SUBROUTINE CheckParameters
+end subroutine CheckParameters
   
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 subroutine chkFldBnds(qF, qR, sig, sigEj, cen)
+
+! Check Field Bounds
+!
+! If the front (or head) of the seed field in z2
+! is < 0, shift to +ive z2, so that the front lies
+! at z2=0.
+!
 
   real(kind=wp), intent(in) :: sig, sigEj
   logical, intent(in) :: qF, qR  
@@ -138,19 +145,29 @@ subroutine chkFldBnds(qF, qR, sig, sigEj, cen)
   real(kind=wp) :: start, tl, shft
 
 
+
+!       Get Total Length (tl) of seed field
+
+
   if (qF) then
 
     if (qR) then
 
+!     flat top w/ rounded edge:
+
       tl = sigEj * gExtEj_G  +  2.0_wp * sig
 
     else 
+
+!     Flat top only
 
       tl = 2.0_wp * sig
 
     end if
 
   else 
+
+!     Gaussian seed field case
 
     tl = sig * gExtEj_G
 
