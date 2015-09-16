@@ -11,11 +11,11 @@ use paratype
 
 !     Loop counters
 
-  integer(kind=ipl) :: maxEl,i
+  integer(kind=ipl) :: maxEl
 
 !    For index referencing
 
-  integer(kind=ip) :: retim, xnode, ynode, z2node, ntrans
+  integer(kind=ip) :: retim, ntrans
   integer(kind=ip), allocatable :: p_nodes(:)
 
 
@@ -32,6 +32,11 @@ use paratype
   real(kind=wp), allocatable :: Lj(:), lis_GR(:,:)
   real(kind=wp) :: dV3, dx, dy, dz2
 
+
+real(kind=wp), allocatable :: dp2f(:), sField4ElecReal(:), &
+                              sField4ElecImag(:)
+
+                              
 !    Error flags
 
   logical :: qoutside

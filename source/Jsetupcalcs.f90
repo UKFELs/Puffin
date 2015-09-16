@@ -11,7 +11,6 @@ USE ParallelInfoType
 USE TransformInfoType
 USE IO
 USE ArrayFunctions
-USE extra
 USE typesAndConstants
 USE Globals
 USE electronInit
@@ -191,13 +190,6 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
        GOTO 1000    
     END IF
 
-!     Get global node numbers
-
-    IF (.NOT. tTransInfo_G%qOneD) THEN
-       ALLOCATE(iNodCodA_G(ReducedNX_G,ReducedNY_G,NZ2_G))
-       ALLOCATE(iGloNumA_G(8*(ReducedNX_G-1)*(ReducedNY_G-1)*(NZ2_G-1)))
-       CALL GL_NUM(ReducedNX_G,ReducedNY_G,NZ2_G,iNodCodA_G,iGloNumA_G)
-    END IF
 
     qElectronsEvolve_G       = qSwitch(iElectronsEvolve_CG)
     qFieldEvolve_G           = qSwitch(iFieldEvolve_CG)
