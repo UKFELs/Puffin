@@ -22,8 +22,8 @@ implicit none
 
 
 
-real(kind=wp), allocatable :: dp2f(:), sField4ElecReal(:), &
-                              sField4ElecImag(:) !, &
+!real(kind=wp), allocatable :: dp2f(:), sField4ElecReal(:), &
+!                              sField4ElecImag(:) !, &
                               !Lj(:)
 
 

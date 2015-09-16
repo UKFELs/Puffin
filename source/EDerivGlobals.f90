@@ -32,10 +32,6 @@ integer(kind=ip) :: ReducedNX_G
 integer(kind=ip) :: ReducedNY_G
 integer(kind=ip) :: outnodex_G,outnodey_G
 
-
-integer(kind=ip), allocatable  :: iGloNumA_G(:)
-integer(kind=ip), allocatable  :: iNodCodA_G(:,:,:)
-
 integer(kind=ip) :: iNodesPerElement_G
 
 integer(kind=ip) :: iNumberNodes_G

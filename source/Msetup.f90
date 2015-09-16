@@ -526,12 +526,6 @@ MODULE Setup
       ENDIF
     ENDIF
   END IF
-
-!    Clear global node numbering arrays
-
-  IF (.NOT. tTransInfo_G%qOneD) THEN
-    DEALLOCATE(iGloNumA_G,iNodCodA_G)
-  END IF
   
 !    Clear FFTW plans
 
