@@ -140,39 +140,11 @@ CONTAINS
 !     ALLOCATE THE ARRAYS
 
   ALLOCATE(Lj(iNumberElectrons_G))!,dp2f(iNumberElectrons_G))
-
+  allocate(p_nodes(iNumberElectrons_G))
   call alct_e_srtcts(iNumberElectrons_G)
-
-  ioutside=0
-
-
-!     Define the size of each element
-
-  dx = sLengthOfElmX_G
-  dy = sLengthOfElmY_G
-  dz2 = sLengthOfElmZ2_G
-
-  dV3 = sLengthOfElmX_G*sLengthOfElmY_G*sLengthOfElmZ2_G
+  allocate(lis_GR(8,iNumberElectrons_G))
 
 
-!     Time savers
-
-  sInv2rho    = 1.0_WP/(2.0_WP * sRho_G)
-
-  ZOver2rho   = sz * sInv2rho
-  salphaSq    = (2.0_WP * sGammaR_G * sRho_G / sAw_G)**2
-
-  kbeta = sAw_G / (2.0_WP * sFocusFactor_G * sRho_G * sGammaR_G)
-  un = sqrt(fx_G**2.0_WP + fy_G**2.0_WP)
-
-
-!     number of transverse nodes
-
-  ntrans = ReducedNX_G * ReducedNY_G
-
-!     Diff between real and imaginary nodes in the reduced system
-
-  retim = ReducedNX_G*ReducedNY_G*nZ2_G
 
 !     Initialise right hand side to zero
 
@@ -180,35 +152,14 @@ CONTAINS
   sField4ElecImag = 0.0_WP
 
 
-!     Adjust undulator tuning (linear taper)
+  call rhs_tmsavers(sz)  ! This can be moved later...
 
-!    n2col = n2col0 * (1 + undgrad*(sz - sz0))
+!     Adjust undulator tuning
+
   call getAlpha(sZ)
 
-  fkb= sFocusfactor_G * kbeta
 
-  econst = sAw_G/(sRho_G*SQRT(2.0_WP*(fx_G**2.0_WP+fy_G**2.0_WP)))
-
-  nc = 2.0_WP*saw_G**2/(fx_G**2.0_WP + fy_G**2.0_WP)
-    
-  nd = SQRT((fx_G**2.0_WP+fy_G**2.0_WP)*(sEta_G))/(2.0_WP*SQRT(2.0_WP)* &
-                             fkb*sRho_G)
-    
-  nb = 2.0_WP * sRho_G / ((fx_G**2.0_WP+fy_G**2.0_WP)*sEta_G)
-    
-  maxEl = maxval(procelectrons_G)
-  qoutside=.FALSE.
-  iOutside=0_IP
-
-  halfx = ((ReducedNX_G-1) / 2.0_WP) * sLengthOfElmX_G
-  halfy = ((ReducedNY_G-1) / 2.0_WP) * sLengthOfElmY_G
-
-
-
-
-! Calculate Lj term
-
-
+!     Calculate Lj term
 
   Lj = sqrt((1.0_WP - (1.0_WP / ( 1.0_WP + (sEta_G * sp2)) )**2.0_WP) &
              / (1.0_WP + nc* ( spr**2.0_wp  +  &
@@ -219,8 +170,6 @@ CONTAINS
 
 
 
-
-  allocate(p_nodes(iNumberElectrons_G))
   
   if (tTransInfo_G%qOneD) then
  
@@ -240,131 +189,133 @@ CONTAINS
 
   if (tTransInfo_G%qOneD) then
 
-    do i = 1, maxEl
-      IF (i<=procelectrons_G(1)) THEN 
-    
-        !   Get surrounding nodes 
-    
-        !   Interpolate
-    
-        !   
-    
-        dadzRInst = ((s_chi_bar_G(i)/dV3) * Lj(i) &
-                          * spr(i) )
-    
-        dadzIInst = ((s_chi_bar_G(i)/dV3) * Lj(i) &
-                          * spi(i) )
-
-
-    
-        z2node = floor(sz2(i)  / dz2)  + 1_IP
-        locz2 = sz2(i) - REAL(z2node  - 1_IP, kind=wp) * sLengthOfElmZ2_G
-    
-        li1 = (1.0_wp - locz2/sLengthOfElmZ2_G)
-        li2 = 1 - li1
-
-        sField4ElecReal(i) = li1 * sA(p_nodes(i)) + sField4ElecReal(i)
-        sField4ElecReal(i) = li2 * sA(p_nodes(i) + 1_ip) + sField4ElecReal(i)
-    
-        sField4ElecImag(i) = li1 * sA(p_nodes(i) + retim) + sField4ElecImag(i)
-        sField4ElecImag(i) = li2 * sA(p_nodes(i) + retim + 1_ip) + sField4ElecImag(i)
-    
-        sDADz(p_nodes(i)) =         li1 * dadzRInst + sDADz(p_nodes(i))
-        sDADz(p_nodes(i) + 1_ip) =  li2 * dadzRInst + sDADz(p_nodes(i) + 1_ip)                
-    
-        sDADz(p_nodes(i) + retim) =         li1 * dadzIInst + sDADz(p_nodes(i) + retim)                        
-        sDADz(p_nodes(i) + 1_ip + retim) =  li2 * dadzIInst + sDADz(p_nodes(i) + 1_ip + retim)           
-    
-      end if
-    end do
+!    do i = 1, maxEl
+!      IF (i<=procelectrons_G(1)) THEN 
+!    
+!        !   Get surrounding nodes 
+!    
+!        !   Interpolate
+!    
+!        !   
+!    
+!        dadzRInst = ((s_chi_bar_G(i)/dV3) * Lj(i) &
+!                          * spr(i) )
+!    
+!        dadzIInst = ((s_chi_bar_G(i)/dV3) * Lj(i) &
+!                          * spi(i) )
+!
+!
+!    
+!        z2node = floor(sz2(i)  / dz2)  + 1_IP
+!        locz2 = sz2(i) - REAL(z2node  - 1_IP, kind=wp) * sLengthOfElmZ2_G
+!    
+!        li1 = (1.0_wp - locz2/sLengthOfElmZ2_G)
+!        li2 = 1 - li1
+!
+!        sField4ElecReal(i) = li1 * sA(p_nodes(i)) + sField4ElecReal(i)
+!        sField4ElecReal(i) = li2 * sA(p_nodes(i) + 1_ip) + sField4ElecReal(i)
+!    
+!        sField4ElecImag(i) = li1 * sA(p_nodes(i) + retim) + sField4ElecImag(i)
+!        sField4ElecImag(i) = li2 * sA(p_nodes(i) + retim + 1_ip) + sField4ElecImag(i)
+!    
+!        sDADz(p_nodes(i)) =         li1 * dadzRInst + sDADz(p_nodes(i))
+!        sDADz(p_nodes(i) + 1_ip) =  li2 * dadzRInst + sDADz(p_nodes(i) + 1_ip)                
+!    
+!        sDADz(p_nodes(i) + retim) =         li1 * dadzIInst + sDADz(p_nodes(i) + retim)                        
+!        sDADz(p_nodes(i) + 1_ip + retim) =  li2 * dadzIInst + sDADz(p_nodes(i) + 1_ip + retim)           
+!    
+!      end if
+!    end do
 
   else
 
-    do i = 1, maxEl
-      IF (i<=procelectrons_G(1)) THEN 
+    call getFFelecs(sA)
+    call getInterps(sx, sy, sz2)
+    call getSource(sDADz, spr, spi)
+
+    !do i = 1, maxEl
+    !  IF (i<=procelectrons_G(1)) THEN 
+
+
+!                  Get surrounding nodes 
+
+!        xnode = floor( (sx(i) + halfx ) / dx)  + 1_IP
+!        locx = sx(i) + halfx - REAL(xnode  - 1_IP, kind=wp) * sLengthOfElmX_G
+!        ynode = floor( (sy(i) + halfy )  / dy)  + 1_IP
+!        locy = sy(i) + halfy - REAL(ynode  - 1_IP, kind=wp) * sLengthOfElmY_G
+!        z2node = floor(sz2(i)  / dz2)  + 1_IP
+!        locz2 = sz2(i) - REAL(z2node  - 1_IP, kind=wp) * sLengthOfElmZ2_G
+!    
+!
+!!                  Get weights for interpolant
+!    
+!        x_in1  = (1.0_wp - locx/sLengthOfElmX_G)
+!        x_in2  = 1 - x_in1
+!        y_in1  = (1.0_wp - locy/sLengthOfElmY_G)
+!        y_in2  = 1 - y_in1
+!        z2_in1 = (1.0_wp - locz2/sLengthOfElmZ2_G)
+!        z2_in2 = 1 - z2_in1
+!
+!        li1 = x_in1 * y_in1 * z2_in1
+!        li2 = x_in2 * y_in1 * z2_in1
+!        li3 = x_in1 * y_in2 * z2_in1
+!        li4 = x_in2 * y_in2 * z2_in1
+!        li5 = x_in1 * y_in1 * z2_in2
+!        li6 = x_in2 * y_in1 * z2_in2
+!        li7 = x_in1 * y_in2 * z2_in2
+!        li8 = x_in2 * y_in2 * z2_in2
+    
+
+!    !               Interpolate field to electron spatial position
+!    
+!        sField4ElecReal(i) = lis_GR(1,i) * sA(p_nodes(i)) + sField4ElecReal(i)
+!        sField4ElecReal(i) = lis_GR(2,i) * sA(p_nodes(i) + 1_ip) + sField4ElecReal(i)
+!        sField4ElecReal(i) = lis_GR(3,i) * sA(p_nodes(i) + ReducedNX_G) + sField4ElecReal(i)
+!        sField4ElecReal(i) = lis_GR(4,i) * sA(p_nodes(i) + ReducedNX_G + 1_ip) + sField4ElecReal(i)
+!        sField4ElecReal(i) = lis_GR(5,i) * sA(p_nodes(i) + ntrans) + sField4ElecReal(i)
+!        sField4ElecReal(i) = lis_GR(6,i) * sA(p_nodes(i) + ntrans + 1_ip) + sField4ElecReal(i)
+!        sField4ElecReal(i) = lis_GR(7,i) * sA(p_nodes(i) + ntrans + ReducedNX_G) + sField4ElecReal(i)
+!        sField4ElecReal(i) = lis_GR(8,i) * sA(p_nodes(i) + ntrans + ReducedNX_G + 1) + sField4ElecReal(i)
+!    
+!        sField4ElecImag(i) = lis_GR(1,i) * sA(p_nodes(i) + retim) + sField4ElecImag(i)
+!        sField4ElecImag(i) = lis_GR(2,i) * sA(p_nodes(i) + retim + 1_ip) + sField4ElecImag(i)
+!        sField4ElecImag(i) = lis_GR(3,i) * sA(p_nodes(i) + retim + ReducedNX_G) + sField4ElecImag(i)
+!        sField4ElecImag(i) = lis_GR(4,i) * sA(p_nodes(i) + retim + ReducedNX_G + 1_ip) + sField4ElecImag(i)
+!        sField4ElecImag(i) = lis_GR(5,i) * sA(p_nodes(i) + retim + ntrans) + sField4ElecImag(i)
+!        sField4ElecImag(i) = lis_GR(6,i) * sA(p_nodes(i) + retim + ntrans + 1_ip) + sField4ElecImag(i)
+!        sField4ElecImag(i) = lis_GR(7,i) * sA(p_nodes(i) + retim + ntrans + ReducedNX_G) + sField4ElecImag(i)
+!        sField4ElecImag(i) = lis_GR(8,i) * sA(p_nodes(i) + retim + ntrans + ReducedNX_G + 1) + sField4ElecImag(i)
+
+
+!                  Get 'instantaneous' dAdz
+
+!        dadzRInst = ((s_chi_bar_G(i)/dV3) * Lj(i) &
+!                          * spr(i) )
+!    
+!        sDADz(p_nodes(i)) =                            lis_GR(1,i) * dadzRInst + sDADz(p_nodes(i))
+!        sDADz(p_nodes(i) + 1_ip) =                     lis_GR(2,i) * dadzRInst + sDADz(p_nodes(i) + 1_ip)                
+!        sDADz(p_nodes(i) + ReducedNX_G) =              lis_GR(3,i) * dadzRInst + sDADz(p_nodes(i) + ReducedNX_G)          
+!        sDADz(p_nodes(i) + ReducedNX_G + 1_ip) =       lis_GR(4,i) * dadzRInst + sDADz(p_nodes(i) + ReducedNX_G + 1_ip)   
+!        sDADz(p_nodes(i) + ntrans) =                   lis_GR(5,i) * dadzRInst + sDADz(p_nodes(i) + ntrans)               
+!        sDADz(p_nodes(i) + ntrans + 1_ip) =            lis_GR(6,i) * dadzRInst + sDADz(p_nodes(i) + ntrans + 1_ip)         
+!        sDADz(p_nodes(i) + ntrans + ReducedNX_G) =     lis_GR(7,i) * dadzRInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G)   
+!        sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1) = lis_GR(8,i) * dadzRInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1)
+!
+!        dadzIInst = ((s_chi_bar_G(i)/dV3) * Lj(i) &
+!                          * spi(i) ) 
+!    
+!        sDADz(p_nodes(i) + retim) =                             lis_GR(1,i) * dadzIInst + sDADz(p_nodes(i) + retim)                        
+!        sDADz(p_nodes(i) + 1_ip + retim) =                      lis_GR(2,i) * dadzIInst + sDADz(p_nodes(i) + 1_ip + retim)           
+!        sDADz(p_nodes(i) + ReducedNX_G + retim) =               lis_GR(3,i) * dadzIInst + sDADz(p_nodes(i) + ReducedNX_G + retim)           
+!        sDADz(p_nodes(i) + ReducedNX_G + 1_ip + retim) =        lis_GR(4,i) * dadzIInst + sDADz(p_nodes(i) + ReducedNX_G + 1_ip + retim)    
+!        sDADz(p_nodes(i) + ntrans + retim) =                    lis_GR(5,i) * dadzIInst + sDADz(p_nodes(i) + ntrans + retim)               
+!        sDADz(p_nodes(i) + ntrans + 1_ip + retim) =             lis_GR(6,i) * dadzIInst + sDADz(p_nodes(i) + ntrans + 1_ip + retim)       
+!        sDADz(p_nodes(i) + ntrans + ReducedNX_G + retim) =      lis_GR(7,i) * dadzIInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + retim)  
+!        sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1 + retim) =  lis_GR(8,i) * dadzIInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1 & 
+!                                                                       + retim)
   
-      !   Get surrounding nodes 
-  
-      !   Interpolate
-  
-      !   
-  
-        dadzRInst = ((s_chi_bar_G(i)/dV3) * Lj(i) &
-                          * spr(i) )
-    
-        dadzIInst = ((s_chi_bar_G(i)/dV3) * Lj(i) &
-                          * spi(i) )
-    
-    
-    
-        xnode = floor( (sx(i) + halfx ) / dx)  + 1_IP
-        locx = sx(i) + halfx - REAL(xnode  - 1_IP, kind=wp) * sLengthOfElmX_G
-        ynode = floor( (sy(i) + halfy )  / dy)  + 1_IP
-        locy = sy(i) + halfy - REAL(ynode  - 1_IP, kind=wp) * sLengthOfElmY_G
-        z2node = floor(sz2(i)  / dz2)  + 1_IP
-        locz2 = sz2(i) - REAL(z2node  - 1_IP, kind=wp) * sLengthOfElmZ2_G
-    
-    
-    
-        x_in1  = (1.0_wp - locx/sLengthOfElmX_G)
-        x_in2  = 1 - x_in1
-        y_in1  = (1.0_wp - locy/sLengthOfElmY_G)
-        y_in2  = 1 - y_in1
-        z2_in1 = (1.0_wp - locz2/sLengthOfElmZ2_G)
-        z2_in2 = 1 - z2_in1
-    
-        li1 = x_in1 * y_in1 * z2_in1
-        li2 = x_in2 * y_in1 * z2_in1
-        li3 = x_in1 * y_in2 * z2_in1
-        li4 = x_in2 * y_in2 * z2_in1
-        li5 = x_in1 * y_in1 * z2_in2
-        li6 = x_in2 * y_in1 * z2_in2
-        li7 = x_in1 * y_in2 * z2_in2
-        li8 = x_in2 * y_in2 * z2_in2
-    
-    
-    
-    
-        sField4ElecReal(i) = li1 * sA(p_nodes(i)) + sField4ElecReal(i)
-        sField4ElecReal(i) = li2 * sA(p_nodes(i) + 1_ip) + sField4ElecReal(i)
-        sField4ElecReal(i) = li3 * sA(p_nodes(i) + ReducedNX_G) + sField4ElecReal(i)
-        sField4ElecReal(i) = li4 * sA(p_nodes(i) + ReducedNX_G + 1_ip) + sField4ElecReal(i)
-        sField4ElecReal(i) = li5 * sA(p_nodes(i) + ntrans) + sField4ElecReal(i)
-        sField4ElecReal(i) = li6 * sA(p_nodes(i) + ntrans + 1_ip) + sField4ElecReal(i)
-        sField4ElecReal(i) = li7 * sA(p_nodes(i) + ntrans + ReducedNX_G) + sField4ElecReal(i)
-        sField4ElecReal(i) = li8 * sA(p_nodes(i) + ntrans + ReducedNX_G + 1) + sField4ElecReal(i)
-    
-        sField4ElecImag(i) = li1 * sA(p_nodes(i) + retim) + sField4ElecImag(i)
-        sField4ElecImag(i) = li2 * sA(p_nodes(i) + retim + 1_ip) + sField4ElecImag(i)
-        sField4ElecImag(i) = li3 * sA(p_nodes(i) + retim + ReducedNX_G) + sField4ElecImag(i)
-        sField4ElecImag(i) = li4 * sA(p_nodes(i) + retim + ReducedNX_G + 1_ip) + sField4ElecImag(i)
-        sField4ElecImag(i) = li5 * sA(p_nodes(i) + retim + ntrans) + sField4ElecImag(i)
-        sField4ElecImag(i) = li6 * sA(p_nodes(i) + retim + ntrans + 1_ip) + sField4ElecImag(i)
-        sField4ElecImag(i) = li7 * sA(p_nodes(i) + retim + ntrans + ReducedNX_G) + sField4ElecImag(i)
-        sField4ElecImag(i) = li8 * sA(p_nodes(i) + retim + ntrans + ReducedNX_G + 1) + sField4ElecImag(i)
-    
-    
-        sDADz(p_nodes(i)) =                            li1 * dadzRInst + sDADz(p_nodes(i))
-        sDADz(p_nodes(i) + 1_ip) =                     li2 * dadzRInst + sDADz(p_nodes(i) + 1_ip)                
-        sDADz(p_nodes(i) + ReducedNX_G) =              li3 * dadzRInst + sDADz(p_nodes(i) + ReducedNX_G)          
-        sDADz(p_nodes(i) + ReducedNX_G + 1_ip) =       li4 * dadzRInst + sDADz(p_nodes(i) + ReducedNX_G + 1_ip)   
-        sDADz(p_nodes(i) + ntrans) =                   li5 * dadzRInst + sDADz(p_nodes(i) + ntrans)               
-        sDADz(p_nodes(i) + ntrans + 1_ip) =            li6 * dadzRInst + sDADz(p_nodes(i) + ntrans + 1_ip)         
-        sDADz(p_nodes(i) + ntrans + ReducedNX_G) =     li7 * dadzRInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G)   
-        sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1) = li8 * dadzRInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1)
-    
-        sDADz(p_nodes(i) + retim) =                             li1 * dadzIInst + sDADz(p_nodes(i) + retim)                        
-        sDADz(p_nodes(i) + 1_ip + retim) =                      li2 * dadzIInst + sDADz(p_nodes(i) + 1_ip + retim)           
-        sDADz(p_nodes(i) + ReducedNX_G + retim) =               li3 * dadzIInst + sDADz(p_nodes(i) + ReducedNX_G + retim)           
-        sDADz(p_nodes(i) + ReducedNX_G + 1_ip + retim) =        li4 * dadzIInst + sDADz(p_nodes(i) + ReducedNX_G + 1_ip + retim)    
-        sDADz(p_nodes(i) + ntrans + retim) =                    li5 * dadzIInst + sDADz(p_nodes(i) + ntrans + retim)               
-        sDADz(p_nodes(i) + ntrans + 1_ip + retim) =             li6 * dadzIInst + sDADz(p_nodes(i) + ntrans + 1_ip + retim)       
-        sDADz(p_nodes(i) + ntrans + ReducedNX_G + retim) =      li7 * dadzIInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + retim)  
-        sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1 + retim) =  li8 * dadzIInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1 & 
-                                                                       + retim)
-  
-      end if
-    end do
+    !  end if
+    !end do
 
   end if
 
@@ -487,7 +438,7 @@ CONTAINS
 !    deallocate(i_n4e,N,iNodeList_Re,iNodeList_Im,i_n4ered)
 !    deallocate(sField4ElecReal,sField4ElecImag,Lj,dp2f)
     deallocate(Lj)
-
+    deallocate(lis_GR)
     call dalct_e_srtcts()
 
     ! Set the error flag and exit
@@ -502,4 +453,225 @@ CONTAINS
 
   END SUBROUTINE getrhs
 
-END MODULE rhs
+
+
+subroutine rhs_tmsavers(sz)
+
+use rhs_vars
+
+real(kind=wp), intent(in) :: sz
+
+  ioutside=0
+
+
+!     Define the size of each element
+
+  dx = sLengthOfElmX_G
+  dy = sLengthOfElmY_G
+  dz2 = sLengthOfElmZ2_G
+
+  dV3 = sLengthOfElmX_G*sLengthOfElmY_G*sLengthOfElmZ2_G
+
+
+!     Time savers
+
+  sInv2rho    = 1.0_WP/(2.0_WP * sRho_G)
+
+  ZOver2rho   = sz * sInv2rho
+  salphaSq    = (2.0_WP * sGammaR_G * sRho_G / sAw_G)**2
+
+  kbeta = sAw_G / (2.0_WP * sFocusFactor_G * sRho_G * sGammaR_G)
+  un = sqrt(fx_G**2.0_WP + fy_G**2.0_WP)
+
+
+!     number of transverse nodes
+
+  ntrans = ReducedNX_G * ReducedNY_G
+
+!     Diff between real and imaginary nodes in the reduced system
+
+  retim = ReducedNX_G*ReducedNY_G*nZ2_G
+
+
+  fkb= sFocusfactor_G * kbeta
+
+  econst = sAw_G/(sRho_G*SQRT(2.0_WP*(fx_G**2.0_WP+fy_G**2.0_WP)))
+
+  nc = 2.0_WP*saw_G**2/(fx_G**2.0_WP + fy_G**2.0_WP)
+    
+  nd = SQRT((fx_G**2.0_WP+fy_G**2.0_WP)*(sEta_G))/(2.0_WP*SQRT(2.0_WP)* &
+                             fkb*sRho_G)
+    
+  nb = 2.0_WP * sRho_G / ((fx_G**2.0_WP+fy_G**2.0_WP)*sEta_G)
+    
+  maxEl = maxval(procelectrons_G)
+  qoutside=.FALSE.
+  iOutside=0_IP
+
+  halfx = ((ReducedNX_G-1) / 2.0_WP) * sLengthOfElmX_G
+  halfy = ((ReducedNY_G-1) / 2.0_WP) * sLengthOfElmY_G
+
+
+
+end subroutine rhs_tmsavers
+
+
+
+!      ##################################################
+
+
+
+subroutine getInterps(sx, sy, sz2)
+
+use rhs_vars
+
+real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:)
+integer(kind=ip) :: xnode, ynode, z2node
+
+real(kind=wp) :: locx, locy, locz2, &
+                 x_in1, x_in2, y_in1, y_in2, z2_in1, z2_in2
+
+
+  do i = 1, maxEl
+    if (i<=procelectrons_G(1)) then 
+
+
+!                  Get surrounding nodes 
+
+      xnode = floor( (sx(i) + halfx ) / dx)  + 1_IP
+      locx = sx(i) + halfx - real(xnode  - 1_IP, kind=wp) * dx
+      x_in2 = locx / dx
+      x_in1 = (1.0_wp - x_in2)
+
+      ynode = floor( (sy(i) + halfy )  / dy)  + 1_IP
+      locy = sy(i) + halfy - real(ynode  - 1_IP, kind=wp) * dy
+      y_in2 = locy / dy
+      y_in1 = (1.0_wp - y_in2)
+
+      z2node = floor(sz2(i)  / dz2)  + 1_IP
+      locz2 = sz2(i) - real(z2node  - 1_IP, kind=wp) * dz2
+      z2_in2 = locz2 / dz2
+      z2_in1 = (1.0_wp - z2_in2)
+
+
+!                  Get weights for interpolant
+
+      lis_GR(1,i) = x_in1 * y_in1 * z2_in1
+      lis_GR(2,i) = x_in2 * y_in1 * z2_in1
+      lis_GR(3,i) = x_in1 * y_in2 * z2_in1
+      lis_GR(4,i) = x_in2 * y_in2 * z2_in1
+      lis_GR(5,i) = x_in1 * y_in1 * z2_in2
+      lis_GR(6,i) = x_in2 * y_in1 * z2_in2
+      lis_GR(7,i) = x_in1 * y_in2 * z2_in2
+      lis_GR(8,i) = x_in2 * y_in2 * z2_in2
+
+    end if
+  end do
+
+
+
+end subroutine getInterps
+
+
+
+
+
+
+!      ##################################################
+
+
+
+
+subroutine getFFelecs(sA)
+
+
+use rhs_vars
+
+real(kind=wp), intent(in) :: sA(:)
+integer(kind=ip) :: i
+
+  do i = 1, maxEl
+  
+    if (i<=procelectrons_G(1)) then
+
+      sField4ElecReal(i) = lis_GR(1,i) * sA(p_nodes(i)) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(2,i) * sA(p_nodes(i) + 1_ip) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(3,i) * sA(p_nodes(i) + ReducedNX_G) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(4,i) * sA(p_nodes(i) + ReducedNX_G + 1_ip) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(5,i) * sA(p_nodes(i) + ntrans) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(6,i) * sA(p_nodes(i) + ntrans + 1_ip) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(7,i) * sA(p_nodes(i) + ntrans + ReducedNX_G) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(8,i) * sA(p_nodes(i) + ntrans + ReducedNX_G + 1) + sField4ElecReal(i)
+  
+      sField4ElecImag(i) = lis_GR(1,i) * sA(p_nodes(i) + retim) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(2,i) * sA(p_nodes(i) + retim + 1_ip) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(3,i) * sA(p_nodes(i) + retim + ReducedNX_G) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(4,i) * sA(p_nodes(i) + retim + ReducedNX_G + 1_ip) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(5,i) * sA(p_nodes(i) + retim + ntrans) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(6,i) * sA(p_nodes(i) + retim + ntrans + 1_ip) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(7,i) * sA(p_nodes(i) + retim + ntrans + ReducedNX_G) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(8,i) * sA(p_nodes(i) + retim + ntrans + ReducedNX_G + 1) + sField4ElecImag(i)
+
+    end if
+  
+  end do 
+
+end subroutine getFFelecs
+
+
+
+!         ########################################################
+
+
+
+subroutine getSource(sDADz, spr, spi)
+
+
+use rhs_vars
+
+real(kind=wp), intent(inout) :: sDADz(:)
+real(kind=wp), intent(in) :: spr(:), spi(:)
+
+integer(kind=ip) :: i
+real(kind=wp) :: dadzRInst, dadzIInst
+
+
+  do i = 1, maxEl
+  
+    if (i<=procelectrons_G(1)) then
+
+
+!                  Get 'instantaneous' dAdz
+
+      dadzRInst = ((s_chi_bar_G(i)/dV3) * Lj(i) &
+                        * spr(i) )
+    
+      sDADz(p_nodes(i)) =                            lis_GR(1,i) * dadzRInst + sDADz(p_nodes(i))
+      sDADz(p_nodes(i) + 1_ip) =                     lis_GR(2,i) * dadzRInst + sDADz(p_nodes(i) + 1_ip)                
+      sDADz(p_nodes(i) + ReducedNX_G) =              lis_GR(3,i) * dadzRInst + sDADz(p_nodes(i) + ReducedNX_G)          
+      sDADz(p_nodes(i) + ReducedNX_G + 1_ip) =       lis_GR(4,i) * dadzRInst + sDADz(p_nodes(i) + ReducedNX_G + 1_ip)   
+      sDADz(p_nodes(i) + ntrans) =                   lis_GR(5,i) * dadzRInst + sDADz(p_nodes(i) + ntrans)               
+      sDADz(p_nodes(i) + ntrans + 1_ip) =            lis_GR(6,i) * dadzRInst + sDADz(p_nodes(i) + ntrans + 1_ip)         
+      sDADz(p_nodes(i) + ntrans + ReducedNX_G) =     lis_GR(7,i) * dadzRInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G)   
+      sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1) = lis_GR(8,i) * dadzRInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1)
+
+      dadzIInst = ((s_chi_bar_G(i)/dV3) * Lj(i) &
+                        * spi(i) ) 
+    
+      sDADz(p_nodes(i) + retim) =                             lis_GR(1,i) * dadzIInst + sDADz(p_nodes(i) + retim)                        
+      sDADz(p_nodes(i) + 1_ip + retim) =                      lis_GR(2,i) * dadzIInst + sDADz(p_nodes(i) + 1_ip + retim)           
+      sDADz(p_nodes(i) + ReducedNX_G + retim) =               lis_GR(3,i) * dadzIInst + sDADz(p_nodes(i) + ReducedNX_G + retim)           
+      sDADz(p_nodes(i) + ReducedNX_G + 1_ip + retim) =        lis_GR(4,i) * dadzIInst + sDADz(p_nodes(i) + ReducedNX_G + 1_ip + retim)    
+      sDADz(p_nodes(i) + ntrans + retim) =                    lis_GR(5,i) * dadzIInst + sDADz(p_nodes(i) + ntrans + retim)               
+      sDADz(p_nodes(i) + ntrans + 1_ip + retim) =             lis_GR(6,i) * dadzIInst + sDADz(p_nodes(i) + ntrans + 1_ip + retim)       
+      sDADz(p_nodes(i) + ntrans + ReducedNX_G + retim) =      lis_GR(7,i) * dadzIInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + retim)  
+      sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1 + retim) =  lis_GR(8,i) * dadzIInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1 & 
+                                                                       + retim)
+    end if
+  
+  end do 
+
+end subroutine getSource
+
+
+end module rhs
