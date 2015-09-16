@@ -1,7 +1,7 @@
 module hdf5_puff
 
 use paratype
-use HDF5
+!use HDF5
 
 implicit none 
 
