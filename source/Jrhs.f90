@@ -159,21 +159,23 @@ CONTAINS
   call getAlpha(sZ)
 
 
+!$OMP PARALLEL
+
 !     Calculate Lj term
 
-! !$OMP PARALLEL WORKSHARE
+!$OMP WORKSHARE
 
   Lj = sqrt((1.0_WP - (1.0_WP / ( 1.0_WP + (sEta_G * sp2)) )**2.0_WP) &
              / (1.0_WP + nc* ( spr**2.0_wp  +  &
                                spi**2.0_wp )   )) &
           * (1.0_WP + sEta_G *  sp2) * sGammaR_G
 
-! !$OMP END PARALLEL WORKSHARE
+
 
 
 
   
-  if (tTransInfo_G%qOneD) then
+!  if (tTransInfo_G%qOneD) then
 
 ! !DIR$ SIMD
  
@@ -182,17 +184,17 @@ CONTAINS
 ! !DIR$ END SIMD
 
 
-  else
+!  else
 
-! !$OMP PARALLEL WORKSHARE
+! ! $ OMP PARALLEL WORKSHARE
 
     p_nodes = (floor( (sx+halfx)  / dx)  + 1_IP) + &
               (floor( (sy+halfy)  / dy) * ReducedNX_G )  + &   !  y 'slices' before primary node
               (ReducedNX_G * ReducedNY_G * &
                               floor(sz2  / dz2) )  ! transverse slices before primary node
-! !$OMP END PARALLEL WORKSHARE
+!$OMP END WORKSHARE
 
-  end if  
+!  end if  
 
 
 
@@ -328,11 +330,11 @@ CONTAINS
     !  end if
     !end do
 
-! !$OMP END PARALLEL DO
+! ! $    OMP END PARALLEL DO
 
   end if
 
-  deallocate(p_nodes)
+
 
 
 
@@ -358,7 +360,7 @@ CONTAINS
         CALL dz2dz_f(sx, sy, sz2, spr, spi, sp2, &
                    sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
                    Lj,qOKL)
-        if (.not. qOKL) goto 1000
+        !if (.not. qOKL) goto 1000
 
 !     X
 
@@ -366,45 +368,46 @@ CONTAINS
         call dxdz_f(sx, sy, sz2, spr, spi, sp2, &
                   sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
                   Lj,qOKL)
-        if (.not. qOKL) goto 1000             
+        !if (.not. qOKL) goto 1000             
 
 !     Y
 
         call dydz_f(sx, sy, sz2, spr, spi, sp2, &
                   sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
                   Lj,qOKL)
-        if (.not. qOKL) goto 1000
+!        if (.not. qOKL) goto 1000
 
 !     dp2f is the focusing correction for dp2/dz
 
         call caldp2f_f(sx, sy, sdx, sdy, sp2, kbeta, qOKL)
-        if (.not. qOKL) goto 1000
+ !       if (.not. qOKL) goto 1000
 
 !     PX (Real pperp)
        
         call dppdz_r_f(sx, sy, sz2, spr, spi, sp2, &
                      sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
                      Lj,qOKL)
-        if (.not. qOKL) goto 1000
+  !      if (.not. qOKL) goto 1000
 
 !     -PY (Imaginary pperp)
 
         call dppdz_i_f(sx, sy, sz2, spr, spi, sp2, &
                      sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
                      Lj,qOKL)
-        if (.not. qOKL) goto 1000
+   !     if (.not. qOKL) goto 1000
 
 !     P2
 
         call dp2dz_f(sx, sy, sz2, spr, spi, sp2, &
                    sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
                    Lj,qOKL)
-        if (.not. qOKL) goto 1000
+    !    if (.not. qOKL) goto 1000
  
     end if 
 
 
 
+!$OMP END PARALLEL
 
 
 
@@ -449,6 +452,7 @@ CONTAINS
 !    deallocate(sField4ElecReal,sField4ElecImag,Lj,dp2f)
     deallocate(Lj)
     deallocate(lis_GR)
+    deallocate(p_nodes)
     call dalct_e_srtcts()
 
 
@@ -546,7 +550,7 @@ real(kind=wp) :: locx, locy, locz2, &
                  x_in1, x_in2, y_in1, y_in2, z2_in1, z2_in2
 
 
-!$OMP PARALLEL DO PRIVATE(xnode, ynode, z2node, locx, locy, locz2, &
+!$OMP DO PRIVATE(xnode, ynode, z2node, locx, locy, locz2, &
 !$OMP x_in1, x_in2, y_in1, y_in2, z2_in1, z2_in2)
   do i = 1, maxEl
     if (i<=procelectrons_G(1)) then 
@@ -583,7 +587,7 @@ real(kind=wp) :: locx, locy, locz2, &
 
     end if
   end do
-!$OMP END PARALLEL DO
+!$OMP END DO
 
 
 end subroutine getInterps
@@ -606,7 +610,7 @@ use rhs_vars
 real(kind=wp), intent(in) :: sA(:)
 integer(kind=ip) :: i
 
-!$OMP PARALLEL DO
+!$OMP DO
   do i = 1, maxEl
   
     if (i<=procelectrons_G(1)) then
@@ -632,7 +636,7 @@ integer(kind=ip) :: i
     end if
   
   end do 
-!$OMP END PARALLEL DO
+!$OMP END DO
 
 end subroutine getFFelecs
 
@@ -654,7 +658,7 @@ integer(kind=ip) :: i
 real(kind=wp) :: dadzRInst, dadzIInst
 
 
-!$OMP PARALLEL DO PRIVATE(dadzRInst, dadzIInst)
+!$OMP DO PRIVATE(dadzRInst, dadzIInst)
   do i = 1, maxEl
   
     if (i<=procelectrons_G(1)) then
@@ -705,7 +709,7 @@ real(kind=wp) :: dadzRInst, dadzIInst
     end if
   
   end do 
-!$OMP END PARALLEL DO
+!$OMP END DO
 
 end subroutine getSource
 

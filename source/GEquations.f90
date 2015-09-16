@@ -94,7 +94,7 @@ contains
 
       if (qFocussing_G) then
 
-! !$OMP PARALLEL WORKSHARE
+!$OMP WORKSHARE
 
         sdpr = sInv2rho * (fy_G*n2col*sin(ZOver2rho) - &
                         (salphaSq * sEta_G * sp2 * &
@@ -104,7 +104,7 @@ contains
                         ( 1.0_WP + (sEta_G * sp2) ) * &
                         sdx * dp2f ) )
 
-! !$OMP END PARALLEL WORKSHARE
+!$OMP END WORKSHARE
 
       else 
 
@@ -212,7 +212,7 @@ contains
 
       if (qFocussing_G) then
 
-! !$OMP PARALLEL WORKSHARE
+!$OMP WORKSHARE
 
         sdpi = sInv2rho * (fx_G*n2col*cos(ZOver2rho) - &
                         (salphaSq * sEta_G * sp2 * &
@@ -222,7 +222,7 @@ contains
                         ( 1.0_WP + (sEta_G * sp2) ) * &
                         sdy * dp2f ) )
 
-! !$OMP END PARALLEL WORKSHARE
+!$OMP END WORKSHARE
 
       else
 
@@ -329,7 +329,7 @@ contains
 
       if (qFocussing_G) then
 
-! !$OMP PARALLEL WORKSHARE
+!$OMP WORKSHARE
 
         sdp2 = 2.0_WP * nb * Lj**2 * &
                         ((sEta_G * sp2 + 1.0_WP) &
@@ -341,7 +341,7 @@ contains
                         spi*sField4ElecImag)) &
                         + dp2f
 
-! !$OMP END PARALLEL WORKSHARE
+!$OMP END WORKSHARE
 
       else
 
