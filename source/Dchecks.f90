@@ -4,25 +4,28 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
-MODULE checks
+module checks
 
-USE Paratype
-USE ParallelInfoType
-USE TransformInfoType
-USE IO
-USE typesAndConstants
+use Paratype
+use ParallelInfoType
+use TransformInfoType
+use IO
+use typesAndConstants
+use Globals
+use particleFunctions
+use grids
 
+implicit none
 
-IMPLICIT NONE
+contains
 
-CONTAINS
-
-SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
+subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
        sLengthofElm,iNodes,sWigglerLength,sStepSize,&
-       nSteps,srho,saw,sgammar,focusfactor,sSigE,f_x, f_y, iRedNodesX,&
-       iRedNodesY,qSwitches,qSimple,qOK)
+       nSteps,srho,saw,sgammar,focusfactor,mag,sSigE,f_x, f_y, &
+       iRedNodesX, iRedNodesY,qSwitches,qSimple,sSigF, &
+       freqf, SmeanZ2, qFlatTopS, nseeds,qOK)
 
-  IMPLICIT NONE
+  implicit none
 
 ! Subroutine to check that the electron and field
 ! parameters are sensible.
@@ -38,18 +41,20 @@ SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
   REAL(KIND=WP),INTENT(INOUT) :: sLenEPulse(:,:)
   INTEGER(KIND=IP),INTENT(INOUT) :: iNumElectrons(:,:)
-  INTEGER(KIND=IP), INTENT(IN) :: nbeams
+  INTEGER(KIND=IP), INTENT(IN) :: nbeams, nseeds
   REAL(KIND=WP),INTENT(INOUT) :: sLengthofElm(:)
   INTEGER(KIND=IP),INTENT(INOUT) :: iNodes(:)
   REAL(KIND=WP), INTENT(INOUT) :: sWigglerLength(:)
   REAL(KIND=WP), INTENT(INOUT) :: sStepSize
   INTEGER(KIND=IP), INTENT(INOUT) :: nSteps
   REAL(KIND=WP), INTENT(IN) :: srho,saw,sgammar,focusfactor
-  REAL(KIND=WP), INTENT(INOUT) :: sSigE(:,:)
+  real(kind=wp), intent(in) :: mag(:)
+  REAL(KIND=WP), INTENT(INOUT) :: sSigE(:,:), sSigF(:,:), &
+                                  freqf(:), SmeanZ2(:)
   REAL(KIND=WP), INTENT(INOUT) :: f_x, f_y
   INTEGER(KIND=IP),INTENT(INOUT) :: iRedNodesX,iRedNodesY
   LOGICAL, INTENT(INOUT) :: qSwitches(:)
-  logical, intent(in) :: qSimple
+  logical, intent(in) :: qSimple, qFlatTopS(:)
   LOGICAL, INTENT(OUT)  :: qOK
 
 !           Local vars
@@ -67,7 +72,7 @@ SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
     if (qSimple) then
 
-      call chkESampleLens(sLenEPulse(i,:),iNumElectrons(i,:),srho,qSwitches(iOneD_CG),qOKL)
+      call chkESampleLens(sLenEPulse(i,:),iNumElectrons(i,:), srho,qSwitches(iOneD_CG),qOKL)
       if (.NOT. qOKL) goto 1000
 
     end if  
@@ -87,7 +92,23 @@ SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
     call checkFreeParams(srho,saw,sgammar,f_x,f_y,focusfactor,qOKL)
     if (.NOT. qOKL) goto 1000
 
+    call checkOscMag(sgammar, mag, nbeams)
+
+    call checkRndEjLens(iNumElectrons, sLenEPulse, sSigE, nbeams)
+
+
+ 
+    do i = 1, nSeeds
+  
+      call chkFldBnds(qFlatTopS(i), qRndFj_G(i), sSigF(i,iZ2_CG), sSigFj_G(i), & 
+                      SmeanZ2(i))
+  
+    end do
+
+
   end if
+
+
 
   if (tProcInfo_G%qRoot) print '(I5,1X,A17,1X,F8.4)',nsteps,&
        'Step(s) and z-bar=',nsteps*sStepSize
@@ -102,8 +123,85 @@ SUBROUTINE CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
 2000 continue
 
-END SUBROUTINE CheckParameters
+end subroutine CheckParameters
   
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+subroutine chkFldBnds(qF, qR, sig, sigEj, cen)
+
+! Check Field Bounds
+!
+! If the front (or head) of the seed field in z2
+! is < 0, shift to +ive z2, so that the front lies
+! at z2=0.
+!
+
+  real(kind=wp), intent(in) :: sig, sigEj
+  logical, intent(in) :: qF, qR  
+  real(kind=wp), intent(inout) :: cen
+
+  real(kind=wp) :: start, tl, shft
+
+
+
+!       Get Total Length (tl) of seed field
+
+
+  if (qF) then
+
+    if (qR) then
+
+!     flat top w/ rounded edge:
+
+      tl = sigEj * gExtEj_G  +  2.0_wp * sig
+
+    else 
+
+!     Flat top only
+
+      tl = 2.0_wp * sig
+
+    end if
+
+  else 
+
+!     Gaussian seed field case
+
+    tl = sig * gExtEj_G
+
+  end if
+
+  start =  cen - tl / 2.0_wp
+
+
+  if (start < 0.0_wp) then
+
+    shft = 0.0_wp - start
+    cen = cen + shft
+
+
+  end if 
+
+
+
+end subroutine chkFldBnds
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 subroutine check1D(qOneD, qDiffraction, qfocusing, iNodes)
@@ -187,6 +285,33 @@ END SUBROUTINE stpFSampleLens
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+
+subroutine checkOscMag(sgammar, mag, nbeams)
+
+  real(kind=wp), intent(in) :: sgammar, mag(:)
+  integer(kind=ip), intent(in) :: nbeams
+
+  integer(kind=ip) :: ii, error
+
+  do ii = 1, nbeams
+
+    if (sgammar <= mag(ii)) then
+
+      PRINT*, 'ERROR: Magnitude of beam oscillation is too large in beam number ', ii
+      print*, 'ERROR: Ensure magnitude of beam energy modulation is < gamma_r'
+  
+      call MPI_FINALIZE(error)
+      STOP
+
+    end if
+
+  end do
+
+end subroutine checkOscMag
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 SUBROUTINE chkESampleLens(sLenEPulse,iNumElectrons,rho,qOneD,qOK)
 
 !                 ARGUMENTS
@@ -243,6 +368,7 @@ SUBROUTINE chkESampleLens(sLenEPulse,iNumElectrons,rho,qOneD,qOK)
 
   END DO
 
+
 !     Set error flag and exit
 
   qOK = .TRUE.
@@ -256,6 +382,53 @@ SUBROUTINE chkESampleLens(sLenEPulse,iNumElectrons,rho,qOneD,qOK)
 END SUBROUTINE chkESampleLens
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+  subroutine checkRndEjLens(iNMP, eSamLen, sigs, nbeams)
+
+    integer(kind=ip), intent(in) :: iNMP(:,:), nbeams
+    real(kind=wp), intent(in) :: eSamLen(:,:), sigs(:,:)
+    
+    integer(kind=ip) :: inttypes(6_ip), ib
+    real(kind=wp) :: gausslen
+    logical :: qOKL
+
+
+
+    do ib = 1, nBeams
+
+      call getIntTypes(iNMP(ib,:), eSamLen(ib,:), sigs(ib,:), inttypes)
+      
+      if (inttypes(iZ2_CG) == iTopHatDistribution_CG) then
+
+        if (qRndEj_G(ib)) then
+
+          gausslen = sSigEj_G(ib) * gExtEj_G !    Check if there is enough room for the rounded edges
+          
+          if ((eSamLen(ib,iZ2_CG) - gausslen) <= 0) then
+
+            print*, 'ERROR:- electron beam model not long enough in z2 to include the gaussian tails'
+            call UnDefineParallelLibrary(qOKL)
+            stop
+
+          end if
+
+        end if
+
+      end if
+
+    end do
+
+
+end subroutine checkRndEjLens
+
+
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
 
 SUBROUTINE chkFSampleLens(iNodes,sWigglerLength,sLengthOfElm,rho,qOK)
 

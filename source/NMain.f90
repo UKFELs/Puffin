@@ -4,17 +4,19 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
-PROGRAM main
+program main
 
-USE FFTW_Constants
-USE transforms
-USE DataWrite
-USE lattice
-USE Stiffness
-USE Setup
-USE RK4int
+use FFTW_Constants
+use transforms
+use sddsPuffin
+use lattice
+use Stiffness
+use Setup
+use RK4int
+use dumpFiles
+use dummyf
 
-!!!!!!!!!!!!!!!!!!!Puffin Version 1.4.0 !!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!! Puffin Version 1.4.4 !!!!!!!!!!!!!!!!!!!
 !
 ! A program for solving an unaveraged 3D FEL system. This 
 ! parallel MPI code requires the MPI transforms in FFTW v2.5.1.
@@ -30,16 +32,6 @@ USE RK4int
 !
 !                       ARGUMENTS 
 !
-!   sV                    Contains electron macroparticle 
-!                         phase space coordinates. If there
-!                         are Nm Macroparticles, then this
-!                         array is of length 6*Nm. The first
-!                         n=1:Nm values describe the nth 
-!                         macroparticle's coordinate in the
-!                         x dimension, and the n=Nm+1:2*Nm
-!                         values contain the coordinates in
-!                         the y dimension and so on, in order
-!                         of x, y, z2, px, py, and p2.
 !
 !   sA                    Array containing the values of the
 !                         real and imaginary parts of the 
@@ -59,35 +51,34 @@ USE RK4int
 !
 !   qOKL                  Error flag.
 
-IMPLICIT NONE
+implicit none
 
-REAL(KIND=WP), ALLOCATABLE  :: sV(:)
-REAL(KIND=WP), ALLOCATABLE  :: sA(:), sAr(:), Ar_local(:)
-REAL(KIND=WP)    :: sZ, nextDiff
+real(kind=wp), allocatable  :: sA(:), sAr(:), Ar_local(:)
+real(kind=wp)    :: sZ, nextDiff
 
-LOGICAL          :: qOKL, qDiffrctd
+logical          :: qOKL, qDiffrctd, qWDisp
 
 !           Read in data file and initialize system
 
-CALL init(sA,sV,sZ,qOKL)
+call init(sA,sZ,qOKL)
 
-ALLOCATE(sAr(2*ReducedNX_G*ReducedNY_G*NZ2_G))
-ALLOCATE(Ar_local(2*local_rows))
+allocate(sAr(2*ReducedNX_G*ReducedNY_G*NZ2_G))
+allocate(Ar_local(2*local_rows))
 
 !!!! TEMP - NEEDS TIDIED, SHOULD OPTIMIZE
 
-  IF (tTransInfo_G%qOneD) THEN
+  if (tTransInfo_G%qOneD) then
      Ar_local(1:local_rows)=sA(fst_row:lst_row)
      Ar_local(local_rows+1:2*local_rows)=&
           sA(fst_row+iNumberNodes_G:lst_row+iNumberNodes_G)
-  ELSE
-     CALL getAlocalFL(sA,Ar_local)
-  END IF
+  else
+     call getAlocalFL(sA,Ar_local)
+  end if
 
-CALL local2globalA(Ar_local,sAr,mrecvs,mdispls,tTransInfo_G%qOneD)
+call local2globalA(Ar_local,sAr,mrecvs,mdispls,tTransInfo_G%qOneD)
 
 qDiffrctd = .false.
-
+qWDisp = .false.
 
 if (start_step==1_IP) then
 
@@ -112,7 +103,7 @@ end if
 
 
 
-CALL Get_time(start_time)
+call Get_time(start_time)
 
 
 
@@ -120,14 +111,14 @@ CALL Get_time(start_time)
 
 
 
-IF (tProcInfo_G%qRoot) print*,' starting..... '
+if (tProcInfo_G%qRoot) print*,' starting..... '
 
-IF (tProcInfo_G%qRoot) OPEN(UNIT=137,FILE='rec.out',STATUS='REPLACE',FORM='FORMATTED')
-IF (tProcInfo_G%qRoot) WRITE(137,*) ' starting..... '
+if (tProcInfo_G%qRoot) OPEN(UNIT=137,FILE='rec.out',STATUS='REPLACE',FORM='FORMATTED')
+if (tProcInfo_G%qRoot) WRITE(137,*) ' starting..... '
 
 !!!!!!!!!!!!!!!!!!!!!!!  BEGIN INTEGRATION !!!!!!!!!!!!!!!!!!!!!!!!
 
-DO iStep = start_step, nSteps
+do iStep = start_step, nSteps
   
 
 
@@ -136,43 +127,19 @@ DO iStep = start_step, nSteps
 
 !   First step of split-step method:- field diffraction only
 
-  IF (qDiffraction_G) THEN
+  if (qDiffraction_G) then
 
-    IF (sZ>(nextDiff-sStepsize/100.0_WP)) THEN
-    
+    if (iStep==0) then
 
-      IF(iStep == nSteps) sStep = diffStep*0.5_WP
-
-      DEALLOCATE(sAr)
-      CALL innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
-      DEALLOCATE(Ar_local)
-
-      CALL DiffractionStep(sStep,&
-           frecvs,&
-           fdispls,&
-           sV,&
-           sA,&
-           qOKL)
-     
-      ALLOCATE(sAr(2*ReducedNX_G*ReducedNY_G*NZ2_G))
-      ALLOCATE(Ar_local(2*local_rows))
-
-      CALL getAlocalFL(sA,Ar_local)
-
-      CALL local2globalA(Ar_local,sAr,mrecvs,mdispls,tTransInfo_G%qOneD)
-
-      IF(iStep==start_step) sStep = diffStep
-      
-      qDiffrctd = .true.
+      call diffractIM(sA, sAr, Ar_local, local_rows, &
+                      diffStep*0.5_WP, frecvs, fdispls, lrecvs, ldispls, &
+                      qDiffrctd, qOKL)
 
       nextDiff = nextDiff + diffStep
 
-    END IF
+    end if
 
-  END IF
-
-
-
+  end if
 
 
 
@@ -182,13 +149,12 @@ DO iStep = start_step, nSteps
 !   Second half of split step method: electron propagation
 !                    and field driving.
 
-  IF (qElectronsEvolve_G .OR. qFieldEvolve_G &
-       .OR. qElectronFieldCoupling_G) THEN
+  if (qElectronsEvolve_G .OR. qFieldEvolve_G &
+       .OR. qElectronFieldCoupling_G) then
 
-     CALL rk4par(sV,sAr,Ar_local,sZ,sStepSize,mrecvs,mdispls,qDiffrctd)
+     call rk4par(sAr,Ar_local,sZ,sStepSize,mrecvs,mdispls,qDiffrctd)
 
-  END IF 
-
+  end if 
 
 
 
@@ -205,45 +171,73 @@ DO iStep = start_step, nSteps
 
 
 
+
+
+
+
+
+!   diffract field to complete diffraction step
+
+  if (qDiffraction_G) then
+
+    if ((sZ>(nextDiff-sStepsize/100.0_WP)) .or. (iStep == nSteps))  then
+
+      if ((iStep == nSteps) .or.  qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps, &
+                   qWDisp) ) then
+  
+        call diffractIM(sA, sAr, Ar_local, local_rows, &
+                        diffStep * 0.5_wp, frecvs, fdispls, lrecvs, ldispls, &
+                        qDiffrctd, qOKL)
+
+      else
+  
+        call diffractIM(sA, sAr, Ar_local, local_rows, &
+                        diffStep, frecvs, fdispls, lrecvs, ldispls, &
+                        qDiffrctd, qOKL)
+  
+      end if
+
+      nextDiff = nextDiff + diffStep
+  
+    end if
+
+  end if
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 !                 If at end of current undulator module, 
 !      propagate electron beam through a dispersive chicane, if present,
 !                 and move to the next undulator module.
 
-  IF (qMod_G) THEN
-     IF (sZ>(zMod(modCount)-sStepsize/100.0_WP)) THEN
+  if (qMod_G) then
+     if (sZ>(zMod(modCount)-sStepsize/100.0_WP)) then
 
-        IF (modCount /= ModNum) THEN
+        if (modCount /= ModNum) then
 
-          CALL disperse(sV,D(modCount),delta(modCount),&
+          call disperse(D(modCount),delta(modCount),&
                    modCount,sStepSize,sZ)
 
-        END IF
+        end if
 
 
 
-
-        !            Write data if not already going to
-
-        IF ((iCount /= iWriteNthSteps).AND.&
-             (iStep /= nSteps)) THEN
-             
-           CALL innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
-             
-           CALL WriteData(qSeparateStepFiles_G,&
-                zDataFileName,tArrayZ,tArrayA,&
-                tArrayE,&
-                iStep,sZ,sA,sV,.FALSE.,qFormattedFiles_G,&
-                qOKL)	
-
-        END IF
-  
-
-
+        qWDisp = .true.
         modCount=modCount+1_IP   !      Update module count
      
-     END IF
+     end if
   
-  END IF
+  end if
 
 
 
@@ -252,24 +246,45 @@ DO iStep = start_step, nSteps
 !                   Write result to file
  
   iCount = iCount + 1_IP
-  IF ((iCount == iWriteNthSteps).OR.&
-       (iStep == nSteps)) THEN
-     iCount = 0_IP
-     
-     CALL innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
-     
-     CALL WriteData(qSeparateStepFiles_G,&
-          zDataFileName,tArrayZ,tArrayA,tArrayE,&
-          iStep,sZ,sA,sV,.FALSE.,qFormattedFiles_G,&
-          qOKL)
-  END IF
   
-  CALL Get_time(end_time)
+
+
+
+
+
+if ( qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps, &
+             qWDisp) ) then
+
+  call writeIM(sA, Ar_local, sZ, &
+               zDataFileName, iStep, iWriteNthSteps, &
+               lrecvs, ldispls, &
+               iIntWriteNthSteps, nSteps, qWDisp, qOKL)
+
+
+  if (qDiffraction_G) then
+
+!             If field diffraction occurred this step, need to complete it....  
+!             ...the diffraction only diffracts a half step if data is going
+!             to be written (to match up the split-step data)
+
+     if (qDiffrctd) call diffractIM(sA, sAr, Ar_local, local_rows, &
+                      diffStep * 0.5_wp, frecvs, fdispls, lrecvs, ldispls, &
+                      qDiffrctd, qOKL)
+
+  end if
+
+    if (qWDisp) qWDisp = .false.
+
+  end if
+
+
   
-  IF (tProcInfo_G%QROOT ) THEN
+  call Get_time(end_time)
+  
+  if (tProcInfo_G%QROOT ) then
      print*,' finished step ',iStep, end_time-start_time
      WRITE(137,*) ' finished step ',iStep, end_time-start_time
-  END IF
+  end if
   
 
 
@@ -280,32 +295,32 @@ DO iStep = start_step, nSteps
 
 !                Dump data when time comes
 
-  IF (mod(iStep,iDumpNthSteps)==0) THEN
-     IF (tProcInfo_G%qRoot) PRINT*, 'Dumping data in case of crash'
+  if (mod(iStep,iDumpNthSteps)==0) then
+     if (tProcInfo_G%qRoot) PRINT*, 'Dumping data in case of crash'
      
-     CALL innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
+     call innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
      
-     if (qDump_G) CALL DUMPDATA(sA,sV,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
+     if (qDump_G) call DUMPDATA(sA,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
           iNumberElectrons_G,sZ,istep,tArrayA(1)%tFileType%iPage)
-  END IF
+  end if
 
 
 
 
 
 
-  IF (modCount > ModNum) EXIT
+  if (modCount > ModNum) EXIT
 
 
-END DO   ! End of integration loop
-
-
-
+end do   ! End of integration loop
 
 
 
 
-CALL cleanup(sA,sV,sZ)   !     Clear arrays and stucts used during integration
+
+
+
+call cleanup(sA, sZ)   !     Clear arrays and stucts used during integration
 
 
 CLOSE(UNIT=137,STATUS='KEEP') 
@@ -314,16 +329,18 @@ CLOSE(UNIT=137,STATUS='KEEP')
 
 
 
-GOTO 2000     !       Exit
+goto 2000     !       Exit
 
             
-1000 CALL Error_log('Error in Main',tErrorLog_G)
-PRINT*,'Error in Main'
-PRINT*, 'Check error log file for details, ',tErrorLog_G%zFileName
-CALL UnDefineParallelLibrary(qOKL)
+1000 call Error_log('Error in Main',tErrorLog_G)
+print*,'Error in Main'
+print*, 'Check error log file for details, ',tErrorLog_G%zFileName
+call UnDefineParallelLibrary(qOKL)
 
-2000 CONTINUE
+2000 continue
 
-IF (tProcInfo_G%qRoot) PRINT*,'Exited successfully'
+if (tProcInfo_G%qRoot) print*,'Exited successfully'
 
-END PROGRAM main
+end program main
+
+

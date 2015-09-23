@@ -4,33 +4,41 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
-MODULE rhs
+module rhs
 
 ! Module to calculate the RHS of the field source equation
 ! and d/dz of electron equations.
 !
 
-USE paratype
-USE ArrayFunctions
-USE Globals
-USE Functions
-USE extra
-USE basis_fn
-USE TransformInfoType
-USE ParallelInfoType
-USE stiffness
+use paratype
+use ArrayFunctions
+use Globals
+use Functions
+use TransformInfoType
+use ParallelInfoType
+use stiffness
+use Equations
+use wigglerVar
+use FiElec1D
+use FiElec
 
-IMPLICIT NONE
 
-CONTAINS
+implicit none
 
-  SUBROUTINE ifrhs(sz,&
-       sA,&
-       sy,&
-       sb,&
-       sDADz)
+contains
 
-    IMPLICIT NONE
+  subroutine getrhs(sz, &
+                    sA, &
+                    sx, sy, sz2, &
+                    spr, spi, sp2, &
+                    sdx, sdy, sdz2, &
+                    sdpr, sdpi, sdp2, &                    
+                    sDADz, &
+                    qOK)
+
+  use rhs_vars
+
+  implicit none
 
 ! Inputs %%%
 !
@@ -42,516 +50,299 @@ CONTAINS
 ! sb  - d/dz of electron phase space positions
 ! sDADz - RHS of field source term
 
-    REAL(KIND=WP),INTENT(IN) :: sz
-    REAL(KIND=WP),INTENT(IN) :: sA(:)
-    REAL(KIND=WP),INTENT(IN) :: sy(:)
-    REAL(KIND=WP),INTENT(OUT) :: sb(:)
-    REAL(KIND=WP), INTENT(INOUT) :: sDADz(:) !!!!!!!
+  real(kind=wp), intent(in) :: sz
+  real(kind=wp), intent(in) :: sA(:)
+  real(kind=wp), intent(in)  :: sx(:), sy(:), sz2(:), &
+                                spr(:), spi(:), sp2(:)
 
-! i
-! dx,dy,dz2 - step size in x y z2
-! xx,yy,zz2 - arrays of the principle node for each electron
-! sa1_elxnew,sa1_elynew,sa1_elz2new - ARRAYS STORING THE
-! PARTICLE'S POSITION X,Y,Z2
-! s_Lex,s_Ley,s_Lez2 - co-ordinates of electrons locally
-! N - storing the interploation function
-! i_n4e - temporary storing the global nodes number 
-! iNodeList_Re
-! iNodeList_Im
-! sInv2rho - 1/2rho
-! sInv4rho - 1/4rho
-! sTheta - z_2/2rho
-! ZOver2rho - z/2rho
-! salphaSq - alpha^2
-! iAstartR - A_real index
-! iAstartI - A_imag index	
-! spPerpSq_i
-! sBetaz_i	
-! sField4ElecReal
-! sField4ElecImag
-! sBetaz_i         - Beta z for each electron
-! sPPerp_Re        - Real PPerp value for ithelectron
-! sPPerp_Im        - Imaginary PPerp value for ithelectron
-! sQ_Re            - Real Q value for ithelectron
-! qOKL             - Local error flag
+  
+  real(kind=wp), intent(inout)  :: sdx(:), sdy(:), sdz2(:), &
+                                   sdpr(:), sdpi(:), sdp2(:)
 
-    INTEGER(KIND=IP) :: icheck
-    REAL(KIND=WP) :: dx,dy,dz2
-    REAL(KIND=WP) :: dV3
-    INTEGER(KIND=IP) :: xx,yy,xred,yred,zz2
-    REAL(KIND=WP) :: s_Lex,s_Ley,s_Lez2
-    INTEGER(KIND=IP),DIMENSION(:),ALLOCATABLE ::&
-                i_n4e,iNodeList_Re,iNodeList_Im,&
-                i_n4ered
-    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE :: N
-    REAL(KIND=WP) :: sInv2rho,sInv4rho
-    REAL(KIND=WP) :: ZOver2rho,salphaSq
-    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE ::&
-         sField4ElecReal,sField4ElecImag
-    INTEGER(KIND=IP) :: iAstartR,&
-         iAstartI,NN
-    REAL(KIND=WP) :: spPerpSq			   
-    REAL(KIND=WP),ALLOCATABLE :: Lj(:), dp2f(:)
-    REAL(KIND=WP) :: sBetaz_i,sInvGamma_i
-    REAL(KIND=WP) :: sPPerp_Re
-    REAL(KIND=WP) :: sPPerp_Im
-    REAL(KIND=WP) :: sQ_Re 
-    REAL(KIND=WP) :: sXcoord 
-    REAL(KIND=WP) :: sYcoord
-    REAL(KIND=WP) :: sZ2coord,z2test 
-    REAL(KIND=WP) :: FieldConst,econst
-    REAL(KIND=WP) :: stheta, kbeta, un, nc, nd, nb, fkb
-    REAL(KIND=WP),DIMENSION(6) :: sendbuff, recvbuff 
-    INTEGER(KIND=IP) :: x_inc, y_inc, z2_inc, istart, iend
-    INTEGER(KIND=IP) :: iNodesX,iNodesZ2,iNodesY, j
-    INTEGER(KIND=IPL) :: maxEl,i
-    INTEGER(KIND=IP) :: local_z2_start, local_nz2, index, ti
-    INTEGER(KIND=IP) :: iOutside
-    INTEGER :: stat,req,error,lrank,rrank
-    REAL(KIND=WP),DIMENSION(10)	:: couple 
-    INTEGER(KIND=IP) :: retim
-    REAL(KIND=WP) :: halfx, halfy
+  real(kind=wp), intent(inout) :: sDADz(:) !!!!!!!
+  logical, intent(inout) :: qOK
 
-    REAL(KIND=WP) :: time1, start_time
-    LOGICAL :: qOKL,qoutside
+
+  real(kind=wp) :: li1, li2, dadzRInst, dadzIInst, locz2
+  integer(kind=ipl) :: i, z2node
+  logical qOKL
 
 !     Begin
 
-    qOKL = .FALSE.
+  qOK = .false.
+  qOKL = .false.
     
 !     SETUP AND INITIALISE THE PARTICLE'S POSITION
 !     ALLOCATE THE ARRAYS
 
-    ALLOCATE(i_n4e(iNodesPerElement_G),N(iNodesPerElement_G),&
-             iNodeList_Re(iNodesPerElement_G),&
-             iNodeList_Im(iNodesPerElement_G))
-    AlLOCATE(i_n4ered(iNodesPerElement_G))
-    ALLOCATE(sField4ElecReal(iNumberElectrons_G),&
-             sField4ElecImag(iNumberElectrons_G))
-    ALLOCATE(Lj(iNumberElectrons_G),dp2f(iNumberElectrons_G))
+  allocate(Lj(iNumberElectrons_G)) 
+  allocate(p_nodes(iNumberElectrons_G))
+  call alct_e_srtcts(iNumberElectrons_G)
+  
+  if (tTransInfo_G%qOneD) then
+    allocate(lis_GR(2,iNumberElectrons_G))
+  else
+    allocate(lis_GR(8,iNumberElectrons_G))
+  end if
 
-    ioutside=0
-
-!     Set up Pointers to the field equations
-
-    iAstartR = iBStartPosition_G(iRe_A_CG)
-    iAstartI = iBStartPosition_G(iIm_A_CG)
-
-!     Define the size of each element
-
-    dx  = sLengthOfElmX_G
-    dy  = sLengthOfElmY_G
-    dz2 = sLengthOfElmZ2_G
-    dV3 = sLengthOfElmX_G*sLengthOfElmY_G*sLengthOfElmZ2_G
-
-!     Time savers
-
-    sInv2rho    = 1.0_WP/(2.0_WP * sRho_G)
-    sInv4rho    = 1.0_WP/(4.0_WP * sRho_G)
-    ZOver2rho   = sz * sInv2rho
-    salphaSq    = (2.0_WP * sGammaR_G * sRho_G / sAw_G)**2
-
-    kbeta = sAw_G / (2.0_WP * sFocusFactor_G * sRho_G * sGammaR_G)
-    un = sqrt(fx_G**2.0_WP + fy_G**2.0_WP)
-
-!     Nodes in X and Z2 directions
-
-    iNodesX = NX_G
-    iNodesY=NY_G
-    iNodesZ2 = NZ2_G
-
-!     Diff between real and imaginary nodes in the reduced system
-
-    retim = ReducedNX_G*ReducedNY_G*nZ2_G
 
 !     Initialise right hand side to zero
 
-    sb = 0.0_WP
-    sField4ElecReal = 0.0_WP
-    sField4ElecImag = 0.0_WP
+  sField4ElecReal = 0.0_WP
+  sField4ElecImag = 0.0_WP
 
+
+  call rhs_tmsavers(sz)  ! This can be moved later...
 
 !     Adjust undulator tuning
 
-!    n2col = n2col0 * (1 + undgrad*(sz - sz0))
-    n2col = n2col0  + undgrad*(sz - sz0)
+  call getAlpha(sZ)
 
-    fkb= sFocusfactor_G * kbeta
 
-    econst = sAw_G/(sRho_G*SQRT(2.0_WP*(fx_G**2.0_WP+fy_G**2.0_WP)))
+!     Calculate Lj term
 
-    nc = 2.0_WP*saw_G**2/(fx_G**2.0_WP + fy_G**2.0_WP)
-    
-    nd = SQRT((fx_G**2.0_WP+fy_G**2.0_WP)*(sEta_G))/(2.0_WP*SQRT(2.0_WP)* &
-                             fkb*sRho_G)
-    
-    nb = 2.0_WP * sRho_G / ((fx_G**2.0_WP+fy_G**2.0_WP)*sEta_G)
-    
-    maxEl = maxval(procelectrons_G)
-    qoutside=.FALSE.
-    iOutside=0_IP
+  Lj = sqrt((1.0_WP - (1.0_WP / ( 1.0_WP + (sEta_G * sp2)) )**2.0_WP) &
+             / (1.0_WP + nc* ( spr**2.0_wp  +  &
+                               spi**2.0_wp )   )) &
+          * (1.0_WP + sEta_G *  sp2) * sGammaR_G
 
-    halfx = ((ReducedNX_G-1) / 2.0_WP) * sLengthOfElmX_G
-    halfy = ((ReducedNY_G-1) / 2.0_WP) * sLengthOfElmY_G
 
-!     Looping (summing) over all the electrons
 
-    DO i=1,maxEl
-    
-       IF (i<=procelectrons_G(1)) THEN	
-       
-!     Get electron variables for electron and field evolution.
 
-          sPPerp_Re = GetValueFromVector(iRe_pPerp_CG, i, sy, qOKL)
-          IF (.NOT. qOKL) THEN
-              CALL Error_log('Error retrieving pperpre in RHS:ifrhs',tErrorLog_G)
-          END IF              
 
-          sPPerp_Im = GetValueFromVector(iIm_pPerp_CG, i, sy, qOKL)
-          IF (.NOT. qOKL) THEN
-              CALL Error_log('Error retrieving pperpim in RHS:ifrhs',tErrorLog_G)
-          END IF
-
-          sQ_Re     = GetValueFromVector(iRe_Q_CG,     i, sy, qOKL)
-          IF (.NOT. qOKL) THEN
-              CALL Error_log('Error retrieving p2 in RHS:ifrhs',tErrorLog_G)
-          END IF
-		
-          sPperpSq = sPPerp_Re**2 + sPPerp_Im**2		
-		
-          sZ2coord = GetValueFromVector(iRe_Z2_CG,i,sy,qOKL)
-          IF (.NOT. qOKL) THEN
-              CALL Error_log('Error retrieving z2 in RHS:ifrhs',tErrorLog_G)
-          END IF
-
-          stheta    = sZ2coord * sinv2rho	
-		 
-          sXcoord = GetValueFromVector(iRe_X_CG,i,sy,qOKL)&
-               + halfx
-
-          sYcoord = GetValueFromVector(iRe_Y_CG,i,sy,qOKL)&
-               + halfy
-       ENDIF
-
-!     Get info for dydz of ith electron
-
-       IF (i<=procelectrons_G(1)) THEN
-
-!     Calculate the coordinates of the principle node for
-!     each electron 
-
-          zz2 = floor(sZ2coord / dz2) + 1_IP
-
-!     Calculate the co-ordinate for each electron locally
-
-          s_Lez2 = sZ2coord - REAL(zz2 - 1_IP, KIND=WP)&
-               * sLengthOfElmZ2_G
-
-!     If s_lez2 is outside the boundary then let it = nearest boundary
-
-          IF (s_Lez2<0.0_WP) THEN
-             s_Lez2=0.0_WP
-          END IF
-		 
-          IF (s_Lez2>sLengthOfElmZ2_G) THEN 
-             s_Lez2=sLengthOfElmZ2_G
-          END IF
-
-!     Calculate pperpsq, betaz, and 1/gamma, and perform checks.
-
-          IF (sEta_G * sQ_Re == -1.0_WP) THEN
-             PRINT *, 'EPSILON +Q=-1,divide by zero need to exit'
-             STOP	
-          ENDIF
-          sBetaz_i    =  1.0_WP / ( 1.0_WP + (sEta_G * sQ_Re)) 
-		
-          IF (sBetaz_i > 1.0_WP) THEN
-             PRINT *, 'BETA_I > 1, sqrt of negative need to exit'
-             STOP
-          ENDIF
-          IF (spPerpSq==-1.0_WP) THEN
-             IF (tProcInfo_G%qRoot) PRINT*, 'electron', i,'ppsq=-1!!'
-            ! CALL MPI_FINALIZE(error)
-             STOP
-          ENDIF
-	  	
-          sInvGamma_i = sqrt((1.0_WP - sBetaz_i**2.0_WP)&
-               / (1.0_WP + nc*spPerpSq))
-
-!     Calculate Lj term: full or approximated....
-
-          !Lj(i) = 2.0_WP*(1.0_WP + sEta_G * sQ_Re ) / &
-          !       (3.0_WP - sQ_Re)
-
-          Lj(i) = sInvGamma_i*(1.0_WP + sEta_G * sQ_Re ) * sGammaR_G
-
-!     Calculate the nodes surrounding the ith electron and the corresponding
-!     interpolation function.
-!     Work out what is the principal node for each electron and 7 
-!     other nodes in the same element. See extra.f90
-
-          IF (tTransInfo_G%qOneD) THEN
-
-!     Work out the indices of the two surrounding nodes for this electron.
-
-             i_n4e(1) = CEILING(sZ2coord/sLengthOfElmZ2_G)
-             i_n4e(2) = i_n4e(1) + 1_IP
-
-             IF (i_n4e(1)>SIZE(sA)) THEN
-                IF (tProcInfo_G%qRoot) PRINT*, 'electron',&
-                     i,'out of bounds of system'
-                CALL MPI_FINALIZE(error)
-                STOP
-             ENDIF	
-             IF (i_n4e(2)>SIZE(sA)) THEN
-                IF (tProcInfo_G%qRoot) PRINT*,&
-                     'electron', i,'out of bounds of system'
-                CALL MPI_FINALIZE(error)
-                STOP
-             ENDIF
-		
-		
-             CALL intpl_fn(s_Lez2,2_IP,sLengthOfElmZ2_G,N)			
-		
-          ELSE
-             xx  = floor(sXcoord  / dx)  + 1_IP
-             yy  = floor(sYcoord  / dy)  + 1_IP 			
-             !xred=xx-(outnodex_G/2_IP)
-             !yred=yy-(outnodey_G/2_IP)
-			
-             s_Lex  = sXcoord  - REAL(xx  - 1_IP,&
-                  KIND=WP) * sLengthOfElmX_G
-             s_Ley  = sYcoord  - REAL(yy  - 1_IP,&
-                  KIND=WP) * sLengthOfElmY_G
-
-             CALL principal(ReducedNX_G,ReducedNY_G,iNodesPerElement_G,&
-                  iGloNumA_G,iNodCodA_G,xx,yy,zz2,i_n4e)
-
-             qoutside=.false.
-             !CALL principal2(ReducedNX_G,ReducedNY_G,&
-             !     iNodesPerElement_G,xred,yred,zz2,i_n4ered,qoutside)
-
-             IF (qoutside) ioutside=ioutside+1
-			
-!     Calculate how much the macroparticle contributes to each node in 
-!     its current element. See basis_fn.f90
-
-             CALL intpl_fn(s_Lex,&
-                  s_Ley,&
-                  s_Lez2,&
-                  iNodesPerElement_G,&
-                  sLengthOfElmX_G,&
-                  sLengthOfElmY_G,&
-                  sLengthOfElmZ2_G,&
-                  N)						  
-          END IF
-
-          IF (SUM(N) > (1.0+1E-4) .OR. SUM(N) < (1.0-1E-4) ) THEN
-             PRINT *,&
-             'THE SUM OF INTERPOLATION FUNCTION IS WRONG',i,SUM(N)
-             DO icheck=1,8
-                IF (N(icheck)<0.0_WP) THEN
-                   PRINT *,&
-                   'INTERPOLATION FUNCTION HAS NEGATIVE VALUE(S)',&
-                   icheck 
-                ENDIF
-             ENDDO
-          ENDIF
-
-          iNodeList_Re = i_n4e
-          iNodeList_Im = i_n4e+retim
-
-!     Get radiation field for coupling terms in electron macroparticle
-!     equations.
-
-          IF (qElectronFieldCoupling_G) THEN
-             sField4ElecReal(i) = SUM( sA(iNodeList_Re) * N )
-             sField4ElecImag(i) = SUM( sA(iNodeList_Im) * N )
-          END IF
-       END IF
-
-!     Field eqn RHS
-
-       IF ((qFieldEvolve_G) .AND. (.not. qoutside)) THEN
-          IF (i<=procelectrons_G(1)) THEN
-             IF (.NOT. qoutside) THEN
-                IF (.NOT. tTransInfo_G%qOneD) iNodeList_Re = i_n4e
-
-                sDADz(iNodeList_Re) = ((s_chi_bar_G(i)/dV3) * Lj(i)&
-                      *  N * sPPerp_Re ) + &
-                     sDADz(iNodeList_Re)
-                     
-                sDADz(iNodeList_Re+retim) = &
-                     ((s_chi_bar_G(i)/dV3) *&
-                     Lj(i) * N * sPPerp_Im ) + &
-                     sDADz(iNodeList_Re+retim)
+  
+  if (tTransInfo_G%qOneD) then
  
-             END IF
-          END IF
-       END IF
+    p_nodes = floor(sz2 / dz2) + 1_IP
 
-    ENDDO
+  else
 
-    IF (ioutside>0) THEN 
-       Print*, 'WARNING: ',ioutside,&
-            ' electrons are outside the inner driving core'
-    END IF
+    p_nodes = (floor( (sx+halfx)  / dx)  + 1_IP) + &
+              (floor( (sy+halfy)  / dy) * ReducedNX_G )  + &   !  y 'slices' before primary node
+              (ReducedNX_G * ReducedNY_G * &
+                              floor(sz2  / dz2) )  ! transverse slices before primary node
 
+
+  end if  
+
+
+
+  if (tTransInfo_G%qOneD) then
+
+    call getInterps_1D(sz2)
+    call getFFelecs_1D(sA)
+    call getSource_1D(sDADz, spr, spi)
+
+  else
+
+    call getInterps_3D(sx, sy, sz2)
+    call getFFelecs_3D(sA)    
+    call getSource_3D(sDADz, spr, spi)
+
+  end if
+
+  deallocate(p_nodes)
+
+
+
+!    IF (ioutside>0) THEN 
+!       Print*, 'WARNING: ',ioutside,&
+!            ' electrons are outside the inner driving core'
+!    END IF
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !      Calculate electron d/dz of electron equations - if needed
 
-    IF (qElectronsEvolve_G) THEN
+  if (.not. qElectronFieldCoupling_G) then
+    sField4ElecReal = 0.0_WP
+    sField4ElecImag = 0.0_WP
+  end if
+
+
+    if (qElectronsEvolve_G) then   
 
 !     z2
 
-       CALL PutValueInVector(iRe_Z2_CG,&
-            Vector(iRe_Q_CG,sy),&
-            sb,&	      
-            qOKL)    
+        CALL dz2dz_f(sx, sy, sz2, spr, spi, sp2, &
+                   sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
+                   Lj,qOKL)
+        if (.not. qOKL) goto 1000
 
 !     X
 
-       CALL PutValueInVector(iRe_X_CG,&
-            Vector(iRe_pPerp_CG,sy) * Lj / nd,&
-            sb,&	      
-            qOKL)
+        call dxdz_f(sx, sy, sz2, spr, spi, sp2, &
+                  sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
+                  Lj,qOKL)
+        if (.not. qOKL) goto 1000             
 
 !     Y
 
-       CALL PutValueInVector(iRe_Y_CG, &
-            -Vector(iIm_pPerp_CG,sy) * Lj / nd,&
-            sb,&	      
-            qOKL)
+        call dydz_f(sx, sy, sz2, spr, spi, sp2, &
+                  sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
+                  Lj,qOKL)
+        if (.not. qOKL) goto 1000
+
 
 !     dp2f is the focusing correction for dp2/dz
 
-       IF (qFocussing_G) THEN
+        call caldp2f_f(sx, sy, sdx, sdy, sp2, kbeta, qOKL)
+        if (.not. qOKL) goto 1000
 
-          dp2f = -(kbeta**2.0_WP) * &   ! New focusing term
-               (1.0_WP + (sEta_G*Vector(iRe_Q_CG,sy))) * &
-               ((Vector(iRe_X_CG,sy)*Vector(iRe_X_CG,sb)) + & 
-               (Vector(iRe_Y_CG,sy)*Vector(iRe_Y_CG,sb))) / &
-               (1.0_WP + sEta_G * ( (Vector(iRe_X_CG,sb))**2.0_WP  + &
-               (Vector(iRe_Y_CG,sb))**2.0_WP ) )
-       ELSE 
-          dp2f=0.0_WP
-       END IF
 
-!     PX (Real pperp) 	
 
-       IF (qFocussing_G) THEN
-
-       CALL PutValueInVector(iRe_PPerp_CG, &
-            sInv2rho * (fy_G*sin(ZOver2rho) - &
-            (salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
-            sField4ElecReal ) ) - & 
-            nd / Lj * & ! New focusing term
-            (  ( kbeta**2 * Vector(iRe_X_CG,sy)) + (sEta_G / &
-            ( 1.0_WP + (sEta_G * Vector(iRe_Q_CG,sy)) ) * &
-            Vector(iRe_X_CG,sb) * dp2f ) ), &
-            sb,	      & 	  
-            qOKL)
+!     PX (Real pperp)
+       
+        call dppdz_r_f(sx, sy, sz2, spr, spi, sp2, &
+                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
+                     Lj,qOKL)
+        if (.not. qOKL) goto 1000
 
 
 !     -PY (Imaginary pperp)
 
-       CALL PutValueInVector(iIm_PPerp_CG, &
-            sInv2rho * (fx_G*cos(ZOver2rho) - &
-            (salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
-            sField4ElecImag ) ) + &
-            nd / Lj * & ! New focusing term
-            (  ( kbeta**2 * Vector(iRe_Y_CG,sy)) + (sEta_G / &
-            ( 1.0_WP + (sEta_G * Vector(iRe_Q_CG,sy)) ) * &
-            Vector(iRe_Y_CG,sb) * dp2f ) ), &
-            sb,	      & 	  
-            qOKL)
+        call dppdz_i_f(sx, sy, sz2, spr, spi, sp2, &
+                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
+                     Lj,qOKL)
+        if (.not. qOKL) goto 1000
 
-!     Q
+!     P2
 
-       CALL PutValueInVector(iRe_Q_CG, &
-            2.0_WP * nb * Lj**2 * &
-            ((sEta_G * Vector(iRe_Q_CG,sy) + 1.0_WP)/ salphaSq * &
-            (Vector(iIm_pPerp_CG,sy) * fx_G*cos(ZOver2Rho) + &
-            Vector(iRe_pPerp_CG,sy) * fy_G*sin(ZOver2rho)) +&
-            sEta_G * Vector(iRe_Q_CG,sy) *&
-            (Vector(iRe_pPerp_CG,sy)*sField4ElecReal +&
-            Vector(iIm_pPerp_CG,sy)*sField4ElecImag)) &
-            + dp2f,& ! New focusing term
-            sb,&
-            qOKL)
-
-       ELSE
-
-!     PX
-
-       CALL PutValueInVector(iRe_PPerp_CG, &
-            sInv2rho * (fy_G* n2col * sin(ZOver2rho) - &
-            ( salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
-            sField4ElecReal ) ), &
-            sb,	      & 	  
-            qOKL)
+        call dp2dz_f(sx, sy, sz2, spr, spi, sp2, &
+                   sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
+                   Lj,qOKL)
+        if (.not. qOKL) goto 1000
+ 
+    end if 
 
 
-!     -PY (Imaginary pperp)
 
-       CALL PutValueInVector(iIm_PPerp_CG, &
-            sInv2rho * (fx_G * n2col * cos(ZOver2rho) - &
-            ( salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
-            sField4ElecImag ) ),&
-            sb,	      & 	  
-            qOKL)
 
-!     p2
 
-       CALL PutValueInVector(iRe_Q_CG, &
-            2.0_WP * nb * Lj**2.0_WP * &
-            ((sEta_G * Vector(iRe_Q_CG,sy) + 1.0_WP)/ salphaSq * n2col * &
-            (Vector(iIm_pPerp_CG,sy) * fx_G*cos(ZOver2Rho) + &
-            Vector(iRe_pPerp_CG,sy) * fy_G*sin(ZOver2rho)) +&
-            sEta_G * Vector(iRe_Q_CG,sy) *&
-            (Vector(iRe_pPerp_CG,sy)*sField4ElecReal +&
-            Vector(iIm_pPerp_CG,sy)*sField4ElecImag)), &
-            sb,&
-            qOKL)
 
-       END IF
+    if (qFieldEvolve_G) then
 
-    END IF 
-    
-    IF (qFieldEvolve_G) THEN
+!     Sum dadz from different MPI processes together
 
-       CALL sum2RootArr(sDADz,ReducedNX_G*ReducedNY_G*NZ2_G*2,0)
-       IF (tProcInfo_G%qRoot) sDADz(1:ReducedNX_G*ReducedNY_G)=0.0_WP
+        call sum2RootArr(sDADz,ReducedNX_G*ReducedNY_G*NZ2_G*2,0)
 
-       !IF (tTransInfo_G%qOneD) THEN
-       !  IF (tProcInfo_G%qRoot) sDADz=sDADz !sDADz=6.0_WP*sDADz
-       !ELSE
-       !   IF (tProcInfo_G%qRoot) sDADz=sDADz !216.0_WP/8.0_WP*sDADz
-       !END IF
+!     Boundary condition dadz = 0 at head of field
 
-    END IF
+        if (tProcInfo_G%qRoot) sDADz(1:ReducedNX_G*ReducedNY_G) = 0.0_WP
+ 
+        !if (tTransInfo_G%qOneD) then
+        !  if (tProcInfo_G%qRoot) sDADz=sDADz !sDADz=6.0_WP*sDADz
+        !else
+        !   if (tProcInfo_G%qRoot) sDADz=sDADz !216.0_WP/8.0_WP*sDADz
+        !end if
+
+    end if
     
 !     Switch field off
 
-    IF (.NOT. qFieldEvolve_G) THEN
+    if (.not. qFieldEvolve_G) then
        sDADz = 0.0_WP
-    END IF
+    end if
 
-!     If electrons not allowed to evolve then      
+!     if electrons not allowed to evolve then      
 
-    IF (.NOT. qElectronsEvolve_G) THEN
-       CALL PutValueInVector(iRe_pPerp_CG, 0.0_WP, sb, qOKL)
-       CALL PutValueInVector(iIm_pPerp_CG, 0.0_WP, sb, qOKL)
-       CALL PutValueInVector(iRe_Q_CG,     0.0_WP, sb, qOKL)
-       CALL PutValueInVector(iRe_Z2_CG,    0.0_WP, sb, qOKL)
-       CALL PutValueInVector(iRe_X_CG,     0.0_WP, sb, qOKL)
-       CALL PutValueInVector(iRe_Y_CG,     0.0_WP, sb, qOKL)
-    END IF
+    if (.not. qElectronsEvolve_G) then
+       sdpr = 0.0_wp
+       sdpi = 0.0_wp
+       sdp2 = 0.0_wp
+       sdx   = 0.0_wp
+       sdy   = 0.0_wp
+       sdz2 = 0.0_wp
+    end if
 
 !     Deallocate arrays
 
-    DEALLOCATE(i_n4e,N,iNodeList_Re,iNodeList_Im,i_n4ered)
-    DEALLOCATE(sField4ElecReal,sField4ElecImag,Lj,dp2f)
+!    deallocate(i_n4e,N,iNodeList_Re,iNodeList_Im,i_n4ered)
+!    deallocate(sField4ElecReal,sField4ElecImag,Lj,dp2f)
+    deallocate(Lj)
+    deallocate(lis_GR)
+    call dalct_e_srtcts()
 
-  END SUBROUTINE ifrhs
+    ! Set the error flag and exit
 
-END MODULE rhs
+    qOK = .true.
+
+    goto 2000 
+
+1000 call Error_log('Error in rhs:getrhs',tErrorLog_G)
+    print*,'Error in rhs:getrhs'
+2000 continue
+
+  end subroutine getrhs
+
+
+
+!        #########################################
+
+
+
+subroutine rhs_tmsavers(sz)
+
+use rhs_vars
+
+real(kind=wp), intent(in) :: sz
+
+  ioutside=0
+
+
+!     Define the size of each element
+
+  dx = sLengthOfElmX_G
+  dy = sLengthOfElmY_G
+  dz2 = sLengthOfElmZ2_G
+
+  dV3 = sLengthOfElmX_G*sLengthOfElmY_G*sLengthOfElmZ2_G
+
+
+!     Time savers
+
+  sInv2rho    = 1.0_WP/(2.0_WP * sRho_G)
+
+  ZOver2rho   = sz * sInv2rho
+  salphaSq    = (2.0_WP * sGammaR_G * sRho_G / sAw_G)**2
+
+  kbeta = sAw_G / (2.0_WP * sFocusFactor_G * sRho_G * sGammaR_G)
+  un = sqrt(fx_G**2.0_WP + fy_G**2.0_WP)
+
+
+!     number of transverse nodes
+
+  ntrans = ReducedNX_G * ReducedNY_G
+
+!     Diff between real and imaginary nodes in the reduced system
+
+  retim = ReducedNX_G*ReducedNY_G*nZ2_G
+
+
+  fkb= sFocusfactor_G * kbeta
+
+  econst = sAw_G/(sRho_G*sqrt(2.0_WP*(fx_G**2.0_WP+fy_G**2.0_WP)))
+
+  nc = 2.0_WP*saw_G**2/(fx_G**2.0_WP + fy_G**2.0_WP)
+    
+  nd = sqrt((fx_G**2.0_WP+fy_G**2.0_WP)*(sEta_G))/(2.0_WP*sqrt(2.0_WP)* &
+                             fkb*sRho_G)
+    
+  nb = 2.0_WP * sRho_G / ((fx_G**2.0_WP+fy_G**2.0_WP)*sEta_G)
+    
+  maxEl = maxval(procelectrons_G)
+  qoutside=.FALSE.
+  iOutside=0_IP
+
+  halfx = ((ReducedNX_G-1) / 2.0_WP) * sLengthOfElmX_G
+  halfy = ((ReducedNY_G-1) / 2.0_WP) * sLengthOfElmY_G
+
+
+
+end subroutine rhs_tmsavers
+
+
+
+
+
+end module rhs

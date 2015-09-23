@@ -10,7 +10,7 @@ enable_language (Fortran)
 set (Puffin_VERSION_MAJOR 1)
 set (Puffin_VERSION_MINOR 4)
 # And because I don't know better
-set (Puffin_VERSION_PATCH 1)
+set (Puffin_VERSION_PATCH 3)
 # FFLAGS depend on the compiler
 get_filename_component (Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
 
@@ -33,15 +33,27 @@ else (Fortran_COMPILER_NAME MATCHES "gfortran.*")
   set (CMAKE_Fortran_FLAGS_RELEASE "-O2")
   set (CMAKE_Fortran_FLAGS_DEBUG   "-O0 -g")
 endif (Fortran_COMPILER_NAME MATCHES "gfortran.*")
-# I think this is unsuccessful in just about all cases, but it doesn't harm
-# Todo: use scimake to determine FFTW (and potentially also FORTRAN/MPI/openMP options)
-find_library(FFTW NAMES fftw_mpi fftw)
+
+### line below is not working, but harmless.
+# todo - find FFTW with scimake
+find_library(FFTW_MPI_LIB fftw_mpi)
+find_library(FFTW_LIB fftw)
+find_path(FFTW_INC_DIR fftw_mpi.h)
+set (FFTW_LIB_DIR ${FFTW_INC_DIR}/../lib)
+
+message ("-- FFTW_LIB: " ${FFTW_LIB})
+message ("-- FFTW_MPI_LIB: " ${FFTW_MPI_LIB})
+message ("-- FFTW_LIB_DIR: " ${FFTW_LIB_DIR})
 find_package(MPI REQUIRED)
-
 add_subdirectory(source)
-
-## todo install example files in a subdirectory of the installation
-#add_subdirectory(inputs)
-
-# TODO install a license file, eg openBSD license.
+install (DIRECTORY inputs/example/ DESTINATION examples)
+install (DIRECTORY inputs/gen/ DESTINATION python)
+# build a CPack driven installer package
+include (InstallRequiredSystemLibraries)
+set (CPACK_RESOURCE_FILE_LICENSE  
+     "${CMAKE_CURRENT_SOURCE_DIR}/License.txt")
+set (CPACK_PACKAGE_VERSION_MAJOR "${Puffin_VERSION_MAJOR}")
+set (CPACK_PACKAGE_VERSION_MINOR "${Puffin_VERSION_MINOR}")
+set (CPACK_PACKAGE_VERSION_PATCH "${Puffin_VERSION_PATCH}")
+include (CPack)
 

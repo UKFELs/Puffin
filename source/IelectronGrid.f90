@@ -15,6 +15,7 @@ use remLow
 use grids
 use initConds
 use parallelSetup
+use gtop2
 
 IMPLICIT NONE
 
@@ -32,7 +33,7 @@ CONTAINS
        sElectronThreshold, &
        qOneD, &
        chirp, &
-       sV, &
+       mag, fr, &
        qOK)
 
 ! Calculate the electron grid positions
@@ -59,7 +60,8 @@ CONTAINS
     REAL(KIND=WP), INTENT(INOUT):: beamCenZ2(:)
     INTEGER(KIND=IP), INTENT(IN):: iNMP(:,:)
     LOGICAL, INTENT(IN)         :: q_noise
-    REAL(KIND=WP), INTENT(IN)	:: sZ, chirp(:)
+    REAL(KIND=WP), INTENT(IN)	:: sZ, chirp(:), mag(:), fr(:)
+
 
     INTEGER(KIND=IP), INTENT(IN) :: nbeams
     REAL(KIND=WP), INTENT(INOUT):: samLenE(:,:)    
@@ -70,7 +72,6 @@ CONTAINS
 
     LOGICAL,         INTENT(IN):: qOneD
 
-    REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sV(:)
     LOGICAL,         INTENT(OUT):: qOK
 
 !              LOCAL ARGUMENTS
@@ -119,7 +120,7 @@ CONTAINS
     REAL(KIND=WP),ALLOCATABLE :: s_tmp_Vk(:)
 
     REAL(KIND=WP), ALLOCATABLE :: s_tmp_max_av(:)
-    REAL(KIND=WP) :: local_start, local_end, afact, um
+    REAL(KIND=WP) :: local_start, local_end, afact, um, kx, ky
 
     REAL(KIND=WP) :: offsets(6)
 
@@ -213,18 +214,20 @@ CONTAINS
                     pz2_tmpvector(b_sts(b_ind):b_ends(b_ind)), &
                     s_tmp_max_av(b_ind), &
                     s_tmp_macro(b_sts(b_ind):b_ends(b_ind)), &
-                    s_tmp_Vk(b_sts(b_ind):b_ends(b_ind)))
+                    s_tmp_Vk(b_sts(b_ind):b_ends(b_ind)), b_ind)
                       
     END DO
 
-
+    npk_bar_G = maxval(s_tmp_max_av) ! record peak density
+    
+    
     CALL getChi(s_tmp_macro, s_tmp_Vk, maxval(s_tmp_max_av), &
                 Tmp_chibar, Tmp_Normchi)
     
     DEALLOCATE(s_tmp_macro,s_tmp_Vk)
 
     CALL removeLow(Tmp_chibar, Tmp_Normchi, b_sts, b_ends, sElectronThreshold, &
- chirp,nbeams,x_tmpcoord,y_tmpcoord,z2_tmpcoord,px_tmpvector,&
+                   chirp,mag,fr,nbeams,x_tmpcoord,y_tmpcoord,z2_tmpcoord,px_tmpvector,&
                    py_tmpvector, pz2_tmpvector,totalmps_b,beamCenZ2)
 
     DEALLOCATE(x_tmpcoord)
@@ -247,33 +250,89 @@ CONTAINS
 !!!!!!! IS - AND DXDZ OFFSET *IS* DEPENDANT ON GAMMA, BUT SIGMA_DXDZ
 !!!!!!! IS NOT
 
-    ALLOCATE(tconv(size(sEl_PX0Position_G)))
+    ALLOCATE(tconv(size(sElPX_G)))
     
-    tconv = sEl_PX0Position_G**2.0_WP + sEl_PY0Position_G**2.0_WP
+    tconv = sElPX_G**2.0_WP + sElPY_G**2.0_WP
 
-    sEl_PX0Position_G = sqrt((sEl_PZ20Position_G**2.0_WP - 1.0_WP) / &
+    sElPX_G = sqrt((sElPZ2_G**2.0_WP - 1.0_WP) / &
                             (1.0_WP + tconv))  &
-                        / afact * sEl_PX0Position_G
+                        / afact * sElPX_G
 
-    sEl_PY0Position_G = sqrt((sEl_PZ20Position_G**2.0_WP - 1.0_WP) / &
+    sElPY_G = sqrt((sElPZ2_G**2.0_WP - 1.0_WP) / &
                             (1.0_WP + tconv))  &
-                        / afact * sEl_PY0Position_G
+                        / afact * sElPY_G
 
 
     DEALLOCATE(tconv)
 
-    sEl_PX0Position_G = sEl_PX0Position_G + pxOffset(sZ, srho_G, fy_G)
-    sEl_PY0Position_G = sEl_PY0Position_G + pyOffset(sZ, srho_G, fx_G)
+
+    kx = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+    ky = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+
+
+
+
+    if (zUndType_G == 'curved') then
+
+! used for curved pole puffin, the 2 order expansion of cosh and sinh
+! allows us to simply add a correction term to the intial position
+! when calculating initial conditions, this may need change eventually
+
+
+        sElPX_G = sElPX_G + &
+        pxOffset(sZ, srho_G, fy_G) & 
+        - 0.5_WP * kx**2 * sElX_G**2 &
+        -  0.5_WP * kY**2 * sElY_G**2
+     
+        sElPY_G = sElPY_G &
+        + pyOffset(sZ, srho_G, fx_G) &
+        - kx**2 *  sElX_G  * sElY_G
+
+
+
+
+
+    else if (zUndType_G == 'planepole') then 
+
+! plane pole initial conditions are calculated as a 2nd order expansion
+! and added as a correction term.
+
+
+
+        sElPX_G = sElPX_G + &
+        pxOffset(sZ, srho_G, fy_G) & 
+        - 0.5_WP * (sEta_G / (4 * sRho_G**2)) * sElX_G**2 
+
+        sElPY_G = sElPY_G &
+        + pyOffset(sZ, srho_G, fx_G) 
+
+
+    else
+
+! "normal" PUFFIN case with no off-axis undulator
+! field variation
+
+
+        sElPX_G = sElPX_G &
+        + pxOffset(sZ, srho_G, fy_G) 
+
+        sElPY_G = sElPY_G &
+        + pyOffset(sZ, srho_G, fx_G) 
+
+
+    end if
+
+
 
 !     We currently have gamma in the p2 position array -
 !     need to change to p2
 
-    sEl_PZ20Position_G = getP2(sEl_PZ20Position_G,sEl_PX0Position_G,&
-                               sEl_PY0Position_G,sEta_G,sAw_G)
+    sElPZ2_G = getP2(sElPZ2_G, sElPX_G,&
+                               sElPY_G, sEta_G, sAw_G)
 
-!     Allocate electron array
 
-    !ALLOCATE(sV(iNumberElectrons_G * 6_IPL))
+
+    sElPY_G = - sElPY_G
 
 !     Sum the local num of macroparticles to a global number
 
@@ -286,8 +345,8 @@ CONTAINS
 
 !     Error Handler
 
-1000 CALL Error_log('Error in Chow:electron_grid',tErrorLog_G)
-    PRINT*,'Error in Chow:electron_grid'
+1000 CALL Error_log('Error in ElectronInit:electron_grid',tErrorLog_G)
+    PRINT*,'Error in ElectronInit:electron_grid'
 2000 CONTINUE
   END SUBROUTINE electron_grid
 
@@ -296,13 +355,13 @@ CONTAINS
 SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, &
                    i_RealE, q_noise, qOneD, sZ, x_tmpcoord, &
                    y_tmpcoord,z2_tmpcoord,px_tmpvector,py_tmpvector,&
-                   pz2_tmpvector,s_tmp_max_av,s_tmp_macro,s_tmp_Vk)
+                   pz2_tmpvector,s_tmp_max_av,s_tmp_macro,s_tmp_Vk, b_num)
 
   IMPLICIT NONE
 
 !                   ARGUMENTS
 
-  INTEGER(KIND=IP), INTENT(IN) :: iNMP(:),iNMP_loc(:)
+  INTEGER(KIND=IP), INTENT(IN) :: iNMP(:),iNMP_loc(:), b_num
   REAL(KIND=WP), INTENT(IN) :: samLenE(:), sigE(:), i_realE, &
                                gamma_d, sZ
                                
@@ -361,7 +420,7 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
   
 !    sZ2_center = offsets(iZ2_CG)
     
-  CALL genGrids(sigE,offsets,samLenE,iLocalIntegralType,iNMP, iNMP_loc, &
+  CALL genGrids(b_num, sigE,offsets,samLenE,iLocalIntegralType,iNMP, iNMP_loc, &
                 sx_grid, sy_grid, sz2_grid, spx_grid, spy_grid, spz2_grid, &
                 sX_integral, sY_integral, sz2_integral, &
                 sPX_integral, sPY_integral, sPZ2_integral)

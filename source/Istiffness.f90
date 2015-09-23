@@ -24,12 +24,15 @@ LOGICAL  ::  qFirst_time
 
 CONTAINS
 
-SUBROUTINE SETUPSTIFFMAT(nx,ny,nz2,elmvol)
-!This subroutine sets up the stiffness matrix and
-!structures needed to solve the field equation. The
-!arrays describing the stiffness matrix are global
-!arrays.
-!------------------------------------------------------
+SUBROUTINE CalcFldSpd(nx,ny,nz2,elmvol)
+
+! This subroutine sets up the values and structures required 
+! to split the field array evenly across MPI processes. 
+! The arrays describing the field layout are global
+! arrays, defined in EDerivGlobals.f90.
+!
+! Lawrence Campbell
+! University of Strathclyde
 
   INTEGER(KIND=IP),INTENT(IN)  ::  nx,ny,nz2
   REAL(KIND=WP),INTENT(IN)  ::  elmvol
@@ -101,7 +104,7 @@ SUBROUTINE SETUPSTIFFMAT(nx,ny,nz2,elmvol)
      END IF
   ENDIF
 
-END SUBROUTINE SETUPSTIFFMAT
+END SUBROUTINE CalcFldSpd
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

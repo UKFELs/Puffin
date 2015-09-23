@@ -1,5 +1,5 @@
 FFTWLIB=/opt/gridware/libs/gcc/fftw2/double-mpi/2.1.5
 
-mpif90 -o3 -o ~/bin/puffin/new/puffin1.4 ./*.o -fsecond-underscore -L$FFTWLIB/lib -lfftw_mpi -lfftw -I$FFTWLIB/include -lmpi -lm
+mpif90 -o2 -o ~/bin/puffin/new/puffin-plane-pole ./*.o -fsecond-underscore -L$FFTWLIB/lib -lfftw_mpi -lfftw -I$FFTWLIB/include -lmpi -lm
 
 rm *.o *.mod

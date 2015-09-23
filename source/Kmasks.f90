@@ -342,4 +342,76 @@ FUNCTION Maskf4(x,dx,nx,nb)
 
 END FUNCTION Maskf4
 
+
+!**********************************************************
+
+FUNCTION getZ2Mask(dx,nx,loc_nx,nb,loc_start)
+
+! This function calculates a simple 1D mask
+! to define the absoribing boundary in Puffin.
+!
+! This particular function should only be used
+! in the z2 direction, and uses the parallelism
+! as dictated by the fftw 2.1.5 functions.
+!
+!                Author:
+!            Lawrence Campbell
+!       University of Hamburg / DESY
+!                  2013
+! 
+
+  REAL(KIND=WP), INTENT(IN) :: dx
+  INTEGER(KIND=IP), INTENT(IN) :: nb, nx, loc_nx, loc_start
+  REAL(KIND=WP) :: getZ2Mask(0:loc_nx-1)
+
+  REAL(KIND=WP) :: Lb, x0, Lf, fbn, x(0:loc_nx-1)
+  integer(kind=ip) :: ind
+
+
+  x = linspace(real(loc_start,kind=wp) * dx, &
+          real(loc_start+loc_nx-1,kind=wp) * dx, &
+                   loc_nx) ! Values in space
+
+  !x = (/loc_start:loc_start+loc_nx-1:1/) * dx  ! Values in space
+
+
+!     Get the length of the boundary, Lb
+
+  Lb = (nb-1) * dx
+
+!     Get total length of modelled field domain (in z2)
+
+  Lf = (nx-1*dx)
+
+
+!     Get the center if of the boundary, x0
+
+  x0 = Lf - Lb/2.0_WP
+
+
+  fbn = nx - nb  ! 1st boundary node  (in C style, so 1st node index is zero)
+
+!     Mask initialized as a cos^2 at one end
+  
+  getZ2Mask(0:loc_nx-1) = 0.0_WP   !   Init all to zero
+
+
+!    getZ2Mask(nx-nb+1_IP:nx) = cos(pi * (x(nx-nb+1_IP:nx)-x0) / Lb) ** 2.0_WP
+  do ind = 0,loc_nx-1
+
+    if (  loc_start + ind >= fbn ) getZ2Mask(ind) = cos(pi * (x(ind)-x0) / Lb) ** 2.0_WP
+
+  end do
+
+
+  !getZ2Mask(nx-nb+1_IP:nx) = cos(pi * (x(nx-nb+1_IP:nx)-x0) / Lb) ** 2.0_WP
+
+  !getZ2Mask(1_IP:nb) = cos(pi * (x(1_IP:nb) + x0) / Lb) ** 2.0_WP
+
+  
+END FUNCTION getZ2Mask
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
 END MODULE masks

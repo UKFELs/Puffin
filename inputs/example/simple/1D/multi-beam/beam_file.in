@@ -23,7 +23,7 @@ TOTAL MODELLED LENGTH OF BEAM IN EACH DIMENSION    - REAL
 
 1.000000000000000E+00   LENXBAR       (overwritten for matched beam)
 1.000000000000000E+00   LENYBAR       (overwritten for matched beam)
-1.705184351394662E-01   LENZ2
+3.0                     LENZ2
 1.000000000000000E+00   LENPXBAR      (overwritten for matched beam)
 1.000000000000000E+00   LENPYBAR      (overwritten for matched beam)
 6.000000000000000E+00   LENGAMMA
@@ -32,7 +32,7 @@ NUMBER OF MACROPARTICLES TO MODEL BEAM IN EACH DIMENSION (EQUISPACED BEFORE NOIS
 
 1                       NUMX
 1                       NUMY
-400                     NUMZ2
+2500                     NUMZ2
 1                       NUMPX
 1                       NUMPY
 1                      NUMGAMMA
@@ -44,6 +44,10 @@ BEAM PARAMETERS
 1.000000000000000E+00   Scaled emittance (bar{epsilon})
 0.000000000000000E+00   Energy chirp in z2 i.e. dgamma/dz2
 0.000000000000000E+00   Center of beam in z2
+0.0                     mag 
+1.0                     freq
+.true.                 Round edge of flat top?
+0.1                     sigma of gaussian edge for flat top
 3.000000000000000E-12   Charge in coulombs
 ========================================================================
 
@@ -57,13 +61,13 @@ STANDARD DEVIATION OF BEAM IN EACH DIMENSION (=1E8 FOR FLAT TOP)   - REAL
 1.000000000000000E+08   SIGZ2
 5.000000000000000E-01   SIGPX      (overwritten for matched beam)
 5.000000000000000E-01   SIGPY      (overwritten for matched beam)
-1.000000000000000E+08   SIGGAMMA
+0.16666700000E-03   SIGGAMMA
 
 TOTAL MODELLED LENGTH OF BEAM IN EACH DIMENSION    - REAL
 
 6.000000000000000E-01   LENX       (overwritten for matched beam)
 6.000000000000000E-01   LENY       (overwritten for matched beam)
-1.000000000000000E+00   LENZ2
+3.000000000000000E+00   LENZ2
 3.000000000000000E+00   LENPX      (overwritten for matched beam)
 3.000000000000000E+00   LENPY      (overwritten for matched beam)
 1.000000000000000E-03   LENGAMMA
@@ -72,10 +76,10 @@ NUMBER OF MACROPARTICLES TO MODEL BEAM IN EACH DIMENSION (EQUISPACED BEFORE NOIS
 
 1                       NUMX
 1                       NUMY
-400                     NUMZ2
+2500                     NUMZ2
 1                       NUMPX
 1                       NUMPY
-11                      NUMGAMMA
+1                      NUMGAMMA
 
 BEAM PARAMETERS
 
@@ -84,6 +88,10 @@ BEAM PARAMETERS
 1.000000000000000E+00   Scaled emittance (bar{epsilon})
 0.000000000000000E+00   Energy chirp in z2 i.e. dgamma/dz2
 0.000000000000000E+00   Center of beam in z2
+0.0                     mag 
+1.0                     freq
+.true.                 Round edge of flat top?
+0.1                     sigma of gaussian edge for flat top
 1.000000000000000E-12   Charge in coulombs
 ========================================================================
 

@@ -64,13 +64,17 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
   integer :: error
 
 
+  qRndEj_G(:) = .false.
+
 ! nZ2 is local, nZ2G is full
 
   allocate(dz2(nbeams), nZ2G(nbeams), nZ2(nbeams))
 
   call getHeaders(fname, npk, dz2, nZ2G)
 
-  nGam = 149_IP  !!!  TEMP, SHOULD BE READ IN
+  nGam = 19_IP  !!!  TEMP, SHOULD BE READ IN
+
+
 
   do ib = 1, nbeams
 
@@ -79,11 +83,17 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
 
   end do
 
+
+
   tnms   = sum(int(nZ2(:),kind=ipl) * int((nGam),kind=ipl))
+
+
 
 !!!!    temp
 
   allocate(totMPs_b(nbeams), b_sts(nbeams), b_ends(nbeams))
+
+
 
 !  getTotalMPS(for each beam)
 
@@ -138,6 +148,8 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
   call removeLowNC(chi_b, chi, b_sts, b_ends, sEThresh, npk, &
                    nbeams, x, y, z2, px,&
                    py, gamma, totMPs_b)
+
+  npk_bar_G = npk
 
   deallocate(totMPs_b, b_sts, b_ends)
 
@@ -338,7 +350,7 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,ym,pxm,pym,dz2,Ne,npk,qnoise, &
 ! what should the length of the grid in gamma be?
 ! since we have a different sigGam for each?.....
 
-    call genGrid(intTypeG, iLinear_CG, gm(k), &         
+    call genGrid(1_ip, intTypeG, iLinear_CG, gm(k), &         
                  gsig(k), 6.0_WP*gsig(k), iNMPG, iNMPG, &
                  ggrid, gint, .FALSE., &
                  qOKL)

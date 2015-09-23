@@ -443,19 +443,11 @@ CONTAINS
   END FUNCTION GainLength
 !********************************************************
 
-
-
-
-
-
-
-
-
-  FUNCTION MatchedBeamRadius(srho,sEmit_n,k_beta)
+  FUNCTION MatchedBeamRadius(srho, sEmit, k_beta)
 
     IMPLICIT NONE
 
-    REAL(KIND=WP),INTENT(IN) :: srho,sEmit_n,k_beta
+    REAL(KIND=WP),INTENT(IN) :: srho, sEmit, k_beta
 
 ! Local vars:-
 
@@ -463,7 +455,7 @@ CONTAINS
 
 ! BEGiN:-
 
-    MatchedBeamRadius = SQRT( sRho * 18.0_WP * sEmit_n /&
+    MatchedBeamRadius = SQRT( sRho * 18.0_WP * sEmit /&
         k_beta)
 
   END FUNCTION MatchedBeamRadius
@@ -487,8 +479,8 @@ CONTAINS
 
 ! BEGIN:-
 
-    IF(tProcInfo_G%QROOT)print *, 'RaleighLength= ',&
-         sRaleighLength
+    !IF(tProcInfo_G%QROOT)print *, 'RaleighLength= ',&
+    !     sRaleighLength
 
     DiffractionLength = SQRT(2.0_WP*&
          ((z/sRaleighLength)**2 + 1.0_WP)) * 6.0_WP*sigma

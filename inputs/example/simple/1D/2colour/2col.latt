@@ -1,10 +1,10 @@
 Module file for Puffin
 
-4    modules
+6    modules
 ======================
-This file specifies an undulator 
-chicane lattice for Puffin. Each 
-line represents one undulator-chicane 
+This file specifies an undulator
+chicane lattice for Puffin. Each
+line represents one undulator-chicane
 section.
 
 
@@ -29,7 +29,13 @@ taper   gradient of undulator parameter as
         daw/dz
 ========================
 
-25     0    1.0                  48    0.0
-25     0    1.0                  48    0.0
-25     0    1.945667391924941    192   0.0
-50     0    0.64                 48    0.0
+25     0    1.0        100        0.0
+25     0    1.0        100        0.0
+25     0    1.945667391924941    200     0.0
+25     0    1.0        100        0.0
+25     0    1.945667391924941    200     0.0
+25     0    1.945667391924941    200     0.0
+
+
+
+

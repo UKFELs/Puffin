@@ -656,7 +656,7 @@ END SUBROUTINE multiplyexp
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE DiffractionStep(h,recvs,displs,sV,sA,qOK)
+SUBROUTINE DiffractionStep(h,recvs,displs,sA,qOK)
 
   IMPLICIT NONE
 !
@@ -684,7 +684,6 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sV,sA,qOK)
 
   REAL(KIND=WP), INTENT(IN)      ::   h
   INTEGER(KIND=IP), INTENT(IN)   :: recvs(:),displs(:)
-  REAL(KIND=WP), DIMENSION(:), INTENT(IN)  :: sV
   REAL(KIND=WP), DIMENSION(:), INTENT(INOUT)  :: sA
   LOGICAL, INTENT(OUT)  ::  qOK
 
@@ -709,8 +708,8 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sV,sA,qOK)
   ALLOCATE(sA_local(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1))
   ALLOCATE(work(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1))
 	 
-  CALL setupParallelFourierField(CMPLX(Vector(iRe_A_CG,sA),&
-       Vector(iIm_A_CG,sA),KIND=WP),&
+  CALL setupParallelFourierField(CMPLX(sA(1:iNumberNodes_G),&
+       sA(iNumberNodes_G+1:2*iNumberNodes_G),KIND=WP),&
        sA_local,work,qOKL) 
 
 !    Multiply field by the exp factor to obtain A(kx,ky,kz2,zbar+h)
@@ -750,7 +749,7 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sV,sA,qOK)
 
 !        Clear up field emerging outside e-beam
 
-  CALL clearA(sA,sV,qOKL)
+  CALL clearA(sA, qOKL)
 
 !              Set error flag and exit
 
@@ -812,7 +811,7 @@ SUBROUTINE AbsorptionStep(sAl,work,h,loc_nz2,ffact)
 
 !               LOCAL ARGS
 
-  REAL(KIND=WP) :: mask(NX_G*NY_G)
+  REAL(KIND=WP) :: mask(NX_G*NY_G), mask_z2(0:tTransInfo_G%loc_nz2-1)
   COMPLEX(KIND=WP) :: sAnb(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1), posI
   INTEGER(KIND=IP) :: iz2, x_inc, y_inc, z2_inc, ind
   integer :: error
@@ -823,19 +822,39 @@ SUBROUTINE AbsorptionStep(sAl,work,h,loc_nz2,ffact)
 
   CALL getMask(NX_G, NY_G, sLengthOfElmX_G, sLengthOfElmY_G, &
                NBX_G, NBY_G, mask)
-  
-!!!!!      sAl is local      !!!!!
-!!!!!      goes from 0,total_local_size     !!!!!!!
+ 
+
+
+!  Now also using boundary in z2....so mask in z2 is....
 
   IF (loc_nz2 > 0) THEN
 
-  DO iz2 = 0_IP, loc_nz2 - 1_IP
+    mask_z2 = getZ2Mask(sLengthOfElmZ2_G, nZ2_G, tTransInfo_G%loc_nz2,   &
+                         nBZ2_G, tTransInfo_G%loc_z2_start)
 
-    sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)  = (1.0_WP - mask) * sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
-    sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP) =  mask * sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
+!!!!!      sAl is local      !!!!!
+!!!!!      goes from 0,total_local_size     !!!!!!!
 
-  END DO
+  
 
+    DO iz2 = 0_IP, loc_nz2 - 1_IP
+  
+      sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)  = (1.0_WP - (mask   +  ( mask_z2(iz2) *  (1.0_WP - mask) ) ) ) * &
+                                                            sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
+
+
+
+
+!    sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP) =   (1.0_WP - mask_z2(iz2)) * sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
+
+
+
+      sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP) =  (mask   +  ( mask_z2(iz2) *  (1.0_WP - mask) ) ) * &
+                                                           sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
+  
+  
+    END DO
+  
   END IF
 
 !     FFT sAb
@@ -900,13 +919,12 @@ END SUBROUTINE AbsorptionStep
 
 !**************************************************
 
-SUBROUTINE clearA(sA,sV,qOK)
+SUBROUTINE clearA(sA, qOK)
 
 ! qOK       OUT      Error flag; if .false. error has occured
 
   IMPLICIT NONE
-    
-  REAL(KIND=WP),INTENT(IN) :: sV(:)
+
   REAL(KIND=WP),INTENT(INOUT) :: sA(:)
   LOGICAL, INTENT(OUT) :: qOK
   INTEGER(KIND=IP) :: error,iz2A,nA,trans
@@ -920,7 +938,7 @@ SUBROUTINE clearA(sA,sV,qOK)
 ! Set field to zero behind electrons...
 
 ! Find furthest back electron
-  loc_max = MAXVAL(Vector(iRe_Z2_CG,sV))
+  loc_max = MAXVAL(sElZ2_G)
 
   CALL MPI_ALLREDUCE(loc_max,glo_max,1,MPI_DOUBLE_PRECISION,&
        MPI_MAX,MPI_COMM_WORLD,error)

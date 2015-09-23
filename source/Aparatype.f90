@@ -19,7 +19,7 @@ INTEGER, PARAMETER     ::      short   =SELECTED_INT_KIND(4), &
 
 INTEGER, PARAMETER     ::      SP      =float
 INTEGER, PARAMETER     ::      WP      =double
-INTEGER, PARAMETER     ::      IPL     =spec
+INTEGER, PARAMETER     ::      IPL     =long
 INTEGER, PARAMETER     ::      IP      =long
 INTEGER, PARAMETER     ::      LP      =long
 
