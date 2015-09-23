@@ -4,30 +4,30 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
-MODULE rhs
+module rhs
 
 ! Module to calculate the RHS of the field source equation
 ! and d/dz of electron equations.
 !
 
-USE paratype
-USE ArrayFunctions
-USE Globals
-USE Functions
-USE TransformInfoType
-USE ParallelInfoType
-USE stiffness
-USE Equations
+use paratype
+use ArrayFunctions
+use Globals
+use Functions
+use TransformInfoType
+use ParallelInfoType
+use stiffness
+use Equations
 use wigglerVar
 use FiElec1D
 use FiElec
 
 
-IMPLICIT NONE
+implicit none
 
-CONTAINS
+contains
 
-  SUBROUTINE getrhs(sz, &
+  subroutine getrhs(sz, &
                     sA, &
                     sx, sy, sz2, &
                     spr, spi, sp2, &
@@ -75,7 +75,7 @@ CONTAINS
 !     SETUP AND INITIALISE THE PARTICLE'S POSITION
 !     ALLOCATE THE ARRAYS
 
-  ALLOCATE(Lj(iNumberElectrons_G))!,dp2f(iNumberElectrons_G))
+  allocate(Lj(iNumberElectrons_G)) 
   allocate(p_nodes(iNumberElectrons_G))
   call alct_e_srtcts(iNumberElectrons_G)
   
@@ -273,7 +273,7 @@ CONTAINS
     print*,'Error in rhs:getrhs'
 2000 continue
 
-  END SUBROUTINE getrhs
+  end subroutine getrhs
 
 
 
@@ -321,11 +321,11 @@ real(kind=wp), intent(in) :: sz
 
   fkb= sFocusfactor_G * kbeta
 
-  econst = sAw_G/(sRho_G*SQRT(2.0_WP*(fx_G**2.0_WP+fy_G**2.0_WP)))
+  econst = sAw_G/(sRho_G*sqrt(2.0_WP*(fx_G**2.0_WP+fy_G**2.0_WP)))
 
   nc = 2.0_WP*saw_G**2/(fx_G**2.0_WP + fy_G**2.0_WP)
     
-  nd = SQRT((fx_G**2.0_WP+fy_G**2.0_WP)*(sEta_G))/(2.0_WP*SQRT(2.0_WP)* &
+  nd = sqrt((fx_G**2.0_WP+fy_G**2.0_WP)*(sEta_G))/(2.0_WP*sqrt(2.0_WP)* &
                              fkb*sRho_G)
     
   nb = 2.0_WP * sRho_G / ((fx_G**2.0_WP+fy_G**2.0_WP)*sEta_G)
