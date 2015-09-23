@@ -16,7 +16,7 @@ USE RK4int
 use dumpFiles
 use dummyf
 
-!!!!!!!!!!!!!!!!!!!Puffin Version 1.4.0 !!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!! Puffin Version 1.4.4 !!!!!!!!!!!!!!!!!!!
 !
 ! A program for solving an unaveraged 3D FEL system. This 
 ! parallel MPI code requires the MPI transforms in FFTW v2.5.1.
@@ -155,56 +155,6 @@ DO iStep = start_step, nSteps
 
 
 
-!     IF (sZ>(nextDiff-sStepsize/100.0_WP)) THEN
-    
-
-!       IF(iStep == nSteps) sStep = diffStep*0.5_WP
-
-!       DEALLOCATE(sAr)
-!       CALL innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
-!       DEALLOCATE(Ar_local)
-
-!       CALL DiffractionStep(sStep,&
-!            frecvs,&
-!            fdispls,&
-!            sV,&
-!            sA,&
-!            qOKL)
-
-     
-!       ALLOCATE(sAr(2*ReducedNX_G*ReducedNY_G*NZ2_G))
-!       ALLOCATE(Ar_local(2*local_rows))
-
-!       CALL getAlocalFL(sA,Ar_local)
-
-!       CALL local2globalA(Ar_local,sAr,mrecvs,mdispls,tTransInfo_G%qOneD)
-
-!       IF(iStep==start_step) then 
-
-!         sStep = diffStep
-!         nextDiff = nextDiff + (diffStep * 0.5_WP)
-
-!       else 
-
-!         nextDiff = nextDiff + diffStep
-
-!       end if
-
-!       qDiffrctd = .true.
-
-      
-
-!     END IF
-
-!   END IF
-
-
-
-
-
-
-
-
 
 !   Second half of split step method: electron propagation
 !                    and field driving.
@@ -268,64 +218,6 @@ DO iStep = start_step, nSteps
 
 
 
-! !   split-step method:- field diffraction only for last step
-
-!   IF (qDiffraction_G) THEN
-
-!     IF(iStep == nSteps) then 
-
-!       sStep = diffStep*0.5_WP
-
-!       DEALLOCATE(sAr)
-!       CALL innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
-!       DEALLOCATE(Ar_local)
-
-!       CALL DiffractionStep(sStep,&
-!            frecvs,&
-!            fdispls,&
-!            sA,&
-!            qOKL)
-     
-!       ALLOCATE(sAr(2*ReducedNX_G*ReducedNY_G*NZ2_G))
-!       ALLOCATE(Ar_local(2*local_rows))
-
-!       CALL getAlocalFL(sA,Ar_local)
-
-!       CALL local2globalA(Ar_local,sAr,mrecvs,mdispls,tTransInfo_G%qOneD)
-
-!       IF(iStep==start_step) sStep = diffStep
-      
-!       qDiffrctd = .true.
-
-!       nextDiff = nextDiff + diffStep
-
-!     END IF
-
-!   END IF
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -349,22 +241,6 @@ DO iStep = start_step, nSteps
         END IF
 
 
-
-        !            Write data if not already going to
-
-!         IF ((iCount /= iWriteNthSteps).AND.&
-!              (iStep /= nSteps)) THEN
-             
-!            CALL innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
-             
-!            CALL WriteData(qSeparateStepFiles_G,&
-!                 zDataFileName,tArrayZ,tArrayA,&
-!                 tArrayE,&
-!                 iStep,sZ,sA,sV,.FALSE.,qFormattedFiles_G,&
-!                 qOKL)	
-
-!         END IF
-  
 
         qWDisp = .true.
         modCount=modCount+1_IP   !      Update module count
@@ -397,11 +273,6 @@ if ( qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps, &
 
   if (qDiffraction_G) then
 
-!    call wdfs(sA, sZ, istep, tArrayA, tArrayE, tArrayZ, &
-!              iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
-!              zDataFileName, qWDisp, qOKL)
-
-
 !             If field diffraction occurred this step, need to complete it....  
 !             ...the diffraction only diffracts a half step if data is going
 !             to be written (to match up the split-step data)
@@ -412,26 +283,9 @@ if ( qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps, &
 
   end if
 
-  if (qWDisp) qWDisp = .false.
+    if (qWDisp) qWDisp = .false.
 
-end if
-
-
-!  if ( (mod(iStep,iIntWriteNthSteps)==0) .or. (iStep == nSteps) .or. &
-!               (qWDisp)   .or. (mod(iStep,iWriteNthSteps)==0) ) then
-!
-!    call innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
-!
-!    call wdfs(sA, sV, sZ, istep, tArrayA, tArrayE, tArrayZ, &
-!              iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
-!              zDataFileName, qWDisp, qOKL)
-!
-!    if (qWDisp) qWDisp = .false.
-!
-!  end if
-
-
-
+  end if
 
 
   
