@@ -525,7 +525,7 @@ SUBROUTINE CheckSourceDiff(sDelZ,iSteps,srho,sSigE,sLenF,sDelF,iNNF,qOK)
           
     IF(tProcInfo_G%QROOT)PRINT *, &
       'WARNING: INITIAL E BEAM SIGMA IS TOO SMALL', &
-      'THERE MAY BE TOO MUCH DIFFRACTION IN Y'
+      'THERE MAY BE TOO MUCH DIFFRACTION IN X'
   
   ENDIF
 
