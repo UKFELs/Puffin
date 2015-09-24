@@ -266,8 +266,8 @@ CONTAINS
     DEALLOCATE(tconv)
 
 
-    kx = SQRT(sEta_G/(8.0_WP*sRho_G**2))
-    ky = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+    kx = kx_und_G
+    ky = ky_und_G
 
 
 
