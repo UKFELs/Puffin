@@ -113,13 +113,15 @@ end subroutine getFFelecs_3D
 
 
 
-subroutine getSource_3D(sDADz, spr, spi)
+subroutine getSource_3D(sDADz, spr, spi, sgam, seta)
 
 
 use rhs_vars
 
 real(kind=wp), intent(inout) :: sDADz(:)
 real(kind=wp), intent(in) :: spr(:), spi(:)
+real(kind=wp), intent(in) :: sgam(:)
+real(kind=wp), intent(in) :: seta
 
 integer(kind=ipl) :: i
 real(kind=wp) :: dadzRInst, dadzIInst
@@ -132,8 +134,8 @@ real(kind=wp) :: dadzRInst, dadzIInst
 
 !                  Get 'instantaneous' dAdz
 
-      dadzRInst = ((s_chi_bar_G(i)/dV3) * Lj(i) &
-                        * spr(i) )
+      dadzRInst = ((s_chi_bar_G(i)/dV3) * (1 + seta * sp2(i) ) &
+                        * spr(i) / sgam(i) )
     
       sDADz(p_nodes(i)) =                         &
         lis_GR(1,i) * dadzRInst + sDADz(p_nodes(i))
@@ -161,8 +163,8 @@ real(kind=wp) :: dadzRInst, dadzIInst
 
 !                   Imaginary part
 
-      dadzIInst = ((s_chi_bar_G(i)/dV3) * Lj(i) &
-                        * spi(i) ) 
+      dadzIInst = ((s_chi_bar_G(i)/dV3) * (1 + seta * sp2(i) ) &
+                        * spi(i) / sgam(i) ) 
     
       sDADz(p_nodes(i) + retim) =                             & 
         lis_GR(1,i) * dadzIInst + sDADz(p_nodes(i) + retim)                        

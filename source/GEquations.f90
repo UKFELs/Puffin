@@ -30,28 +30,15 @@ implicit none
 
 contains
 
-!  subroutine dppdz_r(sInv2rho,ZOver2rho,salphaSq,&
-!    sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,qOK)
-
-  subroutine dppdz_r_f(sx, sy, sz2, spr, spi, sp2, &
-                       sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
-                       Lj, qOK)
+  subroutine dppdz_r_f(sx, sy, sz2, spr, spi, sgam, &
+                       sdpr, qOK)
 
   	implicit none
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sp2(:)
-    real(kind=wp), intent(in) :: sdx(:), sdy(:), sdz2(:), sdpi(:), sdp2(:)
-    real(kind=wp), intent(in) :: Lj(:)
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
     real(kind=wp), intent(out) :: sdpr(:)
 
-!    REAL(KIND=WP),INTENT(IN) :: sInv2rho
-!    REAL(KIND=WP),INTENT(IN) :: ZOver2rho,salphaSq
-!    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE ,INTENT(IN):: sField4ElecReal
-!    REAL(KIND=WP),ALLOCATABLE ,INTENT(IN):: Lj(:), dp2f(:)
-!    REAL(KIND=WP),INTENT(IN) :: kbeta,nd
-!    REAL(KIND=WP),INTENT(IN) :: sy(:)
-!    REAL(KIND=WP),INTENT(OUT) :: sb(:)
     logical, intent(inout) :: qOK
 
     
@@ -63,50 +50,82 @@ contains
 
 !     For curved pole undulator
 
-        sdpr = sInv2rho * ( cosh(sx * kx_und_G) * &
-                        sinh(sy * ky_und_G) * sqrt(2.0_WP) &
-                        * sqrt(sEta_G) * Lj * spi  &      
-                        *  cos(ZOver2rho) &
-                        / (sqrt(salphaSq) * ky_und_G) + &
-                        cosh(sx * kx_und_G) &
-                        * cosh(sy * ky_und_G) * sin(ZOver2rho) - &
-                        sEta_G * sp2 * salphaSq * sField4ElecReal)
 
+        sdpr = sInv2rho * (  cosh(kx_und_G * sx) * cosh(ky_und_G * sy) &
+                            * sin(ZOver2rho)  &
+                            - sEta_G * sp2 / sKappa_G**2 *    &
+                            sField4ElecReal )  +      &
+               ( sKappa_G * spi / sgam * (1 + sEta_G * sp2) * &
+                     sqrt(sEta_G) * sInv2rho / kx_und_G  *    & 
+                     cosh(sx * kx_und_G) * sinh(sy * ky_und_G) *  &
+                     cos(ZOver2rho)
+    
+
+
+!        sdpr = sInv2rho * ( cosh(sx * kx_und_G) * &
+!                        sinh(sy * ky_und_G) * sqrt(2.0_WP) &
+!                        * sqrt(sEta_G) * Lj * spi  &      
+!                        *  cos(ZOver2rho) &
+!                        / (sqrt(salphaSq) * ky_und_G) + &
+!                        cosh(sx * kx_und_G) &
+!                        * cosh(sy * ky_und_G) * sin(ZOver2rho) - &
+!                        sEta_G * sp2 / sKappa_G**2 * sField4ElecReal)
+!
         
 
     else if (zUndType_G == 'planepole')  then
 
 !     Re(p_perp) equation for plane-poled undulator
 
-        sdpr = sInv2rho * (-sField4ElecReal*salphaSq * &
-                        sEta_G * sp2 &
-                        + ((sqrt(6.0_WP) *sRho_G) /sqrt(salphaSq)) * &
-                        sinh(sInv2rho * sy &
-                        * sqrt(sEta_G))  * cos(ZOver2rho) * Lj * &
-                        spi + &
-                        cosh(sInv2rho * sy * &
-                        sqrt(sEta_G)) *sin(ZOver2rho))
+        sdpr = sInv2rho * (  cosh( sqrt(sEta_G) * sInv2rho * sy) & 
+                            * sin(ZOver2rho) & 
+                            - sEta_G * sp2 / sKappa_G**2 *    &
+                            sField4ElecReal ) & 
+               + ( sKappa_G * spi / sgam * (1 + sEta_G * sp2) * &
+                   * sinh( sqrt(sEta_G) * sInv2rho * sy ) &
+                   * cos(ZOver2rho) )
 
-    else 
+
+
+!        sdpr = sInv2rho * (-sField4ElecReal*salphaSq * &
+!                        sEta_G * sp2 &
+!                        + ((sqrt(6.0_WP) *sRho_G) /sqrt(salphaSq)) * &
+!                        sinh(sInv2rho * sy &
+!                        * sqrt(sEta_G))  * cos(ZOver2rho) * Lj * &
+!                        spi + &
+!                        cosh(sInv2rho * sy * &
+!                        sqrt(sEta_G)) *sin(ZOver2rho))
+
+    else if (zUndType_G == 'helical') then
+
+        sdpr = sInv2rho * (  sin(ZOver2rho)  & 
+                            - sEta_G * sp2 / sKappa_G**2 *    &
+                            sField4ElecReal ) & 
+               + ( sKappa_G * spi / sgam * (1 + sEta_G * sp2) * &
+                   * sqrt(sEta_G) * sInv2rho * (
+                    sx * sin( ZOver2rho )  + sy * cos( ZOver2rho ) )
+
+    else
+
 
 !     "normal" PUFFIN case with no off-axis undulator
 !     field variation
 
       if (qFocussing_G) then
 
-        sdpr = sInv2rho * (fy_G*n2col*sin(ZOver2rho) - &
-                        (salphaSq * sEta_G * sp2 * &
-                        sField4ElecReal ) ) - & 
-                        nd / Lj * & ! focusing term
-                        (  ( kbeta**2 * sx) + (sEta_G / &
-                        ( 1.0_WP + (sEta_G * sp2) ) * &
-                        sdx * dp2f ) )
-
+!        sdpr = sInv2rho * (fy_G*n2col*sin(ZOver2rho) - &
+!                        (salphaSq * sEta_G * sp2 * &
+!                        sField4ElecReal ) ) - & 
+!                        nd / Lj * & ! focusing term
+!                        (  ( kbeta**2 * sx) + (sEta_G / &
+!                        ( 1.0_WP + (sEta_G * sp2) ) * &
+!                        sdx * dp2f ) )
+!
       else 
 
 
-        sdpr = sInv2rho * (fy_G* n2col * sin(ZOver2rho) - &
-              ( salphaSq * sEta_G * sp2 * &
+        sdpr = sInv2rho * (fy_G * sin(ZOver2rho) - &
+              ( sEta_G * sp2 / sKappa_G**2 * &
               sField4ElecReal ) )
 
 
@@ -137,30 +156,15 @@ contains
 
 
 
-  subroutine dppdz_i_f(sx, sy, sz2, spr, spi, sp2, &
-                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
-                     Lj, qOK)
+  subroutine dppdz_i_f(sx, sy, sz2, spr, spi, sgam, &
+                       sdpi, qOK)
 
     implicit none
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sp2(:)
-    real(kind=wp), intent(in) :: sdx(:), sdy(:), sdz2(:), sdpr(:), sdp2(:)
-    real(kind=wp), intent(in) :: Lj(:)
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
     real(kind=wp), intent(out) :: sdpi(:)
 
-
-!  	implicit none
-
-
-
-!    REAL(KIND=WP),INTENT(IN) :: sInv2rho
-!    REAL(KIND=WP),INTENT(IN) :: ZOver2rho,salphaSq
-!    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE ,INTENT(IN):: sField4ElecImag
-!    REAL(KIND=WP),ALLOCATABLE,INTENT(IN) :: Lj(:), dp2f(:)
-!    REAL(KIND=WP),INTENT(IN) :: kbeta,nd
-!    REAL(KIND=WP),INTENT(IN) :: sy(:)
-!    REAL(KIND=WP),INTENT(OUT) :: sb(:)
     logical, intent(inout) :: qOK
 
     LOGICAL :: qOKL                   
@@ -252,30 +256,15 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine dp2dz_f(sx, sy, sz2, spr, spi, sp2, &
-                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
-                     Lj, qOK)
+  subroutine dgamdz_f(sx, sy, sz2, spr, spi, sgam, &
+                      sdgam, qOK)
 
     implicit none
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sp2(:)
-    real(kind=wp), intent(in) :: sdx(:), sdy(:), sdz2(:), sdpr(:), sdpi(:)
-    real(kind=wp), intent(in) :: Lj(:)
-    real(kind=wp), intent(out) :: sdp2(:)
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
+    real(kind=wp), intent(out) :: sdgam(:)
 
-
-!  	implicit none
-!
-!
-!
-!    REAL(KIND=WP),INTENT(IN) :: sInv2rho
-!    REAL(KIND=WP),INTENT(IN) :: ZOver2rho,salphaSq
-!    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE ,INTENT(IN):: sField4ElecReal,sField4ElecImag
-!    REAL(KIND=WP),ALLOCATABLE,INTENT(IN) :: Lj(:), dp2f(:)
-!    REAL(KIND=WP),INTENT(IN) :: kbeta,nd,nb
-!    REAL(KIND=WP),INTENT(IN) :: sy(:)
-!    REAL(KIND=WP),INTENT(OUT) :: sb(:)   
     logical, intent(inout) :: qOK
 
     LOGICAL :: qOKL
@@ -360,7 +349,7 @@ contains
     2000 continue
 
 
-  end subroutine dp2dz_f
+  end subroutine dgamdz_f
 
 
 
@@ -368,9 +357,8 @@ contains
 
 
 
-  subroutine dxdz_f(sx, sy, sz2, spr, spi, sp2, &
-                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
-                     Lj, qOK)
+  subroutine dxdz_f(sx, sy, sz2, spr, spi, sgam, &
+                    sdx, qOK)
 
     implicit none
 
@@ -379,9 +367,7 @@ contains
 !              Arguments:
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sp2(:)
-    real(kind=wp), intent(in) :: sdy(:), sdz2(:), sdpr(:), sdpi(:), sdp2(:)
-    real(kind=wp), intent(in) :: Lj(:)
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
     real(kind=wp), intent(out) :: sdx(:)
 
 
@@ -415,9 +401,8 @@ contains
 
 
 
-  subroutine dydz_f(sx, sy, sz2, spr, spi, sp2, &
-                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
-                     Lj, qOK)
+  subroutine dydz_f(sx, sy, sz2, spr, spi, sgam, &
+                    sdy, qOK)
 
     implicit none
 
@@ -426,14 +411,9 @@ contains
 !              Arguments:
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sp2(:)
-    real(kind=wp), intent(in) :: sdx(:), sdz2(:), sdpr(:), sdpi(:), sdp2(:)
-    real(kind=wp), intent(in) :: Lj(:)
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
     real(kind=wp), intent(out) :: sdy(:)
 
-
-!    real(kind=wp), intent(in) :: sy(:), Lj(:), nd
-!    real(kind=wp), intent(inout) :: sb(:)
     logical, intent(inout) :: qOK
 
 !              Local vars
@@ -460,9 +440,8 @@ contains
 
 
 
-  subroutine dz2dz_f(sx, sy, sz2, spr, spi, sp2, &
-                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
-                     Lj, qOK)
+  subroutine dz2dz_f(sx, sy, sz2, spr, spi, sgam, &
+                     sdz2, qOK)
 
     implicit none
 
@@ -471,9 +450,7 @@ contains
 !              Arguments:
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sp2(:)
-    real(kind=wp), intent(in) :: sdx(:), sdy(:), sdpr(:), sdpi(:), sdp2(:)
-    real(kind=wp), intent(in) :: Lj(:)
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
     real(kind=wp), intent(out) :: sdz2(:)
 
 
@@ -507,43 +484,6 @@ contains
 
 
 
-  subroutine caldp2f_f(sx, sy, sdx, sdy, sp2, kbeta, qOK)
-
-    real(kind=wp), intent(in) :: sx(:), sy(:), sdx(:), sdy(:), sp2(:)
-    real(kind=wp), intent(in) :: kbeta
-
-    logical, intent(inout) :: qOK
-
-    qOK = .false.
-
-    if (qFocussing_G) then
-
-        dp2f = -(kbeta**2.0_WP) * &   ! New focusing term
-               (1.0_WP + (sEta_G * sp2  ) ) * &
-               ( ( sx * sdx  ) + & 
-               ( sy * sdy  ) ) / &
-               (1.0_WP + sEta_G * ( ( sdx )**2.0_WP  + &
-               sdy**2.0_WP ) )
-
-    else 
-
-        dp2f=0.0_WP
-
-    end if
-
-    qOK = .true.
-    
-    goto 2000
-    
-    1000 call Error_log('Error in equations:caldp2f',tErrorLog_G)
-    
-    2000 continue
-
-  end subroutine caldp2f_f
-
-
-
-
   subroutine alct_e_srtcts(ar_sz)
 
     implicit none
@@ -553,7 +493,7 @@ contains
 
     integer(kind=ip), intent(in) :: ar_sz
 
-    allocate(dp2f(ar_sz), sField4ElecReal(ar_sz), &
+    allocate(sp2(ar_sz), sField4ElecReal(ar_sz), &
              sField4ElecImag(ar_sz))! , Lj(ar_sz))
 
 
@@ -568,7 +508,7 @@ contains
 ! Allocate the arrays used in the calculation of
 ! the electron eqns  
 
-    deallocate(dp2f, sField4ElecReal, &
+    deallocate(sp2, sField4ElecReal, &
              sField4ElecImag)! , Lj(ar_sz))
 
 

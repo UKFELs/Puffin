@@ -10,62 +10,75 @@ module gtop2
 ! from the relativistic factor gamma to the scaled longitudinal 
 ! velocity p2, and vice-versa.
 
-use Globals
 use paratype
 
 implicit none
 
 contains
 
-  FUNCTION getGamma(px, py, p2, eta, aw)
-  
+  subroutine getGamma(gamma, p2, px, py, eta, aw)
+ 
+    implicit none
+
 ! Return gamma, given p2, px, py and eta
 ! 
 !           ARGUMENTS
 
-    REAL(KIND=WP), INTENT(IN) :: px, py, p2, eta, aw
+    real(kind=wp), intent(in) :: px(:), py(:), p2(:), eta, aw
 
 !            OUTPUT
 
-    REAL(KIND=WP) :: getGamma
+    real(kind=wp), intent(out) :: gamma(:)
     
 !          LOCAL ARGS
 
-    REAL(KIND=WP) :: sl1
-
-
-    sl1 = 2.0_WP*aw**2/(fx_G**2 + fy_G**2)      
-
-    getGamma = SQRT((1.0_WP + ( sl1 * (px**2.0_WP + py**2.0_WP) )) * &
+    getGamma = SQRT((1.0_WP + ( aw**2 * (px**2.0_WP + py**2.0_WP) )) * &
                   (1.0_WP + eta * p2 )**2.0_WP / &
                   ( eta * p2 * (eta * p2 + 2.0_WP) ) )
   
-  END FUNCTION getGamma
+  end subroutine getGamma
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
 
-  FUNCTION getP2(gamma, px, py, eta, aw)
+  subroutine getP2(p2, gamma, px, py, eta, gamma0, aw)
+
+  implicit none
   
-! Return p2, given gamma, px, py and eta
+! Return p2, given Gamma, px, py and eta
+!
+!  ###########################################
 ! 
 !           ARGUMENTS
+!
+!
+!
+!  p2       :          Scaled velocity along wiggler axis (output)
+!
+!  gamma    :          Relativistic factor normalised to gamma_0
+!
+!  px, py   :          Electron macroparticle transverse momenta,
+!                      normalised to aw * m_e * c
+!
+!  eta      :          Scaled longitudinal velocity of 'reference' 
+!                      energy
+!
+!  gamma_0  :          Relativistic factor of 'reference' energy
+!
+!  aw       :          Undulator parameter (peak) 
+!
 
-    REAL(KIND=WP), INTENT(IN) :: px(:), py(:), gamma(:), eta, aw
+    real(kind=wp), intent(in) :: px(:), py(:), gamma(:), eta, gamma0, aw
 
 !            OUTPUT
 
-    REAL(KIND=WP), DIMENSION(SIZE(gamma)) :: getP2
-
-!              LOCAL ARGS
-
-    REAL(KIND=WP) :: nc
+    real(kind=wp), intent(out) :: p2(:)
 
 
-    nc = 2.0_WP*aw**2/(fx_G**2 + fy_G**2)
-
-    getP2 = ((gamma/SQRT(gamma**2 - 1.0_WP - &
-             nc*(px**2 + py**2)))-1.0_WP)/eta
+    getP2 = (( 1_wp/sqrt(1_wp - 1_wp / (gamma0**2 * gamma**2) * ( 1 + &
+             aw**2*(px**2 + py**2))))-1_wp) / eta
   
-  END FUNCTION getP2
+  end subroutine getP2
+
+
 
 end module gtop2

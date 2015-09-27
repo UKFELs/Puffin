@@ -65,7 +65,7 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 ! lam_r_bar          Resonant wavelength in scaled units
 ! qOKL               Local error flag
 
-    REAL(KIND=WP) :: lam_r_bar, LenZ2, modfact1, sbetaz
+    REAL(KIND=WP) :: lam_r_bar, LenZ2, modfact1, sbetaz, aw_rms
     LOGICAL :: qOKL
 
     qOK = .FALSE.
@@ -134,11 +134,37 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 
     sRho_G = sRho_save_G ! * modfact1
 
-    sbetaz = SQRT(gamr**2.0_WP - 1.0_WP - (aw)**2.0_WP) / &
+
+
+
+
+
+    if (zUndType == 'curved')
+
+      aw_rms = aw / sqrt(2_wp)
+
+    else if (zUndType == 'planepole')
+
+      aw_rms = aw / sqrt(2_wp)
+
+    else if (zUndType == 'helical')
+
+      aw_rms = aw
+
+    else
+
+      aw_rms = aw * sqrt(fx**2 + fy**2) / sqrt(2)
+
+    end if
+
+
+    sbetaz = SQRT(gamr**2.0_WP - 1.0_WP - (aw_rms)**2.0_WP) / &
              gamr
 
     sEta_G = (1.0_WP - sbetaz) / sbetaz
     sKBeta_G = aw / 2.0_WP / sFocusFactor / rho / gamr
+    sKappa_G = aw / 2.0_WP / rho / gamr
+
 
     sFocusfactor_save_G = sFocusFactor
 

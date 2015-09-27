@@ -29,11 +29,11 @@ use paratype
 
   real(kind=wp) :: kbeta, nc, nd, nb, ZOver2rho, &
                    salphaSq, sInv2rho, fkb, econst, un
-  real(kind=wp), allocatable :: Lj(:), lis_GR(:,:)
+  real(kind=wp), allocatable :: lis_GR(:,:)
   real(kind=wp) :: dV3, dx, dy, dz2
 
 
-real(kind=wp), allocatable :: dp2f(:), sField4ElecReal(:), &
+real(kind=wp), allocatable :: sp2(:), sField4ElecReal(:), &
                               sField4ElecImag(:)
 
                               
