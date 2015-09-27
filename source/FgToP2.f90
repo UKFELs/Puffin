@@ -32,7 +32,7 @@ contains
     
 !          LOCAL ARGS
 
-    getGamma = SQRT((1.0_WP + ( aw**2 * (px**2.0_WP + py**2.0_WP) )) * &
+    gamma = SQRT((1.0_WP + ( aw**2 * (px**2.0_WP + py**2.0_WP) )) * &
                   (1.0_WP + eta * p2 )**2.0_WP / &
                   ( eta * p2 * (eta * p2 + 2.0_WP) ) )
   
@@ -74,7 +74,7 @@ contains
     real(kind=wp), intent(out) :: p2(:)
 
 
-    getP2 = (( 1_wp/sqrt(1_wp - 1_wp / (gamma0**2 * gamma**2) * ( 1 + &
+    p2 = (( 1_wp/sqrt(1_wp - 1_wp / (gamma0**2 * gamma**2) * ( 1 + &
              aw**2*(px**2 + py**2))))-1_wp) / eta
   
   end subroutine getP2
