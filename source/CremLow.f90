@@ -113,9 +113,10 @@ SUBROUTINE removeLowNC(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold,
 !     We currently have gamma in the p2 position array -
 !     need to change to p2
 
-    sElPZ2_G = getP2(sElPZ2_G, sElPX_G,&
-                     sElPY_G, sEta_G, sAw_G)
-
+!    sElPZ2_G = getP2(sElPZ2_G, sElPX_G,&
+!                     sElPY_G, sEta_G, sAw_G)
+     
+  sElPZ2_G = sElPZ2_G / sGammaR_G
 
 END SUBROUTINE removeLowNC
 
