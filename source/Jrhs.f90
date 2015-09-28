@@ -113,7 +113,7 @@ contains
 
 
   
-!  if (tTransInfo_G%qOneD) then
+  if (tTransInfo_G%qOneD) then
 
 ! !DIR$ SIMD
  
@@ -122,9 +122,7 @@ contains
 ! !DIR$ END SIMD
 
 
-!  else
-
-! ! $ OMP PARALLEL WORKSHARE
+  else
 
 !$OMP WORKSHARE
 
@@ -134,7 +132,7 @@ contains
                               floor(sz2  / dz2) )  ! transverse slices before primary node
 !$OMP END WORKSHARE
 
-!  end if  
+  end if  
 
 
 
