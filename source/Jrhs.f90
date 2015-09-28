@@ -106,7 +106,7 @@ contains
 !          * (1.0_WP + sEta_G *  sp2) * sGammaR_G
 
 
-  call getP2(sp2, sgam, spx, spy, sEta_G, sGammaR_G, saw_G)
+  call getP2(sp2, sgam, spr, spi, sEta_G, sGammaR_G, saw_G)
 
 
 
@@ -247,7 +247,7 @@ contains
 
 !    deallocate(i_n4e,N,iNodeList_Re,iNodeList_Im,i_n4ered)
 !    deallocate(sField4ElecReal,sField4ElecImag,Lj,dp2f)
-    deallocate(Lj)
+    !deallocate(Lj)
     deallocate(lis_GR)
     call dalct_e_srtcts()
 

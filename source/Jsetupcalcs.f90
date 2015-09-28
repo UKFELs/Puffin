@@ -139,21 +139,21 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 
 
 
-    if (zUndType == 'curved')
+    if (zUndType == 'curved') then
 
-      aw_rms = aw / sqrt(2_wp)
+      aw_rms =  aw / sqrt(2.0_wp)
 
-    else if (zUndType == 'planepole')
+    else if (zUndType == 'planepole') then
 
-      aw_rms = aw / sqrt(2_wp)
+      aw_rms =  aw / sqrt(2.0_wp)
 
-    else if (zUndType == 'helical')
+    else if (zUndType == 'helical') then
 
       aw_rms = aw
 
     else
 
-      aw_rms = aw * sqrt(fx**2 + fy**2) / sqrt(2)
+      aw_rms = aw * SQRT(fx**2 + fy**2) / sqrt(2.0_wp)
 
     end if
 

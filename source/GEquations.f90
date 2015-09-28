@@ -81,7 +81,7 @@ contains
                             * sin(ZOver2rho) & 
                             - sEta_G * sp2 / sKappa_G**2 *    &
                             sField4ElecReal ) & 
-               + ( sKappa_G * spi / sgam * (1 + sEta_G * sp2) * &
+               + ( sKappa_G * spi / sgam * (1 + sEta_G * sp2)  &
                    * sinh( sqrt(sEta_G) * sInv2rho * sy ) &
                    * cos(ZOver2rho) )
 
@@ -101,9 +101,9 @@ contains
         sdpr = sInv2rho * (  sin(ZOver2rho)  & 
                             - sEta_G * sp2 / sKappa_G**2 *    &
                             sField4ElecReal ) & 
-               + ( sKappa_G * spi / sgam * (1 + sEta_G * sp2) * &
-                   * sqrt(sEta_G) * sInv2rho * (
-                    sx * sin( ZOver2rho )  + sy * cos( ZOver2rho ) )
+               + ( sKappa_G * spi / sgam * (1 + sEta_G * sp2) &
+                   * sqrt(sEta_G) * sInv2rho * (     &
+                    sx * sin( ZOver2rho )  + sy * cos( ZOver2rho ) ) )
 
     else
 
@@ -213,7 +213,7 @@ contains
         sdpi = sInv2rho * ( 0_ip  &
                             - sEta_G * sp2 / sKappa_G**2 *    &
                             sField4ElecReal ) & 
-               - ( sKappa_G * spr / sgam * (1 + sEta_G * sp2) * &
+               - ( sKappa_G * spr / sgam * (1 + sEta_G * sp2) &
                    * sinh( sqrt(sEta_G) * sInv2rho * sy ) &
                    * cos(ZOver2rho) )
 
@@ -233,8 +233,8 @@ contains
         sdpi = sInv2rho * (  cos(ZOver2rho)  & 
                             - sEta_G * sp2 / sKappa_G**2 *    &
                             sField4ElecReal ) & 
-               - ( sKappa_G * spr / sgam * (1 + sEta_G * sp2) * &
-                   * sqrt(sEta_G) * sInv2rho * (
+               - ( sKappa_G * spr / sgam * (1 + sEta_G * sp2) &
+                   * sqrt(sEta_G) * sInv2rho * (   &
                     sx * sin( ZOver2rho )  + sy * cos( ZOver2rho ) ) )
 
 
@@ -308,7 +308,7 @@ contains
 
     
 
-    dgam = -sRho_G * ( 1 + sEta_G * sp2 ) / sgam * 2_wp * 
+    sdgam = -sRho_G * ( 1 + sEta_G * sp2 ) / sgam * 2_wp *   &
            ( spr * sField4ElecReal + spi * sField4ElecImag ) 
 
     ! Set the error flag and exit
@@ -404,7 +404,7 @@ contains
     qOK = .false.
 
 
-    sdx = - 2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
+    sdy = - 2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
           (1 + sEta_G * sp2) / sgam *  &
           spi
 
