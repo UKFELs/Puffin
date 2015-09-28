@@ -171,13 +171,13 @@ CONTAINS
 
     sl1 = 2.0_WP*sAw_G**2.0_WP/ (fx_G**2.0_WP + fy_G**2.0_WP)
 
-    ALLOCATE(sgamma_j(iNumberElectrons_G))
+!    ALLOCATE(sgamma_j(iNumberElectrons_G))
 
-    sgamma_j = SQRT((1.0_WP + ( sl1 * (sElPX_G**2.0_WP  &
-                                   + sElPY_G**2.0_WP) )) * &
-                  (1.0_WP + sEta_G * sElPZ2_G )**2.0_WP / &
-                  ( sEta_G * sElPZ2_G * &
-                              (sEta_G * sElPZ2_G + 2.0_WP) ) )
+!    sgamma_j = SQRT((1.0_WP + ( sl1 * (sElPX_G**2.0_WP  &
+!                                   + sElPY_G**2.0_WP) )) * &
+!                  (1.0_WP + sEta_G * sElPZ2_G )**2.0_WP / &
+!                  ( sEta_G * sElPZ2_G * &
+!                              (sEta_G * sElPZ2_G + 2.0_WP) ) )
 
 
 
@@ -218,7 +218,7 @@ CONTAINS
 !     Propagate through chicane
 
     sElZ2_G = sElZ2_G - 2.0_WP * D *  &
-                 (sgamma_j - sGammaR_G) / sGammaR_G &
+                 (sElPZ2_G - 1_wp) &
                  + delta
 
 
@@ -253,8 +253,8 @@ CONTAINS
     sElY_G = sElY_G + sy_offset
     sElPX_G = sElPX_G + spx0_offset
     sElPY_G = sElPY_G + spy0_offset
-    sElPZ2_G = getP2(sgamma_j, sElPX_G, &
-                      -sElPY_G, sEta_G, sAw_G)   ! get new p2
+!    sElPZ2_G = getP2(sgamma_j, sElPX_G, &
+!                      -sElPY_G, sEta_G, sAw_G)   ! get new p2
 
 
 
@@ -266,7 +266,8 @@ CONTAINS
 !     p2 = (1/eta) * ( (1/beta_z)  - 1)
 
 
-    DEALLOCATE(sgamma_j,spx0_offset,spy0_offset,sx_offset,sy_offset)
+    DEALLOCATE(spx0_offset,spy0_offset,sx_offset,sy_offset)
+!    DEALLOCATE(sgamma_j,spx0_offset,spy0_offset,sx_offset,sy_offset)
 
 !     Work out new effective eta
 

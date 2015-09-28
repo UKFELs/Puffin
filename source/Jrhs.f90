@@ -21,6 +21,7 @@ use Equations
 use wigglerVar
 use FiElec1D
 use FiElec
+use gtop2
 
 
 implicit none
@@ -30,9 +31,9 @@ contains
   subroutine getrhs(sz, &
                     sA, &
                     sx, sy, sz2, &
-                    spr, spi, sp2, &
+                    spr, spi, sgam, &
                     sdx, sdy, sdz2, &
-                    sdpr, sdpi, sdp2, &                    
+                    sdpr, sdpi, sdgam, &                    
                     sDADz, &
                     qOK)
 
@@ -53,17 +54,15 @@ contains
   real(kind=wp), intent(in) :: sz
   real(kind=wp), intent(in) :: sA(:)
   real(kind=wp), intent(in)  :: sx(:), sy(:), sz2(:), &
-                                spr(:), spi(:), sp2(:)
+                                spr(:), spi(:), sgam(:)
 
   
   real(kind=wp), intent(inout)  :: sdx(:), sdy(:), sdz2(:), &
-                                   sdpr(:), sdpi(:), sdp2(:)
+                                   sdpr(:), sdpi(:), sdgam(:)
 
   real(kind=wp), intent(inout) :: sDADz(:) !!!!!!!
   logical, intent(inout) :: qOK
 
-
-  real(kind=wp) :: li1, li2, dadzRInst, dadzIInst, locz2
   integer(kind=ipl) :: i, z2node
   logical qOKL
 
@@ -75,7 +74,7 @@ contains
 !     SETUP AND INITIALISE THE PARTICLE'S POSITION
 !     ALLOCATE THE ARRAYS
 
-  allocate(Lj(iNumberElectrons_G)) 
+!  allocate(Lj(iNumberElectrons_G)) 
   allocate(p_nodes(iNumberElectrons_G))
   call alct_e_srtcts(iNumberElectrons_G)
   
@@ -103,13 +102,12 @@ contains
 
 !     Calculate Lj term
 
-!$OMP WORKSHARE
+!  Lj = sqrt((1.0_WP - (1.0_WP / ( 1.0_WP + (sEta_G * sp2)) )**2.0_WP) &
+!             / (1.0_WP + nc* ( spr**2.0_wp  +  &
+!                               spi**2.0_wp )   )) &
+!          * (1.0_WP + sEta_G *  sp2) * sGammaR_G
 
-  Lj = sqrt((1.0_WP - (1.0_WP / ( 1.0_WP + (sEta_G * sp2)) )**2.0_WP) &
-             / (1.0_WP + nc* ( spr**2.0_wp  +  &
-                               spi**2.0_wp )   )) &
-          * (1.0_WP + sEta_G *  sp2) * sGammaR_G
-
+  call getP2(sp2, sgam, spr, spi, sEta_G, sGammaR_G, saw_G)
 
 
 
@@ -128,6 +126,8 @@ contains
 
 ! ! $ OMP PARALLEL WORKSHARE
 
+!$OMP WORKSHARE
+
     p_nodes = (floor( (sx+halfx)  / dx)  + 1_IP) + &
               (floor( (sy+halfy)  / dy) * ReducedNX_G )  + &   !  y 'slices' before primary node
               (ReducedNX_G * ReducedNY_G * &
@@ -142,13 +142,13 @@ contains
 
     call getInterps_1D(sz2)
     call getFFelecs_1D(sA)
-    call getSource_1D(sDADz, spr, spi)
+    call getSource_1D(sDADz, spr, spi, sgam, sEta_G)
 
   else
 
     call getInterps_3D(sx, sy, sz2)
     call getFFelecs_3D(sA)    
-    call getSource_3D(sDADz, spr, spi)
+    call getSource_3D(sDADz, spr, spi, sgam, sEta_G)
 
   end if
 
@@ -175,51 +175,41 @@ contains
 
 !     z2
 
-        CALL dz2dz_f(sx, sy, sz2, spr, spi, sp2, &
-                   sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
-                   Lj,qOKL)
-        !if (.not. qOKL) goto 1000
+        CALL dz2dz_f(sx, sy, sz2, spr, spi, sgam, &
+                     sdz2, qOKL)
+        if (.not. qOKL) goto 1000
 
 !     X
 
-
-        call dxdz_f(sx, sy, sz2, spr, spi, sp2, &
-                  sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
-                  Lj,qOKL)
-        !if (.not. qOKL) goto 1000             
+        call dxdz_f(sx, sy, sz2, spr, spi, sgam, &
+                    sdx, qOKL)
+        if (.not. qOKL) goto 1000             
 
 !     Y
 
-        call dydz_f(sx, sy, sz2, spr, spi, sp2, &
-                  sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
-                  Lj,qOKL)
-!        if (.not. qOKL) goto 1000
+        call dydz_f(sx, sy, sz2, spr, spi, sgam, &
+                    sdy, qOKL)
+        if (.not. qOKL) goto 1000
 
-!     dp2f is the focusing correction for dp2/dz
-
-        call caldp2f_f(sx, sy, sdx, sdy, sp2, kbeta, qOKL)
- !       if (.not. qOKL) goto 1000
 
 !     PX (Real pperp)
        
-        call dppdz_r_f(sx, sy, sz2, spr, spi, sp2, &
-                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
-                     Lj,qOKL)
-  !      if (.not. qOKL) goto 1000
+        call dppdz_r_f(sx, sy, sz2, spr, spi, sgam, &
+                       sdpr, qOKL)
+        if (.not. qOKL) goto 1000
+
 
 !     -PY (Imaginary pperp)
 
-        call dppdz_i_f(sx, sy, sz2, spr, spi, sp2, &
-                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
-                     Lj,qOKL)
-   !     if (.not. qOKL) goto 1000
+        call dppdz_i_f(sx, sy, sz2, spr, spi, sgam, &
+                       sdpi, qOKL)
+        if (.not. qOKL) goto 1000
 
 !     P2
 
-        call dp2dz_f(sx, sy, sz2, spr, spi, sp2, &
-                   sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
-                   Lj,qOKL)
-    !    if (.not. qOKL) goto 1000
+        call dgamdz_f(sx, sy, sz2, spr, spi, sgam, &
+                     sdgam, qOKL)
+        if (.not. qOKL) goto 1000
  
     end if 
 
@@ -258,7 +248,7 @@ contains
     if (.not. qElectronsEvolve_G) then
        sdpr = 0.0_wp
        sdpi = 0.0_wp
-       sdp2 = 0.0_wp
+       sdgam = 0.0_wp
        sdx   = 0.0_wp
        sdy   = 0.0_wp
        sdz2 = 0.0_wp
@@ -268,7 +258,7 @@ contains
 
 !    deallocate(i_n4e,N,iNodeList_Re,iNodeList_Im,i_n4ered)
 !    deallocate(sField4ElecReal,sField4ElecImag,Lj,dp2f)
-    deallocate(Lj)
+    !deallocate(Lj)
     deallocate(lis_GR)
     deallocate(p_nodes)
     call dalct_e_srtcts()

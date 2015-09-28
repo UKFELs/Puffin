@@ -142,7 +142,7 @@ real(kind=wp), allocatable     :: sElPZ2_G(:)
 
 real(kind=wp)    :: sRho_save_G,sAw_save_G
 real(kind=wp)    :: sRho_G,sAw_G,sGammaR_G
-real(kind=wp)    :: sEta_G,sKBeta_G
+real(kind=wp)    :: sEta_G,sKBeta_G, sKappa_G
 real(kind=wp)    :: sFocusfactor_G
 real(kind=wp)    :: sFocusfactor_save_G
 real(kind=wp)    :: fx_G, fy_G

@@ -266,8 +266,8 @@ CONTAINS
     DEALLOCATE(tconv)
 
 
-    kx = SQRT(sEta_G/(8.0_WP*sRho_G**2))
-    ky = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+    kx = kx_und_G
+    ky = ky_und_G
 
 
 
@@ -325,12 +325,12 @@ CONTAINS
 
 
 !     We currently have gamma in the p2 position array -
-!     need to change to p2
+!     need to change to gamma / gamma_r
 
-    sElPZ2_G = getP2(sElPZ2_G, sElPX_G,&
-                               sElPY_G, sEta_G, sAw_G)
+!    sElPZ2_G = getP2(sElPZ2_G, sElPX_G,&
+!                               sElPY_G, sEta_G, sAw_G)
 
-
+    sElPZ2_G = sElPZ2_G / sGammaR_G
 
     sElPY_G = - sElPY_G
 
