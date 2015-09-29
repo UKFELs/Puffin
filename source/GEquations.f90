@@ -51,14 +51,14 @@ contains
 !     For curved pole undulator
 
 
-        sdpr = sInv2rho * (  cosh(kx_und_G * sx) * cosh(ky_und_G * sy) &
+        sdpr = sInv2rho * (  n2col * cosh(kx_und_G * sx) * cosh(ky_und_G * sy) &
                             * sin(ZOver2rho)  &
                             - sEta_G * sp2 / sKappa_G**2 *    &
                             sField4ElecReal )  +      &
                ( sKappa_G * spi / sgam * (1 + sEta_G * sp2) * &
                      sqrt(sEta_G) * sInv2rho / kx_und_G  *    & 
                      cosh(sx * kx_und_G) * sinh(sy * ky_und_G) *  &
-                     cos(ZOver2rho) )
+                     n2col * cos(ZOver2rho) )
     
 
 
@@ -77,13 +77,13 @@ contains
 
 !     Re(p_perp) equation for plane-poled undulator
 
-        sdpr = sInv2rho * (  cosh( sqrt(sEta_G) * sInv2rho * sy) & 
+        sdpr = sInv2rho * ( n2col * cosh( sqrt(sEta_G) * sInv2rho * sy) & 
                             * sin(ZOver2rho) & 
                             - sEta_G * sp2 / sKappa_G**2 *    &
                             sField4ElecReal ) & 
                + ( sKappa_G * spi / sgam * (1 + sEta_G * sp2)  &
                    * sinh( sqrt(sEta_G) * sInv2rho * sy ) &
-                   * cos(ZOver2rho) )
+                   * n2col * cos(ZOver2rho) )
 
 
 
@@ -100,11 +100,11 @@ contains
 
 !$OMP WORKSHARE
 
-        sdpr = sInv2rho * (  sin(ZOver2rho)  & 
+        sdpr = sInv2rho * ( n2col * sin(ZOver2rho)  & 
                             - sEta_G * sp2 / sKappa_G**2 *    &
                             sField4ElecReal ) & 
                + ( sKappa_G * spi / sgam * (1 + sEta_G * sp2) &
-                   * sqrt(sEta_G) * sInv2rho * (     &
+                   * sqrt(sEta_G) * sInv2rho * n2col * (     &
                     sx * sin( ZOver2rho )  + sy * cos( ZOver2rho ) ) )
 
 !$OMP END WORKSHARE
@@ -128,7 +128,7 @@ contains
 !      else 
 
 
-        sdpr = sInv2rho * (fy_G * sin(ZOver2rho) - &
+        sdpr = sInv2rho * (fy_G * n2col *sin(ZOver2rho) - &
               ( sEta_G * sp2 / sKappa_G**2 * &
               sField4ElecReal ) )
 
@@ -183,7 +183,7 @@ contains
 !     For curved pole undulator
 
 
-        sdpi = sInv2rho * ( kx_und_G / ky_und_G * &
+        sdpi = sInv2rho * ( n2col * kx_und_G / ky_und_G * &
                             sinh(kx_und_G * sx) * sinh(ky_und_G * sy) &
                             * sin(ZOver2rho)  &
                             - sEta_G * sp2 / sKappa_G**2 *    &
@@ -191,7 +191,7 @@ contains
                ( sKappa_G * spr / sgam * (1 + sEta_G * sp2) * &
                      sqrt(sEta_G) * sInv2rho / kx_und_G  *    & 
                      cosh(sx * kx_und_G) * sinh(sy * ky_und_G) *  &
-                     cos(ZOver2rho) )
+                     n2col * cos(ZOver2rho) )
     
 
 
@@ -219,7 +219,7 @@ contains
                             sField4ElecReal ) & 
                - ( sKappa_G * spr / sgam * (1 + sEta_G * sp2) &
                    * sinh( sqrt(sEta_G) * sInv2rho * sy ) &
-                   * cos(ZOver2rho) )
+                   * n2col * cos(ZOver2rho) )
 
 
 
@@ -236,13 +236,12 @@ contains
 
 !$OMP WORKSHARE
 
-        sdpi = sInv2rho * (  cos(ZOver2rho)  & 
+        sdpi = sInv2rho * (  n2col * cos(ZOver2rho)  & 
                             - sEta_G * sp2 / sKappa_G**2 *    &
                             sField4ElecReal ) & 
                - ( sKappa_G * spr / sgam * (1 + sEta_G * sp2) &
-                   * sqrt(sEta_G) * sInv2rho * (   &
+                   * sqrt(sEta_G) * sInv2rho * n2col * (   &
                     sx * sin( ZOver2rho )  + sy * cos( ZOver2rho ) ) )
-
 
 !$OMP END WORKSHARE
 
