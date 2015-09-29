@@ -102,7 +102,7 @@ contains
                             - sEta_G * sp2 / sKappa_G**2 *    &
                             sField4ElecReal ) & 
                + ( sKappa_G * spi / sgam * (1 + sEta_G * sp2) &
-                   * sqrt(sEta_G) * sInv2rho * n2col (     &
+                   * sqrt(sEta_G) * sInv2rho * n2col * (     &
                     sx * sin( ZOver2rho )  + sy * cos( ZOver2rho ) ) )
 
     else
