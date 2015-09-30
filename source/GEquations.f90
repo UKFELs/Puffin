@@ -142,13 +142,13 @@ contains
 
     qOK = .true.
 
-    goto 2000 
+    !goto 2000 
 
-    1000 call Error_log('Error in equations:dppdz_r',tErrorLog_G)
+    !1000 call Error_log('Error in equations:dppdz_r',tErrorLog_G)
     
-    print*,'Error in equations:dppdz_r'
+    !print*,'Error in equations:dppdz_r'
 
-    2000 continue
+    !2000 continue
 
   end subroutine dppdz_r_f
 
@@ -278,13 +278,13 @@ contains
 
     qOK = .true.
 
-    goto 2000 
+    !goto 2000 
 
-    1000 call Error_log('Error in equations:dppdz_i',tErrorLog_G)
+    !1000 call Error_log('Error in equations:dppdz_i',tErrorLog_G)
     
-    print*,'Error in equations:dppdz_i'
+    !print*,'Error in equations:dppdz_i'
     
-    2000 continue
+    !2000 continue
 
 
   end subroutine dppdz_i_f
@@ -324,13 +324,13 @@ contains
 
     qOK = .true.
 
-    goto 2000 
+    !goto 2000 
 
-    1000 call Error_log('Error in equations:dp2dz',tErrorLog_G)
+    !1000 call Error_log('Error in equations:dp2dz',tErrorLog_G)
     
-    print*,'Error in equations:dp2dz'
+    !print*,'Error in equations:dp2dz'
 
-    2000 continue
+    !2000 continue
 
 
   end subroutine dgamdz_f
@@ -380,11 +380,11 @@ contains
 
     qOK = .true.
     
-    goto 2000
+    !goto 2000
     
-    1000 call Error_log('Error in equations:dxdz',tErrorLog_G)
+    !1000 call Error_log('Error in equations:dxdz',tErrorLog_G)
     
-    2000 continue
+    !2000 continue
 
 
   end subroutine dxdz_f
@@ -429,11 +429,11 @@ contains
 
     qOK = .true.
     
-    goto 2000
+    !goto 2000
     
-    1000 call Error_log('Error in equations:dydz',tErrorLog_G)
+    !1000 call Error_log('Error in equations:dydz',tErrorLog_G)
     
-    2000 continue
+    !2000 continue
 
 
   end subroutine dydz_f
@@ -474,11 +474,11 @@ contains
 
     qOK = .true.
     
-    goto 2000
+    !goto 2000
     
-    1000 call Error_log('Error in equations:dz2dz',tErrorLog_G)
+    !1000 call Error_log('Error in equations:dz2dz',tErrorLog_G)
     
-    2000 continue
+    !2000 continue
 
   end subroutine dz2dz_f
   

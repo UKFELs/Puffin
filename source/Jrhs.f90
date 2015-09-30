@@ -175,39 +175,39 @@ contains
 
         CALL dz2dz_f(sx, sy, sz2, spr, spi, sgam, &
                      sdz2, qOKL)
-        if (.not. qOKL) goto 1000
+        !if (.not. qOKL) goto 1000
 
 !     X
 
         call dxdz_f(sx, sy, sz2, spr, spi, sgam, &
                     sdx, qOKL)
-        if (.not. qOKL) goto 1000             
+        !if (.not. qOKL) goto 1000             
 
 !     Y
 
         call dydz_f(sx, sy, sz2, spr, spi, sgam, &
                     sdy, qOKL)
-        if (.not. qOKL) goto 1000
+        !if (.not. qOKL) goto 1000
 
 
 !     PX (Real pperp)
        
         call dppdz_r_f(sx, sy, sz2, spr, spi, sgam, &
                        sdpr, qOKL)
-        if (.not. qOKL) goto 1000
+        !if (.not. qOKL) goto 1000
 
 
 !     -PY (Imaginary pperp)
 
         call dppdz_i_f(sx, sy, sz2, spr, spi, sgam, &
                        sdpi, qOKL)
-        if (.not. qOKL) goto 1000
+        !if (.not. qOKL) goto 1000
 
 !     P2
 
         call dgamdz_f(sx, sy, sz2, spr, spi, sgam, &
                      sdgam, qOKL)
-        if (.not. qOKL) goto 1000
+        !if (.not. qOKL) goto 1000
  
     end if 
 
