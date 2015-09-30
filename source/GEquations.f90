@@ -103,7 +103,7 @@ contains
                             sField4ElecReal ) & 
                + ( sKappa_G * spi / sgam * (1 + sEta_G * sp2) &
                    * sqrt(sEta_G) * sInv2rho * n2col * (     &
-                    sx * sin( ZOver2rho )  + sy * cos( ZOver2rho ) ) )
+                    -sx * sin( ZOver2rho )  + sy * cos( ZOver2rho ) ) )
 
     else
 
@@ -235,7 +235,7 @@ contains
                             sField4ElecReal ) & 
                - ( sKappa_G * spr / sgam * (1 + sEta_G * sp2) &
                    * sqrt(sEta_G) * sInv2rho * n2col * (   &
-                    sx * sin( ZOver2rho )  + sy * cos( ZOver2rho ) ) )
+                    -sx * sin( ZOver2rho )  + sy * cos( ZOver2rho ) ) )
 
 
     else
