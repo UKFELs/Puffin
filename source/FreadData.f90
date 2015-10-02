@@ -320,6 +320,8 @@ SUBROUTINE read_in(zfilename, &
   READ(UNIT=168,FMT=*) lambda_w
   READ(UNIT=168,FMT=*) Dfact
   READ(UNIT=168,FMT=*) zUndType
+!  READ(UNIT=168,FMT=*) kx_und_G
+!  READ(UNIT=168,FMT=*) ky_und_G
   READ(UNIT=168,FMT=*) taper
   
 !     Read whitespace...

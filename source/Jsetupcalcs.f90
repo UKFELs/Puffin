@@ -162,7 +162,7 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
              gamr
 
     sEta_G = (1.0_WP - sbetaz) / sbetaz
-    sKBeta_G = aw / 2.0_WP / sFocusFactor / rho / gamr
+    sKBeta_G = aw_rms / 2.0_WP / sFocusFactor / rho / gamr
     sKappa_G = aw / 2.0_WP / rho / gamr
 
 

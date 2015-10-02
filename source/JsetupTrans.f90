@@ -99,9 +99,29 @@ SUBROUTINE MatchBeams(srho,sEmit_n,saw, &
 
 
 
-  sKbeta = saw / 2.0_WP / sFF / sRho / sgamr
+  if (zUndType == 'curved') then
 
-  sbetaz = SQRT(sgamr**2.0_WP - 1.0_WP - (saw)**2.0_WP) / &
+    aw_rms =  aw / sqrt(2.0_wp)
+
+  else if (zUndType == 'planepole') then
+
+    aw_rms =  aw / sqrt(2.0_wp)
+
+  else if (zUndType == 'helical') then
+
+    aw_rms = aw
+
+  else
+
+    aw_rms = aw * SQRT(fx**2 + fy**2) / sqrt(2.0_wp)
+
+  end if
+
+
+
+  sKbeta = aw_rms / 2.0_WP / sFF / sRho / sgamr
+
+  sbetaz = SQRT(sgamr**2.0_WP - 1.0_WP - (aw_rms)**2.0_WP) / &
                  sgamr
 
   seta = (1.0_WP - sbetaz) / sbetaz
