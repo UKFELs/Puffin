@@ -23,6 +23,7 @@ INTEGER(KIND=IP), PARAMETER :: iGaussian_CG = 2_IP
 
 INTEGER(KIND=IP), PARAMETER :: iTopHatDistribution_CG = 1_IP
 INTEGER(KIND=IP), PARAMETER :: iGaussianDistribution_CG = 2_IP
+INTEGER(KIND=IP), PARAMETER :: iParabolicDistribution_CG = 3_ip
 
 INTEGER(KIND=IP), PARAMETER :: i_oldgenmacro=1_IP
 INTEGER(KIND=IP), PARAMETER :: i_newgenmacro=2_IP
@@ -222,6 +223,11 @@ CONTAINS
 
     CASE(iGaussianDistribution_CG)
        CALL EvalIntegral(sGrid,sMean,sSigma,sIntegral)
+
+    case(iParabolicDistribution_CG)
+
+       call getParabolicInt(sGrid, sIntegral)
+
     END SELECT
 
 !  Set error flag and exit         
@@ -235,6 +241,70 @@ CONTAINS
 2000 CONTINUE
 
   END SUBROUTINE DistributionIntegralz2
+
+
+!    ####################################################
+
+
+  SUBROUTINE getParabolicInt(s_gridPoints, &
+                             s_integral)
+
+    IMPLICIT NONE
+
+    REAL(KIND=WP),INTENT(IN)  :: s_gridPoints(:)
+    REAL(KIND=WP),INTENT(OUT) :: s_integral(:) 
+!
+!LOCAL VARIABLES
+
+    INTEGER(KIND=IP) :: i, error
+    REAL(KIND=WP)    :: s_value1,s_value2, tdenom, denom, slen, &
+                        low_loc, high_loc, low_glob, high_glob
+
+    low_loc = minval(s_gridPoints)
+    high_loc = maxval(s_gridPoints)
+
+    CALL MPI_ALLREDUCE(high_loc,high_glob,1,MPI_DOUBLE_PRECISION,&
+     MPI_MAX, &
+     tProcInfo_G%comm,error)
+
+    CALL MPI_ALLREDUCE(low_loc,low_glob,1,MPI_DOUBLE_PRECISION,&
+     MPI_MIN, &
+     tProcInfo_G%comm,error)
+
+    slen = high_glob - low_glob
+
+    print*, 'length of para is ... ', slen
+
+    DO i=1,(SIZE(s_gridPoints)-1)
+
+       s_value2 = -4_wp / slen**2_wp * ((s_gridPoints(i+1)**3_wp / 3_wp)  - &
+                   ( s_gridPoints(i+1)**2_wp * slen / 2_wp )  )
+
+       s_value1 = -4_wp / slen**2_wp * ((s_gridPoints(i)**3_wp / 3_wp)  - &
+                   ( s_gridPoints(i)**2_wp * slen / 2_wp )  )
+
+       s_integral(i) = s_value2 - s_value1
+
+    END DO
+
+    tdenom = sum(s_integral)
+
+    CALL MPI_ALLREDUCE(tdenom,denom,1,MPI_DOUBLE_PRECISION,&
+         MPI_SUM, &
+         tProcInfo_G%comm,error)
+
+    print*, 'b4 ... ', s_integral(1:10)
+
+    s_integral=s_integral/denom
+
+    print*, 'after ... ', s_integral(1:10)
+
+  END SUBROUTINE getParabolicInt
+
+
+
+
+
 !********************************************************
 
 

@@ -65,6 +65,8 @@ SUBROUTINE getIntTypes(iNMPs, samplens, sigmas, &
        END IF
     ENDDO
 
+    inttypes(iZ2_CG)=iParabolicDistribution_CG
+
 END SUBROUTINE getIntTypes
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
