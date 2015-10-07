@@ -273,8 +273,6 @@ CONTAINS
 
     slen = high_glob - low_glob
 
-    print*, 'length of para is ... ', slen
-
     DO i=1,(SIZE(s_gridPoints)-1)
 
        s_value2 = -4_wp / slen**2_wp * ((s_gridPoints(i+1)**3_wp / 3_wp)  - &
@@ -293,11 +291,7 @@ CONTAINS
          MPI_SUM, &
          tProcInfo_G%comm,error)
 
-    print*, 'b4 ... ', s_integral(1:10)
-
     s_integral=s_integral/denom
-
-    print*, 'after ... ', s_integral(1:10)
 
   END SUBROUTINE getParabolicInt
 
