@@ -394,14 +394,14 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
   ALLOCATE(sz2_grid(iNMP_loc(iZ2_CG)+1))
   ALLOCATE(spx_grid(iNMP_loc(iPX_CG)+1))
   ALLOCATE(spy_grid(iNMP_loc(iPY_CG)+1))   
-  ALLOCATE(spz2_grid(iNMP_loc(iPZ2_CG)+1))
+  ALLOCATE(spz2_grid(iNMP_loc(iGam_CG)+1))
 
   ALLOCATE(sX_integral(iNMP_loc(iX_CG)))
   ALLOCATE(sY_integral(iNMP_loc(iY_CG)))
   ALLOCATE(sz2_integral(iNMP_loc(iZ2_CG)))
   ALLOCATE(sPX_integral(iNMP_loc(iPX_CG)))
   ALLOCATE(sPY_integral(iNMP_loc(iPY_CG)))
-  ALLOCATE(sPZ2_integral(iNMP_loc(iPZ2_CG))) 
+  ALLOCATE(sPZ2_integral(iNMP_loc(iGam_CG))) 
 
   ALLOCATE(iLocalIntegralType(6))
 
@@ -432,7 +432,7 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
 
   IF (qOneD) THEN ! If 1D, only need z2 and p2 to generate macroparticles
 
-    IF (iNMP(iPZ2_CG) == 1_IP) THEN ! Cold beam case (important for noise)
+    IF (iNMP(iGam_CG) == 1_IP) THEN ! Cold beam case (important for noise)
 
       CALL genMacros(i_total_electrons=i_RealE, &
            q_noise=q_noise,                & 
@@ -443,7 +443,7 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
            max_av=s_tmp_max_av,             &
            x_1_coord=z2_tmpcoord)
 
-      pz2_tmpvector = offsets(iPZ2_CG)
+      pz2_tmpvector = offsets(iGam_CG)
 
     ELSE
 

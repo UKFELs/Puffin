@@ -104,7 +104,7 @@ SUBROUTINE splitBeams(iNMP,samLenE,nBeams,numproc,rank,&
   iNumLocalElectrons(:,iY_CG) = iNMP(:,iY_CG)
   iNumLocalElectrons(:,iPX_CG) = iNMP(:,iPX_CG)
   iNumLocalElectrons(:,iPY_CG) = iNMP(:,iPY_CG)
-  iNumLocalElectrons(:,iPZ2_CG) = iNMP(:,iPZ2_CG)
+  iNumLocalElectrons(:,iGam_CG) = iNMP(:,iGam_CG)
 
   DO ind = 1, nBeams
 

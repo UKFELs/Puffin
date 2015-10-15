@@ -267,7 +267,7 @@ CONTAINS
        If (.NOT. qOKL) Goto 1000
        call WriteINTEGER(iNumElectrons(iPY_CG),tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
-       call WriteINTEGER(iNumElectrons(iPZ2_CG),tParamFile,qOKL)
+       call WriteINTEGER(iNumElectrons(iGam_CG),tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
        call WriteRealNumber(sLengthOfElm(iX_CG),tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
@@ -289,7 +289,7 @@ CONTAINS
        If (.NOT. qOKL) Goto 1000
        call WriteRealNumber(sLenEPulse(iPY_CG),tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
-       call WriteRealNumber(sLenEPulse(iPZ2_CG),tParamFile,qOKL)
+       call WriteRealNumber(sLenEPulse(iGam_CG),tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
        call WriteRealNumber(sWigglerLength(iX_CG),tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
@@ -307,7 +307,7 @@ CONTAINS
        If (.NOT. qOKL) Goto 1000
        call WriteRealNumber(sSigmaGaussian(iPY_CG),tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
-       call WriteRealNumber(sSigmaGaussian(iPZ2_CG),tParamFile,qOKL)
+       call WriteRealNumber(sSigmaGaussian(iGam_CG),tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
        call WriteRealNumber(sA0_Re,tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000

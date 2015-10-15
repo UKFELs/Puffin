@@ -388,8 +388,8 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
 
 !     Change sig_gamma / gamma to sig_gamma
 
-    IF (qSimple) LenEPulse(:,iPZ2_CG) = gamma_d(:) * sGammaR_G * LenEPulse(:,iPZ2_CG)
-    IF (qSimple) sigma(:,iPZ2_CG) = gamma_d(:) * sGammaR_G * sigma(:,iPZ2_CG)
+    IF (qSimple) LenEPulse(:,iGam_CG) = gamma_d(:) * sGammaR_G * LenEPulse(:,iGam_CG)
+    IF (qSimple) sigma(:,iGam_CG) = gamma_d(:) * sGammaR_G * sigma(:,iGam_CG)
 
 !     Setup electrons
 

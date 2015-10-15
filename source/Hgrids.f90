@@ -118,9 +118,9 @@ SUBROUTINE genGrids(ib, sigmas,offsets,slens,intType,iNMPs,iNMPs_loc, &
                iNMPs(iPY_CG),iNMPs_loc(iPY_CG),spy_grid,sPY_integral,.FALSE., &
                qOKL)
 
-  CALL genGrid(ib,intType(iPZ2_CG),iLinear_CG,offsets(iPZ2_CG), &
-               sigmas(iPZ2_CG),slens(iPZ2_CG),&
-               iNMPs(iPZ2_CG),iNMPs_loc(iPZ2_CG),spz2_grid,sPZ2_integral,.FALSE., &
+  CALL genGrid(ib,intType(iGam_CG),iLinear_CG,offsets(iGam_CG), &
+               sigmas(iGam_CG),slens(iGam_CG),&
+               iNMPs(iGam_CG),iNMPs_loc(iGam_CG),spz2_grid,sPZ2_integral,.FALSE., &
                qOKL)
 
 ! Each gamma has its own sig_px, sig_py....need to change above to 
