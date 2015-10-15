@@ -809,7 +809,7 @@ CONTAINS
     call wrt_phs_coord(iRe_Z2_CG, sElZ2_G, qOKL)
     call wrt_phs_coord(iRe_PPerp_CG, sElPX_G, qOKL)
     call wrt_phs_coord(iIm_PPerp_CG, sElPY_G, qOKL)
-    call wrt_phs_coord(iRe_Gam_CG, sElPZ2_G, qOKL)
+    call wrt_phs_coord(iRe_Gam_CG, sElGam_G, qOKL)
     if (.not. qOKL) goto 1000
 
 !     Set error flag and exit

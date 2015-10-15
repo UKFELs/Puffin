@@ -96,7 +96,7 @@ real(kind=wp), allocatable     :: sElY_G(:)
 real(kind=wp), allocatable     :: sElZ2_G(:)
 real(kind=wp), allocatable     :: sElPX_G(:)
 real(kind=wp), allocatable     :: sElPY_G(:)
-real(kind=wp), allocatable     :: sElPZ2_G(:)
+real(kind=wp), allocatable     :: sElGam_G(:)
 
 
 

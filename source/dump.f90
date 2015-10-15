@@ -77,7 +77,7 @@ if (nelectrons > 0) then
  FileName = 'Q'//TRIM(IntegerToString(RANK))//'.dump'
  
  OPEN(UNIT=213,FILE=FileName,STATUS='REPLACE',FORM='UNFORMATTED')
- WRITE(213) sElPZ2_G
+ WRITE(213) sElGam_G
  CLOSE(UNIT=213,STATUS='KEEP') 
 ! Z2 
  FileName = 'Z2-'//TRIM(IntegerToString(RANK))//'.dump'

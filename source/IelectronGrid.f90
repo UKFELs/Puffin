@@ -254,11 +254,11 @@ CONTAINS
     
     tconv = sElPX_G**2.0_WP + sElPY_G**2.0_WP
 
-    sElPX_G = sqrt((sElPZ2_G**2.0_WP - 1.0_WP) / &
+    sElPX_G = sqrt((sElGam_G**2.0_WP - 1.0_WP) / &
                             (1.0_WP + tconv))  &
                         / afact * sElPX_G
 
-    sElPY_G = sqrt((sElPZ2_G**2.0_WP - 1.0_WP) / &
+    sElPY_G = sqrt((sElGam_G**2.0_WP - 1.0_WP) / &
                             (1.0_WP + tconv))  &
                         / afact * sElPY_G
 
@@ -327,10 +327,10 @@ CONTAINS
 !     We currently have gamma in the p2 position array -
 !     need to change to gamma / gamma_r
 
-!    sElPZ2_G = getP2(sElPZ2_G, sElPX_G,&
+!    sElGam_G = getP2(sElGam_G, sElPX_G,&
 !                               sElPY_G, sEta_G, sAw_G)
 
-    sElPZ2_G = sElPZ2_G / sGammaR_G
+    sElGam_G = sElGam_G / sGammaR_G
 
     sElPY_G = - sElPY_G
 

@@ -503,7 +503,7 @@ MODULE Setup
 
 !    Deallocate electron and field arrays
 
-  DEALLOCATE(sElPX_G, sElPY_G, sElPZ2_G)
+  DEALLOCATE(sElPX_G, sElPY_G, sElGam_G)
   DEALLOCATE(sElX_G, sElY_G, sElZ2_G)
   DEALLOCATE(sA)
 

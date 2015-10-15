@@ -120,7 +120,7 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
 
   call derivs(sZ, &
               sA, &
-              sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElPZ2_G, &
+              sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, &
               dxdx, dydx, dz2dx, dpxdx, dpydx, dpz2dx, &
               dAdx)
 
@@ -134,7 +134,7 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
   z2t = sElZ2_G    +  hh*dz2dx
   pxt = sElPX_G    +  hh*dpxdx
   pyt = sElPY_G    +  hh*dpydx
-  pz2t = sElPZ2_G  +  hh*dpz2dx
+  pz2t = sElGam_G  +  hh*dpz2dx
 
 
 
@@ -159,7 +159,7 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
   z2t = sElZ2_G    +  hh*dz2t
   pxt = sElPX_G    +  hh*dpxt
   pyt = sElPY_G    +  hh*dpyt
-  pz2t = sElPZ2_G  +  hh*dpz2t
+  pz2t = sElGam_G  +  hh*dpz2t
 
   A_localt = A_local + hh * dAt
 
@@ -183,7 +183,7 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
   z2t = sElZ2_G    +  h*dz2m
   pxt = sElPX_G    +  h*dpxm
   pyt = sElPY_G    +  h*dpym
-  pz2t = sElPZ2_G  +  h*dpz2m
+  pz2t = sElGam_G  +  h*dpz2m
 
   A_localt=A_local + h * dAm
 
@@ -218,7 +218,7 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
   sElZ2_G   = sElZ2_G  + h6 * ( dz2dx  + dz2t  + 2.0_WP * dz2m )
   sElPX_G   = sElPX_G  + h6 * ( dpxdx  + dpxt  + 2.0_WP * dpxm )
   sElPY_G   = sElPY_G  + h6 * ( dpydx  + dpyt  + 2.0_WP * dpym )
-  sElPZ2_G  = sElPZ2_G + h6 * ( dpz2dx + dpz2t + 2.0_WP * dpz2m)
+  sElGam_G  = sElGam_G + h6 * ( dpz2dx + dpz2t + 2.0_WP * dpz2m)
 
   A_local = A_local + h6 * (dAdx + dAt + 2.0_WP * dAm)
 

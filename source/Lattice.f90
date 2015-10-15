@@ -175,9 +175,9 @@ CONTAINS
 
 !    sgamma_j = SQRT((1.0_WP + ( sl1 * (sElPX_G**2.0_WP  &
 !                                   + sElPY_G**2.0_WP) )) * &
-!                  (1.0_WP + sEta_G * sElPZ2_G )**2.0_WP / &
-!                  ( sEta_G * sElPZ2_G * &
-!                              (sEta_G * sElPZ2_G + 2.0_WP) ) )
+!                  (1.0_WP + sEta_G * sElGam_G )**2.0_WP / &
+!                  ( sEta_G * sElGam_G * &
+!                              (sEta_G * sElGam_G + 2.0_WP) ) )
 
 
 
@@ -218,7 +218,7 @@ CONTAINS
 !     Propagate through chicane
 
     sElZ2_G = sElZ2_G - 2.0_WP * D *  &
-                 (sElPZ2_G - 1_wp) &
+                 (sElGam_G - 1_wp) &
                  + delta
 
 
@@ -253,7 +253,7 @@ CONTAINS
     sElY_G = sElY_G + sy_offset
     sElPX_G = sElPX_G + spx0_offset
     sElPY_G = sElPY_G + spy0_offset
-!    sElPZ2_G = getP2(sgamma_j, sElPX_G, &
+!    sElGam_G = getP2(sgamma_j, sElPX_G, &
 !                      -sElPY_G, sEta_G, sAw_G)   ! get new p2
 
 
