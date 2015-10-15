@@ -142,7 +142,7 @@ CONTAINS
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('iNumElectronsPY','long',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
-       call SddsWriteParameter('iNumElectronsPZ2','long',tFileType=tParamFile)
+       call SddsWriteParameter('iNumElectronsGam','long',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('sLengthOfElmX','double',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
@@ -164,7 +164,7 @@ CONTAINS
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('sLenEPulsePY','double',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
-       call SddsWriteParameter('sLenEPulsePZ2','double',tFileType=tParamFile)
+       call SddsWriteParameter('sLenEPulseGam','double',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('sWigglerLengthX','double',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
@@ -182,7 +182,7 @@ CONTAINS
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('sSigmaGaussianPY','double',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
-       call SddsWriteParameter('sSigmaGaussianPZ2','double',&
+       call SddsWriteParameter('sSigmaGaussianGam','double',&
             tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('sA0_Re','double',tFileType=tParamFile)	   
