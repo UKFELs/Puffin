@@ -248,8 +248,8 @@ SUBROUTINE read_in(zfilename, &
        tArrayVariables(iRe_PPerp_CG)%qWrite
   tArrayVariables(iIm_PPerp_CG)%zVariable = 'IM_PPerp'
     
-  READ(UNIT=168,FMT=*) tArrayVariables(iRe_Q_CG)%qWrite
-  tArrayVariables(iRe_Q_CG)%zVariable = 'Q'
+  READ(UNIT=168,FMT=*) tArrayVariables(iRe_Gam_CG)%qWrite
+  tArrayVariables(iRe_Gam_CG)%zVariable = 'Gamma'
     
   READ(UNIT=168,FMT=*) tArrayVariables(iRe_Z2_CG)%qWrite
   tArrayVariables(iRe_Z2_CG)%zVariable = 'Z2'
