@@ -140,24 +140,7 @@ CONTAINS
 
 
 
-
-
   e_tot = iGloNumElectrons_G
-
-
-
-
-
-
-
-
-
-!     NEW FOR SWISSFEL - TWO COLOUR UNDULATOR SCHEME
-
-!     Factors for redefining undulator parameter in
-!     2 colour undulator scheme.
-
-
 
 
 !     Match beam to new undulator module - only need to 
@@ -170,19 +153,6 @@ CONTAINS
 !     Find gamma for each electron
 
     sl1 = 2.0_WP*sAw_G**2.0_WP/ (fx_G**2.0_WP + fy_G**2.0_WP)
-
-!    ALLOCATE(sgamma_j(iNumberElectrons_G))
-
-!    sgamma_j = SQRT((1.0_WP + ( sl1 * (sElPX_G**2.0_WP  &
-!                                   + sElPY_G**2.0_WP) )) * &
-!                  (1.0_WP + sEta_G * sElGam_G )**2.0_WP / &
-!                  ( sEta_G * sElGam_G * &
-!                              (sEta_G * sElGam_G + 2.0_WP) ) )
-
-
-
-
-
 
 
 
@@ -253,21 +223,9 @@ CONTAINS
     sElY_G = sElY_G + sy_offset
     sElPX_G = sElPX_G + spx0_offset
     sElPY_G = sElPY_G + spy0_offset
-!    sElGam_G = getP2(sgamma_j, sElPX_G, &
-!                      -sElPY_G, sEta_G, sAw_G)   ! get new p2
-
-
-
-
-!     Get new p2 required to keep energy constant
-
-
-!          beta = SQRT( 1.0_WP - ((1.0_WP/sgamma_j**2) * (1.0_WP + ( sl1 * ( Vector(iRe_PPerp_CG,y_e)**2.0_WP + Vector(iIm_PPerp_CG,y_e)**2.0_WP  ) ) ) ) )
-!     p2 = (1/eta) * ( (1/beta_z)  - 1)
 
 
     DEALLOCATE(spx0_offset,spy0_offset,sx_offset,sy_offset)
-!    DEALLOCATE(sgamma_j,spx0_offset,spy0_offset,sx_offset,sy_offset)
 
 !     Work out new effective eta
 
