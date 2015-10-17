@@ -1,3 +1,9 @@
+!************* THIS HEADER MUST NOT BE REMOVED *******************!
+!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
+!** This program must not be copied, distributed or altered in  **!
+!** any way without the prior permission of the above authors.  **!
+!*****************************************************************!
+
 MODULE lattice
 
 USE paratype
@@ -7,11 +13,77 @@ USE ElectronInit
 use gtop2
 use initConds
 
-IMPLICIT NONE
+implicit none
 
-CONTAINS
+integer(kind=ip), parameter :: iUnd = 1_ip, &
+                               iChic = 2_ip, &
+                               iDrift = 3_ip, &
+                               iQuad = 4_ip
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+integer(kind=ip), allocatable :: iElmType(:)
+!integer(kind=ip) :: inum_latt_elms
+
+contains
+
+!    ####################################################
+
+
+
+
+  subroutine setupMods(lattFile, taper, sRho)
+
+    implicit none
+
+!     Sets up elements in wiggler lattice. The elements
+!     are read in from the file specified.
+!
+!     Dr Lawrence Campbell
+!     University of Strathclyde
+!     2015
+
+    character(32_ip), intent(in) :: LattFile 
+    real(kind=wp), intent(inout) :: taper
+    real(kind=wp), intent(in) :: sRho
+
+
+    if (lattFile=='') then
+      qMod_G = .false.
+      if(tProcInfo_G%qRoot) print*, 'There are no dispersive sections'
+    else
+      qMod_G = .true.
+      if(tProcInfo_G%qRoot) print*, 'There are dispersive sections'
+    end if
+
+
+    IF (qMod_G) then
+
+      modNum=numOfMods(lattFile)
+
+      allocate(D(ModNum),zMod(ModNum),delta(modNum))
+      allocate(mf(ModNum),delmz(ModNum),tapers(modNum))
+
+!    Latt file name, number of wigg periods converted to z-bar,
+!    slippage in chicane in z-bar, 2 dispersive constants, 
+!    number of modules
+
+      call readLatt(lattFile,zMod,delta,D,Dfact,ModNum,taper,sRho,sStepSize)
+      ModCount = 1
+
+    else 
+
+      modNum = 1
+      allocate(iElmType(modNum))
+      iElmType(1) = iUnd
+
+    end if
+
+  end subroutine setupMods
+
+
+
+
+!    #####################################################
+
 
   SUBROUTINE readLatt(lattFile,zMod,delta,D,Dfact,ModNum,taper,rho,&
                       sStepSize)

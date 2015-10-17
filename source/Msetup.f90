@@ -196,30 +196,8 @@ MODULE Setup
   
   END IF
 
-!    If using wiggler lattice read in lattice file
-
-  IF (lattFile=='') THEN
-    qMod = .FALSE.
-    IF(tProcInfo_G%qRoot) PRINT*, 'There are no dispersive sections'
-  ELSE
-    qMod = .TRUE.
-    IF(tProcInfo_G%qRoot) PRINT*, 'There are dispersive sections'
-  END IF
+  call setupMods(lattFile, taper, sRho)
       
-  IF (qMod) THEN
-    modNum=numOfMods(lattFile)
-    !modNum=26
-    ALLOCATE(D(ModNum),zMod(ModNum),delta(modNum))
-    ALLOCATE(mf(ModNum),delmz(ModNum),tapers(modNum))
-
-!    Latt file name, number of wigg periods converted to z-bar,
-!    slippage in chicane in z-bar, 2 dispersive constants, 
-!    number of modules
-
-    CALL readLatt(lattFile,zMod,delta,D,Dfact,ModNum,taper,sRho,sStepSize)
-    ModCount = 1
-  END IF
-
 !     Pass local vars to global vars
 
   CALL passToGlobals(srho,saw,sgammar,lambda_w,iNodes, &
@@ -460,8 +438,6 @@ MODULE Setup
   
   
   qSeparateStepFiles_G = qSeparateStepFiles
-
-  qMod_G = qMod
 
   if (qSwitches(iDump_CG)) call DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
   if (qSwitches(iDump_CG)) call DUMPDATA(sA,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
