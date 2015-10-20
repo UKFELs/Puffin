@@ -323,12 +323,8 @@ contains
 
 
 
-
-
-
-
-
-
+  deallocate(sAr)
+  deallocate(Ar_local)
 
 
 
