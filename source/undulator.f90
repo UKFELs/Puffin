@@ -58,11 +58,15 @@ contains
     logical :: qFirst, qLast, qDiffrctd, qWDisp
     logical :: qWPF
     logical :: qWIF
+    logical :: qOKL
 
 
     stepsize = delmz(iM)
     
-    iUndType_G = iDetail(iM)
+!    iUndType_G = iDetail(iM)
+
+
+
 
 !    nW = nPeriods(iM)
 !    nSPP = nStepsPerPeriod(iM)
