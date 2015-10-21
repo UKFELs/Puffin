@@ -54,14 +54,14 @@ contains
     integer(kind=ip) :: iPer, iS ! Loop index - period counter
     integer(kind=ip) :: nW
     integer(kind=ip) :: iSteps4Diff
-    real(kind=wp) :: stepsize, start_time, delz_D, nextDiff
+    real(kind=wp) :: delz_D, nextDiff
     logical :: qFirst, qLast, qDiffrctd, qWDisp
     logical :: qWPF
     logical :: qWIF
     logical :: qOKL
 
 
-    stepsize = delmz(iM)
+!    stepsize = delmz(iM)
     
 !    iUndType_G = iDetail(iM)
 
