@@ -228,7 +228,7 @@ CONTAINS
     DEALLOCATE(s_tmp_macro,s_tmp_Vk)
 
     CALL removeLow(Tmp_chibar, Tmp_Normchi, b_sts, b_ends, sElectronThreshold, &
-                   chirp,mag,fr,nbeams,x_tmpcoord,y_tmpcoord,z2_tmpcoord,px_tmpvector,&
+                   nbeams,x_tmpcoord,y_tmpcoord,z2_tmpcoord,px_tmpvector,&
                    py_tmpvector, pz2_tmpvector,totalmps_b,beamCenZ2)
 
 
@@ -344,7 +344,7 @@ CONTAINS
       call addChirp(sElGam_G(b_sts(b_ind):b_ends(b_ind)), &
                     sElZ2_G(b_sts(b_ind):b_ends(b_ind)), &
                     b_ends(b_ind) - b_sts(b_ind) + 1, beamCenZ2(b_ind), &
-                    dp20)
+                    chirp(b_ind))
   
   
       call addModulation(sElGam_G(b_sts(b_ind):b_ends(b_ind)), &
