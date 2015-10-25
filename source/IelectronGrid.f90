@@ -60,7 +60,8 @@ CONTAINS
     REAL(KIND=WP), INTENT(INOUT):: beamCenZ2(:)
     INTEGER(KIND=IP), INTENT(IN):: iNMP(:,:)
     LOGICAL, INTENT(IN)         :: q_noise
-    REAL(KIND=WP), INTENT(IN)	:: sZ, chirp(:), mag(:), fr(:)
+    REAL(KIND=WP), INTENT(IN)   :: sZ
+    REAL(KIND=WP), INTENT(INOUT) :: chirp(:), mag(:), fr(:)
 
 
     INTEGER(KIND=IP), INTENT(IN) :: nbeams
@@ -230,6 +231,7 @@ CONTAINS
                    chirp,mag,fr,nbeams,x_tmpcoord,y_tmpcoord,z2_tmpcoord,px_tmpvector,&
                    py_tmpvector, pz2_tmpvector,totalmps_b,beamCenZ2)
 
+
     DEALLOCATE(x_tmpcoord)
     DEALLOCATE(y_tmpcoord)
     DEALLOCATE(z2_tmpcoord)
@@ -323,12 +325,8 @@ CONTAINS
     end if
 
 
-
-!     We currently have gamma in the p2 position array -
+!     We currently have gamma -
 !     need to change to gamma / gamma_r
-
-!    sElGam_G = getP2(sElGam_G, sElPX_G,&
-!                               sElPY_G, sEta_G, sAw_G)
 
     sElGam_G = sElGam_G / sGammaR_G
 
@@ -337,6 +335,27 @@ CONTAINS
 !     Sum the local num of macroparticles to a global number
 
     call sum_mpi_int14(iNumberElectrons_G,iGloNumElectrons_G)
+
+    mag(:) = mag(:) / sGammaR_G
+    chirp(:) = chirp(:) / sGammaR_G
+
+    do b_ind = 1, nbeams
+  
+      call addChirp(sElGam_G(b_sts(b_ind):b_ends(b_ind)), &
+                    sElZ2_G(b_sts(b_ind):b_ends(b_ind)), &
+                    b_ends(b_ind) - b_sts(b_ind) + 1, beamCenZ2(b_ind), &
+                    dp20)
+  
+  
+      call addModulation(sElGam_G(b_sts(b_ind):b_ends(b_ind)), &
+                         sElZ2_G(b_sts(b_ind):b_ends(b_ind)), &
+                         b_ends(b_ind) - b_sts(b_ind) + 1, &
+                         mag(b_ind), fr(b_ind))
+  
+
+    end do
+
+
 
 !     Set error flag and exit         
 

@@ -16,7 +16,7 @@ implicit none
 
 contains
 
-  subroutine getGamma(gamma, p2, px, py, eta, aw)
+  subroutine getGamma(gamma, p2, px, py, eta, gamma0, aw)
  
     implicit none
 
@@ -24,7 +24,8 @@ contains
 ! 
 !           ARGUMENTS
 
-    real(kind=wp), intent(in) :: px(:), py(:), p2(:), eta, aw
+    real(kind=wp), intent(in) :: px(:), py(:), p2(:), eta, &
+                                 gamma0, aw
 
 !            OUTPUT
 
@@ -34,7 +35,7 @@ contains
 
     gamma = SQRT((1.0_WP + ( aw**2 * (px**2.0_WP + py**2.0_WP) )) * &
                   (1.0_WP + eta * p2 )**2.0_WP / &
-                  ( eta * p2 * (eta * p2 + 2.0_WP) ) )
+                  ( eta * p2 * (eta * p2 + 2.0_WP) ) ) / gamma0
   
   end subroutine getGamma
 
