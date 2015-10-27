@@ -217,9 +217,9 @@ contains
 
 !     Propagate through chicane
 
-    sElZ2_G = sElZ2_G - 2.0_WP * D *  &
-                 (sElGam_G - 1_wp) &
-                 + delta
+  sElZ2_G = sElZ2_G - 2.0_WP * D *  &
+               (sElGam_G - 1_wp) &
+               + delta
 
 
 
