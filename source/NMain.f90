@@ -96,7 +96,8 @@ do iL = 1, modNum
  
   else if (iElmType(iL) == iChic) then
  
-!    call disp_chic
+    call disperse(D(modCount),delta(modCount),&
+                     modCount,sStepSize,sZ)
  
   else if (iElmType(iL) == iDrift) then
  

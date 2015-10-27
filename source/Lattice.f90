@@ -215,48 +215,6 @@ contains
   e_tot = iGloNumElectrons_G
 
 
-!     Match beam to new undulator module - only need to 
-!     do this if diffrent from last module
-
-
-  !IF (mf(i+1) /= mf(i)) THEN
-
-
-!     Find gamma for each electron
-
-    sl1 = 2.0_WP*sAw_G**2.0_WP/ (fx_G**2.0_WP + fy_G**2.0_WP)
-
-
-
-!     Get p_perp and x, y offsets for this undulator module
-
-    ALLOCATE(spx0_offset(iNumberElectrons_G), spy0_offset(iNumberElectrons_G))
-    ALLOCATE(sx_offset(iNumberElectrons_G),sy_offset(iNumberElectrons_G))
-
-    spx0_offset    = pxOffset(sZ, sRho_G, fy_G)
-    spy0_offset    = -1.0_wp * pyOffset(sZ, sRho_G, fx_G)
-
-
-
-    sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
-                           fx_G, fy_G, sZ)
-
-    sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
-                           fx_G, fy_G, sZ)
-
-
-!     Take off tranverse phase space offsets to center the beam
-
-    sElX_G = sElX_G - sx_offset
-    sElY_G = sElY_G - sy_offset
-    sElPX_G = sElPX_G - spx0_offset
-    sElPY_G = sElPY_G - spy0_offset
-
-
-
-
 !     Propagate through chicane
 
     sElZ2_G = sElZ2_G - 2.0_WP * D *  &
@@ -264,20 +222,35 @@ contains
                  + delta
 
 
-!     Change undulator tuning factor to next undulator module
 
-    n2col0 = mf(i+1)
-    n2col = mf(i+1)
-    undgrad = tapers(i+1)
-    sz0 = sz
-    
-
-!     Get new pperp offsets with new undulator tuning factors
-
-    spx0_offset    = pxOffset(sZ, sRho_G, fy_G)
-    spy0_offset    = -1.0_wp * pyOffset(sZ, sRho_G, fx_G)
+  END SUBROUTINE disperse	
 
 
+
+! ##############################################
+
+
+
+
+
+  subroutine matchOut()
+
+
+
+    real(kind=wp), allocatable :: spx0_offset(:),spy0_offset(:), &
+                                  sx_offset(:),sy_offset(:)
+
+    real(kind=wp) :: kx, ky
+
+
+    kx = kx_und_G
+    ky = ky_und_G
+
+
+    allocate(spx0_offset(iNumberElectrons_G), spy0_offset(iNumberElectrons_G))
+    allocate(sx_offset(iNumberElectrons_G),sy_offset(iNumberElectrons_G))
+
+!     Get offsets for start of undulator
 
     sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
                            sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
@@ -288,7 +261,148 @@ contains
                            fx_G, fy_G, sZ)
 
 
-!     Add on new offset to initialize beam for new undulator module
+    if (zUndType_G == 'curved') then
+
+! used for curved pole puffin, the 2 order expansion of cosh and sinh
+! allows us to simply add a correction term to the intial position
+! when calculating initial conditions, this may need change eventually
+
+
+        spx0_offset = pxOffset(sZ, srho_G, fy_G) & 
+            - 0.5_WP * kx**2 * sElX_G**2 &
+            -  0.5_WP * kY**2 * sElY_G**2
+     
+        spy0_offset = -1_wp *  &
+                      ( pyOffset(sZ, srho_G, fx_G) &
+                      - kx**2 *  sElX_G  * sElY_G)
+
+
+    else if (zUndType_G == 'planepole') then 
+
+! plane pole initial conditions are calculated as a 2nd order expansion
+! and added as a correction term.
+
+
+
+        spx0_offset = pxOffset(sZ, srho_G, fy_G) & 
+            - 0.5_WP * (sEta_G / (4 * sRho_G**2)) * sElX_G**2 
+
+        spy0_offset = -1_wp * &
+                      pyOffset(sZ, srho_G, fx_G) 
+
+
+    else
+
+! "normal" PUFFIN case with no off-axis undulator
+! field variation
+
+
+        spx0_offset = pxOffset(sZ, srho_G, fy_G) 
+
+        spy0_offset = -1.0_wp * & 
+                     pyOffset(sZ, srho_G, fx_G) 
+
+
+    end if
+
+
+!     Add on new offset to initialize beam for undulator module
+
+
+    sElX_G = sElX_G - sx_offset
+    sElY_G = sElY_G - sy_offset
+    sElPX_G = sElPX_G - spx0_offset
+    sElPY_G = sElPY_G - spy0_offset
+
+
+    deallocate(spx0_offset,spy0_offset,sx_offset,sy_offset)
+
+
+
+  end subroutine matchOut
+
+
+
+
+! ###############################################
+
+
+
+
+  subroutine matchIn(sZ)
+
+
+
+    real(kind=wp), allocatable :: spx0_offset(:),spy0_offset(:), &
+                                  sx_offset(:),sy_offset(:)
+
+    real(kind=wp) :: kx, ky
+
+
+    kx = kx_und_G
+    ky = ky_und_G
+
+
+    allocate(spx0_offset(iNumberElectrons_G), spy0_offset(iNumberElectrons_G))
+    allocate(sx_offset(iNumberElectrons_G),sy_offset(iNumberElectrons_G))
+
+!     Get offsets for start of undulator
+
+    sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
+                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
+                           fx_G, fy_G, sZ)
+
+    sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
+                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
+                           fx_G, fy_G, sZ)
+
+
+    if (zUndType_G == 'curved') then
+
+! used for curved pole puffin, the 2 order expansion of cosh and sinh
+! allows us to simply add a correction term to the intial position
+! when calculating initial conditions, this may need change eventually
+
+
+        spx0_offset = pxOffset(sZ, srho_G, fy_G) & 
+            - 0.5_WP * kx**2 * sElX_G**2 &
+            -  0.5_WP * kY**2 * sElY_G**2
+     
+        spy0_offset = -1_wp *  &
+                      ( pyOffset(sZ, srho_G, fx_G) &
+                      - kx**2 *  sElX_G  * sElY_G)
+
+
+    else if (zUndType_G == 'planepole') then 
+
+! plane pole initial conditions are calculated as a 2nd order expansion
+! and added as a correction term.
+
+
+
+        spx0_offset = pxOffset(sZ, srho_G, fy_G) & 
+            - 0.5_WP * (sEta_G / (4 * sRho_G**2)) * sElX_G**2 
+
+        spy0_offset = -1_wp * &
+                      pyOffset(sZ, srho_G, fx_G) 
+
+
+    else
+
+! "normal" PUFFIN case with no off-axis undulator
+! field variation
+
+
+        spx0_offset = pxOffset(sZ, srho_G, fy_G) 
+
+        spy0_offset = -1.0_wp * & 
+                     pyOffset(sZ, srho_G, fx_G) 
+
+
+    end if
+
+
+!     Add on new offset to initialize beam for undulator module
 
 
     sElX_G = sElX_G + sx_offset
@@ -297,32 +411,44 @@ contains
     sElPY_G = sElPY_G + spy0_offset
 
 
-    DEALLOCATE(spx0_offset,spy0_offset,sx_offset,sy_offset)
+    deallocate(spx0_offset,spy0_offset,sx_offset,sy_offset)
 
-!     Work out new effective eta
-
-
-    beta_av = SQRT(sGammaR_G**2.0_WP - 1.0_WP - (saw_G)**2.0_WP) / &
-                   sGammaR_G
-
-    sEta_eff = (1.0_WP - beta_av) / beta_av
-
-!     Ratio between effective and initial etas:-
-
-    m2col = sEta_eff / sEta_G
-
-
-  !END IF
-
-
-  sStepSize = delmz(i+1) ! Change step size - make sure is still integer
-                         ! of 4pirho in input file!!
+  end subroutine matchIn
 
 
 
-  END SUBROUTINE disperse	
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! #########################################################
+
+
+  subroutine initUndulator(iM)
+
+    integer(kind=ip), intent(in) :: iM
+
+! Want to update using arrays describing each module...
+
+!     Update undulator parameter:
+
+    n2col0 = mf(i+1)
+    n2col = mf(i+1)
+    undgrad = tapers(i+1)
+    sz0 = sz
+
+
+
+!     Update stepsize    
+
+    sStepSize = delmz(i+1) ! Change step size - make sure is still integer
+                           ! of 4pirho in input file!!
+
+
+
+
+  end subroutine initUndulator
+
+
+
+! #########################################################
 	
   FUNCTION lineCount(fname)
 

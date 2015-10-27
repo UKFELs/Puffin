@@ -73,8 +73,8 @@ contains
 
 !     Need to match into undulator
 
-!    call initUndulator(iM, sZ)
-!    call matchIn(sV, sZ)
+  call initUndulator(iM)
+  call matchIn(sZ)
 
 
 
@@ -182,7 +182,7 @@ contains
 
 
 
-
+call diffractNT(sA, iStep)
 
 
 
@@ -211,42 +211,6 @@ contains
     
       end if
   
-    end if
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-!                 If at end of current undulator module, 
-!      propagate electron beam through a dispersive chicane, if present,
-!                 and move to the next undulator module.
-
-    if (qMod_G) then
-       if (sZ>(zMod(modCount)-sStepsize/100.0_WP)) then
-  
-          if (modCount /= ModNum) then
-  
-            call disperse(D(modCount),delta(modCount),&
-                     modCount,sStepSize,sZ)
-  
-          end if
-  
-  
-  
-          qWDisp = .true.
-          modCount=modCount+1_IP   !      Update module count
-       
-       end if
-    
     end if
 
 
@@ -325,6 +289,8 @@ contains
   end do   ! End of integration loop
 
 
+
+  call matchOut(sZ)
 
 
   deallocate(sAr)

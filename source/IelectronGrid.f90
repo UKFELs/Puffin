@@ -268,63 +268,6 @@ CONTAINS
     DEALLOCATE(tconv)
 
 
-    kx = kx_und_G
-    ky = ky_und_G
-
-
-
-
-    if (zUndType_G == 'curved') then
-
-! used for curved pole puffin, the 2 order expansion of cosh and sinh
-! allows us to simply add a correction term to the intial position
-! when calculating initial conditions, this may need change eventually
-
-
-        sElPX_G = sElPX_G + &
-        pxOffset(sZ, srho_G, fy_G) & 
-        - 0.5_WP * kx**2 * sElX_G**2 &
-        -  0.5_WP * kY**2 * sElY_G**2
-     
-        sElPY_G = sElPY_G &
-        + pyOffset(sZ, srho_G, fx_G) &
-        - kx**2 *  sElX_G  * sElY_G
-
-
-
-
-
-    else if (zUndType_G == 'planepole') then 
-
-! plane pole initial conditions are calculated as a 2nd order expansion
-! and added as a correction term.
-
-
-
-        sElPX_G = sElPX_G + &
-        pxOffset(sZ, srho_G, fy_G) & 
-        - 0.5_WP * (sEta_G / (4 * sRho_G**2)) * sElX_G**2 
-
-        sElPY_G = sElPY_G &
-        + pyOffset(sZ, srho_G, fx_G) 
-
-
-    else
-
-! "normal" PUFFIN case with no off-axis undulator
-! field variation
-
-
-        sElPX_G = sElPX_G &
-        + pxOffset(sZ, srho_G, fy_G) 
-
-        sElPY_G = sElPY_G &
-        + pyOffset(sZ, srho_G, fx_G) 
-
-
-    end if
-
-
 !     We currently have gamma -
 !     need to change to gamma / gamma_r
 
