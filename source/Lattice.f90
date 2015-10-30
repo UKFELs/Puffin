@@ -21,6 +21,9 @@ integer(kind=ip), parameter :: iUnd = 1_ip, &
                                iQuad = 4_ip
 
 integer(kind=ip), allocatable :: iElmType(:)
+
+integer(kind=ip) :: iUnd_cr, iChic_cr, iDrift_cr, iQuad_cr    ! Counters for each element type
+
 !integer(kind=ip) :: inum_latt_elms
 
 contains
@@ -66,8 +69,10 @@ contains
 !    slippage in chicane in z-bar, 2 dispersive constants, 
 !    number of modules
 
+      allocate(iElmType(2*modNum))   !  For now, using old lattice file format...
       call readLatt(lattFile,zMod,delta,D,Dfact,ModNum,taper,sRho,sStepSize)
       ModCount = 1
+      modNum = 2_ip * modNum
 
     else 
 
@@ -159,6 +164,9 @@ contains
       zMod(i) = zMod(i-1)+2.0_WP*pi*c1*real(nw,KIND=WP) 
     end if
 
+    iElmType(2*i-1) = iUnd
+    iElmType(2*i) = iChic
+
   end do
 	
   close(1, STATUS='KEEP')
@@ -171,11 +179,17 @@ contains
   sStepSize =  delmz(1)
   taper = tapers(1)
 
+  iUnd_cr=1_ip
+  iChic_cr=1_ip
+  iDrift_cr=1_ip
+  iQuad_cr=1_ip
+
+
   END SUBROUTINE readLatt
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  SUBROUTINE disperse(D,delta,i,sStepSize,sZ)
+  SUBROUTINE disperse(iL)
 
   IMPLICIT NONE
 
@@ -193,34 +207,18 @@ contains
 !                  dispersive strength factor of the chicane
 ! delta            Slippage in resonant wavelengths
 	
-  REAL(KIND=WP), INTENT(IN) :: D,delta
-  INTEGER(KIND=IP), INTENT(IN) :: i
-  REAL(KIND=WP), INTENT(OUT) :: sStepSize
-  REAL(KIND=WP), INTENT(INOUT) :: sZ
-
-  INTEGER(KIND=IP)  ::  e_tot
+  INTEGER(KIND=IP), INTENT(IN) :: iL
  
-  REAL(KIND=WP), ALLOCATABLE :: sgamma_j(:),spx0_offset(:),spy0_offset(:), &
-                                sx_offset(:),sy_offset(:)
-
-  REAL(KIND=WP)     :: shift_corr, awo, sx_offseto, sx_offsetn, &
-                       sy_offseto, sy_offsetn, sZ_new, spx0_offseto, &
-                       spy0_offseto, spx0_offsetn, spy0_offsetn, &
-                       beta_av, sEta_eff, sl1
-
   LOGICAL :: qOKL
-
-
-
-  e_tot = iGloNumElectrons_G
-
 
 !     Propagate through chicane
 
-  sElZ2_G = sElZ2_G - 2.0_WP * D *  &
-               (sElGam_G - 1_wp) &
-               + delta
 
+  sElZ2_G = sElZ2_G - 2.0_WP * D(iChic_cr) *  &
+               (sElGam_G - 1_wp) &
+               + delta(iChic_cr)
+
+  iChic_cr = iChic_cr + 1_ip
 
 
   END SUBROUTINE disperse	

@@ -377,6 +377,8 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
 !!!!!!!!!! TEMP
 !!!!!!!!!! CENTERING BEAM IN DX/DZ, DY/DZ = 0
 
+  offsets(iX_CG) = 0.0_WP
+  offsets(iY_CG) = 0.0_WP
   offsets(iPX_CG) = 0.0_WP
   offsets(iPY_CG) = 0.0_WP
   

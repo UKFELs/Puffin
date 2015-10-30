@@ -297,6 +297,7 @@ call diffractNT(sA, iStep)
   deallocate(Ar_local)
 
 
+  iUnd_cr = iUnd_cr + 1_ip
 
 end subroutine UndSection
 
