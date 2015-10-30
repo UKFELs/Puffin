@@ -73,7 +73,7 @@ contains
 
 !     Need to match into undulator
 
-  call initUndulator(iM)
+  call initUndulator(iUnd_cr, sZ)
   call matchIn(sZ)
 
 
@@ -96,6 +96,8 @@ contains
 
   qDiffrctd = .false.
   qWDisp = .false.
+
+  start_step = 1_ip  ! ...TEMP...
 
   if (start_step==1_IP) then
 
@@ -182,7 +184,7 @@ contains
 
 
 
-call diffractNT(sA, iStep)
+!call diffractNT(sA, iStep)
 
 
 
@@ -283,7 +285,7 @@ call diffractNT(sA, iStep)
 
 
 
-    if (modCount > ModNum) EXIT
+!    if (modCount > ModNum) EXIT
 
 
   end do   ! End of integration loop

@@ -64,6 +64,7 @@ contains
 
       allocate(D(ModNum),zMod(ModNum),delta(modNum))
       allocate(mf(ModNum),delmz(ModNum),tapers(modNum))
+      allocate(nSteps_arr(ModNum))
 
 !    Latt file name, number of wigg periods converted to z-bar,
 !    slippage in chicane in z-bar, 2 dispersive constants, 
@@ -79,6 +80,7 @@ contains
       modNum = 1
       allocate(iElmType(modNum))
       iElmType(1) = iUnd
+      iUnd_cr = 1_ip
 
     end if
 
@@ -157,6 +159,8 @@ contains
 
 !     Calculate cumulative interaction length of modules
 
+    nSteps_arr(i) = nw * nperlam(i)
+
     if (i==1) then  
       zMod(i) = real(nw,KIND=WP)
       zMod(i) = 2.0_WP*pi*c1*zMod(i)
@@ -231,9 +235,9 @@ contains
 
 
 
-  subroutine matchOut()
+  subroutine matchOut(sZ)
 
-
+    real(kind=wp), intent(in) :: sZ
 
     real(kind=wp), allocatable :: spx0_offset(:),spy0_offset(:), &
                                   sx_offset(:),sy_offset(:)
@@ -329,7 +333,7 @@ contains
 
   subroutine matchIn(sZ)
 
-
+    real(kind=wp), intent(in) :: sZ
 
     real(kind=wp), allocatable :: spx0_offset(:),spy0_offset(:), &
                                   sx_offset(:),sy_offset(:)
@@ -419,27 +423,28 @@ contains
 ! #########################################################
 
 
-  subroutine initUndulator(iM)
+  subroutine initUndulator(iM, sZ)
 
     integer(kind=ip), intent(in) :: iM
+    real(kind=wp), intent(in) :: sZ
 
 ! Want to update using arrays describing each module...
 
 !     Update undulator parameter:
 
-    n2col0 = mf(i+1)
-    n2col = mf(i+1)
-    undgrad = tapers(i+1)
+    n2col0 = mf(iM)
+    n2col = mf(iM)
+    undgrad = tapers(iM)
     sz0 = sz
 
 
 
 !     Update stepsize    
 
-    sStepSize = delmz(i+1) ! Change step size - make sure is still integer
+    sStepSize = delmz(iM) ! Change step size - make sure is still integer
                            ! of 4pirho in input file!!
 
-
+    nSteps = nSteps_arr(iM)
 
 
   end subroutine initUndulator
