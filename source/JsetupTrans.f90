@@ -88,7 +88,7 @@ SUBROUTINE MatchBeams(srho,sEmit_n,saw, &
 ! sBetaz             longitudinal velocity normalized to c
 ! qOKL               Local error flag
 
-  real(kind=wp) :: sbetaz, seta, sKbeta
+  real(kind=wp) :: sbetaz, seta, sKbeta, sKappa, aw_rms
   LOGICAL :: qOKL
   
 !     Set error flag
@@ -101,25 +101,31 @@ SUBROUTINE MatchBeams(srho,sEmit_n,saw, &
 
   if (zUndType == 'curved') then
 
-    aw_rms =  aw / sqrt(2.0_wp)
+    aw_rms =  saw / sqrt(2.0_wp)
+    sKbeta = aw_rms / 2.0_WP / sqrt(2.0_wp)/ sRho / sgamr
 
   else if (zUndType == 'planepole') then
 
-    aw_rms =  aw / sqrt(2.0_wp)
+    aw_rms =  saw / sqrt(2.0_wp)
+    sKbeta = aw_rms / 2.0_WP / sRho / sgamr
 
   else if (zUndType == 'helical') then
 
-    aw_rms = aw
+    aw_rms = saw
+    sKbeta = aw_rms / 2.0_WP / sqrt(2.0_wp) / sRho / sgamr
 
   else
 
-    aw_rms = aw * SQRT(fx**2 + fy**2) / sqrt(2.0_wp)
+    aw_rms = saw * SQRT(ux**2 + uy**2) / sqrt(2.0_wp)
+    sKbeta = aw_rms / 2.0_WP / sFF / sRho / sgamr
 
   end if
 
 
 
-  sKbeta = aw_rms / 2.0_WP / sFF / sRho / sgamr
+
+  
+  sKappa = saw / 2.0_wp / sRho / sgamr
 
   sbetaz = SQRT(sgamr**2.0_WP - 1.0_WP - (aw_rms)**2.0_WP) / &
                  sgamr
@@ -130,11 +136,11 @@ SUBROUTINE MatchBeams(srho,sEmit_n,saw, &
 !     Matching 1st beam only for now.....
 
   CALL MatchBeam(srho,sEmit_n(1),sKbeta, &
-                 sFF,sEta,&
+                 sFF,sEta,sKappa, &
                  iNNE(1,:),sLenE(1,:),sSigE(1,:), &
                  sSigF,iNNF,sLenF,&
                  sDelF,iRNX,iRNY, &
-                 zUndType,ux,uy,qOKL)
+                 zUndType,qOKL)
 
   IF (.NOT. qOKL) GOTO 1000
   
@@ -152,11 +158,11 @@ END SUBROUTINE MatchBeams
 
 
 SUBROUTINE MatchBeam(srho,sEmit_n,sKbeta, &
-                      sFF,sEta,&
+                      sFF,sEta,sKappa, &
                       iNNE,sLenE,sSigE, &
                       sSigF,iNNF,sLenF,&
                       sDelF,iRNX,iRNY, &
-                      zUndType,ux,uy,qOK)
+                      zUndType,qOK)
 
 ! Subroutine which matches the beam in x and y
 ! and defines the inner field nodes to use in
@@ -190,8 +196,7 @@ SUBROUTINE MatchBeam(srho,sEmit_n,sKbeta, &
 ! qOK                 Error flag
 
   REAL(KIND=WP), INTENT(IN) :: srho,sEmit_n,sKbeta, &
-                                 sFF,sEta, &
-                                 ux, uy
+                                 sFF,sEta, sKappa
 
   INTEGER(KIND=IP), INTENT(IN) :: iNNF(:),iNNE(:)
 
@@ -217,8 +222,8 @@ SUBROUTINE MatchBeam(srho,sEmit_n,sKbeta, &
 !     Get matched beam sigma in x and y
                         
   CALL GetMBParams(srho,sEmit_n,sKbeta,&
-                   sFF,sEta,sLenE,sSigE, &
-                   sSigF,ux,uy,zUndType,qOKL)
+                   sFF,sEta,sKappa,sLenE,sSigE, &
+                   sSigF,zUndType,qOKL)
 
   IF (.NOT. qOKL) GOTO 1000
 
@@ -371,8 +376,8 @@ END SUBROUTINE GetInnerNodes
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE GetMBParams(srho,sEmit_n,k_beta,sFF,sEta,sLenE, &
-                        sSigE,sSigF,ux,uy,zUndType,qOK)
+SUBROUTINE GetMBParams(srho,sEmit_n,k_beta,sFF,sEta,sKappa,sLenE, &
+                        sSigE,sSigF,zUndType,qOK)
 
     IMPLICIT NONE
 
@@ -398,11 +403,10 @@ SUBROUTINE GetMBParams(srho,sEmit_n,k_beta,sFF,sEta,sLenE, &
   REAL(KIND=WP), INTENT(IN)    :: srho	      
   REAL(KIND=WP), INTENT(IN)    :: sEmit_n	      
   REAL(KIND=WP), INTENT(IN)    :: k_beta	      
-  REAL(KIND=WP), INTENT(IN)    :: sFF,sEta
+  REAL(KIND=WP), INTENT(IN)    :: sFF,sEta,sKappa
   REAL(KIND=WP), INTENT(INOUT) :: sLenE(:)	   
   REAL(KIND=WP), INTENT(INOUT) :: sSigE(:)    
   REAL(KIND=WP), INTENT(INOUT) :: sSigF(:)
-  REAL(KIND=WP), INTENT(IN)    :: ux, uy	
   character(32_IP),  intent(in)  :: zUndType
   LOGICAL,       INTENT(OUT)   :: qOK
 
@@ -426,21 +430,10 @@ SUBROUTINE GetMBParams(srho,sEmit_n,k_beta,sFF,sEta,sLenE, &
 
 !     p spread
 
-  if (zUndType == 'curved' .or. zUndType == 'planepole') then
+  sSigE(iPX_CG:iPY_CG) = 18.0_WP * &
+            SQRT(sEta) / 2.0_wp / sKappa * sEmit_n / &
+            sSigE(iX_CG:iY_CG)
 
-    sSigE(iPX_CG:iPY_CG) = 18.0_WP*sEmit_n* &
-              SQRT(ux**2 + uy**2) / (2.0_WP * SQRT(2.0_WP)) * &
-              SQRT(sEta) / &
-              (sFF*k_beta*sSigE(iX_CG:iY_CG))
-
-  else
-
-    sSigE(iPX_CG:iPY_CG) = 18.0_WP*sEmit_n* &
-              SQRT(ux**2 + uy**2) / (2.0_WP * SQRT(2.0_WP)) * &
-              SQRT(sEta) / &
-              (sFF*k_beta*sSigE(iX_CG:iY_CG))
-
-  end if
 !     The sigma values above are the rms radii
 !     Need to change to sigma of current distribution
 !     Here it is assumed lex=6sigma
