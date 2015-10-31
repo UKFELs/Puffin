@@ -29,7 +29,7 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
                          sRNX,sRNY, &
                          sElmLen,&
                          fx,fy,sFocusFactor,taper,sFiltFrac, &
-                         dStepFrac,sBeta,zUndType,qFormatted, qSwitch,qOK)
+                         dStepFrac,sBeta,zUndType,qFormatted, qSwitch, qOK)
 
     IMPLICIT NONE
 
@@ -342,8 +342,9 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
 
     logical, intent(in) :: qSimple
     character(*), intent(in) :: fname(:)
-    REAL(KIND=WP),     INTENT(IN)    :: sQe(:), gamma_d(:), chirp(:)
-    REAL(KIND=WP),     INTENT(IN)    :: mag(:), fr(:)
+    REAL(KIND=WP),     INTENT(IN)    :: sQe(:), gamma_d(:)
+    REAL(KIND=WP),     INTENT(INOUT)    ::  chirp(:)
+    REAL(KIND=WP),     INTENT(INOUT)    :: mag(:), fr(:)
     INTEGER(KIND=IP),  INTENT(IN)    :: NE(:,:),nbeams
     LOGICAL,           INTENT(IN)    :: noise
     REAL(KIND=WP),     INTENT(IN)    :: Z

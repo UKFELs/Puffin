@@ -60,7 +60,8 @@ CONTAINS
     REAL(KIND=WP), INTENT(INOUT):: beamCenZ2(:)
     INTEGER(KIND=IP), INTENT(IN):: iNMP(:,:)
     LOGICAL, INTENT(IN)         :: q_noise
-    REAL(KIND=WP), INTENT(IN)	:: sZ, chirp(:), mag(:), fr(:)
+    REAL(KIND=WP), INTENT(IN)   :: sZ
+    REAL(KIND=WP), INTENT(INOUT) :: chirp(:), mag(:), fr(:)
 
 
     INTEGER(KIND=IP), INTENT(IN) :: nbeams
@@ -227,8 +228,9 @@ CONTAINS
     DEALLOCATE(s_tmp_macro,s_tmp_Vk)
 
     CALL removeLow(Tmp_chibar, Tmp_Normchi, b_sts, b_ends, sElectronThreshold, &
-                   chirp,mag,fr,nbeams,x_tmpcoord,y_tmpcoord,z2_tmpcoord,px_tmpvector,&
+                   nbeams,x_tmpcoord,y_tmpcoord,z2_tmpcoord,px_tmpvector,&
                    py_tmpvector, pz2_tmpvector,totalmps_b,beamCenZ2)
+
 
     DEALLOCATE(x_tmpcoord)
     DEALLOCATE(y_tmpcoord)
@@ -266,69 +268,8 @@ CONTAINS
     DEALLOCATE(tconv)
 
 
-    kx = kx_und_G
-    ky = ky_und_G
-
-
-
-
-    if (zUndType_G == 'curved') then
-
-! used for curved pole puffin, the 2 order expansion of cosh and sinh
-! allows us to simply add a correction term to the intial position
-! when calculating initial conditions, this may need change eventually
-
-
-        sElPX_G = sElPX_G + &
-        pxOffset(sZ, srho_G, fy_G) & 
-        - 0.5_WP * kx**2 * sElX_G**2 &
-        -  0.5_WP * kY**2 * sElY_G**2
-     
-        sElPY_G = sElPY_G &
-        + pyOffset(sZ, srho_G, fx_G) &
-        - kx**2 *  sElX_G  * sElY_G
-
-
-
-
-
-    else if (zUndType_G == 'planepole') then 
-
-! plane pole initial conditions are calculated as a 2nd order expansion
-! and added as a correction term.
-
-
-
-        sElPX_G = sElPX_G + &
-        pxOffset(sZ, srho_G, fy_G) & 
-        - 0.5_WP * (sEta_G / (4 * sRho_G**2)) * sElX_G**2 
-
-        sElPY_G = sElPY_G &
-        + pyOffset(sZ, srho_G, fx_G) 
-
-
-    else
-
-! "normal" PUFFIN case with no off-axis undulator
-! field variation
-
-
-        sElPX_G = sElPX_G &
-        + pxOffset(sZ, srho_G, fy_G) 
-
-        sElPY_G = sElPY_G &
-        + pyOffset(sZ, srho_G, fx_G) 
-
-
-    end if
-
-
-
-!     We currently have gamma in the p2 position array -
+!     We currently have gamma -
 !     need to change to gamma / gamma_r
-
-!    sElGam_G = getP2(sElGam_G, sElPX_G,&
-!                               sElPY_G, sEta_G, sAw_G)
 
     sElGam_G = sElGam_G / sGammaR_G
 
@@ -337,6 +278,27 @@ CONTAINS
 !     Sum the local num of macroparticles to a global number
 
     call sum_mpi_int14(iNumberElectrons_G,iGloNumElectrons_G)
+
+    mag(:) = mag(:) / sGammaR_G
+    chirp(:) = chirp(:) / sGammaR_G
+
+    do b_ind = 1, nbeams
+  
+      call addChirp(sElGam_G(b_sts(b_ind):b_ends(b_ind)), &
+                    sElZ2_G(b_sts(b_ind):b_ends(b_ind)), &
+                    b_ends(b_ind) - b_sts(b_ind) + 1, beamCenZ2(b_ind), &
+                    chirp(b_ind))
+  
+  
+      call addModulation(sElGam_G(b_sts(b_ind):b_ends(b_ind)), &
+                         sElZ2_G(b_sts(b_ind):b_ends(b_ind)), &
+                         b_ends(b_ind) - b_sts(b_ind) + 1, &
+                         mag(b_ind), fr(b_ind))
+  
+
+    end do
+
+
 
 !     Set error flag and exit         
 
@@ -415,6 +377,8 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
 !!!!!!!!!! TEMP
 !!!!!!!!!! CENTERING BEAM IN DX/DZ, DY/DZ = 0
 
+  offsets(iX_CG) = 0.0_WP
+  offsets(iY_CG) = 0.0_WP
   offsets(iPX_CG) = 0.0_WP
   offsets(iPY_CG) = 0.0_WP
   

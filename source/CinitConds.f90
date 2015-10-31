@@ -181,7 +181,8 @@ contains
   FUNCTION pyOffset(z, rho, ux)
 
 ! Equation for the initial electron py offset due to
-! the undulator field.  
+! the undulator field.  (NOTE:- py offset, NOT
+! IM(pperp) offset)
 ! 
 !               ARGUMENTS
 

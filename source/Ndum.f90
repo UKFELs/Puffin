@@ -91,7 +91,7 @@ end subroutine diffractIM
 
 
 subroutine writeIM(sA, Ar_local, sZ, &
-                   zDataFileName, iStep, iWriteNthSteps, &
+                   zDataFileName, iStep, iCstep, iWriteNthSteps, &
                    lrecvs, ldispls, &
                    iIntWriteNthSteps, nSteps, qWDisp, qOK)
 
@@ -108,7 +108,7 @@ subroutine writeIM(sA, Ar_local, sZ, &
 
   real(kind=wp), intent(inout) :: sA(:), Ar_local(:), sZ
   integer(kind=ip), intent(in) :: iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps
-  integer(kind=ip), intent(in) :: lrecvs(:), ldispls(:)
+  integer(kind=ip), intent(in) :: lrecvs(:), ldispls(:), iCstep
   character(32_IP), intent(in) :: zDataFileName
   logical, intent(inout) :: qWDisp
   logical, intent(inout) :: qOK
@@ -124,7 +124,7 @@ subroutine writeIM(sA, Ar_local, sZ, &
 
   if (wrMeth_G == 'sdds') then
 
-    call wr_sdds(sA, sZ, istep, tArrayA, tArrayE, tArrayZ, &
+    call wr_sdds(sA, sZ, iCstep, tArrayA, tArrayE, tArrayZ, &
                  iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
                  zDataFileName, qWDisp, qWriteFull, &
                  qWriteInt, qOK)

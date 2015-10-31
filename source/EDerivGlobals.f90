@@ -166,6 +166,9 @@ real(kind=wp)       :: Dfact  ! Dispersion strength factor for chicane
 real(kind=wp), allocatable    :: D(:), delta(:), zMod(:), &
                                  mf(:), delmz(:), tapers(:)
 
+integer(kind=ip), allocatable :: nSteps_arr(:)
+integer(kind=ip) :: iCsteps  ! Cumulative steps
+
 integer(kind=ip)    :: ModNum, ModCount
 
 

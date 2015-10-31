@@ -12,9 +12,7 @@ use sddsPuffin
 use lattice
 use Stiffness
 use Setup
-use RK4int
-use dumpFiles
-use dummyf
+use undulator
 
 !!!!!!!!!!!!!!!!!!! Puffin Version 1.4.4 !!!!!!!!!!!!!!!!!!!
 !
@@ -53,53 +51,15 @@ use dummyf
 
 implicit none
 
-real(kind=wp), allocatable  :: sA(:), sAr(:), Ar_local(:)
-real(kind=wp)    :: sZ, nextDiff
+real(kind=wp), allocatable  :: sA(:)
+real(kind=wp)    :: sZ
+integer(kind=ip) :: iL
 
-logical          :: qOKL, qDiffrctd, qWDisp
+logical          :: qOKL
 
 !           Read in data file and initialize system
 
 call init(sA,sZ,qOKL)
-
-allocate(sAr(2*ReducedNX_G*ReducedNY_G*NZ2_G))
-allocate(Ar_local(2*local_rows))
-
-!!!! TEMP - NEEDS TIDIED, SHOULD OPTIMIZE
-
-  if (tTransInfo_G%qOneD) then
-     Ar_local(1:local_rows)=sA(fst_row:lst_row)
-     Ar_local(local_rows+1:2*local_rows)=&
-          sA(fst_row+iNumberNodes_G:lst_row+iNumberNodes_G)
-  else
-     call getAlocalFL(sA,Ar_local)
-  end if
-
-call local2globalA(Ar_local,sAr,mrecvs,mdispls,tTransInfo_G%qOneD)
-
-qDiffrctd = .false.
-qWDisp = .false.
-
-if (start_step==1_IP) then
-
-  iCount = 0_IP
-
-else
-
-  iCount = mod(start_step-1_IP,iWriteNthSteps)
-
-end if
-
-
-
-
-if (start_step == 1) then
-  sStep = diffStep*0.5_WP ! Integration step size for first diffraction step
-  nextDiff = 0.0_WP
-else 
-  sStep = diffStep
-  nextDiff = ceiling(sZ/diffStep) * diffStep
-end if
 
 
 
@@ -118,206 +78,35 @@ if (tProcInfo_G%qRoot) WRITE(137,*) ' starting..... '
 
 !!!!!!!!!!!!!!!!!!!!!!!  BEGIN INTEGRATION !!!!!!!!!!!!!!!!!!!!!!!!
 
-do iStep = start_step, nSteps
-  
 
 
 
+do iL = 1, modNum
 
 
-!   First step of split-step method:- field diffraction only
 
-  if (qDiffraction_G) then
 
-    if (iStep==0) then
-
-      call diffractIM(sA, sAr, Ar_local, local_rows, &
-                      diffStep*0.5_WP, frecvs, fdispls, lrecvs, ldispls, &
-                      qDiffrctd, qOKL)
-
-      nextDiff = nextDiff + diffStep
-
-    end if
-
-  end if
-
-
-
-
-
-
-!   Second half of split step method: electron propagation
-!                    and field driving.
-
-  if (qElectronsEvolve_G .OR. qFieldEvolve_G &
-       .OR. qElectronFieldCoupling_G) then
-
-     call rk4par(sAr,Ar_local,sZ,sStepSize,mrecvs,mdispls,qDiffrctd)
-
-  end if 
-
-
-
-
-
-
-!                  Increment z position  
-!       (we now have solution at zbar + sStepsize) 
-
-  sZ = sZ + sStepSize
-
-
-
-
-
-
-
-
-
-
-
-!   diffract field to complete diffraction step
-
-  if (qDiffraction_G) then
-
-    if ((sZ>(nextDiff-sStepsize/100.0_WP)) .or. (iStep == nSteps))  then
-
-      if ((iStep == nSteps) .or.  qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps, &
-                   qWDisp) ) then
-  
-        call diffractIM(sA, sAr, Ar_local, local_rows, &
-                        diffStep * 0.5_wp, frecvs, fdispls, lrecvs, ldispls, &
-                        qDiffrctd, qOKL)
-
-      else
-  
-        call diffractIM(sA, sAr, Ar_local, local_rows, &
-                        diffStep, frecvs, fdispls, lrecvs, ldispls, &
-                        qDiffrctd, qOKL)
-  
-      end if
-
-      nextDiff = nextDiff + diffStep
-  
-    end if
-
-  end if
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-!                 If at end of current undulator module, 
-!      propagate electron beam through a dispersive chicane, if present,
-!                 and move to the next undulator module.
-
-  if (qMod_G) then
-     if (sZ>(zMod(modCount)-sStepsize/100.0_WP)) then
-
-        if (modCount /= ModNum) then
-
-          call disperse(D(modCount),delta(modCount),&
-                   modCount,sStepSize,sZ)
-
-        end if
-
-
-
-        qWDisp = .true.
-        modCount=modCount+1_IP   !      Update module count
-     
-     end if
-  
-  end if
-
-
-
-
-
-!                   Write result to file
+  if (iElmType(iL) == iUnd) then 
  
-  iCount = iCount + 1_IP
-  
-
-
-
-
-
-if ( qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps, &
-             qWDisp) ) then
-
-  call writeIM(sA, Ar_local, sZ, &
-               zDataFileName, iStep, iWriteNthSteps, &
-               lrecvs, ldispls, &
-               iIntWriteNthSteps, nSteps, qWDisp, qOKL)
-
-
-  if (qDiffraction_G) then
-
-!             If field diffraction occurred this step, need to complete it....  
-!             ...the diffraction only diffracts a half step if data is going
-!             to be written (to match up the split-step data)
-
-     if (qDiffrctd) call diffractIM(sA, sAr, Ar_local, local_rows, &
-                      diffStep * 0.5_wp, frecvs, fdispls, lrecvs, ldispls, &
-                      qDiffrctd, qOKL)
-
-  end if
-
-    if (qWDisp) qWDisp = .false.
-
-  end if
-
-
-  
-  call Get_time(end_time)
-  
-  if (tProcInfo_G%QROOT ) then
-     print*,' finished step ',iStep, end_time-start_time
-     WRITE(137,*) ' finished step ',iStep, end_time-start_time
+    call UndSection(iL, sA, sZ)
+ 
+  else if (iElmType(iL) == iQuad) then
+ 
+!    call Quad
+ 
+  else if (iElmType(iL) == iChic) then
+ 
+    call disperse(iL)
+ 
+  else if (iElmType(iL) == iDrift) then
+ 
+!    call drift
+ 
   end if
   
 
 
-
-
-
-
-
-!                Dump data when time comes
-
-  if (mod(iStep,iDumpNthSteps)==0) then
-     if (tProcInfo_G%qRoot) PRINT*, 'Dumping data in case of crash'
-     
-     call innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
-     
-     if (qDump_G) call DUMPDATA(sA,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
-          iNumberElectrons_G,sZ,istep,tArrayA(1)%tFileType%iPage)
-  end if
-
-
-
-
-
-
-  if (modCount > ModNum) EXIT
-
-
-end do   ! End of integration loop
-
-
-
-
-
+end do
 
 
 call cleanup(sA, sZ)   !     Clear arrays and stucts used during integration

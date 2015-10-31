@@ -123,7 +123,7 @@ END SUBROUTINE removeLowNC
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 SUBROUTINE removeLow(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
-                     chirp,mag,fr,nbeams,x_tmpcoord,y_tmpcoord,z2_tmpcoord,px_tmpvector,&
+                     nbeams,x_tmpcoord,y_tmpcoord,z2_tmpcoord,px_tmpvector,&
                      py_tmpvector, pz2_tmpvector,totalmps_b,&
                      sZ2_center)
                    
@@ -139,9 +139,8 @@ SUBROUTINE removeLow(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
                                x_tmpcoord(:), y_tmpcoord(:), &
                                z2_tmpcoord(:), px_tmpvector(:),&
                                py_tmpvector(:), pz2_tmpvector(:)
-  INTEGER(KIND=IPL), INTENT(IN) :: b_sts(:), b_ends(:)
+  INTEGER(KIND=IPL), INTENT(INOUT) :: b_sts(:), b_ends(:)
   INTEGER(KIND=IP), INTENT(IN) :: nbeams
-  REAL(KIND=WP), INTENT(IN) :: chirp(:), mag(:), fr(:)
   REAL(KIND=WP), INTENT(IN) :: sElectronThreshold
   INTEGER(KIND=IPL), INTENT(IN) :: totalmps_b(:)
   REAL(KIND=WP), INTENT(IN) :: sZ2_center(:)
@@ -201,17 +200,10 @@ SUBROUTINE removeLow(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
 
     DEALLOCATE(ikeepos,iendpos)
 
-!     Add linear chirp to the beam....TEMP
-
-
-    call addChirp(sElGam_G(ist:ien), sElZ2_G(ist:ien), &
-                  b_keepn(b_ind), sZ2_center(b_ind), chirp(b_ind))
-
-
-    call addModulation(sElGam_G(ist:ien), sElZ2_G(ist:ien), &
-                       b_keepn(b_ind), mag(b_ind), fr(b_ind))
-
     prev = prev + totalmps_b(b_ind)
+
+    b_sts(b_ind) = ist
+    b_ends(b_ind) = ien
 
   END DO
 
