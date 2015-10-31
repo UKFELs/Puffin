@@ -133,7 +133,7 @@ contains
   do iStep = start_step, nSteps
   
 
-
+  iCsteps = iCsteps + 1_ip
 
 
 
@@ -232,7 +232,7 @@ contains
                qWDisp) ) then
   
     call writeIM(sA, Ar_local, sZ, &
-                 zDataFileName, iStep, iWriteNthSteps, &
+                 zDataFileName, iStep, iCsteps, iWriteNthSteps, &
                  lrecvs, ldispls, &
                  iIntWriteNthSteps, nSteps, qWDisp, qOKL)
   
@@ -258,8 +258,8 @@ contains
     call Get_time(end_time)
     
     if (tProcInfo_G%QROOT ) then
-       print*,' finished step ',iStep, end_time-start_time
-       WRITE(137,*) ' finished step ',iStep, end_time-start_time
+       print*,' finished step ',iCsteps, end_time-start_time
+       WRITE(137,*) ' finished step ',iCsteps, end_time-start_time
     end if
   
 

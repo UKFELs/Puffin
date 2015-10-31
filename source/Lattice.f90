@@ -83,6 +83,8 @@ contains
       iUnd_cr = 1_ip
 
     end if
+   
+   iCsteps = 0_ip
 
   end subroutine setupMods
 
