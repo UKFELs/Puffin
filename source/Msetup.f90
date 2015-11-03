@@ -403,7 +403,7 @@ MODULE Setup
 
   if (qWrite)  call wr_sdds(sA, sZ, 0, tArrayA, tArrayE, tArrayZ, &
                  iIntWriteNthSteps, iWriteNthSteps, .true., &
-                 zDataFileName, .false., .true., .true., qOK)
+                 zDataFileName, .true., .true., qOK)
 
 !  if (qWrite) call wdfs(sA, sZ, 0, tArrayA, tArrayE, tArrayZ, &
 !                        iIntWriteNthSteps, iWriteNthSteps, &

@@ -93,7 +93,7 @@ end subroutine diffractIM
 subroutine writeIM(sA, Ar_local, sZ, &
                    zDataFileName, iStep, iCstep, iWriteNthSteps, &
                    lrecvs, ldispls, &
-                   iIntWriteNthSteps, nSteps, qWDisp, qOK)
+                   iIntWriteNthSteps, nSteps, qOK)
 
 
 ! Subroutine to write data, making the necessary
@@ -110,7 +110,6 @@ subroutine writeIM(sA, Ar_local, sZ, &
   integer(kind=ip), intent(in) :: iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps
   integer(kind=ip), intent(in) :: lrecvs(:), ldispls(:), iCstep
   character(32_IP), intent(in) :: zDataFileName
-  logical, intent(inout) :: qWDisp
   logical, intent(inout) :: qOK
 
   logical :: qOKL, qWriteInt, qWriteFull
@@ -119,14 +118,14 @@ subroutine writeIM(sA, Ar_local, sZ, &
 
   call innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
 
-  call int_or_full(istep, iIntWriteNthSteps, iWriteNthSteps, qWDisp, &
+  call int_or_full(istep, iIntWriteNthSteps, iWriteNthSteps, &
                    qWriteInt, qWriteFull, qOK)
 
   if (wrMeth_G == 'sdds') then
 
     call wr_sdds(sA, sZ, iCstep, tArrayA, tArrayE, tArrayZ, &
                  iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
-                 zDataFileName, qWDisp, qWriteFull, &
+                 zDataFileName, qWriteFull, &
                  qWriteInt, qOK)
 
   else if (wrMeth_G == 'hdf5') then
@@ -159,7 +158,7 @@ end subroutine writeIM
 
 
 
-  subroutine int_or_full(istep, iIntWr, iWr, qWDisp, &
+  subroutine int_or_full(istep, iIntWr, iWr, &
                          qWriteInt, qWriteFull, qOK)
 
     implicit none
@@ -170,7 +169,6 @@ end subroutine writeIM
 
     integer(kind=ip), intent(in) :: istep
     integer(kind=ip), intent(in) :: iIntWr, iWr
-    logical, intent(in) :: qWDisp
     logical, intent(inout) :: qWriteInt, qWriteFull, qOK
 
     logical ::  qOKL
@@ -180,14 +178,14 @@ end subroutine writeIM
     qWriteInt = .false.
     qWriteFull = .false.
 
-    if ((mod(iStep,iIntWr)==0) .or. (iStep == nSteps) .or. (iStep == 0) .or. (qWDisp) ) then
+    if ((mod(iStep,iIntWr)==0) .or. (iStep == nSteps) .or. (iStep == 0) ) then
 
       qWriteInt = .true.
 
     end if
 
 
-    if ((mod(iStep,iWr)==0) .or. (iStep == nSteps) .or. (iStep == 0) .or. (qWDisp) ) then
+    if ((mod(iStep,iWr)==0) .or. (iStep == nSteps) .or. (iStep == 0) ) then
 
       qWriteFull = .true.
 
@@ -200,8 +198,7 @@ end subroutine writeIM
 !########################################################################
 
 
-function qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps, &
-                 qWDisp)
+function qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps)
 
 
 
@@ -209,11 +206,10 @@ function qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps, &
 
   logical :: qWriteq
   integer(kind=ip) :: iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps
-  logical :: qWDisp
 
 
-  if ((mod(iStep,iIntWriteNthSteps)==0) .or. (iStep == nSteps) .or. &
-               (qWDisp)   .or. (mod(iStep,iWriteNthSteps)==0)) then
+  if ((mod(iStep,iIntWriteNthSteps)==0) .or. (iStep == nSteps) &
+               .or. (mod(iStep,iWriteNthSteps)==0)) then
 
     qWriteq = .true.
 
