@@ -451,8 +451,8 @@ contains
 
 !     Setup undulator ends
 
-    sZFS = sz0 + 4_wp * pi * sRho_G  *  2.0_wp
-    sZFE = sz0 + nSteps * sStepSize - &
+    sZFS = sz + 4_wp * pi * sRho_G  *  2.0_wp
+    sZFE = sz + nSteps * sStepSize - &
              4_wp * pi * sRho_G  *  2.0_wp
 
   end subroutine initUndulator
