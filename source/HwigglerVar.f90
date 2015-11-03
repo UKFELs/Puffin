@@ -19,7 +19,23 @@ subroutine getAlpha(sZ)
 ! Variables n2col, c2col0, undgrad and sz0 are
 ! global variables, and are defined elsewhere.
 
-  n2col = n2col0  + undgrad*(sz - sz0)
+  if (sZ <= sZFS) then   ! Work out wiggler ends and bounds???
+                          ! e.g. ...    (sZ <= sZFS)  (sZ >= sZFE)
+ 
+
+    n2col = n2col0 * sin( (sZ - sZ0) / (4_wp * sRho_G) )**2_wp
+
+  else if (sZ >= sZFE) then
+
+    n2col = n2col0 * cos( (sZ - sZFE) / (4_wp * sRho_G) )**2_wp
+
+  else 
+
+    n2col = n2col0  + undgrad*(sz - sz0)
+
+  end if
+
+
 
 end subroutine getAlpha
 

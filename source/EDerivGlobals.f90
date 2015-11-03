@@ -197,6 +197,8 @@ real(kind=wp) :: m2col   ! Fractional change in eta due to change in aw
 
 
 
+real(kind=wp) :: sZFS, sZFE  ! Markers for wiggler ends
+
 
 
 

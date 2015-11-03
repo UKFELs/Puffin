@@ -449,6 +449,12 @@ contains
     nSteps = nSteps_arr(iM)
 
 
+!     Setup undulator ends
+
+    sZFS = sz0 + 4_wp * pi * sRho_G  *  2.0_wp
+    sZFE = sz0 + nSteps * sStepSize - &
+             4_wp * pi * sRho_G  *  2.0_wp
+
   end subroutine initUndulator
 
 
