@@ -23,11 +23,11 @@ subroutine getAlpha(sZ)
                           ! e.g. ...    (sZ <= sZFS)  (sZ >= sZFE)
  
 
-    n2col = n2col0 * sin( (sZ - sZ0) / (4_wp * sRho_G) )**2_wp
+    n2col = n2col0 * (sin( (sZ - sZ0) / (16_wp * sRho_G) ))**2_wp
 
   else if (sZ >= sZFE) then
 
-    n2col = n2col0 * cos( (sZ - sZFE) / (4_wp * sRho_G) )**2_wp
+    n2col = n2col0 * cos( (sZ - sZFE) / (16_wp * sRho_G) )**2_wp
 
   else 
 

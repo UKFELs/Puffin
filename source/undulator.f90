@@ -74,7 +74,7 @@ contains
 !     Need to match into undulator
 
   call initUndulator(iUnd_cr, sZ)
-  call matchIn(sZ)
+!  call matchIn(sZ)
 
 
 
@@ -279,7 +279,7 @@ contains
 
 
 
-  call matchOut(sZ)
+!  call matchOut(sZ)
 
 
   deallocate(sAr)
