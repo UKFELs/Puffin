@@ -55,7 +55,7 @@ contains
     integer(kind=ip) :: nW
     integer(kind=ip) :: iSteps4Diff
     real(kind=wp) :: delz_D, nextDiff
-    logical :: qFirst, qLast, qDiffrctd, qWDisp
+    logical :: qFirst, qLast, qDiffrctd
     logical :: qWPF
     logical :: qWIF
     logical :: qOKL
@@ -95,7 +95,6 @@ contains
   call local2globalA(Ar_local,sAr,mrecvs,mdispls,tTransInfo_G%qOneD)
 
   qDiffrctd = .false.
-  qWDisp = .false.
 
   start_step = 1_ip  ! ...TEMP...
 
@@ -128,33 +127,24 @@ contains
 
 
 
+!   First step of split-step method:- field diffraction only
+
+  if (qDiffraction_G) then
+  
+    call diffractIM(sA, sAr, Ar_local, local_rows, &
+                    diffStep*0.5_WP, frecvs, fdispls, lrecvs, ldispls, &
+                    qDiffrctd, qOKL)
+  
+    nextDiff = nextDiff + diffStep
+  
+  end if
+
 
 
   do iStep = start_step, nSteps
   
 
   iCsteps = iCsteps + 1_ip
-
-
-
-!   First step of split-step method:- field diffraction only
-
-    if (qDiffraction_G) then
-  
-        if (iStep==0) then
-  
-          call diffractIM(sA, sAr, Ar_local, local_rows, &
-                          diffStep*0.5_WP, frecvs, fdispls, lrecvs, ldispls, &
-                          qDiffrctd, qOKL)
-  
-          nextDiff = nextDiff + diffStep
-  
-        end if
-  
-    end if
-
-
-
 
 
 
@@ -194,8 +184,8 @@ contains
   
       if ((sZ>(nextDiff-sStepsize/100.0_WP)) .or. (iStep == nSteps))  then
   
-        if ((iStep == nSteps) .or.  qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps, &
-                     qWDisp) ) then
+        if ((iStep == nSteps) .or. &
+             qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps) ) then
     
           call diffractIM(sA, sAr, Ar_local, local_rows, &
                           diffStep * 0.5_wp, frecvs, fdispls, lrecvs, ldispls, &
@@ -228,13 +218,12 @@ contains
 
 
 
-  if ( qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps, &
-               qWDisp) ) then
+  if ( qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps) ) then
   
     call writeIM(sA, Ar_local, sZ, &
                  zDataFileName, iStep, iCsteps, iWriteNthSteps, &
                  lrecvs, ldispls, &
-                 iIntWriteNthSteps, nSteps, qWDisp, qOKL)
+                 iIntWriteNthSteps, nSteps, qOKL)
   
   
     if (qDiffraction_G) then
@@ -249,18 +238,16 @@ contains
   
     end if
   
-      if (qWDisp) qWDisp = .false.
-  
-    end if
+  end if
 
 
   
-    call Get_time(end_time)
+  call Get_time(end_time)
     
-    if (tProcInfo_G%QROOT ) then
-       print*,' finished step ',iCsteps, end_time-start_time
-       WRITE(137,*) ' finished step ',iCsteps, end_time-start_time
-    end if
+  if (tProcInfo_G%QROOT ) then
+    print*,' finished step ',iCsteps, end_time-start_time
+    WRITE(137,*) ' finished step ',iCsteps, end_time-start_time
+  end if
   
 
 

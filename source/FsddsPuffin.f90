@@ -415,7 +415,7 @@ CONTAINS
 
 
   subroutine wr_sdds(sA, sZ, istep, tArrayA, tArrayE, tArrayZ, &
-                     iIntWr, iWr, qSep, zDFname, qWDisp, qWriteFull, &
+                     iIntWr, iWr, qSep, zDFname, qWriteFull, &
                      qWriteInt, qOK)
 
     implicit none
@@ -428,7 +428,7 @@ CONTAINS
     integer(kind=ip), intent(in) :: istep
     integer(kind=ip), intent(in) :: iIntWr, iWr
     character(32_IP), intent(in) :: zDFName
-    logical, intent(in) :: qSep, qWDisp
+    logical, intent(in) :: qSep
     logical, intent(inout) :: qOK
 
     logical :: qWriteInt, qWriteFull, qOKL
