@@ -31,12 +31,12 @@ implicit none
 contains
 
   subroutine dppdz_r_f(sx, sy, sz2, spr, spi, sgam, &
-                       sdpr, qOK)
+                       sZ, sdpr, qOK)
 
   	implicit none
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:), sZ
     real(kind=wp), intent(out) :: sdpr(:)
 
     logical, intent(inout) :: qOK
@@ -124,10 +124,22 @@ contains
 !      else 
 
 
-        sdpr = sInv2rho * (fy_G * n2col *sin(ZOver2rho) - &
-              ( sEta_G * sp2 / sKappa_G**2 * &
-              sField4ElecReal ) )
+        if (sZ <= sZFS) then 
 
+          sdpr = sInv2rho * (fy_G * n2col0 * &
+                 ( ( -1_wp / 8_wp *  sin(ZOver2rho / 4_wp) * cos(ZOver2rho)     )  &
+                  + (  sin(ZOver2rho/8_wp)**2_wp  * sin(ZOver2rho)  )    ) &
+                 - &
+                ( sEta_G * sp2 / sKappa_G**2 * &
+                sField4ElecReal ) )
+
+        else 
+
+          sdpr = sInv2rho * (fy_G * n2col *sin(ZOver2rho) - &
+                ( sEta_G * sp2 / sKappa_G**2 * &
+                sField4ElecReal ) )
+
+        end if
 
 !      end if
 
@@ -156,13 +168,13 @@ contains
 
 
 
-  subroutine dppdz_i_f(sx, sy, sz2, spr, spi, sgam, &
+  subroutine dppdz_i_f(sx, sy, sz2, spr, spi, sgam, sZ, &
                        sdpi, qOK)
 
     implicit none
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:), sZ
     real(kind=wp), intent(out) :: sdpi(:)
 
     logical, intent(inout) :: qOK
@@ -258,9 +270,23 @@ contains
 !      else
 
 
-        sdpi = sInv2rho * (fx_G * n2col * cos(ZOver2rho) - &
-                      ( sEta_G * sp2 / sKappa_G**2 * &
-                      sField4ElecImag ) )
+        if (sZ <= sZFS) then 
+
+          sdpi = sInv2rho * (fx_G * n2col0 * &
+                   ( ( 1_wp / 8_wp *  sin(ZOver2rho / 4_wp) * sin(ZOver2rho)     )  &
+                  + (  sin(ZOver2rho/8_wp)**2_wp  * cos(ZOver2rho)  )    ) &
+                  - &
+                  ( sEta_G * sp2 / sKappa_G**2 * &
+                  sField4ElecImag ) )
+
+        else
+
+          sdpi = sInv2rho * (fx_G * n2col * cos(ZOver2rho) - &
+                        ( sEta_G * sp2 / sKappa_G**2 * &
+                        sField4ElecImag ) )
+
+
+        end if
 
 !      end if
 
