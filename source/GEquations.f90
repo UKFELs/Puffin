@@ -39,6 +39,8 @@ contains
     real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:), sZ
     real(kind=wp), intent(out) :: sdpr(:)
 
+    real(kind=wp) :: szt
+
     logical, intent(inout) :: qOK
 
     
@@ -126,16 +128,32 @@ contains
 
         if (sZ <= sZFS) then 
 
-          sdpr = sInv2rho * (fy_G * n2col0 * &
-                 ( ( -1_wp / 8_wp *  sin(ZOver2rho / 4_wp) * cos(ZOver2rho)     )  &
-                  + (  sin(ZOver2rho/8_wp)**2_wp  * sin(ZOver2rho)  )    ) &
+          szt = sZ - sZ0
+          szt = szt / 2_wp / sRho_G
+
+          sdpr =   -2_wp * n2col0 * sInv2rho / 8_wp * sin(szt / 8_wp) * &
+                    cos(szt / 8_wp) * cos(szt)    &
+                  +  sInv2rho * n2col0 * sin(szt/8_wp)**2_wp  * sin(szt) &
                  - &
                 ( sEta_G * sp2 / sKappa_G**2 * &
-                sField4ElecReal ) )
+                sField4ElecReal *  sInv2rho ) 
+
+        else if (sZ >= sZFE) then
+ 
+          szt = sZ - sZFE
+          szt = szt / 2_wp / sRho_G
+
+          sdpr =    sInv2rho * n2col0 / 8_wp * sin(szt / 4_wp) * &
+                    cos(szt)    &
+                  +  sInv2rho * n2col0 * cos(szt/8_wp)**2_wp  * sin(szt) &
+                 - &
+                ( sEta_G * sp2 / sKappa_G**2 * &
+                sField4ElecReal *  sInv2rho )     
+
 
         else 
 
-          sdpr = sInv2rho * (fy_G * n2col *sin(ZOver2rho) - &
+          sdpr = sInv2rho * (fy_G*n2col *sin(ZOver2rho) - &
                 ( sEta_G * sp2 / sKappa_G**2 * &
                 sField4ElecReal ) )
 
@@ -176,6 +194,8 @@ contains
 
     real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:), sZ
     real(kind=wp), intent(out) :: sdpi(:)
+
+    real(kind=wp) :: szt
 
     logical, intent(inout) :: qOK
 
@@ -272,9 +292,49 @@ contains
 
         if (sZ <= sZFS) then 
 
+
+!  sdpr =   -2_wp * sInv2rho / 8_wp * sin(ZOver2rho / 8_wp) * &
+!                      cos(ZOver2rho / 8_wp) * cos(ZOver2rho)    &
+!                  +  sInv2rho * sin(ZOver2rho/8_wp)**2_wp  * sin(ZOver2rho) &
+!                 - &
+!                ( sEta_G * sp2 / sKappa_G**2 * &
+!                sField4ElecReal *  sInv2rho ) 
+
+
+          szt = sZ - sZ0
+          szt = szt / 2_wp / sRho_G
+
+
+!          sdpi = sInv2rho * (fx_G * n2col0 * &
+!                    2_wp / 8_wp *  sin(szt / 8_wp) * &
+!                   cos(szt / 8_wp) * sin(szt)  &
+!                  +   n2col0 * sin(szt/8_wp)**2_wp  * cos(szt)     &
+!                  - &
+!                  ( sEta_G * sp2 / sKappa_G**2 * &
+!                  sField4ElecImag ) )
+
           sdpi = sInv2rho * (fx_G * n2col0 * &
-                   ( ( 1_wp / 8_wp *  sin(ZOver2rho / 4_wp) * sin(ZOver2rho)     )  &
-                  + (  sin(ZOver2rho/8_wp)**2_wp  * cos(ZOver2rho)  )    ) &
+                    sin(szt/8_wp)**2_wp  * cos(szt)     &
+                  - &
+                  ( sEta_G * sp2 / sKappa_G**2 * &
+                  sField4ElecImag ) )
+
+
+        else if (sZ >= sZFE) then
+
+          szt = sZ - sZFE
+          szt = szt / 2_wp / sRho_G
+
+!          sdpi = sInv2rho * (fx_G * n2col0 * &
+!                    - 1_wp / 8_wp *  sin(szt / 4_wp) * &
+!                    sin(szt)  &
+!                  +   n2col0 * cos(szt/8_wp)**2_wp  * cos(szt)     &
+!                  - &
+!                  ( sEta_G * sp2 / sKappa_G**2 * &
+!                  sField4ElecImag ) )
+
+          sdpi = sInv2rho * (fx_G * n2col0 * &
+                    cos(szt/8_wp)**2_wp  * cos(szt)     &
                   - &
                   ( sEta_G * sp2 / sKappa_G**2 * &
                   sField4ElecImag ) )
