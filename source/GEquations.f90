@@ -61,19 +61,6 @@ contains
                      sqrt(sEta_G) * sInv2rho / kx_und_G  *    & 
                      cosh(sx * kx_und_G) * sinh(sy * ky_und_G) *  &
                      n2col * cos(ZOver2rho) )
-    
-
-
-!        sdpr = sInv2rho * ( cosh(sx * kx_und_G) * &
-!                        sinh(sy * ky_und_G) * sqrt(2.0_WP) &
-!                        * sqrt(sEta_G) * Lj * spi  &      
-!                        *  cos(ZOver2rho) &
-!                        / (sqrt(salphaSq) * ky_und_G) + &
-!                        cosh(sx * kx_und_G) &
-!                        * cosh(sy * ky_und_G) * sin(ZOver2rho) - &
-!                        sEta_G * sp2 / sKappa_G**2 * sField4ElecReal)
-!
-        
 
     else if (zUndType_G == 'planepole')  then
 
@@ -87,16 +74,6 @@ contains
                    * sinh( sqrt(sEta_G) * sInv2rho * sy ) &
                    * n2col * cos(ZOver2rho) )
 
-
-
-!        sdpr = sInv2rho * (-sField4ElecReal*salphaSq * &
-!                        sEta_G * sp2 &
-!                        + ((sqrt(6.0_WP) *sRho_G) /sqrt(salphaSq)) * &
-!                        sinh(sInv2rho * sy &
-!                        * sqrt(sEta_G))  * cos(ZOver2rho) * Lj * &
-!                        spi + &
-!                        cosh(sInv2rho * sy * &
-!                        sqrt(sEta_G)) *sin(ZOver2rho))
 
     else if (zUndType_G == 'helical') then
 
@@ -131,24 +108,25 @@ contains
           szt = sZ - sZ0
           szt = szt / 2_wp / sRho_G
 
-          sdpr =   -2_wp * n2col0 * sInv2rho / 8_wp * sin(szt / 8_wp) * &
-                    cos(szt / 8_wp) * cos(szt)    &
-                  +  sInv2rho * n2col0 * sin(szt/8_wp)**2_wp  * sin(szt) &
+          sdpr = sInv2rho * (  n2col0 * fy_G * (- sin(szt / 8_wp) * &
+                    cos(szt / 8_wp) * cos(szt) / 4_wp   &
+                  +  sin(szt/8_wp)**2_wp  * sin(szt) ) &
                  - &
                 ( sEta_G * sp2 / sKappa_G**2 * &
-                sField4ElecReal *  sInv2rho ) 
+                sField4ElecReal ) )
+
 
         else if (sZ >= sZFE) then
  
           szt = sZ - sZFE
           szt = szt / 2_wp / sRho_G
 
-          sdpr =    sInv2rho * n2col0 / 8_wp * sin(szt / 4_wp) * &
-                    cos(szt)    &
-                  +  sInv2rho * n2col0 * cos(szt/8_wp)**2_wp  * sin(szt) &
+          sdpr = sInv2rho * ( n2col0 * fy_G * ( cos(szt / 8_wp) * &
+                    sin(szt / 8_wp) * cos(szt)  / 4_wp  &
+                  +  cos(szt/8_wp)**2_wp  * sin(szt) ) &
                  - &
                 ( sEta_G * sp2 / sKappa_G**2 * &
-                sField4ElecReal *  sInv2rho )     
+                sField4ElecReal *  sInv2rho )     )
 
 
         else 
@@ -158,8 +136,6 @@ contains
                 sField4ElecReal ) )
 
         end if
-
-!      end if
 
 
     end if
@@ -220,21 +196,6 @@ contains
                      sqrt(sEta_G) * sInv2rho / kx_und_G  *    & 
                      cosh(sx * kx_und_G) * sinh(sy * ky_und_G) *  &
                      n2col * cos(ZOver2rho) )
-    
-
-
-
-!        sdpi = sInv2rho * ( -1.0_WP * sqrt(2.0_WP) * sqrt(sEta_G) &
-!                        * Lj * spr &
-!                        * cosh(sx * kx_und_G) &
-!                        * sinh(sy * ky_und_G) &
-!                        * cos(ZOver2rho)  / (sqrt(salphaSq) * ky_und_G) &
-!                        + sin(ZOver2rho) * kx_und_G/ky_und_G * &
-!                        sinh(sx * kx_und_G) * &
-!                        sinh(sy * ky_und_G) & 
-!                        - sEta_G * sp2 * salphaSq * &
-!                        sField4ElecImag)
-
 
     else if (zUndType_G == 'planepole') then 
 
@@ -242,23 +203,13 @@ contains
 
 
 
-        sdpi = sInv2rho * ( 0_ip  &
+        sdpi = sInv2rho * ( 0_wp  &
                             - sEta_G * sp2 / sKappa_G**2 *    &
                             sField4ElecReal ) & 
                - ( sKappa_G * spr / sgam * (1 + sEta_G * sp2) &
                    * sinh( sqrt(sEta_G) * sInv2rho * sy ) &
                    * n2col * cos(ZOver2rho) )
 
-
-
-
-
-!        sdpi = sInv2rho * (- sField4ElecImag * salphaSq * &
-!                        sEta_G * sp2  &
-!                        - ((sqrt(6.0_WP) * sRho_G)/ sqrt(salphaSq)) * &
-!                        sinh(sInv2rho * sy &
-!                        * sqrt(sEta_G)) * cos(ZOver2rho) * Lj * &
-!                        spr)
 
     else if (zUndType_G == 'helical') then
 
@@ -292,29 +243,13 @@ contains
 
         if (sZ <= sZFS) then 
 
-
-!  sdpr =   -2_wp * sInv2rho / 8_wp * sin(ZOver2rho / 8_wp) * &
-!                      cos(ZOver2rho / 8_wp) * cos(ZOver2rho)    &
-!                  +  sInv2rho * sin(ZOver2rho/8_wp)**2_wp  * sin(ZOver2rho) &
-!                 - &
-!                ( sEta_G * sp2 / sKappa_G**2 * &
-!                sField4ElecReal *  sInv2rho ) 
-
-
           szt = sZ - sZ0
           szt = szt / 2_wp / sRho_G
 
 
-!          sdpi = sInv2rho * (fx_G * n2col0 * &
-!                    2_wp / 8_wp *  sin(szt / 8_wp) * &
-!                   cos(szt / 8_wp) * sin(szt)  &
-!                  +   n2col0 * sin(szt/8_wp)**2_wp  * cos(szt)     &
-!                  - &
-!                  ( sEta_G * sp2 / sKappa_G**2 * &
-!                  sField4ElecImag ) )
-
-          sdpi = sInv2rho * (fx_G * n2col0 * &
-                    sin(szt/8_wp)**2_wp  * cos(szt)     &
+          sdpi =   sInv2rho * ( n2col0 * fx_G * ( sin(szt / 8_wp) * &
+                   cos(szt / 8_wp) * sin(szt) / 4_wp &
+                  +   sin(szt/8_wp)**2_wp  * cos(szt) ) &
                   - &
                   ( sEta_G * sp2 / sKappa_G**2 * &
                   sField4ElecImag ) )
@@ -325,19 +260,12 @@ contains
           szt = sZ - sZFE
           szt = szt / 2_wp / sRho_G
 
-!          sdpi = sInv2rho * (fx_G * n2col0 * &
-!                    - 1_wp / 8_wp *  sin(szt / 4_wp) * &
-!                    sin(szt)  &
-!                  +   n2col0 * cos(szt/8_wp)**2_wp  * cos(szt)     &
-!                  - &
-!                  ( sEta_G * sp2 / sKappa_G**2 * &
-!                  sField4ElecImag ) )
-
-          sdpi = sInv2rho * (fx_G * n2col0 * &
-                    cos(szt/8_wp)**2_wp  * cos(szt)     &
+          sdpi = sInv2rho * ( n2col0 * fx_G * (- cos(szt / 8_wp) * &
+                    sin(szt / 8_wp) * sin(szt) / 4_wp  &
+                  +  cos(szt/8_wp)**2_wp  * cos(szt) )  &
                   - &
                   ( sEta_G * sp2 / sKappa_G**2 * &
-                  sField4ElecImag ) )
+                  sField4ElecImag * sInv2rho) )
 
         else
 
