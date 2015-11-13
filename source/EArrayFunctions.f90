@@ -30,7 +30,7 @@ Module ArrayFunctions
 ! iIm_A_CG                      Position in pointer array of Imaginary A values
 ! iRe_PPerp_CG                  Position in pointer array of Real pperp values
 ! iIm_PPerp_CG                  Position in pointer array of Imaginary pperp values
-! iRe_Q_CG                      Position in pointer array of Q values
+! iRe_Gam_CG                    Position in pointer array of gamma / gamma_r values
 ! iRe_z2_CG                     Position in pointer array of z2 values
 !
 ! nWaveEquations_CG             Number of wave equations (one real plus one imaginary)
@@ -40,7 +40,7 @@ Module ArrayFunctions
   INTEGER(KIND=IP), PARAMETER    :: nArrayVariables_CG = 8_IP
   INTEGER(KIND=IP), PARAMETER    :: iRe_PPerp_CG       = 1_IP
   INTEGER(KIND=IP), PARAMETER    :: iIm_PPerp_CG       = 2_IP
-  INTEGER(KIND=IP), PARAMETER    :: iRe_Q_CG           = 3_IP
+  INTEGER(KIND=IP), PARAMETER    :: iRe_Gam_CG           = 3_IP
   INTEGER(KIND=IP), PARAMETER    :: iRe_z2_CG          = 4_IP
   INTEGER(KIND=IP), PARAMETER    :: iRe_X_CG           = 5_IP
   INTEGER(KIND=IP), PARAMETER    :: iRe_Y_CG           = 6_IP

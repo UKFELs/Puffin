@@ -29,7 +29,7 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
                          sRNX,sRNY, &
                          sElmLen,&
                          fx,fy,sFocusFactor,taper,sFiltFrac, &
-                         dStepFrac,sBeta,zUndType,qFormatted, qSwitch,qOK)
+                         dStepFrac,sBeta,zUndType,qFormatted, qSwitch, qOK)
 
     IMPLICIT NONE
 
@@ -162,7 +162,7 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
              gamr
 
     sEta_G = (1.0_WP - sbetaz) / sbetaz
-    sKBeta_G = aw / 2.0_WP / sFocusFactor / rho / gamr
+    sKBeta_G = aw_rms / 2.0_WP / sFocusFactor / rho / gamr
     sKappa_G = aw / 2.0_WP / rho / gamr
 
 
@@ -342,8 +342,9 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
 
     logical, intent(in) :: qSimple
     character(*), intent(in) :: fname(:)
-    REAL(KIND=WP),     INTENT(IN)    :: sQe(:), gamma_d(:), chirp(:)
-    REAL(KIND=WP),     INTENT(IN)    :: mag(:), fr(:)
+    REAL(KIND=WP),     INTENT(IN)    :: sQe(:), gamma_d(:)
+    REAL(KIND=WP),     INTENT(INOUT)    ::  chirp(:)
+    REAL(KIND=WP),     INTENT(INOUT)    :: mag(:), fr(:)
     INTEGER(KIND=IP),  INTENT(IN)    :: NE(:,:),nbeams
     LOGICAL,           INTENT(IN)    :: noise
     REAL(KIND=WP),     INTENT(IN)    :: Z
@@ -388,8 +389,8 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
 
 !     Change sig_gamma / gamma to sig_gamma
 
-    IF (qSimple) LenEPulse(:,iPZ2_CG) = gamma_d(:) * sGammaR_G * LenEPulse(:,iPZ2_CG)
-    IF (qSimple) sigma(:,iPZ2_CG) = gamma_d(:) * sGammaR_G * sigma(:,iPZ2_CG)
+    IF (qSimple) LenEPulse(:,iGam_CG) = gamma_d(:) * sGammaR_G * LenEPulse(:,iGam_CG)
+    IF (qSimple) sigma(:,iGam_CG) = gamma_d(:) * sGammaR_G * sigma(:,iGam_CG)
 
 !     Setup electrons
 

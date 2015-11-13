@@ -100,13 +100,6 @@ contains
 
 !$OMP PARALLEL
 
-!     Calculate Lj term
-
-!  Lj = sqrt((1.0_WP - (1.0_WP / ( 1.0_WP + (sEta_G * sp2)) )**2.0_WP) &
-!             / (1.0_WP + nc* ( spr**2.0_wp  +  &
-!                               spi**2.0_wp )   )) &
-!          * (1.0_WP + sEta_G *  sp2) * sGammaR_G
-
   call getP2(sp2, sgam, spr, spi, sEta_G, sGammaR_G, saw_G)
 
 

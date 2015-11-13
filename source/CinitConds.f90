@@ -181,7 +181,8 @@ contains
   FUNCTION pyOffset(z, rho, ux)
 
 ! Equation for the initial electron py offset due to
-! the undulator field.  
+! the undulator field.  (NOTE:- py offset, NOT
+! IM(pperp) offset)
 ! 
 !               ARGUMENTS
 
@@ -278,7 +279,7 @@ SUBROUTINE getOffsets(sZ,samLenE,sZ2_center,gamma_d,offsets)
   offsets(iZ2_CG)   = sz2_offset
   offsets(iPX_CG)   = spx_offset
   offsets(iPY_CG)   = spy_offset
-  offsets(iPZ2_CG)  = sGamma_offset
+  offsets(iGam_CG)  = sGamma_offset
 
 END SUBROUTINE getOffsets
 

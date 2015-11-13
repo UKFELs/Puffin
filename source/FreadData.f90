@@ -248,8 +248,8 @@ SUBROUTINE read_in(zfilename, &
        tArrayVariables(iRe_PPerp_CG)%qWrite
   tArrayVariables(iIm_PPerp_CG)%zVariable = 'IM_PPerp'
     
-  READ(UNIT=168,FMT=*) tArrayVariables(iRe_Q_CG)%qWrite
-  tArrayVariables(iRe_Q_CG)%zVariable = 'Q'
+  READ(UNIT=168,FMT=*) tArrayVariables(iRe_Gam_CG)%qWrite
+  tArrayVariables(iRe_Gam_CG)%zVariable = 'Gamma'
     
   READ(UNIT=168,FMT=*) tArrayVariables(iRe_Z2_CG)%qWrite
   tArrayVariables(iRe_Z2_CG)%zVariable = 'Z2'
@@ -320,6 +320,8 @@ SUBROUTINE read_in(zfilename, &
   READ(UNIT=168,FMT=*) lambda_w
   READ(UNIT=168,FMT=*) Dfact
   READ(UNIT=168,FMT=*) zUndType
+!  READ(UNIT=168,FMT=*) kx_und_G
+!  READ(UNIT=168,FMT=*) ky_und_G
   READ(UNIT=168,FMT=*) taper
   
 !     Read whitespace...
@@ -486,7 +488,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
       READ(UNIT=168,FMT=*) sSigmaE(b_ind,iZ2_CG)
       READ(UNIT=168,FMT=*) sSigmaE(b_ind,iPX_CG)
       READ(UNIT=168,FMT=*) sSigmaE(b_ind,iPY_CG)
-      READ(UNIT=168,FMT=*) sSigmaE(b_ind,iPZ2_CG)
+      READ(UNIT=168,FMT=*) sSigmaE(b_ind,iGam_CG)
       READ(UNIT=168,FMT=*)
       READ(UNIT=168,FMT=*)
       READ(UNIT=168,FMT=*)
@@ -495,7 +497,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
       READ(UNIT=168,FMT=*) sLenE(b_ind,iZ2_CG)
       READ(UNIT=168,FMT=*) sLenE(b_ind,iPX_CG)
       READ(UNIT=168,FMT=*) sLenE(b_ind,iPY_CG)
-      READ(UNIT=168,FMT=*) sLenE(b_ind,iPZ2_CG)
+      READ(UNIT=168,FMT=*) sLenE(b_ind,iGam_CG)
       READ(UNIT=168,FMT=*)
       READ(UNIT=168,FMT=*)
       READ(UNIT=168,FMT=*)
@@ -504,7 +506,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
       READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iZ2_CG)
       READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iPX_CG)
       READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iPY_CG)
-      READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iPZ2_CG)
+      READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iGam_CG)
       READ(UNIT=168,FMT=*)
       READ(UNIT=168,FMT=*)
       READ(UNIT=168,FMT=*)

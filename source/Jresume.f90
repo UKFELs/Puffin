@@ -62,7 +62,7 @@ MODULE RESUME
     ALLOCATE(sElZ2_G(iNumberElectrons_G))
     ALLOCATE(sElPX_G(iNumberElectrons_G))
     ALLOCATE(sElPY_G(iNumberElectrons_G))
-    ALLOCATE(sElPZ2_G(iNumberElectrons_G))
+    ALLOCATE(sElGam_G(iNumberElectrons_G))
 
 
     ALLOCATE(sA(nFieldEquations_CG*iNumberNodes_G))
@@ -256,7 +256,7 @@ if (nelectrons>0) then
  
  OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
  FORM='UNFORMATTED')
- READ(213) sElPZ2_G
+ READ(213) sElGam_G
  CLOSE(UNIT=213,STATUS='KEEP') 
 ! Z2 
  FileName = 'Z2-'//TRIM(IntegerToString(RANK))//'.dump'

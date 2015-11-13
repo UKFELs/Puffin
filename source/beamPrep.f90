@@ -15,9 +15,7 @@ subroutine addChirp(gamj, z2, Nk, center, chirp)
 
     allocate(Qchoff(Nk))
 
-! Remember - sElPZ2_G is actually gamma atm
-
-!     Add linear chirp to the beam....TEMP
+!     Add linear chirp to the beam
 
     Qchoff = chirp*(z2 - center)
     gamj = gamj + Qchoff
@@ -34,9 +32,7 @@ subroutine addModulation(gamj, z2, Nk, mag, fr)
     real(kind=wp), intent(in) :: mag, fr
 
 
-! Remember - sElPZ2_G is actually gamma atm
-
-!     Add linear chirp to the beam....TEMP
+!     Add energy modulation to the beam
 
     gamj = gamj + ( mag * cos(fr * z2) )
 
