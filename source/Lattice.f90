@@ -33,7 +33,7 @@ contains
 
 
 
-  subroutine setupMods(lattFile, taper, sRho)
+  subroutine setupMods(lattFile, taper, sRho, nSteps_f, dz_f)
 
     implicit none
 
@@ -46,7 +46,8 @@ contains
 
     character(32_ip), intent(in) :: LattFile 
     real(kind=wp), intent(inout) :: taper
-    real(kind=wp), intent(in) :: sRho
+    real(kind=wp), intent(in) :: sRho, dz_f
+    integer(kind=ip), intent(in) :: nSteps_f
 
 
     if (lattFile=='') then
@@ -78,13 +79,29 @@ contains
     else 
 
       modNum = 1
+      
+      allocate(D(ModNum),zMod(ModNum),delta(modNum))
+      allocate(mf(ModNum),delmz(ModNum),tapers(modNum))
+      allocate(nSteps_arr(ModNum))
+      
       allocate(iElmType(modNum))
+      
       iElmType(1) = iUnd
       iUnd_cr = 1_ip
+      nSteps_arr(1) = nSteps_f
+      delmz(1) = dz_f
+      mf(1) = 1_wp
+      tapers(1) = taper
+
 
     end if
    
-   iCsteps = 0_ip
+    iUnd_cr=1_ip
+    iChic_cr=1_ip
+    iDrift_cr=1_ip
+    iQuad_cr=1_ip
+
+    iCsteps = 0_ip
 
   end subroutine setupMods
 
@@ -184,12 +201,6 @@ contains
 
   sStepSize =  delmz(1)
   taper = tapers(1)
-
-  iUnd_cr=1_ip
-  iChic_cr=1_ip
-  iDrift_cr=1_ip
-  iQuad_cr=1_ip
-
 
   END SUBROUTINE readLatt
 

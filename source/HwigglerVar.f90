@@ -31,7 +31,16 @@ subroutine getAlpha(sZ)
 
 !  else 
 
-    n2col = n2col0  + undgrad*(sz - sz0)
+
+  if ((sZ >= sZFS) .and. (sZ <= sZFE)) then
+
+    n2col = n2col0  + undgrad*(sz - sZFS)  ! linear taper
+
+  else if (sZ > sZFE) then
+
+    n2col0 = n2col
+
+  end if
 
 !  end if
 
