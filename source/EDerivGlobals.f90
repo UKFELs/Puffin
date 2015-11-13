@@ -4,142 +4,148 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
-Module Globals
+module Globals
 
-! Module containing shared variables used in Puffin
+! Module defining shared (global) variables used in Puffin
 
-USE paratype
-USE typesAndConstants
-USE ArrayFunctions
+use paratype
+use typesAndConstants
+use ArrayFunctions
 
-IMPLICIT NONE
+implicit none
 
-!********************************************************
-! Define Global variables
-!
-! NX_G            - number of nodes in X direction
-! NY_G            - number of nodes in Y direction
-! NZ2_G           - number of nodes in Z2 direction
-! sLengthOfElmX_G - Length of ONE element in x direction
-! sLengthOfElmY_G - Length of ONE element in y direction
-! sLengthOfElmZ2_G - Length of ONE element in z2 direction
-!
-! qElectronsEvolve_G - If letting electrons evolve
-! qFieldEvolve_G     - If letting field evolve
-! qElectronFieldCoupling_G - If allowing field coupling in
-!                            electron equations
-! qDiffraction_G     - If allowing for diffraction
-! qFocussing_G    -  If natural focussing is included in
-!                    the transverse plane
-!
-! iOrderA_G       - Order of square matrix A
-! NNZA_G          - Number of non zero entries of A
-! iLenA_G         - Length of array holding sparse matrix A
-! iColA_G         - Col Coordinate of A
-! iRowA_G         - Row Coordinate of A
-! sA_G            - Sparse matrix stored in coordinate
-!                   storage format
-! iGloNumA_G - AN ARRAY STORING A GLOBAL NUMBER CORRESPONDS
-!              TO EACH NODE
-! iNodCodA_G - co-ordinates of the nodes
-!
-! iNodesPerElement_G - Number of nodes per element
-!
-! sEl_X0Position_G     - Initial electron X position
-! sEl_YP0osition_G     - Initial electron Y position
-! sEl_Z20Position_G    - Initial electron Z2 position
-! rho                - Pierce parameter, describe the
-!                      strength of the field
-! aw                 - Wiggler parameter
-! epsilon            - (1-betaz)/betaz                              
-! gamma_r            - Mean electron velocity at resonance
-! sFocusfactor       - Focussing factor - sqrt(2) for
-!                      natural helical wiggler
-!
-! iNumberElectrons_G  - Number of electrons (total)
-! iNumberNodes_G      - Number of nodes (total)
 
-INTEGER(KIND=IP) :: NX_G, NBX_G
-INTEGER(KIND=IP) :: NY_G, NBY_G
-INTEGER(KIND=IP) :: NZ2_G, NBZ2_G
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! field vars
 
-REAL(KIND=WP)    :: sLengthOfElmX_G 
-REAL(KIND=WP)    :: sLengthOfElmY_G 
-REAL(KIND=WP)    :: sLengthOfElmZ2_G
-!
-LOGICAL          :: qElectronsEvolve_G
-LOGICAL          :: qFieldEvolve_G
-LOGICAL          :: qElectronFieldCoupling_G
-LOGICAL          :: qDiffraction_G
-LOGICAL          :: qFocussing_G
-LOGICAL          :: qFilter
-logical   ::  qDump_G, qResume_G
+integer(kind=ip) :: NX_G, NBX_G
+integer(kind=ip) :: NY_G, NBY_G
+integer(kind=ip) :: NZ2_G, NBZ2_G
 
-!
-INTEGER(KIND=IP) :: iOrderA_G
-INTEGER(KIND=IP) :: NNZA_G      
-INTEGER(KIND=IP) :: iLenA_G
-INTEGER(KIND=IP) :: ReducedNX_G
-INTEGER(KIND=IP) :: ReducedNY_G
-INTEGER(KIND=IP) :: outnodex_G,outnodey_G
-REAL(KIND=WP), ALLOCATABLE     :: sA_G(:)  
-!
-INTEGER(KIND=IP), ALLOCATABLE  :: iGloNumA_G(:)
-INTEGER(KIND=IP), ALLOCATABLE  :: iNodCodA_G(:,:,:)
-!	  
-INTEGER(KIND=IP) :: iNodesPerElement_G
-!
-INTEGER(KIND=IPL), ALLOCATABLE  :: procelectrons_G(:)
+real(kind=wp)    :: sLengthOfElmX_G 
+real(kind=wp)    :: sLengthOfElmY_G 
+real(kind=wp)    :: sLengthOfElmZ2_G
 
-REAL(KIND=WP), ALLOCATABLE     :: s_chi_bar_G(:)
-REAL(KIND=WP), ALLOCATABLE     :: s_Normalised_chi_G(:)
 
-REAL(KIND=WP)    :: sRho_save_G,sAw_save_G
-REAL(KIND=WP)    :: sRho_G,sAw_G,sGammaR_G
-REAL(KIND=WP)    :: sEta_G,sKBeta_G
-REAL(KIND=WP)    :: sFocusfactor_G
-REAL(KIND=WP)    :: sFocusfactor_save_G
 
-!
+integer(kind=ip) :: ReducedNX_G
+integer(kind=ip) :: ReducedNY_G
+integer(kind=ip) :: outnodex_G,outnodey_G
 
-INTEGER(KIND=IPL) :: iNumberElectrons_G
-INTEGER(KIND=IPL) :: iGloNumElectrons_G
-INTEGER(KIND=IP) :: iNumberNodes_G,seedend
+integer(kind=ip) :: iNodesPerElement_G
 
-REAL(KIND=WP)    :: fx_G, fy_G
+integer(kind=ip) :: iNumberNodes_G
 
-REAL(KIND=WP), ALLOCATABLE :: kx_G(:)
-REAL(KIND=WP), ALLOCATABLE :: ky_G(:)
-REAL(KIND=WP), ALLOCATABLE :: kz2_loc_G(:)
+integer(kind=ip) :: seedend
 
-REAL(KIND=WP) :: sBeta_G    ! Absorption coefficient
+real(kind=wp), allocatable :: kx_G(:)
+real(kind=wp), allocatable :: ky_G(:)
+real(kind=wp), allocatable :: kz2_loc_G(:)
 
-REAL(KIND=WP)  :: sfilt, n2col, m2col, sz0, undgrad, n2col0
-  
-REAL(KIND=WP) :: delta_G, npk_bar_G
-!!!!!
-!!!!! NEW FOR NMAIN
+real(kind=wp) :: sBeta_G    ! Absorption coefficient
 
-LOGICAL          :: qSeparateStepFiles_G
+real(kind=wp)  :: sfilt   ! Frequency cutoff for high pass filter, in units 
+                          ! of f_z2 = Lenz2 * ffrac / lamda_rz2
 
-LOGICAL             :: qMod_G
+real(kind=wp) :: delta_G  ! Volume of field element (dx * dy * dz2)
 
-LOGICAL :: qResume, qWrite
 
-REAL(KIND=WP)       :: Dfact
-REAL(KIND=WP), ALLOCATABLE    :: D(:), delta(:), zMod(:), &
-                                 mf(:), delmz(:), tapers(:)
-INTEGER(KIND=IP)    :: ModNum, ModCount
+real(kind=wp), allocatable :: x_ax_G(:), y_ax_G(:) ! x and y axis for field integration
 
-INTEGER(KIND=IP), ALLOCATABLE :: frecvs(:),fdispls(:),&
-     lrecvs(:),ldispls(:),mrecvs(:),mdispls(:)
-INTEGER(KIND=IP) :: iCount, iStep, start_step
-REAL(KIND=WP) :: sStep, sStepSize
+!   ---   For rounded edge seed field   ---   !
 
-INTEGER(KIND=IP) :: nSteps
+logical, allocatable :: qRndFj_G(:)  ! Rounding edges of flat top seed?
 
-REAL(KIND=WP)       :: ffact
-REAL(KIND=WP)  :: diffStep
+real(kind=wp), allocatable :: sSigFj_G(:) ! sigma of gaussian tail off
+                                          ! for flat top seed
+
+
+
+
+
+
+
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! electron vars
+
+real(kind=wp), allocatable     :: s_chi_bar_G(:)
+real(kind=wp), allocatable     :: s_Normalised_chi_G(:)
+
+integer(kind=ipl), allocatable  :: procelectrons_G(:)
+
+integer(kind=ipl) :: iNumberElectrons_G
+integer(kind=ipl) :: iGloNumElectrons_G
+
+real(kind=wp) :: npk_bar_G  ! peak electron number density
+                            ! in the scaled xbar, ybar and z2bar
+                            ! dimensions
+
+!   ---   For rounded edge beam   ---   !
+
+logical, allocatable :: qRndEj_G(:)
+real(kind=wp), allocatable :: sSigEj_G(:) 
+real(kind=wp), parameter :: gExtEj_G = 7.5_wp
+
+
+! Electron macroparticle phase space coordinates 
+
+real(kind=wp), allocatable     :: sElX_G(:)
+real(kind=wp), allocatable     :: sElY_G(:)
+real(kind=wp), allocatable     :: sElZ2_G(:)
+real(kind=wp), allocatable     :: sElPX_G(:)
+real(kind=wp), allocatable     :: sElPY_G(:)
+real(kind=wp), allocatable     :: sElGam_G(:)
+
+
+
+
+
+
+
+
+
+! Temporary intermediate arrays for RK4
+
+! *t is 'temp', for intermediate stages of RK4
+! d*t and d*m are temp intermediate d/dz of each variable 
+
+
+! allocate with size iNumberElectrons_G
+
+
+
+!real(kind=wp), allocatable :: dxm(:), dxt(:), xt(:)    
+!real(kind=wp), allocatable :: dym(:), dyt(:), yt(:)
+!real(kind=wp), allocatable :: dpxm(:), dpxt(:), pxt(:)
+!real(kind=wp), allocatable :: dpym(:), dpyt(:), pyt(:)
+!real(kind=wp), allocatable :: dz2m(:), dz2t(:), z2t(:)
+!real(kind=wp), allocatable :: dpz2m(:), dpz2t(:), pz2t(:) 
+
+
+
+!real(kind=wp), allocatable :: dAm(:), dAt(:), A_localt(:) 
+
+
+
+!real(kind=wp), allocatable :: dxdz(:), dydz(:), dz2dz(:), dpxdz(:), dpydz(:), dpz2dz(:)
+!real(kind=wp), allocatable :: dAdz(:)
+
+
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Wiggler vars
+
+
+
+real(kind=wp)    :: sRho_save_G,sAw_save_G
+real(kind=wp)    :: sRho_G,sAw_G,sGammaR_G
+real(kind=wp)    :: sEta_G,sKBeta_G, sKappa_G
+real(kind=wp)    :: sFocusfactor_G
+real(kind=wp)    :: sFocusfactor_save_G
+real(kind=wp)    :: fx_G, fy_G
 
 
 real(kind=wp) :: lam_w_G, lam_r_G   ! wiggler period, resonant wavelength
@@ -148,52 +154,160 @@ real(kind=wp) :: lg_G, lc_G  ! gain length, cooperation length
 
 
 
+character(32_IP) :: zUndType_G     ! Selects undulator type
 
-
-
-
-
-
-!!!!!!    FOR DATA WRITING
-
-CHARACTER(32_IP) :: zDataFileName
-
-TYPE(cArraySegment) :: tArrayE(nElectronEquations_CG)
-TYPE(cArraySegment) :: tArrayA(nFieldEquations_CG)
-TYPE(cArraySegment) :: tArrayZ
-
-
-TYPE(cFileType) :: tPowF
-
-
-
-INTEGER(KIND=IP) :: iWriteNthSteps, iDumpNthSteps, iIntWriteNthSteps
-
-!!!!!!
-
-
-
-
-
-
-
-
-
-REAL(KIND=WP)   :: start_time,end_time
-REAL(KIND=WP)   :: time1, time2 !!!FOR DEBUGGING!!!
-
-
-real(kind=wp), allocatable :: x_ax_G(:), y_ax_G(:) ! x and y axis for field integration
-
-character(32_IP) :: zUndType_G         ! Selects undulator type
 real(kind=wp) :: kx_und_G, ky_und_G    ! kx and ky for 3D undulator B-field variation
 
-REAL(KIND=WP), ALLOCATABLE     :: sEl_X0Position_G(:)
-REAL(KIND=WP), ALLOCATABLE     :: sEl_Y0Position_G(:)
-REAL(KIND=WP), ALLOCATABLE     :: sEl_Z20Position_G(:)
-REAL(KIND=WP), ALLOCATABLE     :: sEl_PX0Position_G(:)
-REAL(KIND=WP), ALLOCATABLE     :: sEl_PY0Position_G(:)
-REAL(KIND=WP), ALLOCATABLE     :: sEl_PZ20Position_G(:)
+
+real(kind=wp)       :: Dfact  ! Dispersion strength factor for chicane
+                              ! (=1 for 'normal' dispersion, =0 for 
+                              ! isochronous chicanes)
+
+real(kind=wp), allocatable    :: D(:), delta(:), zMod(:), &
+                                 mf(:), delmz(:), tapers(:)
+
+integer(kind=ip), allocatable :: nSteps_arr(:)
+integer(kind=ip) :: iCsteps  ! Cumulative steps
+
+integer(kind=ip)    :: ModNum, ModCount
+
+
+
+
+
+
+
+
+real(kind=wp) :: n2col ! alpha, fractional change in aw (see 
+	                     ! LT Campbell, BWJ McNeil and S Reiche, 
+	                     ! New Journal of Physics 16 (2014) 103019)
+
+! The following are used for linear magnetic field tapering
+! where n2col = n2col0 + (undgrad * (sz-sz0)) 
+
+real(kind=wp) :: sz0     ! zbar used for beginning of taper i.e.
+                         ! (usually, the start of the current undulator module)
+
+real(kind=wp) :: undgrad ! d/dzbar of alpha (n2col)
+
+real(kind=wp) :: n2col0  ! Initial alpha in the current undulator module
+
+real(kind=wp) :: m2col   ! Fractional change in eta due to change in aw
+                         ! (redundant) 
+
+
+
+
+
+
+real(kind=wp)  :: diffStep ! Stepsize in zbar used for diffraction 
+
+real(kind=wp)  :: ffact    ! Scaling factor for fourier transforms
+                           ! (= nnodesX * nnodesY * nnodesz2)
+
+
+
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Integration
+
+integer(kind=ip) :: iCount, iStep, start_step
+real(kind=wp)    :: sStep, sStepSize
+integer(kind=ip) :: nSteps
+
+real(kind=wp)   :: start_time,end_time
+real(kind=wp)   :: time1, time2 !!!FOR DEBUGGING!!!
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Data writing
+
+
+
+character(32_IP) :: zDataFileName ! filename extension for 
+                                  ! data files
+
+! Type arrays describing electron, field and z output files,
+! respectively
+
+TYPE(cArraySegment), save :: tArrayE(nElectronEquations_CG)
+TYPE(cArraySegment), save :: tArrayA(nFieldEquations_CG)
+TYPE(cArraySegment), save :: tArrayZ
+
+
+TYPE(cFileType), save :: tPowF   ! Type array describing the power file
+	                       ! output
+
+
+
+integer(kind=ip) :: iWriteNthSteps, iDumpNthSteps, iIntWriteNthSteps
+
+character(32_ip) :: wrMeth_G
+
+
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Parallel Vars
+
+! These describe the displacement of data across MPI processes (see 
+! MPI dcumentation, e.g. inputs of MPI_ALLGATHERV)...
+
+
+
+! ...for the full field, when split according to FFTW...
+
+integer(kind=ip), allocatable :: frecvs(:), fdispls(:)
+
+! ...for the full (or 'large') field array, when spread as 
+! evenly as possible across processes...
+
+integer(kind=ip), allocatable :: lrecvs(:), ldispls(:)
+
+! ...and for the reduced or active field nodes, split 
+! evenly across processes.
+
+integer(kind=ip), allocatable :: mrecvs(:), mdispls(:)
+
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Flags
+
+
+
+logical   ::  qElectronsEvolve_G ! Integrate electron equations?
+
+logical   ::  qFieldEvolve_G     ! Integrate field equations?
+
+logical   ::  qElectronFieldCoupling_G  ! Electron-field coupling?
+
+logical   ::  qDiffraction_G     ! Model diffraction?
+
+logical   ::  qFocussing_G       ! Provide Focusing for electron beam?
+
+logical   ::  qFilter            ! High pass filter for radiation field
+                                 ! during diffraction? If not, the frequencies
+                                 ! below the cutoff are simply not diffracted.
+
+
+logical   ::  qDump_G            ! Dump data in case of crash?
+
+logical   ::  qResume_G          ! Reading from previously crashed runs dump files? (REDUNDANT)
+
+logical   ::  qSeparateStepFiles_G  ! Make seperate sdds files for each phase space coordinate? 
+
+
+logical   ::  qMod_G  ! Using undulator modules and chicanes?
+
+logical   ::  qResume            ! Reading from previously crashed runs dump files? (ACTUALLY IN USE!!)
+
+logical   ::  qWrite             ! Write data?
+
+
+
+
 
 
 

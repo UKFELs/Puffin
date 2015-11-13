@@ -142,7 +142,7 @@ CONTAINS
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('iNumElectronsPY','long',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
-       call SddsWriteParameter('iNumElectronsPZ2','long',tFileType=tParamFile)
+       call SddsWriteParameter('iNumElectronsGam','long',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('sLengthOfElmX','double',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
@@ -164,7 +164,7 @@ CONTAINS
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('sLenEPulsePY','double',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
-       call SddsWriteParameter('sLenEPulsePZ2','double',tFileType=tParamFile)
+       call SddsWriteParameter('sLenEPulseGam','double',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('sWigglerLengthX','double',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
@@ -182,7 +182,7 @@ CONTAINS
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('sSigmaGaussianPY','double',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
-       call SddsWriteParameter('sSigmaGaussianPZ2','double',&
+       call SddsWriteParameter('sSigmaGaussianGam','double',&
             tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('sA0_Re','double',tFileType=tParamFile)	   
@@ -267,7 +267,7 @@ CONTAINS
        If (.NOT. qOKL) Goto 1000
        call WriteINTEGER(iNumElectrons(iPY_CG),tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
-       call WriteINTEGER(iNumElectrons(iPZ2_CG),tParamFile,qOKL)
+       call WriteINTEGER(iNumElectrons(iGam_CG),tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
        call WriteRealNumber(sLengthOfElm(iX_CG),tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
@@ -289,7 +289,7 @@ CONTAINS
        If (.NOT. qOKL) Goto 1000
        call WriteRealNumber(sLenEPulse(iPY_CG),tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
-       call WriteRealNumber(sLenEPulse(iPZ2_CG),tParamFile,qOKL)
+       call WriteRealNumber(sLenEPulse(iGam_CG),tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
        call WriteRealNumber(sWigglerLength(iX_CG),tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
@@ -307,7 +307,7 @@ CONTAINS
        If (.NOT. qOKL) Goto 1000
        call WriteRealNumber(sSigmaGaussian(iPY_CG),tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
-       call WriteRealNumber(sSigmaGaussian(iPZ2_CG),tParamFile,qOKL)
+       call WriteRealNumber(sSigmaGaussian(iGam_CG),tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
        call WriteRealNumber(sA0_Re,tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
@@ -414,69 +414,32 @@ CONTAINS
 
 
 
-
-
-
-
-
-
-
-
-  subroutine wdfs(sA, sV, sZ, istep, tArrayA, tArrayE, tArrayZ, &
-                  iIntWr, iWr, qSep, zDFname, qWDisp, qOK)
+  subroutine wr_sdds(sA, sZ, istep, tArrayA, tArrayE, tArrayZ, &
+                     iIntWr, iWr, qSep, zDFname, qWriteFull, &
+                     qWriteInt, qOK)
 
     implicit none
 
 ! Write Data FileS
 
 
-    real(kind=wp), intent(in) :: sA(:), sV(:), sZ
+    real(kind=wp), intent(in) :: sA(:), sZ
     type(cArraySegment), intent(inout) :: tArrayA(:), tArrayE(:), tArrayZ
     integer(kind=ip), intent(in) :: istep
     integer(kind=ip), intent(in) :: iIntWr, iWr
     character(32_IP), intent(in) :: zDFName
-    logical, intent(in) :: qSep, qWDisp
+    logical, intent(in) :: qSep
     logical, intent(inout) :: qOK
 
     logical :: qWriteInt, qWriteFull, qOKL
 
-    qOK = .false.
-
-
-
-    if ((mod(iStep,iIntWr)==0) .or. (iStep == nSteps) .or. (iStep == 0) .or. (qWDisp) ) then
-
-      qWriteInt = .true.
-
-    end if
-
-
-
-
-    if ((mod(iStep,iWr)==0) .or. (iStep == nSteps) .or. (iStep == 0) .or. (qWDisp) ) then
-
-      qWriteFull = .true.
-
-    end if
-
-
-
     if (qWriteFull) then
 
-      call outputBeamFiles(sV, tArrayE, iStep, qSep, zDFName, qOKL)
+      call outputBeamFiles(tArrayE, iStep, qSep, zDFName, qOKL)
       if (.not. qOKL) goto 1000
-
-    end if
-
-
-    if (qWriteFull) then 
 
       call outputField(sA, tArrayA, iStep, qSep, zDFName, qOKL)
       if (.not. qOKL) goto 1000
-
-    end if
-
-    if (qWriteFull) then
 
       call outputZ(sZ, tArrayZ, iStep, qSep, zDFName, qOKL)
       if (.not. qOKL) goto 1000
@@ -485,32 +448,119 @@ CONTAINS
 
     if (qWriteInt) then
 
-      call writeIntData(sA,sV)
+      call writeIntData(sA)
     
     end if
 
-!     etc...
+!  Set error flag and exit         
+    qOK = .TRUE.            
+    goto 2000     
 
-!     So writeData below will become redundant
+! Error Handler - Error log Subroutine in CIO.f90 line 709
 
-
-
-
-!     Set error flag and exit
-
-    qOK = .true.
-    goto 2000
-
-
-!     Error Handler - Error log Subroutine in CIO.f90 line 709
-
-1000 call Error_log('Error in sddsPuffin:wdfs',tErrorLog_G)
-    print*,'Error in sddsPuffin:wdfs'
-
+1000 call Error_log('Error in sddsPuffin:wr_sdds',&
+          tErrorLog_G)
+    print*,'Error in sddsPuffin:wr_sdds'
 2000 continue
 
+  end subroutine wr_sdds
 
-  end subroutine wdfs
+
+
+
+
+
+
+!   subroutine wdfs(sA, sZ, istep, tArrayA, tArrayE, tArrayZ, &
+!                   iIntWr, iWr, qSep, zDFname, qWDisp, qOK)
+
+!     implicit none
+
+! ! Write Data FileS
+
+
+!     real(kind=wp), intent(in) :: sA(:), sZ
+!     type(cArraySegment), intent(inout) :: tArrayA(:), tArrayE(:), tArrayZ
+!     integer(kind=ip), intent(in) :: istep
+!     integer(kind=ip), intent(in) :: iIntWr, iWr
+!     character(32_IP), intent(in) :: zDFName
+!     logical, intent(in) :: qSep, qWDisp
+!     logical, intent(inout) :: qOK
+
+!     logical :: qWriteInt, qWriteFull, qOKL
+
+!     qOK = .false.
+    
+!     qWriteInt = .false.
+!     qWriteFull = .false.
+
+!     if ((mod(iStep,iIntWr)==0) .or. (iStep == nSteps) .or. (iStep == 0) .or. (qWDisp) ) then
+
+!       qWriteInt = .true.
+
+!     end if
+
+
+
+
+!     if ((mod(iStep,iWr)==0) .or. (iStep == nSteps) .or. (iStep == 0) .or. (qWDisp) ) then
+
+!       qWriteFull = .true.
+
+!     end if
+
+
+
+!     if (qWriteFull) then
+
+!       call outputBeamFiles(tArrayE, iStep, qSep, zDFName, qOKL)
+!       if (.not. qOKL) goto 1000
+
+!     end if
+
+
+!     if (qWriteFull) then 
+
+!       call outputField(sA, tArrayA, iStep, qSep, zDFName, qOKL)
+!       if (.not. qOKL) goto 1000
+
+!     end if
+
+!     if (qWriteFull) then
+
+!       call outputZ(sZ, tArrayZ, iStep, qSep, zDFName, qOKL)
+!       if (.not. qOKL) goto 1000
+
+!     end if
+
+!     if (qWriteInt) then
+
+!       call writeIntData(sA)
+    
+!     end if
+
+! !     etc...
+
+! !     So writeData below will become redundant
+
+
+
+
+! !     Set error flag and exit
+
+!     qOK = .true.
+!     goto 2000
+
+
+! !     Error Handler - Error log Subroutine in CIO.f90 line 709
+
+! 1000 call Error_log('Error in sddsPuffin:wdfs',tErrorLog_G)
+!     print*,'Error in sddsPuffin:wdfs'
+
+! 2000 continue
+
+
+!   end subroutine wdfs
 
 
 
@@ -657,7 +707,7 @@ CONTAINS
 !     Write the data
       
           call OutputIntegrationData(tArrayA(ifp)%tFileType, &
-                                     Vector(ifp,sA), &
+                                     sA(((ifp-1)*fieldsize) + 1: ifp*fieldsize), &
                                      fieldsize, &
                                      qOKL)
 
@@ -706,7 +756,7 @@ CONTAINS
 
 
 
-  subroutine outputBeamFiles(sV, tArrayE, iStep, qSeparate, zDFName, qOK)
+  subroutine outputBeamFiles(tArrayE, iStep, qSeparate, zDFName, qOK)
 
 
     implicit none
@@ -721,7 +771,6 @@ CONTAINS
 !                  sV
 !
  
-    real(kind=wp), intent(in) :: sV(:)
     type(cArraySegment), intent(inout) :: tArrayE(:)
     integer(kind=ip), intent(in) :: iStep
     logical, intent(in) :: qSeparate
@@ -730,7 +779,7 @@ CONTAINS
 
 ! Local vars
 
-    integer(kind=ip) :: iep, istart, iend
+    integer(kind=ip) :: iep
     logical :: qOKL
 
 
@@ -755,29 +804,13 @@ CONTAINS
 !     to file. This will create very large
 !     files!!!
 
-    do iep = 1_IP, SIZE(tArrayE)
-
-      if (tArrayE(iep)%qWrite) then
-     
-        iStart = tArrayE(iep)%iStart
-        iEnd   = tArrayE(iep)%iEnd
-
-!     Write the data
-      
-        call OutputIntegrationData(tArrayE(iep)%tFileType, &
-                                   sV(iStart:iEnd), &
-                                   tProcInfo_G%rank, &
-                                   iGloNumElectrons_G, &
-                                   qOKL)
-
-        if (.NOT. qOKL) goto 1000
-
-      end if
-
-    end do
-
-
-
+    call wrt_phs_coord(iRe_X_CG, sElX_G, qOKL)
+    call wrt_phs_coord(iRe_Y_CG, sElY_G, qOKL)
+    call wrt_phs_coord(iRe_Z2_CG, sElZ2_G, qOKL)
+    call wrt_phs_coord(iRe_PPerp_CG, sElPX_G, qOKL)
+    call wrt_phs_coord(iIm_PPerp_CG, sElPY_G, qOKL)
+    call wrt_phs_coord(iRe_Gam_CG, sElGam_G, qOKL)
+    if (.not. qOKL) goto 1000
 
 !     Set error flag and exit
 
@@ -800,7 +833,43 @@ CONTAINS
 
 
 
+  subroutine wrt_phs_coord(iPh_id,ph_coord,qOK)
 
+    integer(kind=ip), intent(in) :: iPh_id
+    real(kind=wp), intent(in) :: ph_coord(:)
+    logical, intent(out) :: qOK
+
+    logical :: qOKL
+
+    qOK = .false.
+
+    if (tArrayE(iPh_id)%qWrite) then
+
+!     Write the data
+      
+      call OutputIntegrationData(tArrayE(iPh_id)%tFileType, &
+                                 ph_coord, &
+                                 tProcInfo_G%rank, &
+                                 iGloNumElectrons_G, &
+                                 qOKL)
+
+      if (.NOT. qOKL) goto 1000
+
+    end if
+
+
+!     Set error flag and exit
+
+    qOK = .true.            
+    goto 2000
+
+
+1000 call Error_log('Error in sddsPuffin:wrt_phs_coord',tErrorLog_G)
+    print*,'Error in sddsPuffin:wrt_phs_coord'
+
+2000 continue
+
+  end subroutine wrt_phs_coord
 
 
 

@@ -88,7 +88,7 @@ SUBROUTINE MatchBeams(srho,sEmit_n,saw, &
 ! sBetaz             longitudinal velocity normalized to c
 ! qOKL               Local error flag
 
-  real(kind=wp) :: sbetaz, seta, sKbeta
+  real(kind=wp) :: sbetaz, seta, sKbeta, sKappa, aw_rms
   LOGICAL :: qOKL
   
 !     Set error flag
@@ -99,9 +99,35 @@ SUBROUTINE MatchBeams(srho,sEmit_n,saw, &
 
 
 
-  sKbeta = saw / 2.0_WP / sFF / sRho / sgamr
+  if (zUndType == 'curved') then
 
-  sbetaz = SQRT(sgamr**2.0_WP - 1.0_WP - (saw)**2.0_WP) / &
+    aw_rms =  saw / sqrt(2.0_wp)
+    sKbeta = aw_rms / 2.0_WP / sqrt(2.0_wp)/ sRho / sgamr
+
+  else if (zUndType == 'planepole') then
+
+    aw_rms =  saw / sqrt(2.0_wp)
+    sKbeta = aw_rms / 2.0_WP / sRho / sgamr
+
+  else if (zUndType == 'helical') then
+
+    aw_rms = saw
+    sKbeta = aw_rms / 2.0_WP / sqrt(2.0_wp) / sRho / sgamr
+
+  else
+
+    aw_rms = saw * SQRT(ux**2 + uy**2) / sqrt(2.0_wp)
+    sKbeta = aw_rms / 2.0_WP / sFF / sRho / sgamr
+
+  end if
+
+
+
+
+  
+  sKappa = saw / 2.0_wp / sRho / sgamr
+
+  sbetaz = SQRT(sgamr**2.0_WP - 1.0_WP - (aw_rms)**2.0_WP) / &
                  sgamr
 
   seta = (1.0_WP - sbetaz) / sbetaz
@@ -110,11 +136,11 @@ SUBROUTINE MatchBeams(srho,sEmit_n,saw, &
 !     Matching 1st beam only for now.....
 
   CALL MatchBeam(srho,sEmit_n(1),sKbeta, &
-                 sFF,sEta,&
+                 sFF,sEta,sKappa, &
                  iNNE(1,:),sLenE(1,:),sSigE(1,:), &
                  sSigF,iNNF,sLenF,&
                  sDelF,iRNX,iRNY, &
-                 zUndType,ux,uy,qOKL)
+                 zUndType,qOKL)
 
   IF (.NOT. qOKL) GOTO 1000
   
@@ -132,11 +158,11 @@ END SUBROUTINE MatchBeams
 
 
 SUBROUTINE MatchBeam(srho,sEmit_n,sKbeta, &
-                      sFF,sEta,&
+                      sFF,sEta,sKappa, &
                       iNNE,sLenE,sSigE, &
                       sSigF,iNNF,sLenF,&
                       sDelF,iRNX,iRNY, &
-                      zUndType,ux,uy,qOK)
+                      zUndType,qOK)
 
 ! Subroutine which matches the beam in x and y
 ! and defines the inner field nodes to use in
@@ -170,8 +196,7 @@ SUBROUTINE MatchBeam(srho,sEmit_n,sKbeta, &
 ! qOK                 Error flag
 
   REAL(KIND=WP), INTENT(IN) :: srho,sEmit_n,sKbeta, &
-                                 sFF,sEta, &
-                                 ux, uy
+                                 sFF,sEta, sKappa
 
   INTEGER(KIND=IP), INTENT(IN) :: iNNF(:),iNNE(:)
 
@@ -197,15 +222,21 @@ SUBROUTINE MatchBeam(srho,sEmit_n,sKbeta, &
 !     Get matched beam sigma in x and y
                         
   CALL GetMBParams(srho,sEmit_n,sKbeta,&
-                   sFF,sEta,sLenE,sSigE, &
-                   sSigF,ux,uy,zUndType,qOKL)
+                   sFF,sEta,sKappa,sLenE,sSigE, &
+                   sSigF,zUndType,qOKL)
 
   IF (.NOT. qOKL) GOTO 1000
 
 !     Define inner 'active' node set based on max
-!     transverse radius of beam
+!     transverse radius of beam...
 
 !     in x...
+
+  IF(tProcInfo_G%qRoot) THEN
+
+    PRINT*, 'Matching field grid sampling to beam sampling in xbar...'
+
+  END IF
 
   CALL GetInnerNodes(iNNF(iX_CG),iNNE(iX_CG),&
                      sLenE(iX_CG),sLenF(iX_CG),&
@@ -215,6 +246,13 @@ SUBROUTINE MatchBeam(srho,sEmit_n,sKbeta, &
   IF (.NOT. qOKL) GOTO 1000
   
 !     ...and y.
+
+  IF(tProcInfo_G%qRoot) THEN
+
+    PRINT*, 'Matching field grid sampling to beam sampling in ybar...'
+
+  END IF
+
 
   CALL GetInnerNodes(iNNF(iY_CG),iNNE(iY_CG),&
                      sLenE(iY_CG),sLenF(iY_CG),&
@@ -295,8 +333,8 @@ IMPLICIT NONE
 
   IF(tProcInfo_G%qRoot) THEN
 
-    PRINT*, 'le/ne= ', sLenEPulse/iNumElectrons
-    PRINT*, 'lw/nn= ', sWigglerLength/REAL(iNodes-1,KIND=WP)
+    PRINT*, ' electron macroparticle spacing = ', sLenEPulse/iNumElectrons
+    PRINT*, ' field node spacing = ', sWigglerLength/REAL(iNodes-1,KIND=WP)
 
   END IF
 
@@ -338,8 +376,8 @@ END SUBROUTINE GetInnerNodes
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE GetMBParams(srho,sEmit_n,k_beta,sFF,sEta,sLenE, &
-                        sSigE,sSigF,ux,uy,zUndType,qOK)
+SUBROUTINE GetMBParams(srho,sEmit_n,k_beta,sFF,sEta,sKappa,sLenE, &
+                        sSigE,sSigF,zUndType,qOK)
 
     IMPLICIT NONE
 
@@ -365,11 +403,10 @@ SUBROUTINE GetMBParams(srho,sEmit_n,k_beta,sFF,sEta,sLenE, &
   REAL(KIND=WP), INTENT(IN)    :: srho	      
   REAL(KIND=WP), INTENT(IN)    :: sEmit_n	      
   REAL(KIND=WP), INTENT(IN)    :: k_beta	      
-  REAL(KIND=WP), INTENT(IN)    :: sFF,sEta
+  REAL(KIND=WP), INTENT(IN)    :: sFF,sEta,sKappa
   REAL(KIND=WP), INTENT(INOUT) :: sLenE(:)	   
   REAL(KIND=WP), INTENT(INOUT) :: sSigE(:)    
   REAL(KIND=WP), INTENT(INOUT) :: sSigF(:)
-  REAL(KIND=WP), INTENT(IN)    :: ux, uy	
   character(32_IP),  intent(in)  :: zUndType
   LOGICAL,       INTENT(OUT)   :: qOK
 
@@ -381,6 +418,11 @@ SUBROUTINE GetMBParams(srho,sEmit_n,k_beta,sFF,sEta,sLenE, &
 
   qOK = .FALSE.
 
+  if (tProcInfo_G%qRoot) print*,''
+  if (tProcInfo_G%qRoot) print*, '---------------------'
+  IF (tProcInfo_G%qRoot) PRINT*, 'Matching transverse beam area to focusing channel...'
+
+
 !     Matched beam radius used for electron sigma spread        
 
   sSigE(iX_CG:iY_CG) = MatchedBeamRadius(srho,&
@@ -388,21 +430,10 @@ SUBROUTINE GetMBParams(srho,sEmit_n,k_beta,sFF,sEta,sLenE, &
 
 !     p spread
 
-  if (zUndType == 'curved' .or. zUndType == 'planepole') then
+  sSigE(iPX_CG:iPY_CG) = 18.0_WP * &
+            SQRT(sEta) / 2.0_wp / sKappa * sEmit_n / &
+            sSigE(iX_CG:iY_CG)
 
-    sSigE(iPX_CG:iPY_CG) = 18.0_WP*sEmit_n* &
-              SQRT(ux**2 + uy**2) / (2.0_WP * SQRT(2.0_WP)) * &
-              SQRT(sEta) / &
-              (sFF*k_beta*sSigE(iX_CG:iY_CG))
-
-  else
-
-    sSigE(iPX_CG:iPY_CG) = 18.0_WP*sEmit_n* &
-              SQRT(ux**2 + uy**2) / (2.0_WP * SQRT(2.0_WP)) * &
-              SQRT(sEta) / &
-              (sFF*k_beta*sSigE(iX_CG:iY_CG))
-
-  end if
 !     The sigma values above are the rms radii
 !     Need to change to sigma of current distribution
 !     Here it is assumed lex=6sigma
@@ -416,35 +447,32 @@ SUBROUTINE GetMBParams(srho,sEmit_n,k_beta,sFF,sEta,sLenE, &
          
   sLenE(iPX_CG:iPY_CG) = 6.0_WP * sSigE(iPX_CG:iPY_CG)
 
+
+  IF (tProcInfo_G%qRoot) PRINT*, 'New Gaussian sigma of electron beam in x is ',sSigE(iX_CG)
+  IF (tProcInfo_G%qRoot) PRINT*, '...so total sampled length of beam in x is ', sLenE(iX_CG)
+  if (tProcInfo_G%qRoot) print*,''
+  IF (tProcInfo_G%qRoot) PRINT*, 'New Gaussian sigma of e-beam in px is ', sSigE(iPX_CG)
+  IF (tProcInfo_G%qRoot) PRINT*, 'New Gaussian sigma of e-beam in py is ', sSigE(iPY_CG)
+
+
 !     Seed field sigma spread made equal to electron 
 !     sigma spread         
-!     NOTE: the seed field length must be <= electron
-!     beam length this only applies in x and y
 
-  IF  (sSigF(iX_CG) > sSigE(iX_CG)) THEN
 
-    sSigF(iX_CG) = sSigE(iX_CG)
-       
-  END IF
-
-  IF  (sSigF(iY_CG) > sSigE(iY_CG)) THEN
+  sSigF(iX_CG) = sSigE(iX_CG)
+         
+  sSigF(iY_CG) = sSigE(iY_CG)
   
-    sSigF(iY_CG) = sSigE(iY_CG)
-  
-  END IF
-	  
-  IF (tProcInfo_G%qRoot) PRINT*, 'NEW SEED SIGMA IS', sSigF(iX_CG)
 
-  IF (tProcInfo_G%qRoot) PRINT*, 'NEW ELECTRON SIGMA IS',sSigE(iX_CG)
+  if (tProcInfo_G%qRoot) print*,''
+  if (tProcInfo_G%qRoot) print*, '---------------------'
+  IF (tProcInfo_G%qRoot) PRINT*, 'Matching transverse seed field area to transverse e-beam area...'
+	if (tProcInfo_G%qRoot) print*,''
+  IF (tProcInfo_G%qRoot) PRINT*, 'New Gaussian sigma of field in x is', sSigF(iX_CG)  
+  if (tProcInfo_G%qRoot) print*,''
+  IF (tProcInfo_G%qRoot) PRINT*, 'Scaled Rayleigh length (in gain lengths) = ', sEmit_n/k_beta/2.0_wp
 
-  IF (tProcInfo_G%qRoot) PRINT*, 'NEW ELECTRON LENGTH IS', sLenE(iX_CG)
-
-  IF (tProcInfo_G%qRoot) PRINT*, 'NEW ELECTRON p SIGMA IS', &
-                                   sSigE(iPX_CG:iPY_CG)
-
-  IF (tProcInfo_G%qRoot) PRINT*, 'RAYLEIGH RANGE IS', sEmit_n/k_beta
-
-  IF (tProcInfo_G%qRoot) PRINT*, 'LAMBDA_BETA IS ', 2.0_WP*pi/k_beta
+  IF (tProcInfo_G%qRoot) PRINT*, 'Scaled betatron wavelength (in gain lengths) = ', 2.0_WP*pi/k_beta
 
 ! Set error flag and exit         
 
@@ -510,7 +538,7 @@ SUBROUTINE CheckSourceDiff(sDelZ,iSteps,srho,sSigE,sLenF,sDelF,iNNF,qOK)
           
     IF(tProcInfo_G%QROOT)PRINT *, &
       'WARNING: INITIAL E BEAM SIGMA IS TOO SMALL', &
-      'THERE MAY BE TOO MUCH DIFFRACTION IN Y'
+      'THERE MAY BE TOO MUCH DIFFRACTION IN X'
   
   ENDIF
 

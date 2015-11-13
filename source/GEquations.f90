@@ -10,119 +10,143 @@ module Equations
 use paratype
 use ArrayFunctions
 use Globals
-
+use rhs_vars
 
 implicit none
 
+
+
+!private real(kind=wp), allocatable :: dp2f(:), sField4ElecReal(:), &
+!                                      sField4ElecImag(:) !, &
+!                                      !Lj(:)
+
+
+
+!real(kind=wp), allocatable :: dp2f(:), sField4ElecReal(:), &
+!                              sField4ElecImag(:) !, &
+                              !Lj(:)
+
+
+
 contains
 
-  subroutine getdppdz_r(sInv2rho,ZOver2rho,salphaSq,&
-    sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
-
+  subroutine dppdz_r_f(sx, sy, sz2, spr, spi, sgam, &
+                       sdpr, qOK)
 
   	implicit none
 
 
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
+    real(kind=wp), intent(out) :: sdpr(:)
 
-    REAL(KIND=WP),INTENT(IN) :: sInv2rho
-    REAL(KIND=WP),INTENT(IN) :: ZOver2rho,salphaSq
-    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE ,INTENT(IN):: sField4ElecReal
-    REAL(KIND=WP),ALLOCATABLE ,INTENT(IN):: Lj(:), dp2f(:)
-    REAL(KIND=WP),INTENT(IN) :: kbeta,nd
-    REAL(KIND=WP),INTENT(IN) :: sy(:)
-    REAL(KIND=WP),INTENT(OUT) :: sb(:)
+    logical, intent(inout) :: qOK
 
     
     LOGICAL :: qOKL
 
+    qOK = .false.
 
     if (zUndType_G == 'curved') then
 
 !     For curved pole undulator
 
 
-         CALL PutValueInVector(iRe_PPerp_CG, &
-             sInv2rho * ( COSH(Vector(iRe_X_CG,sy) * kx_und_G) * &
-             SINH(Vector(iRe_Y_CG,sy) * ky_und_G) *SQRT(2.0_WP) &
-              * SQRT(sEta_G) * Lj * Vector(iIm_PPerp_CG,sy)  &      
-               *  cos(ZOver2rho) &
-              / (SQRT(salphaSq) * ky_und_G) +   COSH(Vector(iRe_X_CG,sy) * kx_und_G) &
-              *COSH(Vector(iRe_Y_CG,sy) * ky_und_G) * sin(ZOver2rho) - &
-               sEta_G * Vector(iRe_Q_CG,sy) * salphaSq * sField4ElecReal), &
-             sb,       &       
-             qOKL)
+        sdpr = sInv2rho * (  n2col * cosh(kx_und_G * sx) * cosh(ky_und_G * sy) &
+                            * sin(ZOver2rho)  &
+                            - sEta_G * sp2 / sKappa_G**2 *    &
+                            sField4ElecReal )  +      &
+               ( sKappa_G * spi / sgam * (1 + sEta_G * sp2) * &
+                     sqrt(sEta_G) * sInv2rho / kx_und_G  *    & 
+                     cosh(sx * kx_und_G) * sinh(sy * ky_und_G) *  &
+                     n2col * cos(ZOver2rho) )
+    
 
 
-! Curved poles p_x equation - 1st order expansion
+!        sdpr = sInv2rho * ( cosh(sx * kx_und_G) * &
+!                        sinh(sy * ky_und_G) * sqrt(2.0_WP) &
+!                        * sqrt(sEta_G) * Lj * spi  &      
+!                        *  cos(ZOver2rho) &
+!                        / (sqrt(salphaSq) * ky_und_G) + &
+!                        cosh(sx * kx_und_G) &
+!                        * cosh(sy * ky_und_G) * sin(ZOver2rho) - &
+!                        sEta_G * sp2 / sKappa_G**2 * sField4ElecReal)
 !
-!         CALL PutValueInVector(iRe_PPerp_CG, &
-!             sInv2rho * ((1.0_WP + 0.5_WP * Vector(iRe_X_CG,sy)**2 * kx_und_G**2 ) *SQRT(2.0_WP) &
-!              * SQRT(sEta_G) * Lj * Vector(iIm_PPerp_CG,sy)  &      
-!               *  Vector(iRe_Y_CG,sy) *  cos(ZOver2rho) &
-!              / SQRT(salphaSq)  +  &
-!                ( 1 + 0.5_WP * Vector(iRe_X_CG,sy)**2 * kx_und_G**2 )* &
-!               ( 1 + 0.5_WP * Vector(iRe_Y_CG,sy)**2 * ky_und_G**2 ) * sin(ZOver2rho) - &
-!               sEta_G * Vector(iRe_Q_CG,sy) * salphaSq * sField4ElecReal), &
-!             sb,       &       
-!             qOKL)
-
-
-
-
-
-
+        
 
     else if (zUndType_G == 'planepole')  then
 
 !     Re(p_perp) equation for plane-poled undulator
 
-         CALL PutValueInVector(iRe_PPerp_CG, &
-           sInv2rho * (-sField4ElecReal*salphaSq * sEta_G * Vector(iRe_Q_CG,sy) &
-           + ((SQRT(6.0_WP) *sRho_G) /SQRT(salphaSq))*SINH(sInv2rho * Vector(iRe_Y_CG,sy) &
-           * SQRT(sEta_G))  * cos(ZOver2rho) * Lj * Vector(iIm_PPerp_CG,sy) + &
-            COSH(sInv2rho * Vector(iRe_Y_CG,sy) * SQRT(sEta_G)) *sin(ZOver2rho)), &
-            sb,       &       
-            qOKL)
+        sdpr = sInv2rho * ( n2col * cosh( sqrt(sEta_G) * sInv2rho * sy) & 
+                            * sin(ZOver2rho) & 
+                            - sEta_G * sp2 / sKappa_G**2 *    &
+                            sField4ElecReal ) & 
+               + ( sKappa_G * spi / sgam * (1 + sEta_G * sp2)  &
+                   * sinh( sqrt(sEta_G) * sInv2rho * sy ) &
+                   * n2col * cos(ZOver2rho) )
 
 
 
-! plane pole - 1st order expansion
-!
-!         CALL PutValueInVector(iRe_PPerp_CG, &
-!             sInv2rho * (-1.0_WP  *SQRT(2.0_WP) &
-!              * SQRT(sEta_G) * Lj * Vector(iIm_PPerp_CG,sy) * &      
-!                 Vector(iRe_Y_CG,sy) *  cos(ZOver2rho) &
-!              / SQRT(salphaSq)  +  sin(ZOver2rho) - &
-!               sEta_G * Vector(iRe_Q_CG,sy) * salphaSq * sField4ElecReal), &
-!             sb,       &       
-!             qOKL)
+!        sdpr = sInv2rho * (-sField4ElecReal*salphaSq * &
+!                        sEta_G * sp2 &
+!                        + ((sqrt(6.0_WP) *sRho_G) /sqrt(salphaSq)) * &
+!                        sinh(sInv2rho * sy &
+!                        * sqrt(sEta_G))  * cos(ZOver2rho) * Lj * &
+!                        spi + &
+!                        cosh(sInv2rho * sy * &
+!                        sqrt(sEta_G)) *sin(ZOver2rho))
 
+    else if (zUndType_G == 'helical') then
 
+        sdpr = sInv2rho * ( n2col * sin(ZOver2rho)  & 
+                            - sEta_G * sp2 / sKappa_G**2 *    &
+                            sField4ElecReal ) & 
+               + ( sKappa_G * spi / sgam * (1 + sEta_G * sp2) &
+                   * sqrt(sEta_G) * sInv2rho * n2col * (     &
+                    -sx * sin( ZOver2rho )  + sy * cos( ZOver2rho ) ) )
 
+    else
 
-
-
-
-    else 
 
 !     "normal" PUFFIN case with no off-axis undulator
 !     field variation
 
-        CALL PutValueInVector(iRe_PPerp_CG, &
-            sInv2rho * (fy_G*sin(ZOver2rho) - &
-            (salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
-            sField4ElecReal ) ) - & 
-            nd / Lj * & ! New focusing term
-            (  ( kbeta**2 * Vector(iRe_X_CG,sy)) + (sEta_G / &
-            ( 1.0_WP + (sEta_G * Vector(iRe_Q_CG,sy)) ) * &
-            Vector(iRe_X_CG,sb) * dp2f ) ), &
-            sb,       &     
-            qOKL)
+!      if (qFocussing_G) then
+
+!        sdpr = sInv2rho * (fy_G*n2col*sin(ZOver2rho) - &
+!                        (salphaSq * sEta_G * sp2 * &
+!                        sField4ElecReal ) ) - & 
+!                        nd / Lj * & ! focusing term
+!                        (  ( kbeta**2 * sx) + (sEta_G / &
+!                        ( 1.0_WP + (sEta_G * sp2) ) * &
+!                        sdx * dp2f ) )
+!
+!      else 
+
+
+        sdpr = sInv2rho * (fy_G * n2col *sin(ZOver2rho) - &
+              ( sEta_G * sp2 / sKappa_G**2 * &
+              sField4ElecReal ) )
+
+
+!      end if
 
 
     end if
 
-  end subroutine getdppdz_r
+    ! Set the error flag and exit
+
+    qOK = .true.
+
+    goto 2000 
+
+    1000 call Error_log('Error in equations:dppdz_r',tErrorLog_G)
+    
+    print*,'Error in equations:dppdz_r'
+
+    2000 continue
+
+  end subroutine dppdz_r_f
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -132,23 +156,21 @@ contains
 
 
 
-  SUBROUTINE getdppdz_i(sInv2rho,ZOver2rho,salphaSq,sField4ElecImag,nd,Lj,kbeta,sb,sy,dp2f,qOKL)
+  subroutine dppdz_i_f(sx, sy, sz2, spr, spi, sgam, &
+                       sdpi, qOK)
+
+    implicit none
 
 
-  	IMPLICIT NONE
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
+    real(kind=wp), intent(out) :: sdpi(:)
 
+    logical, intent(inout) :: qOK
 
-
-    REAL(KIND=WP),INTENT(IN) :: sInv2rho
-    REAL(KIND=WP),INTENT(IN) :: ZOver2rho,salphaSq
-    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE ,INTENT(IN):: sField4ElecImag
-    REAL(KIND=WP),ALLOCATABLE,INTENT(IN) :: Lj(:), dp2f(:)
-    REAL(KIND=WP),INTENT(IN) :: kbeta,nd
-    REAL(KIND=WP),INTENT(IN) :: sy(:)
-    REAL(KIND=WP),INTENT(OUT) :: sb(:)
     LOGICAL :: qOKL                   
 
 
+    qOK = .false.
 
 
     if (zUndType_G == 'curved') then
@@ -156,31 +178,30 @@ contains
 
 !     For curved pole undulator
 
-               CALL PutValueInVector(iIM_PPerp_CG, &
-              sInv2rho * ( -1.0_WP * SQRT(2.0_WP) * SQRT(sEta_G) * Lj * Vector(iRe_PPerp_CG,sy) &
-              *COSH(Vector(iRe_X_CG,sy) * kx_und_G) * SINH(Vector(iRe_Y_CG,sy) * ky_und_G) &
-                   * cos(ZOver2rho)  / (SQRT(salphaSq) * ky_und_G)  + sin(ZOver2rho) &
-               * kx_und_G/ky_und_G * SINH(Vector(iRe_X_CG,sy) * kx_und_G) * SINH(Vector(iRe_Y_CG,sy) * ky_und_G) &
-                - sEta_G * Vector(iRe_Q_CG,sy)  * salphaSq * sField4ElecImag), &
-             sb,       &       
-             qOKL)      
 
-!     Curved poles p_x equation - 1st order expansion
-!
-!         CALL PutValueInVector(iIM_PPerp_CG, &
-!              sInv2rho * ( -1.0_WP * SQRT(2.0_WP) * SQRT(sEta_G) * Lj * Vector(iRe_PPerp_CG,sy) &
-!              * ( 1.0_WP + 0.5_WP * Vector(iRe_X_CG,sb)**2 * kx_und_G**2) &
-!              * Vector(iRe_Y_CG,sy)  * cos(ZOver2rho) &
-!              / SQRT(salphaSq)  + sin(ZOver2rho) &
-!               * Vector(iRe_X_CG,sy) * Vector(iRe_Y_CG,sy)* &
-!                kx_und_G**2 - sEta_G * Vector(iRe_Q_CG,sy) &
-!               * salphaSq * sField4ElecImag), &
-!             sb,       &       
-!             qOKL)
+        sdpi = sInv2rho * ( n2col * kx_und_G / ky_und_G * &
+                            sinh(kx_und_G * sx) * sinh(ky_und_G * sy) &
+                            * sin(ZOver2rho)  &
+                            - sEta_G * sp2 / sKappa_G**2 *    &
+                            sField4ElecReal )  -      &
+               ( sKappa_G * spr / sgam * (1 + sEta_G * sp2) * &
+                     sqrt(sEta_G) * sInv2rho / kx_und_G  *    & 
+                     cosh(sx * kx_und_G) * sinh(sy * ky_und_G) *  &
+                     n2col * cos(ZOver2rho) )
+    
 
 
 
-
+!        sdpi = sInv2rho * ( -1.0_WP * sqrt(2.0_WP) * sqrt(sEta_G) &
+!                        * Lj * spr &
+!                        * cosh(sx * kx_und_G) &
+!                        * sinh(sy * ky_und_G) &
+!                        * cos(ZOver2rho)  / (sqrt(salphaSq) * ky_und_G) &
+!                        + sin(ZOver2rho) * kx_und_G/ky_und_G * &
+!                        sinh(sx * kx_und_G) * &
+!                        sinh(sy * ky_und_G) & 
+!                        - sEta_G * sp2 * salphaSq * &
+!                        sField4ElecImag)
 
 
     else if (zUndType_G == 'planepole') then 
@@ -189,31 +210,32 @@ contains
 
 
 
-           CALL PutValueInVector(iIM_PPerp_CG, &
-            sInv2rho * (- sField4ElecImag * salphaSq * sEta_G * Vector(iRe_Q_CG,sy)  &
-             - ((SQRT(6.0_WP) * sRho_G)/ SQRT(salphaSq)) * SINH(sInv2rho * Vector(iRe_Y_CG,sy) &
-             * SQRT(sEta_G)) * cos(ZOver2rho) * Lj * Vector(iRe_PPerp_CG,sy)) , &
-            sb,       &       
-            qOKL)    
-
-            
-            
-! plane pole - 1st order expansion (DOESN'T LOOK RIGHT [-LAWRENCE])
-!
-!         CALL PutValueInVector(iIM_PPerp_CG, &
-!             sInv2rho * ( SQRT(2.0_WP) * SQRT(sEta_G) * Lj * Vector(iRe_PPerp_CG,sy) &
-!              * Vector(iRe_Y_CG,sy)  * cos(ZOver2rho) &
-!              / SQRT(salphaSq)  - sin(ZOver2rho) &
-!               * Vector(iRe_X_CG,sy) * Vector(iRe_Y_CG,sy)* &
-!                kx_und_G**2 - sEta_G * Vector(iRe_Q_CG,sy) &
-!               * salphaSq * sField4ElecImag), &
-!             sb,       &       
-!             qOKL)
+        sdpi = sInv2rho * ( 0_ip  &
+                            - sEta_G * sp2 / sKappa_G**2 *    &
+                            sField4ElecReal ) & 
+               - ( sKappa_G * spr / sgam * (1 + sEta_G * sp2) &
+                   * sinh( sqrt(sEta_G) * sInv2rho * sy ) &
+                   * n2col * cos(ZOver2rho) )
 
 
 
 
 
+!        sdpi = sInv2rho * (- sField4ElecImag * salphaSq * &
+!                        sEta_G * sp2  &
+!                        - ((sqrt(6.0_WP) * sRho_G)/ sqrt(salphaSq)) * &
+!                        sinh(sInv2rho * sy &
+!                        * sqrt(sEta_G)) * cos(ZOver2rho) * Lj * &
+!                        spr)
+
+    else if (zUndType_G == 'helical') then
+
+        sdpi = sInv2rho * (  n2col * cos(ZOver2rho)  & 
+                            - sEta_G * sp2 / sKappa_G**2 *    &
+                            sField4ElecReal ) & 
+               - ( sKappa_G * spr / sgam * (1 + sEta_G * sp2) &
+                   * sqrt(sEta_G) * sInv2rho * n2col * (   &
+                    -sx * sin( ZOver2rho )  + sy * cos( ZOver2rho ) ) )
 
 
     else
@@ -222,20 +244,45 @@ contains
 !     field variation
 
 
-       call PutValueInVector(iIm_PPerp_CG, &
-            sInv2rho * (fx_G*cos(ZOver2rho) - &
-            (salphaSq * sEta_G * Vector(iRe_Q_CG,sy) * &
-            sField4ElecImag ) ) + &
-            nd / Lj * & ! New focusing term
-            (  ( kbeta**2 * Vector(iRe_Y_CG,sy)) + (sEta_G / &
-            ( 1.0_WP + (sEta_G * Vector(iRe_Q_CG,sy)) ) * &
-            Vector(iRe_Y_CG,sb) * dp2f ) ), &
-            sb,       &     
-            qOKL)
+!      if (qFocussing_G) then
+!
+!        sdpi = sInv2rho * (fx_G*n2col*cos(ZOver2rho) - &
+!                        (salphaSq * sEta_G * sp2 * &
+!                        sField4ElecImag ) ) + &
+!                        nd / Lj * & ! focusing term
+!                        (  ( kbeta**2 * sy) + (sEta_G / &
+!                        ( 1.0_WP + (sEta_G * sp2) ) * &
+!                        sdy * dp2f ) )
+!
+!
+!      else
+
+
+        sdpi = sInv2rho * (fx_G * n2col * cos(ZOver2rho) - &
+                      ( sEta_G * sp2 / sKappa_G**2 * &
+                      sField4ElecImag ) )
+
+!      end if
+
 
     end if
 
-  end subroutine getdppdz_i
+    ! Set the error flag and exit
+
+    qOK = .true.
+
+    goto 2000 
+
+    1000 call Error_log('Error in equations:dppdz_i',tErrorLog_G)
+    
+    print*,'Error in equations:dppdz_i'
+    
+    2000 continue
+
+
+  end subroutine dppdz_i_f
+
+
 
 
 
@@ -243,103 +290,216 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine getdp2dz(sInv2rho,ZOver2rho,salphaSq, &
-                      sField4ElecImag,sField4ElecReal, &
-                      nd,Lj,kbeta,sb,sy,dp2f,nb,qOKL)
+  subroutine dgamdz_f(sx, sy, sz2, spr, spi, sgam, &
+                      sdgam, qOK)
+
+    implicit none
 
 
-  	IMPLICIT NONE
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
+    real(kind=wp), intent(out) :: sdgam(:)
 
+    logical, intent(inout) :: qOK
 
-
-    REAL(KIND=WP),INTENT(IN) :: sInv2rho
-    REAL(KIND=WP),INTENT(IN) :: ZOver2rho,salphaSq
-    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE ,INTENT(IN):: sField4ElecReal,sField4ElecImag
-    REAL(KIND=WP),ALLOCATABLE,INTENT(IN) :: Lj(:), dp2f(:)
-    REAL(KIND=WP),INTENT(IN) :: kbeta,nd,nb
-    REAL(KIND=WP),INTENT(IN) :: sy(:)
-    REAL(KIND=WP),INTENT(OUT) :: sb(:)   
     LOGICAL :: qOKL
 
 
+    qOK = .false.
+
+    
+
+    sdgam = -sRho_G * ( 1 + sEta_G * sp2 ) / sgam * 2_wp *   &
+           ( spr * sField4ElecReal + spi * sField4ElecImag ) 
+
+    ! Set the error flag and exit
+
+    qOK = .true.
+
+    goto 2000 
+
+    1000 call Error_log('Error in equations:dp2dz',tErrorLog_G)
+    
+    print*,'Error in equations:dp2dz'
+
+    2000 continue
 
 
-    if (zUndType_G == 'curved') then
+  end subroutine dgamdz_f
 
 
-!     For curved pole undulator
 
-        CALL PutValueInVector(iRe_Q_CG, &
-             (4_WP * sRho_G / sEta_G) * Lj**2 * ( (Vector(iRe_pPerp_CG,sy) * sField4ElecReal &
-             + Vector(iIm_pPerp_CG,sy) * sField4ElecImag) * Vector(iRe_Q_CG,sy) * sEta_G &
-             + (1.0_WP/salphaSq) * (1 + sEta_G * Vector(iRe_Q_CG,sy)) * sin(ZOver2rho) * &
-             (Vector(iRe_pPerp_CG,sy) * COSH(Vector(iRe_X_CG,sy) * kx_und_G) * COSH(Vector(iRe_Y_CG,sy) * ky_und_G) &
-             + Vector(iIm_pPerp_CG,sy) * kx_und_G/ky_und_G * SINH(Vector(iRe_X_CG,sy) * kx_und_G) * &
-             SINH(Vector(iRe_Y_CG,sy) * ky_und_G))),&
-             sb,&
-             qOKL)
 
-!     Curved pole to 1st order
+
+
+
+  subroutine dxdz_f(sx, sy, sz2, spr, spi, sgam, &
+                    sdx, qOK)
+
+    implicit none
+
+!   Calculate dx/dz
 !
-!        CALL PutValueInVector(iRe_Q_CG, &
-!             (4_WP * sRho_G / sEta_G) * Lj**2 * ( (Vector(iRe_pPerp_CG,sy) * sField4ElecReal &
-!             + Vector(iIm_pPerp_CG,sy) * sField4ElecImag) * Vector(iRe_Q_CG,sy) * sEta_G &
-!             + (1.0_WP/salphaSq) * (1 + sEta_G * Vector(iRe_Q_CG,sy)) * sin(ZOver2rho) * &
-!             (Vector(iRe_pPerp_CG,sy) * (1.0_WP + 0.5_WP* kx_und_G**2 * Vector(iRe_X_CG,sy)**2 ) * &
-!                (1.0_WP + 0.5_WP * ky_und_G**2 * Vector(iRe_Y_CG,sy)**2) + Vector(iIm_pPerp_CG,sy) &
-!             * kx_und_G**2 * Vector(iRe_X_CG,sy) * Vector(iRe_Y_CG,sy) ) ),&
-!             sb,&
-!             qOKL)
+!              Arguments:
 
-    else if (zUndType_G == 'planepole') then 
 
-!     p2 equation for plane-poled undulator
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
+    real(kind=wp), intent(out) :: sdx(:)
 
- 
-        CALL PutValueInVector(iRe_Q_CG, &
-            (4_WP * sRho_G / sEta_G) * Lj**2 * ( (Vector(iRe_pPerp_CG,sy) * sField4ElecReal &
-            + Vector(iIm_pPerp_CG,sy) * sField4ElecImag) * Vector(iRe_Q_CG,sy) * sEta_G &
-            + (1.0_WP/salphaSq) * (1 + sEta_G * Vector(iRe_Q_CG,sy)) &
-            * COSH(sInv2rho * Vector(iRe_Y_CG,sy) * SQRT(sEta_G)) &
-             * sin(ZOver2rho) *  Vector(iRe_pPerp_CG,sy)  ) , &
-            sb,&
-            qOKL)
 
-! Plane pole to 1st order (DOESN'T LOOK RIGHT [-LAWRENCE])
+!    real(kind=wp), intent(in) :: sy(:), Lj(:), nd
+!    real(kind=wp), intent(inout) :: sb(:)
+    logical, intent(inout) :: qOK
+
+!              Local vars
+
+    logical :: qOKL ! Local error flag
+
+
+    qOK = .false.
+
+
+    sdx = 2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
+          (1 + sEta_G * sp2) / sgam *  &
+          spr
+
+
+!    sdx = spr * Lj / nd
+    
+
+    qOK = .true.
+    
+    goto 2000
+    
+    1000 call Error_log('Error in equations:dxdz',tErrorLog_G)
+    
+    2000 continue
+
+
+  end subroutine dxdz_f
+
+
+
+
+
+  subroutine dydz_f(sx, sy, sz2, spr, spi, sgam, &
+                    sdy, qOK)
+
+    implicit none
+
+!   Calculate dy/dz
 !
-!        CALL PutValueInVector(iRe_Q_CG, &
-!             (4_WP * sRho_G / sEta_G) * Lj**2 * ( (Vector(iRe_pPerp_CG,sy) * sField4ElecReal &
-!             + Vector(iIm_pPerp_CG,sy) * sField4ElecImag) * Vector(iRe_Q_CG,sy) * sEta_G &
-!             + (1.0_WP/salphaSq) * (1 + sEta_G * Vector(iRe_Q_CG,sy)) * sin(ZOver2rho) * &
-!             (Vector(iRe_pPerp_CG,sy) - Vector(iIm_pPerp_CG,sy) &
-!             * kx**2 * Vector(iRe_X_CG,sy) * Vector(iRe_Y_CG,sy) ) ),&
-!             sb,&
-!             qOKL)
+!              Arguments:
+
+
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
+    real(kind=wp), intent(out) :: sdy(:)
+
+    logical, intent(inout) :: qOK
+
+!              Local vars
+
+    logical :: qOKL ! Local error flag
+
+
+    qOK = .false.
+
+
+    sdy = - 2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
+          (1 + sEta_G * sp2) / sgam *  &
+          spi
+
+
+!    sdy = - spi * Lj / nd
+
+
+    qOK = .true.
+    
+    goto 2000
+    
+    1000 call Error_log('Error in equations:dydz',tErrorLog_G)
+    
+    2000 continue
+
+
+  end subroutine dydz_f
 
 
 
- 
-    else
 
-!     "normal" PUFFIN case with no off-axis undulator
-!     field variation
+  subroutine dz2dz_f(sx, sy, sz2, spr, spi, sgam, &
+                     sdz2, qOK)
 
-        call PutValueInVector(iRe_Q_CG, &
-             2.0_WP * nb * Lj**2 * &
-             ((sEta_G * Vector(iRe_Q_CG,sy) + 1.0_WP)/ salphaSq * &
-             (Vector(iIm_pPerp_CG,sy) * fx_G*cos(ZOver2Rho) + &
-             Vector(iRe_pPerp_CG,sy) * fy_G*sin(ZOver2rho)) +&
-             sEta_G * Vector(iRe_Q_CG,sy) *&
-             (Vector(iRe_pPerp_CG,sy)*sField4ElecReal + &
-             Vector(iIm_pPerp_CG,sy)*sField4ElecImag)) &
-             + dp2f, & 
-             sb,&
-             qOKL)
+    implicit none
 
-    end if
+!   Calculate dz2/dz
+!
+!              Arguments:
 
 
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
+    real(kind=wp), intent(out) :: sdz2(:)
 
-end subroutine getdp2dz
+
+!    real(kind=wp), intent(in) :: sy(:), Lj(:), nd
+!    real(kind=wp), intent(inout) :: sb(:)
+    logical, intent(inout) :: qOK
+
+!              Local vars
+
+    logical :: qOKL ! Local error flag
+
+
+    qOK = .false.
+
+    sdz2 = sp2
+
+
+    qOK = .true.
+    
+    goto 2000
+    
+    1000 call Error_log('Error in equations:dz2dz',tErrorLog_G)
+    
+    2000 continue
+
+  end subroutine dz2dz_f
+  
+
+
+
+
+
+
+  subroutine alct_e_srtcts(ar_sz)
+
+    implicit none
+
+! Allocate the arrays used in the calculation of
+! the electron eqns  
+
+    integer(kind=ip), intent(in) :: ar_sz
+
+    allocate(sp2(ar_sz), sField4ElecReal(ar_sz), &
+             sField4ElecImag(ar_sz))! , Lj(ar_sz))
+
+
+  end subroutine alct_e_srtcts
+
+
+
+  subroutine dalct_e_srtcts()
+
+    implicit none
+
+! Allocate the arrays used in the calculation of
+! the electron eqns  
+
+    deallocate(sp2, sField4ElecReal, &
+             sField4ElecImag)! , Lj(ar_sz))
+
+
+  end subroutine dalct_e_srtcts
+
 
 end module equations
+

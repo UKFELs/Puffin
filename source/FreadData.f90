@@ -40,6 +40,7 @@ SUBROUTINE read_in(zfilename, &
        bcenter, &
        gamma_d, &
        chirp, &
+       mag, fr, &
        nbeams, &
        dist_f, &
        qSimple, &
@@ -153,7 +154,8 @@ SUBROUTINE read_in(zfilename, &
   
   REAL(KIND=WP),     INTENT(OUT)  :: sElectronThreshold
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: bcenter(:), gamma_d(:), &
-                                              chirp(:), sEmit_n(:)
+                                              chirp(:), sEmit_n(:), &
+                                              mag(:), fr(:)
   
   INTEGER(KIND=IP), INTENT(INOUT) :: nbeams, nseeds
 
@@ -240,23 +242,23 @@ SUBROUTINE read_in(zfilename, &
   tArrayA(iIm_A_CG)%qWrite = tArrayA(iRe_A_CG)%qWrite	   
   tArrayA(iIm_A_CG)%zVariable = 'IM_A'
     
-  READ(UNIT=168,FMT=*) tArrayVariables(iRe_PPerp_CG-2)%qWrite
-  tArrayVariables(iRe_PPerp_CG-2)%zVariable = 'RE_PPerp'
-      tArrayVariables(iIm_PPerp_CG-2)%qWrite = &
-       tArrayVariables(iRe_PPerp_CG-2)%qWrite
-  tArrayVariables(iIm_PPerp_CG-2)%zVariable = 'IM_PPerp'
+  READ(UNIT=168,FMT=*) tArrayVariables(iRe_PPerp_CG)%qWrite
+  tArrayVariables(iRe_PPerp_CG)%zVariable = 'RE_PPerp'
+      tArrayVariables(iIm_PPerp_CG)%qWrite = &
+       tArrayVariables(iRe_PPerp_CG)%qWrite
+  tArrayVariables(iIm_PPerp_CG)%zVariable = 'IM_PPerp'
     
-  READ(UNIT=168,FMT=*) tArrayVariables(iRe_Q_CG-2)%qWrite
-  tArrayVariables(iRe_Q_CG-2)%zVariable = 'Q'
+  READ(UNIT=168,FMT=*) tArrayVariables(iRe_Gam_CG)%qWrite
+  tArrayVariables(iRe_Gam_CG)%zVariable = 'Gamma'
     
-  READ(UNIT=168,FMT=*) tArrayVariables(iRe_Z2_CG-2)%qWrite
-  tArrayVariables(iRe_Z2_CG-2)%zVariable = 'Z2'
+  READ(UNIT=168,FMT=*) tArrayVariables(iRe_Z2_CG)%qWrite
+  tArrayVariables(iRe_Z2_CG)%zVariable = 'Z2'
     
-  READ(UNIT=168,FMT=*) tArrayVariables(iRe_X_CG-2)%qWrite
-  tArrayVariables(iRe_X_CG-2)%zVariable = 'X'	
+  READ(UNIT=168,FMT=*) tArrayVariables(iRe_X_CG)%qWrite
+  tArrayVariables(iRe_X_CG)%zVariable = 'X'	
     	
-  READ(UNIT=168,FMT=*) tArrayVariables(iRe_Y_CG-2)%qWrite
-  tArrayVariables(iRe_Y_CG-2)%zVariable = 'Y'	
+  READ(UNIT=168,FMT=*) tArrayVariables(iRe_Y_CG)%qWrite
+  tArrayVariables(iRe_Y_CG)%zVariable = 'Y'	
 
 
 !     Read whitespace...
@@ -318,6 +320,8 @@ SUBROUTINE read_in(zfilename, &
   READ(UNIT=168,FMT=*) lambda_w
   READ(UNIT=168,FMT=*) Dfact
   READ(UNIT=168,FMT=*) zUndType
+!  READ(UNIT=168,FMT=*) kx_und_G
+!  READ(UNIT=168,FMT=*) ky_und_G
   READ(UNIT=168,FMT=*) taper
   READ(UNIT=168,FMT=*) t_mag_G   ! Magnitude of frequency oscillation from taper
   READ(UNIT=168,FMT=*) t_fr_G    ! Frequency of oscillation
@@ -379,7 +383,7 @@ SUBROUTINE read_in(zfilename, &
 
 
   CALL read_beamfile(qSimple, dist_f, beam_file,sEmit_n,sSigmaGaussian,sLenEPulse, &
-                     iNumElectrons,sQe,chirp,bcenter,gamma_d,nbeams, &
+                     iNumElectrons,sQe,chirp,bcenter, mag, fr, gamma_d,nbeams, &
                      qMatched,qOKL)
 
   CALL read_seedfile(seed_file,nseeds,sSigmaF,sA0_Re,sA0_Im,freqf,&
@@ -406,7 +410,7 @@ END SUBROUTINE read_in
 
 
 SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
-                         iNumElectrons,sQe,chirp,bcenter,gammaf,nbeams,&
+                         iNumElectrons,sQe,chirp, bcenter, mag, fr,gammaf,nbeams,&
                          qMatched,qOK)
 
   IMPLICIT NONE
@@ -416,7 +420,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   LOGICAL, INTENT(OUT) :: qSimple
   CHARACTER(*), INTENT(INOUT) :: be_f     ! beam file name
   CHARACTER(*), INTENT(INOUT), ALLOCATABLE :: dist_f(:)     ! dist file names
-  REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sEmit_n(:),chirp(:)
+  REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sEmit_n(:),chirp(:), mag(:), fr(:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sSigmaE(:,:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sLenE(:,:)
   INTEGER(KIND=IP), ALLOCATABLE, INTENT(OUT) :: iNumElectrons(:,:)
@@ -467,6 +471,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
     ALLOCATE(iNumElectrons(nbeams,6))
     ALLOCATE(sEmit_n(nbeams),sQe(nbeams),bcenter(nbeams),gammaf(nbeams))
     ALLOCATE(chirp(nbeams))
+    allocate(mag(nbeams), fr(nbeams))
+    allocate(qRndEj_G(nbeams), sSigEj_G(nbeams))
     
 !     Loop round beams, reading in data
 
@@ -484,7 +490,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
       READ(UNIT=168,FMT=*) sSigmaE(b_ind,iZ2_CG)
       READ(UNIT=168,FMT=*) sSigmaE(b_ind,iPX_CG)
       READ(UNIT=168,FMT=*) sSigmaE(b_ind,iPY_CG)
-      READ(UNIT=168,FMT=*) sSigmaE(b_ind,iPZ2_CG)
+      READ(UNIT=168,FMT=*) sSigmaE(b_ind,iGam_CG)
       READ(UNIT=168,FMT=*)
       READ(UNIT=168,FMT=*)
       READ(UNIT=168,FMT=*)
@@ -493,7 +499,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
       READ(UNIT=168,FMT=*) sLenE(b_ind,iZ2_CG)
       READ(UNIT=168,FMT=*) sLenE(b_ind,iPX_CG)
       READ(UNIT=168,FMT=*) sLenE(b_ind,iPY_CG)
-      READ(UNIT=168,FMT=*) sLenE(b_ind,iPZ2_CG)
+      READ(UNIT=168,FMT=*) sLenE(b_ind,iGam_CG)
       READ(UNIT=168,FMT=*)
       READ(UNIT=168,FMT=*)
       READ(UNIT=168,FMT=*)
@@ -502,7 +508,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
       READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iZ2_CG)
       READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iPX_CG)
       READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iPY_CG)
-      READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iPZ2_CG)
+      READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iGam_CG)
       READ(UNIT=168,FMT=*)
       READ(UNIT=168,FMT=*)
       READ(UNIT=168,FMT=*)
@@ -511,6 +517,10 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
       READ(UNIT=168,FMT=*) sEmit_n(b_ind)
       READ(UNIT=168,FMT=*) chirp(b_ind)
       READ(UNIT=168,FMT=*) bcenter(b_ind)
+      READ(UNIT=168,FMT=*) mag(b_ind)
+      READ(UNIT=168,FMT=*) fr(b_ind)      
+      READ(UNIT=168,FMT=*) qRndEj_G(b_ind)
+      READ(UNIT=168,FMT=*) sSigEj_G(b_ind)
       READ(UNIT=168,FMT=*) sQe(b_ind)
     
     END DO
@@ -528,6 +538,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
     allocate(iNumElectrons(nbeams,6))
     allocate(sLenE(nbeams,6))
     allocate(sSigmaE(nbeams,6))
+    allocate(qRndEj_G(nbeams))
     iNumElectrons = 1
     sLenE = 1
     sSigmaE = 1
@@ -605,6 +616,7 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,qFlatTop, &
   ALLOCATE(sSigmaF(nseeds,3))
   ALLOCATE(sA0_X(nseeds), sA0_Y(nseeds))
   ALLOCATE(freqf(nseeds),qFlatTop(nseeds),meanZ2(nseeds))
+  allocate(qRndFj_G(nseeds), sSigFj_G(nseeds))
     
 !     Loop round seeds, reading in data
 
@@ -623,6 +635,8 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,qFlatTop, &
     READ(UNIT=168,FMT=*) sSigmaF(s_ind,iZ2_CG)
     READ(UNIT=168,FMT=*) qFlatTop(s_ind)
     READ(UNIT=168,FMT=*) meanZ2(s_ind)
+    READ(UNIT=168,FMT=*) qRndFj_G(s_ind)
+    READ(UNIT=168,FMT=*) sSigFj_G(s_ind)
     
   END DO
 

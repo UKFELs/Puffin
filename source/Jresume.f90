@@ -16,7 +16,7 @@ MODULE RESUME
 
   CONTAINS
 
-  SUBROUTINE initFD(sV,sA,sZ,qOK)
+  SUBROUTINE initFD(sA,sZ,qOK)
 
 ! Subroutine to read in the dump files produced,
 ! so in event of system failure can resume from 
@@ -26,7 +26,7 @@ MODULE RESUME
 
 !         ARGUMENTS
 
-    REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sV(:), sA(:)
+    REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sA(:)
     REAL(KIND=WP), INTENT(OUT) :: sZ
     LOGICAL, INTENT(OUT)  ::  qOK
 
@@ -56,8 +56,16 @@ MODULE RESUME
     ALLOCATE(s_chi_bar_G(iNumberElectrons_G),&
            s_Normalised_chi_G(iNumberElectrons_G))
 
-    ALLOCATE(sV(nElectronEquations_CG*iNumberElectrons_G), &
-             sA(nFieldEquations_CG*iNumberNodes_G))
+
+    ALLOCATE(sElX_G(iNumberElectrons_G))
+    ALLOCATE(sElY_G(iNumberElectrons_G))
+    ALLOCATE(sElZ2_G(iNumberElectrons_G))
+    ALLOCATE(sElPX_G(iNumberElectrons_G))
+    ALLOCATE(sElPY_G(iNumberElectrons_G))
+    ALLOCATE(sElGam_G(iNumberElectrons_G))
+
+
+    ALLOCATE(sA(nFieldEquations_CG*iNumberNodes_G))
     
     if (iNumberElectrons_G > 0_IP) then
       call READINCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
@@ -65,7 +73,7 @@ MODULE RESUME
     
     if (tProcInfo_G%qRoot) PRINT*, 'RESUMING, reading in previous data'
 
-    call READDUMP(sA,sV,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
+    call READDUMP(sA,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
         iNumberElectrons_G,sz,start_step,&
         tArrayA(1)%tFileType%iPage)
 
@@ -109,9 +117,9 @@ MODULE RESUME
 
 !    Set up arrays of pointers to locations of data
 
-    CALL SetUpElectronArray(tArrayE,tArrayA,iNumberElectrons_G, &
-                            iNumberNodes_G,qOKL)
-    IF (.NOT. qOKL) Goto 1000
+!    CALL SetUpElectronArray(tArrayE,tArrayA,iNumberElectrons_G, &
+!                            iNumberNodes_G,qOKL)
+!    IF (.NOT. qOKL) Goto 1000
 
 !     Define processes to the left and right, for 
 !     a ring communication
@@ -190,10 +198,9 @@ END SUBROUTINE
 
 !========================================================================== 
 
-SUBROUTINE READDUMP(sA,sV,rank,nnodes,nelectrons,sz,istep,page)
+SUBROUTINE READDUMP(sA,rank,nnodes,nelectrons,sz,istep,page)
 
  REAL(KIND=WP),DIMENSION(:),INTENT(OUT) :: sA
- REAL(KIND=WP),DIMENSION(:),INTENT(OUT) :: sV
  INTEGER(KIND=IP),INTENT(OUT) :: istep,page
  integer(kind=ip),intent(in) :: rank
  INTEGER(KIND=IP),INTENT(IN) :: nnodes
@@ -233,42 +240,44 @@ if (nelectrons>0) then
  
  OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
  FORM='UNFORMATTED')
- READ(213) sV(1:nelectrons)
+ READ(213) sElPX_G
  CLOSE(UNIT=213,STATUS='KEEP') 
 ! Im pperp
  FileName = 'imPPerp'//TRIM(IntegerToString(RANK))//'.dump'
  
  OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
  FORM='UNFORMATTED')
- READ(213) sV(nelectrons+1:2*nelectrons)
+ READ(213) sElPY_G
  CLOSE(UNIT=213,STATUS='KEEP') 
+  sElPY_G = -sElPY_G
+
 ! Q 
  FileName = 'Q'//TRIM(IntegerToString(RANK))//'.dump'
  
  OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
  FORM='UNFORMATTED')
- READ(213) sV(2*nelectrons+1:3*nelectrons)
+ READ(213) sElGam_G
  CLOSE(UNIT=213,STATUS='KEEP') 
 ! Z2 
  FileName = 'Z2-'//TRIM(IntegerToString(RANK))//'.dump'
  
  OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
  FORM='UNFORMATTED')
- READ(213) sV(3*nelectrons+1:4*nelectrons)
+ READ(213) sElZ2_G
  CLOSE(UNIT=213,STATUS='KEEP') 
 ! X 
  FileName = 'X'//TRIM(IntegerToString(RANK))//'.dump'
  
  OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
  FORM='UNFORMATTED')
- READ(213) sV(4*nelectrons+1:5*nelectrons)
+ READ(213) sElX_G
  CLOSE(UNIT=213,STATUS='KEEP')
 ! Y
  FileName = 'Y'//TRIM(IntegerToString(RANK))//'.dump'
  
  OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
  FORM='UNFORMATTED')
- READ(213) sV(5_IPL*nelectrons+1_IPL:6_IPL*nelectrons)
+ READ(213) sElY_G
  CLOSE(UNIT=213,STATUS='KEEP') 
 
 end if

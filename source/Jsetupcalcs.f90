@@ -11,7 +11,6 @@ USE ParallelInfoType
 USE TransformInfoType
 USE IO
 USE ArrayFunctions
-USE extra
 USE typesAndConstants
 USE Globals
 USE electronInit
@@ -30,7 +29,7 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
                          sRNX,sRNY, &
                          sElmLen,&
                          fx,fy,sFocusFactor,taper,sFiltFrac, &
-                         dStepFrac,sBeta,zUndType,qFormatted, qSwitch,qOK)
+                         dStepFrac,sBeta,zUndType,qFormatted, qSwitch, qOK)
 
     IMPLICIT NONE
 
@@ -66,7 +65,7 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 ! lam_r_bar          Resonant wavelength in scaled units
 ! qOKL               Local error flag
 
-    REAL(KIND=WP) :: lam_r_bar, LenZ2, modfact1, sbetaz
+    REAL(KIND=WP) :: lam_r_bar, LenZ2, modfact1, sbetaz, aw_rms
     LOGICAL :: qOKL
 
     qOK = .FALSE.
@@ -135,11 +134,37 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 
     sRho_G = sRho_save_G ! * modfact1
 
-    sbetaz = SQRT(gamr**2.0_WP - 1.0_WP - (aw)**2.0_WP) / &
+
+
+
+
+
+    if (zUndType == 'curved') then
+
+      aw_rms =  aw / sqrt(2.0_wp)
+
+    else if (zUndType == 'planepole') then
+
+      aw_rms =  aw / sqrt(2.0_wp)
+
+    else if (zUndType == 'helical') then
+
+      aw_rms = aw
+
+    else
+
+      aw_rms = aw * SQRT(fx**2 + fy**2) / sqrt(2.0_wp)
+
+    end if
+
+
+    sbetaz = SQRT(gamr**2.0_WP - 1.0_WP - (aw_rms)**2.0_WP) / &
              gamr
 
     sEta_G = (1.0_WP - sbetaz) / sbetaz
-    sKBeta_G = aw / 2.0_WP / sFocusFactor / rho / gamr
+    sKBeta_G = aw_rms / 2.0_WP / sFocusFactor / rho / gamr
+    sKappa_G = aw / 2.0_WP / rho / gamr
+
 
     sFocusfactor_save_G = sFocusFactor
 
@@ -191,13 +216,6 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
        GOTO 1000    
     END IF
 
-!     Get global node numbers
-
-    IF (.NOT. tTransInfo_G%qOneD) THEN
-       ALLOCATE(iNodCodA_G(ReducedNX_G,ReducedNY_G,NZ2_G))
-       ALLOCATE(iGloNumA_G(8*(ReducedNX_G-1)*(ReducedNY_G-1)*(NZ2_G-1)))
-       CALL GL_NUM(ReducedNX_G,ReducedNY_G,NZ2_G,iNodCodA_G,iGloNumA_G)
-    END IF
 
     qElectronsEvolve_G       = qSwitch(iElectronsEvolve_CG)
     qFieldEvolve_G           = qSwitch(iFieldEvolve_CG)
@@ -217,7 +235,10 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
     tArrayA(:)%tFileType%qFormatted = qFormatted
     tArrayZ%tFileType%qFormatted = qFormatted
 
+!    Set output data file format:
+!    Can be sdds, hdf5 or blank (plain data)
 
+    wrMeth_G = 'sdds'
 
 
 
@@ -236,8 +257,7 @@ END SUBROUTINE passToGlobals
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                             
 SUBROUTINE SetUpInitialValues(nseeds, freqf, SmeanZ2, qFlatTopS, sSigmaF, &
-                              sLengthOfElm, sA0_x, sA0_y, sX0, sY0, sZ20, &
-                              sV, sA, qOK)
+                              sLengthOfElm, sA0_x, sA0_y, sA, qOK)
 
     IMPLICIT NONE
 !
@@ -262,10 +282,6 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, SmeanZ2, qFlatTopS, sSigmaF, &
     REAL(KIND=WP), INTENT(IN)    :: sLengthOfElm(:)
     REAL(KIND=WP), INTENT(IN)    :: sA0_x(:)
     REAL(KIND=WP), INTENT(IN)    :: sA0_y(:)
-    REAL(KIND=WP), INTENT(IN)    :: sX0(:)      
-    REAL(KIND=WP), INTENT(IN)    :: sY0(:)      
-    REAL(KIND=WP), INTENT(IN)    :: sz20(:)      
-    REAL(KIND=WP), INTENT(INOUT) :: sV(:)
     REAL(KIND=WP), INTENT(INOUT) :: sA(:)
     LOGICAL,       INTENT(OUT)   :: qOK
 
@@ -304,36 +320,6 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, SmeanZ2, qFlatTopS, sSigmaF, &
 
     DEALLOCATE(sAreal,sAimag)
 
-!     Set up initial electron perp values
-
-    CALL PutValueInVector(iRe_PPerp_CG, sEl_PX0Position_G,&
-         sV, qOKL)
-    IF (.NOT. qOKL) GOTO 1000
-
-    CALL PutValueInVector(iIm_PPerp_CG,-sEl_PY0Position_G,&
-         sV, qOKL)		
-    IF (.NOT. qOKL) GOTO 1000
-
-!     Set up initial electron Q values
-
-    CALL PutValueInVector(iRe_Q_CG, sEl_PZ20Position_G,&
-         sV, qOKL)
-    IF (.NOT. qOKL) GOTO 1000
-
-!     Set up initial electron starting positions in z2 direction
-
-    CALL PutValueInVector(iRe_Z2_CG, sz20, sV, qOKL)
-    IF (.NOT. qOKL) GOTO 1000
-
-!     Set up initial electron starting positions in x direction
-
-    CALL PutValueInVector(iRe_X_CG, sX0, sV, qOKL)
-    IF (.NOT. qOKL) GOTO 1000
-
-!     Set up initial electron starting positions in y direction
-
-    CALL PutValueInVector(iRe_Y_CG, sY0, sV, qOKL)
-    IF (.NOT. qOKL) GOTO 1000
 
 !     Set error flag and exit
 
@@ -350,14 +336,15 @@ END SUBROUTINE SetUpInitialValues
 
 SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
                              sigma, beamCenZ2,gamma_d,eThresh, &
-                             chirp,nbeams, &
-                             sV,qOK)
+                             chirp,mag,fr,nbeams, qOK)
 
 !                     ARGUMENTS
 
     logical, intent(in) :: qSimple
     character(*), intent(in) :: fname(:)
-    REAL(KIND=WP),     INTENT(IN)    :: sQe(:), gamma_d(:), chirp(:)
+    REAL(KIND=WP),     INTENT(IN)    :: sQe(:), gamma_d(:)
+    REAL(KIND=WP),     INTENT(INOUT)    ::  chirp(:)
+    REAL(KIND=WP),     INTENT(INOUT)    :: mag(:), fr(:)
     INTEGER(KIND=IP),  INTENT(IN)    :: NE(:,:),nbeams
     LOGICAL,           INTENT(IN)    :: noise
     REAL(KIND=WP),     INTENT(IN)    :: Z
@@ -365,13 +352,12 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
     REAL(KIND=WP),     INTENT(INOUT) :: sigma(:,:)
     REAL(KIND=WP),     INTENT(INOUT) :: beamCenZ2(:)
     REAL(KIND=WP),     INTENT(IN)    :: eThresh
-    REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sV(:)
     LOGICAL,           INTENT(OUT)   :: qOK     
 
 !                   LOCAL ARGS
 
     INTEGER(KIND=IPL) :: NMacroE
-    REAL(KIND=WP)     :: sQOneE
+    REAL(KIND=WP)     :: sQOneE, totNk_glob, totNk_loc
     REAL(KIND=WP), ALLOCATABLE  :: RealE(:)
     INTEGER(KIND=IP) :: j,error, req, lrank, rrank
     INTEGER(KIND=IPL) :: sendbuff, recvbuff
@@ -403,8 +389,8 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
 
 !     Change sig_gamma / gamma to sig_gamma
 
-    IF (qSimple) LenEPulse(:,iPZ2_CG) = gamma_d(:) * sGammaR_G * LenEPulse(:,iPZ2_CG)
-    IF (qSimple) sigma(:,iPZ2_CG) = gamma_d(:) * sGammaR_G * sigma(:,iPZ2_CG)
+    IF (qSimple) LenEPulse(:,iGam_CG) = gamma_d(:) * sGammaR_G * LenEPulse(:,iGam_CG)
+    IF (qSimple) sigma(:,iGam_CG) = gamma_d(:) * sGammaR_G * sigma(:,iGam_CG)
 
 !     Setup electrons
 
@@ -416,7 +402,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
       CALL electron_grid(RealE,NE,noise, &
                          Z,nbeams, LenEPulse,sigma, beamCenZ2, gamma_d, &
                          eThresh,tTransInfo_G%qOneD, &
-                         chirp,sV,qOKL)
+                         chirp,mag,fr,qOKL)
       IF (.NOT. qOKL) GOTO 1000
 
     else 
@@ -430,10 +416,23 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
        GOTO 1000    
     END IF
 
-    IF (tProcInfo_G%qROOT) PRINT *,&
-         'TOTAL NUM OF MACROPARTICLES = ', iGloNumElectrons_G
 
-    allocate(sV(iNumberElectrons_G * 6_IP))
+    totNk_loc = sum(s_chi_bar_G) * npk_bar_G
+    CALL MPI_ALLREDUCE(totNk_loc, totNk_glob, 1, MPI_DOUBLE_PRECISION, &
+                       MPI_SUM, MPI_COMM_WORLD, error)
+
+
+    if (tProcInfo_G%qRoot) then
+
+      print*, ''
+      print*, '-----------------------------------------'
+      print*, 'Total number of macroparticles = ', iGloNumElectrons_G
+      print*, 'Avg num of real electrons per macroparticle Nk = ', &
+                                    totNk_glob / iGloNumElectrons_G
+      print*, 'Total number of electrons modelled = ', totNk_glob
+
+
+    end if
 
 !    Set up the array describing the number of electrons
 !    on each processor
@@ -473,6 +472,8 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
        sendbuff=recvbuff
     END DO
 
+!    print*, 'procelectrons = ', procelectrons_G
+!    stop 
     IF (iNumberElectrons_G==0) qEmpty=.TRUE. 
 
     if (qSimple) DEALLOCATE(RealE)
@@ -504,8 +505,18 @@ SUBROUTINE getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,frs,nSeeds,dels,xfieldt,yf
 
 !            LOCAL ARGS
 
-  INTEGER(KIND=IP) :: ind
-  REAL(KIND=WP) :: xfield(size(xfieldt)), yfield(size(yfieldt))
+  INTEGER(KIND=IP) :: ind, fsz
+  REAL(KIND=WP), allocatable :: xfield(:), yfield(:)
+
+  fsz = size(xfieldt)
+
+  !  if (fsz .ne. size(yfieldt)) then
+  
+  !  Cause error
+
+  !  end if
+
+  allocate(xfield(fsz), yfield(fsz))
 
 
   xfieldt = 0.0_WP
@@ -513,27 +524,29 @@ SUBROUTINE getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,frs,nSeeds,dels,xfieldt,yf
 
   DO ind = 1, nSeeds
   
-    CALL getSeed(NN(:),sigs(ind,:),cens(ind),magxs(ind),magys(ind),qFTs(ind),rho,frs(ind), &
-                   dels,xfield,yfield)
+    CALL getSeed(NN(:),sigs(ind,:),cens(ind),magxs(ind),magys(ind),qFTs(ind), &
+                 qRndFj_G(ind), sSigFj_G(ind), rho,frs(ind), dels,xfield,yfield)
 
     xfieldt = xfieldt + xfield
     yfieldt = yfieldt + yfield
     
   END DO
 
+  deallocate(xfield, yfield)
+
 END SUBROUTINE getSeeds
 
 !*****************************************************
 
-SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,rho,fr,dels,xfield,yfield)
+SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, sSigR, rho,fr,dels,xfield,yfield)
 
   IMPLICIT NONE
 
 !             ARGUMENTS
 
   INTEGER(KIND=IP), INTENT(IN) :: NN(:)
-  REAL(KIND=WP), INTENT(IN) :: sig(:), cen, rho, fr, magx, magy, dels(:)
-  LOGICAL, INTENT(IN) :: qFT
+  REAL(KIND=WP), INTENT(IN) :: sig(:), cen, sSigR, rho, fr, magx, magy, dels(:)
+  LOGICAL, INTENT(IN) :: qFT, qRnd
   REAL(KIND=WP), INTENT(OUT) :: xfield(:), yfield(:)
 
 !             LOCAL ARGS
@@ -588,20 +601,35 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,rho,fr,dels,xfield,yfield)
    
 
   IF (qFT) THEN
-    
-    WHERE (z2nds < (cen - sig(iZ2_CG)))
+ 
 
-      z2env = 0.0_WP
 
-    ELSEWHERE (z2nds > (cen + sig(iZ2_CG)))
+
+    if (qRnd) then
+ 
+      call ftron(z2env, 2*sig(iZ2_CG), sSigR, cen, z2nds)
+ 
+    else 
+
+
+      WHERE (z2nds < (cen - sig(iZ2_CG)))
 
         z2env = 0.0_WP
 
-    ELSEWHERE
+      ELSEWHERE (z2nds > (cen + sig(iZ2_CG)))
 
-      z2env = 1.0_WP
+        z2env = 0.0_WP
 
-    END WHERE
+      ELSEWHERE
+
+        z2env = 1.0_WP
+
+      END WHERE
+
+    end if
+
+
+
 
   ELSE
   
@@ -631,5 +659,71 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,rho,fr,dels,xfield,yfield)
   end do
 
 END SUBROUTINE getSeed
+
+
+
+
+
+
+
+subroutine ftron(env, fl_len, rn_sig, cen, z2nds)
+
+
+  implicit none
+
+
+  real(kind=wp), intent(inout) :: env(:)
+  real(kind=wp), intent(in) :: fl_len, rn_sig, cen, z2nds(:)
+    
+
+  real(kind=wp) :: len_gauss, sSt, sEd, sg1cen, sg1st, &
+                   sg2cen, sg2st, sftst
+
+  integer(kind=ip) :: nnz2
+
+
+
+  len_gauss = gExtEj_G * rn_sig /2.0_wp  ! model out how many sigma?? 
+  
+
+
+  sSt = cen - (fl_len / 2.0_wp) - len_gauss  ! 
+  sEd = cen + (fl_len / 2.0_wp) + len_gauss 
+
+
+
+  sg1st = sSt              ! Start of 1st half gauss
+  sftst = sSt + len_gauss  ! Start of flat-top section
+  sg2st = sftst + fl_len    ! Start of second half-gaussian
+
+  sg1cen = sftst      ! mean of 1st gauss
+  sg2cen = sg2st      ! mean of 2nd gauss
+
+
+
+
+  where ((z2nds >= sSt) .and. (z2nds <= sftst)) 
+
+    env = gaussian(z2nds, sg1cen, rn_sig)
+
+  elsewhere ((z2nds > sg1cen) .and. (z2nds <= sg2cen)) 
+
+    env = 1.0_wp
+
+  elsewhere ((z2nds > sg2cen) .and.  (z2nds <= sg2st + len_gauss))
+
+    env = gaussian(z2nds, sg2cen, rn_sig)
+
+  elsewhere
+
+    env = 0.0_wp
+
+  end where
+
+
+
+end subroutine ftron
+
+
 
 END MODULE setupcalcs

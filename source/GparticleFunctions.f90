@@ -14,6 +14,7 @@ USE typesAndConstants
 USE FileType
 USE IO
 use parallelsetup
+use globals
 
 IMPLICIT NONE
 
@@ -266,7 +267,7 @@ subroutine flattop2(sig_edj, len_f, sGrid, iNumMP, iLocNumMP, qPara, s_Integral)
 !!! Get grid pts assigned to each section - gaussian -> flat -> gaussian
 
 
-  len_gauss = 7.5_wp * sig_edj   ! model out 7.5 sigma 
+  len_gauss = gExtEj_G * sig_edj /2.0_wp  ! model out how many sigma?? 
 
 ! Get start and end of gaussian (need to send data around to determine global sts and ends in parallel version)
 
@@ -303,7 +304,7 @@ subroutine flattop2(sig_edj, len_f, sGrid, iNumMP, iLocNumMP, qPara, s_Integral)
        call AreaNDist(sGrid(ii:ii+1), sg1cen, sig_edj, tres)
        s_integral(ii) = tres
 
-    else if (sGrid(ii) < sftst .and. (sGrid(ii+1) > sftst .and.  sGrid(ii+1) < sg2st ) ) then
+    else if (sGrid(ii) < sftst .and. (sGrid(ii+1) >= sftst .and.  sGrid(ii+1) <= sg2st ) ) then
 
       ! area to top of gaussian (sftst) + area from top of gaussian to next grid point
 
@@ -316,13 +317,16 @@ subroutine flattop2(sig_edj, len_f, sGrid, iNumMP, iLocNumMP, qPara, s_Integral)
       a2 = norm_pk * (sGrid(ii+1) - tmp_gdpt )    ! flat top section
       s_integral(ii) = a1 + a2
 
-    else if (    (sGrid(ii) > sftst  .and.  sGrid(ii) < sg2st )   .and. (sGrid(ii+1) > sftst  .and.  sGrid(ii+1) < sg2st )  ) then
+    else if (    (sGrid(ii) >= sftst  .and.  sGrid(ii) <= sg2st )  &
+           .and. (sGrid(ii+1) >= sftst  .and.  sGrid(ii+1) <= sg2st )  ) then
 
     ! Flat top section
 
       s_integral(ii) = norm_pk * (sGrid(ii+1) - sGrid(ii) )
 
-    else if (    (sGrid(ii) > sftst  .and.  sGrid(ii) < sg2st )   .and. (sGrid(ii+1) > sg2st  .and.  sGrid(ii+1) < sEd )  ) then
+    else if (    (sGrid(ii) >= sftst  .and.  sGrid(ii) <= sg2st )  &
+            .and. (sGrid(ii+1) > sg2st  .and.  sGrid(ii+1) < sEd )  ) then
+
 
     ! A mix of flat-top and gaussian sections
 
@@ -385,7 +389,7 @@ subroutine flattop2(sig_edj, len_f, sGrid, iNumMP, iLocNumMP, qPara, s_Integral)
 
   s_integral = s_integral / tot_ar
 
-  print*, tot_ar
+!  print*, tot_ar
 
 end subroutine flattop2
 
@@ -412,7 +416,6 @@ subroutine AreaNDist(s_gridPoints, s_mean, s_sigma, elem)
 
 
 end subroutine AreaNDist
-
 
 
 END MODULE particleFunctions

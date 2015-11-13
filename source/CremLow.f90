@@ -14,6 +14,7 @@ use paratype
 use Globals
 use parallelSetup
 use gtop2
+use beamPrep
 
 implicit none
 
@@ -64,12 +65,12 @@ SUBROUTINE removeLowNC(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold,
   END DO
 
 
-  ALLOCATE(sEl_X0Position_G(SUM(b_keepn)))
-  ALLOCATE(sEl_Y0Position_G(SUM(b_keepn)))
-  ALLOCATE(sEl_Z20Position_G(SUM(b_keepn)))
-  ALLOCATE(sEl_PX0Position_G(SUM(b_keepn)))
-  ALLOCATE(sEl_PY0Position_G(SUM(b_keepn)))
-  ALLOCATE(sEl_PZ20Position_G(SUM(b_keepn)))
+  ALLOCATE(sElX_G(SUM(b_keepn)))
+  ALLOCATE(sElY_G(SUM(b_keepn)))
+  ALLOCATE(sElZ2_G(SUM(b_keepn)))
+  ALLOCATE(sElPX_G(SUM(b_keepn)))
+  ALLOCATE(sElPY_G(SUM(b_keepn)))
+  ALLOCATE(sElGam_G(SUM(b_keepn)))
   ALLOCATE(s_chi_bar_G(SUM(b_keepn)))
   ALLOCATE(s_Normalised_chi_G(SUM(b_keepn)))
 
@@ -87,12 +88,12 @@ SUBROUTINE removeLowNC(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold,
     ist = 1_IPL + NSUM
     ien = NSUM + b_keepn(b_ind)
 
-    sEl_X0Position_G(ist:ien)   = x_tmpcoord(ikeepos + prev)
-    sEl_Y0Position_G(ist:ien)   = y_tmpcoord(ikeepos + prev)
-    sEl_Z20Position_G(ist:ien)  = z2_tmpcoord(ikeepos + prev)
-    sEl_PX0Position_G(ist:ien)  = px_tmpvector(ikeepos + prev)
-    sEl_PY0Position_G(ist:ien)  = py_tmpvector(ikeepos + prev)
-    sEl_PZ20Position_G(ist:ien) = pz2_tmpvector(ikeepos + prev)
+    sElX_G(ist:ien)   = x_tmpcoord(ikeepos + prev)
+    sElY_G(ist:ien)   = y_tmpcoord(ikeepos + prev)
+    sElZ2_G(ist:ien)  = z2_tmpcoord(ikeepos + prev)
+    sElPX_G(ist:ien)  = px_tmpvector(ikeepos + prev)
+    sElPY_G(ist:ien)  = py_tmpvector(ikeepos + prev)
+    sElGam_G(ist:ien) = pz2_tmpvector(ikeepos + prev)
     s_chi_bar_G(ist:ien)        = Tmp_chibar(ikeepos + prev)
     s_Normalised_chi_G(ist:ien) = Tmp_Normchi(ikeepos + prev)
 
@@ -112,16 +113,17 @@ SUBROUTINE removeLowNC(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold,
 !     We currently have gamma in the p2 position array -
 !     need to change to p2
 
-    sEl_PZ20Position_G = getP2(sEl_PZ20Position_G,sEl_PX0Position_G,&
-                               sEl_PY0Position_G,sEta_G,sAw_G)
-
+!    sElGam_G = getP2(sElGam_G, sElPX_G,&
+!                     sElPY_G, sEta_G, sAw_G)
+     
+  sElGam_G = sElGam_G / sGammaR_G
 
 END SUBROUTINE removeLowNC
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 SUBROUTINE removeLow(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
-                     chirp,nbeams,x_tmpcoord,y_tmpcoord,z2_tmpcoord,px_tmpvector,&
+                     nbeams,x_tmpcoord,y_tmpcoord,z2_tmpcoord,px_tmpvector,&
                      py_tmpvector, pz2_tmpvector,totalmps_b,&
                      sZ2_center)
                    
@@ -137,9 +139,8 @@ SUBROUTINE removeLow(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
                                x_tmpcoord(:), y_tmpcoord(:), &
                                z2_tmpcoord(:), px_tmpvector(:),&
                                py_tmpvector(:), pz2_tmpvector(:)
-  INTEGER(KIND=IPL), INTENT(IN) :: b_sts(:), b_ends(:)
+  INTEGER(KIND=IPL), INTENT(INOUT) :: b_sts(:), b_ends(:)
   INTEGER(KIND=IP), INTENT(IN) :: nbeams
-  REAL(KIND=WP), INTENT(IN) :: chirp(:)
   REAL(KIND=WP), INTENT(IN) :: sElectronThreshold
   INTEGER(KIND=IPL), INTENT(IN) :: totalmps_b(:)
   REAL(KIND=WP), INTENT(IN) :: sZ2_center(:)
@@ -148,7 +149,7 @@ SUBROUTINE removeLow(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
 
   INTEGER(KIND=IPL), ALLOCATABLE :: ikeepos(:), iendpos(:), b_keepn(:),&
                                     b_neglectn(:)
-  REAL(KIND=WP), ALLOCATABLE :: ilowerElectron(:), Qchoff(:)
+  REAL(KIND=WP), ALLOCATABLE :: ilowerElectron(:)
   INTEGER(KIND=IPL) :: nsum, ist, ien, prev
   INTEGER(KIND=IP) :: b_ind
 
@@ -163,12 +164,12 @@ SUBROUTINE removeLow(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
 
   END DO
 
-  ALLOCATE(sEl_X0Position_G(SUM(b_keepn)))
-  ALLOCATE(sEl_Y0Position_G(SUM(b_keepn)))
-  ALLOCATE(sEl_Z20Position_G(SUM(b_keepn)))
-  ALLOCATE(sEl_PX0Position_G(SUM(b_keepn)))
-  ALLOCATE(sEl_PY0Position_G(SUM(b_keepn)))
-  ALLOCATE(sEl_PZ20Position_G(SUM(b_keepn)))
+  ALLOCATE(sElX_G(SUM(b_keepn)))
+  ALLOCATE(sElY_G(SUM(b_keepn)))
+  ALLOCATE(sElZ2_G(SUM(b_keepn)))
+  ALLOCATE(sElPX_G(SUM(b_keepn)))
+  ALLOCATE(sElPY_G(SUM(b_keepn)))
+  ALLOCATE(sElGam_G(SUM(b_keepn)))
   ALLOCATE(s_chi_bar_G(SUM(b_keepn)))
   ALLOCATE(s_Normalised_chi_G(SUM(b_keepn)))
 
@@ -178,7 +179,6 @@ SUBROUTINE removeLow(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
   DO b_ind=1, nbeams
 
     ALLOCATE(ikeepos(b_keepn(b_ind)), iendpos(b_neglectn(b_ind)))
-    ALLOCATE(Qchoff(b_keepn((b_ind))))
 
     CALL getIndices(Tmp_chibar(b_sts(b_ind):b_ends(b_ind)), &
                     ilowerElectron(b_ind),totalmps_b(b_ind), &
@@ -187,12 +187,12 @@ SUBROUTINE removeLow(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
     ist = 1_IPL + NSUM
     ien = NSUM + b_keepn(b_ind)
 
-    sEl_X0Position_G(ist:ien)   = x_tmpcoord(ikeepos + prev)
-    sEl_Y0Position_G(ist:ien)   = y_tmpcoord(ikeepos + prev)
-    sEl_Z20Position_G(ist:ien)  = z2_tmpcoord(ikeepos + prev)
-    sEl_PX0Position_G(ist:ien)  = px_tmpvector(ikeepos + prev)
-    sEl_PY0Position_G(ist:ien)  = py_tmpvector(ikeepos + prev)
-    sEl_PZ20Position_G(ist:ien) = pz2_tmpvector(ikeepos + prev)
+    sElX_G(ist:ien)   = x_tmpcoord(ikeepos + prev)
+    sElY_G(ist:ien)   = y_tmpcoord(ikeepos + prev)
+    sElZ2_G(ist:ien)  = z2_tmpcoord(ikeepos + prev)
+    sElPX_G(ist:ien)  = px_tmpvector(ikeepos + prev)
+    sElPY_G(ist:ien)  = py_tmpvector(ikeepos + prev)
+    sElGam_G(ist:ien) = pz2_tmpvector(ikeepos + prev)
     s_chi_bar_G(ist:ien)        = Tmp_chibar(ikeepos + prev)
     s_Normalised_chi_G(ist:ien) = Tmp_Normchi(ikeepos + prev)
 
@@ -200,14 +200,10 @@ SUBROUTINE removeLow(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
 
     DEALLOCATE(ikeepos,iendpos)
 
-!     Add linear chirp to the beam....TEMP
-
-    Qchoff = chirp(b_ind)*(sEl_Z20Position_G(ist:ien)-sZ2_center(b_ind))
-    sEl_PZ20Position_G(ist:ien) = sEl_PZ20Position_G(ist:ien) + Qchoff
-
-    DEALLOCATE(Qchoff)
-
     prev = prev + totalmps_b(b_ind)
+
+    b_sts(b_ind) = ist
+    b_ends(b_ind) = ien
 
   END DO
 

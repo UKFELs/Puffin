@@ -96,30 +96,44 @@ seedfile = 'seed_file.in'
 nbeams = 1
 nseeds = 1
 
-# Undulator and beam parameters
+### Sampling
 
-aw = 2.0               # 3.182 rms, 4.5 peak
-emit = 4.976711101413333e-07       # Unnormalised Emittance
-lambda_w = 0.07        # Undulator period
+elms_per_wave = 20         # Field nodes per resonant wavelength 
+emps_per_wave = 24         # Electron macroparticles per resonant wavelength
+steps_per_per = 100        # should be roughly 4-5* elms_per_wave
+
+# Undulator and beam parameters
+# Below similar to CLARA parameters
+
+E = 250e6            # Beam energy
+gamma = E / ( (m_e * pow(c,2) / q_e) ) # Rel. factor
+aw = 1.0               # rms wiggler parameter
+emit = 1e-6 / gamma       # Unnormalised Emittance
+lambda_w = 0.027        # Undulator period
 N_w = 200              # Number of undulator periods
-gamma = 100.0          # Relativistic factor
+# gamma = 100.0          # Relativistic factor
 ff = math.sqrt(2)      # Focus factor
-Q = 2e-9               # Charge
+Q = 0.25e-9               # Charge
 qFlatTopZ2 = 1         # =1 if flat top current profile, else gaussian.
 qHardEdgeX = 0         # =1 if disk (circle) in transverse plane, else gaussian.
-# E = 300e6            # Beam energy
-# gamma = E / (m_e * pow(c,2)) # Rel. factor
-sig_gamma = 0.001      # Energy spread
+qRoundZ2 = 1           # If rounding off edges of flat top in z2
+sigRound_lam = 6       # Sigma of gaussian used to round off the flat top edges, in resonant wavelengths
+bEnOscMag = 0          # Magnitude of oscillation on beam energy | Units of gamma
+bEnOscFr = 7E3         # Frequency (2pi/lambda, where lambda in units of ct) of oscillation on beam energy 
+#E = 300e6            # Beam energy
+#gamma = E / (m_e * pow(c,2)) # Rel. factor
+sig_gamma = 0.0004      # Energy spread
 
 
 k_w = 2 * pi / lambda_w             # Get wiggler wavenumber
-sigt = 0.005570423008216 / c        # Get sigma in t dimension
+sigt = 250e-15 # 0.005570423008216 / c        # Get sigma in t dimension
 sigz = c * sigt                     # Convert sigma in t to z
 k_beta = aw * k_w / ( ff * gamma )  # Betatron wavelength
 N = Q / q_e                         # Number of real electrons in pulse
 lambda_r = lambda_w / (2 * pow(gamma,2)) * (1 + pow(aw,2))
                                     # ^ Resonant wavelength
 
+sigRoundz = sigRound_lam * lambda_r
 
 sigx = sqrt(emit / k_beta)     # Beam standard deviation in x
 sigy = sigx                           # and y
@@ -138,7 +152,10 @@ else:
 tArea = pi * pow(r_av,2)          # Tranverse beam area
 
 if qFlatTopZ2 == 1:
-    lArea = sigz                  # longitudinal integral over charge dist (flat top)
+    if qRoundZ2 == 1:
+        lArea = sqrt(2*pi) * sigRoundz  + sigz     # flat top + gaussian
+    else:
+        lArea = sigz                  # longitudinal integral over charge dist (flat top)
 else:
     lArea = sqrt(2*pi) * sigz     # longitudinal integral over charge dist(gaussian)
 
@@ -157,6 +174,10 @@ Lc = lambda_r / lambda_z2         # Cooperation length
 zbarprop = N_w * lambda_z2        # Length of undulator in zbar (gain lengths)
 sigz2 = sigz / Lc                 # Length of pulse in z2 (cooperation lengths)
 
+sigRoundZ2 = sigRoundz / Lc       # Sigma of tail off in z2 (cooperation lengths)
+
+bEnOscFr = bEnOscFr * Lc
+
 beta = sqrt(pow(gamma,2) - 1.0 - pow(aw,2))/gamma    # Average velocity over c
 eta = (1-beta)/beta                                # Scaled average velocity
 
@@ -168,6 +189,7 @@ B = pow((2 * Z_bar_R),(3.0/2.0))                       # Saldin diffraction para
 
 
 NL = N/sigz2 * lambda_z2                           # electrons per radiation period
+
 Anoise = 6 * sqrt(pi) * rho / (NL * sqrt(log(NL/rho)))  # Spontaneous noise estimate (in scaled units)
 Acse = 16 * pow(rho,2)                             # CSE estimate for flat-top current
 
@@ -186,12 +208,12 @@ chirpz2 = Lc * chirp     # Energy chirp in z2
 ##################################################
 # Sampling
 
-elms_per_wave = 24         # Elements per resonant wavelength
-steps_per_per = 96         # should be roughly 4-5* elms_per_wave
-
 if qFlatTopZ2 == 1:
-    lez2     = sigz2       # flat-top
-    sigz2_in = 1e8 
+    if qRoundZ2 == 1:
+        lez2 = (7.5 * sigRoundZ2)  + sigz2     # flat top + gaussian
+    else:
+        lez2     = sigz2       # flat-top
+        sigz2_in = 1e8 
 else:
     lez2     = 9*sigz2     # gaussian
     sigz2_in = sigz2 
@@ -201,7 +223,12 @@ lsys_z2 = lwz2 + lez2      # Total length of sampled system in z2
 
 dz2 = lambda_z2 / elms_per_wave    # Node spacing in z2
 NNodesZ2 = lsys_z2 / dz2 + 1       # Number of radiation field nodes
-NMElecsZ2 = lez2 / dz2 * 2         # MINIMUM number of macroparticles
+
+dz2e = lambda_z2 / emps_per_wave   # Macroparticle spacing in z2
+NMElecsZ2 = lez2 / dz2e            # Number of macroparticles in z2
+
+NMElecsP2 = 19                     # Number of macroparticles to sample energy spread
+
 dz = lambda_z2 / steps_per_per     # Step size in zbar
 Nsteps = zbarprop / dz             # Number of steps
 
@@ -257,13 +284,19 @@ beam[0].nmppx = 1
 beam[0].nmppy = 1
 
 beam[0].nmpz2 = NMElecsZ2
-beam[0].nmpp2 = 21
+beam[0].nmpp2 = NMElecsP2
 
 beam[0].eratio = 1
 beam[0].emit_bar = emit_bar
 beam[0].chirp = chirpz2
 beam[0].bcenz2 = 0
 beam[0].Q = Q
+beam[0].qRoundEj = qRoundZ2
+beam[0].sigEj = sigRoundZ2
+
+beam[0].bosc_Mag = bEnOscMag
+beam[0].bosc_Fr  = bEnOscFr
+
 
 ##################################################
 # Field info
@@ -357,7 +390,7 @@ f.write('\n')
 f.write('              ELECTRON MACROPARTICLE SAMPLING\n')
 f.write('\n')
 f.write('\n')
-f.write('{:<24}'.format(beamfile) + 'CHARACTER   beam_file                  Name of the beam file\n')
+f.write('{:<24}'.format('\'' + beamfile + '\'') + 'CHARACTER   beam_file                  Name of the beam file\n')
 f.write('{:<24.15E}'.format(0.5)   + 'REAL        sEThreshold          Beyond the threshold level(%) * the average of real electrons are removed(ignored)\n')
 
 
@@ -372,7 +405,7 @@ f.write('\n')
 f.write('\n')
 f.write('{:<24d}'.format(int(math.floor(NNodesX)))        + 'INTEGER     iNumNodes(1)         Number of Elements in x direction\n')
 f.write('{:<24d}'.format(int(math.floor(NNodesY)))        + 'INTEGER     iNumNodes(2)         Number of Elements in y direction\n')
-f.write('{:<24d}'.format(int(math.floor(NNodesZ2)))      + 'INTEGER     iNumNodes(3)         Number of Elements in z2 direction\n')
+f.write('{:<24d}'.format(int(math.floor(elms_per_wave)))      + 'INTEGER     nodesperlambda         Number of nodes per resonant wavelength in z2\n')
 f.write('{:<24.15E}'.format(lsys_y)   + 'REAL        sFModelLengthX       Length of radiation field model in x direction\n')
 f.write('{:<24.15E}'.format(lsys_x)   + 'REAL        sFModelLengthY       Length of radiation field model in y direction\n')
 f.write('{:<24.15E}'.format(lsys_z2)  + 'REAL        sWigglerLengthZ2     Length of wiggler in z2-bar direction\n')
@@ -381,7 +414,7 @@ f.write('{:<24d}'.format(1)        + 'INTEGER     iRedNodesY           Length of
 f.write('{:<24.15E}'.format(filtFrac)   + 'REAL        sFiltFrac            Specifies cutoff for high pass filter as fraction of resonant frequency\n')
 f.write('{:<24.15E}'.format(diffFrac)   + 'REAL        sDiffFrac                  Specifies diffraction step size as fraction of the undulator period\n')
 f.write('{:<24.15E}'.format(diffFrac)   + 'REAL        beta                 Absorption coefficient\n')
-f.write('{:<24}'.format(seedfile) + 'CHARACTER   seed_file                  Name of the seed file\n')
+f.write('{:<24}'.format('\'' + seedfile + '\'') + 'CHARACTER   seed_file                  Name of the seed file\n')
 
 
 f.write('\n')
@@ -397,12 +430,14 @@ f.write('Input the scaled independant variables from [1] here\n')
 f.write('\n')
 f.write('\n')
 f.write('{:<24.15E}'.format(rho) + 'REAL        rho                  Pierce parameter, describe the strength of the field\n')
-f.write('{:<24.15E}'.format(1.0)   + 'REAL        ux                   Normalised magnitude of wiggler magnetic field x-vector: H=1 is helical, H=0 is planar\n')
-f.write('{:<24.15E}'.format(1.0)   + 'REAL        uy                   Normalised magnitude of wiggler magnetic field y-vector: H=1 is helical, H=0 is planar\n')
-f.write('{:<24.15E}'.format(eta) + 'REAL        eta                  Scaled longitudinal velocity (1-beta_av) / beta_av\n')
-f.write('{:<24.15E}'.format(k_beta_bar) + 'REAL        kbeta                Scaled betatron wavenumber\n')
+f.write('{:<24.15E}'.format(1.0)   + 'REAL        ux                   Normalised magnitude of wiggler magnetic field x-vector\n')
+f.write('{:<24.15E}'.format(1.0)   + 'REAL        uy                   Normalised magnitude of wiggler magnetic field y-vector\n')
+f.write('{:<24.15E}'.format(aw) + 'REAL        aw                  rms unduator parameter\n')
+f.write('{:<24.15E}'.format(gamma) + 'REAL        gamma                      Resonant Energy\n')
 f.write('{:<24.15E}'.format(ff) + 'REAL        sFocusfactor         Focussing factor f, from the betatron wavenumber\n')
+f.write('{:<24.15E}'.format(lambda_w) + 'REAL        lambda_w                   Undulator period\n')
 f.write('{:<24.15E}'.format(0.0)      + 'REAL        Dfact                Dispersive strength factor for chicane\n')
+f.write('{:<24}'.format('\'\'')  + 'CHARACTER   undType                    Undulator type - \'curved\' , \'planepole\' , else 1D (no off axis variation of aw)\n')
 f.write('{:<24.15E}'.format(0.0)      + 'REAL        taper                gradient of taper daw/dz\n')
 
 
@@ -425,11 +460,12 @@ f.write('What do we want to calculate in the code to output i.e. bunching, pulse
 f.write('\n')
 f.write('\n')
 f.write('{:<24}'.format('\'\'')       + 'CHARACTER   lattFile             Contents: N_w(periods), delta(periods) (!!! NO BLANK LINES AT END !!!)Blank if none.\n')
-f.write('{:<24.15E}'.format(dz) + 'REAL        sStepSize            Step size for integration (if zero auto calculated)\n')
-f.write('{:<24d}'.format(int(round(Nsteps)))    +   'INTEGER     nSteps               Number of steps (if zero,travel one raleigh length in z)\n')
-f.write('{:<24.15E}'.format(0.0)    + 'REAL        sZ                   Starting z position\n')
+f.write('{:<24d}'.format(steps_per_per) + 'INTEGER     stepsPerPeriod  Number of steps per wiggler period\n')
+f.write('{:<24d}'.format(int(N_w))    +   'INTEGER     nPeriods        Number of wiggler periods\n')
+f.write('{:<24.15E}'.format(0.0)    + 'REAL        sZ0                  Starting z position\n')
 f.write('{:<24}'.format('\'DataFile.dat\'') + 'CHARACTER   zDataFileName        Data file name\n')
 f.write('{:<24d}'.format(100)    +  'INTEGER     iWriteNthSteps       Steps to write data at\n')
+f.write('{:<24d}'.format(100)    +  'INTEGER     iWriteIntNthSteps  Steps to write integrated data at\n')
 f.write('{:<24d}'.format(100)    +  'INTEGER     iDumpNthSteps        Steps to dump data at (0 for no dumping)\n')
 f.write('{:<24.15E}'.format(100)    +  'REAL        sPEOut               Percentage of macroparticles to write out. Macroparticles are randomly selected.\n')
 f.write('\n')
