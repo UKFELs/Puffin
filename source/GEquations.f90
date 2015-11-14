@@ -31,13 +31,14 @@ implicit none
 contains
 
   subroutine dppdz_r_f(sx, sy, sz2, spr, spi, sgam, &
-                       sdpr, qOK)
+                       sdpr, sz, qOK)
 
   	implicit none
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:), sz
     real(kind=wp), intent(out) :: sdpr(:)
+    real(kind=wp) :: sz_n
 
     logical, intent(inout) :: qOK
 
@@ -123,8 +124,14 @@ contains
 !
 !      else 
 
+      if (qFMod_G) then
+        sz_n =  ( 1_wp + t_mag_G*sin(t_fr_G * sz) )  / 2_wp / sRho_G * sz
+        !if (tProcInfo_G%qRoot) print*, sz_n, sz, t_mag_G, t_fr_G
+      else 
+        sz_n = ZOver2rho
+      end if 
 
-        sdpr = sInv2rho * (fy_G * n2col *sin(ZOver2rho) - &
+        sdpr = sInv2rho * (fy_G * n2col *sin(sz_n) - &
               ( sEta_G * sp2 / sKappa_G**2 * &
               sField4ElecReal ) )
 
@@ -157,13 +164,14 @@ contains
 
 
   subroutine dppdz_i_f(sx, sy, sz2, spr, spi, sgam, &
-                       sdpi, qOK)
+                       sdpi, sZ, qOK)
 
     implicit none
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:), sZ
     real(kind=wp), intent(out) :: sdpi(:)
+    real(kind=wp) :: sz_n
 
     logical, intent(inout) :: qOK
 
@@ -257,8 +265,14 @@ contains
 !
 !      else
 
+      if (qFMod_G) then
+        sz_n =  ( 1_wp + t_mag_G*sin(t_fr_G * sz) ) / 2_wp / sRho_G * sz
+      else 
+        sz_n = ZOver2rho
+      end if
 
-        sdpi = sInv2rho * (fx_G * n2col * cos(ZOver2rho) - &
+
+        sdpi = sInv2rho * (fx_G * n2col * cos(sz_n) - &
                       ( sEta_G * sp2 / sKappa_G**2 * &
                       sField4ElecImag ) )
 

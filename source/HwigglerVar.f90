@@ -19,7 +19,13 @@ subroutine getAlpha(sZ)
 ! Variables n2col, c2col0, undgrad and sz0 are
 ! global variables, and are defined elsewhere.
 
-  n2col = n2col0  + undgrad*(sz - sz0)
+  if (qFMod_G) then
+    !n2col = 1_wp + t_mag_G*sin(t_fr_G * sZ)  
+    !n2col = 1_wp / n2col
+    n2col = 1_wp
+  else
+  	n2col = sqrt(  ( ( 1 + sAw_G**2.0_wp ) / (sAw_G**2.0_wp * (1 + t_mag_G*sin(t_fr_G * sz))) ) - (1.0_wp /sAw_G**2.0_wp) )
+  end if
 
 end subroutine getAlpha
 

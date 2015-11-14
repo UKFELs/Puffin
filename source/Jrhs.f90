@@ -175,14 +175,14 @@ contains
 !     PX (Real pperp)
        
         call dppdz_r_f(sx, sy, sz2, spr, spi, sgam, &
-                       sdpr, qOKL)
+                       sdpr, sz, qOKL)
         if (.not. qOKL) goto 1000
 
 
 !     -PY (Imaginary pperp)
 
         call dppdz_i_f(sx, sy, sz2, spr, spi, sgam, &
-                       sdpi, qOKL)
+                       sdpi, sz, qOKL)
         if (.not. qOKL) goto 1000
 
 !     P2

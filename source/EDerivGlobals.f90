@@ -317,6 +317,7 @@ logical   ::  qWrite             ! Write data?
 
 real(kind=wp) :: t_mag_G 
 real(kind=wp) :: t_fr_G  
+logical :: qFMod_G
 
 
 
