@@ -196,7 +196,7 @@ MODULE Setup
   
   END IF
 
-  call setupMods(lattFile, taper, sRho)
+  call setupMods(lattFile, taper, sRho, nSteps, sStepSize)
       
 !     Pass local vars to global vars
 
