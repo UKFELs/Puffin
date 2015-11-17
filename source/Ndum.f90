@@ -130,7 +130,10 @@ subroutine writeIM(sA, Ar_local, sZ, &
 
   else if (wrMeth_G == 'hdf5') then
 
-    call wr_h5()
+    call wr_h5(sA, sZ, iCstep, tArrayA, tArrayE, tArrayZ, &
+                 iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
+                 zDataFileName, qWriteFull, &
+                 qWriteInt, qOK)
 
   else 
 

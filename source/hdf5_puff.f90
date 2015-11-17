@@ -256,7 +256,7 @@ contains
   CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
        dsize, error)   
   CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, sElX_G, dims, error, &
-       dpsace_id, filespace)
+       dspace_id, filespace)
   !
   ! End access to the dataset and release resources used by it.
   !
@@ -267,9 +267,9 @@ contains
 
   CALL H5Dget_space_f(dset_id, filespace, error)
   CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
-       dsize, error, NULL, NULL)   
-  CALL h5dwrite_f(dset_id, H5T_NATIVE_FLOAT, sElY_G, dims, error, &
-       dpsace_id, filespace)
+       dsize, error)
+  CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, sElY_G, dims, error, &
+       dspace_id, filespace)
   CALL h5dclose_f(filespace, error) 
   
   CALL h5dclose_f(dset_id, error)
@@ -398,6 +398,43 @@ contains
 !  end subroutine createH5Files
 
 
+FUNCTION IntegerToString(iInteger)
+
+! Convert an integer into a string
+
+! iInteger    - INPUT  - Integer to convert
+
+! Define variables
+
+        IMPLICIT NONE
+
+        INTEGER(KIND=IP),          INTENT(IN)                   :: iInteger
+        CHARACTER(32_IP)                                        :: IntegerToString
+
+! Define local variables
+
+        CHARACTER(32_IP) :: zCharacter
+
+! Write character to internal file
+
+      write(zCharacter,*) iInteger
+
+! Output without blanks
+
+      IntegerToString = TRIM(ADJUSTL(zCharacter))
+
+!  Set error flag and exit
+
+       GoTo 2000
+
+! Error Handler - Error log Subroutine in CIO.f90 line 709
+
+1000 call Error_log('Error in sddsPuffin:IntegerToString',tErrorLog_G)
+      Print*,'Error in sddsPuffin:IntegerToString'
+2000 CONTINUE
+
+
+END FUNCTION IntegerToString
 	
 	
 end module hdf5_puff
