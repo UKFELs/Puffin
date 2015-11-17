@@ -130,7 +130,7 @@ contains
           tErrorLog_G)
     Print*,'Error in sddsPuffin:WriteParameterData'
 2000 CONTINUE
-  END SUBROUTINE WriteParameterData
+  END SUBROUTINE WriteAttributeData
 
 
 	subroutine wr_h5(sA, sZ, istep, tArrayA, tArrayE, tArrayZ, &
@@ -202,11 +202,11 @@ contains
     INTEGER(HID_T) :: filespace     ! Dataspace identifier
 !    type(cArraySegment), intent(inout) :: tArrayE(:)
     integer(kind=ip), intent(in) :: iStep
-    logical, intent(in) :: qSeparate
+!    logical, intent(in) :: qSeparate
     CHARACTER(LEN=9), PARAMETER :: dsetname = "electrons"     ! Dataset name
-    character(32_IP), intent(in) :: zDFName
+!    character(32_IP), intent(in) :: zDFName
     character(32_IP) :: filename
-    logical, intent(inout) :: qOK
+!    logical, intent(inout) :: qOK
 !    INTEGER(HSIZE_T), DIMENSION(1) :: dims = (/iGloNumElectrons_G/) ! Dataset dimensions
 !    INTEGER     ::   rank = 1                        ! Dataset rank
     INTEGER(HSIZE_T), DIMENSION(2) :: dims 
@@ -233,8 +233,9 @@ contains
 !     Prepare filename      
 
 
-        filename = (trim(adjustl(IntegerToString(iStep))) // '_' // (IntegerToString(tProcInfo_G%Rank)) // '_particles.h5' )
-
+        filename = (trim(adjustl(IntegerToString(iStep))) // '_' // &
+		 trim(adjustl(IntegerToString(tProcInfo_G%Rank))) // &
+		 '_particles.h5' )
 
         CALL h5open_f(error)
 !
@@ -249,12 +250,12 @@ contains
   !
   ! Create the dataset with default properties.
   !
-  CALL h5dcreate_f(file_id, dsetname, H5T_NATIVE_INTEGER, dspace_id, &
+  CALL h5dcreate_f(file_id, dsetname, H5T_NATIVE_DOUBLE, dspace_id, &
        dset_id, error)
   CALL H5Dget_space_f(dset_id, filespace, error)
   CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
-       dsize, error, NULL, NULL)   
-  CALL h5dwrite_f(dset_id, H5T_NATIVE_FLOAT, sElX_G, dims, error, &
+       dsize, error)   
+  CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, sElX_G, dims, error, &
        dpsace_id, filespace)
   !
   ! End access to the dataset and release resources used by it.
@@ -301,17 +302,17 @@ contains
 !    call wrt_phs_coord(iIm_PPerp_CG, sElPY_G, qOKL)
 !    call wrt_phs_coord(iRe_Gam_CG, sElGam_G, qOKL)
 !    if (.not. qOKL) goto 1000
-     size(iRe_X_CG)
+!     size(iRe_X_CG)
 !     Set error flag and exit
 
-    qOK = .true.            
+!    qOK = .true.            
     goto 2000
 
 
 !     Error Handler - Error log Subroutine in CIO.f90 line 709
 
-1000 call Error_log('Error in sddsPuffin:outputBeamFiles',tErrorLog_G)
-    print*,'Error in sddsPuffin:outputBeamFiles'
+1000 call Error_log('Error in hdf5_puff:outputBeamFiles',tErrorLog_G)
+    print*,'Error in hdf5_puff:outputBeamFiles'
 
 2000 continue
 
