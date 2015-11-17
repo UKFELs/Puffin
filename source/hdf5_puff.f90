@@ -209,15 +209,17 @@ contains
     logical, intent(inout) :: qOK
 !    INTEGER(HSIZE_T), DIMENSION(1) :: dims = (/iGloNumElectrons_G/) ! Dataset dimensions
 !    INTEGER     ::   rank = 1                        ! Dataset rank
-    INTEGER(HSIZE_T), DIMENSION(2) :: dims = (/iNumberElectrons_G,6/) ! Dataset dimensions
-    INTEGER(HSIZE_T), DIMENSION(2) :: doffset = (/0,0/) ! Offset for write
-    INTEGER(HSIZE_T), DIMENSION(2) :: dsize = (/iNumberElectrons_F,1/) ! Size of hyperslab to write
+    INTEGER(HSIZE_T), DIMENSION(2) :: dims 
+	INTEGER(HSIZE_T), DIMENSION(2) :: doffset! Offset for write
+    INTEGER(HSIZE_T), DIMENSION(2) :: dsize ! Size of hyperslab to write
     INTEGER     ::   rank = 2                        ! Dataset rank
 ! Local vars
 
     integer(kind=ip) :: iep
     integer :: error ! Error flag
-
+    dims = (/iNumberElectrons_G,6/) ! Dataset dimensions
+    doffset=(/0,0/)
+	dsize=(/iNumberElectrons_G,1/)
 !     Create data files
 
 !      call createH5Files(tArrayE, zDFName, trim(IntegerToString(iStep)), qOKL)
