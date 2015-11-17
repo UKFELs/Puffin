@@ -133,7 +133,9 @@ contains
   END SUBROUTINE WriteParameterData
 
 
-	subroutine wr_h5()
+	subroutine wr_h5(sA, sZ, istep, tArrayA, tArrayE, tArrayZ, &
+                     iIntWr, iWr, qSep, zDFname, qWriteFull, &
+                     qWriteInt, qOK)
 
     implicit none
 
@@ -257,6 +259,8 @@ contains
   !
   CALL h5dclose_f(filespace, error)
 
+! repeat for some next dataset
+  
   CALL h5dclose_f(dset_id, error)
 
   !
