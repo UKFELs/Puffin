@@ -310,83 +310,83 @@ contains
 
   end subroutine outputH5BeamFiles
 
-  subroutine createH5Files(tArrayY, zDFName, zOptionalString, qOK)
-
-    implicit none
+!  subroutine createH5Files(tArrayY, zDFName, zOptionalString, qOK)
+!
+!    implicit none
 
 ! Create "Full" Files - creates either 
 ! the full data sets for the field and 
 ! electron phase space.
 
-    type(cArraySegment), intent(inout) :: tArrayY(:)
-    character(32_IP), intent(in)   ::   zDFName
-    character(*), intent(in), optional  :: zOptionalString
-    logical, intent(inout) :: qOK
+!    type(cArraySegment), intent(inout) :: tArrayY(:)
+!   character(32_IP), intent(in)   ::   zDFName
+!    character(*), intent(in), optional  :: zOptionalString
+!    logical, intent(inout) :: qOK
 
-    integer(kind=ip) :: iap
-    character(32_IP) :: zFileName
-    logical :: qOptional, qOKL
-
-
-
-    qOK = .false.
+!    integer(kind=ip) :: iap
+!    character(32_IP) :: zFileName
+!    logical :: qOptional, qOKL
 
 
-    if (present(zOptionalString)) then
 
-      if (len(trim(adjustl(zOptionalString))) > 0) then
+!    qOK = .false.
 
-        qOptional = .TRUE.
+
+!    if (present(zOptionalString)) then
+
+!      if (len(trim(adjustl(zOptionalString))) > 0) then
+
+!        qOptional = .TRUE.
     
-      end if
+!      end if
   
-    end if
+!    end if
 
 !     Loop around array segments, creating files
 
-    do iap = 1, size(tArrayY)
+!    do iap = 1, size(tArrayY)
 
-      if (tArrayY(iap)%qWrite) then
+!      if (tArrayY(iap)%qWrite) then
         
-        if (tProcInfo_G%qRoot) then
+!        if (tProcInfo_G%qRoot) then
 
 !     Prepare filename      
 
-          zFilename = (trim(adjustl(tArrayY(iap)%zVariable)) // trim(adjustl(zDFName)) // '.h5')
+!          zFilename = (trim(adjustl(tArrayY(iap)%zVariable)) // trim(adjustl(zDFName)) // '.h5')
 
-          if (qOptional) then
+!          if (qOptional) then
 
-            zFilename = (trim(adjustl(zOptionalString)) // '_' // trim(adjustl(zFilename)) // '.h5')
+!            zFilename = (trim(adjustl(zOptionalString)) // '_' // trim(adjustl(zFilename)) // '.h5')
 
-          end if
+!          end if
 !          call CreateSDDSFile(zFilename, &
 !                              tArrayY(iap)%zVariable, &
 !                              tArrayY(iap)%tFileType, &
 !                              qOKL)    
       
 
-        end if
+!        end if
 
 
-      end if
+ !     end if
 
-    end do
+ !   end do
 
 !     Set error flag and exit
 
-    qOK = .true.
-    goto 2000
+!    qOK = .true.
+!    goto 2000
 
 
 !     Error Handler - Error log Subroutine in CIO.f90 line 709
 
-1000 call Error_log('Error in sddsPuffin:createFFiles',tErrorLog_G)
-    print*,'Error in sddsPuffin:createFFiles'
+!1000 call Error_log('Error in sddsPuffin:createFFiles',tErrorLog_G)
+!    print*,'Error in sddsPuffin:createFFiles'
 
-2000 continue
+!2000 continue
 
 
-  end subroutine createH5Files
+!  end subroutine createH5Files
 
 
 	
