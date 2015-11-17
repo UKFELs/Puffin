@@ -259,9 +259,17 @@ contains
   !
   ! End access to the dataset and release resources used by it.
   !
-  CALL h5dclose_f(filespace, error)
-
+  CALL h5dclose_f(filespace, error) 
+  
 ! repeat for some next dataset
+  doffset=(/0,1/)
+
+  CALL H5Dget_space_f(dset_id, filespace, error)
+  CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
+       dsize, error, NULL, NULL)   
+  CALL h5dwrite_f(dset_id, H5T_NATIVE_FLOAT, sElY_G, dims, error, &
+       dpsace_id, filespace)
+  CALL h5dclose_f(filespace, error) 
   
   CALL h5dclose_f(dset_id, error)
 
