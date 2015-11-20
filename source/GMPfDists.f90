@@ -129,12 +129,16 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
              pym(nZ2(ib)), Ne(nZ2(ib)), pxsig(nZ2(ib)), &
              pysig(nZ2(ib)), xsig(nZ2(ib)), ysig(nZ2(ib)))
 
+    if (tProcInfo_G%qRoot) print*, 'allocated...'
+
 !     Read in dist file for this beam
 
     call getLocalDists(fname(ib), z2m, gm, &
                        xm, ym, pxm, pym, gsig, xsig, ysig, & 
                        pxsig, pysig, nz2(ib), nz2G(ib), &
                        Ne)
+
+    if (tProcInfo_G%qRoot) print*, 'read in dists...'
 
 
 !     get Macroparticles in this beam
@@ -145,6 +149,8 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
                       z2(b_sts(ib):b_ends(ib)), gamma(b_sts(ib):b_ends(ib)), &   ! ....BOUNDS.... !
                       chi_b(b_sts(ib):b_ends(ib)), chi(b_sts(ib):b_ends(ib)),sZ,nGam, &
                       nX, nY, nPX, nPY)
+
+    if (tProcInfo_G%qRoot) print*, 'gend particles...'
 
     deallocate(z2m, gm, gsig, xm, ym, pxm, pym, Ne, pxsig, pysig, xsig, ysig)
 
@@ -196,6 +202,8 @@ subroutine getLocalDists(fname, z2ml, gam_ml, xml, yml, pxml, &
 
 !     Read in file
 
+  if (tProcInfo_G%qRoot) print*, 'reading FULL dists...'
+
   if (tProcInfo_G%qRoot) then
 
     call readPartDists(fname, z2m, gam_m, xm, ym, pxm, pym, &
@@ -204,6 +212,8 @@ subroutine getLocalDists(fname, z2ml, gam_ml, xml, yml, pxml, &
   end if
 
 !     Send to local arrays
+
+if (tProcInfo_G%qRoot) print*, 'sending to procs......'
 
   call scdists(xml, yml, z2ml, pxml, pyml, gam_ml, Nel, &
                xm, ym, z2m, pxm, pym, gam_m, xdl, ydl, &
@@ -247,7 +257,11 @@ subroutine scdists(xml, yml, z2ml, pxml, pyml, gam_ml, Nel, &
 
   call scatterE2Loc(z2ml,z2m,nz2,nz2g,recvs,displs,0)
 
+if (tProcInfo_G%qRoot) print*, 'sending xmean......'
+
   call scatterE2Loc(xml,xm,nz2,nz2g,recvs,displs,0)
+
+if (tProcInfo_G%qRoot) print*, 'sending ymean......'
 
   call scatterE2Loc(yml,ym,nz2,nz2g,recvs,displs,0)
 
