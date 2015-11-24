@@ -279,7 +279,7 @@ contains
     CALL h5sclose_f(filespace, error) 
 !    CALL h5sclose_f(dspace_id, error) 
   
-! repeat for some next dataset
+! repeat for some next y dataset
     doffset=(/0,1/)
 
     CALL H5Dget_space_f(dset_id, filespace, error)
@@ -289,7 +289,57 @@ contains
        file_space_id = filespace, mem_space_id = dspace_id)
 ! was       dspace_id, filespace)
     CALL h5sclose_f(filespace, error) 
-  
+
+!
+! repeat for some next z dataset
+    doffset=(/0,2/)
+
+    CALL H5Dget_space_f(dset_id, filespace, error)
+    CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
+       dsize, error)
+    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, sElZ2_G, dims, error, &
+       file_space_id = filespace, mem_space_id = dspace_id)
+! was       dspace_id, filespace)
+    CALL h5sclose_f(filespace, error) 
+
+
+! repeat for some next px dataset
+    doffset=(/0,3/)
+
+    CALL H5Dget_space_f(dset_id, filespace, error)
+    CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
+       dsize, error)
+    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, sElPX_G, dims, error, &
+       file_space_id = filespace, mem_space_id = dspace_id)
+! was       dspace_id, filespace)
+    CALL h5sclose_f(filespace, error) 
+
+
+! repeat for some next py dataset
+    doffset=(/0,4/)
+
+    CALL H5Dget_space_f(dset_id, filespace, error)
+    CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
+       dsize, error)
+    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, sElPY_G, dims, error, &
+       file_space_id = filespace, mem_space_id = dspace_id)
+! was       dspace_id, filespace)
+    CALL h5sclose_f(filespace, error) 
+
+
+! repeat for some next gamma dataset (actually beta*gamma)
+    doffset=(/0,5/)
+
+    CALL H5Dget_space_f(dset_id, filespace, error)
+    CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
+       dsize, error)
+    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, sElgam_G, dims, error, &
+       file_space_id = filespace, mem_space_id = dspace_id)
+! was       dspace_id, filespace)
+    CALL h5sclose_f(filespace, error) 
+!
+! 
+!  
     CALL h5dclose_f(dset_id, error)
 
 !
