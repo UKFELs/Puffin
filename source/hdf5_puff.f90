@@ -198,8 +198,8 @@ contains
 !
     INTEGER(HID_T) :: file_id       ! File identifier
     INTEGER(HID_T) :: dset_id       ! Dataset identifier 
-    INTEGER(HID_T) :: dspace_id     ! Dataspace identifier
-    INTEGER(HID_T) :: filespace     ! Dataspace identifier
+    INTEGER(HID_T) :: dspace_id     ! Dataspace identifier in memory
+    INTEGER(HID_T) :: filespace     ! Dataspace identifier in file
 !    type(cArraySegment), intent(inout) :: tArrayE(:)
     integer(kind=ip), intent(in) :: iStep
 !    logical, intent(in) :: qSeparate
@@ -238,29 +238,46 @@ contains
 		 '_particles.h5' )
 
     CALL h5open_f(error)
+    Print*,'hdf5_puff:outputH5BeamFiles(file opened)'
 !
 ! Create a new file using default properties.
 !
     CALL h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error)
+    Print*,'hdf5_puff:outputH5BeamFiles(file created)'
 !
-! Create the dataspace.
+! Create the big dataspace in the file.
 !
-    CALL h5screate_simple_f(rank, dims, dspace_id, error)
+    CALL h5screate_simple_f(rank, dims, filespace, error)
+    Print*,'hdf5_puff:outputH5BeamFiles(filespace created)'
 
 !
 ! Create the dataset with default properties.
 !
-    CALL h5dcreate_f(file_id, dsetname, H5T_NATIVE_DOUBLE, dspace_id, &
+    CALL h5dcreate_f(file_id, dsetname, H5T_NATIVE_DOUBLE, filespace, &
        dset_id, error)
+    Print*,'hdf5_puff:outputH5BeamFiles(dataset created)'
+    CALL h5sclose_f(filespace, error)
+    Print*,'hdf5_puff:outputH5BeamFiles(filespace closed)'
+
+!
+! Create a smaller space to buffer the data writes
+!
+    CALL h5screate_simple_f(rank, dsize, dspace_id, error)
+    Print*,'hdf5_puff:outputH5BeamFiles(memory dataspace allocated)'
+
+! 
+! Select hyperslab in the file.
+!
     CALL H5Dget_space_f(dset_id, filespace, error)
     CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
        dsize, error)   
     CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, sElX_G, dims, error, &
-       dspace_id, filespace)
-  !
-  ! End access to the dataset and release resources used by it.
-  !
-    CALL h5dclose_f(filespace, error) 
+       file_space_id = filespace, mem_space_id = dspace_id)
+!
+! End access to the dataset and release resources used by it.
+!
+    CALL h5sclose_f(filespace, error) 
+!    CALL h5sclose_f(dspace_id, error) 
   
 ! repeat for some next dataset
     doffset=(/0,1/)
@@ -269,8 +286,9 @@ contains
     CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
        dsize, error)
     CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, sElY_G, dims, error, &
-       dspace_id, filespace)
-    CALL h5dclose_f(filespace, error) 
+       file_space_id = filespace, mem_space_id = dspace_id)
+! was       dspace_id, filespace)
+    CALL h5sclose_f(filespace, error) 
   
     CALL h5dclose_f(dset_id, error)
 
