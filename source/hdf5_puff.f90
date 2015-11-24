@@ -207,7 +207,7 @@ contains
     integer(kind=ip), intent(in) :: iStep
 !    logical, intent(in) :: qSeparate
     CHARACTER(LEN=9), PARAMETER :: dsetname = "electrons"     ! Dataset name
-    CHARACTER(LEN=16), PARAMETER :: aname = "vsNumSpatialDims"   ! Attribute name
+    CHARACTER(LEN=16) :: aname   ! Attribute name
 !    character(32_IP), intent(in) :: zDFName
     character(32_IP) :: filename
 !    logical, intent(inout) :: qOK
@@ -219,19 +219,24 @@ contains
     INTEGER     ::   rank = 2               ! Particle Dataset rank
     INTEGER     ::  arank = 1               ! Attribute Dataset rank
     INTEGER(HSIZE_T), DIMENSION(1) :: adims = (/1/)  ! Attribute dims
-    INTEGER(HSIZE_T), DIMENSION(1) :: attr_data 
+    INTEGER(HSIZE_T), DIMENSION(1) :: attr_data_int 
     INTEGER     :: numSpatialDims = 3   ! Attr content, 
+    REAL(kind=WP) :: attr_data_double
+    CHARACTER(LEN=100) :: attr_data_string
+    INTEGER(HSIZE_T) :: attr_string_len = 100
 !assumed 3D sim. May be 1D.
 !    TYPE(C_PTR) :: f_ptr
 ! Local vars
 
     integer(kind=ip) :: iep
     integer :: error ! Error flag
-    attr_data(1)=numSpatialDims
+    attr_data_int(1)=numSpatialDims
     adims(1)=1
     dims = (/iNumberElectrons_G,6/) ! Dataset dimensions
     doffset=(/0,0/)
     dsize=(/iNumberElectrons_G,1/)
+    attr_data_string="electrons_x,electrons_y,electrons_z,electrons_px," // &
+      "electrons_py,electrons_gamma"
 !     Create data files
 
 !      call createH5Files(tArrayE, zDFName, trim(IntegerToString(iStep)), qOKL)
@@ -245,9 +250,13 @@ contains
 !     Prepare filename      
 
 
-    filename = (trim(adjustl(IntegerToString(iStep))) // '_' // &
-		 trim(adjustl(IntegerToString(tProcInfo_G%Rank))) // &
-		 '_particles.h5' )
+!    filename = ( TRIM(ADJUSTL(zFile))  // '_' // &
+!        trim(adjustl(IntegerToString(iStep))) // '_' // &
+!        trim(adjustl(IntegerToString(tProcInfo_G%Rank))) // &
+!		 '_electrons.h5' )
+    filename = ( trim(adjustl(IntegerToString(iStep))) // '_' // &
+        trim(adjustl(IntegerToString(tProcInfo_G%Rank))) // &
+		 '_electrons.h5' )
 
     CALL h5open_f(error)
     Print*,'hdf5_puff:outputH5BeamFiles(file opened)'
@@ -374,9 +383,12 @@ contains
     CALL h5tcopy_f(H5T_NATIVE_INTEGER, atype_id, error)
 !    CALL h5tset_size_f(atype_id, attrlen, error)
 
+
+
 !
 ! Create dataset attribute.
 !
+    aname = "vsNumSpatialDims"
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
     Print*,'hdf5_puff:outputH5BeamFiles(attribute created)'
 !
@@ -390,7 +402,58 @@ contains
 ! Close the attribute.
 !
     CALL h5aclose_f(attr_id, error)
+
+! next attribute
+    aname="numSpatialDims"
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, numSpatialDims, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+
+! integers done, move onto floats
+    CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
+    aname="time"
+    attr_data_double=1.0*iStep*sStepSize
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+! then
+    aname="mass"
+!    attr_data_double=9.10938356E-31
+    attr_data_double=m_e
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    aname="charge"
+!    attr_data_double=1.602176487E-19
+    attr_data_double=q_e
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+
+! then text attributes
+    CALL h5tcopy_f(H5T_STRING,  atype_id, error)
+    CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    aname="vsLabels"
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    aname="vsType"
+    attr_data_string="variableWithMesh"
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    aname="vsTimeGroup"
+    attr_data_string="time"
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    aname="vsLimits"
+    attr_data_string="globalLimits"
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+
 !
+! Close the attribute.
+!
+    CALL h5aclose_f(attr_id, error)
 ! Terminate access to the data space.
 !
     CALL h5sclose_f(aspace_id, error)
