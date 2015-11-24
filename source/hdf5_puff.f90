@@ -126,9 +126,9 @@ contains
     GoTo 2000     
 
 ! Error Handler - Error log Subroutine in CIO.f90 line 709
-1000 call Error_log('Error in sddsPuffin:WriteParameterData',&
+1000 call Error_log('Error in hdf5_puff:WriteAttributeData',&
           tErrorLog_G)
-    Print*,'Error in sddsPuffin:WriteParameterData'
+    Print*,'Error in hdf5_puff:WriteAttributeData'
 2000 CONTINUE
   END SUBROUTINE WriteAttributeData
 
@@ -210,7 +210,7 @@ contains
 !    INTEGER(HSIZE_T), DIMENSION(1) :: dims = (/iGloNumElectrons_G/) ! Dataset dimensions
 !    INTEGER     ::   rank = 1                        ! Dataset rank
     INTEGER(HSIZE_T), DIMENSION(2) :: dims 
-	INTEGER(HSIZE_T), DIMENSION(2) :: doffset! Offset for write
+    INTEGER(HSIZE_T), DIMENSION(2) :: doffset! Offset for write
     INTEGER(HSIZE_T), DIMENSION(2) :: dsize ! Size of hyperslab to write
     INTEGER     ::   rank = 2                        ! Dataset rank
 ! Local vars
@@ -219,7 +219,7 @@ contains
     integer :: error ! Error flag
     dims = (/iNumberElectrons_G,6/) ! Dataset dimensions
     doffset=(/0,0/)
-	dsize=(/iNumberElectrons_G,1/)
+    dsize=(/iNumberElectrons_G,1/)
 !     Create data files
 
 !      call createH5Files(tArrayE, zDFName, trim(IntegerToString(iStep)), qOKL)
@@ -233,61 +233,61 @@ contains
 !     Prepare filename      
 
 
-        filename = (trim(adjustl(IntegerToString(iStep))) // '_' // &
+    filename = (trim(adjustl(IntegerToString(iStep))) // '_' // &
 		 trim(adjustl(IntegerToString(tProcInfo_G%Rank))) // &
 		 '_particles.h5' )
 
-        CALL h5open_f(error)
+    CALL h5open_f(error)
 !
 ! Create a new file using default properties.
 !
-        CALL h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error)
-  !
-  ! Create the dataspace.
-  !
-  CALL h5screate_simple_f(rank, dims, dspace_id, error)
+    CALL h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error)
+!
+! Create the dataspace.
+!
+    CALL h5screate_simple_f(rank, dims, dspace_id, error)
 
-  !
-  ! Create the dataset with default properties.
-  !
-  CALL h5dcreate_f(file_id, dsetname, H5T_NATIVE_DOUBLE, dspace_id, &
+!
+! Create the dataset with default properties.
+!
+    CALL h5dcreate_f(file_id, dsetname, H5T_NATIVE_DOUBLE, dspace_id, &
        dset_id, error)
-  CALL H5Dget_space_f(dset_id, filespace, error)
-  CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
+    CALL H5Dget_space_f(dset_id, filespace, error)
+    CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
        dsize, error)   
-  CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, sElX_G, dims, error, &
+    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, sElX_G, dims, error, &
        dspace_id, filespace)
   !
   ! End access to the dataset and release resources used by it.
   !
-  CALL h5dclose_f(filespace, error) 
+    CALL h5dclose_f(filespace, error) 
   
 ! repeat for some next dataset
-  doffset=(/0,1/)
+    doffset=(/0,1/)
 
-  CALL H5Dget_space_f(dset_id, filespace, error)
-  CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
+    CALL H5Dget_space_f(dset_id, filespace, error)
+    CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
        dsize, error)
-  CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, sElY_G, dims, error, &
+    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, sElY_G, dims, error, &
        dspace_id, filespace)
-  CALL h5dclose_f(filespace, error) 
+    CALL h5dclose_f(filespace, error) 
   
-  CALL h5dclose_f(dset_id, error)
+    CALL h5dclose_f(dset_id, error)
 
-  !
-  ! Terminate access to the data space.
-  !
-  CALL h5sclose_f(dspace_id, error)
+!
+! Terminate access to the data space.
+!
+    CALL h5sclose_f(dspace_id, error)
 
-  !
-  ! Close the file.
-  !
-  CALL h5fclose_f(file_id, error)
+!
+! Close the file.
+!
+    CALL h5fclose_f(file_id, error)
 
 
 !      end if
 !		    end if
- !      end do
+!      end do
 
 
 
