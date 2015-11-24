@@ -200,10 +200,14 @@ contains
     INTEGER(HID_T) :: dset_id       ! Dataset identifier 
     INTEGER(HID_T) :: dspace_id     ! Dataspace identifier in memory
     INTEGER(HID_T) :: filespace     ! Dataspace identifier in file
+    INTEGER(HID_T) :: attr_id       ! Attribute identifier
+    INTEGER(HID_T) :: aspace_id     ! Attribute Dataspace identifier
+    INTEGER(HID_T) :: atype_id      ! Attribute Dataspace identifier
 !    type(cArraySegment), intent(inout) :: tArrayE(:)
     integer(kind=ip), intent(in) :: iStep
 !    logical, intent(in) :: qSeparate
     CHARACTER(LEN=9), PARAMETER :: dsetname = "electrons"     ! Dataset name
+    CHARACTER(LEN=16), PARAMETER :: aname = "vsNumSpatialDims"   ! Attribute name
 !    character(32_IP), intent(in) :: zDFName
     character(32_IP) :: filename
 !    logical, intent(inout) :: qOK
@@ -212,11 +216,19 @@ contains
     INTEGER(HSIZE_T), DIMENSION(2) :: dims 
     INTEGER(HSIZE_T), DIMENSION(2) :: doffset! Offset for write
     INTEGER(HSIZE_T), DIMENSION(2) :: dsize ! Size of hyperslab to write
-    INTEGER     ::   rank = 2                        ! Dataset rank
+    INTEGER     ::   rank = 2               ! Particle Dataset rank
+    INTEGER     ::  arank = 1               ! Attribute Dataset rank
+    INTEGER(HSIZE_T), DIMENSION(1) :: adims = (/1/)  ! Attribute dims
+    INTEGER(HSIZE_T), DIMENSION(1) :: attr_data 
+    INTEGER     :: numSpatialDims = 3   ! Attr content, 
+!assumed 3D sim. May be 1D.
+!    TYPE(C_PTR) :: f_ptr
 ! Local vars
 
     integer(kind=ip) :: iep
     integer :: error ! Error flag
+    attr_data(1)=numSpatialDims
+    adims(1)=1
     dims = (/iNumberElectrons_G,6/) ! Dataset dimensions
     doffset=(/0,0/)
     dsize=(/iNumberElectrons_G,1/)
@@ -339,13 +351,51 @@ contains
     CALL h5sclose_f(filespace, error) 
 !
 ! 
-!  
-    CALL h5dclose_f(dset_id, error)
 
 !
 ! Terminate access to the data space.
 !
     CALL h5sclose_f(dspace_id, error)
+  
+!
+!
+! ATTRIBUTES FOR PARTICLE DATASET
+!
+!
+! simple dataset for array of vals
+!    CALL h5screate_simple_f(arank, adims, aspace_id, error)
+
+! scalar dataset for simpler values
+    CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
+
+!
+! Create datatype for the attribute.
+!
+    CALL h5tcopy_f(H5T_NATIVE_INTEGER, atype_id, error)
+!    CALL h5tset_size_f(atype_id, attrlen, error)
+
+!
+! Create dataset attribute.
+!
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    Print*,'hdf5_puff:outputH5BeamFiles(attribute created)'
+!
+  ! Write the attribute data.
+  !
+  !data_dims(1) = 2
+!    f_ptr = C_LOC(numSpatialDims)
+! ignore attr dim by setting to zero below
+    CALL h5awrite_f(attr_id, atype_id, numSpatialDims, adims, error) 
+!
+! Close the attribute.
+!
+    CALL h5aclose_f(attr_id, error)
+!
+! Terminate access to the data space.
+!
+    CALL h5sclose_f(aspace_id, error)
+
+    CALL h5dclose_f(dset_id, error)
 
 !
 ! Close the file.
