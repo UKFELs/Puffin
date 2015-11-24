@@ -435,18 +435,22 @@ contains
     CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
     CALL h5tset_size_f(atype_id, attr_string_len, error)
     aname="vsLabels"
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
     CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
     CALL h5aclose_f(attr_id, error)
     aname="vsType"
     attr_data_string="variableWithMesh"
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
     CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
     CALL h5aclose_f(attr_id, error)
     aname="vsTimeGroup"
     attr_data_string="time"
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
     CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
     CALL h5aclose_f(attr_id, error)
     aname="vsLimits"
     attr_data_string="globalLimits"
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
     CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
     CALL h5aclose_f(attr_id, error)
 
