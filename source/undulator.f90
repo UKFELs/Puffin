@@ -60,7 +60,6 @@ contains
     logical :: qWIF
     logical :: qOKL
 
-
 !    stepsize = delmz(iM)
     
 !    iUndType_G = iDetail(iM)

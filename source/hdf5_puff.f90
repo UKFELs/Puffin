@@ -219,7 +219,7 @@ contains
     INTEGER(HSIZE_T), DIMENSION(2) :: dsize ! Size of hyperslab to write
     INTEGER     ::   rank = 2               ! Particle Dataset rank
     INTEGER     ::  arank = 1               ! Attribute Dataset rank
-    INTEGER(HSIZE_T), DIMENSION(1) :: adims = (/1/)  ! Attribute dims
+    INTEGER(HSIZE_T), DIMENSION(1) :: adims ! Attribute dims
     INTEGER(HSIZE_T), DIMENSION(1) :: attr_data_int 
     INTEGER     :: numSpatialDims = 3   ! Attr content,  
 !assumed 3D sim. May be 1D.
@@ -229,12 +229,14 @@ contains
     INTEGER(HSIZE_T) :: attr_string_len
     CHARACTER(LEN=4), PARAMETER :: timegrpname = "time"  ! Group name
     CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  ! Group name
-! Local vars
+    REAL(kind=WP), ALLOCATABLE :: limdata (:)  ! Data to write
+    ! Local vars
 
     integer(kind=ip) :: iep
     integer :: error ! Error flag
     attr_data_int(1)=numSpatialDims
     adims(1)=1
+    adims = (/1/) 
     dims = (/iNumberElectrons_G,6/) ! Dataset dimensions
     doffset=(/0,0/)
     dsize=(/iNumberElectrons_G,1/)
@@ -437,28 +439,28 @@ contains
 
 ! then text attributes
     CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
-    Print*,'hdf5_puff:outputH5BeamFiles(atype_id set to string)'
+!    Print*,'hdf5_puff:outputH5BeamFiles(atype_id set to string)'
     CALL h5tset_size_f(atype_id, attr_string_len, error)
-    Print*,'hdf5_puff:outputH5BeamFiles(string length declared)'
+!    Print*,'hdf5_puff:outputH5BeamFiles(string length declared)'
     CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
-    Print*,'hdf5_puff:outputH5BeamFiles(string padding enabled)'
+!    Print*,'hdf5_puff:outputH5BeamFiles(string padding enabled)'
     aname="vsLabels"
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
-    Print*,'hdf5_puff:outputH5BeamFiles(lables attribute created)'
+!    Print*,'hdf5_puff:outputH5BeamFiles(lables attribute created)'
     CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
-    Print*,'hdf5_puff:outputH5BeamFiles(lables attribute written)'
+!    Print*,'hdf5_puff:outputH5BeamFiles(lables attribute written)'
     CALL h5aclose_f(attr_id, error)
-    Print*,'hdf5_puff:outputH5BeamFiles(lables attribute closed)'
+!    Print*,'hdf5_puff:outputH5BeamFiles(lables attribute closed)'
     aname="vsType"
     attr_data_string="variableWithMesh"
     attr_string_len=16
     CALL h5tset_size_f(atype_id, attr_string_len, error)
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
-    Print*,'hdf5_puff:outputH5BeamFiles(type attribute created)'
+!    Print*,'hdf5_puff:outputH5BeamFiles(type attribute created)'
     CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
-    Print*,'hdf5_puff:outputH5BeamFiles(type attribute written)'
+!    Print*,'hdf5_puff:outputH5BeamFiles(type attribute written)'
     CALL h5aclose_f(attr_id, error)
-    Print*,'hdf5_puff:outputH5BeamFiles(type attribute closed)'
+!    Print*,'hdf5_puff:outputH5BeamFiles(type attribute closed)'
     print*,error
     aname="vsTimeGroup"
     attr_data_string="time"
@@ -523,8 +525,32 @@ contains
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
     CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
     CALL h5aclose_f(attr_id, error)
-!    aname="vsLowerBounds"
-!    aname="vsUpperBounds"
+    CALL h5sclose_f(aspace_id, error)
+
+! And the limits themselves which require non-scalar attributes
+    adims = (/numSpatialDims/) 
+    CALL h5screate_simple_f(arank, adims, aspace_id, error)
+    aname="vsLowerBounds"
+    CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    Print*,'hdf5_puff:outputH5BeamFiles(lower bounds attribute created)'
+    ALLOCATE ( limdata(numSpatialDims))
+    limdata(1)=-0.5*NX_G*sLengthOfElmX_G
+    limdata(2)=-0.5*NY_G*sLengthOfElmY_G
+    limdata(3)=-0.5*NZ2_G*sLengthOfElmZ2_G
+    CALL h5awrite_f(attr_id, atype_id, limdata, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    aname="vsUpperBounds"
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    Print*,'hdf5_puff:outputH5BeamFiles(upper bounds attribute created)'
+    limdata(1)=0.5*NX_G*sLengthOfElmX_G
+    limdata(2)=0.5*NY_G*sLengthOfElmY_G
+    limdata(3)=0.5*NZ2_G*sLengthOfElmZ2_G
+    CALL h5awrite_f(attr_id, atype_id, limdata, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    DEALLOCATE ( limdata)
+    CALL h5sclose_f(aspace_id, error)
+    
     CALL h5gclose_f(group_id, error)
 
 !
@@ -533,7 +559,6 @@ contains
 !    CALL h5aclose_f(attr_id, error)
 ! Terminate access to the data space.
 !
-    CALL h5sclose_f(aspace_id, error)
 
     CALL h5dclose_f(dset_id, error)
 
