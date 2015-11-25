@@ -237,12 +237,12 @@ contains
     attr_data_int(1)=numSpatialDims
     adims(1)=1
     adims = (/1/) 
-    dims = (/iNumberElectrons_G,6/) ! Dataset dimensions
+    dims = (/7,iNumberElectrons_G/) ! Dataset dimensions
     doffset=(/0,0/)
-    dsize=(/iNumberElectrons_G,1/)
+    dsize=(/1,iNumberElectrons_G/)
     attr_data_string="electrons_x,electrons_y,electrons_z,electrons_px," // &
       "electrons_py,electrons_gamma,electrons_weight"
-    attr_string_len=78
+    attr_string_len=94
 !     Create data files
 
 !      call createH5Files(tArrayE, zDFName, trim(IntegerToString(iStep)), qOKL)
@@ -307,7 +307,7 @@ contains
 !    CALL h5sclose_f(dspace_id, error) 
   
 ! repeat for some next y dataset
-    doffset=(/0,1/)
+    doffset=(/1,0/)
 
     CALL H5Dget_space_f(dset_id, filespace, error)
     CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
@@ -319,7 +319,7 @@ contains
 
 !
 ! repeat for some next z dataset
-    doffset=(/0,2/)
+    doffset=(/2,0/)
 
     CALL H5Dget_space_f(dset_id, filespace, error)
     CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
@@ -331,7 +331,7 @@ contains
 
 
 ! repeat for some next px dataset
-    doffset=(/0,3/)
+    doffset=(/3,0/)
 
     CALL H5Dget_space_f(dset_id, filespace, error)
     CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
@@ -343,7 +343,7 @@ contains
 
 
 ! repeat for some next py dataset
-    doffset=(/0,4/)
+    doffset=(/4,0/)
 
     CALL H5Dget_space_f(dset_id, filespace, error)
     CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
@@ -355,7 +355,7 @@ contains
 
 
 ! repeat for some next gamma dataset (actually beta*gamma)
-    doffset=(/0,5/)
+    doffset=(/5,0/)
 
     CALL H5Dget_space_f(dset_id, filespace, error)
     CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
