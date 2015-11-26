@@ -157,8 +157,8 @@ contains
       call outputH5BeamFiles(iStep, error)
       if (error .ne. 0) goto 1000
 
-!      call outputH5Field(sA, tArrayA, iStep, qSep, zDFName, qOKL)
-!      if (.not. qOKL) goto 1000
+      call outputH5Field(sA, iStep, error)
+      if (error .ne. 0) goto 1000
 
 !      call outputH5Z(sZ, tArrayZ, iStep, qSep, zDFName, qOKL)
 !      if (.not. qOKL) goto 1000
@@ -202,7 +202,7 @@ contains
     INTEGER(HID_T) :: filespace     ! Dataspace identifier in file
     INTEGER(HID_T) :: attr_id       ! Attribute identifier
     INTEGER(HID_T) :: aspace_id     ! Attribute Dataspace identifier
-    INTEGER(HID_T) :: atype_id      ! Attribute Dataspace identifier
+    INTEGER(HID_T) :: atype_id      ! Attribute Data type identifier
     INTEGER(HID_T) :: group_id      ! Group identifier
 !    type(cArraySegment), intent(inout) :: tArrayE(:)
     integer(kind=ip), intent(in) :: iStep
@@ -232,7 +232,7 @@ contains
     REAL(kind=WP), ALLOCATABLE :: limdata (:)  ! Data to write
     ! Local vars
 
-    integer(kind=ip) :: iep
+    !integer(kind=ip) :: iep
     integer :: error ! Error flag
     attr_data_int(1)=numSpatialDims
     adims(1)=1
@@ -243,23 +243,12 @@ contains
     attr_data_string="electrons_x,electrons_y,electrons_z,electrons_px," // &
       "electrons_py,electrons_gamma,electrons_weight"
     attr_string_len=94
-!     Create data files
 
-!      call createH5Files(tArrayE, zDFName, trim(IntegerToString(iStep)), qOKL)
-!      if (.not. qOKL) goto 1000
-!       do iep = 1, size(tArrayE)
+! For one file per rank only at the moment
+! Individual and collective writing to combined file to come
 
-!            if (tArrayE(iep)%qWrite) then
-        
-!      if (tProcInfo_G%qRoot) then
+! Prepare filename
 
-!     Prepare filename      
-
-
-!    filename = ( TRIM(ADJUSTL(zFile))  // '_' // &
-!        trim(adjustl(IntegerToString(iStep))) // '_' // &
-!        trim(adjustl(IntegerToString(tProcInfo_G%Rank))) // &
-!		 '_electrons.h5' )
     filename = ( trim(adjustl(IntegerToString(iStep))) // '_' // &
         trim(adjustl(IntegerToString(tProcInfo_G%Rank))) // &
 		 '_electrons.h5' )
@@ -366,6 +355,20 @@ contains
     CALL h5sclose_f(filespace, error) 
 !
 ! 
+! put Chi in the file, slightly redundant as charge on a macroparticle
+! doesn't increase or decrease through the simulation. But does make
+! Everything self contained. Perhaps we use in future a funky h5 technique
+! to point this column at a separate file which holds the data, reducing 
+! the size of this column from every written file.
+    doffset=(/6,0/)
+
+    CALL H5Dget_space_f(dset_id, filespace, error)
+    CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
+       dsize, error)
+    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, s_chi_bar_G, dims, error, &
+       file_space_id = filespace, mem_space_id = dspace_id)
+! was       dspace_id, filespace)
+    CALL h5sclose_f(filespace, error) 
 
 !
 ! Terminate access to the data space.
@@ -603,6 +606,100 @@ contains
 
 
   end subroutine outputH5BeamFiles
+
+  subroutine outputH5Field(sA, iStep, error)
+
+
+    implicit none
+
+! Output the electron bean macroparticle 
+! 6D phase space coordinates in Puffin.
+! 
+! tArrayE   -      Array describing the 
+!                  layout of data in 
+!                  sV
+!
+    real(kind=wp), intent(in) :: sA(:)
+    INTEGER(HID_T) :: file_id       ! File identifier
+    INTEGER(HID_T) :: dset_id       ! Dataset identifier 
+    INTEGER(HID_T) :: dspace_id     ! Dataspace identifier in memory
+    INTEGER(HID_T) :: filespace     ! Dataspace identifier in file
+    INTEGER(HID_T) :: attr_id       ! Attribute identifier
+    INTEGER(HID_T) :: aspace_id     ! Attribute Dataspace identifier
+    INTEGER(HID_T) :: atype_id      ! Attribute Data type identifier
+    INTEGER(HID_T) :: group_id      ! Group identifier
+    integer(kind=ip), intent(in) :: iStep
+! may yet need this, but field data is not separated amongst cores
+!    logical, intent(in) :: qSeparate
+    CHARACTER(LEN=9), PARAMETER :: dsetname = "Aperp"     ! Dataset name
+    CHARACTER(LEN=16) :: aname   ! Attribute name
+!    character(32_IP), intent(in) :: zDFName
+    character(32_IP) :: filename
+    INTEGER(HSIZE_T), DIMENSION(4) :: dims 
+! Data as component*reducedNX*reducedNY*reducedNZ2
+    INTEGER     ::   rank = 4               ! Dataset rank
+    ! Local vars
+    integer :: error ! Error flag
+
+   
+!Fields are all available to rank zero, and we will worry about
+!parallel writing this in due course. 
+    if (tProcInfo_G%qRoot) then
+      dims = (/2,ReducedNX_G,ReducedNY_G,NZ2_G/) ! Dataset dimensions
+
+      filename = ( trim(adjustl(IntegerToString(iStep))) // '_' // &
+        trim(adjustl(IntegerToString(tProcInfo_G%Rank))) // &
+		 '_Aperp.h5' )
+
+      CALL h5open_f(error)
+!    Print*,'hdf5_puff:outputH5BeamFiles(file opened)'
+!
+! Create a new file using default properties.
+!
+      CALL h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error)
+!    Print*,'hdf5_puff:outputH5BeamFiles(file created)'
+!
+! Create the big dataspace in the file.
+!
+      CALL h5screate_simple_f(rank, dims, filespace, error)
+      Print*,'hdf5_puff:outputH5Field(filespace created)'
+
+!
+! Create the dataset with default properties.
+!
+      CALL h5dcreate_f(file_id, dsetname, H5T_NATIVE_DOUBLE, filespace, &
+       dset_id, error)
+      Print*,'hdf5_puff:outputH5Field(dataset created)'
+
+!
+! Create a space in memory to buffer the data writes
+!
+!      CALL h5screate_simple_f(rank, dims, dspace_id, error)
+!      Print*,'hdf5_puff:outputH5BeamFiles(memory dataspace allocated)'
+
+!  try without dataspaces
+      CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, sA, dims, error)
+      Print*,'hdf5_puff:outputH5Field(write done)'
+
+!      CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, sA, dims, error, &
+!        file_space_id = filespace, mem_space_id = dspace_id)
+      CALL h5sclose_f(filespace, error)
+      Print*,'hdf5_puff:outputH5Field(filespace closed)'
+!
+
+      CALL h5dclose_f(dset_id, error)
+
+!
+! Close the file.
+!
+      CALL h5fclose_f(file_id, error)
+
+
+    End If 
+
+!      if (tProcInfo_G%qRoot) then
+
+  end subroutine outputH5Field
 
 !  subroutine createH5Files(tArrayY, zDFName, zOptionalString, qOK)
 !
