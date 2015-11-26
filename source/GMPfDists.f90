@@ -74,11 +74,18 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
 
   call getHeaders(fname, npk, dz2, nZ2G)
 
-  nGam = 7_IP  !!!  TEMP, SHOULD BE READ IN
-  nX = 7
-  nY = 7
-  nPX = 7
-  nPY = 7
+  nGam = 149_IP  !!!  TEMP, SHOULD BE READ IN
+  if (qOneD_G) then
+    nX = 1
+    nY = 1
+    nPX = 1
+    nPY = 1
+  else
+    nX = 7
+    nY = 7
+    nPX = 7
+    nPY = 7
+  end if
 
 
 
@@ -338,13 +345,9 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
                                 xgrid(:), xint(:), ygrid(:), yint(:), &
                                 pxgrid(:), pxint(:), pygrid(:), pyint(:)
 
-  logical :: qOKL, q1D, error
+  logical :: qOKL, error
 
 !     Using 11 mp's and a gaussian distribution in p2 (gamma) 
-
-  if (iNMPX == 1) then
-    q1D = .true.
-  end if
 
   allocate(ggrid(iNMPG+1), gint(iNMPG))
   allocate(xgrid(iNMPX+1), xint(iNMPX))
@@ -388,7 +391,7 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
                  qOKL)
 
 
-    if (q1D) then
+    if (qOneD_G) then
 
       istart = iend + 1
       iend = iStart + iNMPG - 1
@@ -477,7 +480,7 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
 
 
 
-  if (q1D) then
+  if (qOneD_G) then
 
     call getChi(Nk, Vk, npk, chi_b, chi)
 
