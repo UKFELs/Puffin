@@ -42,6 +42,23 @@ real(kind=wp) :: locx, locy, locz2, &
       z2_in2 = locz2 / dz2
       z2_in1 = (1.0_wp - z2_in2)
 
+      if (xnode > ReducedNX_G) then
+        print*, 'X coord is too large!! with node:', xnode, &
+                ' and pos ', sx(i)
+        STOP
+      end if
+
+      if (ynode > ReducedNY_G) then
+        print*, 'Y coord is too large!! with node:', ynode, &
+                ' and pos ', sy(i)
+        STOP
+      end if
+
+      if (z2node > NZ2_G) then
+        print*, 'Z2 coord is too large!! with node:', z2node, &
+                ' and pos ', sz2(i)
+        STOP
+      end if
 
 !                  Get weights for interpolant
 

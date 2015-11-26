@@ -103,7 +103,10 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
 
 !  getTotalMPS(for each beam)
 
-  totMPs_b(:) = int(nZ2(:),kind=ipl) * int(nGam,kind=ipl)  ! no of mps in z2 times num in gamma
+  totMPs_b(:) = int(nZ2(:),kind=ipl) * int(nGam,kind=ipl) * &  ! no of mps in z2 times num in gamma
+                int(nX,kind=ipl) * int(nPX,kind=ipl) * &
+                int(nY,kind=ipl) * int(nPY,kind=ipl)
+
 
   tnms   = sum(totMPs_b)    ! Sum of totMPs is the total number of 
                             ! MPs in the entire system
@@ -112,9 +115,6 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
 
   allocate(x(tnms), y(tnms), px(tnms), py(tnms), z2(tnms), gamma(tnms), &
            chi_b(tnms), chi(tnms))
-
-
-  print*, tProcInfo_G%rank, '  has nZ2 array  = ', nZ2G, nZ2
 
 !     Loop around beams, reading in dist files for each beam.
 
@@ -129,17 +129,12 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
              pym(nZ2(ib)), Ne(nZ2(ib)), pxsig(nZ2(ib)), &
              pysig(nZ2(ib)), xsig(nZ2(ib)), ysig(nZ2(ib)))
 
-    if (tProcInfo_G%qRoot) print*, 'allocated...'
-
 !     Read in dist file for this beam
 
     call getLocalDists(fname(ib), z2m, gm, &
                        xm, ym, pxm, pym, gsig, xsig, ysig, & 
                        pxsig, pysig, nz2(ib), nz2G(ib), &
                        Ne)
-
-    if (tProcInfo_G%qRoot) print*, 'read in dists...'
-
 
 !     get Macroparticles in this beam
 
@@ -149,8 +144,6 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
                       z2(b_sts(ib):b_ends(ib)), gamma(b_sts(ib):b_ends(ib)), &   ! ....BOUNDS.... !
                       chi_b(b_sts(ib):b_ends(ib)), chi(b_sts(ib):b_ends(ib)),sZ,nGam, &
                       nX, nY, nPX, nPY)
-
-    if (tProcInfo_G%qRoot) print*, 'gend particles...'
 
     deallocate(z2m, gm, gsig, xm, ym, pxm, pym, Ne, pxsig, pysig, xsig, ysig)
 
@@ -202,8 +195,6 @@ subroutine getLocalDists(fname, z2ml, gam_ml, xml, yml, pxml, &
 
 !     Read in file
 
-  if (tProcInfo_G%qRoot) print*, 'reading FULL dists...'
-
   if (tProcInfo_G%qRoot) then
 
     call readPartDists(fname, z2m, gam_m, xm, ym, pxm, pym, &
@@ -212,8 +203,6 @@ subroutine getLocalDists(fname, z2ml, gam_ml, xml, yml, pxml, &
   end if
 
 !     Send to local arrays
-
-if (tProcInfo_G%qRoot) print*, 'sending to procs......'
 
   call scdists(xml, yml, z2ml, pxml, pyml, gam_ml, Nel, &
                xm, ym, z2m, pxm, pym, gam_m, xdl, ydl, &
@@ -341,7 +330,7 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
   integer(kind=ipl) :: istart, iend, k, xin
 
   real(kind=wp) :: z2grid(2_IP), &
-                   z2int(1_IP), px0, py0, x0, y0
+                   z2int(1_IP), px0, py0, x0, y0, npk_num, ndens_num, npk_numl
 
   integer(kind=ip), allocatable :: arrbs(:)
 
@@ -349,7 +338,7 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
                                 xgrid(:), xint(:), ygrid(:), yint(:), &
                                 pxgrid(:), pxint(:), pygrid(:), pyint(:)
 
-  logical :: qOKL, q1D
+  logical :: qOKL, q1D, error
 
 !     Using 11 mp's and a gaussian distribution in p2 (gamma) 
 
@@ -369,7 +358,8 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
 
   z2int(:) = 1_WP
 
-  nMPs = int(NMZ2,kind=ipl) * int(iNMPG,kind=ipl)
+  nMPs = int(NMZ2,kind=ipl) * int(iNMPG,kind=ipl) * int(iNMPX,kind=ipl) * &
+         int(iNMPY,kind=ipl) * int(iNMPPX,kind=ipl) * int(iNMPPY,kind=ipl)
 
   allocate(arrbs(iNMPG))
   allocate(Nk(nMPs))
@@ -377,6 +367,9 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
   
   iend = 0
   iStart = 0
+
+  npk_num = 0
+  ndens_num = 0
 
   do k = 1, NMZ2
 
@@ -407,6 +400,8 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
                         p_3_grid           =   ggrid,  &
                         p_3_integral       =   gint,  &
                         s_number_macro     =   Nk(istart:iend),  &
+                        s_vol_element      =   Vk(istart:iend),  &
+                        max_av             =   ndens_num,   &
                         x_1_coord          =   z2(istart:iend),  &
                         p_3_vector         =   gamma(istart:iend) )
 
@@ -416,10 +411,14 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
       x(istart:iend)  = 0    ! ??    x = getXR(xm,xr)
       y(istart:iend)  = 0  
 
+!      Vk(iStart:iEnd) = dz2
+
     else
 
       istart = iend + 1
       iend = iStart + iNMPG * iNMPX * iNMPY * iNMPPX * iNMPPY - 1
+
+      if (tProcInfo_G%qRoot) print*, istart, iend
 
       call genGrid(1_ip, intTypeG, iLinear_CG, xm(k), &         
                    xsig(k), 6.0_WP*xsig(k), iNMPX, iNMPX, &
@@ -441,7 +440,10 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
                    pygrid, pyint, .FALSE., &
                    qOKL)
 
-      call genMacrosNew(i_total_electrons  =   Ne(k), &
+      !call mpi_barrier(tProcInfo_G%comm, error)
+      !if (tProcInfo_G%qRoot) print*, 'ghend grids!!'
+
+      call genMacrosnew(i_total_electrons  =   Ne(k), &
                         q_noise            =   qnoise,  & 
                         x_1_grid           =   z2grid,  &
                         x_1_integral       =   z2int, & 
@@ -456,118 +458,45 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
                         p_3_grid           =   ggrid,  &
                         p_3_integral       =   gint,  &
                         s_number_macro     =   Nk(istart:iend),  &
+                        s_vol_element      =   Vk(istart:iend),  &
+                        max_av             =   ndens_num,   &
                         x_1_coord          =   z2(istart:iend),  &
+                        x_2_coord          =   x(iStart:iend), &
+                        x_3_coord          =   y(istart:iend), &
+                        p_1_vector         =   px(istart:iend), &
+                        p_2_vector         =   py(istart:iend), &
                         p_3_vector         =   gamma(istart:iend) )
+ 
+      if (ndens_num > npk_num) npk_numl = ndens_num
 
     end if
-
-! -- No longer adding offsets to beam - adding them in undulator module.
-!---- for NOT adding mean px, py to each slice
-
-!    px0 = pxOffset(sZ, sRho_G, fy_G)
-!    py0 = pyOffset(sZ, sRho_G, fx_G)
-!
-!    px(istart:iend) = px0    !  In 1D giving no deviation in px
-!    py(istart:iend) = py0    !  or py
-!
-!    x0 = xOffSet(sRho_G, sAw_G,  sGammaR_G, gm(k), &
-!                 sEta_G, sKBeta_G, sFocusfactor_G, &
-!                 px0, py0, &
-!                 fx_G, fy_G, sZ) 
-!
-!    y0 = yOffSet(sRho_G, sAw_G,  sGammaR_G, gm(k), &
-!                 sEta_G, sKBeta_G, sFocusfactor_G, &
-!                 px0, py0, &
-!                 fx_G, fy_G, sZ) 
-!
-!    x(istart:iend)  = x0    ! ??    x = getXR(xm,xr)
-!    y(istart:iend)  = y0  
-
-!---- for adding mean px, py to each slice
-
-
-    !px0 = pxOffset(sZ, sRho_G, fx_G)
-    !py0 = pyOffset(sZ, sRho_G, fy_G)
-
-    !px(istart:iend) = px0  + pxm(k)  !  Adding deviation in px
-    !py(istart:iend) = py0  + pym(k)  !  and py
-
-    !do xin = istart, iend
-
-      !x(xin) = xOffSet(sRho_G, sAw_G,  sGammaR_G, gamma(xin), &
-      !                 sEta_G, sKBeta_G, sFocusfactor_G, &
-      !                 px(xin), py(xin), &
-      !                 fx_G, fy_G, sZ)  +  xm(k)
-
-      !y(xin) = yOffSet(sRho_G, sAw_G,  sGammaR_G, gamma(xin), &
-      !                 sEta_G, sKBeta_G, sFocusfactor_G, &
-      !                 px(xin), py(xin), &
-      !                 fx_G, fy_G, sZ)  +  ym(k)
-
-    !end do
-
-!!------- scrap
-
-    !px(istart:iend) = pxm(k)   +   px0
-    !py(istart:iend) = pym(k)   +   py0
-
-   ! x0 = xOffSet(sRho_G, sAw_G,  sGammaR_G, gm(k), &
-   !              sEta_G, sKBeta_G, sFocusfactor_G, &
-   !              px0, py0, &
-   !              fx_G, fy_G, sZ)
-
-   ! y0 = yOffSet(sRho_G, sAw_G,  sGammaR_G, gm(k), &
-   !              sEta_G, sKBeta_G, sFocusfactor_G, &
-   !              px0, py0, &
-   !              fx_G, fy_G, sZ)    
-
-
-    !do xin = istart, iend
-
-    !  x(xin) = xOffSet(sRho_G, sAw_G,  sGammaR_G, gm(k), &
-    !                   sEta_G, sKBeta_G, sFocusfactor_G, &
-    !                   px(xin), py(xin), &
-    !                   fx_G, fy_G, sZ)  +  xm(k)
-
-    !  y(xin) = yOffSet(sRho_G, sAw_G,  sGammaR_G, gm(k), &
-    !                   sEta_G, sKBeta_G, sFocusfactor_G, &
-    !                   px(xin), py(xin), &
-    !                   fx_G, fy_G, sZ)  +  ym(k)
-
-    !end do
-
-
-!    x(istart:iend) = xOffSet(sRho_G, sAw_G,  sGammaR_G, gm(k), &
-!                             sEta_G, sKBeta_G, sFocusfactor_G, &
-!                             px(istart:iend), py(istart:iend), &
-!                             fx_G, fy_G, sZ)
-
-!    x(istart:iend)  = xm(k)    +   x0    ! ??    x = getXR(xm,xr)
-!    y(istart:iend)  = ym(k)    +   y0
-!    px(istart:iend) = pxm(k)   +   px0
-
-
-
-    !if (i < 10) print*, 'bounds are ', istart, iend
-
-!    if (qNoise) call applyNoise(x,dx,gam,dgam,Nks)
-
-!!------ end scrap
 
   end do 
 
 
 
 
-  Vk(:) = dz2
 
-  call getChi(Nk, Vk, npk, chi_b, chi)
+  if (q1D) then
+
+    call getChi(Nk, Vk, npk, chi_b, chi)
+
+  else 
+
+    call getGlobalnpk(npk_num, npk_numl)
+
+    call getChi(Nk, Vk, npk_num, chi_b, chi)
+
+  end if
 
 
   deallocate(Nk, Vk)
+
   deallocate(ggrid, xgrid, ygrid, pxgrid, pygrid, &
              gint, xint, yint, pxint, pyint)
 
+
 end subroutine getMPsFDists
 
-END MODULE gMPsFromDists
+end module gMPsFromDists
+

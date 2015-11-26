@@ -32,7 +32,7 @@ CONTAINS
        p_1_grid, p_1_integral, &
        p_2_grid, p_2_integral, &
        p_3_grid, p_3_integral, &
-       s_number_macro, &
+       s_number_macro, s_vol_element, max_av, &
        x_1_coord, x_2_coord,   &
        x_3_coord, p_1_vector,  &
        p_2_vector, p_3_vector)
@@ -84,11 +84,11 @@ CONTAINS
     !REAL(KIND=WP),DIMENSION(:), INTENT(IN)  ::  sigma
     !REAL(KIND=WP), INTENT(IN)               ::  pxstart,pxend,pxmean
     !REAL(KIND=WP), INTENT(IN)               ::  pystart,pyend,pymean
-    !REAL(KIND=WP), INTENT(OUT)  :: max_av
+    REAL(KIND=WP), INTENT(OUT)  :: max_av
     REAL(KIND=WP),DIMENSION(:), INTENT(OUT)  ::  x_1_coord
     REAL(KIND=WP),DIMENSION(:), INTENT(OUT), OPTIONAL  ::  x_2_coord, x_3_coord
     REAL(KIND=WP),DIMENSION(:), INTENT(OUT), OPTIONAL  ::  p_1_vector, p_2_vector, p_3_vector
-    REAL(KIND=WP),DIMENSION(:), INTENT(OUT) ::  s_number_macro !, s_vol_element
+    REAL(KIND=WP),DIMENSION(:), INTENT(OUT) ::  s_number_macro , s_vol_element
 !
 ! LOCAL VARIABLES
 ! i_total_number_macro        - Total number of macro particels
@@ -399,15 +399,15 @@ CONTAINS
 ! Calculate the element volume of each macro particle		
 !*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+	 
     
-!                  s_vol_element(index)=x_1_del(i)
+                  s_vol_element(index)=x_1_del(i)
                   
-!                  IF (PRESENT(x_2_grid)) THEN
-!                     s_vol_element(index)=s_vol_element(index)*x_2_del(j)
-!                  END IF
+                  IF (PRESENT(x_2_grid)) THEN
+                     s_vol_element(index)=s_vol_element(index)*x_2_del(j)
+                  END IF
 
-!                  IF (PRESENT(x_3_grid)) THEN
-!                     s_vol_element(index)=s_vol_element(index)*x_3_del(k)
-!                  END IF
+                  IF (PRESENT(x_3_grid)) THEN
+                     s_vol_element(index)=s_vol_element(index)*x_3_del(k)
+                  END IF
                   
                 END DO
              END DO
@@ -416,21 +416,17 @@ CONTAINS
     END DO
   END DO
 
-!    END IF
-!    CALL MPI_BARRIER(tProcInfo_G%comm,error) 
-!    END DO
-!    CALL MPI_BARRIER(tProcInfo_G%comm,error) 
- 
     IF (icount==0) THEN
        IF (tProcInfo_G%qROOT)  STOP "Error in GenMacros.f90, no macroparticles exist\!"
     ENDIF
-    !IF (tProcInfo_G%qRoot)  PRINT*, 'got the electrons'
 
 ! Calculate the scaled weighting (chi_bar) and weighting(chichi) of all macro particles
 
 !     Local max...
 
-!  local_max_av = MAXVAL(s_spatial_macro/s_vol_element)
+  local_max_av = MAXVAL(s_spatial_macro/s_vol_element)
+
+  max_av = local_max_av  ! FOR NOW!!!
 
 !     Sum to global to get max across all processes
 
@@ -448,5 +444,6 @@ CONTAINS
     IF(PRESENT(p_3_grid)) DEALLOCATE(p_3_position,p_3_del,p_3_random)
 
   END SUBROUTINE genMacrosNew
+
 
 END MODULE MacrosGenNew

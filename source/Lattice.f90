@@ -263,14 +263,6 @@ contains
 
 !     Get offsets for start of undulator
 
-    sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
-                           fx_G, fy_G, sZ)
-
-    sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
-                           fx_G, fy_G, sZ)
-
 
     if (zUndType_G == 'curved') then
 
@@ -315,6 +307,15 @@ contains
 
 
     end if
+
+
+    sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
+                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
+                           fx_G, fy_G, sZ)
+
+    sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
+                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
+                           fx_G, fy_G, sZ)
 
 
 !     Add on new offset to initialize beam for undulator module
@@ -359,15 +360,6 @@ contains
 
 !     Get offsets for start of undulator
 
-    sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
-                           fx_G, fy_G, sZ)
-
-    sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
-                           fx_G, fy_G, sZ)
-
-
     if (zUndType_G == 'curved') then
 
 ! used for curved pole puffin, the 2 order expansion of cosh and sinh
@@ -413,8 +405,16 @@ contains
     end if
 
 
-!     Add on new offset to initialize beam for undulator module
+    sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
+                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, -spy0_offset, &
+                           fx_G, fy_G, sZ)
 
+    sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
+                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, -spy0_offset, &
+                           fx_G, fy_G, sZ)
+
+
+!     Add on new offset to initialize beam for undulator module
 
     sElX_G = sElX_G + sx_offset
     sElY_G = sElY_G + sy_offset
