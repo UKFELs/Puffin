@@ -98,12 +98,16 @@ contains
 
     else if (zUndType_G == 'helical') then
 
+!$OMP WORKSHARE
+
         sdpr = sInv2rho * ( n2col * sin(ZOver2rho)  & 
                             - sEta_G * sp2 / sKappa_G**2 *    &
                             sField4ElecReal ) & 
                + ( sKappa_G * spi / sgam * (1 + sEta_G * sp2) &
                    * sqrt(sEta_G) * sInv2rho * n2col * (     &
                     -sx * sin( ZOver2rho )  + sy * cos( ZOver2rho ) ) )
+
+!$OMP END WORKSHARE
 
     else
 
@@ -138,13 +142,13 @@ contains
 
     qOK = .true.
 
-    goto 2000 
+    !goto 2000 
 
-    1000 call Error_log('Error in equations:dppdz_r',tErrorLog_G)
+    !1000 call Error_log('Error in equations:dppdz_r',tErrorLog_G)
     
-    print*,'Error in equations:dppdz_r'
+    !print*,'Error in equations:dppdz_r'
 
-    2000 continue
+    !2000 continue
 
   end subroutine dppdz_r_f
 
@@ -230,6 +234,8 @@ contains
 
     else if (zUndType_G == 'helical') then
 
+!$OMP WORKSHARE
+
         sdpi = sInv2rho * (  n2col * cos(ZOver2rho)  & 
                             - sEta_G * sp2 / sKappa_G**2 *    &
                             sField4ElecReal ) & 
@@ -237,12 +243,13 @@ contains
                    * sqrt(sEta_G) * sInv2rho * n2col * (   &
                     -sx * sin( ZOver2rho )  + sy * cos( ZOver2rho ) ) )
 
+!$OMP END WORKSHARE
 
     else
 
+
 !     "normal" PUFFIN case with no off-axis undulator
 !     field variation
-
 
 !      if (qFocussing_G) then
 !
@@ -271,13 +278,13 @@ contains
 
     qOK = .true.
 
-    goto 2000 
+    !goto 2000 
 
-    1000 call Error_log('Error in equations:dppdz_i',tErrorLog_G)
+    !1000 call Error_log('Error in equations:dppdz_i',tErrorLog_G)
     
-    print*,'Error in equations:dppdz_i'
+    !print*,'Error in equations:dppdz_i'
     
-    2000 continue
+    !2000 continue
 
 
   end subroutine dppdz_i_f
@@ -306,22 +313,24 @@ contains
 
     qOK = .false.
 
-    
+!$OMP WORKSHARE
 
     sdgam = -sRho_G * ( 1 + sEta_G * sp2 ) / sgam * 2_wp *   &
            ( spr * sField4ElecReal + spi * sField4ElecImag ) 
+
+!$OMP END WORKSHARE
 
     ! Set the error flag and exit
 
     qOK = .true.
 
-    goto 2000 
+    !goto 2000 
 
-    1000 call Error_log('Error in equations:dp2dz',tErrorLog_G)
+    !1000 call Error_log('Error in equations:dp2dz',tErrorLog_G)
     
-    print*,'Error in equations:dp2dz'
+    !print*,'Error in equations:dp2dz'
 
-    2000 continue
+    !2000 continue
 
 
   end subroutine dgamdz_f
@@ -358,21 +367,24 @@ contains
     qOK = .false.
 
 
+!$OMP WORKSHARE
+
     sdx = 2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
           (1 + sEta_G * sp2) / sgam *  &
           spr
 
+!$OMP END WORKSHARE
 
 !    sdx = spr * Lj / nd
     
 
     qOK = .true.
     
-    goto 2000
+    !goto 2000
     
-    1000 call Error_log('Error in equations:dxdz',tErrorLog_G)
+    !1000 call Error_log('Error in equations:dxdz',tErrorLog_G)
     
-    2000 continue
+    !2000 continue
 
 
   end subroutine dxdz_f
@@ -404,21 +416,24 @@ contains
     qOK = .false.
 
 
+!$OMP WORKSHARE
+
     sdy = - 2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
           (1 + sEta_G * sp2) / sgam *  &
           spi
 
+!$OMP END WORKSHARE
 
 !    sdy = - spi * Lj / nd
 
 
     qOK = .true.
     
-    goto 2000
+    !goto 2000
     
-    1000 call Error_log('Error in equations:dydz',tErrorLog_G)
+    !1000 call Error_log('Error in equations:dydz',tErrorLog_G)
     
-    2000 continue
+    !2000 continue
 
 
   end subroutine dydz_f
@@ -451,16 +466,19 @@ contains
 
     qOK = .false.
 
+!$OMP WORKSHARE
+
     sdz2 = sp2
 
+!$OMP END WORKSHARE
 
     qOK = .true.
     
-    goto 2000
+    !goto 2000
     
-    1000 call Error_log('Error in equations:dz2dz',tErrorLog_G)
+    !1000 call Error_log('Error in equations:dz2dz',tErrorLog_G)
     
-    2000 continue
+    !2000 continue
 
   end subroutine dz2dz_f
   

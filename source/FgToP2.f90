@@ -75,8 +75,12 @@ contains
     real(kind=wp), intent(out) :: p2(:)
 
 
+!$OMP WORKSHARE
+
     p2 = (( 1_wp/sqrt(1_wp - 1_wp / (gamma0**2 * gamma**2) * ( 1 + &
              aw**2*(px**2 + py**2))))-1_wp) / eta
+
+!$OMP END WORKSHARE
   
   end subroutine getP2
 
