@@ -253,11 +253,7 @@ subroutine scdists(xml, yml, z2ml, pxml, pyml, gam_ml, Nel, &
 
   call scatterE2Loc(z2ml,z2m,nz2,nz2g,recvs,displs,0)
 
-if (tProcInfo_G%qRoot) print*, 'sending xmean......'
-
   call scatterE2Loc(xml,xm,nz2,nz2g,recvs,displs,0)
-
-if (tProcInfo_G%qRoot) print*, 'sending ymean......'
 
   call scatterE2Loc(yml,ym,nz2,nz2g,recvs,displs,0)
 
@@ -420,8 +416,6 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
 
       istart = iend + 1
       iend = iStart + iNMPG * iNMPX * iNMPY * iNMPPX * iNMPPY - 1
-
-      if (tProcInfo_G%qRoot) print*, istart, iend
 
       call genGrid(1_ip, intTypeG, iLinear_CG, xm(k), &         
                    xsig(k), 6.0_WP*xsig(k), iNMPX, iNMPX, &

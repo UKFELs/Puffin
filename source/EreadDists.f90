@@ -59,26 +59,17 @@ subroutine readPartDists(fname, z2m, gam_m, xm, ym, pxm, pym, &
 
 !     Read in blank lines
 
-if (tProcInfo_G%qRoot) print*, 'reading blanks'
-
   call readBlanks(fid, 2)
 
 !     Read in header
 
-if (tProcInfo_G%qRoot) print*, 'header'
-
   call readDistHeader(fid, eta, rho, npk, dZ2, nZ2)
-
-if (tProcInfo_G%qRoot) print*, 'reading MORE blanks ... ', nZ2
 
   call readBlanks(fid, 4)  
 
   do k = 1, nZ2
 
     !        Read in z2, gamma, x, y, px, py etc...
-
-
-if (tProcInfo_G%qRoot) print*, 'reading line ', k, '...'
 
     call readLine(fid, z2m(k), gam_m(k), xm(k), ym(k), pxm(k), pym(k), &
                   gam_d(k), x_d(k), y_d(k), pxd(k), pyd(k), Ne(k))
