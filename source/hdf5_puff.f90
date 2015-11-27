@@ -488,6 +488,7 @@ contains
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
     CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
     CALL h5aclose_f(attr_id, error)
+    CALL h5tclose_f(atype_id, error)
 
     CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
     aname="vsTime"
@@ -495,7 +496,7 @@ contains
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
     CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
     CALL h5aclose_f(attr_id, error)
-
+    CALL h5tclose_f(atype_id, error)
     CALL h5tcopy_f(H5T_NATIVE_INTEGER, atype_id, error)
     aname="vsStep"
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
@@ -504,6 +505,7 @@ contains
     CALL h5awrite_f(attr_id, atype_id, iStep, adims, error) 
     Print*,error
     Print*,'Writing vsStep'
+    CALL h5tclose_f(atype_id, error)
     CALL h5aclose_f(attr_id, error)
     Print*,error
     Print*,'Closing vsStep'
@@ -552,6 +554,7 @@ contains
     CALL h5awrite_f(attr_id, atype_id, limdata, adims, error) 
     CALL h5aclose_f(attr_id, error)
     DEALLOCATE ( limdata)
+    CALL h5tclose_f(atype_id, error)
     CALL h5sclose_f(aspace_id, error)
     
     CALL h5gclose_f(group_id, error)
@@ -638,6 +641,12 @@ contains
     INTEGER(HSIZE_T), DIMENSION(4) :: dims 
 ! Data as component*reducedNX*reducedNY*reducedNZ2
     INTEGER     ::   rank = 4               ! Dataset rank
+    INTEGER(HSIZE_T), DIMENSION(1) :: adims ! Attribute dims
+    REAL(kind=WP) :: attr_data_double
+    CHARACTER(LEN=100) :: attr_data_string
+    INTEGER(HSIZE_T) :: attr_string_len
+    CHARACTER(LEN=4), PARAMETER :: timegrpname = "time"  ! Group name
+    CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  ! Group name
     ! Local vars
     integer :: error ! Error flag
 
@@ -686,6 +695,79 @@ contains
       CALL h5sclose_f(filespace, error)
       Print*,'hdf5_puff:outputH5Field(filespace closed)'
 !
+
+! ATTRIBUTES FOR FIELD DATASET
+!
+!
+! simple dataset for array of vals
+!    CALL h5screate_simple_f(arank, adims, aspace_id, error)
+
+! scalar dataset for simpler values
+    CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
+
+!
+! Create datatype for the attribute.
+!
+    CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
+    aname="time"
+    attr_data_double=1.0*iStep*sStepSize/c
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    CALL h5tclose_f(atype_id, error)
+! then text attributes
+    CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
+!    Print*,'hdf5_puff:outputH5BeamFiles(atype_id set to string)'
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+!    Print*,'hdf5_puff:outputH5BeamFiles(string length declared)'
+    CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
+!    Print*,'hdf5_puff:outputH5BeamFiles(string padding enabled)'
+    aname="vsLabels"
+    attr_data_string="A_perp_Re_scaled,A_perp_Im_scaled"
+    attr_string_len=33
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+!    Print*,'hdf5_puff:outputH5BeamFiles(lables attribute created)'
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+!    Print*,'hdf5_puff:outputH5BeamFiles(lables attribute written)'
+    CALL h5aclose_f(attr_id, error)
+!    Print*,'hdf5_puff:outputH5BeamFiles(lables attribute closed)'
+    aname="vsType"
+    attr_data_string="variable"
+    attr_string_len=16
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+!    Print*,'hdf5_puff:outputH5BeamFiles(type attribute created)'
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+!    Print*,'hdf5_puff:outputH5BeamFiles(type attribute written)'
+    CALL h5aclose_f(attr_id, error)
+!    Print*,'hdf5_puff:outputH5BeamFiles(type attribute closed)'
+    print*,error
+    aname="vsTimeGroup"
+    attr_data_string="time"
+    attr_string_len=4
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    aname="vsLimits"
+    attr_data_string="globalLimits"
+    attr_string_len=12
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    aname="vsMesh"
+    attr_data_string="globalMesh"
+    attr_string_len=10
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+
+    CALL h5aclose_f(attr_id, error)
+    CALL h5sclose_f(aspace_id, error)
+    CALL h5tclose_f(atype_id, error)
+
 
       CALL h5dclose_f(dset_id, error)
 
