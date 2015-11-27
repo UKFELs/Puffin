@@ -47,7 +47,7 @@ module MASPin
              ACTION='READ',POSITION='REWIND')   
   
         do ij = 1,nBlanks 
-        	READ() 
+        	READ(UNIT=fid, FMT=*) 
         end do
 
         do ij = 1,nMPsLoc
@@ -60,6 +60,8 @@ module MASPin
         end do
 
       end if
+
+      
 
     end do
 
