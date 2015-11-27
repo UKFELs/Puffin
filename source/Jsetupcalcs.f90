@@ -398,7 +398,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
 
 
 
-    if (qSimple) then
+    if (iInputType_G == iGenHom_G) then
 
       CALL electron_grid(RealE,NE,noise, &
                          Z,nbeams, LenEPulse,sigma, beamCenZ2, gamma_d, &
@@ -406,9 +406,20 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
                          chirp,mag,fr,qOKL)
       IF (.NOT. qOKL) GOTO 1000
 
-    else 
+    else if (iInputType_G == iReadDist_G)
 
       call getMPs(fname, nbeams, Z, noise, eThresh)
+
+    else if (iInputType_G == iReadDist_G)
+
+      call readMASPout(fname)
+
+    else 
+
+      if (tProcInfo_G%qRoot) print*, 'No beam input type specified....'
+      if (tProcInfo_G%qRoot) print*, 'Exiting...'
+      call UnDefineParallelLibrary(qOKL)
+      stop
 
     end if
 
