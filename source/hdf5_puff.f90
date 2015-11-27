@@ -718,13 +718,13 @@ contains
 ! then text attributes
     CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
 !    Print*,'hdf5_puff:outputH5BeamFiles(atype_id set to string)'
+    aname="vsLabels"
+    attr_data_string="A_perp_Re_scaled,A_perp_Im_scaled"
+    attr_string_len=33
     CALL h5tset_size_f(atype_id, attr_string_len, error)
 !    Print*,'hdf5_puff:outputH5BeamFiles(string length declared)'
     CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
 !    Print*,'hdf5_puff:outputH5BeamFiles(string padding enabled)'
-    aname="vsLabels"
-    attr_data_string="A_perp_Re_scaled,A_perp_Im_scaled"
-    attr_string_len=33
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
 !    Print*,'hdf5_puff:outputH5BeamFiles(lables attribute created)'
     CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
@@ -733,7 +733,7 @@ contains
 !    Print*,'hdf5_puff:outputH5BeamFiles(lables attribute closed)'
     aname="vsType"
     attr_data_string="variable"
-    attr_string_len=16
+    attr_string_len=8
     CALL h5tset_size_f(atype_id, attr_string_len, error)
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
 !    Print*,'hdf5_puff:outputH5BeamFiles(type attribute created)'
