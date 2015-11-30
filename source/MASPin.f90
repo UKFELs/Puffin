@@ -2,19 +2,24 @@ module MASPin
 
 use paratype
 use globals
+use ParallelSetUp
+use parBeam
+
+implicit none
 
 contains
 
 
   subroutine readMASPfile(zFile)
 
-    character(*) :: zFile
+    character(*), intent(in) :: zFile
 
 
     integer(kind=ip) :: nMPs, nMPsLoc
-    integer(kind=ip) :: nBlanks_head
+    integer(kind=ip) :: nBlanks_head, nBlanks
     integer :: fid
 
+    integer(kind=ip) :: ir, ij, ios
     integer(kind=ip), allocatable :: recvs_eb(:), displs_eb(:)
 
     real(kind=wp) :: dV_bar
