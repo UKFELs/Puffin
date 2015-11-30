@@ -243,6 +243,10 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 
 
 
+
+    iInputType_G = iReadMASP_G
+
+
 !     Set error flag and exit
 
     qOK = .TRUE.				    
@@ -406,11 +410,11 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
                          chirp,mag,fr,qOKL)
       IF (.NOT. qOKL) GOTO 1000
 
-    else if (iInputType_G == iReadDist_G)
+    else if (iInputType_G == iReadDist_G) then
 
       call getMPs(fname, nbeams, Z, noise, eThresh)
 
-    else if (iInputType_G == iReadDist_G)
+    else if (iInputType_G == iReadMASP_G) then
 
       call readMASPout(fname)
 

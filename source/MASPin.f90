@@ -1,5 +1,10 @@
 module MASPin
 
+use paratype
+use globals
+
+contains
+
 
   subroutine readMASPfile(zFile)
 
