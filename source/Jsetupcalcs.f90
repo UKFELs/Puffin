@@ -16,6 +16,7 @@ USE Globals
 USE electronInit
 USE gMPsFromDists
 use avwrite
+use MASPin
 
 IMPLICIT NONE
 
@@ -368,6 +369,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
     INTEGER(KIND=IPL) :: sendbuff, recvbuff
     INTEGER sendstat(MPI_STATUS_SIZE)
     INTEGER recvstat(MPI_STATUS_SIZE)
+    character(32) :: fname_temp
     LOGICAL :: qOKL
 
     sQOneE = 1.60217656535E-19
@@ -416,7 +418,8 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
 
     else if (iInputType_G == iReadMASP_G) then
 
-      call readMASPout(fname)
+      fname_temp = 'from_masp_OUT.txt'
+      call readMASPfile(fname_temp)
 
     else 
 

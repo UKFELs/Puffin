@@ -26,10 +26,15 @@ contains
     
     real(kind=wp) :: dummy1, dummy2, dummy3
 
+    integer :: error
 
     fid = 132
 
     dV_bar = 1.0_wp
+    nMPs = 2065012_ip
+    iGloNumElectrons_G = nMPs
+
+    dummy1 = 1.0_wp
 
     ! Split into local num per process
 
@@ -39,9 +44,30 @@ contains
     call splitBeam(nMPs, dummy1, tProcInfo_G%size, tProcInfo_G%rank, &
                    nMPsLoc, dummy2, dummy3)
 
+    call mpi_barrier(tProcInfo_G%comm, error)
+
+    if ( tProcInfo_G%qRoot ) print*, 'made it 0.1'
+
     allocate(recvs_eb(tProcInfo_G%size), displs_eb(tProcInfo_G%size))
 
+    call mpi_barrier(tProcInfo_G%comm, error)
+
+    if ( tProcInfo_G%qRoot ) print*, 'made it 0.2'
+
+
     call getGathArrs(nMPsLoc,recvs_eb,displs_eb)
+
+
+    call mpi_barrier(tProcInfo_G%comm, error)
+
+    if ( tProcInfo_G%qRoot ) print*, 'made it 0.3', ' and displs = ', displs_eb
+
+
+    call mpi_barrier(tProcInfo_G%comm, error)
+
+    if ( tProcInfo_G%qRoot ) print*, 'made it 1'
+
+    iNumberElectrons_G = nMPsLoc
 
     ! Allocate local MP arrays
 
@@ -54,6 +80,9 @@ contains
              s_chi_bar_G(nMPsLoc), &
              s_Normalised_chi_G(nMPsLoc))
 
+    call mpi_barrier(tProcInfo_G%comm, error)
+
+    if ( tProcInfo_G%qRoot ) print*, 'made it 1.1'
 
 
     ! read file
@@ -67,13 +96,14 @@ contains
         OPEN(UNIT=fid,FILE=zFile,IOSTAT=ios,&
              ACTION='READ',POSITION='REWIND')   
   
-        nBlanks = displs_eb(ir) + nBlanks_head
-
+        nBlanks = displs_eb(ir+1) + nBlanks_head
+        print*, 'num of blanks now ', nblanks
         do ij = 1,nBlanks 
         	READ(UNIT=fid, FMT=*) 
         end do
 
-        do ij = displs_eb(ir)+1, nMPsLoc + displs_eb(ir)
+        !do ij = displs_eb(ir+1)+1, nMPsLoc + displs_eb(ir+1)
+        do ij = 1, nMPsLoc
 
           read(UNIT=fid, FMT=*) sElX_G(ij), sElY_G(ij), &
                                 sElPX_G(ij), sElPY_G(ij), &
@@ -84,7 +114,11 @@ contains
 
       end if
 
-      
+      call mpi_barrier(tProcInfo_G%comm, error)
+
+      if ( tProcInfo_G%qRoot ) print*, 'made it 1.2 on loop with rank ', ir, &
+                               ' with displs  ', displs_eb(ir+1)
+  
 
     end do
 
