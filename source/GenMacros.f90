@@ -278,6 +278,14 @@ kx = SQRT(sEta_G/(8.0_WP*sRho_G**2))
 ky = SQRT(sEta_G/(8.0_WP*sRho_G**2))
 px_shift = 0
 py_shift = 0
+
+call mpi_barrier(tProcInfo_G%comm, error)
+
+IF (tProcInfo_G%qROOT) print*, 'ABOUT TO LOOOOP'
+
+print*, 'ABOUT TO LOOOOP', size(x_1_integral), size(x_1_grid), &
+size(x_1_coord)
+
   DO k=1,nx3
     DO j=1,nx2
        DO i=1,nx1
@@ -425,19 +433,13 @@ py_shift = 0
     END DO
   END DO
 
-!    END IF
-!    CALL MPI_BARRIER(tProcInfo_G%comm,error) 
-!    END DO
-!    CALL MPI_BARRIER(tProcInfo_G%comm,error) 
- 
+
     IF (icount==0) THEN
        IF (tProcInfo_G%qROOT)  STOP "Error in GenMacros.f90, no macroparticles exist\!"
     ENDIF
-    !IF (tProcInfo_G%qRoot)  PRINT*, 'got the electrons'
 
 ! Calculate the scaled weighting (chi_bar) and weighting(chichi) of all macro particles
 
-!     Local max...
 
   local_max_av = MAXVAL(s_spatial_macro/s_vol_element)
 
@@ -511,5 +513,19 @@ SUBROUTINE getChi(Nk, Vk, max_dens, chi_bar, chi)
 !    ENDIF
 
 END SUBROUTINE getChi
+
+
+
+
+  subroutine getGlobalnpk(npk_num, npk_numl)
+
+  real(kind=wp), intent(inout) :: npk_num, npk_numl
+
+  integer :: error
+
+  CALL MPI_ALLREDUCE(npk_numl, npk_num, 1, MPI_DOUBLE_PRECISION, &
+       MPI_MAX, MPI_COMM_WORLD, error)
+
+  end subroutine getGlobalnpk
 
 END MODULE MacrosGen

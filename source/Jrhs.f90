@@ -98,6 +98,8 @@ contains
   call getAlpha(sZ)
 
 
+!$OMP PARALLEL
+
   call getP2(sp2, sgam, spr, spi, sEta_G, sGammaR_G, saw_G)
 
 
@@ -105,15 +107,24 @@ contains
 
   
   if (tTransInfo_G%qOneD) then
+
+! !DIR$ SIMD
  
     p_nodes = floor(sz2 / dz2) + 1_IP
 
+! !DIR$ END SIMD
+
+
   else
+
+!$OMP WORKSHARE
 
     p_nodes = (floor( (sx+halfx)  / dx)  + 1_IP) + &
               (floor( (sy+halfy)  / dy) * ReducedNX_G )  + &   !  y 'slices' before primary node
               (ReducedNX_G * ReducedNY_G * &
                               floor(sz2  / dz2) )  ! transverse slices before primary node
+
+!$OMP END WORKSHARE
 
   end if  
 
@@ -132,7 +143,7 @@ contains
 
   end if
 
-  deallocate(p_nodes)
+
 
 
 
@@ -157,19 +168,19 @@ contains
 
         CALL dz2dz_f(sx, sy, sz2, spr, spi, sgam, &
                      sdz2, qOKL)
-        if (.not. qOKL) goto 1000
+        !if (.not. qOKL) goto 1000
 
 !     X
 
         call dxdz_f(sx, sy, sz2, spr, spi, sgam, &
                     sdx, qOKL)
-        if (.not. qOKL) goto 1000             
+        !if (.not. qOKL) goto 1000             
 
 !     Y
 
         call dydz_f(sx, sy, sz2, spr, spi, sgam, &
                     sdy, qOKL)
-        if (.not. qOKL) goto 1000
+        !if (.not. qOKL) goto 1000
 
 
 !     PX (Real pperp)
@@ -189,12 +200,13 @@ contains
 
         call dgamdz_f(sx, sy, sz2, spr, spi, sgam, &
                      sdgam, qOKL)
-        if (.not. qOKL) goto 1000
+        !if (.not. qOKL) goto 1000
  
     end if 
 
 
 
+!$OMP END PARALLEL
 
 
 
@@ -239,7 +251,9 @@ contains
 !    deallocate(sField4ElecReal,sField4ElecImag,Lj,dp2f)
     !deallocate(Lj)
     deallocate(lis_GR)
+    deallocate(p_nodes)
     call dalct_e_srtcts()
+
 
     ! Set the error flag and exit
 
@@ -318,8 +332,6 @@ real(kind=wp), intent(in) :: sz
 
 
 end subroutine rhs_tmsavers
-
-
 
 
 

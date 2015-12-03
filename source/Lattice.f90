@@ -31,8 +31,6 @@ contains
 !    ####################################################
 
 
-
-
   subroutine setupMods(lattFile, taper, sRho, nsteps_f, dz_f)
 
     implicit none
@@ -79,23 +77,26 @@ contains
     else 
 
       modNum = 1
-      allocate(iElmType(modNum))
+
+      allocate(iElmType(modNum), zMod(ModNum))
       allocate(mf(ModNum),delmz(ModNum),tapers(modNum))
       allocate(nSteps_arr(ModNum))
+
       iElmType(1) = iUnd
       mf(1) = 1_wp
-      nsteps_arr(1) = nsteps_f
-      tapers(1) = taper
       delmz(1) = dz_f
+      tapers(1) = taper
+      nSteps_arr(1) = nSteps_f
+
       iUnd_cr = 1_ip
 
     end if
-   
+
     iUnd_cr=1_ip
     iChic_cr=1_ip
     iDrift_cr=1_ip
     iQuad_cr=1_ip
-
+   
     iCsteps = 0_ip
 
   end subroutine setupMods
@@ -262,14 +263,6 @@ contains
 
 !     Get offsets for start of undulator
 
-    sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
-                           fx_G, fy_G, sZ)
-
-    sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
-                           fx_G, fy_G, sZ)
-
 
     if (zUndType_G == 'curved') then
 
@@ -314,6 +307,15 @@ contains
 
 
     end if
+
+
+    sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
+                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
+                           fx_G, fy_G, sZ)
+
+    sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
+                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
+                           fx_G, fy_G, sZ)
 
 
 !     Add on new offset to initialize beam for undulator module
@@ -358,15 +360,6 @@ contains
 
 !     Get offsets for start of undulator
 
-    sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
-                           fx_G, fy_G, sZ)
-
-    sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
-                           fx_G, fy_G, sZ)
-
-
     if (zUndType_G == 'curved') then
 
 ! used for curved pole puffin, the 2 order expansion of cosh and sinh
@@ -412,8 +405,16 @@ contains
     end if
 
 
-!     Add on new offset to initialize beam for undulator module
+    sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
+                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, -spy0_offset, &
+                           fx_G, fy_G, sZ)
 
+    sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
+                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, -spy0_offset, &
+                           fx_G, fy_G, sZ)
+
+
+!     Add on new offset to initialize beam for undulator module
 
     sElX_G = sElX_G + sx_offset
     sElY_G = sElY_G + sy_offset
