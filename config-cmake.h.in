@@ -1,0 +1,4 @@
+// the configured options and settings for Tutorial
+#define Puffin_VERSION_MAJOR @Puffin_VERSION_MAJOR@
+#define Puffin_VERSION_MINOR @Puffin_VERSION_MINOR@
+#define Puffin_VERSION_PATCH @Puffin_VERSION_PATCH@
