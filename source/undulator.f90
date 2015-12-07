@@ -76,8 +76,6 @@ contains
   call matchIn(sZ)
 
 
-
-
   allocate(sAr(2*ReducedNX_G*ReducedNY_G*NZ2_G))
   allocate(Ar_local(2*local_rows))
 
@@ -279,7 +277,7 @@ contains
 
 
   call matchOut(sZ)
-
+  call correctTrans()  ! correct transverse motion at undulator exit
 
   deallocate(sAr)
   deallocate(Ar_local)

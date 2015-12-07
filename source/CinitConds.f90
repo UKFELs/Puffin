@@ -74,7 +74,7 @@ contains
 ! sgammar  - Mean electron velocity at resonance
 ! sEpsilon - (1+aw^2)/(2*gammar^2) 
 ! sZ0      - Starting z position
-    REAL(KIND=WP), INTENT(IN) :: rho,aw,gamma_r,gamma_j, &
+    REAL(KIND=WP), INTENT(IN) :: rho,aw,gamma_r,gamma_j(:), &
          eta,px(:),py(:),k_beta,ff,ux,uy,sZ0
     REAL(KIND=WP) :: xOffSet_Array(size(px)), nc
     
@@ -141,7 +141,7 @@ contains
 ! sEpsilon - (1+aw^2)/(2*gammar^2) 
 ! sZ0      - Starting z position
 
-    REAL(KIND=WP), INTENT(IN) :: rho,aw,gamma_r,gamma_j, &
+    REAL(KIND=WP), INTENT(IN) :: rho,aw,gamma_r,gamma_j(:), &
          eta,px(:),py(:),k_beta,ff,ux,uy,sZ0
     REAL(KIND=WP) :: yOffSet_Array(size(px)), nc
     

@@ -217,6 +217,7 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
     END IF
 
 
+    qOneD_G                  = qSwitch(iOneD_CG)
     qElectronsEvolve_G       = qSwitch(iElectronsEvolve_CG)
     qFieldEvolve_G           = qSwitch(iFieldEvolve_CG)
     qElectronFieldCoupling_G = qSwitch(iElectronFieldCoupling_CG)
