@@ -305,7 +305,7 @@ logical   ::  qResume            ! Reading from previously crashed runs dump fil
 
 logical   ::  qWrite             ! Write data?
 
-
+logical   ::  qOneD_G
 
 
 

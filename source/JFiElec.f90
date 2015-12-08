@@ -20,7 +20,8 @@ integer(kind=ipl) :: i
 real(kind=wp) :: locx, locy, locz2, &
                  x_in1, x_in2, y_in1, y_in2, z2_in1, z2_in2
 
-
+!$OMP DO PRIVATE(xnode, ynode, z2node, locx, locy, locz2, &
+!$OMP x_in1, x_in2, y_in1, y_in2, z2_in1, z2_in2)
   do i = 1, maxEl
     if (i<=procelectrons_G(1)) then 
 
@@ -42,6 +43,23 @@ real(kind=wp) :: locx, locy, locz2, &
       z2_in2 = locz2 / dz2
       z2_in1 = (1.0_wp - z2_in2)
 
+      if (xnode > ReducedNX_G) then
+        print*, 'X coord is too large!! with node:', xnode, &
+                ' and pos ', sx(i)
+        STOP
+      end if
+
+      if (ynode > ReducedNY_G) then
+        print*, 'Y coord is too large!! with node:', ynode, &
+                ' and pos ', sy(i)
+        STOP
+      end if
+
+      if (z2node > NZ2_G) then
+        print*, 'Z2 coord is too large!! with node:', z2node, &
+                ' and pos ', sz2(i)
+        STOP
+      end if
 
 !                  Get weights for interpolant
 
@@ -56,7 +74,7 @@ real(kind=wp) :: locx, locy, locz2, &
 
     end if
   end do
-
+!$OMP END DO
 
 
 end subroutine getInterps_3D
@@ -79,6 +97,7 @@ use rhs_vars
 real(kind=wp), intent(in) :: sA(:)
 integer(kind=ip) :: i
 
+!$OMP DO
   do i = 1, maxEl
   
     if (i<=procelectrons_G(1)) then
@@ -104,6 +123,7 @@ integer(kind=ip) :: i
     end if
   
   end do 
+!$OMP END DO
 
 end subroutine getFFelecs_3D
 
@@ -126,7 +146,7 @@ real(kind=wp), intent(in) :: seta
 integer(kind=ipl) :: i
 real(kind=wp) :: dadzRInst, dadzIInst
 
-
+!$OMP DO PRIVATE(dadzRInst, dadzIInst)
   do i = 1, maxEl
   
     if (i<=procelectrons_G(1)) then
@@ -137,27 +157,35 @@ real(kind=wp) :: dadzRInst, dadzIInst
       dadzRInst = ((s_chi_bar_G(i)/dV3) * (1 + seta * sp2(i) ) &
                         * spr(i) / sgam(i) )
     
+      !$OMP ATOMIC
       sDADz(p_nodes(i)) =                         &
         lis_GR(1,i) * dadzRInst + sDADz(p_nodes(i))
       
+      !$OMP ATOMIC
       sDADz(p_nodes(i) + 1_ip) =                  &
         lis_GR(2,i) * dadzRInst + sDADz(p_nodes(i) + 1_ip)                
 
+      !$OMP ATOMIC
       sDADz(p_nodes(i) + ReducedNX_G) =           &
         lis_GR(3,i) * dadzRInst + sDADz(p_nodes(i) + ReducedNX_G)          
 
+      !$OMP ATOMIC
       sDADz(p_nodes(i) + ReducedNX_G + 1_ip) =    &
         lis_GR(4,i) * dadzRInst + sDADz(p_nodes(i) + ReducedNX_G + 1_ip)   
 
+      !$OMP ATOMIC
       sDADz(p_nodes(i) + ntrans) =                &
         lis_GR(5,i) * dadzRInst + sDADz(p_nodes(i) + ntrans)               
 
+      !$OMP ATOMIC
       sDADz(p_nodes(i) + ntrans + 1_ip) =         &
         lis_GR(6,i) * dadzRInst + sDADz(p_nodes(i) + ntrans + 1_ip)         
 
+      !$OMP ATOMIC
       sDADz(p_nodes(i) + ntrans + ReducedNX_G) =  &
         lis_GR(7,i) * dadzRInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G)   
 
+      !$OMP ATOMIC
       sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1) = &
         lis_GR(8,i) * dadzRInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1)
 
@@ -166,33 +194,42 @@ real(kind=wp) :: dadzRInst, dadzIInst
       dadzIInst = ((s_chi_bar_G(i)/dV3) * (1 + seta * sp2(i) ) &
                         * spi(i) / sgam(i) ) 
     
+      !$OMP ATOMIC
       sDADz(p_nodes(i) + retim) =                             & 
         lis_GR(1,i) * dadzIInst + sDADz(p_nodes(i) + retim)                        
 
+      !$OMP ATOMIC
       sDADz(p_nodes(i) + 1_ip + retim) =                      & 
         lis_GR(2,i) * dadzIInst + sDADz(p_nodes(i) + 1_ip + retim)           
 
+      !$OMP ATOMIC
       sDADz(p_nodes(i) + ReducedNX_G + retim) =               & 
         lis_GR(3,i) * dadzIInst + sDADz(p_nodes(i) + ReducedNX_G + retim)           
 
+      !$OMP ATOMIC
       sDADz(p_nodes(i) + ReducedNX_G + 1_ip + retim) =        & 
         lis_GR(4,i) * dadzIInst + sDADz(p_nodes(i) + ReducedNX_G + 1_ip + retim)    
 
+      !$OMP ATOMIC
       sDADz(p_nodes(i) + ntrans + retim) =                    & 
         lis_GR(5,i) * dadzIInst + sDADz(p_nodes(i) + ntrans + retim)               
 
+      !$OMP ATOMIC
       sDADz(p_nodes(i) + ntrans + 1_ip + retim) =             & 
         lis_GR(6,i) * dadzIInst + sDADz(p_nodes(i) + ntrans + 1_ip + retim)       
 
+      !$OMP ATOMIC
       sDADz(p_nodes(i) + ntrans + ReducedNX_G + retim) =      & 
         lis_GR(7,i) * dadzIInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + retim)  
 
+      !$OMP ATOMIC
       sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1 + retim) =  & 
         lis_GR(8,i) * dadzIInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1 + retim)
 
     end if
   
   end do 
+!$OMP END DO
 
 end subroutine getSource_3D
 

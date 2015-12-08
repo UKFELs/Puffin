@@ -489,13 +489,6 @@ CONTAINS
 
 !********************************************************
 
-
-
-
-
-
-
-
   FUNCTION RaleighLength(srho,sigma)
 
 ! sigma of the seed field
@@ -511,5 +504,52 @@ CONTAINS
     RaleighLength = sigma**2/(2.0_WP*srho)
 
   END FUNCTION RaleighLength
+
+! ####################################################
+
+  function arr_mean_para(s_ar)
+
+! Return the mean of an array of real values
+
+    use ParallelSetUp
+
+    implicit none
+
+    real(kind=wp), intent(in) :: s_ar(:)
+    real(kind=wp) :: arr_mean_para
+    real(kind=wp) :: loc_sum, glob_sum    
+
+    loc_sum = sum(s_ar)  ! local sum
+
+    call sum_mpi_real(loc_sum,glob_sum)  ! sum globally
+
+    arr_mean_para = glob_sum / size(s_ar)  ! get mean
+
+  end function arr_mean_para
+
+
+
+
+  function arr_mean_para_weighted(s_ar, weights)
+
+! Return the mean of an array of real values
+
+    use ParallelSetUp
+
+    implicit none
+
+    real(kind=wp), intent(in) :: s_ar(:), weights(:)
+    real(kind=wp) :: arr_mean_para_weighted
+    real(kind=wp) :: loc_sum, glob_sum    
+
+    loc_sum = sum(weights * s_ar)  ! local sum
+
+    call sum_mpi_real(loc_sum,glob_sum)  ! sum globally
+
+    arr_mean_para_weighted = glob_sum / sum(weights)  ! get mean
+
+  end function arr_mean_para_weighted
+
+
 
 END MODULE Functions
