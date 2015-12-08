@@ -24,14 +24,14 @@ endif()
 
 # Don't need all the libraries, so just use this.
 set (FFTW_LIBS fftw_mpi fftw)
-set (BASE_LINK_LIBS m)
+set (BASE_LINK_LIBS dl m)
 #add_dependencies() seems not to be needed at this point
 if (USE_MKL)
   include_directories(${MKL_INCLUDE_DIRS} ${MPI_Fortran_INCLUDE_PATH})
   link_directories(${MKL_LIBRARY_DIRS} ${MPI_Fortran_LIBRARIES})
 else()
-  include_directories(${Fftw_INCLUDE_DIRS} ${MPI_Fortran_INCLUDE_PATH})
-  link_directories(${Fftw_LIBRARY_DIRS} ${MPI_Fortran_LIBRARIES})
+  include_directories(${Fftw_INCLUDE_DIRS} ${Hdf5_INCLUDE_DIRS} ${MPI_Fortran_INCLUDE_PATH})
+  link_directories(${Fftw_LIBRARY_DIRS} ${Hdf5_INCLUDE_DIRS} ${MPI_Fortran_LIBRARIES})
 endif ()
 
 
@@ -61,7 +61,7 @@ add_dependencies(puffin AIO)
 if (USE_MKL)
   target_link_libraries(puffin AIO ${MKL_LIBS} ${MPI_Fortran_LIBRARIES} ${BASE_LINK_LIBS})
 else()
-  target_link_libraries(puffin AIO ${FFTW_LIBS} ${MPI_Fortran_LIBRARIES} ${BASE_LINK_LIBS})
+  target_link_libraries(puffin AIO ${FFTW_LIBS} ${Hdf5_LIBRARIES} ${MPI_Fortran_LIBRARIES} ${BASE_LINK_LIBS})
 endif()
 
 install (TARGETS puffin DESTINATION bin)
