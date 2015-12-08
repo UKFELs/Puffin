@@ -664,7 +664,7 @@ contains
 !Fields are all available to rank zero, and we will worry about
 !parallel writing this in due course. 
     if (tProcInfo_G%qRoot) then
-      dims = (/2,NX_G,NY_G,NZ2_G/) ! Dataset dimensions
+      dims = (/NX_G,NY_G,NZ2_G,2/) ! Dataset dimensions
 
       filename = ( trim(adjustl(IntegerToString(iStep))) // '_' // &
         trim(adjustl(IntegerToString(tProcInfo_G%Rank))) // &
