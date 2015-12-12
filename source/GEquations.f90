@@ -77,16 +77,70 @@ contains
 
     else if (zUndType_G == 'helical') then
 
+
+
+        if (iUndPlace_G == iUndStart_G) then 
+
+          szt = sZ
+          szt = szt / 2_wp / sRho_G
+
 !$OMP WORKSHARE
 
-        sdpr = sInv2rho * ( n2col * sin(ZOver2rho)  & 
-                            - sEta_G * sp2 / sKappa_G**2 *    &
-                            sField4ElecReal ) & 
-               + ( sKappa_G * spi / sgam * (1 + sEta_G * sp2) &
-                   * sqrt(sEta_G) * sInv2rho * n2col * (     &
-                    -sx * sin( ZOver2rho )  + sy * cos( ZOver2rho ) ) )
+          sdpr = sInv2rho * ( n2col0 * (- sin(szt / 8_wp) * &
+                      cos(szt / 8_wp) * cos(szt) / 4_wp   &
+                    +  sin(szt/8_wp)**2_wp  * sin(szt) )  &
+                              - sEta_G * sp2 / sKappa_G**2 *    &
+                              sField4ElecReal ) & 
+                 + ( sKappa_G * spi / sgam * (1 + sEta_G * sp2) &
+                     * sqrt(sEta_G) * sInv2rho * n2col0 * (     & 
+                      sx * ( 1/32_wp * cos(szt/4_wp) * sin(szt) + &
+                              1/4_wp * sin(szt/4_wp) * cos(szt) - & 
+                              sin(szt/8_wp)**2 * sin(szt) )    + &
+                      sy * ( -1/32_wp * cos(szt/4_wp) * cos(szt) + &
+                              1/4_wp * sin(szt/4_wp) * sin(szt) + & 
+                              sin(szt/8_wp)**2 * cos(szt) ) ) ) 
 
 !$OMP END WORKSHARE
+
+        else if (iUndPlace_G == iUndEnd_G) then
+ 
+          szt = sZ - sZFE
+          szt = szt / 2_wp / sRho_G
+
+!$OMP WORKSHARE
+
+          sdpr = sInv2rho * ( n2col * ( cos(szt / 8_wp) * &
+                      sin(szt / 8_wp) * cos(szt)  / 4_wp  &
+                    +  cos(szt/8_wp)**2_wp  * sin(szt) ) &
+                              - sEta_G * sp2 / sKappa_G**2 *    &
+                              sField4ElecReal ) & 
+                 + ( sKappa_G * spi / sgam * (1 + sEta_G * sp2) &
+                     * sqrt(sEta_G) * sInv2rho * n2col * (     & 
+                      sx * ( -1/32_wp * cos(szt/4_wp) * sin(szt) - &
+                              1/4_wp * sin(szt/4_wp) * cos(szt) - & 
+                              cos(szt/8_wp)**2 * sin(szt) )    + &
+                      sy * ( 1/32_wp * cos(szt/4_wp) * cos(szt) - &
+                              1/4_wp * sin(szt/4_wp) * sin(szt) + & 
+                              cos(szt/8_wp)**2 * cos(szt) ) ) ) 
+
+!$OMP END WORKSHARE
+
+        else if (iUndPlace_G == iUndMain_G) then
+
+!$OMP WORKSHARE
+
+          sdpr = sInv2rho * ( n2col * sin(ZOver2rho)  & 
+                              - sEta_G * sp2 / sKappa_G**2 *    &
+                              sField4ElecReal ) & 
+                 + ( sKappa_G * spi / sgam * (1 + sEta_G * sp2) &
+                     * sqrt(sEta_G) * sInv2rho * n2col * (     &
+                      -sx * sin( ZOver2rho )  + sy * cos( ZOver2rho ) ) )
+
+!$OMP END WORKSHARE
+
+        end if
+
+
 
     else
 
@@ -107,9 +161,9 @@ contains
 !      else 
 
 
-        if (sZ <= sZFS) then 
+        if (iUndPlace_G == iUndStart_G) then 
 
-          szt = sZ - sZ0
+          szt = sZ
           szt = szt / 2_wp / sRho_G
 
           sdpr = sInv2rho * (  n2col0 * fy_G * (- sin(szt / 8_wp) * &
@@ -120,7 +174,7 @@ contains
                 sField4ElecReal ) )
 
 
-        else if (sZ >= sZFE) then
+        else if (iUndPlace_G == iUndEnd_G) then
  
           szt = sZ - sZFE
           szt = szt / 2_wp / sRho_G
@@ -133,7 +187,7 @@ contains
                 sField4ElecReal *  sInv2rho )     )
 
 
-        else 
+        else if (iUndPlace_G == iUndMain_G) then
 
           sdpr = sInv2rho * (fy_G*n2col *sin(ZOver2rho) - &
                 ( sEta_G * sp2 / sKappa_G**2 * &
@@ -217,6 +271,54 @@ contains
 
     else if (zUndType_G == 'helical') then
 
+        if (iUndPlace_G == iUndStart_G) then 
+
+          szt = sZ
+          szt = szt / 2_wp / sRho_G
+
+!$OMP WORKSHARE
+
+        sdpi = sInv2rho * (  n2col0 * ( sin(szt / 8_wp) * &
+                   cos(szt / 8_wp) * sin(szt) / 4_wp &
+                  +   sin(szt/8_wp)**2_wp  * cos(szt) )  & 
+                            - sEta_G * sp2 / sKappa_G**2 *    &
+                            sField4ElecReal ) & 
+               - ( sKappa_G * spr / sgam * (1 + sEta_G * sp2) &
+                   * sqrt(sEta_G) * sInv2rho * n2col0 * (   &
+                    sx * ( 1/32_wp * cos(szt/4_wp) * sin(szt) + &
+                              1/4_wp * sin(szt/4_wp) * cos(szt) - & 
+                              sin(szt/8_wp)**2 * sin(szt) )    + &
+                      sy * ( -1/32_wp * cos(szt/4_wp) * cos(szt) + &
+                              1/4_wp * sin(szt/4_wp) * sin(szt) + & 
+                              sin(szt/8_wp)**2 * cos(szt) ) ) )
+
+!$OMP END WORKSHARE
+
+        else if (iUndPlace_G == iUndEnd_G) then
+
+          szt = sZ - sZFE
+          szt = szt / 2_wp / sRho_G
+
+!$OMP WORKSHARE
+
+        sdpi = sInv2rho * (  n2col * (- cos(szt / 8_wp) * &
+                    sin(szt / 8_wp) * sin(szt) / 4_wp  &
+                  +  cos(szt/8_wp)**2_wp  * cos(szt) )  & 
+                            - sEta_G * sp2 / sKappa_G**2 *    &
+                            sField4ElecReal ) & 
+               - ( sKappa_G * spr / sgam * (1 + sEta_G * sp2) &
+                   * sqrt(sEta_G) * sInv2rho * n2col * (   &
+                    sx * ( -1/32_wp * cos(szt/4_wp) * sin(szt) - &
+                              1/4_wp * sin(szt/4_wp) * cos(szt) - & 
+                              cos(szt/8_wp)**2 * sin(szt) )    + &
+                      sy * ( 1/32_wp * cos(szt/4_wp) * cos(szt) - &
+                              1/4_wp * sin(szt/4_wp) * sin(szt) + & 
+                              cos(szt/8_wp)**2 * cos(szt) ) ) )
+
+!$OMP END WORKSHARE
+
+        else if (iUndPlace_G == iUndMain_G) then
+
 !$OMP WORKSHARE
 
         sdpi = sInv2rho * (  n2col * cos(ZOver2rho)  & 
@@ -227,6 +329,9 @@ contains
                     -sx * sin( ZOver2rho )  + sy * cos( ZOver2rho ) ) )
 
 !$OMP END WORKSHARE
+
+        end if
+
 
     else
 
@@ -248,9 +353,9 @@ contains
 !      else
 
 
-        if (sZ <= sZFS) then 
+        if (iUndPlace_G == iUndStart_G) then 
 
-          szt = sZ - sZ0
+          szt = sZ
           szt = szt / 2_wp / sRho_G
 
 
@@ -262,7 +367,7 @@ contains
                   sField4ElecImag ) )
 
 
-        else if (sZ >= sZFE) then
+        else if (iUndPlace_G == iUndEnd_G) then
 
           szt = sZ - sZFE
           szt = szt / 2_wp / sRho_G
@@ -274,7 +379,7 @@ contains
                   ( sEta_G * sp2 / sKappa_G**2 * &
                   sField4ElecImag * sInv2rho) )
 
-        else
+        else if (iUndPlace_G == iUndMain_G) then
 
           sdpi = sInv2rho * (fx_G * n2col * cos(ZOver2rho) - &
                         ( sEta_G * sp2 / sKappa_G**2 * &
@@ -531,6 +636,50 @@ contains
 
 
   end subroutine dalct_e_srtcts
+
+
+
+  subroutine adjUndPlace(szl)
+
+    real(kind=wp) :: szl
+
+      if (qUndEnds_G) then
+
+        if (szl < 0) then
+
+          print*, 'undulator section not recognised, sz < 0!!'
+          stop
+
+        else if (sZl <= sZFS) then 
+
+          iUndPlace_G = iUndStart_G
+
+        else if (sZl >= sZFE) then
+ 
+          iUndPlace_G = iUndEnd_G
+
+        else if ((sZl > sZFS) .and. (sZl < sZFE)) then
+
+          iUndPlace_G = iUndMain_G
+
+        else 
+
+          print*, 'undulator section not recognised, sz > sZFE!!'
+          stop
+
+        end if
+
+      else
+
+        iUndPlace_G = iUndMain_G
+
+      end if
+
+  end subroutine adjUndPlace
+
+
+
+
 
 
 end module equations

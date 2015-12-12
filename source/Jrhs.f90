@@ -96,7 +96,7 @@ contains
 !     Adjust undulator tuning
 
   call getAlpha(sZ)
-
+  call adjUndPlace(sZ)
 
 !$OMP PARALLEL
 

@@ -440,10 +440,11 @@ contains
 ! #########################################################
 
 
-  subroutine initUndulator(iM, sZ)
+  subroutine initUndulator(iM, sZ, szl)
 
     integer(kind=ip), intent(in) :: iM
     real(kind=wp), intent(in) :: sZ
+    real(kind=wp), intent(inout) :: szl
 
 ! Want to update using arrays describing each module...
 
@@ -453,7 +454,7 @@ contains
     n2col = mf(iM)
     undgrad = tapers(iM)
     sz0 = sz
-
+    szl = 0_wp
 
 
 !     Update stepsize    
@@ -466,9 +467,18 @@ contains
 
 !     Setup undulator ends
 
-    sZFS = sz + 4_wp * pi * sRho_G  *  2.0_wp
-    sZFE = sz + nSteps * sStepSize - &
-             4_wp * pi * sRho_G  *  2.0_wp
+    if (qUndEnds_G) then
+
+      sZFS = 4_wp * pi * sRho_G  *  2.0_wp
+      sZFE = nSteps * sStepSize - &
+               4_wp * pi * sRho_G  *  2.0_wp
+
+    else 
+
+      sZFS = 0_wp
+      sZFE = nSteps * sStepSize
+
+    end if
 
   end subroutine initUndulator
 

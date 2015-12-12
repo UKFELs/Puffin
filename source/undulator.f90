@@ -54,7 +54,7 @@ contains
     integer(kind=ip) :: iPer, iS ! Loop index - period counter
     integer(kind=ip) :: nW
     integer(kind=ip) :: iSteps4Diff
-    real(kind=wp) :: delz_D, nextDiff
+    real(kind=wp) :: delz_D, nextDiff, szl
     logical :: qFirst, qLast, qDiffrctd
     logical :: qWPF
     logical :: qWIF
@@ -73,8 +73,8 @@ contains
 
 !     Need to match into undulator
 
-  call initUndulator(iUnd_cr, sZ)
-!  call matchIn(sZ)
+  call initUndulator(iUnd_cr, sZ, szl)
+  if (.not. qUndEnds_G) call matchIn(sZ)
 
 
   allocate(sAr(2*ReducedNX_G*ReducedNY_G*NZ2_G))
@@ -152,7 +152,7 @@ contains
     if (qElectronsEvolve_G .OR. qFieldEvolve_G &
              .OR. qElectronFieldCoupling_G) then
   
-      call rk4par(sAr,Ar_local,sZ,sStepSize,mrecvs,mdispls,qDiffrctd)
+      call rk4par(sAr,Ar_local,sZl,sStepSize,mrecvs,mdispls,qDiffrctd)
   
     end if 
 
@@ -164,8 +164,8 @@ contains
 !                  Increment z position  
 !       (we now have solution at zbar + sStepsize) 
 
-    sZ = sZ + sStepSize
-
+    sZl = sZl + sStepSize
+    sZ = sZ0 + szl
 
 
 
@@ -277,7 +277,7 @@ contains
 
 
 
-!  call matchOut(sZ)
+  if (.not. qUndEnds_G) call matchOut(sZ)
 
 
   deallocate(sAr)
