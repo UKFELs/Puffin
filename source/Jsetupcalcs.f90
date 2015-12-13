@@ -201,8 +201,6 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 
     NBZ2_G = 37_IP
 
-    qUndEnds_G = .false.
-
 
     zUndType_G = zUndType
 

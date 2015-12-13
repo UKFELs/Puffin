@@ -228,6 +228,7 @@ SUBROUTINE read_in(zfilename, &
   READ(UNIT=168,FMT=*) qSwitches(iDiffraction_CG)
   READ(UNIT=168,FMT=*) qfilter
   READ(UNIT=168,FMT=*) q_noise    ! qSwitches(iNoise_CG)
+  READ(UNIT=168,FMT=*) qUndEnds_G
   READ(UNIT=168,FMT=*) qSwitches(iDump_CG)
   READ(UNIT=168,FMT=*) qResume
   READ(UNIT=168,FMT=*) qSeparateFiles
