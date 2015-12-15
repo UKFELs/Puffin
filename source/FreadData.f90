@@ -375,10 +375,8 @@ SUBROUTINE read_in(zfilename, &
 
   if (tProcInfo_G%qRoot) print*, 'number of nodes in z2 --- ', iNumNodes(iZ2_CG)
 
-
-
-
-
+  zBFile_G = beam_file
+  zSFile_G = seed_file
 
   CALL read_beamfile(qSimple, dist_f, beam_file,sEmit_n,sSigmaGaussian,sLenEPulse, &
                      iNumElectrons,sQe,chirp,bcenter, mag, fr, gamma_d,nbeams, &
@@ -388,6 +386,9 @@ SUBROUTINE read_in(zfilename, &
                      qFlatTopS,SmeanZ2,qOKL)
 
   IF  (.NOT. qOKL) GOTO 1000
+
+
+  call get_exec()
 
 !  CALL read_seedfile(32_IP)  ! SOON ! 
 
@@ -651,6 +652,16 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,qFlatTop, &
 
 
 END SUBROUTINE read_seedfile
+
+
+subroutine get_exec()
+  
+
+! Retrieves command line used to initiate run
+
+  call get_command(cmd_call_G)
+  
+end subroutine get_exec
 
 
 END MODULE Read_data
