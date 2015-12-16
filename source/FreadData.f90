@@ -385,8 +385,11 @@ SUBROUTINE read_in(zfilename, &
   CALL read_seedfile(seed_file,nseeds,sSigmaF,sA0_Re,sA0_Im,freqf,&
                      qFlatTopS,SmeanZ2,qOKL)
 
-  IF  (.NOT. qOKL) GOTO 1000
 
+  call FileNameNoExtension(beam_file, zBFile_G, qOKL)
+  call FileNameNoExtension(seed_file, zSFile_G, qOKL)
+
+  IF  (.NOT. qOKL) GOTO 1000
 
   call get_exec()
 
