@@ -72,6 +72,7 @@ MODULE Setup
 
   CALL getarg(1,infile)
   zFileName = infile
+  zFileName_G = zFileName
 
   IF (infile == emptstring) THEN
 
