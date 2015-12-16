@@ -678,8 +678,8 @@ contains
     if (tProcInfo_G%qRoot) then
       dims = (/NX_G,NY_G,NZ2_G,2/) ! Dataset dimensions
 
-      filename = ( 'Aperp_' // &
-        trim(adjustl(IntegerToString(tProcInfo_G%Rank))) &
+      filename = (trim(adjustl(zFilename_G)) // '_Aperp_' &
+        // trim(adjustl(IntegerToString(tProcInfo_G%Rank))) &
         // '_' //trim(adjustl(IntegerToString(iStep))) &
         // '.h5' )
       PRINT *,'size of sA'
