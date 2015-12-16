@@ -27,7 +27,6 @@ contains
        rho,aw,epsilon,gamma_r, &
        kbeta, ff, &
        lam_w, lam_r, &
-       l_g, l_c, &
        npk_bar, &
        totalNumberElectrons, &
        nWaveEquations, &
@@ -87,7 +86,7 @@ contains
     REAL(KIND=WP),    INTENT(IN) :: sA0_Im   
     REAL(KIND=WP),    INTENT(IN) :: rho,aw,epsilon,gamma_r
     REAL(KIND=WP),    INTENT(IN) :: kbeta, ff
-    real(kind=wp),    intent(in) :: lam_w, lam_r, l_g, l_c
+    real(kind=wp),    intent(in) :: lam_w, lam_r
     real(kind=wp),    intent(in) :: npk_bar
     INTEGER(KIND=IPL), INTENT(IN) :: totalNumberElectrons
     INTEGER(KIND=IP), INTENT(IN) :: nWaveEquations    
@@ -133,7 +132,7 @@ contains
   END SUBROUTINE WriteAttributeData
 
 
-	subroutine wr_h5(sA, sZ, istep, tArrayA, tArrayE, tArrayZ, &
+	subroutine wr_h5(sA, sZ, tArrayA, tArrayE, tArrayZ, &
                      iIntWr, iWr, qSep, zDFname, qWriteFull, &
                      qWriteInt, qOK)
 
@@ -144,23 +143,23 @@ contains
 
     real(kind=wp), intent(in) :: sA(:), sZ
     type(cArraySegment), intent(inout) :: tArrayA(:), tArrayE(:), tArrayZ
-    integer(kind=ip), intent(in) :: istep
     integer(kind=ip), intent(in) :: iIntWr, iWr
     character(32_IP), intent(in) :: zDFName
     logical, intent(in) :: qSep
     logical, intent(inout) :: qOK
     integer :: error
     logical :: qWriteInt, qWriteFull
+    real(kind=wp) :: time
     error = 0
     if (qWriteFull) then
-
-      call outputH5BeamFiles(iStep, error)
+      time = real(iCSteps,kind=wp)*sStepSize*lg_G/c
+      call outputH5BeamFiles(time, error)
       if (error .ne. 0) goto 1000
 
-      call outputH5Field(sA, iStep, error)
+      call outputH5Field(sA, time, error)
       if (error .ne. 0) goto 1000
 
-      call outputH5Power(sA, iStep, error)
+      call outputH5Power(sA, time, error)
       if (error .ne. 0) goto 1000
 
 !      call outputH5Z(sZ, tArrayZ, iStep, qSep, zDFName, qOKL)
@@ -187,7 +186,7 @@ contains
 
     end subroutine wr_h5
 
-  subroutine outputH5BeamFiles(iStep, error)
+  subroutine outputH5BeamFiles(time, error)
 
 
     implicit none
@@ -198,6 +197,7 @@ contains
 ! tArrayE   -      Array describing the 
 !                  layout of data in 
 !                  sV
+    REAL(kind=WP),intent(in) :: time ! Current time
 !
     INTEGER(HID_T) :: file_id       ! File identifier
     INTEGER(HID_T) :: dset_id       ! Dataset identifier 
@@ -207,8 +207,6 @@ contains
     INTEGER(HID_T) :: aspace_id     ! Attribute Dataspace identifier
     INTEGER(HID_T) :: atype_id      ! Attribute Data type identifier
     INTEGER(HID_T) :: group_id      ! Group identifier
-!    type(cArraySegment), intent(inout) :: tArrayE(:)
-    integer(kind=ip), intent(in) :: iStep
 !    logical, intent(in) :: qSeparate
     CHARACTER(LEN=9), PARAMETER :: dsetname = "electrons"     ! Dataset name
     CHARACTER(LEN=16) :: aname   ! Attribute name
@@ -219,12 +217,12 @@ contains
 !    INTEGER     ::   rank = 1                        ! Dataset rank
     INTEGER(HSIZE_T), DIMENSION(2) :: dims 
     INTEGER(HSIZE_T), DIMENSION(2) :: doffset! Offset for write
-    INTEGER(HSIZE_T), DIMENSION(2) :: dsize ! Size of hyperslab to write
-    INTEGER     ::   rank = 2               ! Particle Dataset rank
-    INTEGER     ::  arank = 1               ! Attribute Dataset rank
-    INTEGER(HSIZE_T), DIMENSION(1) :: adims ! Attribute dims
+    INTEGER(HSIZE_T), DIMENSION(2) :: dsize  ! Size of hyperslab to write
+    INTEGER     ::  rank = 2                 ! Particle Dataset rank
+    INTEGER     ::  arank = 1                ! Attribute Dataset rank
+    INTEGER(HSIZE_T), DIMENSION(1) :: adims  ! Attribute dims
     INTEGER(HSIZE_T), DIMENSION(1) :: attr_data_int 
-    INTEGER     :: numSpatialDims = 3   ! Attr content,  
+    INTEGER     :: numSpatialDims    ! Attr content,  
 !assumed 3D sim. May be 1D.
 !    TYPE(C_PTR) :: f_ptr
     REAL(kind=WP) :: attr_data_double
@@ -234,9 +232,15 @@ contains
     CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  ! Group name
     REAL(kind=WP), ALLOCATABLE :: limdata (:)  ! Data to write
     ! Local vars
-
     !integer(kind=ip) :: iep
     integer :: error ! Error flag
+
+    if (qONED_G) then
+      numSpatialDims=1
+    else
+      numSpatialDims=3
+    end if
+
     attr_data_int(1)=numSpatialDims
     adims(1)=1
     adims = (/1/) 
@@ -252,9 +256,9 @@ contains
 
 ! Prepare filename
 
-    filename = ( trim(adjustl(IntegerToString(iStep))) // '_' // &
-        trim(adjustl(IntegerToString(tProcInfo_G%Rank))) // &
-		 '_electrons.h5' )
+    filename = ( trim(adjustl(zFilename_G)) // '_electrons_' // &
+                 trim(adjustl(IntegerToString(tProcInfo_G%Rank))) // &
+		 '_' // trim(adjustl(IntegerToString(iStep))) // '.h5' )
 
     CALL h5open_f(error)
 !    Print*,'hdf5_puff:outputH5BeamFiles(file opened)'
@@ -425,7 +429,7 @@ contains
 ! integers done, move onto floats
     CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
     aname="time"
-    attr_data_double=1.0*iStep*sStepSize/c
+    attr_data_double=real(iStep,kind=wp)*sStepSize*lg_G/c
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
     CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
     CALL h5aclose_f(attr_id, error)
@@ -485,38 +489,38 @@ contains
     CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
     CALL h5aclose_f(attr_id, error)
 
-
+    CALL writeH5TimeGroup(file_id, timegrpname, time, 'outputH5Beam', error)
 ! We make a group
-    CALL h5gcreate_f(file_id, timegrpname, group_id, error)
-    aname="vsType"
-    attr_data_string="time"
-    attr_string_len=4
-    CALL h5tset_size_f(atype_id, attr_string_len, error)
-    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
-    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
-    CALL h5aclose_f(attr_id, error)
-    CALL h5tclose_f(atype_id, error)
+!    CALL h5gcreate_f(file_id, timegrpname, group_id, error)
+!    aname="vsType"
+!    attr_data_string="time"
+!    attr_string_len=4
+!    CALL h5tset_size_f(atype_id, attr_string_len, error)
+!    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+!    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+!    CALL h5aclose_f(attr_id, error)
+!    CALL h5tclose_f(atype_id, error)
 
-    CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
-    aname="vsTime"
-    attr_data_double=1.0*iStep*sStepSize/c
-    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
-    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
-    CALL h5aclose_f(attr_id, error)
-    CALL h5tclose_f(atype_id, error)
-    CALL h5tcopy_f(H5T_NATIVE_INTEGER, atype_id, error)
-    aname="vsStep"
-    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+!    CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
+!    aname="vsTime"
+!    attr_data_double=1.0*iStep*sStepSize/c
+!    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+!    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
+!    CALL h5aclose_f(attr_id, error)
+!    CALL h5tclose_f(atype_id, error)
+!    CALL h5tcopy_f(H5T_NATIVE_INTEGER, atype_id, error)
+!    aname="vsStep"
+!    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
  !   Print*,error
  !   Print*,'Creating vsStep'
-    CALL h5awrite_f(attr_id, atype_id, iStep, adims, error) 
+!    CALL h5awrite_f(attr_id, atype_id, iStep, adims, error) 
 !    Print*,error
 !    Print*,'Writing vsStep'
-    CALL h5tclose_f(atype_id, error)
-    CALL h5aclose_f(attr_id, error)
+!    CALL h5tclose_f(atype_id, error)
+!    CALL h5aclose_f(attr_id, error)
 !    Print*,error
 !    Print*,'Closing vsStep'
-    CALL h5gclose_f(group_id, error)
+!    CALL h5gclose_f(group_id, error)
 !    Print*,error
 !    Print*,'Closing timeGroup'
 
@@ -617,7 +621,7 @@ contains
 
   end subroutine outputH5BeamFiles
 
-  subroutine outputH5Field(sA, iStep, error)
+  subroutine outputH5Field(sA, time, error)
 
 
     implicit none
@@ -630,6 +634,7 @@ contains
 !                  sV
 !
     real(kind=wp), intent(in) :: sA(:)
+    REAL(kind=WP), intent(in) :: time
     INTEGER(HID_T) :: file_id       ! File identifier
     INTEGER(HID_T) :: dset_id       ! Dataset identifier 
     INTEGER(HID_T) :: dspace_id     ! Dataspace identifier in memory
@@ -638,7 +643,6 @@ contains
     INTEGER(HID_T) :: aspace_id     ! Attribute Dataspace identifier
     INTEGER(HID_T) :: atype_id      ! Attribute Data type identifier
     INTEGER(HID_T) :: group_id      ! Group identifier
-    integer(kind=ip), intent(in) :: iStep
 ! may yet need this, but field data is not separated amongst cores
 !    logical, intent(in) :: qSeparate
     CHARACTER(LEN=5), PARAMETER :: dsetname = "Aperp"     ! Dataset name
@@ -652,7 +656,7 @@ contains
     REAL(kind=WP) :: attr_data_double
     CHARACTER(LEN=100) :: attr_data_string
     INTEGER(HSIZE_T) :: attr_string_len
-    INTEGER(kind=IP) :: numSpatialDims = 3   ! Attr content,  
+    INTEGER(kind=IP) :: numSpatialDims      ! Attr content,  
     INTEGER     ::  arank = 1               ! Attribute Dataset rank
     CHARACTER(LEN=4), PARAMETER :: timegrpname = "time"  ! Group name
     CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  ! Group name
@@ -663,7 +667,12 @@ contains
     ! Local vars    integer :: error ! Error flag
     integer :: error ! Error flag
 
-   
+    if (.TRUE.) then
+      numSpatialDims=1
+    else
+      numSpatialDims=3
+    end if
+
 !Fields are all available to rank zero, and we will worry about
 !parallel writing this in due course. 
     if (tProcInfo_G%qRoot) then
@@ -833,69 +842,68 @@ contains
    Print*,'hdf5_puff:outputH5Field(close dataset work on groups)'
     Print*,error
  
-
+    CALL writeH5TimeGroup(file_id, timegrpname, time, 'outputH5Field', error)
 ! with the main dataset done we work on the other groups with attributes
 ! We make a group
-    CALL h5gcreate_f(file_id, timegrpname, group_id, error)
+!    CALL h5gcreate_f(file_id, timegrpname, group_id, error)
 !   Print*,'hdf5_puff:outputH5Field(group timegrpname created)'
 !    Print*,error
-    CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
+!    CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
 !   Print*,'hdf5_puff:outputH5Field(set timegrpname type)'
 !    Print*,error
-    CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
+!    CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
 !    Print*,'hdf5_puff:outputH5Field(string padding enabled)'
-    aname="vsType"
-    attr_data_string="time"
-    attr_string_len=4
-    CALL h5tset_size_f(atype_id, attr_string_len, error)
+!    aname="vsType"
+!    attr_data_string="time"
+!    attr_string_len=4
+!    CALL h5tset_size_f(atype_id, attr_string_len, error)
 !   Print*,'hdf5_puff:outputH5Field(set timegrpname size)'
 !    Print*,error
-    CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
-    Print*,'hdf5_puff:outputH5Field(scalar attribute space created)'
-    Print*,error   
-    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
-   Print*,'hdf5_puff:outputH5Field(create timegrpname time attribute)'
-    Print*,error
-    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
-   Print*,'hdf5_puff:outputH5Field(write timegrpname time attribute)'
-    Print*,error
-    CALL h5aclose_f(attr_id, error)
-   Print*,'hdf5_puff:outputH5Field(close timegrpname time attribute)'
-    Print*,error
+!    CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
+!    Print*,'hdf5_puff:outputH5Field(scalar attribute space created)'
+!    Print*,error   
+!    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+!   Print*,'hdf5_puff:outputH5Field(create timegrpname time attribute)'
+!    Print*,error
+!    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+!   Print*,'hdf5_puff:outputH5Field(write timegrpname time attribute)'
+!    Print*,error
+!    CALL h5aclose_f(attr_id, error)
+!   Print*,'hdf5_puff:outputH5Field(close timegrpname time attribute)'
+!    Print*,error
 
-    CALL h5tclose_f(atype_id, error)
-   Print*,'hdf5_puff:outputH5Field(close timegrpname time attributetype )'
-    Print*,error
+!    CALL h5tclose_f(atype_id, error)
+!   Print*,'hdf5_puff:outputH5Field(close timegrpname time attributetype )'
+!    Print*,error
 
-    CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
-    aname="vsTime"
-    attr_data_double=1.0*iStep*sStepSize/c
-    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
-    Print*,error
-    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
-    Print*,error
-    CALL h5aclose_f(attr_id, error)
-    Print*,error
-    CALL h5tclose_f(atype_id, error)
-    Print*,error
-    CALL h5tcopy_f(H5T_NATIVE_INTEGER, atype_id, error)
-    Print*,error
-    aname="vsStep"
-    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
-    Print*,error
-    Print*,'Creating vsStep'
-    CALL h5awrite_f(attr_id, atype_id, iStep, adims, error) 
-    Print*,error
-    Print*,'Writing vsStep'
-    CALL h5tclose_f(atype_id, error)
-    CALL h5aclose_f(attr_id, error)
-    Print*,error
-    Print*,'Closing vsStep'
-    Print*,error
-    CALL h5gclose_f(group_id, error)
-    Print*,'Closing timeGroup'
-    Print*,error
-
+!    CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
+!    aname="vsTime"
+!    attr_data_double=1.0*iStep*sStepSize/c
+!    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+!    Print*,error
+!    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
+!    Print*,error
+!    CALL h5aclose_f(attr_id, error)
+!    Print*,error
+!    CALL h5tclose_f(atype_id, error)
+!    Print*,error
+!    CALL h5tcopy_f(H5T_NATIVE_INTEGER, atype_id, error)
+!    Print*,error
+!    aname="vsStep"
+!    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+!    Print*,error
+!    Print*,'Creating vsStep'
+!    CALL h5awrite_f(attr_id, atype_id, iStep, adims, error) 
+!    Print*,error
+!    Print*,'Writing vsStep'
+!    CALL h5tclose_f(atype_id, error)
+!    CALL h5aclose_f(attr_id, error)
+!    Print*,error
+!    Print*,'Closing vsStep'
+!    Print*,error
+!    CALL h5gclose_f(group_id, error)
+!    Print*,'Closing timeGroup'
+!    Print*,error
 ! We make another group
     CALL h5gcreate_f(file_id, limgrpname, group_id, error)
     Print*,error
@@ -1081,7 +1089,7 @@ contains
 
   end subroutine outputH5Field
 
-  subroutine outputH5Power(sA, iStep, error)
+  subroutine outputH5Power(sA, time, error)
 
 
     implicit none
@@ -1094,6 +1102,7 @@ contains
 !                  sV
 !
     real(kind=wp), intent(in) :: sA(:)
+    REAL(kind=WP), intent(in) :: time
     real(kind=wp), DIMENSION(NZ2_G) :: power
     INTEGER(HID_T) :: file_id       ! File identifier
     INTEGER(HID_T) :: dset_id       ! Dataset identifier 
@@ -1103,7 +1112,6 @@ contains
     INTEGER(HID_T) :: aspace_id     ! Attribute Dataspace identifier
     INTEGER(HID_T) :: atype_id      ! Attribute Data type identifier
     INTEGER(HID_T) :: group_id      ! Group identifier
-    integer(kind=ip), intent(in) :: iStep
 ! may yet need this, but field data is not separated amongst cores
 !    logical, intent(in) :: qSeparate
     CHARACTER(LEN=5), PARAMETER :: dsetname = "Power"     ! Dataset name
@@ -1126,7 +1134,7 @@ contains
     REAL(kind=WP), ALLOCATABLE :: limdata (:)  ! Data to write
     INTEGER(kind=IP), ALLOCATABLE :: numcelldata (:)  ! Data to write
     ! Local vars    integer :: error ! Error flag
-    integer :: error ! Error flag
+    integer(kind=ip) :: error ! Error flag
 
    
 !Fields are all available to rank zero, and we will worry about
@@ -1135,7 +1143,7 @@ contains
       CALL gPower(sA,power)
       dims = (/NZ2_G/) ! Dataset dimensions
 
-      filename = ( 'Power_' // &
+      filename = ( trim(adjustl(zFilename_G)) // '_Power_' // &
         trim(adjustl(IntegerToString(tProcInfo_G%Rank))) &
         // '_' //trim(adjustl(IntegerToString(iStep))) &
         // '.h5' )
@@ -1299,68 +1307,9 @@ contains
    Print*,'hdf5_puff:outputH5power(close dataset work on groups)'
     Print*,error
  
+! Call the subroutine to create the time group
+    CALL writeH5TimeGroup(file_id, timegrpname, time, 'outputH5Power', error)
 
-! with the main dataset done we work on the other groups with attributes
-! We make a group
-    CALL h5gcreate_f(file_id, timegrpname, group_id, error)
-!   Print*,'hdf5_puff:outputH5power(group timegrpname created)'
-!    Print*,error
-    CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
-!   Print*,'hdf5_puff:outputH5power(set timegrpname type)'
-!    Print*,error
-    CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
-!    Print*,'hdf5_puff:outputH5power(string padding enabled)'
-    aname="vsType"
-    attr_data_string="time"
-    attr_string_len=4
-    CALL h5tset_size_f(atype_id, attr_string_len, error)
-!   Print*,'hdf5_puff:outputH5power(set timegrpname size)'
-!    Print*,error
-    CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
-    Print*,'hdf5_puff:outputH5power(scalar attribute space created)'
-    Print*,error   
-    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
-   Print*,'hdf5_puff:outputH5power(create timegrpname time attribute)'
-    Print*,error
-    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
-   Print*,'hdf5_puff:outputH5power(write timegrpname time attribute)'
-    Print*,error
-    CALL h5aclose_f(attr_id, error)
-   Print*,'hdf5_puff:outputH5power(close timegrpname time attribute)'
-    Print*,error
-
-    CALL h5tclose_f(atype_id, error)
-   Print*,'hdf5_puff:outputH5power(close timegrpname time attributetype )'
-    Print*,error
-
-    CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
-    aname="vsTime"
-    attr_data_double=1.0*iStep*sStepSize/c
-    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
-    Print*,error
-    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
-    Print*,error
-    CALL h5aclose_f(attr_id, error)
-    Print*,error
-    CALL h5tclose_f(atype_id, error)
-    Print*,error
-    CALL h5tcopy_f(H5T_NATIVE_INTEGER, atype_id, error)
-    Print*,error
-    aname="vsStep"
-    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
-    Print*,error
-    Print*,'Creating vsStep'
-    CALL h5awrite_f(attr_id, atype_id, iStep, adims, error) 
-    Print*,error
-    Print*,'Writing vsStep'
-    CALL h5tclose_f(atype_id, error)
-    CALL h5aclose_f(attr_id, error)
-    Print*,error
-    Print*,'Closing vsStep'
-    Print*,error
-    CALL h5gclose_f(group_id, error)
-    Print*,'Closing timeGroup'
-    Print*,error
 
 ! We make another group
     CALL h5gcreate_f(file_id, limgrpname, group_id, error)
@@ -1535,6 +1484,91 @@ contains
 
   end subroutine outputH5Power
 
+  subroutine writeH5TimeGroup(file_id, timegrpname, time, callerstr, error)
+
+    INTEGER(HID_T) :: file_id       ! File identifier
+    CHARACTER(LEN=4), intent(in) :: timegrpname  ! Group name
+    REAL(kind=WP), intent(in) :: time ! Current time
+    CHARACTER(LEN=12), intent(in) :: callerstr
+    INTEGER(kind=ip) :: error
+!
+! Local
+    INTEGER(HID_T) :: attr_id       ! Attribute identifier
+    INTEGER(HID_T) :: aspace_id     ! Attribute Dataspace identifier
+    INTEGER(HID_T) :: atype_id      ! Attribute Data type identifier
+    INTEGER(HID_T) :: group_id      ! Group identifier
+    INTEGER     ::   rank = 1               ! Dataset rank
+    INTEGER(HSIZE_T), DIMENSION(1) :: adims ! Attribute dims
+    REAL(kind=WP) :: attr_data_double
+    CHARACTER(LEN=100) :: attr_data_string
+    INTEGER(HSIZE_T) :: attr_string_len
+    INTEGER(kind=IP) :: numSpatialDims = 1   ! Attr content,  
+    INTEGER     ::  arank = 1               ! Attribute Dataset rank
+    CHARACTER(LEN=16) :: aname   ! Attribute name
+
+! with the main dataset done we work on the other groups with attributes
+! We make a group
+    CALL h5gcreate_f(file_id, timegrpname, group_id, error)
+!   Print*,'hdf5_puff:outputH5power(group timegrpname created)'
+!    Print*,error
+    CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
+!   Print*,'hdf5_puff:outputH5power(set timegrpname type)'
+!    Print*,error
+    CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
+!    Print*,'hdf5_puff:outputH5power(string padding enabled)'
+    aname="vsType"
+    attr_data_string="time"
+    attr_string_len=4
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+!   Print*,'hdf5_puff:outputH5power(set timegrpname size)'
+!    Print*,error
+    CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
+    Print*,'hdf5_puff:outputH5power(scalar attribute space created)'
+    Print*,error   
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    Print*,'hdf5_puff:outputH5power(create timegrpname time attribute)'
+    Print*,error
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    Print*,'hdf5_puff:outputH5power(write timegrpname time attribute)'
+    Print*,error
+    CALL h5aclose_f(attr_id, error)
+    Print*,'hdf5_puff:outputH5power(close timegrpname time attribute)'
+    Print*,error
+
+    CALL h5tclose_f(atype_id, error)
+    Print*,'hdf5_puff:outputH5power(close timegrpname time attributetype )'
+    Print*,error
+
+    CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
+    aname="vsTime"
+    attr_data_double=time
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    Print*,error
+    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
+    Print*,error
+    CALL h5aclose_f(attr_id, error)
+    Print*,error
+    CALL h5tclose_f(atype_id, error)
+    Print*,error
+    CALL h5tcopy_f(H5T_NATIVE_INTEGER, atype_id, error)
+    Print*,error
+    aname="vsStep"
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    Print*,error
+    Print*,'Creating vsStep'
+    CALL h5awrite_f(attr_id, atype_id, iCSteps, adims, error) 
+    Print*,error
+    Print*,'Writing vsStep'
+    CALL h5tclose_f(atype_id, error)
+    CALL h5aclose_f(attr_id, error)
+    Print*,error
+    Print*,'Closing vsStep'
+    Print*,error
+    CALL h5gclose_f(group_id, error)
+    Print*,'Closing timeGroup'
+    Print*,error
+
+  end subroutine writeH5TimeGroup
 !  subroutine createH5Files(tArrayY, zDFName, zOptionalString, qOK)
 !
 !    implicit none
