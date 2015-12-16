@@ -72,7 +72,6 @@ MODULE Setup
 
   CALL getarg(1,infile)
   zFileName = infile
-  zFileName_G = zFileName
 
   IF (infile == emptstring) THEN
 
@@ -83,6 +82,8 @@ MODULE Setup
 
   CALL FileNameNoExtension(zFileName, zFile, qOKL)
   IF (.NOT. qOKL) GOTO 1000
+
+  zFileName_G = zFile
 
 !     Initialise Error log for this run
 
