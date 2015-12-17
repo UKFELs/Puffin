@@ -64,8 +64,9 @@ real(kind=wp), allocatable :: sSigFj_G(:) ! sigma of gaussian tail off
 
 
 
+integer(kind=ip) :: npts_I_G    !  Specifying mesh 4 current calculation
 
-
+real(kind=wp) :: dz2_I_G
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! electron vars

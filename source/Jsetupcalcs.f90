@@ -228,9 +228,12 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 
 
 
-    call initPFile(tPowF, qFormatted) ! initialize power file type
-    
+    dz2_I_G = sLengthOfElmZ2_G
+    call getCurrNpts(dz2_I_G, npts_I_G)
 
+
+
+    call initPFile(tPowF, qFormatted) ! initialize power file type
 
     tArrayE(:)%tFileType%qFormatted = qFormatted
     tArrayA(:)%tFileType%qFormatted = qFormatted
