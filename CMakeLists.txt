@@ -81,6 +81,7 @@ set(HAVE_CMAKE 1 CACHE STRING "Whether built with CMake")
 configure_file(config-cmake.h.in config.h)
 
 add_subdirectory(source)
+install (DIRECTORY utilities DESTINATION bin)
 install (DIRECTORY inputs/example/ DESTINATION examples)
 install (DIRECTORY inputs/gen/ DESTINATION python)
 
