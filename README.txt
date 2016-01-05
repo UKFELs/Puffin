@@ -15,12 +15,14 @@ The only external package now required is FFTW v2.1.5.
 The sub-directories include:
 
 
-  source/  -  This contains the main source code written in C 
-              and Fortran 90.
+  source/    -  This contains the main source code written in C 
+                and Fortran 90.
 
-  compile/ -  Some example compilation and linking scripts.
+  compile/   -  Some example compilation and linking scripts.
   
-  inputs/  -  Some example input files.
+  inputs/    -  Some example input files.
+  
+  utilities/ -  Python scripts to manipulate output files
 
 
 Basic operation involves 3 input files. The three files are:
@@ -106,8 +108,22 @@ module load compilers/gcc/4.6.2
 module load mpi/gcc/openmpi/1.6
 module load /libs/gcc/fftw2/double-mpi/2.1.5
 
-You may wish to put these commands into your .bashrc script (or
-equivalent) to save typing this every time you log in.
+By default, Puffin will create SDDS files, which may be
+postprocessed using the SDDS toolkit from Argonne National Lab.
+If you have the hdf5 library available, Puffin can be built to 
+produce hdf5 output, which aids visualisation using MATLAB, 
+VisIt, paraview, matplotlib or other tools.
+
+You may wish to put these commands to set your environment into 
+your .bashrc script (or equivalent) to save typing this every time
+you log in.
+
+If you do not have these built, you may either contact your
+system administrator or build these yourself using the bilder
+package management system.
+
+To build the software itself you can use cmake, or the scripts
+provided.
 
 The example job submission script lanches a job on 1 node, using 12 
 processes. The line
@@ -143,7 +159,7 @@ nodes, to maximize the RAM for each process.
 
 Puffin is the result of work performed by a group of people 
 at the University of Strathclyde over the period
-2005-2013. A brief history is as follows:
+2005-2016. A brief history is as follows:
 
 The code had its origins in a 1D version briefly described in:
 BWJ McNeil, GRM Robb and D Jaroszynski,
