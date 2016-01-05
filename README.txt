@@ -108,18 +108,18 @@ module load compilers/gcc/4.6.2
 module load mpi/gcc/openmpi/1.6
 module load /libs/gcc/fftw2/double-mpi/2.1.5
 
-By default, Puffin will create SDDS files, which may be
+By default, Puffin will create SDDS[1] files, which may be
 postprocessed using the SDDS toolkit from Argonne National Lab.
-If you have the hdf5 library available, Puffin can be built to 
-produce hdf5 output, which aids visualisation using MATLAB, 
-VisIt, paraview, matplotlib or other tools.
+If you have the hdf5[2] library available, Puffin can be built to 
+produce hdf5 output, which aids visualisation using VisIt[3], 
+paraview, matplotlib, MATLAB (R) or other tools.
 
 You may wish to put these commands to set your environment into 
 your .bashrc script (or equivalent) to save typing this every time
 you log in.
 
 If you do not have these built, you may either contact your
-system administrator or build these yourself using the bilder
+system administrator or build these yourself using the bilder[4]
 package management system.
 
 To build the software itself you can use cmake, or the scripts
@@ -206,3 +206,8 @@ The only external package now required by Puffin is FFTW.
 Contact Information:
 Dr Lawrence Campbell:	lawrence.campbell@strath.ac.uk
 Dr Brian McNeil:		b.w.j.mcneil@strath.ac.uk
+
+[1] http://www.aps.anl.gov/Accelerator_Systems_Division/Accelerator_Operations_Physics/SDDSInfo.shtml
+[2] https://www.hdfgroup.org/HDF5/
+[3] https://visit.llnl.gov/
+[4] https://ice.txcorp.com:3000/projects/bilder/wiki
