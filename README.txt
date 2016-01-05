@@ -1,7 +1,7 @@
-==================== Puffin v1.4.0 ======================
+==================== Puffin v1.5.1 ======================
 
 The code 'Puffin' solves the unaveraged 3D FEL system of equations. 
-The code requires FFTW_2.5.1 and uses MPI.
+The code requires FFTW_2.1.5 and uses MPI.
 
 Puffin (Parallel Unaveraged Fel INtegrator) is described in:-
 LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
