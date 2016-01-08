@@ -21,6 +21,7 @@ integer(kind=ipl) :: i
 real(kind=wp) :: locz2
 
 
+!$OMP DO PRIVATE(z2node, locz2)
   do i = 1, maxEl
     if (i<=procelectrons_G(1)) then 
 
@@ -34,22 +35,9 @@ real(kind=wp) :: locz2
       lis_GR(1,i) = (1.0_wp - locz2/dz2)
       lis_GR(2,i) = 1 - lis_GR(1,i)
 
-!        z2node = floor(sz2(i)  / dz2)  + 1_IP
-!        locz2 = sz2(i) - REAL(z2node  - 1_IP, kind=wp) * sLengthOfElmZ2_G
-    
-!        li1 = (1.0_wp - locz2/sLengthOfElmZ2_G)
-!        li2 = 1 - li1
-
-
-        !z2node = floor(sz2(i)  / dz2)  + 1_IP
-        !locz2 = sz2(i) - REAL(z2node  - 1_IP, kind=wp) * sLengthOfElmZ2_G
-    
-        !li1 = (1.0_wp - locz2/sLengthOfElmZ2_G)
-        !li2 = 1 - li1
-
     end if
   end do
-
+!$OMP END DO
 
 
 end subroutine getInterps_1D
@@ -72,6 +60,7 @@ use rhs_vars
 real(kind=wp), intent(in) :: sA(:)
 integer(kind=ip) :: i
 
+!$OMP DO
   do i = 1, maxEl
   
     if (i<=procelectrons_G(1)) then
@@ -85,11 +74,7 @@ integer(kind=ip) :: i
     end if
   
   end do 
-!        sField4ElecReal(i) = li1 * sA(p_nodes(i)) + sField4ElecReal(i)
-!        sField4ElecReal(i) = li2 * sA(p_nodes(i) + 1_ip) + sField4ElecReal(i)
-!    
-!        sField4ElecImag(i) = li1 * sA(p_nodes(i) + retim) + sField4ElecImag(i)
-!        sField4ElecImag(i) = li2 * sA(p_nodes(i) + retim + 1_ip) + sField4ElecImag(i)
+!$OMP END DO
 
 end subroutine getFFelecs_1D
 
@@ -113,6 +98,7 @@ integer(kind=ipl) :: i
 real(kind=wp) :: dadzRInst, dadzIInst
 
 
+!$OMP DO PRIVATE(dadzRInst, dadzIInst)
   do i = 1, maxEl
   
     if (i<=procelectrons_G(1)) then
@@ -122,10 +108,12 @@ real(kind=wp) :: dadzRInst, dadzIInst
 
       dadzRInst = ((s_chi_bar_G(i)/dV3) * (1 + seta * sp2(i) ) &
                         * spr(i) / sgam(i) )
-    
+      
+      !$OMP ATOMIC
       sDADz(p_nodes(i)) =                         &
         lis_GR(1,i) * dadzRInst + sDADz(p_nodes(i))
       
+      !$OMP ATOMIC
       sDADz(p_nodes(i) + 1_ip) =                  &
         lis_GR(2,i) * dadzRInst + sDADz(p_nodes(i) + 1_ip)                
 
@@ -134,16 +122,20 @@ real(kind=wp) :: dadzRInst, dadzIInst
 
       dadzIInst = ((s_chi_bar_G(i)/dV3) * (1 + seta * sp2(i) ) &
                         * spi(i) / sgam(i) ) 
-    
+      
+      !$OMP ATOMIC
       sDADz(p_nodes(i) + retim) =                             & 
         lis_GR(1,i) * dadzIInst + sDADz(p_nodes(i) + retim)                        
 
+      !$OMP ATOMIC
       sDADz(p_nodes(i) + 1_ip + retim) =                      & 
         lis_GR(2,i) * dadzIInst + sDADz(p_nodes(i) + 1_ip + retim)
 
     end if
   
   end do 
+!$OMP END DO
+
 
 end subroutine getSource_1D
 
