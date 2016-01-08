@@ -108,11 +108,11 @@ contains
   
   if (tTransInfo_G%qOneD) then
 
-! !DIR$ SIMD
+!$OMP WORKSHARE
  
     p_nodes = floor(sz2 / dz2) + 1_IP
 
-! !DIR$ END SIMD
+!$OMP END WORKSHARE
 
 
   else
