@@ -1,7 +1,6 @@
 enable_language(Fortran)
 set (C_SOURCES "AIO.c")
-
-FILE(GLOB F_SOURCES *.f90)
+FILE(GLOB F_SOURCES *.f90 ${PROJECT_BINARY_DIR}/source/hdf5_puff.f90)
 
 #
 # USE_MKL to be set by user, but actually a flag not just for MKL but for other openMP options

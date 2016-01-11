@@ -156,7 +156,7 @@ contains
     character(32_IP), intent(in) :: zDFName
     logical, intent(in) :: qSep
     logical, intent(inout) :: qOK
-    integer :: error
+    integer :: error, numSpatialDims
     logical :: qWriteInt, qWriteFull
     real(kind=wp) :: time
     error = 0
@@ -164,9 +164,15 @@ contains
       time = real(iCSteps,kind=wp)*sStepSize*lg_G/c
       call outputH5BeamFiles(time, error)
       if (error .ne. 0) goto 1000
-
-      call outputH5Field(sA, time, error)
+    if (qONED_G) then
+      numSpatialDims=1
+      print *,'2 component 1D field output not currently supported'
+    else
+      numSpatialDims=3
+      call outputH5Field3D(sA, time, error)
       if (error .ne. 0) goto 1000
+    end if
+
 
 
 !      call outputH5Z(sZ, tArrayZ, iStep, qSep, zDFName, qOKL)
@@ -177,6 +183,7 @@ contains
     if (qWriteInt) then
 ! For starters, write on rank 0 only
       if (tProcInfo_G%qRoot) then
+           time = real(iCSteps,kind=wp)*sStepSize*lg_G/c
            CALL gPower(sA,power)
            call outputH5Field1DFloat(power, 'Power', time, error)
       if (error .ne. 0) goto 1000
@@ -444,7 +451,7 @@ contains
 ! integers done, move onto floats
     CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
     aname="time"
-    attr_data_double=real(iStep,kind=wp)*sStepSize*lg_G/c
+    attr_data_double=time
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
     CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
     CALL h5aclose_f(attr_id, error)
@@ -480,7 +487,7 @@ contains
 !    Print*,'hdf5_puff:outputH5BeamFiles(lables attribute closed)'
     aname="vsType"
     attr_data_string="variableWithMesh"
-    attr_string_len=16
+    attr_string_len=len(attr_data_string)
     CALL h5tset_size_f(atype_id, attr_string_len, error)
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
 !    Print*,'hdf5_puff:outputH5BeamFiles(type attribute created)'
@@ -491,14 +498,14 @@ contains
     print*,error
     aname="vsTimeGroup"
     attr_data_string="time"
-    attr_string_len=4
+    attr_string_len=len(attr_data_string)
     CALL h5tset_size_f(atype_id, attr_string_len, error)
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
     CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
     CALL h5aclose_f(attr_id, error)
     aname="vsLimits"
     attr_data_string="globalLimits"
-    attr_string_len=12
+    attr_string_len=len(attr_data_string)
     CALL h5tset_size_f(atype_id, attr_string_len, error)
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
     CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
@@ -506,6 +513,10 @@ contains
 ! Write time Group
 
     CALL writeH5TimeGroup(file_id, timegrpname, time, 'outputH5Beam', error)
+
+! Write run info
+    CALL writeH5RunInfo(file_id, 'outputH5FieldBeam', error)
+
 
 ! We make another group
     CALL h5gcreate_f(file_id, limgrpname, group_id, error)
@@ -703,7 +714,7 @@ contains
 !
     CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
     aname="time"
-    attr_data_double=1.0*iStep*sStepSize/c
+    attr_data_double=time
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
 !    Print*,'hdf5_puff:outputH5Field(time attrib created)'
     CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
@@ -809,7 +820,7 @@ contains
 
 	  CALL writeH5RunInfo(file_id, 'outputH5Field3D', error)
 	
-	  CALL writeH5Field3DderivedVars(file_id, error)
+!	  CALL writeH5Field3DderivedVars(file_id, error)
 	
 ! We make another group
     CALL h5gcreate_f(file_id, limgrpname, group_id, error)
@@ -1175,8 +1186,12 @@ contains
     Print*,error
  
 ! Call the subroutine to create the time group
-    CALL writeH5TimeGroup(file_id, timegrpname, &
-	  time, trim(adjustl(dsetname)), error)
+! CALL writeH5TimeGroup(file_id, timegrpname, simtime, trim(adjustl(dsetname)), error)
+  CALL writeH5TimeGroup(file_id, timegrpname, simtime, '1Dfield', error)
+
+  CALL writeH5RunInfo(file_id, 'outputH5Field3D', error)
+	
+!	  CALL writeH5Field3DderivedVars(file_id, error)
 
 ! CALL writeH5LimitsMesh1D
 	
@@ -1356,11 +1371,11 @@ contains
 
   end subroutine outputH5Field1DFloat
 
-  subroutine writeH5TimeGroup(file_id, timegrpname, time, callerstr, error)
+  subroutine writeH5TimeGroup(file_id, timegrpname, simtime, callerstr, error)
 
     INTEGER(HID_T) :: file_id       ! File identifier
     CHARACTER(LEN=4), intent(in) :: timegrpname  ! Group name
-    REAL(kind=WP), intent(in) :: time ! Current time
+    REAL(kind=WP), intent(in) :: simtime ! Current time
     CHARACTER(LEN=12), intent(in) :: callerstr
     INTEGER(kind=ip) :: error
 !
@@ -1390,7 +1405,7 @@ contains
 !    Print*,'hdf5_puff:outputH5power(string padding enabled)'
     aname="vsType"
     attr_data_string="time"
-    attr_string_len=4
+    attr_string_len=len(attr_data_string)
     CALL h5tset_size_f(atype_id, attr_string_len, error)
 !   Print*,'hdf5_puff:outputH5power(set timegrpname size)'
 !    Print*,error
@@ -1398,13 +1413,13 @@ contains
     Print*,('hdf5_puff:' // callerstr // '(scalar attr space created)')
     Print*,error   
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
-    Print*,'hdf5_puff:' // callerstr // '(create timegrpname time attr)'
+    Print*,'hdf5_puff:' // callerstr // '(create timegrp vstype at)'
     Print*,error
     CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
-    Print*,'hdf5_puff:' // callerstr // '(write timegrpname time attr)'
+    Print*,'hdf5_puff:' // callerstr // '(write timegrp vstype attr)'
     Print*,error
     CALL h5aclose_f(attr_id, error)
-    Print*,'hdf5_puff:' // callerstr // '(close timegrpname time attr)'
+    Print*,'hdf5_puff:' // callerstr // '(close timegrp vstype attr)'
     Print*,error
 
     CALL h5tclose_f(atype_id, error)
@@ -1413,13 +1428,16 @@ contains
 
     CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
     aname="vsTime"
-    attr_data_double=time
+    attr_data_double=simtime
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
-!    Print*,error
+    print*,'hdf5_puff:' // callerstr // ' create vstime attribute'
+    Print*,error
     CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
-!    Print*,error
+    print*,'hdf5_puff:' // callerstr // ' write vstime attribute'
+    Print*,error
     CALL h5aclose_f(attr_id, error)
-!    Print*,error
+    print*,'hdf5_puff:' // callerstr // ' close vstime attribute'
+    Print*,error
     CALL h5tclose_f(atype_id, error)
 !    Print*,error
     CALL h5tcopy_f(H5T_NATIVE_INTEGER, atype_id, error)
@@ -1492,7 +1510,79 @@ contains
     CALL h5aclose_f(attr_id, error)
 
     aname="vsSwVersion"
-    attr_data_string=Puffin_VERSION_MAJOR 
+    attr_data_string='@Puffin_VERSION_MAJOR@.@Puffin_VERSION_MINOR@.@Puffin_VERSION_PATCH@' 
+    attr_string_len=len(attr_data_string)
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+
+    aname="vsVsVersion"
+    attr_data_string='2.1' 
+    attr_string_len=len(attr_data_string)
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+
+    aname="vsFCompiler"
+    attr_data_string='@Fortran_COMPILER_NAME@' 
+    attr_string_len=len(attr_data_string)
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+
+    aname="vsFCompilerVersion"
+    attr_data_string='@Fortran_VERSION@' 
+    attr_string_len=len(attr_data_string)
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+
+    aname="vsFCompilerFlags"
+    attr_data_string='@CMAKE_Fortran_FLAGS@' 
+    attr_string_len=len(attr_data_string)
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+
+    aname="vsBuildHost"
+    attr_data_string='@UQHOSTNAME@' 
+    attr_string_len=len(attr_data_string)
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+
+    aname="vsBuildHostType"
+    attr_data_string='@HOSTTYPE@' 
+    attr_string_len=len(attr_data_string)
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+
+    aname="vsInputFile"
+    attr_data_string=zFilename_G
+    attr_string_len=len(attr_data_string)
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+
+    aname="vsBeamFile"
+    attr_data_string=zBFile_G
+    attr_string_len=len(attr_data_string)
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+
+    aname="vsSeedFile"
+    attr_data_string=zSFile_G
     attr_string_len=len(attr_data_string)
     CALL h5tset_size_f(atype_id, attr_string_len, error)
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
@@ -1502,22 +1592,23 @@ contains
     CALL h5tclose_f(atype_id, error)
 !    CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
 !    Print*,error
-    CALL h5tcopy_f(H5T_NATIVE_INTEGER, atype_id, error)
-    Print*,error
-    aname="vsStep"
-    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+
+!    CALL h5tcopy_f(H5T_NATIVE_INTEGER, atype_id, error)
+!    Print*,error
+!    aname="vsStep"
+!    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
 !    Print*,error
 !    Print*,'Creating vsStep'
-    CALL h5awrite_f(attr_id, atype_id, iCSteps, adims, error) 
+!    CALL h5awrite_f(attr_id, atype_id, iCSteps, adims, error) 
 !    Print*,error
 !    Print*,'Writing vsStep'
-    CALL h5tclose_f(atype_id, error)
-    CALL h5aclose_f(attr_id, error)
+!    CALL h5tclose_f(atype_id, error)
+!    CALL h5aclose_f(attr_id, error)
 !    Print*,error
 !    Print*,'Closing vsStep'
 !    Print*,error
     CALL h5gclose_f(group_id, error)
-    Print*,'Closing timeGroup'
+    Print*,'Closing runInfo'
     Print*,error
 
   end subroutine writeH5RunInfo

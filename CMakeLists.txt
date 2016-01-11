@@ -79,7 +79,7 @@ set(HAVE_CMAKE 1 CACHE STRING "Whether built with CMake")
 #
 ######################################################################
 configure_file(config-cmake.h.in config.h)
-
+configure_file(source/hdf5_puff.f90.in source/hdf5_puff.f90)
 add_subdirectory(source)
 install (DIRECTORY utilities DESTINATION bin)
 install (DIRECTORY inputs/example/ DESTINATION examples)
