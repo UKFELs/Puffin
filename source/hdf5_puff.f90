@@ -177,11 +177,11 @@ contains
     if (qWriteInt) then
 ! For starters, write on rank 0 only
       if (tProcInfo_G%qRoot) then
-            CALL gPower(sA,power)
-            call outputH5Field1DFloat(power, 'Power', time, error)
+           CALL gPower(sA,power)
+           call outputH5Field1DFloat(power, 'Power', time, error)
       if (error .ne. 0) goto 1000
-           call getCurr(dz2_I_G, Iarray)
-		   call outputH5Field1DFloat(Iarray, 'Current', time, error)
+!           call getCurr(dz2_I_G, Iarray)
+!           call outputH5Field1DFloat(Iarray, 'Current', time, error)
       if (error .ne. 0) goto 1000
 		   !           call outputH5Current
 !       not yet implemented
@@ -1003,7 +1003,7 @@ contains
 !
     real(kind=wp), intent(in) :: writeData(:)
     REAL(kind=WP), intent(in) :: time
-    CHARACTER(LEN=16), intent(in) :: dsetname     ! Dataset name
+    CHARACTER(LEN=*), intent(in) :: dsetname  ! Dataset name
     INTEGER(HID_T) :: file_id       ! File identifier
     INTEGER(HID_T) :: dset_id       ! Dataset identifier 
     INTEGER(HID_T) :: dspace_id     ! Dataspace identifier in memory
@@ -1041,13 +1041,14 @@ contains
     if (tProcInfo_G%qRoot) then
       dims = size(writeData) ! Dataset dimensions
 
-      filename = ( trim(adjustl(zFilename_G)) // '_' // dsetname & 
+      filename = ( trim(adjustl(zFilename_G)) // '_' // trim(adjustl(dsetname)) & 
 	    // '_' // trim(adjustl(IntegerToString(tProcInfo_G%Rank))) &
         // '_' //trim(adjustl(IntegerToString(iStep))) &
         // '.h5' )
       PRINT *,'size of writeData'
-	  PRINT *, trim(adjustl(dsetname))
+      PRINT *, trim(adjustl(dsetname))
       PRINT *, dims
+      PRINT *, len(trim(adjustl(dsetname)))
       CALL h5open_f(error)
 !
 ! Create a new file using default properties.
@@ -1063,7 +1064,7 @@ contains
 !
 ! Create the dataset with default properties.
 !
-      CALL h5dcreate_f(file_id, dsetname, H5T_NATIVE_DOUBLE, filespace, &
+      CALL h5dcreate_f(file_id, trim(adjustl(dsetname)), H5T_NATIVE_DOUBLE, filespace, &
        dset_id, error)
       Print*,'hdf5_puff:outputH5power(dataset created)'
       Print*,error
@@ -1114,8 +1115,8 @@ contains
     CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
 !    Print*,'hdf5_puff:outputH5BeamFiles(atype_id set to string)'
     aname="vsLabels"
-    attr_data_string=trim(dsetname)
-    attr_string_len=len_trim(dsetname) 
+    attr_data_string=trim(adjustl(dsetname))
+    attr_string_len=len(trim(adjustl(dsetname))) 
     CALL h5tset_size_f(atype_id, attr_string_len, error)
     Print*,'hdf5_puff:outputH5power(string length declared)'
     CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
@@ -1162,7 +1163,7 @@ contains
     Print*,'hdf5_puff:outputH5power(time group name being written)'
 !
     Print*,len(timegrpname) 
-	print*, ' need to figure length of string. len'
+	print*, ' need to figure length of tstring. len'
     Print*,len_trim(timegrpname) 
 	print*, ' need to figure len_trim'
 !
@@ -1178,7 +1179,7 @@ contains
     Print*,error
     aname="vsLimits"
     Print*,len(limgrpname) 
-	print*, ' need to figure length of string. len'
+	print*, ' need to figure length of limstring. len'
     Print*,len_trim(limgrpname) 
 	print*, ' need to figure len_trim'
 !    attr_data_string=limgrpname
@@ -1213,7 +1214,7 @@ contains
     Print*,error
  
 ! Call the subroutine to create the time group
-    CALL writeH5TimeGroup(file_id, timegrpname, time, dsetname, error)
+    CALL writeH5TimeGroup(file_id, timegrpname, time, trim(adjustl(dsetname)), error)
 
 ! CALL writeH5LimitsMesh1D
 	
@@ -1349,7 +1350,7 @@ contains
     aname="vsUpperBounds"
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
     Print*,'hdf5_puff:outputH5Field1DFloat(mesh upper bounds attribute' &
-         // 'created)' // dsetname
+         // 'created)' // trim(adjustl(dsetname))
     limdata(1)=real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G
     CALL h5awrite_f(attr_id, atype_id, limdata, adims, error) 
     CALL h5aclose_f(attr_id, error)
@@ -1368,7 +1369,7 @@ contains
     aname="vsNumCells"
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
     Print*,'hdf5_puff:outputH5Field1DFloat(numcells attribute ' &
-	  // 'created)' // dsetname
+	  // 'created)' // trim(adjustl(dsetname))
     numcelldata(1)=NZ2_G-1
     CALL h5awrite_f(attr_id, atype_id, numcelldata, adims, error) 
     CALL h5aclose_f(attr_id, error)
