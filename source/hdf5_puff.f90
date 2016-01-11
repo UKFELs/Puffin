@@ -150,7 +150,7 @@ contains
 
     real(kind=wp), intent(in) :: sA(:), sZ
     real(kind=wp), DIMENSION(NZ2_G) :: power ! power data
-    real(kind=wp), DIMENSION(dz2_I_G) :: Iarray ! current data
+    real(kind=wp), DIMENSION(npts_I_G) :: Iarray ! current data
     type(cArraySegment), intent(inout) :: tArrayA(:), tArrayE(:), tArrayZ
     integer(kind=ip), intent(in) :: iIntWr, iWr
     character(32_IP), intent(in) :: zDFName
@@ -178,7 +178,7 @@ contains
 ! For starters, write on rank 0 only
       if (tProcInfo_G%qRoot) then
             CALL gPower(sA,power)
-            call outputH5Field1DFLoat(power, 'Power', time, error)
+            call outputH5Field1DFloat(power, 'Power', time, error)
       if (error .ne. 0) goto 1000
            call getCurr(dz2_I_G, Iarray)
 		   call outputH5Field1DFloat(Iarray, 'Current', time, error)
@@ -1003,6 +1003,7 @@ contains
 !
     real(kind=wp), intent(in) :: writeData(:)
     REAL(kind=WP), intent(in) :: time
+    CHARACTER(LEN=16), intent(in) :: dsetname     ! Dataset name
     INTEGER(HID_T) :: file_id       ! File identifier
     INTEGER(HID_T) :: dset_id       ! Dataset identifier 
     INTEGER(HID_T) :: dspace_id     ! Dataspace identifier in memory
@@ -1013,7 +1014,6 @@ contains
     INTEGER(HID_T) :: group_id      ! Group identifier
 ! may yet need this, but field data is not separated amongst cores
 !    logical, intent(in) :: qSeparate
-    CHARACTER(LEN=16), dsetname :: dsetname     ! Dataset name
     CHARACTER(LEN=16) :: aname   ! Attribute name
 !    character(32_IP), intent(in) :: zDFName
     character(32_IP) :: filename
@@ -1161,8 +1161,10 @@ contains
     attr_data_string=timegrpname
     Print*,'hdf5_puff:outputH5power(time group name being written)'
 !
-    Print*,len(timegrpname) // ' need to figure length of string. len'
-    Print*,len_trim(timegrpname) // ' need to figure len_trim'
+    Print*,len(timegrpname) 
+	print*, ' need to figure length of string. len'
+    Print*,len_trim(timegrpname) 
+	print*, ' need to figure len_trim'
 !
     attr_string_len=4
     CALL h5tset_size_f(atype_id, attr_string_len, error)
@@ -1175,8 +1177,10 @@ contains
     Print*,'hdf5_puff:outputH5power(time group attributes closed)'
     Print*,error
     aname="vsLimits"
-    Print*,len(limgrpname) // ' need to figure length of string. len'
-    Print*,len_trim(limgrpname) // ' need to figure len_trim'
+    Print*,len(limgrpname) 
+	print*, ' need to figure length of string. len'
+    Print*,len_trim(limgrpname) 
+	print*, ' need to figure len_trim'
 !    attr_data_string=limgrpname
     attr_string_len=12
     CALL h5tset_size_f(atype_id, attr_string_len, error)
