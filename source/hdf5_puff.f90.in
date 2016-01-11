@@ -1117,21 +1117,21 @@ contains
     CALL h5aclose_f(attr_id, error)
     aname="vsType"
     attr_data_string="variable"
-    attr_string_len=len(attr_data_string)
+    attr_string_len=len(trim(adjustl(attr_data_string)))
     CALL h5tset_size_f(atype_id, attr_string_len, error)
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
     CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
     CALL h5aclose_f(attr_id, error)
     aname="vsCentering"
     attr_data_string="nodal"
-    attr_string_len=len(attr_data_string)
+    attr_string_len=len(trim(adjustl(attr_data_string)))
     CALL h5tset_size_f(atype_id, attr_string_len, error)
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
     CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
     CALL h5aclose_f(attr_id, error)
     aname="vsIndexOrder"
     attr_data_string="compMinorC"
-    attr_string_len=len(attr_data_string)
+    attr_string_len=len(trim(adjustl(attr_data_string)))
     CALL h5tset_size_f(atype_id, attr_string_len, error)
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
 !    Print*,'hdf5_puff:outputH5BeamFiles(type attribute created)'
@@ -1191,7 +1191,7 @@ contains
 
   CALL writeH5RunInfo(file_id, 'outputH5Field3D', error)
 	
-!	  CALL writeH5Field3DderivedVars(file_id, error)
+! CALL writeH5Field1DderivedVars(file_id, error)
 
 ! CALL writeH5LimitsMesh1D
 	
@@ -1478,7 +1478,7 @@ contains
     INTEGER(HSIZE_T) :: attr_string_len
     INTEGER(kind=IP) :: numSpatialDims = 1   ! Attr content,  
     INTEGER     ::  arank = 1               ! Attribute Dataset rank
-    CHARACTER(LEN=16) :: aname   ! Attribute name
+    CHARACTER(LEN=24) :: aname   ! Attribute name
 
 ! with the main dataset done we work on the other groups with attributes
 ! We make a group
