@@ -10,7 +10,7 @@
 Expects files in order basename_speciesname_procno_dumpstep.h5
 """
 
-import numpy,tables,glob,os
+import numpy,tables,glob,os,sys
 
 
 def getTimeSlices(baseName):
@@ -51,7 +51,10 @@ def getNumProcs(filelist,baseName,n):
     print "This isn't very good, is it!"   
   return numProcs, sorted(procNos)
 
-baseName="fig7_electrons"
+print "Got "+str(len(sys.argv))+" arguments"
+baseName=sys.argv[1]
+print "using baseName = "+baseName
+#baseName="fig7_electrons"
 #baseName="electrons"
 filelist, dumpStepNos=getTimeSlices(baseName)
 numProcs0, procNos0=getNumProcs(filelist,baseName,0)

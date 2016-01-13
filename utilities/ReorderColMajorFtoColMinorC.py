@@ -30,32 +30,59 @@ filename = sys.argv[1]
 print "Reorder rows and columns attempting to match against: "+filename
 
 if isvsh5suffix(filename):
-  outfilename = filename[:-5]+"C.vsh5"
-  print "vsh5"
-if ish5suffix(filename):
-  outfilename = filename[:-3]+"C.h5"
+  filenamepieces=filename.split('_')
+  print len(filenamepieces)
+  if len(filenamepieces)==4:
+    (simbase,dataset,rank,dumpnoAndExt)=filenamepieces
+  elif len(filenamepieces)==3:
+    (simbase,dataset,dumpnoAndExt)=filenamepieces
+#  outfilename = filename[:-5]+"C.vsh5"
+  else:
+    print "unknown file format - don't know how to tell dumps, rank, dataset from filename"
+    exit()
+  tdsetname=dataset+"N"
+  outfilename = simbase+"_"+dataset+"_C_"+dumpnoAndExt
+
+elif ish5suffix(filename):
+  filenamepieces=filename.split('_')
+  print len(filenamepieces)
+  if len(filenamepieces)==4:
+    (simbase,dataset,rank,dumpnoAndExt)=filenamepieces
+  elif len(filenamepieces)==3:
+    (simbase,dataset,dumpnoAndExt)=filenamepieces
+#  outfilename = filename[:-5]+"C.vsh5"
+  else:
+    print "unknown file format - don't know how to tell dumps, rank, dataset from filename"
+    exit()
+  tdsetname=dataset+"N"
+  outfilename = simbase+"_"+dataset+"_C_"+dumpnoAndExt
+else:
+  print"need to figure out if we're here, as there will be multiple output files"
 print outfilename
 
 tables.copy_file(filename,outfilename)
 h5=tables.open_file(outfilename,'r+')
-print h5.root.Aperp.shape
+print h5.root.APerp.shape
 
 # While this works it may be better to just read using numpy.asfortranarray() 
-# ie fieldin=numpy.asfortranarray(h5.root.Aperp.read()) or whatever actually works
-fieldin=h5.root.Aperp.read()
+# ie fieldin=numpy.asfortranarray(h5.root.APerp.read()) or whatever actually works
+fieldin=h5.root.APerp.read()
 print "fieldin shape "+str(fieldin.shape)
 testfield=numpy.asarray(fieldin, order='C')
 print "testfield shape"+str(testfield.shape)
+testfield=numpy.asfortranarray(fieldin)
+print "testfield shape"+str(testfield.shape)
 fieldout=numpy.zeros((fieldin.shape[3],fieldin.shape[2],fieldin.shape[1],fieldin.shape[0]))
-for i in range(fieldin.shape[2]):
-  for j in range(fieldin.shape[0]):
-    fieldout[j,:,i,:]=fieldin[i,:,j,:]
-#.reshape(numpy.array((h5.root.Aperp.shape[3],h5.root.Aperp.shape[2],h5.root.Aperp.shape[1],2)),order='F')
+print "fieldout shape"+str(fieldout.shape)
+for i in range(fieldin.shape[0]):
+  for j in range(fieldin.shape[2]):
+    fieldout[:,j,:,i]=fieldin[i,:,j,:].T
+#.reshape(numpy.array((h5.root.APerp.shape[3],h5.root.APerp.shape[2],h5.root.APerp.shape[1],2)),order='F')
 print fieldout.shape
 h5.create_array('/','APerpN',fieldout)
-h5.copy_node_attrs('/Aperp','/APerpN')
-h5.remove_node('/Aperp')
-h5.rename_node('/APerpN','Aperp')
-h5.root._v_children['Aperp']._v_attrs.vsIndexOrder="compMinorC"
+h5.copy_node_attrs('/APerp','/APerpN')
+h5.remove_node('/APerp')
+h5.rename_node('/APerpN','APerp')
+h5.root._v_children['APerp']._v_attrs.vsIndexOrder="compMinorC"
 h5.root._v_children['meshScaled']._v_attrs.vsIndexOrder="compMinorC"
 h5.close()

@@ -9,7 +9,7 @@
 
 This should write VizSchema file with aggregated power output
 """
-import numpy,tables,glob,os
+import numpy,tables,glob,os,sys
 
 def getTimeSlices(baseName):
   """ getTimeSlices(baseName) gets a list of files
@@ -59,9 +59,11 @@ def getNumSpatialPoints(filelist):
   print "length: "+str(length)
   return length,min,max
 
-  
+print "passed "+str(len(sys.argv))+" arguments"
+print "1: " +sys.argv[1]
 #baseName="Power_0"
-baseName="fig7_Power_0"
+#baseName="fig7_Power_0"
+baseName=sys.argv[1]
 outfilename=baseName+'_all.vsh5'
 h5=tables.open_file(outfilename,'w')
 filelist=getTimeSlices(baseName)
