@@ -54,7 +54,36 @@ h5out.close()
 ###
 # Can we write a charge density field?
 ##
-H,edges=numpy.histogramdd(newparticles[:,0:3],bins=(33,33,65))
+H,edges=numpy.histogramdd(elecs[:,0:3],bins=(32,32,114),weights=elecs[:,6])
 print edges[0]
 print numpy.max(H)
+h5out=tables.open_file('_'.join(outfilebase)+'Charge_'+dumpno+'.'+fileextname,'w')
+h5out.create_array('/','electronCharge',H)
+h5out.root.electronCharge._v_attrs['time']=numpy.double(0.0)
+h5out.root.electronCharge._v_attrs['numSpatialDims']=numpy.int(3)
+h5out.root.electronCharge._v_attrs['vsNumSpatialDims']=numpy.int(3)
+h5out.root.electronCharge._v_attrs['vsType']="variable"
+h5out.root.electronCharge._v_attrs['vsMesh']="mesh"
+h5out.root.electronCharge._v_attrs['vsTimeGroup']="time"
+h5out.root.electronCharge._v_attrs['vsLimits']="globalLimits"
+h5out.root.electronCharge._v_attrs['vsCentering']="zonal"
+h5out.create_group('/','globalLimits')
+h5out.root.globalLimits._v_attrs['vsType']="limits"
+h5out.root.globalLimits._v_attrs['vsKind']="Cartesian"
+h5out.root.globalLimits._v_attrs['vsLowerBounds']=numpy.array((numpy.min(newparticles[:,0]),numpy.min(newparticles[:,1]),numpy.min(newparticles[:,2])))
+h5out.root.globalLimits._v_attrs['vsUpperBounds']=numpy.array((numpy.max(newparticles[:,0]),numpy.max(newparticles[:,1]),numpy.max(newparticles[:,2])))
+h5out.create_group('/','time')
+h5out.root.time._v_attrs['vsStep']=numpy.int(0)
+h5out.root.time._v_attrs['vsTime']=numpy.double(0.0)
+h5out.root.time._v_attrs['vsType']="time"
+h5out.create_group('/','mesh')
+h5out.root.mesh._v_attrs['vsType']="mesh"
+h5out.root.mesh._v_attrs['vsKind']="uniform"
+h5out.root.mesh._v_attrs['vsCentering']="zonal"
+h5out.root.mesh._v_attrs['vsLowerBounds']=numpy.array((numpy.min(newparticles[:,0]),numpy.min(newparticles[:,1]),numpy.min(newparticles[:,2])))
+h5out.root.mesh._v_attrs['vsUpperBounds']=numpy.array((numpy.max(newparticles[:,0]),numpy.max(newparticles[:,1]),numpy.max(newparticles[:,2])))
+h5out.root.mesh._v_attrs['vsNumCells']=numpy.array((len(edges[0])-1,len(edges[1])-1,len(edges[2])-1))
+h5out.root.mesh._v_attrs['vsStartCell']=numpy.array((0,0,0))
+h5out.flush()
+h5out.close()
 exit()
