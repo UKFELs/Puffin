@@ -51,4 +51,10 @@ h5out.root.time._v_attrs['vsTime']=numpy.double(0.0)
 h5out.root.time._v_attrs['vsType']="time"
 h5out.flush()
 h5out.close()
+###
+# Can we write a charge density field?
+##
+H,edges=numpy.histogramdd(newparticles[:,0:3],bins=(33,33,65))
+print edges[0]
+print numpy.max(H)
 exit()
