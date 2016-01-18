@@ -44,7 +44,10 @@ configuration with multiple seeds and electron beams, with different
 powers, frequencies, energies, and distributions.
 
 The input parameters are in terms of the scaled, dimensionless 
-variables described in the Physics of Plasmas reference above.
+variables. The system has been updated from the original 2012
+physics of plasmas reference and is described in the distributed
+file: Scaling.pdf
+
 A python script, 'write_df.py' is located in the examples/gen
 directory which can generate the input files from commonly used
 SI experimental parameters.
