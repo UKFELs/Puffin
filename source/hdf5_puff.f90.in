@@ -187,8 +187,12 @@ contains
            CALL gPower(sA,power)
            call outputH5Field1DFloat(power, 'Power', time, error)
       if (error .ne. 0) goto 1000
-!           call getCurr(dz2_I_G, Iarray)
-!           call outputH5Field1DFloat(Iarray, 'Current', time, error)
+      end if
+! This call requires all ranks to participate
+      call getCurr(dz2_I_G, Iarray)
+! but the write operation does not.
+      if (tProcInfo_G%qRoot) then
+           call outputH5Field1DFloat(Iarray, 'Current', time, error)
       if (error .ne. 0) goto 1000
 		   !           call outputH5Current
 !       not yet implemented
