@@ -64,6 +64,7 @@ print "1: " +sys.argv[1]
 #baseName="Power_0"
 #baseName="fig7_Power_0"
 baseName=sys.argv[1]
+inputFilename,datasetname,mpirank=baseName.split('_')
 outfilename=baseName+'_all.vsh5'
 h5=tables.open_file(outfilename,'w')
 filelist=getTimeSlices(baseName)
@@ -85,13 +86,13 @@ fieldNormData=numpy.zeros((numSpatialPoints, numTimes))
 fieldCount=0
 for slice in filelist:
   h5in=tables.open_file(slice,'r')
-  fieldData[:,fieldCount]=h5in.root.Power.read()
-  fieldNormData[:,fieldCount]=h5in.root.Power.read()/numpy.max(h5in.root.Power.read())
+  fieldData[:,fieldCount]=h5in.root._f_getChild(datasetname).read()
+  fieldNormData[:,fieldCount]=h5in.root._f_getChild(datasetname).read()/numpy.max(h5in.root._f_getChild(datasetname).read())
   h5in.close()
   fieldCount+=1
-h5.create_array('/','Power_ST',fieldData)
-h5.create_array('/','Power_ST_Norm',fieldNormData)
-for fieldname in ['Power_ST','Power_ST_Norm']:
+h5.create_array('/',datasetname+'_ST',fieldData)
+h5.create_array('/',datasetname+'_ST_Norm',fieldNormData)
+for fieldname in [datasetname+'_ST',datasetname+'_ST_Norm']:
   h5.root._v_children[fieldname]._v_attrs.vsMesh="grid"
   h5.root._v_children[fieldname]._v_attrs.vsTimeGroup="time"
   h5.root._v_children[fieldname]._v_attrs.time=0.
