@@ -540,13 +540,16 @@ CONTAINS
 
     real(kind=wp), intent(in) :: s_ar(:), weights(:)
     real(kind=wp) :: arr_mean_para_weighted
-    real(kind=wp) :: loc_sum, glob_sum    
+    real(kind=wp) :: loc_sum, glob_sum, glob_weight_sum, &
+                     loc_weight_sum
 
     loc_sum = sum(weights * s_ar)  ! local sum
+    loc_weight_sum = sum(weights)
 
     call sum_mpi_real(loc_sum,glob_sum)  ! sum globally
+    call sum_mpi_real(loc_weight_sum,glob_weight_sum)  ! sum globally
 
-    arr_mean_para_weighted = glob_sum / sum(weights)  ! get mean
+    arr_mean_para_weighted = glob_sum / glob_weight_sum  ! get mean
 
   end function arr_mean_para_weighted
 
