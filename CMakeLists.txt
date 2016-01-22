@@ -8,8 +8,8 @@ project (puffin)
 enable_language (Fortran)
 # The version number.
 set (Puffin_VERSION_MAJOR 1)
-set (Puffin_VERSION_MINOR 4)
-set (Puffin_VERSION_PATCH 3)
+set (Puffin_VERSION_MINOR 5)
+set (Puffin_VERSION_PATCH 1)
 include(${CMAKE_SOURCE_DIR}/scimake/SciInit.cmake)
 #option(ENABLE_PARALLEL "whether to build parallel PUFFIN" ON)
 
@@ -28,7 +28,7 @@ if (USE_MKL)
 else()
 find_package(SciFftw REQUIRED)
 endif()
-
+find_package(SciHdf5)
 find_package(OpenMP)
 if (OPENMP_FOUND)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
@@ -79,8 +79,9 @@ set(HAVE_CMAKE 1 CACHE STRING "Whether built with CMake")
 #
 ######################################################################
 configure_file(config-cmake.h.in config.h)
-
+configure_file(source/hdf5_puff.f90.in source/hdf5_puff.f90)
 add_subdirectory(source)
+install (DIRECTORY utilities/ DESTINATION bin)
 install (DIRECTORY inputs/example/ DESTINATION examples)
 install (DIRECTORY inputs/gen/ DESTINATION python)
 
