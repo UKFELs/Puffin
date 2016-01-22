@@ -108,11 +108,11 @@ contains
   
   if (tTransInfo_G%qOneD) then
 
-! !DIR$ SIMD
+!$OMP WORKSHARE
  
     p_nodes = floor(sz2 / dz2) + 1_IP
 
-! !DIR$ END SIMD
+!$OMP END WORKSHARE
 
 
   else
@@ -219,6 +219,9 @@ contains
 !     Boundary condition dadz = 0 at head of field
 
         if (tProcInfo_G%qRoot) sDADz(1:ReducedNX_G*ReducedNY_G) = 0.0_WP
+        if (tProcInfo_G%qRoot) sDADz(ReducedNX_G*ReducedNY_G*NZ2_G + 1: &
+                                     ReducedNX_G*ReducedNY_G*NZ2_G + &
+                                     ReducedNX_G*ReducedNY_G) = 0.0_WP
  
         !if (tTransInfo_G%qOneD) then
         !  if (tProcInfo_G%qRoot) sDADz=sDADz !sDADz=6.0_WP*sDADz

@@ -64,8 +64,9 @@ real(kind=wp), allocatable :: sSigFj_G(:) ! sigma of gaussian tail off
 
 
 
+integer(kind=ip) :: npts_I_G    !  Specifying mesh 4 current calculation
 
-
+real(kind=wp) :: dz2_I_G
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! electron vars
@@ -251,6 +252,8 @@ integer(kind=ip) :: iWriteNthSteps, iDumpNthSteps, iIntWriteNthSteps
 character(32_ip) :: wrMeth_G
 
 
+character(132_ip) :: cmd_call_G
+character(32_ip) :: zFileName_G, zBFile_G, zSFile_G
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

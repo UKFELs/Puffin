@@ -278,7 +278,7 @@ contains
 
 
   call matchOut(sZ)
-
+  call correctTrans()  ! correct transverse motion at undulator exit
 
   deallocate(sAr)
   deallocate(Ar_local)
