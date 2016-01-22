@@ -50,6 +50,7 @@ contains
 
 !     For curved pole undulator
 
+!$OMP WORKSHARE
 
         sdpr = sInv2rho * (  n2col * cosh(kx_und_G * sx) * cosh(ky_und_G * sy) &
                             * sin(ZOver2rho)  &
@@ -60,22 +61,14 @@ contains
                      cosh(sx * kx_und_G) * sinh(sy * ky_und_G) *  &
                      n2col * cos(ZOver2rho) )
     
-
-
-!        sdpr = sInv2rho * ( cosh(sx * kx_und_G) * &
-!                        sinh(sy * ky_und_G) * sqrt(2.0_WP) &
-!                        * sqrt(sEta_G) * Lj * spi  &      
-!                        *  cos(ZOver2rho) &
-!                        / (sqrt(salphaSq) * ky_und_G) + &
-!                        cosh(sx * kx_und_G) &
-!                        * cosh(sy * ky_und_G) * sin(ZOver2rho) - &
-!                        sEta_G * sp2 / sKappa_G**2 * sField4ElecReal)
-!
+!$OMP END WORKSHARE
         
 
     else if (zUndType_G == 'planepole')  then
 
 !     Re(p_perp) equation for plane-poled undulator
+
+!$OMP WORKSHARE
 
         sdpr = sInv2rho * ( n2col * cosh( sqrt(sEta_G) * sInv2rho * sy) & 
                             * sin(ZOver2rho) & 
@@ -85,16 +78,8 @@ contains
                    * sinh( sqrt(sEta_G) * sInv2rho * sy ) &
                    * n2col * cos(ZOver2rho) )
 
+!$OMP END WORKSHARE
 
-
-!        sdpr = sInv2rho * (-sField4ElecReal*salphaSq * &
-!                        sEta_G * sp2 &
-!                        + ((sqrt(6.0_WP) *sRho_G) /sqrt(salphaSq)) * &
-!                        sinh(sInv2rho * sy &
-!                        * sqrt(sEta_G))  * cos(ZOver2rho) * Lj * &
-!                        spi + &
-!                        cosh(sInv2rho * sy * &
-!                        sqrt(sEta_G)) *sin(ZOver2rho))
 
     else if (zUndType_G == 'helical') then
 
@@ -115,25 +100,14 @@ contains
 !     "normal" PUFFIN case with no off-axis undulator
 !     field variation
 
-!      if (qFocussing_G) then
 
-!        sdpr = sInv2rho * (fy_G*n2col*sin(ZOver2rho) - &
-!                        (salphaSq * sEta_G * sp2 * &
-!                        sField4ElecReal ) ) - & 
-!                        nd / Lj * & ! focusing term
-!                        (  ( kbeta**2 * sx) + (sEta_G / &
-!                        ( 1.0_WP + (sEta_G * sp2) ) * &
-!                        sdx * dp2f ) )
-!
-!      else 
-
+!$OMP WORKSHARE
 
         sdpr = sInv2rho * (fy_G * n2col *sin(ZOver2rho) - &
               ( sEta_G * sp2 / sKappa_G**2 * &
               sField4ElecReal ) )
 
-
-!      end if
+!$OMP END WORKSHARE
 
 
     end if
@@ -182,6 +156,7 @@ contains
 
 !     For curved pole undulator
 
+!$OMP WORKSHARE
 
         sdpi = sInv2rho * ( n2col * kx_und_G / ky_und_G * &
                             sinh(kx_und_G * sx) * sinh(ky_und_G * sy) &
@@ -192,20 +167,8 @@ contains
                      sqrt(sEta_G) * sInv2rho / kx_und_G  *    & 
                      cosh(sx * kx_und_G) * sinh(sy * ky_und_G) *  &
                      n2col * cos(ZOver2rho) )
-    
 
-
-
-!        sdpi = sInv2rho * ( -1.0_WP * sqrt(2.0_WP) * sqrt(sEta_G) &
-!                        * Lj * spr &
-!                        * cosh(sx * kx_und_G) &
-!                        * sinh(sy * ky_und_G) &
-!                        * cos(ZOver2rho)  / (sqrt(salphaSq) * ky_und_G) &
-!                        + sin(ZOver2rho) * kx_und_G/ky_und_G * &
-!                        sinh(sx * kx_und_G) * &
-!                        sinh(sy * ky_und_G) & 
-!                        - sEta_G * sp2 * salphaSq * &
-!                        sField4ElecImag)
+!$OMP END WORKSHARE
 
 
     else if (zUndType_G == 'planepole') then 
@@ -213,6 +176,7 @@ contains
 !     Im(p_perp) equation for plane-poled undulator
 
 
+!$OMP WORKSHARE
 
         sdpi = sInv2rho * ( 0_ip  &
                             - sEta_G * sp2 / sKappa_G**2 *    &
@@ -221,7 +185,7 @@ contains
                    * sinh( sqrt(sEta_G) * sInv2rho * sy ) &
                    * n2col * cos(ZOver2rho) )
 
-
+!$OMP END WORKSHARE
 
 
 
@@ -264,10 +228,13 @@ contains
 !
 !      else
 
+!$OMP WORKSHARE
 
         sdpi = sInv2rho * (fx_G * n2col * cos(ZOver2rho) - &
                       ( sEta_G * sp2 / sKappa_G**2 * &
                       sField4ElecImag ) )
+
+!$OMP END WORKSHARE
 
 !      end if
 
