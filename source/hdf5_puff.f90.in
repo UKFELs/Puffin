@@ -497,18 +497,18 @@ contains
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
     CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
     CALL h5aclose_f(attr_id, error)
-    Print*,'hdf5_puff:outputH5BeamFiles(charge written)'
+!    Print*,'hdf5_puff:outputH5BeamFiles(charge written)'
     CALL h5tclose_f(atype_id, error)
 
 ! then text attributes
     CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
     CALL h5tset_size_f(atype_id, attr_string_len, error)
     CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
-    Print*,'hdf5_puff:outputH5BeamFiles(string padding enabled)'
+!    Print*,'hdf5_puff:outputH5BeamFiles(string padding enabled)'
     aname="vsLabels"
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
     CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
-    Print*,'hdf5_puff:outputH5BeamFiles(lables attribute written)'
+!    Print*,'hdf5_puff:outputH5BeamFiles(lables attribute written)'
     CALL h5aclose_f(attr_id, error)
     CALL addH5StringAttribute(dset_id,"vsType","variableWithMesh",aspace_id)
     CALL addH5StringAttribute(dset_id,"vsTimeGroup","time",aspace_id)
@@ -537,7 +537,7 @@ contains
     aname="vsLowerBounds"
     CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
-    Print*,'hdf5_puff:outputH5BeamFiles(lower bounds attribute created)'
+!    Print*,'hdf5_puff:outputH5BeamFiles(lower bounds attribute created)'
     ALLOCATE ( limdata(numSpatialDims))
     limdata(1)=-0.5*NX_G*sLengthOfElmX_G
     if (numSpatialDims .GT. 1) then
@@ -1173,9 +1173,9 @@ contains
 !    attr_string_len=len(meshScaledGrpname)
 !    CALL h5tset_size_f(atype_id, attr_string_len, error)
 !    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
-    Print*,'hdf5_puff:outputH5Field1D(mesh attributes created)'
-    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
-    CALL h5aclose_f(attr_id, error)
+!    Print*,'hdf5_puff:outputH5Field1D(mesh attributes created)'
+!    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+!    CALL h5aclose_f(attr_id, error)
 !    Print*,'hdf5_puff:outputH5Field1D(mesh attributes closed)'
 !    CALL h5sclose_f(aspace_id, error)
     Print*,'hdf5_puff:outputH5Field1D(not closing scalar space)'
@@ -1437,9 +1437,7 @@ contains
     character(10) :: time
     character(5)  :: zone
     integer,dimension(8) :: values
-    CHARACTER(32) :: login
     call date_and_time(date,time,zone,values)
-    CALL GETLOG(login)
  ! with the main dataset done we work on the other groups with attributes
 ! We make a group
     CALL h5gcreate_f(file_id, 'runInfo' , group_id, error)
@@ -1462,9 +1460,13 @@ contains
 
 !    write(attr_data_string, '(8i5)') values
 !    write(attr_data_string, '(5i4-3i2-3i2) zone (4i3 3i2:3i2:3i2 .4i3)') values
-    write(attr_data_string, '(a,1x,a,1x,a,2x,a)') date(1:4),date(5:8), time, zone
+    write(attr_data_string, '(a,a,a,a,a,2x,a,a,a,a,a,1x,a)') date(1:4),'-',date(5:6), &
+      '-',date(7:8),time(1:2),':',time(3:4),':',time(5:10), zone
     CALL addH5StringAttribute(group_id,"vsRunDate",attr_data_string,aspace_id)
-    CALL addH5StringAttribute(group_id,"vsUser",login,aspace_id)
+    CALL GETLOG(attr_data_string)
+    CALL addH5StringAttribute(group_id,"vsUser",attr_data_string,aspace_id)
+    CALL HOSTNM(attr_data_string)
+    CALL addH5StringAttribute(group_id,"vsRunHost",attr_data_string,aspace_id)
     CALL addH5StringAttribute(group_id,"vsBuildConfigDate",'@CONFIGURE_TIME_STAMP@',aspace_id)
 
     attr_data_string='@GIT_BRANCH@ : @GIT_REVISION@' 
@@ -1484,6 +1486,7 @@ contains
     CALL get_command(attr_data_string)
     CALL addH5StringAttribute(group_id,"vsCommandLine",attr_data_string,aspace_id)
 ! rest I think is less sensitive to FORTRAN version
+
 
     CALL addH5StringAttribute(group_id,"vsInputFile",zFilename_G,aspace_id)
     CALL addH5StringAttribute(group_id,"vsBeamFile",zBFile_G,aspace_id)
