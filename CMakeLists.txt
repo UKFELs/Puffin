@@ -74,6 +74,7 @@ execute_process(COMMAND git rev-parse HEAD
   )
 STRING(REPLACE "\n" "" GIT_REVISION ${GIT_REVISION})
 message(STATUS "git branch : ${GIT_BRANCH} ${GIT_REVISION}")
+string(TIMESTAMP CONFIGURE_TIME_STAMP "%Y-%m-%d %H:%M")
 ######################################################################
 #
 # Variables for inclusion in config.h
