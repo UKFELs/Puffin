@@ -60,7 +60,7 @@ else:
   print"need to figure out if we're here, as there will be multiple output files"
 print outfilename
 
-tables.copy_file(filename,outfilename)
+tables.copy_file(filename,outfilename,overwrite=1)
 h5=tables.open_file(outfilename,'r+')
 print h5.root.APerp.shape
 
