@@ -10,7 +10,7 @@ USE RK4int
 use dumpFiles 
 use hdf5_puff
 use pln_puff
-
+use ParaField
 
 implicit none
 
@@ -112,11 +112,17 @@ subroutine writeIM(sA, Ar_local, sZ, &
   character(32_IP), intent(in) :: zDataFileName
   logical, intent(inout) :: qOK
 
+  integer error
+
   logical :: qOKL, qWriteInt, qWriteFull
 
   qOK = .false.
 
-  call innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
+
+  call UpdateGlobalField(sA)
+
+
+  !call innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
 
   call int_or_full(istep, iIntWriteNthSteps, iWriteNthSteps, &
                    qWriteInt, qWriteFull, qOK)
@@ -130,10 +136,10 @@ subroutine writeIM(sA, Ar_local, sZ, &
 ! temporarilly commenting as we want files written both ways
 !  else if (wrMeth_G == 'hdf5') then
 !    print*,zDataFileName
-    call wr_h5(sA, sZ, tArrayA, tArrayE, tArrayZ, &
-                 iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
-                 zDataFileName, qWriteFull, &
-                 qWriteInt, qOK)
+!    call wr_h5(sA, sZ, tArrayA, tArrayE, tArrayZ, &
+!                 iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
+!                 zDataFileName, qWriteFull, &
+!                 qWriteInt, qOK)
 
   else 
 

@@ -12,6 +12,8 @@ use FFTW_Constants
 use Globals
 use Derivative
 use IO
+use ParaField
+
 
 contains
 
@@ -61,7 +63,15 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
   REAL(KIND=WP), DIMENSION(iNumberElectrons_G) :: dz2m, dz2t, z2t
   REAL(KIND=WP), DIMENSION(iNumberElectrons_G) :: dpz2m, dpz2t, pz2t  
 
-  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dAm, dAt
+  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dadz_r0, dadz_i0
+  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dadz_r1, dadz_i1
+  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dadz_r2, dadz_i2
+
+  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localtr0, A_localti0
+  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localtr1, A_localti1
+  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localtr2, A_localti2
+  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localtr3, A_localti3
+
   REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dxdx, dydx, dz2dx, dpxdx, dpydx, dpz2dx
   REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dAdx
   REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localt 
@@ -85,9 +95,38 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
   allocate(Dpz2Dx(iNumberElectrons_G))    
 
 
+  allocate(dadz_r0(tllen), dadz_i0(tllen))
+  allocate(dadz_r1(tllen), dadz_i1(tllen))
+  allocate(dadz_r2(tllen), dadz_i2(tllen))
 
-  allocate(DADx(2*local_rows))
-  allocate(A_localt(2*local_rows))
+  allocate(A_localtr0(tllen), A_localti0(tllen))
+  allocate(A_localtr1(tllen), A_localti1(tllen))
+  allocate(A_localtr2(tllen), A_localti2(tllen))
+  allocate(A_localtr3(tllen), A_localti3(tllen))
+
+  dadz_r0 = 0_wp
+  dadz_r1 = 0_wp
+  dadz_r2 = 0_wp
+  dadz_i0 = 0_wp
+  dadz_i1 = 0_wp
+  dadz_i2 = 0_wp
+
+  A_localtr0 = 0_wp
+  A_localtr1 = 0_wp
+  A_localtr2 = 0_wp
+  A_localtr3 = 0_wp
+  A_localtr0 = 0_wp
+  A_localtr1 = 0_wp
+  A_localtr2 = 0_wp
+  A_localtr3 = 0_wp
+
+
+
+  A_localtr0 = ac_rfield
+  A_localti0 = ac_ifield
+
+!  allocate(DADx(2*local_rows))
+!  allocate(A_localt(2*local_rows))
 
 !    A_local from A_big	  
 
@@ -109,23 +148,24 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
 !    Incrementing Y and A
 !    Error checking         
 
-  iy = size(sElX_G)
-  idydx = size(dxdx)
+!  iy = size(sElX_G)
+!  idydx = size(dxdx)
       
-  if (iy /= idydx ) then
-     goto 1000
-  end if
+!  if (iy /= idydx ) then
+!     goto 1000
+!  end if
   
 !    Get derivatives
 
-  call derivs(sZ, &
-              sA, &
+  call derivs(sZ, A_localtr0, A_localti0, &
               sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, &
               dxdx, dydx, dz2dx, dpxdx, dpydx, dpz2dx, &
-              dAdx)
+              dadz_r0, dadz_i0)
 
-  allocate(dAm(2*local_rows),dAt(2*local_rows))
 
+
+!  allocate(dAm(2*local_rows),dAt(2*local_rows))
+  !print*, dpydx
 
 !    Increment local electron and field values
   
@@ -138,19 +178,33 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
 
 
 
-  A_localt = A_local + hh * dAdx  	  
+
+
+  A_localtr1 = A_localtr0 + hh * dadz_r0
+  A_localti1 = A_localti0 + hh * dadz_i0
+
+
 
 !    Update large field array with new values 
-  call local2globalA(A_localt,sA,recvs,displs,tTransInfo_G%qOneD)
+!  call local2globalA(A_localt,sA,recvs,displs,tTransInfo_G%qOneD)
+
+  call upd8a(A_localtr1, A_localti1)
+
+
+
+
 
 !    Second step       
 !    Get derivatives
 
-  call derivs(szh, &
-       sA, &
+  call derivs(szh, A_localtr1, A_localti1, &
        xt, yt, z2t, pxt, pyt, pz2t, &
        dxt, dyt, dz2t, dpxt, dpyt, dpz2t, &
-       dAt)
+       dadz_r1, dadz_i1)
+
+
+
+
 
 !    Incrementing with newest derivative value...
 
@@ -161,33 +215,54 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
   pyt = sElPY_G    +  hh*dpyt
   pz2t = sElGam_G  +  hh*dpz2t
 
-  A_localt = A_local + hh * dAt
+
+
+
+  A_localtr2 = A_localtr1 + hh * dadz_r1
+  A_localti2 = A_localti1 + hh * dadz_i1
+
+
 
 !    Update full field array
 
-  call local2globalA(A_localt,sA,recvs,displs,tTransInfo_G%qOneD)
+!  call local2globalA(A_localt,sA,recvs,displs,tTransInfo_G%qOneD)
+
+
+  call upd8a(A_localtr2, A_localti2)
 
 !    Third step       
 !    Get derivatives
 
-  call derivs(szh, &
-       sA, &
+
+
+  call derivs(szh, A_localtr2, A_localti2, &
        xt, yt, z2t, pxt, pyt, pz2t, &
        dxm, dym, dz2m, dpxm, dpym, dpz2m, &
-       dAm)
+       dadz_r2, dadz_i2)
+
+
+
+
+
 
 !    Incrementing
 
-  xt = sElX_G      +  h*dxm
-  yt = sElY_G      +  h*dym
-  z2t = sElZ2_G    +  h*dz2m
-  pxt = sElPX_G    +  h*dpxm
-  pyt = sElPY_G    +  h*dpym
-  pz2t = sElGam_G  +  h*dpz2m
+  xt = sElX_G      +  h * dxm
+  yt = sElY_G      +  h * dym
+  z2t = sElZ2_G    +  h * dz2m
+  pxt = sElPX_G    +  h * dpxm
+  pyt = sElPY_G    +  h * dpym
+  pz2t = sElGam_G  +  h * dpz2m
 
-  A_localt=A_local + h * dAm
+  A_localtr3 = A_localtr2 + h * dadz_r2
+  A_localti3 = A_localti2 + h * dadz_i2
 
-  call local2globalA(A_localt,sA,recvs,displs,tTransInfo_G%qOneD)
+
+!  call local2globalA(A_localt, sA, recvs, displs, tTransInfo_G%qOneD)
+
+  call upd8a(A_localtr3, A_localti3)
+
+
 
   dxm = dxt + dxm
   dym = dyt + dym
@@ -196,7 +271,11 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
   dpym = dpyt + dpym
   dpz2m = dpz2t + dpz2m
 
-  dAm = dAt + dAm
+  dadz_r2 = dadz_r1 + dadz_r2
+  dadz_i2 = dadz_i1 + dadz_i2
+
+  dadz_r1 = 0_wp
+  dadz_i1 = 0_wp
 
 !    Fourth step       
 
@@ -205,11 +284,11 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
 
 !    Get derivatives
 
-  call derivs(szh, &
-       sA, &
+  call derivs(szh, A_localtr3, A_localti3, &
        xt, yt, z2t, pxt, pyt, pz2t, &
        dxt, dyt, dz2t, dpxt, dpyt, dpz2t, &
-       dAt)  
+       dadz_r1, dadz_i1)  
+
 
 !    Accumulate increments with proper weights       
 
@@ -220,16 +299,31 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
   sElPY_G   = sElPY_G  + h6 * ( dpydx  + dpyt  + 2.0_WP * dpym )
   sElGam_G  = sElGam_G + h6 * ( dpz2dx + dpz2t + 2.0_WP * dpz2m)
 
-  A_local = A_local + h6 * (dAdx + dAt + 2.0_WP * dAm)
+  ac_rfield = ac_rfield + h6 * (dadz_r0 + dadz_r1 + 2.0_WP * dadz_r2)
+  ac_ifield = ac_ifield + h6 * (dadz_i0 + dadz_i1 + 2.0_WP * dadz_i2)
 
 
-  call local2globalA(A_local,sA,recvs,displs,tTransInfo_G%qOneD)
+
+  call upd8a(ac_rfield, ac_ifield)
+
+
+
+!  call local2globalA(A_local,sA,recvs,displs,tTransInfo_G%qOneD)
 
 !    Deallocating temp arrays
 
-  deallocate(dAm,dAt,A_localt)
+!  deallocate(dAm,dAt,A_localt)
 
-  deallocate(DADx)
+!  deallocate(DADx)
+
+  deallocate(dadz_r0, dadz_i0)
+  deallocate(dadz_r1, dadz_i1)
+  deallocate(dadz_r2, dadz_i2)
+
+  deallocate(A_localtr0, A_localti0)
+  deallocate(A_localtr1, A_localti1)
+  deallocate(A_localtr2, A_localti2)
+  deallocate(A_localtr3, A_localti3)
 
   deallocate(DxDx)    
   deallocate(DyDx)    

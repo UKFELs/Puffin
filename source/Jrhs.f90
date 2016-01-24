@@ -22,6 +22,7 @@ use wigglerVar
 use FiElec1D
 use FiElec
 use gtop2
+use ParaField
 
 
 implicit none
@@ -29,12 +30,12 @@ implicit none
 contains
 
   subroutine getrhs(sz, &
-                    sA, &
+                    sAr, sAi, &
                     sx, sy, sz2, &
                     spr, spi, sgam, &
                     sdx, sdy, sdz2, &
                     sdpr, sdpi, sdgam, &                    
-                    sDADz, &
+                    sDADzr, sDADzi, &
                     qOK)
 
   use rhs_vars
@@ -52,7 +53,7 @@ contains
 ! sDADz - RHS of field source term
 
   real(kind=wp), intent(in) :: sz
-  real(kind=wp), intent(in) :: sA(:)
+  real(kind=wp), intent(in) :: sAr(:), sAi(:)
   real(kind=wp), intent(in)  :: sx(:), sy(:), sz2(:), &
                                 spr(:), spi(:), sgam(:)
 
@@ -60,10 +61,11 @@ contains
   real(kind=wp), intent(inout)  :: sdx(:), sdy(:), sdz2(:), &
                                    sdpr(:), sdpi(:), sdgam(:)
 
-  real(kind=wp), intent(inout) :: sDADz(:) !!!!!!!
+  real(kind=wp), intent(inout) :: sDADzr(:), sDADzi(:) !!!!!!!
   logical, intent(inout) :: qOK
 
   integer(kind=ipl) :: i, z2node
+  integer :: error
   logical qOKL
 
 !     Begin
@@ -110,9 +112,12 @@ contains
 
 !$OMP WORKSHARE
  
-    p_nodes = floor(sz2 / dz2) + 1_IP
+    p_nodes = floor(sz2 / dz2) + 1_IP - (fz2-1)
 
 !$OMP END WORKSHARE
+
+!print*, p_nodes
+
 
 
   else
@@ -129,17 +134,23 @@ contains
 
 
 
+
+
+
+
   if (tTransInfo_G%qOneD) then
 
     call getInterps_1D(sz2)
-    call getFFelecs_1D(sA)
-    call getSource_1D(sDADz, spr, spi, sgam, sEta_G)
+    call getFFelecs_1D(sAr, sAi)
+    call getSource_1D(sDADzr, sDADzi,  spr, spi, sgam, sEta_G)
+
+
 
   else
 
     call getInterps_3D(sx, sy, sz2)
-    call getFFelecs_3D(sA)    
-    call getSource_3D(sDADz, spr, spi, sgam, sEta_G)
+    call getFFelecs_3D(sAr, sAi)    
+    call getSource_3D(sDADzr, sDADzi, spr, spi, sgam, sEta_G)
 
   end if
 
@@ -210,18 +221,18 @@ contains
 
 
 
-    if (qFieldEvolve_G) then
+!    if (qFieldEvolve_G) then
 
 !     Sum dadz from different MPI processes together
 
-        call sum2RootArr(sDADz,ReducedNX_G*ReducedNY_G*NZ2_G*2,0)
+!        call sum2RootArr(sDADz,ReducedNX_G*ReducedNY_G*NZ2_G*2,0)
 
 !     Boundary condition dadz = 0 at head of field
 
-        if (tProcInfo_G%qRoot) sDADz(1:ReducedNX_G*ReducedNY_G) = 0.0_WP
-        if (tProcInfo_G%qRoot) sDADz(ReducedNX_G*ReducedNY_G*NZ2_G + 1: &
-                                     ReducedNX_G*ReducedNY_G*NZ2_G + &
-                                     ReducedNX_G*ReducedNY_G) = 0.0_WP
+!        if (tProcInfo_G%qRoot) sDADz(1:ReducedNX_G*ReducedNY_G) = 0.0_WP
+!        if (tProcInfo_G%qRoot) sDADz(ReducedNX_G*ReducedNY_G*NZ2_G + 1: &
+!                                     ReducedNX_G*ReducedNY_G*NZ2_G + &
+!                                     ReducedNX_G*ReducedNY_G) = 0.0_WP
  
         !if (tTransInfo_G%qOneD) then
         !  if (tProcInfo_G%qRoot) sDADz=sDADz !sDADz=6.0_WP*sDADz
@@ -229,12 +240,13 @@ contains
         !   if (tProcInfo_G%qRoot) sDADz=sDADz !216.0_WP/8.0_WP*sDADz
         !end if
 
-    end if
+!    end if
     
 !     Switch field off
 
     if (.not. qFieldEvolve_G) then
-       sDADz = 0.0_WP
+       sDADzr = 0.0_WP
+       sDADzi = 0.0_WP
     end if
 
 !     if electrons not allowed to evolve then      

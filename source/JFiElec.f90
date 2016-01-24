@@ -89,12 +89,12 @@ end subroutine getInterps_3D
 
 
 
-subroutine getFFelecs_3D(sA)
+subroutine getFFelecs_3D(sAr, sAi)
 
 
 use rhs_vars
 
-real(kind=wp), intent(in) :: sA(:)
+real(kind=wp), intent(in) :: sAr(:), sAi(:)
 integer(kind=ip) :: i
 
 !$OMP DO
@@ -102,23 +102,23 @@ integer(kind=ip) :: i
   
     if (i<=procelectrons_G(1)) then
 
-      sField4ElecReal(i) = lis_GR(1,i) * sA(p_nodes(i)) + sField4ElecReal(i)
-      sField4ElecReal(i) = lis_GR(2,i) * sA(p_nodes(i) + 1_ip) + sField4ElecReal(i)
-      sField4ElecReal(i) = lis_GR(3,i) * sA(p_nodes(i) + ReducedNX_G) + sField4ElecReal(i)
-      sField4ElecReal(i) = lis_GR(4,i) * sA(p_nodes(i) + ReducedNX_G + 1_ip) + sField4ElecReal(i)
-      sField4ElecReal(i) = lis_GR(5,i) * sA(p_nodes(i) + ntrans) + sField4ElecReal(i)
-      sField4ElecReal(i) = lis_GR(6,i) * sA(p_nodes(i) + ntrans + 1_ip) + sField4ElecReal(i)
-      sField4ElecReal(i) = lis_GR(7,i) * sA(p_nodes(i) + ntrans + ReducedNX_G) + sField4ElecReal(i)
-      sField4ElecReal(i) = lis_GR(8,i) * sA(p_nodes(i) + ntrans + ReducedNX_G + 1) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(1,i) * sAr(p_nodes(i)) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(2,i) * sAr(p_nodes(i) + 1_ip) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(3,i) * sAr(p_nodes(i) + ReducedNX_G) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(4,i) * sAr(p_nodes(i) + ReducedNX_G + 1_ip) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(5,i) * sAr(p_nodes(i) + ntrans) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(6,i) * sAr(p_nodes(i) + ntrans + 1_ip) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(7,i) * sAr(p_nodes(i) + ntrans + ReducedNX_G) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(8,i) * sAr(p_nodes(i) + ntrans + ReducedNX_G + 1) + sField4ElecReal(i)
   
-      sField4ElecImag(i) = lis_GR(1,i) * sA(p_nodes(i) + retim) + sField4ElecImag(i)
-      sField4ElecImag(i) = lis_GR(2,i) * sA(p_nodes(i) + retim + 1_ip) + sField4ElecImag(i)
-      sField4ElecImag(i) = lis_GR(3,i) * sA(p_nodes(i) + retim + ReducedNX_G) + sField4ElecImag(i)
-      sField4ElecImag(i) = lis_GR(4,i) * sA(p_nodes(i) + retim + ReducedNX_G + 1_ip) + sField4ElecImag(i)
-      sField4ElecImag(i) = lis_GR(5,i) * sA(p_nodes(i) + retim + ntrans) + sField4ElecImag(i)
-      sField4ElecImag(i) = lis_GR(6,i) * sA(p_nodes(i) + retim + ntrans + 1_ip) + sField4ElecImag(i)
-      sField4ElecImag(i) = lis_GR(7,i) * sA(p_nodes(i) + retim + ntrans + ReducedNX_G) + sField4ElecImag(i)
-      sField4ElecImag(i) = lis_GR(8,i) * sA(p_nodes(i) + retim + ntrans + ReducedNX_G + 1) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(1,i) * sAi(p_nodes(i)) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(2,i) * sAi(p_nodes(i)  + 1_ip) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(3,i) * sAi(p_nodes(i)  + ReducedNX_G) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(4,i) * sAi(p_nodes(i)  + ReducedNX_G + 1_ip) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(5,i) * sAi(p_nodes(i)  + ntrans) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(6,i) * sAi(p_nodes(i)  + ntrans + 1_ip) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(7,i) * sAi(p_nodes(i)  + ntrans + ReducedNX_G) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(8,i) * sAi(p_nodes(i)  + ntrans + ReducedNX_G + 1) + sField4ElecImag(i)
 
     end if
   
@@ -133,12 +133,12 @@ end subroutine getFFelecs_3D
 
 
 
-subroutine getSource_3D(sDADz, spr, spi, sgam, seta)
+subroutine getSource_3D(sDADzr, sDADzi, spr, spi, sgam, seta)
 
 
 use rhs_vars
 
-real(kind=wp), intent(inout) :: sDADz(:)
+real(kind=wp), intent(inout) :: sDADzr(:), sDADzi(:)
 real(kind=wp), intent(in) :: spr(:), spi(:)
 real(kind=wp), intent(in) :: sgam(:)
 real(kind=wp), intent(in) :: seta
@@ -158,36 +158,36 @@ real(kind=wp) :: dadzRInst, dadzIInst
                         * spr(i) / sgam(i) )
     
       !$OMP ATOMIC
-      sDADz(p_nodes(i)) =                         &
-        lis_GR(1,i) * dadzRInst + sDADz(p_nodes(i))
+      sDADzr(p_nodes(i)) =                         &
+        lis_GR(1,i) * dadzRInst + sDADzr(p_nodes(i))
       
       !$OMP ATOMIC
-      sDADz(p_nodes(i) + 1_ip) =                  &
-        lis_GR(2,i) * dadzRInst + sDADz(p_nodes(i) + 1_ip)                
+      sDADzr(p_nodes(i) + 1_ip) =                  &
+        lis_GR(2,i) * dadzRInst + sDADzr(p_nodes(i) + 1_ip)                
 
       !$OMP ATOMIC
-      sDADz(p_nodes(i) + ReducedNX_G) =           &
-        lis_GR(3,i) * dadzRInst + sDADz(p_nodes(i) + ReducedNX_G)          
+      sDADzr(p_nodes(i) + ReducedNX_G) =           &
+        lis_GR(3,i) * dadzRInst + sDADzr(p_nodes(i) + ReducedNX_G)          
 
       !$OMP ATOMIC
-      sDADz(p_nodes(i) + ReducedNX_G + 1_ip) =    &
-        lis_GR(4,i) * dadzRInst + sDADz(p_nodes(i) + ReducedNX_G + 1_ip)   
+      sDADzr(p_nodes(i) + ReducedNX_G + 1_ip) =    &
+        lis_GR(4,i) * dadzRInst + sDADzr(p_nodes(i) + ReducedNX_G + 1_ip)   
 
       !$OMP ATOMIC
-      sDADz(p_nodes(i) + ntrans) =                &
-        lis_GR(5,i) * dadzRInst + sDADz(p_nodes(i) + ntrans)               
+      sDADzr(p_nodes(i) + ntrans) =                &
+        lis_GR(5,i) * dadzRInst + sDADzr(p_nodes(i) + ntrans)               
 
       !$OMP ATOMIC
-      sDADz(p_nodes(i) + ntrans + 1_ip) =         &
-        lis_GR(6,i) * dadzRInst + sDADz(p_nodes(i) + ntrans + 1_ip)         
+      sDADzr(p_nodes(i) + ntrans + 1_ip) =         &
+        lis_GR(6,i) * dadzRInst + sDADzr(p_nodes(i) + ntrans + 1_ip)         
 
       !$OMP ATOMIC
-      sDADz(p_nodes(i) + ntrans + ReducedNX_G) =  &
-        lis_GR(7,i) * dadzRInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G)   
+      sDADzr(p_nodes(i) + ntrans + ReducedNX_G) =  &
+        lis_GR(7,i) * dadzRInst + sDADzr(p_nodes(i) + ntrans + ReducedNX_G)   
 
       !$OMP ATOMIC
-      sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1) = &
-        lis_GR(8,i) * dadzRInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1)
+      sDADzr(p_nodes(i) + ntrans + ReducedNX_G + 1) = &
+        lis_GR(8,i) * dadzRInst + sDADzr(p_nodes(i) + ntrans + ReducedNX_G + 1)
 
 !                   Imaginary part
 
@@ -195,36 +195,36 @@ real(kind=wp) :: dadzRInst, dadzIInst
                         * spi(i) / sgam(i) ) 
     
       !$OMP ATOMIC
-      sDADz(p_nodes(i) + retim) =                             & 
-        lis_GR(1,i) * dadzIInst + sDADz(p_nodes(i) + retim)                        
+      sDADzi(p_nodes(i) + retim) =                             & 
+        lis_GR(1,i) * dadzIInst + sDADzi(p_nodes(i))                        
 
       !$OMP ATOMIC
-      sDADz(p_nodes(i) + 1_ip + retim) =                      & 
-        lis_GR(2,i) * dadzIInst + sDADz(p_nodes(i) + 1_ip + retim)           
+      sDADzi(p_nodes(i) + 1_ip) =                      & 
+        lis_GR(2,i) * dadzIInst + sDADzi(p_nodes(i) + 1_ip)           
 
       !$OMP ATOMIC
-      sDADz(p_nodes(i) + ReducedNX_G + retim) =               & 
-        lis_GR(3,i) * dadzIInst + sDADz(p_nodes(i) + ReducedNX_G + retim)           
+      sDADzi(p_nodes(i) + ReducedNX_G) =               & 
+        lis_GR(3,i) * dadzIInst + sDADzi(p_nodes(i) + ReducedNX_G)           
 
       !$OMP ATOMIC
-      sDADz(p_nodes(i) + ReducedNX_G + 1_ip + retim) =        & 
-        lis_GR(4,i) * dadzIInst + sDADz(p_nodes(i) + ReducedNX_G + 1_ip + retim)    
+      sDADzi(p_nodes(i) + ReducedNX_G + 1_ip) =        & 
+        lis_GR(4,i) * dadzIInst + sDADzi(p_nodes(i) + ReducedNX_G + 1_ip)    
 
       !$OMP ATOMIC
-      sDADz(p_nodes(i) + ntrans + retim) =                    & 
-        lis_GR(5,i) * dadzIInst + sDADz(p_nodes(i) + ntrans + retim)               
+      sDADzi(p_nodes(i) + ntrans) =                    & 
+        lis_GR(5,i) * dadzIInst + sDADzi(p_nodes(i) + ntrans)               
 
       !$OMP ATOMIC
-      sDADz(p_nodes(i) + ntrans + 1_ip + retim) =             & 
-        lis_GR(6,i) * dadzIInst + sDADz(p_nodes(i) + ntrans + 1_ip + retim)       
+      sDADzi(p_nodes(i) + ntrans + 1_ip) =             & 
+        lis_GR(6,i) * dadzIInst + sDADzi(p_nodes(i) + ntrans + 1_ip)       
 
       !$OMP ATOMIC
-      sDADz(p_nodes(i) + ntrans + ReducedNX_G + retim) =      & 
-        lis_GR(7,i) * dadzIInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + retim)  
+      sDADzi(p_nodes(i) + ntrans + ReducedNX_G) =      & 
+        lis_GR(7,i) * dadzIInst + sDADzi(p_nodes(i) + ntrans + ReducedNX_G)  
 
       !$OMP ATOMIC
-      sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1 + retim) =  & 
-        lis_GR(8,i) * dadzIInst + sDADz(p_nodes(i) + ntrans + ReducedNX_G + 1 + retim)
+      sDADzi(p_nodes(i) + ntrans + ReducedNX_G + 1) =  & 
+        lis_GR(8,i) * dadzIInst + sDADzi(p_nodes(i) + ntrans + ReducedNX_G + 1)
 
     end if
   

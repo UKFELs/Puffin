@@ -22,6 +22,7 @@ use Stiffness
 use RK4int
 use dumpFiles
 use dummyf
+use ParaField
 
 
 implicit none
@@ -59,6 +60,7 @@ contains
     logical :: qWPF
     logical :: qWIF
     logical :: qOKL
+    integer error
 
 !    stepsize = delmz(iM)
     
@@ -105,7 +107,17 @@ contains
 
   end if
 
+!############################################
+!############################################
+!############################################
 
+!    TEMP 1D parallel field case only
+
+  call getLocalFieldIndices(sLengthOfElmZ2_G, sA)
+
+!############################################
+!############################################
+!############################################
 
 
   if (start_step == 1) then
@@ -156,6 +168,9 @@ contains
     end if 
 
 
+!  print*, ac_ifield
+!  call mpi_finalize(error) 
+!  stop
 
 
 
@@ -216,7 +231,7 @@ contains
 
 
   if ( qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps) ) then
-  
+
     call writeIM(sA, Ar_local, sZ, &
                  zDataFileName, iStep, iCsteps, iWriteNthSteps, &
                  lrecvs, ldispls, &
@@ -274,6 +289,10 @@ contains
 
   end do   ! End of integration loop
 
+
+
+!  call mpi_finalize(error) 
+!  stop
 
 
   call matchOut(sZ)

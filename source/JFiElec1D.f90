@@ -52,29 +52,32 @@ end subroutine getInterps_1D
 
 
 
-subroutine getFFelecs_1D(sA)
+subroutine getFFelecs_1D(sAr, sAi)
 
 
 use rhs_vars
 
-real(kind=wp), intent(in) :: sA(:)
+real(kind=wp), intent(in) :: sAr(:), sAi(:)
 integer(kind=ip) :: i
+integer error
+
 
 !$OMP DO
   do i = 1, maxEl
   
     if (i<=procelectrons_G(1)) then
 
-      sField4ElecReal(i) = lis_GR(1,i) * sA(p_nodes(i)) + sField4ElecReal(i)
-      sField4ElecReal(i) = lis_GR(2,i) * sA(p_nodes(i) + 1_ip) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(1,i) * sAr(p_nodes(i)) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(2,i) * sAr(p_nodes(i) + 1_ip) + sField4ElecReal(i)
   
-      sField4ElecImag(i) = lis_GR(1,i) * sA(p_nodes(i) + retim) + sField4ElecImag(i)
-      sField4ElecImag(i) = lis_GR(2,i) * sA(p_nodes(i) + retim + 1_ip) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(1,i) * sAi(p_nodes(i)) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(2,i) * sAi(p_nodes(i) + 1_ip) + sField4ElecImag(i)
 
     end if
   
   end do 
 !$OMP END DO
+
 
 end subroutine getFFelecs_1D
 
@@ -84,12 +87,12 @@ end subroutine getFFelecs_1D
 
 
 
-subroutine getSource_1D(sDADz, spr, spi, sgam, seta)
+subroutine getSource_1D(sDADzr, sDADzi, spr, spi, sgam, seta)
 
 
 use rhs_vars
 
-real(kind=wp), intent(inout) :: sDADz(:)
+real(kind=wp), intent(inout) :: sDADzr(:), sDADzi(:)
 real(kind=wp), intent(in) :: spr(:), spi(:)
 real(kind=wp), intent(in) :: sgam(:)
 real(kind=wp), intent(in) :: seta
@@ -110,12 +113,12 @@ real(kind=wp) :: dadzRInst, dadzIInst
                         * spr(i) / sgam(i) )
       
       !$OMP ATOMIC
-      sDADz(p_nodes(i)) =                         &
-        lis_GR(1,i) * dadzRInst + sDADz(p_nodes(i))
+      sDADzr(p_nodes(i)) =                         &
+        lis_GR(1,i) * dadzRInst + sDADzr(p_nodes(i))
       
       !$OMP ATOMIC
-      sDADz(p_nodes(i) + 1_ip) =                  &
-        lis_GR(2,i) * dadzRInst + sDADz(p_nodes(i) + 1_ip)                
+      sDADzr(p_nodes(i) + 1_ip) =                  &
+        lis_GR(2,i) * dadzRInst + sDADzr(p_nodes(i) + 1_ip)                
 
 
 !                   Imaginary part
@@ -124,12 +127,12 @@ real(kind=wp) :: dadzRInst, dadzIInst
                         * spi(i) / sgam(i) ) 
       
       !$OMP ATOMIC
-      sDADz(p_nodes(i) + retim) =                             & 
-        lis_GR(1,i) * dadzIInst + sDADz(p_nodes(i) + retim)                        
+      sDADzi(p_nodes(i)) =                             & 
+        lis_GR(1,i) * dadzIInst + sDADzi(p_nodes(i))                        
 
       !$OMP ATOMIC
-      sDADz(p_nodes(i) + 1_ip + retim) =                      & 
-        lis_GR(2,i) * dadzIInst + sDADz(p_nodes(i) + 1_ip + retim)
+      sDADzi(p_nodes(i) + 1_ip) =                      & 
+        lis_GR(2,i) * dadzIInst + sDADzi(p_nodes(i) + 1_ip)
 
     end if
   
