@@ -1211,7 +1211,7 @@ contains
 !    CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
     print*,"not opening space as not closed, and handy for timegrp, runinfo"
     Print*,error
-    
+    CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
     CALL addH5StringAttribute(dset_id,"vsType","limits",aspace_id)
     CALL addH5StringAttribute(dset_id,"vsKind","Cartesian",aspace_id)
     CALL h5sclose_f(aspace_id, error)
@@ -1239,6 +1239,7 @@ contains
 
 ! We make a mesh group
     CALL h5gcreate_f(file_id, meshScaledGrpname, group_id, error)
+    CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
     CALL addH5StringAttribute(group_id,"vsType","mesh",aspace_id)
     CALL addH5StringAttribute(group_id,"vsIndexOrder","compMinorC",aspace_id)
     CALL addH5StringAttribute(group_id,"vsCentering","nodal",aspace_id)
