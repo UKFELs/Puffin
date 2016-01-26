@@ -62,11 +62,11 @@ print outfilename
 
 tables.copy_file(filename,outfilename,overwrite=1)
 h5=tables.open_file(outfilename,'r+')
-print h5.root.APerp.shape
+print h5.root.aperp.shape
 
 # While this works it may be better to just read using numpy.asfortranarray() 
-# ie fieldin=numpy.asfortranarray(h5.root.APerp.read()) or whatever actually works
-fieldin=h5.root.APerp.read()
+# ie fieldin=numpy.asfortranarray(h5.root.aperp.read()) or whatever actually works
+fieldin=h5.root.aperp.read()
 print "fieldin shape "+str(fieldin.shape)
 testfield=numpy.asarray(fieldin, order='C')
 print "testfield shape"+str(testfield.shape)
@@ -77,12 +77,12 @@ print "fieldout shape"+str(fieldout.shape)
 for i in range(fieldin.shape[0]):
   for j in range(fieldin.shape[2]):
     fieldout[:,j,:,i]=fieldin[i,:,j,:].T
-#.reshape(numpy.array((h5.root.APerp.shape[3],h5.root.APerp.shape[2],h5.root.APerp.shape[1],2)),order='F')
+#.reshape(numpy.array((h5.root.aperp.shape[3],h5.root.aperp.shape[2],h5.root.aperp.shape[1],2)),order='F')
 print fieldout.shape
-h5.create_array('/','APerpN',fieldout)
-h5.copy_node_attrs('/APerp','/APerpN')
-h5.remove_node('/APerp')
-h5.rename_node('/APerpN','APerp')
-h5.root._v_children['APerp']._v_attrs.vsIndexOrder="compMinorC"
+h5.create_array('/','aperpN',fieldout)
+h5.copy_node_attrs('/aperp','/aperpN')
+h5.remove_node('/aperp')
+h5.rename_node('/aperpN','aperp')
+h5.root._v_children['aperp']._v_attrs.vsIndexOrder="compMinorC"
 h5.root._v_children['meshScaled']._v_attrs.vsIndexOrder="compMinorC"
 h5.close()
