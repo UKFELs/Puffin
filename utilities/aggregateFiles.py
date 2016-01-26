@@ -46,13 +46,13 @@ def getTimeSliceInfo(filelist):
   return len(filelist), min, max
    
 
-def getNumSpatialPoints(filelist):
+def getNumSpatialPoints(filelist,datasetname):
   """ getNumSpatialPoints(filelist) get num spatial points
 
   What it says on the tin. Same as extent of data.
   """
   h5in=tables.open_file(filelist[0],'r')
-  length=h5in.root.Power.shape[0]
+  length=h5in.root._f_getChild(datasetname).shape[0]
   min=h5in.root.globalLimits._v_attrs.vsLowerBounds
   max=h5in.root.globalLimits._v_attrs.vsUpperBounds
   h5in.close()
@@ -69,7 +69,7 @@ outfilename=baseName+'_all.vsh5'
 h5=tables.open_file(outfilename,'w')
 filelist=getTimeSlices(baseName)
 numTimes,minZT,maxZT=getTimeSliceInfo(filelist)
-numSpatialPoints, minS,maxS=getNumSpatialPoints(filelist)
+numSpatialPoints, minS,maxS=getNumSpatialPoints(filelist,datasetname)
 print "files in order:"
 print filelist
 h5.create_group('/','grid','')

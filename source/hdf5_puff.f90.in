@@ -290,7 +290,7 @@ contains
     INTEGER(HID_T) :: group_id      !< Group identifier
 !    logical, intent(in) :: qSeparate !<May reinstitute this.
     CHARACTER(LEN=9), PARAMETER :: dsetname = "electrons" !< Dataset name
-    CHARACTER(LEN=18) :: aname   !< Attribute name
+    CHARACTER(LEN=30) :: aname   !< Attribute name
     character(32_IP) :: filename
 !    logical, intent(inout) :: qOK
 !    INTEGER(HSIZE_T), DIMENSION(1) :: dims = (/iGloNumElectrons_G/) ! Dataset dimensions
@@ -506,6 +506,20 @@ contains
     CALL h5aclose_f(attr_id, error)
     CALL h5tclose_f(atype_id, error)
 
+    aname="gainLength"
+    attr_data_double=lg_G
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    CALL h5tclose_f(atype_id, error)
+
+    aname="cooperationLength"
+    attr_data_double=lc_G
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    CALL h5tclose_f(atype_id, error)
+
 ! then text attributes
     CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
     CALL h5tset_size_f(atype_id, attr_string_len, error)
@@ -571,7 +585,7 @@ contains
     CALL h5gclose_f(group_id, error)
 
     aname="electrons_xSI"
-    write(scaleToSIstring, '(E16.10)' ) (DSQRT(lg_G*lc_G)) 
+    write(scaleToSIstring, '(E16.9)' ) (DSQRT(lg_G*lc_G)) 
     attr_data_string=("electrons_x*" // scaleToSIstring)
     attr_string_len=len(trim(adjustl(attr_data_string)))
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
@@ -584,32 +598,32 @@ contains
 
 ! We make another group
     aname="electrons_zSI"
-    write(scaleToSIstring, '(E16.10)' ) lc_G
+    write(scaleToSIstring, '(E16.9)' ) lc_G
     attr_data_string=("electrons_z*" // scaleToSIstring)
     attr_string_len=len(trim(adjustl(attr_data_string)))
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)!
 ! Were there an SI version of this, we might be in the right place to use it
 
     aname="electrons_pxSI"
-    write(scaleToSIstring, '(E16.10)' ) sAw_G * m_e * c
+    write(scaleToSIstring, '(E16.9)' ) sAw_G * m_e * c
     attr_data_string=("electrons_px*" // scaleToSIstring)
     attr_string_len=len(trim(adjustl(attr_data_string)))
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
     aname="electrons_pySI"
-    write(scaleToSIstring, '(E16.10)' ) sAw_G * m_e * c
+    write(scaleToSIstring, '(E16.9)' ) sAw_G * m_e * c
     attr_data_string=("electrons_py*" // scaleToSIstring)
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
     aname="electrons_gammaSI"
-    write(scaleToSIstring, '(E16.10)' ) sGammaR_G
+    write(scaleToSIstring, '(E16.9)' ) sGammaR_G
     attr_data_string=("electrons_gamma*" // scaleToSIstring)
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
     aname="slice_nom_lamda"
 ! Todo: Actually needs to take account of slippage, and needs to identify
 ! which lamda was used (eg for 2 colour)
-    write(scaleToSIstring, '(E16.10)' ) lam_r_G
+    write(scaleToSIstring, '(E16.9)' ) lam_r_G
     attr_data_string=("floor(electrons_zSI/" // scaleToSIstring // ")")
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
@@ -621,16 +635,15 @@ contains
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
     aname="electrons_numPhysicalParticles"
-    write(scaleToSIstring, '(E16.10)' ) npk_bar_G
-    attr_data_string=("electrons_weight*" // scaleToSIstring // ")")
+    write(scaleToSIstring, '(E16.9)' ) npk_bar_G
+    attr_data_string=("electrons_weight*" // scaleToSIstring)
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
     aname="electrons_chargeSI"
-    write(scaleToSIstring, '(E16.10)' ) npk_bar_G*q_e
-    attr_data_string=("electrons_weight*" // scaleToSIstring // ")")
+    write(scaleToSIstring, '(E16.9)' ) npk_bar_G*q_e
+    attr_data_string=("electrons_weight*" // scaleToSIstring)
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
-! Todo: Write an expression for absolute z position
 ! Todo: write an expression for rms beam sizes
 ! Todo: write an expression for slice emittance
 
@@ -1198,7 +1211,7 @@ contains
 !    CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
     print*,"not opening space as not closed, and handy for timegrp, runinfo"
     Print*,error
-    
+    CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
     CALL addH5StringAttribute(dset_id,"vsType","limits",aspace_id)
     CALL addH5StringAttribute(dset_id,"vsKind","Cartesian",aspace_id)
     CALL h5sclose_f(aspace_id, error)
@@ -1226,6 +1239,7 @@ contains
 
 ! We make a mesh group
     CALL h5gcreate_f(file_id, meshScaledGrpname, group_id, error)
+    CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
     CALL addH5StringAttribute(group_id,"vsType","mesh",aspace_id)
     CALL addH5StringAttribute(group_id,"vsIndexOrder","compMinorC",aspace_id)
     CALL addH5StringAttribute(group_id,"vsCentering","nodal",aspace_id)
