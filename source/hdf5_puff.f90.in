@@ -492,6 +492,20 @@ contains
 !    Print*,'hdf5_puff:outputH5BeamFiles(charge written)'
     CALL h5tclose_f(atype_id, error)
 
+    aname="numTotalPhysicalParticles"
+    attr_data_double=npk_bar_G*q_e
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    CALL h5tclose_f(atype_id, error)
+
+    aname="distanceThroughMachine"
+    attr_data_double=real(iCSteps,kind=wp)*sStepSize*lg_G
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    CALL h5tclose_f(atype_id, error)
+
 ! then text attributes
     CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
     CALL h5tset_size_f(atype_id, attr_string_len, error)
@@ -607,12 +621,12 @@ contains
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
     aname="electrons_numPhysicalParticles"
-    write(scaleToSIstring, '(E16.10)' ) npk_G
+    write(scaleToSIstring, '(E16.10)' ) npk_bar_G
     attr_data_string=("electrons_weight*" // scaleToSIstring // ")")
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
     aname="electrons_chargeSI"
-    write(scaleToSIstring, '(E16.10)' ) npk_G*q_e
+    write(scaleToSIstring, '(E16.10)' ) npk_bar_G*q_e
     attr_data_string=("electrons_weight*" // scaleToSIstring // ")")
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
@@ -1361,7 +1375,7 @@ contains
 !!   asking for the run information to be written (ie parent routine)
    subroutine writeH5RunInfo(file_id, callerstr, error)
 
-    INTEGER(HID_T), INTENT=(in) :: file_id 
+    INTEGER(HID_T), INTENT(in) :: file_id 
     CHARACTER(LEN=12), intent(in) :: callerstr
     INTEGER(kind=ip) :: error
 !
