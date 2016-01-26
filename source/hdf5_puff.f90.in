@@ -514,7 +514,7 @@ contains
     CALL h5tclose_f(atype_id, error)
 
     aname="cooperationLength"
-    attr_data_double=lg_G
+    attr_data_double=lc_G
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
     CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
     CALL h5aclose_f(attr_id, error)
