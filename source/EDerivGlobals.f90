@@ -102,6 +102,8 @@ real(kind=wp), allocatable     :: sElGam_G(:)
 
 
 
+real(kind=wp), allocatable     :: dadz_w(:)
+
 
 
 
@@ -208,6 +210,8 @@ real(kind=wp)  :: ffact    ! Scaling factor for fourier transforms
 
 
 
+
+real(kind=wp) :: cf1_G
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

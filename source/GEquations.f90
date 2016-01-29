@@ -104,10 +104,12 @@ contains
 !$OMP WORKSHARE
 
         sdpr = sInv2rho * (fy_G * n2col *sin(ZOver2rho) - &
-              ( sEta_G * sp2 / sKappa_G**2 * &
+              ( cf1_G * sp2 * &
               sField4ElecReal ) )
 
 !$OMP END WORKSHARE
+
+
 
 
     end if
@@ -231,7 +233,7 @@ contains
 !$OMP WORKSHARE
 
         sdpi = sInv2rho * (fx_G * n2col * cos(ZOver2rho) - &
-                      ( sEta_G * sp2 / sKappa_G**2 * &
+                      ( cf1_G * sp2 * &
                       sField4ElecImag ) )
 
 !$OMP END WORKSHARE

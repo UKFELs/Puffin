@@ -22,8 +22,9 @@ real(kind=wp) :: locz2
 
 
 !$OMP DO PRIVATE(z2node, locz2)
-  do i = 1, maxEl
-    if (i<=procelectrons_G(1)) then 
+  do i = 1, procelectrons_G(1)
+  !do i = 1, maxEl
+!    if (i<=procelectrons_G(1)) then 
 
 
 !                  Get surrounding nodes 
@@ -35,7 +36,7 @@ real(kind=wp) :: locz2
       lis_GR(1,i) = (1.0_wp - locz2/dz2)
       lis_GR(2,i) = 1 - lis_GR(1,i)
 
-    end if
+!    end if
   end do
 !$OMP END DO
 
@@ -63,17 +64,25 @@ integer error
 
 
 !$OMP DO
-  do i = 1, maxEl
+  do i = 1, procelectrons_G(1)
+!  do i = 1, maxEl
   
-    if (i<=procelectrons_G(1)) then
+    !if (i<=procelectrons_G(1)) then
 
       sField4ElecReal(i) = lis_GR(1,i) * sAr(p_nodes(i)) + sField4ElecReal(i)
       sField4ElecReal(i) = lis_GR(2,i) * sAr(p_nodes(i) + 1_ip) + sField4ElecReal(i)
   
+  end do
+!$OMP END DO
+
+!$OMP DO
+  do i = 1, procelectrons_G(1)
+
+
       sField4ElecImag(i) = lis_GR(1,i) * sAi(p_nodes(i)) + sField4ElecImag(i)
       sField4ElecImag(i) = lis_GR(2,i) * sAi(p_nodes(i) + 1_ip) + sField4ElecImag(i)
 
-    end if
+    !end if
   
   end do 
 !$OMP END DO
@@ -98,20 +107,31 @@ real(kind=wp), intent(in) :: sgam(:)
 real(kind=wp), intent(in) :: seta
 
 integer(kind=ipl) :: i
-real(kind=wp) :: dadzRInst, dadzIInst
+real(kind=wp) :: dadzRInst, dadzIInst, dadzCom
 
+!$OMP WORKSHARE
+dadz_w = (s_chi_bar_G(i)/dV3) * (1 + seta * sp2(i) ) &
+                        / sgam(i)
+!$OMP END WORKSHARE
 
 !$OMP DO PRIVATE(dadzRInst, dadzIInst)
-  do i = 1, maxEl
+  do i = 1, procelectrons_G(1)
+  ! do i = 1, maxEl
   
-    if (i<=procelectrons_G(1)) then
+    !if (i<=procelectrons_G(1)) then
 
 
 !                  Get 'instantaneous' dAdz
 
-      dadzRInst = ((s_chi_bar_G(i)/dV3) * (1 + seta * sp2(i) ) &
-                        * spr(i) / sgam(i) )
       
+
+      !dadzRInst = ((s_chi_bar_G(i)/dV3) * (1 + seta * sp2(i) ) &
+      !                  * spr(i) / sgam(i) )
+      
+      ! dadzCom = ((s_chi_bar_G(i)/dV3)
+
+      dadzRInst = dadz_w(i) * spr(i)
+
       !$OMP ATOMIC
       sDADzr(p_nodes(i)) =                         &
         lis_GR(1,i) * dadzRInst + sDADzr(p_nodes(i))
@@ -123,9 +143,13 @@ real(kind=wp) :: dadzRInst, dadzIInst
 
 !                   Imaginary part
 
-      dadzIInst = ((s_chi_bar_G(i)/dV3) * (1 + seta * sp2(i) ) &
-                        * spi(i) / sgam(i) ) 
+      !dadzIInst = ((s_chi_bar_G(i)/dV3) * (1 + seta * sp2(i) ) &
+      !                  * spi(i) / sgam(i) ) 
       
+
+      dadzIInst = dadz_w(i) * spi(i)
+
+
       !$OMP ATOMIC
       sDADzi(p_nodes(i)) =                             & 
         lis_GR(1,i) * dadzIInst + sDADzi(p_nodes(i))                        
@@ -134,7 +158,7 @@ real(kind=wp) :: dadzRInst, dadzIInst
       sDADzi(p_nodes(i) + 1_ip) =                      & 
         lis_GR(2,i) * dadzIInst + sDADzi(p_nodes(i) + 1_ip)
 
-    end if
+    !end if
   
   end do 
 !$OMP END DO

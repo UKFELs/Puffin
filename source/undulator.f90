@@ -150,6 +150,16 @@ contains
 
 
 
+
+
+
+  call allact_rk4_arrs()
+
+
+
+
+
+
   do iStep = start_step, nSteps
   
 
@@ -289,7 +299,7 @@ contains
 
   end do   ! End of integration loop
 
-
+  call deallact_rk4_arrs()
 
 !  call mpi_finalize(error) 
 !  stop

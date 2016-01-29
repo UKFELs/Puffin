@@ -14,6 +14,26 @@ use Derivative
 use IO
 use ParaField
 
+implicit none
+
+  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dadz_r0, dadz_i0
+  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dadz_r1, dadz_i1
+  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dadz_r2, dadz_i2
+
+  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localtr0, A_localti0
+  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localtr1, A_localti1
+  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localtr2, A_localti2
+  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localtr3, A_localti3
+
+  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dxdx, dydx, dz2dx, dpxdx, dpydx, dpz2dx
+
+
+  REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dxm, dxt, xt    ! *t is 'temp', for use in next rhs call...
+  REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dym, dyt, yt
+  REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dpxm, dpxt, pxt
+  REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dpym, dpyt, pyt
+  REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dz2m, dz2t, z2t
+  REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dpz2m, dpz2t, pz2t  
 
 contains
 
@@ -56,23 +76,9 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
   REAL(KIND=WP)    :: h6, hh, szh
   !REAL(KIND=WP), DIMENSION(size(y)) :: dym, dyt, yt
 
-  REAL(KIND=WP), DIMENSION(iNumberElectrons_G) :: dxm, dxt, xt    ! *t is 'temp', for use in next rhs call...
-  REAL(KIND=WP), DIMENSION(iNumberElectrons_G) :: dym, dyt, yt
-  REAL(KIND=WP), DIMENSION(iNumberElectrons_G) :: dpxm, dpxt, pxt
-  REAL(KIND=WP), DIMENSION(iNumberElectrons_G) :: dpym, dpyt, pyt
-  REAL(KIND=WP), DIMENSION(iNumberElectrons_G) :: dz2m, dz2t, z2t
-  REAL(KIND=WP), DIMENSION(iNumberElectrons_G) :: dpz2m, dpz2t, pz2t  
 
-  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dadz_r0, dadz_i0
-  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dadz_r1, dadz_i1
-  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dadz_r2, dadz_i2
 
-  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localtr0, A_localti0
-  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localtr1, A_localti1
-  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localtr2, A_localti2
-  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localtr3, A_localti3
 
-  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dxdx, dydx, dz2dx, dpxdx, dpydx, dpz2dx
   REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dAdx
   REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localt 
   INTEGER(KIND=IP) :: error, trans
@@ -87,22 +93,7 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
   h6 = h / 6.0_WP
   szh = sz + hh
 
-  allocate(DxDx(iNumberElectrons_G))	  
-  allocate(DyDx(iNumberElectrons_G))    
-  allocate(DpxDx(iNumberElectrons_G))    
-  allocate(DpyDx(iNumberElectrons_G))    
-  allocate(Dz2Dx(iNumberElectrons_G))    
-  allocate(Dpz2Dx(iNumberElectrons_G))    
 
-
-  allocate(dadz_r0(tllen), dadz_i0(tllen))
-  allocate(dadz_r1(tllen), dadz_i1(tllen))
-  allocate(dadz_r2(tllen), dadz_i2(tllen))
-
-  allocate(A_localtr0(tllen), A_localti0(tllen))
-  allocate(A_localtr1(tllen), A_localti1(tllen))
-  allocate(A_localtr2(tllen), A_localti2(tllen))
-  allocate(A_localtr3(tllen), A_localti3(tllen))
 
   dadz_r0 = 0_wp
   dadz_r1 = 0_wp
@@ -316,6 +307,82 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
 
 !  deallocate(DADx)
 
+!  deallocate(dadz_r0, dadz_i0)
+!  deallocate(dadz_r1, dadz_i1)
+!  deallocate(dadz_r2, dadz_i2)
+!
+!  deallocate(A_localtr0, A_localti0)
+!  deallocate(A_localtr1, A_localti1)
+!  deallocate(A_localtr2, A_localti2)
+!  deallocate(A_localtr3, A_localti3)
+!
+!  deallocate(DxDx)    
+!  deallocate(DyDx)    
+!  deallocate(DpxDx)    
+!  deallocate(DpyDx)    
+!  deallocate(Dz2Dx)    
+!  deallocate(Dpz2Dx)    
+
+!   Set error flag and exit         
+
+  GOTO 2000
+
+!   Error Handler - Error log Subroutine in CIO.f90 line 709
+
+1000 CALL Error_log('Error in MathLib:rk4',tErrorLog_G)
+  PRINT*,'Error in MathLib:rk4'
+2000 CONTINUE
+
+end subroutine rk4par
+
+
+
+
+
+
+
+subroutine allact_rk4_arrs()
+
+
+  allocate(DxDx(iNumberElectrons_G))    
+  allocate(DyDx(iNumberElectrons_G))    
+  allocate(DpxDx(iNumberElectrons_G))    
+  allocate(DpyDx(iNumberElectrons_G))    
+  allocate(Dz2Dx(iNumberElectrons_G))    
+  allocate(Dpz2Dx(iNumberElectrons_G))    
+
+
+  allocate(dadz_r0(tllen), dadz_i0(tllen))
+  allocate(dadz_r1(tllen), dadz_i1(tllen))
+  allocate(dadz_r2(tllen), dadz_i2(tllen))
+
+  allocate(A_localtr0(tllen), A_localti0(tllen))
+  allocate(A_localtr1(tllen), A_localti1(tllen))
+  allocate(A_localtr2(tllen), A_localti2(tllen))
+  allocate(A_localtr3(tllen), A_localti3(tllen))
+
+  allocate(dxm(iNumberElectrons_G), &
+    dxt(iNumberElectrons_G), xt(iNumberElectrons_G))
+  allocate(dym(iNumberElectrons_G), &
+    dyt(iNumberElectrons_G), yt(iNumberElectrons_G))
+  allocate(dpxm(iNumberElectrons_G), &
+    dpxt(iNumberElectrons_G), pxt(iNumberElectrons_G))
+  allocate(dpym(iNumberElectrons_G), &
+    dpyt(iNumberElectrons_G), pyt(iNumberElectrons_G))
+  allocate(dz2m(iNumberElectrons_G), &
+    dz2t(iNumberElectrons_G), z2t(iNumberElectrons_G))
+  allocate(dpz2m(iNumberElectrons_G), &
+    dpz2t(iNumberElectrons_G), pz2t(iNumberElectrons_G))
+
+  allocate(dadz_w(iNumberElectrons_G))
+
+end subroutine allact_rk4_arrs
+
+
+
+
+subroutine deallact_rk4_arrs()
+
   deallocate(dadz_r0, dadz_i0)
   deallocate(dadz_r1, dadz_i1)
   deallocate(dadz_r2, dadz_i2)
@@ -332,17 +399,22 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
   deallocate(Dz2Dx)    
   deallocate(Dpz2Dx)    
 
-!   Set error flag and exit         
+  deallocate(dxm, &
+    dxt, xt)    
+  deallocate(dym, &
+    dyt, yt)
+  deallocate(dpxm, &
+    dpxt, pxt)
+  deallocate(dpym, &
+    dpyt, pyt)
+  deallocate(dz2m, &
+    dz2t, z2t)
+  deallocate(dpz2m, &
+    dpz2t, pz2t)
 
-  GOTO 2000
+  deallocate(dadz_w)
 
-!   Error Handler - Error log Subroutine in CIO.f90 line 709
-
-1000 CALL Error_log('Error in MathLib:rk4',tErrorLog_G)
-  PRINT*,'Error in MathLib:rk4'
-2000 CONTINUE
-
-end subroutine rk4par
+end subroutine deallact_rk4_arrs
 
 
 !subroutine RK4_inc

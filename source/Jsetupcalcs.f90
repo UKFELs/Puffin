@@ -193,6 +193,9 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 
 
 
+    cf1_G = sEta_G / sKappa_G**2
+
+
     diffstep = dStepFrac * 4.0_WP * pi * rho
     sBeta_G = sBeta
 
