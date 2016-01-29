@@ -23,7 +23,7 @@ SUBROUTINE read_in(zfilename, &
        sZ0, &
        LattFile,&
        iWriteNthSteps, &
-       iIntWriteNthSteps_l, &
+       iWriteIntNthSteps, &
        tArrayZ, &
        tArrayA, &
        tArrayVariables, &
@@ -46,12 +46,12 @@ SUBROUTINE read_in(zfilename, &
        qSimple, &
        sA0_Re, &
        sA0_Im, &
-       sFiltFact, &
+       sFiltFrac, &
        sDiffFrac, &
        sBeta, &
        srho, &
        saw, &
-       sgamma, &
+       sgamma_r, &
        lambda_w, &
        sEmit_n, &
        sux, &
@@ -132,7 +132,7 @@ SUBROUTINE read_in(zfilename, &
   REAL(KIND=WP) ,    INTENT(OUT)  :: sZ0
   CHARACTER(32_IP),  INTENT(INOUT):: LattFile
     
-  INTEGER(KIND=IP),  INTENT(OUT)  :: iWriteNthSteps, iIntWriteNthSteps_l
+  INTEGER(KIND=IP),  INTENT(OUT)  :: iWriteNthSteps, iWriteIntNthSteps
   TYPE(cArraySegment)             :: tArrayZ
   TYPE(cArraySegment)             :: tArrayA(:)
   TYPE(cArraySegment)             :: tArrayVariables(:)
@@ -167,10 +167,10 @@ SUBROUTINE read_in(zfilename, &
   LOGICAL, INTENT(out) :: qSimple
   CHARACTER(*), ALLOCATABLE, INTENT(INOUT) :: dist_f(:)
   
-  REAL(KIND=WP),     INTENT(OUT)  :: sFiltFact,sDiffFrac,sBeta
+  REAL(KIND=WP),     INTENT(OUT)  :: sFiltFrac,sDiffFrac,sBeta
   REAL(KIND=WP),     INTENT(OUT)  :: srho
   REAL(KIND=WP),     INTENT(OUT)  :: saw
-  REAL(KIND=WP),     INTENT(OUT)  :: sgamma, lambda_w
+  REAL(KIND=WP),     INTENT(OUT)  :: sgamma_r, lambda_w
   REAL(KIND=WP),     INTENT(OUT)  :: sux
   REAL(KIND=WP),     INTENT(OUT)  :: suy
   REAL(KIND=WP),     INTENT(OUT)  :: Dfact
@@ -183,7 +183,7 @@ SUBROUTINE read_in(zfilename, &
 
 ! Define local variables
     
-  integer(kind=ip) :: stpsprlam, nodesperlambda, nperiods ! Steps per lambda_w, nodes per lambda_r
+  integer(kind=ip) :: stepsPerPeriod, nodesperlambda, nperiods ! Steps per lambda_w, nodes per lambda_r
   real(kind=wp) :: dz2, zbar
   integer(kind=ip) :: nwaves
 
@@ -191,176 +191,108 @@ SUBROUTINE read_in(zfilename, &
   CHARACTER(32_IP) :: beam_file, seed_file
   LOGICAL :: qOKL, qMatched !   TEMP VAR FOR NOW, SHOULD MAKE FOR EACH BEAM
 
+  logical :: qWriteZ, qWriteA, &
+             qWritePperp, qWriteP2, qWriteZ2, &
+             qWriteX, qWriteY
+
+  logical :: qOneD, qFieldEvolve, qElectronsEvolve, &
+             qElectronFieldCoupling, qFocussing, qMatchedBeam, &
+             qDiffraction, qDump
+
+  integer(kind=ip) :: iNumNodesX, iNumNodesY, nodesPerLambdar
+  real(kind=wp) :: sFModelLengthX, sFModelLengthY, sFModelLengthZ2
+
+
+namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
+                 qElectronFieldCoupling, qFocussing, &
+                 qMatchedBeam, qDiffraction, qFilter, &
+                 q_noise, qDump, qResume, qSeparateFiles, &
+                 qFormattedFiles, qWriteZ, qWriteA, &
+                 qWritePperp, qWriteP2, qWriteZ2, &
+                 qWriteX, qWriteY, &
+                 beam_file, sElectronThreshold, &
+                 iNumNodesY, iNumNodesX, &
+                 nodesPerLambdar, sFModelLengthX, &
+                 sFModelLengthY, sFModelLengthZ2, &
+                 iRedNodesX, iRedNodesY, sFiltFrac, &
+                 sDiffFrac, sBeta, seed_file, srho, &
+                 sux, suy, saw, sgamma_r, sFocusfactor, &
+                 lambda_w, Dfact, zundType, taper, &                 
+                 LattFile, stepsPerPeriod, nPeriods, &
+                 sZ0, zDataFileName, iWriteNthSteps, &
+                 iWriteIntNthSteps, iDumpNthSteps, sPEOut                
 
 ! Begin subroutine:
 ! Set error flag to false         
-!
-    qOK = .FALSE.
+
+  qOK = .FALSE.
 
 ! Initialise array!
   qSwitches = .FALSE.
 
-! Open the file         
-  OPEN(UNIT=168,FILE=zfilename,IOSTAT=ios,&
-       ACTION='READ',POSITION='REWIND')
-  IF  (ios/=0_IP) THEN
-     GOTO 1000
-  END IF
+
+! Open and read namelist
+
+  open(168,file=zfilename, status='OLD', recl=80, delim='APOSTROPHE')
+  read(168,nml=mdata)
+  close(UNIT=168,STATUS='KEEP')
+
+  qSwitches(iOneD_CG) = qOneD
+  qSwitches(iFieldEvolve_CG) = qFieldEvolve
+  qSwitches(iElectronsEvolve_CG) = qElectronsEvolve
+  qSwitches(iElectronFieldCoupling_CG) = qElectronFieldCoupling
+  qSwitches(iFocussing_CG) = qFocussing
+  qSwitches(iMatchedBeam_CG) = qMatchedBeam
+  qSwitches(iDiffraction_CG) = qDiffraction
+  qSwitches(iDump_CG) = qDump
 
 
-!     Read in blank space at top of file
 
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
 
-!     Read in flags and switches....
 
-  READ(UNIT=168,FMT=*) qSwitches(iOneD_CG)
-  READ(UNIT=168,FMT=*) qSwitches(iFieldEvolve_CG)
-  READ(UNIT=168,FMT=*) qSwitches(iElectronsEvolve_CG)
-  READ(UNIT=168,FMT=*) qSwitches(iElectronFieldCoupling_CG)
-  READ(UNIT=168,FMT=*) qSwitches(iFocussing_CG)
-  READ(UNIT=168,FMT=*) qSwitches(iMatchedBeam_CG)
-  READ(UNIT=168,FMT=*) qSwitches(iDiffraction_CG)
-  READ(UNIT=168,FMT=*) qfilter
-  READ(UNIT=168,FMT=*) q_noise    ! qSwitches(iNoise_CG)
-  READ(UNIT=168,FMT=*) qSwitches(iDump_CG)
-  READ(UNIT=168,FMT=*) qResume
-  READ(UNIT=168,FMT=*) qSeparateFiles
-  READ(UNIT=168,FMT=*) qFormattedFiles  
-      
-  READ(UNIT=168,FMT=*) tArrayZ%qWrite
+
+
+  tArrayZ%qWrite = qWriteZ
   tArrayZ%zVariable = 'Z' ! Assign SDDS column names
     
-  READ(UNIT=168,FMT=*) tArrayA(iRe_A_CG)%qWrite        
+  tArrayA(iRe_A_CG)%qWrite = qWriteA
   tArrayA(iRe_A_CG)%zVariable = 'RE_A'
     
-  tArrayA(iIm_A_CG)%qWrite = tArrayA(iRe_A_CG)%qWrite	   
+  tArrayA(iIm_A_CG)%qWrite = qWriteA
   tArrayA(iIm_A_CG)%zVariable = 'IM_A'
     
-  READ(UNIT=168,FMT=*) tArrayVariables(iRe_PPerp_CG)%qWrite
+  tArrayVariables(iRe_PPerp_CG)%qWrite = qWritePperp
   tArrayVariables(iRe_PPerp_CG)%zVariable = 'RE_PPerp'
-      tArrayVariables(iIm_PPerp_CG)%qWrite = &
-       tArrayVariables(iRe_PPerp_CG)%qWrite
+  tArrayVariables(iIm_PPerp_CG)%qWrite = qWritePperp
   tArrayVariables(iIm_PPerp_CG)%zVariable = 'IM_PPerp'
     
-  READ(UNIT=168,FMT=*) tArrayVariables(iRe_Gam_CG)%qWrite
+  tArrayVariables(iRe_Gam_CG)%qWrite = qWriteP2
   tArrayVariables(iRe_Gam_CG)%zVariable = 'Gamma'
     
-  READ(UNIT=168,FMT=*) tArrayVariables(iRe_Z2_CG)%qWrite
+  tArrayVariables(iRe_Z2_CG)%qWrite = qWriteZ2
   tArrayVariables(iRe_Z2_CG)%zVariable = 'Z2'
     
-  READ(UNIT=168,FMT=*) tArrayVariables(iRe_X_CG)%qWrite
+  tArrayVariables(iRe_X_CG)%qWrite = qWriteX
   tArrayVariables(iRe_X_CG)%zVariable = 'X'	
     	
-  READ(UNIT=168,FMT=*) tArrayVariables(iRe_Y_CG)%qWrite
+  tArrayVariables(iRe_Y_CG)%qWrite = qWriteY
   tArrayVariables(iRe_Y_CG)%zVariable = 'Y'	
 
 
-!     Read whitespace...
-
-  READ(UNIT=168,FMT=*) 
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-
-!     Read electron beam params 
-
-    READ(UNIT=168,FMT=*) beam_file
-    READ(UNIT=168,FMT=*) sElectronThreshold
-
-!     Read whitespace...
-
-  READ(UNIT=168,FMT=*) 
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*) 
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)   
-    
-!     Read field params
-    
-  READ(UNIT=168,FMT=*) iNumNodes(iX_CG)
-  READ(UNIT=168,FMT=*) iNumNodes(iY_CG)
-  READ(UNIT=168,FMT=*) nodesperlambda
-  READ(UNIT=168,FMT=*) sWigglerLength(iX_CG)
-  READ(UNIT=168,FMT=*) sWigglerLength(iY_CG)
-  READ(UNIT=168,FMT=*) sWigglerLength(iZ2_CG)
-  READ(UNIT=168,FMT=*) iRedNodesX
-  READ(UNIT=168,FMT=*) iRedNodesY
-  READ(UNIT=168,FMT=*) sFiltFact
-  READ(UNIT=168,FMT=*) sDiffFrac
-  READ(UNIT=168,FMT=*) sBeta
-  READ(UNIT=168,FMT=*) seed_file
-
-!     Read whitespace...
-
-  READ(UNIT=168,FMT=*) 
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*) 
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)  
-  READ(UNIT=168,FMT=*)      
-  READ(UNIT=168,FMT=*)  
-    
-            
-!     Read Independant vars 
-
-  READ(UNIT=168,FMT=*) srho
-  READ(UNIT=168,FMT=*) sux
-  READ(UNIT=168,FMT=*) suy  
-  READ(UNIT=168,FMT=*) saw
-  READ(UNIT=168,FMT=*) sgamma
-  READ(UNIT=168,FMT=*) sFocusfactor
-  READ(UNIT=168,FMT=*) lambda_w
-  READ(UNIT=168,FMT=*) Dfact
-  READ(UNIT=168,FMT=*) zUndType
-!  READ(UNIT=168,FMT=*) kx_und_G
-!  READ(UNIT=168,FMT=*) ky_und_G
-  READ(UNIT=168,FMT=*) taper
-  
-!     Read whitespace...
-
-  READ(UNIT=168,FMT=*) 
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*) 
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)  
-  READ(UNIT=168,FMT=*)      
-  READ(UNIT=168,FMT=*) 
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  
-  
-!     Read vars for integration lengths and ouput
-
-
-  READ(UNIT=168,FMT=*) LattFile  
-  READ(UNIT=168,FMT=*) stpsprlam
-  READ(UNIT=168,FMT=*) nperiods
-  READ(UNIT=168,FMT=*) sZ0
-  READ(UNIT=168,FMT=*) zDataFileName 
-  READ(UNIT=168,FMT=*) iWriteNthSteps 
-  READ(UNIT=168,FMT=*) iIntWriteNthSteps_l  
-  READ(UNIT=168,FMT=*) iDumpNthSteps  
-  READ(UNIT=168,FMT=*) sPEOut  ! Put to 100% if all are to be written
-  
-  CLOSE(UNIT=168,STATUS='KEEP')  
+  iNumNodes(iX_CG) = iNumNodesX
+  iNumNodes(iY_CG) = iNumNodesY
+  nodesperlambda   = nodesPerLambdar
+  sWigglerLength(iX_CG) = sFModelLengthX
+  sWigglerLength(iY_CG) = sFModelLengthY
+  sWigglerLength(iZ2_CG) = sFModelLengthZ2
 
 
 
-  sStepSize = 4.0_WP * pi * srho / real(stpsprlam,kind=wp)
-  nSteps = nperiods * stpsprlam
+
+
+
+  sStepSize = 4.0_WP * pi * srho / real(stepsPerPeriod,kind=wp)
+  nSteps = nperiods * stepsPerPeriod
 
   if (tProcInfo_G%qRoot) print*, 'step size is --- ', sStepSize
 
