@@ -1,5 +1,5 @@
 !************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
+!** Copyright 2013-2016, Lawrence Campbell and Brian McNeil.    **!
 !** This program must not be copied, distributed or altered in  **!
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
@@ -13,7 +13,7 @@ use globals
 use functions
 use sddsROutput
 use createSDDS
-
+use ParallelSetUp
 
 
 implicit none
@@ -63,7 +63,7 @@ contains
 
 !    complex(kind=wp), allocatable :: wfield(:,:,:)
     real(kind=wp), allocatable :: power(:)
-
+    
     allocate(power(nz2_g))
 
 !    allocate(wfield(nx,ny,nz2))
@@ -382,5 +382,75 @@ contains
     end do
     
   end function m_trapz
+
+
+
+   
+
+
+  subroutine getCurrNpts(sam_len, npts)
+
+    real(kind=wp), intent(in) :: sam_len
+    integer(kind=ip), intent(out) :: npts
+
+    npts = ceiling(sLengthOfElmZ2_G*(NZ2_G-1)/sam_len)  + 1_ip ! round up over length of system
+
+  end subroutine getCurrNpts
+
+
+
+
+
+
+  subroutine getCurr(sam_len, Iarray)
+
+    use typesAndConstants
+
+    real(kind=wp), intent(in) :: sam_len
+    real(kind=wp), intent(inout) :: Iarray(:)
+
+    integer(kind=ip) :: ij, inl, inu
+    real(kind=wp) :: li1, li2, locz2
+
+    do ij = 1, size(sElX_G)
+
+      !   Array indices 
+      inl = ceiling(sElZ2_G(ij)/sam_len)
+      inu = inl + 1
+
+      if ((inu > NZ2_G) .or. (inl<0)) then
+        print*, 'NODES OUTSIDE BOUNDS'
+        STOP
+      end if
+
+      ! Interpolation fractions
+      locz2 = sElZ2_G(ij) - (inl-1) * sam_len
+      li2 = locz2 / sam_len
+      li1 = 1_wp - li2
+
+      if ((li2 < 0.0_wp) .or. (li1<0.0_wp)) then
+        print*, 'interps are negative!'
+        STOP
+      end if
+
+      ! interpolate onto current mesh
+      Iarray(inl) = li1 * s_chi_bar_G(ij) + Iarray(inl)
+      Iarray(inu) = li2 * s_chi_bar_G(ij) + Iarray(inu)
+
+    end do
+
+
+    call sum2RootArr(Iarray, size(Iarray), 0)
+
+    Iarray = Iarray * npk_bar_G    ! N_e at each node
+    Iarray = Iarray * q_e / sam_len    ! dQ / dz2
+    Iarray = Iarray * c / lc_G         ! dQ / dt
+
+  end subroutine getCurr
+
+
+
+
+
 
 end module avwrite

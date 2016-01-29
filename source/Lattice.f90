@@ -12,6 +12,7 @@ USE ArrayFunctions
 USE ElectronInit
 use gtop2
 use initConds
+use functions
 
 implicit none
 
@@ -249,6 +250,36 @@ contains
 ! ##############################################
 
 
+
+  subroutine correctTrans()
+
+! Apply a virtual 'magnet corrector' at the end of the wiggler
+! module. It simply centers the beam in the transverse dimensions
+
+    real(kind=wp) :: spx_m, spy_m, sx_m, sy_m
+
+
+! Calculate means 
+
+    spx_m = arr_mean_para_weighted(sElPX_G, s_chi_bar_G)
+    spy_m = arr_mean_para_weighted(sElPY_G, s_chi_bar_G)
+
+    sx_m = arr_mean_para_weighted(sElX_G, s_chi_bar_G)
+    sy_m = arr_mean_para_weighted(sElY_G, s_chi_bar_G)
+
+! Correct coordinates
+
+    sElPX_G = sElPX_G - spx_m
+    sElPY_G = sElPY_G - spy_m
+
+    sElX_G = sElX_G - sx_m
+    sElY_G = sElY_G - sy_m
+
+
+  end subroutine correctTrans
+
+
+!  #############################################
 
 
 

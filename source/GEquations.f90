@@ -52,6 +52,7 @@ contains
 
 !     For curved pole undulator
 
+!$OMP WORKSHARE
 
         sdpr = sInv2rho * (  n2col * cosh(kx_und_G * sx) * cosh(ky_und_G * sy) &
                             * sin(ZOver2rho)  &
@@ -61,10 +62,14 @@ contains
                      sqrt(sEta_G) * sInv2rho / kx_und_G  *    & 
                      cosh(sx * kx_und_G) * sinh(sy * ky_und_G) *  &
                      n2col * cos(ZOver2rho) )
+    
+!$OMP END WORKSHARE
 
     else if (zUndType_G == 'planepole')  then
 
 !     Re(p_perp) equation for plane-poled undulator
+
+!$OMP WORKSHARE
 
         sdpr = sInv2rho * ( n2col * cosh( sqrt(sEta_G) * sInv2rho * sy) & 
                             * sin(ZOver2rho) & 
@@ -74,10 +79,9 @@ contains
                    * sinh( sqrt(sEta_G) * sInv2rho * sy ) &
                    * n2col * cos(ZOver2rho) )
 
+!$OMP END WORKSHARE
 
     else if (zUndType_G == 'helical') then
-
-
 
         if (iUndPlace_G == iUndStart_G) then 
 
@@ -148,23 +152,12 @@ contains
 !     "normal" PUFFIN case with no off-axis undulator
 !     field variation
 
-!      if (qFocussing_G) then
-
-!        sdpr = sInv2rho * (fy_G*n2col*sin(ZOver2rho) - &
-!                        (salphaSq * sEta_G * sp2 * &
-!                        sField4ElecReal ) ) - & 
-!                        nd / Lj * & ! focusing term
-!                        (  ( kbeta**2 * sx) + (sEta_G / &
-!                        ( 1.0_WP + (sEta_G * sp2) ) * &
-!                        sdx * dp2f ) )
-!
-!      else 
-
-
         if (iUndPlace_G == iUndStart_G) then 
 
           szt = sZ
           szt = szt / 2_wp / sRho_G
+
+!$OMP WORKSHARE
 
           sdpr = sInv2rho * (  n2col0 * fy_G * (- sin(szt / 8_wp) * &
                     cos(szt / 8_wp) * cos(szt) / 4_wp   &
@@ -173,11 +166,15 @@ contains
                 ( sEta_G * sp2 / sKappa_G**2 * &
                 sField4ElecReal ) )
 
+!$OMP END WORKSHARE
+
 
         else if (iUndPlace_G == iUndEnd_G) then
  
           szt = sZ - sZFE
           szt = szt / 2_wp / sRho_G
+
+!$OMP WORKSHARE
 
           sdpr = sInv2rho * ( n2col0 * fy_G * ( cos(szt / 8_wp) * &
                     sin(szt / 8_wp) * cos(szt)  / 4_wp  &
@@ -186,15 +183,20 @@ contains
                 ( sEta_G * sp2 / sKappa_G**2 * &
                 sField4ElecReal *  sInv2rho )     )
 
+!$OMP END WORKSHARE
+
 
         else if (iUndPlace_G == iUndMain_G) then
+
+!$OMP WORKSHARE
 
           sdpr = sInv2rho * (fy_G*n2col *sin(ZOver2rho) - &
                 ( sEta_G * sp2 / sKappa_G**2 * &
                 sField4ElecReal ) )
 
-        end if
+!$OMP END WORKSHARE
 
+        end if
 
     end if
 
@@ -244,6 +246,7 @@ contains
 
 !     For curved pole undulator
 
+!$OMP WORKSHARE
 
         sdpi = sInv2rho * ( n2col * kx_und_G / ky_und_G * &
                             sinh(kx_und_G * sx) * sinh(ky_und_G * sy) &
@@ -255,11 +258,14 @@ contains
                      cosh(sx * kx_und_G) * sinh(sy * ky_und_G) *  &
                      n2col * cos(ZOver2rho) )
 
+!$OMP END WORKSHARE
+
     else if (zUndType_G == 'planepole') then 
 
 !     Im(p_perp) equation for plane-poled undulator
 
 
+!$OMP WORKSHARE
 
         sdpi = sInv2rho * ( 0_wp  &
                             - sEta_G * sp2 / sKappa_G**2 *    &
@@ -267,6 +273,8 @@ contains
                - ( sKappa_G * spr / sgam * (1 + sEta_G * sp2) &
                    * sinh( sqrt(sEta_G) * sInv2rho * sy ) &
                    * n2col * cos(ZOver2rho) )
+
+!$OMP END WORKSHARE
 
 
     else if (zUndType_G == 'helical') then
@@ -352,12 +360,12 @@ contains
 !
 !      else
 
-
         if (iUndPlace_G == iUndStart_G) then 
 
           szt = sZ
           szt = szt / 2_wp / sRho_G
 
+!$OMP WORKSHARE
 
           sdpi =   sInv2rho * ( n2col0 * fx_G * ( sin(szt / 8_wp) * &
                    cos(szt / 8_wp) * sin(szt) / 4_wp &
@@ -366,11 +374,14 @@ contains
                   ( sEta_G * sp2 / sKappa_G**2 * &
                   sField4ElecImag ) )
 
+!$OMP END WORKSHARE
 
         else if (iUndPlace_G == iUndEnd_G) then
 
           szt = sZ - sZFE
           szt = szt / 2_wp / sRho_G
+
+!$OMP WORKSHARE
 
           sdpi = sInv2rho * ( n2col0 * fx_G * (- cos(szt / 8_wp) * &
                     sin(szt / 8_wp) * sin(szt) / 4_wp  &
@@ -379,17 +390,19 @@ contains
                   ( sEta_G * sp2 / sKappa_G**2 * &
                   sField4ElecImag * sInv2rho) )
 
+!$OMP END WORKSHARE
+
         else if (iUndPlace_G == iUndMain_G) then
+
+!$OMP WORKSHARE
 
           sdpi = sInv2rho * (fx_G * n2col * cos(ZOver2rho) - &
                         ( sEta_G * sp2 / sKappa_G**2 * &
                         sField4ElecImag ) )
 
+!$OMP END WORKSHARE
 
         end if
-
-!      end if
-
 
     end if
 

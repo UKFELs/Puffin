@@ -127,10 +127,13 @@ subroutine writeIM(sA, Ar_local, sZ, &
                  iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
                  zDataFileName, qWriteFull, &
                  qWriteInt, qOK)
-
-  else if (wrMeth_G == 'hdf5') then
-
-    call wr_h5()
+! temporarilly commenting as we want files written both ways
+!  else if (wrMeth_G == 'hdf5') then
+!    print*,zDataFileName
+    call wr_h5(sA, sZ, tArrayA, tArrayE, tArrayZ, &
+                 iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
+                 zDataFileName, qWriteFull, &
+                 qWriteInt, qOK)
 
   else 
 

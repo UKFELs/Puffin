@@ -469,4 +469,26 @@ END SUBROUTINE shareFileType
 
   END SUBROUTINE sum_mpi_int14
 
+
+  SUBROUTINE sum_mpi_real(in1,o1)
+
+    IMPLICIT NONE
+
+    real(kind=wp), intent(in) :: in1
+    real(kind=wp), intent(out) :: o1
+
+    integer :: error ! for MPI errors
+
+    real(kind=wp), allocatable :: trecv(:)
+
+    ALLOCATE(trecv(tProcInfo_G%size))
+
+    CALL MPI_ALLGATHER(in1,1,MPI_DOUBLE_PRECISION, &
+                       trecv,1,MPI_DOUBLE_PRECISION, &
+                       tProcInfo_G%comm,error)
+
+    o1 = sum(trecv)
+
+  END SUBROUTINE sum_mpi_real
+
 END MODULE ParallelSetUp

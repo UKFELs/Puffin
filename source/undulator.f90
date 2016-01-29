@@ -60,7 +60,6 @@ contains
     logical :: qWIF
     logical :: qOKL
 
-
 !    stepsize = delmz(iM)
     
 !    iUndType_G = iDetail(iM)
@@ -277,8 +276,10 @@ contains
 
 
 
+
   if (.not. qUndEnds_G) call matchOut(sZ)
 
+  call correctTrans()  ! correct transverse motion at undulator exit
 
   deallocate(sAr)
   deallocate(Ar_local)

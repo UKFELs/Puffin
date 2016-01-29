@@ -1,3 +1,10 @@
+!************* THIS HEADER MUST NOT BE REMOVED *******************!
+!** Copyright 2009-2016, University of Strathclyde              **!
+!** written by Lawrence Campbell and Brian McNeil.              **!
+!** This program must not be copied, distributed or altered in  **!
+!** any way without the prior permission of the above authors.  **!
+!*****************************************************************!
+
 MODULE FFTW_CONSTANTS            		
 
 !---------------------------------------------------------------------
