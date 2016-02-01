@@ -367,21 +367,52 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   INTEGER(KIND=IP) :: b_ind
   INTEGER::ios
   CHARACTER(96) :: dum1, dum2, dtype
+  logical, allocatable :: qMatched_A(:)
+
+
+! Declare namelists
+
+  namelist /nblist/ nbeams, dtype
+  namelist /blist/ sSigmaE, sLenE, iNumElectrons, &
+                   sEmit_n, sQe, bcenter,  gammaf, &
+                   chirp, mag, fr, qRndEj_G, sSigEj_G, &
+                   qMatched_A
 
   qOK = .FALSE.
   
 ! Open the file         
-  OPEN(UNIT=168,FILE=be_f,IOSTAT=ios,&
-    ACTION='READ',POSITION='REWIND')
-  IF  (ios/=0_IP) THEN
-    CALL Error_log('Error in read_in:OPEN(input file) not performed correctly, IOSTAT/=0',tErrorLog_G)
-    GOTO 1000
-  END IF
+!  OPEN(UNIT=168,FILE=be_f,IOSTAT=ios,&
+!    ACTION='READ',POSITION='REWIND')
+!  IF  (ios/=0_IP) THEN
+!    CALL Error_log('Error in read_in:OPEN(input file) not performed correctly, IOSTAT/=0',tErrorLog_G)
+!    GOTO 1000
+!  END IF
 
 !     Read in file header to get number of beams
 
-  READ(UNIT=168,FMT=*) dum1, dum2, dtype
-  dtype = TRIM(ADJUSTL(dtype))
+!  READ(UNIT=168,FMT=*) dum1, dum2, dtype
+!  dtype = TRIM(ADJUSTL(dtype))
+
+
+!!!!! Need to make qMatched an array 
+!!!!! Maybe make qMathcField or something to choose which beam is matched to transverse field area (numerically - sampling wise)..???
+! Read first namelist - number of beams only
+
+  open(161,file=be_f, status='OLD', recl=80, delim='APOSTROPHE')
+  read(161,nml=nblist)
+
+
+! Allocate arrays
+
+
+  allocate(sSigmaE(nbeams,6))
+  allocate(sLenE(nbeams,6))
+  allocate(iNumElectrons(nbeams,6))
+  allocate(sEmit_n(nbeams),sQe(nbeams),bcenter(nbeams),gammaf(nbeams))
+  allocate(chirp(nbeams), qMatched_A(nbeams))
+  allocate(mag(nbeams), fr(nbeams))
+  allocate(qRndEj_G(nbeams), sSigEj_G(nbeams))
+
 
   if (dtype == 'dist') then
     qSimple = .false.
@@ -391,82 +422,22 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
   if (qSimple) then
 
+! Read in arrays
 
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*) nbeams
+    read(161,nml=blist)
 
+    close(UNIT=161,STATUS='KEEP')
 
-    ALLOCATE(sSigmaE(nbeams,6))
-    ALLOCATE(sLenE(nbeams,6))
-    ALLOCATE(iNumElectrons(nbeams,6))
-    ALLOCATE(sEmit_n(nbeams),sQe(nbeams),bcenter(nbeams),gammaf(nbeams))
-    ALLOCATE(chirp(nbeams))
-    allocate(mag(nbeams), fr(nbeams))
-    allocate(qRndEj_G(nbeams), sSigEj_G(nbeams))
-    
-!     Loop round beams, reading in data
-
-    DO b_ind = 1,nbeams
-
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*) sSigmaE(b_ind,iX_CG)
-      READ(UNIT=168,FMT=*) sSigmaE(b_ind,iY_CG)
-      READ(UNIT=168,FMT=*) sSigmaE(b_ind,iZ2_CG)
-      READ(UNIT=168,FMT=*) sSigmaE(b_ind,iPX_CG)
-      READ(UNIT=168,FMT=*) sSigmaE(b_ind,iPY_CG)
-      READ(UNIT=168,FMT=*) sSigmaE(b_ind,iGam_CG)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*) sLenE(b_ind,iX_CG)
-      READ(UNIT=168,FMT=*) sLenE(b_ind,iY_CG)
-      READ(UNIT=168,FMT=*) sLenE(b_ind,iZ2_CG)
-      READ(UNIT=168,FMT=*) sLenE(b_ind,iPX_CG)
-      READ(UNIT=168,FMT=*) sLenE(b_ind,iPY_CG)
-      READ(UNIT=168,FMT=*) sLenE(b_ind,iGam_CG)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iX_CG)
-      READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iY_CG)
-      READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iZ2_CG)
-      READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iPX_CG)
-      READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iPY_CG)
-      READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iGam_CG)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*) qMatched
-      READ(UNIT=168,FMT=*) gammaf(b_ind)
-      READ(UNIT=168,FMT=*) sEmit_n(b_ind)
-      READ(UNIT=168,FMT=*) chirp(b_ind)
-      READ(UNIT=168,FMT=*) bcenter(b_ind)
-      READ(UNIT=168,FMT=*) mag(b_ind)
-      READ(UNIT=168,FMT=*) fr(b_ind)      
-      READ(UNIT=168,FMT=*) qRndEj_G(b_ind)
-      READ(UNIT=168,FMT=*) sSigEj_G(b_ind)
-      READ(UNIT=168,FMT=*) sQe(b_ind)
-    
-    END DO
+    qMatched = qMatched_A(1)
 
   else
 
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*) nbeams
+    READ(UNIT=161,FMT=*)
+    READ(UNIT=161,FMT=*)
+    READ(UNIT=161,FMT=*)
+    READ(UNIT=161,FMT=*)
+    READ(UNIT=161,FMT=*)
+    READ(UNIT=161,FMT=*) nbeams
 
     allocate(dist_f(nbeams))
     allocate(iNumElectrons(nbeams,6))
@@ -481,17 +452,22 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
     ! READ IN FNAMES
     !!!!!!!!!!!!!!!!
     !!!!!!!!!!!!!!!!
-    READ(UNIT=168,FMT=*) 
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
+    READ(UNIT=161,FMT=*) 
+    READ(UNIT=161,FMT=*)
+    READ(UNIT=161,FMT=*)
 
     DO b_ind = 1, nbeams
-      READ(UNIT=168,FMT=*) dist_f(b_ind)
+      READ(UNIT=161,FMT=*) dist_f(b_ind)
     END DO
+
+    CLOSE(UNIT=161,STATUS='KEEP')
 
   end if
 
-  CLOSE(UNIT=168,STATUS='KEEP')
+
+
+
+
 
 ! Set the error flag and exit
   qOK = .TRUE.
