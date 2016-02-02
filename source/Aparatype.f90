@@ -1,5 +1,6 @@
 !************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
+!** Copyright 2013-2016 University of Strathclyde               **!
+!** Written by Lawrence Campbell and Brian McNeil.              **!
 !** This program must not be copied, distributed or altered in  **!
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
