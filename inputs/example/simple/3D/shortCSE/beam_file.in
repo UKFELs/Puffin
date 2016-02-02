@@ -26,25 +26,23 @@
 ! qMatched_A - Automatically match beam to focusing channel??
 !========================================================================
 
-
 &NBLIST
 nbeams = 1
 dtype = 'simple'
 /
 
 &BLIST
-sSigmaE =1.0, 1.0, 1E8, 1.0, 1.0, 0.001
-sLenE = 1E-6, 1E-6, 6.0, 1E-6, 1E-6, 0.006
-iNumElectrons = 9, 9, 900, 9, 9, 5
+sSigmaE =1.0, 1.0, 0.222, 1.0, 1.0, 0.001
+sLenE = 1E-6, 1E-6, 2.0, 1E-6, 1E-6, 0.006
+iNumElectrons = 7, 7, 400, 7, 7, 7
 sEmit_n = 1.0
-sQe = 1.0E-9
+sQe = 3.5908E-11
 bcenter = 0.0
 gammaf = 1.0
 chirp = 0.0
 mag = 0.0
 fr = 1.0
 qRndEj_G = .false.
-sSigEj_G = 0.02
+sSigEj_G = 0.06
 qMatched_A = .true.
 /
-

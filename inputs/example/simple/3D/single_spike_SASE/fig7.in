@@ -118,14 +118,14 @@
  qWriteY                = .true.   
  beam_file              = 'beam_file.in'     
  sElectronThreshold     = 0.05
- iNumNodesX             = 65      
- iNumNodesY             = 65 
+ iNumNodesX             = 85      
+ iNumNodesY             = 85 
  nodesPerLambdar        = 14
  sFModelLengthX         = 44.49088 
  sFModelLengthY         = 44.49088 
- sFModelLengthZ2        = 14.5
- iRedNodesX             = 30
- iRedNodesY             = 30
+ sFModelLengthZ2        = 31.0
+ iRedNodesX             = 20
+ iRedNodesY             = 20
  sFiltFrac              = 0.3
  sDiffFrac              = 1.0
  sBeta                  = 1.0
@@ -142,7 +142,7 @@
  taper                  = 0.0
  lattFile               = ''
  stepsPerPeriod         = 30
- nPeriods               = 115
+ nPeriods               = 250
  sZ0                    = 0.0
  zDataFileName          = 'DataFile.dat'
  iWriteNthSteps         = 1500
@@ -150,4 +150,3 @@
  iDumpNthSteps          = 3000
  sPEOut                 = 100.0
  /
-
