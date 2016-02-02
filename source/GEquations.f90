@@ -31,13 +31,15 @@ implicit none
 contains
 
   subroutine dppdz_r_f(sx, sy, sz2, spr, spi, sgam, &
-                       sdpr, qOK)
+                       sZ, sdpr, qOK)
 
   	implicit none
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:), sZ
     real(kind=wp), intent(out) :: sdpr(:)
+
+    real(kind=wp) :: szt
 
     logical, intent(inout) :: qOK
 
@@ -62,7 +64,6 @@ contains
                      n2col * cos(ZOver2rho) )
     
 !$OMP END WORKSHARE
-        
 
     else if (zUndType_G == 'planepole')  then
 
@@ -80,19 +81,70 @@ contains
 
 !$OMP END WORKSHARE
 
-
     else if (zUndType_G == 'helical') then
+
+        if (iUndPlace_G == iUndStart_G) then 
+
+          szt = sZ
+          szt = szt / 2_wp / sRho_G
 
 !$OMP WORKSHARE
 
-        sdpr = sInv2rho * ( n2col * sin(ZOver2rho)  & 
-                            - sEta_G * sp2 / sKappa_G**2 *    &
-                            sField4ElecReal ) & 
-               + ( sKappa_G * spi / sgam * (1 + sEta_G * sp2) &
-                   * sqrt(sEta_G) * sInv2rho * n2col * (     &
-                    -sx * sin( ZOver2rho )  + sy * cos( ZOver2rho ) ) )
+          sdpr = sInv2rho * ( n2col0 * (- sin(szt / 8_wp) * &
+                      cos(szt / 8_wp) * cos(szt) / 4_wp   &
+                    +  sin(szt/8_wp)**2_wp  * sin(szt) )  &
+                              - sEta_G * sp2 / sKappa_G**2 *    &
+                              sField4ElecReal ) & 
+                 + ( sKappa_G * spi / sgam * (1 + sEta_G * sp2) &
+                     * sqrt(sEta_G) * sInv2rho * n2col0 * (     & 
+                      sx * ( 1/32_wp * cos(szt/4_wp) * sin(szt) + &
+                              1/4_wp * sin(szt/4_wp) * cos(szt) - & 
+                              sin(szt/8_wp)**2 * sin(szt) )    + &
+                      sy * ( -1/32_wp * cos(szt/4_wp) * cos(szt) + &
+                              1/4_wp * sin(szt/4_wp) * sin(szt) + & 
+                              sin(szt/8_wp)**2 * cos(szt) ) ) ) 
 
 !$OMP END WORKSHARE
+
+        else if (iUndPlace_G == iUndEnd_G) then
+ 
+          szt = sZ - sZFE
+          szt = szt / 2_wp / sRho_G
+
+!$OMP WORKSHARE
+
+          sdpr = sInv2rho * ( n2col * ( cos(szt / 8_wp) * &
+                      sin(szt / 8_wp) * cos(szt)  / 4_wp  &
+                    +  cos(szt/8_wp)**2_wp  * sin(szt) ) &
+                              - sEta_G * sp2 / sKappa_G**2 *    &
+                              sField4ElecReal ) & 
+                 + ( sKappa_G * spi / sgam * (1 + sEta_G * sp2) &
+                     * sqrt(sEta_G) * sInv2rho * n2col * (     & 
+                      sx * ( -1/32_wp * cos(szt/4_wp) * sin(szt) - &
+                              1/4_wp * sin(szt/4_wp) * cos(szt) - & 
+                              cos(szt/8_wp)**2 * sin(szt) )    + &
+                      sy * ( 1/32_wp * cos(szt/4_wp) * cos(szt) - &
+                              1/4_wp * sin(szt/4_wp) * sin(szt) + & 
+                              cos(szt/8_wp)**2 * cos(szt) ) ) ) 
+
+!$OMP END WORKSHARE
+
+        else if (iUndPlace_G == iUndMain_G) then
+
+!$OMP WORKSHARE
+
+          sdpr = sInv2rho * ( n2col * sin(ZOver2rho)  & 
+                              - sEta_G * sp2 / sKappa_G**2 *    &
+                              sField4ElecReal ) & 
+                 + ( sKappa_G * spi / sgam * (1 + sEta_G * sp2) &
+                     * sqrt(sEta_G) * sInv2rho * n2col * (     &
+                      -sx * sin( ZOver2rho )  + sy * cos( ZOver2rho ) ) )
+
+!$OMP END WORKSHARE
+
+        end if
+
+
 
     else
 
@@ -100,15 +152,51 @@ contains
 !     "normal" PUFFIN case with no off-axis undulator
 !     field variation
 
+        if (iUndPlace_G == iUndStart_G) then 
+
+          szt = sZ
+          szt = szt / 2_wp / sRho_G
 
 !$OMP WORKSHARE
 
-        sdpr = sInv2rho * (fy_G * n2col *sin(ZOver2rho) - &
-              ( sEta_G * sp2 / sKappa_G**2 * &
-              sField4ElecReal ) )
+          sdpr = sInv2rho * (  n2col0 * fy_G * (- sin(szt / 8_wp) * &
+                    cos(szt / 8_wp) * cos(szt) / 4_wp   &
+                  +  sin(szt/8_wp)**2_wp  * sin(szt) ) &
+                 - &
+                ( sEta_G * sp2 / sKappa_G**2 * &
+                sField4ElecReal ) )
 
 !$OMP END WORKSHARE
 
+
+        else if (iUndPlace_G == iUndEnd_G) then
+ 
+          szt = sZ - sZFE
+          szt = szt / 2_wp / sRho_G
+
+!$OMP WORKSHARE
+
+          sdpr = sInv2rho * ( n2col0 * fy_G * ( cos(szt / 8_wp) * &
+                    sin(szt / 8_wp) * cos(szt)  / 4_wp  &
+                  +  cos(szt/8_wp)**2_wp  * sin(szt) ) &
+                 - &
+                ( sEta_G * sp2 / sKappa_G**2 * &
+                sField4ElecReal *  sInv2rho )     )
+
+!$OMP END WORKSHARE
+
+
+        else if (iUndPlace_G == iUndMain_G) then
+
+!$OMP WORKSHARE
+
+          sdpr = sInv2rho * (fy_G*n2col *sin(ZOver2rho) - &
+                ( sEta_G * sp2 / sKappa_G**2 * &
+                sField4ElecReal ) )
+
+!$OMP END WORKSHARE
+
+        end if
 
     end if
 
@@ -134,14 +222,16 @@ contains
 
 
 
-  subroutine dppdz_i_f(sx, sy, sz2, spr, spi, sgam, &
+  subroutine dppdz_i_f(sx, sy, sz2, spr, spi, sgam, sZ, &
                        sdpi, qOK)
 
     implicit none
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:), sZ
     real(kind=wp), intent(out) :: sdpi(:)
+
+    real(kind=wp) :: szt
 
     logical, intent(inout) :: qOK
 
@@ -170,7 +260,6 @@ contains
 
 !$OMP END WORKSHARE
 
-
     else if (zUndType_G == 'planepole') then 
 
 !     Im(p_perp) equation for plane-poled undulator
@@ -178,7 +267,7 @@ contains
 
 !$OMP WORKSHARE
 
-        sdpi = sInv2rho * ( 0_ip  &
+        sdpi = sInv2rho * ( 0_wp  &
                             - sEta_G * sp2 / sKappa_G**2 *    &
                             sField4ElecReal ) & 
                - ( sKappa_G * spr / sgam * (1 + sEta_G * sp2) &
@@ -188,15 +277,55 @@ contains
 !$OMP END WORKSHARE
 
 
-
-!        sdpi = sInv2rho * (- sField4ElecImag * salphaSq * &
-!                        sEta_G * sp2  &
-!                        - ((sqrt(6.0_WP) * sRho_G)/ sqrt(salphaSq)) * &
-!                        sinh(sInv2rho * sy &
-!                        * sqrt(sEta_G)) * cos(ZOver2rho) * Lj * &
-!                        spr)
-
     else if (zUndType_G == 'helical') then
+
+        if (iUndPlace_G == iUndStart_G) then 
+
+          szt = sZ
+          szt = szt / 2_wp / sRho_G
+
+!$OMP WORKSHARE
+
+        sdpi = sInv2rho * (  n2col0 * ( sin(szt / 8_wp) * &
+                   cos(szt / 8_wp) * sin(szt) / 4_wp &
+                  +   sin(szt/8_wp)**2_wp  * cos(szt) )  & 
+                            - sEta_G * sp2 / sKappa_G**2 *    &
+                            sField4ElecReal ) & 
+               - ( sKappa_G * spr / sgam * (1 + sEta_G * sp2) &
+                   * sqrt(sEta_G) * sInv2rho * n2col0 * (   &
+                    sx * ( 1/32_wp * cos(szt/4_wp) * sin(szt) + &
+                              1/4_wp * sin(szt/4_wp) * cos(szt) - & 
+                              sin(szt/8_wp)**2 * sin(szt) )    + &
+                      sy * ( -1/32_wp * cos(szt/4_wp) * cos(szt) + &
+                              1/4_wp * sin(szt/4_wp) * sin(szt) + & 
+                              sin(szt/8_wp)**2 * cos(szt) ) ) )
+
+!$OMP END WORKSHARE
+
+        else if (iUndPlace_G == iUndEnd_G) then
+
+          szt = sZ - sZFE
+          szt = szt / 2_wp / sRho_G
+
+!$OMP WORKSHARE
+
+        sdpi = sInv2rho * (  n2col * (- cos(szt / 8_wp) * &
+                    sin(szt / 8_wp) * sin(szt) / 4_wp  &
+                  +  cos(szt/8_wp)**2_wp  * cos(szt) )  & 
+                            - sEta_G * sp2 / sKappa_G**2 *    &
+                            sField4ElecReal ) & 
+               - ( sKappa_G * spr / sgam * (1 + sEta_G * sp2) &
+                   * sqrt(sEta_G) * sInv2rho * n2col * (   &
+                    sx * ( -1/32_wp * cos(szt/4_wp) * sin(szt) - &
+                              1/4_wp * sin(szt/4_wp) * cos(szt) - & 
+                              cos(szt/8_wp)**2 * sin(szt) )    + &
+                      sy * ( 1/32_wp * cos(szt/4_wp) * cos(szt) - &
+                              1/4_wp * sin(szt/4_wp) * sin(szt) + & 
+                              cos(szt/8_wp)**2 * cos(szt) ) ) )
+
+!$OMP END WORKSHARE
+
+        else if (iUndPlace_G == iUndMain_G) then
 
 !$OMP WORKSHARE
 
@@ -208,6 +337,9 @@ contains
                     -sx * sin( ZOver2rho )  + sy * cos( ZOver2rho ) ) )
 
 !$OMP END WORKSHARE
+
+        end if
+
 
     else
 
@@ -228,16 +360,49 @@ contains
 !
 !      else
 
+        if (iUndPlace_G == iUndStart_G) then 
+
+          szt = sZ
+          szt = szt / 2_wp / sRho_G
+
 !$OMP WORKSHARE
 
-        sdpi = sInv2rho * (fx_G * n2col * cos(ZOver2rho) - &
-                      ( sEta_G * sp2 / sKappa_G**2 * &
-                      sField4ElecImag ) )
+          sdpi =   sInv2rho * ( n2col0 * fx_G * ( sin(szt / 8_wp) * &
+                   cos(szt / 8_wp) * sin(szt) / 4_wp &
+                  +   sin(szt/8_wp)**2_wp  * cos(szt) ) &
+                  - &
+                  ( sEta_G * sp2 / sKappa_G**2 * &
+                  sField4ElecImag ) )
 
 !$OMP END WORKSHARE
 
-!      end if
+        else if (iUndPlace_G == iUndEnd_G) then
 
+          szt = sZ - sZFE
+          szt = szt / 2_wp / sRho_G
+
+!$OMP WORKSHARE
+
+          sdpi = sInv2rho * ( n2col0 * fx_G * (- cos(szt / 8_wp) * &
+                    sin(szt / 8_wp) * sin(szt) / 4_wp  &
+                  +  cos(szt/8_wp)**2_wp  * cos(szt) )  &
+                  - &
+                  ( sEta_G * sp2 / sKappa_G**2 * &
+                  sField4ElecImag * sInv2rho) )
+
+!$OMP END WORKSHARE
+
+        else if (iUndPlace_G == iUndMain_G) then
+
+!$OMP WORKSHARE
+
+          sdpi = sInv2rho * (fx_G * n2col * cos(ZOver2rho) - &
+                        ( sEta_G * sp2 / sKappa_G**2 * &
+                        sField4ElecImag ) )
+
+!$OMP END WORKSHARE
+
+        end if
 
     end if
 
@@ -484,6 +649,50 @@ contains
 
 
   end subroutine dalct_e_srtcts
+
+
+
+  subroutine adjUndPlace(szl)
+
+    real(kind=wp) :: szl
+
+      if (qUndEnds_G) then
+
+        if (szl < 0) then
+
+          print*, 'undulator section not recognised, sz < 0!!'
+          stop
+
+        else if (sZl <= sZFS) then 
+
+          iUndPlace_G = iUndStart_G
+
+        else if (sZl >= sZFE) then
+ 
+          iUndPlace_G = iUndEnd_G
+
+        else if ((sZl > sZFS) .and. (sZl < sZFE)) then
+
+          iUndPlace_G = iUndMain_G
+
+        else 
+
+          print*, 'undulator section not recognised, sz > sZFE!!'
+          stop
+
+        end if
+
+      else
+
+        iUndPlace_G = iUndMain_G
+
+      end if
+
+  end subroutine adjUndPlace
+
+
+
+
 
 
 end module equations

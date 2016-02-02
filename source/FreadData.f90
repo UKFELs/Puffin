@@ -199,7 +199,7 @@ SUBROUTINE read_in(zfilename, &
 
   logical :: qOneD, qFieldEvolve, qElectronsEvolve, &
              qElectronFieldCoupling, qFocussing, &
-             qDiffraction, qDump
+             qDiffraction, qDump, qUndEnds
 
   integer(kind=ip) :: iNumNodesX, iNumNodesY, nodesPerLambdar
   real(kind=wp) :: sFModelLengthX, sFModelLengthY, sFModelLengthZ2
@@ -207,7 +207,7 @@ SUBROUTINE read_in(zfilename, &
 
 namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  qElectronFieldCoupling, qFocussing, &
-                 qDiffraction, qFilter, &
+                 qDiffraction, qFilter, qUndEnds, &
                  q_noise, qDump, qResume, qSeparateFiles, &
                  qFormattedFiles, qWriteZ, qWriteA, &
                  qWritePperp, qWriteP2, qWriteZ2, &
@@ -232,8 +232,6 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
 ! Initialise array!
   qSwitches = .FALSE.
 
-
-
 ! Default vals...
 
   qOneD = .true.
@@ -244,6 +242,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qDiffraction = .true.
   qFilter = .true.
   q_noise = .true.
+  qUndEnds = .false.
   qDump = .false.
   qResume = .false.
   qSeparateFiles = .true.
@@ -305,7 +304,8 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qSwitches(iFocussing_CG) = qFocussing
   qSwitches(iDiffraction_CG) = qDiffraction
   qSwitches(iDump_CG) = qDump
-
+  
+  qUndEnds = qUndEnds_G
 
 
 

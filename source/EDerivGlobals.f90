@@ -196,10 +196,17 @@ real(kind=wp) :: n2col0  ! Initial alpha in the current undulator module
 real(kind=wp) :: m2col   ! Fractional change in eta due to change in aw
                          ! (redundant) 
 
+logical :: qUndEnds_G     ! If modelling undulator ends
 
+real(kind=wp) :: sZFS, sZFE  ! Markers for wiggler ends
 
+! Indicates which part of the wiggler we're in -
+! i.e. start, middle or end
 
-
+integer(kind=ip) :: iUndPlace_G
+integer(kind=ip), parameter :: iUndStart_G = 1_ip, &
+                               iUndEnd_G = 2_ip, &
+                               iUndMain_G = 0_ip
 
 real(kind=wp)  :: diffStep ! Stepsize in zbar used for diffraction 
 
@@ -272,6 +279,7 @@ integer(kind=ip), allocatable :: lrecvs(:), ldispls(:)
 ! evenly across processes.
 
 integer(kind=ip), allocatable :: mrecvs(:), mdispls(:)
+
 
 
 

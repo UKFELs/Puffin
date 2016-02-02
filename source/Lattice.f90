@@ -80,16 +80,24 @@ contains
     else 
 
       modNum = 1
-      allocate(iElmType(modNum), zMod(ModNum))
+      
+      allocate(D(ModNum),zMod(ModNum),delta(modNum))
       allocate(mf(ModNum),delmz(ModNum),tapers(modNum))
       allocate(nSteps_arr(ModNum))
-
+      
+      allocate(iElmType(modNum))
+      
       iElmType(1) = iUnd
       mf(1) = 1_wp
       delmz(1) = dz_f
       tapers(1) = taper
       nSteps_arr(1) = nSteps_f
       iUnd_cr = 1_ip
+      nSteps_arr(1) = nSteps_f
+      delmz(1) = dz_f
+      mf(1) = 1_wp
+      tapers(1) = taper
+
 
     end if
 
@@ -97,7 +105,7 @@ contains
     iChic_cr=1_ip
     iDrift_cr=1_ip
     iQuad_cr=1_ip
-   
+
     iCsteps = 0_ip
 
   end subroutine setupMods
@@ -463,10 +471,11 @@ contains
 ! #########################################################
 
 
-  subroutine initUndulator(iM, sZ)
+  subroutine initUndulator(iM, sZ, szl)
 
     integer(kind=ip), intent(in) :: iM
     real(kind=wp), intent(in) :: sZ
+    real(kind=wp), intent(inout) :: szl
 
 ! Want to update using arrays describing each module...
 
@@ -476,7 +485,7 @@ contains
     n2col = mf(iM)
     undgrad = tapers(iM)
     sz0 = sz
-
+    szl = 0_wp
 
 
 !     Update stepsize    
@@ -486,6 +495,21 @@ contains
 
     nSteps = nSteps_arr(iM)
 
+
+!     Setup undulator ends
+
+    if (qUndEnds_G) then
+
+      sZFS = 4_wp * pi * sRho_G  *  2.0_wp
+      sZFE = nSteps * sStepSize - &
+               4_wp * pi * sRho_G  *  2.0_wp
+
+    else 
+
+      sZFS = 0_wp
+      sZFE = nSteps * sStepSize
+
+    end if
 
   end subroutine initUndulator
 
