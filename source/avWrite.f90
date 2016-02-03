@@ -202,7 +202,7 @@ contains
 
     real(kind=wp), intent(out) :: power(:)
     
-
+    power = 0.0_wp     ! init
 
     if ((NX_G == 1_IP) .and. (NY_G == 1_IP)) then
 
@@ -411,6 +411,8 @@ contains
 
     integer(kind=ip) :: ij, inl, inu
     real(kind=wp) :: li1, li2, locz2
+
+    Iarray = 0.0_wp   ! initialize
 
     do ij = 1, size(sElX_G)
 
