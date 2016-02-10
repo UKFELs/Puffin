@@ -203,7 +203,12 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
     NBZ2_G = 37_IP
 
 
-    zUndType_G = zUndType
+    if (qSwitch(iOneD_CG)) then
+      zUndType_G = ''
+    else
+      zUndType_G = zUndType
+    end if
+
 
     kx_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2))
     ky_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2))
