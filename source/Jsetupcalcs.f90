@@ -252,10 +252,6 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 
 
 
-
-    iInputType_G = iReadMASP_G
-
-
 !     Set error flag and exit
 
     qOK = .TRUE.				    
@@ -426,7 +422,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
 
     else if (iInputType_G == iReadMASP_G) then
 
-      fname_temp = 'from_masp_OUT.txt'
+      fname_temp = fname(1)
       call readMASPfile(fname_temp)
 
     else 
