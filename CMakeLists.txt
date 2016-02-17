@@ -62,7 +62,20 @@ endif()
 #message ("-- FFTW_MPI_LIB: " ${FFTW_MPI_LIB})
 #message ("-- FFTW_LIB_DIR: " ${FFTW_LIB_DIR})
 #find_package(MPI REQUIRED)
-
+set(ENV{GIT_DIR} ${CMAKE_SOURCE_DIR}/.git)
+#set(GIT_GET_BRANCH "git rev-parse --abbrev-ref HEAD")
+execute_process(COMMAND git --work-tree=${CMAKE_SOURCE_DIR} rev-parse --abbrev-ref HEAD
+  RESULT_VARIABLE GIT_RESULT
+  OUTPUT_VARIABLE GIT_BRANCH
+  )
+STRING(REPLACE "\n" "" GIT_BRANCH ${GIT_BRANCH})
+execute_process(COMMAND git --work-tree=${CMAKE_SOURCE_DIR} rev-parse HEAD
+  RESULT_VARIABLE GIT_RESULT
+  OUTPUT_VARIABLE GIT_REVISION
+  )
+STRING(REPLACE "\n" "" GIT_REVISION ${GIT_REVISION})
+message(STATUS "git branch : ${GIT_BRANCH} ${GIT_REVISION}")
+string(TIMESTAMP CONFIGURE_TIME_STAMP "%Y-%m-%d %H:%M")
 ######################################################################
 #
 # Variables for inclusion in config.h

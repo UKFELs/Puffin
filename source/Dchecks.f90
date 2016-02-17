@@ -23,7 +23,7 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
        sLengthofElm,iNodes,sWigglerLength,sStepSize,&
        nSteps,srho,saw,sgammar,focusfactor,mag,sSigE,f_x, f_y, &
        iRedNodesX, iRedNodesY,qSwitches,qSimple,sSigF, &
-       freqf, SmeanZ2, qFlatTopS, nseeds,qOK)
+       freqf, SmeanZ2, qFlatTopS, nseeds, qOK)
 
   implicit none
 

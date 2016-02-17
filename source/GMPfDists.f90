@@ -74,7 +74,7 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
 
   call getHeaders(fname, npk, dz2, nZ2G)
 
-  nGam = 149_IP  !!!  TEMP, SHOULD BE READ IN
+  nGam = 9_IP  !!!  TEMP, SHOULD BE READ IN
   if (qOneD_G) then
     nX = 1
     nY = 1

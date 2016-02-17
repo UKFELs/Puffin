@@ -150,6 +150,7 @@ MODULE Setup
        sPEOut,            &
        iDumpNthSteps,     &
        qSwitches,         &
+       qMatched_A,        &
        qOKL)
   
   IF (.NOT. qOKL) GOTO 1000
@@ -173,7 +174,7 @@ MODULE Setup
 
 !    Calculate parameters for matched beam
 
-  IF (qSwitches(iMatchedBeam_CG)) THEN
+  IF (qMatched_A(1)) THEN
 
     if (qSimple) CALL MatchBeams(srho,sEmit_n,saw,sFocusfactor,&
                     sgammar,iNumElectrons,sLenEPulse,&

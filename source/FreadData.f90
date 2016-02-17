@@ -23,7 +23,7 @@ SUBROUTINE read_in(zfilename, &
        sZ0, &
        LattFile,&
        iWriteNthSteps, &
-       iIntWriteNthSteps_l, &
+       iWriteIntNthSteps, &
        tArrayZ, &
        tArrayA, &
        tArrayVariables, &
@@ -46,12 +46,12 @@ SUBROUTINE read_in(zfilename, &
        qSimple, &
        sA0_Re, &
        sA0_Im, &
-       sFiltFact, &
+       sFiltFrac, &
        sDiffFrac, &
        sBeta, &
        srho, &
        saw, &
-       sgamma, &
+       sgamma_r, &
        lambda_w, &
        sEmit_n, &
        sux, &
@@ -66,6 +66,7 @@ SUBROUTINE read_in(zfilename, &
        sPEOut, &
        iDumpNthSteps, &
        qSwitches, &
+       qMatched_A, &
        qOK)
        
        IMPLICIT NONE
@@ -132,7 +133,7 @@ SUBROUTINE read_in(zfilename, &
   REAL(KIND=WP) ,    INTENT(OUT)  :: sZ0
   CHARACTER(32_IP),  INTENT(INOUT):: LattFile
     
-  INTEGER(KIND=IP),  INTENT(OUT)  :: iWriteNthSteps, iIntWriteNthSteps_l
+  INTEGER(KIND=IP),  INTENT(OUT)  :: iWriteNthSteps, iWriteIntNthSteps
   TYPE(cArraySegment)             :: tArrayZ
   TYPE(cArraySegment)             :: tArrayA(:)
   TYPE(cArraySegment)             :: tArrayVariables(:)
@@ -167,10 +168,10 @@ SUBROUTINE read_in(zfilename, &
   LOGICAL, INTENT(out) :: qSimple
   CHARACTER(*), ALLOCATABLE, INTENT(INOUT) :: dist_f(:)
   
-  REAL(KIND=WP),     INTENT(OUT)  :: sFiltFact,sDiffFrac,sBeta
+  REAL(KIND=WP),     INTENT(OUT)  :: sFiltFrac,sDiffFrac,sBeta
   REAL(KIND=WP),     INTENT(OUT)  :: srho
   REAL(KIND=WP),     INTENT(OUT)  :: saw
-  REAL(KIND=WP),     INTENT(OUT)  :: sgamma, lambda_w
+  REAL(KIND=WP),     INTENT(OUT)  :: sgamma_r, lambda_w
   REAL(KIND=WP),     INTENT(OUT)  :: sux
   REAL(KIND=WP),     INTENT(OUT)  :: suy
   REAL(KIND=WP),     INTENT(OUT)  :: Dfact
@@ -179,11 +180,12 @@ SUBROUTINE read_in(zfilename, &
   REAL(KIND=WP),     INTENT(OUT)  :: sPEOut
   INTEGER(KIND=IP),  INTENT(OUT)  :: iDumpNthSteps
   LOGICAL,           INTENT(OUT)  :: qSwitches(:)
+  LOGICAL, ALLOCATABLE, INTENT(OUT)  :: qMatched_A(:)
   LOGICAL,           INTENT(OUT)  :: qOK
 
 ! Define local variables
     
-  integer(kind=ip) :: stpsprlam, nodesperlambda, nperiods ! Steps per lambda_w, nodes per lambda_r
+  integer(kind=ip) :: stepsPerPeriod, nodesperlambda, nperiods ! Steps per lambda_w, nodes per lambda_r
   real(kind=wp) :: dz2, zbar
   integer(kind=ip) :: nwaves
 
@@ -191,176 +193,166 @@ SUBROUTINE read_in(zfilename, &
   CHARACTER(32_IP) :: beam_file, seed_file
   LOGICAL :: qOKL, qMatched !   TEMP VAR FOR NOW, SHOULD MAKE FOR EACH BEAM
 
+  logical :: qWriteZ, qWriteA, &
+             qWritePperp, qWriteP2, qWriteZ2, &
+             qWriteX, qWriteY
+
+  logical :: qOneD, qFieldEvolve, qElectronsEvolve, &
+             qElectronFieldCoupling, qFocussing, &
+             qDiffraction, qDump, qUndEnds
+
+  integer(kind=ip) :: iNumNodesX, iNumNodesY, nodesPerLambdar
+  real(kind=wp) :: sFModelLengthX, sFModelLengthY, sFModelLengthZ2
+
+
+namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
+                 qElectronFieldCoupling, qFocussing, &
+                 qDiffraction, qFilter, qUndEnds, &
+                 q_noise, qDump, qResume, qSeparateFiles, &
+                 qFormattedFiles, qWriteZ, qWriteA, &
+                 qWritePperp, qWriteP2, qWriteZ2, &
+                 qWriteX, qWriteY, &
+                 beam_file, sElectronThreshold, &
+                 iNumNodesY, iNumNodesX, &
+                 nodesPerLambdar, sFModelLengthX, &
+                 sFModelLengthY, sFModelLengthZ2, &
+                 iRedNodesX, iRedNodesY, sFiltFrac, &
+                 sDiffFrac, sBeta, seed_file, srho, &
+                 sux, suy, saw, sgamma_r, sFocusfactor, &
+                 lambda_w, Dfact, zundType, taper, &                 
+                 LattFile, stepsPerPeriod, nPeriods, &
+                 sZ0, zDataFileName, iWriteNthSteps, &
+                 iWriteIntNthSteps, iDumpNthSteps, sPEOut                
 
 ! Begin subroutine:
 ! Set error flag to false         
-!
-    qOK = .FALSE.
+
+  qOK = .FALSE.
 
 ! Initialise array!
   qSwitches = .FALSE.
 
-! Open the file         
-  OPEN(UNIT=168,FILE=zfilename,IOSTAT=ios,&
-       ACTION='READ',POSITION='REWIND')
-  IF  (ios/=0_IP) THEN
-     GOTO 1000
-  END IF
+! Default vals...
+
+  qOneD = .true.
+  qFieldEvolve = .true.
+  qElectronsEvolve = .true.
+  qElectronFieldCoupling = .true.
+  qFocussing = .false.
+  qDiffraction = .true.
+  qFilter = .true.
+  q_noise = .true.
+  qUndEnds = .false.
+  qDump = .false.
+  qResume = .false.
+  qSeparateFiles = .true.
+  qFormattedFiles = .false.
+  qWriteZ = .true.
+  qWriteA = .true.
+  qWritePperp = .true.
+  qWriteP2 = .true.
+  qWriteZ2 = .true.
+  qWriteX = .true.
+  qWriteY = .true.
+  
+  beam_file = 'beam_file.in'
+  sElectronThreshold     = 0.05
+  iNumNodesX             = 129      
+  iNumNodesY             = 129 
+  nodesPerLambdar        = 17
+  sFModelLengthX         = 1.0
+  sFModelLengthY         = 1.0
+  sFModelLengthZ2        = 4.0
+  iRedNodesX             = 21
+  iRedNodesY             = 21
+  sFiltFrac              = 0.3
+  sDiffFrac              = 1.0
+  sBeta                  = 1.0
+  seed_file              = 'seed_file.in'
+  srho                   = 0.01
+  sux                    = 1.0
+  suy                    = 1.0
+  saw                    = 1.0
+  sgamma_r               = 100.0
+  sFocusfactor           = 1.41213562373095
+  lambda_w               = 0.04
+  Dfact                  = 0.0
+  zundType               = 'helical'
+  taper                  = 0.0
+  lattFile               = ''
+  stepsPerPeriod         = 30
+  nPeriods               = 8
+  sZ0                    = 0.0
+  zDataFileName          = 'DataFile.dat'
+  iWriteNthSteps         = 30
+  iWriteIntNthSteps      = 30
+  iDumpNthSteps          = 3000
+  sPEOut                 = 100.0
 
 
-!     Read in blank space at top of file
 
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
+! Open and read namelist
 
-!     Read in flags and switches....
+  open(168,file=zfilename, status='OLD', recl=80, delim='APOSTROPHE')
+  read(168,nml=mdata)
+  close(UNIT=168,STATUS='KEEP')
 
-  READ(UNIT=168,FMT=*) qSwitches(iOneD_CG)
-  READ(UNIT=168,FMT=*) qSwitches(iFieldEvolve_CG)
-  READ(UNIT=168,FMT=*) qSwitches(iElectronsEvolve_CG)
-  READ(UNIT=168,FMT=*) qSwitches(iElectronFieldCoupling_CG)
-  READ(UNIT=168,FMT=*) qSwitches(iFocussing_CG)
-  READ(UNIT=168,FMT=*) qSwitches(iMatchedBeam_CG)
-  READ(UNIT=168,FMT=*) qSwitches(iDiffraction_CG)
-  READ(UNIT=168,FMT=*) qfilter
-  READ(UNIT=168,FMT=*) q_noise    ! qSwitches(iNoise_CG)
-  READ(UNIT=168,FMT=*) qSwitches(iDump_CG)
-  READ(UNIT=168,FMT=*) qResume
-  READ(UNIT=168,FMT=*) qSeparateFiles
-  READ(UNIT=168,FMT=*) qFormattedFiles  
-      
-  READ(UNIT=168,FMT=*) tArrayZ%qWrite
+  qSwitches(iOneD_CG) = qOneD
+  qSwitches(iFieldEvolve_CG) = qFieldEvolve
+  qSwitches(iElectronsEvolve_CG) = qElectronsEvolve
+  qSwitches(iElectronFieldCoupling_CG) = qElectronFieldCoupling
+  qSwitches(iFocussing_CG) = qFocussing
+  qSwitches(iDiffraction_CG) = qDiffraction
+  qSwitches(iDump_CG) = qDump
+  
+  qUndEnds = qUndEnds_G
+
+
+
+
+
+
+  tArrayZ%qWrite = qWriteZ
   tArrayZ%zVariable = 'Z' ! Assign SDDS column names
     
-  READ(UNIT=168,FMT=*) tArrayA(iRe_A_CG)%qWrite        
+  tArrayA(iRe_A_CG)%qWrite = qWriteA
   tArrayA(iRe_A_CG)%zVariable = 'RE_A'
     
-  tArrayA(iIm_A_CG)%qWrite = tArrayA(iRe_A_CG)%qWrite	   
+  tArrayA(iIm_A_CG)%qWrite = qWriteA
   tArrayA(iIm_A_CG)%zVariable = 'IM_A'
     
-  READ(UNIT=168,FMT=*) tArrayVariables(iRe_PPerp_CG)%qWrite
+  tArrayVariables(iRe_PPerp_CG)%qWrite = qWritePperp
   tArrayVariables(iRe_PPerp_CG)%zVariable = 'RE_PPerp'
-      tArrayVariables(iIm_PPerp_CG)%qWrite = &
-       tArrayVariables(iRe_PPerp_CG)%qWrite
+  tArrayVariables(iIm_PPerp_CG)%qWrite = qWritePperp
   tArrayVariables(iIm_PPerp_CG)%zVariable = 'IM_PPerp'
     
-  READ(UNIT=168,FMT=*) tArrayVariables(iRe_Gam_CG)%qWrite
+  tArrayVariables(iRe_Gam_CG)%qWrite = qWriteP2
   tArrayVariables(iRe_Gam_CG)%zVariable = 'Gamma'
     
-  READ(UNIT=168,FMT=*) tArrayVariables(iRe_Z2_CG)%qWrite
+  tArrayVariables(iRe_Z2_CG)%qWrite = qWriteZ2
   tArrayVariables(iRe_Z2_CG)%zVariable = 'Z2'
     
-  READ(UNIT=168,FMT=*) tArrayVariables(iRe_X_CG)%qWrite
+  tArrayVariables(iRe_X_CG)%qWrite = qWriteX
   tArrayVariables(iRe_X_CG)%zVariable = 'X'	
     	
-  READ(UNIT=168,FMT=*) tArrayVariables(iRe_Y_CG)%qWrite
+  tArrayVariables(iRe_Y_CG)%qWrite = qWriteY
   tArrayVariables(iRe_Y_CG)%zVariable = 'Y'	
 
 
-!     Read whitespace...
-
-  READ(UNIT=168,FMT=*) 
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-
-!     Read electron beam params 
-
-    READ(UNIT=168,FMT=*) beam_file
-    READ(UNIT=168,FMT=*) sElectronThreshold
-
-!     Read whitespace...
-
-  READ(UNIT=168,FMT=*) 
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*) 
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)   
-    
-!     Read field params
-    
-  READ(UNIT=168,FMT=*) iNumNodes(iX_CG)
-  READ(UNIT=168,FMT=*) iNumNodes(iY_CG)
-  READ(UNIT=168,FMT=*) nodesperlambda
-  READ(UNIT=168,FMT=*) sWigglerLength(iX_CG)
-  READ(UNIT=168,FMT=*) sWigglerLength(iY_CG)
-  READ(UNIT=168,FMT=*) sWigglerLength(iZ2_CG)
-  READ(UNIT=168,FMT=*) iRedNodesX
-  READ(UNIT=168,FMT=*) iRedNodesY
-  READ(UNIT=168,FMT=*) sFiltFact
-  READ(UNIT=168,FMT=*) sDiffFrac
-  READ(UNIT=168,FMT=*) sBeta
-  READ(UNIT=168,FMT=*) seed_file
-
-!     Read whitespace...
-
-  READ(UNIT=168,FMT=*) 
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*) 
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)  
-  READ(UNIT=168,FMT=*)      
-  READ(UNIT=168,FMT=*)  
-    
-            
-!     Read Independant vars 
-
-  READ(UNIT=168,FMT=*) srho
-  READ(UNIT=168,FMT=*) sux
-  READ(UNIT=168,FMT=*) suy  
-  READ(UNIT=168,FMT=*) saw
-  READ(UNIT=168,FMT=*) sgamma
-  READ(UNIT=168,FMT=*) sFocusfactor
-  READ(UNIT=168,FMT=*) lambda_w
-  READ(UNIT=168,FMT=*) Dfact
-  READ(UNIT=168,FMT=*) zUndType
-!  READ(UNIT=168,FMT=*) kx_und_G
-!  READ(UNIT=168,FMT=*) ky_und_G
-  READ(UNIT=168,FMT=*) taper
-  
-!     Read whitespace...
-
-  READ(UNIT=168,FMT=*) 
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*) 
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)  
-  READ(UNIT=168,FMT=*)      
-  READ(UNIT=168,FMT=*) 
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  
-  
-!     Read vars for integration lengths and ouput
-
-
-  READ(UNIT=168,FMT=*) LattFile  
-  READ(UNIT=168,FMT=*) stpsprlam
-  READ(UNIT=168,FMT=*) nperiods
-  READ(UNIT=168,FMT=*) sZ0
-  READ(UNIT=168,FMT=*) zDataFileName 
-  READ(UNIT=168,FMT=*) iWriteNthSteps 
-  READ(UNIT=168,FMT=*) iIntWriteNthSteps_l  
-  READ(UNIT=168,FMT=*) iDumpNthSteps  
-  READ(UNIT=168,FMT=*) sPEOut  ! Put to 100% if all are to be written
-  
-  CLOSE(UNIT=168,STATUS='KEEP')  
+  iNumNodes(iX_CG) = iNumNodesX
+  iNumNodes(iY_CG) = iNumNodesY
+  nodesperlambda   = nodesPerLambdar
+  sWigglerLength(iX_CG) = sFModelLengthX
+  sWigglerLength(iY_CG) = sFModelLengthY
+  sWigglerLength(iZ2_CG) = sFModelLengthZ2
 
 
 
-  sStepSize = 4.0_WP * pi * srho / real(stpsprlam,kind=wp)
-  nSteps = nperiods * stpsprlam
+
+
+
+  sStepSize = 4.0_WP * pi * srho / real(stepsPerPeriod,kind=wp)
+  nSteps = nperiods * stepsPerPeriod
 
   if (tProcInfo_G%qRoot) print*, 'step size is --- ', sStepSize
 
@@ -380,7 +372,7 @@ SUBROUTINE read_in(zfilename, &
 
   CALL read_beamfile(qSimple, dist_f, beam_file,sEmit_n,sSigmaGaussian,sLenEPulse, &
                      iNumElectrons,sQe,chirp,bcenter, mag, fr, gamma_d,nbeams, &
-                     qMatched,qOKL)
+                     qMatched_A,qOKL)
 
   CALL read_seedfile(seed_file,nseeds,sSigmaF,sA0_Re,sA0_Im,freqf,&
                      qFlatTopS,SmeanZ2,qOKL)
@@ -413,7 +405,7 @@ END SUBROUTINE read_in
 
 SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
                          iNumElectrons,sQe,chirp, bcenter, mag, fr,gammaf,nbeams,&
-                         qMatched,qOK)
+                         qMatched_A,qOK)
 
   IMPLICIT NONE
 
@@ -428,7 +420,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   INTEGER(KIND=IP), ALLOCATABLE, INTENT(OUT) :: iNumElectrons(:,:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sQe(:),bcenter(:),gammaf(:)
   INTEGER(KIND=IP), INTENT(INOUT) :: nbeams
-  LOGICAL, INTENT(OUT) :: qOK, qMatched
+  LOGICAL, INTENT(OUT) :: qOK
+  logical, intent(inout), allocatable :: qMatched_A(:)
 
 !                     LOCAL ARGS
 
@@ -436,20 +429,65 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   INTEGER::ios
   CHARACTER(96) :: dum1, dum2, dtype
 
+
+
+! Declare namelists
+
+  namelist /nblist/ nbeams, dtype
+  namelist /blist/ sSigmaE, sLenE, iNumElectrons, &
+                   sEmit_n, sQe, bcenter,  gammaf, &
+                   chirp, mag, fr, qRndEj_G, sSigEj_G, &
+                   qMatched_A
+
   qOK = .FALSE.
   
 ! Open the file         
-  OPEN(UNIT=168,FILE=be_f,IOSTAT=ios,&
-    ACTION='READ',POSITION='REWIND')
-  IF  (ios/=0_IP) THEN
-    CALL Error_log('Error in read_in:OPEN(input file) not performed correctly, IOSTAT/=0',tErrorLog_G)
-    GOTO 1000
-  END IF
+!  OPEN(UNIT=168,FILE=be_f,IOSTAT=ios,&
+!    ACTION='READ',POSITION='REWIND')
+!  IF  (ios/=0_IP) THEN
+!    CALL Error_log('Error in read_in:OPEN(input file) not performed correctly, IOSTAT/=0',tErrorLog_G)
+!    GOTO 1000
+!  END IF
 
 !     Read in file header to get number of beams
 
-  READ(UNIT=168,FMT=*) dum1, dum2, dtype
-  dtype = TRIM(ADJUSTL(dtype))
+!  READ(UNIT=168,FMT=*) dum1, dum2, dtype
+!  dtype = TRIM(ADJUSTL(dtype))
+
+
+!!!!! Need to make qMatched an array 
+!!!!! Maybe make qMathcField or something to choose which beam is matched to transverse field area (numerically - sampling wise)..???
+
+
+!  Default vals
+
+  nbeams = 1  
+  dtype = 'simple'
+
+  qSimple = .true.
+
+
+
+
+
+
+! Read first namelist - number of beams only
+
+  open(161,file=be_f, status='OLD', recl=80, delim='APOSTROPHE')
+  read(161,nml=nblist)
+
+
+! Allocate arrays
+
+
+  allocate(sSigmaE(nbeams,6))
+  allocate(sLenE(nbeams,6))
+  allocate(iNumElectrons(nbeams,6))
+  allocate(sEmit_n(nbeams),sQe(nbeams),bcenter(nbeams),gammaf(nbeams))
+  allocate(chirp(nbeams), qMatched_A(nbeams))
+  allocate(mag(nbeams), fr(nbeams))
+  allocate(qRndEj_G(nbeams), sSigEj_G(nbeams))
+
 
   if (dtype == 'dist') then
     qSimple = .false.
@@ -457,90 +495,56 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
     qsimple = .true.
   end if
 
+
+! &&&&&&&&&& Default vals
+
+  sSigmaE(1,1:2) = 1.0_wp
+  sSigmaE(1,3) = 1E8
+  sSigmaE(1,4:5) = 1.0_wp
+  sSigmaE(1,6) = 0.001_wp
+
+  sLenE(1,1:2) = 6.0_wp
+  sLenE(1,3) = 1.0_wp
+  sLenE(1,4:5) = 6.0_wp
+  sLenE(1,6) = 0.006_wp
+
+  iNumElectrons(1,1:2) = 1
+  iNumElectrons(1,3) = 1200
+  iNumElectrons(1,4:5) = 1
+  iNumElectrons(1,6) = 19
+
+  sEmit_n = 1.0_wp
+  sQe = 1E-9
+  bcenter = 0.0_wp
+  gammaf = 1.0_wp
+  chirp = 0.0_wp
+  qMatched_A = .true.
+  mag = 0.0_wp
+  fr = 1.0_wp
+  qRndEj_G = .true.
+  sSigEj_G = 0.02_wp
+
+! &&&&&&&&&&&&&&&&&&&&&
+
   if (qSimple) then
 
+! Read in arrays
 
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*) nbeams
+    read(161,nml=blist)
 
-
-    ALLOCATE(sSigmaE(nbeams,6))
-    ALLOCATE(sLenE(nbeams,6))
-    ALLOCATE(iNumElectrons(nbeams,6))
-    ALLOCATE(sEmit_n(nbeams),sQe(nbeams),bcenter(nbeams),gammaf(nbeams))
-    ALLOCATE(chirp(nbeams))
-    allocate(mag(nbeams), fr(nbeams))
-    allocate(qRndEj_G(nbeams), sSigEj_G(nbeams))
-    
-!     Loop round beams, reading in data
-
-    DO b_ind = 1,nbeams
-
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*) sSigmaE(b_ind,iX_CG)
-      READ(UNIT=168,FMT=*) sSigmaE(b_ind,iY_CG)
-      READ(UNIT=168,FMT=*) sSigmaE(b_ind,iZ2_CG)
-      READ(UNIT=168,FMT=*) sSigmaE(b_ind,iPX_CG)
-      READ(UNIT=168,FMT=*) sSigmaE(b_ind,iPY_CG)
-      READ(UNIT=168,FMT=*) sSigmaE(b_ind,iGam_CG)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*) sLenE(b_ind,iX_CG)
-      READ(UNIT=168,FMT=*) sLenE(b_ind,iY_CG)
-      READ(UNIT=168,FMT=*) sLenE(b_ind,iZ2_CG)
-      READ(UNIT=168,FMT=*) sLenE(b_ind,iPX_CG)
-      READ(UNIT=168,FMT=*) sLenE(b_ind,iPY_CG)
-      READ(UNIT=168,FMT=*) sLenE(b_ind,iGam_CG)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iX_CG)
-      READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iY_CG)
-      READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iZ2_CG)
-      READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iPX_CG)
-      READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iPY_CG)
-      READ(UNIT=168,FMT=*) iNumElectrons(b_ind,iGam_CG)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*)
-      READ(UNIT=168,FMT=*) qMatched
-      READ(UNIT=168,FMT=*) gammaf(b_ind)
-      READ(UNIT=168,FMT=*) sEmit_n(b_ind)
-      READ(UNIT=168,FMT=*) chirp(b_ind)
-      READ(UNIT=168,FMT=*) bcenter(b_ind)
-      READ(UNIT=168,FMT=*) mag(b_ind)
-      READ(UNIT=168,FMT=*) fr(b_ind)      
-      READ(UNIT=168,FMT=*) qRndEj_G(b_ind)
-      READ(UNIT=168,FMT=*) sSigEj_G(b_ind)
-      READ(UNIT=168,FMT=*) sQe(b_ind)
-    
-    END DO
+    close(UNIT=161,STATUS='KEEP')
 
   else
 
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*) nbeams
+    READ(UNIT=161,FMT=*)
+    READ(UNIT=161,FMT=*)
+    READ(UNIT=161,FMT=*)
+    READ(UNIT=161,FMT=*)
+    READ(UNIT=161,FMT=*)
+    READ(UNIT=161,FMT=*) nbeams
 
     allocate(dist_f(nbeams))
-    allocate(iNumElectrons(nbeams,6))
-    allocate(sLenE(nbeams,6))
-    allocate(sSigmaE(nbeams,6))
-    allocate(qRndEj_G(nbeams))
+
     iNumElectrons = 1
     sLenE = 1
     sSigmaE = 1
@@ -549,17 +553,22 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
     ! READ IN FNAMES
     !!!!!!!!!!!!!!!!
     !!!!!!!!!!!!!!!!
-    READ(UNIT=168,FMT=*) 
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
+    READ(UNIT=161,FMT=*) 
+    READ(UNIT=161,FMT=*)
+    READ(UNIT=161,FMT=*)
 
     DO b_ind = 1, nbeams
-      READ(UNIT=168,FMT=*) dist_f(b_ind)
+      READ(UNIT=161,FMT=*) dist_f(b_ind)
     END DO
+
+    CLOSE(UNIT=161,STATUS='KEEP')
 
   end if
 
-  CLOSE(UNIT=168,STATUS='KEEP')
+
+
+
+
 
 ! Set the error flag and exit
   qOK = .TRUE.
@@ -594,55 +603,47 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,qFlatTop, &
   INTEGER(KIND=IP) :: s_ind
   INTEGER::ios
 
+
+  namelist /nslist/ nseeds
+  namelist /slist/ freqf, sA0_X, sA0_Y, sSigmaF, &
+                   qFlatTop, meanZ2, qRndFj_G,  sSigFj_G
+
+
   qOK = .FALSE.
+
+
+! Default vals
+
+  nseeds = 1
+
   
 ! Open the file         
-  OPEN(UNIT=168,FILE=se_f,IOSTAT=ios,&
-    ACTION='READ',POSITION='REWIND')
-  IF  (ios/=0_IP) THEN
-    CALL Error_log('Error in read_in:OPEN(input file) not performed correctly, IOSTAT/=0',tErrorLog_G)
-    GOTO 1000
-  END IF
+  open(161,file=se_f, status='OLD', recl=80, delim='APOSTROPHE')
 
-!     Read in file header to get number of beams
 
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*)
-  READ(UNIT=168,FMT=*) nseeds
+  read(161,nml=nslist)
 
   ALLOCATE(sSigmaF(nseeds,3))
   ALLOCATE(sA0_X(nseeds), sA0_Y(nseeds))
   ALLOCATE(freqf(nseeds),qFlatTop(nseeds),meanZ2(nseeds))
   allocate(qRndFj_G(nseeds), sSigFj_G(nseeds))
-    
-!     Loop round seeds, reading in data
 
-  DO s_ind = 1,nseeds
 
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*)
-    READ(UNIT=168,FMT=*) freqf(s_ind)
-    READ(UNIT=168,FMT=*) sA0_X(s_ind)
-    READ(UNIT=168,FMT=*) sA0_Y(s_ind)
-    READ(UNIT=168,FMT=*) sSigmaF(s_ind,iX_CG)
-    READ(UNIT=168,FMT=*) sSigmaF(s_ind,iY_CG)
-    READ(UNIT=168,FMT=*) sSigmaF(s_ind,iZ2_CG)
-    READ(UNIT=168,FMT=*) qFlatTop(s_ind)
-    READ(UNIT=168,FMT=*) meanZ2(s_ind)
-    READ(UNIT=168,FMT=*) qRndFj_G(s_ind)
-    READ(UNIT=168,FMT=*) sSigFj_G(s_ind)
-    
-  END DO
+!  Default value
 
-  CLOSE(UNIT=168,STATUS='KEEP')
+  sSigmaF = 1.0_wp   
+  freqf = 1.0_wp
+  sA0_X = 1.0_wp
+  sA0_Y = 1.0_wp
+  qFlatTop = .false.
+  meanZ2 = 0.0_wp
+  qRndFj_G = .false.
+  sSigFj_G = 0.01_wp
+
+
+  read(161,nml=slist)
+  close(UNIT=161,STATUS='KEEP')
+
 
 ! Set the error flag and exit
   qOK = .TRUE.

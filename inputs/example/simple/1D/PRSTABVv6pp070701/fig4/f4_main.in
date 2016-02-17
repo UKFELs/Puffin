@@ -107,24 +107,22 @@
  q_noise                = .true.  
  beam_file              = 'beam_file.in'     
  sElectronThreshold     = 0.05
- nodesPerLambdar        = 26
- sFModelLengthZ2        = 175.0
+ nodesPerLambdar        = 17
+ sFModelLengthZ2        = 30.0
  seed_file              = 'seed_file.in'
- srho                   = 0.005
+ srho                   = 7.96e-3
  sux                    = 1.0
  suy                    = 1.0
- saw                    = 1.0
- sgamma_r               = 6316.0
+ saw                    = 2.0
+ sgamma_r               = 100.0
  sFocusfactor           = 1.41213562373095
  lambda_w               = 0.07
- lattFile               = '2col.latt'
+ lattFile               = ''
  stepsPerPeriod         = 30
- nPeriods               = 1400
+ nPeriods               = 50
  iWriteNthSteps         = 300
  iWriteIntNthSteps      = 30
  iDumpNthSteps          = 3000
  /
-
-
 
 
