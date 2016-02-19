@@ -30,8 +30,8 @@ contains
 
     fid = 132
 
-    dV_bar = 1.0_wp
-    nMPs = 2065012_ip
+    dV_bar = 1.884986038391355e-05
+    nMPs = 3455789_ip
     iGloNumElectrons_G = nMPs
 
     dummy1 = 1.0_wp
