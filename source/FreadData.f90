@@ -277,7 +277,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   sFocusfactor           = 1.41213562373095
   lambda_w               = 0.04
   Dfact                  = 0.0
-  zundType               = 'helical'
+  zundType               = ''
   taper                  = 0.0
   lattFile               = ''
   stepsPerPeriod         = 30
@@ -439,6 +439,9 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
                    chirp, mag, fr, qRndEj_G, sSigEj_G, &
                    qMatched_A
 
+
+  namelist /bdlist/ dist_f
+
   qOK = .FALSE.
   
 ! Open the file         
@@ -464,11 +467,6 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   nbeams = 1  
   dtype = 'simple'
 
-  qSimple = .true.
-
-
-
-
 
 
 ! Read first namelist - number of beams only
@@ -487,14 +485,6 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   allocate(chirp(nbeams), qMatched_A(nbeams))
   allocate(mag(nbeams), fr(nbeams))
   allocate(qRndEj_G(nbeams), sSigEj_G(nbeams))
-
-
-  if (dtype == 'dist') then
-    qSimple = .false.
-  else
-    qsimple = .true.
-  end if
-
 
 ! &&&&&&&&&& Default vals
 
@@ -526,42 +516,76 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
 ! &&&&&&&&&&&&&&&&&&&&&
 
-  if (qSimple) then
+  if (dtype == 'simple') then
 
 ! Read in arrays
+
+    iInputType_G = iGenHom_G
+    qSimple = .true.
 
     read(161,nml=blist)
 
     close(UNIT=161,STATUS='KEEP')
 
-  else
+  else if (dtype == 'dist') then
 
-    READ(UNIT=161,FMT=*)
-    READ(UNIT=161,FMT=*)
-    READ(UNIT=161,FMT=*)
-    READ(UNIT=161,FMT=*)
-    READ(UNIT=161,FMT=*)
-    READ(UNIT=161,FMT=*) nbeams
 
+!    Need to change this to namelist - could have array of strings...??
+!    And can the namelist define each element individually....????
+
+
+    iInputType_G = iReadDist_G
+
+!    READ(UNIT=161,FMT=*)
+!    READ(UNIT=161,FMT=*)
+!    READ(UNIT=161,FMT=*)
+!    READ(UNIT=161,FMT=*)
+!    READ(UNIT=161,FMT=*)
+!    READ(UNIT=161,FMT=*) nbeams
+!
     allocate(dist_f(nbeams))
+
+
+    read(161,nml=bdlist)
+
+    close(UNIT=161,STATUS='KEEP')
 
     iNumElectrons = 1
     sLenE = 1
     sSigmaE = 1
-    !!!!!!!!!!!!!!!!
-    !!!!!!!!!!!!!!!! 
-    ! READ IN FNAMES
-    !!!!!!!!!!!!!!!!
-    !!!!!!!!!!!!!!!!
-    READ(UNIT=161,FMT=*) 
-    READ(UNIT=161,FMT=*)
-    READ(UNIT=161,FMT=*)
 
-    DO b_ind = 1, nbeams
-      READ(UNIT=161,FMT=*) dist_f(b_ind)
-    END DO
+!    !!!!!!!!!!!!!!!!
+!    !!!!!!!!!!!!!!!! 
+!    ! READ IN FNAMES
+!    !!!!!!!!!!!!!!!!
+!    !!!!!!!!!!!!!!!!
+!    READ(UNIT=161,FMT=*) 
+!    READ(UNIT=161,FMT=*)
+!    READ(UNIT=161,FMT=*)
+!
+!    DO b_ind = 1, nbeams
+!      READ(UNIT=161,FMT=*) dist_f(b_ind)
+!    END DO
+!
+!    CLOSE(UNIT=161,STATUS='KEEP')
 
-    CLOSE(UNIT=161,STATUS='KEEP')
+  else if (dtype == 'particle') then
+
+    if (nbeams /= 1) then 
+      
+      if (tProcInfo_G%qRoot) print*, 'WARNING - currently only 1 file', &
+                                      'is supported for the particle beam type'
+      if (tProcInfo_G%qRoot) print*, 'Only the 1st file will be read in....'
+
+    end if
+
+    allocate(dist_f(nbeams))
+
+    iInputType_G = iReadMASP_G
+    
+    read(161,nml=bdlist)
+
+    close(UNIT=161,STATUS='KEEP')    
 
   end if
 
