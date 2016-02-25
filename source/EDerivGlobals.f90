@@ -203,6 +203,8 @@ real(kind=wp) :: m2col   ! Fractional change in eta due to change in aw
 
 logical :: qUndEnds_G     ! If modelling undulator ends
 
+logical :: qhdf5_G, qsdds_G  ! Switches for data output file formats
+
 real(kind=wp) :: sZFS, sZFE  ! Markers for wiggler ends
 
 ! Indicates which part of the wiggler we're in -
@@ -255,8 +257,6 @@ TYPE(cFileType), save :: tPowF   ! Type array describing the power file
 
 
 integer(kind=ip) :: iWriteNthSteps, iDumpNthSteps, iIntWriteNthSteps
-
-character(32_ip) :: wrMeth_G
 
 
 character(132_ip) :: cmd_call_G

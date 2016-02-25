@@ -199,7 +199,7 @@ SUBROUTINE read_in(zfilename, &
 
   logical :: qOneD, qFieldEvolve, qElectronsEvolve, &
              qElectronFieldCoupling, qFocussing, &
-             qDiffraction, qDump, qUndEnds
+             qDiffraction, qDump, qUndEnds, qhdf5, qsdds
 
   integer(kind=ip) :: iNumNodesX, iNumNodesY, nodesPerLambdar
   real(kind=wp) :: sFModelLengthX, sFModelLengthY, sFModelLengthZ2
@@ -211,7 +211,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  q_noise, qDump, qResume, qSeparateFiles, &
                  qFormattedFiles, qWriteZ, qWriteA, &
                  qWritePperp, qWriteP2, qWriteZ2, &
-                 qWriteX, qWriteY, &
+                 qWriteX, qWriteY, qsdds, qhdf5, &
                  beam_file, sElectronThreshold, &
                  iNumNodesY, iNumNodesX, &
                  nodesPerLambdar, sFModelLengthX, &
@@ -254,7 +254,10 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qWriteZ2 = .true.
   qWriteX = .true.
   qWriteY = .true.
-  
+  qsdds = .true.
+  qhdf5 = .true.
+!  qplain = .false.
+
   beam_file = 'beam_file.in'
   sElectronThreshold     = 0.05
   iNumNodesX             = 129      
@@ -305,8 +308,9 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qSwitches(iDiffraction_CG) = qDiffraction
   qSwitches(iDump_CG) = qDump
   
-  qUndEnds = qUndEnds_G
-
+  qUndEnds_G = qUndEnds
+  qsdds_G  = qsdds
+  qhdf5_G = qhdf5
 
 
 
