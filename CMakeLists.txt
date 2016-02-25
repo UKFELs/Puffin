@@ -9,7 +9,7 @@ enable_language (Fortran)
 # The version number.
 set (Puffin_VERSION_MAJOR 1)
 set (Puffin_VERSION_MINOR 5)
-set (Puffin_VERSION_PATCH 1)
+set (Puffin_VERSION_PATCH 2)
 include(${CMAKE_SOURCE_DIR}/scimake/SciInit.cmake)
 #option(ENABLE_PARALLEL "whether to build parallel PUFFIN" ON)
 
