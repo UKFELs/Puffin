@@ -8,7 +8,7 @@ USE Stiffness
 USE Setup
 USE RK4int
 use dumpFiles 
-use hdf5_puff
+!use hdf5_puff
 use pln_puff
 use ParaField
 
@@ -138,10 +138,10 @@ subroutine writeIM(sA, Ar_local, sZ, &
 
   if (qhdf5_G) then
 
-    call wr_h5(sA, sZ, tArrayA, tArrayE, tArrayZ, &
-                 iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
-                 zDataFileName, qWriteFull, &
-                 qWriteInt, qOK)
+!    call wr_h5(sA, sZ, tArrayA, tArrayE, tArrayZ, &
+!                 iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
+!                 zDataFileName, qWriteFull, &
+!                 qWriteInt, qOK)
 
   end if
 

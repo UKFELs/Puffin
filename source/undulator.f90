@@ -290,7 +290,8 @@ contains
     end if
 
 
-  if ((iCsteps == 60) .or. (iCsteps == 120) ) then
+  !if ((iCsteps == 60) .or. (iCsteps == 120) ) then
+  if (mod(iCsteps, 60) == 0)  then
 
     call deallact_rk4_arrs()
     call getLocalFieldIndices(sLengthOfElmZ2_G, sA)

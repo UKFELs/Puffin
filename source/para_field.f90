@@ -15,16 +15,24 @@ real(kind=wp), allocatable :: fr_rfield(:), bk_rfield(:), ac_rfield(:), &
 
 real(kind=wp), allocatable :: tmp_A(:)
 
-integer(kind=ip), allocatable :: recvs_pf(:), displs_pf(:)
+integer(kind=ip), allocatable :: recvs_pf(:), displs_pf(:), recvs_ff(:), &
+                                 displs_ff(:), recvs_ef(:), displs_ef(:)
 
 integer(kind=ip) :: fz2, ez2, lTr, bz2, fbuffLen, fbuffLenM, tllen, mainlen, &
                     fz2_GGG, ez2_GGG 
 
 integer(kind=ip) :: ffs, ffe, tlflen, ees, eee, tlelen, tlflen_glob, tlelen_glob, &
-                    tlflen4arr, tlelen4arr
+                    tlflen4arr, tlelen4arr, ffs_GGG, ffe_GGG, ees_GGG, eee_GGG
 
 
 integer(kind=ip), allocatable :: ac_ar(:,:), ff_ar(:,:), ee_ar(:,:)
+
+
+integer(kind=ip) :: iParaBas
+integer(kind=ip), parameter :: iElectronBased=1, &
+                               iFieldBased = 2
+
+
 
 logical :: qStart_new
 
@@ -93,67 +101,74 @@ contains
 
     if (qStart_new) then
 
-    tnjdlz2 = 400
+      iParaBas = iFieldBased
 
-    fz2 = (tProcInfo_G%rank * tnjdlz2) + 1
-    ez2 = (tProcInfo_G%rank * tnjdlz2) + tnjdlz2
-    bz2 = 410
+      call getFStEnd()
 
-    if (tProcInfo_G%rank == 1) then
+!      tnjdlz2 = 400
 
-      ez2 = NZ2_G
-      tnjdlz2 = NZ2_G - tnjdlz2
+!      fz2 = (tProcInfo_G%rank * tnjdlz2) + 1
+!      ez2 = (tProcInfo_G%rank * tnjdlz2) + tnjdlz2
+      bz2 = ez2
 
-    end if
+!      if (tProcInfo_G%rank == 1) then
 
-    if (tProcInfo_G%rank == 1) bz2 = ez2
+!        ez2 = NZ2_G
+!        tnjdlz2 = NZ2_G - tnjdlz2
 
-    mainlen = tnjdlz2
+!      end if
 
-    tlflen_glob = 0
-    tlflen = 0
-    tlflen4arr = 1
-    ffs = 0
-    ffe = 0
+!      if (tProcInfo_G%rank == 1) bz2 = ez2
+
+!      mainlen = tnjdlz2
+
+      tlflen_glob = 0
+      tlflen = 0
+      tlflen4arr = 1
+      ffs = 0
+      ffe = 0
 
 
-    tlelen_glob = 0
-    tlelen = 0
-    tlelen4arr = 1
-    ees = 0
-    eee = 0
+      tlelen_glob = 0
+      tlelen = 0
+      tlelen4arr = 1
+      ees = 0
+      eee = 0
 
-    allocate(ee_ar(tProcInfo_G%size, 3))
-    allocate(ff_ar(tProcInfo_G%size, 3))
-    allocate(ac_ar(tProcInfo_G%size, 3))
+      allocate(ee_ar(tProcInfo_G%size, 3))
+      allocate(ff_ar(tProcInfo_G%size, 3))
+      allocate(ac_ar(tProcInfo_G%size, 3))
     
 
-    call setupLayoutArrs(mainlen, fz2, ez2, ac_ar)
-    call setupLayoutArrs(tlflen, ffs, ffe, ff_ar)
-    call setupLayoutArrs(tlelen, ees, eee, ee_ar)
+      call setupLayoutArrs(mainlen, fz2, ez2, ac_ar)
+      call setupLayoutArrs(tlflen, ffs, ffe, ff_ar)
+      call setupLayoutArrs(tlelen, ees, eee, ee_ar)
 
-    print*, mainlen, fz2, ez2, ac_ar
-
-
-    allocate(fr_rfield(tlflen4arr), fr_ifield(tlflen4arr))
-    allocate(bk_rfield(tlelen4arr), bk_ifield(tlelen4arr))
-
-    allocate(ac_rfield(tnjdlz2), ac_ifield(tnjdlz2))
-
-    ac_rfield = sA(fz2:bz2)
-    ac_ifield = sA(fz2 + NZ2_G:bz2 + NZ2_G)
+      print*, mainlen, fz2, ez2, ac_ar
 
 
-    fr_rfield = 0_wp
-    fr_ifield = 0_wp
-    bk_rfield = 0_wp
-    bk_ifield = 0_wp 
+      allocate(fr_rfield(tlflen4arr), fr_ifield(tlflen4arr))
+      allocate(bk_rfield(tlelen4arr), bk_ifield(tlelen4arr))
 
-    qStart_new = .false.
+      allocate(ac_rfield(tnjdlz2), ac_ifield(tnjdlz2))
+
+      ac_rfield = sA(fz2:bz2)
+      ac_ifield = sA(fz2 + NZ2_G:bz2 + NZ2_G)
+
+
+      fr_rfield = 0_wp
+      fr_ifield = 0_wp
+      bk_rfield = 0_wp
+      bk_ifield = 0_wp 
+
+      qStart_new = .false.
+
+      iParaBas = iElectronBased
 
     else 
 
       deallocate(recvs_pf, displs_pf, tmp_A)
+      deallocate(recvs_ff, displs_ff, recvs_ef, displs_ef)
 
     end if
 
@@ -514,6 +529,22 @@ print*, 'AC_AR_OLD 2', ac_ar_old
 !     Will NOT be needed later on....
 !     ...and should now ONLY be used for data writing while testing...
 
+
+
+      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+        gath_v = tlflen !-1
+      else
+        gath_v = tlflen
+      end if
+
+
+      allocate(recvs_ff(tProcInfo_G%size), displs_ff(tProcInfo_G%size))
+      call getGathArrs(gath_v, recvs_ff, displs_ff)
+
+
+
+
+
       if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
         gath_v = mainlen ! -1
       else
@@ -523,56 +554,22 @@ print*, 'AC_AR_OLD 2', ac_ar_old
       allocate(recvs_pf(tProcInfo_G%size), displs_pf(tProcInfo_G%size))
       call getGathArrs(gath_v, recvs_pf, displs_pf)
 
+
+
+      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+        gath_v = tlelen !-1
+      else
+        gath_v = tlelen
+      end if
+
+      allocate(recvs_ef(tProcInfo_G%size), displs_ef(tProcInfo_G%size))
+      call getGathArrs(gath_v, recvs_ef, displs_ef)
+
+
+
+
+
 !  #######################################################################
-
-
-
-
-
-
-!  ##################################################################
-
-
-
-
-
-
-
-
-
-
-!  ##################################################################
-!    Send data to local back field sections
-
-!     Allocate back arrays
-
-
-
-!  ##################################################################
-
-
-
-
-
-
-
-
-
-
-!  ##################################################################
-!    Send data to local active field sections
-
-
-
-
-!  ##################################################################
-
-
-
-
-
-
-
 
 
 
@@ -609,6 +606,8 @@ print*, 'AC_AR_OLD 2', ac_ar_old
   print*, tProcInfo_G%rank, ': len of buffM = ', fbuffLen, fbuffLenM
 
   print*, tProcInfo_G%rank, '...now front and back has ...', ffs, ffe, ees, eee
+
+  if (tProcInfo_G%rank == 0) print*, fr_rfield
 
 !if (tProcInfo_G%rank == 1) print*, size(sElZ2_G), sElZ2_G
 
@@ -676,6 +675,55 @@ print*, 'AC_AR_OLD 2', ac_ar_old
       integer error
 
 
+
+
+
+
+
+
+
+
+
+      if (ffe_GGG > 0) then
+
+      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+        gath_v = tlflen !-1
+      else
+        gath_v = tlflen
+      end if
+
+
+
+
+      allocate(A_local(gath_v * 2))
+
+      A_local = 0_wp
+
+      A_local(1:gath_v) = fr_rfield(1:gath_v)
+      A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
+
+      call gather2A(A_local, sA(ffs_GGG:ffe_GGG), gath_v, NZ2_G, recvs_ff, displs_ff)
+
+
+
+      deallocate(A_local)
+
+      end if
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
       if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
       	gath_v = mainlen !-1
       else
@@ -697,6 +745,55 @@ print*, 'AC_AR_OLD 2', ac_ar_old
 
 
       deallocate(A_local)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      if (eee_GGG < nz2_G) then
+
+      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+        gath_v = tlelen !-1
+      else
+        gath_v = tlelen
+      end if
+
+
+
+
+      allocate(A_local(gath_v * 2))
+
+      A_local = 0_wp
+
+      A_local(1:gath_v) = fr_rfield(1:gath_v)
+      A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
+
+      call gather2A(A_local, sA(ees_GGG:eee_GGG), gath_v, NZ2_G, recvs_ef, displs_ef)
+
+
+
+      deallocate(A_local)
+
+      end if
+
+
+
+
+
+
 
     end subroutine UpdateGlobalField
 
@@ -1057,6 +1154,8 @@ print*, 'AC_AR_OLD 2', ac_ar_old
 
     bz2 = nint(bz2_len / sLengthOfElmZ2_G)  ! node index of final node in boundary
 
+    if (bz2 > nz2_G) bz2 = nz2_G
+
     print*, tProcInfo_G%rank, 'is inside calcBuff, with bz2 = ', bz2
 
     fbuffLen = bz2 - (ez2+1) + 1  ! Local buffer length, including the ez2 node
@@ -1137,29 +1236,46 @@ print*, 'AC_AR_OLD 2', ac_ar_old
 
 
 
+    if (iParaBas == iElectronBased) then
 
-    fz2_act = minval(ceiling(sElZ2_G / sLengthOfElmZ2_G))   ! front z2 node in 'active' region
+      fz2_act = minval(ceiling(sElZ2_G / sLengthOfElmZ2_G))   ! front z2 node in 'active' region
 
-    CALL mpi_allreduce(fz2_act, rbuff, 1, mpi_integer, &
-             mpi_min, tProcInfo_G%comm, error)
+      CALL mpi_allreduce(fz2_act, rbuff, 1, mpi_integer, &
+               mpi_min, tProcInfo_G%comm, error)
 
 
-    fz2_act = rbuff
-    fz2_GGG = fz2_act
+      fz2_act = rbuff
+      fz2_GGG = fz2_act
 
 print*, 'fz2_act = ', fz2_act
 
-    ez2_act = maxval(ceiling(sElZ2_G / sLengthOfElmZ2_G) + 1) 
+      ez2_act = maxval(ceiling(sElZ2_G / sLengthOfElmZ2_G) + 1) 
 
-    CALL mpi_allreduce(ez2_act, rbuff, 1, mpi_integer, &
-             mpi_max, tProcInfo_G%comm, error)
+      CALL mpi_allreduce(ez2_act, rbuff, 1, mpi_integer, &
+               mpi_max, tProcInfo_G%comm, error)
 
-    ez2_act = rbuff
-    ez2_GGG = ez2_act
+      ez2_act = rbuff
+      ez2_GGG = ez2_act
 
 print*, 'ez2_act = ', ez2_act
 
+    else if (iParaBas == iFieldBased) then    !    FIELD based - also used for initial steps...
+
+      fz2_act = 1_ip
+      ez2_act = NZ2_G
+      fz2_GGG = 1
+      ez2_GGG = 1
+
+    else
+
+      print*, 'NO BASIS FOR PARALLELISM SELECTED!!!'
+
+    end if
+
     n_act_g = ez2_act - fz2_act + 1
+
+
+
 
 
 ! get local start and end nodes for the active region
@@ -1209,6 +1325,9 @@ print*, 'ez2_act = ', ez2_act
         tlflen4arr = 1
         ffs = 0
         ffe = 0
+        ffs_GGG = 0
+        ffe_GGG = 0
+
 
       else if (efz2_MG > 0) then
 
@@ -1219,6 +1338,10 @@ print*, 'ez2_act = ', ez2_act
                       tlflen, ffs, ffe)
 
         tlflen4arr = tlflen
+
+        ffs_GGG = 1
+        ffe_GGG = efz2_MG
+
 
       end if
 
@@ -1276,6 +1399,9 @@ print*, 'ez2_act = ', ez2_act
 
         ees = ees + ebz2_MG - 1
         eee = eee + ebz2_MG - 1
+
+        ees_GGG = ebz2_MG
+        eee_GGG = NZ2_G
 
         tlelen4arr = tlelen
 

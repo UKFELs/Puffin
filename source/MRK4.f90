@@ -106,10 +106,10 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
   A_localtr1 = 0_wp
   A_localtr2 = 0_wp
   A_localtr3 = 0_wp
-  A_localtr0 = 0_wp
-  A_localtr1 = 0_wp
-  A_localtr2 = 0_wp
-  A_localtr3 = 0_wp
+  A_localti0 = 0_wp
+  A_localti1 = 0_wp
+  A_localti2 = 0_wp
+  A_localti3 = 0_wp
 
 
 
