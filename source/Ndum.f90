@@ -127,25 +127,29 @@ subroutine writeIM(sA, Ar_local, sZ, &
   call int_or_full(istep, iIntWriteNthSteps, iWriteNthSteps, &
                    qWriteInt, qWriteFull, qOK)
 
-  if (wrMeth_G == 'sdds') then
+  if (qsdds_G) then
 
     call wr_sdds(sA, sZ, iCstep, tArrayA, tArrayE, tArrayZ, &
                  iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
                  zDataFileName, qWriteFull, &
                  qWriteInt, qOK)
-! temporarilly commenting as we want files written both ways
-!  else if (wrMeth_G == 'hdf5') then
-!    print*,zDataFileName
-!    call wr_h5(sA, sZ, tArrayA, tArrayE, tArrayZ, &
-!                 iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
-!                 zDataFileName, qWriteFull, &
-!                 qWriteInt, qOK)
-
-  else 
-
-    call wr_pln()
 
   end if
+
+  if (qhdf5_G) then
+
+    call wr_h5(sA, sZ, tArrayA, tArrayE, tArrayZ, &
+                 iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
+                 zDataFileName, qWriteFull, &
+                 qWriteInt, qOK)
+
+  end if
+
+!  else 
+
+!    call wr_pln()
+
+!  end if
 
 !              Set error flag and exit
 

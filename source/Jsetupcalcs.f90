@@ -16,6 +16,7 @@ USE Globals
 USE electronInit
 USE gMPsFromDists
 use avwrite
+use MASPin
 
 IMPLICIT NONE
 
@@ -247,12 +248,6 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
     tArrayA(:)%tFileType%qFormatted = qFormatted
     tArrayZ%tFileType%qFormatted = qFormatted
 
-!    Set output data file format:
-!    Can be sdds, hdf5 or blank (plain data)
-
-    wrMeth_G = 'sdds'
-
-
 
 !     Set error flag and exit
 
@@ -375,6 +370,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
     INTEGER(KIND=IPL) :: sendbuff, recvbuff
     INTEGER sendstat(MPI_STATUS_SIZE)
     INTEGER recvstat(MPI_STATUS_SIZE)
+    character(32) :: fname_temp
     LOGICAL :: qOKL
 
     sQOneE = 1.60217656535E-19
@@ -409,7 +405,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
 
 
 
-    if (qSimple) then
+    if (iInputType_G == iGenHom_G) then
 
       CALL electron_grid(RealE,NE,noise, &
                          Z,nbeams, LenEPulse,sigma, beamCenZ2, gamma_d, &
@@ -417,9 +413,21 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
                          chirp,mag,fr,qOKL)
       IF (.NOT. qOKL) GOTO 1000
 
-    else 
+    else if (iInputType_G == iReadDist_G) then
 
       call getMPs(fname, nbeams, Z, noise, eThresh)
+
+    else if (iInputType_G == iReadMASP_G) then
+
+      fname_temp = fname(1)
+      call readMASPfile(fname_temp)
+
+    else 
+
+      if (tProcInfo_G%qRoot) print*, 'No beam input type specified....'
+      if (tProcInfo_G%qRoot) print*, 'Exiting...'
+      call UnDefineParallelLibrary(qOKL)
+      stop
 
     end if
 

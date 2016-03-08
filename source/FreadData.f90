@@ -166,7 +166,7 @@ SUBROUTINE read_in(zfilename, &
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sSigmaF(:,:)
   LOGICAL, ALLOCATABLE, INTENT(OUT) :: qFlatTopS(:)
   LOGICAL, INTENT(out) :: qSimple
-  CHARACTER(*), ALLOCATABLE, INTENT(INOUT) :: dist_f(:)
+  CHARACTER(32_ip), ALLOCATABLE, INTENT(INOUT) :: dist_f(:)
   
   REAL(KIND=WP),     INTENT(OUT)  :: sFiltFrac,sDiffFrac,sBeta
   REAL(KIND=WP),     INTENT(OUT)  :: srho
@@ -199,7 +199,7 @@ SUBROUTINE read_in(zfilename, &
 
   logical :: qOneD, qFieldEvolve, qElectronsEvolve, &
              qElectronFieldCoupling, qFocussing, &
-             qDiffraction, qDump, qUndEnds
+             qDiffraction, qDump, qUndEnds, qhdf5, qsdds
 
   integer(kind=ip) :: iNumNodesX, iNumNodesY, nodesPerLambdar
   real(kind=wp) :: sFModelLengthX, sFModelLengthY, sFModelLengthZ2
@@ -211,7 +211,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  q_noise, qDump, qResume, qSeparateFiles, &
                  qFormattedFiles, qWriteZ, qWriteA, &
                  qWritePperp, qWriteP2, qWriteZ2, &
-                 qWriteX, qWriteY, &
+                 qWriteX, qWriteY, qsdds, qhdf5, &
                  beam_file, sElectronThreshold, &
                  iNumNodesY, iNumNodesX, &
                  nodesPerLambdar, sFModelLengthX, &
@@ -254,7 +254,10 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qWriteZ2 = .true.
   qWriteX = .true.
   qWriteY = .true.
-  
+  qsdds = .true.
+  qhdf5 = .true.
+!  qplain = .false.
+
   beam_file = 'beam_file.in'
   sElectronThreshold     = 0.05
   iNumNodesX             = 129      
@@ -277,7 +280,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   sFocusfactor           = 1.41213562373095
   lambda_w               = 0.04
   Dfact                  = 0.0
-  zundType               = 'helical'
+  zundType               = ''
   taper                  = 0.0
   lattFile               = ''
   stepsPerPeriod         = 30
@@ -305,8 +308,9 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qSwitches(iDiffraction_CG) = qDiffraction
   qSwitches(iDump_CG) = qDump
   
-  qUndEnds = qUndEnds_G
-
+  qUndEnds_G = qUndEnds
+  qsdds_G  = qsdds
+  qhdf5_G = qhdf5
 
 
 
@@ -413,7 +417,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
   LOGICAL, INTENT(OUT) :: qSimple
   CHARACTER(*), INTENT(INOUT) :: be_f     ! beam file name
-  CHARACTER(*), INTENT(INOUT), ALLOCATABLE :: dist_f(:)     ! dist file names
+  CHARACTER(32_ip), INTENT(INOUT), ALLOCATABLE :: dist_f(:)     ! dist file names
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sEmit_n(:),chirp(:), mag(:), fr(:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sSigmaE(:,:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sLenE(:,:)
@@ -438,6 +442,9 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
                    sEmit_n, sQe, bcenter,  gammaf, &
                    chirp, mag, fr, qRndEj_G, sSigEj_G, &
                    qMatched_A
+
+
+  namelist /bdlist/ dist_f
 
   qOK = .FALSE.
   
@@ -464,11 +471,6 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   nbeams = 1  
   dtype = 'simple'
 
-  qSimple = .true.
-
-
-
-
 
 
 ! Read first namelist - number of beams only
@@ -487,14 +489,6 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   allocate(chirp(nbeams), qMatched_A(nbeams))
   allocate(mag(nbeams), fr(nbeams))
   allocate(qRndEj_G(nbeams), sSigEj_G(nbeams))
-
-
-  if (dtype == 'dist') then
-    qSimple = .false.
-  else
-    qsimple = .true.
-  end if
-
 
 ! &&&&&&&&&& Default vals
 
@@ -526,42 +520,76 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
 ! &&&&&&&&&&&&&&&&&&&&&
 
-  if (qSimple) then
+  if (dtype == 'simple') then
 
 ! Read in arrays
+
+    iInputType_G = iGenHom_G
+    qSimple = .true.
 
     read(161,nml=blist)
 
     close(UNIT=161,STATUS='KEEP')
 
-  else
+  else if (dtype == 'dist') then
 
-    READ(UNIT=161,FMT=*)
-    READ(UNIT=161,FMT=*)
-    READ(UNIT=161,FMT=*)
-    READ(UNIT=161,FMT=*)
-    READ(UNIT=161,FMT=*)
-    READ(UNIT=161,FMT=*) nbeams
 
+!    Need to change this to namelist - could have array of strings...??
+!    And can the namelist define each element individually....????
+
+
+    iInputType_G = iReadDist_G
+
+!    READ(UNIT=161,FMT=*)
+!    READ(UNIT=161,FMT=*)
+!    READ(UNIT=161,FMT=*)
+!    READ(UNIT=161,FMT=*)
+!    READ(UNIT=161,FMT=*)
+!    READ(UNIT=161,FMT=*) nbeams
+!
     allocate(dist_f(nbeams))
+
+
+    read(161,nml=bdlist)
+
+    close(UNIT=161,STATUS='KEEP')
 
     iNumElectrons = 1
     sLenE = 1
     sSigmaE = 1
-    !!!!!!!!!!!!!!!!
-    !!!!!!!!!!!!!!!! 
-    ! READ IN FNAMES
-    !!!!!!!!!!!!!!!!
-    !!!!!!!!!!!!!!!!
-    READ(UNIT=161,FMT=*) 
-    READ(UNIT=161,FMT=*)
-    READ(UNIT=161,FMT=*)
 
-    DO b_ind = 1, nbeams
-      READ(UNIT=161,FMT=*) dist_f(b_ind)
-    END DO
+!    !!!!!!!!!!!!!!!!
+!    !!!!!!!!!!!!!!!! 
+!    ! READ IN FNAMES
+!    !!!!!!!!!!!!!!!!
+!    !!!!!!!!!!!!!!!!
+!    READ(UNIT=161,FMT=*) 
+!    READ(UNIT=161,FMT=*)
+!    READ(UNIT=161,FMT=*)
+!
+!    DO b_ind = 1, nbeams
+!      READ(UNIT=161,FMT=*) dist_f(b_ind)
+!    END DO
+!
+!    CLOSE(UNIT=161,STATUS='KEEP')
 
-    CLOSE(UNIT=161,STATUS='KEEP')
+  else if (dtype == 'particle') then
+
+    if (nbeams /= 1) then 
+      
+      if (tProcInfo_G%qRoot) print*, 'WARNING - currently only 1 file', &
+                                      'is supported for the particle beam type'
+      if (tProcInfo_G%qRoot) print*, 'Only the 1st file will be read in....'
+
+    end if
+
+    allocate(dist_f(nbeams))
+
+    iInputType_G = iReadMASP_G
+    
+    read(161,nml=bdlist)
+
+    close(UNIT=161,STATUS='KEEP')    
 
   end if
 

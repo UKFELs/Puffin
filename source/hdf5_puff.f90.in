@@ -1188,7 +1188,7 @@ contains
 !    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
 !    CALL h5aclose_f(attr_id, error)
 !    Print*,'hdf5_puff:outputH5Field1D(mesh attributes closed)'
-!    CALL h5sclose_f(aspace_id, error)
+    CALL h5sclose_f(aspace_id, error)
     Print*,'hdf5_puff:outputH5Field1D(not closing scalar space)'
 !    CALL h5tclose_f(atype_id, error)
     Print*,error
@@ -1209,11 +1209,12 @@ contains
 ! We make another group
     CALL h5gcreate_f(file_id, limgrpname, group_id, error)
 !    CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
-    print*,"not opening space as not closed, and handy for timegrp, runinfo"
+!    print*,"not opening space as not closed, and handy for timegrp, runinfo"
     Print*,error
     CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
-    CALL addH5StringAttribute(dset_id,"vsType","limits",aspace_id)
-    CALL addH5StringAttribute(dset_id,"vsKind","Cartesian",aspace_id)
+    Print*,error
+    CALL addH5StringAttribute(group_id,"vsType","limits",aspace_id)
+    CALL addH5StringAttribute(group_id,"vsKind","Cartesian",aspace_id)
     CALL h5sclose_f(aspace_id, error)
 ! And the limits themselves which require non-scalar attributes
     adims = (/1/) 
@@ -1336,7 +1337,7 @@ contains
 !    Print*,'hdf5_puff:outputH5power(string padding enabled)'
     aname="vsType"
     attr_data_string="time"
-    attr_string_len=len(attr_data_string)
+    attr_string_len=len(trim(adjustl(attr_data_string)))
     CALL h5tset_size_f(atype_id, attr_string_len, error)
 !   Print*,'hdf5_puff:outputH5power(set timegrpname size)'
 !    Print*,error
@@ -1376,7 +1377,11 @@ contains
     CALL h5aclose_f(attr_id, error)
     print*,'hdf5_puff:' // callerstr // ' close vsStep attribute'
     Print*,error
+    CALL h5sclose_f(aspace_id, error)
+    Print*,error
+    Print*,'Closing space'
     CALL h5gclose_f(group_id, error)
+    Print*,error
     Print*,'Closing timeGroup'
 !    Print*,error
 
@@ -1471,7 +1476,9 @@ contains
 !    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
 !    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
 !    CALL h5aclose_f(attr_id, error)
-!    CALL h5tclose_f(atype_id, error)
+    CALL h5sclose_f(aspace_id, error)
+    Print*,error
+    CALL h5tclose_f(atype_id, error)
     CALL h5gclose_f(group_id, error)
     Print*,'Closing runInfo'
 !    Print*,error
