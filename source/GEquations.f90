@@ -189,8 +189,13 @@ contains
 
 !$OMP WORKSHARE
 
+!   Using 'shortcuts'
+!        sdpr = sInv2rho * (fy_G * n2col *sin(ZOver2rho) - &
+!              ( cf1_G * sp2 * &
+!              sField4ElecReal ) )
+
           sdpr = sInv2rho * (fy_G*n2col *sin(ZOver2rho) - &
-                ( cf1_G * sp2 * &
+                ( sEta_G * sp2 / sKappa_G**2 * &
                 sField4ElecReal ) )
 
 !$OMP END WORKSHARE
@@ -395,8 +400,13 @@ contains
 
 !$OMP WORKSHARE
 
+! Using 'shortcuts':
+!        sdpi = sInv2rho * (fx_G * n2col * cos(ZOver2rho) - &
+!                      ( cf1_G * sp2 * &
+!                      sField4ElecImag ) )
+
           sdpi = sInv2rho * (fx_G * n2col * cos(ZOver2rho) - &
-                        ( cf1_G * sp2 * &
+                        ( sEta_G * sp2 / sKappa_G**2 * &
                         sField4ElecImag ) )
 
 !$OMP END WORKSHARE

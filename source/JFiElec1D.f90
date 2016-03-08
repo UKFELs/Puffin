@@ -82,10 +82,14 @@ integer error
       sField4ElecImag(i) = lis_GR(1,i) * sAi(p_nodes(i)) + sField4ElecImag(i)
       sField4ElecImag(i) = lis_GR(2,i) * sAi(p_nodes(i) + 1_ip) + sField4ElecImag(i)
 
+!if (tProcInfo_G%rank == 0) print*, i, sField4ElecImag(i), sAi(p_nodes(i)), sAi(p_nodes(i)+1), &
+!                                  p_nodes(i), lis_GR(1,i), lis_GR(2,i)
+
     !end if
   
   end do 
 !$OMP END DO
+
 
 
 end subroutine getFFelecs_1D
@@ -109,13 +113,19 @@ real(kind=wp), intent(in) :: seta
 integer(kind=ipl) :: i
 real(kind=wp) :: dadzRInst, dadzIInst, dadzCom
 
+integer :: error
+
+
+
+
 !$OMP WORKSHARE
-dadz_w = (s_chi_bar_G(i)/dV3) * (1 + seta * sp2(i) ) &
-                        / sgam(i)
+dadz_w = (s_chi_bar_G/dV3) * (1 + seta * sp2 ) &
+                        / sgam
 !$OMP END WORKSHARE
 
 !$OMP DO PRIVATE(dadzRInst, dadzIInst)
   do i = 1, procelectrons_G(1)
+
   ! do i = 1, maxEl
   
     !if (i<=procelectrons_G(1)) then
@@ -138,7 +148,7 @@ dadz_w = (s_chi_bar_G(i)/dV3) * (1 + seta * sp2(i) ) &
       
       !$OMP ATOMIC
       sDADzr(p_nodes(i) + 1_ip) =                  &
-        lis_GR(2,i) * dadzRInst + sDADzr(p_nodes(i) + 1_ip)                
+        lis_GR(2,i) * dadzRInst + sDADzr(p_nodes(i) + 1_ip)
 
 
 !                   Imaginary part
@@ -157,6 +167,8 @@ dadz_w = (s_chi_bar_G(i)/dV3) * (1 + seta * sp2(i) ) &
       !$OMP ATOMIC
       sDADzi(p_nodes(i) + 1_ip) =                      & 
         lis_GR(2,i) * dadzIInst + sDADzi(p_nodes(i) + 1_ip)
+
+
 
     !end if
   

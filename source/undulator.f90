@@ -113,6 +113,7 @@ contains
 
 !    TEMP 1D parallel field case only
 
+  qStart_new = .true. !!! TTTEEEMPPPe.
   call getLocalFieldIndices(sLengthOfElmZ2_G, sA)
 
 !############################################
@@ -164,7 +165,6 @@ contains
   
 
   iCsteps = iCsteps + 1_ip
-
 
 
 !   Second half of split step method: electron propagation
@@ -290,6 +290,13 @@ contains
     end if
 
 
+  if ((iCsteps == 60) .or. (iCsteps == 120) ) then
+
+    call deallact_rk4_arrs()
+    call getLocalFieldIndices(sLengthOfElmZ2_G, sA)
+    call allact_rk4_arrs()
+    
+  end if
 
 
 
