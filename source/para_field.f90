@@ -612,8 +612,6 @@ print*, 'AC_AR_OLD 2', ac_ar_old
 
   print*, tProcInfo_G%rank, '...now front and back has ...', ffs, ffe, ees, eee
 
-  if (tProcInfo_G%rank == 0) print*, fr_rfield
-
 !if (tProcInfo_G%rank == 1) print*, size(sElZ2_G), sElZ2_G
 
   !call mpi_finalize(error)
@@ -857,7 +855,7 @@ print*, 'AC_AR_OLD 2', ac_ar_old
 
       call CloseFile(tFileTyper, qOKL)
       If (.NOT. qOKL) Goto 1000
-      print*, tFileTyper%iUnit
+      
     end if   
   
 !     Synchronize processors
@@ -895,7 +893,7 @@ print*, 'AC_AR_OLD 2', ac_ar_old
         end if
 
 !     Synchronize
-print*, tFileTyper%iUnit
+
         CALL MPI_BARRIER(tProcInfo_G%comm, error)
     
       END DO  
@@ -923,7 +921,7 @@ print*, tFileTyper%iUnit
     end if
 
 !     Synchronize
-print*, tFileTyper%iUnit
+
       CALL MPI_BARRIER(tProcInfo_G%comm, error)
     
     END DO  
@@ -952,7 +950,7 @@ print*, tFileTyper%iUnit
         end if
 
 !     Synchronize
-print*, tFileTyper%iUnit
+
         CALL MPI_BARRIER(tProcInfo_G%comm, error)
     
       END DO  
