@@ -10,6 +10,7 @@ USE ArrayFunctions
 USE TypesandConstants
 USE Globals
 USE ParallelSetUp
+use MASPin
 
 CONTAINS
 
@@ -444,7 +445,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
                    qMatched_A
 
 
-  namelist /bdlist/ dist_f
+  namelist /bdlist/ dist_f, nMPs4MASP_G
 
   qOK = .FALSE.
   
@@ -586,7 +587,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
     allocate(dist_f(nbeams))
 
     iInputType_G = iReadMASP_G
-    
+    nMPs4MASP_G = 3455789_ip
     read(161,nml=bdlist)
 
     close(UNIT=161,STATUS='KEEP')    
