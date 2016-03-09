@@ -116,10 +116,6 @@ contains
 
 !$OMP END WORKSHARE
 
-!print*, p_nodes
-
-
-
   else
 
 !$OMP WORKSHARE
@@ -136,15 +132,11 @@ contains
 
 
 
-
-
   if (tTransInfo_G%qOneD) then
 
     call getInterps_1D(sz2)
     call getFFelecs_1D(sAr, sAi)
     call getSource_1D(sDADzr, sDADzi,  spr, spi, sgam, sEta_G)
-
-
 
   else
 
@@ -153,8 +145,6 @@ contains
     call getSource_3D(sDADzr, sDADzi, spr, spi, sgam, sEta_G)
 
   end if
-
-
 
 
 

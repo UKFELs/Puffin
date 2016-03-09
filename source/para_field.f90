@@ -7,6 +7,11 @@ use paratype
 use globals
 use ParallelSetUp
 use gtop2
+use filetype
+use createSDDS
+use sddsROutput
+use sddsSetup
+
 
 implicit none
 
@@ -686,27 +691,27 @@ print*, 'AC_AR_OLD 2', ac_ar_old
 
       if (ffe_GGG > 0) then
 
-      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-        gath_v = tlflen !-1
-      else
-        gath_v = tlflen
-      end if
+        if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+          gath_v = tlflen !-1
+        else
+          gath_v = tlflen
+        end if
 
 
 
 
-      allocate(A_local(gath_v * 2))
+        allocate(A_local(gath_v * 2))
 
-      A_local = 0_wp
+        A_local = 0_wp
 
-      A_local(1:gath_v) = fr_rfield(1:gath_v)
-      A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
+        A_local(1:gath_v) = fr_rfield(1:gath_v)
+        A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
 
-      call gather2A(A_local, sA(ffs_GGG:ffe_GGG), gath_v, NZ2_G, recvs_ff, displs_ff)
+        call gather2A(A_local, sA(ffs_GGG:ffe_GGG), gath_v, NZ2_G, recvs_ff, displs_ff)
 
 
 
-      deallocate(A_local)
+        deallocate(A_local)
 
       end if
 
@@ -765,27 +770,27 @@ print*, 'AC_AR_OLD 2', ac_ar_old
 
       if (eee_GGG < nz2_G) then
 
-      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-        gath_v = tlelen !-1
-      else
-        gath_v = tlelen
-      end if
+        if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+          gath_v = tlelen !-1
+        else
+          gath_v = tlelen
+        end if
 
 
 
 
-      allocate(A_local(gath_v * 2))
+        allocate(A_local(gath_v * 2))
+  
+          A_local = 0_wp
+  
+          A_local(1:gath_v) = fr_rfield(1:gath_v)
+          A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
+  
+        call gather2A(A_local, sA(ees_GGG:eee_GGG), gath_v, NZ2_G, recvs_ef, displs_ef)
 
-      A_local = 0_wp
-
-      A_local(1:gath_v) = fr_rfield(1:gath_v)
-      A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
-
-      call gather2A(A_local, sA(ees_GGG:eee_GGG), gath_v, NZ2_G, recvs_ef, displs_ef)
 
 
-
-      deallocate(A_local)
+        deallocate(A_local)
 
       end if
 
@@ -796,6 +801,442 @@ print*, 'AC_AR_OLD 2', ac_ar_old
 
 
     end subroutine UpdateGlobalField
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    subroutine writeParaField(tFileTyper, tFileTypei)
+
+    type(cFileType), intent(inout) :: tFileTyper, tFileTypei
+    logical :: qOKL
+    integer :: error
+    integer(kind=ip) :: i
+
+
+    IF (tProcInfo_G%rank==0) THEN
+  
+      call OpenFileForAppend(tFileTyper%zFileName, &
+                             tFileTyper, qOKL)
+      if (.NOT. qOKL) Goto 1000
+
+!     Set up new page - see CIO.f90 line 651        
+
+      call WriteSDDSNewPage(tFileTyper,qOKL)
+      if (.NOT. qOKL) Goto 1000
+
+!     Write length of column data - see CIO.f90 line 100          
+
+      call WriteINTEGERL(nz2_G,tFileTyper,qOKL)
+      if (.NOT. qOKL) Goto 1000
+
+!     Close File 
+
+      call CloseFile(tFileTyper, qOKL)
+      If (.NOT. qOKL) Goto 1000
+      print*, tFileTyper%iUnit
+    end if   
+  
+!     Synchronize processors
+
+    call MPI_BARRIER(tProcInfo_G%comm, error)
+  
+!     File data was setup on process 0, need to share filetype with the
+!     rest of the processors in the MPI communicator 
+    
+    call shareFileType(tFileTyper)
+
+!     Cycle through processes and write data one by one - see CIO.f90 line 232
+
+
+! front
+
+    if (ffe_GGG > 0) then
+
+      do i = 0,tProcInfo_G%size-1
+  
+        if (tProcInfo_G%rank == i) then
+  
+          if (tlflen > 0) then
+  
+            call OpenFileForAppend(tFileTyper%zFileName, &
+                                   tFileTyper, qOKL)
+  
+            call Write1DRealArray(fr_rfield,tFileTyper,qOKL)
+            if (.not. qOKL) Goto 1000
+  
+            call CloseFile(tFileTyper, qOKL)
+  
+          end if
+  
+        end if
+
+!     Synchronize
+print*, tFileTyper%iUnit
+        CALL MPI_BARRIER(tProcInfo_G%comm, error)
+    
+      END DO  
+
+    end if
+
+! Active
+
+    do i = 0,tProcInfo_G%size-1
+
+    if (tProcInfo_G%rank == i) then
+
+      if (mainlen > 0) then
+
+        call OpenFileForAppend(tFileTyper%zFileName, &
+                               tFileTyper, qOKL)
+
+        call Write1DRealArray(ac_rfield(1:mainlen),tFileTyper,qOKL)
+        if (.not. qOKL) Goto 1000
+
+        call CloseFile(tFileTyper, qOKL)
+
+      end if
+
+    end if
+
+!     Synchronize
+print*, tFileTyper%iUnit
+      CALL MPI_BARRIER(tProcInfo_G%comm, error)
+    
+    END DO  
+
+
+! back
+
+    if (ees_GGG < nz2_g) then
+
+      do i = 0,tProcInfo_G%size-1
+  
+        if (tProcInfo_G%rank == i) then
+  
+          if (tlelen > 0) then
+  
+            call OpenFileForAppend(tFileTyper%zFileName, &
+                                   tFileTyper, qOKL)
+  
+            call Write1DRealArray(bk_rfield,tFileTyper,qOKL)
+            if (.not. qOKL) Goto 1000
+  
+            call CloseFile(tFileTyper, qOKL)
+  
+          end if
+  
+        end if
+
+!     Synchronize
+print*, tFileTyper%iUnit
+        CALL MPI_BARRIER(tProcInfo_G%comm, error)
+    
+      END DO  
+
+    end if
+
+
+
+
+
+
+
+
+
+    IF (tProcInfo_G%rank==0) THEN
+  
+      call OpenFileForAppend(tFileTypei%zFileName, &
+                             tFileTypei, qOKL)
+      if (.NOT. qOKL) Goto 1000
+
+!     Set up new page - see CIO.f90 line 651        
+
+      call WriteSDDSNewPage(tFileTypei,qOKL)
+      if (.NOT. qOKL) Goto 1000
+
+!     Write length of column data - see CIO.f90 line 100          
+
+      call WriteINTEGERL(nz2_G,tFileTypei,qOKL)
+      if (.NOT. qOKL) Goto 1000
+
+!     Close File 
+
+      call CloseFile(tFileTypei, qOKL)
+      If (.NOT. qOKL) Goto 1000
+    
+    end if   
+  
+!     Synchronize processors
+
+    call MPI_BARRIER(tProcInfo_G%comm, error)
+  
+!     File data was setup on process 0, need to share filetype with the
+!     rest of the processors in the MPI communicator 
+    
+    call shareFileType(tFileTypei)
+
+!     Cycle through processes and write data one by one - see CIO.f90 line 232
+
+
+! front
+
+    if (ffe_GGG > 0) then
+
+      do i = 0,tProcInfo_G%size-1
+  
+        if (tProcInfo_G%rank == i) then
+  
+          if (tlflen > 0) then
+  
+            call OpenFileForAppend(tFileTypei%zFileName, &
+                                   tFileTypei, qOKL)
+  
+            call Write1DRealArray(fr_ifield,tFileTypei,qOKL)
+            if (.not. qOKL) Goto 1000
+  
+            call CloseFile(tFileTypei, qOKL)
+  
+          end if
+  
+        end if
+
+!     Synchronize
+
+        CALL MPI_BARRIER(tProcInfo_G%comm, error)
+    
+      END DO  
+
+    end if
+
+! Active
+
+    do i = 0,tProcInfo_G%size-1
+
+    if (tProcInfo_G%rank == i) then
+
+      if (mainlen > 0) then
+
+        call OpenFileForAppend(tFileTypei%zFileName, &
+                               tFileTypei, qOKL)
+
+        call Write1DRealArray(ac_ifield(1:mainlen),tFileTypei,qOKL)
+        if (.not. qOKL) Goto 1000
+
+        call CloseFile(tFileTypei, qOKL)
+
+      end if
+
+    end if
+
+!     Synchronize
+
+      CALL MPI_BARRIER(tProcInfo_G%comm, error)
+    
+    END DO  
+
+
+! back
+
+    if (ees_GGG < nz2_g) then
+
+      do i = 0,tProcInfo_G%size-1
+  
+        if (tProcInfo_G%rank == i) then
+  
+          if (tlelen > 0) then
+  
+            call OpenFileForAppend(tFileTypei%zFileName, &
+                                   tFileTypei, qOKL)
+  
+            call Write1DRealArray(bk_ifield,tFileTypei,qOKL)
+            if (.not. qOKL) Goto 1000
+  
+            call CloseFile(tFileTypei, qOKL)
+  
+          end if
+  
+        end if
+
+!     Synchronize
+
+        CALL MPI_BARRIER(tProcInfo_G%comm, error)
+    
+      END DO  
+
+    end if
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!       if (ffe_GGG > 0) then
+
+!         if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+!           gath_v = tlflen !-1
+!         else
+!           gath_v = tlflen
+!         end if
+
+
+
+
+!         allocate(A_local(gath_v * 2))
+
+!         A_local = 0_wp
+
+!         A_local(1:gath_v) = fr_rfield(1:gath_v)
+!         A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
+
+!         call gather2A(A_local, sA(ffs_GGG:ffe_GGG), gath_v, NZ2_G, recvs_ff, displs_ff)
+
+
+
+!         deallocate(A_local)
+
+!       end if
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!       if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+!         gath_v = mainlen !-1
+!       else
+!         gath_v = mainlen
+!       end if
+
+
+
+
+!       allocate(A_local(gath_v * 2))
+
+!       A_local = 0_wp
+
+!       A_local(1:gath_v) = ac_rfield(1:gath_v)
+!       A_local(gath_v+1:gath_v*2) = ac_ifield(1:gath_v)
+
+!       call gather2A(A_local, sA(fz2_GGG:ez2_GGG), gath_v, NZ2_G, recvs_pf, displs_pf)
+
+
+
+!       deallocate(A_local)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!       if (eee_GGG < nz2_G) then
+
+!         if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+!           gath_v = tlelen !-1
+!         else
+!           gath_v = tlelen
+!         end if
+
+
+
+
+!         allocate(A_local(gath_v * 2))
+  
+!           A_local = 0_wp
+  
+!           A_local(1:gath_v) = fr_rfield(1:gath_v)
+!           A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
+  
+!         call gather2A(A_local, sA(ees_GGG:eee_GGG), gath_v, NZ2_G, recvs_ef, displs_ef)
+
+
+
+!         deallocate(A_local)
+
+!       end if
+
+  goto 2000
+
+1000 print*, 'ERROR HAS OCCURREDD'
+
+2000 continue
+
+
+    end subroutine writeParaField
+
+
+
+
+
+
 
 
 

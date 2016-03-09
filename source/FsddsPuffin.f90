@@ -13,6 +13,7 @@ USE ParallelSetUp
 Use avWrite
 use sddsROutput
 use createSDDS
+use parafield
 
 
 implicit none
@@ -692,32 +693,36 @@ CONTAINS
 
     end if
 
+
+    call writeParaField(tArrayA(1)%tFileType, tArrayA(2)%tFileType)
+
+
 !     Write out field data:-only root processor needs to do this
     
-    fieldsize = SIZE(sA)/2_IP
-
-
-
-    if (tProcInfo_G%qRoot) then
-
-      do ifp = 1_IP, size(tArrayA)
-
-        if (tArrayA(ifp)%qWrite) then
-
-!     Write the data
-      
-          call OutputIntegrationData(tArrayA(ifp)%tFileType, &
-                                     sA(((ifp-1)*fieldsize) + 1: ifp*fieldsize), &
-                                     fieldsize, &
-                                     qOKL)
-
-          if (.not. qOKL) goto 1000
-
-        end if
-
-      end do
-
-    end if
+!    fieldsize = SIZE(sA)/2_IP
+!
+!
+!
+!    if (tProcInfo_G%qRoot) then
+!
+!      do ifp = 1_IP, size(tArrayA)
+!
+!        if (tArrayA(ifp)%qWrite) then
+!
+!!     Write the data
+!      
+!          call OutputIntegrationData(tArrayA(ifp)%tFileType, &
+!                                     sA(((ifp-1)*fieldsize) + 1: ifp*fieldsize), &
+!                                     fieldsize, &
+!                                     qOKL)
+!
+!          if (.not. qOKL) goto 1000
+!
+!        end if
+!
+!      end do
+!
+!    end if
 
 
 
