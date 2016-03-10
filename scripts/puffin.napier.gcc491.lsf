@@ -1,0 +1,37 @@
+#!/bin/bash
+#BSUB -o puffin.%J.out
+#BSUB -e puffin.%J.err
+#BSUB -R "span[ptile=24]"
+#BSUB -n 48
+#BSUB -J testPuffin
+#BSUB -W 360
+export MYHOME=`pwd`
+
+# setup modules
+. /etc/profile.d/modules.sh
+#module load puffin-gcc
+#module load gcc/4.9.1
+#module load openmpi-gcc/1.8
+module load puffin-gcc
+#source $HOME/../shared/contrib-gcc491-sysopenmpi1.8/.sh
+#export PUFFIN_DIR=$HOME/../shared/install-sys-gcc491/puffin-1.5.1/bin
+# phase 2 / napier
+#export PUFFIN_DIR=$HOME/../shared/install-gcc491-sysopenmpi1.8/puffin-1.5.1-new-write/bin
+export PUFFIN_DIR=/gpfs/stfc/local/apps/gcc/puffin/1.5.3/bin
+export MYJOB=fig7
+export MYINPUT=${MYJOB}.in
+date | tee ${MYJOB}.log
+echo running puffin | tee -a ${MYJOB}.log
+mpirun -n 32 $PUFFIN_DIR/puffin ${MYINPUT} | tee -a ${MYJOB}.log
+echo puffin finished | tee -a ${MYJOB}.log
+date | tee -a ${MYJOB}.log
+#do something while this .log file is reasonably current
+#postprocessing - sort out fields
+(for i in $(ls ${MYJOB}_aperp_0_*.h5); do  python $PUFFIN_DIR/ReorderColMajorFtoColMinorC.py $i; done) | tee -a ${MYJOB}.log
+#postprocessing - join up particles
+python $PUFFIN_DIR/mergeParticles.py ${MYJOB}_electrons | tee -a ${MYJOB}.log
+#postprocessing - merge power outputs
+python $PUFFIN_DIR/aggregateFiles.py ${MYJOB}_power_0 | tee -a ${MYJOB}.log
+python $PUFFIN_DIR/aggregateFiles.py ${MYJOB}_current_0 | tee -a ${MYJOB}.log
+#reduce particles for ease of visualisation
+(for i in $(ls ${MYJOB}_electrons_*.vsh5); do python reduce_particles.py $i 10000; done) | tee -a ${MYJOB}.log
