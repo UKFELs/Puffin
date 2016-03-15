@@ -1,5 +1,5 @@
 import numpy,tables,os,sys
-from scipy.signal install hilbert
+from scipy.signal import hilbert
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 #Check input is correct
@@ -13,10 +13,13 @@ def getMagPhase(h5,xi,yi,component):
   # nodes is num cells+1
     zMesh=numpy.linspace(zLoBounds,zUpBounds,zNumNodes)
     dz=zLen/zNumCells
-    analytic_signal=hibert(h5.root.aperp[xi,yi,:,component]
+    analytic_signal=hilbert(h5.root.aperp[xi,yi,:,component])
     amplitude_envelope = numpy.abs(analytic_signal)    
-    instantaneous_phase = numpy.unwrap(numpy.angle(analytic_signal))    
+    instantaneous_phase = numpy.unwrap(numpy.angle(analytic_signal))
+  # Get an instantaneous frequency from rate of change of phase, and append 0 to make length correspond
+  # strictly should plot zonally instead of nodally, then all would work.    
     instantaneous_freq = numpy.diff(instantaneous_phase) / (2.0*numpy.pi*dz)
+    instantaneous_freq = numpy.hstack((instantaneous_freq,numpy.array([0])))
     return amplitude_envelope,instantaneous_phase,instantaneous_freq
     
 if len(sys.argv) == 2:
@@ -77,16 +80,16 @@ if len(sys.argv) == 2:
   h5out.copy_node_attrs('/aperp','/stokes')
   h5out.remove_node('/aperp')
   h5out.root.stokes._v_attrs.vsLabels="magx,phasex,freqx,magy,phasey,freqy"
-  h5out.root.create_group('/','s0')
+  h5out.create_group('/','s0','normalization of stokes parameters')
   h5out.root.s0._v_attrs.vsType="vsVars"
   h5out.root.s0._v_attrs.s0="max((sqr(magx)+sqr(magy)),1.e-99)"
-  h5out.root.create_group('/','P1')
+  h5out.create_group('/','P1','Stokes parameter P1')
   h5out.root.P1._v_attrs.vsType="vsVars"
   h5out.root.P1._v_attrs.P1="(sqr(magx)-sqr(magy))/s0"
-  h5out.root.create_group('/','P2')
+  h5out.create_group('/','P2','Stokes parameter P2')
   h5out.root.P2._v_attrs.vsType="vsVars"
   h5out.root.P2._v_attrs.P2="2*magx*magy*cos(phasex-phasey)/s0"
-  h5out.root.create_group('/','P3')
+  h5out.create_group('/','P3','Stokes parameter P3')
   h5out.root.P3._v_attrs.vsType="vsVars"
   h5out.root.P3._v_attrs.P3="2*magx*magy*sin(phasex-phasey)/s0"
   h5out.close()
