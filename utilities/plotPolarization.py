@@ -111,7 +111,7 @@ if len(sys.argv) == 4 or len(sys.argv) == 3:
       s0=numpy.max(numpy.add(numpy.square(magx),numpy.square(magy)),1.e-99)
       s1=numpy.subtract(numpy.square(magx),numpy.square(magy))
       s2=2*numpy.multiply(numpy.multiply(magx,magy),numpy.cos(numpy.subtract(phasex,phasey)))
-      s3=2*numpy.multiply(numpy.multiply(magx,magy),numpy.cos(numpy.subtract(phasex,phasey)))
+      s3=2*numpy.multiply(numpy.multiply(magx,magy),numpy.sin(numpy.subtract(phasex,phasey)))
   # various averages are calculated using stokesLength, but they don't appear to be used.
       StokesParams[xi,yi,:,0]=numpy.divide(s1,s0)
       StokesParams[xi,yi,:,1]=numpy.divide(s2,s0)
