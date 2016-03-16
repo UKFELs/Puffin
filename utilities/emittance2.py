@@ -1,6 +1,7 @@
 #@ifn input file name, from command line
 #@ifh input file handle
 import numpy,sys,tables,re
+c=2.998e8
 ifn=sys.argv[1]
 print "reading in "+str(ifn)
 ifh=open(ifn,'r')
@@ -46,12 +47,24 @@ mpz=(spz2/n)-numpy.square(spz/n)
 mxpx=(sxpx/n)-(sx*spx/n/n)
 mypy=(sypy/n)-(sy*spy/n/n)
 mzpz=(szpz/n)-(sz*spz/n/n)
-eps_n_x=numpy.sqrt(mx*mpx-mxpx*mxpx)/3e8
-eps_n_y=numpy.sqrt(my*mpy-mypy*mypy)/3e8
-eps_n_z=numpy.sqrt(mz*mpz-mzpz*mzpz)/3e8
+eps_n_x=numpy.sqrt(mx*mpx-mxpx*mxpx)/c
+eps_n_y=numpy.sqrt(my*mpy-mypy*mypy)/c
+eps_n_z=numpy.sqrt(mz*mpz-mzpz*mzpz)/c
+#now assume beam is in x, so just calc betay, betaz
+print "mpx:"+str(mpx) + "  sqrt(mpx): "+str(numpy.sqrt(mpx))
+#beta=<x^2>/epsilon(non-norm)=<x^2>*lorentzgamma*lorentzbeta/epsilon(norm)
+beta_y=my*spx/(n*eps_n_y)
+beta_z=mz*spx/(n*eps_n_z)
+#alpha=-<xx'>/eps(non-norm)=-<xx'>*lorentzgamma*lorentzbeta/epsilon(norm)
+alpha_y=mypy/(c*eps_n_y)
+alpha_z=mzpz/(c*eps_n_z)
 print "eps_n_x"+str(eps_n_x)
 print "eps_n_y"+str(eps_n_y)
 print "eps_n_z"+str(eps_n_z)
+print "beta_y"+str(beta_y)
+print "beta_z"+str(beta_z)
+print "alpha_y"+str(alpha_y)
+print "alpha_z"+str(alpha_z)
 #Now try doing just with the primes
 yp=numpy.divide(pdata[:,4],pdata[:,3])
 zp=numpy.divide(pdata[:,5],pdata[:,3])
