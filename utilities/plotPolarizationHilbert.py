@@ -53,12 +53,14 @@ if len(sys.argv) == 2:
   #output file goes in current directory whether or not input was there.
   outFilename=inputFilename.split(os.sep)[-1].replace('aperp','stokes')
   print outFilename
-#  for xi in range(0,nx):
-#    for yi in range(0,ny):
+  for xi in range(0,nx):
+    for yi in range(0,ny):
 # Just look in the middle while testing
-  for xi in range(int(14*nx/32),int(18*nx/32)):
-    for yi in range(int(14*ny/32),int(18*ny/32)):
-      print "xi: "+str(xi)+"  yi: "+str(yi)
+#  for xi in range(int(14*nx/32),int(18*nx/32)):
+#    for yi in range(int(14*ny/32),int(18*ny/32)):
+      if xi%16==0:
+        if yi%16==0:
+          print "xi: "+str(xi)+"  yi: "+str(yi)
       magx,phasex,freqx=getMagPhase(h5,xi,yi,0)
       magy,phasey,freqy=getMagPhase(h5,xi,yi,1)
 #      s0=numpy.max(numpy.add(numpy.square(magx),numpy.square(magy)),1.e-99)
