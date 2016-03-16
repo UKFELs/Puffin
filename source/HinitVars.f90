@@ -94,7 +94,7 @@ logical, allocatable :: qMatched_A(:)
 !!!
 
 INTEGER(KIND=IP) :: nseeds
-REAL(KIND=WP), ALLOCATABLE :: freqf(:), SmeanZ2(:)
+REAL(KIND=WP), ALLOCATABLE :: freqf(:), ph_sh(:), SmeanZ2(:)
 LOGICAL, ALLOCATABLE :: qFlatTopS(:)
 REAL(KIND=WP), ALLOCATABLE    :: sSeedSigma(:,:)
 

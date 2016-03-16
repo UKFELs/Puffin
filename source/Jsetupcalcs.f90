@@ -263,7 +263,8 @@ END SUBROUTINE passToGlobals
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                             
-SUBROUTINE SetUpInitialValues(nseeds, freqf, SmeanZ2, qFlatTopS, sSigmaF, &
+SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
+                              qFlatTopS, sSigmaF, &
                               sLengthOfElm, sA0_x, sA0_y, sA, qOK)
 
     IMPLICIT NONE
@@ -284,7 +285,8 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, SmeanZ2, qFlatTopS, sSigmaF, &
 ! qOK                OUTPUT   Error flag
 
     INTEGER(KIND=IP), INTENT(IN) :: nseeds
-    REAL(KIND=WP), INTENT(IN)    :: sSigmaF(:,:), SmeanZ2(:), freqf(:)
+    REAL(KIND=WP), INTENT(IN)    :: sSigmaF(:,:), SmeanZ2(:), &
+                                    freqf(:), ph_sh(:)
     LOGICAL, INTENT(IN) :: qFlatTopS(:)
     REAL(KIND=WP), INTENT(IN)    :: sLengthOfElm(:)
     REAL(KIND=WP), INTENT(IN)    :: sA0_x(:)
@@ -320,7 +322,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, SmeanZ2, qFlatTopS, sSigmaF, &
     ALLOCATE(sAreal(iXY*iZ2),sAimag(iXY*iZ2))
    
     CALL getSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,freqf, &
-                  nseeds,sLengthOfElm,sAreal,sAimag)
+                  ph_sh, nseeds,sLengthOfElm,sAreal,sAimag)
 
     sA(1:iXY*iZ2) = sAreal
     sA(iXY*iZ2 + 1:2*iXY*iZ2) = sAimag
@@ -512,13 +514,14 @@ END SUBROUTINE PopMacroElectrons
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,frs,nSeeds,dels,xfieldt,yfieldt)
+SUBROUTINE getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
+                    frs,ph_sh,nSeeds,dels,xfieldt,yfieldt)
 
 !             ARGUMENTS
 
   INTEGER(KIND=IP), INTENT(IN) :: NN(:)
   REAL(KIND=WP), INTENT(IN) :: sigs(:,:), cens(:), rho, frs(:), &
-                               magxs(:), magys(:), dels(:)
+                               ph_sh(:), magxs(:), magys(:), dels(:)
   LOGICAL, INTENT(IN) :: qFTs(:)
   INTEGER(KIND=IP), INTENT(IN) :: nSeeds
   REAL(KIND=WP), INTENT(OUT) :: xfieldt(:), yfieldt(:)
@@ -545,7 +548,8 @@ SUBROUTINE getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,frs,nSeeds,dels,xfieldt,yf
   DO ind = 1, nSeeds
   
     CALL getSeed(NN(:),sigs(ind,:),cens(ind),magxs(ind),magys(ind),qFTs(ind), &
-                 qRndFj_G(ind), sSigFj_G(ind), rho,frs(ind), dels,xfield,yfield)
+                 qRndFj_G(ind), sSigFj_G(ind), rho,frs(ind), ph_sh(ind), &
+                 dels,xfield,yfield)
 
     xfieldt = xfieldt + xfield
     yfieldt = yfieldt + yfield
@@ -558,14 +562,16 @@ END SUBROUTINE getSeeds
 
 !*****************************************************
 
-SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, sSigR, rho,fr,dels,xfield,yfield)
+SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, sSigR, rho,fr,ph_sh, &
+                   dels,xfield,yfield)
 
   IMPLICIT NONE
 
 !             ARGUMENTS
 
   INTEGER(KIND=IP), INTENT(IN) :: NN(:)
-  REAL(KIND=WP), INTENT(IN) :: sig(:), cen, sSigR, rho, fr, magx, magy, dels(:)
+  REAL(KIND=WP), INTENT(IN) :: sig(:), cen, sSigR, rho, fr, ph_sh,&
+                               magx, magy, dels(:)
   LOGICAL, INTENT(IN) :: qFT, qRnd
   REAL(KIND=WP), INTENT(OUT) :: xfield(:), yfield(:)
 
@@ -660,8 +666,8 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, sSigR, rho,fr,dels,xfield,yfie
 
 !     x and y polarized fields in z2
 
-  oscx = -z2env * cos(fr * z2nds / (2.0_WP * rho))
-  oscy = z2env * sin(fr * z2nds / (2.0_WP * rho))
+  oscx = -z2env * cos(fr * z2nds / (2.0_WP * rho) - ph_sh)
+  oscy = z2env * sin(fr * z2nds / (2.0_WP * rho) - ph_sh)
 
 
 !     Full 3D field
