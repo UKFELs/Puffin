@@ -63,6 +63,7 @@ SUBROUTINE read_in(zfilename, &
        zUndType, &
        sSigmaF, &
        freqf, SmeanZ2, &
+       ph_sh, &
        qFlatTopS, nseeds, &
        sPEOut, &
        iDumpNthSteps, &
@@ -163,7 +164,8 @@ SUBROUTINE read_in(zfilename, &
 
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sA0_Re(:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sA0_Im(:)
-  REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: freqf(:), SmeanZ2(:)
+  REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: freqf(:), SmeanZ2(:), &
+                                              ph_sh(:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sSigmaF(:,:)
   LOGICAL, ALLOCATABLE, INTENT(OUT) :: qFlatTopS(:)
   LOGICAL, INTENT(out) :: qSimple
@@ -380,7 +382,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                      qMatched_A,qOKL)
 
   CALL read_seedfile(seed_file,nseeds,sSigmaF,sA0_Re,sA0_Im,freqf,&
-                     qFlatTopS,SmeanZ2,qOKL)
+                     ph_sh, qFlatTopS,SmeanZ2,qOKL)
 
 
   call FileNameNoExtension(beam_file, zBFile_G, qOKL)
@@ -587,7 +589,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
     allocate(dist_f(nbeams))
 
     iInputType_G = iReadMASP_G
-    nMPs4MASP_G = 3455789_ip
+    nMPs4MASP_G = 3455789_ip  ! default?
+
     read(161,nml=bdlist)
 
     close(UNIT=161,STATUS='KEEP')    
@@ -611,8 +614,8 @@ END SUBROUTINE read_beamfile
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,qFlatTop, &
-                         meanZ2,qOK)
+SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
+                         qFlatTop, meanZ2,qOK)
 
   IMPLICIT NONE
 
@@ -621,7 +624,8 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,qFlatTop, &
   CHARACTER(*), INTENT(IN) :: se_f     ! seed file name
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sSigmaF(:,:), &
                                              sA0_X(:),sA0_Y(:), &
-                                             freqf(:), meanZ2(:)
+                                             freqf(:), meanZ2(:), &
+                                             ph_sh(:)
   INTEGER(KIND=IP), INTENT(INOUT) :: nseeds
 
   LOGICAL, ALLOCATABLE, INTENT(OUT) :: qFlatTop(:)
@@ -634,7 +638,7 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,qFlatTop, &
 
 
   namelist /nslist/ nseeds
-  namelist /slist/ freqf, sA0_X, sA0_Y, sSigmaF, &
+  namelist /slist/ freqf, ph_sh, sA0_X, sA0_Y, sSigmaF, &
                    qFlatTop, meanZ2, qRndFj_G,  sSigFj_G
 
 
@@ -653,7 +657,7 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,qFlatTop, &
   read(161,nml=nslist)
 
   ALLOCATE(sSigmaF(nseeds,3))
-  ALLOCATE(sA0_X(nseeds), sA0_Y(nseeds))
+  ALLOCATE(sA0_X(nseeds), sA0_Y(nseeds), ph_sh(nseeds))
   ALLOCATE(freqf(nseeds),qFlatTop(nseeds),meanZ2(nseeds))
   allocate(qRndFj_G(nseeds), sSigFj_G(nseeds))
 

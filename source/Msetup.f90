@@ -146,6 +146,7 @@ MODULE Setup
        zUndType,          &
        sSeedSigma,        &
        freqf, SmeanZ2,    &
+       ph_sh, &
        qFlatTopS, nseeds, &
        sPEOut,            &
        iDumpNthSteps,     &
@@ -158,6 +159,7 @@ MODULE Setup
 !    Check all the inputs e.g. wiggler and electron lengths etc 
 !    to avoid errors.
 
+
   CALL CheckParameters(sLenEPulse,iNumElectrons,nbeams,sLengthofElm,iNodes,&
                        sWigglerLength,sStepSize,nSteps,srho,saw,sgammar, &
                        sFocusfactor, mag, sSigmaGaussian,fx,fy, iRedNodesX, &
@@ -165,6 +167,8 @@ MODULE Setup
                        SmeanZ2, qFlatTopS, nseeds, qOKL)
   
   IF (.NOT. qOKL) GOTO 1000
+
+
 
 !    Setup FFTW plans for the forward and backwards transforms.
 
@@ -185,6 +189,8 @@ MODULE Setup
   
   END IF
 
+
+
 !     Check transverse sampled length of field is long enough to model 
 !     diffraction of the resonant frequency.
 
@@ -198,6 +204,8 @@ MODULE Setup
     IF (.NOT. qOKL) GOTO 1000
   
   END IF
+
+
 
   call setupMods(lattFile, taper, sRho, nSteps, sStepSize)
       
@@ -240,7 +248,7 @@ MODULE Setup
 
     ALLOCATE(sA(nFieldEquations_CG*iNumberNodes_G)) 
         
-    CALL SetUpInitialValues(nseeds, freqf, SmeanZ2, qFlatTopS,&
+    CALL SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, qFlatTopS,&
                             sSeedSigma, sLengthOfElm,&
                             sA0_Re,&
                             sA0_Im,&
