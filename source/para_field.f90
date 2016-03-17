@@ -151,11 +151,13 @@ contains
 
       print*, mainlen, fz2, ez2, ac_ar
 
+      !call mpi_finalize(error)
+      !stop
 
       allocate(fr_rfield(tlflen4arr), fr_ifield(tlflen4arr))
       allocate(bk_rfield(tlelen4arr), bk_ifield(tlelen4arr))
 
-      allocate(ac_rfield(tnjdlz2), ac_ifield(tnjdlz2))
+      allocate(ac_rfield(mainlen), ac_ifield(mainlen))
 
       ac_rfield = sA(fz2:bz2)
       ac_ifield = sA(fz2 + NZ2_G:bz2 + NZ2_G)

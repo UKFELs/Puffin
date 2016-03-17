@@ -19,6 +19,7 @@ MODULE Setup
   USE Read_data
   USE checks
   use dumpFiles
+  use ParaField
 
 ! A module which allocates and initializes - or 
 ! destroys - the data used in Puffin.
@@ -412,9 +413,9 @@ MODULE Setup
 !               lrecvs, ldispls, &
 !               iIntWriteNthSteps, nSteps, qWDisp, qOKL)
 
-  if (qWrite)  call wr_sdds(sA, sZ, 0, tArrayA, tArrayE, tArrayZ, &
-                 iIntWriteNthSteps, iWriteNthSteps, .true., &
-                 zDataFileName, .true., .true., qOK)
+!  if (qWrite)  call wr_sdds(sA, sZ, 0, tArrayA, tArrayE, tArrayZ, &
+!                 iIntWriteNthSteps, iWriteNthSteps, .true., &
+!                 zDataFileName, .true., .true., qOK)
 
 !  if (qWrite) call wdfs(sA, sZ, 0, tArrayA, tArrayE, tArrayZ, &
 !                        iIntWriteNthSteps, iWriteNthSteps, &
@@ -455,6 +456,8 @@ MODULE Setup
                              iNumberElectrons_G,sZ,istep,tArrayA(1)%tFileType%iPage)
 
   DEALLOCATE(s_Normalised_chi_G)
+ 
+  qStart_new = .true.
 
   qOK = .TRUE.
   

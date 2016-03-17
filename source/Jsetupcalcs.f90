@@ -577,15 +577,22 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, sSigR, rho,fr,ph_sh, &
 
 !             LOCAL ARGS
 
-  REAL(KIND=WP) :: xnds(NN(iX_CG)), ynds(NN(iY_CG)), &
-                   z2nds(NN(iZ2_CG)), &
-                   xenv(NN(iX_CG)), yenv(NN(iY_CG)), &
-                   z2env(NN(iZ2_CG)), oscx(NN(iZ2_CG)), &
-                   oscy(NN(iZ2_CG))
+  REAL(KIND=WP), allocatable :: xnds(:), ynds(:), &
+                   z2nds(:), &
+                   xenv(:), yenv(:), &
+                   z2env(:), oscx(:), &
+                   oscy(:)
  
   REAL(KIND=WP) :: lx, ly, lz2
                    
   INTEGER(KIND=IP) :: ind1, ind2, ind3, gind
+
+
+  allocate(xnds(NN(iX_CG)), ynds(NN(iY_CG)), &
+           z2nds(NN(iZ2_CG)), &
+           xenv(NN(iX_CG)), yenv(NN(iY_CG)), &
+           z2env(NN(iZ2_CG)), oscx(NN(iZ2_CG)), &
+           oscy(NN(iZ2_CG)))
 
 !     Sample length of the field in each dimension
 
@@ -669,7 +676,6 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, sSigR, rho,fr,ph_sh, &
   oscx = -z2env * cos(fr * z2nds / (2.0_WP * rho) - ph_sh)
   oscy = z2env * sin(fr * z2nds / (2.0_WP * rho) - ph_sh)
 
-
 !     Full 3D field
 
   do ind1 = 1, NN(iZ2_CG)
@@ -683,6 +689,14 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, sSigR, rho,fr,ph_sh, &
       end do
     end do     
   end do
+
+
+deallocate(xnds, ynds, &
+           z2nds, &
+           xenv, yenv, &
+           z2env, oscx, &
+           oscy)
+
 
 END SUBROUTINE getSeed
 
