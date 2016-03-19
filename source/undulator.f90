@@ -113,7 +113,7 @@ contains
 
 !    TEMP 1D parallel field case only
 
-  qStart_new = .true. !!! TTTEEEMPPPe.
+  !qStart_new = .true. !!! TTTEEEMPPPe.
   call getLocalFieldIndices(sLengthOfElmZ2_G, sA)
 
 !############################################

@@ -9,7 +9,7 @@ enable_language (Fortran)
 # The version number.
 set (Puffin_VERSION_MAJOR 1)
 set (Puffin_VERSION_MINOR 5)
-set (Puffin_VERSION_PATCH 2)
+set (Puffin_VERSION_PATCH 3)
 include(${CMAKE_SOURCE_DIR}/scimake/SciInit.cmake)
 #option(ENABLE_PARALLEL "whether to build parallel PUFFIN" ON)
 
@@ -68,12 +68,21 @@ execute_process(COMMAND git --work-tree=${CMAKE_SOURCE_DIR} rev-parse --abbrev-r
   RESULT_VARIABLE GIT_RESULT
   OUTPUT_VARIABLE GIT_BRANCH
   )
-STRING(REPLACE "\n" "" GIT_BRANCH ${GIT_BRANCH})
+if (GIT_BRANCH)
+  STRING(REPLACE "\n" "" GIT_BRANCH ${GIT_BRANCH})
+else()
+  set(GIT_BRANCH "unknown branch, not in git")
+endif()
+
 execute_process(COMMAND git --work-tree=${CMAKE_SOURCE_DIR} rev-parse HEAD
   RESULT_VARIABLE GIT_RESULT
   OUTPUT_VARIABLE GIT_REVISION
   )
-STRING(REPLACE "\n" "" GIT_REVISION ${GIT_REVISION})
+if (GIT_REVISION)
+  STRING(REPLACE "\n" "" GIT_REVISION ${GIT_REVISION})
+else()
+  set(GIT_REVISION "unknown revision, not in git")
+endif()
 message(STATUS "git branch : ${GIT_BRANCH} ${GIT_REVISION}")
 string(TIMESTAMP CONFIGURE_TIME_STAMP "%Y-%m-%d %H:%M")
 ######################################################################
@@ -97,6 +106,7 @@ add_subdirectory(source)
 install (DIRECTORY utilities/ DESTINATION bin)
 install (DIRECTORY inputs/example/ DESTINATION examples)
 install (DIRECTORY inputs/gen/ DESTINATION python)
+install (DIRECTORY scripts/ DESTINATION examples/job-submission-scripts)
 
 
 

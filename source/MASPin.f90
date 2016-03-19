@@ -7,6 +7,9 @@ use parBeam
 
 implicit none
 
+
+integer(kind=ip) :: nMPs4MASP_G
+
 contains
 
 
@@ -31,7 +34,7 @@ contains
     fid = 132
 
     dV_bar = 1.884986038391355e-05
-    nMPs = 3455789_ip
+    nMPs = nMPs4MASP_G ! 3455789_ip
     iGloNumElectrons_G = nMPs
 
     dummy1 = 1.0_wp

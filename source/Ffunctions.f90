@@ -55,7 +55,7 @@ CONTAINS
 !
     REAL(KIND=WP),INTENT(IN) ::xstart,xend
     INTEGER(KIND=IP),INTENT(IN) :: n
-    REAL(KIND=WP),DIMENSION(n) :: linspace
+    REAL(KIND=WP),DIMENSION(:), allocatable :: linspace
     
 ! Local vars:-
 
@@ -63,6 +63,8 @@ CONTAINS
     INTEGER(KIND=IP) :: i
 
 ! BEGIN:-
+
+    allocate(linspace(n))
 
     IF(n>1) THEN
        dx=(xend-xstart)/REAL((n-1),KIND=WP)
@@ -72,6 +74,9 @@ CONTAINS
     ELSE
        STOP "*** Number of points must be >0 in LINSPACE ***"
     END IF
+
+    return
+    deallocate(linspace)
 
   END FUNCTION linspace
 
