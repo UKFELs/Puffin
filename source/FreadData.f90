@@ -666,6 +666,7 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
 
   sSigmaF = 1.0_wp   
   freqf = 1.0_wp
+  ph_sh = 0.0_wp
   sA0_X = 1.0_wp
   sA0_Y = 1.0_wp
   qFlatTop = .false.
