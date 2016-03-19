@@ -30,10 +30,34 @@ integer(kind=ip) :: ffs, ffe, tlflen, ees, eee, tlelen, tlflen_glob, tlelen_glob
                     tlflen4arr, tlelen4arr, ffs_GGG, ffe_GGG, ees_GGG, eee_GGG
 
 
+
+!!!   For parallel algorithm to deal with over-compression...
+
+integer(kind=ip), allocatable :: lrank_v(:), rrank_v(:,:), &
+                                 lrfromwhere(:)
+
+integer(kind=ip) :: nsnds_bf, nrecvs_bf
+
+!integer(kind=ip) :: qUnique 
+
+! if fz2 to ez2 overlaps, give warning - but not fail...
+! No, fz2 to ez2 will only overlap if less nodes than procs...
+! in which case, we share ALL nodes...but do this later...
+! and can use MPI_ALLGATHER or whatever as before (but on 
+! ac_rfield and ac_ifield rather than sA)
+
+! if boundary overlaps next process, then process will send
+! buffer to more than one process...so loop around lrank_v
+! and rrank_v etc
+
+
+
+
 integer(kind=ip), allocatable :: ac_ar(:,:), ff_ar(:,:), ee_ar(:,:)
 
 
-integer(kind=ip) :: iParaBas
+integer(kind=ip) :: iParaBas   ! Basis for parallelism - options:
+
 integer(kind=ip), parameter :: iElectronBased=1, &
                                iFieldBased = 2
 
@@ -97,7 +121,7 @@ contains
     INTEGER recvstat(MPI_STATUS_SIZE)
 
 
-    print*, 'INSIDE GETLOCALFIELDINDICES, SIZE OF SA IS ', size(sA)
+!    print*, 'INSIDE GETLOCALFIELDINDICES, SIZE OF SA IS ', size(sA)
 
 
 
@@ -149,10 +173,8 @@ contains
       call setupLayoutArrs(tlflen, ffs, ffe, ff_ar)
       call setupLayoutArrs(tlelen, ees, eee, ee_ar)
 
-      print*, mainlen, fz2, ez2, ac_ar
+!      print*, mainlen, fz2, ez2, ac_ar
 
-      !call mpi_finalize(error)
-      !stop
 
       allocate(fr_rfield(tlflen4arr), fr_ifield(tlflen4arr))
       allocate(bk_rfield(tlelen4arr), bk_ifield(tlelen4arr))
@@ -176,8 +198,11 @@ contains
 
       deallocate(recvs_pf, displs_pf, tmp_A)
       deallocate(recvs_ff, displs_ff, recvs_ef, displs_ef)
+      deallocate(lrank_v, lrfromwhere)
+      deallocate(rrank_v)
 
     end if
+
 
 !!!!!!&&*(&*(&CD*(S)))  INITIALIZING ONLY FOR TESTING!!!! WILL ONLY
 !                       WORK WITH TEST CASE!!!!!
@@ -414,14 +439,8 @@ contains
 
 
 
-  call calcBuff(4 * pi * sRho_G * 4)  ! Calculate buffers 
-
-
-  call setupLayoutArrs(mainlen, fz2, ez2, ac_ar)
-
-
-
-
+!  call calcBuff(4 * pi * sRho_G * 4)  ! Calculate buffers 
+  call calcBuff(4.0_wp)  ! Calculate buffers 
 
   call getFrBk()  ! Get surrounding nodes
 
@@ -432,7 +451,7 @@ contains
 
 
 
-print*, 'AC_AR_OLD', ac_ar_old
+!print*, 'AC_AR_OLD', ac_ar_old
 
 
 ! for each front, active and back (9 calls??)
@@ -501,7 +520,7 @@ print*, 'AC_AR_OLD', ac_ar_old
 
   call redist2new(ee_ar_old, ac_ar, bk_rfield_old, ac_rfield)
   call redist2new(ee_ar_old, ac_ar, bk_ifield_old, ac_ifield)
-print*, 'AC_AR_OLD 2', ac_ar_old
+!print*, 'AC_AR_OLD 2', ac_ar_old
   call redist2new(ac_ar_old, ac_ar, ac_rfield_old, ac_rfield)
   call redist2new(ac_ar_old, ac_ar, ac_ifield_old, ac_ifield)
 
@@ -602,17 +621,19 @@ print*, 'AC_AR_OLD 2', ac_ar_old
 
   call mpi_barrier(tProcInfo_G%comm, error)
 
-  print*, tProcInfo_G%rank, ' made it here, with active nodes redefined between ', &
-                              fz2, ez2, 'corresponding to z2 = ', (fz2-1)*sLengthOfElmZ2_G, &
-                              ' to ', (ez2-1)*sLengthOfElmZ2_G
+!  print*, tProcInfo_G%rank, ' made it here, with active nodes redefined between ', &
+!                              fz2, ez2, 'corresponding to z2 = ', (fz2-1)*sLengthOfElmZ2_G, &
+!                              ' to ', (ez2-1)*sLengthOfElmZ2_G
 
-  print*, 'and sizes of elecs = ', iNumberElectrons_G
+!  print*, 'and sizes of elecs = ', iNumberElectrons_G
 
-  print*, 'and rank = ', ' had buffer at global node ', bz2
+!  print*, 'and rank = ', ' had buffer at global node ', bz2
 
-  print*, tProcInfo_G%rank, ': len of buffM = ', fbuffLen, fbuffLenM
+!  print*, tProcInfo_G%rank, ': len of buffM = ', fbuffLen, fbuffLenM
 
-  print*, tProcInfo_G%rank, '...now front and back has ...', ffs, ffe, ees, eee
+!  print*, tProcInfo_G%rank, '...now front and back has ...', ffs, ffe, ees, eee
+
+!  if (tProcInfo_G%rank == 0) print*, fr_rfield
 
 !if (tProcInfo_G%rank == 1) print*, size(sElZ2_G), sElZ2_G
 
@@ -654,8 +675,8 @@ print*, 'AC_AR_OLD 2', ac_ar_old
 
 
 
-
-      allocate(tmp_A(fbuffLenM))
+      allocate(tmp_A(maxval(lrank_v)))
+      ! allocate(tmp_A(fbuffLenM))
 
       tmp_A = 0_wp
 
@@ -857,7 +878,7 @@ print*, 'AC_AR_OLD 2', ac_ar_old
 
       call CloseFile(tFileTyper, qOKL)
       If (.NOT. qOKL) Goto 1000
-      
+      !print*, tFileTyper%iUnit
     end if   
   
 !     Synchronize processors
@@ -895,7 +916,7 @@ print*, 'AC_AR_OLD 2', ac_ar_old
         end if
 
 !     Synchronize
-
+!print*, tFileTyper%iUnit
         CALL MPI_BARRIER(tProcInfo_G%comm, error)
     
       END DO  
@@ -923,7 +944,7 @@ print*, 'AC_AR_OLD 2', ac_ar_old
     end if
 
 !     Synchronize
-
+!print*, tFileTyper%iUnit
       CALL MPI_BARRIER(tProcInfo_G%comm, error)
     
     END DO  
@@ -952,7 +973,7 @@ print*, 'AC_AR_OLD 2', ac_ar_old
         end if
 
 !     Synchronize
-
+!print*, tFileTyper%iUnit
         CALL MPI_BARRIER(tProcInfo_G%comm, error)
     
       END DO  
@@ -1263,7 +1284,7 @@ print*, 'AC_AR_OLD 2', ac_ar_old
 
       real(kind=wp), intent(inout) :: dadz_r(:), dadz_i(:)
 
-      integer(kind=ip) :: req, error
+      integer(kind=ip) :: req, error, ij, si, sst, sse
       integer statr(MPI_STATUS_SIZE)
       integer sendstat(MPI_STATUS_SIZE)
 
@@ -1274,8 +1295,24 @@ print*, 'AC_AR_OLD 2', ac_ar_old
 
 !        send to rank+1
 
-        call mpi_issend(dadz_r((ez2+1)-(fz2-1):bz2-(fz2-1)), fbuffLen, mpi_double_precision, &
-              tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
+        !do ij = tProcInfo_G%rank + 1, tProcInfo_G%size-1
+         do ij = 1, nsnds_bf
+
+          si = rrank_v(ij, 1)
+          sst = rrank_v(ij, 2)
+          sse = rrank_v(ij, 3)
+
+!          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
+!                    mpi_double_precision, &
+!                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
+
+          call mpi_issend(dadz_r( sst - (fz2-1):sse-(fz2-1)), si, &
+                    mpi_double_precision, &
+                    tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, req, error)
+
+
+        end do
+
 
       end if
 
@@ -1283,14 +1320,20 @@ print*, 'AC_AR_OLD 2', ac_ar_old
 
 !       rec from rank-1
 
-        CALL mpi_recv( tmp_A, fbuffLenM, mpi_double_precision, &
-        	     tProcInfo_G%rank-1, 0, tProcInfo_G%comm, statr, error )  
+        do ij = 1, nrecvs_bf
+
+          CALL mpi_recv( tmp_A(1:lrank_v(ij)), lrank_v(ij), mpi_double_precision, &
+          	     lrfromwhere(ij), 0, tProcInfo_G%comm, statr, error )  
+
+          dadz_r(1:fbuffLenM) = dadz_r(1:lrank_v(ij)) + tmp_A(1:lrank_v(ij))
+
+        end do
 
       end if
 
       if (tProcInfo_G%rank /= tProcInfo_G%size-1) call mpi_wait( req,sendstat,error )
 
-      dadz_r(1:fbuffLenM) = dadz_r(1:fbuffLenM) + tmp_A
+
 
 
 
@@ -1298,28 +1341,51 @@ print*, 'AC_AR_OLD 2', ac_ar_old
 
       tmp_A = 0_wp
 
-
       if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
 
 !        send to rank+1
 
-        call mpi_issend(dadz_i((ez2+1)-(fz2-1):bz2-(fz2-1)), fbuffLen, mpi_double_precision, &
-        	     tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
+        ! do ij = tProcInfo_G%rank + 1, tProcInfo_G%size-1
+        do ij = 1, nsnds_bf
+
+          si = rrank_v(ij, 1)
+          sst = rrank_v(ij, 2)
+          sse = rrank_v(ij, 3)
+
+!          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
+!                    mpi_double_precision, &
+!                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
+
+          call mpi_issend(dadz_i( sst - (fz2-1):sse-(fz2-1)), si, &
+                    mpi_double_precision, &
+                    tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, req, error)
+
+
+        end do
 
       end if
+
+
 
       if (tProcInfo_G%rank /= 0) then
 
 !       rec from rank-1
 
-        CALL mpi_recv( tmp_A, fbuffLenM, mpi_double_precision, &
-        	    tProcInfo_G%rank-1, 0, tProcInfo_G%comm, statr, error )  
+        do ij = 1, nrecvs_bf
+
+          CALL mpi_recv( tmp_A(1:lrank_v(ij)), lrank_v(ij), mpi_double_precision, &
+                 lrfromwhere(ij), 0, tProcInfo_G%comm, statr, error )  
+
+          dadz_i(1:fbuffLenM) = dadz_i(1:lrank_v(ij)) + tmp_A(1:lrank_v(ij))
+
+        end do
 
       end if
 
+
       if (tProcInfo_G%rank /= tProcInfo_G%size-1) call mpi_wait( req,sendstat,error )
 
-      dadz_i(1:fbuffLenM) = dadz_i(1:fbuffLenM) + tmp_A
+      !dadz_i(1:fbuffLenM) = dadz_i(1:fbuffLenM) + tmp_A
 
 
 
@@ -1344,7 +1410,7 @@ print*, 'AC_AR_OLD 2', ac_ar_old
 
       real(kind=wp), intent(inout) :: ac_rl(tllen), ac_il(tllen)
 
-      integer(kind=ip) :: req, error
+      integer(kind=ip) :: req, error, ij, si, sst, sse
       integer statr(MPI_STATUS_SIZE)
       integer sendstat(MPI_STATUS_SIZE)
 
@@ -1355,51 +1421,154 @@ print*, 'AC_AR_OLD 2', ac_ar_old
 
       if (tProcInfo_G%rank /= 0) then
 
-!        send to rank-1
+!       rec from rank-1
 
-        call mpi_issend(ac_rl(1:fbuffLenM), fbuffLenM, mpi_double_precision, &
-                           tProcInfo_G%rank-1, 0, tProcInfo_G%comm, req, error)
+        do ij = 1, nrecvs_bf
+
+          CALL mpi_issend( ac_rl(1:lrank_v(ij)), lrank_v(ij), &
+                 mpi_double_precision, &
+                 lrfromwhere(ij), 0, tProcInfo_G%comm, req, error )  
+
+        end do
 
       end if
+
+
+
+
 
 
 
       if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
 
-!       rec from rank+1
+!        send to rank+1
 
-        CALL mpi_recv( ac_rl((ez2+1)-(fz2-1):bz2-(fz2-1)), fbuffLen, mpi_double_precision, &
-                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, statr, error )  
+        !do ij = tProcInfo_G%rank + 1, tProcInfo_G%size-1
+         do ij = 1, nsnds_bf
+
+          si = rrank_v(ij, 1)
+          sst = rrank_v(ij, 2)
+          sse = rrank_v(ij, 3)
+
+!          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
+!                    mpi_double_precision, &
+!                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
+
+          call mpi_recv(ac_rl( sst - (fz2-1):sse-(fz2-1)), si, &
+                    mpi_double_precision, &
+                    tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, statr, error)
+
+
+        end do
+
 
       end if
 
-
-
-
-
-      if (tProcInfo_G%rank /= 0) call mpi_wait( req,sendstat,error )
 
 
 
       if (tProcInfo_G%rank /= 0) then
 
-!        send to rank-1
+!       rec from rank-1
 
-        call mpi_issend(ac_il(1:fbuffLenM), fbuffLenM, mpi_double_precision, &
-                tProcInfo_G%rank-1, 0, tProcInfo_G%comm, req, error)
+        do ij = 1, nrecvs_bf
+
+          CALL mpi_issend( ac_il(1:lrank_v(ij)), lrank_v(ij), &
+                 mpi_double_precision, &
+                 lrfromwhere(ij), 0, tProcInfo_G%comm, req, error )  
+
+        end do
 
       end if
+
+
+
+
+
+
 
       if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
 
-!       rec from rank+1
+!        send to rank+1
 
-        CALL mpi_recv( ac_il((ez2+1)-(fz2-1):bz2-(fz2-1)), fbuffLen, mpi_double_precision, &
-               tProcInfo_G%rank+1, 0, tProcInfo_G%comm, statr, error )  
+        !do ij = tProcInfo_G%rank + 1, tProcInfo_G%size-1
+         do ij = 1, nsnds_bf
+
+          si = rrank_v(ij, 1)
+          sst = rrank_v(ij, 2)
+          sse = rrank_v(ij, 3)
+
+!          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
+!                    mpi_double_precision, &
+!                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
+
+          call mpi_recv(ac_il( sst - (fz2-1):sse-(fz2-1)), si, &
+                    mpi_double_precision, &
+                    tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, statr, error)
+
+
+        end do
+
 
       end if
 
+
       if (tProcInfo_G%rank /= 0) call mpi_wait( req,sendstat,error )
+
+
+
+
+!   -----     OLD
+
+!      if (tProcInfo_G%rank /= 0) then
+!
+!!        send to rank-1
+!
+!        call mpi_issend(ac_rl(1:fbuffLenM), fbuffLenM, mpi_double_precision, &
+!                           tProcInfo_G%rank-1, 0, tProcInfo_G%comm, req, error)
+!
+!      end if
+!
+!
+!
+!      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+!
+!!       rec from rank+1
+!
+!        CALL mpi_recv( ac_rl((ez2+1)-(fz2-1):bz2-(fz2-1)), fbuffLen, mpi_double_precision, &
+!                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, statr, error )  
+!
+!      end if
+!
+!
+!
+!
+!
+!      if (tProcInfo_G%rank /= 0) call mpi_wait( req,sendstat,error )
+!
+!
+!
+!      if (tProcInfo_G%rank /= 0) then
+!
+!!        send to rank-1
+!
+!        call mpi_issend(ac_il(1:fbuffLenM), fbuffLenM, mpi_double_precision, &
+!                tProcInfo_G%rank-1, 0, tProcInfo_G%comm, req, error)
+!
+!      end if
+!
+!      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+!
+!!       rec from rank+1
+!
+!        CALL mpi_recv( ac_il((ez2+1)-(fz2-1):bz2-(fz2-1)), fbuffLen, mpi_double_precision, &
+!               tProcInfo_G%rank+1, 0, tProcInfo_G%comm, statr, error )  
+!
+!      end if
+!
+!      if (tProcInfo_G%rank /= 0) call mpi_wait( req,sendstat,error )
+!
+!   -----     OLD
 
 
 
@@ -1573,6 +1742,8 @@ print*, 'AC_AR_OLD 2', ac_ar_old
     real(kind=wp), allocatable :: sp2(:)
     
     real(kind=wp) :: bz2_len
+    integer(kind=ip) :: yip, ij, bz2_globm, ctrecvs, cpolap, dum_recvs
+    integer(kind=ip), allocatable :: drecar(:)
     integer :: error, req
 
     integer statr(MPI_STATUS_SIZE)
@@ -1597,39 +1768,26 @@ print*, 'AC_AR_OLD 2', ac_ar_old
 
     if (bz2 > nz2_G) bz2 = nz2_G
 
-    print*, tProcInfo_G%rank, 'is inside calcBuff, with bz2 = ', bz2
 
-    fbuffLen = bz2 - (ez2+1) + 1  ! Local buffer length, including the ez2 node
+
+! Find global bz2...
+
+    call mpi_reduce(bz2, bz2_globm, 1, mpi_integer, mpi_max, &
+                    tProcInfo_G%size-1, tProcInfo_G%comm, error)
+
+    if (tProcInfo_G%rank == tProcInfo_G%size-1) then
+
+      bz2 = bz2_globm
+
+    end if
+
+
+    fbuffLen = bz2 - (ez2+1) + 1  ! Local buffer length, NOT including the ez2 node
     tllen = bz2 - fz2 + 1     ! local total length, including buffer
 
 
 
-!     Send buffer length to process on the right - as the right process
-!     will be updating out local 'buffer' region
 
-    fbuffLenM = 1
-
-    if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-
-!        send to rank+1
-
-      call mpi_issend(fbuffLen, 1, mpi_integer, tProcInfo_G%rank+1, 4, &
-             tProcInfo_G%comm, req, error)
-
-    end if
-
-    if (tProcInfo_G%rank /= 0) then
-
-!       rec from rank-1
-
-      CALL mpi_recv( fbuffLenM,1,MPI_INTEGER,tProcInfo_G%rank-1,4, &
-             tProcInfo_G%comm,statr,error )  
-
-!      call mpi_wait( statr,sendstat,error )
-
-    end if
-
-    if (tProcInfo_G%rank /= tProcInfo_G%size-1) call mpi_wait( req,sendstat,error )
 
 
     if (tProcInfo_G%rank == tProcInfo_G%size-1) then
@@ -1640,10 +1798,230 @@ print*, 'AC_AR_OLD 2', ac_ar_old
 
     end if
 
-    call mpi_barrier(tProcInfo_G%comm, error)
 
-    print* , tProcInfo_G%rank, 'is inside calcBuff, with fz2, ez2, bz2 of = ', fz2, ez2, bz2, &
-    'and lens of ', mainlen, tllen, fbuffLen, fbuffLenM
+
+    call setupLayoutArrs(mainlen, fz2, ez2, ac_ar)  ! readjust ac_ar with new ez2 for last process
+
+
+
+
+    
+    ! count overlap over how many processes....
+
+
+!!!   NOW NEED TO RECALC AC_AR TO TAKE INTO ACCOUNT POSSIBLY ADJUSTED 
+!!!   BOUNDS ON LAST PROCESS....???
+
+    cpolap = 0
+
+    do ij = 0,tProcInfo_G%size-1  
+
+      if  ( (ij > tProcInfo_G%rank) .and. (bz2 >= ac_ar(ij+1, 2)) ) then
+
+        cpolap = cpolap + 1
+        
+      end if
+
+    end do
+
+
+
+    if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+      allocate(rrank_v(cpolap, 3))
+      !allocate(isnd2u(tProcInfo_G%size))
+    else
+      allocate(rrank_v(1, 3))
+      rrank_v = 1
+      !allocate(isnd2u(tProcInfo_G%size))
+    end if
+
+    yip = 0
+    nsnds_bf = cpolap
+    !isnd2u = 0
+
+
+
+
+!  Count how much I'm sending to each process I'm bounding over...
+
+    if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+
+      do ij = 0,tProcInfo_G%size-1
+print*, ij  
+        if  (   (ij > tProcInfo_G%rank) .and. (bz2 >= ac_ar(ij+1, 2)) ) then
+  
+          yip = yip + 1
+  
+          rrank_v(yip,2) = ac_ar(ij+1, 2)
+  
+          if (bz2 > ac_ar(ij+1, 3)) then
+            rrank_v(yip,3) = ac_ar(ij+1, 3)
+          else
+            rrank_v(yip,3) = bz2
+          end if
+  
+          rrank_v(yip,1) = rrank_v(yip,3) - rrank_v(yip,2) + 1
+  
+        end if
+  
+      end do    
+
+
+
+    !  send numbers I'm sending to the processes to let them know:
+
+      yip = 0
+  
+      do ij = tProcInfo_G%rank + 1, tProcInfo_G%size-1
+  
+        yip = yip + 1
+  
+        if (ij - tProcInfo_G%rank <= cpolap) then
+  
+          !send rrank_v(yip, 1) to tProcInfo_G%rank + yip
+          
+          call mpi_issend(rrank_v(yip, 1), 1, mpi_integer, &
+                   tProcInfo_G%rank + yip, 0, tProcInfo_G%comm, &
+                   req, error) 
+  
+        else
+  
+          !send 0 to tProcInfo_G%rank + yip
+          call mpi_issend(0, 1, mpi_integer, &
+                   tProcInfo_G%rank + yip, 0, tProcInfo_G%comm, &
+                   req, error) 
+  
+        end if
+  
+      end do  
+
+    end if
+
+
+
+
+    allocate(drecar(tProcInfo_G%rank))
+    ctrecvs = 0
+
+    if (tProcInfo_G%rank /= 0) then
+
+      do ij =  0, tProcInfo_G%rank - 1
+  
+        ! dum_recvs from ij 
+        
+        call mpi_recv(dum_recvs, 1, mpi_integer, ij, &
+                0, tProcInfo_G%comm, statr, error)
+  
+        drecar(ij+1) = dum_recvs
+  
+        if (dum_recvs > 0) ctrecvs = ctrecvs + 1
+  
+      end do  
+
+    end if
+  
+    if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+      call mpi_wait(req, sendstat, error)
+    end if
+
+    if (tProcInfo_G%rank /= 0) then
+
+      allocate(lrank_v(ctrecvs))
+      allocate(lrfromwhere(ctrecvs))
+
+    else 
+
+      allocate(lrank_v(1))
+      allocate(lrfromwhere(1))
+      lrank_v = 1
+      lrfromwhere = 1
+
+    end if
+
+    nrecvs_bf = ctrecvs
+
+    if (tProcInfo_G%rank /= 0) then
+  
+      !nrecvs2me = count(drecar > 0)
+  
+      yip = 0 
+
+      do ij = 0, tProcInfo_G%rank - 1
+  
+  
+        if (drecar(ij+1) > 0) then
+        
+          yip = yip+1
+          lrank_v(yip) = drecar(ij+1)
+          lrfromwhere(yip) = ij  ! rank recieving info from
+  
+        end if
+  
+      end do
+
+    end if
+
+
+    call mpi_barrier(tProcInfo_G%comm, error)
+    print*, 'SENT AND RECVD BOSS!!!'
+    print*, tProcInfo_G%rank, 'has lrank_v = ', lrank_v!, size(lrank_v), ctrecvs
+    print*, tProcInfo_G%rank, 'has rrank_v = ', rrank_v
+    print*, tProcInfo_G%rank, 'has lrfromwhere = ', lrfromwhere
+    print*, tProcInfo_G%rank, 'has nrecvs_bf = ', nrecvs_bf
+    print*, tProcInfo_G%rank, 'has nsnds_bf = ', nsnds_bf
+
+
+!    call mpi_finalize(error)
+!    stop
+
+!!  !!!!!!! !!!!!  AND NOW EZ2 OF LAST PROCESS SHOULD EQUAL *GLOBAL* BZ2!!!
+!!
+!!
+!!
+!!  !!!!!!! !!!!!  SO EQUALS GLOBAL MAXIMUM SO NO ACCIDENTAL OVERLAP INTO BANDIT TERRITORY!!!
+!!
+!!
+!!
+!!  !!!!!!! !!!!!  THIS SHOULD PROBABLY BE SET BEFORE THE SEND AND RECV ARRAYS ARE SET UP!!!!
+
+
+
+!  ----      OLD
+!     Send buffer length to process on the right - as the right process
+!     will be updating out local 'buffer' region
+
+!    fbuffLenM = 1
+!
+!    if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+!
+!!        send to rank+1
+!
+!      call mpi_issend(fbuffLen, 1, mpi_integer, tProcInfo_G%rank+1, 4, &
+!             tProcInfo_G%comm, req, error)
+!
+!    end if
+!
+!    if (tProcInfo_G%rank /= 0) then
+!
+!!       rec from rank-1
+!
+!      CALL mpi_recv( fbuffLenM,1,MPI_INTEGER,tProcInfo_G%rank-1,4, &
+!             tProcInfo_G%comm,statr,error )  
+!
+!!      call mpi_wait( statr,sendstat,error )
+!
+!    end if
+!
+!    if (tProcInfo_G%rank /= tProcInfo_G%size-1) call mpi_wait( req,sendstat,error )
+!
+!
+!
+!
+!    call mpi_barrier(tProcInfo_G%comm, error)
+!
+!    print* , tProcInfo_G%rank, 'is inside calcBuff, with fz2, ez2, bz2 of = ', fz2, ez2, bz2, &
+!    'and lens of ', mainlen, tllen, fbuffLen, fbuffLenM
+!    -----    OLD
 
 !    call mpi_finalize(error)
 !    stop
@@ -1688,7 +2066,7 @@ print*, 'AC_AR_OLD 2', ac_ar_old
       fz2_act = rbuff
       fz2_GGG = fz2_act
 
-print*, 'fz2_act = ', fz2_act
+!print*, 'fz2_act = ', fz2_act
 
       ez2_act = maxval(ceiling(sElZ2_G / sLengthOfElmZ2_G) + 1) 
 
@@ -1698,7 +2076,7 @@ print*, 'fz2_act = ', fz2_act
       ez2_act = rbuff
       ez2_GGG = ez2_act
 
-print*, 'ez2_act = ', ez2_act
+!print*, 'ez2_act = ', ez2_act
 
     else if (iParaBas == iFieldBased) then    !    FIELD based - also used for initial steps...
 
@@ -1728,8 +2106,8 @@ print*, 'ez2_act = ', ez2_act
     call divNodes(n_act_g, tProcInfo_G%size, tProcInfo_G%rank, &
                   tllen, fz2, ez2)
 
-    print*, 'n_act_g was ', n_act_g
-    print*, 'local now ', tllen, fz2, ez2, fz2_act
+!    print*, 'n_act_g was ', n_act_g
+!    print*, 'local now ', tllen, fz2, ez2, fz2_act
 
     fz2 = fz2 + fz2_act - 1
     ez2 = ez2 + fz2_act - 1
@@ -1802,7 +2180,7 @@ print*, 'ez2_act = ', ez2_act
 
 
 
-    print*, 'FRONT ARRAY IS ', ff_ar
+!    print*, 'FRONT ARRAY IS ', ff_ar
 
 
 
@@ -1832,7 +2210,7 @@ print*, 'ez2_act = ', ez2_act
 
         tlelen_glob = nz2_G - ebz2_MG + 1
 
-        print*, 'I get the tlelen_glob to be ', tlelen_glob
+!        print*, 'I get the tlelen_glob to be ', tlelen_glob
 
         call divNodes(tlelen_glob,tProcInfo_G%size, &
                       tProcInfo_G%rank, &
@@ -1846,7 +2224,7 @@ print*, 'ez2_act = ', ez2_act
 
         tlelen4arr = tlelen
 
-        print*, '...and the start nd end of the back to be', ees, eee
+!        print*, '...and the start nd end of the back to be', ees, eee
 
       end if
 
@@ -1862,7 +2240,7 @@ print*, 'ez2_act = ', ez2_act
               ee_ar(:,3), 1, MPI_INTEGER, &
               tProcInfo_G%comm, error)  
       
-        print*, '...so back array = ', ee_ar
+!        print*, '...so back array = ', ee_ar
 
 
 
@@ -1906,15 +2284,15 @@ print*, 'ez2_act = ', ez2_act
     ! direct assignment
 
 
-    if (tProcInfo_G%qroot) print*, 'NOW, for new dist described by ', new_dist,'....', &
-                               ' and old dist of ', old_dist
+!    if (tProcInfo_G%qroot) print*, 'NOW, for new dist described by ', new_dist,'....', &
+!                               ' and old dist of ', old_dist
 
     do iproc_s = 0, tProcInfo_G%size-1   !  maybe do iproc_s = rank, rank-1 (looped round....)
   
       call golaps(old_dist(iproc_s+1,2), old_dist(iproc_s+1,3), new_dist, send_ptrs)
   
-      if (tProcInfo_G%qroot) print*, 'olaps are ', send_ptrs, 'for old nodes ', old_dist(iproc_s+1,2), &
-          'to', old_dist(iproc_s+1,3)
+!      if (tProcInfo_G%qroot) print*, 'olaps are ', send_ptrs, 'for old nodes ', old_dist(iproc_s+1,2), &
+!          'to', old_dist(iproc_s+1,3)
 
       call mpi_barrier(tProcInfo_G%comm, error)
 
@@ -1934,8 +2312,8 @@ print*, 'ez2_act = ', ez2_act
             st_ind_old = send_ptrs(iproc_r+1, 2) - obase
             ed_ind_old = send_ptrs(iproc_r+1, 3) - obase
 
-            print*, 'AD st_ind_old = ', st_ind_old, ed_ind_old
-            print*, 'AD st_ind_new = ', st_ind_new, ed_ind_new
+!            print*, 'AD st_ind_old = ', st_ind_old, ed_ind_old
+!            print*, 'AD st_ind_new = ', st_ind_new, ed_ind_new
 
             field_new(st_ind_new:ed_ind_new) = field_old(st_ind_old:ed_ind_old)
   
