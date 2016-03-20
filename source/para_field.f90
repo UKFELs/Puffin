@@ -720,22 +720,35 @@ contains
       if (ffe_GGG > 0) then
 
         if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-          gath_v = tlflen !-1
+          gath_v = tlflen*ntrnds_G  !-1
         else
-          gath_v = tlflen
+          gath_v = tlflen*ntrnds_G
         end if
 
 
 
 
-        allocate(A_local(gath_v * 2))
+        allocate(A_local(gath_v))
 
         A_local = 0_wp
 
         A_local(1:gath_v) = fr_rfield(1:gath_v)
-        A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
+        !A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
 
-        call gather2A(A_local, sA(ffs_GGG:ffe_GGG), gath_v, NZ2_G, recvs_ff, displs_ff)
+        call gather1A(A_local, sA((ffs_GGG-1)*ntrnds_G + 1:ffe_GGG*ntrnds_G), &
+                gath_v, (ffe_GGG - ffs_GGG + 1) * ntrnds_G, &
+                  recvs_ff, displs_ff)
+
+
+
+        A_local(1:gath_v) = fr_ifield(1:gath_v)
+
+        call gather1A(A_local, sA((ffs_GGG-1)*ntrnds_G + 1 + NZ2_G*ntrnds_G: &
+                                    ffe_GGG*ntrnds_G + NZ2_G*ntrnds_G), &
+                gath_v, (ffe_GGG - ffs_GGG + 1) * ntrnds_G, &
+                 recvs_ff, displs_ff)
+
+
 
 
 
@@ -758,22 +771,31 @@ contains
 
 
       if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-      	gath_v = mainlen !-1
+      	gath_v = mainlen * ntrnds_G !-1
       else
-        gath_v = mainlen
+        gath_v = mainlen * ntrnds_G
       end if
 
 
 
 
-      allocate(A_local(gath_v * 2))
+      allocate(A_local(gath_v))
 
       A_local = 0_wp
 
       A_local(1:gath_v) = ac_rfield(1:gath_v)
-      A_local(gath_v+1:gath_v*2) = ac_ifield(1:gath_v)
+!      A_local(gath_v+1:gath_v*2) = ac_ifield(1:gath_v)
 
-      call gather2A(A_local, sA(fz2_GGG:ez2_GGG), gath_v, NZ2_G, recvs_pf, displs_pf)
+      call gather1A(A_local, sA((fz2_GGG-1)*ntrnds_G + 1:ez2_GGG*ntrnds_G), &
+                       gath_v, (fz2_GGG - ez2_GGG + 1) * ntrnds_G, &
+                       recvs_pf, displs_pf)
+
+      A_local(1:gath_v) = ac_ifield(1:gath_v)
+
+      call gather1A(A_local, sA((fz2_GGG-1)*ntrnds_G + 1 + NZ2_G*ntrnds_G: &
+                                 ez2_GGG*ntrnds_G + NZ2_G*ntrnds_G), &
+                       gath_v, (ez2_GGG - fz2_GGG + 1) * ntrnds_G, &
+                       recvs_pf, displs_pf)
 
 
 
@@ -799,22 +821,30 @@ contains
       if (eee_GGG < nz2_G) then
 
         if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-          gath_v = tlelen !-1
+          gath_v = tlelen * ntrnds_G !-1
         else
-          gath_v = tlelen
+          gath_v = tlelen * ntrnds_G
         end if
 
 
 
 
-        allocate(A_local(gath_v * 2))
+        allocate(A_local(gath_v))
   
           A_local = 0_wp
   
           A_local(1:gath_v) = fr_rfield(1:gath_v)
-          A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
+          !A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
   
-        call gather2A(A_local, sA(ees_GGG:eee_GGG), gath_v, NZ2_G, recvs_ef, displs_ef)
+        call gather1A(A_local, sA((ees_GGG - 1)*ntrnds_G + 1:eee_GGG*ntrnds_G), &
+                       gath_v, (eee_GGG - ees_GGG + 1), recvs_ef, displs_ef)
+
+
+        A_local(1:gath_v) = fr_ifield(1:gath_v)
+
+        call gather1A(A_local, sA((ees_GGG - 1)*ntrnds_G + 1 + NZ2_G*ntrnds_G: &
+                       eee_GGG*ntrnds_G + nz2_G*ntrnds_G), &
+                       gath_v, (eee_GGG - ees_GGG + 1), recvs_ef, displs_ef)
 
 
 
