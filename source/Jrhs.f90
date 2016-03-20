@@ -120,10 +120,19 @@ contains
 
 !$OMP WORKSHARE
 
+!    p_nodes = (floor( (sx+halfx)  / dx)  + 1_IP) + &
+!              (floor( (sy+halfy)  / dy) * ReducedNX_G )  + &   !  y 'slices' before primary node
+!              (ReducedNX_G * ReducedNY_G * &
+!                              floor(sz2  / dz2) ) - &
+!                              (fz2-1)*ntrnds_G  ! transverse slices before primary node
+
     p_nodes = (floor( (sx+halfx)  / dx)  + 1_IP) + &
-              (floor( (sy+halfy)  / dy) * ReducedNX_G )  + &   !  y 'slices' before primary node
-              (ReducedNX_G * ReducedNY_G * &
-                              floor(sz2  / dz2) )  ! transverse slices before primary node
+              (floor( (sy+halfy)  / dy) * NX_G )  + &   !  y 'slices' before primary node
+              (NX_G * NY_G * &
+                              floor(sz2  / dz2) ) - &
+                              (fz2-1)*ntrnds_G  ! transverse slices before primary node
+
+
 !$OMP END WORKSHARE
 
   end if  
@@ -331,9 +340,11 @@ real(kind=wp), intent(in) :: sz
   qoutside=.FALSE.
   iOutside=0_IP
 
-  halfx = ((ReducedNX_G-1) / 2.0_WP) * sLengthOfElmX_G
-  halfy = ((ReducedNY_G-1) / 2.0_WP) * sLengthOfElmY_G
+!  halfx = ((ReducedNX_G-1) / 2.0_WP) * sLengthOfElmX_G
+!  halfy = ((ReducedNY_G-1) / 2.0_WP) * sLengthOfElmY_G
 
+  halfx = ((NX_G-1) / 2.0_WP) * sLengthOfElmX_G
+  halfy = ((NY_G-1) / 2.0_WP) * sLengthOfElmY_G
 
 
 end subroutine rhs_tmsavers

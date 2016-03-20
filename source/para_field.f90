@@ -176,13 +176,17 @@ contains
 !      print*, mainlen, fz2, ez2, ac_ar
 
 
-      allocate(fr_rfield(tlflen4arr), fr_ifield(tlflen4arr))
-      allocate(bk_rfield(tlelen4arr), bk_ifield(tlelen4arr))
+      allocate(fr_rfield(tlflen4arr*ntrnds_G), &
+                 fr_ifield(tlflen4arr*ntrnds_G))
+      allocate(bk_rfield(tlelen4arr*ntrnds_G), &
+               bk_ifield(tlelen4arr*ntrnds_G))
 
-      allocate(ac_rfield(mainlen), ac_ifield(mainlen))
+      allocate(ac_rfield(mainlen*ntrnds_G), &
+               ac_ifield(mainlen*ntrnds_G))
 
-      ac_rfield = sA(fz2:bz2)
-      ac_ifield = sA(fz2 + NZ2_G:bz2 + NZ2_G)
+      ac_rfield = sA((fz2-1)*ntrnds_G + 1:bz2*ntrnds_G)
+      ac_ifield = sA((fz2 + NZ2_G-1)*ntrnds_G + 1: &
+                      (bz2 + NZ2_G)*ntrnds_G)
 
 
       fr_rfield = 0_wp
@@ -472,9 +476,12 @@ contains
   deallocate(fr_rfield, fr_ifield)
   deallocate(bk_rfield, bk_ifield)
 
-  allocate(fr_rfield(tlflen4arr), fr_ifield(tlflen4arr))
-  allocate(bk_rfield(tlelen4arr), bk_ifield(tlelen4arr))
-  allocate(ac_rfield(tllen), ac_ifield(tllen))
+  allocate(fr_rfield(tlflen4arr*ntrnds_G), &
+           fr_ifield(tlflen4arr*ntrnds_G))
+  allocate(bk_rfield(tlelen4arr*ntrnds_G), &
+           bk_ifield(tlelen4arr*ntrnds_G))
+  allocate(ac_rfield(tllen*ntrnds_G), &
+           ac_ifield(tllen*ntrnds_G))
 
   ac_rfield = 0_wp
   ac_ifield = 0_wp
@@ -558,9 +565,9 @@ contains
 
 
       if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-        gath_v = tlflen !-1
+        gath_v = tlflen*ntrnds_G !-1
       else
-        gath_v = tlflen
+        gath_v = tlflen*ntrnds_G
       end if
 
 
@@ -572,9 +579,9 @@ contains
 
 
       if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-        gath_v = mainlen ! -1
+        gath_v = mainlen*ntrnds_G ! -1
       else
-        gath_v = mainlen
+        gath_v = mainlen*ntrnds_G
       end if
 
       allocate(recvs_pf(tProcInfo_G%size), displs_pf(tProcInfo_G%size))
@@ -583,9 +590,9 @@ contains
 
 
       if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-        gath_v = tlelen !-1
+        gath_v = tlelen*ntrnds_G !-1
       else
-        gath_v = tlelen
+        gath_v = tlelen*ntrnds_G
       end if
 
       allocate(recvs_ef(tProcInfo_G%size), displs_ef(tProcInfo_G%size))
@@ -675,7 +682,7 @@ contains
 
 
 
-      allocate(tmp_A(maxval(lrank_v)))
+      allocate(tmp_A(maxval(lrank_v)*ntrnds_G))
       ! allocate(tmp_A(fbuffLenM))
 
       tmp_A = 0_wp
@@ -871,7 +878,7 @@ contains
 
 !     Write length of column data - see CIO.f90 line 100          
 
-      call WriteINTEGERL(nz2_G,tFileTyper,qOKL)
+      call WriteINTEGERL(iNumberNodes_G,tFileTyper,qOKL)
       if (.NOT. qOKL) Goto 1000
 
 !     Close File 
@@ -934,7 +941,7 @@ contains
         call OpenFileForAppend(tFileTyper%zFileName, &
                                tFileTyper, qOKL)
 
-        call Write1DRealArray(ac_rfield(1:mainlen),tFileTyper,qOKL)
+        call Write1DRealArray(ac_rfield(1:mainlen*ntrnds_G),tFileTyper,qOKL)
         if (.not. qOKL) Goto 1000
 
         call CloseFile(tFileTyper, qOKL)
@@ -1001,7 +1008,7 @@ contains
 
 !     Write length of column data - see CIO.f90 line 100          
 
-      call WriteINTEGERL(nz2_G,tFileTypei,qOKL)
+      call WriteINTEGERL(iNumberNodes_G,tFileTypei,qOKL)
       if (.NOT. qOKL) Goto 1000
 
 !     Close File 
@@ -1064,7 +1071,7 @@ contains
         call OpenFileForAppend(tFileTypei%zFileName, &
                                tFileTypei, qOKL)
 
-        call Write1DRealArray(ac_ifield(1:mainlen),tFileTypei,qOKL)
+        call Write1DRealArray(ac_ifield(1:mainlen*ntrnds_G),tFileTypei,qOKL)
         if (.not. qOKL) Goto 1000
 
         call CloseFile(tFileTypei, qOKL)
@@ -1306,7 +1313,9 @@ contains
 !                    mpi_double_precision, &
 !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
 
-          call mpi_issend(dadz_r( sst - (fz2-1):sse-(fz2-1)), si, &
+          call mpi_issend(dadz_r( (sst - (fz2-1)-1)*ntrnds_G + 1: &
+                                    (sse-(fz2-1))*ntrnds_G ), &
+                    si*ntrnds_G, &
                     mpi_double_precision, &
                     tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, req, error)
 
@@ -1322,10 +1331,13 @@ contains
 
         do ij = 1, nrecvs_bf
 
-          CALL mpi_recv( tmp_A(1:lrank_v(ij)), lrank_v(ij), mpi_double_precision, &
+          CALL mpi_recv( tmp_A(1:lrank_v(ij)*ntrnds_G), &
+                 lrank_v(ij)*ntrnds_G, &
+                 mpi_double_precision, &
           	     lrfromwhere(ij), 0, tProcInfo_G%comm, statr, error )  
 
-          dadz_r(1:fbuffLenM) = dadz_r(1:lrank_v(ij)) + tmp_A(1:lrank_v(ij))
+          dadz_r(1:lrank_v(ij)*ntrnds_G) = dadz_r(1:lrank_v(ij)*ntrnds_G) &
+                                         + tmp_A(1:lrank_v(ij)*ntrnds_G)
 
         end do
 
@@ -1356,7 +1368,9 @@ contains
 !                    mpi_double_precision, &
 !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
 
-          call mpi_issend(dadz_i( sst - (fz2-1):sse-(fz2-1)), si, &
+          call mpi_issend(dadz_i( (sst - (fz2-1)-1)*ntrnds_G + 1: &
+                                   (sse-(fz2-1))*ntrnds_G), &
+                    si*ntrnds_G, &
                     mpi_double_precision, &
                     tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, req, error)
 
@@ -1373,10 +1387,13 @@ contains
 
         do ij = 1, nrecvs_bf
 
-          CALL mpi_recv( tmp_A(1:lrank_v(ij)), lrank_v(ij), mpi_double_precision, &
+          CALL mpi_recv( tmp_A(1:lrank_v(ij)*ntrnds_G), &
+                 lrank_v(ij)*ntrnds_G, &
+                 mpi_double_precision, &
                  lrfromwhere(ij), 0, tProcInfo_G%comm, statr, error )  
 
-          dadz_i(1:fbuffLenM) = dadz_i(1:lrank_v(ij)) + tmp_A(1:lrank_v(ij))
+          dadz_i(1:lrank_v(ij)*ntrnds_G) = dadz_i(1:lrank_v(ij)*ntrnds_G) &
+                                         + tmp_A(1:lrank_v(ij)*ntrnds_G)
 
         end do
 
@@ -1425,7 +1442,8 @@ contains
 
         do ij = 1, nrecvs_bf
 
-          CALL mpi_issend( ac_rl(1:lrank_v(ij)), lrank_v(ij), &
+          CALL mpi_issend( ac_rl(1:lrank_v(ij)*ntrnds_G), &
+                 lrank_v(ij)*ntrnds_G, &
                  mpi_double_precision, &
                  lrfromwhere(ij), 0, tProcInfo_G%comm, req, error )  
 
@@ -1454,7 +1472,9 @@ contains
 !                    mpi_double_precision, &
 !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
 
-          call mpi_recv(ac_rl( sst - (fz2-1):sse-(fz2-1)), si, &
+          call mpi_recv(ac_rl( (sst - (fz2-1)-1)*ntrnds_G + 1: &
+                                 (sse-(fz2-1))*ntrnds_G ), &
+                    si*ntrnds_G, &
                     mpi_double_precision, &
                     tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, statr, error)
 
@@ -1473,7 +1493,8 @@ contains
 
         do ij = 1, nrecvs_bf
 
-          CALL mpi_issend( ac_il(1:lrank_v(ij)), lrank_v(ij), &
+          CALL mpi_issend( ac_il(1:lrank_v(ij)*ntrnds_G), &
+                 lrank_v(ij)*ntrnds_G, &
                  mpi_double_precision, &
                  lrfromwhere(ij), 0, tProcInfo_G%comm, req, error )  
 
@@ -1502,7 +1523,9 @@ contains
 !                    mpi_double_precision, &
 !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
 
-          call mpi_recv(ac_il( sst - (fz2-1):sse-(fz2-1)), si, &
+          call mpi_recv(ac_il( (sst - (fz2-1)-1)*ntrnds_G + 1: &
+                              (sse-(fz2-1))*ntrnds_G ), &
+                    si*ntrnds_G, &
                     mpi_double_precision, &
                     tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, statr, error)
 
@@ -2304,13 +2327,21 @@ print*, ij
   
             ! assign directly
 
-            obase = old_dist(iproc_r+1, 2) - 1
-            nbase = new_dist(iproc_r+1, 2) - 1
+            obase = old_dist(iproc_r+1, 2) - 1 
+            nbase = new_dist(iproc_r+1, 2) - 1 
 
             st_ind_new = send_ptrs(iproc_r+1, 2) - nbase
+            st_ind_new = (st_ind_new - 1)* ntrnds_G + 1
+
             ed_ind_new = send_ptrs(iproc_r+1, 3) - nbase
+            ed_ind_new = ed_ind_new * ntrnds_G
+            
             st_ind_old = send_ptrs(iproc_r+1, 2) - obase
+            st_ind_old = (st_ind_old - 1) * ntrnds_G + 1
+            
             ed_ind_old = send_ptrs(iproc_r+1, 3) - obase
+            ed_ind_old = ed_ind_old * ntrnds_G
+
 
 !            print*, 'AD st_ind_old = ', st_ind_old, ed_ind_old
 !            print*, 'AD st_ind_new = ', st_ind_new, ed_ind_new
@@ -2323,9 +2354,16 @@ print*, ij
             nbase = new_dist(iproc_r+1, 2) - 1
 
             st_ind_new = send_ptrs(iproc_r+1, 2) - nbase
+            st_ind_new = (st_ind_new - 1)* ntrnds_G + 1
+
             ed_ind_new = send_ptrs(iproc_r+1, 3) - nbase
+            ed_ind_new = ed_ind_new * ntrnds_G
+            
             st_ind_old = send_ptrs(iproc_r+1, 2) - obase
+            st_ind_old = (st_ind_old - 1) * ntrnds_G + 1
+            
             ed_ind_old = send_ptrs(iproc_r+1, 3) - obase
+            ed_ind_old = ed_ind_old * ntrnds_G
 
             
             if (tProcInfo_G%rank == iproc_s) then
@@ -2333,7 +2371,8 @@ print*, ij
 !              print*, 'SD st_ind_old = ', st_ind_old, ed_ind_old, size(field_old), &
 !              send_ptrs(iproc_r+1,1)
 
-              call mpi_issend(field_old(st_ind_old:ed_ind_old), send_ptrs(iproc_r+1,1), & 
+              call mpi_issend(field_old(st_ind_old:ed_ind_old), &
+                          send_ptrs(iproc_r+1,1)*ntrnds_G, & 
                           mpi_double_precision, iproc_r, 0, tProcInfo_G%comm, req, error)
   
 !              print*, 'SENDING', field_old(st_ind_old:ed_ind_old)
@@ -2343,7 +2382,8 @@ print*, ij
 !              print*, 'SD st_ind_new = ', st_ind_new, ed_ind_new, size(field_new), &
 !                           send_ptrs(iproc_r+1,1)
 
-              call mpi_recv(field_new(st_ind_new:ed_ind_new), send_ptrs(iproc_r+1,1), &
+              call mpi_recv(field_new(st_ind_new:ed_ind_new), &
+                            send_ptrs(iproc_r+1,1)*ntrnds_G, &
                             mpi_double_precision, iproc_s, 0, tProcInfo_G%comm, statr, error)
   
 !              print*, 'RECIEVED', field_new(st_ind_new:ed_ind_new)

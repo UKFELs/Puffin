@@ -153,7 +153,8 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
               dxdx, dydx, dz2dx, dpxdx, dpydx, dpz2dx, &
               dadz_r0, dadz_i0)
 
-
+!call mpi_finalize(error)
+!stop
 
 !  allocate(dAm(2*local_rows),dAt(2*local_rows))
   !print*, dpydx
@@ -343,6 +344,9 @@ end subroutine rk4par
 
 subroutine allact_rk4_arrs()
 
+  integer(kind=ip) :: tllen43D
+
+  tllen43D = tllen * ntrnds_G
 
   allocate(DxDx(iNumberElectrons_G))    
   allocate(DyDx(iNumberElectrons_G))    
@@ -352,14 +356,14 @@ subroutine allact_rk4_arrs()
   allocate(Dpz2Dx(iNumberElectrons_G))    
 
 
-  allocate(dadz_r0(tllen), dadz_i0(tllen))
-  allocate(dadz_r1(tllen), dadz_i1(tllen))
-  allocate(dadz_r2(tllen), dadz_i2(tllen))
+  allocate(dadz_r0(tllen43D), dadz_i0(tllen43D))
+  allocate(dadz_r1(tllen43D), dadz_i1(tllen43D))
+  allocate(dadz_r2(tllen43D), dadz_i2(tllen43D))
 
-  allocate(A_localtr0(tllen), A_localti0(tllen))
-  allocate(A_localtr1(tllen), A_localti1(tllen))
-  allocate(A_localtr2(tllen), A_localti2(tllen))
-  allocate(A_localtr3(tllen), A_localti3(tllen))
+  allocate(A_localtr0(tllen43D), A_localti0(tllen43D))
+  allocate(A_localtr1(tllen43D), A_localti1(tllen43D))
+  allocate(A_localtr2(tllen43D), A_localti2(tllen43D))
+  allocate(A_localtr3(tllen43D), A_localti3(tllen43D))
 
   allocate(dxm(iNumberElectrons_G), &
     dxt(iNumberElectrons_G), xt(iNumberElectrons_G))
