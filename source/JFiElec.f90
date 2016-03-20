@@ -195,7 +195,7 @@ real(kind=wp) :: dadzRInst, dadzIInst
                         * spi(i) / sgam(i) ) 
     
       !$OMP ATOMIC
-      sDADzi(p_nodes(i) + retim) =                             & 
+      sDADzi(p_nodes(i)) =                             & 
         lis_GR(1,i) * dadzIInst + sDADzi(p_nodes(i))                        
 
       !$OMP ATOMIC
