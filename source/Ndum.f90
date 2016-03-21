@@ -8,7 +8,7 @@ USE Stiffness
 USE Setup
 USE RK4int
 use dumpFiles 
-use hdf5_puff
+!use hdf5_puff
 use pln_puff
 use ParaField
 
@@ -90,7 +90,7 @@ end subroutine diffractIM
 
 
 
-subroutine writeIM(sA, Ar_local, sZ, &
+subroutine writeIM(sZ, &
                    zDataFileName, iStep, iCstep, iWriteNthSteps, &
                    lrecvs, ldispls, &
                    iIntWriteNthSteps, nSteps, qOK)
@@ -106,7 +106,7 @@ subroutine writeIM(sA, Ar_local, sZ, &
 
   implicit none
 
-  real(kind=wp), intent(inout) :: sA(:), Ar_local(:), sZ
+  real(kind=wp), intent(inout) :: sZ
   integer(kind=ip), intent(in) :: iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps
   integer(kind=ip), intent(in) :: lrecvs(:), ldispls(:), iCstep
   character(32_IP), intent(in) :: zDataFileName
@@ -119,7 +119,7 @@ subroutine writeIM(sA, Ar_local, sZ, &
   qOK = .false.
 
 
-  call UpdateGlobalField(sA)
+  !call UpdateGlobalField(sA)
 
 
   !call innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
@@ -129,7 +129,7 @@ subroutine writeIM(sA, Ar_local, sZ, &
 
   if (qsdds_G) then
 
-    call wr_sdds(sA, sZ, iCstep, tArrayA, tArrayE, tArrayZ, &
+    call wr_sdds(sZ, iCstep, tArrayA, tArrayE, tArrayZ, &
                  iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
                  zDataFileName, qWriteFull, &
                  qWriteInt, qOK)
@@ -138,10 +138,10 @@ subroutine writeIM(sA, Ar_local, sZ, &
 
   if (qhdf5_G) then
 
-    call wr_h5(sA, sZ, tArrayA, tArrayE, tArrayZ, &
-                 iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
-                 zDataFileName, qWriteFull, &
-                 qWriteInt, qOK)
+!    call wr_h5(sA, sZ, tArrayA, tArrayE, tArrayZ, &
+!                 iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
+!                 zDataFileName, qWriteFull, &
+!                 qWriteInt, qOK)
 
   end if
 

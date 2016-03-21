@@ -68,7 +68,7 @@ logical :: qStart_new
 contains
 
 
-	subroutine getLocalFieldIndices(sdz, sA)
+	subroutine getLocalFieldIndices(sdz)
 
     implicit none
 
@@ -85,7 +85,7 @@ contains
 !         2) Can define bounds as averages between processes,
 !            or start to share electrons between processes.
 
-    real(kind=wp), intent(in) :: sdz, sA(:)
+    real(kind=wp), intent(in) :: sdz
 
     real(kind=wp), allocatable :: sp2(:), fr_rfield_old(:), &
                                   fr_ifield_old(:), &
@@ -184,10 +184,13 @@ contains
       allocate(ac_rfield(mainlen*ntrnds_G), &
                ac_ifield(mainlen*ntrnds_G))
 
-      ac_rfield = sA((fz2-1)*ntrnds_G + 1:bz2*ntrnds_G)
-      ac_ifield = sA((fz2 + NZ2_G-1)*ntrnds_G + 1: &
-                      (bz2 + NZ2_G)*ntrnds_G)
+!      ac_rfield = sA((fz2-1)*ntrnds_G + 1:bz2*ntrnds_G)
+!      ac_ifield = sA((fz2 + NZ2_G-1)*ntrnds_G + 1: &
+!                      (bz2 + NZ2_G)*ntrnds_G)
 
+
+      ac_rfield = 0_wp
+      ac_ifield = 0_wp
 
       fr_rfield = 0_wp
       fr_ifield = 0_wp
@@ -197,6 +200,8 @@ contains
       qStart_new = .false.
 
       iParaBas = iElectronBased
+
+!      goto 1000
 
     else 
 
@@ -678,18 +683,19 @@ contains
 
 
 
-
-
-
-
       allocate(tmp_A(maxval(lrank_v)*ntrnds_G))
       ! allocate(tmp_A(fbuffLenM))
 
       tmp_A = 0_wp
 
-      print*, tProcInfo_G%rank, ' set up with bounds of ', fz2, ez2, bz2, &
-      'with a buffer length of ', fbuffLen, 'and a total length of ', tllen
-      print*, tProcInfo_G%rank, ' and size of sA (over 2) is ', size(sA) / 2
+
+
+!  1000 continue
+
+
+      print*, tProcInfo_G%rank, ' set up with bounds of ', fz2, ez2, bz2! , &
+!      'with a buffer length of ', fbuffLen, 'and a total length of ', tllen
+      !print*, tProcInfo_G%rank, ' and size of sA (over 2) is ', size(sA) / 2
 
     end subroutine getLocalFieldIndices
 
@@ -1813,7 +1819,7 @@ contains
 
     deallocate(sp2)
 
-    print*, tProcInfo_G%rank, 'is inside calcBuff, with buffer length', bz2_len
+!    print*, tProcInfo_G%rank, 'is inside calcBuff, with buffer length', bz2_len
 
 !    bz2 = ez2 + nint(4 * 4 * pi * sRho_G / sLengthOfElmZ2_G)   ! Boundary only 4 lambda_r long - so can only go ~ 3 periods
 
@@ -1900,7 +1906,7 @@ contains
     if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
 
       do ij = 0,tProcInfo_G%size-1
-print*, ij  
+!print*, ij  
         if  (   (ij > tProcInfo_G%rank) .and. (bz2 >= ac_ar(ij+1, 2)) ) then
   
           yip = yip + 1
@@ -2015,13 +2021,13 @@ print*, ij
     end if
 
 
-    call mpi_barrier(tProcInfo_G%comm, error)
-    print*, 'SENT AND RECVD BOSS!!!'
-    print*, tProcInfo_G%rank, 'has lrank_v = ', lrank_v!, size(lrank_v), ctrecvs
-    print*, tProcInfo_G%rank, 'has rrank_v = ', rrank_v
-    print*, tProcInfo_G%rank, 'has lrfromwhere = ', lrfromwhere
-    print*, tProcInfo_G%rank, 'has nrecvs_bf = ', nrecvs_bf
-    print*, tProcInfo_G%rank, 'has nsnds_bf = ', nsnds_bf
+!    call mpi_barrier(tProcInfo_G%comm, error)
+!    print*, 'SENT AND RECVD BOSS!!!'
+!    print*, tProcInfo_G%rank, 'has lrank_v = ', lrank_v!, size(lrank_v), ctrecvs
+!    print*, tProcInfo_G%rank, 'has rrank_v = ', rrank_v
+!    print*, tProcInfo_G%rank, 'has lrfromwhere = ', lrfromwhere
+!    print*, tProcInfo_G%rank, 'has nrecvs_bf = ', nrecvs_bf
+!    print*, tProcInfo_G%rank, 'has nsnds_bf = ', nsnds_bf
 
 
 !    call mpi_finalize(error)
@@ -2524,7 +2530,7 @@ print*, ij
 
     call mpi_barrier(tProcInfo_G%comm, error)
 
-    print*, 'cnt2proc = ', cnt2proc
+!    print*, 'cnt2proc = ', cnt2proc
 
 
 !    call mpi_finalize(error)

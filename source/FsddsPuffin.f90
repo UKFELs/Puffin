@@ -415,7 +415,7 @@ CONTAINS
 
 
 
-  subroutine wr_sdds(sA, sZ, istep, tArrayA, tArrayE, tArrayZ, &
+  subroutine wr_sdds(sZ, istep, tArrayA, tArrayE, tArrayZ, &
                      iIntWr, iWr, qSep, zDFname, qWriteFull, &
                      qWriteInt, qOK)
 
@@ -424,7 +424,7 @@ CONTAINS
 ! Write Data FileS
 
 
-    real(kind=wp), intent(in) :: sA(:), sZ
+    real(kind=wp), intent(in) :: sZ
     type(cArraySegment), intent(inout) :: tArrayA(:), tArrayE(:), tArrayZ
     integer(kind=ip), intent(in) :: istep
     integer(kind=ip), intent(in) :: iIntWr, iWr
@@ -439,7 +439,7 @@ CONTAINS
       call outputBeamFiles(tArrayE, iStep, qSep, zDFName, qOKL)
       if (.not. qOKL) goto 1000
 
-      call outputField(sA, tArrayA, iStep, qSep, zDFName, qOKL)
+      call outputField(tArrayA, iStep, qSep, zDFName, qOKL)
       if (.not. qOKL) goto 1000
 
       call outputZ(sZ, tArrayZ, iStep, qSep, zDFName, qOKL)
@@ -447,11 +447,20 @@ CONTAINS
 
     end if
 
-    if (qWriteInt) then
-
-      call writeIntData(sA)
     
-    end if
+
+!   ###########################################
+! ! -----  TEMP COMMENTED OUT
+! 
+!     if (qWriteInt) then
+! 
+!       call writeIntData(sA)
+!     
+!     end if
+! 
+! ! -----  END TEMP COMMENTED OUT
+!   ###########################################
+
 
 !  Set error flag and exit         
     qOK = .TRUE.            
@@ -658,7 +667,7 @@ CONTAINS
 
 
 
-  subroutine outputField(sA, tArrayA, iStep, qSeparate, zDFName, qOK)
+  subroutine outputField(tArrayA, iStep, qSeparate, zDFName, qOK)
 
     implicit none
 
@@ -666,7 +675,6 @@ CONTAINS
 
 ! Arguments
 
-    real(kind=wp), intent(in) :: sA(:)
     type(cArraySegment), intent(inout) :: tArrayA(:)
     integer(kind=ip), intent(in) :: iStep
     logical, intent(in) :: qSeparate

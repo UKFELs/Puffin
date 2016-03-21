@@ -37,7 +37,7 @@ implicit none
 
 contains
 
-subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
+subroutine rk4par(sZ,h,recvs,displs,qD)
 
   implicit none
 !
@@ -55,7 +55,7 @@ subroutine rk4par(sA,A_local,sZ,h,recvs,displs,qD)
 ! x       INPUT          Propagation distance zbar
 ! h       INPUT          Step size in zbar
       
-  REAL(KIND=WP),  DIMENSION(:), INTENT(INOUT) :: sA, A_local
+!  REAL(KIND=WP),  DIMENSION(:), INTENT(INOUT) :: sA, A_local
   REAL(KIND=WP),  INTENT(IN)                  :: sZ
   REAL(KIND=WP),                INTENT(IN)  :: h
   INTEGER(KIND=IP),DIMENSION(:),INTENT(IN)  :: recvs,displs

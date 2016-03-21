@@ -17,6 +17,7 @@ USE electronInit
 USE gMPsFromDists
 use avwrite
 use MASPin
+use parafield
 
 IMPLICIT NONE
 
@@ -267,7 +268,7 @@ END SUBROUTINE passToGlobals
                             
 SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
                               qFlatTopS, sSigmaF, &
-                              sLengthOfElm, sA0_x, sA0_y, sA, qOK)
+                              sLengthOfElm, sA0_x, sA0_y, qOK)
 
     IMPLICIT NONE
 !
@@ -293,7 +294,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
     REAL(KIND=WP), INTENT(IN)    :: sLengthOfElm(:)
     REAL(KIND=WP), INTENT(IN)    :: sA0_x(:)
     REAL(KIND=WP), INTENT(IN)    :: sA0_y(:)
-    REAL(KIND=WP), INTENT(INOUT) :: sA(:)
+!    REAL(KIND=WP), INTENT(INOUT) :: sA(:)
     LOGICAL,       INTENT(OUT)   :: qOK
 
 !                LOCAL ARGS
@@ -307,8 +308,8 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
     LOGICAL           :: qInitialGauss
     INTEGER(KIND=IP)  :: iZ2,iXY,i,lowind,highind,error,NN(3)
     REAL(KIND=WP)     :: z2bar,rho
-    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE :: sAx_mag,sAy_mag,&
-                                              sAreal,sAimag
+!    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE :: sAx_mag,sAy_mag,&
+!                                              sAreal,sAimag
 
 !     Set error flag to false
 
@@ -321,15 +322,18 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
     NN(iY_CG) = NY_G
     NN(iZ2_CG) = NZ2_G
     
-    ALLOCATE(sAreal(iXY*iZ2),sAimag(iXY*iZ2))
+!    ALLOCATE(sAreal(iXY*iZ2),sAimag(iXY*iZ2))
    
-    CALL getSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,freqf, &
-                  ph_sh, nseeds,sLengthOfElm,sAreal,sAimag)
+!    CALL getSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,freqf, &
+!                  ph_sh, nseeds,sLengthOfElm,sAreal,sAimag)
 
-    sA(1:iXY*iZ2) = sAreal
-    sA(iXY*iZ2 + 1:2*iXY*iZ2) = sAimag
+    call getPaSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,&
+                    freqf,ph_sh,nseeds,sLengthOfElm)
 
-    DEALLOCATE(sAreal,sAimag)
+!    sA(1:iXY*iZ2) = sAreal
+!    sA(iXY*iZ2 + 1:2*iXY*iZ2) = sAimag
+
+!    DEALLOCATE(sAreal,sAimag)
 
 
 !     Set error flag and exit
@@ -516,12 +520,79 @@ END SUBROUTINE PopMacroElectrons
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
-                    frs,ph_sh,nSeeds,dels,xfieldt,yfieldt)
+
+
+
+subroutine getPaSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
+                    frs,ph_sh,nSeeds,dels)
+
+
 
 !             ARGUMENTS
 
   INTEGER(KIND=IP), INTENT(IN) :: NN(:)
+  REAL(KIND=WP), INTENT(IN) :: sigs(:,:), cens(:), rho, frs(:), &
+                               ph_sh(:), magxs(:), magys(:), dels(:)
+  LOGICAL, INTENT(IN) :: qFTs(:)
+  INTEGER(KIND=IP), INTENT(IN) :: nSeeds
+  integer :: error
+
+
+!  1st gen front seed if present
+
+
+
+  if ((ffe_GGG > 0) .and. (ffe-ffs+1 > 0) ) then
+
+    call getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
+                  frs,ph_sh,nSeeds,dels,ffs, ffe, &
+                  fr_rfield,fr_ifield)
+
+  end if
+
+!  CALL MPI_BARRIER(tProcInfo_G%comm,error)
+!  call mpi_finalize(error)
+!  stop
+
+
+!  2nd gen active field seed
+
+
+  call getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
+                frs,ph_sh,nSeeds,dels,fz2, ez2, &
+                ac_rfield,ac_ifield)
+
+
+
+
+!  3rd gen back seed section if present
+
+
+  if ((eee_GGG > 0) .and. (eee-ees+1 > 0) ) then
+
+    call getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
+                  frs,ph_sh,nSeeds,dels,ees, eee, &
+                  bk_rfield,bk_ifield)
+
+  end if
+
+
+
+end subroutine getPaSeeds
+
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+SUBROUTINE getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
+                    frs,ph_sh,nSeeds,dels,iz2_s, iz2_e, &
+                    xfieldt,yfieldt)
+
+!             ARGUMENTS
+
+  INTEGER(KIND=IP), INTENT(IN) :: NN(:), iz2_s, iz2_e
   REAL(KIND=WP), INTENT(IN) :: sigs(:,:), cens(:), rho, frs(:), &
                                ph_sh(:), magxs(:), magys(:), dels(:)
   LOGICAL, INTENT(IN) :: qFTs(:)
@@ -551,7 +622,7 @@ SUBROUTINE getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
   
     CALL getSeed(NN(:),sigs(ind,:),cens(ind),magxs(ind),magys(ind),qFTs(ind), &
                  qRndFj_G(ind), sSigFj_G(ind), rho,frs(ind), ph_sh(ind), &
-                 dels,xfield,yfield)
+                 dels,iz2_s, iz2_e,xfield,yfield)
 
     xfieldt = xfieldt + xfield
     yfieldt = yfieldt + yfield
@@ -564,14 +635,15 @@ END SUBROUTINE getSeeds
 
 !*****************************************************
 
-SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, sSigR, rho,fr,ph_sh, &
-                   dels,xfield,yfield)
+SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
+                   sSigR, rho,fr,ph_sh, &
+                   dels,iz2_s, iz2_e, xfield,yfield)
 
   IMPLICIT NONE
 
 !             ARGUMENTS
 
-  INTEGER(KIND=IP), INTENT(IN) :: NN(:)
+  INTEGER(KIND=IP), INTENT(IN) :: NN(:), iz2_s, iz2_e
   REAL(KIND=WP), INTENT(IN) :: sig(:), cen, sSigR, rho, fr, ph_sh,&
                                magx, magy, dels(:)
   LOGICAL, INTENT(IN) :: qFT, qRnd
@@ -585,9 +657,9 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, sSigR, rho,fr,ph_sh, &
                    z2env(:), oscx(:), &
                    oscy(:)
  
-  REAL(KIND=WP) :: lx, ly, lz2
+  REAL(KIND=WP) :: lx, ly, lz2, z2sl, z2el
                    
-  INTEGER(KIND=IP) :: ind1, ind2, ind3, gind
+  INTEGER(KIND=IP) :: ind1, ind2, ind3, gind, nz2l
 
 
   allocate(xnds(NN(iX_CG)), ynds(NN(iY_CG)), &
@@ -600,7 +672,11 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, sSigR, rho,fr,ph_sh, &
 
   lx = dels(iX_CG) * (NN(iX_CG) - 1_IP)
   ly = dels(iY_CG) * (NN(iY_CG) - 1_IP)
-  lz2 = dels(iZ2_CG) * (NN(iZ2_CG) - 1_IP)
+
+  z2sl = dels(iZ2_CG) * (iz2_s - 1_IP)
+  z2el = dels(iZ2_CG) * (iz2_e - 1_IP)
+
+  nz2l = iz2_e - iz2_s + 1
 
 !     Coordinates of field nodes in x, y and z2 (sample points)
 
@@ -617,7 +693,7 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, sSigR, rho,fr,ph_sh, &
     ynds = linspace(-ly/2_WP, ly/2_WP, NN(iY_CG))
   END IF  
 
-  z2nds = linspace(0.0_WP,lz2,NN(iZ2_CG))
+  z2nds = linspace(z2sl,z2el,nz2l)
 
 !     Profile in each dimension
 
@@ -680,7 +756,7 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, sSigR, rho,fr,ph_sh, &
 
 !     Full 3D field
 
-  do ind1 = 1, NN(iZ2_CG)
+  do ind1 = 1, nz2l
     do ind2 = 1,NN(iY_CG)
       do ind3 = 1,NN(iX_CG)
         

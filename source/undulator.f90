@@ -31,7 +31,7 @@ implicit none
 contains
 
 
-  subroutine UndSection(iM, sA, sZ)
+  subroutine UndSection(iM, sZ)
 
 
     implicit none
@@ -46,7 +46,7 @@ contains
 ! sZ              -      zbar
 
     integer(kind=ip), intent(in) :: iM
-    real(kind=wp), intent(inout) :: sZ, sA(:)
+    real(kind=wp), intent(inout) :: sZ ! , sA(:)
 
 
 ! Local args
@@ -78,20 +78,27 @@ contains
   if (.not. qUndEnds_G) call matchIn(sZ)
 
 
-  allocate(sAr(2*ReducedNX_G*ReducedNY_G*NZ2_G))
-  allocate(Ar_local(2*local_rows))
 
-!!!! TEMP - NEEDS TIDIED, SHOULD OPTIMIZE
-
-  if (tTransInfo_G%qOneD) then
-     Ar_local(1:local_rows)=sA(fst_row:lst_row)
-     Ar_local(local_rows+1:2*local_rows)=&
-          sA(fst_row+iNumberNodes_G:lst_row+iNumberNodes_G)
-  else
-     call getAlocalFL(sA,Ar_local)
-  end if
-
-  call local2globalA(Ar_local,sAr,mrecvs,mdispls,tTransInfo_G%qOneD)
+!   ###########################################
+! ! -----  TEMP COMMENTED OUT
+! 
+! !  allocate(sAr(2*ReducedNX_G*ReducedNY_G*NZ2_G))
+! !  allocate(Ar_local(2*local_rows))
+! 
+! !!!! TEMP - NEEDS TIDIED, SHOULD OPTIMIZE
+! 
+!   if (tTransInfo_G%qOneD) then
+!      Ar_local(1:local_rows)=sA(fst_row:lst_row)
+!      Ar_local(local_rows+1:2*local_rows)=&
+!           sA(fst_row+iNumberNodes_G:lst_row+iNumberNodes_G)
+!   else
+!      call getAlocalFL(sA,Ar_local)
+!   end if
+! 
+!   call local2globalA(Ar_local,sAr,mrecvs,mdispls,tTransInfo_G%qOneD)
+!
+! -----  END TEMP COMMENTED OUT
+!   ###########################################
 
   qDiffrctd = .false.
 
@@ -114,7 +121,7 @@ contains
 !    TEMP 1D parallel field case only
 
   !qStart_new = .true. !!! TTTEEEMPPPe.
-  call getLocalFieldIndices(sLengthOfElmZ2_G, sA)
+  call getLocalFieldIndices(sLengthOfElmZ2_G)
 
 !############################################
 !############################################
@@ -139,16 +146,22 @@ contains
 
 !   First step of split-step method:- field diffraction only
 
-  if (qDiffraction_G) then
-  
-    call diffractIM(sA, sAr, Ar_local, local_rows, &
-                    diffStep*0.5_WP, frecvs, fdispls, lrecvs, ldispls, &
-                    qDiffrctd, qOKL)
-  
-    nextDiff = nextDiff + diffStep
-  
-  end if
 
+!   ###########################################
+! ! -----  TEMP COMMENTED OUT
+!
+!  if (qDiffraction_G) then
+!  
+!    call diffractIM(sA, sAr, Ar_local, local_rows, &
+!                    diffStep*0.5_WP, frecvs, fdispls, lrecvs, ldispls, &
+!                    qDiffrctd, qOKL)
+!  
+!    nextDiff = nextDiff + diffStep
+!  
+!  end if
+!
+! ! -----  END TEMP COMMENTED OUT
+!   ###########################################
 
 
 
@@ -173,7 +186,7 @@ contains
     if (qElectronsEvolve_G .OR. qFieldEvolve_G &
              .OR. qElectronFieldCoupling_G) then
   
-      call rk4par(sAr,Ar_local,sZl,sStepSize,mrecvs,mdispls,qDiffrctd)
+      call rk4par(sZl,sStepSize,mrecvs,mdispls,qDiffrctd)
   
     end if 
 
@@ -202,31 +215,41 @@ contains
 
 !   diffract field to complete diffraction step
 
-    if (qDiffraction_G) then
-  
-      if ((sZ>(nextDiff-sStepsize/100.0_WP)) .or. (iStep == nSteps))  then
-  
-        if ((iStep == nSteps) .or. &
-             qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps) ) then
-    
-          call diffractIM(sA, sAr, Ar_local, local_rows, &
-                          diffStep * 0.5_wp, frecvs, fdispls, lrecvs, ldispls, &
-                          qDiffrctd, qOKL)
-  
-        else
-    
-          call diffractIM(sA, sAr, Ar_local, local_rows, &
-                          diffStep, frecvs, fdispls, lrecvs, ldispls, &
-                          qDiffrctd, qOKL)
-    
-        end if
-  
-        nextDiff = nextDiff + diffStep
-    
-      end if
-  
-    end if
 
+
+
+
+!   ###########################################
+! ! -----  TEMP COMMENTED OUT
+!
+!
+!    if (qDiffraction_G) then
+!  
+!      if ((sZ>(nextDiff-sStepsize/100.0_WP)) .or. (iStep == nSteps))  then
+!  
+!        if ((iStep == nSteps) .or. &
+!             qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps) ) then
+!    
+!          call diffractIM(sA, sAr, Ar_local, local_rows, &
+!                          diffStep * 0.5_wp, frecvs, fdispls, lrecvs, ldispls, &
+!                          qDiffrctd, qOKL)
+!  
+!        else
+!    
+!          call diffractIM(sA, sAr, Ar_local, local_rows, &
+!                          diffStep, frecvs, fdispls, lrecvs, ldispls, &
+!                          qDiffrctd, qOKL)
+!    
+!        end if
+!  
+!        nextDiff = nextDiff + diffStep
+!    
+!      end if
+!  
+!    end if
+!
+! ! -----  END TEMP COMMENTED OUT
+!   ###########################################
 
 
 
@@ -242,23 +265,28 @@ contains
 
   if ( qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps) ) then
 
-    call writeIM(sA, Ar_local, sZ, &
+    call writeIM(sZ, &
                  zDataFileName, iStep, iCsteps, iWriteNthSteps, &
                  lrecvs, ldispls, &
                  iIntWriteNthSteps, nSteps, qOKL)
-  
-  
-    if (qDiffraction_G) then
 
-!             If field diffraction occurred this step, need to complete it....  
-!             ...the diffraction only diffracts a half step if data is going
-!             to be written (to match up the split-step data)
 
-       if (qDiffrctd) call diffractIM(sA, sAr, Ar_local, local_rows, &
-                        diffStep * 0.5_wp, frecvs, fdispls, lrecvs, ldispls, &
-                        qDiffrctd, qOKL)
-  
-    end if
+!   ###########################################  
+! ! -----  TEMP COMMENTED OUT  
+!     if (qDiffraction_G) then
+! 
+! !             If field diffraction occurred this step, need to complete it....  
+! !             ...the diffraction only diffracts a half step if data is going
+! !             to be written (to match up the split-step data)
+! 
+!        if (qDiffrctd) call diffractIM(sA, sAr, Ar_local, local_rows, &
+!                         diffStep * 0.5_wp, frecvs, fdispls, lrecvs, ldispls, &
+!                         qDiffrctd, qOKL)
+!   
+!     end if
+! 
+! ! -----  END TEMP COMMENTED OUT
+!   ###########################################
   
   end if
 
@@ -277,24 +305,29 @@ contains
 
 
 
-
-!                Dump data when time comes
-
-    if (mod(iStep,iDumpNthSteps)==0) then
-       if (tProcInfo_G%qRoot) PRINT*, 'Dumping data in case of crash'
-       
-       call innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
-       
-       if (qDump_G) call DUMPDATA(sA,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
-            iNumberElectrons_G,sZ,istep,tArrayA(1)%tFileType%iPage)
-    end if
+!   ###########################################  
+! ! -----  TEMP COMMENTED OUT  
+!
+!!                Dump data when time comes
+!
+!    if (mod(iStep,iDumpNthSteps)==0) then
+!       if (tProcInfo_G%qRoot) PRINT*, 'Dumping data in case of crash'
+!       
+!       call innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
+!       
+!       if (qDump_G) call DUMPDATA(sA,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
+!            iNumberElectrons_G,sZ,istep,tArrayA(1)%tFileType%iPage)
+!    end if
+!
+! ! -----  END TEMP COMMENTED OUT
+!   ###########################################
 
 
   !if ((iCsteps == 60) .or. (iCsteps == 120) ) then
   if (mod(iCsteps, 60) == 0)  then
 
     call deallact_rk4_arrs()
-    call getLocalFieldIndices(sLengthOfElmZ2_G, sA)
+    call getLocalFieldIndices(sLengthOfElmZ2_G)
     call allact_rk4_arrs()
     
   end if
@@ -318,9 +351,14 @@ contains
 
   call correctTrans()  ! correct transverse motion at undulator exit
 
-  deallocate(sAr)
-  deallocate(Ar_local)
-
+!   ###########################################  
+! ! -----  TEMP COMMENTED OUT
+!
+!  deallocate(sAr)
+!  deallocate(Ar_local)
+!
+! ! -----  END TEMP COMMENTED OUT
+!   ###########################################
 
   iUnd_cr = iUnd_cr + 1_ip
 
