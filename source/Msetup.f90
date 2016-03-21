@@ -264,9 +264,9 @@ MODULE Setup
                             qOKL)
   
 
-  CALL MPI_BARRIER(tProcInfo_G%comm,error)
-  call mpi_finalize(error)
-  stop
+!  CALL MPI_BARRIER(tProcInfo_G%comm,error)
+!  call mpi_finalize(error)
+!  stop
 
     start_step = 1_IP
   	
