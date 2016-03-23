@@ -16,7 +16,7 @@ implicit none
 
 contains
 
-subroutine diffractIM(sA, sAr, Ar_local, local_rows, sStep,&
+subroutine diffractIM(local_rows, sStep,&
                       frecvs, fdispls, lrecvs, ldispls, &
                       qDiffrctd, qOK)
 
@@ -31,8 +31,6 @@ subroutine diffractIM(sA, sAr, Ar_local, local_rows, sStep,&
 
   implicit none
 
-  real(kind=wp), intent(inout) :: sA(:)
-  real(kind=wp), intent(inout), allocatable :: sAr(:), Ar_local(:)
   real(kind=wp), intent(in) :: sStep
   integer(kind=ip), intent(in) :: local_rows
   integer(kind=ip), intent(in) :: frecvs(:), fdispls(:), lrecvs(:), ldispls(:)
@@ -44,28 +42,35 @@ subroutine diffractIM(sA, sAr, Ar_local, local_rows, sStep,&
   qOK = .false.
   
 
-  
-  DEALLOCATE(sAr)
-  CALL innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
-  DEALLOCATE(Ar_local)
+!      Change data layout to FFTW -
+
+  iParaBas = iFFTW_based
+  call getLocalFieldIndices(sLengthOfElmZ2_G)
+
+
 
   CALL DiffractionStep(sStep,&
        frecvs,&
        fdispls,&
-       sA,&
+       ac_rfield, ac_ifield,&
        qOKL)
   if (.not. qOKL) goto 1000
 
-  ALLOCATE(sAr(2*ReducedNX_G*ReducedNY_G*NZ2_G))
-  ALLOCATE(Ar_local(2*local_rows))
+!  ALLOCATE(sAr(2*ReducedNX_G*ReducedNY_G*NZ2_G))
+!  ALLOCATE(Ar_local(2*local_rows))
 
-  CALL getAlocalFL(sA,Ar_local)
+!  CALL getAlocalFL(sA,Ar_local)
 
-  CALL local2globalA(Ar_local,sAr,mrecvs,mdispls,tTransInfo_G%qOneD)
+!  CALL local2globalA(Ar_local,sAr,mrecvs,mdispls,tTransInfo_G%qOneD)
 
   qDiffrctd = .true.
   
-    
+
+
+!    Change back to wiggler data layout
+  iParaBas = iElectronBased
+  call getLocalFieldIndices(sLengthOfElmZ2_G)
+
 
 
 !              Set error flag and exit
