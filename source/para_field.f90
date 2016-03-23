@@ -223,8 +223,6 @@ contains
   ff_ar_old = ff_ar
   ac_ar_old = ac_ar
 
-  print*, 'Well I made it!!'
-
 
 
   call getFStEnd()    ! Define new 'active' region
@@ -232,15 +230,12 @@ contains
 
 
 
-  print*, 'Well I made it!! to 2'
-
 
 
 
   call setupLayoutArrs(mainlen, fz2, ez2, ac_ar)
 
 
-  print*, 'Well I made it!! to 3'
 
 
 
@@ -260,9 +255,6 @@ contains
 
 
   if (.not. qUnique) then
-
-    print*, 'I SHOULDNT BE IN HERE SHOULD IIII?????'
-    print*, 'my mainlen is ', mainlen, fz2, ez2
 
     ac_ar(1,1) = mainlen
     ac_ar(1,2) = fz2
@@ -309,26 +301,21 @@ contains
   fr_ifield = 0_wp
 
 
-  print*, 'Well I made it!! to 4'
-
 
   call redist2new(ff_ar_old, ff_ar, fr_rfield_old, fr_rfield)
   call redist2new(ff_ar_old, ff_ar, fr_ifield_old, fr_ifield)
 
-  call mpi_barrier(tProcInfo_G%comm, error)
-  print*, 'Well I made it!! to 4.01'
+
 
   call redist2new(ee_ar_old, ff_ar, bk_rfield_old, fr_rfield)
   call redist2new(ee_ar_old, ff_ar, bk_ifield_old, fr_ifield)
 
-  call mpi_barrier(tProcInfo_G%comm, error)
-  print*, 'Well I made it!! to 4.02'
+
 
   call redist2new(ac_ar_old, ff_ar, ac_rfield_old, fr_rfield)
   call redist2new(ac_ar_old, ff_ar, ac_ifield_old, fr_ifield)
 
-  call mpi_barrier(tProcInfo_G%comm, error)
-  print*, 'Well I made it!! to 4.1'
+
 
 
 
@@ -341,8 +328,6 @@ contains
   call redist2new(ac_ar_old, ee_ar, ac_rfield_old, bk_rfield)
   call redist2new(ac_ar_old, ee_ar, ac_ifield_old, bk_ifield)
 
-  call mpi_barrier(tProcInfo_G%comm, error)
-  print*, 'Well I made it!! to 4.2'
 
 
 
@@ -352,16 +337,9 @@ contains
   call redist2new(ff_ar_old, ac_ar, fr_rfield_old, ac_rfield)
   call redist2new(ff_ar_old, ac_ar, fr_ifield_old, ac_ifield)
 
-  call mpi_barrier(tProcInfo_G%comm, error)
-  print*, 'Well I made it!! to 4.21'
 
   call redist2new(ee_ar_old, ac_ar, bk_rfield_old, ac_rfield)
   call redist2new(ee_ar_old, ac_ar, bk_ifield_old, ac_ifield)
-
-  call mpi_barrier(tProcInfo_G%comm, error)
-  print*, 'Well I made it!! to 4.22, with ac_ar_old of', &
-                             ac_ar_old, &
-          'and ac_ar of', ac_ar
 
 
 
@@ -370,9 +348,6 @@ contains
 
 
 
-
-  call mpi_barrier(tProcInfo_G%comm, error)
-  print*, 'Well I made it!! to 5'
 
 
   deallocate(ff_ar_old, &
@@ -396,8 +371,6 @@ contains
                    tProcInfo_G%comm, error)
   end if
 
-  call mpi_barrier(tProcInfo_G%comm, error)
-  print*, 'Well I made it!! to 6'
 
 
 ! then deallocate old fields
@@ -452,9 +425,6 @@ contains
       allocate(recvs_ef(tProcInfo_G%size), displs_ef(tProcInfo_G%size))
       call getGathArrs(gath_v, recvs_ef, displs_ef)
 
-
-  call mpi_barrier(tProcInfo_G%comm, error)
-  print*, 'Well I made it!! to 7'
 
 
 !  #######################################################################
@@ -531,9 +501,6 @@ contains
        sendbuff=recvbuff
     END DO
 
-
-  call mpi_barrier(tProcInfo_G%comm, error)
-  print*, 'Well I made it!! to 8'
 
 
 
@@ -1940,8 +1907,6 @@ contains
 
     if (.not. qUnique) then
 
-      print*, tProcInfo_G%rank, 'b4 has', mainlen, fz2, ez2, bz2, tllen
-
       bz2 = bz2_globm
       ez2 = bz2
       mainlen = ez2-fz2+1
@@ -1949,8 +1914,6 @@ contains
       tllen = mainlen
 
       allocate(lrank_v(1), rrank_v(1,1), lrfromwhere(1))
-
-      print*, tProcInfo_G%rank, 'has', mainlen, fz2, ez2, bz2, tllen
 
     else
 
