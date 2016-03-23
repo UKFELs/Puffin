@@ -312,8 +312,8 @@ END SUBROUTINE clearTransformPlans_ThreeD
 
 !*****************************************************
 
-SUBROUTINE SetupParallelFourierField(sA,sA_local,&
-                            work,qOK)      
+SUBROUTINE SetupParallelFourierField(sA_local,&
+                                      work,qOK)      
 
   IMPLICIT NONE
 !
@@ -335,7 +335,6 @@ SUBROUTINE SetupParallelFourierField(sA,sA_local,&
 !                     of identical size to sA_local	   
 ! qOK         OUT     Error flag; .false. if error has occured
 
-  COMPLEX(KIND=WP), INTENT(IN) :: sA(:)
   COMPLEX(KIND=WP), INTENT(INOUT),&
        DIMENSION(0:tTransInfo_G%total_local_size-1)&
        :: sA_local, work
@@ -364,21 +363,21 @@ SUBROUTINE SetupParallelFourierField(sA,sA_local,&
 !    Calculate beginning and end of the local processes
 !    portion of sA and check they are valid
 
-  first = ((tTransInfo_G%loc_z2_start+1)*strans) &
-              -(strans)+1
-
-  last = (((tTransInfo_G%loc_z2_start+1)*strans)-(strans))+ &
-              (tTransInfo_G%loc_nz2*strans)
-
-  IF (last > SIZE(sA) ) THEN
-    CALL Error_log('last index out of bounds of field array',tErrorLog_G)
-    GOTO 1000
-  END IF
+!  first = ((tTransInfo_G%loc_z2_start+1)*strans) &
+!              -(strans)+1
+!
+!  last = (((tTransInfo_G%loc_z2_start+1)*strans)-(strans))+ &
+!              (tTransInfo_G%loc_nz2*strans)
+!
+!  IF (last > SIZE(sA) ) THEN
+!    CALL Error_log('last index out of bounds of field array',tErrorLog_G)
+!    GOTO 1000
+!  END IF
 
 ! Arrange real space field data across processors according to 
 ! FFTW_MPI. Split the data along the z2-axis.
 
-  sA_local(0:((strans*tTransInfo_G%loc_nz2)-1))   =   sA(first:last)
+!  sA_local(0:((strans*tTransInfo_G%loc_nz2)-1))   =   sA(first:last)
   
 !      Transform the local field data into fourier space.
 
@@ -656,7 +655,7 @@ END SUBROUTINE multiplyexp
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE DiffractionStep(h,recvs,displs,sA,qOK)
+SUBROUTINE DiffractionStep(h,recvs,displs,sAr, sAi, qOK)
 
   IMPLICIT NONE
 !
@@ -684,7 +683,7 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sA,qOK)
 
   REAL(KIND=WP), INTENT(IN)      ::   h
   INTEGER(KIND=IP), INTENT(IN)   :: recvs(:),displs(:)
-  REAL(KIND=WP), DIMENSION(:), INTENT(INOUT)  :: sA
+  REAL(KIND=WP), DIMENSION(:), INTENT(INOUT)  :: sAr, sAi
   LOGICAL, INTENT(OUT)  ::  qOK
 
 !                       LOCAL ARGS
@@ -696,6 +695,7 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sA,qOK)
 
   COMPLEX(KIND=WP), DIMENSION(:), ALLOCATABLE :: &
        work,sA_local
+  integer(kind=ip) :: ntrh
   LOGICAL :: qOKL
 
 !                      Begin
@@ -707,10 +707,16 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sA,qOK)
 
   ALLOCATE(sA_local(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1))
   ALLOCATE(work(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1))
-	 
-  CALL setupParallelFourierField(CMPLX(sA(1:iNumberNodes_G),&
-       sA(iNumberNodes_G+1:2*iNumberNodes_G),KIND=WP),&
-       sA_local,work,qOKL) 
+
+  sA_local = 0.0_wp
+  ntrh = NX_G * NY_G
+
+
+  sA_local(0:(tTransInfo_G%loc_z2_start * ntrh) - 1) = &
+          CMPLX(sAr(1:tTransInfo_G%loc_z2_start * ntrh), &
+                 sAi(1:tTransInfo_G%loc_z2_start * ntrh), kind=wp)
+
+  CALL setupParallelFourierField(sA_local, work, qOKL) 
 
 !    Multiply field by the exp factor to obtain A(kx,ky,kz2,zbar+h)
 
@@ -739,17 +745,31 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sA,qOK)
 
 !   Collect data back onto global field var sA on every process
 
-  CALL gather2Acomtoreal(sA_local,sA, &
-       (NX_G*NY_G*tTransInfo_G%loc_nz2), &
-       NX_G*NY_G*NZ2_G, &
-       tTransInfo_G%TOTAL_LOCAL_SIZE, &
-       recvs,displs)
+!  CALL gather2Acomtoreal(sA_local,sA, &
+!       (NX_G*NY_G*tTransInfo_G%loc_nz2), &
+!       NX_G*NY_G*NZ2_G, &
+!       tTransInfo_G%TOTAL_LOCAL_SIZE, &
+!       recvs,displs)
+
+
 
   DEALLOCATE(sA_local)
 
+! assign data back to real and img parts for integration 
+! through undulator
+
+  sAr(1:tTransInfo_G%loc_z2_start * ntrh) = &
+          real(sA_local(0:(tTransInfo_G%loc_z2_start * ntrh) - 1), &
+                            kind=wp)
+
+  sAi(1:tTransInfo_G%loc_z2_start * ntrh) = &
+          imag(sA_local(0:(tTransInfo_G%loc_z2_start * ntrh) - 1))
+
+
+
 !        Clear up field emerging outside e-beam
 
-  CALL clearA(sA, qOKL)
+!  CALL clearA(sA, qOKL)
 
 !              Set error flag and exit
 

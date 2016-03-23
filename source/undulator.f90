@@ -149,17 +149,17 @@ contains
 
 !   ###########################################
 ! ! -----  TEMP COMMENTED OUT
-!
-!  if (qDiffraction_G) then
-!  
-!    call diffractIM(sA, sAr, Ar_local, local_rows, &
-!                    diffStep*0.5_WP, frecvs, fdispls, lrecvs, ldispls, &
-!                    qDiffrctd, qOKL)
-!  
-!    nextDiff = nextDiff + diffStep
-!  
-!  end if
-!
+
+  if (qDiffraction_G) then
+  
+    call diffractIM(local_rows, &
+                    diffStep*0.5_WP, frecvs, fdispls, lrecvs, ldispls, &
+                    qDiffrctd, qOKL)
+  
+    nextDiff = nextDiff + diffStep
+  
+  end if
+
 ! ! -----  END TEMP COMMENTED OUT
 !   ###########################################
 
@@ -221,33 +221,33 @@ contains
 
 !   ###########################################
 ! ! -----  TEMP COMMENTED OUT
-!
-!
-!    if (qDiffraction_G) then
-!  
-!      if ((sZ>(nextDiff-sStepsize/100.0_WP)) .or. (iStep == nSteps))  then
-!  
-!        if ((iStep == nSteps) .or. &
-!             qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps) ) then
-!    
-!          call diffractIM(sA, sAr, Ar_local, local_rows, &
-!                          diffStep * 0.5_wp, frecvs, fdispls, lrecvs, ldispls, &
-!                          qDiffrctd, qOKL)
-!  
-!        else
-!    
-!          call diffractIM(sA, sAr, Ar_local, local_rows, &
-!                          diffStep, frecvs, fdispls, lrecvs, ldispls, &
-!                          qDiffrctd, qOKL)
-!    
-!        end if
-!  
-!        nextDiff = nextDiff + diffStep
-!    
-!      end if
-!  
-!    end if
-!
+
+
+    if (qDiffraction_G) then
+  
+      if ((sZ>(nextDiff-sStepsize/100.0_WP)) .or. (iStep == nSteps))  then
+  
+        if ((iStep == nSteps) .or. &
+             qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps) ) then
+    
+          call diffractIM(local_rows, &
+                          diffStep * 0.5_wp, frecvs, fdispls, lrecvs, ldispls, &
+                          qDiffrctd, qOKL)
+  
+        else
+    
+          call diffractIM(local_rows, &
+                          diffStep, frecvs, fdispls, lrecvs, ldispls, &
+                          qDiffrctd, qOKL)
+    
+        end if
+  
+        nextDiff = nextDiff + diffStep
+    
+      end if
+  
+    end if
+
 ! ! -----  END TEMP COMMENTED OUT
 !   ###########################################
 
@@ -273,18 +273,18 @@ contains
 
 !   ###########################################  
 ! ! -----  TEMP COMMENTED OUT  
-!     if (qDiffraction_G) then
-! 
-! !             If field diffraction occurred this step, need to complete it....  
-! !             ...the diffraction only diffracts a half step if data is going
-! !             to be written (to match up the split-step data)
-! 
-!        if (qDiffrctd) call diffractIM(sA, sAr, Ar_local, local_rows, &
-!                         diffStep * 0.5_wp, frecvs, fdispls, lrecvs, ldispls, &
-!                         qDiffrctd, qOKL)
-!   
-!     end if
-! 
+     if (qDiffraction_G) then
+ 
+ !             If field diffraction occurred this step, need to complete it....  
+ !             ...the diffraction only diffracts a half step if data is going
+ !             to be written (to match up the split-step data)
+ 
+        if (qDiffrctd) call diffractIM(local_rows, &
+                         diffStep * 0.5_wp, frecvs, fdispls, lrecvs, ldispls, &
+                         qDiffrctd, qOKL)
+   
+     end if
+ 
 ! ! -----  END TEMP COMMENTED OUT
 !   ###########################################
   

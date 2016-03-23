@@ -6,6 +6,7 @@ module ParaField
 use paratype
 use globals
 use ParallelSetUp
+use TransformInfoType
 use gtop2
 use filetype
 use createSDDS
@@ -59,7 +60,8 @@ integer(kind=ip), allocatable :: ac_ar(:,:), ff_ar(:,:), ee_ar(:,:)
 integer(kind=ip) :: iParaBas   ! Basis for parallelism - options:
 
 integer(kind=ip), parameter :: iElectronBased=1, &
-                               iFieldBased = 2
+                               iFieldBased = 2, &
+                               iFFTW_based = 3
 
 
 
@@ -239,12 +241,22 @@ contains
 
 
 
-  if (qUnique) call rearrElecs()   ! Rearrange electrons
+  if (iParaBas /= iFFTW_based) then
+
+    if (qUnique) call rearrElecs()   ! Rearrange electrons
 
 
 
-  call calcBuff(4 * pi * sRho_G * 4)  ! Calculate buffers 
+    call calcBuff(4 * pi * sRho_G * 4)  ! Calculate buffers 
 !  call calcBuff(4.0_wp)  ! Calculate buffers 
+
+  else
+
+    bz2 = ez2
+
+  end if
+
+
 
   call getFrBk()  ! Get surrounding nodes
 
@@ -2272,6 +2284,18 @@ contains
 
 
 
+    if (iParaBas == iFFTW_based) then  ! fftw tells us how to go
+
+      fz2 = tTransInfo_G%loc_z2_start + 1
+      ez2 = tTransInfo_G%loc_z2_start + &
+            tTransInfo_G%loc_nz2
+      mainlen = tTransInfo_G%loc_nz2
+      bz2 = ez2
+      tllen = mainlen
+
+!      tllen = tTransInfo_G%total_local_size
+
+    end if
 
   end subroutine getFStEnd
 
