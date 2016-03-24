@@ -17,7 +17,8 @@ use sddsSetup
 implicit none
 
 real(kind=wp), allocatable :: fr_rfield(:), bk_rfield(:), ac_rfield(:), &
-                              fr_ifield(:), bk_ifield(:), ac_ifield(:)
+                              fr_ifield(:), bk_ifield(:), ac_ifield(:), &
+                              tre_fft(:), tim_fft(:)
 
 real(kind=wp), allocatable :: tmp_A(:)
 
@@ -54,7 +55,8 @@ logical :: qUnique
 
 
 
-integer(kind=ip), allocatable :: ac_ar(:,:), ff_ar(:,:), ee_ar(:,:)
+integer(kind=ip), allocatable :: ac_ar(:,:), ff_ar(:,:), ee_ar(:,:), &
+                                 ft_ar(:,:)
 
 
 integer(kind=ip) :: iParaBas   ! Basis for parallelism - options:
@@ -241,25 +243,25 @@ contains
 
 
 
-  if (iParaBas /= iFFTW_based) then
+  !if (iParaBas /= iFFTW_based) then
 
-    if (qUnique) call rearrElecs()   ! Rearrange electrons
+  if (qUnique) call rearrElecs()   ! Rearrange electrons
 
 
 
-    call calcBuff(4 * pi * sRho_G * 4)  ! Calculate buffers 
+  call calcBuff(4 * pi * sRho_G * 4)  ! Calculate buffers 
 !  call calcBuff(4.0_wp)  ! Calculate buffers 
 
-  else
+ ! else
 
-    bz2 = ez2
+!    bz2 = ez2
 
-  end if
+  !end if
+
 
 
 
   call getFrBk()  ! Get surrounding nodes
-
 
 
   call setupLayoutArrs(tlflen, ffs, ffe, ff_ar)
@@ -313,16 +315,11 @@ contains
   fr_ifield = 0_wp
 
 
-
   call redist2new(ff_ar_old, ff_ar, fr_rfield_old, fr_rfield)
   call redist2new(ff_ar_old, ff_ar, fr_ifield_old, fr_ifield)
 
-
-
   call redist2new(ee_ar_old, ff_ar, bk_rfield_old, fr_rfield)
   call redist2new(ee_ar_old, ff_ar, bk_ifield_old, fr_ifield)
-
-
 
   call redist2new(ac_ar_old, ff_ar, ac_rfield_old, fr_rfield)
   call redist2new(ac_ar_old, ff_ar, ac_ifield_old, fr_ifield)
@@ -344,20 +341,14 @@ contains
 
 
 
-
-
   call redist2new(ff_ar_old, ac_ar, fr_rfield_old, ac_rfield)
   call redist2new(ff_ar_old, ac_ar, fr_ifield_old, ac_ifield)
-
 
   call redist2new(ee_ar_old, ac_ar, bk_rfield_old, ac_rfield)
   call redist2new(ee_ar_old, ac_ar, bk_ifield_old, ac_ifield)
 
-
-
   call redist2new(ac_ar_old, ac_ar, ac_rfield_old, ac_rfield)
   call redist2new(ac_ar_old, ac_ar, ac_ifield_old, ac_ifield)
-
 
 
 
@@ -382,7 +373,6 @@ contains
                    mpi_double_precision, 0, & 
                    tProcInfo_G%comm, error)
   end if
-
 
 
 ! then deallocate old fields
@@ -436,7 +426,6 @@ contains
 
       allocate(recvs_ef(tProcInfo_G%size), displs_ef(tProcInfo_G%size))
       call getGathArrs(gath_v, recvs_ef, displs_ef)
-
 
 
 !  #######################################################################
@@ -517,7 +506,9 @@ contains
 
 
     if (qUnique) then
+
       allocate(tmp_A(maxval(lrank_v)*ntrnds_G))
+
     else
       allocate(tmp_A(tllen*ntrnds_G))
     end if
@@ -525,7 +516,7 @@ contains
 
       ! allocate(tmp_A(fbuffLenM))
 
-      tmp_A = 0_wp
+     tmp_A = 0_wp
 
 
 
@@ -1522,13 +1513,13 @@ contains
     ! Send sA from buffer to process on the left
     ! Data in 'buffer' on the left is overwritten.
 
-      real(kind=wp), intent(inout) :: ac_rl(tllen), ac_il(tllen)
+      real(kind=wp), intent(inout) :: ac_rl(:), ac_il(:)
 
       integer(kind=ip) :: req, error, ij, si, sst, sse
       integer statr(MPI_STATUS_SIZE)
       integer sendstat(MPI_STATUS_SIZE)
 
-      real(kind=wp), allocatable :: tstf(:), tstf2(:)
+!      real(kind=wp), allocatable :: tstf(:), tstf2(:)
 
 
 
@@ -2207,16 +2198,25 @@ contains
 
       fz2_act = minval(ceiling(sElZ2_G / sLengthOfElmZ2_G))   ! front z2 node in 'active' region
 
+!      print*, tProcInfo_G%rank, 'and I have fz2_act = ', fz2_act
+
       CALL mpi_allreduce(fz2_act, rbuff, 1, mpi_integer, &
                mpi_min, tProcInfo_G%comm, error)
+
+!      print*, tProcInfo_G%rank, 'and then my reduced fz2_act = ', rbuff
+
 
 
       fz2_act = rbuff
       fz2_GGG = fz2_act
 
+!print*, tProcInfo_G%rank, 'and so my fz2_act remains = ', fz2_act
+
 !print*, 'fz2_act = ', fz2_act
 
       ez2_act = maxval(ceiling(sElZ2_G / sLengthOfElmZ2_G) + 1) 
+
+!      print*, tProcInfo_G%rank, 'and I have ez2_act = ', ez2_act
 
       CALL mpi_allreduce(ez2_act, rbuff, 1, mpi_integer, &
                mpi_max, tProcInfo_G%comm, error)
@@ -2233,7 +2233,7 @@ contains
       fz2_GGG = 1
       ez2_GGG = 1
 
-    else
+    else 
 
       print*, 'NO BASIS FOR PARALLELISM SELECTED!!!'
 
@@ -2241,6 +2241,8 @@ contains
 
     n_act_g = ez2_act - fz2_act + 1
 
+
+    !print*, tProcInfo_G%rank, 'and then my fz2_act is STILL = ', fz2_act
 
 
 
@@ -2271,10 +2273,10 @@ contains
 
       call divNodes(n_act_g, tProcInfo_G%size, tProcInfo_G%rank, &
                     tllen, fz2, ez2)
-
+  
       fz2 = fz2 + fz2_act - 1
       ez2 = ez2 + fz2_act - 1
-
+  
       mainlen = ez2 - fz2 + 1     ! local length, NOT including buffer
 
     end if
@@ -2284,18 +2286,7 @@ contains
 
 
 
-    if (iParaBas == iFFTW_based) then  ! fftw tells us how to go
 
-      fz2 = tTransInfo_G%loc_z2_start + 1
-      ez2 = tTransInfo_G%loc_z2_start + &
-            tTransInfo_G%loc_nz2
-      mainlen = tTransInfo_G%loc_nz2
-      bz2 = ez2
-      tllen = mainlen
-
-!      tllen = tTransInfo_G%total_local_size
-
-    end if
 
   end subroutine getFStEnd
 
@@ -3014,15 +3005,86 @@ contains
 
 
 
+  subroutine redist2FFTWlt()
+
+    integer(kind=ip) :: tmpfz2, tmpez2, tmpmainlen, &
+                        tmpbz2, tmptllen, tmpfz2_act, &
+                        tmpez2_act
+
+
+
+  
+  
+  
+    tmpfz2 = tTransInfo_G%loc_z2_start + 1
+    tmpez2 = tTransInfo_G%loc_z2_start + &
+              tTransInfo_G%loc_nz2
+    
+    tmpmainlen = tTransInfo_G%loc_nz2
+    tmpbz2 = tmpez2
+    tmptllen = tmpmainlen
+    tmpfz2_act = 1
+    tmpez2_act = nz2_G
+  
+
+    allocate(tre_fft(tmpmainlen*ntrnds_G), &
+             tim_fft(tmpmainlen*ntrnds_G))
+
+
+    tre_fft = 0_wp
+    tim_fft = 0_wp
+  
+
+    allocate(ft_ar(tProcInfo_G%size, 3))
+    call setupLayoutArrs(tmpmainlen, tmpfz2, tmpez2, ft_ar)
+  
+    print*, 'fft array layout is ', ft_ar
+
+  
+    call redist2new(ff_ar, ft_ar, fr_rfield, tre_fft)
+    call redist2new(ff_ar, ft_ar, fr_ifield, tim_fft)
+  
+  
+    call redist2new(ee_ar, ft_ar, bk_rfield, tre_fft)
+    call redist2new(ee_ar, ft_ar, bk_ifield, tim_fft)
+  
+  
+  
+    call redist2new(ac_ar, ft_ar, ac_rfield, tre_fft)
+    call redist2new(ac_ar, ft_ar, ac_ifield, tim_fft)
+
+
+  end subroutine redist2FFTWlt
 
 
 
 
 
 
+  subroutine redistbackFFT()
+
+
+  
+  
+    call redist2new(ft_ar, ff_ar, tre_fft, fr_rfield)
+    call redist2new(ft_ar, ff_ar, tim_fft, fr_ifield)
+  
+  
+    call redist2new(ft_ar, ee_ar, tre_fft, bk_rfield)
+    call redist2new(ft_ar, ee_ar, tim_fft, bk_ifield)
+  
+  
+  
+    call redist2new(ft_ar, ac_ar, tre_fft, ac_rfield)
+    call redist2new(ft_ar, ac_ar, tim_fft, ac_ifield)
+
+
+    deallocate(tre_fft, tim_fft)
+    deallocate(ft_ar)
 
 
 
+  end subroutine redistbackFFT
 
 
 

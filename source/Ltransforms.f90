@@ -697,6 +697,7 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sAr, sAi, qOK)
        work,sA_local
   integer(kind=ip) :: ntrh
   LOGICAL :: qOKL
+  integer :: error
 
 !                      Begin
 
@@ -711,16 +712,16 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sAr, sAi, qOK)
   sA_local = 0.0_wp
   ntrh = NX_G * NY_G
 
-
-  sA_local(0:(tTransInfo_G%loc_z2_start * ntrh) - 1) = &
-          CMPLX(sAr(1:tTransInfo_G%loc_z2_start * ntrh), &
-                 sAi(1:tTransInfo_G%loc_z2_start * ntrh), kind=wp)
+  sA_local(0:(tTransInfo_G%loc_nz2 * ntrh) - 1) = &
+          CMPLX(sAr(1:tTransInfo_G%loc_nz2 * ntrh), &
+                 sAi(1:tTransInfo_G%loc_nz2 * ntrh), kind=wp)
 
   CALL setupParallelFourierField(sA_local, work, qOKL) 
 
 !    Multiply field by the exp factor to obtain A(kx,ky,kz2,zbar+h)
 
   CALL MultiplyExp(h,sA_local,qOKL)	
+
  
 !   Perform the backward fourier transform to obtain A(x,y,z2,zbar+h)
 
@@ -728,6 +729,7 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sAr, sAi, qOK)
        work, &
        sA_local, &
        qOKL)
+
 
   IF (.NOT. qOKL) GOTO 1000
 
@@ -753,18 +755,19 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sAr, sAi, qOK)
 
 
 
-  DEALLOCATE(sA_local)
-
 ! assign data back to real and img parts for integration 
 ! through undulator
 
-  sAr(1:tTransInfo_G%loc_z2_start * ntrh) = &
-          real(sA_local(0:(tTransInfo_G%loc_z2_start * ntrh) - 1), &
+  sAr(1:tTransInfo_G%loc_nz2 * ntrh) = &
+          real(sA_local(0:(tTransInfo_G%loc_nz2 * ntrh) - 1), &
                             kind=wp)
 
-  sAi(1:tTransInfo_G%loc_z2_start * ntrh) = &
-          imag(sA_local(0:(tTransInfo_G%loc_z2_start * ntrh) - 1))
 
+  sAi(1:tTransInfo_G%loc_nz2 * ntrh) = &
+          aimag(sA_local(0:(tTransInfo_G%loc_nz2 * ntrh) - 1))
+
+
+  DEALLOCATE(sA_local)
 
 
 !        Clear up field emerging outside e-beam

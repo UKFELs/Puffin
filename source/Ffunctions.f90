@@ -26,10 +26,13 @@ CONTAINS
     REAL(KIND=WP), INTENT(IN) :: x(:)
     REAL (KIND=WP),INTENT(IN) :: xc,sigma
 ! Local vars
-    REAL(KIND=WP) :: gaussian(SIZE(x)),&
-         ngaussian(SIZE(x))
+    REAL(KIND=WP), allocatable :: gaussian(:),&
+         ngaussian(:)
     REAL(KIND=WP) ::pi,s_twopi_sigma
 
+
+    allocate(gaussian(SIZE(x)),&
+         ngaussian(SIZE(x)))
 
 ! BEGIN:-
 
@@ -39,6 +42,10 @@ CONTAINS
     ngaussian=exp(-((x-xc)/sigma)**2/2.0_WP)
 	
     gaussian=ngaussian
+
+    return
+
+    deallocate(gaussian)
 
   END FUNCTION gaussian
 

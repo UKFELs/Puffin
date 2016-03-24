@@ -226,6 +226,8 @@ contains
     if (qDiffraction_G) then
   
       if ((sZ>(nextDiff-sStepsize/100.0_WP)) .or. (iStep == nSteps))  then
+
+        call deallact_rk4_arrs()
   
         if ((iStep == nSteps) .or. &
              qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps) ) then
@@ -321,6 +323,8 @@ contains
 !
 ! ! -----  END TEMP COMMENTED OUT
 !   ###########################################
+
+  if (qDiffrctd) call allact_rk4_arrs()
 
 
   !if ((iCsteps == 60) .or. (iCsteps == 120) ) then

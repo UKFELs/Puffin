@@ -662,12 +662,6 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
   INTEGER(KIND=IP) :: ind1, ind2, ind3, gind, nz2l
 
 
-  allocate(xnds(NN(iX_CG)), ynds(NN(iY_CG)), &
-           z2nds(NN(iZ2_CG)), &
-           xenv(NN(iX_CG)), yenv(NN(iY_CG)), &
-           z2env(NN(iZ2_CG)), oscx(NN(iZ2_CG)), &
-           oscy(NN(iZ2_CG)))
-
 !     Sample length of the field in each dimension
 
   lx = dels(iX_CG) * (NN(iX_CG) - 1_IP)
@@ -677,6 +671,14 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
   z2el = dels(iZ2_CG) * (iz2_e - 1_IP)
 
   nz2l = iz2_e - iz2_s + 1
+
+
+  allocate(xnds(NN(iX_CG)), ynds(NN(iY_CG)), &
+           z2nds(nz2l), &
+           xenv(NN(iX_CG)), yenv(NN(iY_CG)), &
+           z2env(nz2l), oscx(NN(iZ2_CG)), &
+           oscy(NN(iZ2_CG)))
+
 
 !     Coordinates of field nodes in x, y and z2 (sample points)
 
@@ -693,6 +695,8 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
     ynds = linspace(-ly/2_WP, ly/2_WP, NN(iY_CG))
   END IF  
 
+
+!  call linspacesr(z2sl,z2el,nz2l, z2nds)
   z2nds = linspace(z2sl,z2el,nz2l)
 
 !     Profile in each dimension
@@ -738,9 +742,6 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
       END WHERE
 
     end if
-
-
-
 
   ELSE
   

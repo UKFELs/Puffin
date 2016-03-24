@@ -44,15 +44,14 @@ subroutine diffractIM(local_rows, sStep,&
 
 !      Change data layout to FFTW -
 
-  iParaBas = iFFTW_based
-  call getLocalFieldIndices(sLengthOfElmZ2_G)
+  call redist2FFTWlt()
 
 
 
   CALL DiffractionStep(sStep,&
        frecvs,&
        fdispls,&
-       ac_rfield, ac_ifield,&
+       tre_fft, tim_fft,&
        qOKL)
   if (.not. qOKL) goto 1000
 
@@ -68,9 +67,8 @@ subroutine diffractIM(local_rows, sStep,&
 
 
 !    Change back to wiggler data layout
-  iParaBas = iElectronBased
-  call getLocalFieldIndices(sLengthOfElmZ2_G)
 
+  call redistbackFFT()
 
 
 !              Set error flag and exit

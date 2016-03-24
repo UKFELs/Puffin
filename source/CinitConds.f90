@@ -119,7 +119,7 @@ contains
               rho**2.0_WP / sqrt(ux**2 + uy**2) / sqrt(eta) * &
               (gamma_r / sqrt(gamma_j**2 - (1.0_WP + nc*(px**2 + py**2))))
           
-    s_Cos_zOver2rho = COS(sZ0 / (2.0_WP * rho))	
+    s_Cos_zOver2rho = COS(sZ0 / (2.0_WP * rho))
 ! Initial values for the electron pulse in all direction
     yOffSet_OneValue         = srBcoeff * n2col * s_Cos_zOver2rho
       
