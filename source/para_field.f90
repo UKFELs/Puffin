@@ -25,6 +25,9 @@ real(kind=wp), allocatable :: tmp_A(:)
 integer(kind=ip), allocatable :: recvs_pf(:), displs_pf(:), recvs_ff(:), &
                                  displs_ff(:), recvs_ef(:), displs_ef(:)
 
+integer(kind=ip), allocatable :: recvs_ppf(:), displs_ppf(:), recvs_fpf(:), &
+                                 displs_fpf(:), recvs_epf(:), displs_epf(:)
+
 integer(kind=ip) :: fz2, ez2, lTr, bz2, fbuffLen, fbuffLenM, tllen, mainlen, &
                     fz2_GGG, ez2_GGG 
 
@@ -214,6 +217,9 @@ contains
       deallocate(recvs_ff, displs_ff, recvs_ef, displs_ef)
       deallocate(lrank_v, lrfromwhere)
       deallocate(rrank_v)
+
+      deallocate(recvs_ppf, displs_ppf)
+      deallocate(recvs_fpf, displs_fpf, recvs_epf, displs_epf)
 
     end if
 
@@ -426,6 +432,62 @@ contains
 
       allocate(recvs_ef(tProcInfo_G%size), displs_ef(tProcInfo_G%size))
       call getGathArrs(gath_v, recvs_ef, displs_ef)
+
+
+
+
+
+
+
+
+
+!  #######################################################################
+!     Get gathering arrays - only used to gather active field sections 
+!   THESE ARE FOR POWER
+
+
+
+      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+        gath_v = tlflen !-1
+      else
+        gath_v = tlflen
+      end if
+
+
+      allocate(recvs_fpf(tProcInfo_G%size), displs_fpf(tProcInfo_G%size))
+      recvs_fpf = 0
+      displs_fpf = 0
+      call getGathArrs(gath_v, recvs_fpf, displs_fpf)
+
+
+
+
+
+      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+        gath_v = mainlen ! -1
+      else
+        gath_v = mainlen
+      end if
+
+      allocate(recvs_ppf(tProcInfo_G%size), displs_ppf(tProcInfo_G%size))
+      recvs_ppf = 0
+      displs_ppf = 0
+      call getGathArrs(gath_v, recvs_ppf, displs_ppf)
+
+
+
+      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+        gath_v = tlelen !-1
+      else
+        gath_v = tlelen
+      end if
+
+      allocate(recvs_epf(tProcInfo_G%size), displs_epf(tProcInfo_G%size))
+      recvs_epf = 0
+      displs_epf = 0
+      call getGathArrs(gath_v, recvs_epf, displs_epf)
+
+
 
 
 !  #######################################################################
@@ -866,6 +928,143 @@ contains
 
 
 
+
+    subroutine UpdateGlobalPow(fpow, apow, bpow, gpow)
+
+      real(kind=wp), intent(inout) :: fpow(:), apow(:), bpow(:), gpow(:)
+
+      integer(kind=ip) :: gath_v
+
+      real(kind=wp), allocatable :: A_local(:), powi(:)
+
+      integer error
+
+
+
+
+
+
+
+
+      gpow=0.0_wp
+
+
+
+      if (ffe_GGG > 0) then
+
+        if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+          gath_v = tlflen  !-1
+        else
+          gath_v = tlflen
+        end if
+
+
+
+
+        allocate(A_local(gath_v))
+
+        A_local = 0_wp
+
+        A_local(1:gath_v) = fpow(1:gath_v)
+        !A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
+
+        call gather1A(A_local, gpow(ffs_GGG:ffe_GGG), &
+                gath_v, ffe_GGG - ffs_GGG + 1, &
+                  recvs_fpf, displs_fpf)
+
+
+        deallocate(A_local)
+
+      end if
+
+
+
+
+
+!    call mpi_barrier(tProcInfo_G%comm, error)
+!    print*, 'got glob powwww  almosst 1'
+
+
+
+
+      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+        gath_v = mainlen !-1
+      else
+        gath_v = mainlen
+      end if
+
+
+
+
+      allocate(A_local(gath_v))
+      allocate(powi(ez2_GGG - fz2_GGG + 1))
+
+      A_local = 0_wp
+      powi = 0_wp
+
+      A_local(1:gath_v) = apow(1:gath_v)
+!      A_local(gath_v+1:gath_v*2) = ac_ifield(1:gath_v)
+
+      call gather1A(A_local, powi, &
+                       gath_v, fz2_GGG - ez2_GGG + 1, &
+                       recvs_ppf, displs_ppf)
+
+
+      gpow(fz2_GGG:ez2_GGG) = powi(:)
+      deallocate(A_local)
+      deallocate(powi)
+
+    !if (tProcInfo_G%qRoot) print*, gpow
+
+
+
+!    call mpi_barrier(tProcInfo_G%comm, error)
+!    print*, 'got glob powwww  almosst 2'
+
+
+
+      if (eee_GGG < nz2_G+1) then
+
+        if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+          gath_v = tlelen !-1
+        else
+          gath_v = tlelen
+        end if
+
+
+
+
+        allocate(A_local(gath_v))
+        allocate(powi(eee_GGG - ees_GGG + 1))
+  
+
+          A_local = 0_wp
+          powi = 0_wp
+  
+          A_local(1:gath_v) = bpow(1:gath_v)
+          !A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
+  
+          call gather1A(A_local, powi, &
+                         gath_v, eee_GGG - ees_GGG + 1, recvs_epf, displs_epf)
+
+
+          gpow(ees_GGG:eee_GGG) = powi(:)
+
+          deallocate(A_local)
+          deallocate(powi)
+
+      end if
+
+
+
+
+
+!    call mpi_barrier(tProcInfo_G%comm, error)
+!    print*, 'got glob powwww  almosst 3'
+
+
+
+    end subroutine UpdateGlobalPow
 
 
 
@@ -1358,15 +1557,27 @@ contains
 
       real(kind=wp), intent(inout) :: dadz_r(:), dadz_i(:)
 
-      integer(kind=ip) :: req, error, ij, si, sst, sse
+      integer :: req, error
+      integer(kind=ip) :: ij, si, sst, sse
       integer statr(MPI_STATUS_SIZE)
       integer sendstat(MPI_STATUS_SIZE)
 
 
       if (qUnique) then
 
+
+
         tmp_A = 0_wp
-  
+        !snd_A = 0_wp
+
+
+   !           si = rrank_v(1, 1)
+   !         sst = rrank_v(1, 2)
+   !         sse = rrank_v(1, 3)
+   !         call mpi_barrier(tProcInfo_G%comm, error)
+   !         print*, tProcInfo_G%rank, 'here, sending nodes :', (sst - (fz2-1)-1)*ntrnds_G + 1, &
+   !                       'to', (sse-(fz2-1))*ntrnds_G , 'to rank', tProcInfo_G%rank+1
+
         if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
   
   !        send to rank+1
@@ -1377,14 +1588,24 @@ contains
             si = rrank_v(ij, 1)
             sst = rrank_v(ij, 2)
             sse = rrank_v(ij, 3)
-  
+
+
   !          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
   !                    mpi_double_precision, &
   !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
   
-            call mpi_issend(dadz_r( (sst - (fz2-1)-1)*ntrnds_G + 1: &
-                                      (sse-(fz2-1))*ntrnds_G ), &
-                      si*ntrnds_G, &
+
+!            print*, tProcInfo_G%rank, 'here, sending nodes :', (sst - (fz2-1)-1)*ntrnds_G + 1, &
+!                          'to', (sse-(fz2-1))*ntrnds_G , 'to rank', tProcInfo_G%rank+ij, &
+!                          ' and size dadz_r = ', size(dadz_r), ' and si =  ', si
+
+            sst = (sst - (fz2-1)-1)*ntrnds_G + 1
+            sse = (sse-(fz2-1))*ntrnds_G
+            si = si*ntrnds_G
+
+
+            call mpi_issend(dadz_r(sst:sse), &
+                      si, &
                       mpi_double_precision, &
                       tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, req, error)
   
@@ -1394,12 +1615,22 @@ contains
   
         end if
   
+    !          call mpi_barrier(tProcInfo_G%comm, error)
+     !         print*, tProcInfo_G%rank, 'here, recving nodes :', 1, &
+      !                    'to', lrank_v(1)*ntrnds_G , 'from rank', lrfromwhere(1)
+
+
         if (tProcInfo_G%rank /= 0) then
   
   !       rec from rank-1
   
           do ij = 1, nrecvs_bf
-  
+ 
+
+!              print*, tProcInfo_G%rank, 'here, recving nodes :', 1, &
+!                          'to', lrank_v(ij)*ntrnds_G , 'from rank', lrfromwhere(ij), &
+!                          ' and size dadz_r = ', size(dadz_r)
+
             CALL mpi_recv( tmp_A(1:lrank_v(ij)*ntrnds_G), &
                    lrank_v(ij)*ntrnds_G, &
                    mpi_double_precision, &
@@ -1433,13 +1664,17 @@ contains
             sst = rrank_v(ij, 2)
             sse = rrank_v(ij, 3)
   
+
+            sst = (sst - (fz2-1)-1)*ntrnds_G + 1
+            sse = (sse-(fz2-1))*ntrnds_G
+            si = si*ntrnds_G
+
   !          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
   !                    mpi_double_precision, &
   !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
   
-            call mpi_issend(dadz_i( (sst - (fz2-1)-1)*ntrnds_G + 1: &
-                                     (sse-(fz2-1))*ntrnds_G), &
-                      si*ntrnds_G, &
+            call mpi_issend(dadz_i(sst:sse), &
+                      si, &
                       mpi_double_precision, &
                       tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, req, error)
   
@@ -1477,7 +1712,7 @@ contains
       else
 
 
-        call mpi_reduce(dadz_r, tmp_A, mainlen, &
+        call mpi_reduce(dadz_r, tmp_A, mainlen*ntrnds_G, &
                         mpi_double_precision, &
                         mpi_sum, 0, tProcInfo_G%comm, &
                         error)
@@ -1485,7 +1720,7 @@ contains
         dadz_r = tmp_A
         
 
-        call mpi_reduce(dadz_i, tmp_A, mainlen, &
+        call mpi_reduce(dadz_i, tmp_A, mainlen*ntrnds_G, &
                         mpi_double_precision, &
                         mpi_sum, 0, tProcInfo_G%comm, &
                         error)
@@ -1557,14 +1792,17 @@ contains
             si = rrank_v(ij, 1)
             sst = rrank_v(ij, 2)
             sse = rrank_v(ij, 3)
-  
+
+            sst = (sst - (fz2-1)-1)*ntrnds_G + 1
+            sse = (sse-(fz2-1))*ntrnds_G
+            si = si*ntrnds_G
+
   !          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
   !                    mpi_double_precision, &
   !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
   
-            call mpi_recv(ac_rl( (sst - (fz2-1)-1)*ntrnds_G + 1: &
-                                   (sse-(fz2-1))*ntrnds_G ), &
-                      si*ntrnds_G, &
+            call mpi_recv(ac_rl(sst:sse), &
+                      si, &
                       mpi_double_precision, &
                       tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, statr, error)
   
@@ -1608,14 +1846,17 @@ contains
             si = rrank_v(ij, 1)
             sst = rrank_v(ij, 2)
             sse = rrank_v(ij, 3)
+
+            sst = (sst - (fz2-1)-1)*ntrnds_G + 1
+            sse = (sse-(fz2-1))*ntrnds_G
+            si = si*ntrnds_G
   
   !          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
   !                    mpi_double_precision, &
   !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
   
-            call mpi_recv(ac_il( (sst - (fz2-1)-1)*ntrnds_G + 1: &
-                                (sse-(fz2-1))*ntrnds_G ), &
-                      si*ntrnds_G, &
+            call mpi_recv(ac_il( sst:sse ), &
+                      si, &
                       mpi_double_precision, &
                       tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, statr, error)
   
@@ -1940,7 +2181,7 @@ contains
       call setupLayoutArrs(mainlen, fz2, ez2, ac_ar)  ! readjust ac_ar with new ez2 for last process
   
   
-  
+      ez2_GGG = ac_ar(tProcInfo_G%size, 3)
   
       
       ! count overlap over how many processes....
@@ -2592,6 +2833,8 @@ contains
 
   subroutine rearrElecs()
 
+  implicit none
+
   integer :: error
   integer(kind=ip) :: iproc, iproc_r, iproc_s
   integer(kind=ip), allocatable :: cnt2proc(:), &
@@ -3006,6 +3249,8 @@ contains
 
 
   subroutine redist2FFTWlt()
+ 
+    implicit none
 
     integer(kind=ip) :: tmpfz2, tmpez2, tmpmainlen, &
                         tmpbz2, tmptllen, tmpfz2_act, &
@@ -3038,7 +3283,7 @@ contains
     allocate(ft_ar(tProcInfo_G%size, 3))
     call setupLayoutArrs(tmpmainlen, tmpfz2, tmpez2, ft_ar)
   
-    print*, 'fft array layout is ', ft_ar
+!    print*, 'fft array layout is ', ft_ar
 
   
     call redist2new(ff_ar, ft_ar, fr_rfield, tre_fft)
@@ -3064,7 +3309,7 @@ contains
   subroutine redistbackFFT()
 
 
-  
+    implicit none
   
     call redist2new(ft_ar, ff_ar, tre_fft, fr_rfield)
     call redist2new(ft_ar, ff_ar, tim_fft, fr_ifield)

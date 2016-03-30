@@ -716,7 +716,26 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sAr, sAi, qOK)
           CMPLX(sAr(1:tTransInfo_G%loc_nz2 * ntrh), &
                  sAi(1:tTransInfo_G%loc_nz2 * ntrh), kind=wp)
 
-  CALL setupParallelFourierField(sA_local, work, qOKL) 
+!  CALL setupParallelFourierField(sA_local, work, qOKL) 
+
+!  CALL Transform(tTransInfo_G%fplan, &
+!       work, &
+!       sA_local, &
+!       qOKL)
+
+
+  call mpi_barrier(tProcInfo_G%comm, error)
+!  print*, size(sA_local), size(sAr), size(sAi), tTransInfo_G%loc_nz2
+
+  CALL fftwnd_f77_mpi(tTransInfo_G%fplan,1,sA_local,&
+                      work,USE_WORK,&
+                      FFTW_NORMAL_ORDER) 
+
+
+
+  call mpi_barrier(tProcInfo_G%comm, error)
+!  print*, 'made it here!!!!'
+
 
 !    Multiply field by the exp factor to obtain A(kx,ky,kz2,zbar+h)
 
@@ -725,13 +744,25 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sAr, sAi, qOK)
  
 !   Perform the backward fourier transform to obtain A(x,y,z2,zbar+h)
 
-  CALL Transform(tTransInfo_G%bplan, &
-       work, &
-       sA_local, &
-       qOKL)
+!  CALL Transform(tTransInfo_G%bplan, &
+!       work, &
+!       sA_local, &
+!       qOKL)
+
+  CALL fftwnd_f77_mpi(tTransInfo_G%bplan,1,sA_local,&
+                      work,USE_WORK,&
+                      FFTW_NORMAL_ORDER) 
 
 
-  IF (.NOT. qOKL) GOTO 1000
+
+  call mpi_barrier(tProcInfo_G%comm, error)
+!  print*, 'made it here  2!!!!'
+
+
+
+
+
+ ! IF (.NOT. qOKL) GOTO 1000
 
 !      Scale the field data to normalize transforms
 
@@ -765,6 +796,10 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sAr, sAi, qOK)
 
   sAi(1:tTransInfo_G%loc_nz2 * ntrh) = &
           aimag(sA_local(0:(tTransInfo_G%loc_nz2 * ntrh) - 1))
+
+!call mpi_barrier(tProcInfo_G%comm, error)
+!  call mpi_finalize(error)
+!  stop
 
 
   DEALLOCATE(sA_local)
@@ -834,11 +869,22 @@ SUBROUTINE AbsorptionStep(sAl,work,h,loc_nz2,ffact)
 
 !               LOCAL ARGS
 
-  REAL(KIND=WP) :: mask(NX_G*NY_G), mask_z2(0:tTransInfo_G%loc_nz2-1)
-  COMPLEX(KIND=WP) :: sAnb(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1), posI
+  REAL(KIND=WP), allocatable :: mask(:), mask_z2(:)
+  COMPLEX(KIND=WP), allocatable :: sAnb(:)
+  COMPLEX(KIND=WP) :: posI
   INTEGER(KIND=IP) :: iz2, x_inc, y_inc, z2_inc, ind
   integer :: error
   LOGICAL :: qOKL
+
+
+
+! ****************************
+
+  allocate(mask(NX_G*NY_G), mask_z2(0:tTransInfo_G%loc_nz2-1))
+  allocate(sAnb(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1))
+
+! ****************************
+
 
 
   posI=CMPLX(0.0,1.0,KIND=WP)
@@ -930,6 +976,9 @@ SUBROUTINE AbsorptionStep(sAl,work,h,loc_nz2,ffact)
 
   sAl = sAl + sAnb
 
+
+  deallocate(mask, mask_z2)
+  deallocate(sAnb)
 
 END SUBROUTINE AbsorptionStep
 

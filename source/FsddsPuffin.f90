@@ -452,11 +452,11 @@ CONTAINS
 !   ###########################################
 ! ! -----  TEMP COMMENTED OUT
 ! 
-!     if (qWriteInt) then
-! 
-!       call writeIntData(sA)
-!     
-!     end if
+     if (qWriteInt) then
+ 
+       call writeIntData()
+     
+     end if
 ! 
 ! ! -----  END TEMP COMMENTED OUT
 !   ###########################################

@@ -253,8 +253,8 @@ SUBROUTINE gather1A(A_local,sA,nA_loc,nA,recvs,displs)
 ! Gather from A_local to A
 
 REAL(KIND=WP),INTENT(IN)  ::  A_local(:)
-INTEGER,INTENT(IN)  ::  nA_loc,nA
-INTEGER,INTENT(IN)  ::  recvs(:),displs(:)
+INTEGER(kind=ip),INTENT(IN)  ::  nA_loc,nA
+INTEGER(kind=ip),INTENT(IN)  ::  recvs(:),displs(:)
 REAL(KIND=WP),INTENT(OUT) ::  sA(:)
 
 INTEGER(KIND=IP)  ::  error

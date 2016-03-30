@@ -74,7 +74,14 @@ contains
 
 !     Need to match into undulator
 
+  call mpi_barrier(tProcInfo_G%comm, error)
+  print*, 'init undulator...'
+
   call initUndulator(iUnd_cr, sZ, szl)
+
+  call mpi_barrier(tProcInfo_G%comm, error)
+  print*, 'init beam...'
+
   if (.not. qUndEnds_G) call matchIn(sZ)
 
 
@@ -121,6 +128,10 @@ contains
 !    TEMP 1D parallel field case only
 
   !qStart_new = .true. !!! TTTEEEMPPPe.
+
+  call mpi_barrier(tProcInfo_G%comm, error)
+  print*, 'redisitng field...'
+
   call getLocalFieldIndices(sLengthOfElmZ2_G)
 
 !############################################
@@ -165,7 +176,8 @@ contains
 
 
 
-
+  call mpi_barrier(tProcInfo_G%comm, error)
+  print*, 'alloc arrs...'
 
   call allact_rk4_arrs()
 
@@ -227,7 +239,7 @@ contains
   
       if ((sZ>(nextDiff-sStepsize/100.0_WP)) .or. (iStep == nSteps))  then
 
-        call deallact_rk4_arrs()
+!        call deallact_rk4_arrs()
   
         if ((iStep == nSteps) .or. &
              qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps) ) then
@@ -324,7 +336,7 @@ contains
 ! ! -----  END TEMP COMMENTED OUT
 !   ###########################################
 
-  if (qDiffrctd) call allact_rk4_arrs()
+!  if (qDiffrctd) call allact_rk4_arrs()
 
 
   !if ((iCsteps == 60) .or. (iCsteps == 120) ) then

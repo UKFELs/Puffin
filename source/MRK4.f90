@@ -113,8 +113,41 @@ subroutine rk4par(sZ,h,recvs,displs,qD)
 
 
 
+  xt = 0_wp
+  yt = 0_wp
+  z2t = 0_wp
+  pxt = 0_wp
+  pyt = 0_wp
+  pz2t = 0_wp
+
+  dxdx = 0.0_wp
+  dydx = 0.0_wp
+  dz2dx = 0.0_wp
+  dpxdx = 0.0_wp
+  dpydx = 0.0_wp
+  dpz2dx = 0.0_wp
+
+  dxm = 0.0_wp
+  dxt = 0.0_wp
+  dym = 0.0_wp
+  dyt = 0.0_wp
+  dpxm = 0.0_wp
+  dpxt = 0.0_wp
+  dpym = 0.0_wp
+  dpyt = 0.0_wp
+  dz2m = 0.0_wp
+  dz2t = 0.0_wp
+  dpz2m = 0.0_wp
+  dpz2t = 0.0_wp
+
+
+
   A_localtr0 = ac_rfield
   A_localti0 = ac_ifield
+
+
+!if (count(abs(ac_rfield) > 1.0E2) > 0) print*, 'HELP IM RUBBUSH AT START I habve ', &
+!              (count(abs(ac_rfield) > 1.0E2) > 0), 'bigger than 100...'
 
 !  allocate(DADx(2*local_rows))
 !  allocate(A_localt(2*local_rows))
@@ -210,8 +243,8 @@ subroutine rk4par(sZ,h,recvs,displs,qD)
 
 
 
-  A_localtr2 = A_localtr1 + hh * dadz_r1
-  A_localti2 = A_localti1 + hh * dadz_i1
+  A_localtr2 = A_localtr0 + hh * dadz_r1
+  A_localti2 = A_localti0 + hh * dadz_i1
 
 
 
@@ -246,8 +279,8 @@ subroutine rk4par(sZ,h,recvs,displs,qD)
   pyt = sElPY_G    +  h * dpym
   pz2t = sElGam_G  +  h * dpz2m
 
-  A_localtr3 = A_localtr2 + h * dadz_r2
-  A_localti3 = A_localti2 + h * dadz_i2
+  A_localtr3 = A_localtr0 + h * dadz_r2
+  A_localti3 = A_localti0 + h * dadz_i2
 
 
 !  call local2globalA(A_localt, sA, recvs, displs, tTransInfo_G%qOneD)
@@ -293,6 +326,15 @@ subroutine rk4par(sZ,h,recvs,displs,qD)
 
   ac_rfield = ac_rfield + h6 * (dadz_r0 + dadz_r1 + 2.0_WP * dadz_r2)
   ac_ifield = ac_ifield + h6 * (dadz_i0 + dadz_i1 + 2.0_WP * dadz_i2)
+
+!  if (count(abs(dadz_r0) > 0.0_wp) <= 0) print*, 'HELP IM TOO RUBBUSH'
+
+!  if (count(abs(ac_rfield) > 0.0_wp) <= 0) print*, 'HELP IM RUBBUSH'
+
+
+!if (count(abs(ac_rfield) > 1.0E2) > 0) print*, 'HELP IM RUBBUSH for I habve ', &
+!              count(abs(ac_rfield) > 1.0E2) , 'bigger than 100...', &
+!              'and I am', tProcInfo_G%rank
 
 
 
