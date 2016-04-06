@@ -140,20 +140,27 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 
 
 
-
+    fx_G = fx
+    fy_G = fy
 
 
     if (zUndType == 'curved') then
 
       aw_rms =  aw / sqrt(2.0_wp)
+      fx_G = 0   ! Temp fix for initialization bug
+      fy_G = 1
 
     else if (zUndType == 'planepole') then
 
       aw_rms =  aw / sqrt(2.0_wp)
+      fx_G = 0   ! Temp fix for initialization bug
+      fy_G = 1
 
     else if (zUndType == 'helical') then
 
       aw_rms = aw
+      fx_G = 1   ! Temp fix for initialization bug
+      fy_G = 1
 
     else
 
@@ -174,9 +181,6 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 
     sFocusfactor_G = sFocusfactor_save_G ! * modfact1
 
-
-    fx_G = fx
-    fy_G = fy
 
     !sAw_save_G = ((1 / (2.0_WP*rho*sFocusFactor*kbeta)**2) *   &
     !        (1.0_WP - (1.0_WP / ( 1.0_WP + eta )**2) ) - 1.0_WP) ** (-0.5_WP)
