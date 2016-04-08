@@ -147,6 +147,14 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
     if (zUndType == 'curved') then
 
       aw_rms =  aw / sqrt(2.0_wp)
+
+      kx_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2)) ! Giving equal focusing for now....
+      ky_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+
+      sKBetaX_G = aw / sqrt(2.0_wp * sEta_G) / sGammaR_G * kx_und_G
+      sKBetaY_G = aw / sqrt(2.0_wp * sEta_G) / sGammaR_G * ky_und_G
+
+
       fx_G = 0   ! Temp fix for initialization bug
       fy_G = 1
 
@@ -173,17 +181,16 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
              gamr
 
     sEta_G = (1.0_WP - sbetaz) / sbetaz
-    sKBeta_G = aw_rms / 2.0_WP / sFocusFactor / rho / gamr
     sKappa_G = aw / 2.0_WP / rho / gamr
+    sKBeta_G = sKappa_G ! aw_rms / 2.0_WP / sFocusFactor / rho / gamr
 
 
-    sFocusfactor_save_G = sFocusFactor
-
-    sFocusfactor_G = sFocusfactor_save_G ! * modfact1
 
 
-    !sAw_save_G = ((1 / (2.0_WP*rho*sFocusFactor*kbeta)**2) *   &
-    !        (1.0_WP - (1.0_WP / ( 1.0_WP + eta )**2) ) - 1.0_WP) ** (-0.5_WP)
+
+
+
+
 
 
 
@@ -220,8 +227,45 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
     end if
 
 
-    kx_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2))
-    ky_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+
+
+
+!  Get focusing for 'reference' beam energy
+
+    if (zUndType == 'curved') then
+
+      kx_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2)) ! Giving equal focusing for now....
+      ky_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+
+      sKBetaX_G = aw / sqrt(2.0_wp * sEta_G) / sGammaR_G * kx_und_G
+      sKBetaY_G = aw / sqrt(2.0_wp * sEta_G) / sGammaR_G * ky_und_G
+
+    else if (zUndType == 'planepole') then
+
+      kx_und_G = 0.0_wp
+      ky_und_G = 0.0_wp
+
+      sKBetaX_G = 0.0_wp
+      sKBetaY_G = aw / 2 / sqrt(2.0_wp) / sRho_G / sGammaR_G
+
+    else if (zUndType == 'helical') then
+
+      sKBetaX_G = aw / 2 / sqrt(2.0_wp) / sRho_G / sGammaR_G
+      sKBetaY_G = aw / 2 / sqrt(2.0_wp) / sRho_G / sGammaR_G
+
+    else
+
+      sKBetaX_G = aw / 2 / sqrt(2.0_wp) / sRho_G / sGammaR_G
+      sKBetaY_G = aw / 2 / sqrt(2.0_wp) / sRho_G / sGammaR_G
+
+    end if
+
+
+
+    sMNum_G = 1_wp
+
+
+
 
 !     Get the number of nodes
 
@@ -272,7 +316,7 @@ END SUBROUTINE passToGlobals
                             
 SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
                               qFlatTopS, sSigmaF, &
-                              sLengthOfElm, sA0_x, sA0_y, qOK)
+                              sA0_x, sA0_y, qOK)
 
     IMPLICIT NONE
 !
@@ -295,7 +339,6 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
     REAL(KIND=WP), INTENT(IN)    :: sSigmaF(:,:), SmeanZ2(:), &
                                     freqf(:), ph_sh(:)
     LOGICAL, INTENT(IN) :: qFlatTopS(:)
-    REAL(KIND=WP), INTENT(IN)    :: sLengthOfElm(:)
     REAL(KIND=WP), INTENT(IN)    :: sA0_x(:)
     REAL(KIND=WP), INTENT(IN)    :: sA0_y(:)
 !    REAL(KIND=WP), INTENT(INOUT) :: sA(:)
@@ -312,6 +355,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
     LOGICAL           :: qInitialGauss
     INTEGER(KIND=IP)  :: iZ2,iXY,i,lowind,highind,error,NN(3)
     REAL(KIND=WP)     :: z2bar,rho
+    REAL(KIND=WP)     :: sLengthOfElm(3)
 !    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE :: sAx_mag,sAy_mag,&
 !                                              sAreal,sAimag
 
@@ -325,7 +369,11 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
     NN(iX_CG) = NX_G
     NN(iY_CG) = NY_G
     NN(iZ2_CG) = NZ2_G
-    
+
+    sLengthOfElm(iX_CG) = sLengthOfElmX_G
+    sLengthOfElm(iY_CG) = sLengthOfElmY_G
+    sLengthOfElm(iZ2_CG) = sLengthOfElmZ2_G
+
 !    ALLOCATE(sAreal(iXY*iZ2),sAimag(iXY*iZ2))
    
 !    CALL getSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,freqf, &

@@ -349,11 +349,11 @@ contains
 
 
     sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
+                           sEta_G, sKappa_G, sFocusfactor_G, spx0_offset, spy0_offset, &
                            fx_G, fy_G, sZ)
 
     sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
+                           sEta_G, sKappa_G, sFocusfactor_G, spx0_offset, spy0_offset, &
                            fx_G, fy_G, sZ)
 
 
@@ -446,12 +446,12 @@ contains
 
 
     sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, -spy0_offset, &
+                           sEta_G, sKappa_G, sFocusfactor_G, spx0_offset, -spy0_offset, &
                            fx_G, fy_G, sZ)
 
 
     sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, -spy0_offset, &
+                           sEta_G, sKappa_G, sFocusfactor_G, spx0_offset, -spy0_offset, &
                            fx_G, fy_G, sZ)
 
 

@@ -225,7 +225,8 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  lambda_w, Dfact, zundType, taper, &                 
                  LattFile, stepsPerPeriod, nPeriods, &
                  sZ0, zDataFileName, iWriteNthSteps, &
-                 iWriteIntNthSteps, iDumpNthSteps, sPEOut                
+                 iWriteIntNthSteps, iDumpNthSteps, sPEOut, &
+                 qFMesh_G             
 
 ! Begin subroutine:
 ! Set error flag to false         
@@ -259,6 +260,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qWriteY = .true.
   qsdds = .true.
   qhdf5 = .true.
+  qFMesh_G = .true.
 !  qplain = .false.
 
   beam_file = 'beam_file.in'
@@ -354,7 +356,15 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   sWigglerLength(iZ2_CG) = sFModelLengthZ2
 
 
+  sLengthofElm(iX_CG) = sWigglerLength(iX_CG) / &
+                    real((iNumNodes(iX_CG) - 1_ip), kind=wp)
 
+  sLengthofElm(iY_CG) = sWigglerLength(iY_CG) / &
+                    real((iNumNodes(iY_CG) - 1_ip), kind=wp)
+
+
+  sLengthofElm(iZ2_CG) = sWigglerLength(iZ2_CG) / &
+                    real((iNumNodes(iZ2_CG) - 1_ip), kind=wp)
 
 
 
@@ -492,6 +502,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   allocate(chirp(nbeams), qMatched_A(nbeams))
   allocate(mag(nbeams), fr(nbeams))
   allocate(qRndEj_G(nbeams), sSigEj_G(nbeams))
+
 
 ! &&&&&&&&&& Default vals
 
@@ -639,7 +650,8 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
 
   namelist /nslist/ nseeds
   namelist /slist/ freqf, ph_sh, sA0_X, sA0_Y, sSigmaF, &
-                   qFlatTop, meanZ2, qRndFj_G,  sSigFj_G
+                   qFlatTop, meanZ2, qRndFj_G,  sSigFj_G, &
+                   qMatchS_G
 
 
   qOK = .FALSE.
@@ -660,7 +672,7 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
   ALLOCATE(sA0_X(nseeds), sA0_Y(nseeds), ph_sh(nseeds))
   ALLOCATE(freqf(nseeds),qFlatTop(nseeds),meanZ2(nseeds))
   allocate(qRndFj_G(nseeds), sSigFj_G(nseeds))
-
+  allocate(qMatchS_G(nseeds))
 
 !  Default value
 
@@ -673,7 +685,7 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
   meanZ2 = 0.0_wp
   qRndFj_G = .false.
   sSigFj_G = 0.01_wp
-
+  qMatchS_G = .true.
 
   read(161,nml=slist)
   close(UNIT=161,STATUS='KEEP')

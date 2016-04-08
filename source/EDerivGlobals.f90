@@ -51,6 +51,10 @@ real(kind=wp)  :: sfilt   ! Frequency cutoff for high pass filter, in units
 real(kind=wp) :: delta_G  ! Volume of field element (dx * dy * dz2)
 
 
+
+real(kind=wp) :: sMNum_G
+
+
 real(kind=wp), allocatable :: x_ax_G(:), y_ax_G(:) ! x and y axis for field integration
 
 !   ---   For rounded edge seed field   ---   !
@@ -60,8 +64,8 @@ logical, allocatable :: qRndFj_G(:)  ! Rounding edges of flat top seed?
 real(kind=wp), allocatable :: sSigFj_G(:) ! sigma of gaussian tail off
                                           ! for flat top seed
 
-
-
+logical, allocatable :: qMatchS_G(:)
+logical :: qFMesh_G
 
 
 
@@ -167,6 +171,7 @@ character(32_IP) :: zUndType_G     ! Selects undulator type
 
 real(kind=wp) :: kx_und_G, ky_und_G    ! kx and ky for 3D undulator B-field variation
 
+real(kind=wp) :: sKBetaX_G, sKBetaY_G
 
 real(kind=wp)       :: Dfact  ! Dispersion strength factor for chicane
                               ! (=1 for 'normal' dispersion, =0 for 

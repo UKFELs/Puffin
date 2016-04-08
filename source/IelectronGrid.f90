@@ -176,9 +176,11 @@ CONTAINS
 !!!!!!  TEMP
 !!!!!!  CONVERT SIGPX -> SIX_{DX/DZ}
 
-    um = sqrt(fx_G**2.0_WP + fy_G**2.0_WP)
-    afact = sqrt(2.0_WP) * saw_G / um
+!    um = sqrt(fx_G**2.0_WP + fy_G**2.0_WP)
+!    afact = sqrt(2.0_WP) * saw_G / um
     
+    afact = saw_G
+
 !    sigE(:,iPX_CG) = sigE(:,iPX_CG) * afact * &
 !                     sqrt((sEta_G * (sEta_G + 2.0_WP) / (1 + afact**2.0_WP)))
                      

@@ -179,32 +179,41 @@ MODULE Setup
 
 !    Calculate parameters for matched beam
 
-  IF (qMatched_A(1)) THEN
-
-    if (qSimple) CALL MatchBeams(srho,sEmit_n,saw,sFocusfactor,&
-                    sgammar,iNumElectrons,sLenEPulse,&
-                    sSigmaGaussian,sSeedSigma(1,:),iNodes,sWigglerLength,&
-                    sLengthofElm,zUndType,iRedNodesX,iRedNodesY,fx,fy,qOKL)
-
-    IF (.NOT. qOKL) GOTO 1000
-  
-  END IF
 
 
 
-!     Check transverse sampled length of field is long enough to model 
-!     diffraction of the resonant frequency.
 
-  IF (qSwitches(iDiffraction_CG)) THEN
 
-    if (qSimple)  CALL CheckSourceDiff(sStepSize,nSteps,srho, &
-                                       sSigmaGaussian, &
-                                       sWigglerLength,&
-                                       sLengthofElm,iNodes,qOKL)
 
-    IF (.NOT. qOKL) GOTO 1000
-  
-  END IF
+
+
+
+!  IF (qMatched_A(1)) THEN
+!
+!    if (qSimple) CALL MatchBeams(srho,sEmit_n,saw,sFocusfactor,&
+!                    sgammar,gamma_d,iNumElectrons,sLenEPulse,&
+!                    sSigmaGaussian,sSeedSigma,iNodes,sWigglerLength,&
+!                    sLengthofElm,zUndType,iRedNodesX,iRedNodesY,fx,fy,qOKL)
+!
+!    IF (.NOT. qOKL) GOTO 1000
+!  
+!  END IF
+!
+!
+!
+!!     Check transverse sampled length of field is long enough to model 
+!!     diffraction of the resonant frequency.
+!
+!  IF (qSwitches(iDiffraction_CG)) THEN
+!
+!    if (qSimple)  CALL CheckSourceDiff(sStepSize,nSteps,srho, &
+!                                       sSigmaGaussian, &
+!                                       sWigglerLength,&
+!                                       sLengthofElm,iNodes,qOKL)
+!
+!    IF (.NOT. qOKL) GOTO 1000
+!  
+!  END IF
 
 
 
@@ -221,9 +230,35 @@ MODULE Setup
 
   IF (.NOT. qOKL) GOTO 1000
 
+
+  if (.not. qOneD_G) then
+
+    if (qSimple) then
+
+      call stptrns(sSigmaGaussian, sLenEPulse, iNumElectrons, &
+                   sEmit_n, gamma_d, &
+                   qMatched_A, qMatchS_G, qFMesh_G, sSeedSigma)
+
+    end if
+
+
+    if (qSwitches(iDiffraction_CG)) then
+
+      call CheckSourceDiff(sStepSize,nSteps,srho, &
+                           sSigmaGaussian, &
+                           sWigglerLength,&
+                           sLengthofElm,iNodes,qOKL)
+
+      if (.not. qOKL) goto 1000
+  
+    end if
+
+  end if
+
+
 !     Generate macroelectrons
 
-  CALL PopMacroElectrons(qSimple, dist_f, sQe,iNumElectrons,q_noise,sZ,sLenEPulse,&
+  call PopMacroElectrons(qSimple, dist_f, sQe,iNumElectrons,q_noise,sZ,sLenEPulse,&
                          sSigmaGaussian,beamCenZ2,gamma_d,&
                          sElectronThreshold,chirp, mag, fr, &
                          nbeams, qOK)
@@ -258,7 +293,7 @@ MODULE Setup
 
   
     CALL SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, qFlatTopS,&
-                            sSeedSigma, sLengthOfElm,&
+                            sSeedSigma, &
                             sA0_Re,&
                             sA0_Im,&
                             qOKL)
