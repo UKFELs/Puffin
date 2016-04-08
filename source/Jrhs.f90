@@ -23,6 +23,7 @@ use FiElec1D
 use FiElec
 use gtop2
 use ParaField
+use bfields
 
 
 implicit none
@@ -173,6 +174,9 @@ contains
 
 
     if (qElectronsEvolve_G) then   
+
+        call getBFields(sx, sy, sz, &
+                        bxu, byu, bzu)
 
 !     z2
 

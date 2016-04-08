@@ -36,7 +36,9 @@ use paratype
 real(kind=wp), allocatable :: sp2(:), sField4ElecReal(:), &
                               sField4ElecImag(:)
 
-                              
+
+real(kind=wp), allocatable :: bxu(:), byu(:), bzu(:)
+
 !    Error flags
 
   logical :: qoutside
