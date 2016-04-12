@@ -291,8 +291,9 @@ subroutine getBXfield(sx, sy, sz, bxj)
 
 !$OMP WORKSHARE
       byj = cosh( sqrt(sEta_G) / 2_wp / sRho_G * sy) * & 
-            (  (-1_wp/8_wp * sin(szt/4_wp) * cos(szt)) &
-              + sin(szt/8_wp)**2_wp * sin(szt)  )
+            (  (- sin(szt / 8_wp) * &
+               cos(szt / 8_wp) * cos(szt) / 4_wp   &
+             +  sin(szt/8_wp)**2_wp  * sin(szt) )  )
 !$OMP END WORKSHARE
 
     else if (iUndPlace_G == iUndEnd_G) then
@@ -302,8 +303,9 @@ subroutine getBXfield(sx, sy, sz, bxj)
 
 !$OMP WORKSHARE
       byj = cosh( sqrt(sEta_G) / 2_wp / sRho_G * sy) * & 
-            (  (1_wp/8_wp * sin(szt/4_wp) * cos(szt)) &
-              + cos(szt/8_wp)**2_wp * sin(szt)  )
+            (  cos(szt / 8_wp) * &
+              sin(szt / 8_wp) * cos(szt)  / 4_wp  &
+            +  cos(szt/8_wp)**2_wp  * sin(szt)  )
 !$OMP END WORKSHARE
 
     else if (iUndPlace_G == iUndMain_G) then
