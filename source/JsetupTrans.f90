@@ -292,7 +292,15 @@ subroutine MatchBeams(sSigE, sLenE, sEmit, sGamFrac, &
 
     sLenE(iY_CG) = sSigE(iY_CG) * 6_wp    
     sLenE(iPY_CG) = sSigE(iPY_CG) * 6_wp    
-    
+
+    if (kbx == 0_wp) then
+
+      sSigE(iX_CG) = sSigE(iY_CG)
+      sLenE(iX_CG) = sLenE(iY_CG)
+      sSigE(iPX_CG) = sSigE(iPY_CG)
+      sLenE(iPX_CG) = sLenE(iPY_CG)
+
+    end if
 
   end subroutine matchTransBeam
 
@@ -316,9 +324,13 @@ subroutine MatchBeams(sSigE, sLenE, sEmit, sGamFrac, &
     real(kind=wp), intent(out) :: sigx, sigpx
 
 
-    sigx = sqrt(sRho_G * emit / kx)
-    sigpx = sqrt(sEta_G) / 2.0_wp / sKappa_G * &
-             sEnfrac * emit / sigx
+    if (kx /= 0_wp) then
+
+      sigx = sqrt(sRho_G * emit / kx)
+      sigpx = sqrt(sEta_G) / 2.0_wp / sKappa_G * &
+               sEnfrac * emit / sigx
+
+    end if
 
 
 
