@@ -220,11 +220,11 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
     NBZ2_G = 37_IP
 
 
-    if (qSwitch(iOneD_CG)) then
-      zUndType_G = ''
-    else
+!    if (qSwitch(iOneD_CG)) then
+!      zUndType_G = ''
+!    else
       zUndType_G = zUndType
-    end if
+!    end if
 
 
 
@@ -232,7 +232,7 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 
 !  Get focusing for 'reference' beam energy
 
-    if (zUndType == 'curved') then
+    if (zUndType_G == 'curved') then
 
       kx_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2)) ! Giving equal focusing for now....
       ky_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2))
@@ -240,7 +240,7 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
       sKBetaX_G = aw / sqrt(2.0_wp * sEta_G) / sGammaR_G * kx_und_G
       sKBetaY_G = aw / sqrt(2.0_wp * sEta_G) / sGammaR_G * ky_und_G
 
-    else if (zUndType == 'planepole') then
+    else if (zUndType_G == 'planepole') then
 
       kx_und_G = 0.0_wp
       ky_und_G = 0.0_wp
@@ -248,7 +248,7 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
       sKBetaX_G = 0.0_wp
       sKBetaY_G = aw / 2 / sqrt(2.0_wp) / sRho_G / sGammaR_G
 
-    else if (zUndType == 'helical') then
+    else if (zUndType_G == 'helical') then
 
       sKBetaX_G = aw / 2 / sqrt(2.0_wp) / sRho_G / sGammaR_G
       sKBetaY_G = aw / 2 / sqrt(2.0_wp) / sRho_G / sGammaR_G
