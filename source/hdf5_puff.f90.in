@@ -233,7 +233,7 @@ contains
 ! For starters, write on rank 0 only
       if (tProcInfo_G%qRoot) then
            time = real(iCSteps,kind=wp)*sStepSize*lg_G/c
-           CALL gPower(sA,power)
+           !CALL gPower(sA,power)
            call outputH5Field1DFloat(power, 'power', time, error)
       if (error .ne. 0) goto 1000
       end if
