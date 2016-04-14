@@ -255,7 +255,7 @@ contains
 
 
 
-  call calcBuff(4 * pi * sRho_G * 4)  ! Calculate buffers 
+  call calcBuff(4 * pi * sRho_G * sdz)  ! Calculate buffers 
 !  call calcBuff(4.0_wp)  ! Calculate buffers 
 
  ! else

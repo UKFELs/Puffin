@@ -132,7 +132,7 @@ contains
   call mpi_barrier(tProcInfo_G%comm, error)
   print*, 'redisitng field...'
 
-  call getLocalFieldIndices(sLengthOfElmZ2_G)
+  call getLocalFieldIndices(8.0_wp)
 
 !############################################
 !############################################
@@ -343,7 +343,7 @@ contains
   if (mod(iCsteps, 60) == 0)  then
 
     call deallact_rk4_arrs()
-    call getLocalFieldIndices(sLengthOfElmZ2_G)
+    call getLocalFieldIndices(4.0_wp)
     call allact_rk4_arrs()
     
   end if
