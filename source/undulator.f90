@@ -132,7 +132,7 @@ contains
   call mpi_barrier(tProcInfo_G%comm, error)
   print*, 'redisitng field...'
 
-  call getLocalFieldIndices(8.0_wp)
+  call getLocalFieldIndices(sRedistLen_G*2.0_wp)
 
 !############################################
 !############################################
@@ -338,12 +338,11 @@ contains
 
 !  if (qDiffrctd) call allact_rk4_arrs()
 
-
   !if ((iCsteps == 60) .or. (iCsteps == 120) ) then
-  if (mod(iCsteps, 60) == 0)  then
+  if (mod(iCsteps, iRedistStp_G) == 0)  then
 
     call deallact_rk4_arrs()
-    call getLocalFieldIndices(4.0_wp)
+    call getLocalFieldIndices(sRedistLen_G)
     call allact_rk4_arrs()
     
   end if

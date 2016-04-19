@@ -293,6 +293,11 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 
 
 
+    if (sRedistLen_G < 0) sRedistLen_G = 4.0_wp
+
+    if (iRedistStp_G < 0) iRedistStp_G = 60_ip
+
+
 
 !     Get the number of nodes
 

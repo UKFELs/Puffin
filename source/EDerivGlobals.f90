@@ -247,6 +247,9 @@ real(kind=wp)   :: start_time,end_time
 real(kind=wp)   :: time1, time2 !!!FOR DEBUGGING!!!
 
 
+real(kind=wp) :: sRedistLen_G
+integer(kind=ip) :: iRedistStp_G
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Data writing
 

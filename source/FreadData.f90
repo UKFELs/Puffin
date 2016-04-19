@@ -209,6 +209,9 @@ SUBROUTINE read_in(zfilename, &
 
   real(kind=wp) :: sKBetaXSF, sKBetaYSF
 
+  real(kind=wp) :: sRedistLen
+  integer(kind=ip) :: iRedistStp
+
 
 namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  qElectronFieldCoupling, qFocussing, &
@@ -228,7 +231,9 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  LattFile, stepsPerPeriod, nPeriods, &
                  sZ0, zDataFileName, iWriteNthSteps, &
                  iWriteIntNthSteps, iDumpNthSteps, sPEOut, &
-                 qFMesh_G, sKBetaXSF, sKBetaYSF        
+                 qFMesh_G, sKBetaXSF, sKBetaYSF, sRedistLen, &
+                 iRedistStp
+
 
 ! Begin subroutine:
 ! Set error flag to false         
@@ -300,6 +305,9 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   sPEOut                 = 100.0
   sKBetaXSF = -0.1_wp
   sKBetaYSF = -0.1_wp
+
+  sRedistLen = -0.1_wp
+  iRedistStp = -2_ip
 
 ! Open and read namelist
 
@@ -389,6 +397,9 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   sKBetaXSF_G = sKBetaXSF
   sKBetaYSF_G = sKBetaYSF
 
+
+  sRedistLen_G = sRedistLen
+  iRedistStp_G = iRedistStp
 
   zBFile_G = beam_file
   zSFile_G = seed_file
