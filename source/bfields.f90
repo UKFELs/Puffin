@@ -222,6 +222,19 @@ subroutine getBXfield(sx, sy, sz, bxj)
 
   end if
 
+
+!   Focusing component (non-physical)
+
+    if (qFocussing_G) then
+
+!$OMP WORKSHARE
+        bxj = sqrt(sEta_G) * sKBetaY_G**2.0_wp / sKappa_G &
+              * sy + bxj
+!$OMP END WORKSHARE
+
+    end if
+
+
   end subroutine getBXfield
 
 
@@ -240,6 +253,7 @@ subroutine getBXfield(sx, sy, sz, bxj)
   szt = szt / 2_wp / sRho_G
 
 
+!  ####################################################
 !    Curved pole case - planar wiggler with focusing
 !    in both x and y (electron wiggles in x)
 
@@ -279,7 +293,16 @@ subroutine getBXfield(sx, sy, sz, bxj)
 
     end if
 
+!    END curved pole field description
+!  ####################################################
 
+
+
+
+
+
+
+!  ####################################################
 !    Plane-pole case - planar wiggler with focusing
 !    only in y (and electron will wiggle in x)
 
@@ -317,8 +340,18 @@ subroutine getBXfield(sx, sy, sz, bxj)
 
     end if
 
+!    END plane pole undulator field description
+!  ####################################################
 
 
+
+
+
+
+
+
+
+!  ####################################################
 !    Helical case - helical wiggler with focusing
 !    in x and y (and electron will wiggle in x and y)
 
@@ -351,9 +384,24 @@ subroutine getBXfield(sx, sy, sz, bxj)
 
     end if
 
+!    END helical undulator field description
+!  ####################################################
+
+
+
+
+
+
+
+
   else   
 
 
+
+
+
+
+!  ####################################################
 !    'puffin' elliptical undulator...
 !    with variable x and y polarization...
 
@@ -385,7 +433,24 @@ subroutine getBXfield(sx, sy, sz, bxj)
 
     end if
 
+!    END elliptical undulator description
+!  ####################################################
+
+
+
+
   end if
+
+!   Focusing component (non-physical)
+
+    if (qFocussing_G) then
+
+!$OMP WORKSHARE
+      byj = -sqrt(sEta_G) * sKBetaX_G**2.0_wp / sKappa_G &
+            * sx + byj
+!$OMP END WORKSHARE
+
+    end if
 
   end subroutine getBYfield
 
@@ -410,12 +475,22 @@ subroutine getBZfield(sx, sy, sz, bzj)
 
   if (qOneD_G) then
 
+!  ####################################################
+!    1D case - no z-component of magnetic field
+
 !$OMP WORKSHARE
     bzj = 0_wp
 !$OMP END WORKSHARE
 
   else
 
+
+
+
+
+
+
+!  ####################################################
 !    Curved pole case - planar wiggler with focusing
 !    in both x and y (electron wiggles in x)
 
@@ -459,11 +534,17 @@ subroutine getBZfield(sx, sy, sz, bzj)
 
     end if
 
+!    END curved pole field description
+!  ####################################################
 
+
+
+
+
+
+!  ####################################################
 !    Plane-pole case - planar wiggler with focusing
 !    only in y (and electron will wiggle in x)
-
-
 
   else if (zUndType_G == 'planepole')  then
 
@@ -497,8 +578,15 @@ subroutine getBZfield(sx, sy, sz, bzj)
 
     end if
 
+!    END plane pole undulator field description
+!  ####################################################
 
 
+
+
+
+
+!  ####################################################
 !    Helical case - helical wiggler with focusing
 !    in x and y (and electron will wiggle in x and y)
 
@@ -540,8 +628,19 @@ subroutine getBZfield(sx, sy, sz, bzj)
 
     end if
 
+!    END helical undulator field description
+!  ####################################################
+
+
+
+
+
   else 
 
+
+
+
+!  ####################################################
 !    'puffin' elliptical undulator...
 !    with variable x and y polarization...
 
@@ -580,6 +679,11 @@ subroutine getBZfield(sx, sy, sz, bzj)
 !$OMP END WORKSHARE
 
     end if
+
+!    END elliptical undulator description
+!  ####################################################
+
+
 
 
   end if

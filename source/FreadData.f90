@@ -207,6 +207,8 @@ SUBROUTINE read_in(zfilename, &
   integer(kind=ip) :: iNumNodesX, iNumNodesY, nodesPerLambdar
   real(kind=wp) :: sFModelLengthX, sFModelLengthY, sFModelLengthZ2
 
+  real(kind=wp) :: sKBetaXSF, sKBetaYSF
+
 
 namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  qElectronFieldCoupling, qFocussing, &
@@ -226,7 +228,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  LattFile, stepsPerPeriod, nPeriods, &
                  sZ0, zDataFileName, iWriteNthSteps, &
                  iWriteIntNthSteps, iDumpNthSteps, sPEOut, &
-                 qFMesh_G             
+                 qFMesh_G, sKBetaXSF, sKBetaYSF        
 
 ! Begin subroutine:
 ! Set error flag to false         
@@ -296,8 +298,8 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   iWriteIntNthSteps      = 30
   iDumpNthSteps          = 3000
   sPEOut                 = 100.0
-
-
+  sKBetaXSF = -0.1_wp
+  sKBetaYSF = -0.1_wp
 
 ! Open and read namelist
 
@@ -383,6 +385,10 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   iNumNodes(iZ2_CG) = ceiling(sWigglerLength(iZ2_CG) / dz2) + 1_IP
 
   if (tProcInfo_G%qRoot) print*, 'number of nodes in z2 --- ', iNumNodes(iZ2_CG)
+
+  sKBetaXSF_G = sKBetaXSF
+  sKBetaYSF_G = sKBetaYSF
+
 
   zBFile_G = beam_file
   zSFile_G = seed_file

@@ -185,7 +185,7 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
     sKBeta_G = sKappa_G ! aw_rms / 2.0_WP / sFocusFactor / rho / gamr
 
 
-
+    sFocusFactor_G = sFocusFactor
 
 
 
@@ -260,6 +260,33 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 
     end if
 
+!    sKBetaXSF_G = 10.0_wp
+!    sKBetaYSF_G = 10.0_wp
+
+
+
+    qOneD_G                  = qSwitch(iOneD_CG)
+    qElectronsEvolve_G       = qSwitch(iElectronsEvolve_CG)
+    qFieldEvolve_G           = qSwitch(iFieldEvolve_CG)
+    qElectronFieldCoupling_G = qSwitch(iElectronFieldCoupling_CG)
+    qDiffraction_G           = qSwitch(iDiffraction_CG)
+    qFocussing_G             = qSwitch(iFocussing_CG)
+    qResume_G                = qSwitch(iResume_CG)
+    qDump_G                  = qSwitch(iDump_CG)
+
+
+
+    if (qFocussing_G) then
+
+      if (sKBetaXSF_G > 0) then
+        sKBetaX_G = sKBetaXSF_G
+      end if
+
+      if (sKBetaYSF_G > 0) then
+        sKBetaY_G = sKBetaYSF_G
+      end if
+
+    end if
 
 
     sMNum_G = 1_wp
@@ -275,17 +302,6 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
        CALL Error_log('iNumberNodes_G <=0.',tErrorLog_G)
        GOTO 1000    
     END IF
-
-
-    qOneD_G                  = qSwitch(iOneD_CG)
-    qElectronsEvolve_G       = qSwitch(iElectronsEvolve_CG)
-    qFieldEvolve_G           = qSwitch(iFieldEvolve_CG)
-    qElectronFieldCoupling_G = qSwitch(iElectronFieldCoupling_CG)
-    qDiffraction_G           = qSwitch(iDiffraction_CG)
-    qFocussing_G             = qSwitch(iFocussing_CG)
-    qResume_G                = qSwitch(iResume_CG)
-    qDump_G                  = qSwitch(iDump_CG)
-
 
 
     dz2_I_G = sLengthOfElmZ2_G
