@@ -2,6 +2,7 @@ module FiElec1D
 
 use paratype
 use globals
+use parafield
 
 implicit none
 
@@ -29,10 +30,20 @@ real(kind=wp) :: locz2
 
 !                  Get surrounding nodes 
 
-
       z2node = floor(sz2(i)  / dz2)  + 1_IP
       locz2 = sz2(i) - REAL(z2node  - 1_IP, kind=wp) * dz2
   
+      if (z2node >= NZ2_G) then
+        print*, 'Z2 coord is too large!! with node:', z2node, &
+                ' and pos ', sz2(i)
+        STOP
+      end if
+
+      if (z2node >= bz2) then
+        qPArrOK_G = .false.
+      end if
+
+
       lis_GR(1,i) = (1.0_wp - locz2/dz2)
       lis_GR(2,i) = 1 - lis_GR(1,i)
 

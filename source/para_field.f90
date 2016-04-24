@@ -750,6 +750,8 @@ contains
 
 
       print*, tProcInfo_G%rank, ' set up with bounds of ', fz2, ez2, bz2! , &
+
+      qPArrOK_G = .true.
 !      'with a buffer length of ', fbuffLen, 'and a total length of ', tllen
       !print*, tProcInfo_G%rank, ' and size of sA (over 2) is ', size(sA) / 2
 

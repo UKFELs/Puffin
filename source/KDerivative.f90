@@ -51,7 +51,7 @@ contains
 ! sb        Vector holding the right hand sides
 
 !    real(kind=wp), allocatable :: ldadz(:)
-    integer(kind=ip) :: error
+    integer(kind=ip) :: error, iArEr
     logical :: qOKL
 
 !    allocate(LDADz(ReducedNX_G*ReducedNY_G*NZ2_G*2))
@@ -79,6 +79,30 @@ contains
       call upd8da(sdAr, sdAi)
 
 
+
+!     Check to see if parallel field setup OK...
+
+      if (.not. qPArrOK_G) then
+        iArEr = 1_ip
+      else
+        iArEr = 0_ip
+      end if
+
+      call mpi_allreduce(mpi_in_place, iArEr, 1, &
+            MPI_INTEGER, &
+            MPI_SUM, MPI_COMM_WORLD, error)
+
+      if (iArEr > 0_ip) then 
+        qPArrOK_G = .false.
+        if (tProcInfo_G%qRoot) then
+          print*, 'electron outside parallel bounds!'
+          print*, 'Emergency redistribute!!!'
+          print*, 'If this happens often, then &
+                & it is possible the parallel &
+                & tuning parameters are inefficient, &
+                & and not suitable...'
+        end if
+      end if
 
 !    scatter dadz to local MPI process (split amongst processors)
 

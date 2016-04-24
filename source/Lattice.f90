@@ -106,7 +106,7 @@ contains
     iDrift_cr=1_ip
     iQuad_cr=1_ip
 
-    iCsteps = 0_ip
+    iCsteps = 1_ip
 
   end subroutine setupMods
 

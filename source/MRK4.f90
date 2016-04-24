@@ -168,16 +168,9 @@ subroutine rk4par(sZ,h,recvs,displs,qD)
 !
   end if
 
-!    First step       
-!    Incrementing Y and A
-!    Error checking         
-
+!    First step
 !  iy = size(sElX_G)
 !  idydx = size(dxdx)
-      
-!  if (iy /= idydx ) then
-!     goto 1000
-!  end if
   
 !    Get derivatives
 
@@ -194,35 +187,32 @@ subroutine rk4par(sZ,h,recvs,displs,qD)
 
 !    Increment local electron and field values
   
-  xt = sElX_G      +  hh*dxdx
-  yt = sElY_G      +  hh*dydx
-  z2t = sElZ2_G    +  hh*dz2dx
-  pxt = sElPX_G    +  hh*dpxdx
-  pyt = sElPY_G    +  hh*dpydx
-  pz2t = sElGam_G  +  hh*dpz2dx
+  if (qPArrOK_G) then
 
+    xt = sElX_G      +  hh*dxdx
+    yt = sElY_G      +  hh*dydx
+    z2t = sElZ2_G    +  hh*dz2dx
+    pxt = sElPX_G    +  hh*dpxdx
+    pyt = sElPY_G    +  hh*dpydx
+    pz2t = sElGam_G  +  hh*dpz2dx
 
-
-
-
-  A_localtr1 = A_localtr0 + hh * dadz_r0
-  A_localti1 = A_localti0 + hh * dadz_i0
-
-
+    A_localtr1 = A_localtr0 + hh * dadz_r0
+    A_localti1 = A_localti0 + hh * dadz_i0
 
 !    Update large field array with new values 
 !  call local2globalA(A_localt,sA,recvs,displs,tTransInfo_G%qOneD)
 
-  call upd8a(A_localtr1, A_localti1)
+    call upd8a(A_localtr1, A_localti1)
 
-
+  end if
 
 
 
 !    Second step       
 !    Get derivatives
 
-  call derivs(szh, A_localtr1, A_localti1, &
+  if (qPArrOK_G) &
+    call derivs(szh, A_localtr1, A_localti1, &
        xt, yt, z2t, pxt, pyt, pz2t, &
        dxt, dyt, dz2t, dpxt, dpyt, dpz2t, &
        dadz_r1, dadz_i1)
@@ -233,74 +223,69 @@ subroutine rk4par(sZ,h,recvs,displs,qD)
 
 !    Incrementing with newest derivative value...
 
-  xt = sElX_G      +  hh*dxt
-  yt = sElY_G      +  hh*dyt
-  z2t = sElZ2_G    +  hh*dz2t
-  pxt = sElPX_G    +  hh*dpxt
-  pyt = sElPY_G    +  hh*dpyt
-  pz2t = sElGam_G  +  hh*dpz2t
+  if (qPArrOK_G) then
 
+    xt = sElX_G      +  hh*dxt
+    yt = sElY_G      +  hh*dyt
+    z2t = sElZ2_G    +  hh*dz2t
+    pxt = sElPX_G    +  hh*dpxt
+    pyt = sElPY_G    +  hh*dpyt
+    pz2t = sElGam_G  +  hh*dpz2t
 
-
-
-  A_localtr2 = A_localtr0 + hh * dadz_r1
-  A_localti2 = A_localti0 + hh * dadz_i1
-
-
+    A_localtr2 = A_localtr0 + hh * dadz_r1
+    A_localti2 = A_localti0 + hh * dadz_i1
 
 !    Update full field array
 
 !  call local2globalA(A_localt,sA,recvs,displs,tTransInfo_G%qOneD)
 
+    call upd8a(A_localtr2, A_localti2)
 
-  call upd8a(A_localtr2, A_localti2)
+  end if
 
 !    Third step       
 !    Get derivatives
 
 
-
-  call derivs(szh, A_localtr2, A_localti2, &
+  if (qPArrOK_G) &
+    call derivs(szh, A_localtr2, A_localti2, &
        xt, yt, z2t, pxt, pyt, pz2t, &
        dxm, dym, dz2m, dpxm, dpym, dpz2m, &
        dadz_r2, dadz_i2)
 
-
-
-
-
-
 !    Incrementing
 
-  xt = sElX_G      +  h * dxm
-  yt = sElY_G      +  h * dym
-  z2t = sElZ2_G    +  h * dz2m
-  pxt = sElPX_G    +  h * dpxm
-  pyt = sElPY_G    +  h * dpym
-  pz2t = sElGam_G  +  h * dpz2m
+  if (qPArrOK_G) then
 
-  A_localtr3 = A_localtr0 + h * dadz_r2
-  A_localti3 = A_localti0 + h * dadz_i2
+    xt = sElX_G      +  h * dxm
+    yt = sElY_G      +  h * dym
+    z2t = sElZ2_G    +  h * dz2m
+    pxt = sElPX_G    +  h * dpxm
+    pyt = sElPY_G    +  h * dpym
+    pz2t = sElGam_G  +  h * dpz2m
 
+    A_localtr3 = A_localtr0 + h * dadz_r2
+    A_localti3 = A_localti0 + h * dadz_i2
 
 !  call local2globalA(A_localt, sA, recvs, displs, tTransInfo_G%qOneD)
 
-  call upd8a(A_localtr3, A_localti3)
+    call upd8a(A_localtr3, A_localti3)
 
 
+    dxm = dxt + dxm
+    dym = dyt + dym
+    dz2m = dz2t + dz2m
+    dpxm = dpxt + dpxm
+    dpym = dpyt + dpym
+    dpz2m = dpz2t + dpz2m
 
-  dxm = dxt + dxm
-  dym = dyt + dym
-  dz2m = dz2t + dz2m
-  dpxm = dpxt + dpxm
-  dpym = dpyt + dpym
-  dpz2m = dpz2t + dpz2m
+    dadz_r2 = dadz_r1 + dadz_r2
+    dadz_i2 = dadz_i1 + dadz_i2
 
-  dadz_r2 = dadz_r1 + dadz_r2
-  dadz_i2 = dadz_i1 + dadz_i2
+    dadz_r1 = 0_wp
+    dadz_i1 = 0_wp
 
-  dadz_r1 = 0_wp
-  dadz_i1 = 0_wp
+  end if
 
 !    Fourth step       
 
@@ -309,7 +294,8 @@ subroutine rk4par(sZ,h,recvs,displs,qD)
 
 !    Get derivatives
 
-  call derivs(szh, A_localtr3, A_localti3, &
+  if (qPArrOK_G) & 
+      call derivs(szh, A_localtr3, A_localti3, &
        xt, yt, z2t, pxt, pyt, pz2t, &
        dxt, dyt, dz2t, dpxt, dpyt, dpz2t, &
        dadz_r1, dadz_i1)  
@@ -317,15 +303,17 @@ subroutine rk4par(sZ,h,recvs,displs,qD)
 
 !    Accumulate increments with proper weights       
 
-  sElX_G    = sElX_G   + h6 * ( dxdx   + dxt   + 2.0_WP * dxm  )
-  sElY_G    = sElY_G   + h6 * ( dydx   + dyt   + 2.0_WP * dym  )
-  sElZ2_G   = sElZ2_G  + h6 * ( dz2dx  + dz2t  + 2.0_WP * dz2m )
-  sElPX_G   = sElPX_G  + h6 * ( dpxdx  + dpxt  + 2.0_WP * dpxm )
-  sElPY_G   = sElPY_G  + h6 * ( dpydx  + dpyt  + 2.0_WP * dpym )
-  sElGam_G  = sElGam_G + h6 * ( dpz2dx + dpz2t + 2.0_WP * dpz2m)
+  if (qPArrOK_G) then
 
-  ac_rfield = ac_rfield + h6 * (dadz_r0 + dadz_r1 + 2.0_WP * dadz_r2)
-  ac_ifield = ac_ifield + h6 * (dadz_i0 + dadz_i1 + 2.0_WP * dadz_i2)
+    sElX_G    = sElX_G   + h6 * ( dxdx   + dxt   + 2.0_WP * dxm  )
+    sElY_G    = sElY_G   + h6 * ( dydx   + dyt   + 2.0_WP * dym  )
+    sElZ2_G   = sElZ2_G  + h6 * ( dz2dx  + dz2t  + 2.0_WP * dz2m )
+    sElPX_G   = sElPX_G  + h6 * ( dpxdx  + dpxt  + 2.0_WP * dpxm )
+    sElPY_G   = sElPY_G  + h6 * ( dpydx  + dpyt  + 2.0_WP * dpym )
+    sElGam_G  = sElGam_G + h6 * ( dpz2dx + dpz2t + 2.0_WP * dpz2m)
+
+    ac_rfield = ac_rfield + h6 * (dadz_r0 + dadz_r1 + 2.0_WP * dadz_r2)
+    ac_ifield = ac_ifield + h6 * (dadz_i0 + dadz_i1 + 2.0_WP * dadz_i2)
 
 !  if (count(abs(dadz_r0) > 0.0_wp) <= 0) print*, 'HELP IM TOO RUBBUSH'
 
@@ -338,9 +326,9 @@ subroutine rk4par(sZ,h,recvs,displs,qD)
 
 
 
-  call upd8a(ac_rfield, ac_ifield)
+    call upd8a(ac_rfield, ac_ifield)
 
-
+  end if
 
 !  call local2globalA(A_local,sA,recvs,displs,tTransInfo_G%qOneD)
 

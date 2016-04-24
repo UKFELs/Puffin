@@ -338,7 +338,7 @@ logical   ::  qWrite             ! Write data?
 
 logical   ::  qOneD_G
 
-
+logical   ::  qPArrOK_G
 
 
 
