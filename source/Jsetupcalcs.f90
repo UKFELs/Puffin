@@ -525,12 +525,18 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
 
     if (tProcInfo_G%qRoot) then
 
+
       print*, ''
+
       print*, '-----------------------------------------'
+
       print*, 'Total number of macroparticles = ', iGloNumElectrons_G
+
       print*, 'Avg num of real electrons per macroparticle Nk = ', &
                                     totNk_glob / iGloNumElectrons_G
-      print*, 'Total number of electrons modelled = ', totNk_glob
+
+      print*, 'Total number of real electrons modelled = ', &
+                        totNk_glob
 
 
     end if

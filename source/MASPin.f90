@@ -25,15 +25,16 @@ contains
     integer(kind=ip) :: ir, ij, ios
     integer(kind=ip), allocatable :: recvs_eb(:), displs_eb(:)
 
-    real(kind=wp) :: dV_bar
+!    real(kind=wp) :: dV_bar
     
     real(kind=wp) :: dummy1, dummy2, dummy3
+    real(kind=wp) :: npk_bar
 
     integer :: error
 
     fid = 132
 
-    dV_bar = 1.884986038391355e-05
+!    dV_bar = 1.884986038391355e-05
     nMPs = nMPs4MASP_G ! 3455789_ip
     iGloNumElectrons_G = nMPs
 
@@ -106,6 +107,11 @@ contains
         end do
 
         !do ij = displs_eb(ir+1)+1, nMPsLoc + displs_eb(ir+1)
+
+!       Reading in particle positions in 6D phase space, 
+!       + Nk, number of electrons represented by each
+!       macroparticle.
+
         do ij = 1, nMPsLoc
 
           read(UNIT=fid, FMT=*) sElX_G(ij), sElY_G(ij), &
@@ -126,7 +132,21 @@ contains
     end do
 
 
-    s_Normalised_chi_G = s_chi_bar_G / dV_bar
+!    Work out analytic peak density from rho...
+
+    npk_bar = lg_G * lc_G**2.0_wp * e_0 * m_e / q_e**2.0_wp * &
+              sGammaR_G**3.0_wp * sRho_G**3.0_wp * (4.0_wp * &
+              c * 2.0_wp * pi / lam_w_G / saw_G  )**2.0_wp
+
+
+!   Scale Nk by peak density...
+
+    s_chi_bar_G = s_chi_bar_G / npk_bar
+
+
+    npk_bar_G = npk_bar
+
+!    sElGam_G = sElGam_G / 550_wp
 
     ! exit
 
