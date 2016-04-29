@@ -70,7 +70,12 @@ contains
   
 
     call fixMesh(sLengthOfElmX_G, sLenE(1, iX_CG), iNMPs(1, iX_CG))
-    call fixMesh(sLengthOfElmY_G, sLenE(1, iX_CG), iNMPs(1, iY_CG))
+    call fixMesh(sLengthOfElmY_G, sLenE(1, iY_CG), iNMPs(1, iY_CG))
+
+    if (tProcInfo_G%qRoot) print*, 'FIXING MESH - dx = ', &
+              sLengthOfElmX_G, ','
+
+    if (tProcInfo_G%qRoot) print*, 'and dy = ' sLengthOfElmY_G
 
   end subroutine fixXYMesh
 
@@ -89,6 +94,7 @@ contains
 !     Make length of radiation elm = len of macroparticle elm / nmps per elm
 
     dx = dx / sMNum_G
+
 
   end subroutine fixMesh
 

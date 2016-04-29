@@ -275,15 +275,25 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
     qDump_G                  = qSwitch(iDump_CG)
 
 
+!    if ((sKBetaXSF_G <= 0) .and. (sKBetaYSF_G <= 0) ) then
+!      qFocussing_G = .false.
+!    end if
+
 
     if (qFocussing_G) then
 
       if (sKBetaXSF_G > 0) then
         sKBetaX_G = sKBetaXSF_G
+      else
+        sKBetaXSF_G = 0.0_wp
+        if (tProcInfo_G%qRoot) print*, 'No strong focusing in x'
       end if
 
       if (sKBetaYSF_G > 0) then
         sKBetaY_G = sKBetaYSF_G
+      else
+        sKBetaYSF_G = 0.0_wp
+        if (tProcInfo_G%qRoot) print*, 'No strong focusing in y'
       end if
 
     end if

@@ -228,7 +228,7 @@ subroutine getBXfield(sx, sy, sz, bxj)
     if (qFocussing_G) then
 
 !$OMP WORKSHARE
-        bxj = sqrt(sEta_G) * sKBetaY_G**2.0_wp / sKappa_G &
+        bxj = sqrt(sEta_G) * sKBetaYSF_G**2.0_wp / sKappa_G &
               * sy + bxj
 !$OMP END WORKSHARE
 
@@ -446,7 +446,7 @@ subroutine getBXfield(sx, sy, sz, bxj)
     if (qFocussing_G) then
 
 !$OMP WORKSHARE
-      byj = -sqrt(sEta_G) * sKBetaX_G**2.0_wp / sKappa_G &
+      byj = -sqrt(sEta_G) * sKBetaXSF_G**2.0_wp / sKappa_G &
             * sx + byj
 !$OMP END WORKSHARE
 
