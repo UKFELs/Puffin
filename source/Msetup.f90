@@ -239,6 +239,14 @@ MODULE Setup
                    sEmit_n, gamma_d, &
                    qMatched_A, qMatchS_G, qFMesh_G, sSeedSigma)
 
+      sWigglerLength(iX_CG) = sLengthOfElmX_G * real((NX_G-1_ip),kind=wp)
+      sWigglerLength(iY_CG) = sLengthOfElmY_G * real((NY_G-1_ip),kind=wp)
+
+      sLengthOfElm(iX_CG) = sLengthOfElmX_G
+      sLengthOfElm(iY_CG) = sLengthOfElmY_G
+
+      delta_G = sLengthOfElmX_G*sLengthOfElmY_G*sLengthOfElmZ2_G
+
     end if
 
 
@@ -255,6 +263,7 @@ MODULE Setup
 
   end if
 
+  call initPFile(tPowF, qFormattedFiles) ! initialize power file type
 
 !     Generate macroelectrons
 
