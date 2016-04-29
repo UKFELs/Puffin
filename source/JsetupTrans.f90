@@ -75,7 +75,7 @@ contains
     if (tProcInfo_G%qRoot) print*, 'FIXING MESH - dx = ', &
               sLengthOfElmX_G, ','
 
-    if (tProcInfo_G%qRoot) print*, 'and dy = ' sLengthOfElmY_G
+    if (tProcInfo_G%qRoot) print*, 'and dy = ', sLengthOfElmY_G
 
   end subroutine fixXYMesh
 
