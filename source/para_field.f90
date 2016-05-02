@@ -284,6 +284,8 @@ contains
   end if
 
 
+  print*, 'trying to get layout of main as', fz2, ez2, bz2
+
 !print*, 'AC_AR_OLD', ac_ar_old
 
 
@@ -2128,6 +2130,9 @@ contains
     bz2_len = dz  ! distance in zbar until next rearrangement
     bz2_len = maxval(sElZ2_G + bz2_len * sp2)  ! predicted length in z2 needed needed in buffer for beam
 
+    print*, 'bz2 length is...', bz2_len
+    print*, 'max p2 is ', maxval(sp2)
+
     deallocate(sp2)
 
 !    print*, tProcInfo_G%rank, 'is inside calcBuff, with buffer length', bz2_len
@@ -2966,7 +2971,7 @@ contains
 
 
     iNumberElectrons_G = new_sum
-
+    print*, 'new num elecs is ', new_sum
 
 !    allocate(frmroot(tProcInfo_G%size))
     allocate(tmp4sending(maxval(cnt2proc)))

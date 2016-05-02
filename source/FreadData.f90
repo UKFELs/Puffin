@@ -212,7 +212,6 @@ SUBROUTINE read_in(zfilename, &
   real(kind=wp) :: sRedistLen
   integer(kind=ip) :: iRedistStp
 
-
 namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  qElectronFieldCoupling, qFocussing, &
                  qDiffraction, qFilter, qUndEnds, &
@@ -456,6 +455,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   INTEGER(KIND=IP), INTENT(INOUT) :: nbeams
   LOGICAL, INTENT(OUT) :: qOK
   logical, intent(inout), allocatable :: qMatched_A(:)
+  logical :: qEquiXY
+  integer(kind=ip) :: nseqparts
 
 !                     LOCAL ARGS
 
@@ -471,7 +472,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   namelist /blist/ sSigmaE, sLenE, iNumElectrons, &
                    sEmit_n, sQe, bcenter,  gammaf, &
                    chirp, mag, fr, qRndEj_G, sSigEj_G, &
-                   qMatched_A
+                   qMatched_A, qEquiXY, nseqparts
 
 
   namelist /bdlist/ dist_f, nMPs4MASP_G
@@ -548,6 +549,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   fr = 1.0_wp
   qRndEj_G = .true.
   sSigEj_G = 0.02_wp
+  qEquiXY = .false.
+  nseqparts = 1000_ip
 
 ! &&&&&&&&&&&&&&&&&&&&&
 
@@ -626,7 +629,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   end if
 
 
-
+  qEquiXY_G = qEquiXY
+  nseqparts_G = nseqparts
 
 
 

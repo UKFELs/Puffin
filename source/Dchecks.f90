@@ -96,6 +96,9 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
     call checkRndEjLens(iNumElectrons, sLenEPulse, sSigE, nbeams)
 
+!   Work out charge for each beam...
+
+!    call calcCharge()
 
  
     do i = 1, nSeeds
@@ -107,6 +110,9 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
 
   end if
+
+
+
 
 
 
@@ -125,6 +131,32 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
 end subroutine CheckParameters
   
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+! subroutine calcCharge()
+
+! ! This has to be called AFTER the beam is matched and so forth
+
+! if qHardEdgeX == 1:
+!     r_av = sig_av                 # Hard edged circle in x and y
+! else:
+!     r_av = math.sqrt(2) * sig_av  # Gaussian dist in x and y
+
+! tArea = pi * pow(r_av,2)          # Tranverse beam area
+
+! if qFlatTopZ2 == 1:
+!     if qRoundZ2 == 1:
+!         lArea = sqrt(2*pi) * sigRoundz  + sigz     # flat top + gaussian
+!     else:
+!         lArea = sigz                  # longitudinal integral over charge dist (flat top)
+! else:
+!     lArea = sqrt(2*pi) * sigz     # longitudinal integral over charge dist(gaussian)
+
+! n_p = N / (tArea * lArea)              # Electron number density
+
+! end subroutine calcCharge
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

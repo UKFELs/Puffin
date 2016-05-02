@@ -67,6 +67,9 @@ real(kind=wp), allocatable :: sSigFj_G(:) ! sigma of gaussian tail off
 logical, allocatable :: qMatchS_G(:)
 logical :: qFMesh_G
 
+integer(kind=ip) :: nseqparts_G
+logical :: qEquiXY_G
+
 
 
 integer(kind=ip) :: npts_I_G    !  Specifying mesh 4 current calculation

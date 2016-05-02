@@ -295,7 +295,7 @@ MODULE Setup
 
     qStart_new = .true.
 
-    call getLocalFieldIndices(sLengthOfElmZ2_G)
+    call getLocalFieldIndices(sRedistLen_G)
 
 
 

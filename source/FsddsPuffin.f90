@@ -449,17 +449,11 @@ CONTAINS
 
     
 
-!   ###########################################
-! ! -----  TEMP COMMENTED OUT
-! 
      if (qWriteInt) then
  
        call writeIntData()
      
      end if
-! 
-! ! -----  END TEMP COMMENTED OUT
-!   ###########################################
 
 
 !  Set error flag and exit         

@@ -313,6 +313,15 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 
     iNumberNodes_G = iNN(iX_CG)*iNN(iY_CG)*iNN(iZ2_CG)
 
+
+
+
+!     Get n_pk_bar
+!
+!     DDDOOOO IIITTTT
+! 
+
+
     IF(iNumberNodes_G <= 0_IP) THEN
        CALL Error_log('iNumberNodes_G <=0.',tErrorLog_G)
        GOTO 1000    
@@ -326,6 +335,10 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
     tArrayE(:)%tFileType%qFormatted = qFormatted
     tArrayA(:)%tFileType%qFormatted = qFormatted
     tArrayZ%tFileType%qFormatted = qFormatted
+
+
+!    qEquiXY_G = .false.
+!    nseqparts_G = 1000_ip
 
 
 !     Set error flag and exit

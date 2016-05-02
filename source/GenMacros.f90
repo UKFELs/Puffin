@@ -502,7 +502,7 @@ SUBROUTINE getChi(Nk, Vk, max_dens, chi_bar, chi)
   chi_bar = Nk / max_dens
 	
 !    IF (PRESENT(chichi)) THEN
-  chi = chi_bar / Vk
+  chi = chi_bar / 1.0_wp
 !    ENDIF
 
 END SUBROUTINE getChi
