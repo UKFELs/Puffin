@@ -414,7 +414,8 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
 !
 !  For equispaced grids in EVERY dimension - this can be memory intensive,
 !  and you may end up with more macroparticles than real electrons!!!
-!  The noise statistics will be correct in every dimension
+!  The noise statistics will be correct in every dimension - but you may be
+!  better doing a one-to-one simulation in this case.
 !
 
 
@@ -500,7 +501,9 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
 !  This ensures a quiet start in z2 only, and so the noise statistics
 !  will only be correct in z2.
 !
-
+!  Currently, only random sequences in the other dimensions are used.
+!  Halton/Hammersley or other low-disprecpency sequences may be added 
+!  later...
 
     nseqparts = nseqparts_G
  
@@ -521,22 +524,28 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
 !    call mpi_finalize(error)
 !    stop
 
+!   Create quiet 'base' beam in z2...
+
     CALL genMacros(i_total_electrons=i_RealE, &
-                   q_noise=.false.,                & 
-                   x_1_grid=sz2_grid,               &
-                   x_1_integral=sZ2_integral,       &
-                   s_number_macro=nktemp,     & 
-                   s_vol_element=vkt,          &
-                   max_av=s_tmp_max_av,             &
+                   q_noise=.false.,           & 
+                   x_1_grid=sz2_grid,         &
+                   x_1_integral=sZ2_integral, &
+                   s_number_macro=nktemp,   & 
+                   s_vol_element=vkt,       &
+                   max_av=s_tmp_max_av,     &
                    x_1_coord=z2base)
+
+!   ...then generate some random sequences for the other 5 dimensions...
 
     allocate(xseq(nseqparts), yseq(nseqparts), &
              pxseq(nseqparts), pyseq(nseqparts), &
              gamseq(nseqparts))  ! to store 'constant' sequences which will be replicated for each z2 slice
 
-!    allocate(x(iNMP_loc(iZ2_CG) * nseqparts), y, z2, px, py gamma)   ! should prob be done above in genBeam
-
     call getSeqs(xseq, yseq, pxseq, pyseq, gamseq, sigE)
+
+!   ...then, each particle in this 1D beam (which has perfectly equispaced particles)
+!   is split into many particles with the same temporal/longitudinal coordinate
+!   with transverse positions given by the random particle distributions
 
     gamseq = gamseq + offsets(iGam_CG)
 
