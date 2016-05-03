@@ -508,14 +508,14 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
     allocate(vkt(iNMP_loc(iZ2_CG)))
    
 
-    if (tProcInfo_G%qRoot) then
-    print*, 'size z2 grid = ', size(sz2_grid)
-    print*, 'size z2 int = ', size(sZ2_integral)
-    print*, 'size nks = ', size(nktemp)
-    print*, 'size Vk', size(s_tmp_Vk)
-    print*, 'size z2 temp', size(z2_tmpcoord)
-    print*, 'sigmas are...', sigE
-    end if
+!    if (tProcInfo_G%qRoot) then
+!    print*, 'size z2 grid = ', size(sz2_grid)
+!    print*, 'size z2 int = ', size(sZ2_integral)
+!    print*, 'size nks = ', size(nktemp)
+!    print*, 'size Vk', size(s_tmp_Vk)
+!    print*, 'size z2 temp', size(z2_tmpcoord)
+!    print*, 'sigmas are...', sigE
+!    end if
 
 
 !    call mpi_finalize(error)
