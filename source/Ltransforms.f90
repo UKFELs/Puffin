@@ -724,7 +724,7 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sAr, sAi, qOK)
 !       qOKL)
 
 
-  call mpi_barrier(tProcInfo_G%comm, error)
+!  call mpi_barrier(tProcInfo_G%comm, error)
 !  print*, size(sA_local), size(sAr), size(sAi), tTransInfo_G%loc_nz2
 
   CALL fftwnd_f77_mpi(tTransInfo_G%fplan,1,sA_local,&
@@ -733,7 +733,7 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sAr, sAi, qOK)
 
 
 
-  call mpi_barrier(tProcInfo_G%comm, error)
+!  call mpi_barrier(tProcInfo_G%comm, error)
 !  print*, 'made it here!!!!'
 
 
@@ -755,7 +755,7 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sAr, sAi, qOK)
 
 
 
-  call mpi_barrier(tProcInfo_G%comm, error)
+!  call mpi_barrier(tProcInfo_G%comm, error)
 !  print*, 'made it here  2!!!!'
 
 

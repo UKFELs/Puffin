@@ -77,7 +77,7 @@ contains
 
     end if
 
-    call mpi_barrier(tProcInfo_G%comm, error)
+!    call mpi_barrier(tProcInfo_G%comm, error)
 !    print*, 'got FRONT powsss'
     
 
@@ -87,7 +87,7 @@ contains
 
 !if (count(abs(ac_power) > 0.0_wp) <= 0) print*, 'HELP IM RUBBUSH'
 
-    call mpi_barrier(tProcInfo_G%comm, error)
+!    call mpi_barrier(tProcInfo_G%comm, error)
     !print*, 'got ACC powsss'
 
     if ((ees_GGG < nz2_G) .and. (tlelen > 0) ) then
@@ -98,13 +98,13 @@ contains
 
 
 
-    call mpi_barrier(tProcInfo_G%comm, error)
+!    call mpi_barrier(tProcInfo_G%comm, error)
 !    print*, 'got powsss'
 
     
     call UpdateGlobalPow(fr_power, ac_power, bk_power, power)
 
-    call mpi_barrier(tProcInfo_G%comm, error)
+!    call mpi_barrier(tProcInfo_G%comm, error)
 !    print*, 'got glob powwww'
 
 
@@ -112,7 +112,7 @@ contains
     call writePower(power,tPowF)
 
 
-    call mpi_barrier(tProcInfo_G%comm, error)
+!    call mpi_barrier(tProcInfo_G%comm, error)
 !    print*, 'written'
 
 
