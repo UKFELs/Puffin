@@ -135,28 +135,32 @@ end subroutine CheckParameters
 
 
 
-! subroutine calcCharge()
-
-! ! This has to be called AFTER the beam is matched and so forth
-
-! if qHardEdgeX == 1:
-!     r_av = sig_av                 # Hard edged circle in x and y
-! else:
-!     r_av = math.sqrt(2) * sig_av  # Gaussian dist in x and y
-
-! tArea = pi * pow(r_av,2)          # Tranverse beam area
-
-! if qFlatTopZ2 == 1:
-!     if qRoundZ2 == 1:
-!         lArea = sqrt(2*pi) * sigRoundz  + sigz     # flat top + gaussian
-!     else:
-!         lArea = sigz                  # longitudinal integral over charge dist (flat top)
-! else:
-!     lArea = sqrt(2*pi) * sigz     # longitudinal integral over charge dist(gaussian)
-
-! n_p = N / (tArea * lArea)              # Electron number density
-
-! end subroutine calcCharge
+!subroutine calcCharge()
+!
+!! ! This has to be called AFTER the beam is matched and so forth
+!
+!if (qHardEdgeX) then
+!    r_av = sig_av                 # Hard edged circle in x and y
+!else
+!    r_av = sqrt(2) * sig_av  # Gaussian dist in x and y
+!end if
+!
+!tArea = pi * r_av**2.0_wp          # Tranverse beam area
+!
+!if (qFlatTopZ2) then
+!    if (qRoundZ2) then
+!        lArea = sqrt(2.0_wp*pi) * sigRoundz  &
+!               + (sigz-(gExtEj_G*sigRoundz))     # flat top + gaussian
+!    else
+!        lArea = sigz                  # longitudinal integral over charge dist (flat top)
+!    end if
+!else
+!    lArea = sqrt(2*pi) * sigz     # longitudinal integral over charge dist(gaussian)
+!end if
+!
+!n_p = N / (tArea * lArea)              # Electron number density
+!
+!end subroutine calcCharge
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
