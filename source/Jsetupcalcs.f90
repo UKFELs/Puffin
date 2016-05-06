@@ -775,8 +775,8 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
   allocate(xnds(NN(iX_CG)), ynds(NN(iY_CG)), &
            z2nds(nz2l), &
            xenv(NN(iX_CG)), yenv(NN(iY_CG)), &
-           z2env(nz2l), oscx(NN(iZ2_CG)), &
-           oscy(NN(iZ2_CG)))
+           z2env(nz2l), oscx(nz2l), &
+           oscy(nz2l))
 
 
 !     Coordinates of field nodes in x, y and z2 (sample points)
