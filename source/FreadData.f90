@@ -544,13 +544,14 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   bcenter = 0.0_wp
   gammaf = 1.0_wp
   chirp = 0.0_wp
-  qMatched_A = .true.
+  qMatched_A = .false.
   mag = 0.0_wp
   fr = 1.0_wp
   qRndEj_G = .true.
   sSigEj_G = 0.02_wp
   qEquiXY = .false.
   nseqparts = 1000_ip
+  qSimple = .false.
 
 ! &&&&&&&&&&&&&&&&&&&&&
 
