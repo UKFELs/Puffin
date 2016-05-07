@@ -346,7 +346,7 @@ In general, the correct noise statistics are added to the beam with the method d
 
 {\bf Equispaced Grid in Every Dimension}
 
-When using this option, the beam is intialized on an equispaced 6D grid. This requires very many particles to appropriately sample every dimension, and you may find it very easy to have more macroparticles than real electrons while loading the beam this way. However, we leave it up to the user to decide if this is appropriate - for some extreme dispersion situation it may be necessary to create the beam in this way.  This can be activated by setting qEquiXY $=$ true in the beam input. qEquiXY is actually an array of size nbeams, with a seperate value for each beam if multiple beams are desired. qEquiXY $=$ false by default.
+When using this option, the beam is intialized on an equispaced 6D grid. This requires very many particles to appropriately sample every dimension, and you may find it very easy to have more macroparticles than real electrons while loading the beam this way. However, we leave it up to the user to decide if this is appropriate - for some extreme dispersion situation with high charge it may be necessary to create the beam in this way.  This can be activated by setting qEquiXY $=$ true in the beam input. qEquiXY is actually an array of size nbeams, with a seperate value for each beam if multiple beams are desired. qEquiXY $=$ false by default.
 
 {\bf Equispaced grid ONLY in $\bar{z}_2$}
 
@@ -354,16 +354,15 @@ If qEquiXY is false, then the beam is intially generated as a 1D beam, with equi
 
 Both of the above methods may, of course, be replicated and modified to suit a particular situation. The creation of the beam with the correct statistics, while still retaining the sampling necessary for the FEL interaction, is still an area of ongoing research, and is quite controversial. We ultimately leave it to the user to ensure the beam is appropriate for their situation. The methods above can probably be replicated with a just a few lines of Python. The generated beam can then be input into Puffin.
 
+To use this, set the option dtype = `simple' in the nblist namelist in the beam file. The parameters for the distribution are then set in the blist namelist in the same file.
+
 \subsubsection{Dist input}
 
 The input is composed of a description of temporal slices along the bunch, describing a Gaussian mean and standard deviation in every other dimension for each temporal slice. This information is used to generate the electron beam in Puffin.
 
-
 \subsubsection{Beam input}
 
-This method allows one to read in the 6D scaled particle coordinates from a text file. The beam is generated externally. (Arrangement?)
-
-
+This method allows one to read in the 6D scaled particle coordinates from a text file. The beam is generated externally. (Arrangement?) The user is then responsible for the noise in the pulse - it is not added by Puffin in this method.
 
 
 \subsection{Field Mesh}
