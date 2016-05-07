@@ -2143,8 +2143,6 @@ contains
 
     if (bz2 > nz2_G) bz2 = nz2_G
 
-
-
 ! Find global bz2...
 
     call mpi_allreduce(bz2, bz2_globm, 1, mpi_integer, mpi_max, &
@@ -2153,6 +2151,10 @@ contains
     if (tProcInfo_G%rank == tProcInfo_G%size-1) then
 
       bz2 = bz2_globm
+
+    else 
+
+      if (bz2 <= ez2) bz2 = ez2 + 1  ! For sparse beam!!
 
     end if
 
