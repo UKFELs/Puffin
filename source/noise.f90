@@ -32,6 +32,7 @@ subroutine applyNoise(x,dx,Nks)
 !            LOCAL ARGS
 
   real(kind=wp) :: u
+  real(kind=wp) :: sv
   integer(kind=ipl) :: k, Nm
 
 
@@ -41,9 +42,13 @@ subroutine applyNoise(x,dx,Nks)
 
   do k = 1,Nm
 
+    sv = Nks(k)
     Nks(k) = random_Poisson(Nks(k), .TRUE.)
-
-    x(k)   = addxDev(x(k), dx, Nks(k), u)
+    if (Nks(k) <= 0.0_wp) then
+      Nks(k) = sv
+    else
+      x(k)   = addxDev(x(k), dx, Nks(k), u)
+    end if
 
   end do
 

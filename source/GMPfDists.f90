@@ -175,7 +175,7 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
                    nbeams, x, y, z2, px,&
                    py, gamma, totMPs_b)
 
-  npk_bar_G = npk
+  if (qEquiXY_G)  npk_bar_G = npk
 
   deallocate(totMPs_b, b_sts, b_ends)
 
@@ -353,7 +353,8 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
   real(kind=wp), allocatable :: Nk(:), Vk(:), ggrid(:), gint(:), &
                                 xgrid(:), xint(:), ygrid(:), yint(:), &
                                 pxgrid(:), pxint(:), pygrid(:), pyint(:), &
-                                xseq(:), yseq(:), pxseq(:), pyseq(:), gamseq(:)
+                                xseq(:), yseq(:), pxseq(:), pyseq(:), gamseq(:), &
+                                xseqb(:), yseqb(:), pxseqb(:), pyseqb(:), gamseqb(:)
 
   real(kind=wp) :: sigxpr, sigpxpr, sigypr, sigpypr, siggampr
 
@@ -385,13 +386,16 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
     allocate(xseq(nseqparts_G), yseq(nseqparts_G), &
              pxseq(nseqparts_G), pyseq(nseqparts_G), &
              gamseq(nseqparts_G))
-    call getSeqs(xseq, yseq, pxseq, pyseq, gamseq, &
+    allocate(xseqb(nseqparts_G), yseqb(nseqparts_G), &
+         pxseqb(nseqparts_G), pyseqb(nseqparts_G), &
+         gamseqb(nseqparts_G))
+    call getSeqs(xseqb, yseqb, pxseqb, pyseqb, gamseqb, &
              (/1.0_wp, 1.0_wp, 1.0_wp, 1.0_wp, 1.0_wp, 1.0_wp/))
-    sigxpr = 1.0_wp
-    sigpxpr = 1.0_wp
-    sigypr = 1.0_wp
-    sigpypr = 1.0_wp
-    siggampr = 1.0_wp
+    !sigxpr = 1.0_wp
+    !sigpxpr = 1.0_wp
+    !sigypr = 1.0_wp
+    !sigpypr = 1.0_wp
+    !siggampr = 1.0_wp
   end if
 
   iend = 0
@@ -508,29 +512,29 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
         istart = iend + 1
         iend = iStart + nseqparts_G - 1
 
-        sigxpr = 1.0_wp
-        sigpxpr = 1.0_wp
-        sigypr = 1.0_wp
-        sigpypr = 1.0_wp
-        siggampr = 1.0_wp
+        !sigxpr = 1.0_wp
+        !sigpxpr = 1.0_wp
+        !sigypr = 1.0_wp
+        !sigpypr = 1.0_wp
+        !siggampr = 1.0_wp
 
-!     Modify random sequences to new rms sigma
+!     Modify random sequences to new rms sigma and mean
 
-        xseq = xseq / sigxpr * xsig(k)
-        yseq = yseq / sigypr * ysig(k)
-        pxseq = pxseq / sigpxpr * pxsig(k)
-        pyseq = pyseq / sigpypr * pysig(k)
-        gamseq = gamseq / siggampr * gsig(k)
+        xseq = xseqb * xsig(k) + xm(k)
+        yseq = yseqb * ysig(k) + ym(k)
+        pxseq = pxseqb * pxsig(k) + pxm(k)
+        pyseq = pyseqb * pysig(k) + pym(k)
+        gamseq = gamseqb * gsig(k) + gm(k)
 
 
 
 !     Save rms sigma for next iteration
 
-        sigxpr = xsig(k)
-        sigpxpr = pxsig(k)
-        sigypr = ysig(k)
-        sigpypr = pysig(k)
-        siggampr = gsig(k)
+        !sigxpr = xsig(k)
+        !sigpxpr = pxsig(k)
+        !sigypr = ysig(k)
+        !sigpypr = pysig(k)
+        !siggampr = gsig(k)
 
 
 
@@ -546,8 +550,6 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
         py(istart:iend) = pyseq
 
 
-       call applyNoise(z2(iStart:iEnd), dz2, Nk(istart:iend))  ! add noise in z2
-
       end if
 
 
@@ -558,7 +560,15 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
 
 
   if (.not. qEquiXY_G) then
+
+    if (minval(z2) < 0) print*, 'WARNING. B4 noise z2<0'
+
+    call applyNoise(z2, dz2, Nk)  ! add noise in z2
+
+    if (minval(z2) < 0) print*, 'WARNING. AFTER noise z2<0'
+
     deallocate(xseq, yseq, pxseq, pyseq, gamseq)
+    deallocate(xseqb, yseqb, pxseqb, pyseqb, gamseqb)
   end if
 
 
