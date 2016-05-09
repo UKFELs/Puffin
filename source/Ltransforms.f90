@@ -19,6 +19,10 @@ USE masks
 
 IMPLICIT NONE
 
+
+real(kind=wp) :: tr_time_s, tr_time_e
+
+
 !INCLUDE 'mpif.h'
  
 CONTAINS
@@ -706,8 +710,24 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sAr, sAi, qOK)
 !     Allocate arrays and get distributed FT of field. 
 !     Transforming from A(x,y,z2,zbar) to A(kx,ky,kz2,zbar)
 
+
+  if (tProcInfo_G%QROOT ) then
+    print*,' inside diffraction... ',iCsteps, end_time-start_time
+  end if
+
+    
+  call Get_time(tr_time_s)
+
+
   ALLOCATE(sA_local(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1))
   ALLOCATE(work(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1))
+
+  call Get_time(tr_time_e)
+
+  if (tProcInfo_G%QROOT ) then
+    print*,' allocating arrays took... ', tr_time_e-tr_time_s
+  end if
+
 
   sA_local = 0.0_wp
   ntrh = NX_G * NY_G
@@ -715,6 +735,12 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sAr, sAi, qOK)
   sA_local(0:(tTransInfo_G%loc_nz2 * ntrh) - 1) = &
           CMPLX(sAr(1:tTransInfo_G%loc_nz2 * ntrh), &
                  sAi(1:tTransInfo_G%loc_nz2 * ntrh), kind=wp)
+
+  call Get_time(tr_time_e)
+
+  if (tProcInfo_G%QROOT ) then
+    print*,' assigning data took... ', tr_time_e-tr_time_s
+  end if
 
 !  CALL setupParallelFourierField(sA_local, work, qOKL) 
 
@@ -732,6 +758,12 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sAr, sAi, qOK)
                       FFTW_NORMAL_ORDER) 
 
 
+  call Get_time(tr_time_e)
+
+  if (tProcInfo_G%QROOT ) then
+    print*,' forward transform took... ', tr_time_e-tr_time_s
+  end if
+
 
 !  call mpi_barrier(tProcInfo_G%comm, error)
 !  print*, 'made it here!!!!'
@@ -742,6 +774,13 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sAr, sAi, qOK)
   CALL MultiplyExp(h,sA_local,qOKL)	
 
  
+  call Get_time(tr_time_e)
+
+  if (tProcInfo_G%QROOT ) then
+    print*,' multiply exp took... ', tr_time_e-tr_time_s
+  end if
+
+
 !   Perform the backward fourier transform to obtain A(x,y,z2,zbar+h)
 
 !  CALL Transform(tTransInfo_G%bplan, &
@@ -752,6 +791,12 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sAr, sAi, qOK)
   CALL fftwnd_f77_mpi(tTransInfo_G%bplan,1,sA_local,&
                       work,USE_WORK,&
                       FFTW_NORMAL_ORDER) 
+
+  call Get_time(tr_time_e)
+
+  if (tProcInfo_G%QROOT ) then
+    print*,' back transform took... ', tr_time_e-tr_time_s
+  end if
 
 
 
@@ -772,6 +817,12 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sAr, sAi, qOK)
 !      Now solve for the absorbing boundary layer
 
   CALL AbsorptionStep(sA_local,work,h,tTransInfo_G%loc_nz2,ffact)
+
+  call Get_time(tr_time_e)
+
+  if (tProcInfo_G%QROOT ) then
+    print*,' absorption step took... ', tr_time_e-tr_time_s
+  end if
 
 
   DEALLOCATE(work)
