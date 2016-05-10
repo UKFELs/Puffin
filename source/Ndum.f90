@@ -8,15 +8,15 @@ USE Stiffness
 USE Setup
 USE RK4int
 use dumpFiles 
-use hdf5_puff
+!use hdf5_puff
 use pln_puff
-
+use ParaField
 
 implicit none
 
 contains
 
-subroutine diffractIM(sA, sAr, Ar_local, local_rows, sStep,&
+subroutine diffractIM(local_rows, sStep,&
                       frecvs, fdispls, lrecvs, ldispls, &
                       qDiffrctd, qOK)
 
@@ -31,8 +31,6 @@ subroutine diffractIM(sA, sAr, Ar_local, local_rows, sStep,&
 
   implicit none
 
-  real(kind=wp), intent(inout) :: sA(:)
-  real(kind=wp), intent(inout), allocatable :: sAr(:), Ar_local(:)
   real(kind=wp), intent(in) :: sStep
   integer(kind=ip), intent(in) :: local_rows
   integer(kind=ip), intent(in) :: frecvs(:), fdispls(:), lrecvs(:), ldispls(:)
@@ -44,28 +42,33 @@ subroutine diffractIM(sA, sAr, Ar_local, local_rows, sStep,&
   qOK = .false.
   
 
-  
-  DEALLOCATE(sAr)
-  CALL innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
-  DEALLOCATE(Ar_local)
+!      Change data layout to FFTW -
+
+  call redist2FFTWlt()
+
+
 
   CALL DiffractionStep(sStep,&
        frecvs,&
        fdispls,&
-       sA,&
+       tre_fft, tim_fft,&
        qOKL)
   if (.not. qOKL) goto 1000
 
-  ALLOCATE(sAr(2*ReducedNX_G*ReducedNY_G*NZ2_G))
-  ALLOCATE(Ar_local(2*local_rows))
+!  ALLOCATE(sAr(2*ReducedNX_G*ReducedNY_G*NZ2_G))
+!  ALLOCATE(Ar_local(2*local_rows))
 
-  CALL getAlocalFL(sA,Ar_local)
+!  CALL getAlocalFL(sA,Ar_local)
 
-  CALL local2globalA(Ar_local,sAr,mrecvs,mdispls,tTransInfo_G%qOneD)
+!  CALL local2globalA(Ar_local,sAr,mrecvs,mdispls,tTransInfo_G%qOneD)
 
   qDiffrctd = .true.
   
-    
+
+
+!    Change back to wiggler data layout
+
+  call redistbackFFT()
 
 
 !              Set error flag and exit
@@ -90,7 +93,7 @@ end subroutine diffractIM
 
 
 
-subroutine writeIM(sA, Ar_local, sZ, &
+subroutine writeIM(sZ, &
                    zDataFileName, iStep, iCstep, iWriteNthSteps, &
                    lrecvs, ldispls, &
                    iIntWriteNthSteps, nSteps, qOK)
@@ -106,37 +109,50 @@ subroutine writeIM(sA, Ar_local, sZ, &
 
   implicit none
 
-  real(kind=wp), intent(inout) :: sA(:), Ar_local(:), sZ
+  real(kind=wp), intent(inout) :: sZ
   integer(kind=ip), intent(in) :: iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps
   integer(kind=ip), intent(in) :: lrecvs(:), ldispls(:), iCstep
   character(32_IP), intent(in) :: zDataFileName
   logical, intent(inout) :: qOK
 
+  integer error
+
   logical :: qOKL, qWriteInt, qWriteFull
 
   qOK = .false.
 
-  call innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
+
+  !call UpdateGlobalField(sA)
+
+
+  !call innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
 
   call int_or_full(istep, iIntWriteNthSteps, iWriteNthSteps, &
                    qWriteInt, qWriteFull, qOK)
 
-  if (wrMeth_G == 'sdds') then
+  if (qsdds_G) then
 
-    call wr_sdds(sA, sZ, iCstep, tArrayA, tArrayE, tArrayZ, &
+    call wr_sdds(sZ, iCstep, tArrayA, tArrayE, tArrayZ, &
                  iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
                  zDataFileName, qWriteFull, &
                  qWriteInt, qOK)
 
-  else if (wrMeth_G == 'hdf5') then
+  end if
 
-    call wr_h5()
+  if (qhdf5_G) then
 
-  else 
-
-    call wr_pln()
+!    call wr_h5(sA, sZ, tArrayA, tArrayE, tArrayZ, &
+!                 iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
+!                 zDataFileName, qWriteFull, &
+!                 qWriteInt, qOK)
 
   end if
+
+!  else 
+
+!    call wr_pln()
+
+!  end if
 
 !              Set error flag and exit
 

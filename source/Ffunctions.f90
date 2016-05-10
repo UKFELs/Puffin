@@ -26,10 +26,13 @@ CONTAINS
     REAL(KIND=WP), INTENT(IN) :: x(:)
     REAL (KIND=WP),INTENT(IN) :: xc,sigma
 ! Local vars
-    REAL(KIND=WP) :: gaussian(SIZE(x)),&
-         ngaussian(SIZE(x))
+    REAL(KIND=WP), allocatable :: gaussian(:),&
+         ngaussian(:)
     REAL(KIND=WP) ::pi,s_twopi_sigma
 
+
+    allocate(gaussian(SIZE(x)),&
+         ngaussian(SIZE(x)))
 
 ! BEGIN:-
 
@@ -39,6 +42,10 @@ CONTAINS
     ngaussian=exp(-((x-xc)/sigma)**2/2.0_WP)
 	
     gaussian=ngaussian
+
+    return
+
+    deallocate(gaussian)
 
   END FUNCTION gaussian
 
@@ -55,7 +62,7 @@ CONTAINS
 !
     REAL(KIND=WP),INTENT(IN) ::xstart,xend
     INTEGER(KIND=IP),INTENT(IN) :: n
-    REAL(KIND=WP),DIMENSION(n) :: linspace
+    REAL(KIND=WP),DIMENSION(:), allocatable :: linspace
     
 ! Local vars:-
 
@@ -63,6 +70,8 @@ CONTAINS
     INTEGER(KIND=IP) :: i
 
 ! BEGIN:-
+
+    allocate(linspace(n))
 
     IF(n>1) THEN
        dx=(xend-xstart)/REAL((n-1),KIND=WP)
@@ -72,6 +81,9 @@ CONTAINS
     ELSE
        STOP "*** Number of points must be >0 in LINSPACE ***"
     END IF
+
+    return
+    deallocate(linspace)
 
   END FUNCTION linspace
 
@@ -489,13 +501,6 @@ CONTAINS
 
 !********************************************************
 
-
-
-
-
-
-
-
   FUNCTION RaleighLength(srho,sigma)
 
 ! sigma of the seed field
@@ -511,5 +516,55 @@ CONTAINS
     RaleighLength = sigma**2/(2.0_WP*srho)
 
   END FUNCTION RaleighLength
+
+! ####################################################
+
+  function arr_mean_para(s_ar)
+
+! Return the mean of an array of real values
+
+    use ParallelSetUp
+
+    implicit none
+
+    real(kind=wp), intent(in) :: s_ar(:)
+    real(kind=wp) :: arr_mean_para
+    real(kind=wp) :: loc_sum, glob_sum    
+
+    loc_sum = sum(s_ar)  ! local sum
+
+    call sum_mpi_real(loc_sum,glob_sum)  ! sum globally
+
+    arr_mean_para = glob_sum / size(s_ar)  ! get mean
+
+  end function arr_mean_para
+
+
+
+
+  function arr_mean_para_weighted(s_ar, weights)
+
+! Return the mean of an array of real values
+
+    use ParallelSetUp
+
+    implicit none
+
+    real(kind=wp), intent(in) :: s_ar(:), weights(:)
+    real(kind=wp) :: arr_mean_para_weighted
+    real(kind=wp) :: loc_sum, glob_sum, glob_weight_sum, &
+                     loc_weight_sum
+
+    loc_sum = sum(weights * s_ar)  ! local sum
+    loc_weight_sum = sum(weights)
+
+    call sum_mpi_real(loc_sum,glob_sum)  ! sum globally
+    call sum_mpi_real(loc_weight_sum,glob_weight_sum)  ! sum globally
+
+    arr_mean_para_weighted = glob_sum / glob_weight_sum  ! get mean
+
+  end function arr_mean_para_weighted
+
+
 
 END MODULE Functions

@@ -16,6 +16,8 @@ USE Globals
 USE electronInit
 USE gMPsFromDists
 use avwrite
+use MASPin
+use parafield
 
 IMPLICIT NONE
 
@@ -75,6 +77,8 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
     NX_G  = iNN(iX_CG)
     NY_G  = iNN(iY_CG)
     NZ2_G = iNN(iZ2_CG)
+
+    ntrnds_G = NX_G * NY_G
 
     IF (NX_G == 1 .AND. NY_G == 1) THEN
     
@@ -136,20 +140,35 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 
 
 
-
+    fx_G = fx
+    fy_G = fy
 
 
     if (zUndType == 'curved') then
 
       aw_rms =  aw / sqrt(2.0_wp)
 
+      kx_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2)) ! Giving equal focusing for now....
+      ky_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+
+      sKBetaX_G = aw / sqrt(2.0_wp * sEta_G) / sGammaR_G * kx_und_G
+      sKBetaY_G = aw / sqrt(2.0_wp * sEta_G) / sGammaR_G * ky_und_G
+
+
+      fx_G = 0   ! Temp fix for initialization bug
+      fy_G = 1
+
     else if (zUndType == 'planepole') then
 
       aw_rms =  aw / sqrt(2.0_wp)
+      fx_G = 0   ! Temp fix for initialization bug
+      fy_G = 1
 
     else if (zUndType == 'helical') then
 
       aw_rms = aw
+      fx_G = 1   ! Temp fix for initialization bug
+      fy_G = 1
 
     else
 
@@ -162,20 +181,16 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
              gamr
 
     sEta_G = (1.0_WP - sbetaz) / sbetaz
-    sKBeta_G = aw_rms / 2.0_WP / sFocusFactor / rho / gamr
     sKappa_G = aw / 2.0_WP / rho / gamr
+    sKBeta_G = sKappa_G ! aw_rms / 2.0_WP / sFocusFactor / rho / gamr
 
 
-    sFocusfactor_save_G = sFocusFactor
-
-    sFocusfactor_G = sFocusfactor_save_G ! * modfact1
+    sFocusFactor_G = sFocusFactor
 
 
-    fx_G = fx
-    fy_G = fy
 
-    !sAw_save_G = ((1 / (2.0_WP*rho*sFocusFactor*kbeta)**2) *   &
-    !        (1.0_WP - (1.0_WP / ( 1.0_WP + eta )**2) ) - 1.0_WP) ** (-0.5_WP)
+
+
 
 
 
@@ -193,6 +208,9 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 
 
 
+    cf1_G = sEta_G / sKappa_G**2
+
+
     diffstep = dStepFrac * 4.0_WP * pi * rho
     sBeta_G = sBeta
 
@@ -202,19 +220,49 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
     NBZ2_G = 37_IP
 
 
-    zUndType_G = zUndType
+!    if (qSwitch(iOneD_CG)) then
+!      zUndType_G = ''
+!    else
+      zUndType_G = zUndType
+!    end if
 
-    kx_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2))
-    ky_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2))
 
-!     Get the number of nodes
 
-    iNumberNodes_G = iNN(iX_CG)*iNN(iY_CG)*iNN(iZ2_CG)
 
-    IF(iNumberNodes_G <= 0_IP) THEN
-       CALL Error_log('iNumberNodes_G <=0.',tErrorLog_G)
-       GOTO 1000    
-    END IF
+
+!  Get focusing for 'reference' beam energy
+
+    if (zUndType_G == 'curved') then
+
+      kx_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2)) ! Giving equal focusing for now....
+      ky_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+
+      sKBetaX_G = aw / sqrt(2.0_wp * sEta_G) / sGammaR_G * kx_und_G
+      sKBetaY_G = aw / sqrt(2.0_wp * sEta_G) / sGammaR_G * ky_und_G
+
+    else if (zUndType_G == 'planepole') then
+
+      kx_und_G = 0.0_wp
+      ky_und_G = 0.0_wp
+
+      sKBetaX_G = 0.0_wp
+      sKBetaY_G = aw / 2 / sqrt(2.0_wp) / sRho_G / sGammaR_G
+
+    else if (zUndType_G == 'helical') then
+
+      sKBetaX_G = aw / 2 / sqrt(2.0_wp) / sRho_G / sGammaR_G
+      sKBetaY_G = aw / 2 / sqrt(2.0_wp) / sRho_G / sGammaR_G
+
+    else
+
+      sKBetaX_G = aw / 2 / sqrt(2.0_wp) / sRho_G / sGammaR_G
+      sKBetaY_G = aw / 2 / sqrt(2.0_wp) / sRho_G / sGammaR_G
+
+    end if
+
+!    sKBetaXSF_G = 10.0_wp
+!    sKBetaYSF_G = 10.0_wp
+
 
 
     qOneD_G                  = qSwitch(iOneD_CG)
@@ -227,20 +275,70 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
     qDump_G                  = qSwitch(iDump_CG)
 
 
+!    if ((sKBetaXSF_G <= 0) .and. (sKBetaYSF_G <= 0) ) then
+!      qFocussing_G = .false.
+!    end if
 
-    call initPFile(tPowF, qFormatted) ! initialize power file type
-    
+
+    if (qFocussing_G) then
+
+      if (sKBetaXSF_G > 0) then
+        sKBetaX_G = sKBetaXSF_G
+      else
+        sKBetaXSF_G = 0.0_wp
+        if (tProcInfo_G%qRoot) print*, 'No strong focusing in x'
+      end if
+
+      if (sKBetaYSF_G > 0) then
+        sKBetaY_G = sKBetaYSF_G
+      else
+        sKBetaYSF_G = 0.0_wp
+        if (tProcInfo_G%qRoot) print*, 'No strong focusing in y'
+      end if
+
+    end if
+
+
+    sMNum_G = 1_wp
+
+
+
+    if (sRedistLen_G < 0) sRedistLen_G = 4.0_wp
+
+    if (iRedistStp_G < 0) iRedistStp_G = 60_ip
+
+
+
+!     Get the number of nodes
+
+    iNumberNodes_G = iNN(iX_CG)*iNN(iY_CG)*iNN(iZ2_CG)
+
+
+
+
+!     Get n_pk_bar
+!
+!     DDDOOOO IIITTTT
+! 
+
+
+    IF(iNumberNodes_G <= 0_IP) THEN
+       CALL Error_log('iNumberNodes_G <=0.',tErrorLog_G)
+       GOTO 1000    
+    END IF
+
+
+    dz2_I_G = sLengthOfElmZ2_G
+    call getCurrNpts(dz2_I_G, npts_I_G)
 
 
     tArrayE(:)%tFileType%qFormatted = qFormatted
     tArrayA(:)%tFileType%qFormatted = qFormatted
     tArrayZ%tFileType%qFormatted = qFormatted
 
-!    Set output data file format:
-!    Can be sdds, hdf5 or blank (plain data)
 
-    wrMeth_G = 'sdds'
-
+!    qEquiXY_G = .false.
+!    nseqparts_G = 1000_ip
 
 
 !     Set error flag and exit
@@ -257,8 +355,9 @@ END SUBROUTINE passToGlobals
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                             
-SUBROUTINE SetUpInitialValues(nseeds, freqf, SmeanZ2, qFlatTopS, sSigmaF, &
-                              sLengthOfElm, sA0_x, sA0_y, sA, qOK)
+SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
+                              qFlatTopS, sSigmaF, &
+                              sA0_x, sA0_y, qOK)
 
     IMPLICIT NONE
 !
@@ -278,12 +377,12 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, SmeanZ2, qFlatTopS, sSigmaF, &
 ! qOK                OUTPUT   Error flag
 
     INTEGER(KIND=IP), INTENT(IN) :: nseeds
-    REAL(KIND=WP), INTENT(IN)    :: sSigmaF(:,:), SmeanZ2(:), freqf(:)
+    REAL(KIND=WP), INTENT(IN)    :: sSigmaF(:,:), SmeanZ2(:), &
+                                    freqf(:), ph_sh(:)
     LOGICAL, INTENT(IN) :: qFlatTopS(:)
-    REAL(KIND=WP), INTENT(IN)    :: sLengthOfElm(:)
     REAL(KIND=WP), INTENT(IN)    :: sA0_x(:)
     REAL(KIND=WP), INTENT(IN)    :: sA0_y(:)
-    REAL(KIND=WP), INTENT(INOUT) :: sA(:)
+!    REAL(KIND=WP), INTENT(INOUT) :: sA(:)
     LOGICAL,       INTENT(OUT)   :: qOK
 
 !                LOCAL ARGS
@@ -297,8 +396,9 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, SmeanZ2, qFlatTopS, sSigmaF, &
     LOGICAL           :: qInitialGauss
     INTEGER(KIND=IP)  :: iZ2,iXY,i,lowind,highind,error,NN(3)
     REAL(KIND=WP)     :: z2bar,rho
-    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE :: sAx_mag,sAy_mag,&
-                                              sAreal,sAimag
+    REAL(KIND=WP)     :: sLengthOfElm(3)
+!    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE :: sAx_mag,sAy_mag,&
+!                                              sAreal,sAimag
 
 !     Set error flag to false
 
@@ -310,16 +410,23 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, SmeanZ2, qFlatTopS, sSigmaF, &
     NN(iX_CG) = NX_G
     NN(iY_CG) = NY_G
     NN(iZ2_CG) = NZ2_G
-    
-    ALLOCATE(sAreal(iXY*iZ2),sAimag(iXY*iZ2))
+
+    sLengthOfElm(iX_CG) = sLengthOfElmX_G
+    sLengthOfElm(iY_CG) = sLengthOfElmY_G
+    sLengthOfElm(iZ2_CG) = sLengthOfElmZ2_G
+
+!    ALLOCATE(sAreal(iXY*iZ2),sAimag(iXY*iZ2))
    
-    CALL getSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,freqf, &
-                  nseeds,sLengthOfElm,sAreal,sAimag)
+!    CALL getSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,freqf, &
+!                  ph_sh, nseeds,sLengthOfElm,sAreal,sAimag)
 
-    sA(1:iXY*iZ2) = sAreal
-    sA(iXY*iZ2 + 1:2*iXY*iZ2) = sAimag
+    call getPaSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,&
+                    freqf,ph_sh,nseeds,sLengthOfElm)
 
-    DEALLOCATE(sAreal,sAimag)
+!    sA(1:iXY*iZ2) = sAreal
+!    sA(iXY*iZ2 + 1:2*iXY*iZ2) = sAimag
+
+!    DEALLOCATE(sAreal,sAimag)
 
 
 !     Set error flag and exit
@@ -364,6 +471,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
     INTEGER(KIND=IPL) :: sendbuff, recvbuff
     INTEGER sendstat(MPI_STATUS_SIZE)
     INTEGER recvstat(MPI_STATUS_SIZE)
+    character(32) :: fname_temp
     LOGICAL :: qOKL
 
     sQOneE = 1.60217656535E-19
@@ -398,7 +506,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
 
 
 
-    if (qSimple) then
+    if (iInputType_G == iGenHom_G) then
 
       CALL electron_grid(RealE,NE,noise, &
                          Z,nbeams, LenEPulse,sigma, beamCenZ2, gamma_d, &
@@ -406,9 +514,21 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
                          chirp,mag,fr,qOKL)
       IF (.NOT. qOKL) GOTO 1000
 
-    else 
+    else if (iInputType_G == iReadDist_G) then
 
       call getMPs(fname, nbeams, Z, noise, eThresh)
+
+    else if (iInputType_G == iReadMASP_G) then
+
+      fname_temp = fname(1)
+      call readMASPfile(fname_temp)
+
+    else 
+
+      if (tProcInfo_G%qRoot) print*, 'No beam input type specified....'
+      if (tProcInfo_G%qRoot) print*, 'Exiting...'
+      call UnDefineParallelLibrary(qOKL)
+      stop
 
     end if
 
@@ -425,12 +545,18 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
 
     if (tProcInfo_G%qRoot) then
 
+
       print*, ''
+
       print*, '-----------------------------------------'
+
       print*, 'Total number of macroparticles = ', iGloNumElectrons_G
+
       print*, 'Avg num of real electrons per macroparticle Nk = ', &
                                     totNk_glob / iGloNumElectrons_G
-      print*, 'Total number of electrons modelled = ', totNk_glob
+
+      print*, 'Total number of real electrons modelled = ', &
+                        totNk_glob
 
 
     end if
@@ -493,13 +619,81 @@ END SUBROUTINE PopMacroElectrons
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,frs,nSeeds,dels,xfieldt,yfieldt)
+
+
+
+subroutine getPaSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
+                    frs,ph_sh,nSeeds,dels)
+
+
 
 !             ARGUMENTS
 
   INTEGER(KIND=IP), INTENT(IN) :: NN(:)
   REAL(KIND=WP), INTENT(IN) :: sigs(:,:), cens(:), rho, frs(:), &
-                               magxs(:), magys(:), dels(:)
+                               ph_sh(:), magxs(:), magys(:), dels(:)
+  LOGICAL, INTENT(IN) :: qFTs(:)
+  INTEGER(KIND=IP), INTENT(IN) :: nSeeds
+  integer :: error
+
+
+!  1st gen front seed if present
+
+
+
+  if ((ffe_GGG > 0) .and. (ffe-ffs+1 > 0) ) then
+
+    call getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
+                  frs,ph_sh,nSeeds,dels,ffs, ffe, &
+                  fr_rfield,fr_ifield)
+
+  end if
+
+!  CALL MPI_BARRIER(tProcInfo_G%comm,error)
+!  call mpi_finalize(error)
+!  stop
+
+
+!  2nd gen active field seed
+
+
+  call getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
+                frs,ph_sh,nSeeds,dels,fz2, ez2, &
+                ac_rfield,ac_ifield)
+
+
+
+
+!  3rd gen back seed section if present
+
+
+  if ((eee_GGG > 0) .and. (eee-ees+1 > 0) ) then
+
+    call getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
+                  frs,ph_sh,nSeeds,dels,ees, eee, &
+                  bk_rfield,bk_ifield)
+
+  end if
+
+
+
+end subroutine getPaSeeds
+
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+SUBROUTINE getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
+                    frs,ph_sh,nSeeds,dels,iz2_s, iz2_e, &
+                    xfieldt,yfieldt)
+
+!             ARGUMENTS
+
+  INTEGER(KIND=IP), INTENT(IN) :: NN(:), iz2_s, iz2_e
+  REAL(KIND=WP), INTENT(IN) :: sigs(:,:), cens(:), rho, frs(:), &
+                               ph_sh(:), magxs(:), magys(:), dels(:)
   LOGICAL, INTENT(IN) :: qFTs(:)
   INTEGER(KIND=IP), INTENT(IN) :: nSeeds
   REAL(KIND=WP), INTENT(OUT) :: xfieldt(:), yfieldt(:)
@@ -526,7 +720,8 @@ SUBROUTINE getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,frs,nSeeds,dels,xfieldt,yf
   DO ind = 1, nSeeds
   
     CALL getSeed(NN(:),sigs(ind,:),cens(ind),magxs(ind),magys(ind),qFTs(ind), &
-                 qRndFj_G(ind), sSigFj_G(ind), rho,frs(ind), dels,xfield,yfield)
+                 qRndFj_G(ind), sSigFj_G(ind), rho,frs(ind), ph_sh(ind), &
+                 dels,iz2_s, iz2_e,xfield,yfield)
 
     xfieldt = xfieldt + xfield
     yfieldt = yfieldt + yfield
@@ -539,34 +734,50 @@ END SUBROUTINE getSeeds
 
 !*****************************************************
 
-SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, sSigR, rho,fr,dels,xfield,yfield)
+SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
+                   sSigR, rho,fr,ph_sh, &
+                   dels,iz2_s, iz2_e, xfield,yfield)
 
   IMPLICIT NONE
 
 !             ARGUMENTS
 
-  INTEGER(KIND=IP), INTENT(IN) :: NN(:)
-  REAL(KIND=WP), INTENT(IN) :: sig(:), cen, sSigR, rho, fr, magx, magy, dels(:)
+  INTEGER(KIND=IP), INTENT(IN) :: NN(:), iz2_s, iz2_e
+  REAL(KIND=WP), INTENT(IN) :: sig(:), cen, sSigR, rho, fr, ph_sh,&
+                               magx, magy, dels(:)
   LOGICAL, INTENT(IN) :: qFT, qRnd
   REAL(KIND=WP), INTENT(OUT) :: xfield(:), yfield(:)
 
 !             LOCAL ARGS
 
-  REAL(KIND=WP) :: xnds(NN(iX_CG)), ynds(NN(iY_CG)), &
-                   z2nds(NN(iZ2_CG)), &
-                   xenv(NN(iX_CG)), yenv(NN(iY_CG)), &
-                   z2env(NN(iZ2_CG)), oscx(NN(iZ2_CG)), &
-                   oscy(NN(iZ2_CG))
+  REAL(KIND=WP), allocatable :: xnds(:), ynds(:), &
+                   z2nds(:), &
+                   xenv(:), yenv(:), &
+                   z2env(:), oscx(:), &
+                   oscy(:)
  
-  REAL(KIND=WP) :: lx, ly, lz2
+  REAL(KIND=WP) :: lx, ly, lz2, z2sl, z2el
                    
-  INTEGER(KIND=IP) :: ind1, ind2, ind3, gind
+  INTEGER(KIND=IP) :: ind1, ind2, ind3, gind, nz2l
+
 
 !     Sample length of the field in each dimension
 
   lx = dels(iX_CG) * (NN(iX_CG) - 1_IP)
   ly = dels(iY_CG) * (NN(iY_CG) - 1_IP)
-  lz2 = dels(iZ2_CG) * (NN(iZ2_CG) - 1_IP)
+
+  z2sl = dels(iZ2_CG) * (iz2_s - 1_IP)
+  z2el = dels(iZ2_CG) * (iz2_e - 1_IP)
+
+  nz2l = iz2_e - iz2_s + 1
+
+
+  allocate(xnds(NN(iX_CG)), ynds(NN(iY_CG)), &
+           z2nds(nz2l), &
+           xenv(NN(iX_CG)), yenv(NN(iY_CG)), &
+           z2env(nz2l), oscx(nz2l), &
+           oscy(nz2l))
+
 
 !     Coordinates of field nodes in x, y and z2 (sample points)
 
@@ -583,7 +794,9 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, sSigR, rho,fr,dels,xfield,yfie
     ynds = linspace(-ly/2_WP, ly/2_WP, NN(iY_CG))
   END IF  
 
-  z2nds = linspace(0.0_WP,lz2,NN(iZ2_CG))
+
+!  call linspacesr(z2sl,z2el,nz2l, z2nds)
+  z2nds = linspace(z2sl,z2el,nz2l)
 
 !     Profile in each dimension
 
@@ -629,9 +842,6 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, sSigR, rho,fr,dels,xfield,yfie
 
     end if
 
-
-
-
   ELSE
   
     z2env = gaussian(z2nds,cen,sig(iZ2_CG))
@@ -641,13 +851,12 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, sSigR, rho,fr,dels,xfield,yfie
 
 !     x and y polarized fields in z2
 
-  oscx = -z2env * cos(fr * z2nds / (2.0_WP * rho))
-  oscy = z2env * sin(fr * z2nds / (2.0_WP * rho))
-
+  oscx = -z2env * cos(fr * z2nds / (2.0_WP * rho) - ph_sh)
+  oscy = z2env * sin(fr * z2nds / (2.0_WP * rho) - ph_sh)
 
 !     Full 3D field
 
-  do ind1 = 1, NN(iZ2_CG)
+  do ind1 = 1, nz2l
     do ind2 = 1,NN(iY_CG)
       do ind3 = 1,NN(iX_CG)
         
@@ -658,6 +867,14 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, sSigR, rho,fr,dels,xfield,yfie
       end do
     end do     
   end do
+
+
+deallocate(xnds, ynds, &
+           z2nds, &
+           xenv, yenv, &
+           z2env, oscx, &
+           oscy)
+
 
 END SUBROUTINE getSeed
 

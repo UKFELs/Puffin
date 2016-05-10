@@ -31,14 +31,16 @@ implicit none
 contains
 
   subroutine dppdz_r_f(sx, sy, sz2, spr, spi, sgam, &
-                       sdpr, sz, qOK)
+                       sZ, sdpr, qOK)
 
   	implicit none
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:), sz
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:), sZ
     real(kind=wp), intent(out) :: sdpr(:)
     real(kind=wp) :: sz_n
+
+    real(kind=wp) :: szt
 
     logical, intent(inout) :: qOK
 
@@ -47,105 +49,27 @@ contains
 
     qOK = .false.
 
-    if (zUndType_G == 'curved') then
 
-!     For curved pole undulator
-
-
-        sdpr = sInv2rho * (  n2col * cosh(kx_und_G * sx) * cosh(ky_und_G * sy) &
-                            * sin(ZOver2rho)  &
-                            - sEta_G * sp2 / sKappa_G**2 *    &
-                            sField4ElecReal )  +      &
-               ( sKappa_G * spi / sgam * (1 + sEta_G * sp2) * &
-                     sqrt(sEta_G) * sInv2rho / kx_und_G  *    & 
-                     cosh(sx * kx_und_G) * sinh(sy * ky_und_G) *  &
-                     n2col * cos(ZOver2rho) )
-    
-
-
-!        sdpr = sInv2rho * ( cosh(sx * kx_und_G) * &
-!                        sinh(sy * ky_und_G) * sqrt(2.0_WP) &
-!                        * sqrt(sEta_G) * Lj * spi  &      
-!                        *  cos(ZOver2rho) &
-!                        / (sqrt(salphaSq) * ky_und_G) + &
-!                        cosh(sx * kx_und_G) &
-!                        * cosh(sy * ky_und_G) * sin(ZOver2rho) - &
-!                        sEta_G * sp2 / sKappa_G**2 * sField4ElecReal)
+!    case where qFmod_G = .true. (undulator period oscillation) doesn't currently work...
+!    Below needs to be added to magnetic field module...
+!    ...so that magnetic field osc is sin(sz_n), where sz_n is defined below...
 !
-        
-
-    else if (zUndType_G == 'planepole')  then
-
-!     Re(p_perp) equation for plane-poled undulator
-
-        sdpr = sInv2rho * ( n2col * cosh( sqrt(sEta_G) * sInv2rho * sy) & 
-                            * sin(ZOver2rho) & 
-                            - sEta_G * sp2 / sKappa_G**2 *    &
-                            sField4ElecReal ) & 
-               + ( sKappa_G * spi / sgam * (1 + sEta_G * sp2)  &
-                   * sinh( sqrt(sEta_G) * sInv2rho * sy ) &
-                   * n2col * cos(ZOver2rho) )
-
-
-
-!        sdpr = sInv2rho * (-sField4ElecReal*salphaSq * &
-!                        sEta_G * sp2 &
-!                        + ((sqrt(6.0_WP) *sRho_G) /sqrt(salphaSq)) * &
-!                        sinh(sInv2rho * sy &
-!                        * sqrt(sEta_G))  * cos(ZOver2rho) * Lj * &
-!                        spi + &
-!                        cosh(sInv2rho * sy * &
-!                        sqrt(sEta_G)) *sin(ZOver2rho))
-
-    else if (zUndType_G == 'helical') then
+!    if (qFMod_G) then
+!      sz_n =  ( 1_wp + t_mag_G*sin(t_fr_G * sz) )  / 2_wp / sRho_G * sz
+!      !if (tProcInfo_G%qRoot) print*, sz_n, sz, t_mag_G, t_fr_G
+!    else 
+!      sz_n = ZOver2rho
+!    end if 
 
 !$OMP WORKSHARE
-
-        sdpr = sInv2rho * ( n2col * sin(ZOver2rho)  & 
-                            - sEta_G * sp2 / sKappa_G**2 *    &
-                            sField4ElecReal ) & 
-               + ( sKappa_G * spi / sgam * (1 + sEta_G * sp2) &
-                   * sqrt(sEta_G) * sInv2rho * n2col * (     &
-                    -sx * sin( ZOver2rho )  + sy * cos( ZOver2rho ) ) )
-
+    sdpr = sInv2rho * ( n2col * byu  & 
+                        - sEta_G * sp2 / sKappa_G**2 *    &
+                        sField4ElecReal ) & 
+           + sKappa_G * spi / sgam * (1 + sEta_G * sp2) &
+               * n2col * bzu
 !$OMP END WORKSHARE
 
-    else
-
-
-!     "normal" PUFFIN case with no off-axis undulator
-!     field variation
-
-!      if (qFocussing_G) then
-
-!        sdpr = sInv2rho * (fy_G*n2col*sin(ZOver2rho) - &
-!                        (salphaSq * sEta_G * sp2 * &
-!                        sField4ElecReal ) ) - & 
-!                        nd / Lj * & ! focusing term
-!                        (  ( kbeta**2 * sx) + (sEta_G / &
-!                        ( 1.0_WP + (sEta_G * sp2) ) * &
-!                        sdx * dp2f ) )
-!
-!      else 
-
-      if (qFMod_G) then
-        sz_n =  ( 1_wp + t_mag_G*sin(t_fr_G * sz) )  / 2_wp / sRho_G * sz
-        !if (tProcInfo_G%qRoot) print*, sz_n, sz, t_mag_G, t_fr_G
-      else 
-        sz_n = ZOver2rho
-      end if 
-
-        sdpr = sInv2rho * (fy_G * n2col *sin(sz_n) - &
-              ( sEta_G * sp2 / sKappa_G**2 * &
-              sField4ElecReal ) )
-
-
-!      end if
-
-
-    end if
-
-    ! Set the error flag and exit
+! Set the error flag and exit
 
     qOK = .true.
 
@@ -167,8 +91,8 @@ contains
 
 
 
-  subroutine dppdz_i_f(sx, sy, sz2, spr, spi, sgam, &
-                       sdpi, sZ, qOK)
+  subroutine dppdz_i_f(sx, sy, sz2, spr, spi, sgam, sZ, &
+                       sdpi, qOK)
 
     implicit none
 
@@ -177,6 +101,8 @@ contains
     real(kind=wp), intent(out) :: sdpi(:)
     real(kind=wp) :: sz_n
 
+    real(kind=wp) :: szt
+
     logical, intent(inout) :: qOK
 
     LOGICAL :: qOKL                   
@@ -184,111 +110,15 @@ contains
 
     qOK = .false.
 
-
-    if (zUndType_G == 'curved') then
-
-
-!     For curved pole undulator
-
-
-        sdpi = sInv2rho * ( n2col * kx_und_G / ky_und_G * &
-                            sinh(kx_und_G * sx) * sinh(ky_und_G * sy) &
-                            * sin(ZOver2rho)  &
-                            - sEta_G * sp2 / sKappa_G**2 *    &
-                            sField4ElecReal )  -      &
-               ( sKappa_G * spr / sgam * (1 + sEta_G * sp2) * &
-                     sqrt(sEta_G) * sInv2rho / kx_und_G  *    & 
-                     cosh(sx * kx_und_G) * sinh(sy * ky_und_G) *  &
-                     n2col * cos(ZOver2rho) )
-    
-
-
-
-!        sdpi = sInv2rho * ( -1.0_WP * sqrt(2.0_WP) * sqrt(sEta_G) &
-!                        * Lj * spr &
-!                        * cosh(sx * kx_und_G) &
-!                        * sinh(sy * ky_und_G) &
-!                        * cos(ZOver2rho)  / (sqrt(salphaSq) * ky_und_G) &
-!                        + sin(ZOver2rho) * kx_und_G/ky_und_G * &
-!                        sinh(sx * kx_und_G) * &
-!                        sinh(sy * ky_und_G) & 
-!                        - sEta_G * sp2 * salphaSq * &
-!                        sField4ElecImag)
-
-
-    else if (zUndType_G == 'planepole') then 
-
-!     Im(p_perp) equation for plane-poled undulator
-
-
-
-        sdpi = sInv2rho * ( 0_ip  &
-                            - sEta_G * sp2 / sKappa_G**2 *    &
-                            sField4ElecReal ) & 
-               - ( sKappa_G * spr / sgam * (1 + sEta_G * sp2) &
-                   * sinh( sqrt(sEta_G) * sInv2rho * sy ) &
-                   * n2col * cos(ZOver2rho) )
-
-
-
-
-
-!        sdpi = sInv2rho * (- sField4ElecImag * salphaSq * &
-!                        sEta_G * sp2  &
-!                        - ((sqrt(6.0_WP) * sRho_G)/ sqrt(salphaSq)) * &
-!                        sinh(sInv2rho * sy &
-!                        * sqrt(sEta_G)) * cos(ZOver2rho) * Lj * &
-!                        spr)
-
-    else if (zUndType_G == 'helical') then
-
 !$OMP WORKSHARE
-
-        sdpi = sInv2rho * (  n2col * cos(ZOver2rho)  & 
-                            - sEta_G * sp2 / sKappa_G**2 *    &
-                            sField4ElecReal ) & 
-               - ( sKappa_G * spr / sgam * (1 + sEta_G * sp2) &
-                   * sqrt(sEta_G) * sInv2rho * n2col * (   &
-                    -sx * sin( ZOver2rho )  + sy * cos( ZOver2rho ) ) )
-
+    sdpi = sInv2rho * (  n2col * bxu  & 
+           - sEta_G * sp2 / sKappa_G**2 * &
+                        sField4ElecReal ) & 
+           - sKappa_G * spr / sgam * (1 + sEta_G * sp2) &
+               * n2col * bzu
 !$OMP END WORKSHARE
 
-    else
-
-
-!     "normal" PUFFIN case with no off-axis undulator
-!     field variation
-
-!      if (qFocussing_G) then
-!
-!        sdpi = sInv2rho * (fx_G*n2col*cos(ZOver2rho) - &
-!                        (salphaSq * sEta_G * sp2 * &
-!                        sField4ElecImag ) ) + &
-!                        nd / Lj * & ! focusing term
-!                        (  ( kbeta**2 * sy) + (sEta_G / &
-!                        ( 1.0_WP + (sEta_G * sp2) ) * &
-!                        sdy * dp2f ) )
-!
-!
-!      else
-
-      if (qFMod_G) then
-        sz_n =  ( 1_wp + t_mag_G*sin(t_fr_G * sz) ) / 2_wp / sRho_G * sz
-      else 
-        sz_n = ZOver2rho
-      end if
-
-
-        sdpi = sInv2rho * (fx_G * n2col * cos(sz_n) - &
-                      ( sEta_G * sp2 / sKappa_G**2 * &
-                      sField4ElecImag ) )
-
-!      end if
-
-
-    end if
-
-    ! Set the error flag and exit
+! Set the error flag and exit
 
     qOK = .true.
 
@@ -514,6 +344,7 @@ contains
     allocate(sp2(ar_sz), sField4ElecReal(ar_sz), &
              sField4ElecImag(ar_sz))! , Lj(ar_sz))
 
+    allocate(bxu(ar_sz), byu(ar_sz), bzu(ar_sz))
 
   end subroutine alct_e_srtcts
 
@@ -529,8 +360,53 @@ contains
     deallocate(sp2, sField4ElecReal, &
              sField4ElecImag)! , Lj(ar_sz))
 
+    deallocate(bxu, byu, bzu)
 
   end subroutine dalct_e_srtcts
+
+
+
+  subroutine adjUndPlace(szl)
+
+    real(kind=wp) :: szl
+
+      if (qUndEnds_G) then
+
+        if (szl < 0) then
+
+          print*, 'undulator section not recognised, sz < 0!!'
+          stop
+
+        else if (sZl <= sZFS) then 
+
+          iUndPlace_G = iUndStart_G
+
+        else if (sZl >= sZFE) then
+ 
+          iUndPlace_G = iUndEnd_G
+
+        else if ((sZl > sZFS) .and. (sZl < sZFE)) then
+
+          iUndPlace_G = iUndMain_G
+
+        else 
+
+          print*, 'undulator section not recognised, sz > sZFE!!'
+          stop
+
+        end if
+
+      else
+
+        iUndPlace_G = iUndMain_G
+
+      end if
+
+  end subroutine adjUndPlace
+
+
+
+
 
 
 end module equations

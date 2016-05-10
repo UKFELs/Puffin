@@ -51,7 +51,7 @@ use undulator
 
 implicit none
 
-real(kind=wp), allocatable  :: sA(:)
+!real(kind=wp), allocatable  :: sA(:)
 real(kind=wp)    :: sZ
 integer(kind=ip) :: iL
 
@@ -59,7 +59,7 @@ logical          :: qOKL
 
 !           Read in data file and initialize system
 
-call init(sA,sZ,qOKL)
+call init(sZ,qOKL)
 
 
 
@@ -88,7 +88,7 @@ do iL = 1, modNum
 
   if (iElmType(iL) == iUnd) then 
  
-    call UndSection(iL, sA, sZ)
+    call UndSection(iL, sZ)
  
   else if (iElmType(iL) == iQuad) then
  
@@ -109,7 +109,7 @@ do iL = 1, modNum
 end do
 
 
-call cleanup(sA, sZ)   !     Clear arrays and stucts used during integration
+call cleanup(sZ)   !     Clear arrays and stucts used during integration
 
 
 CLOSE(UNIT=137,STATUS='KEEP') 

@@ -82,6 +82,7 @@ REAL(KIND=WP), ALLOCATABLE    :: sQe(:), beamCenZ2(:), gamma_d(:), &
 REAL(KIND=WP), ALLOCATABLE :: sA0_Re(:),sA0_Im(:)
 
 INTEGER(KIND=IP) :: nbeams
+logical, allocatable :: qMatched_A(:)
 
 !!!
 !!! END NEW
@@ -93,7 +94,7 @@ INTEGER(KIND=IP) :: nbeams
 !!!
 
 INTEGER(KIND=IP) :: nseeds
-REAL(KIND=WP), ALLOCATABLE :: freqf(:), SmeanZ2(:)
+REAL(KIND=WP), ALLOCATABLE :: freqf(:), ph_sh(:), SmeanZ2(:)
 LOGICAL, ALLOCATABLE :: qFlatTopS(:)
 REAL(KIND=WP), ALLOCATABLE    :: sSeedSigma(:,:)
 

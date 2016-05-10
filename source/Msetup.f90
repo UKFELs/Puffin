@@ -19,6 +19,7 @@ MODULE Setup
   USE Read_data
   USE checks
   use dumpFiles
+  use ParaField
 
 ! A module which allocates and initializes - or 
 ! destroys - the data used in Puffin.
@@ -29,7 +30,7 @@ MODULE Setup
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  SUBROUTINE init(sA, sZ, qOK)
+  SUBROUTINE init(sZ, qOK)
 
   USE InitVars
 
@@ -49,7 +50,7 @@ MODULE Setup
 ! 
 ! qOK            Error flag; .false. if no error
 
-  REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sA(:)
+!  REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sA(:)
   REAL(KIND=WP), INTENT(OUT) :: sZ
   LOGICAL, INTENT(OUT)   ::  qOK
 
@@ -82,6 +83,8 @@ MODULE Setup
 
   CALL FileNameNoExtension(zFileName, zFile, qOKL)
   IF (.NOT. qOKL) GOTO 1000
+
+  zFileName_G = zFile
 
 !     Initialise Error log for this run
 
@@ -144,16 +147,19 @@ MODULE Setup
        zUndType,          &
        sSeedSigma,        &
        freqf, SmeanZ2,    &
+       ph_sh, &
        qFlatTopS, nseeds, &
        sPEOut,            &
        iDumpNthSteps,     &
        qSwitches,         &
+       qMatched_A,        &
        qOKL)
   
   IF (.NOT. qOKL) GOTO 1000
 
 !    Check all the inputs e.g. wiggler and electron lengths etc 
 !    to avoid errors.
+
 
   CALL CheckParameters(sLenEPulse,iNumElectrons,nbeams,sLengthofElm,iNodes,&
                        sWigglerLength,sStepSize,nSteps,srho,saw,sgammar, &
@@ -163,6 +169,8 @@ MODULE Setup
   
   IF (.NOT. qOKL) GOTO 1000
 
+
+
 !    Setup FFTW plans for the forward and backwards transforms.
 
   CALL getTransformPlans4FEL(iNodes,qOKL)
@@ -171,30 +179,43 @@ MODULE Setup
 
 !    Calculate parameters for matched beam
 
-  IF (qSwitches(iMatchedBeam_CG)) THEN
 
-    if (qSimple) CALL MatchBeams(srho,sEmit_n,saw,sFocusfactor,&
-                    sgammar,iNumElectrons,sLenEPulse,&
-                    sSigmaGaussian,sSeedSigma(1,:),iNodes,sWigglerLength,&
-                    sLengthofElm,zUndType,iRedNodesX,iRedNodesY,fx,fy,qOKL)
 
-    IF (.NOT. qOKL) GOTO 1000
-  
-  END IF
 
-!     Check transverse sampled length of field is long enough to model 
-!     diffraction of the resonant frequency.
 
-  IF (qSwitches(iDiffraction_CG)) THEN
 
-    if (qSimple)  CALL CheckSourceDiff(sStepSize,nSteps,srho, &
-                                       sSigmaGaussian, &
-                                       sWigglerLength,&
-                                       sLengthofElm,iNodes,qOKL)
 
-    IF (.NOT. qOKL) GOTO 1000
-  
-  END IF
+
+
+
+!  IF (qMatched_A(1)) THEN
+!
+!    if (qSimple) CALL MatchBeams(srho,sEmit_n,saw,sFocusfactor,&
+!                    sgammar,gamma_d,iNumElectrons,sLenEPulse,&
+!                    sSigmaGaussian,sSeedSigma,iNodes,sWigglerLength,&
+!                    sLengthofElm,zUndType,iRedNodesX,iRedNodesY,fx,fy,qOKL)
+!
+!    IF (.NOT. qOKL) GOTO 1000
+!  
+!  END IF
+!
+!
+!
+!!     Check transverse sampled length of field is long enough to model 
+!!     diffraction of the resonant frequency.
+!
+!  IF (qSwitches(iDiffraction_CG)) THEN
+!
+!    if (qSimple)  CALL CheckSourceDiff(sStepSize,nSteps,srho, &
+!                                       sSigmaGaussian, &
+!                                       sWigglerLength,&
+!                                       sLengthofElm,iNodes,qOKL)
+!
+!    IF (.NOT. qOKL) GOTO 1000
+!  
+!  END IF
+
+
 
   call setupMods(lattFile, taper, sRho, nSteps, sStepSize)
       
@@ -209,9 +230,44 @@ MODULE Setup
 
   IF (.NOT. qOKL) GOTO 1000
 
+
+  if (.not. qOneD_G) then
+
+    if (qSimple) then
+
+      call stptrns(sSigmaGaussian, sLenEPulse, iNumElectrons, &
+                   sEmit_n, gamma_d, &
+                   qMatched_A, qMatchS_G, qFMesh_G, sSeedSigma)
+
+      sWigglerLength(iX_CG) = sLengthOfElmX_G * real((NX_G-1_ip),kind=wp)
+      sWigglerLength(iY_CG) = sLengthOfElmY_G * real((NY_G-1_ip),kind=wp)
+
+      sLengthOfElm(iX_CG) = sLengthOfElmX_G
+      sLengthOfElm(iY_CG) = sLengthOfElmY_G
+
+      delta_G = sLengthOfElmX_G*sLengthOfElmY_G*sLengthOfElmZ2_G
+
+    end if
+
+
+    if (qSwitches(iDiffraction_CG)) then
+
+      call CheckSourceDiff(sStepSize,nSteps,srho, &
+                           sSigmaGaussian, &
+                           sWigglerLength,&
+                           sLengthofElm,iNodes,qOKL)
+
+      if (.not. qOKL) goto 1000
+  
+    end if
+
+  end if
+
+  call initPFile(tPowF, qFormattedFiles) ! initialize power file type
+
 !     Generate macroelectrons
 
-  CALL PopMacroElectrons(qSimple, dist_f, sQe,iNumElectrons,q_noise,sZ,sLenEPulse,&
+  call PopMacroElectrons(qSimple, dist_f, sQe,iNumElectrons,q_noise,sZ,sLenEPulse,&
                          sSigmaGaussian,beamCenZ2,gamma_d,&
                          sElectronThreshold,chirp, mag, fr, &
                          nbeams, qOK)
@@ -225,9 +281,9 @@ MODULE Setup
 
   IF (qResume) THEN
 
-    CALL InitFD(sA,sZ,qOKL)
+    !CALL InitFD(sA,sZ,qOKL)
 
-    IF (.NOT. qOKL) GOTO 1000  
+    !IF (.NOT. qOKL) GOTO 1000  
   
 
   ELSE
@@ -235,15 +291,27 @@ MODULE Setup
 !    ...or if qResume is .FALSE. then we are setting up the data
 !    ourselves....
 
-    ALLOCATE(sA(nFieldEquations_CG*iNumberNodes_G)) 
-        
-    CALL SetUpInitialValues(nseeds, freqf, SmeanZ2, qFlatTopS,&
-                            sSeedSigma, sLengthOfElm,&
+!    ALLOCATE(sA(nFieldEquations_CG*iNumberNodes_G)) 
+
+    qStart_new = .true.
+
+    call getLocalFieldIndices(sRedistLen_G)
+
+
+
+
+  
+    CALL SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, qFlatTopS,&
+                            sSeedSigma, &
                             sA0_Re,&
                             sA0_Im,&
-                            sA,&
                             qOKL)
   
+
+!  CALL MPI_BARRIER(tProcInfo_G%comm,error)
+!  call mpi_finalize(error)
+!  stop
+
     start_step = 1_IP
   	
   END IF
@@ -259,6 +327,9 @@ MODULE Setup
    	
   CALL MPI_BARRIER(tProcInfo_G%comm,error) ! Sync MPI processes
   
+!  call mpi_finalize(error)
+!  stop
+
   ALLOCATE(lrecvs(tProcInfo_G%size),ldispls(tProcInfo_G%size))
     
   IF (tProcInfo_G%qRoot) PRINT*, 'reduced field sizes',&
@@ -401,7 +472,7 @@ MODULE Setup
 !               lrecvs, ldispls, &
 !               iIntWriteNthSteps, nSteps, qWDisp, qOKL)
 
-  if (qWrite)  call wr_sdds(sA, sZ, 0, tArrayA, tArrayE, tArrayZ, &
+  if (qWrite)  call wr_sdds(sZ, 0, tArrayA, tArrayE, tArrayZ, &
                  iIntWriteNthSteps, iWriteNthSteps, .true., &
                  zDataFileName, .true., .true., qOK)
 
@@ -439,12 +510,12 @@ MODULE Setup
   
   qSeparateStepFiles_G = qSeparateStepFiles
 
-  if (qSwitches(iDump_CG)) call DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
-  if (qSwitches(iDump_CG)) call DUMPDATA(sA,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
-                             iNumberElectrons_G,sZ,istep,tArrayA(1)%tFileType%iPage)
+!  if (qSwitches(iDump_CG)) call DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
+!  if (qSwitches(iDump_CG)) call DUMPDATA(sA,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
+!                             iNumberElectrons_G,sZ,istep,tArrayA(1)%tFileType%iPage)
 
   DEALLOCATE(s_Normalised_chi_G)
-
+ 
   qOK = .TRUE.
   
   GOTO 2000
@@ -457,7 +528,7 @@ MODULE Setup
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  SUBROUTINE cleanup(sA,sZ)
+  SUBROUTINE cleanup(sZ)
   
   IMPLICIT NONE
 
@@ -465,7 +536,7 @@ MODULE Setup
 !
 ! -Lawrence
 
-  REAL(KIND=WP), ALLOCATABLE, INTENT(INOUT)  :: sA(:)
+!  REAL(KIND=WP), ALLOCATABLE, INTENT(INOUT)  :: sA(:)
   REAL(KIND=WP), INTENT(IN) :: sZ
 
 ! Local
@@ -474,14 +545,14 @@ MODULE Setup
 
 !    Dump data for resumption
 
-  IF (qDump_G) CALL DUMPDATA(sA,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
-       iNumberElectrons_G,sZ,(istep-1),tArrayA(1)%tFileType%iPage)
+!  IF (qDump_G) CALL DUMPDATA(sA,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
+!       iNumberElectrons_G,sZ,(istep-1),tArrayA(1)%tFileType%iPage)
 
 !    Deallocate electron and field arrays
 
   DEALLOCATE(sElPX_G, sElPY_G, sElGam_G)
   DEALLOCATE(sElX_G, sElY_G, sElZ2_G)
-  DEALLOCATE(sA)
+!  DEALLOCATE(sA)
 
 !    Deallocate global positioning arrays
 

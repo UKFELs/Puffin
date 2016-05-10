@@ -22,6 +22,8 @@ use wigglerVar
 use FiElec1D
 use FiElec
 use gtop2
+use ParaField
+use bfields
 
 
 implicit none
@@ -29,12 +31,12 @@ implicit none
 contains
 
   subroutine getrhs(sz, &
-                    sA, &
+                    sAr, sAi, &
                     sx, sy, sz2, &
                     spr, spi, sgam, &
                     sdx, sdy, sdz2, &
                     sdpr, sdpi, sdgam, &                    
-                    sDADz, &
+                    sDADzr, sDADzi, &
                     qOK)
 
   use rhs_vars
@@ -52,7 +54,7 @@ contains
 ! sDADz - RHS of field source term
 
   real(kind=wp), intent(in) :: sz
-  real(kind=wp), intent(in) :: sA(:)
+  real(kind=wp), intent(in) :: sAr(:), sAi(:)
   real(kind=wp), intent(in)  :: sx(:), sy(:), sz2(:), &
                                 spr(:), spi(:), sgam(:)
 
@@ -60,10 +62,11 @@ contains
   real(kind=wp), intent(inout)  :: sdx(:), sdy(:), sdz2(:), &
                                    sdpr(:), sdpi(:), sdgam(:)
 
-  real(kind=wp), intent(inout) :: sDADz(:) !!!!!!!
+  real(kind=wp), intent(inout) :: sDADzr(:), sDADzi(:) !!!!!!!
   logical, intent(inout) :: qOK
 
   integer(kind=ipl) :: i, z2node
+  integer :: error
   logical qOKL
 
 !     Begin
@@ -96,7 +99,7 @@ contains
 !     Adjust undulator tuning
 
   call getAlpha(sZ)
-
+  call adjUndPlace(sZ)
 
 !$OMP PARALLEL
 
@@ -108,42 +111,53 @@ contains
   
   if (tTransInfo_G%qOneD) then
 
-! !DIR$ SIMD
+!$OMP WORKSHARE
  
-    p_nodes = floor(sz2 / dz2) + 1_IP
+    p_nodes = floor(sz2 / dz2) + 1_IP - (fz2-1)
 
-! !DIR$ END SIMD
-
+!$OMP END WORKSHARE
 
   else
 
 !$OMP WORKSHARE
 
-    p_nodes = (floor( (sx+halfx)  / dx)  + 1_IP) + &
-              (floor( (sy+halfy)  / dy) * ReducedNX_G )  + &   !  y 'slices' before primary node
-              (ReducedNX_G * ReducedNY_G * &
-                              floor(sz2  / dz2) )  ! transverse slices before primary node
+!    p_nodes = (floor( (sx+halfx)  / dx)  + 1_IP) + &
+!              (floor( (sy+halfy)  / dy) * ReducedNX_G )  + &   !  y 'slices' before primary node
+!              (ReducedNX_G * ReducedNY_G * &
+!                              floor(sz2  / dz2) ) - &
+!                              (fz2-1)*ntrnds_G  ! transverse slices before primary node
 
+    p_nodes = (floor( (sx+halfx)  / dx)  + 1_IP) + &
+              (floor( (sy+halfy)  / dy) * NX_G )  + &   !  y 'slices' before primary node
+              (NX_G * NY_G * &
+                              floor(sz2  / dz2) ) - &
+                              (fz2-1)*ntrnds_G  ! transverse slices before primary node
 !$OMP END WORKSHARE
 
   end if  
 
 
+
+
+
+
   if (tTransInfo_G%qOneD) then
 
     call getInterps_1D(sz2)
-    call getFFelecs_1D(sA)
-    call getSource_1D(sDADz, spr, spi, sgam, sEta_G)
+    if (qPArrOK_G) then
+      call getFFelecs_1D(sAr, sAi)
+      call getSource_1D(sDADzr, sDADzi,  spr, spi, sgam, sEta_G)
+    end if
 
   else
 
     call getInterps_3D(sx, sy, sz2)
-    call getFFelecs_3D(sA)    
-    call getSource_3D(sDADz, spr, spi, sgam, sEta_G)
+    if (qPArrOK_G) then 
+      call getFFelecs_3D(sAr, sAi)    
+      call getSource_3D(sDADzr, sDADzi, spr, spi, sgam, sEta_G)
+    end if
 
   end if
-
-
 
 
 
@@ -163,6 +177,9 @@ contains
 
 
     if (qElectronsEvolve_G) then   
+
+        call getBFields(sx, sy, sz, &
+                        bxu, byu, bzu)
 
 !     z2
 
@@ -185,16 +202,17 @@ contains
 
 !     PX (Real pperp)
        
-        call dppdz_r_f(sx, sy, sz2, spr, spi, sgam, &
-                       sdpr, sz, qOKL)
-        if (.not. qOKL) goto 1000
+        call dppdz_r_f(sx, sy, sz2, spr, spi, sgam, sZ, &
+                       sdpr, qOKL)
+        !if (.not. qOKL) goto 1000
 
 
 !     -PY (Imaginary pperp)
 
-        call dppdz_i_f(sx, sy, sz2, spr, spi, sgam, &
-                       sdpi, sz, qOKL)
-        if (.not. qOKL) goto 1000
+        call dppdz_i_f(sx, sy, sz2, spr, spi, sgam, sz, &
+                       sdpi, qOKL)
+        !if (.not. qOKL) goto 1000
+
 
 !     P2
 
@@ -210,15 +228,18 @@ contains
 
 
 
-    if (qFieldEvolve_G) then
+!    if (qFieldEvolve_G) then
 
 !     Sum dadz from different MPI processes together
 
-        call sum2RootArr(sDADz,ReducedNX_G*ReducedNY_G*NZ2_G*2,0)
+!        call sum2RootArr(sDADz,ReducedNX_G*ReducedNY_G*NZ2_G*2,0)
 
 !     Boundary condition dadz = 0 at head of field
 
-        if (tProcInfo_G%qRoot) sDADz(1:ReducedNX_G*ReducedNY_G) = 0.0_WP
+!        if (tProcInfo_G%qRoot) sDADz(1:ReducedNX_G*ReducedNY_G) = 0.0_WP
+!        if (tProcInfo_G%qRoot) sDADz(ReducedNX_G*ReducedNY_G*NZ2_G + 1: &
+!                                     ReducedNX_G*ReducedNY_G*NZ2_G + &
+!                                     ReducedNX_G*ReducedNY_G) = 0.0_WP
  
         !if (tTransInfo_G%qOneD) then
         !  if (tProcInfo_G%qRoot) sDADz=sDADz !sDADz=6.0_WP*sDADz
@@ -226,12 +247,13 @@ contains
         !   if (tProcInfo_G%qRoot) sDADz=sDADz !216.0_WP/8.0_WP*sDADz
         !end if
 
-    end if
+!    end if
     
 !     Switch field off
 
     if (.not. qFieldEvolve_G) then
-       sDADz = 0.0_WP
+       sDADzr = 0.0_WP
+       sDADzi = 0.0_WP
     end if
 
 !     if electrons not allowed to evolve then      
@@ -326,9 +348,11 @@ real(kind=wp), intent(in) :: sz
   qoutside=.FALSE.
   iOutside=0_IP
 
-  halfx = ((ReducedNX_G-1) / 2.0_WP) * sLengthOfElmX_G
-  halfy = ((ReducedNY_G-1) / 2.0_WP) * sLengthOfElmY_G
+!  halfx = ((ReducedNX_G-1) / 2.0_WP) * sLengthOfElmX_G
+!  halfy = ((ReducedNY_G-1) / 2.0_WP) * sLengthOfElmY_G
 
+  halfx = ((NX_G-1) / 2.0_WP) * sLengthOfElmX_G
+  halfy = ((NY_G-1) / 2.0_WP) * sLengthOfElmY_G
 
 
 end subroutine rhs_tmsavers

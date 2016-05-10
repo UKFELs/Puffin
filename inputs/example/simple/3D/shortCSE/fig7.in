@@ -1,0 +1,152 @@
+!
+! The main input parameters are described below - Puffin takes the namelist blocks at the
+! bottom of this file as input. This is the 'main' input file, containing info about the 
+! wiggler, field sampling, and general flags and other numerical instructions for the
+! simulation. This file also points to a beam file, seed file, and optionally a lattice 
+! file.
+!--------------------------------------------------------------------------------------------------!
+! NAME                       DESCRIPTION
+!--------------------------------------------------------------------------------------------------!
+!
+!                      FLAGS
+!
+!
+! qOneD                      If TRUE, model 1D FEL, with only 1 field node and 1 macroparticle in transverse dimensions
+! qFieldEvolve               if letting the radiation field evolve
+! qElectronsEvolve           if integrating electron equations
+! qElectronFieldCoupling     if allowing field to feedback onto the electron equations
+! qFocussing                 if focussing is included in the transverse plane
+! qMatchedBeam               if matching beam to undulator. If TRUE, electron pulse sigma and length in x,y,px,py are automatically calculated
+! qDiffraction               if modelling diffraction
+! qFilter                    TRUE to filter, if FALSE the low frequencies will just be ignored during diffraction
+! q_noise                    Shot noise in initial electron beam distribution
+! qDump                      Do you wish to dump data so the run can be resumed if anything goes wrong? .TRUE. for yes.
+! qResume                    If resuming from dump files left from a previous run
+! qSeparateFiles             Write data to separate SDDS files at each step
+! qFormattedFiles            Write data as formatted text(TRUE) or binary(FALSE)
+! qWriteZ                    Write out Z data
+! qWriteA                    Write out A data
+! qWritePperp                Write out Pperp data
+! qWriteP2                    Write out P2 data
+! qWriteZ2                   Write out Z2 data
+! qWriteX                    Write out X data
+! qWriteY                    Write out Y data
+! 
+!               ELECTRON MACROPARTICLE SAMPLING
+! 
+! 
+! beam_file                  Name of the beam file
+! sElectronThreshold         Beyond the threshold level(%) * the average of real electrons are removed(ignored)
+! 
+! 
+! 
+!                   FIELD NODE SAMPLING
+! 
+! 
+! iNumNodesX               Number of nodes to sample radiation field in x direction
+! iNumNodesY               Number of nodes to sample radiation field in y direction
+! nodesPerLambdar            Number of nodes per resonant wavelength
+! sFModelLengthX             Length of radiation field model in x direction
+! sFModelLengthY             Length of radiation field model in y direction
+! sWigglerLengthZ2           Length of field model in z2-bar direction
+! iRedNodesX                 Length of central field section in x where electrons will not leave
+! iRedNodesY                 Length of central field section in y where electrons will not leave
+! sFiltFrac                  Specifies cutoff for high pass filter as fraction of resonant frequency - used in diffraction step
+! sDiffFrac                  Specifies diffraction step size as fraction of the undulator period
+! beta                       Absorption coefficient
+! seed_file                  Name of the seed file
+! 
+! 
+!                  INDEPENDANT VARIABLES
+! 
+! 
+! Input the scaled independant variables from [1] here
+! 
+! 
+! srho                        Pierce or FEL parameter, describing the strength of the interaction (or efficiency)
+! sux                         Normalised magnitude of wiggler magnetic field x-vector: H=1 is helical, H=0 is planar
+! suy                         Normalised magnitude of wiggler magnetic field y-vector: H=1 is helical, H=0 is planar
+! saw                         peak undulator parameter
+! sgamma_r                    Resonant, or reference, beam energy
+! sFocusfactor               Focussing factor f, from the betatron wavenumber (root(2) for helical, 1 for planar)
+! lambda_w                   Undulator period
+! Dfact                      Dispersive strength factor for chicane
+! zundType                    Undulator type - 'curved' , 'planepole' , else 1D (no off axis variation of aw)
+! taper                      gradient of taper - d/dz of alpha
+! 
+! 
+!                       INTEGRATION AND OUTPUT
+! 
+! 
+! Here,a lattice file can be input to specify an undulator-chicane lattice.
+! If it is specified, then the value of nPeriods and stepsPerPeriod supplied 
+! here is ignored. Otherwise the values below are used in a basic single undulator 
+! setup.
+! 
+! lattFile           Name of lattice file (optional).
+! stepsPerPeriod     Number of steps per wiggler period
+! nPeriods           Number of wiggler periods
+! sZ0                Starting zbar position
+! zDataFileName      Data file name
+! iWriteNthSteps     Steps to write data at
+! iWriteIntNthSteps  Steps to write integrated data at
+! iDumpNthSteps      Steps to dump data at (0 for no dumping)
+! sPEOut             Percentage of macroparticles to write out
+!
+!
+! Begin input:-
+
+&MDATA
+ qOneD                  = .false.   
+ qFieldEvolve           = .true. 
+ qElectronsEvolve       = .true. 
+ qElectronFieldCoupling = .true.  
+ qFocussing             = .true. 
+ qDiffraction           = .true.   
+ qFilter                = .true.   
+ q_noise                = .true.   
+ qDump                  = .false.   
+ qResume                = .false.   
+ qSeparateFiles         = .true.   
+ qFormattedFiles        = .false.   
+ qWriteZ                = .true.   
+ qWriteA                = .true.   
+ qWritePperp            = .true.   
+ qWriteP2               = .true.   
+ qWriteZ2               = .true.   
+ qWriteX                = .true.   
+ qWriteY                = .true.   
+ beam_file              = 'beam_file.in'     
+ sElectronThreshold     = 0.05
+ iNumNodesX             = 85      
+ iNumNodesY             = 85 
+ nodesPerLambdar        = 14
+ sFModelLengthX         = 44.49088 
+ sFModelLengthY         = 44.49088 
+ sFModelLengthZ2        = 31.0
+ iRedNodesX             = 20
+ iRedNodesY             = 20
+ sFiltFrac              = 0.3
+ sDiffFrac              = 1.0
+ sBeta                  = 1.0
+ seed_file              = 'seed_file.in'
+ srho                   = 0.00555
+ sux                    = 1.0
+ suy                    = 1.0
+ saw                    = 1.0
+ sgamma_r               = 700.0
+ sFocusfactor           = 1.41213562373095
+ lambda_w               = 0.025
+ Dfact                  = 0.0
+ zundType               = 'helical'
+ taper                  = 0.0
+ lattFile               = ''
+ stepsPerPeriod         = 30
+ nPeriods               = 250
+ sZ0                    = 0.0
+ zDataFileName          = 'DataFile.dat'
+ iWriteNthSteps         = 1500
+ iWriteIntNthSteps      = 30
+ iDumpNthSteps          = 3000
+ sPEOut                 = 100.0
+ /

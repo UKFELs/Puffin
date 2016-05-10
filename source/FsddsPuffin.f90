@@ -13,6 +13,7 @@ USE ParallelSetUp
 Use avWrite
 use sddsROutput
 use createSDDS
+use parafield
 
 
 implicit none
@@ -414,7 +415,7 @@ CONTAINS
 
 
 
-  subroutine wr_sdds(sA, sZ, istep, tArrayA, tArrayE, tArrayZ, &
+  subroutine wr_sdds(sZ, istep, tArrayA, tArrayE, tArrayZ, &
                      iIntWr, iWr, qSep, zDFname, qWriteFull, &
                      qWriteInt, qOK)
 
@@ -423,7 +424,7 @@ CONTAINS
 ! Write Data FileS
 
 
-    real(kind=wp), intent(in) :: sA(:), sZ
+    real(kind=wp), intent(in) :: sZ
     type(cArraySegment), intent(inout) :: tArrayA(:), tArrayE(:), tArrayZ
     integer(kind=ip), intent(in) :: istep
     integer(kind=ip), intent(in) :: iIntWr, iWr
@@ -438,7 +439,7 @@ CONTAINS
       call outputBeamFiles(tArrayE, iStep, qSep, zDFName, qOKL)
       if (.not. qOKL) goto 1000
 
-      call outputField(sA, tArrayA, iStep, qSep, zDFName, qOKL)
+      call outputField(tArrayA, iStep, qSep, zDFName, qOKL)
       if (.not. qOKL) goto 1000
 
       call outputZ(sZ, tArrayZ, iStep, qSep, zDFName, qOKL)
@@ -446,11 +447,14 @@ CONTAINS
 
     end if
 
-    if (qWriteInt) then
-
-      call writeIntData(sA)
     
-    end if
+
+     if (qWriteInt) then
+ 
+       call writeIntData()
+     
+     end if
+
 
 !  Set error flag and exit         
     qOK = .TRUE.            
@@ -657,7 +661,7 @@ CONTAINS
 
 
 
-  subroutine outputField(sA, tArrayA, iStep, qSeparate, zDFName, qOK)
+  subroutine outputField(tArrayA, iStep, qSeparate, zDFName, qOK)
 
     implicit none
 
@@ -665,7 +669,6 @@ CONTAINS
 
 ! Arguments
 
-    real(kind=wp), intent(in) :: sA(:)
     type(cArraySegment), intent(inout) :: tArrayA(:)
     integer(kind=ip), intent(in) :: iStep
     logical, intent(in) :: qSeparate
@@ -692,32 +695,36 @@ CONTAINS
 
     end if
 
+
+    call writeParaField(tArrayA(1)%tFileType, tArrayA(2)%tFileType)
+
+
 !     Write out field data:-only root processor needs to do this
     
-    fieldsize = SIZE(sA)/2_IP
-
-
-
-    if (tProcInfo_G%qRoot) then
-
-      do ifp = 1_IP, size(tArrayA)
-
-        if (tArrayA(ifp)%qWrite) then
-
-!     Write the data
-      
-          call OutputIntegrationData(tArrayA(ifp)%tFileType, &
-                                     sA(((ifp-1)*fieldsize) + 1: ifp*fieldsize), &
-                                     fieldsize, &
-                                     qOKL)
-
-          if (.not. qOKL) goto 1000
-
-        end if
-
-      end do
-
-    end if
+!    fieldsize = SIZE(sA)/2_IP
+!
+!
+!
+!    if (tProcInfo_G%qRoot) then
+!
+!      do ifp = 1_IP, size(tArrayA)
+!
+!        if (tArrayA(ifp)%qWrite) then
+!
+!!     Write the data
+!      
+!          call OutputIntegrationData(tArrayA(ifp)%tFileType, &
+!                                     sA(((ifp-1)*fieldsize) + 1: ifp*fieldsize), &
+!                                     fieldsize, &
+!                                     qOKL)
+!
+!          if (.not. qOKL) goto 1000
+!
+!        end if
+!
+!      end do
+!
+!    end if
 
 
 

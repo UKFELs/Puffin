@@ -246,6 +246,25 @@ INTEGER(KIND=IP)  ::  error
 
 END SUBROUTINE gather2A
 
+!====================================================================== 
+
+SUBROUTINE gather1A(A_local,sA,nA_loc,nA,recvs,displs)
+
+! Gather from A_local to A
+
+REAL(KIND=WP),INTENT(IN)  ::  A_local(:)
+INTEGER(kind=ip),INTENT(IN)  ::  nA_loc,nA
+INTEGER(kind=ip),INTENT(IN)  ::  recvs(:),displs(:)
+REAL(KIND=WP),INTENT(OUT) ::  sA(:)
+
+INTEGER(KIND=IP)  ::  error
+
+ CALL MPI_ALLGATHERV( A_local(1:nA_loc),nA_loc,MPI_DOUBLE_PRECISION, &
+                    sA(1:nA), recvs,displs, MPI_DOUBLE_PRECISION, &
+              tProcInfo_G%comm, error)  
+
+END SUBROUTINE gather1A
+
 !======================================================================
 
 SUBROUTINE scatter2Loc(A_local,sA,nA_loc,nA,recvs,displs,root)
@@ -468,5 +487,27 @@ END SUBROUTINE shareFileType
     o1 = sum(trecv)
 
   END SUBROUTINE sum_mpi_int14
+
+
+  SUBROUTINE sum_mpi_real(in1,o1)
+
+    IMPLICIT NONE
+
+    real(kind=wp), intent(in) :: in1
+    real(kind=wp), intent(out) :: o1
+
+    integer :: error ! for MPI errors
+
+    real(kind=wp), allocatable :: trecv(:)
+
+    ALLOCATE(trecv(tProcInfo_G%size))
+
+    CALL MPI_ALLGATHER(in1,1,MPI_DOUBLE_PRECISION, &
+                       trecv,1,MPI_DOUBLE_PRECISION, &
+                       tProcInfo_G%comm,error)
+
+    o1 = sum(trecv)
+
+  END SUBROUTINE sum_mpi_real
 
 END MODULE ParallelSetUp

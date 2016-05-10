@@ -12,6 +12,7 @@ USE ArrayFunctions
 USE ElectronInit
 use gtop2
 use initConds
+use functions
 
 implicit none
 
@@ -77,11 +78,13 @@ contains
     else 
 
       modNum = 1
-
-      allocate(iElmType(modNum), zMod(ModNum))
+      
+      allocate(D(ModNum),zMod(ModNum),delta(modNum))
       allocate(mf(ModNum),delmz(ModNum),tapers(modNum))
       allocate(nSteps_arr(ModNum))
-
+      
+      allocate(iElmType(modNum))
+      
       iElmType(1) = iUnd
       mf(1) = 1_wp
       delmz(1) = dz_f
@@ -89,6 +92,11 @@ contains
       nSteps_arr(1) = nSteps_f
 
       iUnd_cr = 1_ip
+      nSteps_arr(1) = nSteps_f
+      delmz(1) = dz_f
+      mf(1) = 1_wp
+      tapers(1) = taper
+
 
     end if
 
@@ -96,8 +104,8 @@ contains
     iChic_cr=1_ip
     iDrift_cr=1_ip
     iQuad_cr=1_ip
-   
-    iCsteps = 0_ip
+
+    iCsteps = 1_ip
 
   end subroutine setupMods
 
@@ -242,6 +250,36 @@ contains
 
 
 
+  subroutine correctTrans()
+
+! Apply a virtual 'magnet corrector' at the end of the wiggler
+! module. It simply centers the beam in the transverse dimensions
+
+    real(kind=wp) :: spx_m, spy_m, sx_m, sy_m
+
+
+! Calculate means 
+
+    spx_m = arr_mean_para_weighted(sElPX_G, s_chi_bar_G)
+    spy_m = arr_mean_para_weighted(sElPY_G, s_chi_bar_G)
+
+    sx_m = arr_mean_para_weighted(sElX_G, s_chi_bar_G)
+    sy_m = arr_mean_para_weighted(sElY_G, s_chi_bar_G)
+
+! Correct coordinates
+
+    sElPX_G = sElPX_G - spx_m
+    sElPY_G = sElPY_G - spy_m
+
+    sElX_G = sElX_G - sx_m
+    sElY_G = sElY_G - sy_m
+
+
+  end subroutine correctTrans
+
+
+!  #############################################
+
 
 
   subroutine matchOut(sZ)
@@ -310,11 +348,11 @@ contains
 
 
     sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
+                           sEta_G, sKappa_G, sFocusfactor_G, spx0_offset, spy0_offset, &
                            fx_G, fy_G, sZ)
 
     sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
+                           sEta_G, sKappa_G, sFocusfactor_G, spx0_offset, spy0_offset, &
                            fx_G, fy_G, sZ)
 
 
@@ -350,6 +388,7 @@ contains
 
     real(kind=wp) :: kx, ky
 
+    integer :: error
 
     kx = kx_und_G
     ky = ky_und_G
@@ -406,11 +445,12 @@ contains
 
 
     sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, -spy0_offset, &
+                           sEta_G, sKappa_G, sFocusfactor_G, spx0_offset, -spy0_offset, &
                            fx_G, fy_G, sZ)
 
+
     sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, -spy0_offset, &
+                           sEta_G, sKappa_G, sFocusfactor_G, spx0_offset, -spy0_offset, &
                            fx_G, fy_G, sZ)
 
 
@@ -432,10 +472,11 @@ contains
 ! #########################################################
 
 
-  subroutine initUndulator(iM, sZ)
+  subroutine initUndulator(iM, sZ, szl)
 
     integer(kind=ip), intent(in) :: iM
     real(kind=wp), intent(in) :: sZ
+    real(kind=wp), intent(inout) :: szl
 
 ! Want to update using arrays describing each module...
 
@@ -445,7 +486,7 @@ contains
     n2col = mf(iM)
     undgrad = tapers(iM)
     sz0 = sz
-
+    szl = 0_wp
 
 
 !     Update stepsize    
@@ -455,6 +496,21 @@ contains
 
     nSteps = nSteps_arr(iM)
 
+
+!     Setup undulator ends
+
+    if (qUndEnds_G) then
+
+      sZFS = 4_wp * pi * sRho_G  *  2.0_wp
+      sZFE = nSteps * sStepSize - &
+               4_wp * pi * sRho_G  *  2.0_wp
+
+    else 
+
+      sZFS = 0_wp
+      sZFE = nSteps * sStepSize
+
+    end if
 
   end subroutine initUndulator
 

@@ -19,6 +19,10 @@ USE masks
 
 IMPLICIT NONE
 
+
+real(kind=wp) :: tr_time_s, tr_time_e
+
+
 !INCLUDE 'mpif.h'
  
 CONTAINS
@@ -312,8 +316,8 @@ END SUBROUTINE clearTransformPlans_ThreeD
 
 !*****************************************************
 
-SUBROUTINE SetupParallelFourierField(sA,sA_local,&
-                            work,qOK)      
+SUBROUTINE SetupParallelFourierField(sA_local,&
+                                      work,qOK)      
 
   IMPLICIT NONE
 !
@@ -335,7 +339,6 @@ SUBROUTINE SetupParallelFourierField(sA,sA_local,&
 !                     of identical size to sA_local	   
 ! qOK         OUT     Error flag; .false. if error has occured
 
-  COMPLEX(KIND=WP), INTENT(IN) :: sA(:)
   COMPLEX(KIND=WP), INTENT(INOUT),&
        DIMENSION(0:tTransInfo_G%total_local_size-1)&
        :: sA_local, work
@@ -364,21 +367,21 @@ SUBROUTINE SetupParallelFourierField(sA,sA_local,&
 !    Calculate beginning and end of the local processes
 !    portion of sA and check they are valid
 
-  first = ((tTransInfo_G%loc_z2_start+1)*strans) &
-              -(strans)+1
-
-  last = (((tTransInfo_G%loc_z2_start+1)*strans)-(strans))+ &
-              (tTransInfo_G%loc_nz2*strans)
-
-  IF (last > SIZE(sA) ) THEN
-    CALL Error_log('last index out of bounds of field array',tErrorLog_G)
-    GOTO 1000
-  END IF
+!  first = ((tTransInfo_G%loc_z2_start+1)*strans) &
+!              -(strans)+1
+!
+!  last = (((tTransInfo_G%loc_z2_start+1)*strans)-(strans))+ &
+!              (tTransInfo_G%loc_nz2*strans)
+!
+!  IF (last > SIZE(sA) ) THEN
+!    CALL Error_log('last index out of bounds of field array',tErrorLog_G)
+!    GOTO 1000
+!  END IF
 
 ! Arrange real space field data across processors according to 
 ! FFTW_MPI. Split the data along the z2-axis.
 
-  sA_local(0:((strans*tTransInfo_G%loc_nz2)-1))   =   sA(first:last)
+!  sA_local(0:((strans*tTransInfo_G%loc_nz2)-1))   =   sA(first:last)
   
 !      Transform the local field data into fourier space.
 
@@ -656,7 +659,7 @@ END SUBROUTINE multiplyexp
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE DiffractionStep(h,recvs,displs,sA,qOK)
+SUBROUTINE DiffractionStep(h,recvs,displs,sAr, sAi, qOK)
 
   IMPLICIT NONE
 !
@@ -684,7 +687,7 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sA,qOK)
 
   REAL(KIND=WP), INTENT(IN)      ::   h
   INTEGER(KIND=IP), INTENT(IN)   :: recvs(:),displs(:)
-  REAL(KIND=WP), DIMENSION(:), INTENT(INOUT)  :: sA
+  REAL(KIND=WP), DIMENSION(:), INTENT(INOUT)  :: sAr, sAi
   LOGICAL, INTENT(OUT)  ::  qOK
 
 !                       LOCAL ARGS
@@ -696,7 +699,9 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sA,qOK)
 
   COMPLEX(KIND=WP), DIMENSION(:), ALLOCATABLE :: &
        work,sA_local
+  integer(kind=ip) :: ntrh
   LOGICAL :: qOKL
+  integer :: error
 
 !                      Begin
 
@@ -705,25 +710,104 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sA,qOK)
 !     Allocate arrays and get distributed FT of field. 
 !     Transforming from A(x,y,z2,zbar) to A(kx,ky,kz2,zbar)
 
+
+  if (tProcInfo_G%QROOT ) then
+    print*,' inside diffraction... ',iCsteps, end_time-start_time
+  end if
+
+    
+  call Get_time(tr_time_s)
+
+
   ALLOCATE(sA_local(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1))
   ALLOCATE(work(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1))
-	 
-  CALL setupParallelFourierField(CMPLX(sA(1:iNumberNodes_G),&
-       sA(iNumberNodes_G+1:2*iNumberNodes_G),KIND=WP),&
-       sA_local,work,qOKL) 
+
+  call Get_time(tr_time_e)
+
+  if (tProcInfo_G%QROOT ) then
+    print*,' allocating arrays took... ', tr_time_e-tr_time_s
+  end if
+
+
+  sA_local = 0.0_wp
+  ntrh = NX_G * NY_G
+
+  sA_local(0:(tTransInfo_G%loc_nz2 * ntrh) - 1) = &
+          CMPLX(sAr(1:tTransInfo_G%loc_nz2 * ntrh), &
+                 sAi(1:tTransInfo_G%loc_nz2 * ntrh), kind=wp)
+
+  call Get_time(tr_time_e)
+
+  if (tProcInfo_G%QROOT ) then
+    print*,' assigning data took... ', tr_time_e-tr_time_s
+  end if
+
+!  CALL setupParallelFourierField(sA_local, work, qOKL) 
+
+!  CALL Transform(tTransInfo_G%fplan, &
+!       work, &
+!       sA_local, &
+!       qOKL)
+
+
+!  call mpi_barrier(tProcInfo_G%comm, error)
+!  print*, size(sA_local), size(sAr), size(sAi), tTransInfo_G%loc_nz2
+
+  CALL fftwnd_f77_mpi(tTransInfo_G%fplan,1,sA_local,&
+                      work,USE_WORK,&
+                      FFTW_NORMAL_ORDER) 
+
+
+  call Get_time(tr_time_e)
+
+  if (tProcInfo_G%QROOT ) then
+    print*,' forward transform took... ', tr_time_e-tr_time_s
+  end if
+
+
+!  call mpi_barrier(tProcInfo_G%comm, error)
+!  print*, 'made it here!!!!'
+
 
 !    Multiply field by the exp factor to obtain A(kx,ky,kz2,zbar+h)
 
   CALL MultiplyExp(h,sA_local,qOKL)	
+
  
+  call Get_time(tr_time_e)
+
+  if (tProcInfo_G%QROOT ) then
+    print*,' multiply exp took... ', tr_time_e-tr_time_s
+  end if
+
+
 !   Perform the backward fourier transform to obtain A(x,y,z2,zbar+h)
 
-  CALL Transform(tTransInfo_G%bplan, &
-       work, &
-       sA_local, &
-       qOKL)
+!  CALL Transform(tTransInfo_G%bplan, &
+!       work, &
+!       sA_local, &
+!       qOKL)
 
-  IF (.NOT. qOKL) GOTO 1000
+  CALL fftwnd_f77_mpi(tTransInfo_G%bplan,1,sA_local,&
+                      work,USE_WORK,&
+                      FFTW_NORMAL_ORDER) 
+
+  call Get_time(tr_time_e)
+
+  if (tProcInfo_G%QROOT ) then
+    print*,' back transform took... ', tr_time_e-tr_time_s
+  end if
+
+
+
+!  call mpi_barrier(tProcInfo_G%comm, error)
+!  print*, 'made it here  2!!!!'
+
+
+
+
+
+ ! IF (.NOT. qOKL) GOTO 1000
 
 !      Scale the field data to normalize transforms
 
@@ -734,22 +818,47 @@ SUBROUTINE DiffractionStep(h,recvs,displs,sA,qOK)
 
   CALL AbsorptionStep(sA_local,work,h,tTransInfo_G%loc_nz2,ffact)
 
+  call Get_time(tr_time_e)
+
+  if (tProcInfo_G%QROOT ) then
+    print*,' absorption step took... ', tr_time_e-tr_time_s
+  end if
+
 
   DEALLOCATE(work)
 
 !   Collect data back onto global field var sA on every process
 
-  CALL gather2Acomtoreal(sA_local,sA, &
-       (NX_G*NY_G*tTransInfo_G%loc_nz2), &
-       NX_G*NY_G*NZ2_G, &
-       tTransInfo_G%TOTAL_LOCAL_SIZE, &
-       recvs,displs)
+!  CALL gather2Acomtoreal(sA_local,sA, &
+!       (NX_G*NY_G*tTransInfo_G%loc_nz2), &
+!       NX_G*NY_G*NZ2_G, &
+!       tTransInfo_G%TOTAL_LOCAL_SIZE, &
+!       recvs,displs)
+
+
+
+! assign data back to real and img parts for integration 
+! through undulator
+
+  sAr(1:tTransInfo_G%loc_nz2 * ntrh) = &
+          real(sA_local(0:(tTransInfo_G%loc_nz2 * ntrh) - 1), &
+                            kind=wp)
+
+
+  sAi(1:tTransInfo_G%loc_nz2 * ntrh) = &
+          aimag(sA_local(0:(tTransInfo_G%loc_nz2 * ntrh) - 1))
+
+!call mpi_barrier(tProcInfo_G%comm, error)
+!  call mpi_finalize(error)
+!  stop
+
 
   DEALLOCATE(sA_local)
 
+
 !        Clear up field emerging outside e-beam
 
-  CALL clearA(sA, qOKL)
+!  CALL clearA(sA, qOKL)
 
 !              Set error flag and exit
 
@@ -811,11 +920,22 @@ SUBROUTINE AbsorptionStep(sAl,work,h,loc_nz2,ffact)
 
 !               LOCAL ARGS
 
-  REAL(KIND=WP) :: mask(NX_G*NY_G), mask_z2(0:tTransInfo_G%loc_nz2-1)
-  COMPLEX(KIND=WP) :: sAnb(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1), posI
+  REAL(KIND=WP), allocatable :: mask(:), mask_z2(:)
+  COMPLEX(KIND=WP), allocatable :: sAnb(:)
+  COMPLEX(KIND=WP) :: posI
   INTEGER(KIND=IP) :: iz2, x_inc, y_inc, z2_inc, ind
   integer :: error
   LOGICAL :: qOKL
+
+
+
+! ****************************
+
+  allocate(mask(NX_G*NY_G), mask_z2(0:tTransInfo_G%loc_nz2-1))
+  allocate(sAnb(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1))
+
+! ****************************
+
 
 
   posI=CMPLX(0.0,1.0,KIND=WP)
@@ -907,6 +1027,9 @@ SUBROUTINE AbsorptionStep(sAl,work,h,loc_nz2,ffact)
 
   sAl = sAl + sAnb
 
+
+  deallocate(mask, mask_z2)
+  deallocate(sAnb)
 
 END SUBROUTINE AbsorptionStep
 

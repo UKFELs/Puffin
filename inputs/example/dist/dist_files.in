@@ -1,13 +1,12 @@
-type = dist
 
-DIST FILE FOR PUFFIN
 
-List of dist files for Puffin. The header must remain the same.  Alter the list and num of files below accordingly.
+&NBLIST
+nbeams = 3
+dtype = 'dist'
+/
 
-3         # of beams / files. List files below.
-
-File List:
-
-troLi16_LiPlusElec_47_1.pufin
-troLi16_LiPlusElec_47_2.pufin
-troLi16_LiPlusElec_47_3.pufin
+&BDLIST
+dist_f(1) = 'troLi16_LiPlusElec_47_1.pufin'
+dist_f(2) = 'troLi16_LiPlusElec_47_2.pufin'
+dist_f(3) = 'troLi16_LiPlusElec_47_3.pufin'
+/

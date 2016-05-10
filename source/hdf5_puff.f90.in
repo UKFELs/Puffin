@@ -1,0 +1,1565 @@
+!************* THIS HEADER MUST NOT BE REMOVED *******************!
+!** Copyright 2013-2016, University of Strathclyde              **!
+!** Written by Jonathan Smith (Tech-X UK Ltd)                   **!
+!** This program must not be copied, distributed or altered in  **!
+!** any way without the prior permission of the above authors.  **!
+!*****************************************************************!
+
+module hdf5_puff
+
+USE ArrayFunctions
+USE TypesandConstants
+USE Globals
+USE ParallelSetUp
+Use avWrite
+use paratype
+use HDF5
+
+implicit none 
+
+contains
+
+!> Leftover routine to write vars into a parameter file
+!! This should write the input data used to create results
+!! @param zDataFileName      - INPUT  - Data file name
+!! @param iNodes             - INPUT  - Number of Nodes
+!! @param iNumElectrons      - INPUT  - number of electrons
+!! @param sLengthOfElm       - INPUT  - Element length
+!! @param sStepSize          - INPUT  - Integration step size
+!! @param nSteps             - INPUT  - Number of steps 
+!! @param sLenEPulse 	     - INPUT  - L-electron pulse
+!! @param sWigglerLength     - INPUT  - Wiggler length
+!! @param sSigmaGaussian     - INPUT  - e-pulse sigma
+!! @param sA0_Re,            - INPUT  - Initial field value (real)
+!! @param sA0_Im,            - INPUT  - Initial field value (imag)
+!! @param iTotalNumElectrons - INPUT  - Acutal Number of electrons used
+!! @param nWaveEquations     - INPUT  - Number of Wave Equations
+!! @param nElectronEquations - INPUT  - Number of Electron Equations
+!! @param sZ                 - UPDATE - IN: Starting z position
+!! @param iWriteNthSteps     - UPDATE - Steps to write data at
+!! @param sSeedSigma         - INPUT  - Sigma of initial seed field
+!! @param qSwitch            - UPDATE - Optional if letting electrons
+!!                               evolve, field evolve,
+!!                               diffraction, gauss inital field
+!! @param qOK                - OUTPUT - Error flag
+!! @todo work out fx,fy usage, and whether vars below eg sx0_offset
+!! are still in use. Determine if we need an h5 equivalent.
+!! Note, runInfo group in vsh5 file contains input filename
+
+! These appear not to be present any more
+! @param sx0_offset         - INPUT  - Electron offset value
+! @param sy0_offset         - INPUT  - Electron offset value
+
+  SUBROUTINE  WriteAttributeData(zDataFileName, &
+       iNodes,&
+       iNumElectrons, &
+       sLengthOfElm, &
+       sStepSize, &
+       nSteps, &
+       sLenEPulse, &
+       sWigglerLength, &
+       sSigmaGaussian, &
+       sA0_Re, &
+       sA0_Im, &
+       rho,aw,epsilon,gamma_r, &
+       kbeta, ff, &
+       lam_w, lam_r, &
+       npk_bar, &
+       totalNumberElectrons, &
+       nWaveEquations, &
+       nElectronEquations, &  
+       sZ, &
+       iWriteNthSteps, &
+       iIntWriteNthSteps, &
+       sSeedSigma, &
+       qSwitch, &
+       fx, &
+       fy, &
+       qOK)
+
+    IMPLICIT NONE
+
+
+!  LIst of variables to write as attributes available at FssdsPuffin.f90 lines 250 - 375	
+!
+    CHARACTER(32_IP), INTENT(IN) :: zDataFileName
+    INTEGER(KIND=IP), INTENT(IN) :: iNodes(:)
+    INTEGER(KIND=IP), INTENT(IN) :: iNumElectrons(:)
+    REAL(KIND=WP),    INTENT(IN) :: sLengthOfElm(:)
+    REAL(KIND=WP),    INTENT(IN) :: sStepSize
+    INTEGER(KIND=IP), INTENT(IN) :: nSteps
+    REAL(KIND=WP),    INTENT(IN) :: sLenEPulse(:)   
+    REAL(KIND=WP),    INTENT(IN) :: sWigglerLength(:) 
+    REAL(KIND=WP),    INTENT(IN) :: sSigmaGaussian(:)
+    REAL(KIND=WP),    INTENT(IN) :: sA0_Re   
+    REAL(KIND=WP),    INTENT(IN) :: sA0_Im   
+    REAL(KIND=WP),    INTENT(IN) :: rho,aw,epsilon,gamma_r
+    REAL(KIND=WP),    INTENT(IN) :: kbeta, ff
+    real(kind=wp),    intent(in) :: lam_w, lam_r
+    real(kind=wp),    intent(in) :: npk_bar
+    INTEGER(KIND=IPL), INTENT(IN) :: totalNumberElectrons
+    INTEGER(KIND=IP), INTENT(IN) :: nWaveEquations    
+    INTEGER(KIND=IP), INTENT(IN) :: nElectronEquations
+    REAL(KIND=WP),    INTENT(IN) :: sZ
+    INTEGER(KIND=IP), INTENT(IN) :: iWriteNthSteps, iIntWriteNthSteps
+    REAL(KIND=WP),    INTENT(IN) :: sSeedSigma(:)
+    LOGICAL,          INTENT(IN) :: qSwitch(:)
+    REAL(KIND=WP),    INTENT(IN) :: fx,fy
+  
+    LOGICAL,          INTENT(OUT) :: qOK      
+!
+! Define local variables
+! 
+! tParamFile   - Write Parameter data to file
+! qOKL         - Local error flag
+!	
+    TYPE(cFileType) :: tParamFile
+    LOGICAL         :: qOKL
+!********************************************************
+! BEGIN:-
+! Set error flag to false         
+    qOK = .FALSE.    
+
+    If (tProcInfo_G%qROOT) Then
+
+! Open the file to receive data output -
+! This subroutine is in IO.f90 line 793
+       tParamFile%qFormatted = .TRUE.
+!       call InitBasicSDDSFile('Param' // TRIM(zDataFileName),  or some other init for HDF5
+!       If (.NOT. qOKL) Goto 1000
+    End If 
+
+!  Set error flag and exit         
+    qOK = .TRUE.				    
+    GoTo 2000     
+
+! Error Handler - Error log Subroutine in CIO.f90 line 709
+1000 call Error_log('Error in hdf5_puff:WriteAttributeData',&
+          tErrorLog_G)
+    Print*,'Error in hdf5_puff:WriteAttributeData'
+2000 CONTINUE
+  END SUBROUTINE WriteAttributeData
+
+
+!> Simple wrapper routine to write a string attribute into hdf5
+!! Assumed that the padding is set up outside here
+!! Assumed that the h5 dataspace is set up outside here.
+  SUBROUTINE addH5StringAttribute(locHandle,attrName,attrValue,aspace_id)
+    IMPLICIT NONE
+    INTEGER(HID_T), INTENT(in) :: locHandle   !< h5 handle of write location
+    CHARACTER(LEN=*), INTENT(in) :: attrName  !<attrib name
+    CHARACTER(LEN=*), INTENT(in) :: attrValue !<attrib value
+    INTEGER(HID_T), INTENT(in) :: aspace_id   !< Attribute Dataspace identifier
+    ! Local vars
+    INTEGER(HID_T) :: attr_id                 !< Attribute identifier
+    INTEGER(HID_T) :: atype_id                !< Attribute Data type identifier
+    INTEGER(HSIZE_T) :: attr_string_len       !< Length of attribute string 
+    INTEGER(HSIZE_T),DIMENSION(1) :: adims=(/1/) !< Attribute Data type identifier
+    INTEGER :: error                             !< Error flag
+!    aname="vsType"
+!    attr_data_string="vsVars"
+    CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
+    attr_string_len=len(trim(adjustl(attrValue)))
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5acreate_f(locHandle, attrName, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attrValue, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    CALL h5tclose_f(atype_id, error)
+  END SUBROUTINE
+
+!> Add vizschema derived variable
+  SUBROUTINE addH5derivedVariable(location,varName,expression,error)
+    IMPLICIT NONE
+    INTEGER(HID_T), INTENT(in) :: location !< h5 handle of write location
+    CHARACTER(LEN=*), INTENT(in) :: varName !<derived var name
+    CHARACTER(LEN=*), INTENT(in) :: expression !<expression value
+    ! Local vars
+    INTEGER(HID_T) :: group_id      !< Group identifier
+    INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
+    INTEGER :: error ! Error flag
+! We make a new group
+    CALL h5gcreate_f(location, varName, group_id, error)
+    CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
+    CALL addH5StringAttribute(group_id,"vsType","vsVars",aspace_id)
+    CALL addH5StringAttribute(group_id,varName,expression,aspace_id)
+    CALL h5sclose_f(aspace_id, error)
+    CALL h5gclose_f(group_id, error)
+  END SUBROUTINE
+
+!> Overall script to write the larger full h5 output data files
+!! Not including the integrated quantities
+!! @ Todo remove unused vars - filename parameters are not required.
+  subroutine wr_h5(sA, sZ, tArrayA, tArrayE, tArrayZ, &
+                     iIntWr, iWr, qSep, zDFname, qWriteFull, &
+                     qWriteInt, qOK)
+    implicit none
+    real(kind=wp), intent(in) :: sA(:), sZ   !<Global field data
+    real(kind=wp), DIMENSION(NZ2_G) :: power !<power data (called here)
+    real(kind=wp), DIMENSION(npts_I_G) :: Iarray !< current data (called here)
+    type(cArraySegment), intent(inout) :: tArrayA(:), tArrayE(:), tArrayZ
+    integer(kind=ip), intent(in) :: iIntWr, iWr !<Aren't these global?
+    character(32_IP), intent(in) :: zDFName 
+    logical, intent(in) :: qSep !< Probably not used here
+    logical, intent(inout) :: qOK  !< Flag set if any probs happen
+    integer :: error, numSpatialDims
+    logical :: qWriteInt, qWriteFull !<Flags identifying if it is time to write
+    real(kind=wp) :: time !<Simulation time, calcualted here
+    error = 0
+    if (qWriteFull) then
+      time = real(iCSteps,kind=wp)*sStepSize*lg_G/c
+      call outputH5BeamFiles(time, error)
+      if (error .ne. 0) goto 1000
+    if (qONED_G) then
+      numSpatialDims=1
+      print *,'2 component 1D field output not currently supported'
+! todo generalize/split 1D field output to take two component fields.
+! to do raw data write in one place, and prob limits, and write other
+! field attributes which are shared elsewhere. Lims are the same. Mesh
+! is (probably) the same
+    else
+      numSpatialDims=3
+      call outputH5Field3D(sA, time, error)
+      if (error .ne. 0) goto 1000
+    end if
+
+! Zposition is probably to be recorded not at each timestep
+! Todo: move into main
+!      call outputH5Z(sZ, tArrayZ, iStep, qSep, zDFName, qOKL)
+!      if (.not. qOKL) goto 1000
+
+    end if
+
+    if (qWriteInt) then
+! For starters, write on rank 0 only
+      if (tProcInfo_G%qRoot) then
+           time = real(iCSteps,kind=wp)*sStepSize*lg_G/c
+           !CALL gPower(sA,power)
+           call outputH5Field1DFloat(power, 'power', time, error)
+      if (error .ne. 0) goto 1000
+      end if
+! This call requires all ranks to participate
+      call getCurr(dz2_I_G, Iarray)
+! but the write operation does not.
+      if (tProcInfo_G%qRoot) then
+           call outputH5Field1DFloat(Iarray, 'current', time, error)
+      if (error .ne. 0) goto 1000
+! Todo not yet implemented
+!     call outputH5SliceEmittance
+!       NOT YET IMPLEMENTED
+
+      end if  
+    end if
+
+!  Set error flag and exit         
+    error = 0            
+    goto 2000     
+
+! Error Handler - Error log Subroutine in CIO.f90 line 709
+
+1000 call Error_log('Error in hdfPuffin:wr_h5',&
+          tErrorLog_G)
+    print*,'Error in hdfPuffin:wr_h5'
+2000 continue
+
+    end subroutine wr_h5
+
+!> Output the electron bean macroparticle 
+!! 6D phase space coordinates (plus weight) in Puffin.
+!! For one file per rank only at the moment
+!! @params unused tArrayE global array (to this rank) 
+!! containing particles and layout of data in sV.
+!! @params sElX_G, particle x coordinate
+!! @params sElY_G, particle y coordinate
+!! @params sElZ2_G, particle z2 (displacement from bunch centre)
+!! @params iNumberElectrons_G number of electrons (global) on this rank
+!! @todo Individual and collective writing to combined file to come
+!! For collective write, we want to work out how many particles on 
+!! each rank, what the cumulative num electrons is, and then determine
+!! the array slice based on that.
+!! so instead of 
+  subroutine outputH5BeamFiles(time, error)
+    implicit none
+    REAL(kind=WP),intent(in) :: time !< Current time
+    INTEGER(HID_T) :: file_id       !< File identifier
+    INTEGER(HID_T) :: dset_id       !< Dataset identifier 
+    INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
+    INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
+    INTEGER(HID_T) :: attr_id       !< Attribute identifier
+    INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
+    INTEGER(HID_T) :: atype_id      !< Attribute Data type identifier
+    INTEGER(HID_T) :: group_id      !< Group identifier
+!    logical, intent(in) :: qSeparate !<May reinstitute this.
+    CHARACTER(LEN=9), PARAMETER :: dsetname = "electrons" !< Dataset name
+    CHARACTER(LEN=30) :: aname   !< Attribute name
+    character(32_IP) :: filename
+!    logical, intent(inout) :: qOK
+!    INTEGER(HSIZE_T), DIMENSION(1) :: dims = (/iGloNumElectrons_G/) ! Dataset dimensions
+    INTEGER(HSIZE_T), DIMENSION(2) :: dims   !< dims of ptcl dataset (coords*numelecs)
+    INTEGER(HSIZE_T), DIMENSION(2) :: doffset!< Offset for write, could be rank dependent
+    INTEGER(HSIZE_T), DIMENSION(2) :: dsize  !< Size of hyperslab to write
+    INTEGER     ::  rank = 2                 !< Particle Dataset rank
+    INTEGER     ::  arank = 1                !< Attribute rank - 1 is vector
+    INTEGER(HSIZE_T), DIMENSION(1) :: adims  !< Attribute dims
+    INTEGER(HSIZE_T), DIMENSION(1) :: attr_data_int !< For integer attribs (numdims)
+    INTEGER     :: numSpatialDims    !< Attr content, and also num elsewhere  
+!assumed 3D sim. May be 1D.
+!    TYPE(C_PTR) :: f_ptr
+    REAL(kind=WP) :: attr_data_double
+    CHARACTER(LEN=100) :: attr_data_string
+    CHARACTER(LEN=16) :: scaleToSIstring
+    INTEGER(HSIZE_T) :: attr_string_len
+    CHARACTER(LEN=4), PARAMETER :: timegrpname = "time"  ! Group name
+    CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  ! Group name
+    REAL(kind=WP), ALLOCATABLE :: limdata (:)  ! Data to write
+    ! Local vars
+    !integer(kind=ip) :: iep
+    integer :: error ! Error flag
+
+    if (qONED_G) then
+      numSpatialDims=1
+    else
+      numSpatialDims=3
+    end if
+    print*,'Writing electron data on rank', tProcInfo_G%rank
+
+    attr_data_int(1)=numSpatialDims
+    adims(1)=1 
+    adims = (/1/) 
+   dims = (/7,iNumberElectrons_G/) ! Dataset dimensions
+    doffset=(/0,0/)
+    dsize=(/1,iNumberElectrons_G/)
+    attr_data_string="electrons_x,electrons_y,electrons_z,electrons_px," // &
+      "electrons_py,electrons_gamma,electrons_weight"
+    attr_string_len=94
+
+! Prepare filename
+
+    filename = ( trim(adjustl(zFilename_G)) // '_electrons_' // &
+                 trim(adjustl(IntegerToString(tProcInfo_G%Rank))) // &
+		 '_' // trim(adjustl(IntegerToString(iStep))) // '.h5' )
+
+    CALL h5open_f(error)
+!    Print*,'hdf5_puff:outputH5BeamFiles(file opened)'
+
+! Create a new file using default properties.
+    CALL h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error)
+!    Print*,'hdf5_puff:outputH5BeamFiles(file created)'
+
+! Create the big dataspace in the file.
+    CALL h5screate_simple_f(rank, dims, filespace, error)
+!    Print*,'hdf5_puff:outputH5BeamFiles(filespace created)'
+
+! Create the dataset with default properties.
+    CALL h5dcreate_f(file_id, dsetname, H5T_NATIVE_DOUBLE, filespace, &
+       dset_id, error)
+!    Print*,'hdf5_puff:outputH5BeamFiles(dataset created)'
+    CALL h5sclose_f(filespace, error)
+!    Print*,'hdf5_puff:outputH5BeamFiles(filespace closed)'
+
+! Create a smaller space to buffer the data writes
+    CALL h5screate_simple_f(rank, dsize, dspace_id, error)
+!    Print*,'hdf5_puff:outputH5BeamFiles(memory dataspace allocated)'
+! Select hyperslab in the file.
+    CALL H5Dget_space_f(dset_id, filespace, error)
+    CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
+       dsize, error)   
+    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, sElX_G, dims, error, &
+       file_space_id = filespace, mem_space_id = dspace_id)
+
+! End access to the dataset and release resources used by it.
+    CALL h5sclose_f(filespace, error) 
+!    CALL h5sclose_f(dspace_id, error) 
+  
+! repeat for some next y dataset
+    doffset=(/1,0/)
+    CALL H5Dget_space_f(dset_id, filespace, error)
+    CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
+       dsize, error)
+    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, sElY_G, dims, error, &
+       file_space_id = filespace, mem_space_id = dspace_id)
+! was       dspace_id, filespace)
+    CALL h5sclose_f(filespace, error) 
+
+!
+! repeat for some next z dataset
+    doffset=(/2,0/)
+    CALL H5Dget_space_f(dset_id, filespace, error)
+    CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
+       dsize, error)
+    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, sElZ2_G, dims, error, &
+       file_space_id = filespace, mem_space_id = dspace_id)
+! was       dspace_id, filespace)
+    CALL h5sclose_f(filespace, error) 
+
+! repeat for some next px dataset
+    doffset=(/3,0/)
+    CALL H5Dget_space_f(dset_id, filespace, error)
+    CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
+       dsize, error)
+    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, sElPX_G, dims, error, &
+       file_space_id = filespace, mem_space_id = dspace_id)
+! was       dspace_id, filespace)
+    CALL h5sclose_f(filespace, error) 
+
+! repeat for some next py dataset
+    doffset=(/4,0/)
+    CALL H5Dget_space_f(dset_id, filespace, error)
+    CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
+       dsize, error)
+    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, sElPY_G, dims, error, &
+       file_space_id = filespace, mem_space_id = dspace_id)
+! was       dspace_id, filespace)
+    CALL h5sclose_f(filespace, error) 
+
+! repeat for some next gamma dataset (actually beta*gamma)
+    doffset=(/5,0/)
+
+    CALL H5Dget_space_f(dset_id, filespace, error)
+    CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
+       dsize, error)
+    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, sElgam_G, dims, error, &
+       file_space_id = filespace, mem_space_id = dspace_id)
+! was       dspace_id, filespace)
+    CALL h5sclose_f(filespace, error) 
+!
+! 
+! put Chi in the file, slightly redundant as charge on a macroparticle
+! doesn't increase or decrease through the simulation. But does make
+! Everything self contained. Perhaps we use in future a funky h5 technique
+! to point this column at a separate file which holds the data, reducing 
+! the size of this column from every written file.
+    doffset=(/6,0/)
+
+    CALL H5Dget_space_f(dset_id, filespace, error)
+    CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
+       dsize, error)
+    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, s_chi_bar_G, dims, error, &
+       file_space_id = filespace, mem_space_id = dspace_id)
+! was       dspace_id, filespace)
+    CALL h5sclose_f(filespace, error) 
+! Terminate access to the data space.
+!
+    CALL h5sclose_f(dspace_id, error)  
+!
+! ATTRIBUTES FOR PARTICLE DATASET
+!
+! simple dataset for array of vals
+!    CALL h5screate_simple_f(arank, adims, aspace_id, error)
+
+! scalar dataset for simpler values
+    CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
+!
+! Create datatype for the attribute.
+!
+    CALL h5tcopy_f(H5T_NATIVE_INTEGER, atype_id, error)
+!    CALL h5tset_size_f(atype_id, attrlen, error)
+!
+! Create dataset attribute.
+!
+    aname = "vsNumSpatialDims"
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+! Write the attribute data.
+    CALL h5awrite_f(attr_id, atype_id, numSpatialDims, adims, error) !
+! Close the attribute.
+    CALL h5aclose_f(attr_id, error)
+! next attribute
+    aname="numSpatialDims"
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, numSpatialDims, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    CALL h5tclose_f(atype_id, error)
+
+! integers done, move onto floats
+    CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
+    aname="time"
+    attr_data_double=time
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+! then
+    aname="mass"
+!    attr_data_double=9.10938356E-31
+    attr_data_double=m_e
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    aname="charge"
+!    attr_data_double=1.602176487E-19
+    attr_data_double=q_e
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+!    Print*,'hdf5_puff:outputH5BeamFiles(charge written)'
+    CALL h5tclose_f(atype_id, error)
+
+    aname="numTotalPhysicalParticles"
+    attr_data_double=npk_bar_G*q_e
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    CALL h5tclose_f(atype_id, error)
+
+    aname="distanceThroughMachine"
+    attr_data_double=real(iCSteps,kind=wp)*sStepSize*lg_G
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    CALL h5tclose_f(atype_id, error)
+
+    aname="gainLength"
+    attr_data_double=lg_G
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    CALL h5tclose_f(atype_id, error)
+
+    aname="cooperationLength"
+    attr_data_double=lc_G
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    CALL h5tclose_f(atype_id, error)
+
+! then text attributes
+    CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
+!    Print*,'hdf5_puff:outputH5BeamFiles(string padding enabled)'
+    aname="vsLabels"
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+!    Print*,'hdf5_puff:outputH5BeamFiles(lables attribute written)'
+    CALL h5aclose_f(attr_id, error)
+    CALL addH5StringAttribute(dset_id,"vsType","variableWithMesh",aspace_id)
+    CALL addH5StringAttribute(dset_id,"vsTimeGroup","time",aspace_id)
+    CALL addH5StringAttribute(dset_id,"vsLimits","globalLimits",aspace_id)
+!
+! Terminate access to the dataset space, still using the scalar identifier
+    CALL h5dclose_f(dset_id, error)
+
+! Write time Group
+    CALL writeH5TimeGroup(file_id, timegrpname, time, 'outputH5Beam', error)
+
+! Write run info
+    CALL writeH5RunInfo(file_id, 'outputH5Beam', error)
+
+! We make the limits
+    CALL h5gcreate_f(file_id, limgrpname, group_id, error)
+    CALL addH5StringAttribute(dset_id,"vsType","limits",aspace_id)
+    CALL addH5StringAttribute(dset_id,"vsKind","Cartesian",aspace_id)
+! end of scalars, need arrays (a vector) for the limits
+    CALL h5sclose_f(aspace_id, error)
+
+! And the limits themselves which require non-scalar attributes
+! This is the 3D version.
+    adims = (/numSpatialDims/) 
+    CALL h5screate_simple_f(arank, adims, aspace_id, error)
+    aname="vsLowerBounds"
+    CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+!    Print*,'hdf5_puff:outputH5BeamFiles(lower bounds attribute created)'
+    ALLOCATE ( limdata(numSpatialDims))
+    limdata(1)=-0.5*NX_G*sLengthOfElmX_G
+! Particles inhabit a 3D physical space even for 1D simulations.
+!    if (numSpatialDims .GT. 1) then
+      limdata(2)=-0.5*NY_G*sLengthOfElmY_G
+      limdata(3)=0.0
+!    end if
+    CALL h5awrite_f(attr_id, atype_id, limdata, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    aname="vsUpperBounds"
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    Print*,'hdf5_puff:outputH5BeamFiles(upper bounds attribute created)'
+    limdata(1)=0.5*NX_G*sLengthOfElmX_G
+! Particles inhabit a 3D physical space even for 1D simulations.
+!    if (numSpatialDims .GT. 1) then
+      limdata(2)=0.5*NY_G*sLengthOfElmY_G
+      limdata(3)=real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G
+!    end if
+    CALL h5awrite_f(attr_id, atype_id, limdata, adims, error) 
+! Close the attribute should be done above. 
+    CALL h5aclose_f(attr_id, error)
+    DEALLOCATE ( limdata)
+    CALL h5tclose_f(atype_id, error)
+    CALL h5sclose_f(aspace_id, error)    
+    CALL h5gclose_f(group_id, error)
+
+    aname="electrons_xSI"
+    write(scaleToSIstring, '(E16.9)' ) (DSQRT(lg_G*lc_G)) 
+    attr_data_string=("electrons_x*" // scaleToSIstring)
+    attr_string_len=len(trim(adjustl(attr_data_string)))
+    CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
+
+! We make another group
+    aname="electrons_ySI"
+    attr_data_string=("electrons_y*" // scaleToSIstring)
+    attr_string_len=len(trim(adjustl(attr_data_string)))
+    CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
+
+! We make another group
+    aname="electrons_zSI"
+    write(scaleToSIstring, '(E16.9)' ) lc_G
+    attr_data_string=("electrons_z*" // scaleToSIstring)
+    attr_string_len=len(trim(adjustl(attr_data_string)))
+    CALL addH5derivedVariable(file_id,aname,attr_data_string,error)!
+! Were there an SI version of this, we might be in the right place to use it
+
+    aname="electrons_pxSI"
+    write(scaleToSIstring, '(E16.9)' ) sAw_G * m_e * c
+    attr_data_string=("electrons_px*" // scaleToSIstring)
+    attr_string_len=len(trim(adjustl(attr_data_string)))
+    CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
+
+    aname="electrons_pySI"
+    write(scaleToSIstring, '(E16.9)' ) sAw_G * m_e * c
+    attr_data_string=("electrons_py*" // scaleToSIstring)
+    CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
+
+    aname="electrons_gammaSI"
+    write(scaleToSIstring, '(E16.9)' ) sGammaR_G
+    attr_data_string=("electrons_gamma*" // scaleToSIstring)
+    CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
+
+    aname="slice_nom_lamda"
+! Todo: Actually needs to take account of slippage, and needs to identify
+! which lamda was used (eg for 2 colour)
+    write(scaleToSIstring, '(E16.9)' ) lam_r_G
+    attr_data_string=("floor(electrons_zSI/" // scaleToSIstring // ")")
+    CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
+
+    aname="phi_lamda"
+! Todo: Actually needs to take account of slippage, and needs to identify
+! which lamda was used (eg for 2 colour)
+    attr_data_string=("(electrons_zSI-(slice_nom_lamda*" // &
+     scaleToSIstring // "))*6.283185307179586/" // scaleToSIstring)
+    CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
+
+    aname="electrons_numPhysicalParticles"
+    write(scaleToSIstring, '(E16.9)' ) npk_bar_G
+    attr_data_string=("electrons_weight*" // scaleToSIstring)
+    CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
+
+    aname="electrons_chargeSI"
+    write(scaleToSIstring, '(E16.9)' ) npk_bar_G*q_e
+    attr_data_string=("electrons_weight*" // scaleToSIstring)
+    CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
+
+! Todo: write an expression for rms beam sizes
+! Todo: write an expression for slice emittance
+
+! Close the file.
+    CALL h5fclose_f(file_id, error)
+
+!Close the interface
+    CALL h5close_f(error)
+
+!    qOK = .true.            
+    goto 2000
+
+!     Error Handler - Error log Subroutine in CIO.f90 line 709
+1000 call Error_log('Error in hdf5_puff:outputBeamFiles',tErrorLog_G)
+    print*,'Error in hdf5_puff:outputBeamFiles'
+2000 continue
+  end subroutine outputH5BeamFiles
+
+
+!> outputH5Field3D is for writing the full field output.
+  subroutine outputH5Field3D(sA, time, error)
+    implicit none
+    real(kind=wp), intent(in) :: sA(:)
+    REAL(kind=WP), intent(in) :: time
+    INTEGER(HID_T) :: file_id       !< File identifier
+    INTEGER(HID_T) :: dset_id       !< Dataset identifier 
+    INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
+    INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
+    INTEGER(HID_T) :: attr_id       !< Attribute identifier
+    INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
+    INTEGER(HID_T) :: atype_id      !< Attribute Data type identifier
+    INTEGER(HID_T) :: group_id      !< Group identifier
+! may yet need this, but field data is not separated amongst cores
+!    logical, intent(in) :: qSeparate
+    CHARACTER(LEN=5), PARAMETER :: dsetname = "aperp"     ! Dataset name
+    CHARACTER(LEN=16) :: aname   ! Attribute name
+!    character(32_IP), intent(in) :: zDFName
+    character(32_IP) :: filename
+    INTEGER(HSIZE_T), DIMENSION(4) :: dims 
+! Data as component*reducedNX*reducedNY*reducedNZ2
+! Not described as a parameter, so can prob modify 
+! for single component (rank 3 data) like charge
+    INTEGER     ::   rank = 4               !< Dataset rank
+    INTEGER(HSIZE_T), DIMENSION(1) :: adims !< Attribute dims
+    REAL(kind=WP) :: attr_data_double       !< holder of attribute double data
+    CHARACTER(LEN=100) :: attr_data_string  !< holder of attribute strings 
+    INTEGER(HSIZE_T) :: attr_string_len     !< length of attribute strings
+    INTEGER(kind=IP) :: numSpatialDims      !< Attr content,  
+    INTEGER     ::  arank = 1               !< Attribute Dataset rank (1: vector)
+    CHARACTER(LEN=4), PARAMETER :: timegrpname = "time"  !< Name of time group
+    CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  !< Name of limits grp
+    CHARACTER(LEN=10), PARAMETER :: meshScaledGrpname = "meshScaled" !< Name of mesh grp
+    CHARACTER(LEN=6), PARAMETER :: meshSIGrpname = "meshSI"  !< Dummy scaled mesh grp name
+    REAL(kind=WP), ALLOCATABLE :: limdata (:)  !< Data to write (diff for 1D and 3D)
+    INTEGER(kind=IP), ALLOCATABLE :: numcelldata (:)  !< Mesh info for uniform grid
+    ! Local vars
+    integer :: error !< Error flag
+
+    if (qONED_G) then
+      numSpatialDims=1
+    else
+      numSpatialDims=3
+    end if
+
+    Print*,('Spatialdims: ' // trim(IntegerToString(numSpatialDims)))
+
+!Fields are all available to rank zero, and we will worry about
+!parallel writing this in due course. 
+    if (tProcInfo_G%qRoot) then
+      dims = (/NX_G,NY_G,NZ2_G,2/) ! Dataset dimensions
+
+      filename = (trim(adjustl(zFilename_G)) // '_aperp_' &
+        // trim(adjustl(IntegerToString(tProcInfo_G%Rank))) &
+        // '_' //trim(adjustl(IntegerToString(iStep))) &
+        // '.h5' )
+      PRINT *,'size of sA'
+      PRINT *, size(sA)
+      CALL h5open_f(error)
+
+      CALL h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error)
+!    Print*,'hdf5_puff:outputH5BeamFiles(file created)'
+!
+! Create the big dataspace in the file.
+!
+      CALL h5screate_simple_f(rank, dims, filespace, error)
+      Print*,'hdf5_puff:outputH5Field(filespace created)'
+!      Print*,error
+!
+! Create the dataset with default properties.
+!
+      CALL h5dcreate_f(file_id, dsetname, H5T_NATIVE_DOUBLE, filespace, &
+       dset_id, error)
+      Print*,'hdf5_puff:outputH5Field(dataset created)'
+      Print*,error
+
+! We do not need to Create a space in memory to buffer the data writes
+! for a serial (rank 0 only write), but may need this for parallel write
+! where we'll want to grab a slice of sA for writing
+!      CALL h5screate_simple_f(rank, dims, dspace_id, error)
+!      Print*,'hdf5_puff:outputH5BeamFiles(memory dataspace allocated)'
+
+!  try without dataspaces
+      CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, sA, dims, error)
+      Print*,'hdf5_puff:outputH5Field(write done)'
+      Print*,error
+
+!      CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, sA, dims, error, &
+!        file_space_id = filespace, mem_space_id = dspace_id)
+      CALL h5sclose_f(filespace, error)
+      Print*,'hdf5_puff:outputH5Field(filespace closed)'
+      Print*,error
+!
+
+! ATTRIBUTES FOR FIELD DATASET
+!
+! scalar dataset for simpler values
+    CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
+    Print*,'hdf5_puff:outputH5Field(scalar space created)'
+
+! Attributes of type double float first.
+!
+! Create datatype for the attribute.
+!
+    CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
+    aname="time"
+    attr_data_double=time
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    CALL h5tclose_f(atype_id, error)
+
+! then text attributes
+    CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
+!    Print*,'hdf5_puff:outputH5BeamFiles(atype_id set to string)'
+    aname="vsLabels"
+    attr_data_string="APerp_Re_scaled,APerp_Im_scaled"
+    attr_string_len=len(trim(adjustl(attr_data_string)))
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+!    Print*,'hdf5_puff:outputH5BeamFiles(lables attribute created)'
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    Print*,'hdf5_puff:outputH5BeamFiles(lables attribute written)'
+    print*,error
+    CALL h5aclose_f(attr_id, error)
+    Print*,'hdf5_puff:outputH5Field3D(type attribute closed)'
+    print*,error
+
+    aname="vsType"
+    attr_data_string="variable"
+    attr_string_len=len(trim(adjustl(attr_data_string)))
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    Print*,'hdf5_puff:outputH5BeamFiles(type attribute created)'
+    print*,error
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    Print*,'hdf5_puff:outputH5BeamFiles(type attribute written)'
+    print*,error
+    CALL h5aclose_f(attr_id, error)
+    aname="vsCentering"
+    attr_data_string="nodal"
+    attr_string_len=len(trim(adjustl(attr_data_string)))
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    Print*,'hdf5_puff:outputH5BeamFiles(type attribute created)'
+    print*,error
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+!    Print*,'hdf5_puff:outputH5BeamFiles(type attribute written)'
+    CALL h5aclose_f(attr_id, error)
+    CALL addH5StringAttribute(dset_id,"vsIndexOrder","compMajorF",aspace_id)
+    CALL addH5StringAttribute(dset_id,"vsTimeGroup",timegrpname,aspace_id)
+    CALL addH5StringAttribute(dset_id,"vsLimits",limgrpname,aspace_id)
+    CALL addH5StringAttribute(dset_id,"vsMesh",meshScaledGrpname,aspace_id)
+
+    CALL h5dclose_f(dset_id, error)
+	  
+! Time Group 
+    CALL writeH5TimeGroup(file_id, timegrpname, time, &
+	     'outH5Field3D', error)
+
+    CALL writeH5RunInfo(file_id, 'outH5Field3D', error)
+	
+!	  CALL writeH5Field3DderivedVars(file_id, error)
+	
+! We make a group for the limits of the field data
+    CALL h5gcreate_f(file_id, limgrpname, group_id, error)
+    CALL addH5StringAttribute(dset_id,"vsType","limits",aspace_id)
+    CALL addH5StringAttribute(dset_id,"vsKind","Cartesian",aspace_id)
+    CALL h5sclose_f(aspace_id, error)
+! And the limits themselves which require non-scalar attributes
+    adims = (/numSpatialDims/) 
+    CALL h5screate_simple_f(arank, adims, aspace_id, error)
+    aname="vsLowerBounds"
+    CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+!    Print*,'hdf5_puff:outputH5Field(lower bounds attribute created)'
+    ALLOCATE ( limdata(numSpatialDims))
+    limdata(1)=-0.5*(NX_G-1_IP)*sLengthOfElmX_G
+    limdata(2)=-0.5*(NY_G-1_IP)*sLengthOfElmY_G
+    limdata(3)=0.0
+    CALL h5awrite_f(attr_id, atype_id, limdata, adims, error) 
+    Print*,error
+    CALL h5aclose_f(attr_id, error)
+    Print*,error
+    aname="vsUpperBounds"
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+!    Print*,'hdf5_puff:outputH5Field(upper bounds attribute created)'
+!    Print*,error
+    limdata(1)=0.5*(NX_G-1)*sLengthOfElmX_G
+    limdata(2)=0.5*(NY_G-1)*sLengthOfElmY_G
+    limdata(3)=real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G
+    CALL h5awrite_f(attr_id, atype_id, limdata, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    DEALLOCATE ( limdata)
+    CALL h5tclose_f(atype_id, error)
+    CALL h5sclose_f(aspace_id, error)    
+    CALL h5gclose_f(group_id, error)
+
+! We make a SI mesh group
+    CALL h5gcreate_f(file_id, meshSIGrpname, group_id, error)
+    CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
+    aname="vsType"
+    attr_data_string="mesh"
+    attr_string_len=4
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    Print*,error   
+    CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
+!    Print*,'hdf5_puff:outputH5Field(scalar attribute space created)'
+!    Print*,error   
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+!    Print*,error   
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+!    Print*,error   
+    CALL h5aclose_f(attr_id, error)
+!    Print*,error   
+    aname="vsIndexOrder"
+    attr_data_string="compMajorF"
+    attr_string_len=10
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+!    Print*,'hdf5_puff:outputH5BeamFiles(type attribute created)'
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+!    Print*,'hdf5_puff:outputH5BeamFiles(type attribute written)'
+    CALL h5aclose_f(attr_id, error)
+!    Print*,'hdf5_puff:outputH5BeamFiles(type attribute closed)'
+!    print*,error
+    aname="vsCentering"
+    attr_data_string="nodal"
+    attr_string_len=len(attr_data_string)
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    aname="vsKind"
+    attr_data_string="uniform"
+    attr_string_len=len(attr_data_string)
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    CALL h5tclose_f(atype_id, error)
+    CALL h5aclose_f(attr_id, error)
+    CALL h5sclose_f(aspace_id, error)
+! And the limits themselves which require non-scalar attributes
+    adims = (/numSpatialDims/) 
+    CALL h5screate_simple_f(arank, adims, aspace_id, error)
+    aname="vsLowerBounds"
+    CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    Print*,'hdf5_puff:outputH5Field(mesh lower bounds attribute created)'
+    ALLOCATE ( limdata(numSpatialDims))
+    limdata(1)=-0.5*(NX_G-1)*sLengthOfElmX_G*DSQRT(lg_G*lc_G)
+    limdata(2)=-0.5*(NY_G-1)*sLengthOfElmY_G*DSQRT(lg_G*lc_G)
+    limdata(3)=0.0*lc_G
+    CALL h5awrite_f(attr_id, atype_id, limdata, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    aname="vsUpperBounds"
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    Print*,'hdf5_puff:outputH5Field(mesh upper bounds attribute created)'
+    limdata(1)=0.5*(NX_G-1)*sLengthOfElmX_G*DSQRT(lg_G*lc_G)
+    limdata(2)=0.5*(NY_G-1)*sLengthOfElmY_G*DSQRT(lg_G*lc_G)
+    limdata(3)=real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_G
+    CALL h5awrite_f(attr_id, atype_id, limdata, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    DEALLOCATE ( limdata)
+    CALL h5tclose_f(atype_id, error)
+    CALL h5gclose_f(group_id, error)
+! We make the scaled mesh group
+    CALL h5gcreate_f(file_id, meshScaledGrpname, group_id, error)
+    CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
+    aname="vsType"
+    attr_data_string="mesh"
+    attr_string_len=4
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    Print*,error   
+    CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
+!    Print*,'hdf5_puff:outputH5Field(scalar attribute space created)'
+!    Print*,error   
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+!    Print*,error   
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+!    Print*,error   
+    CALL h5aclose_f(attr_id, error)
+!    Print*,error   
+    aname="vsIndexOrder"
+    attr_data_string="compMajorF"
+    attr_string_len=10
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    aname="vsCentering"
+    attr_data_string="nodal"
+    attr_string_len=len(trim(adjustl(attr_data_string)))
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    aname="vsKind"
+    attr_data_string="uniform"
+    attr_string_len=len(trim(adjustl(attr_data_string)))
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    CALL h5tclose_f(atype_id, error)
+    CALL h5aclose_f(attr_id, error)
+    CALL h5sclose_f(aspace_id, error)
+! And the limits themselves which require non-scalar attributes
+    adims = (/numSpatialDims/) 
+    CALL h5screate_simple_f(arank, adims, aspace_id, error)
+    aname="vsLowerBounds"
+    CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    Print*,'hdf5_puff:outputH5Field(mesh lower bounds attribute created)'
+    ALLOCATE ( limdata(numSpatialDims))
+    limdata(1)=-0.5*(NX_G-1)*sLengthOfElmX_G
+    limdata(2)=-0.5*(NY_G-1)*sLengthOfElmY_G
+    limdata(3)=0.0
+    CALL h5awrite_f(attr_id, atype_id, limdata, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    aname="vsUpperBounds"
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    Print*,'hdf5_puff:outputH5Field(mesh upper bounds attribute created)'
+    limdata(1)=0.5*(NX_G-1)*sLengthOfElmX_G
+    limdata(2)=0.5*(NY_G-1)*sLengthOfElmY_G
+    limdata(3)=real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G
+    CALL h5awrite_f(attr_id, atype_id, limdata, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    DEALLOCATE ( limdata)
+    CALL h5tclose_f(atype_id, error)
+
+! Integers
+    aname="vsStartCell"
+    CALL h5tcopy_f(H5T_NATIVE_INTEGER, atype_id, error)
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    Print*,'hdf5_puff:outputH5Field(startcell attribute created)'
+    ALLOCATE ( numcelldata(numSpatialDims))
+    numcelldata(1)=0
+    numcelldata(2)=0
+    numcelldata(3)=0
+    CALL h5awrite_f(attr_id, atype_id, numcelldata, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    aname="vsNumCells"
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    Print*,'hdf5_puff:outputH5Field(numcells attribute created)'
+    numcelldata(1)=NX_G-1
+    numcelldata(2)=NY_G-1
+    numcelldata(3)=NZ2_G-1
+    CALL h5awrite_f(attr_id, atype_id, numcelldata, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    DEALLOCATE ( numcelldata)
+    CALL h5tclose_f(atype_id, error)
+
+    CALL h5sclose_f(aspace_id, error)
+    
+    CALL h5gclose_f(group_id, error)
+
+! We make another group
+!    CALL h5gcreate_f(file_id, "intensityScaled", group_id, error)
+!    CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
+!    CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
+!    aname="vsType"
+!    attr_data_string="vsVars"
+!    attr_string_len=len(trim(adjustl(attr_data_string)))
+!    CALL h5tset_size_f(atype_id, attr_string_len, error)
+!    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+!    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+!    CALL h5aclose_f(attr_id, error)
+    aname="intensityScaled"
+    attr_data_string="sqr(APerp_Re_scaled)+sqr(APerp_Im_scaled)"
+    attr_string_len=len(trim(adjustl(attr_data_string)))
+    CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
+!    CALL h5tset_size_f(atype_id, attr_string_len, error)
+!    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+!    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+!    CALL h5aclose_f(attr_id, error)
+!    CALL h5tclose_f(atype_id, error)
+!    CALL h5sclose_f(aspace_id, error)
+!    CALL h5gclose_f(group_id, error)
+
+
+!
+! Close the file.
+!
+      CALL h5fclose_f(file_id, error)
+
+
+    End If 
+
+!      if (tProcInfo_G%qRoot) then
+
+  end subroutine outputH5Field3D
+
+!> outputH5Field1DFloat
+!! Output a 1D, 1 comp float eg of radiation power, electron current, etc
+!! 
+  subroutine outputH5Field1DFloat(writeData, dsetname, simtime, error)
+
+    implicit none
+
+    real(kind=wp), intent(in) :: writeData(:) !< data to be written
+    REAL(kind=WP), intent(in) :: simtime      !< simulation time
+    CHARACTER(LEN=*), intent(in) :: dsetname  !< Dataset name
+    INTEGER(HID_T) :: file_id       !< File identifier
+    INTEGER(HID_T) :: dset_id       !< Dataset identifier 
+    INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
+    INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
+    INTEGER(HID_T) :: attr_id       !< Attribute identifier
+    INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
+    INTEGER(HID_T) :: atype_id      !< Attribute Data type identifier
+    INTEGER(HID_T) :: group_id      !< Group identifier
+! may yet need this, but field data is not separated amongst cores
+!    logical, intent(in) :: qSeparate
+! assumed these files will be small and written on rank0 for now
+    CHARACTER(LEN=16) :: aname   !< Attribute name
+    character(32_IP) :: filename !< output filename
+    INTEGER(HSIZE_T), DIMENSION(1) :: dims  !< Dataset dimensionality
+    INTEGER     ::   rank = 1               !< Dataset rank
+    INTEGER(HSIZE_T), DIMENSION(1) :: adims !< Attribute dims
+    REAL(kind=WP) :: attr_data_double       !< for attrs of type double
+    CHARACTER(LEN=100) :: attr_data_string  !< attrs of type string
+    INTEGER(HSIZE_T) :: attr_string_len     !< len of attrs of type string
+    INTEGER(kind=IP) :: numSpatialDims = 1  !< Attr content,  
+    INTEGER     ::  arank = 1               !< Attribute Dataset rank
+    CHARACTER(LEN=4), PARAMETER :: timegrpname = "time"  !< Time Group name
+    CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  !< Lims Group name
+    CHARACTER(LEN=10), PARAMETER :: meshScaledGrpname = "meshScaled" !< Mesh Group name
+    CHARACTER(LEN=6), PARAMETER :: meshSIGrpname = "meshSI"  !< SI Mesh Group name
+    CHARACTER(LEN=16) :: scaleToSIstring !< placeholder for scaling factor strings
+    REAL(kind=WP), ALLOCATABLE :: limdata (:)  !< dataset containing limits to write
+    INTEGER(kind=IP), ALLOCATABLE :: numcelldata (:)  !< Dataset to write with numcells
+    ! Local vars    integer :: error ! Error flag
+    integer(kind=ip) :: error !< Local Error flag
+
+!Fields are all available to rank zero, and we will worry about
+!parallel writing this in due course. 
+    if (tProcInfo_G%qRoot) then
+      dims = size(writeData) ! Dataset dimensions
+
+      filename = ( trim(adjustl(zFilename_G)) // '_' // trim(adjustl(dsetname)) & 
+	    // '_' // trim(adjustl(IntegerToString(tProcInfo_G%Rank))) &
+        // '_' //trim(adjustl(IntegerToString(iStep))) &
+        // '.h5' )
+      PRINT *,'size of writeData'
+      PRINT *, trim(adjustl(dsetname))
+      PRINT *, dims
+      PRINT *, len(trim(adjustl(dsetname)))
+      
+      CALL h5open_f(error)
+!
+! Create a new file using default properties.
+!
+      CALL h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error)
+!    Print*,'hdf5_puff:outputH5BeamFiles(file created)'
+!
+! Create the big dataspace in the file.
+!
+      CALL h5screate_simple_f(rank, dims, filespace, error)
+!      Print*,'hdf5_puff:outputH5power(filespace created)'
+!      Print*,error
+!
+! Create the dataset with default properties.
+!
+      CALL h5dcreate_f(file_id, trim(adjustl(dsetname)), H5T_NATIVE_DOUBLE, filespace, &
+       dset_id, error)
+!
+! Create a space in memory to buffer the data writes
+!
+!      CALL h5screate_simple_f(rank, dims, dspace_id, error)
+!      Print*,'hdf5_puff:outputH5BeamFiles(memory dataspace allocated)'
+
+!  try without dataspaces
+      CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, writeData, dims, error)
+!      Print*,'hdf5_puff:outputH5power(write done)'
+!      Print*,error
+!      CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, sA, dims, error, &
+!        file_space_id = filespace, mem_space_id = dspace_id)
+      CALL h5sclose_f(filespace, error)
+!      Print*,'hdf5_puff:outputH5power(filespace closed)'
+!      Print*,error
+
+! ATTRIBUTES FOR FIELD DATASET
+!
+! simple dataset for array of vals
+!    CALL h5screate_simple_f(arank, adims, aspace_id, error)
+
+! scalar dataset for simpler values
+    CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
+!    Print*,'hdf5_puff:outputH5power(scalar space created)'
+!
+! Create datatype for the attribute.
+!
+    CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
+    aname="time"
+!    attr_data_double=1.0*iStep*sStepSize/c
+    attr_data_double=simtime
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    CALL h5tclose_f(atype_id, error)
+!      text attributes
+    CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
+    aname="vsLabels"
+    attr_data_string=trim(adjustl(dsetname))
+    attr_string_len=len(trim(adjustl(dsetname))) 
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    CALL addH5StringAttribute(dset_id,"vsType","variable",aspace_id)
+    CALL addH5StringAttribute(dset_id,"vsCentering","nodal",aspace_id) 
+    CALL addH5StringAttribute(dset_id,"vsIndexOrder","compMinorC",aspace_id)
+    CALL addH5StringAttribute(dset_id,"vsTimeGroup",timegrpname,aspace_id)
+    CALL addH5StringAttribute(dset_id,"vsLimits",limgrpname,aspace_id)
+    CALL addH5StringAttribute(dset_id,"vsMesh",meshScaledGrpname,aspace_id)
+!    aname="vsMesh"
+!    attr_data_string=meshScaledGrpname
+!    attr_string_len=len(meshScaledGrpname)
+!    CALL h5tset_size_f(atype_id, attr_string_len, error)
+!    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+!    Print*,'hdf5_puff:outputH5Field1D(mesh attributes created)'
+!    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+!    CALL h5aclose_f(attr_id, error)
+!    Print*,'hdf5_puff:outputH5Field1D(mesh attributes closed)'
+    CALL h5sclose_f(aspace_id, error)
+    Print*,'hdf5_puff:outputH5Field1D(not closing scalar space)'
+!    CALL h5tclose_f(atype_id, error)
+    Print*,error
+
+      CALL h5dclose_f(dset_id, error)
+   Print*,'hdf5_puff:outputH5Field1D(close dataset work on groups)'
+!    Print*,error
+ 
+! Call the subroutine to create the time group
+! CALL writeH5TimeGroup(file_id, timegrpname, simtime, trim(adjustl(dsetname)), error)
+  CALL writeH5TimeGroup(file_id, timegrpname, simtime, 'outH5field1D', error)
+
+  CALL writeH5RunInfo(file_id, 'outputH5Field1D', error)
+	
+! CALL writeH5Field1DderivedVars(file_id, error)
+! CALL writeH5LimitsMesh1D
+	
+! We make another group
+    CALL h5gcreate_f(file_id, limgrpname, group_id, error)
+!    CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
+!    print*,"not opening space as not closed, and handy for timegrp, runinfo"
+    Print*,error
+    CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
+    Print*,error
+    CALL addH5StringAttribute(group_id,"vsType","limits",aspace_id)
+    CALL addH5StringAttribute(group_id,"vsKind","Cartesian",aspace_id)
+    CALL h5sclose_f(aspace_id, error)
+! And the limits themselves which require non-scalar attributes
+    adims = (/1/) 
+    CALL h5screate_simple_f(arank, adims, aspace_id, error)
+    aname="vsLowerBounds"
+    CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+!    Print*,'hdf5_puff:outputH5Field1D(lower bounds attribute created)'
+    ALLOCATE ( limdata(1))
+    limdata(1)=0.0
+    CALL h5awrite_f(attr_id, atype_id, limdata, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    aname="vsUpperBounds"
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+!    Print*,'hdf5_puff:outputH5Field1D(upper bounds attribute created)'
+    limdata(1)=real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G
+    CALL h5awrite_f(attr_id, atype_id, limdata, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    DEALLOCATE ( limdata)
+    CALL h5tclose_f(atype_id, error)
+    CALL h5sclose_f(aspace_id, error)
+    CALL h5gclose_f(group_id, error)
+
+! We make a mesh group
+    CALL h5gcreate_f(file_id, meshScaledGrpname, group_id, error)
+    CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
+    CALL addH5StringAttribute(group_id,"vsType","mesh",aspace_id)
+    CALL addH5StringAttribute(group_id,"vsIndexOrder","compMinorC",aspace_id)
+    CALL addH5StringAttribute(group_id,"vsCentering","nodal",aspace_id)
+    CALL addH5StringAttribute(group_id,"vsKind","uniform",aspace_id)
+    CALL h5sclose_f(aspace_id, error)
+! And the limits themselves which require non-scalar attributes
+    adims = (/1/) 
+    CALL h5screate_simple_f(arank, adims, aspace_id, error)
+    aname="vsLowerBounds"
+    CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+!    Print*,'hdf5_puff:outputH5Field1D(mesh lower bounds attribute created)'
+    ALLOCATE ( limdata(1))
+    limdata(1)=0.0
+    CALL h5awrite_f(attr_id, atype_id, limdata, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    aname="vsUpperBounds"
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    Print*,'hdf5_puff:outputH5Field1DFloat(mesh upper bounds attribute' &
+         // 'created)' // trim(adjustl(dsetname))
+    limdata(1)=real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G
+    CALL h5awrite_f(attr_id, atype_id, limdata, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    DEALLOCATE ( limdata)
+    CALL h5tclose_f(atype_id, error)
+
+! Integers
+    aname="vsStartCell"
+    CALL h5tcopy_f(H5T_NATIVE_INTEGER, atype_id, error)
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    Print*,'hdf5_puff:outputH5Field1D(startcell attribute created)'
+    ALLOCATE ( numcelldata(numSpatialDims))
+    numcelldata(1)=0
+    CALL h5awrite_f(attr_id, atype_id, numcelldata, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    aname="vsNumCells"
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    Print*,'hdf5_puff:outputH5Field1DFloat(numcells attribute ' &
+	  // 'created)' // trim(adjustl(dsetname))
+    numcelldata(1)=NZ2_G-1
+    CALL h5awrite_f(attr_id, atype_id, numcelldata, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    DEALLOCATE ( numcelldata)
+    CALL h5tclose_f(atype_id, error)
+    print*,error
+
+
+    CALL h5sclose_f(aspace_id, error)
+    
+    CALL h5gclose_f(group_id, error)
+
+
+!
+! Close the file.
+!
+      CALL h5fclose_f(file_id, error)
+
+
+    End If 
+
+!      if (tProcInfo_G%qRoot) then
+
+  end subroutine outputH5Field1DFloat
+
+  subroutine writeH5TimeGroup(file_id, timegrpname, simtime, callerstr, error)
+
+    INTEGER(HID_T) :: file_id       ! File identifier
+    CHARACTER(LEN=4), intent(in) :: timegrpname  ! Group name
+    REAL(kind=WP), intent(in) :: simtime ! Current time
+    CHARACTER(LEN=12), intent(in) :: callerstr
+    INTEGER(kind=ip) :: error
+!
+! Local
+    INTEGER(HID_T) :: attr_id       ! Attribute identifier
+    INTEGER(HID_T) :: aspace_id     ! Attribute Dataspace identifier
+    INTEGER(HID_T) :: atype_id      ! Attribute Data type identifier
+    INTEGER(HID_T) :: group_id      ! Group identifier
+    INTEGER     ::   rank = 1               ! Dataset rank
+    INTEGER(HSIZE_T), DIMENSION(1) :: adims ! Attribute dims
+    REAL(kind=WP) :: attr_data_double
+    CHARACTER(LEN=100) :: attr_data_string
+    INTEGER(HSIZE_T) :: attr_string_len
+    INTEGER(kind=IP) :: numSpatialDims = 1   ! Attr content,  
+    INTEGER     ::  arank = 1               ! Attribute Dataset rank
+    CHARACTER(LEN=16) :: aname   ! Attribute name
+
+! with the main dataset done we work on the other groups with attributes
+! We make a group
+    CALL h5gcreate_f(file_id, timegrpname, group_id, error)
+   Print*,'hdf5_puff:' // callerstr // '(group timegrpname created)'
+    CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
+!   Print*,'hdf5_puff:outputH5power(set timegrpname type)'
+    CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
+!    Print*,'hdf5_puff:outputH5power(string padding enabled)'
+    aname="vsType"
+    attr_data_string="time"
+    attr_string_len=len(trim(adjustl(attr_data_string)))
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+!   Print*,'hdf5_puff:outputH5power(set timegrpname size)'
+!    Print*,error
+    CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
+!    Print*,('hdf5_puff:' // callerstr // '(scalar attr space created)')
+!    Print*,error   
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+!    Print*,'hdf5_puff:' // callerstr // '(create timegrp vstype at)'
+!    Print*,error
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+!    Print*,'hdf5_puff:' // callerstr // '(write timegrp vstype attr)'
+!    Print*,error
+    CALL h5aclose_f(attr_id, error)
+!    Print*,'hdf5_puff:' // callerstr // '(close timegrp vstype attr)'
+!    Print*,error
+
+    CALL h5tclose_f(atype_id, error)
+!    Print*,'hdf5_puff:' // callerstr // '(close timegrpname time attr-type )'
+!    Print*,error
+
+    CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
+    aname="vsTime"
+    attr_data_double=simtime
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+!    print*,'hdf5_puff:' // callerstr // ' create vstime attribute'
+!    Print*,error
+    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
+!    print*,'hdf5_puff:' // callerstr // ' write vstime attribute'
+!    Print*,error
+    CALL h5aclose_f(attr_id, error)
+    CALL h5tclose_f(atype_id, error)
+    CALL h5tcopy_f(H5T_NATIVE_INTEGER, atype_id, error)
+    aname="vsStep"
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, iCSteps, adims, error) 
+    CALL h5tclose_f(atype_id, error)
+    CALL h5aclose_f(attr_id, error)
+    print*,'hdf5_puff:' // callerstr // ' close vsStep attribute'
+    Print*,error
+    CALL h5sclose_f(aspace_id, error)
+    Print*,error
+    Print*,'Closing space'
+    CALL h5gclose_f(group_id, error)
+    Print*,error
+    Print*,'Closing timeGroup'
+!    Print*,error
+
+  end subroutine writeH5TimeGroup
+
+!> writeH5RunInfo
+!! Routine to write provenance data to the vizschema hdf5 files
+!! @param file_id file identifier, location to put provenance data
+!! @callerstr allows the passing in of information about what is
+!!   asking for the run information to be written (ie parent routine)
+   subroutine writeH5RunInfo(file_id, callerstr, error)
+
+    INTEGER(HID_T), INTENT(in) :: file_id 
+    CHARACTER(LEN=12), intent(in) :: callerstr
+    INTEGER(kind=ip) :: error
+!
+! Local
+    INTEGER(HID_T) :: attr_id       !< Attribute identifier
+    INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
+    INTEGER(HID_T) :: atype_id      !< Attribute Data type identifier
+    INTEGER(HID_T) :: group_id      !< Group identifier
+    INTEGER     ::   rank = 1               !< Dataset rank
+    INTEGER(HSIZE_T), DIMENSION(1) :: adims !< Attribute dims
+    REAL(kind=WP) :: attr_data_double       !< attrib data (type double)
+    CHARACTER(LEN=1024) :: attr_data_string !< attrib data (type string)
+    INTEGER(HSIZE_T) :: attr_string_len     !< length of attrib string
+    INTEGER(kind=IP) :: numSpatialDims = 1  !< Attr content, identifying nu 
+    INTEGER     ::  arank = 1               !< Attribute Dataset rank
+    CHARACTER(LEN=24) :: aname   ! Attribute name
+    character(8)  :: date
+    character(10) :: time
+    character(5)  :: zone
+    integer,dimension(8) :: values
+    call date_and_time(date,time,zone,values)
+ ! with the main dataset done we work on the other groups with attributes
+! We make a group
+    CALL h5gcreate_f(file_id, 'runInfo' , group_id, error)
+    Print*,'hdf5_puff:' // callerstr // '(group runinfo created)'
+    CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
+    CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
+    aname="vsType"
+    attr_data_string="runInfo"
+    attr_string_len=len(trim(attr_data_string))
+    CALL h5tset_size_f(atype_id, attr_string_len, error)
+    CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
+!    Print*,('hdf5_puff:' // callerstr // '(scalar attr space created)')
+!    Print*,error   
+    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+!    Print*,'hdf5_puff:' // callerstr // '(close timegrpname time attr)'
+!    Print*,error
+    CALL addH5StringAttribute(group_id,"vsSoftware","PUFFIN",aspace_id)
+
+!    write(attr_data_string, '(8i5)') values
+!    write(attr_data_string, '(5i4-3i2-3i2) zone (4i3 3i2:3i2:3i2 .4i3)') values
+    write(attr_data_string, '(a,a,a,a,a,2x,a,a,a,a,a,1x,a)') date(1:4),'-',date(5:6), &
+      '-',date(7:8),time(1:2),':',time(3:4),':',time(5:10), zone
+    CALL addH5StringAttribute(group_id,"vsRunDate",attr_data_string,aspace_id)
+    CALL GETLOG(attr_data_string)
+    CALL addH5StringAttribute(group_id,"vsUser",attr_data_string,aspace_id)
+    CALL HOSTNM(attr_data_string)
+    CALL addH5StringAttribute(group_id,"vsRunHost",attr_data_string,aspace_id)
+    CALL addH5StringAttribute(group_id,"vsBuildConfigDate",'@CONFIGURE_TIME_STAMP@',aspace_id)
+
+    attr_data_string='@GIT_BRANCH@ : @GIT_REVISION@' 
+    CALL addH5StringAttribute(group_id,"vsSwRevision",attr_data_string,aspace_id)
+
+    attr_data_string='@Puffin_VERSION_MAJOR@.@Puffin_VERSION_MINOR@.@Puffin_VERSION_PATCH@' 
+    CALL addH5StringAttribute(group_id,"vsSwVersion",attr_data_string,aspace_id)
+   
+    CALL addH5StringAttribute(group_id,"vsVsVersion","3.0",aspace_id)
+    CALL addH5StringAttribute(group_id,"vsFCompiler","@Fortran_COMPILER_NAME@",aspace_id)
+    CALL addH5StringAttribute(group_id,"vsFCompilerVersion","@Fortran_VERSION@",aspace_id)
+    CALL addH5StringAttribute(group_id,"vsFCompilerFlags","@CMAKE_Fortran_FLAGS@",aspace_id)
+    CALL addH5StringAttribute(group_id,"vsBuildHost","@UQHOSTNAME@",aspace_id)
+    CALL addH5StringAttribute(group_id,"vsBuildHostType","@CMAKE_HOST_SYSTEM@",aspace_id)
+
+! required Fotran 2003. Not sure if we really want to do this.
+    CALL get_command(attr_data_string)
+    CALL addH5StringAttribute(group_id,"vsCommandLine",attr_data_string,aspace_id)
+! rest I think is less sensitive to FORTRAN version
+
+
+    CALL addH5StringAttribute(group_id,"vsInputFile",zFilename_G,aspace_id)
+    CALL addH5StringAttribute(group_id,"vsBeamFile",zBFile_G,aspace_id)
+    CALL addH5StringAttribute(group_id,"vsSeedFile",zSFile_G,aspace_id)
+!    aname="vsSeedFile"
+!    attr_data_string=zSFile_G
+!    attr_string_len=len(attr_data_string)
+!    CALL h5tset_size_f(atype_id, attr_string_len, error)
+!    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+!    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+!    CALL h5aclose_f(attr_id, error)
+    CALL h5sclose_f(aspace_id, error)
+    Print*,error
+    CALL h5tclose_f(atype_id, error)
+    CALL h5gclose_f(group_id, error)
+    Print*,'Closing runInfo'
+!    Print*,error
+
+  end subroutine writeH5RunInfo
+ 
+!  subroutine createH5Files(tArrayY, zDFName, zOptionalString, qOK)
+!
+!    implicit none
+
+! Create "Full" Files - creates either 
+! the full data sets for the field and 
+! electron phase space.
+
+!    type(cArraySegment), intent(inout) :: tArrayY(:)
+!   character(32_IP), intent(in)   ::   zDFName
+!    character(*), intent(in), optional  :: zOptionalString
+!    logical, intent(inout) :: qOK
+
+!    integer(kind=ip) :: iap
+!    character(32_IP) :: zFileName
+!    logical :: qOptional, qOKL
+
+
+
+!    qOK = .false.
+!    if (present(zOptionalString)) then
+!      if (len(trim(adjustl(zOptionalString))) > 0) then
+!        qOptional = .TRUE.
+!      end if
+!    end if
+!     Loop around array segments, creating files
+!    do iap = 1, size(tArrayY)
+!      if (tArrayY(iap)%qWrite) then
+!        if (tProcInfo_G%qRoot) then
+!     Prepare filename      
+!          zFilename = (trim(adjustl(tArrayY(iap)%zVariable)) // trim(adjustl(zDFName)) // '.h5')
+!          if (qOptional) then
+!            zFilename = (trim(adjustl(zOptionalString)) // '_' // trim(adjustl(zFilename)) // '.h5')
+!          end if
+!          call CreateSDDSFile(zFilename, &
+!                              tArrayY(iap)%zVariable, &
+!                              tArrayY(iap)%tFileType, &
+!                              qOKL)    
+!        end if
+!     end if
+!   end do
+!     Set error flag and exit
+!    qOK = .true.
+!    goto 2000
+!     Error Handler - Error log Subroutine in CIO.f90 line 709
+!1000 call Error_log('Error in sddsPuffin:createFFiles',tErrorLog_G)
+!    print*,'Error in sddsPuffin:createFFiles'
+!2000 continue
+!  end subroutine createH5Files
+
+
+!> IntegerToString
+!! Convert an integer into a string
+!! Handy for filename substitution of dump number
+!! @param  iInteger    - INPUT  - Integer to convert
+FUNCTION IntegerToString(iInteger)
+
+        IMPLICIT NONE
+        INTEGER(KIND=IP), INTENT(IN) :: iInteger
+        CHARACTER(32_IP) :: IntegerToString
+! Define local variables
+        CHARACTER(32_IP) :: zCharacter
+! Write character to internal file
+      write(zCharacter,*) iInteger
+! Output without blanks
+      IntegerToString = TRIM(ADJUSTL(zCharacter))
+!  Set error flag and exit
+       GoTo 2000
+! Error Handler - Error log Subroutine in CIO.f90 line 709
+1000 call Error_log('Error in sddsPuffin:IntegerToString',tErrorLog_G)
+      Print*,'Error in sddsPuffin:IntegerToString'
+2000 CONTINUE
+
+END FUNCTION IntegerToString
+	
+	
+end module hdf5_puff
+

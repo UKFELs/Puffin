@@ -279,13 +279,6 @@ ky = SQRT(sEta_G/(8.0_WP*sRho_G**2))
 px_shift = 0
 py_shift = 0
 
-call mpi_barrier(tProcInfo_G%comm, error)
-
-IF (tProcInfo_G%qROOT) print*, 'ABOUT TO LOOOOP'
-
-print*, 'ABOUT TO LOOOOP', size(x_1_integral), size(x_1_grid), &
-size(x_1_coord)
-
   DO k=1,nx3
     DO j=1,nx2
        DO i=1,nx1
@@ -509,7 +502,7 @@ SUBROUTINE getChi(Nk, Vk, max_dens, chi_bar, chi)
   chi_bar = Nk / max_dens
 	
 !    IF (PRESENT(chichi)) THEN
-  chi = chi_bar / Vk
+  chi = chi_bar / 1.0_wp
 !    ENDIF
 
 END SUBROUTINE getChi
