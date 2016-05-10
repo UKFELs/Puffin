@@ -419,46 +419,46 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
 !
 
 
-  if (qEquiXY_G) then
+  IF (qOneD) THEN ! If 1D, only need z2 and p2 to generate macroparticles
+  
+    IF (iNMP(iGam_CG) == 1_IP) THEN ! Cold beam case (important for noise)
+  
+      CALL genMacros(i_total_electrons=i_RealE, &
+           q_noise=q_noise,                & 
+           x_1_grid=sz2_grid,               &
+           x_1_integral=sZ2_integral,       &
+           s_number_macro=s_tmp_macro,     & 
+           s_vol_element=s_tmp_Vk,          &
+           max_av=s_tmp_max_av,             &
+           x_1_coord=z2_tmpcoord)
+  
+      pz2_tmpvector = offsets(iGam_CG)
+  
+    ELSE
+  
+      CALL genMacros(i_total_electrons=i_RealE, &
+                     q_noise=q_noise,                & 
+                     x_1_grid=sz2_grid,               &
+                     x_1_integral=sZ2_integral,       & 
+                     p_3_grid=spz2_grid,              &
+                     p_3_integral=sPZ2_integral,      &
+                     s_number_macro=s_tmp_macro,     &
+                     s_vol_element=s_tmp_Vk,         &
+                     max_av=s_tmp_max_av,            & 
+                     x_1_coord=z2_tmpcoord,           &
+                     p_3_vector=pz2_tmpvector)
+  
+    END IF
+  
+    x_tmpcoord  = offsets(iX_CG) 
+    y_tmpcoord  = offsets(iY_CG)
+    px_tmpvector = offsets(iPX_CG)
+    py_tmpvector = offsets(iPY_CG)    
+  
+  ELSE ! 6D beam
 
-    IF (qOneD) THEN ! If 1D, only need z2 and p2 to generate macroparticles
-  
-      IF (iNMP(iGam_CG) == 1_IP) THEN ! Cold beam case (important for noise)
-  
-        CALL genMacros(i_total_electrons=i_RealE, &
-             q_noise=q_noise,                & 
-             x_1_grid=sz2_grid,               &
-             x_1_integral=sZ2_integral,       &
-             s_number_macro=s_tmp_macro,     & 
-             s_vol_element=s_tmp_Vk,          &
-             max_av=s_tmp_max_av,             &
-             x_1_coord=z2_tmpcoord)
-  
-        pz2_tmpvector = offsets(iGam_CG)
-  
-      ELSE
-  
-        CALL genMacros(i_total_electrons=i_RealE, &
-                       q_noise=q_noise,                & 
-                       x_1_grid=sz2_grid,               &
-                       x_1_integral=sZ2_integral,       &	
-                       p_3_grid=spz2_grid,              &
-                       p_3_integral=sPZ2_integral,      &
-                       s_number_macro=s_tmp_macro,     &
-                       s_vol_element=s_tmp_Vk,         &
-                       max_av=s_tmp_max_av,            & 
-                       x_1_coord=z2_tmpcoord,           &
-                       p_3_vector=pz2_tmpvector)
-  
-      END IF
-  
-      x_tmpcoord  = offsets(iX_CG) 
-      y_tmpcoord  = offsets(iY_CG)
-      px_tmpvector = offsets(iPX_CG)
-      py_tmpvector = offsets(iPY_CG)    
-  
-    ELSE ! 6D beam
-  
+    if (qEquiXY_G) then
+
       CALL genMacros(i_total_electrons=i_RealE, &
                      q_noise=q_noise,                     & 
                      x_1_grid=sx_grid,               &
@@ -466,11 +466,11 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
                      x_2_grid=sy_grid,               &
                      x_2_integral=sY_integral,       & 
                      x_3_grid=sz2_grid,                   &
-                     x_3_integral=sZ2_integral,      &	
+                     x_3_integral=sZ2_integral,      &  
                      p_1_grid=spx_grid,              &
-                     p_1_integral=sPX_integral,      &	 
+                     p_1_integral=sPX_integral,      &   
                      p_2_grid=spy_grid,              &
-                     p_2_integral=sPY_integral,      &	
+                     p_2_integral=sPY_integral,      &  
                      p_3_grid=spz2_grid,             &
                      p_3_integral=sPZ2_integral,     &
                      s_number_macro=s_tmp_macro,     &
@@ -482,9 +482,9 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
                      p_1_vector=px_tmpvector,        &
                      p_2_vector=py_tmpvector,        &
                      p_3_vector=pz2_tmpvector)
-    END IF
+    
 
-  else    ! using sequences in transverse plane
+    else    ! using sequences in transverse plane
 
 
 
@@ -505,10 +505,10 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
 !  Halton/Hammersley or other low-disprecpency sequences may be added 
 !  later...
 
-    nseqparts = nseqparts_G
+      nseqparts = nseqparts_G
  
-    allocate(nktemp(iNMP_loc(iZ2_CG)), z2base(iNMP_loc(iZ2_CG)))
-    allocate(vkt(iNMP_loc(iZ2_CG)))
+      allocate(nktemp(iNMP_loc(iZ2_CG)), z2base(iNMP_loc(iZ2_CG)))
+      allocate(vkt(iNMP_loc(iZ2_CG)))
    
 
 !    if (tProcInfo_G%qRoot) then
@@ -526,55 +526,57 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
 
 !   Create quiet 'base' beam in z2...
 
-    CALL genMacros(i_total_electrons=i_RealE, &
-                   q_noise=.false.,           & 
-                   x_1_grid=sz2_grid,         &
-                   x_1_integral=sZ2_integral, &
-                   s_number_macro=nktemp,   & 
-                   s_vol_element=vkt,       &
-                   max_av=s_tmp_max_av,     &
-                   x_1_coord=z2base)
+      CALL genMacros(i_total_electrons=i_RealE, &
+                     q_noise=.false.,           & 
+                     x_1_grid=sz2_grid,         &
+                     x_1_integral=sZ2_integral, &
+                     s_number_macro=nktemp,   & 
+                     s_vol_element=vkt,       &
+                     max_av=s_tmp_max_av,     &
+                     x_1_coord=z2base)
 
 !   ...then generate some random sequences for the other 5 dimensions...
 
-    allocate(xseq(nseqparts), yseq(nseqparts), &
-             pxseq(nseqparts), pyseq(nseqparts), &
-             gamseq(nseqparts))  ! to store 'constant' sequences which will be replicated for each z2 slice
+      allocate(xseq(nseqparts), yseq(nseqparts), &
+               pxseq(nseqparts), pyseq(nseqparts), &
+               gamseq(nseqparts))  ! to store 'constant' sequences which will be replicated for each z2 slice
 
-    call getSeqs(xseq, yseq, pxseq, pyseq, gamseq, sigE)
+      call getSeqs(xseq, yseq, pxseq, pyseq, gamseq, sigE)
 
 !   ...then, each particle in this 1D beam (which has perfectly equispaced particles)
 !   is split into many particles with the same temporal/longitudinal coordinate
 !   with transverse positions given by the random particle distributions
 
-    gamseq = gamseq + offsets(iGam_CG)
+      gamseq = gamseq + offsets(iGam_CG)
 
-    do ij = 1, iNMP_loc(iZ2_CG)
+      do ij = 1, iNMP_loc(iZ2_CG)
 
-      s_tmp_macro((ij-1)*nseqparts+1:(ij*nseqparts)) &
-                       = nktemp(ij) / nseqparts   ! split charge evenly across MPs
+        s_tmp_macro((ij-1)*nseqparts+1:(ij*nseqparts)) &
+                         = nktemp(ij) / nseqparts   ! split charge evenly across MPs
 
-      z2_tmpcoord((ij-1)*nseqparts+1:(ij*nseqparts)) = z2base(ij)
-      x_tmpcoord((ij-1)*nseqparts+1:(ij*nseqparts)) = xseq(:)
-      y_tmpcoord((ij-1)*nseqparts+1:(ij*nseqparts)) = yseq(:)
-      px_tmpvector((ij-1)*nseqparts+1:(ij*nseqparts)) = pxseq(:)
-      py_tmpvector((ij-1)*nseqparts+1:(ij*nseqparts)) = pyseq(:)
-      pz2_tmpvector((ij-1)*nseqparts+1:(ij*nseqparts)) = gamseq(:)   ! Sequences constructed!!
+        z2_tmpcoord((ij-1)*nseqparts+1:(ij*nseqparts)) = z2base(ij)
+        x_tmpcoord((ij-1)*nseqparts+1:(ij*nseqparts)) = xseq(:)
+        y_tmpcoord((ij-1)*nseqparts+1:(ij*nseqparts)) = yseq(:)
+        px_tmpvector((ij-1)*nseqparts+1:(ij*nseqparts)) = pxseq(:)
+        py_tmpvector((ij-1)*nseqparts+1:(ij*nseqparts)) = pyseq(:)
+        pz2_tmpvector((ij-1)*nseqparts+1:(ij*nseqparts)) = gamseq(:)   ! Sequences constructed!!
 
-      s_tmp_Vk((ij-1)*nseqparts+1:(ij*nseqparts)) = vkt(ij)
+        s_tmp_Vk((ij-1)*nseqparts+1:(ij*nseqparts)) = vkt(ij)
 
       ! Need to rename z2, x, y etc above
       ! to use z2_tmpcoord etc...
       ! Make a new temp z2 array to put into genMacros
 
-    end do
+      end do
 
-    deallocate(xseq, yseq, pxseq, pyseq, gamseq)
-    deallocate(nktemp, z2base)
+      deallocate(xseq, yseq, pxseq, pyseq, gamseq)
+      deallocate(nktemp, z2base)
 
-    call applyNoise(z2_tmpcoord, sz2_grid(2) - sz2_grid(1), s_tmp_macro)  ! add noise in z2
+      call applyNoise(z2_tmpcoord, sz2_grid(2) - sz2_grid(1), s_tmp_macro)  ! add noise in z2
 
-  end if 
+    end if 
+
+  end if
 
 
 

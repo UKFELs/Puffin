@@ -416,6 +416,10 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   call FileNameNoExtension(beam_file, zBFile_G, qOKL)
   call FileNameNoExtension(seed_file, zSFile_G, qOKL)
 
+
+  if (qOneD) qEquiXY_G = .true.
+
+  
   IF  (.NOT. qOKL) GOTO 1000
 
   call get_exec()
