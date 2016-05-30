@@ -101,13 +101,6 @@ The strength of the dispersive chicanes can be given in the 'Dfact'
 variable in the main input file. Currently, only this one strength 
 factor may be specified which will be shared by all chicanes.
  
-An undulator taper can also be added in the main input file.
-Presently, if a lattice file is used, this taper will be applied
-to ALL undulator modules, and the taper will be applied to the
-undulator parameter of each module. Only a linear taper may be
-supplied for now.
-
-
 
 COMPILATION ON HPC MACHINES
 ===========================
