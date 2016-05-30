@@ -132,23 +132,10 @@ contains
     end do
 
 
-!    Work out analytic peak density from rho...
-
-    npk_bar = lg_G * lc_G**2.0_wp * e_0 * m_e / q_e**2.0_wp * &
-              sGammaR_G**3.0_wp * sRho_G**3.0_wp * (4.0_wp * &
-              c * 2.0_wp * pi / lam_w_G / saw_G  )**2.0_wp
-
 
 !   Scale Nk by peak density...
 
-    s_chi_bar_G = s_chi_bar_G / npk_bar
-
-
-    npk_bar_G = npk_bar
-
-!    sElGam_G = sElGam_G / 550_wp
-
-    ! exit
+    s_chi_bar_G = s_chi_bar_G / npk_bar_G
 
   end subroutine readMASPfile
 

@@ -317,9 +317,13 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 
 
 !     Get n_pk_bar
-!
-!     DDDOOOO IIITTTT
-! 
+
+    npk_bar_G = lg_G * lc_G**2.0_wp * e_0 * m_e / q_e**2.0_wp * &
+                sGammaR_G**3.0_wp * sRho_G**3.0_wp * (4.0_wp * &
+                c * 2.0_wp * pi / lam_w_G / saw_G  )**2.0_wp
+
+
+
 
 
     IF(iNumberNodes_G <= 0_IP) THEN

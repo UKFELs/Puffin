@@ -579,23 +579,19 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
 
   if (qOneD_G) then
 
-    call getChi(Nk, Vk, npk, chi_b, chi)
+    !call getChi(Nk, Vk, npk, chi_b, chi)
+    call getChi(Nk, Vk, npk_bar_G, chi_b, chi)
 
   else 
 
     if (qEquiXY_G) then
 
 
-      call getGlobalnpk(npk_num, npk_numl)
+      !call getGlobalnpk(npk_num, npk_numl)
 
-      call getChi(Nk, Vk, npk_num, chi_b, chi)
+      call getChi(Nk, Vk, npk_bar_G, chi_b, chi)
 
     else
-
-
-      npk_bar_G = lg_G * lc_G**2.0_wp * e_0 * m_e / q_e**2.0_wp * &
-                sGammaR_G**3.0_wp * sRho_G**3.0_wp * (4.0_wp * &
-                c * 2.0_wp * pi / lam_w_G / saw_G  )**2.0_wp
 
 
       chi_b = Nk / npk_bar_G
