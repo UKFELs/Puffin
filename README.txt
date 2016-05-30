@@ -15,17 +15,15 @@ The only external package now required is FFTW v2.1.5.
 The sub-directories include:
 
 
-  source/    -  This contains the main source code written in C 
-                and Fortran 90.
-
-  compile/   -  Some example compilation and linking scripts.
-
   doc/       -  Some documentation - see 'puffin_notes.pdf'
-  
+
   inputs/    -  Some example input files.
 
   scripts/   -  Example job submission scripts
-  
+
+  source/    -  This contains the main source code written in C 
+                and Fortran 90.
+    
   utilities/ -  Python scripts to manipulate output files
 
 
