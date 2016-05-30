@@ -64,7 +64,7 @@ the number of undulator modules. Each line of the lattice file
 contains 4 numbers describing a complete undulator-chicane pair, 
 in the following format:
 
-Nw   Nc  aw_fact   stepsize
+Nw   Nc  aw_fact   nperlam  taper
 
 where 
 
@@ -78,14 +78,20 @@ aw_f          is the undulator parameter expressed as a fraction
               given in the input file, then the undulator 
               parameter for this module is aw = aw_f * aw_0.
 
-stepsize      is the stepsize used for the numerical integration
-              in this undulator section. The mesh describing the
-              radiation field does not alter as the undulator
-              tuning changes, but a larger aw wil cause the beam
-              to propagate more quickly in the radiation frame
-              i.e. the beam slips more quickly behind the radiation
-              field. This option will be necessary to stop the beam
-              skipping over nodes, see e.g. the Courant number.
+nperlam       is the number of integration steps per undulator 
+              period to be used in this undulator section. The 
+              mesh describing the radiation field does not alter
+              as the undulator tuning changes, but a larger aw 
+              will cause the beam to propagate more quickly in 
+              the radiation frame i.e. the beam slips more quickly
+              behind the radiation field. This option will be 
+              necessary to stop the beam skipping over nodes, 
+              see e.g. the Courant number.
+
+taper         d/dz of aw_f across this undulator module. This is 
+              a single number - i.e. only linear tapers may be
+              specified.
+
 
 Also note that if aw is decreased in an undulator module you should
 ensure the radiation mesh is fine enough to model the higher frequency
