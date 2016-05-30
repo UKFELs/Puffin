@@ -19,8 +19,12 @@ The sub-directories include:
                 and Fortran 90.
 
   compile/   -  Some example compilation and linking scripts.
+
+  doc/       -  Some documentation - see 'puffin_notes.pdf'
   
   inputs/    -  Some example input files.
+
+  scripts/   -  Example job submission scripts
   
   utilities/ -  Python scripts to manipulate output files
 
