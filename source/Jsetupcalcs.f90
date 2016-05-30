@@ -93,8 +93,8 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 
 
 
-    ReducedNX_G=sRNX
-    ReducedNY_G=sRNY
+    ReducedNX_G=NX_G
+    ReducedNY_G=NY_G
 
     IF (NX_G*NY_G==1) THEN
       ReducedNX_G=1_IP

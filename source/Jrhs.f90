@@ -16,7 +16,6 @@ use Globals
 use Functions
 use TransformInfoType
 use ParallelInfoType
-use stiffness
 use Equations
 use wigglerVar
 use FiElec1D
@@ -326,11 +325,11 @@ real(kind=wp), intent(in) :: sz
 
 !     number of transverse nodes
 
-  ntrans = ReducedNX_G * ReducedNY_G
+  ntrans = NX_G * NY_G
 
 !     Diff between real and imaginary nodes in the reduced system
 
-  retim = ReducedNX_G*ReducedNY_G*nZ2_G
+  retim = NX_G*NY_G*nZ2_G
 
 
   fkb= sFocusfactor_G * kbeta

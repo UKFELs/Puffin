@@ -293,18 +293,6 @@ character(32_ip) :: zFileName_G, zBFile_G, zSFile_G
 
 integer(kind=ip), allocatable :: frecvs(:), fdispls(:)
 
-! ...for the full (or 'large') field array, when spread as 
-! evenly as possible across processes...
-
-integer(kind=ip), allocatable :: lrecvs(:), ldispls(:)
-
-! ...and for the reduced or active field nodes, split 
-! evenly across processes.
-
-integer(kind=ip), allocatable :: mrecvs(:), mdispls(:)
-
-
-
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Flags

@@ -12,7 +12,6 @@ MODULE Setup
   USE transforms
   USE sddsPuffin
   USE lattice
-  USE Stiffness
   USE Globals
   USE resume
   USE electronInit
@@ -325,50 +324,7 @@ MODULE Setup
 
   ffact = iNodes(iX_CG)*iNodes(iY_CG)*iNodes(iZ2_CG)      
    	
-  CALL MPI_BARRIER(tProcInfo_G%comm,error) ! Sync MPI processes
-  
-!  call mpi_finalize(error)
-!  stop
 
-  ALLOCATE(lrecvs(tProcInfo_G%size),ldispls(tProcInfo_G%size))
-    
-  IF (tProcInfo_G%qRoot) PRINT*, 'reduced field sizes',&
-       ReducedNX_G,reducedNY_G
-
-
-
-
-
-!     Calculate Field Spread across MPI processes
-  	
-  CALL CalcFldSpd(ReducedNX_G,ReducedNY_G,NZ2_G,delta_G)
-  	
-  CALL MPI_BARRIER(tProcInfo_G%comm,error)
-  IF (tProcInfo_G%qRoot) PRINT*, 'Setup active field'
-
-
-
-
-  	
-!    Get gathering arrays for reduced/active field arrays
-
-  IF (tTransInfo_G%qOneD) THEN
-    CALL getGathArrs(local_rows,lrecvs,ldispls)
-  
-    lfst_row=fst_row
-    llst_row=lst_row
-    llocal_rows=local_rows
-  ELSE
-!    Get sizes for large field array
-    CALL getLargeLocSizes(fst_row,lst_row,lfst_row,llst_row,llocal_rows)
-  	
-!    Get gathering arrays for large field arrays
-    CALL getGathArrs(llocal_rows,lrecvs,ldispls)
-  END IF
-  
-  ALLOCATE(mrecvs(tProcInfo_G%size),mdispls(tProcInfo_G%size))
-
-  CALL getGathArrs(local_rows,mrecvs,mdispls)
 
   IF (qResume) THEN
     CALL READINCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)

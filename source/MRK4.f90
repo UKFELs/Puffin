@@ -37,7 +37,7 @@ implicit none
 
 contains
 
-subroutine rk4par(sZ,h,recvs,displs,qD)
+subroutine rk4par(sZ,h,qD)
 
   implicit none
 !
@@ -58,7 +58,6 @@ subroutine rk4par(sZ,h,recvs,displs,qD)
 !  REAL(KIND=WP),  DIMENSION(:), INTENT(INOUT) :: sA, A_local
   REAL(KIND=WP),  INTENT(IN)                  :: sZ
   REAL(KIND=WP),                INTENT(IN)  :: h
-  INTEGER(KIND=IP),DIMENSION(:),INTENT(IN)  :: recvs,displs
   LOGICAL, INTENT(INOUT) :: qD
 
 !               LOCAL ARGS

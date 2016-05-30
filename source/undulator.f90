@@ -15,10 +15,9 @@ module undulator
 !  use stiffness
 
 use FFTW_Constants
-use transforms
+use pdiff
 use sddsPuffin
 use lattice
-use Stiffness
 use RK4int
 use dumpFiles
 use dummyf
@@ -127,8 +126,7 @@ contains
 
   if (qDiffraction_G) then
   
-    call diffractIM(local_rows, &
-                    diffStep*0.5_WP, frecvs, fdispls, lrecvs, ldispls, &
+    call diffractIM(diffStep*0.5_WP, &
                     qDiffrctd, qOKL)
   
     nextDiff = nextDiff + diffStep
@@ -156,7 +154,7 @@ contains
 
       igoes = 1_ip  
       do 
-        call rk4par(sZl,sStepSize,mrecvs,mdispls,qDiffrctd)
+        call rk4par(sZl,sStepSize,qDiffrctd)
         if (igoes>3_ip) exit
         if (.not. qPArrOK_G) then
           if (tProcInfo_G%qRoot) print*, 'Layout not working'
@@ -194,14 +192,12 @@ contains
         if ((iStep == nSteps) .or. &
              qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps) ) then
     
-          call diffractIM(local_rows, &
-                          diffStep * 0.5_wp, frecvs, fdispls, lrecvs, ldispls, &
+          call diffractIM(diffStep * 0.5_wp, &
                           qDiffrctd, qOKL)
   
         else
     
-          call diffractIM(local_rows, &
-                          diffStep, frecvs, fdispls, lrecvs, ldispls, &
+          call diffractIM(diffStep, &
                           qDiffrctd, qOKL)
     
         end if
@@ -219,7 +215,6 @@ contains
 
     call writeIM(sZ, &
                  zDataFileName, iStep, iCsteps, iWriteNthSteps, &
-                 lrecvs, ldispls, &
                  iIntWriteNthSteps, nSteps, qOKL)
 
 
@@ -229,8 +224,7 @@ contains
  !             ...the diffraction only diffracts a half step if data is going
  !             to be written (to match up the split-step data)
  
-        if (qDiffrctd) call diffractIM(local_rows, &
-                         diffStep * 0.5_wp, frecvs, fdispls, lrecvs, ldispls, &
+        if (qDiffrctd) call diffractIM(diffStep * 0.5_wp, &
                          qDiffrctd, qOKL)
    
      end if

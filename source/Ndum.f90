@@ -1,14 +1,14 @@
 module dummyf
 
 USE FFTW_Constants
-USE transforms
+USE pdiff
 USE sddsPuffin
 USE lattice
-USE Stiffness
 USE Setup
 USE RK4int
 use dumpFiles 
 !use hdf5_puff
+
 use pln_puff
 use ParaField
 
@@ -16,13 +16,12 @@ implicit none
 
 contains
 
-subroutine diffractIM(local_rows, sStep,&
-                      frecvs, fdispls, lrecvs, ldispls, &
+subroutine diffractIM(sStep, &
                       qDiffrctd, qOK)
 
 
 ! Subroutine which diffracts the field, after making the preparations
-! necessary when Puffin is within an undukator module.
+! necessary when Puffin is within an undulator module.
 !
 ! Lawrence Campbell
 ! University of Strathclyde
@@ -32,8 +31,6 @@ subroutine diffractIM(local_rows, sStep,&
   implicit none
 
   real(kind=wp), intent(in) :: sStep
-  integer(kind=ip), intent(in) :: local_rows
-  integer(kind=ip), intent(in) :: frecvs(:), fdispls(:), lrecvs(:), ldispls(:)
   logical, intent(out) :: qDiffrctd, qOK
 
   logical :: qOKL
@@ -49,18 +46,9 @@ subroutine diffractIM(local_rows, sStep,&
 
 
   CALL DiffractionStep(sStep,&
-       frecvs,&
-       fdispls,&
        tre_fft, tim_fft,&
        qOKL)
   if (.not. qOKL) goto 1000
-
-!  ALLOCATE(sAr(2*ReducedNX_G*ReducedNY_G*NZ2_G))
-!  ALLOCATE(Ar_local(2*local_rows))
-
-!  CALL getAlocalFL(sA,Ar_local)
-
-!  CALL local2globalA(Ar_local,sAr,mrecvs,mdispls,tTransInfo_G%qOneD)
 
   qDiffrctd = .true.
   
@@ -95,7 +83,6 @@ end subroutine diffractIM
 
 subroutine writeIM(sZ, &
                    zDataFileName, iStep, iCstep, iWriteNthSteps, &
-                   lrecvs, ldispls, &
                    iIntWriteNthSteps, nSteps, qOK)
 
 
@@ -111,7 +98,7 @@ subroutine writeIM(sZ, &
 
   real(kind=wp), intent(inout) :: sZ
   integer(kind=ip), intent(in) :: iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps
-  integer(kind=ip), intent(in) :: lrecvs(:), ldispls(:), iCstep
+  integer(kind=ip), intent(in) :: iCstep
   character(32_IP), intent(in) :: zDataFileName
   logical, intent(inout) :: qOK
 
@@ -121,11 +108,6 @@ subroutine writeIM(sZ, &
 
   qOK = .false.
 
-
-  !call UpdateGlobalField(sA)
-
-
-  !call innerLA2largeA(Ar_local,sA,lrecvs,ldispls,tTransInfo_G%qOneD)
 
   call int_or_full(istep, iIntWriteNthSteps, iWriteNthSteps, &
                    qWriteInt, qWriteFull, qOK)
