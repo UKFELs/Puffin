@@ -150,6 +150,32 @@ Allows one to select from a choice of undulators. Choices are `curved', `planepo
 $u_x$ and $u_y$ - the relative peak magnetic field of the undulator in each transverse polarization. Usually, at least one should be $=1$, and the other between $0$ (planar) and $1$ (helical). If they are not defined, the default is helical, $u_x=u_y=1$.
 
 
+{\bf qOneD}
+
+Logical. If  {\bf .true.}, Puffin will be run in 1D mode. Default is  {\bf .true.}, since this is the least computationally expensive option.
+
+{\bf qFieldEvolve}
+
+Logical. If = {\bf .false.}, then the radiation field evolution will be switched off. This is obviously artificial and very rarely used, but can be useful for debugging in some instances. Default is = {\bf .true}.
+
+{\bf qElectronsEvolve}
+
+Logical. If = {\bf .false.}, then the electron equations are not solved in the integration steps. Like when qFieldEvolve= {\bf .false.},  this is obviously artificial and very rarely used, but can be useful for debugging in some instances. Default is = {\bf .true.}.
+
+{\bf qElectronFieldCoupling}
+
+Logical. If = {\bf .false.}, then the radiation field feedback onto the electrons is switched off by setting the field terms in the electron evolution equations = 0, and so switches off the amplification of the radiation from the electrons. This is unphysical, but is used more often than when qFieldEvolve and qElectronsEvolve ={\bf .false.} . It can often be used to check for gain in the FEL in low gain situations, or to check whether amplification has occurred rather than coherent emission (CSE) effects due to \textit{e.g.} fine structure in the beam. When ={\bf .false.}, this will give the purely spontaneous emission (coherent or incoherent) from the electrons in the wiggler. If there is no appreciable difference between the qElectronFieldCoupling=true and false cases, then there has been negligible FEL amplification.
+
+{\bf qFocussing}
+
+Allows one to switch the strong focussing channel on or off. If ={bf .true.}, the strong focusing is switched on with calues specified by sKBetaXSF and sKBetaYSF. If qFocussing={\bf .true.}, yet no focussing strength is specified (sKBetaXSF or sKBetaYSF), then strong focusing is effectively switched off in that dimension. Default = {\bf .false.}.
+
+{\bf qDiffraction}
+
+Switches modelling of diffraction of the radiation field on or off. If ={\bf .true.}, field diffraction is modelled. This can be useful to switch off only really for debugging purposes. Default ={\bf .true.}.
+
+
+
 \subsection{3D Magnetic Fields}
 
 The undulator is modelled analytically, and the model must include the fast wiggle motion. Puffin may be modified in the future to allow a map of the undulator field to be input. For now, there are a few generic undulator model employed. The magnetic fields for use in Puffin are the helical, plane-pole, and canted-pole undulator fields discussed in \cite{scharlemann1}, which in the scaled notation here are:-
