@@ -7,7 +7,7 @@ USE lattice
 USE Setup
 USE RK4int
 use dumpFiles 
-!use hdf5_puff
+use hdf5_puff
 
 use pln_puff
 use ParaField
@@ -114,19 +114,19 @@ subroutine writeIM(sZ, &
 
   if (qsdds_G) then
 
-    call wr_sdds(sZ, iCstep, tArrayA, tArrayE, tArrayZ, &
-                 iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
-                 zDataFileName, qWriteFull, &
-                 qWriteInt, qOK)
+!    call wr_sdds(sZ, iCstep, tArrayA, tArrayE, tArrayZ, &
+!                 iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
+!                 zDataFileName, qWriteFull, &
+!                 qWriteInt, qOK)
 
   end if
 
   if (qhdf5_G) then
 
-!    call wr_h5(sA, sZ, tArrayA, tArrayE, tArrayZ, &
-!                 iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
-!                 zDataFileName, qWriteFull, &
-!                 qWriteInt, qOK)
+    call wr_h5(sZ, tArrayA, tArrayE, tArrayZ, &
+                 iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
+                 zDataFileName, qWriteFull, &
+                 qWriteInt, qOK)
 
   end if
 
