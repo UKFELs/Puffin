@@ -55,7 +55,7 @@ contains
 
 !    call CheckSourceDiff(sDelZ,iSteps,srho,sSigE,sLenF,sDelF,iNNF,qOK)
 
-    if (qFMesh) call fixXYMesh(sLenE, iNMPs)
+    if (qFMesh) call fixXYMesh(sSigE, sLenE, iNMPs)
 
 
     delta_G = sLengthOfElmX_G*sLengthOfElmY_G*sLengthOfElmZ2_G
@@ -63,9 +63,9 @@ contains
   end subroutine stptrns
 
 
-  subroutine fixXYMesh(sLenE, iNMPs)
+  subroutine fixXYMesh(sSigE, sLenE, iNMPs)
 
-    real(kind=wp), intent(in) :: sLenE(:,:) 
+    real(kind=wp), intent(in) :: sSigE(:,:), sLenE(:,:) 
     integer(kind=ip), intent(in) :: iNMPs(:,:)
   
 
