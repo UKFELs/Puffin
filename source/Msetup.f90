@@ -221,7 +221,6 @@ MODULE Setup
 !     Pass local vars to global vars
 
   CALL passToGlobals(srho,saw,sgammar,lambda_w,iNodes, &
-                     iredNodesX,iredNodesY, &
                      sLengthOfElm,&
                      fx,fy,sFocusFactor,taper, &
                      sFiltFrac,sDiffFrac,sBeta, &

@@ -19,33 +19,41 @@ use avwrite
 use MASPin
 use parafield
 
+!****************************************************
+! Module containing miscellaneous routines for setup
+! and initialization of variables in Puffin.
+!
+! Lawrence Campbell
+! lawrence.campbell@strath.ac.uk
+! University of Strathclyde
+! June 2016
+!
+
 IMPLICIT NONE
 
 CONTAINS
 
-
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
-                         sRNX,sRNY, &
-                         sElmLen,&
-                         fx,fy,sFocusFactor,taper,sFiltFrac, &
-                         dStepFrac,sBeta,zUndType,qFormatted, qSwitch, qOK)
+SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
+                         sElmLen, fx, fy, &
+                         sFocusFactor, taper, sFiltFrac, &
+                         dStepFrac, sBeta, zUndType, &
+                         qFormatted, qSwitch, qOK)
 
     IMPLICIT NONE
 
+!***********************************************************
 ! Subroutine to pass all the temporary variables to global
 ! vars used in the integration loop.
 !
+! Some setup is also performed.
+!
+!
 !                    ARGUMENTS
 !
-! rho                Pierce parameter
-! eta                scaled z-velocity
+! rho                Pierce/FEL parameter
+! eta                scaled average z-velocity
 ! kbeta              scaled betatron wavenumber
 ! iNN                number of nodes in each dimension (x,y,z2)
-! sRNX,sRNY          number of nodes in the inner reduced 'active'
-!                    set of nodes
 ! sElmLen            Length of ONE element in each dimension (x,y,z2)
 ! fx, fy             specifies undulator polarization
 ! qSwitch            If letting electrons evolve, field evolve,
@@ -53,7 +61,6 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 ! qOK                Error flag
 
     REAL(KIND=WP),     INTENT(IN)    :: rho,aw,gamr, lam_w
-    INTEGER(KIND=IP),  INTENT(IN)    :: sRNX,sRNY
     INTEGER(KIND=IP),  INTENT(IN)    :: iNN(:)
     REAL(KIND=WP),     INTENT(IN)    :: sElmLen(:)	
     REAL(KIND=WP),     INTENT(IN)    :: fx,fy,sFocusFactor, taper
