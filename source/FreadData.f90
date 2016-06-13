@@ -12,6 +12,21 @@ USE Globals
 USE ParallelSetUp
 use MASPin
 
+
+!****************************************************************
+!
+! Module containing the routines which read in the data files
+! in Puffin.
+!
+! -Lawrence Campbell
+! lawrence.campbell@strath.ac.uk
+! University of Strathclyde
+! June 2016
+!
+!****************************************************************
+
+
+
 CONTAINS
 
 SUBROUTINE read_in(zfilename, &
@@ -74,7 +89,7 @@ SUBROUTINE read_in(zfilename, &
        IMPLICIT NONE
        
 !******************************************************
-! Read input data from a file
+! Read input data from the main Puffin input file
 ! 
 ! zFileName          - FileName containing input data
 ! nRowProcessors     - Number of row processors
@@ -434,10 +449,8 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
 2000 CONTINUE
     
 END SUBROUTINE read_in
+
 !********************************************************
-
-
-
 
 
 SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
@@ -445,6 +458,10 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
                          qMatched_A,qOK)
 
   IMPLICIT NONE
+
+
+! Read the beamfile into Puffin
+
 
 !                     ARGUMENTS
 
