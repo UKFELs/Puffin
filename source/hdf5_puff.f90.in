@@ -1036,6 +1036,7 @@ contains
         Print*,trim(adjustl(IntegerToString(error))) // " selecting slab on rank" &
           //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
       else
+! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
         CALL h5sselect_none_f(filespace,error)
         Print*,trim(adjustl(IntegerToString(error))) // " selecting none on rank" &
           //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
@@ -1105,11 +1106,11 @@ contains
       ub(3)=NZ2_G*sLengthOfElmZ2_G
       CALL write3DlimGrp(file_id,limgrpname,lb,ub)
       CALL write3DuniformMesh(file_id,meshScaledGrpname,lb,ub,(/nx_g-1,ny_g-1,NZ2_G-1/))
-      CALL h5fclose_f(file_id, error)
       aname="intensityScaled"
       attr_data_string="sqr(aperp_real)+sqr(aperp_imaginary)"
       attr_string_len=len(trim(adjustl(attr_data_string)))
       CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
+      CALL h5fclose_f(file_id, error)
       end if
    end if
    end if
