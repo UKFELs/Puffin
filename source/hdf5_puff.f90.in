@@ -975,12 +975,13 @@ contains
       numSpatialDims=3
       dims = (/nx_g,ny_g,nlonglength,1/) ! Dataset dimensions
       fdims = (/nx_g,ny_g,NZ2_G,2/) ! Dataset dimensions
-      doffset = (/0,0,nlo,component/)
+      doffset = (/0,0,(nlo-1),component/)
 !      dsize = (/nx_g,ny_g,nhi-nlo+1,1/)
       dsize = (/nx_g,ny_g,nlonglength,1/)
     end if
     print *,IntegerToString(size(rawdata)) // " vs " //trim(adjustl(IntegerToString(Nx_g*ny_g*nlonglength)))
-
+    print *,"nlo : " // trim(adjustl(IntegerToString(nlo)))
+    print *,"nlo+nlonglength : " // trim(adjustl(IntegerToString(nlo+nlonglength)))
 !! repeat for some next y dataset
 !    doffset=(/1,0/)
 !    CALL H5Dget_space_f(dset_id, filespace, error)
