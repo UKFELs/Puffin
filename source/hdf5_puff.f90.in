@@ -1046,23 +1046,23 @@ contains
       CALL h5pset_dxpl_mpio_f(plist_id, H5FD_MPIO_INDEPENDENT_F, error)
       CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, rawdata, dims, error, &
          xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
-      Print*,'hdf5_puff:outputH5FieldSD(write done)'
-      Print*,error
+!      Print*,'hdf5_puff:outputH5FieldSD(write done)'
+!      Print*,error
       CALL h5sclose_f(filespace, error)
-      Print*,'hdf5_puff:outputH5FieldSD(file space closed)'
-      Print*,error
+!      Print*,'hdf5_puff:outputH5FieldSD(file space closed)'
+!      Print*,error
       CALL h5sclose_f(dspace_id, error)
-      Print*,'hdf5_puff:outputH5FieldSD(hyperslab space closed)'
-      Print*,error
+!      Print*,'hdf5_puff:outputH5FieldSD(hyperslab space closed)'
+!      Print*,error
       CALL h5pclose_f(plist_id, error)
-      Print*,'hdf5_puff:outputH5FieldSD(propertylist closed)'
-      Print*,error
+!      Print*,'hdf5_puff:outputH5FieldSD(propertylist closed)'
+!      Print*,error
       CALL h5dclose_f(dset_id, error)
-      Print*,'hdf5_puff:outputH5FieldSD(dataset closed)'
-      Print*,error
+!      Print*,'hdf5_puff:outputH5FieldSD(dataset closed)'
+!      Print*,error
       CALL h5fclose_f(file_id, error)
-      Print*,'hdf5_puff:outputH5FieldSD(file closed)'
-      Print*,error
+!      Print*,'hdf5_puff:outputH5FieldSD(file closed)'
+!      Print*,error
 ! end of parallel write stuff
 
 ! add stuff just on rank 0
@@ -1070,11 +1070,11 @@ contains
 
       if (tProcInfo_G%qRoot) then 
       CALL h5fopen_f(filename, H5F_ACC_RDWR_F, file_id, error)
-      Print*,'hdf5_puff:outputH5FieldSD(file reopened in serial)'
-      Print*,error
+!      Print*,'hdf5_puff:outputH5FieldSD(file reopened in serial)'
+!      Print*,error
      CALL h5dopen_f (file_id, dsetname, dset_id, error)
-      Print*,'hdf5_puff:outputH5FieldSD(dataset reopened in serial)'
-      Print*,error
+!      Print*,'hdf5_puff:outputH5FieldSD(dataset reopened in serial)'
+!      Print*,error
 !      CALL h5dget_space_f(dset_id, filespace, error)
       CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
       Print*,'hdf5_puff:outputH5Field3DSD(scalar space created)'
@@ -1085,7 +1085,7 @@ contains
       CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
       CALL h5aclose_f(attr_id, error)
       CALL h5tclose_f(atype_id, error)
-      CALL addH5StringAttribute(dset_id,"vsLabels","aperp_front_realfield",aspace_id)
+      CALL addH5StringAttribute(dset_id,"vsLabels","aperp_real, aperp_imaginary",aspace_id)
       CALL addH5StringAttribute(dset_id,"vsType","variable",aspace_id)
       CALL addH5StringAttribute(dset_id,"vsCentering","nodal",aspace_id)
       CALL addH5StringAttribute(dset_id,"vsIndexOrder","compMajorF",aspace_id)
@@ -1099,13 +1099,17 @@ contains
       CALL writeH5RunInfo(file_id, 'outH5Field3D', error)
       lb(1)=-0.5*NX_G*sLengthOfElmX_G
       lb(2)=-0.5*NY_G*sLengthOfElmY_G
-      lb(3)=(nlo-1)*sLengthOfElmZ2_G
+      lb(3)=0.0_WP*sLengthOfElmZ2_G
       ub(1)=0.5*NX_G*sLengthOfElmX_G
       ub(2)=0.5*NY_G*sLengthOfElmY_G
-      ub(3)=nhi*sLengthOfElmZ2_G
+      ub(3)=NZ2_G*sLengthOfElmZ2_G
       CALL write3DlimGrp(file_id,limgrpname,lb,ub)
-      CALL write3DuniformMesh(file_id,meshScaledGrpname,lb,ub,(/nx_g,ny_g,nlonglength/))
+      CALL write3DuniformMesh(file_id,meshScaledGrpname,lb,ub,(/nx_g-1,ny_g-1,NZ2_G-1/))
       CALL h5fclose_f(file_id, error)
+      aname="intensityScaled"
+      attr_data_string="sqr(aperp_real)+sqr(aperp_imaginary)"
+      attr_string_len=len(trim(adjustl(attr_data_string)))
+      CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
       end if
    end if
    end if
