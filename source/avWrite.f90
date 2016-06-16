@@ -41,28 +41,19 @@ contains
 
 
 
-
-
-
-
-  subroutine oPower()
+  subroutine gPowerP(power)
 
     implicit none
 
-! This subroutine retrieves the power in z2 and
-! outputs it to a file.
-!
-!
-! wfield          array used to hold the field in 3D form
 
-!    complex(kind=wp), allocatable :: wfield(:,:,:)
-    real(kind=wp), allocatable :: power(:), &
-                                  fr_power(:), &
+    real(kind=wp), intent(out) :: power(:)
+
+    real(kind=wp), allocatable :: fr_power(:), &
                                   bk_power(:), &
                                   ac_power(:)
 
     integer :: error
-    allocate(power(nz2_g))
+
     allocate(ac_power(mainlen), fr_power(tlflen4arr), bk_power(tlelen4arr))
 
 !    allocate(wfield(nx,ny,nz2))
@@ -108,6 +99,32 @@ contains
 !    print*, 'got glob powwww'
 
 
+    deallocate(fr_power, ac_power, bk_power)
+
+  end subroutine gPowerP
+
+
+
+  subroutine oPower()
+
+    implicit none
+
+! This subroutine retrieves the power in z2 and
+! outputs it to a file.
+!
+!
+! wfield          array used to hold the field in 3D form
+
+!    complex(kind=wp), allocatable :: wfield(:,:,:)
+    real(kind=wp), allocatable :: power(:)
+    integer :: error
+
+
+    allocate(power(nz2_g))
+
+    call gPowerP(power)
+
+
 
     call writePower(power,tPowF)
 
@@ -116,7 +133,7 @@ contains
 !    print*, 'written'
 
 
-    deallocate(fr_power, ac_power, bk_power, power)
+    deallocate(power)
 
   end subroutine oPower
 

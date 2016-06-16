@@ -363,17 +363,19 @@ contains
 
     if (qWriteInt) then
 ! For starters, write on rank 0 only
+      call gPowerP(power)
+
       if (tProcInfo_G%qRoot) then
-           time = real(iCSteps,kind=wp)*sStepSize*lg_G/c
-           !CALL gPower(sA,power)
-!!!           call outputH5Field1DFloat(power, 'power', time, error)
+        time = real(iCSteps,kind=wp)*sStepSize*lg_G/c
+        !CALL gPower(sA,power)
+        call outputH5Field1DFloat(power, 'power', time, error)
       if (error .ne. 0) goto 1000
       end if
 ! This call requires all ranks to participate
       call getCurr(dz2_I_G, Iarray)
 ! but the write operation does not.
       if (tProcInfo_G%qRoot) then
-!!!           call outputH5Field1DFloat(Iarray, 'current', time, error)
+        call outputH5Field1DFloat(Iarray, 'current', time, error)
       if (error .ne. 0) goto 1000
 ! Todo not yet implemented
 !     call outputH5SliceEmittance
