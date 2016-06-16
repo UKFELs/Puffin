@@ -952,7 +952,8 @@ contains
         CALL h5sselect_none_f(dspace_id,error)
       end if
       CALL h5pcreate_f(H5P_DATASET_XFER_F, plist_id, error) 
-      CALL h5pset_dxpl_mpio_f(plist_id, H5FD_MPIO_INDEPENDENT_F, error)
+!      CALL h5pset_dxpl_mpio_f(plist_id, H5FD_MPIO_INDEPENDENT_F, error)
+      CALL h5pset_dxpl_mpio_f(plist_id, H5FD_MPIO_COLLECTIVE_F, error)
 !      CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, &
 !         sElX_G((startOffset+1):(startOffset+procelectrons_G(1))), dsize, error, &
 !         xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
@@ -1142,10 +1143,10 @@ contains
     CALL h5tclose_f(atype_id, error)
     CALL h5sclose_f(aspace_id, error)
     CALL h5pclose_f(plist_id, error)
-    Print*,'hdf5_puff:outputH5BeamSD(propertylist closed)'
+!    Print*,'hdf5_puff:outputH5BeamSD(propertylist closed)'
 !    Print*,error
       CALL h5dclose_f(dset_id, error)
-      Print*,'hdf5_puff:outputH5BeamSD(dataset closed)'
+!      Print*,'hdf5_puff:outputH5BeamSD(dataset closed)'
 !      Print*,error
 
       CALL h5fclose_f(file_id, error)
@@ -1543,19 +1544,19 @@ contains
       Print*,'hdf5_puff:outputH5FieldSD(filespace created)'
       CALL h5dcreate_f(file_id, dsetname, H5T_NATIVE_DOUBLE, filespace, &
        dset_id, error)
-      Print*,'hdf5_puff:outputH5FieldSD(dataset created)'
+!      Print*,'hdf5_puff:outputH5FieldSD(dataset created)'
 !      Print*,error
       CALL h5sclose_f(filespace, error)
-      Print*,'hdf5_puff:outputH5FieldSD(filespace closed)'
+!      Print*,'hdf5_puff:outputH5FieldSD(filespace closed)'
 !      Print*,error
       else  ! not creating a new file, just adding data to an existing one.
         CALL h5pset_fapl_mpio_f(plist_id, tProcInfo_G%comm, mpiinfo, error)
         CALL h5fopen_f(filename, H5F_ACC_RDWR_F, file_id, error, access_prp = plist_id)
         Print*,'hdf5_puff:outputH5FieldSD(file reopened in parallel)'
-        Print*,error
+!        Print*,error
         CALL h5dopen_f (file_id, dsetname, dset_id, error)
-        Print*,'hdf5_puff:outputH5FieldSD(dataset reopened in parallel)'
-        Print*,error
+!        Print*,'hdf5_puff:outputH5FieldSD(dataset reopened in parallel)'
+!        Print*,error
         CALL h5pclose_f(plist_id, error)
       end if
       CALL h5screate_simple_f(rank, dims, dspace_id, error)
