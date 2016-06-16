@@ -4,7 +4,6 @@ USE FFTW_Constants
 USE pdiff
 USE sddsPuffin
 USE lattice
-USE Setup
 USE RK4int
 use dumpFiles 
 use hdf5_puff
