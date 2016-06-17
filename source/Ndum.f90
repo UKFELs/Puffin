@@ -113,10 +113,10 @@ subroutine writeIM(sZ, &
 
   if (qsdds_G) then
 
-!    call wr_sdds(sZ, iCstep, tArrayA, tArrayE, tArrayZ, &
-!                 iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
-!                 zDataFileName, qWriteFull, &
-!                 qWriteInt, qOK)
+    call wr_sdds(sZ, iCstep, tArrayA, tArrayE, tArrayZ, &
+                 iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
+                 zDataFileName, qWriteFull, &
+                 qWriteInt, qOK)
 
   end if
 
