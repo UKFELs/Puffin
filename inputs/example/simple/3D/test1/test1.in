@@ -106,7 +106,7 @@
  q_noise                = .true.   
  qDump                  = .false.   
  qResume                = .false.   
- qSeparateFiles         = .true.   
+ qSeparateFiles         = .false.   
  qFormattedFiles        = .false.   
  qWriteZ                = .true.   
  qWriteA                = .true.   
