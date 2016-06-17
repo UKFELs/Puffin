@@ -688,12 +688,12 @@ CONTAINS
 
 
 
-    if (qSeparate) then
+!    if (qSeparate) then
 
       call createFFiles(tArrayA, zDFName, trim(IntegerToString(iStep)),qOKL)
       if (.not. qOKL) goto 1000
 
-    end if
+!    end if
 
 
     call writeParaField(tArrayA(1)%tFileType, tArrayA(2)%tFileType)
@@ -798,12 +798,12 @@ CONTAINS
 
 
 
-    if (qSeparate) then
+!    if (qSeparate) then
 
       call createFFiles(tArrayE, zDFName, trim(IntegerToString(iStep)), qOKL)
       if (.not. qOKL) goto 1000
 
-    end if
+!    end if
 
 
 
@@ -912,12 +912,12 @@ CONTAINS
 
     qOK = .false.
 
-    if (qSeparate) then
+!    if (qSeparate) then
 
       call createZFile(tArrayZ, zDFName, trim(IntegerToString(iStep)),qOKL)
       if (.not. qOKL) goto 1000
 
-    end if
+!    end if
 
 !     Write out Zbar data:-only root processor needs to do this
     
