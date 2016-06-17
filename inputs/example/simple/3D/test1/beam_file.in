@@ -33,16 +33,16 @@ dtype = 'simple'
 
 &BLIST
 sSigmaE =1.0, 1.0, 1E8, 1.0, 1.0, 0.001
-sLenE = 1E-6, 1E-6, 10.0, 1E-6, 1E-6, 0.006
-iNumElectrons = 20, 20, 880, 7, 7, 7
+sLenE = 1E-6, 1E-6, 13.0, 1E-6, 1E-6, 0.006
+iNumElectrons = 20, 20, 1100, 7, 7, 7
 sEmit_n = 1.0
-sQe = 2.3E-9
+sQe = 3.189E-9
 bcenter = 0.0
 gammaf = 1.0
 chirp = 0.0
 mag = 0.0
 fr = 1.0
 qRndEj_G = .true.
-sSigEj_G = 0.2
+sSigEj_G = 0.4
 qMatched_A = .true.
 /

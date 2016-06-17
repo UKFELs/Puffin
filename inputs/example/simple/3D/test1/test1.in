@@ -134,8 +134,8 @@
  sux                    = 1.0
  suy                    = 1.0
  saw                    = 1.0
- sgamma_r               = 700.0
- lambda_w               = 0.025
+ sgamma_r               = 100.0
+ lambda_w               = 0.04
  Dfact                  = 0.0
  zundType               = 'helical'
  taper                  = 0.0
