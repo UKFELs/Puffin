@@ -141,7 +141,7 @@
  taper                  = 0.0
  lattFile               = ''
  stepsPerPeriod         = 30
- nPeriods               = 50
+ nPeriods               = 60
  sZ0                    = 0.0
  zDataFileName          = 'DataFile.dat'
  iWriteNthSteps         = 60
