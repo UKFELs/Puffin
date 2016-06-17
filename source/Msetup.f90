@@ -19,6 +19,7 @@ MODULE Setup
   USE checks
   use dumpFiles
   use ParaField
+  use dummyf
 
 ! A module which allocates and initializes - or 
 ! destroys - the data used in Puffin.
@@ -427,9 +428,13 @@ MODULE Setup
 !               lrecvs, ldispls, &
 !               iIntWriteNthSteps, nSteps, qWDisp, qOKL)
 
-  if (qWrite)  call wr_sdds(sZ, 0, tArrayA, tArrayE, tArrayZ, &
-                 iIntWriteNthSteps, iWriteNthSteps, .true., &
-                 zDataFileName, .true., .true., qOK)
+!  if (qWrite)  call wr_sdds(sZ, 0, tArrayA, tArrayE, tArrayZ, &
+!                 iIntWriteNthSteps, iWriteNthSteps, .true., &
+!                 zDataFileName, .true., .true., qOK)
+
+  call writeIM(sZ, &
+               zDataFileName, 0_ip, 0_ip, iWriteNthSteps, &
+               iIntWriteNthSteps, nSteps, qOKL)
 
 !  if (qWrite) call wdfs(sA, sZ, 0, tArrayA, tArrayE, tArrayZ, &
 !                        iIntWriteNthSteps, iWriteNthSteps, &
