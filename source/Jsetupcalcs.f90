@@ -365,7 +365,87 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 END SUBROUTINE passToGlobals
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                            
+
+
+subroutine fixCharge(sQb, sSigz2, sLenz2, sSigTails, qTails)
+
+! Only 1D for now
+
+real(kind=wp), intent(out) :: sQb
+real(kind=wp), intent(in) :: sSigz2, sLenz2, sSigTails
+logical, intent(in) :: qTails
+
+real(kind=wp) :: sLArea, sTArea
+logical :: qOneD
+
+qOneD = .true.
+sTArea = 0.0_wp
+
+call getLBArea(sLArea, sSigz2, sLenz2, sSigTails, qTails)
+
+call getQFmNpk(sQb, sTarea, sLarea, qOneD)
+
+end subroutine fixCharge
+
+subroutine getLBArea(sLArea, sSigz2, sLenz2, sSigTails, qTails)
+
+real(kind=wp), intent(out) :: sLArea
+real(kind=wp), intent(in) :: sSigz2, sLenz2, sSigTails
+logical, intent(in) :: qTails
+
+real(kind=wp) :: sEndsLen, sMainLen
+logical :: qFlatTop
+
+if (sSigZ2 >= 1e6) qFlatTop = .true.
+
+sEndsLen = 0.0_wp
+
+if (qFlatTop) then
+  if (qTails) sEndsLen = gExtEj_G * sSigTails
+  sMainLen = sLenz2 - sEndsLen
+  sLArea = sMainLen + sqrt(2*pi)*sSigTails
+else
+  sLArea = sqrt(2*pi) * sSigz2
+end if
+
+end subroutine getLBArea
+
+
+subroutine getQFmNpk(sQb, sTarea, sLarea, qOneD)
+
+real(kind=wp), intent(out) :: sQb
+real(kind=wp), intent(in) :: sTArea, sLArea
+logical, intent(in) :: qOneD
+
+real(kind=wp) :: sVol, sNe
+
+
+!  Set phase space volume
+
+  if (qOneD) then
+    sVol = sLArea
+  else
+    sVol = sLArea * sTArea
+  end if
+
+
+! Number of electrons
+
+
+  sNe = npk_bar_G * sVol
+  sQb = q_e * sNe
+
+
+
+end subroutine getQFmNpk
+
+
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
 SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
                               qFlatTopS, sSigmaF, &
                               sA0_x, sA0_y, qOK)

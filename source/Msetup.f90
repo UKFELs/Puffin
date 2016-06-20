@@ -266,6 +266,16 @@ MODULE Setup
 
 !     Generate macroelectrons
 
+
+!   Fixing charge only for 1st beam
+
+  if (qFixCharge_G) then
+
+    call fixCharge(sQe(1), sSigmaGaussian(1,iZ2_CG), sLenEPulse(1,iZ2_CG), &
+                       sSigEj_G(1), qRndEj_G(1))
+
+  end if
+
   call PopMacroElectrons(qSimple, dist_f, sQe,iNumElectrons,q_noise,sZ,sLenEPulse,&
                          sSigmaGaussian,beamCenZ2,gamma_d,&
                          sElectronThreshold,chirp, mag, fr, &

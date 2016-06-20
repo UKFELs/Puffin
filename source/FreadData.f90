@@ -482,6 +482,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 !                     LOCAL ARGS
 
   INTEGER(KIND=IP) :: b_ind
+  logical :: qFixCharge
   INTEGER::ios
   CHARACTER(96) :: dum1, dum2, dtype
 
@@ -493,7 +494,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   namelist /blist/ sSigmaE, sLenE, iNumElectrons, &
                    sEmit_n, sQe, bcenter,  gammaf, &
                    chirp, mag, fr, qRndEj_G, sSigEj_G, &
-                   qMatched_A, qEquiXY, nseqparts
+                   qMatched_A, qEquiXY, nseqparts, qFixCharge
 
 
   namelist /bdlist/ dist_f, nMPs4MASP_G
@@ -573,6 +574,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   qEquiXY = .false.
   nseqparts = 1000_ip
   qSimple = .false.
+  qFixCharge = .false.
 
 ! &&&&&&&&&&&&&&&&&&&&&
 
@@ -653,7 +655,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
   qEquiXY_G = qEquiXY
   nseqparts_G = nseqparts
-
+  qFixCharge_G = qFixCharge
 
 
 ! Set the error flag and exit
