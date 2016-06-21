@@ -69,7 +69,7 @@ logical :: qFMesh_G
 
 integer(kind=ip) :: nseqparts_G
 logical :: qEquiXY_G
-
+logical :: qFixCharge_G
 
 
 integer(kind=ip) :: npts_I_G    !  Specifying mesh 4 current calculation
