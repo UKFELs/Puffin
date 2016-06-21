@@ -115,6 +115,8 @@
  qWriteZ2               = .true.   
  qWriteX                = .true.   
  qWriteY                = .true.   
+ qsdds = .false.
+ qhdf5=.true.
  qUndEnds = .true.
  beam_file              = 'beam_file.in'     
  sElectronThreshold     = 0.05
