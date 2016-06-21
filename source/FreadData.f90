@@ -280,7 +280,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qWriteX = .true.
   qWriteY = .true.
   qsdds = .true.
-  qhdf5 = .true.
+  qhdf5 = .false.
   qFMesh_G = .true.
 !  qplain = .false.
 
