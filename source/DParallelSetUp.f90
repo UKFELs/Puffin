@@ -373,13 +373,28 @@ END SUBROUTINE sum2GlobalArr
 
 SUBROUTINE sum2RootArr(loc_arr,nvals,root)
 
+! Takes each process's local array, and calculates
+! the global sum of each element in the array.
+!
+! The resultant array is stored on the rank specified.
+!
+! loc_arr - the local array. This MUST be of the same size
+!           on each process. On the rank specified by 'root',
+!           this will be overwritten by the global sum.
+!
+! nvals   - size of loc_arr
+! 
+! root    - rank of the 'root' process. The root process is
+!           where the result will be stored. The root 
+!           process's array will be overwritten.
+
 REAL(KIND=WP),INTENT(INOUT)  ::  loc_arr(:)
 INTEGER(KIND=IP),INTENT(IN)  ::  nvals
 INTEGER(KIND=IP),INTENT(IN)  ::  root
 
 INTEGER(KIND=IP)  ::  error
 
- IF (tProcInfo_G%qRoot) THEN
+ IF (tProcInfo_G%rank == root) THEN
 
   CALL MPI_REDUCE(MPI_IN_PLACE,loc_arr,nvals,MPI_DOUBLE_PRECISION,&
  			 MPI_SUM,root,MPI_COMM_WORLD,error)
