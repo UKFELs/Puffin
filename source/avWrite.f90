@@ -529,9 +529,58 @@ contains
 
   end subroutine getCurr
 
+!> getSliceTwiss computes twiss parameters
+!! in universal coordinates - so need scaling
+!! to get back to SI
+  subroutine getSliceTwiss(nslices,aveX,aveY,sdX,sdY,eX,eY,ax,ay,bx,by,aveGamma,aveDgamma,Islice)
+    integer(kind=ip), intent(in) :: nslices
+    real(kind=wp), intent(out) :: aveX(:)
+    real(kind=wp), intent(out) :: aveY(:)
+    real(kind=wp), intent(out) :: sdX(:)
+    real(kind=wp), intent(out) :: sdY(:)
+    real(kind=wp), intent(out) :: eX(:)
+    real(kind=wp), intent(out) :: eY(:)
+    real(kind=wp), intent(out) :: aX(:)
+    real(kind=wp), intent(out) :: aY(:)
+    real(kind=wp), intent(out) :: bX(:)
+    real(kind=wp), intent(out) :: bY(:)
+    real(kind=wp), intent(out) :: aveGamma(:)
+    real(kind=wp), intent(out) :: aveDgamma(:)
+    real(kind=wp), intent(out) :: Islice(:)
+    integer(kind=ip),parameter :: ncoord=6
+    integer(kind=ip) :: ip,ic1,ic2,is !< particle,coord,slice index
+    real(kind=wp) :: sliceSizeZ2
+    real(kind=wp) :: csdata(ncoord,nslices)
+    real(kind=wp) :: cs2data(ncoord,ncoord,nslices)
 
+    aveX = 0.0_wp  ! initialize
+    aveY = 0.0_wp  ! initialize
+    sdX = 0.0_wp   ! initialize
+    sdY = 0.0_wp   ! initialize
+    eX = 0.0_wp    ! initialize
+    eY = 0.0_wp    ! initialize
+    aX = 0.0_wp    ! initialize
+    aY = 0.0_wp    ! initialize
+    bX = 0.0_wp    ! initialize
+    bY = 0.0_wp    ! initialize
+    aveGamma = 0.0_wp   ! initialize
+    aveDgamma = 0.0_wp   ! initialize
+    Islice = 0.0_wp   ! initialize
+!    sliceSizeZ2=(sLengthOfElmZ2_G*NBZ2)/(nslices-1)
+    sliceSizeZ2=(sLengthOfElmZ2_G*NZ2_G)/(nslices)
+    do ip = 1, size(sElX_G)
+      is = ceiling(sElZ2_G(ip)/sliceSizeZ2)
+      if ((is>nslices) .or. (is <1)) then
+        print*,"slice index, is, out of bounds in slice computation"
+      end if  
+    end do
+  end subroutine getSliceTwiss
 
-
+  subroutine getBunchingFundamental(nslices,bunching)
+    integer(kind=ip), intent(in) :: nslices
+    real(kind=wp), intent(out) :: bunching(:)
+    bunching = 0.0_wp    ! initialize
+  end subroutine getBunchingFundamental
 
 
 end module avwrite
