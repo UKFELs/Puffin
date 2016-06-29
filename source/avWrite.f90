@@ -578,7 +578,7 @@ contains
       if ((is>nslices) .or. (is <1)) then
         print*,"slice index, is, out of bounds in slice computation"
       end if  
-      if (mod(ip,10000)) then
+      if (mod(ip,10000) .eq. 0) then
         print*,"at particle ",ip
       end if
       sdata(is)=sdata(is)+s_chi_bar_G(ip)
@@ -604,23 +604,66 @@ contains
       csdata(5,is)=s_chi_bar_G(ip)*sElpY_G(ip)
       csdata(6,is)=s_chi_bar_G(ip)*sElGam_G(ip)
       cs2data(6,6,is)=cs2data(6,6,is)+s_chi_bar_G(ip)*sElgam_G(ip)*sElgam_G(ip)
-    call sum2RootArr(sdata, size(sdata), 0)
-!    call sum2RootArr(csdata, size(csdata), 0)
-    call sum2RootArr(csdata(1,:), size(csdata(1,:)), 0)
-    call sum2RootArr(csdata(2,:), size(csdata(2,:)), 0)
-    call sum2RootArr(csdata(4,:), size(csdata(4,:)), 0)
-    call sum2RootArr(csdata(5,:), size(csdata(5,:)), 0)
-    call sum2RootArr(csdata(6,:), size(csdata(6,:)), 0)
 !    call sum2RootArr(cs2data(, size(cs2data), 0)
 
     end do
+ print*,"Bringing arrays onto rank0"
+    call sum2RootArr(sdata, size(sdata), 0)
+!    call sum2RootArr(csdata, size(csdata), 0)
+ print*,"Bringing x array onto rank0"
+    call sum2RootArr(csdata(1,:), size(csdata(1,:)), 0)
+ print*,"Bringing y array onto rank0"
+    call sum2RootArr(csdata(2,:), size(csdata(2,:)), 0)
+ print*,"Bringing px array onto rank0"
+    call sum2RootArr(csdata(4,:), size(csdata(4,:)), 0)
+ print*,"Bringing py array onto rank0"
+    call sum2RootArr(csdata(5,:), size(csdata(5,:)), 0)
+ print*,"Bringing gamma array onto rank0"
+    call sum2RootArr(csdata(6,:), size(csdata(6,:)), 0)
+ print*,"Bringing x^2 array onto rank0"
+    call sum2RootArr(cs2data(1,1,:), size(cs2data(1,1,:)), 0)
+ print*,"Bringing x*px array onto rank0"
+    call sum2RootArr(cs2data(1,4,:), size(cs2data(1,4,:)), 0)
+ print*,"Bringing y*py array onto rank0"
+    call sum2RootArr(cs2data(2,5,:), size(cs2data(2,5,:)), 0)
+ print*,"Bringing y^2 array onto rank0"
+    call sum2RootArr(cs2data(2,2,:), size(cs2data(2,2,:)), 0)
+ print*,"Bringing gamma^2 array onto rank0"
+    call sum2RootArr(cs2data(6,6,:), size(cs2data(6,6,:)), 0)
 !! All ranks calculate, but correct data is now only on rank0.
     Do is=1,nslices
-      aveX(is)=csdata(1,is)/sdata(is)
-      aveY(is)=csdata(2,is)/sdata(is)
-      avepX(is)=csdata(4,is)/sdata(is)
-      avepY(is)=csdata(5,is)/sdata(is)
-      aveGamma(is)=csdata(6,is)/sdata(is)
+      if (sdata(is)>0) then
+        aveX(is)=csdata(1,is)/sdata(is)
+        aveY(is)=csdata(2,is)/sdata(is)
+        avepX(is)=csdata(4,is)/sdata(is)
+        avepY(is)=csdata(5,is)/sdata(is)
+        aveGamma(is)=csdata(6,is)/sdata(is)
+        sdx(is)=sqrt((cs2data(1,1,is)-(csdata(1,is)**2)/sdata(is))/sdata(is))
+        sdy(is)=sqrt((cs2data(2,2,is)-(csdata(2,is)**2)/sdata(is))/sdata(is))
+        avedgamma(is)=sqrt((cs2data(6,6,is)-(csdata(6,is)**2)/sdata(is))/sdata(is))
+        if (tprocinfo_g%qroot) then
+          print*, "ex terms for slice " 
+          print*, is
+          print*,cs2data(1,1,is)
+          print*,cs2data(4,4,is)
+          print*,cs2data(1,4,is)
+          print*,cs2data(1,1,is)*cs2data(4,4,is)
+          print*,cs2data(1,4,is)**2
+        end if
+        ex(is)=sqrt((cs2data(1,1,is)*cs2data(4,4,is)-(cs2data(1,4,is)**2)))/sdata(is)
+        ey(is)=sqrt((cs2data(2,2,is)*cs2data(5,5,is)-(cs2data(2,5,is)**2)))/sdata(is)
+      else
+        aveX(is)=0._wp
+        aveY(is)=0._wp
+        avePX(is)=0._wp
+        avePY(is)=0._wp
+        aveGamma(is)=0._wp
+        sdX(is)=0._wp
+        sdY(is)=0._wp
+        eX(is)=0._wp
+        eY(is)=0._wp
+        avedgamma(is)=0._wp
+      end if
     end do
   end subroutine getSliceTwiss
 
