@@ -626,6 +626,10 @@ contains
     call sum2RootArr(cs2data(1,1,:), size(cs2data(1,1,:)), 0)
  print*,"Bringing x*px array onto rank0"
     call sum2RootArr(cs2data(1,4,:), size(cs2data(1,4,:)), 0)
+ print*,"Bringing px*px array onto rank0"
+    call sum2RootArr(cs2data(4,4,:), size(cs2data(4,4,:)), 0)
+ print*,"Bringing py*py array onto rank0"
+    call sum2RootArr(cs2data(5,5,:), size(cs2data(5,5,:)), 0)
  print*,"Bringing y*py array onto rank0"
     call sum2RootArr(cs2data(2,5,:), size(cs2data(2,5,:)), 0)
  print*,"Bringing y^2 array onto rank0"
