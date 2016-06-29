@@ -534,27 +534,32 @@ contains
 !! to get back to SI
   subroutine getSliceTwiss(nslices,aveX,aveY,sdX,sdY,eX,eY,ax,ay,bx,by,aveGamma,aveDgamma,Islice)
     integer(kind=ip), intent(in) :: nslices
-    real(kind=wp), intent(out) :: aveX(:)
-    real(kind=wp), intent(out) :: aveY(:)
-    real(kind=wp), intent(out) :: sdX(:)
-    real(kind=wp), intent(out) :: sdY(:)
+    real(kind=wp), intent(out) :: aveX(nslices)
+    real(kind=wp), intent(out) :: aveY(nslices)
+    real(kind=wp), intent(out) :: avepX(nslices)
+    real(kind=wp), intent(out) :: avepY(nslices)
+    real(kind=wp), intent(out) :: sdX(nslices)
+    real(kind=wp), intent(out) :: sdY(nslices)
     real(kind=wp), intent(out) :: eX(:)
     real(kind=wp), intent(out) :: eY(:)
     real(kind=wp), intent(out) :: aX(:)
     real(kind=wp), intent(out) :: aY(:)
     real(kind=wp), intent(out) :: bX(:)
     real(kind=wp), intent(out) :: bY(:)
-    real(kind=wp), intent(out) :: aveGamma(:)
+    real(kind=wp), intent(out) :: aveGamma(nslices)
     real(kind=wp), intent(out) :: aveDgamma(:)
     real(kind=wp), intent(out) :: Islice(:)
     integer(kind=ip),parameter :: ncoord=6
     integer(kind=ip) :: ip,ic1,ic2,is !< particle,coord,slice index
     real(kind=wp) :: sliceSizeZ2
+    real(kind=wp) :: sdata(nslices)
     real(kind=wp) :: csdata(ncoord,nslices)
     real(kind=wp) :: cs2data(ncoord,ncoord,nslices)
 
     aveX = 0.0_wp  ! initialize
     aveY = 0.0_wp  ! initialize
+    avepX = 0.0_wp  ! initialize
+    avepY = 0.0_wp  ! initialize
     sdX = 0.0_wp   ! initialize
     sdY = 0.0_wp   ! initialize
     eX = 0.0_wp    ! initialize
@@ -566,6 +571,9 @@ contains
     aveGamma = 0.0_wp   ! initialize
     aveDgamma = 0.0_wp   ! initialize
     Islice = 0.0_wp   ! initialize
+    sdata = 0.0_wp   ! initialize
+    csdata = 0.0_wp   ! initialize
+    cs2data = 0.0_wp   ! initialize
 !    sliceSizeZ2=(sLengthOfElmZ2_G*NBZ2)/(nslices-1)
     sliceSizeZ2=(sLengthOfElmZ2_G*NZ2_G)/(nslices)
     do ip = 1, size(sElX_G)
@@ -573,6 +581,40 @@ contains
       if ((is>nslices) .or. (is <1)) then
         print*,"slice index, is, out of bounds in slice computation"
       end if  
+      if (mod(ip,10000)) then
+        print*,"at slice ",ip
+      end if
+      sdata(is)=sdata(is)+s_chi_bar_G(ip)
+!      do ic1 = 1,ncoord
+!        select case (ncoord)
+!          case (1) csdata(ic1,is)=s_chi_bar_G(ip)*sX_G
+!        !! Would be tidier, but sadly our data is not structured nicely for this        
+!      end do
+      csdata(1,is)=csdata(1,is)+s_chi_bar_G(ip)*sElX_G(ip)
+      cs2data(1,1,is)=cs2data(1,1,is)+s_chi_bar_G(ip)*sElX_G(ip)*sElX_G(ip)
+      cs2data(1,2,is)=cs2data(1,2,is)+s_chi_bar_G(ip)*sElX_G(ip)*sElY_G(ip)
+      cs2data(1,3,is)=cs2data(1,3,is)+s_chi_bar_G(ip)*sElX_G(ip)*sElz2_G(ip)
+      cs2data(1,4,is)=cs2data(1,4,is)+s_chi_bar_G(ip)*sElX_G(ip)*sElpX_G(ip)
+      cs2data(1,5,is)=cs2data(1,5,is)+s_chi_bar_G(ip)*sElX_G(ip)*sElpy_G(ip)
+      cs2data(1,6,is)=cs2data(1,6,is)+s_chi_bar_G(ip)*sElX_G(ip)*sElgam_G(ip)
+      csdata(2,is)=s_chi_bar_G(ip)*sElY_G(ip)
+      cs2data(2,2,is)=cs2data(2,2,is)+s_chi_bar_G(ip)*sElY_G(ip)*sElY_G(ip)
+      cs2data(2,3,is)=cs2data(2,3,is)+s_chi_bar_G(ip)*sElY_G(ip)*sElz2_G(ip)
+      cs2data(2,4,is)=cs2data(2,4,is)+s_chi_bar_G(ip)*sElY_G(ip)*sElpX_G(ip)
+      cs2data(2,5,is)=cs2data(2,5,is)+s_chi_bar_G(ip)*sElY_G(ip)*sElpy_G(ip)
+      cs2data(2,6,is)=cs2data(2,6,is)+s_chi_bar_G(ip)*sElY_G(ip)*sElgam_G(ip)
+      csdata(4,is)=s_chi_bar_G(ip)*sElpX_G(ip)
+      csdata(5,is)=s_chi_bar_G(ip)*sElpY_G(ip)
+      csdata(6,is)=s_chi_bar_G(ip)*sElGam_G(ip)
+      cs2data(6,6,is)=cs2data(6,6,is)+s_chi_bar_G(ip)*sElgam_G(ip)*sElgam_G(ip)
+
+    end do
+    do is=1,nslices
+      aveX(is)=csdata(1,is)/sdata(is)
+      aveY(is)=csdata(2,is)/sdata(is)
+      avepX(is)=csdata(4,is)/sdata(is)
+      avepY(is)=csdata(5,is)/sdata(is)
+      aveGamma(is)=csdata(6,is)/sdata(is)
     end do
   end subroutine getSliceTwiss
 
