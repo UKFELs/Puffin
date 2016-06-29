@@ -301,7 +301,7 @@ contains
     real(kind=wp), DIMENSION(NZ2_G) :: power !<power data (called here)
     real(kind=wp), DIMENSION(npts_I_G) :: Iarray !< current data (called here)
     type(cArraySegment), intent(inout) :: tArrayA(:), tArrayE(:), tArrayZ
-    integer(kind=ip),PARAMETER :: nslices=128
+    integer(kind=ip),PARAMETER :: nslices=256
     real(kind=wp), DIMENSION(nslices) :: aveX,aveY,avePX,avePY,aveGamma,aveDgamma
     real(kind=wp), DIMENSION(nslices) :: sdX, sdY, eX, ey, aX, aY, bX, bY
 !    real(kind=wp), intent(out) :: eX(:)
