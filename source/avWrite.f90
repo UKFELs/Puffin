@@ -532,23 +532,21 @@ contains
 !> getSliceTwiss computes twiss parameters
 !! in universal coordinates - so need scaling
 !! to get back to SI
-  subroutine getSliceTwiss(nslices,aveX,aveY,sdX,sdY,eX,eY,ax,ay,bx,by,aveGamma,aveDgamma,Islice)
+  subroutine getSliceTwiss(nslices,aveX,aveY,avePX,avePY &
+    ,sdX,sdY,eX,eY,ax,ay,bx,by,aveGamma,aveDgamma)
     integer(kind=ip), intent(in) :: nslices
-    real(kind=wp), intent(out) :: aveX(nslices)
-    real(kind=wp), intent(out) :: aveY(nslices)
-    real(kind=wp), intent(out) :: avepX(nslices)
-    real(kind=wp), intent(out) :: avepY(nslices)
-    real(kind=wp), intent(out) :: sdX(nslices)
-    real(kind=wp), intent(out) :: sdY(nslices)
-    real(kind=wp), intent(out) :: eX(:)
-    real(kind=wp), intent(out) :: eY(:)
-    real(kind=wp), intent(out) :: aX(:)
-    real(kind=wp), intent(out) :: aY(:)
-    real(kind=wp), intent(out) :: bX(:)
-    real(kind=wp), intent(out) :: bY(:)
-    real(kind=wp), intent(out) :: aveGamma(nslices)
-    real(kind=wp), intent(out) :: aveDgamma(:)
-    real(kind=wp), intent(out) :: Islice(:)
+    real(kind=wp), intent(out), DIMENSION(nslices) :: aveX,aveY,avePX,avePY,aveGamma,aveDgamma
+    real(kind=wp), intent(out), DIMENSION(nslices) :: sdX, sdY, eX, eY, ax, ay, bx, by
+!    real(kind=wp), intent(out) :: sdX(nslices)
+!    real(kind=wp), intent(out) :: sdY(nslices)
+!    real(kind=wp), intent(out) :: eX(:)
+!    real(kind=wp), intent(out) :: eY(:)
+!    real(kind=wp), intent(out) :: aX(:)
+!    real(kind=wp), intent(out) :: aY(:)
+!    real(kind=wp), intent(out) :: bX(:)
+!    real(kind=wp), intent(out) :: bY(:)
+!    real(kind=wp), intent(out) :: aveGamma(nslices)
+!    real(kind=wp), intent(out) :: aveDgamma(:)
     integer(kind=ip),parameter :: ncoord=6
     integer(kind=ip) :: ip,ic1,ic2,is !< particle,coord,slice index
     real(kind=wp) :: sliceSizeZ2
@@ -570,7 +568,6 @@ contains
     bY = 0.0_wp    ! initialize
     aveGamma = 0.0_wp   ! initialize
     aveDgamma = 0.0_wp   ! initialize
-    Islice = 0.0_wp   ! initialize
     sdata = 0.0_wp   ! initialize
     csdata = 0.0_wp   ! initialize
     cs2data = 0.0_wp   ! initialize
@@ -582,7 +579,7 @@ contains
         print*,"slice index, is, out of bounds in slice computation"
       end if  
       if (mod(ip,10000)) then
-        print*,"at slice ",ip
+        print*,"at particle ",ip
       end if
       sdata(is)=sdata(is)+s_chi_bar_G(ip)
 !      do ic1 = 1,ncoord
@@ -607,9 +604,18 @@ contains
       csdata(5,is)=s_chi_bar_G(ip)*sElpY_G(ip)
       csdata(6,is)=s_chi_bar_G(ip)*sElGam_G(ip)
       cs2data(6,6,is)=cs2data(6,6,is)+s_chi_bar_G(ip)*sElgam_G(ip)*sElgam_G(ip)
+    call sum2RootArr(sdata, size(sdata), 0)
+!    call sum2RootArr(csdata, size(csdata), 0)
+    call sum2RootArr(csdata(1,:), size(csdata(1,:)), 0)
+    call sum2RootArr(csdata(2,:), size(csdata(2,:)), 0)
+    call sum2RootArr(csdata(4,:), size(csdata(4,:)), 0)
+    call sum2RootArr(csdata(5,:), size(csdata(5,:)), 0)
+    call sum2RootArr(csdata(6,:), size(csdata(6,:)), 0)
+!    call sum2RootArr(cs2data(, size(cs2data), 0)
 
     end do
-    do is=1,nslices
+!! All ranks calculate, but correct data is now only on rank0.
+    Do is=1,nslices
       aveX(is)=csdata(1,is)/sdata(is)
       aveY(is)=csdata(2,is)/sdata(is)
       avepX(is)=csdata(4,is)/sdata(is)
