@@ -194,7 +194,7 @@ CONTAINS
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('aw','double',tFileType=tParamFile)	  
        If (.NOT. qOKL) Goto 1000
-       call SddsWriteParameter('epsilon','double',tFileType=tParamFile)	  
+       call SddsWriteParameter('eta','double',tFileType=tParamFile)	  
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('gamma_r','double',tFileType=tParamFile)	  
        If (.NOT. qOKL) Goto 1000
