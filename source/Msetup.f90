@@ -383,6 +383,8 @@ MODULE Setup
 
   IF(tProcInfo_G%qROOT) PRINT *, 'Writing parameter data to file' 
 
+  qSeparateStepFiles_G = qSeparateStepFiles
+
   CALL WriteEleData(zDataFileName,'Chi','s_chi_bar',qFormattedFiles, &
        iGlonumElectrons_G,s_chi_bar_G,qOKL)
   If (.NOT. qOKL) GOTO 1000
@@ -478,8 +480,6 @@ MODULE Setup
   If(tProcInfo_G%qROOT) PRINT *, 'Initial data written'
   
   
-  qSeparateStepFiles_G = qSeparateStepFiles
-
 !  if (qSwitches(iDump_CG)) call DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
 !  if (qSwitches(iDump_CG)) call DUMPDATA(sA,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
 !                             iNumberElectrons_G,sZ,istep,tArrayA(1)%tFileType%iPage)
