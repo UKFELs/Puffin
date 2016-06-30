@@ -301,6 +301,18 @@ contains
     real(kind=wp), DIMENSION(NZ2_G) :: power !<power data (called here)
     real(kind=wp), DIMENSION(npts_I_G) :: Iarray !< current data (called here)
     type(cArraySegment), intent(inout) :: tArrayA(:), tArrayE(:), tArrayZ
+    integer(kind=ip),PARAMETER :: nslices=256
+    real(kind=wp), DIMENSION(nslices) :: aveX,aveY,avePX,avePY,aveGamma,aveDgamma
+    real(kind=wp), DIMENSION(nslices) :: sdX, sdY, eX, ey, aX, aY, bX, bY
+    real(kind=wp), DIMENSION(nslices) :: bun1,bun2,bun3,bun4,bun5
+!    real(kind=wp), intent(out) :: eX(:)
+!    real(kind=wp), intent(out) :: eY(:)
+!    real(kind=wp), intent(out) :: aX(:)
+!    real(kind=wp), intent(out) :: aY(:)
+!    real(kind=wp), intent(out) :: bX(:)
+!    real(kind=wp), intent(out) :: bY(:)
+!    real(kind=wp), intent(out) :: aveGamma(nslices)
+!    real(kind=wp), intent(out) :: aveDgamma(:)
     integer(kind=ip), intent(in) :: iIntWr, iWr !<Aren't these global?
     character(32_IP), intent(in) :: zDFName 
     logical, intent(in) :: qSep !< Probably not used here, whether to write separate files
@@ -401,9 +413,26 @@ contains
       end if
 ! This call requires all ranks to participate
       call getCurr(dz2_I_G, Iarray)
-! but the write operation does not.
+      call getSliceTwiss(nslices,aveX,aveY,avePX,avePY &
+    ,sdX,sdY,eX,eY,ax,ay,bx,by,aveGamma,aveDgamma,bun1,bun2,bun3,bun4,bun5)
+! but the write operation does not, as the data has been collected on rank0.
       if (tProcInfo_G%qRoot) then
         call outputH5Field1DFloat(Iarray, 'current', time, error)
+        call outputH5Field1DFloat(aveX, 'aveX', time, error)
+        call outputH5Field1DFloat(aveY, 'aveY', time, error)
+        call outputH5Field1DFloat(avepy, 'avePX', time, error)
+        call outputH5Field1DFloat(avepy, 'avePY', time, error)
+        call outputH5Field1DFloat(aveGamma, 'aveGamma', time, error)
+        call outputH5Field1DFloat(aveDGamma, 'avedGamma', time, error)
+        call outputH5Field1DFloat(sdx, 'sdx', time, error)
+        call outputH5Field1DFloat(sdy, 'sdy', time, error)
+        call outputH5Field1DFloat(ex, 'ex', time, error)
+        call outputH5Field1DFloat(ey, 'ey', time, error)
+        call outputH5Field1DFloat(bun1, 'bunching1st', time, error)
+        call outputH5Field1DFloat(bun2, 'bunching2nd', time, error)
+        call outputH5Field1DFloat(bun3, 'bunching3rd', time, error)
+        call outputH5Field1DFloat(bun4, 'bunching4th', time, error)
+        call outputH5Field1DFloat(bun5, 'bunching5th', time, error)
       if (error .ne. 0) goto 1000
 ! Todo not yet implemented
 !     call outputH5SliceEmittance
@@ -2160,7 +2189,11 @@ contains
     CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
     CALL h5aclose_f(attr_id, error)
     CALL addH5StringAttribute(dset_id,"vsType","variable",aspace_id)
-    CALL addH5StringAttribute(dset_id,"vsCentering","nodal",aspace_id) 
+    if (size(writeData) .eq. NZ2_G) then
+      CALL addH5StringAttribute(dset_id,"vsCentering","nodal",aspace_id) 
+    else
+      CALL addH5StringAttribute(dset_id,"vsCentering","zonal",aspace_id) 
+    end if
     CALL addH5StringAttribute(dset_id,"vsIndexOrder","compMinorC",aspace_id)
     CALL addH5StringAttribute(dset_id,"vsTimeGroup",timegrpname,aspace_id)
     CALL addH5StringAttribute(dset_id,"vsLimits",limgrpname,aspace_id)
@@ -2245,8 +2278,8 @@ contains
     CALL h5aclose_f(attr_id, error)
     aname="vsUpperBounds"
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
-    Print*,'hdf5_puff:outputH5Field1DFloat(mesh upper bounds attribute' &
-         // 'created)' // trim(adjustl(dsetname))
+!    Print*,'hdf5_puff:outputH5Field1DFloat(mesh upper bounds attribute' &
+!         // 'created)' // trim(adjustl(dsetname))
     limdata(1)=real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G
     CALL h5awrite_f(attr_id, atype_id, limdata, adims, error) 
     CALL h5aclose_f(attr_id, error)
@@ -2257,7 +2290,7 @@ contains
     aname="vsStartCell"
     CALL h5tcopy_f(H5T_NATIVE_INTEGER, atype_id, error)
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
-    Print*,'hdf5_puff:outputH5Field1D(startcell attribute created)'
+!    Print*,'hdf5_puff:outputH5Field1D(startcell attribute created)'
     ALLOCATE ( numcelldata(numSpatialDims))
     numcelldata(1)=0
     CALL h5awrite_f(attr_id, atype_id, numcelldata, adims, error) 
@@ -2266,7 +2299,13 @@ contains
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
     Print*,'hdf5_puff:outputH5Field1DFloat(numcells attribute ' &
 	  // 'created)' // trim(adjustl(dsetname))
-    numcelldata(1)=NZ2_G-1
+    print*,NZ2_G-1
+    print*, size(writeData)
+    if (size(writeData) .eq. NZ2_G) then
+      numcelldata(1)=NZ2_G-1
+    else
+      numcelldata(1)=size(writeData)
+    end if
     CALL h5awrite_f(attr_id, atype_id, numcelldata, adims, error) 
     CALL h5aclose_f(attr_id, error)
     DEALLOCATE ( numcelldata)
