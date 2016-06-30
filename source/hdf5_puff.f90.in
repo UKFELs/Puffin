@@ -304,6 +304,7 @@ contains
     integer(kind=ip),PARAMETER :: nslices=256
     real(kind=wp), DIMENSION(nslices) :: aveX,aveY,avePX,avePY,aveGamma,aveDgamma
     real(kind=wp), DIMENSION(nslices) :: sdX, sdY, eX, ey, aX, aY, bX, bY
+    real(kind=wp), DIMENSION(nslices) :: bun1,bun2,bun3,bun4,bun5
 !    real(kind=wp), intent(out) :: eX(:)
 !    real(kind=wp), intent(out) :: eY(:)
 !    real(kind=wp), intent(out) :: aX(:)
@@ -413,7 +414,7 @@ contains
 ! This call requires all ranks to participate
       call getCurr(dz2_I_G, Iarray)
       call getSliceTwiss(nslices,aveX,aveY,avePX,avePY &
-    ,sdX,sdY,eX,eY,ax,ay,bx,by,aveGamma,aveDgamma)
+    ,sdX,sdY,eX,eY,ax,ay,bx,by,aveGamma,aveDgamma,bun1,bun2,bun3,bun4,bun5)
 ! but the write operation does not, as the data has been collected on rank0.
       if (tProcInfo_G%qRoot) then
         call outputH5Field1DFloat(Iarray, 'current', time, error)
@@ -427,6 +428,11 @@ contains
         call outputH5Field1DFloat(sdy, 'sdy', time, error)
         call outputH5Field1DFloat(ex, 'ex', time, error)
         call outputH5Field1DFloat(ey, 'ey', time, error)
+        call outputH5Field1DFloat(bun1, 'bunching1st', time, error)
+        call outputH5Field1DFloat(bun2, 'bunching2nd', time, error)
+        call outputH5Field1DFloat(bun3, 'bunching3rd', time, error)
+        call outputH5Field1DFloat(bun4, 'bunching4th', time, error)
+        call outputH5Field1DFloat(bun5, 'bunching5th', time, error)
       if (error .ne. 0) goto 1000
 ! Todo not yet implemented
 !     call outputH5SliceEmittance

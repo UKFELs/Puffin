@@ -533,10 +533,11 @@ contains
 !! in universal coordinates - so need scaling
 !! to get back to SI
   subroutine getSliceTwiss(nslices,aveX,aveY,avePX,avePY &
-    ,sdX,sdY,eX,eY,ax,ay,bx,by,aveGamma,aveDgamma)
+    ,sdX,sdY,eX,eY,ax,ay,bx,by,aveGamma,aveDgamma,b1,b2,b3,b4,b5)
     integer(kind=ip), intent(in) :: nslices
     real(kind=wp), intent(out), DIMENSION(nslices) :: aveX,aveY,avePX,avePY,aveGamma,aveDgamma
     real(kind=wp), intent(out), DIMENSION(nslices) :: sdX, sdY, eX, eY, ax, ay, bx, by
+    real(kind=wp), intent(out), DIMENSION(nslices) :: b1,b2,b3,b4,b5
 !    real(kind=wp), intent(out) :: sdX(nslices)
 !    real(kind=wp), intent(out) :: sdY(nslices)
 !    real(kind=wp), intent(out) :: eX(:)
@@ -551,6 +552,8 @@ contains
     integer(kind=ip) :: ip,ic1,ic2,is !< particle,coord,slice index
     real(kind=wp) :: sliceSizeZ2
     real(kind=wp) :: sdata(nslices)
+    real(kind=wp),DIMENSION(nslices) :: b1r,b2r,b3r,b4r,b5r
+    real(kind=wp),DIMENSION(nslices) :: b1i,b2i,b3i,b4i,b5i
     real(kind=wp) :: csdata(ncoord,nslices)
     real(kind=wp) :: cs2data(ncoord,ncoord,nslices)
 
@@ -571,6 +574,21 @@ contains
     sdata = 0.0_wp   ! initialize
     csdata = 0.0_wp   ! initialize
     cs2data = 0.0_wp   ! initialize
+!
+! Should create a parameter hno (harmonic number)
+! and loop.
+!
+
+    b1r = 0.0_wp   ! initialize
+    b2r = 0.0_wp   ! initialize
+    b3r = 0.0_wp   ! initialize
+    b4r = 0.0_wp   ! initialize
+    b5r = 0.0_wp   ! initialize
+    b1i = 0.0_wp   ! initialize
+    b2i = 0.0_wp   ! initialize
+    b3i = 0.0_wp   ! initialize
+    b4i = 0.0_wp   ! initialize
+    b5i = 0.0_wp   ! initialize
 !    sliceSizeZ2=(sLengthOfElmZ2_G*NBZ2)/(nslices-1)
     sliceSizeZ2=(sLengthOfElmZ2_G*NZ2_G)/(nslices)
     do ip = 1, size(sElX_G)
@@ -606,36 +624,44 @@ contains
       cs2data(5,5,is)=cs2data(5,5,is)+s_chi_bar_G(ip)*sElpY_G(ip)*sElpY_G(ip)
       csdata(6,is)=csdata(6,is)+s_chi_bar_G(ip)*sElGam_G(ip)
       cs2data(6,6,is)=cs2data(6,6,is)+s_chi_bar_G(ip)*sElgam_G(ip)*sElgam_G(ip)
+      b1r(is)=b1(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(2*sRho_G))
+      b1i(is)=b1(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(2*sRho_G))
+      b2r(is)=b2(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(4*sRho_G))
+      b2i(is)=b2(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(4*sRho_G))
+      b3r(is)=b3(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(6*sRho_G))
+      b3i(is)=b3(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(6*sRho_G))
+      b4r(is)=b4(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(8*sRho_G))
+      b4i(is)=b4(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(8*sRho_G))
+      b5r(is)=b5(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(10*sRho_G))
+      b5i(is)=b5(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(10*sRho_G))
 !    call sum2RootArr(cs2data(, size(cs2data), 0)
 
     end do
  print*,"Bringing arrays onto rank0"
     call sum2RootArr(sdata, size(sdata), 0)
-!    call sum2RootArr(csdata, size(csdata), 0)
- print*,"Bringing x array onto rank0"
     call sum2RootArr(csdata(1,:), size(csdata(1,:)), 0)
- print*,"Bringing y array onto rank0"
     call sum2RootArr(csdata(2,:), size(csdata(2,:)), 0)
- print*,"Bringing px array onto rank0"
     call sum2RootArr(csdata(4,:), size(csdata(4,:)), 0)
- print*,"Bringing py array onto rank0"
     call sum2RootArr(csdata(5,:), size(csdata(5,:)), 0)
- print*,"Bringing gamma array onto rank0"
     call sum2RootArr(csdata(6,:), size(csdata(6,:)), 0)
- print*,"Bringing x^2 array onto rank0"
     call sum2RootArr(cs2data(1,1,:), size(cs2data(1,1,:)), 0)
- print*,"Bringing x*px array onto rank0"
     call sum2RootArr(cs2data(1,4,:), size(cs2data(1,4,:)), 0)
- print*,"Bringing px*px array onto rank0"
     call sum2RootArr(cs2data(4,4,:), size(cs2data(4,4,:)), 0)
- print*,"Bringing py*py array onto rank0"
     call sum2RootArr(cs2data(5,5,:), size(cs2data(5,5,:)), 0)
- print*,"Bringing y*py array onto rank0"
     call sum2RootArr(cs2data(2,5,:), size(cs2data(2,5,:)), 0)
- print*,"Bringing y^2 array onto rank0"
     call sum2RootArr(cs2data(2,2,:), size(cs2data(2,2,:)), 0)
- print*,"Bringing gamma^2 array onto rank0"
     call sum2RootArr(cs2data(6,6,:), size(cs2data(6,6,:)), 0)
+    call sum2RootArr(b1r, size(b1r), 0)
+    call sum2RootArr(b1i, size(b1i), 0)
+    call sum2RootArr(b2r, size(b2r), 0)
+    call sum2RootArr(b2i, size(b2i), 0)
+    call sum2RootArr(b3r, size(b3r), 0)
+    call sum2RootArr(b3i, size(b3i), 0)
+    call sum2RootArr(b4r, size(b4r), 0)
+    call sum2RootArr(b4i, size(b4i), 0)
+    call sum2RootArr(b5r, size(b5r), 0)
+    call sum2RootArr(b5i, size(b5i), 0)
+
 !! All ranks calculate, but correct data is now only on rank0.
     Do is=1,nslices
       if (sdata(is)>0) then
@@ -658,6 +684,11 @@ contains
         end if
         ex(is)=sqrt((cs2data(1,1,is)*cs2data(4,4,is)-(cs2data(1,4,is)**2)))/sdata(is)
         ey(is)=sqrt((cs2data(2,2,is)*cs2data(5,5,is)-(cs2data(2,5,is)**2)))/sdata(is)
+        b1=b1r**2+b1i**2
+        b2=b2r**2+b2i**2
+        b3=b3r**2+b3i**2
+        b4=b4r**2+b4i**2
+        b5=b5r**2+b5i**2
       else
         aveX(is)=0._wp
         aveY(is)=0._wp
@@ -669,6 +700,11 @@ contains
         eX(is)=0._wp
         eY(is)=0._wp
         avedgamma(is)=0._wp
+        b1(is)=0._wp
+        b2(is)=0._wp
+        b3(is)=0._wp
+        b4(is)=0._wp
+        b5(is)=0._wp
       end if
     end do
   end subroutine getSliceTwiss
