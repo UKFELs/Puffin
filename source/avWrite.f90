@@ -23,14 +23,14 @@ contains
 
 
 
+!> writeIntData Top level routine for writing reduced/integrated data
+!! Outputs integrated data e.g. power, current
+!! bunching, etc
 
 
   subroutine writeIntData()
 
     implicit none
-
-! Outputs integrated data e.g. power, current
-! bunching, etc
 
     call oPower()
 
@@ -684,11 +684,11 @@ contains
         end if
         ex(is)=sqrt((cs2data(1,1,is)*cs2data(4,4,is)-(cs2data(1,4,is)**2)))/sdata(is)
         ey(is)=sqrt((cs2data(2,2,is)*cs2data(5,5,is)-(cs2data(2,5,is)**2)))/sdata(is)
-        b1=b1r**2+b1i**2
-        b2=b2r**2+b2i**2
-        b3=b3r**2+b3i**2
-        b4=b4r**2+b4i**2
-        b5=b5r**2+b5i**2
+        b1=sqrt(b1r**2+b1i**2)/sdata(is)/sliceSizeZ2
+        b2=sqrt(b2r**2+b2i**2)/sdata(is)/sliceSizeZ2
+        b3=sqrt(b3r**2+b3i**2)/sdata(is)/sliceSizeZ2
+        b4=sqrt(b4r**2+b4i**2)/sdata(is)/sliceSizeZ2
+        b5=sqrt(b5r**2+b5i**2)/sdata(is)/sliceSizeZ2
       else
         aveX(is)=0._wp
         aveY(is)=0._wp
