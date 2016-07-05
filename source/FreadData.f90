@@ -270,7 +270,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qUndEnds = .false.
   qDump = .false.
   qResume = .false.
-  qSeparateFiles = .true.
+  qSeparateFiles = .false.
   qFormattedFiles = .false.
   qWriteZ = .true.
   qWriteA = .true.
