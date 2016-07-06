@@ -458,9 +458,13 @@ if (sSigZ2 >= 1e6) qFlatTop = .true.
 sEndsLen = 0.0_wp
 
 if (qFlatTop) then
-  if (qTails) sEndsLen = gExtEj_G * sSigTails
-  sMainLen = sLenz2 - sEndsLen
-  sLArea = sMainLen + sqrt(2*pi)*sSigTails
+  if (qTails) then 
+    sEndsLen = gExtEj_G * sSigTails
+    sMainLen = sLenz2 - sEndsLen
+    sLArea = sMainLen + sqrt(2*pi)*sSigTails
+  else 
+    sLArea = sMainLen
+  end if
 else
   sLArea = sqrt(2*pi) * sSigz2
 end if
