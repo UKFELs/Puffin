@@ -463,7 +463,7 @@ if (qFlatTop) then
     sMainLen = sLenz2 - sEndsLen
     sLArea = sMainLen + sqrt(2*pi)*sSigTails
   else 
-    sLArea = sMainLen
+    sLArea = sLenz2
   end if
 else
   sLArea = sqrt(2*pi) * sSigz2
