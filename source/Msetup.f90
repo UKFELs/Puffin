@@ -222,7 +222,7 @@ MODULE Setup
 !     Pass local vars to global vars
 
   CALL passToGlobals(srho,saw,sgammar,lambda_w,iNodes, &
-                     sLengthOfElm,&
+                     sLengthOfElm, qSimple, iNumElectrons, &
                      fx,fy,sFocusFactor,taper, &
                      sFiltFrac,sDiffFrac,sBeta, &
                      zUndType,qFormattedFiles, qSwitches,qOK)
