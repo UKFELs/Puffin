@@ -194,7 +194,7 @@ CONTAINS
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('aw','double',tFileType=tParamFile)	  
        If (.NOT. qOKL) Goto 1000
-       call SddsWriteParameter('epsilon','double',tFileType=tParamFile)	  
+       call SddsWriteParameter('eta','double',tFileType=tParamFile)	  
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('gamma_r','double',tFileType=tParamFile)	  
        If (.NOT. qOKL) Goto 1000
@@ -240,14 +240,19 @@ CONTAINS
        call SddsWriteParameter('qElectronFieldCoupling',&
             'long',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
-       call SddsWriteParameter('qFocussing_CG','long',tFileType=tParamFile)
+       call SddsWriteParameter('qFocussing','long',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
-       call SddsWriteParameter('qMatchedBeam_CG','long',tFileType=tParamFile)
+       call SddsWriteParameter('qMatchedBeam','long',tFileType=tParamFile)
+       If (.NOT. qOKL) Goto 1000
+       call SddsWriteParameter('qOneD','long',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('fx','double',tFileType=tParamFile)	   
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('fy','double',tFileType=tParamFile)	   
        If (.NOT. qOKL) Goto 1000
+       call SddsWriteParameter('kappa','double',tFileType=tParamFile)     
+       If (.NOT. qOKL) Goto 1000
+
 
 ! Write data mode - This subroutine is in BsddsWriter.f90  line 316
        call SddsWriteDataMode('ascii',tFileType=tParamFile)	
@@ -368,10 +373,16 @@ CONTAINS
        If (.NOT. qOKL) Goto 1000
        call WriteLOGICINTEGER(qSwitch(iMatchedBeam_CG),tParamFile,qOKL) 
        If (.NOT. qOKL) Goto 1000
+       call WriteLOGICINTEGER(qOneD_G,tParamFile,qOKL) 
+       If (.NOT. qOKL) Goto 1000
        call WriteRealNumber(fx,tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
        call WriteRealNumber(fy,tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
+       call WriteRealNumber(sKappa_G,tParamFile,qOKL)
+       If (.NOT. qOKL) Goto 1000
+
+
 
 ! close data file - This subroutine is in CIO.f90 line 560       
        call CloseFile(tParamFile, qOKL) 

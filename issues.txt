@@ -1,0 +1,18 @@
+
+CMake v3.5.1 doesn't work with SciMake when trying to find the hdf5 libs - there seems to have be a possible interface change. This is the version of CMake that's in the Ubuntu 16.04 default repos. (v3.4.1 - the version which is supplied by Bilder - does work.)
+
+Parallel HDF5 v1.8.13 (Fortran) doesn't work with the GNU compilers - there is an error with how the MPI communicator is handled passing from C -> Fortran. It gives the following runtime error when trying to write files in parallel in Fortran. 
+
+*****************************************
+*** An error occurred in MPI_Comm_dup
+*** reported by process [3498442753,0]
+*** on communicator MPI_COMM_WORLD
+*** MPI_ERR_COMM: invalid communicator
+*** MPI_ERRORS_ARE_FATAL (processes in this communicator will now abort,
+***    and potentially your MPI job)
+*****************************************
+
+Unfortunately, this is the version supplied by Bilder. (v1.8.16 does work, which is the version supplied in the default Ubuntu 16.04 repos.)
+
+
+
