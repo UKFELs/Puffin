@@ -51,6 +51,80 @@ END INTERFACE
 contains
 
 
+
+
+
+!subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
+!                       beamCenZ2, chirp, sEmit, &
+!                       sFieldModelLength, sLengthofElm, &
+!                       sSeedSigma)
+!
+!    real(kind=wp), intent(inout) :: sEleSig(:,:), sLenEPulse(:,:), &
+!                                    sSigEdge(:), beamCenZ2(:), &
+!                                    chirp(:), sEmit(:), &
+!                                    sFieldModelLength(:), &
+!                                    sLengthofElm(:), &
+!                                    sSeedSigma(:,:)
+!
+!
+!
+!
+!
+!    call scaleEmit(sEmit, lambda_r)
+!
+!    call scaleX()
+!
+!    call scalePx()
+! 
+!    call scaleT()
+!
+!
+!
+!
+!
+!end subroutine scaleParams
+
+
+
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!  Scaling of emittance
+
+
+
+subroutine scaleEmit(sEmit, sLambda_R)
+
+!     Inputting unnormalized emittance, 
+!     outputting scaled emittance \bar{\epsilon}
+
+    real(kind=wp), intent(inout) :: sEmit
+    real(kind=wp), intent(in) :: sLambda_R
+
+    sEmit = sEmit / (sLambda_R / (4.0_wp * pi) )
+
+end subroutine scaleEmit
+
+
+subroutine unscaleEmit(sEmit, sLambda_R)
+
+!     Inputting scaled emittance \bar{\epsilon},
+!     outputting unnormalized emittance
+
+    real(kind=wp), intent(inout) :: sEmit
+    real(kind=wp), intent(in) :: sLambda_R
+
+    sEmit = sEmit * (sLambda_R / (4.0_wp * pi) )
+
+end subroutine unscaleEmit
+
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!  Scaling of energy - gamma
 

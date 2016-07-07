@@ -113,14 +113,14 @@ MODULE Setup
        tArrayE,           &
        sLenEPulse,        &
        iNodes,            &
-       sWigglerLength,    &
+       sFieldModelLength, &
        sLengthofElm,      &
        iRedNodesX,        &
        iRedNodesY,        &
        sQe,               &
        q_noise,           &
        iNumElectrons,     &
-       sSigmaGaussian,    &
+       sEleSig,           &
        sElectronThreshold,&
        beamCenZ2,         &
        gamma_d,           &
@@ -161,9 +161,25 @@ MODULE Setup
 !    to avoid errors.
 
 
+
+!  if (.not. qscaled_G) then
+!
+!
+!    call scaleParams(sEleSig, sLenEPulse, sSigEj_G, &
+!                     beamCenZ2, chirp, sEmit_n, &
+!                     sFieldModelLength, sLengthofElm, &
+!                     sSeedSigma)
+!
+!
+!  end if
+
+
+
+
+
   CALL CheckParameters(sLenEPulse,iNumElectrons,nbeams,sLengthofElm,iNodes,&
-                       sWigglerLength,sStepSize,nSteps,srho,saw,sgammar, &
-                       sFocusfactor, mag, sSigmaGaussian,fx,fy, iRedNodesX, &
+                       sFieldModelLength,sStepSize,nSteps,srho,saw,sgammar, &
+                       sFocusfactor, mag, sEleSig,fx,fy, iRedNodesX, &
                        iRedNodesY,qSwitches,qSimple, sSeedSigma, freqf, & 
                        SmeanZ2, qFlatTopS, nseeds, qOKL)
   
@@ -192,7 +208,7 @@ MODULE Setup
 !
 !    if (qSimple) CALL MatchBeams(srho,sEmit_n,saw,sFocusfactor,&
 !                    sgammar,gamma_d,iNumElectrons,sLenEPulse,&
-!                    sSigmaGaussian,sSeedSigma,iNodes,sWigglerLength,&
+!                    sEleSig,sSeedSigma,iNodes,sFieldModelLength,&
 !                    sLengthofElm,zUndType,iRedNodesX,iRedNodesY,fx,fy,qOKL)
 !
 !    IF (.NOT. qOKL) GOTO 1000
@@ -207,8 +223,8 @@ MODULE Setup
 !  IF (qSwitches(iDiffraction_CG)) THEN
 !
 !    if (qSimple)  CALL CheckSourceDiff(sStepSize,nSteps,srho, &
-!                                       sSigmaGaussian, &
-!                                       sWigglerLength,&
+!                                       sEleSig, &
+!                                       sFieldModelLength,&
 !                                       sLengthofElm,iNodes,qOKL)
 !
 !    IF (.NOT. qOKL) GOTO 1000
@@ -234,12 +250,12 @@ MODULE Setup
 
     if (qSimple) then
 
-      call stptrns(sSigmaGaussian, sLenEPulse, iNumElectrons, &
+      call stptrns(sEleSig, sLenEPulse, iNumElectrons, &
                    sEmit_n, gamma_d, &
                    qMatched_A, qMatchS_G, qFMesh_G, sSeedSigma)
 
-      sWigglerLength(iX_CG) = sLengthOfElmX_G * real((NX_G-1_ip),kind=wp)
-      sWigglerLength(iY_CG) = sLengthOfElmY_G * real((NY_G-1_ip),kind=wp)
+      sFieldModelLength(iX_CG) = sLengthOfElmX_G * real((NX_G-1_ip),kind=wp)
+      sFieldModelLength(iY_CG) = sLengthOfElmY_G * real((NY_G-1_ip),kind=wp)
 
       sLengthOfElm(iX_CG) = sLengthOfElmX_G
       sLengthOfElm(iY_CG) = sLengthOfElmY_G
@@ -252,8 +268,8 @@ MODULE Setup
     if (qSwitches(iDiffraction_CG)) then
 
       call CheckSourceDiff(sStepSize,nSteps,srho, &
-                           sSigmaGaussian, &
-                           sWigglerLength,&
+                           sEleSig, &
+                           sFieldModelLength,&
                            sLengthofElm,iNodes,qOKL)
 
       if (.not. qOKL) goto 1000
@@ -271,13 +287,13 @@ MODULE Setup
 
   if (qFixCharge_G) then
 
-    call fixCharge(sQe(1), sSigmaGaussian(1,iZ2_CG), sLenEPulse(1,iZ2_CG), &
+    call fixCharge(sQe(1), sEleSig(1,iZ2_CG), sLenEPulse(1,iZ2_CG), &
                        sSigEj_G(1), qRndEj_G(1))
 
   end if
 
   call PopMacroElectrons(qSimple, dist_f, sQe,iNumElectrons,q_noise,sZ,sLenEPulse,&
-                         sSigmaGaussian,beamCenZ2,gamma_d,&
+                         sEleSig,beamCenZ2,gamma_d,&
                          sElectronThreshold,chirp, mag, fr, &
                          nbeams, qOK)
 
@@ -401,8 +417,8 @@ MODULE Setup
          sStepSize,    &
          nSteps,&
          sLenEPulse(1,:),&
-         sWigglerLength,&
-         sSigmaGaussian(1,:),&
+         sFieldModelLength,&
+         sEleSig(1,:),&
          sA0_Re(1),&
          sA0_Im(1),&
          srho,&
