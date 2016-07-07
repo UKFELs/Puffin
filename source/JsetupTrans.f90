@@ -55,7 +55,7 @@ contains
 
 !    call CheckSourceDiff(sDelZ,iSteps,srho,sSigE,sLenF,sDelF,iNNF,qOK)
 
-    if (qFMesh) call fixXYMesh(sLenE, iNMPs)
+    if (qFMesh) call fixXYMesh(sSigE, sLenE, iNMPs)
 
 
     delta_G = sLengthOfElmX_G*sLengthOfElmY_G*sLengthOfElmZ2_G
@@ -63,14 +63,17 @@ contains
   end subroutine stptrns
 
 
-  subroutine fixXYMesh(sLenE, iNMPs)
+  subroutine fixXYMesh(sSigE, sLenE, iNMPs)
 
-    real(kind=wp), intent(in) :: sLenE(:,:) 
+    real(kind=wp), intent(in) :: sSigE(:,:), sLenE(:,:) 
     integer(kind=ip), intent(in) :: iNMPs(:,:)
   
 
-    call fixMesh(sLengthOfElmX_G, sLenE(1, iX_CG), iNMPs(1, iX_CG))
-    call fixMesh(sLengthOfElmY_G, sLenE(1, iY_CG), iNMPs(1, iY_CG))
+    call fixMesh(sLengthOfElmX_G, sSigE(1, iX_CG), sLenE(1, iX_CG), &
+                 iNMPs(1, iX_CG), iRedNodesX_G)
+
+    call fixMesh(sLengthOfElmY_G, sSigE(1, iY_CG), sLenE(1, iY_CG), &
+                 iNMPs(1, iY_CG), iRedNodesY_G)
 
     if (tProcInfo_G%qRoot) print*, 'FIXING MESH - dx = ', &
               sLengthOfElmX_G, ','
@@ -81,19 +84,28 @@ contains
 
 
 
-  subroutine fixMesh(dx, sLenE, iNMPs)
+  subroutine fixMesh(dx, sSigE, sLenE, iNMPs, iRNX)
 
 
-    real(kind=wp), intent(in) :: sLenE 
-    integer(kind=ip), intent(in) :: iNMPs
+    real(kind=wp), intent(in) :: sSigE, sLenE 
+    integer(kind=ip), intent(in) :: iNMPs, iRNX
     real(kind=wp), intent(out) :: dx
 
-    dx = sLenE / REAL(iNMPs,kind=wp) !macroparticle dx
+    if (qEquiXY_G) then
 
+      ! dx = sLenE / REAL(iNMPs,kind=wp) !macroparticle dx
+
+      dx = sLenE / REAL((iRNX - 1_ip), kind=wp) !macroparticle dx
+
+    else 
+
+      dx = 6.0_wp * sSigE / real((iRNX - 1), kind=wp)
+
+    end if
 
 !     Make length of radiation elm = len of macroparticle elm / nmps per elm
 
-    dx = dx / sMNum_G
+!    dx = dx / sMNum_G
 
 
   end subroutine fixMesh

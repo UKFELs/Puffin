@@ -292,8 +292,8 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   sFModelLengthX         = 1.0
   sFModelLengthY         = 1.0
   sFModelLengthZ2        = 4.0
-  iRedNodesX             = 21
-  iRedNodesY             = 21
+  iRedNodesX             = -1
+  iRedNodesY             = -1
   sFiltFrac              = 0.3
   sDiffFrac              = 1.0
   sBeta                  = 1.0
@@ -407,6 +407,12 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   iNumNodes(iZ2_CG) = ceiling(sWigglerLength(iZ2_CG) / dz2) + 1_IP
 
   if (tProcInfo_G%qRoot) print*, 'number of nodes in z2 --- ', iNumNodes(iZ2_CG)
+
+
+
+  iRedNodesX_G = iRedNodesX
+  iRedNodesY_G = iRedNodesY
+
 
   sKBetaXSF_G = sKBetaXSF
   sKBetaYSF_G = sKBetaYSF

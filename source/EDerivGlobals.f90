@@ -29,8 +29,8 @@ real(kind=wp)    :: sLengthOfElmZ2_G
 
 
 
-integer(kind=ip) :: ReducedNX_G
-integer(kind=ip) :: ReducedNY_G
+integer(kind=ip) :: iRedNodesX_G
+integer(kind=ip) :: iRedNodesY_G
 integer(kind=ip) :: outnodex_G,outnodey_G
 
 integer(kind=ip) :: iNodesPerElement_G

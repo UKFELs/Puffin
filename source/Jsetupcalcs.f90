@@ -33,8 +33,12 @@ IMPLICIT NONE
 
 CONTAINS
 
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
 SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
-                         sElmLen, fx, fy, &
+                         sElmLen, qSimple, iNMPs, fx, fy, &
                          sFocusFactor, taper, sFiltFrac, &
                          dStepFrac, sBeta, zUndType, &
                          qFormatted, qSwitch, qOK)
@@ -61,11 +65,12 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 ! qOK                Error flag
 
     REAL(KIND=WP),     INTENT(IN)    :: rho,aw,gamr, lam_w
-    INTEGER(KIND=IP),  INTENT(IN)    :: iNN(:)
+    INTEGER(KIND=IP),  INTENT(IN)    :: iNN(:), iNMPs(:,:)
     REAL(KIND=WP),     INTENT(IN)    :: sElmLen(:)	
     REAL(KIND=WP),     INTENT(IN)    :: fx,fy,sFocusFactor, taper
     REAL(KIND=WP),     INTENT(IN)    :: sFiltFrac, dStepFrac, sBeta
-    LOGICAL,           INTENT(IN)    :: qSwitch(nSwitches_CG), qFormatted
+    LOGICAL,           INTENT(IN)    :: qSwitch(nSwitches_CG), qFormatted, &
+                                        qSimple
     character(32_ip),  intent(in)    :: zUndType
     LOGICAL,           INTENT(OUT)   :: qOK
 
@@ -99,17 +104,69 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
 
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!!      Define reduced node set in x and y,
+!!      which the electron beam is initialized
+!!      within, transversely.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    ReducedNX_G=NX_G
-    ReducedNY_G=NY_G
 
-    IF (NX_G*NY_G==1) THEN
-      ReducedNX_G=1_IP
-      ReducedNY_G=1_IP
-    END IF
+
+    if (NX_G*NY_G==1) then
+
+
+!            1D case
+
+
+      iRedNodesX_G = 1_IP
+      iRedNodesY_G = 1_IP
     
-    outnodex_G=NX_G-ReducedNX_G
-    outnodey_G=NY_G-ReducedNY_G
+    else
+
+
+!            3D case
+    
+
+      if (iRedNodesX_G < 0_ip) then
+
+!        If iRedNodes was not defined, set to default
+
+
+        if (qSimple) then
+
+          iRedNodesX_G = inmps(1,iX_CG) + 1_ip
+
+        else 
+
+          iRedNodesX_G = 20_ip
+
+        end if
+
+      end if
+
+
+
+      if (iRedNodesY_G < 0_ip) then
+
+        if (qSimple) then
+
+          iRedNodesY_G = inmps(1,iY_CG) + 1_ip
+
+        else
+
+          iRedNodesY_G = 20_ip
+
+        end if
+
+      end if
+
+    end if
+
+    
+    outnodex_G=NX_G-iRedNodesX_G
+    outnodey_G=NY_G-iRedNodesY_G
 
 !     Set up the length of ONE element globally
 
@@ -401,9 +458,13 @@ if (sSigZ2 >= 1e6) qFlatTop = .true.
 sEndsLen = 0.0_wp
 
 if (qFlatTop) then
-  if (qTails) sEndsLen = gExtEj_G * sSigTails
-  sMainLen = sLenz2 - sEndsLen
-  sLArea = sMainLen + sqrt(2*pi)*sSigTails
+  if (qTails) then 
+    sEndsLen = gExtEj_G * sSigTails
+    sMainLen = sLenz2 - sEndsLen
+    sLArea = sMainLen + sqrt(2*pi)*sSigTails
+  else 
+    sLArea = sLenz2
+  end if
 else
   sLArea = sqrt(2*pi) * sSigz2
 end if
