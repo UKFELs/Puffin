@@ -331,6 +331,7 @@ logical   ::  qOneD_G
 
 logical   ::  qPArrOK_G
 
+logical   ::  qscaled_G
 
 
 

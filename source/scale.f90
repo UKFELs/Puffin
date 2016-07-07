@@ -54,40 +54,6 @@ contains
 
 
 
-!subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
-!                       beamCenZ2, chirp, sEmit, &
-!                       sFieldModelLength, sLengthofElm, &
-!                       sSeedSigma)
-!
-!    real(kind=wp), intent(inout) :: sEleSig(:,:), sLenEPulse(:,:), &
-!                                    sSigEdge(:), beamCenZ2(:), &
-!                                    chirp(:), sEmit(:), &
-!                                    sFieldModelLength(:), &
-!                                    sLengthofElm(:), &
-!                                    sSeedSigma(:,:)
-!
-!
-!
-!
-!
-!    call scaleEmit(sEmit, lambda_r)
-!
-!    call scaleX()
-!
-!    call scalePx()
-! 
-!    call scaleT()
-!
-!
-!
-!
-!
-!end subroutine scaleParams
-
-
-
-
-
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!  Scaling of emittance
 

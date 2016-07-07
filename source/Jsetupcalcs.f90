@@ -18,6 +18,7 @@ USE gMPsFromDists
 use avwrite
 use MASPin
 use parafield
+use scale
 
 !****************************************************
 ! Module containing miscellaneous routines for setup
@@ -593,6 +594,91 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
 END SUBROUTINE SetUpInitialValues
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
+                       beamCenZ2, chirp, sEmit, gamFrac, &
+                       sFieldModelLength, sLengthofElm, &
+                       sSeedSigma)
+
+    real(kind=wp), intent(inout) :: sEleSig(:,:), sLenEPulse(:,:), &
+                                    sSigEdge(:), beamCenZ2(:), &
+                                    chirp(:), sEmit(:), &
+                                    sFieldModelLength(:), &
+                                    sLengthofElm(:), &
+                                    sSeedSigma(:,:)
+
+    real(kind=wp), intent(in) :: gamFrac(:)
+
+
+    integer(kind=ip) :: nbeams, nseeds, ib, is
+
+    nbeams = size(sEleSig(:,1))
+
+    do ib = 1, nbeams
+
+      call scaleX(sEleSig(ib,iX_CG), lg_G, lc_G)
+      call scaleX(sEleSig(ib,iY_CG), lg_G, lc_G)
+
+      call scalePx(sEleSig(ib,iPX_CG), gamFrac(ib), saw_G)
+      call scalePx(sEleSig(ib,iPY_CG), gamFrac(ib), saw_G)
+ 
+      call scaleT(sEleSig(ib,iZ2_CG), lc_G)
+
+
+
+
+      call scaleX(sLenEPulse(ib,iX_CG), lg_G, lc_G)
+      call scaleX(sLenEPulse(ib,iY_CG), lg_G, lc_G)
+
+      call scalePx(sLenEPulse(ib,iPX_CG), gamFrac(ib), saw_G)
+      call scalePx(sLenEPulse(ib,iPY_CG), gamFrac(ib), saw_G)
+ 
+      call scaleT(sLenEPulse(ib,iZ2_CG), lc_G)
+
+
+
+
+      call scaleT(sSigEdge(ib), lc_G)
+      call scaleT(beamCenZ2(ib), lc_G)
+      call scaleG(chirp(ib), gamFrac(ib)*sGammaR_G)
+      call scaleT(chirp(ib), lc_G)
+
+      call scaleEmit(sEmit(ib), lam_r_G)
+
+    end do
+
+
+
+    call scaleX(sFieldModelLength(iX_CG), lg_G, lc_G)
+    call scaleX(sFieldModelLength(iY_CG), lg_G, lc_G)
+    call scaleT(sFieldModelLength(iZ2_CG), lc_G)
+
+    call scaleX(sLengthofElm(iX_CG), lg_G, lc_G)
+    call scaleX(sLengthofElm(iY_CG), lg_G, lc_G)
+    call scaleT(sLengthofElm(iZ2_CG), lc_G)
+
+    
+    nseeds = size(sSeedSigma(:,1))
+
+    do is = 1, nseeds
+
+      call scaleX(sSeedSigma(is,iX_CG), lg_G, lc_G)
+      call scaleX(sSeedSigma(is,iY_CG), lg_G, lc_G)
+      call scaleT(sSeedSigma(is,iZ2_CG), lc_G)
+
+    end do
+
+end subroutine scaleParams
+
+
+
+
+
+
 
 SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
                              sigma, beamCenZ2,gamma_d,eThresh, &
