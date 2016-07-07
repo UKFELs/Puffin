@@ -156,43 +156,111 @@ end subroutine unscaleX_array
 !! Scaling of transverse momenta px
 
 
-subroutine scalePx_single(sPx, saw)
 
-	real(kind=wp), intent(inout) :: sPx
-    real(kind=wp), intent(in) :: saw
+subroutine scalePx_single(sPx, sgamma, saw)
 
-    sPx = sPx / saw / m_e / c
+!    Inputting dx/dz, outputting \bar{px}
+
+    real(kind=wp), intent(inout) :: sPx
+    real(kind=wp), intent(in) :: saw, sgamma
+
+
+    sPx = sPx * sgamma / saw
 
 end subroutine scalePx_single
 
 
-subroutine unscalePx_single(sPx, saw)
 
-	real(kind=wp), intent(inout) :: sPx
-    real(kind=wp), intent(in) :: saw
+subroutine unscalePx_single(sPx, sgamma, saw)
 
-    sPx = sPx * saw * m_e * c
+!    Inputting \bar{px}, outputting dx/dz
+
+    real(kind=wp), intent(inout) :: sPx
+    real(kind=wp), intent(in) :: saw, sgamma
+
+
+    sPx = sPx * saw / sgamma 
 
 end subroutine unscalePx_single
 
-subroutine scalePx_array(sPx, saw)
 
-	real(kind=wp), intent(inout) :: sPx(:)
-    real(kind=wp), intent(in) :: saw
 
-    sPx = sPx / saw / m_e / c
+subroutine scalePx_array(sPx, sgamma, saw)
+
+!    Inputting dx/dz, outputting \bar{px}
+
+    real(kind=wp), intent(inout) :: sPx(:)
+    real(kind=wp), intent(in) :: saw, sgamma(:)
+
+
+    sPx = sPx * sgamma / saw
 
 end subroutine scalePx_array
 
 
-subroutine unscalePx_array(sPx, saw)
 
-	real(kind=wp), intent(inout) :: sPx(:)
-    real(kind=wp), intent(in) :: saw
+subroutine unscalePx_array(sPx, sgamma, saw)
 
-    sPx = sPx * saw * m_e * c
+!    Inputting \bar{px}, outputting dx/dz
+
+    real(kind=wp), intent(inout) :: sPx(:)
+    real(kind=wp), intent(in) :: saw, sgamma(:)
+
+
+    sPx = sPx * saw / sgamma 
 
 end subroutine unscalePx_array
+
+
+
+
+
+
+!!  subroutine scalePx_single(sPx, saw)
+!!  
+!!  !    Inputting px, outputting \bar{px}
+!!  
+!!  	real(kind=wp), intent(inout) :: sPx
+!!      real(kind=wp), intent(in) :: saw
+!!  
+!!      sPx = sPx / saw / m_e / c
+!!  
+!!  end subroutine scalePx_single
+!!  
+!!  
+!!  subroutine unscalePx_single(sPx, saw)
+!!  
+!!  !    Inputting \bar{px}, outputting px
+!!  
+!!  	real(kind=wp), intent(inout) :: sPx
+!!      real(kind=wp), intent(in) :: saw
+!!  
+!!      sPx = sPx * saw * m_e * c
+!!  
+!!  end subroutine unscalePx_single
+!!  
+!!  subroutine scalePx_array(sPx, saw)
+!!  
+!!  !    Inputting px, outputting \bar{px}
+!!  
+!!  	real(kind=wp), intent(inout) :: sPx(:)
+!!      real(kind=wp), intent(in) :: saw
+!!  
+!!      sPx = sPx / saw / m_e / c
+!!  
+!!  end subroutine scalePx_array
+!!  
+!!  
+!!  subroutine unscalePx_array(sPx, saw)
+!!  
+!!  !    Inputting \bar{px}, outputting px
+!!  
+!!  	real(kind=wp), intent(inout) :: sPx(:)
+!!      real(kind=wp), intent(in) :: saw
+!!  
+!!      sPx = sPx * saw * m_e * c
+!!  
+!!  end subroutine unscalePx_array
 
 
 !!
