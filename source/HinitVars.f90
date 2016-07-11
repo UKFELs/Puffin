@@ -156,6 +156,9 @@ INTEGER  :: ndims
 INTEGER(KIND=IP)  :: iRedNodesX,iRedNodesY
 REAL(KIND=WP)  :: redwigglengthX,redwigglengthY
 
+integer(kind=ip) :: nodesperlambda, stepsPerPeriod, &
+                    nperiods
+
 
 !=============================================================
 ! Variables used for propagation of electron and field values.

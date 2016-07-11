@@ -34,8 +34,6 @@ SUBROUTINE read_in(zfilename, &
        qSeparateFiles, &
        qFormattedFiles, &
        qResume, &
-       sStepSize, &
-       nSteps, &
        sZ0, &
        LattFile,&
        iWriteNthSteps, &
@@ -46,8 +44,10 @@ SUBROUTINE read_in(zfilename, &
        sLenEPulse, &
        iNumNodes, &
        sWigglerLength, &
-       sLengthofElm, &
        iRedNodesX,iRedNodesY, &
+       nodesperlambda, &
+       stepsPerPeriod, &
+       nperiods, &
        sQe, &
        q_noise, &
        iNumElectrons, &
@@ -145,8 +145,6 @@ SUBROUTINE read_in(zfilename, &
   LOGICAL,           INTENT(OUT)  :: qSeparateFiles
   LOGICAL,           INTENT(OUT)  :: qFormattedFiles
   LOGICAL,           INTENT(OUT)  :: qResume
-  REAL(KIND=WP),     INTENT(OUT)  :: sStepSize
-  INTEGER(KIND=IP),  INTENT(OUT)  :: nSteps
   REAL(KIND=WP) ,    INTENT(OUT)  :: sZ0
   CHARACTER(32_IP),  INTENT(INOUT):: LattFile
     
@@ -158,7 +156,7 @@ SUBROUTINE read_in(zfilename, &
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sLenEPulse(:,:)
   INTEGER(KIND=IP),  INTENT(OUT)  :: iNumNodes(:)
     
-  REAL(KIND=WP),     INTENT(OUT)  :: sWigglerLength(:) , sLengthofElm(:)  
+  REAL(KIND=WP),     INTENT(OUT)  :: sWigglerLength(:)   
     
   INTEGER(KIND=IP),  INTENT(OUT)  :: iRedNodesX,&
                                        iRedNodesY
@@ -203,7 +201,7 @@ SUBROUTINE read_in(zfilename, &
 
 ! Define local variables
     
-  integer(kind=ip) :: stepsPerPeriod, nodesperlambda, nperiods ! Steps per lambda_w, nodes per lambda_r
+  integer(kind=ip), intent(out) :: stepsPerPeriod, nodesperlambda, nperiods ! Steps per lambda_w, nodes per lambda_r
   real(kind=wp) :: dz2, zbar
   integer(kind=ip) :: nwaves
 
@@ -382,35 +380,15 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   sWigglerLength(iZ2_CG) = sFModelLengthZ2
 
 
-  sLengthofElm(iX_CG) = sWigglerLength(iX_CG) / &
-                    real((iNumNodes(iX_CG) - 1_ip), kind=wp)
-
-  sLengthofElm(iY_CG) = sWigglerLength(iY_CG) / &
-                    real((iNumNodes(iY_CG) - 1_ip), kind=wp)
-
-
-  sLengthofElm(iZ2_CG) = sWigglerLength(iZ2_CG) / &
-                    real((iNumNodes(iZ2_CG) - 1_ip), kind=wp)
-
-
-
-  sStepSize = 4.0_WP * pi * srho / real(stepsPerPeriod,kind=wp)
-  nSteps = nperiods * stepsPerPeriod
-
-  if (tProcInfo_G%qRoot) print*, 'step size is --- ', sStepSize
 
 
 
 
 
 
-  dz2 = 4.0_WP * pi * srho / real(nodesperlambda-1_IP,kind=wp)
-
-  iNumNodes(iZ2_CG) = ceiling(sWigglerLength(iZ2_CG) / dz2) + 1_IP
-
-  if (tProcInfo_G%qRoot) print*, 'number of nodes in z2 --- ', iNumNodes(iZ2_CG)
-
-
+!!!!!!!!!!!!
+!!!! NEW SPACE
+!!!!!!!!!!!!
 
   iRedNodesX_G = iRedNodesX
   iRedNodesY_G = iRedNodesY
@@ -425,6 +403,10 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
 
   zBFile_G = beam_file
   zSFile_G = seed_file
+
+
+
+
 
   CALL read_beamfile(qSimple, dist_f, beam_file,sEmit_n,sSigmaGaussian,sLenEPulse, &
                      iNumElectrons,sQe,chirp,bcenter, mag, fr, gamma_d,nbeams, &

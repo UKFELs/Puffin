@@ -156,7 +156,6 @@ real(kind=wp), allocatable     :: dadz_w(:)
 
 
 
-real(kind=wp)    :: sRho_save_G,sAw_save_G
 real(kind=wp)    :: sRho_G,sAw_G,sGammaR_G
 real(kind=wp)    :: sEta_G,sKBeta_G, sKappa_G
 real(kind=wp)    :: sFocusfactor_G

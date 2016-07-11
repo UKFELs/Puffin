@@ -199,58 +199,6 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
     sz0 = 0.0_WP
     undgrad = taper
 
-    sRho_save_G = rho
-
-    sRho_G = sRho_save_G ! * modfact1
-
-
-
-    fx_G = fx
-    fy_G = fy
-
-
-    if (zUndType == 'curved') then
-
-      aw_rms =  aw / sqrt(2.0_wp)
-
-      kx_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2)) ! Giving equal focusing for now....
-      ky_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2))
-
-      sKBetaX_G = aw / sqrt(2.0_wp * sEta_G) / sGammaR_G * kx_und_G
-      sKBetaY_G = aw / sqrt(2.0_wp * sEta_G) / sGammaR_G * ky_und_G
-
-
-      fx_G = 0   ! Temp fix for initialization bug
-      fy_G = 1
-
-    else if (zUndType == 'planepole') then
-
-      aw_rms =  aw / sqrt(2.0_wp)
-      fx_G = 0   ! Temp fix for initialization bug
-      fy_G = 1
-
-    else if (zUndType == 'helical') then
-
-      aw_rms = aw
-      fx_G = 1   ! Temp fix for initialization bug
-      fy_G = 1
-
-    else
-
-      aw_rms = aw * SQRT(fx**2 + fy**2) / sqrt(2.0_wp)
-
-    end if
-
-
-    sbetaz = SQRT(gamr**2.0_WP - 1.0_WP - (aw_rms)**2.0_WP) / &
-             gamr
-
-    sEta_G = (1.0_WP - sbetaz) / sbetaz
-    sKappa_G = aw / 2.0_WP / rho / gamr
-    sKBeta_G = sKappa_G ! aw_rms / 2.0_WP / sFocusFactor / rho / gamr
-
-
-    sFocusFactor_G = sFocusFactor
 
 
 
@@ -259,17 +207,6 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
 
 
-    sAw_save_G = aw
-    sAw_G = sAw_save_G ! * modfact1
-
-    sGammaR_G = gamr
-
-
-    lam_w_G = lam_w
-    lam_r_G = lam_w * sEta_G
-
-    lg_G = lam_w_G / 4.0_WP / pi / rho
-    lc_G = lam_r_G / 4.0_WP / pi / rho
 
 
 
@@ -644,7 +581,7 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
 
       call scaleT(sSigEdge(ib), lc_G)
       call scaleT(beamCenZ2(ib), lc_G)
-      call scaleG(chirp(ib), gamFrac(ib)*sGammaR_G)
+      !call scaleG(chirp(ib), gamFrac(ib)*sGammaR_G)
       call scaleT(chirp(ib), lc_G)
 
       call scaleEmit(sEmit(ib), lam_r_G)
@@ -672,9 +609,189 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
 
     end do
 
+
+!    If not-scaled / in SI units, then
+!
+!    beam params in x, y, t, dx/dz, dy/dz, and gamma / gamma_r
+!    chirp in dgamma/dt
+!
+!    field params in x, y, and t
+!    
+
+
+
 end subroutine scaleParams
 
 
+
+
+
+subroutine calcScaling(srho, saw, sgamr, slam_w, sFocusFactor, & 
+                       zUndType, sfx, sfy)
+
+  real(kind=wp), intent(in) :: srho, saw, sgamr, slam_w, &
+                               sFocusFactor, sfx, sfy
+
+  CHARACTER(32_IP), intent(in) :: zUndType
+
+  real(kind=wp) :: saw_rms, sBetaz
+
+  sRho_G = srho
+
+
+  fx_G = sfx
+  fy_G = sfy
+
+
+
+
+  sGammaR_G = sgamr
+
+
+
+  if (zUndType == 'curved') then
+
+    saw_rms =  saw / sqrt(2.0_wp)
+
+    kx_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2)) ! Giving equal focusing for now....
+    ky_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+
+    sKBetaX_G = saw / sqrt(2.0_wp * sEta_G) / sGammaR_G * kx_und_G
+    sKBetaY_G = saw / sqrt(2.0_wp * sEta_G) / sGammaR_G * ky_und_G
+
+
+    fx_G = 0   ! Temp fix for initialization bug
+    fy_G = 1
+
+  else if (zUndType == 'planepole') then
+
+    saw_rms =  saw / sqrt(2.0_wp)
+    fx_G = 0   ! Temp fix for initialization bug
+    fy_G = 1
+
+  else if (zUndType == 'helical') then
+
+    saw_rms = saw
+    fx_G = 1   ! Temp fix for initialization bug
+    fy_G = 1
+
+  else
+
+    saw_rms = saw * SQRT(sfx**2 + sfy**2) / sqrt(2.0_wp)
+    
+  end if
+
+
+  sbetaz = SQRT(sgamr**2.0_WP - 1.0_WP - (saw_rms)**2.0_WP) / &
+           sgamr
+
+  sEta_G = (1.0_WP - sbetaz) / sbetaz
+  sKappa_G = saw / 2.0_WP / srho / sgamr
+  sKBeta_G = sKappa_G ! aw_rms / 2.0_WP / sFocusFactor / srho / sgamr
+
+
+  sFocusFactor_G = sFocusFactor
+
+
+  sAw_G = saw
+
+
+  lam_w_G = slam_w
+  lam_r_G = slam_w * sEta_G
+
+  lg_G = lam_w_G / 4.0_WP / pi / srho
+  lc_G = lam_r_G / 4.0_WP / pi / srho
+
+
+end subroutine calcScaling
+
+
+
+
+
+subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
+                       sStepSize, stepsPerPeriod, nSteps, &
+                       nperiods, nodesperlambda)
+
+
+  real(kind=wp), intent(in) ::sFieldModelLength(:)
+
+  integer(kind=ip), intent(in) :: nperiods, nodesperlambda, &
+                                  stepsPerPeriod
+
+  real(kind=wp), intent(out) :: sLengthOfElm(:), sStepSize
+
+  integer(kind=ip), intent(inout) :: iNumNodes(:)
+  integer(kind=ip), intent(out) :: nSteps
+
+  real(kind=wp) :: dz2
+
+
+
+  if (iNumNodes(iX_CG) <= 1_ip) then
+
+    sLengthOfElm(iX_CG) = 1_wp
+
+  else
+
+    sLengthOfElm(iX_CG) = sFieldModelLength(iX_CG) / &
+                      real((iNumNodes(iX_CG) - 1_ip), kind=wp)
+
+  end if
+
+
+
+
+  if (iNumNodes(iY_CG) <= 1_ip) then
+
+    sLengthOfElm(iY_CG) = 1_wp
+
+  else
+
+    sLengthOfElm(iY_CG) = sFieldModelLength(iY_CG) / &
+                      real((iNumNodes(iY_CG) - 1_ip), kind=wp)
+
+  end if
+
+
+!  if (iNumNodes(iZ2_CG) <= 1_ip) then
+
+!    sLengthOfElm(iZ2_CG) = sFieldModelLength(iZ2_CG)
+ !   print*, 'WARNING, only one node in Z2!!'
+
+!  else
+
+    sLengthOfElm(iZ2_CG) = sFieldModelLength(iZ2_CG) / &
+                      real((iNumNodes(iZ2_CG) - 1_ip), kind=wp)
+
+!  end if
+
+
+
+  if (stepsPerPeriod >= 1) then
+
+
+    sStepSize = 4.0_WP * pi * srho_G / real(stepsPerPeriod,kind=wp)
+    nSteps = nperiods * stepsPerPeriod
+
+  else 
+
+    print*, 'less than one step per period!!'
+
+  end if
+
+  if (tProcInfo_G%qRoot) print*, 'step size is --- ', sStepSize
+
+
+  dz2 = 4.0_WP * pi * sRho_G / real(nodesperlambda-1_IP,kind=wp)
+
+  iNumNodes(iZ2_CG) = ceiling(sFieldModelLength(iZ2_CG) / dz2) + 1_IP
+
+  if (tProcInfo_G%qRoot) print*, 'number of nodes in z2 --- ', iNumNodes(iZ2_CG)
+
+
+
+end subroutine calcSamples
 
 
 

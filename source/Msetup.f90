@@ -102,8 +102,6 @@ MODULE Setup
        qSeparateStepFiles,&
        qFormattedFiles,   &
        qResume,           &
-       sStepSize,         &
-       nSteps,            &
        sZ,                &
        LattFile,          &
        iWriteNthSteps,    &
@@ -114,9 +112,11 @@ MODULE Setup
        sLenEPulse,        &
        iNodes,            &
        sFieldModelLength, &
-       sLengthofElm,      &
        iRedNodesX,        &
        iRedNodesY,        &
+       nodesperlambda, &
+       stepsPerPeriod, &
+       nperiods, &
        sQe,               &
        q_noise,           &
        iNumElectrons,     &
@@ -162,17 +162,38 @@ MODULE Setup
 
 
 
-  if (qscaled_G) then
+  call calcScaling(srho, saw, sgammar, lambda_w, &
+    sFocusFactor, zUndType, fx, fy)
 
-    CALL CheckParameters(sLenEPulse,iNumElectrons,nbeams,sLengthofElm,iNodes,&
-                         sFieldModelLength,sStepSize,nSteps,srho,saw,sgammar, &
-                         sFocusfactor, mag, sEleSig,fx,fy, iRedNodesX, &
-                         iRedNodesY,qSwitches,qSimple, sSeedSigma, freqf, & 
-                         SmeanZ2, qFlatTopS, nseeds, qOKL)
   
-    IF (.NOT. qOKL) GOTO 1000
+  if (.not. qscaled_G) then
 
+    call scaleParams(sEleSig, sLenEPulse, sSigEj_G, &
+                     beamCenZ2, chirp, sEmit_n, gamma_d, &
+                     sFieldModelLength, sLengthofElm, &
+                     sSeedSigma)
   end if
+
+
+
+
+  call calcSamples(sFieldModelLength, iNodes, sLengthofElm, &
+                   sStepSize, stepsPerPeriod, nSteps, &
+                   nperiods, nodesperlambda)
+
+
+
+!  if (qscaled_G) then
+
+  CALL CheckParameters(sLenEPulse,iNumElectrons,nbeams,sLengthofElm,iNodes,&
+                       sFieldModelLength,sStepSize,nSteps,srho,saw,sgammar, &
+                       sFocusfactor, mag, sEleSig,fx,fy, iRedNodesX, &
+                       iRedNodesY,qSwitches,qSimple, sSeedSigma, freqf, & 
+                       SmeanZ2, qFlatTopS, nseeds, qOKL)
+  
+  IF (.NOT. qOKL) GOTO 1000
+
+!  end if
 
 
 !    Setup FFTW plans for the forward and backwards transforms.
@@ -235,16 +256,6 @@ MODULE Setup
 
 
 
-
-
-
-  if (.not. qscaled_G) then
-
-    call scaleParams(sEleSig, sLenEPulse, sSigEj_G, &
-                     beamCenZ2, chirp, sEmit_n, gamma_d, &
-                     sFieldModelLength, sLengthofElm, &
-                     sSeedSigma)
-  end if
 
 
 
