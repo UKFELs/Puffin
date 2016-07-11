@@ -380,6 +380,9 @@ call getLBArea(sLArea, sSigz2, sLenz2, sSigTails, qTails)
 
 call getQFmNpk(sQb, sTarea, sLarea, qOneD)
 
+if (tProcInfo_G%qroot) print*, 'FIXING CHARGE '
+if (tProcInfo_G%qroot) print*, 'Q =  ', sQb
+
 end subroutine fixCharge
 
 subroutine getLBArea(sLArea, sSigz2, sLenz2, sSigTails, qTails)
