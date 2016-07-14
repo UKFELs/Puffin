@@ -20,6 +20,7 @@ use initConds
 use remLow
 use addNoise
 use pseqs
+use scale
 
 implicit none
 
@@ -228,6 +229,24 @@ subroutine getLocalDists(fname, z2ml, gam_ml, xml, yml, pxml, &
                xm, ym, z2m, pxm, pym, gam_m, xdl, ydl, &
                pxdl, pydl, gam_dl, pxd, pyd, xd, yd, gam_d, Ne, &
                nz2, nz2g)
+
+
+  if (.not. qscaled_G) then
+
+    ! scale beam coordinates
+
+    call unscaleT(z2ml, Lc_G)
+    call unscaleX(xml, Lg_G, Lc_G)
+    call unscaleX(xdl, Lg_G, Lc_G)
+    call unscaleX(yml, Lg_G, Lc_G)
+    call unscaleX(ydl, Lg_G, Lc_G)
+    call unscalePX(pxml, sGammaR_G * gam_ml, saw_G)
+    call unscalePX(pxdl, sGammaR_G * gam_ml, saw_G)
+    call unscalePX(pyml, sGammaR_G * gam_ml, saw_G)
+    call unscalePX(pydl, sGammaR_G * gam_ml, saw_G)
+
+
+  end if
 
 !     deallocate arrays
 
