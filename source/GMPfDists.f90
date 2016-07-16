@@ -235,15 +235,15 @@ subroutine getLocalDists(fname, z2ml, gam_ml, xml, yml, pxml, &
 
     ! scale beam coordinates
 
-    call unscaleT(z2ml, Lc_G)
-    call unscaleX(xml, Lg_G, Lc_G)
-    call unscaleX(xdl, Lg_G, Lc_G)
-    call unscaleX(yml, Lg_G, Lc_G)
-    call unscaleX(ydl, Lg_G, Lc_G)
-    call unscalePX(pxml, sGammaR_G * gam_ml, saw_G)
-    call unscalePX(pxdl, sGammaR_G * gam_ml, saw_G)
-    call unscalePX(pyml, sGammaR_G * gam_ml, saw_G)
-    call unscalePX(pydl, sGammaR_G * gam_ml, saw_G)
+    call scaleT(z2ml, Lc_G)
+    call scaleX(xml, Lg_G, Lc_G)
+    call scaleX(xdl, Lg_G, Lc_G)
+    call scaleX(yml, Lg_G, Lc_G)
+    call scaleX(ydl, Lg_G, Lc_G)
+    call scalePX(pxml, sGammaR_G * gam_ml, saw_G)
+    call scalePX(pxdl, sGammaR_G * gam_ml, saw_G)
+    call scalePX(pyml, sGammaR_G * gam_ml, saw_G)
+    call scalePX(pydl, sGammaR_G * gam_ml, saw_G)
 
 
   end if
