@@ -374,7 +374,7 @@ logical, intent(in) :: qTails
 real(kind=wp) :: sLArea, sTArea
 logical :: qOneD
 
-qOneD = .true.
+qOneD = qOneD_G
 sTArea = sqrt(2*pi) * sSigX
 
 call getLBArea(sLArea, sSigz2, sLenz2, sSigTails, qTails)
