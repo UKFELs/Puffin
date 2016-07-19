@@ -352,14 +352,18 @@ where angular brackets indicate the ensemble average of the beam.
 
 If {\bf qFocussing} is true and the strong betatron wavenumber is given, then the strong betatron wavenumber is used to match the beam. Otherwise the beam is auto-matched to the natural focusing channel of the undulator. 
 
- 
+
+
+
 \subsection{To scale or not to scale?}
 
 The main algorithm in Puffin utilizes scaled variables to make the numbers `nicer' to work with. The system saturates with scaled intensity $\sim 1$, the scaled perpindicular momentum of the beam in the wiggler oscillates between $-1$ and $1$, and so forth. The distance through the wiggler is given in units of a (1D) gain length, and the beam coordinate in the radiation frame is in units of the cooperation length, so that an electron slips $1l_c$ through the radiation field in $1$ gain  length. The scaling defines a frame of reference which normalises the quantities not only to numerically more manageable numbers, but to \textit{characteristic} variables. 
 
-The two dominant variables for the scaling are $\rho$ and $\eta$. $\eta$ is a function of the wiggler parameters $a_u$ and $\lambda_u$, and reference beam energy $\gamma_r$, and is calculated in Puffin from these variables. The $\rho$ parameter is a quite complicated variable, and is dependent on the peak electron beam number density, amongst other things.
+The two dominant variables for the scaling are $\rho$ and $\eta$. $\eta$ is a function of the wiggler parameters $a_u$ and $\lambda_u$, and reference beam energy $\gamma_r$, and is calculated in Puffin from the input. The $\rho$ parameter is dependent on the peak electron beam number density, amongst other things.
 
-The beam and radiation field parameters may be input in either SI units or the scaled units. Use the variable {\bf qscaled} in the main input file to do this. If $=$ {\bf .true.}, then Puffin expects scaled variables are being used. If SI units are used, then the input parameters will be scaled according to the scaling values specified in the main input file. Note that they are only \textit{scaling} parameters. The FEL parameter as input does not have to correspond the the beam being input for the results to be correct. The scaled parameters will behave `nicely' if it does, but it is not necessary. When the result is unscaled, the resut will still be correct.
+The beam and radiation field parameters may be input in either SI units or the scaled units. Use the variable {\bf qscaled} in the main input file to do this. If $=$ {\bf .true.}, then Puffin expects scaled variables are being used. If SI units are used, then the input parameters will be scaled according to the scaling values specified in the main input file. 
+
+Note that they are only \textit{scaling} parameters. The FEL parameter as input does not have to correspond to the beam being input for the results to be correct. The scaled parameters will behave `nicely' if it does, but it is not necessary. When the result is unscaled, the resut will still be correct.
 
 
 
@@ -440,21 +444,35 @@ This method allows one to read in the 6D scaled particle coordinates from a text
 \subsection{Field Mesh}
 
 
-\begin{figure}
-\centering
-\includegraphics[width=150mm]{trans_mesh2.png}
-\caption{Transverse mesh to model the radiation field - the beam is indicated in red. The mesh may be `matched' to the mesh initially by specifying the iRedNodes parameters - these specify an inner set of nodes such that the mesh will be setup so that the beam is contained within this number of nodes. This is only an initial condition, but can aid in setting up the mesh.}
-\label{trmsh}
-\end{figure}
+The radiation field in Puffin is modelled by a simple cartesian mesh, with equispaced nodes in each of the 3 spatial dimensions. Each node samples a value of the $x$ and $y$ polarized radiation field (the $z$ component of the electric field is not modelled). The scaled $\bar{z}_2$ coordinate frame is such that the back of the system is with increasing $\bar{z}_2$ - \textit{i.e.} to the right in figure \ref{lgmsh}. Recall that $\bar{z}_2$ is the stationary radiation frame, so that as the beam propagates through the undulator, the beam slips back through the radiation field, moving to the right in figure \ref{lgmsh}. 
+
+This mesh must be large enough to contain the beam through the entire propagation distance through the wiggler.
+
+It must also be large enough to contain the beam in the transverse plane, see figure \ref{trmsh}. The radiation field is calculated from the driving electron beam by linear interpolants, so the field must adequately sample the area which the beam occupies.  The radiation also diffracts outwards from the beam, so the field mesh must extend to adequately model this diffracting radiation to avoid numerical problems at the boundaries of the grid. There are absorbing boundaries in the outer 16 nodes in the mesh in $x$ and $y$ to mitigate this issue, but an absorbing boundary which works well for the full range of frequencies modelled by Puffin is difficult to realise, and the absorbing boundary should not be relied upon to absorb everything which propagates to the outer reaches of the mesh.
+
+\subsection{Fixing the Radiation Mesh}
+
+One may use the variables {\bf iRedNodesX, iRedNodesY} to fix the mesh around the beam - see figure \ref{trmsh}. These variables define an inner set (`reduced' set) of nodes which the beam width will occupy. So the mesh length in $x$ and $y$ will be set up such that the inner set of nodes defined by  {\bf iRedNodesX, iRedNodesY} will contain the beam. In this case, the {\bf sFModelLengthX, sFModelLengthX} inputs will be ignored.
 
 
-
-\begin{figure}
+\begin{figure*}
 \centering
 \includegraphics[width=150mm]{long_mesh.png}
 \caption{Showing the longitudinal setup of the radiation mesh. The beam is indicated in red. The scaled $\bar{z}_2$ coordinate is defined so that the front of the radiation and beam is to the left. This is the constant radiatioon frame, so the beam slips backwards through the field from left to right. In the lab frame, the beam and radiation propagates from right to left. The full length of the mesh must be large enough to contain the beam through propagation.}
 \label{lgmsh}
-\end{figure}
+\end{figure*}
+
+
+\begin{figure*}
+\centering
+\includegraphics[width=150mm]{trans_mesh2.png}
+\caption{Transverse mesh to model the radiation field - the beam is indicated in red. The mesh may be `matched' to the mesh initially by specifying the iRedNodes parameters - these specify an inner set of nodes such that the mesh will be setup so that the beam is contained within this number of nodes. This is only an initial condition, but can aid in setting up the mesh.}
+\label{trmsh}
+\end{figure*}
+
+
+
+
 
 
 
@@ -463,7 +481,7 @@ This method allows one to read in the 6D scaled particle coordinates from a text
 
 
 
-
+\newpage
 
 \begin{thebibliography}{10}
 
