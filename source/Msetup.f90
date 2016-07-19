@@ -303,7 +303,7 @@ MODULE Setup
   if (qFixCharge_G) then
 
     call fixCharge(sQe(1), sEleSig(1,iZ2_CG), sLenEPulse(1,iZ2_CG), &
-                       sSigEj_G(1), qRndEj_G(1))
+                       sSigEj_G(1), qRndEj_G(1), sEleSig(1,iX_CG))
 
   end if
 
