@@ -100,7 +100,7 @@ contains
 
 
   call mpi_barrier(tProcInfo_G%comm, error)
-  if (tProcInfo_G%qRoot) print*, 'redisitng field...'
+  if (tProcInfo_G%qRoot) print*, 'redisting field...'
 
   call getLocalFieldIndices(sRedistLen_G*2.0_wp)
 
@@ -135,7 +135,7 @@ contains
 
 
   call mpi_barrier(tProcInfo_G%comm, error)
-  print*, 'alloc arrs...'
+  if (tProcInfo_G%qRoot) print*, 'alloc arrs...'
 
   call allact_rk4_arrs()
 
