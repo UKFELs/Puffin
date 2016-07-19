@@ -74,12 +74,12 @@ contains
 !     Need to match into undulator
 
   call mpi_barrier(tProcInfo_G%comm, error)
-  print*, 'init undulator...'
+  if (tProcInfo_G%qRoot) print*, 'init undulator...'
 
   call initUndulator(iUnd_cr, sZ, szl)
 
   call mpi_barrier(tProcInfo_G%comm, error)
-  print*, 'init beam...'
+  if (tProcInfo_G%qRoot) print*, 'init beam...'
 
   if (.not. qUndEnds_G) call matchIn(sZ)
 
