@@ -100,7 +100,7 @@ contains
 
 
   call mpi_barrier(tProcInfo_G%comm, error)
-  print*, 'redisitng field...'
+  if (tProcInfo_G%qRoot) print*, 'redisitng field...'
 
   call getLocalFieldIndices(sRedistLen_G*2.0_wp)
 
