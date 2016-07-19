@@ -362,7 +362,7 @@ END SUBROUTINE passToGlobals
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-subroutine fixCharge(sQb, sSigz2, sLenz2, sSigTails, qTails,
+subroutine fixCharge(sQb, sSigz2, sLenz2, sSigTails, qTails, &
                     sSigX)
 
 ! Only 1D for now
