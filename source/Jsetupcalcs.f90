@@ -363,19 +363,22 @@ END SUBROUTINE passToGlobals
 
 
 subroutine fixCharge(sQb, sSigz2, sLenz2, sSigTails, qTails, &
-                    sSigX)
+                    sSigX, sSigY)
 
 ! Only 1D for now
 
 real(kind=wp), intent(out) :: sQb
-real(kind=wp), intent(in) :: sSigz2, sLenz2, sSigTails, sSigX
+real(kind=wp), intent(in) :: sSigz2, sLenz2, sSigTails, &
+                               sSigX, sSigY
 logical, intent(in) :: qTails
 
 real(kind=wp) :: sLArea, sTArea
 logical :: qOneD
 
 qOneD = qOneD_G
-sTArea = sqrt(2*pi) * sSigX
+
+sTArea = sqrt(2.0_wp*pi) * sSigX &
+          * sqrt(2.0_wp*pi) * sSigY
 
 call getLBArea(sLArea, sSigz2, sLenz2, sSigTails, qTails)
 
