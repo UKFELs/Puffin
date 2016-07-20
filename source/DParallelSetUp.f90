@@ -17,12 +17,12 @@ Module ParallelSetUp
 USE paratype
 USE ParallelInfoType
 USE IO
-use mpi
+! use mpi
 
 
 IMPLICIT NONE
 
-!INCLUDE 'mpif.h'
+INCLUDE 'mpif.h'
 
 INTEGER :: MPI_INT_HIGH
 
