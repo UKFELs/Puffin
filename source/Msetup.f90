@@ -168,7 +168,11 @@ MODULE Setup
   
   if (.not. qscaled_G) then
 
+
+    if (tProcInfo_G%qRoot) print*, '*******************'
+    if (tProcInfo_G%qRoot) print*, ''
     if (tProcInfo_G%qRoot) print*, 'Scaling params....'
+    if (tProcInfo_G%qRoot) print*, ''
 
     call scaleParams(sEleSig, sLenEPulse, sSigEj_G, &
                      beamCenZ2, chirp, sEmit_n, gamma_d, &
