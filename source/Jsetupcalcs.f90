@@ -718,20 +718,25 @@ end subroutine calcScaling
 
 subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
                        sStepSize, stepsPerPeriod, nSteps, &
-                       nperiods, nodesperlambda)
+                       nperiods, nodesperlambda, sGamFrac, &
+                       sLenEPulse)
 
 
-  real(kind=wp), intent(in) ::sFieldModelLength(:)
+  real(kind=wp), intent(inout) :: sFieldModelLength(:)
+
+  real(kind=wp), intent(in) :: sGamFrac(:), sLenEPulse(:,:)
 
   integer(kind=ip), intent(in) :: nperiods, nodesperlambda, &
                                   stepsPerPeriod
 
   real(kind=wp), intent(out) :: sLengthOfElm(:), sStepSize
+                                
 
   integer(kind=ip), intent(inout) :: iNumNodes(:)
   integer(kind=ip), intent(out) :: nSteps
 
-  real(kind=wp) :: dz2
+  real(kind=wp), allocatable :: smeanp2(:), fmlensTmp(:)
+  real(kind=wp) :: dz2, szbar, fmlenTmp
 
 
 
@@ -790,10 +795,46 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
   if (tProcInfo_G%qRoot) print*, 'step size is --- ', sStepSize
 
 
+
+
+
+  szbar = nperiods * 4.0_WP * pi * srho_G
+
+
+!   MAX P2 -
+
+  allocate(smeanp2(size(sGamFrac)), fmlensTmp(size(sGamFrac)))
+  smeanp2 = 1.0_wp / sGamFrac**2.0_wp  ! Estimate of p2...
+
+  fmlensTmp = sLenEPulse(:,iZ2_CG) + smeanp2(:)
+  fmlenTmp = maxval(fmlensTmp)
+
+  if (sFieldModelLength(iZ2_CG) <= fmlenTmp + 1.0_wp) then
+
+
+    if (tProcInfo_G%qRoot) print*, '******************************'
+    if (tProcInfo_G%qRoot) print*, ''
+    if (tProcInfo_G%qRoot) print*, 'WARNING - field mesh may not be large &&
+                                   enough in z2 - fixing....'
+
+    sFieldModelLength(iZ2_CG) = fmlenTmp + 10.0_wp  ! Add buffer 10 long for
+                                                    ! extra security...
+
+    if (tProcInfo_G%qRoot) print*, 'Field mesh length in z2 now = ', &
+                                sFieldModelLength(iZ2_CG)
+    if (tProcInfo_G%qRoot) print*, ''
+
+  end if
+
+  deallocate(smeanp2, fmlensTmp)
+
+  
   dz2 = 4.0_WP * pi * sRho_G / real(nodesperlambda-1_IP,kind=wp)
 
   iNumNodes(iZ2_CG) = ceiling(sFieldModelLength(iZ2_CG) / dz2) + 1_IP
 
+  if (tProcInfo_G%qRoot) print*, '******************************'
+  if (tProcInfo_G%qRoot) print*, ''
   if (tProcInfo_G%qRoot) print*, 'number of nodes in z2 --- ', iNumNodes(iZ2_CG)
 
 

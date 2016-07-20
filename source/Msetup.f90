@@ -181,7 +181,7 @@ MODULE Setup
 
   call calcSamples(sFieldModelLength, iNodes, sLengthofElm, &
                    sStepSize, stepsPerPeriod, nSteps, &
-                   nperiods, nodesperlambda)
+                   nperiods, nodesperlambda, gamma_d, sLenEPulse)
 
 
 
