@@ -12,6 +12,21 @@ USE Globals
 USE ParallelSetUp
 use MASPin
 
+
+!****************************************************************
+!
+! Module containing the routines which read in the data files
+! in Puffin.
+!
+! -Lawrence Campbell
+! lawrence.campbell@strath.ac.uk
+! University of Strathclyde
+! June 2016
+!
+!****************************************************************
+
+
+
 CONTAINS
 
 SUBROUTINE read_in(zfilename, &
@@ -19,8 +34,6 @@ SUBROUTINE read_in(zfilename, &
        qSeparateFiles, &
        qFormattedFiles, &
        qResume, &
-       sStepSize, &
-       nSteps, &
        sZ0, &
        LattFile,&
        iWriteNthSteps, &
@@ -31,8 +44,10 @@ SUBROUTINE read_in(zfilename, &
        sLenEPulse, &
        iNumNodes, &
        sWigglerLength, &
-       sLengthofElm, &
        iRedNodesX,iRedNodesY, &
+       nodesperlambda, &
+       stepsPerPeriod, &
+       nperiods, &
        sQe, &
        q_noise, &
        iNumElectrons, &
@@ -74,7 +89,7 @@ SUBROUTINE read_in(zfilename, &
        IMPLICIT NONE
        
 !******************************************************
-! Read input data from a file
+! Read input data from the main Puffin input file
 ! 
 ! zFileName          - FileName containing input data
 ! nRowProcessors     - Number of row processors
@@ -130,8 +145,6 @@ SUBROUTINE read_in(zfilename, &
   LOGICAL,           INTENT(OUT)  :: qSeparateFiles
   LOGICAL,           INTENT(OUT)  :: qFormattedFiles
   LOGICAL,           INTENT(OUT)  :: qResume
-  REAL(KIND=WP),     INTENT(OUT)  :: sStepSize
-  INTEGER(KIND=IP),  INTENT(OUT)  :: nSteps
   REAL(KIND=WP) ,    INTENT(OUT)  :: sZ0
   CHARACTER(32_IP),  INTENT(INOUT):: LattFile
     
@@ -143,7 +156,7 @@ SUBROUTINE read_in(zfilename, &
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sLenEPulse(:,:)
   INTEGER(KIND=IP),  INTENT(OUT)  :: iNumNodes(:)
     
-  REAL(KIND=WP),     INTENT(OUT)  :: sWigglerLength(:) , sLengthofElm(:)  
+  REAL(KIND=WP),     INTENT(OUT)  :: sWigglerLength(:)   
     
   INTEGER(KIND=IP),  INTENT(OUT)  :: iRedNodesX,&
                                        iRedNodesY
@@ -188,7 +201,7 @@ SUBROUTINE read_in(zfilename, &
 
 ! Define local variables
     
-  integer(kind=ip) :: stepsPerPeriod, nodesperlambda, nperiods ! Steps per lambda_w, nodes per lambda_r
+  integer(kind=ip), intent(out) :: stepsPerPeriod, nodesperlambda, nperiods ! Steps per lambda_w, nodes per lambda_r
   real(kind=wp) :: dz2, zbar
   integer(kind=ip) :: nwaves
 
@@ -202,7 +215,8 @@ SUBROUTINE read_in(zfilename, &
 
   logical :: qOneD, qFieldEvolve, qElectronsEvolve, &
              qElectronFieldCoupling, qFocussing, &
-             qDiffraction, qDump, qUndEnds, qhdf5, qsdds
+             qDiffraction, qDump, qUndEnds, qhdf5, qsdds, &
+             qscaled
 
   integer(kind=ip) :: iNumNodesX, iNumNodesY, nodesPerLambdar
   real(kind=wp) :: sFModelLengthX, sFModelLengthY, sFModelLengthZ2
@@ -231,7 +245,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  sZ0, zDataFileName, iWriteNthSteps, &
                  iWriteIntNthSteps, iDumpNthSteps, sPEOut, &
                  qFMesh_G, sKBetaXSF, sKBetaYSF, sRedistLen, &
-                 iRedistStp, t_mag_G, t_fr_G, qFMod_G
+                 iRedistStp, qscaled, t_mag_G, t_fr_G, qFMod_G
 
 
 ! Begin subroutine:
@@ -255,7 +269,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qUndEnds = .false.
   qDump = .false.
   qResume = .false.
-  qSeparateFiles = .true.
+  qSeparateFiles = .false.
   qFormattedFiles = .false.
   qWriteZ = .true.
   qWriteA = .true.
@@ -265,8 +279,9 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qWriteX = .true.
   qWriteY = .true.
   qsdds = .true.
-  qhdf5 = .true.
+  qhdf5 = .false.
   qFMesh_G = .true.
+  qscaled = .true.
 !  qplain = .false.
   qFMod_G = .false.
   t_mag_G = 0.0
@@ -280,8 +295,8 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   sFModelLengthX         = 1.0
   sFModelLengthY         = 1.0
   sFModelLengthZ2        = 4.0
-  iRedNodesX             = 21
-  iRedNodesY             = 21
+  iRedNodesX             = -1
+  iRedNodesY             = -1
   sFiltFrac              = 0.3
   sDiffFrac              = 1.0
   sBeta                  = 1.0
@@ -328,7 +343,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qUndEnds_G = qUndEnds
   qsdds_G  = qsdds
   qhdf5_G = qhdf5
-
+  qscaled_G = qscaled
 
 
 
@@ -368,32 +383,17 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   sWigglerLength(iZ2_CG) = sFModelLengthZ2
 
 
-  sLengthofElm(iX_CG) = sWigglerLength(iX_CG) / &
-                    real((iNumNodes(iX_CG) - 1_ip), kind=wp)
-
-  sLengthofElm(iY_CG) = sWigglerLength(iY_CG) / &
-                    real((iNumNodes(iY_CG) - 1_ip), kind=wp)
-
-  sLengthofElm(iZ2_CG) = sWigglerLength(iZ2_CG) / &
-                    real((iNumNodes(iZ2_CG) - 1_ip), kind=wp)
-
-
-
-  sStepSize = 4.0_WP * pi * srho / real(stepsPerPeriod,kind=wp)
-  nSteps = nperiods * stepsPerPeriod
-
-  if (tProcInfo_G%qRoot) print*, 'step size is --- ', sStepSize
 
 
 
 
+!!!!!!!!!!!!
+!!!! NEW SPACE
+!!!!!!!!!!!!
 
+  iRedNodesX_G = iRedNodesX
+  iRedNodesY_G = iRedNodesY
 
-  dz2 = 4.0_WP * pi * srho / real(nodesperlambda-1_IP,kind=wp)
-
-  iNumNodes(iZ2_CG) = ceiling(sWigglerLength(iZ2_CG) / dz2) + 1_IP
-
-  if (tProcInfo_G%qRoot) print*, 'number of nodes in z2 --- ', iNumNodes(iZ2_CG)
 
   sKBetaXSF_G = sKBetaXSF
   sKBetaYSF_G = sKBetaYSF
@@ -404,6 +404,10 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
 
   zBFile_G = beam_file
   zSFile_G = seed_file
+
+
+
+
 
   CALL read_beamfile(qSimple, dist_f, beam_file,sEmit_n,sSigmaGaussian,sLenEPulse, &
                      iNumElectrons,sQe,chirp,bcenter, mag, fr, gamma_d,nbeams, &
@@ -436,10 +440,8 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
 2000 CONTINUE
     
 END SUBROUTINE read_in
+
 !********************************************************
-
-
-
 
 
 SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
@@ -447,6 +449,10 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
                          qMatched_A,qOK)
 
   IMPLICIT NONE
+
+
+! Read the beamfile into Puffin
+
 
 !                     ARGUMENTS
 
@@ -467,6 +473,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 !                     LOCAL ARGS
 
   INTEGER(KIND=IP) :: b_ind
+  logical :: qFixCharge
   INTEGER::ios
   CHARACTER(96) :: dum1, dum2, dtype
 
@@ -478,7 +485,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   namelist /blist/ sSigmaE, sLenE, iNumElectrons, &
                    sEmit_n, sQe, bcenter,  gammaf, &
                    chirp, mag, fr, qRndEj_G, sSigEj_G, &
-                   qMatched_A, qEquiXY, nseqparts
+                   qMatched_A, qEquiXY, nseqparts, qFixCharge
 
 
   namelist /bdlist/ dist_f, nMPs4MASP_G
@@ -558,6 +565,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   qEquiXY = .false.
   nseqparts = 1000_ip
   qSimple = .false.
+  qFixCharge = .false.
 
 ! &&&&&&&&&&&&&&&&&&&&&
 
@@ -638,7 +646,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
   qEquiXY_G = qEquiXY
   nseqparts_G = nseqparts
-
+  qFixCharge_G = qFixCharge
 
 
 ! Set the error flag and exit

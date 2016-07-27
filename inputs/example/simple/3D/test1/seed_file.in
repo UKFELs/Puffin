@@ -1,0 +1,36 @@
+! PUFFIN SEED FILE
+!
+!Describes seed fields for input into puffin. Multiple seeds with
+!different frequencies, profiles and positions can be used. Please 
+!refer to POP-REF for an explanation of the scaled variables used, 
+!such as z2.
+!
+!READ IN SEED CHARACTERISTICS
+!========================================================================
+!PARAMETERS:-
+!
+!freqf            Ratio of seed to resonant frequency i.e. omega_s / omega_r
+!sA0_X                Initial peak field value (real, also the x-polarized field)
+!sA0_Y                Initial peak field value (imaginary, also the y-polarized field)
+!sSigmaF              Seed field sigma in each spatial direction 
+!qFlatTop             =.TRUE. if flat top seed, else gaussian is assumed
+!meanZ2               Mean or center position of seed in Z2
+!qRndFj_G             round edge of flat top? 
+!sSigEj               Sigma of gaussian roll off for flat top
+!========================================================================
+
+&NSLIST
+nseeds = 1
+/
+
+&SLIST
+freqf = 1.0
+sA0_X = 0.0
+sA0_Y = 0.0
+sSigmaF = 2.0, 2.0, 2.0
+qFlatTop = .false.
+meanZ2 = 0.0
+qRndFj_G = .false.
+sSigFj_G = 1.0
+/
+

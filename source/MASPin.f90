@@ -4,6 +4,7 @@ use paratype
 use globals
 use ParallelSetUp
 use parBeam
+use scale
 
 implicit none
 
@@ -132,23 +133,21 @@ contains
     end do
 
 
-!    Work out analytic peak density from rho...
-
-    npk_bar = lg_G * lc_G**2.0_wp * e_0 * m_e / q_e**2.0_wp * &
-              sGammaR_G**3.0_wp * sRho_G**3.0_wp * (4.0_wp * &
-              c * 2.0_wp * pi / lam_w_G / saw_G  )**2.0_wp
-
 
 !   Scale Nk by peak density...
 
-    s_chi_bar_G = s_chi_bar_G / npk_bar
+    s_chi_bar_G = s_chi_bar_G / npk_bar_G
 
 
-    npk_bar_G = npk_bar
+    call scaleT(sElZ2_G, Lc_G)
+    call scaleX(sElX_G, Lg_G, Lc_G)
+    call scaleX(sElY_G, Lg_G, Lc_G)
+    call scalePX(sElPX_G, sGammaR_G * sElGam_G, saw_G)
+    call scalePX(sElPY_G, sGammaR_G * sElGam_G, saw_G)
 
-!    sElGam_G = sElGam_G / 550_wp
 
-    ! exit
+
+
 
   end subroutine readMASPfile
 

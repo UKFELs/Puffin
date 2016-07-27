@@ -32,7 +32,9 @@ MODULE RESUME
 
 !         LOCAL ARGS:-
 
-    INTEGER(KIND=IP) :: sendbuff,recvbuff,statr,req,lrank,rrank
+    INTEGER(KIND=IP) :: sendbuff,recvbuff,req,lrank,rrank
+    integer statr(MPI_STATUS_SIZE)
+    integer sendstat(MPI_STATUS_SIZE)
     INTEGER(KIND=IP) :: i
     LOGICAL :: qOKL
     INTEGER :: error
@@ -152,7 +154,7 @@ MODULE RESUME
     
       CALL MPI_ISSEND( sendbuff,1,MPI_INTEGER,rrank,0,tProcInfo_G%comm,req,error )
       CALL MPI_RECV( recvbuff,1,MPI_INTEGER,lrank,0,tProcInfo_G%comm,statr,error )
-      CALL MPI_WAIT( req,statr,error )	  
+      CALL MPI_WAIT( req,sendstat,error )	  
   
       procelectrons_G(i) = recvbuff
     

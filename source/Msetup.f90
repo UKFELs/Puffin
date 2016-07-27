@@ -12,7 +12,6 @@ MODULE Setup
   USE transforms
   USE sddsPuffin
   USE lattice
-  USE Stiffness
   USE Globals
   USE resume
   USE electronInit
@@ -20,6 +19,7 @@ MODULE Setup
   USE checks
   use dumpFiles
   use ParaField
+  use dummyf
 
 ! A module which allocates and initializes - or 
 ! destroys - the data used in Puffin.
@@ -102,8 +102,6 @@ MODULE Setup
        qSeparateStepFiles,&
        qFormattedFiles,   &
        qResume,           &
-       sStepSize,         &
-       nSteps,            &
        sZ,                &
        LattFile,          &
        iWriteNthSteps,    &
@@ -113,14 +111,16 @@ MODULE Setup
        tArrayE,           &
        sLenEPulse,        &
        iNodes,            &
-       sWigglerLength,    &
-       sLengthofElm,      &
+       sFieldModelLength, &
        iRedNodesX,        &
        iRedNodesY,        &
+       nodesperlambda, &
+       stepsPerPeriod, &
+       nperiods, &
        sQe,               &
        q_noise,           &
        iNumElectrons,     &
-       sSigmaGaussian,    &
+       sEleSig,           &
        sElectronThreshold,&
        beamCenZ2,         &
        gamma_d,           &
@@ -161,14 +161,45 @@ MODULE Setup
 !    to avoid errors.
 
 
+
+  call calcScaling(srho, saw, sgammar, lambda_w, &
+    sFocusFactor, zUndType, fx, fy)
+
+  
+  if (.not. qscaled_G) then
+
+
+    if (tProcInfo_G%qRoot) print*, '*******************'
+    if (tProcInfo_G%qRoot) print*, ''
+    if (tProcInfo_G%qRoot) print*, 'Scaling params....'
+    if (tProcInfo_G%qRoot) print*, ''
+
+    call scaleParams(sEleSig, sLenEPulse, sSigEj_G, &
+                     beamCenZ2, chirp, sEmit_n, gamma_d, &
+                     sFieldModelLength, sLengthofElm, &
+                     sSeedSigma)
+  end if
+
+
+
+
+  call calcSamples(sFieldModelLength, iNodes, sLengthofElm, &
+                   sStepSize, stepsPerPeriod, nSteps, &
+                   nperiods, nodesperlambda, gamma_d, sLenEPulse)
+
+
+
+!  if (qscaled_G) then
+
   CALL CheckParameters(sLenEPulse,iNumElectrons,nbeams,sLengthofElm,iNodes,&
-                       sWigglerLength,sStepSize,nSteps,srho,saw,sgammar, &
-                       sFocusfactor, mag, sSigmaGaussian,fx,fy, iRedNodesX, &
+                       sFieldModelLength,sStepSize,nSteps,srho,saw,sgammar, &
+                       sFocusfactor, mag, sEleSig,fx,fy, iRedNodesX, &
                        iRedNodesY,qSwitches,qSimple, sSeedSigma, freqf, & 
                        SmeanZ2, qFlatTopS, nseeds, qOKL)
   
   IF (.NOT. qOKL) GOTO 1000
 
+!  end if
 
 
 !    Setup FFTW plans for the forward and backwards transforms.
@@ -192,7 +223,7 @@ MODULE Setup
 !
 !    if (qSimple) CALL MatchBeams(srho,sEmit_n,saw,sFocusfactor,&
 !                    sgammar,gamma_d,iNumElectrons,sLenEPulse,&
-!                    sSigmaGaussian,sSeedSigma,iNodes,sWigglerLength,&
+!                    sEleSig,sSeedSigma,iNodes,sFieldModelLength,&
 !                    sLengthofElm,zUndType,iRedNodesX,iRedNodesY,fx,fy,qOKL)
 !
 !    IF (.NOT. qOKL) GOTO 1000
@@ -207,8 +238,8 @@ MODULE Setup
 !  IF (qSwitches(iDiffraction_CG)) THEN
 !
 !    if (qSimple)  CALL CheckSourceDiff(sStepSize,nSteps,srho, &
-!                                       sSigmaGaussian, &
-!                                       sWigglerLength,&
+!                                       sEleSig, &
+!                                       sFieldModelLength,&
 !                                       sLengthofElm,iNodes,qOKL)
 !
 !    IF (.NOT. qOKL) GOTO 1000
@@ -222,8 +253,7 @@ MODULE Setup
 !     Pass local vars to global vars
 
   CALL passToGlobals(srho,saw,sgammar,lambda_w,iNodes, &
-                     iredNodesX,iredNodesY, &
-                     sLengthOfElm,&
+                     sLengthOfElm, qSimple, iNumElectrons, &
                      fx,fy,sFocusFactor,taper, &
                      sFiltFrac,sDiffFrac,sBeta, &
                      zUndType,qFormattedFiles, qSwitches,qOK)
@@ -231,16 +261,20 @@ MODULE Setup
   IF (.NOT. qOKL) GOTO 1000
 
 
+
+
+
+
   if (.not. qOneD_G) then
 
     if (qSimple) then
 
-      call stptrns(sSigmaGaussian, sLenEPulse, iNumElectrons, &
+      call stptrns(sEleSig, sLenEPulse, iNumElectrons, &
                    sEmit_n, gamma_d, &
                    qMatched_A, qMatchS_G, qFMesh_G, sSeedSigma)
 
-      sWigglerLength(iX_CG) = sLengthOfElmX_G * real((NX_G-1_ip),kind=wp)
-      sWigglerLength(iY_CG) = sLengthOfElmY_G * real((NY_G-1_ip),kind=wp)
+      sFieldModelLength(iX_CG) = sLengthOfElmX_G * real((NX_G-1_ip),kind=wp)
+      sFieldModelLength(iY_CG) = sLengthOfElmY_G * real((NY_G-1_ip),kind=wp)
 
       sLengthOfElm(iX_CG) = sLengthOfElmX_G
       sLengthOfElm(iY_CG) = sLengthOfElmY_G
@@ -253,8 +287,8 @@ MODULE Setup
     if (qSwitches(iDiffraction_CG)) then
 
       call CheckSourceDiff(sStepSize,nSteps,srho, &
-                           sSigmaGaussian, &
-                           sWigglerLength,&
+                           sEleSig, &
+                           sFieldModelLength,&
                            sLengthofElm,iNodes,qOKL)
 
       if (.not. qOKL) goto 1000
@@ -267,8 +301,19 @@ MODULE Setup
 
 !     Generate macroelectrons
 
+
+!   Fixing charge only for 1st beam
+
+  if (qFixCharge_G) then
+
+    call fixCharge(sQe(1), sEleSig(1,iZ2_CG), sLenEPulse(1,iZ2_CG), &
+                       sSigEj_G(1), qRndEj_G(1), sEleSig(1,iX_CG), &
+                       sEleSig(1,iY_CG))
+
+  end if
+
   call PopMacroElectrons(qSimple, dist_f, sQe,iNumElectrons,q_noise,sZ,sLenEPulse,&
-                         sSigmaGaussian,beamCenZ2,gamma_d,&
+                         sEleSig,beamCenZ2,gamma_d,&
                          sElectronThreshold,chirp, mag, fr, &
                          nbeams, qOK)
 
@@ -325,50 +370,7 @@ MODULE Setup
 
   ffact = iNodes(iX_CG)*iNodes(iY_CG)*iNodes(iZ2_CG)      
    	
-  CALL MPI_BARRIER(tProcInfo_G%comm,error) ! Sync MPI processes
-  
-!  call mpi_finalize(error)
-!  stop
 
-  ALLOCATE(lrecvs(tProcInfo_G%size),ldispls(tProcInfo_G%size))
-    
-  IF (tProcInfo_G%qRoot) PRINT*, 'reduced field sizes',&
-       ReducedNX_G,reducedNY_G
-
-
-
-
-
-!     Calculate Field Spread across MPI processes
-  	
-  CALL CalcFldSpd(ReducedNX_G,ReducedNY_G,NZ2_G,delta_G)
-  	
-  CALL MPI_BARRIER(tProcInfo_G%comm,error)
-  IF (tProcInfo_G%qRoot) PRINT*, 'Setup active field'
-
-
-
-
-  	
-!    Get gathering arrays for reduced/active field arrays
-
-  IF (tTransInfo_G%qOneD) THEN
-    CALL getGathArrs(local_rows,lrecvs,ldispls)
-  
-    lfst_row=fst_row
-    llst_row=lst_row
-    llocal_rows=local_rows
-  ELSE
-!    Get sizes for large field array
-    CALL getLargeLocSizes(fst_row,lst_row,lfst_row,llst_row,llocal_rows)
-  	
-!    Get gathering arrays for large field arrays
-    CALL getGathArrs(llocal_rows,lrecvs,ldispls)
-  END IF
-  
-  ALLOCATE(mrecvs(tProcInfo_G%size),mdispls(tProcInfo_G%size))
-
-  CALL getGathArrs(local_rows,mrecvs,mdispls)
 
   IF (qResume) THEN
     CALL READINCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
@@ -417,6 +419,8 @@ MODULE Setup
 
   IF(tProcInfo_G%qROOT) PRINT *, 'Writing parameter data to file' 
 
+  qSeparateStepFiles_G = qSeparateStepFiles
+
   CALL WriteEleData(zDataFileName,'Chi','s_chi_bar',qFormattedFiles, &
        iGlonumElectrons_G,s_chi_bar_G,qOKL)
   If (.NOT. qOKL) GOTO 1000
@@ -433,8 +437,8 @@ MODULE Setup
          sStepSize,    &
          nSteps,&
          sLenEPulse(1,:),&
-         sWigglerLength,&
-         sSigmaGaussian(1,:),&
+         sFieldModelLength,&
+         sEleSig(1,:),&
          sA0_Re(1),&
          sA0_Im(1),&
          srho,&
@@ -472,9 +476,13 @@ MODULE Setup
 !               lrecvs, ldispls, &
 !               iIntWriteNthSteps, nSteps, qWDisp, qOKL)
 
-  if (qWrite)  call wr_sdds(sZ, 0, tArrayA, tArrayE, tArrayZ, &
-                 iIntWriteNthSteps, iWriteNthSteps, .true., &
-                 zDataFileName, .true., .true., qOK)
+!  if (qWrite)  call wr_sdds(sZ, 0, tArrayA, tArrayE, tArrayZ, &
+!                 iIntWriteNthSteps, iWriteNthSteps, .true., &
+!                 zDataFileName, .true., .true., qOK)
+
+  call writeIM(sZ, &
+               zDataFileName, 0_ip, 0_ip, iWriteNthSteps, &
+               iIntWriteNthSteps, nSteps, qOKL)
 
 !  if (qWrite) call wdfs(sA, sZ, 0, tArrayA, tArrayE, tArrayZ, &
 !                        iIntWriteNthSteps, iWriteNthSteps, &
@@ -508,8 +516,6 @@ MODULE Setup
   If(tProcInfo_G%qROOT) PRINT *, 'Initial data written'
   
   
-  qSeparateStepFiles_G = qSeparateStepFiles
-
 !  if (qSwitches(iDump_CG)) call DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
 !  if (qSwitches(iDump_CG)) call DUMPDATA(sA,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
 !                             iNumberElectrons_G,sZ,istep,tArrayA(1)%tFileType%iPage)

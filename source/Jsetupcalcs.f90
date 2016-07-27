@@ -18,34 +18,47 @@ USE gMPsFromDists
 use avwrite
 use MASPin
 use parafield
+use scale
+
+!****************************************************
+! Module containing miscellaneous routines for setup
+! and initialization of variables in Puffin.
+!
+! Lawrence Campbell
+! lawrence.campbell@strath.ac.uk
+! University of Strathclyde
+! June 2016
+!
 
 IMPLICIT NONE
 
 CONTAINS
 
 
-
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
-                         sRNX,sRNY, &
-                         sElmLen,&
-                         fx,fy,sFocusFactor,taper,sFiltFrac, &
-                         dStepFrac,sBeta,zUndType,qFormatted, qSwitch, qOK)
+
+SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
+                         sElmLen, qSimple, iNMPs, fx, fy, &
+                         sFocusFactor, taper, sFiltFrac, &
+                         dStepFrac, sBeta, zUndType, &
+                         qFormatted, qSwitch, qOK)
 
     IMPLICIT NONE
 
+!***********************************************************
 ! Subroutine to pass all the temporary variables to global
 ! vars used in the integration loop.
 !
+! Some setup is also performed.
+!
+!
 !                    ARGUMENTS
 !
-! rho                Pierce parameter
-! eta                scaled z-velocity
+! rho                Pierce/FEL parameter
+! eta                scaled average z-velocity
 ! kbeta              scaled betatron wavenumber
 ! iNN                number of nodes in each dimension (x,y,z2)
-! sRNX,sRNY          number of nodes in the inner reduced 'active'
-!                    set of nodes
 ! sElmLen            Length of ONE element in each dimension (x,y,z2)
 ! fx, fy             specifies undulator polarization
 ! qSwitch            If letting electrons evolve, field evolve,
@@ -53,12 +66,12 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 ! qOK                Error flag
 
     REAL(KIND=WP),     INTENT(IN)    :: rho,aw,gamr, lam_w
-    INTEGER(KIND=IP),  INTENT(IN)    :: sRNX,sRNY
-    INTEGER(KIND=IP),  INTENT(IN)    :: iNN(:)
+    INTEGER(KIND=IP),  INTENT(IN)    :: iNN(:), iNMPs(:,:)
     REAL(KIND=WP),     INTENT(IN)    :: sElmLen(:)	
     REAL(KIND=WP),     INTENT(IN)    :: fx,fy,sFocusFactor, taper
     REAL(KIND=WP),     INTENT(IN)    :: sFiltFrac, dStepFrac, sBeta
-    LOGICAL,           INTENT(IN)    :: qSwitch(nSwitches_CG), qFormatted
+    LOGICAL,           INTENT(IN)    :: qSwitch(nSwitches_CG), qFormatted, &
+                                        qSimple
     character(32_ip),  intent(in)    :: zUndType
     LOGICAL,           INTENT(OUT)   :: qOK
 
@@ -92,17 +105,69 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 
 
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!!      Define reduced node set in x and y,
+!!      which the electron beam is initialized
+!!      within, transversely.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    ReducedNX_G=sRNX
-    ReducedNY_G=sRNY
 
-    IF (NX_G*NY_G==1) THEN
-      ReducedNX_G=1_IP
-      ReducedNY_G=1_IP
-    END IF
+
+    if (NX_G*NY_G==1) then
+
+
+!            1D case
+
+
+      iRedNodesX_G = 1_IP
+      iRedNodesY_G = 1_IP
     
-    outnodex_G=NX_G-ReducedNX_G
-    outnodey_G=NY_G-ReducedNY_G
+    else
+
+
+!            3D case
+    
+
+      if (iRedNodesX_G < 0_ip) then
+
+!        If iRedNodes was not defined, set to default
+
+
+        if (qSimple) then
+
+          iRedNodesX_G = inmps(1,iX_CG) + 1_ip
+
+        else 
+
+          iRedNodesX_G = 20_ip
+
+        end if
+
+      end if
+
+
+
+      if (iRedNodesY_G < 0_ip) then
+
+        if (qSimple) then
+
+          iRedNodesY_G = inmps(1,iY_CG) + 1_ip
+
+        else
+
+          iRedNodesY_G = 20_ip
+
+        end if
+
+      end if
+
+    end if
+
+    
+    outnodex_G=NX_G-iRedNodesX_G
+    outnodey_G=NY_G-iRedNodesY_G
 
 !     Set up the length of ONE element globally
 
@@ -134,58 +199,6 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
     sz0 = 0.0_WP
     undgrad = taper
 
-    sRho_save_G = rho
-
-    sRho_G = sRho_save_G ! * modfact1
-
-
-
-    fx_G = fx
-    fy_G = fy
-
-
-    if (zUndType == 'curved') then
-
-      aw_rms =  aw / sqrt(2.0_wp)
-
-      kx_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2)) ! Giving equal focusing for now....
-      ky_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2))
-
-      sKBetaX_G = aw / sqrt(2.0_wp * sEta_G) / sGammaR_G * kx_und_G
-      sKBetaY_G = aw / sqrt(2.0_wp * sEta_G) / sGammaR_G * ky_und_G
-
-
-      fx_G = 0   ! Temp fix for initialization bug
-      fy_G = 1
-
-    else if (zUndType == 'planepole') then
-
-      aw_rms =  aw / sqrt(2.0_wp)
-      fx_G = 0   ! Temp fix for initialization bug
-      fy_G = 1
-
-    else if (zUndType == 'helical') then
-
-      aw_rms = aw
-      fx_G = 1   ! Temp fix for initialization bug
-      fy_G = 1
-
-    else
-
-      aw_rms = aw * SQRT(fx**2 + fy**2) / sqrt(2.0_wp)
-
-    end if
-
-
-    sbetaz = SQRT(gamr**2.0_WP - 1.0_WP - (aw_rms)**2.0_WP) / &
-             gamr
-
-    sEta_G = (1.0_WP - sbetaz) / sbetaz
-    sKappa_G = aw / 2.0_WP / rho / gamr
-    sKBeta_G = sKappa_G ! aw_rms / 2.0_WP / sFocusFactor / rho / gamr
-
-
-    sFocusFactor_G = sFocusFactor
 
 
 
@@ -194,17 +207,6 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 
 
 
-    sAw_save_G = aw
-    sAw_G = sAw_save_G ! * modfact1
-
-    sGammaR_G = gamr
-
-
-    lam_w_G = lam_w
-    lam_r_G = lam_w * sEta_G
-
-    lg_G = lam_w_G / 4.0_WP / pi / rho
-    lc_G = lam_r_G / 4.0_WP / pi / rho
 
 
 
@@ -317,9 +319,13 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 
 
 !     Get n_pk_bar
-!
-!     DDDOOOO IIITTTT
-! 
+
+    npk_bar_G = lg_G * lc_G**2.0_wp * e_0 * m_e / q_e**2.0_wp * &
+                sGammaR_G**3.0_wp * sRho_G**3.0_wp * (4.0_wp * &
+                c * 2.0_wp * pi / lam_w_G / saw_G  )**2.0_wp
+
+
+
 
 
     IF(iNumberNodes_G <= 0_IP) THEN
@@ -354,7 +360,98 @@ SUBROUTINE passToGlobals(rho,aw,gamr,lam_w,iNN, &
 END SUBROUTINE passToGlobals
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                            
+
+
+subroutine fixCharge(sQb, sSigz2, sLenz2, sSigTails, qTails, &
+                    sSigX, sSigY)
+
+! Only 1D for now
+
+real(kind=wp), intent(out) :: sQb
+real(kind=wp), intent(in) :: sSigz2, sLenz2, sSigTails, &
+                               sSigX, sSigY
+logical, intent(in) :: qTails
+
+real(kind=wp) :: sLArea, sTArea
+logical :: qOneD
+
+qOneD = qOneD_G
+
+sTArea = sqrt(2.0_wp*pi) * sSigX &
+          * sqrt(2.0_wp*pi) * sSigY
+
+call getLBArea(sLArea, sSigz2, sLenz2, sSigTails, qTails)
+
+call getQFmNpk(sQb, sTarea, sLarea, qOneD)
+
+if (tProcInfo_G%qroot) print*, 'FIXING CHARGE '
+if (tProcInfo_G%qroot) print*, 'Q =  ', sQb
+
+end subroutine fixCharge
+
+subroutine getLBArea(sLArea, sSigz2, sLenz2, sSigTails, qTails)
+
+real(kind=wp), intent(out) :: sLArea
+real(kind=wp), intent(in) :: sSigz2, sLenz2, sSigTails
+logical, intent(in) :: qTails
+
+real(kind=wp) :: sEndsLen, sMainLen
+logical :: qFlatTop
+
+if (sSigZ2 >= 1e6) qFlatTop = .true.
+
+sEndsLen = 0.0_wp
+
+if (qFlatTop) then
+  if (qTails) then 
+    sEndsLen = gExtEj_G * sSigTails
+    sMainLen = sLenz2 - sEndsLen
+    sLArea = sMainLen + sqrt(2*pi)*sSigTails
+  else 
+    sLArea = sLenz2
+  end if
+else
+  sLArea = sqrt(2*pi) * sSigz2
+end if
+
+end subroutine getLBArea
+
+
+subroutine getQFmNpk(sQb, sTarea, sLarea, qOneD)
+
+real(kind=wp), intent(out) :: sQb
+real(kind=wp), intent(in) :: sTArea, sLArea
+logical, intent(in) :: qOneD
+
+real(kind=wp) :: sVol, sNe
+
+
+!  Set phase space volume
+
+  if (qOneD) then
+    sVol = sLArea
+  else
+    sVol = sLArea * sTArea
+  end if
+
+
+! Number of electrons
+
+
+  sNe = npk_bar_G * sVol
+  sQb = q_e * sNe
+
+
+
+end subroutine getQFmNpk
+
+
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
 SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
                               qFlatTopS, sSigmaF, &
                               sA0_x, sA0_y, qOK)
@@ -441,6 +538,312 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
 END SUBROUTINE SetUpInitialValues
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
+                       beamCenZ2, chirp, sEmit, gamFrac, &
+                       sFieldModelLength, sLengthofElm, &
+                       sSeedSigma)
+
+    real(kind=wp), intent(inout) :: sEleSig(:,:), sLenEPulse(:,:), &
+                                    sSigEdge(:), beamCenZ2(:), &
+                                    chirp(:), sEmit(:), &
+                                    sFieldModelLength(:), &
+                                    sLengthofElm(:), &
+                                    sSeedSigma(:,:)
+
+    real(kind=wp), intent(in) :: gamFrac(:)
+
+
+    integer(kind=ip) :: nbeams, nseeds, ib, is
+
+    nbeams = size(sEleSig(:,1))
+
+    do ib = 1, nbeams
+
+      call scaleX(sEleSig(ib,iX_CG), lg_G, lc_G)
+      call scaleX(sEleSig(ib,iY_CG), lg_G, lc_G)
+
+      call scalePx(sEleSig(ib,iPX_CG), gamFrac(ib), saw_G)
+      call scalePx(sEleSig(ib,iPY_CG), gamFrac(ib), saw_G)
+ 
+      call scaleT(sEleSig(ib,iZ2_CG), lc_G)
+
+
+
+
+      call scaleX(sLenEPulse(ib,iX_CG), lg_G, lc_G)
+      call scaleX(sLenEPulse(ib,iY_CG), lg_G, lc_G)
+
+      call scalePx(sLenEPulse(ib,iPX_CG), gamFrac(ib), saw_G)
+      call scalePx(sLenEPulse(ib,iPY_CG), gamFrac(ib), saw_G)
+ 
+      call scaleT(sLenEPulse(ib,iZ2_CG), lc_G)
+
+
+
+
+      call scaleT(sSigEdge(ib), lc_G)
+      call scaleT(beamCenZ2(ib), lc_G)
+      !call scaleG(chirp(ib), gamFrac(ib)*sGammaR_G)
+      call scaleT(chirp(ib), lc_G)
+
+      call scaleEmit(sEmit(ib), lam_r_G)
+
+    end do
+
+
+
+    call scaleX(sFieldModelLength(iX_CG), lg_G, lc_G)
+    call scaleX(sFieldModelLength(iY_CG), lg_G, lc_G)
+    call scaleT(sFieldModelLength(iZ2_CG), lc_G)
+
+    call scaleX(sLengthofElm(iX_CG), lg_G, lc_G)
+    call scaleX(sLengthofElm(iY_CG), lg_G, lc_G)
+    call scaleT(sLengthofElm(iZ2_CG), lc_G)
+
+    
+    nseeds = size(sSeedSigma(:,1))
+
+    do is = 1, nseeds
+
+      call scaleX(sSeedSigma(is,iX_CG), lg_G, lc_G)
+      call scaleX(sSeedSigma(is,iY_CG), lg_G, lc_G)
+      call scaleT(sSeedSigma(is,iZ2_CG), lc_G)
+
+    end do
+
+
+!    If not-scaled / in SI units, then
+!
+!    beam params in x, y, t, dx/dz, dy/dz, and gamma / gamma_r
+!    chirp in dgamma/dt
+!
+!    field params in x, y, and t
+!    
+
+
+
+end subroutine scaleParams
+
+
+
+
+
+subroutine calcScaling(srho, saw, sgamr, slam_w, sFocusFactor, & 
+                       zUndType, sfx, sfy)
+
+  real(kind=wp), intent(in) :: srho, saw, sgamr, slam_w, &
+                               sFocusFactor, sfx, sfy
+
+  CHARACTER(32_IP), intent(in) :: zUndType
+
+  real(kind=wp) :: saw_rms, sBetaz
+
+  sRho_G = srho
+
+
+  fx_G = sfx
+  fy_G = sfy
+
+
+
+
+  sGammaR_G = sgamr
+
+
+
+  if (zUndType == 'curved') then
+
+    saw_rms =  saw / sqrt(2.0_wp)
+
+    kx_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2)) ! Giving equal focusing for now....
+    ky_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+
+    sKBetaX_G = saw / sqrt(2.0_wp * sEta_G) / sGammaR_G * kx_und_G
+    sKBetaY_G = saw / sqrt(2.0_wp * sEta_G) / sGammaR_G * ky_und_G
+
+
+    fx_G = 0   ! Temp fix for initialization bug
+    fy_G = 1
+
+  else if (zUndType == 'planepole') then
+
+    saw_rms =  saw / sqrt(2.0_wp)
+    fx_G = 0   ! Temp fix for initialization bug
+    fy_G = 1
+
+  else if (zUndType == 'helical') then
+
+    saw_rms = saw
+    fx_G = 1   ! Temp fix for initialization bug
+    fy_G = 1
+
+  else
+
+    saw_rms = saw * SQRT(sfx**2 + sfy**2) / sqrt(2.0_wp)
+    
+  end if
+
+
+  sbetaz = SQRT(sgamr**2.0_WP - 1.0_WP - (saw_rms)**2.0_WP) / &
+           sgamr
+
+  sEta_G = (1.0_WP - sbetaz) / sbetaz
+  sKappa_G = saw / 2.0_WP / srho / sgamr
+  sKBeta_G = sKappa_G ! aw_rms / 2.0_WP / sFocusFactor / srho / sgamr
+
+
+  sFocusFactor_G = sFocusFactor
+
+
+  sAw_G = saw
+
+
+  lam_w_G = slam_w
+  lam_r_G = slam_w * sEta_G
+
+  lg_G = lam_w_G / 4.0_WP / pi / srho
+  lc_G = lam_r_G / 4.0_WP / pi / srho
+
+
+end subroutine calcScaling
+
+
+
+
+
+subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
+                       sStepSize, stepsPerPeriod, nSteps, &
+                       nperiods, nodesperlambda, sGamFrac, &
+                       sLenEPulse)
+
+
+  real(kind=wp), intent(inout) :: sFieldModelLength(:)
+
+  real(kind=wp), intent(in) :: sGamFrac(:), sLenEPulse(:,:)
+
+  integer(kind=ip), intent(in) :: nperiods, nodesperlambda, &
+                                  stepsPerPeriod
+
+  real(kind=wp), intent(out) :: sLengthOfElm(:), sStepSize
+                                
+
+  integer(kind=ip), intent(inout) :: iNumNodes(:)
+  integer(kind=ip), intent(out) :: nSteps
+
+  real(kind=wp), allocatable :: smeanp2(:), fmlensTmp(:)
+  real(kind=wp) :: dz2, szbar, fmlenTmp
+
+
+
+  if (iNumNodes(iX_CG) <= 1_ip) then
+
+    sLengthOfElm(iX_CG) = 1_wp
+
+  else
+
+    sLengthOfElm(iX_CG) = sFieldModelLength(iX_CG) / &
+                      real((iNumNodes(iX_CG) - 1_ip), kind=wp)
+
+  end if
+
+
+
+
+  if (iNumNodes(iY_CG) <= 1_ip) then
+
+    sLengthOfElm(iY_CG) = 1_wp
+
+  else
+
+    sLengthOfElm(iY_CG) = sFieldModelLength(iY_CG) / &
+                      real((iNumNodes(iY_CG) - 1_ip), kind=wp)
+
+  end if
+
+
+!  if (iNumNodes(iZ2_CG) <= 1_ip) then
+
+!    sLengthOfElm(iZ2_CG) = sFieldModelLength(iZ2_CG)
+ !   print*, 'WARNING, only one node in Z2!!'
+
+!  else
+
+    sLengthOfElm(iZ2_CG) = sFieldModelLength(iZ2_CG) / &
+                      real((iNumNodes(iZ2_CG) - 1_ip), kind=wp)
+
+!  end if
+
+
+
+  if (stepsPerPeriod >= 1) then
+
+
+    sStepSize = 4.0_WP * pi * srho_G / real(stepsPerPeriod,kind=wp)
+    nSteps = nperiods * stepsPerPeriod
+
+  else 
+
+    print*, 'less than one step per period!!'
+
+  end if
+
+  if (tProcInfo_G%qRoot) print*, 'step size is --- ', sStepSize
+
+
+
+
+
+  szbar = nperiods * 4.0_WP * pi * srho_G
+
+
+!   MAX P2 -
+
+  allocate(smeanp2(size(sGamFrac)), fmlensTmp(size(sGamFrac)))
+  smeanp2 = 1.0_wp / sGamFrac**2.0_wp  ! Estimate of p2...
+
+  fmlensTmp = sLenEPulse(:,iZ2_CG) + smeanp2(:)
+  fmlenTmp = maxval(fmlensTmp)
+
+  if (sFieldModelLength(iZ2_CG) <= fmlenTmp + 1.0_wp) then
+
+
+    if (tProcInfo_G%qRoot) print*, '******************************'
+    if (tProcInfo_G%qRoot) print*, ''
+    if (tProcInfo_G%qRoot) print*, 'WARNING - field mesh may not be large &
+                                   &enough in z2 - fixing....'
+
+    sFieldModelLength(iZ2_CG) = fmlenTmp + 10.0_wp  ! Add buffer 10 long for
+                                                    ! extra security...
+
+    if (tProcInfo_G%qRoot) print*, 'Field mesh length in z2 now = ', &
+                                sFieldModelLength(iZ2_CG)
+    if (tProcInfo_G%qRoot) print*, ''
+
+  end if
+
+  deallocate(smeanp2, fmlensTmp)
+
+  
+  dz2 = 4.0_WP * pi * sRho_G / real(nodesperlambda-1_IP,kind=wp)
+
+  iNumNodes(iZ2_CG) = ceiling(sFieldModelLength(iZ2_CG) / dz2) + 1_IP
+
+  if (tProcInfo_G%qRoot) print*, '******************************'
+  if (tProcInfo_G%qRoot) print*, ''
+  if (tProcInfo_G%qRoot) print*, 'number of nodes in z2 --- ', iNumNodes(iZ2_CG)
+
+
+
+end subroutine calcSamples
+
+
+
+
 
 SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
                              sigma, beamCenZ2,gamma_d,eThresh, &

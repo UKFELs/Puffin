@@ -751,7 +751,7 @@ contains
 !  1000 continue
 
 
-      print*, tProcInfo_G%rank, ' set up with bounds of ', fz2, ez2, bz2! , &
+!      print*, tProcInfo_G%rank, ' set up with bounds of ', fz2, ez2, bz2! , &
 
       qPArrOK_G = .true.
 !      'with a buffer length of ', fbuffLen, 'and a total length of ', tllen
