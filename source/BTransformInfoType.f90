@@ -9,6 +9,8 @@ MODULE TransformInfoType
       USE paratype
       
       IMPLICIT NONE
+
+      include 'fftw3-mpi.f03'
 !      
 !-----------------------------------------------------------------
 ! Author - Lawrence Campbell

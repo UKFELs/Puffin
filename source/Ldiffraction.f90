@@ -32,8 +32,8 @@ SUBROUTINE multiplyexp(h,Field,qOK)
 
   REAL(KIND=WP), INTENT(IN) :: h
 
-  COMPLEX(KIND=WP), INTENT(INOUT) :: &
-       Field(0:tTransInfo_G%total_local_size-1)
+  COMPLEX(C_DOUBLE_COMPLEX), pointer, &
+                INTENT(INOUT) :: field(:)
 
   LOGICAL, INTENT(OUT) :: qOK
 
@@ -81,7 +81,7 @@ SUBROUTINE multiplyexp(h,Field,qOK)
 
            ELSE
               
-              IF (qFilter) Field(ind)=CMPLX(0.0_WP,0.0_WP)
+              IF (qFilter) Field(ind) = CMPLX(0.0, 0.0, C_DOUBLE_COMPLEX)
               
            END IF
 
@@ -162,8 +162,8 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
   call Get_time(tr_time_s)
 
 
-  ALLOCATE(sA_local(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1))
-  ALLOCATE(work(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1))
+!  ALLOCATE(sA_local(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1))
+!  ALLOCATE(work(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1))
 
   call Get_time(tr_time_e)
 
@@ -175,9 +175,9 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
   sA_local = 0.0_wp
   ntrh = NX_G * NY_G
 
-  sA_local(0:(tTransInfo_G%loc_nz2 * ntrh) - 1) = &
+  Afftw(0:(tTransInfo_G%loc_nz2 * ntrh) - 1) = &
           CMPLX(sAr(1:tTransInfo_G%loc_nz2 * ntrh), &
-                 sAi(1:tTransInfo_G%loc_nz2 * ntrh), kind=wp)
+                 sAi(1:tTransInfo_G%loc_nz2 * ntrh), C_DOUBLE_COMPLEX)
 
   call Get_time(tr_time_e)
 
@@ -187,18 +187,17 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 
 !  CALL setupParallelFourierField(sA_local, work, qOKL) 
 
-!  CALL Transform(tTransInfo_G%fplan, &
-!       work, &
-!       sA_local, &
-!       qOKL)
+  CALL Transform(tTransInfo_G%fplan, &
+       Afftw, &
+       qOKL)
 
 
 !  call mpi_barrier(tProcInfo_G%comm, error)
 !  print*, size(sA_local), size(sAr), size(sAi), tTransInfo_G%loc_nz2
 
-  CALL fftwnd_f77_mpi(tTransInfo_G%fplan,1,sA_local,&
-                      work,USE_WORK,&
-                      FFTW_NORMAL_ORDER) 
+!  CALL fftwnd_f77_mpi(tTransInfo_G%fplan,1,sA_local,&
+!                      work,USE_WORK,&
+!                      FFTW_NORMAL_ORDER) 
 
 
   call Get_time(tr_time_e)
@@ -214,7 +213,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 
 !    Multiply field by the exp factor to obtain A(kx,ky,kz2,zbar+h)
 
-  CALL MultiplyExp(h,sA_local,qOKL)	
+  CALL MultiplyExp(h,Afftw,qOKL)	
 
  
   call Get_time(tr_time_e)
@@ -226,14 +225,15 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 
 !   Perform the backward fourier transform to obtain A(x,y,z2,zbar+h)
 
-!  CALL Transform(tTransInfo_G%bplan, &
-!       work, &
-!       sA_local, &
-!       qOKL)
+  CALL Transform(tTransInfo_G%bplan, &
+       Afftw, &
+       qOKL)
 
-  CALL fftwnd_f77_mpi(tTransInfo_G%bplan,1,sA_local,&
-                      work,USE_WORK,&
-                      FFTW_NORMAL_ORDER) 
+
+
+!  CALL fftwnd_f77_mpi(tTransInfo_G%bplan,1,sA_local,&
+!                      work,USE_WORK,&
+!                      FFTW_NORMAL_ORDER) 
 
   call Get_time(tr_time_e)
 
@@ -254,7 +254,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 
 !      Scale the field data to normalize transforms
 
-  sA_local = sA_local/ffact
+  Afftw = Afftw/ffact
 
 
 !      Now solve for the absorbing boundary layer
