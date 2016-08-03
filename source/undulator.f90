@@ -232,10 +232,10 @@ contains
  
         if (qDiffrctd) call diffractIM(diffStep * 0.5_wp, &
                          qDiffrctd, qOKL)
-
-        call outer2Inner(ac_rfield_in, ac_ifield_in)
    
      end if
+
+    call outer2Inner(ac_rfield_in, ac_ifield_in)
    
   end if
 
