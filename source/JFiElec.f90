@@ -179,20 +179,20 @@ real(kind=wp) :: dadzRInst, dadzIInst
         lis_GR(4,i) * dadzRInst + sDADzr(p_nodes(i) + nspinDX + 1_ip)   
 
       !$OMP ATOMIC
-      sDADzr(p_nodes(i) + ntrnds_G) =                &
-        lis_GR(5,i) * dadzRInst + sDADzr(p_nodes(i) + ntrnds_G)               
+      sDADzr(p_nodes(i) + ntrndsi_G) =                &
+        lis_GR(5,i) * dadzRInst + sDADzr(p_nodes(i) + ntrndsi_G)               
 
       !$OMP ATOMIC
-      sDADzr(p_nodes(i) + ntrnds_G + 1_ip) =         &
-        lis_GR(6,i) * dadzRInst + sDADzr(p_nodes(i) + ntrnds_G + 1_ip)         
+      sDADzr(p_nodes(i) + ntrndsi_G + 1_ip) =         &
+        lis_GR(6,i) * dadzRInst + sDADzr(p_nodes(i) + ntrndsi_G + 1_ip)         
 
       !$OMP ATOMIC
-      sDADzr(p_nodes(i) + ntrnds_G + nspinDX) =  &
-        lis_GR(7,i) * dadzRInst + sDADzr(p_nodes(i) + ntrnds_G + nspinDX)   
+      sDADzr(p_nodes(i) + ntrndsi_G + nspinDX) =  &
+        lis_GR(7,i) * dadzRInst + sDADzr(p_nodes(i) + ntrndsi_G + nspinDX)   
 
       !$OMP ATOMIC
-      sDADzr(p_nodes(i) + ntrnds_G + nspinDX + 1) = &
-        lis_GR(8,i) * dadzRInst + sDADzr(p_nodes(i) + ntrnds_G + nspinDX + 1)
+      sDADzr(p_nodes(i) + ntrndsi_G + nspinDX + 1) = &
+        lis_GR(8,i) * dadzRInst + sDADzr(p_nodes(i) + ntrndsi_G + nspinDX + 1)
 
 !                   Imaginary part
 
@@ -216,20 +216,20 @@ real(kind=wp) :: dadzRInst, dadzIInst
         lis_GR(4,i) * dadzIInst + sDADzi(p_nodes(i) + nspinDX + 1_ip)    
 
       !$OMP ATOMIC
-      sDADzi(p_nodes(i) + ntrnds_G) =                    & 
-        lis_GR(5,i) * dadzIInst + sDADzi(p_nodes(i) + ntrnds_G)               
+      sDADzi(p_nodes(i) + ntrndsi_G) =                    & 
+        lis_GR(5,i) * dadzIInst + sDADzi(p_nodes(i) + ntrndsi_G)               
 
       !$OMP ATOMIC
-      sDADzi(p_nodes(i) + ntrnds_G + 1_ip) =             & 
-        lis_GR(6,i) * dadzIInst + sDADzi(p_nodes(i) + ntrnds_G + 1_ip)       
+      sDADzi(p_nodes(i) + ntrndsi_G + 1_ip) =             & 
+        lis_GR(6,i) * dadzIInst + sDADzi(p_nodes(i) + ntrndsi_G + 1_ip)       
 
       !$OMP ATOMIC
-      sDADzi(p_nodes(i) + ntrnds_G + nspinDX) =      & 
-        lis_GR(7,i) * dadzIInst + sDADzi(p_nodes(i) + ntrnds_G + nspinDX)  
+      sDADzi(p_nodes(i) + ntrndsi_G + nspinDX) =      & 
+        lis_GR(7,i) * dadzIInst + sDADzi(p_nodes(i) + ntrndsi_G + nspinDX)  
 
       !$OMP ATOMIC
-      sDADzi(p_nodes(i) + ntrnds_G + nspinDX + 1) =  & 
-        lis_GR(8,i) * dadzIInst + sDADzi(p_nodes(i) + ntrnds_G + nspinDX + 1)
+      sDADzi(p_nodes(i) + ntrndsi_G + nspinDX + 1) =  & 
+        lis_GR(8,i) * dadzIInst + sDADzi(p_nodes(i) + ntrndsi_G + nspinDX + 1)
 
     end if
   
