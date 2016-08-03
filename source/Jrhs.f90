@@ -329,7 +329,7 @@ real(kind=wp), intent(in) :: sz
 
 !     Diff between real and imaginary nodes in the reduced system
 
-  retim = NX_G*NY_G*nZ2_G
+  retim = nspinDX*nspinDY*nZ2_G
 
 
   fkb= sFocusfactor_G * kbeta
@@ -350,8 +350,8 @@ real(kind=wp), intent(in) :: sz
 !  halfx = ((ReducedNX_G-1) / 2.0_WP) * sLengthOfElmX_G
 !  halfy = ((ReducedNY_G-1) / 2.0_WP) * sLengthOfElmY_G
 
-  halfx = ((NX_G-1) / 2.0_WP) * sLengthOfElmX_G
-  halfy = ((NY_G-1) / 2.0_WP) * sLengthOfElmY_G
+  halfx = ((nspinDX-1) / 2.0_WP) * sLengthOfElmX_G
+  halfy = ((nspinDY-1) / 2.0_WP) * sLengthOfElmY_G
 
 
 end subroutine rhs_tmsavers
