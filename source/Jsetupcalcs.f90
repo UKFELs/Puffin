@@ -93,6 +93,11 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
     ntrnds_G = NX_G * NY_G
 
+    nspinDX = 31_ip
+    nspinDY = 31_ip 
+
+    ntrndsi_G = nspinDX * nspinDY
+
     IF (NX_G == 1 .AND. NY_G == 1) THEN
     
        iNodesPerElement_G = 2_IP

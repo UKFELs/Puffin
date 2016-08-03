@@ -21,7 +21,9 @@ implicit none
 integer(kind=ip) :: NX_G, NBX_G
 integer(kind=ip) :: NY_G, NBY_G
 integer(kind=ip) :: NZ2_G, NBZ2_G
-integer(kind=ip) :: ntrnds_G
+integer(kind=ip) :: ntrnds_G, ntrndsi_G
+
+integer(kind=ip) :: nspinDX, nspinDY
 
 real(kind=wp)    :: sLengthOfElmX_G 
 real(kind=wp)    :: sLengthOfElmY_G 

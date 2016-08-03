@@ -44,13 +44,13 @@ real(kind=wp) :: locx, locy, locz2, &
       z2_in2 = locz2 / dz2
       z2_in1 = (1.0_wp - z2_in2)
 
-      if (xnode > NX_G) then
+      if (xnode > nspinDX) then
         print*, 'X coord is too large!! with node:', xnode, &
                 ' and pos ', sx(i)
         STOP
       end if
 
-      if (ynode > NY_G) then
+      if (ynode > nspinDY) then
         print*, 'Y coord is too large!! with node:', ynode, &
                 ' and pos ', sy(i)
         STOP
@@ -109,21 +109,21 @@ integer(kind=ip) :: i
 
       sField4ElecReal(i) = lis_GR(1,i) * sAr(p_nodes(i)) + sField4ElecReal(i)
       sField4ElecReal(i) = lis_GR(2,i) * sAr(p_nodes(i) + 1_ip) + sField4ElecReal(i)
-      sField4ElecReal(i) = lis_GR(3,i) * sAr(p_nodes(i) + NX_G) + sField4ElecReal(i)
-      sField4ElecReal(i) = lis_GR(4,i) * sAr(p_nodes(i) + NX_G + 1_ip) + sField4ElecReal(i)
-      sField4ElecReal(i) = lis_GR(5,i) * sAr(p_nodes(i) + ntrnds_G) + sField4ElecReal(i)
-      sField4ElecReal(i) = lis_GR(6,i) * sAr(p_nodes(i) + ntrnds_G + 1_ip) + sField4ElecReal(i)
-      sField4ElecReal(i) = lis_GR(7,i) * sAr(p_nodes(i) + ntrnds_G + NX_G) + sField4ElecReal(i)
-      sField4ElecReal(i) = lis_GR(8,i) * sAr(p_nodes(i) + ntrnds_G + NX_G + 1) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(3,i) * sAr(p_nodes(i) + nspinDX) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(4,i) * sAr(p_nodes(i) + nspinDX + 1_ip) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(5,i) * sAr(p_nodes(i) + ntrndsi_G) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(6,i) * sAr(p_nodes(i) + ntrndsi_G + 1_ip) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(7,i) * sAr(p_nodes(i) + ntrndsi_G + nspinDX) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(8,i) * sAr(p_nodes(i) + ntrndsi_G + nspinDX + 1) + sField4ElecReal(i)
   
       sField4ElecImag(i) = lis_GR(1,i) * sAi(p_nodes(i)) + sField4ElecImag(i)
       sField4ElecImag(i) = lis_GR(2,i) * sAi(p_nodes(i)  + 1_ip) + sField4ElecImag(i)
-      sField4ElecImag(i) = lis_GR(3,i) * sAi(p_nodes(i)  + NX_G) + sField4ElecImag(i)
-      sField4ElecImag(i) = lis_GR(4,i) * sAi(p_nodes(i)  + NX_G + 1_ip) + sField4ElecImag(i)
-      sField4ElecImag(i) = lis_GR(5,i) * sAi(p_nodes(i)  + ntrnds_G) + sField4ElecImag(i)
-      sField4ElecImag(i) = lis_GR(6,i) * sAi(p_nodes(i)  + ntrnds_G + 1_ip) + sField4ElecImag(i)
-      sField4ElecImag(i) = lis_GR(7,i) * sAi(p_nodes(i)  + ntrnds_G + NX_G) + sField4ElecImag(i)
-      sField4ElecImag(i) = lis_GR(8,i) * sAi(p_nodes(i)  + ntrnds_G + NX_G + 1) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(3,i) * sAi(p_nodes(i)  + nspinDX) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(4,i) * sAi(p_nodes(i)  + nspinDX + 1_ip) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(5,i) * sAi(p_nodes(i)  + ntrndsi_G) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(6,i) * sAi(p_nodes(i)  + ntrndsi_G + 1_ip) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(7,i) * sAi(p_nodes(i)  + ntrndsi_G + nspinDX) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(8,i) * sAi(p_nodes(i)  + ntrndsi_G + nspinDX + 1) + sField4ElecImag(i)
 
     end if
   
@@ -171,12 +171,12 @@ real(kind=wp) :: dadzRInst, dadzIInst
         lis_GR(2,i) * dadzRInst + sDADzr(p_nodes(i) + 1_ip)                
 
       !$OMP ATOMIC
-      sDADzr(p_nodes(i) + NX_G) =           &
-        lis_GR(3,i) * dadzRInst + sDADzr(p_nodes(i) + NX_G)          
+      sDADzr(p_nodes(i) + nspinDX) =           &
+        lis_GR(3,i) * dadzRInst + sDADzr(p_nodes(i) + nspinDX)          
 
       !$OMP ATOMIC
-      sDADzr(p_nodes(i) + NX_G + 1_ip) =    &
-        lis_GR(4,i) * dadzRInst + sDADzr(p_nodes(i) + NX_G + 1_ip)   
+      sDADzr(p_nodes(i) + nspinDX + 1_ip) =    &
+        lis_GR(4,i) * dadzRInst + sDADzr(p_nodes(i) + nspinDX + 1_ip)   
 
       !$OMP ATOMIC
       sDADzr(p_nodes(i) + ntrnds_G) =                &
@@ -187,12 +187,12 @@ real(kind=wp) :: dadzRInst, dadzIInst
         lis_GR(6,i) * dadzRInst + sDADzr(p_nodes(i) + ntrnds_G + 1_ip)         
 
       !$OMP ATOMIC
-      sDADzr(p_nodes(i) + ntrnds_G + NX_G) =  &
-        lis_GR(7,i) * dadzRInst + sDADzr(p_nodes(i) + ntrnds_G + NX_G)   
+      sDADzr(p_nodes(i) + ntrnds_G + nspinDX) =  &
+        lis_GR(7,i) * dadzRInst + sDADzr(p_nodes(i) + ntrnds_G + nspinDX)   
 
       !$OMP ATOMIC
-      sDADzr(p_nodes(i) + ntrnds_G + NX_G + 1) = &
-        lis_GR(8,i) * dadzRInst + sDADzr(p_nodes(i) + ntrnds_G + NX_G + 1)
+      sDADzr(p_nodes(i) + ntrnds_G + nspinDX + 1) = &
+        lis_GR(8,i) * dadzRInst + sDADzr(p_nodes(i) + ntrnds_G + nspinDX + 1)
 
 !                   Imaginary part
 
@@ -208,12 +208,12 @@ real(kind=wp) :: dadzRInst, dadzIInst
         lis_GR(2,i) * dadzIInst + sDADzi(p_nodes(i) + 1_ip)           
 
       !$OMP ATOMIC
-      sDADzi(p_nodes(i) + NX_G) =               & 
-        lis_GR(3,i) * dadzIInst + sDADzi(p_nodes(i) + NX_G)           
+      sDADzi(p_nodes(i) + nspinDX) =               & 
+        lis_GR(3,i) * dadzIInst + sDADzi(p_nodes(i) + nspinDX)           
 
       !$OMP ATOMIC
-      sDADzi(p_nodes(i) + NX_G + 1_ip) =        & 
-        lis_GR(4,i) * dadzIInst + sDADzi(p_nodes(i) + NX_G + 1_ip)    
+      sDADzi(p_nodes(i) + nspinDX + 1_ip) =        & 
+        lis_GR(4,i) * dadzIInst + sDADzi(p_nodes(i) + nspinDX + 1_ip)    
 
       !$OMP ATOMIC
       sDADzi(p_nodes(i) + ntrnds_G) =                    & 
@@ -224,12 +224,12 @@ real(kind=wp) :: dadzRInst, dadzIInst
         lis_GR(6,i) * dadzIInst + sDADzi(p_nodes(i) + ntrnds_G + 1_ip)       
 
       !$OMP ATOMIC
-      sDADzi(p_nodes(i) + ntrnds_G + NX_G) =      & 
-        lis_GR(7,i) * dadzIInst + sDADzi(p_nodes(i) + ntrnds_G + NX_G)  
+      sDADzi(p_nodes(i) + ntrnds_G + nspinDX) =      & 
+        lis_GR(7,i) * dadzIInst + sDADzi(p_nodes(i) + ntrnds_G + nspinDX)  
 
       !$OMP ATOMIC
-      sDADzi(p_nodes(i) + ntrnds_G + NX_G + 1) =  & 
-        lis_GR(8,i) * dadzIInst + sDADzi(p_nodes(i) + ntrnds_G + NX_G + 1)
+      sDADzi(p_nodes(i) + ntrnds_G + nspinDX + 1) =  & 
+        lis_GR(8,i) * dadzIInst + sDADzi(p_nodes(i) + ntrnds_G + nspinDX + 1)
 
     end if
   

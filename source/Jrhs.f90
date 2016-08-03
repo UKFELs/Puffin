@@ -127,10 +127,10 @@ contains
 !                              (fz2-1)*ntrnds_G  ! transverse slices before primary node
 
     p_nodes = (floor( (sx+halfx)  / dx)  + 1_IP) + &
-              (floor( (sy+halfy)  / dy) * NX_G )  + &   !  y 'slices' before primary node
-              (NX_G * NY_G * &
+              (floor( (sy+halfy)  / dy) * nspinDX )  + &   !  y 'slices' before primary node
+              (nspinDX * nspinDY * &
                               floor(sz2  / dz2) ) - &
-                              (fz2-1)*ntrnds_G  ! transverse slices before primary node
+                              (fz2-1)*ntrndsi_G  ! transverse slices before primary node
 
 
 !$OMP END WORKSHARE
