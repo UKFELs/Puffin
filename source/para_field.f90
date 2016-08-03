@@ -1951,14 +1951,14 @@ contains
 
 
 
-  subroutine innerToOuter(ac_rfield_in, ac_ifield_in)
+  subroutine inner2Outer(ac_rfield_in, ac_ifield_in)
 
 
     implicit none
 
     real(kind=wp), intent(in) :: ac_rfield_in(:), ac_ifield_in(:)
 
-    integer(kind=ip) :: iz, sst2, sse2
+    integer(kind=ip) :: iz, ssti, ssei, iy, sst, sse
     integer(kind=ip) :: nspinDX, nspinDY, nxout, nyout ! should be made global and calculated
 
     nxout = nx_g - nspindx
@@ -1975,7 +1975,7 @@ contains
 
         sse = sst + nspinDX - 1
 
-        ssti = (iz - (fz2-1)-1)*ntransIn + &
+        ssti = (iz - (fz2-1)-1)*ntrndsi_G + &
                          nspinDX*(iy-1) + 1
         ssei = ssti + nspinDX - 1
 
@@ -1987,7 +1987,7 @@ contains
     end do
 
 
-  end subroutine innerToOuter
+  end subroutine inner2Outer
 
 
 
@@ -2001,7 +2001,7 @@ contains
     real(kind=wp), intent(out) :: ac_rfield_in(:), ac_ifield_in(:)
 
     integer(kind=ip) :: iz, sst, sse, ssti, ssei
-    integer(kind=ip) :: nxout, nyout ! should be made global and calculated
+    integer(kind=ip) :: nxout, nyout, iy ! should be made global and calculated
 
     nxout = nx_g - nspindx
     nyout = ny_g - nspindy
