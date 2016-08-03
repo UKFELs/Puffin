@@ -143,8 +143,8 @@ subroutine rk4par(sZ,h,qD)
 
 
 
-  A_localtr0 = ac_rfield
-  A_localti0 = ac_ifield
+  A_localtr0 = ac_rfield_in
+  A_localti0 = ac_ifield_in
 
 
 !if (count(abs(ac_rfield) > 1.0E2) > 0) print*, 'HELP IM RUBBUSH AT START I habve ', &
