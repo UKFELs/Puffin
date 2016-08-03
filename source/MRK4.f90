@@ -327,7 +327,7 @@ subroutine rk4par(sZ,h,qD)
 
 
 
-    call upd8a(ac_rfield, ac_ifield)
+    call upd8a(ac_rfield_in, ac_ifield_in)
 
   end if
 
