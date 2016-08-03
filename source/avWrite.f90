@@ -407,15 +407,15 @@ contains
     integer(kind=ip) :: xe, ye, i, j
     real(kind=wp), allocatable :: cul(:)
 
-    allocate(cul(size(x)))
+    allocate(cul(size(y)))
 
-    xe = size(x)
+    ye = size(y)
 
-    do i = 1, xe
-      cul(i) = m_trapz(y, fxy(i,:))
+    do i = 1, ye
+      cul(i) = m_trapz(x, fxy(:,i))
     end do
 
-    m_trapz2D = m_trapz(x,cul)
+    m_trapz2D = m_trapz(y,cul)
 
     deallocate(cul)
         
