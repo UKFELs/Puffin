@@ -1959,7 +1959,7 @@ contains
     real(kind=wp), intent(in) :: ac_rfield_in(:), ac_ifield_in(:)
 
     integer(kind=ip) :: iz, ssti, ssei, iy, sst, sse
-    integer(kind=ip) :: nspinDX, nspinDY, nxout, nyout ! should be made global and calculated
+    integer(kind=ip) :: nxout, nyout ! should be made global and calculated
 
     nxout = nx_g - nspindx
     nyout = ny_g - nspindy
