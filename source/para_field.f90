@@ -1961,8 +1961,8 @@ contains
     integer(kind=ip) :: iz, ssti, ssei, iy, sst, sse
     integer(kind=ip) :: nxout, nyout ! should be made global and calculated
 
-    nxout = nx_g - nspindx
-    nyout = ny_g - nspindy
+    nxout = (nx_g - nspindx)/2
+    nyout = (ny_g - nspindy)/2
 
 
     do iz = fz2, ez2
@@ -2003,8 +2003,8 @@ contains
     integer(kind=ip) :: iz, sst, sse, ssti, ssei
     integer(kind=ip) :: nxout, nyout, iy ! should be made global and calculated
 
-    nxout = nx_g - nspindx
-    nyout = ny_g - nspindy
+    nxout = (nx_g - nspindx)/2
+    nyout = (ny_g - nspindy)/2
 
     do iz = fz2, ez2
 
