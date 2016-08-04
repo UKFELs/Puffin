@@ -1951,12 +1951,12 @@ contains
 
 
 
-  subroutine inner2Outer(ac_rfield_in, ac_ifield_in)
+  subroutine inner2Outer(inner_ra, inner_ia)
 
 
     implicit none
 
-    real(kind=wp), intent(in) :: ac_rfield_in(:), ac_ifield_in(:)
+    real(kind=wp), intent(in) :: inner_ra(:), inner_ia(:)
 
     integer(kind=ip) :: iz, ssti, ssei, iy, sst, sse
     integer(kind=ip) :: nxout, nyout ! should be made global and calculated
@@ -1965,7 +1965,7 @@ contains
     nyout = (ny_g - nspindy)/2
 
 
-    do iz = fz2, ez2
+    do iz = fz2, bz2
 
       do iy = 1, nspinDY
 
@@ -1979,8 +1979,8 @@ contains
                          nspinDX*(iy-1) + 1
         ssei = ssti + nspinDX - 1
 
-        ac_rfield(sst:sse) = ac_rfield_in(ssti:ssei)
-        ac_ifield(sst:sse) = ac_ifield_in(ssti:ssei)
+        ac_rfield(sst:sse) = inner_ra(ssti:ssei)
+        ac_ifield(sst:sse) = inner_ia(ssti:ssei)
 
       end do
 
@@ -1993,12 +1993,12 @@ contains
 
 
 
-  subroutine outer2Inner(ac_rfield_in, ac_ifield_in)
+  subroutine outer2Inner(inner_ra, inner_ia)
 
 
     implicit none
 
-    real(kind=wp), intent(out) :: ac_rfield_in(:), ac_ifield_in(:)
+    real(kind=wp), intent(out) :: inner_ra(:), inner_ia(:)
 
     integer(kind=ip) :: iz, sst, sse, ssti, ssei
     integer(kind=ip) :: nxout, nyout, iy ! should be made global and calculated
@@ -2006,7 +2006,7 @@ contains
     nxout = (nx_g - nspindx)/2
     nyout = (ny_g - nspindy)/2
 
-    do iz = fz2, ez2
+    do iz = fz2, bz2
 
       do iy = 1, nspinDY
 
@@ -2020,8 +2020,8 @@ contains
                          nspinDX*(iy-1) + 1
         ssei = ssti + nspinDX - 1
 
-        ac_rfield_in(ssti:ssei) = ac_rfield(sst:sse)
-        ac_ifield_in(ssti:ssei) = ac_ifield(sst:sse)
+        inner_ra(ssti:ssei) = ac_rfield(sst:sse)
+        inner_ia(ssti:ssei) = ac_ifield(sst:sse)
 
       end do
 
