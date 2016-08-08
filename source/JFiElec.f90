@@ -61,7 +61,7 @@ real(kind=wp) :: locx, locy, locz2, &
         qPArrOK_G = .false.
       end if
 
-      if ((ynode >= nspinDY) .or. (ynode < 1) then
+      if ((ynode >= nspinDY) .or. (ynode < 1)) then
         qInnerXYOK_G = .false.
         qPArrOK_G = .false.
       end if
