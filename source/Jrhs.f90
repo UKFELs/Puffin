@@ -152,7 +152,7 @@ contains
   else
 
     call getInterps_3D(sx, sy, sz2)
-    if (qPArrOK_G) then 
+    if ((qPArrOK_G) .and. (qInnerXYOK_G)) then 
       call getFFelecs_3D(sAr, sAi)    
       call getSource_3D(sDADzr, sDADzi, spr, spi, sgam, sEta_G)
     end if

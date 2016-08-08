@@ -2031,8 +2031,70 @@ contains
   end subroutine outer2Inner
 
 
+  subroutine getInNode()
+
+  real(kind=wp) :: sminx, smaxx, sminy, smaxy
+  integer(kind=ip) :: iminx, imaxx, iminy, imaxy, &
+                      inBuf
+
+  integer :: error
+  logical :: qOKL
+
+  inBuf = 3_ip
+
+  smaxx = maxval(sElX_G)
+  sminx = minval(sElX_G)
+
+  smaxy = maxval(sElY_G)
+  sminy = minval(sElY_G)
+
+  imaxx = ceiling(smaxx / sLengthOfElmX_G)
+  iminx = floor(sminx / sLengthOfElmX_G)
+
+  imaxy = ceiling(smaxy / sLengthOfElmY_G)
+  iminy = floor(sminy / sLengthOfElmY_G)
+
+  nspinDX = max(/imaxx,iminx/) + inBuf
+  nspinDY = max(/imaxy,iminy/) + inBuf
+
+  nspinDX = nspinDX * 2
+  nspinDY = nspinDY * 2
+
+  if (mod(nx_g, 2) .ne. mod(nspinDX, 2) ) then
+ 
+    nspinDX =  nspinDX + 1
+
+  end if
+
+  if (mod(ny_g, 2) .ne. mod(nspinDY, 2) ) then
+ 
+    nspinDY =  nspinDY + 1
+
+  end if
 
 
+
+  call mpi_reduce(nspinDX, nspinDX, 1, mpi_integer, &
+                   mpi_max, tProcInfo_G%comm, error)
+
+  call mpi_reduce(nspinDY, nspinDY, 1, mpi_integer, &
+                   mpi_max, tProcInfo_G%comm, error)
+
+  if (nspinDX > nx_g) then
+    print*, 'ERROR, x grid not large enough'
+    call StopCode(qOKL)
+  end if  
+  
+
+  if (nspinDY > ny_g) then
+    print*, 'ERROR, y grid not large enough'
+    call StopCode(qOKL)
+  end if  
+  
+
+  qInnerXYOK_G = .true.
+
+  end subroutine getInNode
 
 
 

@@ -44,16 +44,26 @@ real(kind=wp) :: locx, locy, locz2, &
       z2_in2 = locz2 / dz2
       z2_in1 = (1.0_wp - z2_in2)
 
-      if (xnode > nspinDX) then
-        print*, 'X coord is too large!! with node:', xnode, &
-                ' and pos ', sx(i)
-        STOP
+!      if (xnode > nspinDX) then
+!        print*, 'X coord is too large!! with node:', xnode, &
+!                ' and pos ', sx(i)
+!        STOP
+!      end if
+
+!      if (ynode > nspinDY) then
+!        print*, 'Y coord is too large!! with node:', ynode, &
+!                ' and pos ', sy(i)
+!        STOP
+!      end if
+
+      if ((xnode >= nspinDX) .or. (xnode < 1))then
+        qInnerXYOK_G = .false.
+        qPArrOK_G = .false.
       end if
 
-      if (ynode > nspinDY) then
-        print*, 'Y coord is too large!! with node:', ynode, &
-                ' and pos ', sy(i)
-        STOP
+      if ((ynode >= nspinDY) .or. (ynode < 1) then
+        qInnerXYOK_G = .false.
+        qPArrOK_G = .false.
       end if
 
       if (z2node >= NZ2_G) then

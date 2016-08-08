@@ -160,6 +160,9 @@ contains
           if (tProcInfo_G%qRoot) print*, 'Layout not working'
           if (tProcInfo_G%qRoot) print*, 'Rearranging...'
           call deallact_rk4_arrs()
+          if (.not. qInnerXYOK_G) then
+            call getInNode()
+          end if
           call getLocalFieldIndices(sRedistLen_G)
           call allact_rk4_arrs()
         else 
