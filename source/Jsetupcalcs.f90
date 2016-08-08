@@ -144,6 +144,9 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
       iRedNodesX_G = 1_IP
       iRedNodesY_G = 1_IP
+
+      nspinDX = 1_ip
+      nspinDY = 1_ip
     
     else
 
