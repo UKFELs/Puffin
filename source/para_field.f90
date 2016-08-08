@@ -2054,8 +2054,8 @@ contains
   imaxy = ceiling(smaxy / sLengthOfElmY_G)
   iminy = floor(sminy / sLengthOfElmY_G)
 
-  nspinDX = max(/imaxx,iminx/) + inBuf
-  nspinDY = max(/imaxy,iminy/) + inBuf
+  nspinDX = maxval((/imaxx,iminx/)) + inBuf
+  nspinDY = maxval((/imaxy,iminy/)) + inBuf
 
   nspinDX = nspinDX * 2
   nspinDY = nspinDY * 2
