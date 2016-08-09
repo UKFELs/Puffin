@@ -96,17 +96,17 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 !    nspinDX = 31_ip
 !    nspinDY = 31_ip 
 
-    if ( mod(nx_g, 2) .ne. mod(nspinDX, 2) ) then
- 
-      nspinDX =  nspinDX + 1
-
-    end if
-
-    if ( mod(ny_g, 2) .ne. mod(nspinDY, 2) ) then
- 
-      nspinDY =  nspinDY + 1
-
-    end if
+!    if ( mod(nx_g, 2) .ne. mod(nspinDX, 2) ) then
+! 
+!      nspinDX =  nspinDX + 1
+!
+!    end if
+!
+!    if ( mod(ny_g, 2) .ne. mod(nspinDY, 2) ) then
+! 
+!      nspinDY =  nspinDY + 1
+!
+!    end if
 
 
     qInnerXYOK_G = .true.
