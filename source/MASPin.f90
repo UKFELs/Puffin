@@ -139,11 +139,14 @@ contains
     s_chi_bar_G = s_chi_bar_G / npk_bar_G
 
 
-    call scaleT(sElZ2_G, Lc_G)
-    call scaleX(sElX_G, Lg_G, Lc_G)
-    call scaleX(sElY_G, Lg_G, Lc_G)
-    call scalePX(sElPX_G, sGammaR_G * sElGam_G, saw_G)
-    call scalePX(sElPY_G, sGammaR_G * sElGam_G, saw_G)
+
+    if (.not. qscaled_G) then
+      call scaleT(sElZ2_G, Lc_G)
+      call scaleX(sElX_G, Lg_G, Lc_G)
+      call scaleX(sElY_G, Lg_G, Lc_G)
+      call scalePX(sElPX_G, sGammaR_G * sElGam_G, saw_G)
+      call scalePX(sElPY_G, sGammaR_G * sElGam_G, saw_G)
+    end if
 
 
 
