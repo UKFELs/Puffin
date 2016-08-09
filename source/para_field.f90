@@ -2074,10 +2074,10 @@ contains
 
 
 
-  call mpi_reduce(nspinDX, nspinDX, 1, mpi_integer, &
+  call mpi_allreduce(MPI_IN_PLACE, nspinDX, 1, mpi_integer, &
                    mpi_max, tProcInfo_G%comm, error)
 
-  call mpi_reduce(nspinDY, nspinDY, 1, mpi_integer, &
+  call mpi_allreduce(MPI_IN_PLACE, nspinDY, 1, mpi_integer, &
                    mpi_max, tProcInfo_G%comm, error)
 
   if (nspinDX > nx_g) then
