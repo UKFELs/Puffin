@@ -2092,6 +2092,8 @@ contains
   end if  
   
 
+  ntrndsi_G = nspinDX * nspinDY
+
   qInnerXYOK_G = .true.
 
   end subroutine getInNode

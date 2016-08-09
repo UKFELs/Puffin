@@ -93,8 +93,8 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
     ntrnds_G = NX_G * NY_G
 
-    nspinDX = 31_ip
-    nspinDY = 31_ip 
+!    nspinDX = 31_ip
+!    nspinDY = 31_ip 
 
     if ( mod(nx_g, 2) .ne. mod(nspinDX, 2) ) then
  
@@ -147,6 +147,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
       nspinDX = 1_ip
       nspinDY = 1_ip
+      ntrndsi_G = 1_ip
     
     else
 
@@ -1031,6 +1032,28 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
     IF (iNumberElectrons_G==0) qEmpty=.TRUE. 
 
     if (qSimple) DEALLOCATE(RealE)
+
+
+    if ( (nspinDX<0) .or. (nspinDY<0) ) then
+      if (tProcInfo_G%qRoot) print*, ''
+      if (tProcInfo_G%qRoot) print*, ''
+      if (tProcInfo_G%qRoot) print*, '----------------'
+      if (tProcInfo_G%qRoot) print*, 'Getting inner node set for MPI communication'
+
+      call getInNode()
+
+      if (tProcInfo_G%qRoot) print*, '...'
+      if (tProcInfo_G%qRoot) print*, 'inner nx = ', nspinDX
+      if (tProcInfo_G%qRoot) print*, 'inner ny = ', nspinDY
+      if (tProcInfo_G%qRoot) print*, 'inner ntransnodes = ', ntrndsi_G
+    end if
+
+
+
+
+
+
+
 
 !    Set error flag and exit
 
