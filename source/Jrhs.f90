@@ -127,10 +127,10 @@ contains
 !                              (fz2-1)*ntrnds_G  ! transverse slices before primary node
 
     p_nodes = (floor( (sx+halfx)  / dx)  + 1_IP) + &
-              (floor( (sy+halfy)  / dy) * NX_G )  + &   !  y 'slices' before primary node
-              (NX_G * NY_G * &
+              (floor( (sy+halfy)  / dy) * nspinDX )  + &   !  y 'slices' before primary node
+              (nspinDX * nspinDY * &
                               floor(sz2  / dz2) ) - &
-                              (fz2-1)*ntrnds_G  ! transverse slices before primary node
+                              (fz2-1)*ntrndsi_G  ! transverse slices before primary node
 
 
 !$OMP END WORKSHARE
@@ -152,7 +152,7 @@ contains
   else
 
     call getInterps_3D(sx, sy, sz2)
-    if (qPArrOK_G) then 
+    if ((qPArrOK_G) .and. (qInnerXYOK_G)) then 
       call getFFelecs_3D(sAr, sAi)    
       call getSource_3D(sDADzr, sDADzi, spr, spi, sgam, sEta_G)
     end if
@@ -329,7 +329,7 @@ real(kind=wp), intent(in) :: sz
 
 !     Diff between real and imaginary nodes in the reduced system
 
-  retim = NX_G*NY_G*nZ2_G
+  retim = nspinDX*nspinDY*nZ2_G
 
 
   fkb= sFocusfactor_G * kbeta
@@ -350,8 +350,8 @@ real(kind=wp), intent(in) :: sz
 !  halfx = ((ReducedNX_G-1) / 2.0_WP) * sLengthOfElmX_G
 !  halfy = ((ReducedNY_G-1) / 2.0_WP) * sLengthOfElmY_G
 
-  halfx = ((NX_G-1) / 2.0_WP) * sLengthOfElmX_G
-  halfy = ((NY_G-1) / 2.0_WP) * sLengthOfElmY_G
+  halfx = ((nspinDX-1) / 2.0_WP) * sLengthOfElmX_G
+  halfy = ((nspinDY-1) / 2.0_WP) * sLengthOfElmY_G
 
 
 end subroutine rhs_tmsavers
