@@ -2042,11 +2042,11 @@ contains
 
   inBuf = 3_ip
 
-  smaxx = maxval(sElX_G)
-  sminx = minval(sElX_G)
+  smaxx = abs(maxval(sElX_G))
+  sminx = abs(minval(sElX_G))
 
-  smaxy = maxval(sElY_G)
-  sminy = minval(sElY_G)
+  smaxy = abs(maxval(sElY_G))
+  sminy = abs(minval(sElY_G))
 
   imaxx = ceiling(smaxx / sLengthOfElmX_G)
   iminx = floor(sminx / sLengthOfElmX_G)
@@ -2082,12 +2082,14 @@ contains
 
   if (nspinDX > nx_g) then
     print*, 'ERROR, x grid not large enough'
+    print*, 'nspinDX = ', nspinDX
     call StopCode(qOKL)
   end if  
   
 
   if (nspinDY > ny_g) then
     print*, 'ERROR, y grid not large enough'
+    print*, 'nspinDY = ', nspinDY
     call StopCode(qOKL)
   end if  
   
