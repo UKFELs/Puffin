@@ -21,7 +21,9 @@ implicit none
 integer(kind=ip) :: NX_G, NBX_G
 integer(kind=ip) :: NY_G, NBY_G
 integer(kind=ip) :: NZ2_G, NBZ2_G
-integer(kind=ip) :: ntrnds_G
+integer(kind=ip) :: ntrnds_G, ntrndsi_G
+
+integer(kind=ip) :: nspinDX, nspinDY
 
 real(kind=wp)    :: sLengthOfElmX_G 
 real(kind=wp)    :: sLengthOfElmY_G 
@@ -29,8 +31,8 @@ real(kind=wp)    :: sLengthOfElmZ2_G
 
 
 
-integer(kind=ip) :: ReducedNX_G
-integer(kind=ip) :: ReducedNY_G
+integer(kind=ip) :: iRedNodesX_G
+integer(kind=ip) :: iRedNodesY_G
 integer(kind=ip) :: outnodex_G,outnodey_G
 
 integer(kind=ip) :: iNodesPerElement_G
@@ -69,7 +71,7 @@ logical :: qFMesh_G
 
 integer(kind=ip) :: nseqparts_G
 logical :: qEquiXY_G
-
+logical :: qFixCharge_G
 
 
 integer(kind=ip) :: npts_I_G    !  Specifying mesh 4 current calculation
@@ -156,7 +158,6 @@ real(kind=wp), allocatable     :: dadz_w(:)
 
 
 
-real(kind=wp)    :: sRho_save_G,sAw_save_G
 real(kind=wp)    :: sRho_G,sAw_G,sGammaR_G
 real(kind=wp)    :: sEta_G,sKBeta_G, sKappa_G
 real(kind=wp)    :: sFocusfactor_G
@@ -293,18 +294,6 @@ character(32_ip) :: zFileName_G, zBFile_G, zSFile_G
 
 integer(kind=ip), allocatable :: frecvs(:), fdispls(:)
 
-! ...for the full (or 'large') field array, when spread as 
-! evenly as possible across processes...
-
-integer(kind=ip), allocatable :: lrecvs(:), ldispls(:)
-
-! ...and for the reduced or active field nodes, split 
-! evenly across processes.
-
-integer(kind=ip), allocatable :: mrecvs(:), mdispls(:)
-
-
-
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Flags
@@ -343,6 +332,9 @@ logical   ::  qOneD_G
 
 logical   ::  qPArrOK_G
 
+logical   ::  qInnerXYOK_G
+
+logical   ::  qscaled_G
 
 
 

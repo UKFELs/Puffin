@@ -46,6 +46,7 @@ fr = 1.0
 qRndEj_G = .true.
 sSigEj_G = 0.1
 qMatched_A = .false.
+qFixCharge=.true.
 /
 
 

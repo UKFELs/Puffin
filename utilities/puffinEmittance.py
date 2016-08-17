@@ -2,25 +2,41 @@
 #@ifh input file handle
 import numpy,sys,tables,re
 c=2.998e8
+
+def emittance2D(x,px,w):
+  sx=numpy.sum(x)
+  spx=numpy.sum(pdata[:,3])
+  sx2=numpy.sum(numpy.square(pdata[:,0]))
+  spx2=numpy.sum(numpy.square(pdata[:,3]))
+
+
+if __main__():
+
 ifn=sys.argv[1]
-print "reading in "+str(ifn)
-ifh=open(ifn,'r')
-inDataAsText=ifh.read()
+if ifn.split('.')[-1]=="h5":
+  tables.open_file(ifn)
+  pdata=
+else:
+  print "assuming text file"
+  print "reading in "+str(ifn)
+  ifh=open(ifn,'r')
+  inDataAsText=ifh.read()
 #numPtcls=inDataAsText.count('\n')
-ptclStrings=inDataAsText.split('\n')
-pdata=numpy.zeros((len(ptclStrings),6))
-failIndices=[]
-for ptclIndex in range(0,len(ptclStrings)):
-  try:
-    pdata[ptclIndex,:]=numpy.array((re.split("\s+",ptclStrings[ptclIndex])[0:6])).astype(numpy.float)    
-  except:
-    print "Problem allocating data to array, expect due to lack of data in row"
-    failIndices.append(ptclIndex)
-  if ptclIndex%1000==0:
-    print ptclIndex
+  ptclStrings=inDataAsText.split('\n')
+  pdata=numpy.zeros((len(ptclStrings),6))
+  failIndices=[]
+  for ptclIndex in range(0,len(ptclStrings)):
+    try:
+      pdata[ptclIndex,:]=numpy.array((re.split("\s+",ptclStrings[ptclIndex])[0:6])).astype(numpy.float)    
+    except:
+      print "Problem allocating data to array, expect due to lack of data in row"
+      failIndices.append(ptclIndex)
+    if ptclIndex%1000==0:
+      print ptclIndex
 # HACK! - get rid of just last index
-print "failing at indices: "+str(failIndices)
-pdata=pdata[0:-1]
+  print "failing at indices: "+str(failIndices)
+  pdata=pdata[0:-1]
+
 #for fixed weight particles oriented in x
 sx=numpy.sum(pdata[:,0])
 sy=numpy.sum(pdata[:,1])

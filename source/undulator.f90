@@ -15,10 +15,9 @@ module undulator
 !  use stiffness
 
 use FFTW_Constants
-use transforms
+use pdiff
 use sddsPuffin
 use lattice
-use Stiffness
 use RK4int
 use dumpFiles
 use dummyf
@@ -75,12 +74,12 @@ contains
 !     Need to match into undulator
 
   call mpi_barrier(tProcInfo_G%comm, error)
-  print*, 'init undulator...'
+  if (tProcInfo_G%qRoot) print*, 'init undulator...'
 
   call initUndulator(iUnd_cr, sZ, szl)
 
   call mpi_barrier(tProcInfo_G%comm, error)
-  print*, 'init beam...'
+  if (tProcInfo_G%qRoot) print*, 'init beam...'
 
   if (.not. qUndEnds_G) call matchIn(sZ)
 
@@ -101,7 +100,7 @@ contains
 
 
   call mpi_barrier(tProcInfo_G%comm, error)
-  print*, 'redisitng field...'
+  if (tProcInfo_G%qRoot) print*, 'redisting field...'
 
   call getLocalFieldIndices(sRedistLen_G*2.0_wp)
 
@@ -127,8 +126,7 @@ contains
 
   if (qDiffraction_G) then
   
-    call diffractIM(local_rows, &
-                    diffStep*0.5_WP, frecvs, fdispls, lrecvs, ldispls, &
+    call diffractIM(diffStep*0.5_WP, &
                     qDiffrctd, qOKL)
   
     nextDiff = nextDiff + diffStep
@@ -137,7 +135,7 @@ contains
 
 
   call mpi_barrier(tProcInfo_G%comm, error)
-  print*, 'alloc arrs...'
+  if (tProcInfo_G%qRoot) print*, 'alloc arrs...'
 
   call allact_rk4_arrs()
 
@@ -156,12 +154,15 @@ contains
 
       igoes = 1_ip  
       do 
-        call rk4par(sZl,sStepSize,mrecvs,mdispls,qDiffrctd)
+        call rk4par(sZl,sStepSize,qDiffrctd)
         if (igoes>3_ip) exit
         if (.not. qPArrOK_G) then
           if (tProcInfo_G%qRoot) print*, 'Layout not working'
           if (tProcInfo_G%qRoot) print*, 'Rearranging...'
           call deallact_rk4_arrs()
+          if (.not. qInnerXYOK_G) then
+            call getInNode()
+          end if
           call getLocalFieldIndices(sRedistLen_G)
           call allact_rk4_arrs()
         else 
@@ -190,21 +191,23 @@ contains
       if ((sZ>(nextDiff-sStepsize/100.0_WP)) .or. (iStep == nSteps))  then
 
 !        call deallact_rk4_arrs()
+
+        call inner2Outer(ac_rfield_in, ac_ifield_in)
   
         if ((iStep == nSteps) .or. &
              qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps) ) then
     
-          call diffractIM(local_rows, &
-                          diffStep * 0.5_wp, frecvs, fdispls, lrecvs, ldispls, &
+          call diffractIM(diffStep * 0.5_wp, &
                           qDiffrctd, qOKL)
   
         else
     
-          call diffractIM(local_rows, &
-                          diffStep, frecvs, fdispls, lrecvs, ldispls, &
+          call diffractIM(diffStep, &
                           qDiffrctd, qOKL)
     
         end if
+
+        call outer2Inner(ac_rfield_in, ac_ifield_in)
   
         nextDiff = nextDiff + diffStep
     
@@ -217,9 +220,10 @@ contains
   
   if ( qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps) ) then
 
+    call inner2Outer(ac_rfield_in, ac_ifield_in)
+
     call writeIM(sZ, &
                  zDataFileName, iStep, iCsteps, iWriteNthSteps, &
-                 lrecvs, ldispls, &
                  iIntWriteNthSteps, nSteps, qOKL)
 
 
@@ -229,11 +233,12 @@ contains
  !             ...the diffraction only diffracts a half step if data is going
  !             to be written (to match up the split-step data)
  
-        if (qDiffrctd) call diffractIM(local_rows, &
-                         diffStep * 0.5_wp, frecvs, fdispls, lrecvs, ldispls, &
+        if (qDiffrctd) call diffractIM(diffStep * 0.5_wp, &
                          qDiffrctd, qOKL)
    
      end if
+
+    call outer2Inner(ac_rfield_in, ac_ifield_in)
    
   end if
 

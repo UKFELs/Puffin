@@ -10,7 +10,6 @@ use FFTW_Constants
 use transforms
 use sddsPuffin
 use lattice
-use Stiffness
 use Setup
 use undulator
 

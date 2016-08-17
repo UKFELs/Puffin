@@ -68,7 +68,6 @@
 ! suy                         Normalised magnitude of wiggler magnetic field y-vector: H=1 is helical, H=0 is planar
 ! saw                         peak undulator parameter
 ! sgamma_r                    Resonant, or reference, beam energy
-! sFocusfactor               Focussing factor f, from the betatron wavenumber (root(2) for helical, 1 for planar)
 ! lambda_w                   Undulator period
 ! Dfact                      Dispersive strength factor for chicane
 ! zundType                    Undulator type - 'curved' , 'planepole' , else 1D (no off axis variation of aw)
@@ -115,7 +114,6 @@
  suy                    = 0.0
  saw                    = 2.0
  sgamma_r               = 100.0
- sFocusfactor           = 1.41213562373095
  lambda_w               = 0.07
  lattFile               = ''
  stepsPerPeriod         = 30

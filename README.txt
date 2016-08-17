@@ -15,13 +15,15 @@ The only external package now required is FFTW v2.1.5.
 The sub-directories include:
 
 
+  doc/       -  Some documentation - see 'puffin_notes.pdf'
+
+  inputs/    -  Some example input files.
+
+  scripts/   -  Example job submission scripts
+
   source/    -  This contains the main source code written in C 
                 and Fortran 90.
-
-  compile/   -  Some example compilation and linking scripts.
-  
-  inputs/    -  Some example input files.
-  
+    
   utilities/ -  Python scripts to manipulate output files
 
 
@@ -62,7 +64,7 @@ the number of undulator modules. Each line of the lattice file
 contains 4 numbers describing a complete undulator-chicane pair, 
 in the following format:
 
-Nw   Nc  aw_fact   stepsize
+Nw   Nc  aw_fact   nperlam  taper
 
 where 
 
@@ -76,14 +78,20 @@ aw_f          is the undulator parameter expressed as a fraction
               given in the input file, then the undulator 
               parameter for this module is aw = aw_f * aw_0.
 
-stepsize      is the stepsize used for the numerical integration
-              in this undulator section. The mesh describing the
-              radiation field does not alter as the undulator
-              tuning changes, but a larger aw wil cause the beam
-              to propagate more quickly in the radiation frame
-              i.e. the beam slips more quickly behind the radiation
-              field. This option will be necessary to stop the beam
-              skipping over nodes, see e.g. the Courant number.
+nperlam       is the number of integration steps per undulator 
+              period to be used in this undulator section. The 
+              mesh describing the radiation field does not alter
+              as the undulator tuning changes, but a larger aw 
+              will cause the beam to propagate more quickly in 
+              the radiation frame i.e. the beam slips more quickly
+              behind the radiation field. This option will be 
+              necessary to stop the beam skipping over nodes, 
+              see e.g. the Courant number.
+
+taper         d/dz of aw_f across this undulator module. This is 
+              a single number - i.e. only linear tapers may be
+              specified.
+
 
 Also note that if aw is decreased in an undulator module you should
 ensure the radiation mesh is fine enough to model the higher frequency
@@ -93,13 +101,6 @@ The strength of the dispersive chicanes can be given in the 'Dfact'
 variable in the main input file. Currently, only this one strength 
 factor may be specified which will be shared by all chicanes.
  
-An undulator taper can also be added in the main input file.
-Presently, if a lattice file is used, this taper will be applied
-to ALL undulator modules, and the taper will be applied to the
-undulator parameter of each module. Only a linear taper may be
-supplied for now.
-
-
 
 COMPILATION ON HPC MACHINES
 ===========================

@@ -571,10 +571,10 @@ contains
 
     if (qUnique) then
 
-      allocate(tmp_A(maxval(lrank_v)*ntrnds_G))
+      allocate(tmp_A(maxval(lrank_v)*ntrndsi_G))
 
     else
-      allocate(tmp_A(tllen*ntrnds_G))
+      allocate(tmp_A(tllen*ntrndsi_G))
     end if
 
 
@@ -751,7 +751,7 @@ contains
 !  1000 continue
 
 
-      print*, tProcInfo_G%rank, ' set up with bounds of ', fz2, ez2, bz2! , &
+!      print*, tProcInfo_G%rank, ' set up with bounds of ', fz2, ez2, bz2! , &
 
       qPArrOK_G = .true.
 !      'with a buffer length of ', fbuffLen, 'and a total length of ', tllen
@@ -1603,9 +1603,9 @@ contains
 !                          'to', (sse-(fz2-1))*ntrnds_G , 'to rank', tProcInfo_G%rank+ij, &
 !                          ' and size dadz_r = ', size(dadz_r), ' and si =  ', si
 
-            sst = (sst - (fz2-1)-1)*ntrnds_G + 1
-            sse = (sse-(fz2-1))*ntrnds_G
-            si = si*ntrnds_G
+            sst = (sst - (fz2-1)-1)*ntrndsi_G + 1
+            sse = (sse-(fz2-1))*ntrndsi_G
+            si = si*ntrndsi_G
 
 
             call mpi_issend(dadz_r(sst:sse), &
@@ -1621,7 +1621,7 @@ contains
   
     !          call mpi_barrier(tProcInfo_G%comm, error)
      !         print*, tProcInfo_G%rank, 'here, recving nodes :', 1, &
-      !                    'to', lrank_v(1)*ntrnds_G , 'from rank', lrfromwhere(1)
+      !                    'to', lrank_v(1)*ntrndsi_G , 'from rank', lrfromwhere(1)
 
 
         if (tProcInfo_G%rank /= 0) then
@@ -1632,16 +1632,16 @@ contains
  
 
 !              print*, tProcInfo_G%rank, 'here, recving nodes :', 1, &
-!                          'to', lrank_v(ij)*ntrnds_G , 'from rank', lrfromwhere(ij), &
+!                          'to', lrank_v(ij)*ntrndsi_G , 'from rank', lrfromwhere(ij), &
 !                          ' and size dadz_r = ', size(dadz_r)
 
-            CALL mpi_recv( tmp_A(1:lrank_v(ij)*ntrnds_G), &
-                   lrank_v(ij)*ntrnds_G, &
+            CALL mpi_recv( tmp_A(1:lrank_v(ij)*ntrndsi_G), &
+                   lrank_v(ij)*ntrndsi_G, &
                    mpi_double_precision, &
             	     lrfromwhere(ij), 0, tProcInfo_G%comm, statr, error )  
   
-            dadz_r(1:lrank_v(ij)*ntrnds_G) = dadz_r(1:lrank_v(ij)*ntrnds_G) &
-                                           + tmp_A(1:lrank_v(ij)*ntrnds_G)
+            dadz_r(1:lrank_v(ij)*ntrndsi_G) = dadz_r(1:lrank_v(ij)*ntrndsi_G) &
+                                           + tmp_A(1:lrank_v(ij)*ntrndsi_G)
   
           end do
   
@@ -1669,9 +1669,9 @@ contains
             sse = rrank_v(ij, 3)
   
 
-            sst = (sst - (fz2-1)-1)*ntrnds_G + 1
-            sse = (sse-(fz2-1))*ntrnds_G
-            si = si*ntrnds_G
+            sst = (sst - (fz2-1)-1)*ntrndsi_G + 1
+            sse = (sse-(fz2-1))*ntrndsi_G
+            si = si*ntrndsi_G
 
   !          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
   !                    mpi_double_precision, &
@@ -1695,13 +1695,13 @@ contains
   
           do ij = 1, nrecvs_bf
   
-            CALL mpi_recv( tmp_A(1:lrank_v(ij)*ntrnds_G), &
-                   lrank_v(ij)*ntrnds_G, &
+            CALL mpi_recv( tmp_A(1:lrank_v(ij)*ntrndsi_G), &
+                   lrank_v(ij)*ntrndsi_G, &
                    mpi_double_precision, &
                    lrfromwhere(ij), 0, tProcInfo_G%comm, statr, error )  
   
-            dadz_i(1:lrank_v(ij)*ntrnds_G) = dadz_i(1:lrank_v(ij)*ntrnds_G) &
-                                           + tmp_A(1:lrank_v(ij)*ntrnds_G)
+            dadz_i(1:lrank_v(ij)*ntrndsi_G) = dadz_i(1:lrank_v(ij)*ntrndsi_G) &
+                                           + tmp_A(1:lrank_v(ij)*ntrndsi_G)
   
           end do
   
@@ -1716,7 +1716,7 @@ contains
       else
 
 
-        call mpi_reduce(dadz_r, tmp_A, mainlen*ntrnds_G, &
+        call mpi_reduce(dadz_r, tmp_A, mainlen*ntrndsi_G, &
                         mpi_double_precision, &
                         mpi_sum, 0, tProcInfo_G%comm, &
                         error)
@@ -1724,7 +1724,7 @@ contains
         dadz_r = tmp_A
         
 
-        call mpi_reduce(dadz_i, tmp_A, mainlen*ntrnds_G, &
+        call mpi_reduce(dadz_i, tmp_A, mainlen*ntrndsi_G, &
                         mpi_double_precision, &
                         mpi_sum, 0, tProcInfo_G%comm, &
                         error)
@@ -1771,8 +1771,8 @@ contains
   
           do ij = 1, nrecvs_bf
   
-            CALL mpi_issend( ac_rl(1:lrank_v(ij)*ntrnds_G), &
-                   lrank_v(ij)*ntrnds_G, &
+            CALL mpi_issend( ac_rl(1:lrank_v(ij)*ntrndsi_G), &
+                   lrank_v(ij)*ntrndsi_G, &
                    mpi_double_precision, &
                    lrfromwhere(ij), 0, tProcInfo_G%comm, req, error )  
   
@@ -1797,9 +1797,9 @@ contains
             sst = rrank_v(ij, 2)
             sse = rrank_v(ij, 3)
 
-            sst = (sst - (fz2-1)-1)*ntrnds_G + 1
-            sse = (sse-(fz2-1))*ntrnds_G
-            si = si*ntrnds_G
+            sst = (sst - (fz2-1)-1)*ntrndsi_G + 1
+            sse = (sse-(fz2-1))*ntrndsi_G
+            si = si*ntrndsi_G
 
   !          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
   !                    mpi_double_precision, &
@@ -1825,8 +1825,8 @@ contains
   
           do ij = 1, nrecvs_bf
   
-            CALL mpi_issend( ac_il(1:lrank_v(ij)*ntrnds_G), &
-                   lrank_v(ij)*ntrnds_G, &
+            CALL mpi_issend( ac_il(1:lrank_v(ij)*ntrndsi_G), &
+                   lrank_v(ij)*ntrndsi_G, &
                    mpi_double_precision, &
                    lrfromwhere(ij), 0, tProcInfo_G%comm, req, error )  
   
@@ -1851,9 +1851,9 @@ contains
             sst = rrank_v(ij, 2)
             sse = rrank_v(ij, 3)
 
-            sst = (sst - (fz2-1)-1)*ntrnds_G + 1
-            sse = (sse-(fz2-1))*ntrnds_G
-            si = si*ntrnds_G
+            sst = (sst - (fz2-1)-1)*ntrndsi_G + 1
+            sse = (sse-(fz2-1))*ntrndsi_G
+            si = si*ntrndsi_G
   
   !          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
   !                    mpi_double_precision, &
@@ -1878,11 +1878,11 @@ contains
       else
 
 
-        call MPI_Bcast(ac_rl, tllen*ntrnds_G, &
+        call MPI_Bcast(ac_rl, tllen*ntrndsi_G, &
                        mpi_double_precision, 0, & 
                        tProcInfo_G%comm, error)
     
-        call MPI_Bcast(ac_il, tllen*ntrnds_G, &
+        call MPI_Bcast(ac_il, tllen*ntrndsi_G, &
                        mpi_double_precision, 0, & 
                        tProcInfo_G%comm, error)
 
@@ -1947,6 +1947,158 @@ contains
     end subroutine upd8a
 
 
+
+
+
+
+  subroutine inner2Outer(inner_ra, inner_ia)
+
+
+    implicit none
+
+    real(kind=wp), intent(in) :: inner_ra(:), inner_ia(:)
+
+    integer(kind=ip) :: iz, ssti, ssei, iy, sst, sse
+    integer(kind=ip) :: nxout, nyout ! should be made global and calculated
+
+    nxout = (nx_g - nspindx)/2
+    nyout = (ny_g - nspindy)/2
+
+
+    do iz = fz2, bz2
+
+      do iy = 1, nspinDY
+
+        sst = (iz - (fz2-1)-1)*ntrnds_G + &
+                         nx_G*(nyout+(iy-1)) + &
+                         nxout + 1
+
+        sse = sst + nspinDX - 1
+
+        ssti = (iz - (fz2-1)-1)*ntrndsi_G + &
+                         nspinDX*(iy-1) + 1
+        ssei = ssti + nspinDX - 1
+
+        ac_rfield(sst:sse) = inner_ra(ssti:ssei)
+        ac_ifield(sst:sse) = inner_ia(ssti:ssei)
+
+      end do
+
+    end do
+
+
+  end subroutine inner2Outer
+
+
+
+
+
+  subroutine outer2Inner(inner_ra, inner_ia)
+
+
+    implicit none
+
+    real(kind=wp), intent(out) :: inner_ra(:), inner_ia(:)
+
+    integer(kind=ip) :: iz, sst, sse, ssti, ssei
+    integer(kind=ip) :: nxout, nyout, iy ! should be made global and calculated
+
+    nxout = (nx_g - nspindx)/2
+    nyout = (ny_g - nspindy)/2
+
+    do iz = fz2, bz2
+
+      do iy = 1, nspinDY
+
+        sst = (iz - (fz2-1)-1)*ntrnds_G + &
+                         nx_G*(nyout+(iy-1)) + &
+                         nxout + 1
+
+        sse = sst + nspinDX - 1
+
+        ssti = (iz - (fz2-1)-1)*ntrndsi_G + &
+                         nspinDX*(iy-1) + 1
+        ssei = ssti + nspinDX - 1
+
+        inner_ra(ssti:ssei) = ac_rfield(sst:sse)
+        inner_ia(ssti:ssei) = ac_ifield(sst:sse)
+
+      end do
+
+    end do
+
+
+  end subroutine outer2Inner
+
+
+  subroutine getInNode()
+
+  real(kind=wp) :: sminx, smaxx, sminy, smaxy
+  integer(kind=ip) :: iminx, imaxx, iminy, imaxy, &
+                      inBuf
+
+  integer :: error
+  logical :: qOKL
+
+  inBuf = 3_ip
+
+  smaxx = abs(maxval(sElX_G))
+  sminx = abs(minval(sElX_G))
+
+  smaxy = abs(maxval(sElY_G))
+  sminy = abs(minval(sElY_G))
+
+  imaxx = ceiling(smaxx / sLengthOfElmX_G)
+  iminx = floor(sminx / sLengthOfElmX_G)
+
+  imaxy = ceiling(smaxy / sLengthOfElmY_G)
+  iminy = floor(sminy / sLengthOfElmY_G)
+
+  nspinDX = maxval((/imaxx,iminx/)) + inBuf
+  nspinDY = maxval((/imaxy,iminy/)) + inBuf
+
+  nspinDX = nspinDX * 2
+  nspinDY = nspinDY * 2
+
+  if (mod(nx_g, 2) .ne. mod(nspinDX, 2) ) then
+ 
+    nspinDX =  nspinDX + 1
+
+  end if
+
+  if (mod(ny_g, 2) .ne. mod(nspinDY, 2) ) then
+ 
+    nspinDY =  nspinDY + 1
+
+  end if
+
+
+
+  call mpi_allreduce(MPI_IN_PLACE, nspinDX, 1, mpi_integer, &
+                   mpi_max, tProcInfo_G%comm, error)
+
+  call mpi_allreduce(MPI_IN_PLACE, nspinDY, 1, mpi_integer, &
+                   mpi_max, tProcInfo_G%comm, error)
+
+  if (nspinDX > nx_g) then
+    print*, 'ERROR, x grid not large enough'
+    print*, 'nspinDX = ', nspinDX
+    call StopCode(qOKL)
+  end if  
+  
+
+  if (nspinDY > ny_g) then
+    print*, 'ERROR, y grid not large enough'
+    print*, 'nspinDY = ', nspinDY
+    call StopCode(qOKL)
+  end if  
+  
+
+  ntrndsi_G = nspinDX * nspinDY
+
+  qInnerXYOK_G = .true.
+
+  end subroutine getInNode
 
 
 

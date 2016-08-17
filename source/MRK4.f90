@@ -25,6 +25,8 @@ implicit none
   REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localtr2, A_localti2
   REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localtr3, A_localti3
 
+  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: ac_rfield_in, ac_ifield_in
+
   REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dxdx, dydx, dz2dx, dpxdx, dpydx, dpz2dx
 
 
@@ -37,7 +39,7 @@ implicit none
 
 contains
 
-subroutine rk4par(sZ,h,recvs,displs,qD)
+subroutine rk4par(sZ,h,qD)
 
   implicit none
 !
@@ -58,7 +60,6 @@ subroutine rk4par(sZ,h,recvs,displs,qD)
 !  REAL(KIND=WP),  DIMENSION(:), INTENT(INOUT) :: sA, A_local
   REAL(KIND=WP),  INTENT(IN)                  :: sZ
   REAL(KIND=WP),                INTENT(IN)  :: h
-  INTEGER(KIND=IP),DIMENSION(:),INTENT(IN)  :: recvs,displs
   LOGICAL, INTENT(INOUT) :: qD
 
 !               LOCAL ARGS
@@ -142,8 +143,8 @@ subroutine rk4par(sZ,h,recvs,displs,qD)
 
 
 
-  A_localtr0 = ac_rfield
-  A_localti0 = ac_ifield
+  A_localtr0 = ac_rfield_in
+  A_localti0 = ac_ifield_in
 
 
 !if (count(abs(ac_rfield) > 1.0E2) > 0) print*, 'HELP IM RUBBUSH AT START I habve ', &
@@ -312,8 +313,8 @@ subroutine rk4par(sZ,h,recvs,displs,qD)
     sElPY_G   = sElPY_G  + h6 * ( dpydx  + dpyt  + 2.0_WP * dpym )
     sElGam_G  = sElGam_G + h6 * ( dpz2dx + dpz2t + 2.0_WP * dpz2m)
 
-    ac_rfield = ac_rfield + h6 * (dadz_r0 + dadz_r1 + 2.0_WP * dadz_r2)
-    ac_ifield = ac_ifield + h6 * (dadz_i0 + dadz_i1 + 2.0_WP * dadz_i2)
+    ac_rfield_in = ac_rfield_in + h6 * (dadz_r0 + dadz_r1 + 2.0_WP * dadz_r2)
+    ac_ifield_in = ac_ifield_in + h6 * (dadz_i0 + dadz_i1 + 2.0_WP * dadz_i2)
 
 !  if (count(abs(dadz_r0) > 0.0_wp) <= 0) print*, 'HELP IM TOO RUBBUSH'
 
@@ -326,7 +327,7 @@ subroutine rk4par(sZ,h,recvs,displs,qD)
 
 
 
-    call upd8a(ac_rfield, ac_ifield)
+    call upd8a(ac_rfield_in, ac_ifield_in)
 
   end if
 
@@ -376,7 +377,7 @@ subroutine allact_rk4_arrs()
 
   integer(kind=ip) :: tllen43D
 
-  tllen43D = tllen * ntrnds_G
+  tllen43D = tllen * ntrndsi_G
 
   allocate(DxDx(iNumberElectrons_G))    
   allocate(DyDx(iNumberElectrons_G))    
@@ -395,6 +396,8 @@ subroutine allact_rk4_arrs()
   allocate(A_localtr2(tllen43D), A_localti2(tllen43D))
   allocate(A_localtr3(tllen43D), A_localti3(tllen43D))
 
+  allocate(ac_rfield_in(tllen43D), ac_ifield_in(tllen43D))
+
   allocate(dxm(iNumberElectrons_G), &
     dxt(iNumberElectrons_G), xt(iNumberElectrons_G))
   allocate(dym(iNumberElectrons_G), &
@@ -410,12 +413,20 @@ subroutine allact_rk4_arrs()
 
   allocate(dadz_w(iNumberElectrons_G))
 
+  call outer2Inner(ac_rfield_in, ac_ifield_in)
+
+  qInnerXYOK_G = .true.
+
 end subroutine allact_rk4_arrs
 
 
 
 
 subroutine deallact_rk4_arrs()
+
+  call inner2Outer(ac_rfield_in, ac_ifield_in)
+
+  deallocate(ac_rfield_in, ac_ifield_in)
 
   deallocate(dadz_r0, dadz_i0)
   deallocate(dadz_r1, dadz_i1)

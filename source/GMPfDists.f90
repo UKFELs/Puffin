@@ -20,6 +20,7 @@ use initConds
 use remLow
 use addNoise
 use pseqs
+use scale
 
 implicit none
 
@@ -228,6 +229,24 @@ subroutine getLocalDists(fname, z2ml, gam_ml, xml, yml, pxml, &
                xm, ym, z2m, pxm, pym, gam_m, xdl, ydl, &
                pxdl, pydl, gam_dl, pxd, pyd, xd, yd, gam_d, Ne, &
                nz2, nz2g)
+
+
+  if (.not. qscaled_G) then
+
+    ! scale beam coordinates
+
+    call scaleT(z2ml, Lc_G)
+    call scaleX(xml, Lg_G, Lc_G)
+    call scaleX(xdl, Lg_G, Lc_G)
+    call scaleX(yml, Lg_G, Lc_G)
+    call scaleX(ydl, Lg_G, Lc_G)
+    call scalePX(pxml, sGammaR_G * gam_ml, saw_G)
+    call scalePX(pxdl, sGammaR_G * gam_ml, saw_G)
+    call scalePX(pyml, sGammaR_G * gam_ml, saw_G)
+    call scalePX(pydl, sGammaR_G * gam_ml, saw_G)
+
+
+  end if
 
 !     deallocate arrays
 
@@ -579,23 +598,19 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
 
   if (qOneD_G) then
 
-    call getChi(Nk, Vk, npk, chi_b, chi)
+    !call getChi(Nk, Vk, npk, chi_b, chi)
+    call getChi(Nk, Vk, npk_bar_G, chi_b, chi)
 
   else 
 
     if (qEquiXY_G) then
 
 
-      call getGlobalnpk(npk_num, npk_numl)
+      !call getGlobalnpk(npk_num, npk_numl)
 
-      call getChi(Nk, Vk, npk_num, chi_b, chi)
+      call getChi(Nk, Vk, npk_bar_G, chi_b, chi)
 
     else
-
-
-      npk_bar_G = lg_G * lc_G**2.0_wp * e_0 * m_e / q_e**2.0_wp * &
-                sGammaR_G**3.0_wp * sRho_G**3.0_wp * (4.0_wp * &
-                c * 2.0_wp * pi / lam_w_G / saw_G  )**2.0_wp
 
 
       chi_b = Nk / npk_bar_G

@@ -225,9 +225,6 @@ CONTAINS
     END DO
 
 !    npk_bar_G = maxval(s_tmp_max_av) ! record peak density
-    npk_bar_G = lg_G * lc_G**2.0_wp * e_0 * m_e / q_e**2.0_wp * &
-              sGammaR_G**3.0_wp * sRho_G**3.0_wp * (4.0_wp * &
-              c * 2.0_wp * pi / lam_w_G / saw_G  )**2.0_wp    
     
     CALL getChi(s_tmp_macro, s_tmp_Vk, npk_bar_G, &
                 Tmp_chibar, Tmp_Normchi)
@@ -572,7 +569,7 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
       deallocate(xseq, yseq, pxseq, pyseq, gamseq)
       deallocate(nktemp, z2base)
 
-      call applyNoise(z2_tmpcoord, sz2_grid(2) - sz2_grid(1), s_tmp_macro)  ! add noise in z2
+      if (q_noise) call applyNoise(z2_tmpcoord, sz2_grid(2) - sz2_grid(1), s_tmp_macro)  ! add noise in z2
 
     end if 
 

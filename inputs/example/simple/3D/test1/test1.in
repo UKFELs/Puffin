@@ -96,17 +96,17 @@
 ! Begin input:-
 
 &MDATA
- qOneD                  = .true.   
+ qOneD                  = .false.   
  qFieldEvolve           = .true. 
  qElectronsEvolve       = .true. 
- qElectronFieldCoupling = .false.  
- qFocussing             = .false. 
- qDiffraction           = .false.   
+ qElectronFieldCoupling = .true.  
+ qFocussing             = .true. 
+ qDiffraction           = .true.   
  qFilter                = .true.   
  q_noise                = .true.   
- qDump                  = .true.   
+ qDump                  = .false.   
  qResume                = .false.   
- qSeparateFiles         = .true.   
+ qSeparateFiles         = .false.   
  qFormattedFiles        = .false.   
  qWriteZ                = .true.   
  qWriteA                = .true.   
@@ -115,39 +115,39 @@
  qWriteZ2               = .true.   
  qWriteX                = .true.   
  qWriteY                = .true.   
- beam_file              = 'dist_files.in'     
+ qsdds = .false.
+ qhdf5=.true.
+ qUndEnds = .true.
+ beam_file              = 'beam_file.in'     
  sElectronThreshold     = 0.05
- iNumNodesX             = 125      
- iNumNodesY             = 125 
- nodesPerLambdar        = 23
- sFModelLengthX         = 10.0
- sFModelLengthY         = 10.0
- sFModelLengthZ2        = 120
- iRedNodesX             = 21
- iRedNodesY             = 21
+ iNumNodesX             = 85      
+ iNumNodesY             = 85 
+ nodesPerLambdar        = 20
+ sFModelLengthX         = 44.49088 
+ sFModelLengthY         = 44.49088 
+ sFModelLengthZ2        = 31.0
+ iRedNodesX             = 20
+ iRedNodesY             = 20
  sFiltFrac              = 0.3
  sDiffFrac              = 1.0
  sBeta                  = 1.0
  seed_file              = 'seed_file.in'
- srho                   = 3.82195E-2
+ srho                   = 0.02
  sux                    = 1.0
  suy                    = 1.0
- saw                    = 2.3
- sgamma_r               = 312.1
+ saw                    = 1.0
+ sgamma_r               = 100.0
  lambda_w               = 0.04
  Dfact                  = 0.0
- zundType               = ''
+ zundType               = 'helical'
  taper                  = 0.0
  lattFile               = ''
  stepsPerPeriod         = 30
- nPeriods               = 8
+ nPeriods               = 60
  sZ0                    = 0.0
  zDataFileName          = 'DataFile.dat'
- iWriteNthSteps         = 30
+ iWriteNthSteps         = 60
  iWriteIntNthSteps      = 30
  iDumpNthSteps          = 3000
  sPEOut                 = 100.0
  /
-
-
-

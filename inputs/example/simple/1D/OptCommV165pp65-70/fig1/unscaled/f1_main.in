@@ -103,7 +103,7 @@
  qFocussing             = .false. 
  qDiffraction           = .false.   
  qFilter                = .true.   
- q_noise                = .true.   
+ q_noise                = .false.   
  qDump                  = .true.   
  qResume                = .false.   
  qSeparateFiles         = .true.   
@@ -114,29 +114,30 @@
  qWriteP2               = .true.   
  qWriteZ2               = .true.   
  qWriteX                = .true.   
- qWriteY                = .true.   
- beam_file              = 'dist_files.in'     
+ qWriteY                = .true. 
+ qscaled = .false.  
+ beam_file              = 'beam_file.in'     
  sElectronThreshold     = 0.05
  iNumNodesX             = 125      
  iNumNodesY             = 125 
- nodesPerLambdar        = 23
+ nodesPerLambdar        = 17
  sFModelLengthX         = 10.0
  sFModelLengthY         = 10.0
- sFModelLengthZ2        = 120
+ sFModelLengthZ2        = 4.2448e-13
  iRedNodesX             = 21
  iRedNodesY             = 21
  sFiltFrac              = 0.3
  sDiffFrac              = 1.0
  sBeta                  = 1.0
  seed_file              = 'seed_file.in'
- srho                   = 3.82195E-2
+ srho                   = 0.01
  sux                    = 1.0
  suy                    = 1.0
- saw                    = 2.3
- sgamma_r               = 312.1
+ saw                    = 1.0
+ sgamma_r               = 100.0
  lambda_w               = 0.04
  Dfact                  = 0.0
- zundType               = ''
+ zundType               = 'helical'
  taper                  = 0.0
  lattFile               = ''
  stepsPerPeriod         = 30
@@ -148,6 +149,5 @@
  iDumpNthSteps          = 3000
  sPEOut                 = 100.0
  /
-
 
 

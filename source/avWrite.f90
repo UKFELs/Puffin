@@ -23,14 +23,14 @@ contains
 
 
 
+!> writeIntData Top level routine for writing reduced/integrated data
+!! Outputs integrated data e.g. power, current
+!! bunching, etc
 
 
   subroutine writeIntData()
 
     implicit none
-
-! Outputs integrated data e.g. power, current
-! bunching, etc
 
     call oPower()
 
@@ -41,28 +41,19 @@ contains
 
 
 
-
-
-
-
-  subroutine oPower()
+  subroutine gPowerP(power)
 
     implicit none
 
-! This subroutine retrieves the power in z2 and
-! outputs it to a file.
-!
-!
-! wfield          array used to hold the field in 3D form
 
-!    complex(kind=wp), allocatable :: wfield(:,:,:)
-    real(kind=wp), allocatable :: power(:), &
-                                  fr_power(:), &
+    real(kind=wp), intent(out) :: power(:)
+
+    real(kind=wp), allocatable :: fr_power(:), &
                                   bk_power(:), &
                                   ac_power(:)
 
     integer :: error
-    allocate(power(nz2_g))
+
     allocate(ac_power(mainlen), fr_power(tlflen4arr), bk_power(tlelen4arr))
 
 !    allocate(wfield(nx,ny,nz2))
@@ -108,6 +99,32 @@ contains
 !    print*, 'got glob powwww'
 
 
+    deallocate(fr_power, ac_power, bk_power)
+
+  end subroutine gPowerP
+
+
+
+  subroutine oPower()
+
+    implicit none
+
+! This subroutine retrieves the power in z2 and
+! outputs it to a file.
+!
+!
+! wfield          array used to hold the field in 3D form
+
+!    complex(kind=wp), allocatable :: wfield(:,:,:)
+    real(kind=wp), allocatable :: power(:)
+    integer :: error
+
+
+    allocate(power(nz2_g))
+
+    call gPowerP(power)
+
+
 
     call writePower(power,tPowF)
 
@@ -116,7 +133,7 @@ contains
 !    print*, 'written'
 
 
-    deallocate(fr_power, ac_power, bk_power, power)
+    deallocate(power)
 
   end subroutine oPower
 
@@ -390,15 +407,15 @@ contains
     integer(kind=ip) :: xe, ye, i, j
     real(kind=wp), allocatable :: cul(:)
 
-    allocate(cul(size(x)))
+    allocate(cul(size(y)))
 
-    xe = size(x)
+    ye = size(y)
 
-    do i = 1, xe
-      cul(i) = m_trapz(y, fxy(i,:))
+    do i = 1, ye
+      cul(i) = m_trapz(x, fxy(:,i))
     end do
 
-    m_trapz2D = m_trapz(x,cul)
+    m_trapz2D = m_trapz(y,cul)
 
     deallocate(cul)
         
@@ -512,9 +529,191 @@ contains
 
   end subroutine getCurr
 
+!> getSliceTwiss computes twiss parameters
+!! in universal coordinates - so need scaling
+!! to get back to SI
+  subroutine getSliceTwiss(nslices,aveX,aveY,avePX,avePY &
+    ,sdX,sdY,eX,eY,ax,ay,bx,by,aveGamma,aveDgamma,b1,b2,b3,b4,b5)
+    integer(kind=ip), intent(in) :: nslices
+    real(kind=wp), intent(out), DIMENSION(nslices) :: aveX,aveY,avePX,avePY,aveGamma,aveDgamma
+    real(kind=wp), intent(out), DIMENSION(nslices) :: sdX, sdY, eX, eY, ax, ay, bx, by
+    real(kind=wp), intent(out), DIMENSION(nslices) :: b1,b2,b3,b4,b5
+!    real(kind=wp), intent(out) :: sdX(nslices)
+!    real(kind=wp), intent(out) :: sdY(nslices)
+!    real(kind=wp), intent(out) :: eX(:)
+!    real(kind=wp), intent(out) :: eY(:)
+!    real(kind=wp), intent(out) :: aX(:)
+!    real(kind=wp), intent(out) :: aY(:)
+!    real(kind=wp), intent(out) :: bX(:)
+!    real(kind=wp), intent(out) :: bY(:)
+!    real(kind=wp), intent(out) :: aveGamma(nslices)
+!    real(kind=wp), intent(out) :: aveDgamma(:)
+    integer(kind=ip),parameter :: ncoord=6
+    integer(kind=ip) :: ip,ic1,ic2,is !< particle,coord,slice index
+    real(kind=wp) :: sliceSizeZ2
+    real(kind=wp) :: sdata(nslices)
+    real(kind=wp),DIMENSION(nslices) :: b1r,b2r,b3r,b4r,b5r
+    real(kind=wp),DIMENSION(nslices) :: b1i,b2i,b3i,b4i,b5i
+    real(kind=wp) :: csdata(ncoord,nslices)
+    real(kind=wp) :: cs2data(ncoord,ncoord,nslices)
 
+    aveX = 0.0_wp  ! initialize
+    aveY = 0.0_wp  ! initialize
+    avepX = 0.0_wp  ! initialize
+    avepY = 0.0_wp  ! initialize
+    sdX = 0.0_wp   ! initialize
+    sdY = 0.0_wp   ! initialize
+    eX = 0.0_wp    ! initialize
+    eY = 0.0_wp    ! initialize
+    aX = 0.0_wp    ! initialize
+    aY = 0.0_wp    ! initialize
+    bX = 0.0_wp    ! initialize
+    bY = 0.0_wp    ! initialize
+    aveGamma = 0.0_wp   ! initialize
+    aveDgamma = 0.0_wp   ! initialize
+    sdata = 0.0_wp   ! initialize
+    csdata = 0.0_wp   ! initialize
+    cs2data = 0.0_wp   ! initialize
+!
+! Should create a parameter hno (harmonic number)
+! and loop.
+!
 
+    b1r = 0.0_wp   ! initialize
+    b2r = 0.0_wp   ! initialize
+    b3r = 0.0_wp   ! initialize
+    b4r = 0.0_wp   ! initialize
+    b5r = 0.0_wp   ! initialize
+    b1i = 0.0_wp   ! initialize
+    b2i = 0.0_wp   ! initialize
+    b3i = 0.0_wp   ! initialize
+    b4i = 0.0_wp   ! initialize
+    b5i = 0.0_wp   ! initialize
+!    sliceSizeZ2=(sLengthOfElmZ2_G*NBZ2)/(nslices-1)
+    sliceSizeZ2=(sLengthOfElmZ2_G*NZ2_G)/(nslices)
+    do ip = 1, size(sElX_G)
+      is = ceiling(sElZ2_G(ip)/sliceSizeZ2)
+      if ((is>nslices) .or. (is <1)) then
+        print*,"slice index, is, out of bounds in slice computation"
+      end if  
+      if (mod(ip,10000) .eq. 0) then
+        print*,"at particle ",ip
+      end if
+      sdata(is)=sdata(is)+s_chi_bar_G(ip)
+!      do ic1 = 1,ncoord
+!        select case (ncoord)
+!          case (1) csdata(ic1,is)=s_chi_bar_G(ip)*sX_G
+!        !! Would be tidier, but sadly our data is not structured nicely for this        
+!      end do
+      csdata(1,is)=csdata(1,is)+s_chi_bar_G(ip)*sElX_G(ip)
+      cs2data(1,1,is)=cs2data(1,1,is)+s_chi_bar_G(ip)*sElX_G(ip)*sElX_G(ip)
+      cs2data(1,2,is)=cs2data(1,2,is)+s_chi_bar_G(ip)*sElX_G(ip)*sElY_G(ip)
+      cs2data(1,3,is)=cs2data(1,3,is)+s_chi_bar_G(ip)*sElX_G(ip)*sElz2_G(ip)
+      cs2data(1,4,is)=cs2data(1,4,is)+s_chi_bar_G(ip)*sElX_G(ip)*sElpX_G(ip)
+      cs2data(1,5,is)=cs2data(1,5,is)+s_chi_bar_G(ip)*sElX_G(ip)*sElpy_G(ip)
+      cs2data(1,6,is)=cs2data(1,6,is)+s_chi_bar_G(ip)*sElX_G(ip)*sElgam_G(ip)
+      csdata(2,is)=csdata(2,is)+s_chi_bar_G(ip)*sElY_G(ip)
+      cs2data(2,2,is)=cs2data(2,2,is)+s_chi_bar_G(ip)*sElY_G(ip)*sElY_G(ip)
+      cs2data(2,3,is)=cs2data(2,3,is)+s_chi_bar_G(ip)*sElY_G(ip)*sElz2_G(ip)
+      cs2data(2,4,is)=cs2data(2,4,is)+s_chi_bar_G(ip)*sElY_G(ip)*sElpX_G(ip)
+      cs2data(2,5,is)=cs2data(2,5,is)+s_chi_bar_G(ip)*sElY_G(ip)*sElpy_G(ip)
+      cs2data(2,6,is)=cs2data(2,6,is)+s_chi_bar_G(ip)*sElY_G(ip)*sElgam_G(ip)
+      csdata(4,is)=csdata(4,is)+s_chi_bar_G(ip)*sElpX_G(ip)
+      cs2data(4,4,is)=cs2data(4,4,is)+s_chi_bar_G(ip)*sElpX_G(ip)*sElpX_G(ip)
+      csdata(5,is)=csdata(5,is)+s_chi_bar_G(ip)*sElpY_G(ip)
+      cs2data(5,5,is)=cs2data(5,5,is)+s_chi_bar_G(ip)*sElpY_G(ip)*sElpY_G(ip)
+      csdata(6,is)=csdata(6,is)+s_chi_bar_G(ip)*sElGam_G(ip)
+      cs2data(6,6,is)=cs2data(6,6,is)+s_chi_bar_G(ip)*sElgam_G(ip)*sElgam_G(ip)
+      b1r(is)=b1(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(2*sRho_G))
+      b1i(is)=b1(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(2*sRho_G))
+      b2r(is)=b2(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(4*sRho_G))
+      b2i(is)=b2(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(4*sRho_G))
+      b3r(is)=b3(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(6*sRho_G))
+      b3i(is)=b3(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(6*sRho_G))
+      b4r(is)=b4(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(8*sRho_G))
+      b4i(is)=b4(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(8*sRho_G))
+      b5r(is)=b5(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(10*sRho_G))
+      b5i(is)=b5(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(10*sRho_G))
+!    call sum2RootArr(cs2data(, size(cs2data), 0)
 
+    end do
+ print*,"Bringing arrays onto rank0"
+    call sum2RootArr(sdata, size(sdata), 0)
+    call sum2RootArr(csdata(1,:), size(csdata(1,:)), 0)
+    call sum2RootArr(csdata(2,:), size(csdata(2,:)), 0)
+    call sum2RootArr(csdata(4,:), size(csdata(4,:)), 0)
+    call sum2RootArr(csdata(5,:), size(csdata(5,:)), 0)
+    call sum2RootArr(csdata(6,:), size(csdata(6,:)), 0)
+    call sum2RootArr(cs2data(1,1,:), size(cs2data(1,1,:)), 0)
+    call sum2RootArr(cs2data(1,4,:), size(cs2data(1,4,:)), 0)
+    call sum2RootArr(cs2data(4,4,:), size(cs2data(4,4,:)), 0)
+    call sum2RootArr(cs2data(5,5,:), size(cs2data(5,5,:)), 0)
+    call sum2RootArr(cs2data(2,5,:), size(cs2data(2,5,:)), 0)
+    call sum2RootArr(cs2data(2,2,:), size(cs2data(2,2,:)), 0)
+    call sum2RootArr(cs2data(6,6,:), size(cs2data(6,6,:)), 0)
+    call sum2RootArr(b1r, size(b1r), 0)
+    call sum2RootArr(b1i, size(b1i), 0)
+    call sum2RootArr(b2r, size(b2r), 0)
+    call sum2RootArr(b2i, size(b2i), 0)
+    call sum2RootArr(b3r, size(b3r), 0)
+    call sum2RootArr(b3i, size(b3i), 0)
+    call sum2RootArr(b4r, size(b4r), 0)
+    call sum2RootArr(b4i, size(b4i), 0)
+    call sum2RootArr(b5r, size(b5r), 0)
+    call sum2RootArr(b5i, size(b5i), 0)
+
+!! All ranks calculate, but correct data is now only on rank0.
+    Do is=1,nslices
+      if (sdata(is)>0) then
+        aveX(is)=csdata(1,is)/sdata(is)
+        aveY(is)=csdata(2,is)/sdata(is)
+        avepX(is)=csdata(4,is)/sdata(is)
+        avepY(is)=csdata(5,is)/sdata(is)
+        aveGamma(is)=csdata(6,is)/sdata(is)
+        sdx(is)=sqrt((cs2data(1,1,is)-(csdata(1,is)**2)/sdata(is))/sdata(is))
+        sdy(is)=sqrt((cs2data(2,2,is)-(csdata(2,is)**2)/sdata(is))/sdata(is))
+        avedgamma(is)=sqrt((cs2data(6,6,is)-(csdata(6,is)**2)/sdata(is))/sdata(is))
+        if (tprocinfo_g%qroot) then
+          print*, "ex terms for slice " 
+          print*, is
+          print*,cs2data(1,1,is)
+          print*,cs2data(4,4,is)
+          print*,cs2data(1,4,is)
+          print*,cs2data(1,1,is)*cs2data(4,4,is)
+          print*,cs2data(1,4,is)**2
+        end if
+        ex(is)=sqrt((cs2data(1,1,is)*cs2data(4,4,is)-(cs2data(1,4,is)**2)))/sdata(is)
+        ey(is)=sqrt((cs2data(2,2,is)*cs2data(5,5,is)-(cs2data(2,5,is)**2)))/sdata(is)
+        b1=sqrt(b1r**2+b1i**2)/sdata(is)/sliceSizeZ2
+        b2=sqrt(b2r**2+b2i**2)/sdata(is)/sliceSizeZ2
+        b3=sqrt(b3r**2+b3i**2)/sdata(is)/sliceSizeZ2
+        b4=sqrt(b4r**2+b4i**2)/sdata(is)/sliceSizeZ2
+        b5=sqrt(b5r**2+b5i**2)/sdata(is)/sliceSizeZ2
+      else
+        aveX(is)=0._wp
+        aveY(is)=0._wp
+        avePX(is)=0._wp
+        avePY(is)=0._wp
+        aveGamma(is)=0._wp
+        sdX(is)=0._wp
+        sdY(is)=0._wp
+        eX(is)=0._wp
+        eY(is)=0._wp
+        avedgamma(is)=0._wp
+        b1(is)=0._wp
+        b2(is)=0._wp
+        b3(is)=0._wp
+        b4(is)=0._wp
+        b5(is)=0._wp
+      end if
+    end do
+  end subroutine getSliceTwiss
+
+  subroutine getBunchingFundamental(nslices,bunching)
+    integer(kind=ip), intent(in) :: nslices
+    real(kind=wp), intent(out) :: bunching(:)
+    bunching = 0.0_wp    ! initialize
+  end subroutine getBunchingFundamental
 
 
 end module avwrite

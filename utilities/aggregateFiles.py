@@ -70,6 +70,9 @@ h5=tables.open_file(outfilename,'w')
 filelist=getTimeSlices(baseName)
 numTimes,minZT,maxZT=getTimeSliceInfo(filelist)
 numSpatialPoints, minS,maxS=getNumSpatialPoints(filelist,datasetname)
+sumData=numpy.zeros(numTimes)
+peakData=numpy.zeros(numTimes)
+
 print "files in order:"
 print filelist
 h5.create_group('/','grid','')
@@ -87,7 +90,9 @@ fieldCount=0
 for slice in filelist:
   h5in=tables.open_file(slice,'r')
   fieldData[:,fieldCount]=h5in.root._f_getChild(datasetname).read()
-  fieldNormData[:,fieldCount]=h5in.root._f_getChild(datasetname).read()/numpy.max(h5in.root._f_getChild(datasetname).read())
+  sumData[fieldCount]=numpy.sum(h5in.root._f_getChild(datasetname).read())
+  peakData[fieldCount]=numpy.max(h5in.root._f_getChild(datasetname).read())
+  fieldNormData[:,fieldCount]=h5in.root._f_getChild(datasetname).read()/peakData[fieldCount]
   h5in.close()
   fieldCount+=1
 h5.create_array('/',datasetname+'_ST',fieldData)
@@ -101,4 +106,19 @@ h5.create_group('/','time','')
 h5.root.time._v_attrs.vsType="time"
 h5.root.time._v_attrs.vsTime=0.
 h5.root.time._v_attrs.vsStep=0
+h5.create_array('/',datasetname+'_sum',sumData)
+h5.create_array('/',datasetname+'_peak',peakData)
+h5.create_group('/','timeSeries','Time information')
+h5.root.timeSeries._v_attrs.vsKind='uniform'
+h5.root.timeSeries._v_attrs.vsType='mesh'
+h5.root.timeSeries._v_attrs.vsStartCell=0
+h5.root.timeSeries._v_attrs.vsNumCells=numTimes-1 # -1 as zonal
+h5.root.timeSeries._v_attrs.vsLowerBounds=minZT
+h5.root.timeSeries._v_attrs.vsUpperBounds=maxZT
+h5in=tables.open_file(filelist[-1])
+h5in.root.runInfo._f_copy(h5.root)
+h5in.close()
+for fieldname in [datasetname+'_sum',datasetname+'_peak']:
+  h5.root._v_children[fieldname]._v_attrs.vsMesh='timeSeries'
+  h5.root._v_children[fieldname]._v_attrs.vsType='variable'
 h5.close()
