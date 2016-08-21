@@ -112,26 +112,15 @@
  sFModelLengthZ2        = 31.0
  iRedNodesX             = 20
  iRedNodesY             = 20
- sFiltFrac              = 0.3
- sDiffFrac              = 1.0
- sBeta                  = 1.0
  seed_file              = 'seed_file.in'
  srho                   = 0.00555
- sux                    = 1.0
- suy                    = 1.0
  saw                    = 1.0
  sgamma_r               = 700.0
  lambda_w               = 0.025
- Dfact                  = 0.0
  zundType               = 'helical'
- taper                  = 0.0
- lattFile               = ''
  stepsPerPeriod         = 30
  nPeriods               = 250
  sZ0                    = 0.0
- zDataFileName          = 'DataFile.dat'
  iWriteNthSteps         = 1500
  iWriteIntNthSteps      = 30
- iDumpNthSteps          = 3000
- sPEOut                 = 100.0
  /
