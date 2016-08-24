@@ -98,6 +98,7 @@ subroutine writeIM(sZ, &
   real(kind=wp), intent(inout) :: sZ
   integer(kind=ip), intent(in) :: iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps
   integer(kind=ip), intent(in) :: iCstep
+  integer(kind=ip) :: nslices
   character(32_IP), intent(in) :: zDataFileName
   logical, intent(inout) :: qOK
 
@@ -121,11 +122,12 @@ subroutine writeIM(sZ, &
   end if
 
   if (qhdf5_G) then
-
+     nslices=ceiling( (sLengthOfElmZ2_G*NZ2_G)/(4*pi*srho_g))
+     
     call wr_h5(sZ, tArrayA, tArrayE, tArrayZ, &
                  iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
                  zDataFileName, qWriteFull, &
-                 qWriteInt, qOK)
+                 qWriteInt, nslices, qOK)
 
   end if
 
