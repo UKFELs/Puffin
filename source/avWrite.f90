@@ -686,11 +686,11 @@ contains
         end if
         ex(is)=sqrt((cs2data(1,1,is)*cs2data(4,4,is)-(cs2data(1,4,is)**2)))/sdata(is)
         ey(is)=sqrt((cs2data(2,2,is)*cs2data(5,5,is)-(cs2data(2,5,is)**2)))/sdata(is)
-        b1(is)=sqrt(b1r(is)**2+b1i(is)**2)/sdata(is)/sliceSizeZ2
-        b2(is)=sqrt(b2r(is)**2+b2i(is)**2)/sdata(is)/sliceSizeZ2
-        b3(is)=sqrt(b3r(is)**2+b3i(is)**2)/sdata(is)/sliceSizeZ2
-        b4(is)=sqrt(b4r(is)**2+b4i(is)**2)/sdata(is)/sliceSizeZ2
-        b5(is)=sqrt(b5r(is)**2+b5i(is)**2)/sdata(is)/sliceSizeZ2
+        b1(is)=sqrt(b1r(is)**2+b1i(is)**2)/sliceSizeZ2
+        b2(is)=sqrt(b2r(is)**2+b2i(is)**2)/sliceSizeZ2
+        b3(is)=sqrt(b3r(is)**2+b3i(is)**2)/sliceSizeZ2
+        b4(is)=sqrt(b4r(is)**2+b4i(is)**2)/sliceSizeZ2
+        b5(is)=sqrt(b5r(is)**2+b5i(is)**2)/sliceSizeZ2
       else
         aveX(is)=0._wp
         aveY(is)=0._wp
