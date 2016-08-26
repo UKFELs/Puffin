@@ -94,7 +94,7 @@ h5.root.grid._v_attrs.vsNumCells=numpy.array(numCells)
 h5.root.grid._v_attrs.vsKind="uniform"
 h5.root.grid._v_attrs.vsType="mesh"
 h5.root.grid._v_attrs.vsCentering="nodal"
-h5.root.grid._v_attrs.vsAxisLabels="z2,t"
+h5.root.grid._v_attrs.vsAxisLabels="z2bar,t"
 if minZZ is not None:
   h5.create_group('/','gridZ','')
   h5.root.gridZ._v_attrs.vsLowerBounds=numpy.array((numpy.double(minS),numpy.double(minZZ)))
@@ -103,7 +103,7 @@ if minZZ is not None:
   h5.root.gridZ._v_attrs.vsNumCells=numpy.array(numCells)
   h5.root.gridZ._v_attrs.vsKind="uniform"
   h5.root.gridZ._v_attrs.vsType="mesh"
-  h5.root.gridZ._v_attrs.vsAxisLabels="Z2,Z (or t)"
+  h5.root.gridZ._v_attrs.vsAxisLabels="Z2bar,Zbar"
   h5.root.gridZ._v_attrs.vsCentering="nodal"
 fieldData=numpy.zeros((numSpatialPoints, numTimes))
 fieldNormData=numpy.zeros((numSpatialPoints, numTimes))
