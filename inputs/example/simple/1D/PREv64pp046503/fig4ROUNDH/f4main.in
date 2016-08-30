@@ -96,19 +96,12 @@
 ! Begin input:-
 
 &MDATA
- qOneD                  = .true.   
- qFieldEvolve           = .true. 
- qElectronsEvolve       = .true. 
- qElectronFieldCoupling = .true.  
- qFocussing             = .false. 
- qDiffraction           = .false.   
- qFilter                = .true.   
- q_noise                = .true.  
+ qOneD                  = .true.
  beam_file              = 'beam_file.in'     
+ seed_file              = 'seed_file.in'
  sElectronThreshold     = 0.05
  nodesPerLambdar        = 26
  sFModelLengthZ2        = 90.0
- seed_file              = 'seed_file.in'
  srho                   = 0.005
  sux                    = 1.0
  suy                    = 1.0
