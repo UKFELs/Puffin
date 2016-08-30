@@ -831,7 +831,7 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
   allocate(smeanp2(size(sGamFrac)), fmlensTmp(size(sGamFrac)))
   smeanp2 = 1.0_wp / sGamFrac**2.0_wp  ! Estimate of p2...
 
-  fmlensTmp = sLenEPulse(:,iZ2_CG) + smeanp2(:)
+  fmlensTmp = sLenEPulse(:,iZ2_CG) + (smeanp2(:) * szbar)
   fmlenTmp = maxval(fmlensTmp)
 
   if (sFieldModelLength(iZ2_CG) <= fmlenTmp + 1.0_wp) then
