@@ -141,7 +141,7 @@ def IntegratedPower():
   ViewCurveAtts.rangeScale = ViewCurveAtts.LOG  # LINEAR, LOG
   visit.SetViewCurve(ViewCurveAtts) 
   visit.DrawPlots()
-  ViewCurveAtts.domainCoords = (4.44752e-12, 3.18887e-08)
+  ViewCurveAtts.domainCoords = (0, 15.01681327819824)
   ViewCurveAtts.rangeCoords = (-6, 2)
   ViewCurveAtts.viewportCoords = (0.2, 0.95, 0.15, 0.95)
   visit.SetViewCurve(ViewCurveAtts) 
