@@ -80,6 +80,7 @@ h5=tables.open_file(outfilename,'w')
 filelist=getTimeSlices(baseName)
 numTimes,minZT,maxZT,minZZ,maxZZ=getTimeSliceInfo(filelist,datasetname)
 numSpatialPoints, minS,maxS=getNumSpatialPoints(filelist,datasetname)
+deltaz2 = (maxS - minS) / numSpatialPoints
 sumData=numpy.zeros(numTimes)
 peakData=numpy.zeros(numTimes)
 
@@ -111,7 +112,7 @@ fieldCount=0
 for slice in filelist:
   h5in=tables.open_file(slice,'r')
   fieldData[:,fieldCount]=h5in.root._f_getChild(datasetname).read()
-  sumData[fieldCount]=numpy.sum(h5in.root._f_getChild(datasetname).read())
+  sumData[fieldCount]=numpy.trapz(h5in.root._f_getChild(datasetname).read(), None, deltaz2)
   peakData[fieldCount]=numpy.max(h5in.root._f_getChild(datasetname).read())
   fieldNormData[:,fieldCount]=h5in.root._f_getChild(datasetname).read()/peakData[fieldCount]
   h5in.close()
@@ -119,7 +120,7 @@ for slice in filelist:
 h5.create_array('/',datasetname+'_ST',fieldData)
 h5.create_array('/',datasetname+'_ST_Norm',fieldNormData)
 for fieldname in [datasetname+'_ST',datasetname+'_ST_Norm']:
-  h5.root._v_children[fieldname]._v_attrs.vsMesh="grid"
+  h5.root._v_children[fieldname]._v_attrs.vsMesh="gridZ"
   h5.root._v_children[fieldname]._v_attrs.vsTimeGroup="time"
   h5.root._v_children[fieldname]._v_attrs.time=0.
   h5.root._v_children[fieldname]._v_attrs.vsType="variable"
@@ -128,9 +129,9 @@ h5.create_group('/','time','')
 h5.root.time._v_attrs.vsType="time"
 h5.root.time._v_attrs.vsTime=0.
 h5.root.time._v_attrs.vsStep=0
-h5.create_array('/',datasetname+'_sum',sumData)
+h5.create_array('/',datasetname+'_integral',sumData)
 h5.create_array('/',datasetname+'_peak',peakData)
-h5.create_group('/',datasetname+'_sumz','sumData as function of z')
+h5.create_group('/',datasetname+'_integralz','sumData as function of z')
 h5.create_group('/',datasetname+'_peakz','peakData as a function of z')
 h5.create_group('/','timeSeries','Time information')
 h5.root.timeSeries._v_attrs.vsKind='uniform'
@@ -154,7 +155,7 @@ h5.create_group('/','powerZZ2','')
 h5.root.powerZZ2._v_attrs.vsMesh='gridZ'
 h5.root.powerZZ2._v_attrs.vsType='vsVars'
 h5.root.powerZZ2._v_attrs.powerZZ2='power_ST'
-for fieldname in [datasetname+'_sum',datasetname+'_peak']:
+for fieldname in [datasetname+'_integral',datasetname+'_peak']:
   h5.root._v_children[fieldname]._v_attrs.vsMesh='timeSeries'
   h5.root._v_children[fieldname]._v_attrs.vsType='variable'
   h5.root._v_children[fieldname+"z"]._v_attrs.vsMesh='zSeries'
