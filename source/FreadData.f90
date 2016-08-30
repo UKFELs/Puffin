@@ -549,7 +549,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   sLenE(1,6) = 0.006_wp
 
   iNumElectrons(1,1:2) = 1
-  iNumElectrons(1,3) = 1200
+  iNumElectrons(1,3) = -1
   iNumElectrons(1,4:5) = 1
   iNumElectrons(1,6) = 19
 
