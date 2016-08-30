@@ -532,12 +532,13 @@ contains
 !> getSliceTwiss computes twiss parameters
 !! in universal coordinates - so need scaling
 !! to get back to SI
-  subroutine getSliceTwiss(nslices,aveX,aveY,avePX,avePY &
-    ,sdX,sdY,eX,eY,ax,ay,bx,by,aveGamma,aveDgamma,b1,b2,b3,b4,b5)
+  subroutine getSliceTwiss(nslices,slicetrim,aveX,aveY,avePX,avePY &
+    ,sdX,sdY,eX,eY,ax,ay,bx,by,aveGamma,aveDgamma,b1,b2,b3,b4,b5,sdata)
     integer(kind=ip), intent(in) :: nslices
+    real(kind=wp), intent(in) :: slicetrim
     real(kind=wp), intent(out), DIMENSION(nslices) :: aveX,aveY,avePX,avePY,aveGamma,aveDgamma
     real(kind=wp), intent(out), DIMENSION(nslices) :: sdX, sdY, eX, eY, ax, ay, bx, by
-    real(kind=wp), intent(out), DIMENSION(nslices) :: b1,b2,b3,b4,b5
+    real(kind=wp), intent(out), DIMENSION(nslices) :: b1,b2,b3,b4,b5,sdata
 !    real(kind=wp), intent(out) :: sdX(nslices)
 !    real(kind=wp), intent(out) :: sdY(nslices)
 !    real(kind=wp), intent(out) :: eX(:)
@@ -551,7 +552,6 @@ contains
     integer(kind=ip),parameter :: ncoord=6
     integer(kind=ip) :: ip,ic1,ic2,is !< particle,coord,slice index
     real(kind=wp) :: sliceSizeZ2
-    real(kind=wp) :: sdata(nslices)
     real(kind=wp),DIMENSION(nslices) :: b1r,b2r,b3r,b4r,b5r
     real(kind=wp),DIMENSION(nslices) :: b1i,b2i,b3i,b4i,b5i
     real(kind=wp) :: csdata(ncoord,nslices)
@@ -590,11 +590,14 @@ contains
     b4i = 0.0_wp   ! initialize
     b5i = 0.0_wp   ! initialize
 !    sliceSizeZ2=(sLengthOfElmZ2_G*NBZ2)/(nslices-1)
-    sliceSizeZ2=(sLengthOfElmZ2_G*NZ2_G)/(nslices)
+!    sliceSizeZ2=((sLengthOfElmZ2_G*NZ2_G)-slicetrim)/(nslices)
+    sliceSizeZ2=4*pi*srho_g
+    print *,"evaluating slices of size",4*pi*srho_g,sliceSizeZ2,slicetrim
     do ip = 1, size(sElX_G)
       is = ceiling(sElZ2_G(ip)/sliceSizeZ2)
       if ((is>nslices) .or. (is <1)) then
-        print*,"slice index, is, out of bounds in slice computation"
+         print*,"slice index, is, out of bounds in slice computation"
+         goto 1000
       end if  
       if (mod(ip,10000) .eq. 0) then
         print*,"at particle ",ip
@@ -624,19 +627,18 @@ contains
       cs2data(5,5,is)=cs2data(5,5,is)+s_chi_bar_G(ip)*sElpY_G(ip)*sElpY_G(ip)
       csdata(6,is)=csdata(6,is)+s_chi_bar_G(ip)*sElGam_G(ip)
       cs2data(6,6,is)=cs2data(6,6,is)+s_chi_bar_G(ip)*sElgam_G(ip)*sElgam_G(ip)
-      b1r(is)=b1(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(2*sRho_G))
-      b1i(is)=b1(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(2*sRho_G))
-      b2r(is)=b2(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(4*sRho_G))
-      b2i(is)=b2(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(4*sRho_G))
-      b3r(is)=b3(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(6*sRho_G))
-      b3i(is)=b3(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(6*sRho_G))
-      b4r(is)=b4(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(8*sRho_G))
-      b4i(is)=b4(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(8*sRho_G))
-      b5r(is)=b5(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(10*sRho_G))
-      b5i(is)=b5(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(10*sRho_G))
+      b1r(is)=b1r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(2*sRho_G))
+      b1i(is)=b1i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(2*sRho_G))
+      b2r(is)=b2r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(4*sRho_G))
+      b2i(is)=b2i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(4*sRho_G))
+      b3r(is)=b3r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(6*sRho_G))
+      b3i(is)=b3i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(6*sRho_G))
+      b4r(is)=b4r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(8*sRho_G))
+      b4i(is)=b4i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(8*sRho_G))
+      b5r(is)=b5r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(10*sRho_G))
+      b5i(is)=b5i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(10*sRho_G))
 !    call sum2RootArr(cs2data(, size(cs2data), 0)
-
-    end do
+1000    end do
  print*,"Bringing arrays onto rank0"
     call sum2RootArr(sdata, size(sdata), 0)
     call sum2RootArr(csdata(1,:), size(csdata(1,:)), 0)
@@ -674,21 +676,21 @@ contains
         sdy(is)=sqrt((cs2data(2,2,is)-(csdata(2,is)**2)/sdata(is))/sdata(is))
         avedgamma(is)=sqrt((cs2data(6,6,is)-(csdata(6,is)**2)/sdata(is))/sdata(is))
         if (tprocinfo_g%qroot) then
-          print*, "ex terms for slice " 
-          print*, is
-          print*,cs2data(1,1,is)
-          print*,cs2data(4,4,is)
-          print*,cs2data(1,4,is)
-          print*,cs2data(1,1,is)*cs2data(4,4,is)
-          print*,cs2data(1,4,is)**2
+!          print*, "ex terms for slice " 
+!          print*, is
+!          print*,cs2data(1,1,is)
+!          print*,cs2data(4,4,is)
+!          print*,cs2data(1,4,is)
+!          print*,cs2data(1,1,is)*cs2data(4,4,is)
+!          print*,cs2data(1,4,is)**2
         end if
         ex(is)=sqrt((cs2data(1,1,is)*cs2data(4,4,is)-(cs2data(1,4,is)**2)))/sdata(is)
         ey(is)=sqrt((cs2data(2,2,is)*cs2data(5,5,is)-(cs2data(2,5,is)**2)))/sdata(is)
-        b1=sqrt(b1r**2+b1i**2)/sdata(is)/sliceSizeZ2
-        b2=sqrt(b2r**2+b2i**2)/sdata(is)/sliceSizeZ2
-        b3=sqrt(b3r**2+b3i**2)/sdata(is)/sliceSizeZ2
-        b4=sqrt(b4r**2+b4i**2)/sdata(is)/sliceSizeZ2
-        b5=sqrt(b5r**2+b5i**2)/sdata(is)/sliceSizeZ2
+        b1(is)=sqrt(b1r(is)**2+b1i(is)**2)/sliceSizeZ2
+        b2(is)=sqrt(b2r(is)**2+b2i(is)**2)/sliceSizeZ2
+        b3(is)=sqrt(b3r(is)**2+b3i(is)**2)/sliceSizeZ2
+        b4(is)=sqrt(b4r(is)**2+b4i(is)**2)/sliceSizeZ2
+        b5(is)=sqrt(b5r(is)**2+b5i(is)**2)/sliceSizeZ2
       else
         aveX(is)=0._wp
         aveY(is)=0._wp
