@@ -23,13 +23,13 @@ similar to a Particle-In-Cell (PIC) code methodology.
 
 In addition, some accelerator componenets are included, and together with the
 lack of restrictions, means it may model:
-  - Variably polarized undulators
   - The full, broad bandwidth frequency spectrum, limited only by the Niquist frequency of the mesh
   - Full electron beam transport
   - Transport of large energy spread beams through the undulator, and the radiation emitted from these beams
   - Tapered undulators
   - Fully 3D undulators, including modelling of the wiggler entries/exits and natural focusing
   - Interleaved undulator-chicane lattices
+  - Variably polarized undulators
   - Undulator tuning of each module
 
 It presently does not include the effects of space charge, and ignores emission
