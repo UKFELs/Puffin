@@ -18,7 +18,7 @@ only external package now required is FFTW v2.1.5.
 Puffin is a so-called 'unaveraged' FEL code - meaning it is absent of the
 slowly varying envelope approximation (SVEA) and wiggler period averaging
 approximations. It does not utilize a 'slicing' model of the beam phase space
-and radiation field, and instead utilizes and algorithm which is much more
+and radiation field, and instead utilizes an algorithm which is much more
 similar to a Particle-In-Cell (PIC) code methodology.
 
 In addition, some accelerator componenets are included, and together with the
