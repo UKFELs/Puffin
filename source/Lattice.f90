@@ -261,22 +261,42 @@ contains
 
   iChic_cr = iChic_cr + 1_ip
 
-
-
-
-
-! Get p2 -
-
-
-
-! The disperse through chicane
-
-  ! Call diffract(zbar)
-
-  ! z2 = z2 + zbar*p2, right???
-
-
   END SUBROUTINE disperse
+
+
+
+! ##############################################
+
+
+
+  subroutine driftSection(iL)
+
+    integer(kind=wp), intent(in) :: iL
+
+    real(kind=wp) :: del_dr_z
+
+    real(kind=wp), allocatable :: sp2(:)
+    real(kind=wp) :: dumdrifts(2)  ! dummy until global
+    logical :: qDummy, qOKL
+
+
+    del_dr_z = dumdrifts(iDrift_cr) ! dummy until global
+
+    allocate(sp2(iNumberElectrons_G))
+
+    call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, sEta_G, sGammaR_G, saw_G)
+
+    sElZ2_G = sElZ2_G + del_dr_z * sp2
+
+    if (qDiffraction_G) call diffractIM(del_dr_z, qDummy, qOKL)
+
+    deallocate(sp2)
+
+    iDrift_cr = iDrift_cr + 1_ip
+
+  end subroutine driftSection
+
+
 
 
 
