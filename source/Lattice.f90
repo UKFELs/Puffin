@@ -13,6 +13,7 @@ USE ElectronInit
 use gtop2
 use initConds
 use functions
+use pdiff
 
 implicit none
 
@@ -45,7 +46,7 @@ contains
 !     University of Strathclyde
 !     2015
 
-    character(32_ip), intent(in) :: LattFile 
+    character(32_ip), intent(in) :: LattFile
     real(kind=wp), intent(inout) :: taper
     real(kind=wp), intent(in) :: sRho, dz_f
     integer(kind=ip), intent(in) :: nSteps_f
@@ -69,7 +70,7 @@ contains
       allocate(nSteps_arr(ModNum))
 
 !    Latt file name, number of wigg periods converted to z-bar,
-!    slippage in chicane in z-bar, 2 dispersive constants, 
+!    slippage in chicane in z-bar, 2 dispersive constants,
 !    number of modules
 
       allocate(iElmType(2*modNum))   !  For now, using old lattice file format...
@@ -77,16 +78,16 @@ contains
       ModCount = 1
       modNum = 2_ip * modNum
 
-    else 
+    else
 
       modNum = 1
-      
+
       allocate(D(ModNum),zMod(ModNum),delta(modNum))
       allocate(mf(ModNum),delmz(ModNum),tapers(modNum))
       allocate(nSteps_arr(ModNum))
-      
+
       allocate(iElmType(modNum))
-      
+
       iElmType(1) = iUnd
       mf(1) = 1_wp
       delmz(1) = dz_f
@@ -124,18 +125,18 @@ contains
 ! Subroutine to read the information from the lattice file
 ! and define some of the dispersion parameters.
 !
-! Modified from Brian McNeil's 1D lattice FEL code 
+! Modified from Brian McNeil's 1D lattice FEL code
 ! to work with this 3D unaveraged model.
 !
 !                ARGUMENTS
-! 
+!
 ! lattFile      The name of the lattice file (INPUT)
-! zMod          Array containing the cumulative 
-!               interaction lengths of each module in 
+! zMod          Array containing the cumulative
+!               interaction lengths of each module in
 !               z-bar (OUTPUT)
-! delta         Array containing lengths of dispersive 
+! delta         Array containing lengths of dispersive
 !               sections in slippage lengths (OUTPUT)
-! D             Dispersive factor of the chicane, 
+! D             Dispersive factor of the chicane,
 !               D=10*Dfact/6*delta (OUTPUT)
 ! Dfact         Dispersive strength of the chicane (INPUT)
 ! ModNum        Number of Modules (INPUT)
@@ -166,11 +167,11 @@ contains
 !     Read whitespace
 
   NL = 31_IP      !    Number of lines in header
-  
+
   do ri = 1,NL
-  
+
     read (1,*)
-  
+
   end do
 
 !     Read module data from lattice file
@@ -185,18 +186,18 @@ contains
 
     nSteps_arr(i) = nw * nperlam(i)
 
-    if (i==1) then  
+    if (i==1) then
       zMod(i) = real(nw,KIND=WP)
       zMod(i) = 2.0_WP*pi*c1*zMod(i)
     else
-      zMod(i) = zMod(i-1)+2.0_WP*pi*c1*real(nw,KIND=WP) 
+      zMod(i) = zMod(i-1)+2.0_WP*pi*c1*real(nw,KIND=WP)
     end if
 
     iElmType(2*i-1) = iUnd
     iElmType(2*i) = iChic
 
   end do
-	
+
   close(1, STATUS='KEEP')
 
 !     Convert from # undulator periods to z-bar
@@ -217,7 +218,7 @@ contains
 
 ! Subroutine to apply phase changes to electrons beam
 ! due to passing through a chicane...
-! Modified from Brian McNeil's Phase shift routine to 
+! Modified from Brian McNeil's Phase shift routine to
 ! work with p2 (electron momentum in z2 frame) as opposed
 ! to bar{p}_z
 !
@@ -228,9 +229,13 @@ contains
 !                  (D=10*Dfact/6*delta, Dfact is the
 !                  dispersive strength factor of the chicane
 ! delta            Slippage in resonant wavelengths
-	
+
   INTEGER(KIND=IP), INTENT(IN) :: iL
- 
+
+  real(kind=wp) :: szbar4d, smeanp2
+  real(kind=wp), allocatable :: sp2(:)
+  logical :: qDummy
+
   LOGICAL :: qOKL
 
 !     Propagate through chicane
@@ -240,10 +245,38 @@ contains
                (sElGam_G - 1_wp) &
                + delta(iChic_cr)
 
+  if (qDiffraction_G) then
+
+!  Convert slippage in z2bar to spatial length for diffraction
+
+    allocate(sp2(iNumberElectrons_G))
+    call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, sEta_G, sGammaR_G, saw_G)
+    smeanp2 = arr_mean_para_weighted(sp2, s_chi_bar_G)
+    szbar4d = delta(iChic_cr) / smeanp2
+    call diffractIM(szbar4d, qDummy, qOKL)
+
+  end if
+
+  deallocate(sp2)
+
   iChic_cr = iChic_cr + 1_ip
 
 
-  END SUBROUTINE disperse	
+
+
+
+! Get p2 -
+
+
+
+! The disperse through chicane
+
+  ! Call diffract(zbar)
+
+  ! z2 = z2 + zbar*p2, right???
+
+
+  END SUBROUTINE disperse
 
 
 
@@ -259,7 +292,7 @@ contains
     real(kind=wp) :: spx_m, spy_m, sx_m, sy_m
 
 
-! Calculate means 
+! Calculate means
 
     spx_m = arr_mean_para_weighted(sElPX_G, s_chi_bar_G)
     spy_m = arr_mean_para_weighted(sElPY_G, s_chi_bar_G)
@@ -310,27 +343,27 @@ contains
 ! when calculating initial conditions, this may need change eventually
 
 
-        spx0_offset = pxOffset(sZ, srho_G, fy_G) & 
+        spx0_offset = pxOffset(sZ, srho_G, fy_G) &
             - 0.5_WP * kx**2 * sElX_G**2 &
             -  0.5_WP * kY**2 * sElY_G**2
-     
+
         spy0_offset = -1_wp *  &
                       ( pyOffset(sZ, srho_G, fx_G) &
                       - kx**2 *  sElX_G  * sElY_G)
 
 
-    else if (zUndType_G == 'planepole') then 
+    else if (zUndType_G == 'planepole') then
 
 ! plane pole initial conditions are calculated as a 2nd order expansion
 ! and added as a correction term.
 
 
 
-        spx0_offset = pxOffset(sZ, srho_G, fy_G) & 
-            - 0.5_WP * (sEta_G / (4 * sRho_G**2)) * sElX_G**2 
+        spx0_offset = pxOffset(sZ, srho_G, fy_G) &
+            - 0.5_WP * (sEta_G / (4 * sRho_G**2)) * sElX_G**2
 
         spy0_offset = -1_wp * &
-                      pyOffset(sZ, srho_G, fx_G) 
+                      pyOffset(sZ, srho_G, fx_G)
 
 
     else
@@ -339,10 +372,10 @@ contains
 ! field variation
 
 
-        spx0_offset = pxOffset(sZ, srho_G, fy_G) 
+        spx0_offset = pxOffset(sZ, srho_G, fy_G)
 
-        spy0_offset = -1.0_wp * & 
-                     pyOffset(sZ, srho_G, fx_G) 
+        spy0_offset = -1.0_wp * &
+                     pyOffset(sZ, srho_G, fx_G)
 
 
     end if
@@ -407,27 +440,27 @@ contains
 ! when calculating initial conditions, this may need change eventually
 
 
-        spx0_offset = pxOffset(sZ, srho_G, fy_G) & 
+        spx0_offset = pxOffset(sZ, srho_G, fy_G) &
             - 0.5_WP * kx**2 * sElX_G**2 &
             -  0.5_WP * kY**2 * sElY_G**2
-     
+
         spy0_offset = -1_wp *  &
                       ( pyOffset(sZ, srho_G, fx_G) &
                       - kx**2 *  sElX_G  * sElY_G)
 
 
-    else if (zUndType_G == 'planepole') then 
+    else if (zUndType_G == 'planepole') then
 
 ! plane pole initial conditions are calculated as a 2nd order expansion
 ! and added as a correction term.
 
 
 
-        spx0_offset = pxOffset(sZ, srho_G, fy_G) & 
-            - 0.5_WP * (sEta_G / (4 * sRho_G**2)) * sElX_G**2 
+        spx0_offset = pxOffset(sZ, srho_G, fy_G) &
+            - 0.5_WP * (sEta_G / (4 * sRho_G**2)) * sElX_G**2
 
         spy0_offset = -1_wp * &
-                      pyOffset(sZ, srho_G, fx_G) 
+                      pyOffset(sZ, srho_G, fx_G)
 
 
     else
@@ -436,10 +469,10 @@ contains
 ! field variation
 
 
-        spx0_offset = pxOffset(sZ, srho_G, fy_G) 
+        spx0_offset = pxOffset(sZ, srho_G, fy_G)
 
-        spy0_offset = -1.0_wp * & 
-                     pyOffset(sZ, srho_G, fx_G) 
+        spy0_offset = -1.0_wp * &
+                     pyOffset(sZ, srho_G, fx_G)
 
 
     end if
@@ -490,7 +523,7 @@ contains
     szl = 0_wp
 
 
-!     Update stepsize    
+!     Update stepsize
 
     sStepSize = delmz(iM) ! Change step size - make sure is still integer
                            ! of 4pirho in input file!!
@@ -506,7 +539,7 @@ contains
       sZFE = nSteps * sStepSize - &
                4_wp * pi * sRho_G  *  2.0_wp
 
-    else 
+    else
 
       sZFS = 0_wp
       sZFE = nSteps * sStepSize
@@ -516,13 +549,12 @@ contains
   end subroutine initUndulator
 
 
-
 ! #########################################################
-	
+
   FUNCTION lineCount(fname)
 
 !     Function to count the number of lines on a file
-!            
+!
 !                ARGUMENTS
 
   INTEGER(KIND=IP)          :: lineCount
@@ -537,7 +569,7 @@ contains
 
   lineCount = 0_IP
 
-  DO 
+  DO
     lineCount=lineCount+1_IP
     READ(1,*,END=10)
   END DO
@@ -547,11 +579,11 @@ contains
   END FUNCTION lineCount
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  
+
   FUNCTION numOfMods(fname)
 
 !     Function to count the number of lines on a file
-!            
+!
 !                ARGUMENTS
 
   INTEGER(KIND=IP)          :: numOfMods
@@ -573,4 +605,3 @@ contains
   END FUNCTION numOfMods
 
 END MODULE lattice
-
