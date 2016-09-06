@@ -472,6 +472,38 @@ One may use the variables {\bf iRedNodesX, iRedNodesY} to fix the mesh around th
 
 
 
+\section{Lattice Input}
+
+There are five supported lattice element types, being undulators, quads, chicanes, drifts, and modulations. These are specified in the lattice file by the first 2 characters of each line.
+
+Undulator - UN
+
+Quadrupole - QU
+
+Chicane - CH
+
+Drift - DR
+
+Modulation - MO
+
+For the undulator, we must specify type, Nw, alpha, taper, ux, uy, qends, qfocus, kbx, kby, and steps per period.
+
+For the quad, we must specify $k$ and $L$.
+
+For the chicane, one must specify physical length, slippage length, and dispersion enhancement (R56). The length is the physical length of the device in undulator periods, and is used to calculate the diffraction properly. The slippage length tells how many wavelengths to delay the beam by relative to the radiation field in resonant radiation wavelengths - be careful, this should not be $\leq 0$, or the beam will then be faster than light speed! Similarly, it is left up to the user to decide what is appropriate to delay the beam by with respect to the physical length of the device. The dispersive enhancement is the R56 of the device - using $\gamma_r$ in the main input as the mean $gamma$ for the chicane. 
+
+This approach of being able to vary the 3 parameters above is quite flexible, but at the expense of easy automatic checking of the physical relevance of the parameters. For example, one can disperse the beam 'in place', without shifting it w.r.t. the resonant wavelength, which is obviously unphysical. However, this may be useful for a quick setup of the beam for EEHG at the beginning of the undulator, for instance. If one is not sure of the physical length of the actual device, but knows the length between modules and the desired slippage (e.g. for mode locking the FEL), then one can specify the spatial drift between modules using a drift section, and then specify a chicane with zero physical length, but with the desired delay and R56. In this way the radiation diffraction will still be modelled correctly.
+
+For the drift, one must specify length in units of the number of undulator periods.
+
+For the modulation section, one may add an energy modulation to the beam specified by $k_M$ and $\Delta \gamma$.
+
+
+
+
+
+
+
 
 
 
