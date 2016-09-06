@@ -20,11 +20,12 @@ implicit none
 integer(kind=ip), parameter :: iUnd = 1_ip, &
                                iChic = 2_ip, &
                                iDrift = 3_ip, &
-                               iQuad = 4_ip
+                               iQuad = 4_ip, &
+                               iModulation = 5_ip
 
 integer(kind=ip), allocatable :: iElmType(:)
 
-integer(kind=ip) :: iUnd_cr, iChic_cr, iDrift_cr, iQuad_cr    ! Counters for each element type
+integer(kind=ip) :: iUnd_cr, iChic_cr, iDrift_cr, iQuad_cr, iModulation_cr    ! Counters for each element type
 
 !integer(kind=ip) :: inum_latt_elms
 
@@ -35,7 +36,8 @@ contains
 
 
 
-  subroutine setupMods(lattFile, taper, sRho, nSteps_f, dz_f)
+  subroutine setupMods(lattFile, taper, sRho, nSteps_f, dz_f, &
+                       ux_f, uy_f, kbnx_f, kbny_f)
 
     implicit none
 
@@ -48,8 +50,9 @@ contains
 
     character(32_ip), intent(in) :: LattFile
     real(kind=wp), intent(inout) :: taper
-    real(kind=wp), intent(in) :: sRho, dz_f
-    integer(kind=ip), intent(in) :: nSteps_f
+    real(kind=wp), intent(in) :: sRho
+    real(kind=wp), intent(inout) :: dz_f, ux_f, uy_f, kbnx_f, kbny_f
+    integer(kind=ip), intent(inout) :: nSteps_f
 
 
     if (lattFile=='') then
@@ -65,28 +68,66 @@ contains
 
       modNum=numOfMods(lattFile)
 
-      allocate(D(ModNum),zMod(ModNum),delta(modNum))
-      allocate(mf(ModNum),delmz(ModNum),tapers(modNum))
-      allocate(nSteps_arr(ModNum))
+
+      allocate(mf(numOfUnds),delmz(numOfUnds),tapers(numOfUnds))
+      allocate(nSteps_arr(numOfUnds), zMod(numOfUnds))
+      allocate(ux_arr(numOfUnds), uy_arr(numOfUnds), &
+               kbnx_arr(numOfUnds), kbny_arr(numOfUnds))
+      allocate(zundtype_arr(numOfUnds))
+
+
+      allocate(chic_disp(numOfChics), chic_slip(numOfChics), &
+               chic_zbar(numOfChics))
+
+      allocate(drift_zbar(numOfDrifts))
+
+      allocate(enmod_wavenum(numOfModulations), &
+                 enmod_mag(numOfModulations)) 
+
+      allocate(quad_fx(numOfQuads), quad_fy(numOfQuads))
+
 
 !    Latt file name, number of wigg periods converted to z-bar,
 !    slippage in chicane in z-bar, 2 dispersive constants,
 !    number of modules
 
-      allocate(iElmType(2*modNum))   !  For now, using old lattice file format...
-      call readLatt(lattFile,zMod,delta,D,Dfact,ModNum,taper,sRho,sStepSize)
+      allocate(iElmType(modNum))   !  For now, using old lattice file format...
+
+      call readLatt(lattFile, sRho, sStepSize)
+
       ModCount = 1
-      modNum = 2_ip * modNum
+
+      dz_f =  delmz(1)
+      nSteps_f = nSteps_arr(1)
+      taper = tapers(1)
 
     else
 
       modNum = 1
+      numOfUnds = 1
+      numOfChics = 0
+      numOfDrifts = 0
+      numOfQuads = 0
+      numOfModulations = 0
 
-      allocate(D(ModNum),zMod(ModNum),delta(modNum))
-      allocate(mf(ModNum),delmz(ModNum),tapers(modNum))
-      allocate(nSteps_arr(ModNum))
+      allocate(iElmType(1))
 
-      allocate(iElmType(modNum))
+      allocate(mf(numOfUnds),delmz(numOfUnds),tapers(numOfUnds))
+      allocate(nSteps_arr(numOfUnds), zMod(numOfUnds))
+      allocate(ux_arr(numOfUnds), uy_arr(numOfUnds), &
+               kbnx_arr(numOfUnds), kbny_arr(numOfUnds))
+      allocate(zundtype_arr(numOfUnds))
+
+
+      allocate(chic_disp(numOfChics), chic_slip(numOfChics), &
+               chic_zbar(numOfChics))
+
+      allocate(drift_zbar(numOfDrifts))
+
+      allocate(enmod_wavenum(numOfModulations), &
+                 enmod_mag(numOfModulations)) 
+
+      allocate(quad_fx(numOfQuads), quad_fy(numOfQuads))
 
       iElmType(1) = iUnd
       mf(1) = 1_wp
@@ -98,7 +139,10 @@ contains
       delmz(1) = dz_f
       mf(1) = 1_wp
       tapers(1) = taper
-
+      ux_arr(1) = ux_f
+      uy_arr(1) = uy_f
+      kbnx_arr(1) = kbnx_f 
+      kbny_arr(1) = kbny_f 
 
     end if
 
@@ -106,6 +150,7 @@ contains
     iChic_cr=1_ip
     iDrift_cr=1_ip
     iQuad_cr=1_ip
+    iModulation_cr = 1_ip
 
     iCsteps = 1_ip
 
@@ -117,8 +162,7 @@ contains
 !    #####################################################
 
 
-  SUBROUTINE readLatt(lattFile,zMod,delta,D,Dfact,ModNum,taper,rho,&
-                      sStepSize)
+  SUBROUTINE readLatt(lattFile, rho, sStepSize)
 
   IMPLICIT NONE
 
@@ -131,9 +175,6 @@ contains
 !                ARGUMENTS
 !
 ! lattFile      The name of the lattice file (INPUT)
-! zMod          Array containing the cumulative
-!               interaction lengths of each module in
-!               z-bar (OUTPUT)
 ! delta         Array containing lengths of dispersive
 !               sections in slippage lengths (OUTPUT)
 ! D             Dispersive factor of the chicane,
@@ -143,78 +184,171 @@ contains
 ! rho           FEL parameter
 
   CHARACTER(32_IP), INTENT(IN) :: lattFile
-  REAL(KIND=WP), DIMENSION(:), INTENT(INOUT) :: zMod,delta,D
-  REAL(KIND=WP), INTENT(IN) :: Dfact
-  REAL(KIND=WP), INTENT(INOUT)  ::  taper
   REAL(KIND=WP), INTENT(IN) :: rho
-  INTEGER(KIND=IP), INTENT(IN) :: ModNum
   REAL(KIND=WP), INTENT(OUT)   :: sStepSize
 
 !                LOCAL VARS
 
   INTEGER(KIND=IP)   :: i,ios,nw,error,ri,NL
-  REAL(KIND=WP)      :: c1
+  REAL(KIND=WP)      :: c1, slamw
 
-  integer(kind=ip) :: nperlam(size(delmz))
+  integer(kind=ip) :: nperlam
 
-  OPEN(1,FILE=lattFile, IOSTAT=ios, ACTION='READ', POSITION ='REWIND')
-  IF (ios /= 0_IP) STOP "OPEN(input file) not performed correctly, IOSTAT /= 0"
+  integer(kind=ip) :: cnt, cntq, cntu, cntc, cntd, cntm, cntt
+  character(40) :: ztest
 
 !   pi = 4.0_WP*ATAN(1.0_WP)
   c1 = 2.0_WP*rho
 
+  cnt = 0
+  cntt = 0
+  cntu = 0
+  cntq = 0
+  cntd = 0
+  cntc = 0
 
-!     Read whitespace
 
-  NL = 31_IP      !    Number of lines in header
 
-  do ri = 1,NL
+  open(168,FILE=lattFile, IOSTAT=ios, STATUS='OLD', ACTION='READ', POSITION ='REWIND')
 
-    read (1,*)
+  if (ios /= 0) then
+    print*, 'iostat = ', ios
+    stop "OPEN(input file) not performed correctly, IOSTAT /= 0"
+  end if
 
-  end do
 
-!     Read module data from lattice file
+  do 
 
-  do i=1,ModNum
+    read (168,*, IOSTAT=ios) ztest  ! probe the line
 
-    read (1,*) nw, delta(i), mf(i), nperlam(i), tapers(i)  !, resFactor(i) ! Wiggler periods, Chicane slippage periods, aw shift, stepsize
+    if (ios < 0) then  ! if reached end of file:-
 
-    delmz(i) = 4.0_WP * pi * rho / real(nperlam(i),kind=wp)
+      print*, "Reached end of file!! (for the second time)"
+      !print*, "Turns out you had ", cnt, "lines in the file!!"
+      !print*, "Turns out you had ", cntq, "quads in the file!! in lines ", lineq
+      !print*, "Turns out you had ", cntu, "undulators in the file!!"
 
-!     Calculate cumulative interaction length of modules
+      exit
 
-    nSteps_arr(i) = nw * nperlam(i)
+    else if (ios > 0) then
 
-    if (i==1) then
-      zMod(i) = real(nw,KIND=WP)
-      zMod(i) = 2.0_WP*pi*c1*zMod(i)
+      print*, 'THIS LINE HAS NOTHING FOR ME', ios
+      exit
+      cnt = cnt + 1
+
     else
-      zMod(i) = zMod(i-1)+2.0_WP*pi*c1*real(nw,KIND=WP)
+
+      if (ztest(1:2) == 'QU') then
+
+        backspace(168)
+
+        cntq = cntq + 1
+
+        read (168,*, IOSTAT=ios) ztest, quad_fx(cntq), quad_fy(cntq)  ! read vars
+
+        cntt = cntt + 1
+        iElmType(cntt) = iQuad
+
+      else if (ztest(1:2) == 'UN') then
+
+        backspace(168)
+
+        cntu = cntu + 1
+
+!       reading ... element ID, undulator type, num of periods, alpha (aw / aw0), 
+!       taper (d alpha / dz), integration steps per period, ux and uy (polarization 
+!       control), and kbnx and kbny, betatron wavenumbers for in-undulator strong 
+!       focusing (applied in the wiggler!!! NOT from quads. Remember the natural 
+!       undulator focusing is also included IN ADDITION to this...)
+
+        read (168,*, IOSTAT=ios) ztest, zundtype_arr(cntu), nw, mf(cntu), tapers(cntu), &
+                                 nperlam, ux_arr(cntu), uy_arr(cntu), kbnx_arr(cntu), &
+                                 kbny_arr(cntu)  ! read vars
+
+        cntt = cntt + 1
+        iElmType(cntt) = iUnd
+
+
+        nSteps_arr(cntu) = nw * nperlam
+
+        slamw = 4.0_WP * pi * rho
+        delmz(cntu) = slamw / real(nperlam, kind=wp)
+  
+        if (zundtype_arr(cntu) == 'curved') then
+
+          ux_arr(cntu) = 0   ! Temp fix for initialization bug
+          uy_arr(cntu) = 1
+
+        else if (zundtype_arr(cntu) == 'planepole') then
+
+          ux_arr(cntu) = 0   ! Temp fix for initialization bug
+          uy_arr(cntu) = 1
+
+        else if (zundtype_arr(cntu) == 'helical') then
+
+          ux_arr(cntu) = 1   ! Temp fix for initialization bug
+          uy_arr(cntu) = 1
+
+        end if
+
+
+
+
+
+      else if (ztest(1:2) == 'CH') then
+
+        backspace(168)
+        cntc = cntc + 1
+        read (168,*, IOSTAT=ios) ztest, chic_zbar(cntc), chic_slip(cntc), chic_disp(cntc)  ! read vars
+
+        cntt = cntt + 1
+        iElmType(cntt) = iChic
+
+
+        chic_slip(cntc) = 2.0_WP*pi*c1*chic_slip(cntc)
+        chic_zbar(cntc) = 2.0_WP*pi*c1*chic_zbar(cntc)
+        ! D = Dfact*10.0/6.0*delta ! The Dispersion parameter
+
+
+      else if (ztest(1:2) == 'DR') then
+
+        backspace(168)
+        cntd = cntd + 1
+        read (168,*, IOSTAT=ios) ztest, drift_zbar(cntd)   ! read vars
+
+        cntt = cntt + 1
+        iElmType(cntt) = iDrift
+
+        drift_zbar(cntd) = drift_zbar(cntd) * 4.0_wp * pi * sRho_G
+
+      else if (ztest(1:2) == 'MO') then
+
+        backspace(168)
+        cntm = cntm + 1
+        read (168,*, IOSTAT=ios) ztest, enmod_wavenum(cntm), enmod_mag(cntm) ! read vars
+
+        cntt = cntt + 1
+        iElmType(cntt) = iModulation
+
+
+      end if
+
+      cnt = cnt + 1
+      !print*, 'hi'
+
     end if
 
-    iElmType(2*i-1) = iUnd
-    iElmType(2*i) = iChic
+  end do    
 
-  end do
+  close(168, STATUS='KEEP')
 
-  close(1, STATUS='KEEP')
-
-!     Convert from # undulator periods to z-bar
-
-  delta = 2.0_WP*pi*c1*delta
-  D = Dfact*10.0/6.0*delta ! The Dispersion parameter
-
-  sStepSize =  delmz(1)
-  taper = tapers(1)
-
-  END SUBROUTINE readLatt
+  end subroutine readLatt
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  SUBROUTINE disperse(iL)
+  subroutine disperse(iL)
 
-  IMPLICIT NONE
+  implicit none
 
 ! Subroutine to apply phase changes to electrons beam
 ! due to passing through a chicane...
@@ -230,30 +364,30 @@ contains
 !                  dispersive strength factor of the chicane
 ! delta            Slippage in resonant wavelengths
 
-  INTEGER(KIND=IP), INTENT(IN) :: iL
+  integer(kind=ip), intent(in) :: iL
 
-  real(kind=wp) :: szbar4d, smeanp2
+  real(kind=wp) :: szbar4d
   real(kind=wp), allocatable :: sp2(:)
   logical :: qDummy
 
-  LOGICAL :: qOKL
+
+
+  logical :: qOKL
+
+  szbar4d = chic_zbar(iChic_cr)
 
 !     Propagate through chicane
 
 
-  sElZ2_G = sElZ2_G - 2.0_WP * D(iChic_cr) *  &
+  sElZ2_G = sElZ2_G - 2.0_WP * chic_disp(iChic_cr) *  &
                (sElGam_G - 1_wp) &
-               + delta(iChic_cr)
+               + chic_slip(iChic_cr)
 
   if (qDiffraction_G) then
 
 !  Convert slippage in z2bar to spatial length for diffraction
 
-    allocate(sp2(iNumberElectrons_G))
-    call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, sEta_G, sGammaR_G, saw_G)
-    smeanp2 = arr_mean_para_weighted(sp2, s_chi_bar_G)
-    szbar4d = delta(iChic_cr) / smeanp2
-    call diffractIM(szbar4d, qDummy, qOKL)
+    if (szbar4d > 0.0_wp) call diffractIM(szbar4d, qDummy, qOKL)
 
   end if
 
@@ -261,7 +395,7 @@ contains
 
   iChic_cr = iChic_cr + 1_ip
 
-  END SUBROUTINE disperse
+  end subroutine disperse
 
 
 
@@ -276,11 +410,10 @@ contains
     real(kind=wp) :: del_dr_z
 
     real(kind=wp), allocatable :: sp2(:)
-    real(kind=wp) :: dumdrifts(2)  ! dummy until global
     logical :: qDummy, qOKL
 
 
-    del_dr_z = dumdrifts(iDrift_cr) ! dummy until global
+    del_dr_z = drift_zbar(iDrift_cr) ! dummy until global
 
     allocate(sp2(iNumberElectrons_G))
 
@@ -550,6 +683,13 @@ contains
 
     nSteps = nSteps_arr(iM)
 
+    zUndType_G = zundtype_arr(iM)
+
+    fx_G = ux_arr(iM)
+    fy_G = uy_arr(iM)
+
+    sKBetaXSF_G = kbnx_arr(iM)
+    sKBetaYSF_G = kbny_arr(iM)
 
 !     Setup undulator ends
 
@@ -600,28 +740,111 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  FUNCTION numOfMods(fname)
+  function numOfMods(fname)
 
-!     Function to count the number of lines on a file
+!     Function to count the number of each type of element
+!     in the lattice file
 !
 !                ARGUMENTS
 
-  INTEGER(KIND=IP)          :: numOfMods
-  CHARACTER(*), INTENT(IN)  :: fname
+  integer(kind=ip)          :: numOfMods
+  character(*), intent(in)  :: fname
 
 !                LOCAL ARGS
 
-  INTEGER :: ios
+  integer :: ios
+  integer(kind=ip) :: cnt, cntq, cntu, cntc, cntd, cntm
+  character(40) :: ztest
 
-  OPEN(1,FILE=fname, IOSTAT=ios, ACTION='READ', POSITION ='REWIND')
-  IF (ios /= 0) STOP "OPEN(input file) not performed correctly, IOSTAT /= 0"
+  ztest = ''
+  cnt = 0
+  cntq = 0
+  cntu = 0
+  cntc = 0
+  cntd = 0
+  cntm = 0
 
-  READ (1,*)
-  READ (1,*)
-  READ (1,*) numOfMods
+  open(168,FILE=fname, IOSTAT=ios, STATUS='OLD', ACTION='READ', POSITION ='REWIND')
+  if (ios /= 0) then
+    print*, 'iostat = ', ios
+    stop "OPEN(input file) not performed correctly, IOSTAT /= 0"
+  end if
 
-  10 CLOSE(1, STATUS='KEEP')
+  do 
 
-  END FUNCTION numOfMods
+    read (168,*, IOSTAT=ios) ztest  ! probe the line
 
-END MODULE lattice
+    if (ios < 0) then  ! if reached end of file:-
+
+      print*, "Reached end of file!!"
+      print*, "Turns out you had ", cnt, "lines in the file!!"
+      print*, "Turns out you had ", cntq, "quads in the file!!"
+      print*, "Turns out you had ", cntu, "undulators in the file!!"
+
+      exit
+
+    else if (ios > 0) then
+
+      print*, 'THIS LINE HAS NOTHING FOR ME'
+      cnt = cnt + 1
+      stop
+
+    else
+
+      if (ztest(1:2) == 'QU') then
+
+        cntq = cntq + 1
+!        print*, 'quad number ', cntq, ' has params ', quad1, quad2
+
+      else if (ztest(1:2) == 'UN') then
+
+
+        cntu = cntu + 1
+
+
+      else if (ztest(1:2) == 'CH') then
+
+
+        cntc = cntc + 1
+
+
+      else if (ztest(1:2) == 'DR') then
+
+
+        cntd = cntd + 1
+
+
+      else if (ztest(1:2) == 'MO') then
+
+
+        cntm = cntm + 1
+
+
+      end if
+
+      cnt = cnt + 1
+      !print*, 'hi'
+
+    end if
+
+  end do
+
+  close(168, STATUS='KEEP')
+
+
+  numOfMods = cntq + cntu + cntc + cntd + cntm
+
+  numOfUnds = cntu
+
+  numOfChics = cntc
+
+  numOfDrifts = cntd
+
+  numOfModulations = cntm
+
+  numOfQuads = cntq
+
+
+  end function numOfMods
+
+end module lattice
