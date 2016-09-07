@@ -423,13 +423,13 @@ contains
     
       ! drift in x and y...
 
-      sElX_G = 2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
+      sElX_G = sElX_G + (2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
             (1 + sEta_G * sp2) / sElGam_G *  &
-            sElPX_G
+            sElPX_G) * del_dr_z
 
-      sElY_G = - 2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
+      sElY_G = sElY_G - (2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
             (1 + sEta_G * sp2) / sElGam_G *  &
-            sElPY_G
+            sElPY_G) * del_dr_z
 
     end if
 
@@ -449,13 +449,31 @@ contains
 
     integer(kind=ip), intent(in) :: iL
 
+    real(kind=wp), allocatable :: sp2(:)
+
+    allocate(sp2(iNumberElectrons_G))
+
+    call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, sEta_G, sGammaR_G, saw_G)
+
 !    Apply quad transform (point transform)
 
 
     if (.not. qOneD_G) then
 
+      sElPX_G = sElPX_G + sqrt(sEta_G) * sElGam_G / &
+                 (2 * sRho_G * sKappa_G) * sElX_G / &
+                 (1 + (sEta_G * sp2)) / quad_fx(iQuad_cr)
+
+      sElPY_G = sElPY_G + sqrt(sEta_G) * sElGam_G / &
+                 (2 * sRho_G * sKappa_G) * sElY_G / &
+                 (1 + (sEta_G * sp2)) / quad_fy(iQuad_cr)
 
     end if
+
+
+  deallocate(sp2)
+
+  iQuad_cr = iQuad_cr + 1_ip
 
   end subroutine Quad
 
@@ -467,7 +485,11 @@ contains
 
     integer(kind=ip), intent(in) :: iL
 
+    sElGam_G = sElGam_G + ( enmod_mag(iModulation_cr) &
+               * cos(enmod_wavenum(iModulation_cr) * sElZ2_G) )
 
+
+    iModulation_cr = iModulation_cr + 1
 
   end subroutine bModulation
 

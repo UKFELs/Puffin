@@ -21,8 +21,9 @@ approximations. It does not utilize a 'slicing' model of the beam phase space
 and radiation field, and instead utilizes an algorithm which is much more
 similar to a Particle-In-Cell (PIC) code methodology.
 
-In addition, some accelerator componenets are included, and together with the
-lack of restrictions, means it may model:
+In addition, some accelerator components are included for simulation of the 
+'realistic' undulator line, and together with the lack of restrictions, 
+means it may model:
   - The full, broad bandwidth frequency spectrum, limited only by the Niquist frequency of the mesh
   - Full electron beam transport
   - Transport of large energy spread beams through the undulator, and the radiation emitted from these beams
@@ -37,6 +38,13 @@ of the backwards wave from the e-beam.
 
 
 ## Release Notes
+
+1.6.0:
+  - Revamped the form of the lattice file, both to include more compenents, and to
+    enhance the flexibility. Multiple undulator types with different polarizations,
+    tunings, and tapers can now be used in the one run. Quads, drifts, and better
+    chicane modelling (with proper diffraction of the radiation field) are now
+    included.
 
 1.5.1:
   - Added use of inner mesh to the parallel model to reduce communication between MPI nodes.
