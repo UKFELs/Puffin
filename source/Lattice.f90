@@ -391,8 +391,6 @@ contains
 
   end if
 
-  deallocate(sp2)
-
   iChic_cr = iChic_cr + 1_ip
 
   end subroutine disperse
@@ -405,7 +403,7 @@ contains
 
   subroutine driftSection(iL)
 
-    integer(kind=wp), intent(in) :: iL
+    integer(kind=ip), intent(in) :: iL
 
     real(kind=wp) :: del_dr_z
 
@@ -421,6 +419,20 @@ contains
 
     sElZ2_G = sElZ2_G + del_dr_z * sp2
 
+    if (.not. qOneD_G) then
+    
+      ! drift in x and y...
+
+      sElX_G = 2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
+            (1 + sEta_G * sp2) / sElGam_G *  &
+            sElPX_G
+
+      sElY_G = - 2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
+            (1 + sEta_G * sp2) / sElGam_G *  &
+            sElPY_G
+
+    end if
+
     if (qDiffraction_G) call diffractIM(del_dr_z, qDummy, qOKL)
 
     deallocate(sp2)
@@ -428,6 +440,36 @@ contains
     iDrift_cr = iDrift_cr + 1_ip
 
   end subroutine driftSection
+
+! ##############################################
+
+
+
+  subroutine Quad(iL)
+
+    integer(kind=ip), intent(in) :: iL
+
+!    Apply quad transform (point transform)
+
+
+    if (.not. qOneD_G) then
+
+
+    end if
+
+  end subroutine Quad
+
+
+
+! ##############################################
+
+  subroutine bModulation(iL)
+
+    integer(kind=ip), intent(in) :: iL
+
+
+
+  end subroutine bModulation
 
 
 
