@@ -1,0 +1,115 @@
+Module file for Puffin
+
+
+
+!Below are 6 25 period undulators, with different aw's.
+!They lase at 2 different colours.
+!There are 20 period drifts between modules,
+!and an isochronous chicane ('isochronous' meaning
+!there is no dispersion, so R56 = 0).
+
+
+UN  ''  25   1.0   0.0   30   1.0   1.0   0.0    0.0
+DR  20.0
+CH  0.0   20.0   0.0
+UN  ''  25   1.0   0.0   30   1.0   1.0   0.0    0.0
+DR  20.0
+CH  0.0   20.0   0.0
+UN  ''  25   1.945667391924941   0.0   30   1.0   1.0   0.0    0.0
+DR  20.0
+CH  0.0   20.0   0.0
+UN  ''  25   1.0   0.0   30   1.0   1.0   0.0    0.0
+DR  20.0
+CH  0.0   20.0   0.0
+UN  ''  25   1.945667391924941   0.0   30   1.0   1.0   0.0    0.0
+DR  20.0
+CH  0.0   20.0   0.0
+UN  ''  25   1.945667391924941   0.0   30   1.0   1.0   0.0    0.0
+
+
+
+!Modulation added with:
+
+!MO  58.3    0.001   e.g.
+
+
+!Chicane added with e.g.
+!CH  0.0   20.0   0.0
+
+
+!Drift added with e.g.
+!DR  20.0
+
+
+!Quad added with e.g. 
+!QU  2   -2
+!QU  -2   2
+
+
+! *********************************************
+!
+! A line must start with the correct 2 identifying
+! characters to be read as an element.
+! Then should follow the necessary numbers describing 
+! element.
+! Brief explanations below...
+!
+! *********************************************
+! Undulator - use 'UN'
+! zundtype_arr, nw, mf, tapers, nperlam, ux_arr, uy_arr, kbnx_arr, kbny_arr
+!
+! ...being...
+!
+! undulator type, number of periods (integer), initial tuning alpha = aw/aw0, 
+! taper d/dz alpha, number of integration steps per undulator period (integer), 
+! ux and uy - relative magnetic field strengths in x and y, respectively
+! kbnx_arr and kbny_arr - betatron wavenumber (k_beta = 2pi / lambda_beta) 
+! of constant 'strong' focusing channel applied over undulator
+!
+!
+!
+! *********************************************
+!
+! Quadrupole - use 'QU'
+!
+! with \bar{F}_x and \bar{F}_y, which are F_x / lg
+! and Fy / lg, respectively. (F_x being -1/R21 of
+! the quad transport matrix, and F_y being -1/R43).
+!
+! *********************************************
+!
+! Modulation (energy) - use 'MO'
+!
+! with wavenumber = 2*pi / lambda_mod, where lambda_mod
+! is in units of z2
+! and with magnitude in units of del gamma / gamma_r
+!
+!
+!
+! *********************************************
+! 
+! Chicane - use 'CH'
+!
+! chic_zbar(cntc), chic_slip(cntc), chic_disp(cntc)
+!
+! ...being...
+!
+! physical length of device in undulator periods (can be non-integer)
+! slippage induced by chicane w.r.t. radiation field,
+! in units of resonant wavelengths (can be non-integer)
+! Dispersion factor \bar{R}_56 = rho * k_r * R56
+!
+!
+! *********************************************
+! Drift - use DR
+!
+! with length of drift in undulator periods (can be non-integer)
+!
+
+
+
+
+
+
+
+
