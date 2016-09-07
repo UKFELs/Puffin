@@ -1,40 +1,90 @@
 Module file for Puffin
 
-6    modules
-======================
-This file specifies an undulator
-chicane lattice for Puffin. Each
-line represents one undulator-chicane
-section.
 
 
-Columns for each section:
+!Below are 6 25 period undulators, with different aw's.
+!They lase at 2 different colours.
+!There are no drift section between modules.
 
-Nw   Ns   aw/aw0   nperlam    taper
 
-where
+UN  ''  25   1.0   0.0   30   1.0   1.0   0.0    0.0
+UN  ''  25   1.0   0.0   30   1.0   1.0   0.0    0.0
+UN  ''  25   1.945667391924941   0.0   30   1.0   1.0   0.0    0.0
+UN  ''  25   1.0   0.0   30   1.0   1.0   0.0    0.0
+UN  ''  25   1.945667391924941   0.0   30   1.0   1.0   0.0    0.0
+UN  ''  25   1.945667391924941   0.0   30   1.0   1.0   0.0    0.0
 
-Nw      Number of undulator periods
 
-Ns      Relative slippage between beam
-        and field, in resonant wavelengths
 
-aw/aw0  Undulator parameter, normalised to
-        undulator parameter in input file
 
-nperlam Number of steps per undulator period for this module
 
-taper   gradient of undulator parameter as
-        function of propagation distance z,
-        daw/dz
-========================
+!MO  58.3    0.001
 
-25     0    1.0        100        0.0
-25     0    1.0        100        0.0
-25     0    1.945667391924941    200     0.0
-25     0    1.0        100        0.0
-25     0    1.945667391924941    200     0.0
-25     0    1.945667391924941    200     0.0
+
+!CH  0.0   20.0   0.0
+!CH  0.0   20.0   0.0
+!CH  0.0   20.0   0.0
+
+
+! *********************************************
+!
+! Brief explanations below...
+!
+! *********************************************
+! Undulator - use 'UN'
+! zundtype_arr, nw, mf, tapers, nperlam, ux_arr, uy_arr, kbnx_arr, kbny_arr
+!
+! ...being...
+!
+! undulator type, number of periods (integer), initial tuning alpha = aw/aw0, 
+! taper d/dz alpha, number of integration steps per undulator period (integer), 
+! ux and uy - relative magnetic field strengths in x and y, respectively
+! kbnx_arr and kbny_arr - betatron wavenumber (k_beta = 2pi / lambda_beta) 
+! of constant 'strong' focusing channel applied over undulator
+!
+!
+!
+! *********************************************
+!
+! Quadrupole - use 'QU'
+!
+! with \bar{F}_x and \bar{F}_y, which are F_x / lg
+! and Fy / lg, respectively. (F_x being -1/R21 of
+! the quad transport matrix, and F_y being -1/R43).
+!
+! *********************************************
+!
+! Modulation (energy) - use 'MO'
+!
+! with wavenumber = 2*pi / lambda_mod, where lambda_mod
+! is in units of z2
+! and with magnitude in units of del gamma / gamma_r
+!
+!
+!
+! *********************************************
+! 
+! Chicane - use 'CH'
+!
+! chic_zbar(cntc), chic_slip(cntc), chic_disp(cntc)
+!
+! ...being...
+!
+! physical length of device in undulator periods (can be non-integer)
+! slippage induced by chicane w.r.t. radiation field,
+! in units of resonant wavelengths (can be non-integer)
+! Dispersion factor \bar{R}_56 = rho * k_r * R56
+!
+!
+! *********************************************
+! Drift - use DR
+!
+! with length of drift in undulator periods (can be non-integer)
+!
+
+
+
+
 
 
 
