@@ -40,7 +40,7 @@ of the backwards wave from the e-beam.
 ## Release Notes
 
 1.6.0:
-  - Revamped the form of the lattice file, both to include more compenents, and to
+  - Revamped the form of the lattice file, both to include more components, and to
     enhance the flexibility. Multiple undulator types with different polarizations,
     tunings, and tapers can now be used in the one run. Quads, drifts, and better
     chicane modelling (with proper diffraction of the radiation field) are now
