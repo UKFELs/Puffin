@@ -16,18 +16,30 @@ UN  ''  25   1.945667391924941   0.0   30   1.0   1.0   0.0    0.0
 
 
 
+!Modulation added with:
+
+!MO  58.3    0.001   e.g.
 
 
-!MO  58.3    0.001
-
-
+!Chicane added with e.g.
 !CH  0.0   20.0   0.0
-!CH  0.0   20.0   0.0
-!CH  0.0   20.0   0.0
+
+
+!Drift added with e.g.
+!DR  20.0
+
+
+!Quad added with e.g. 
+!QU  2   -2
+!QU  -2   2
 
 
 ! *********************************************
 !
+! A line must start with the correct 2 identifying
+! characters to be read as an element.
+! Then should follow the necessary numbers describing 
+! element.
 ! Brief explanations below...
 !
 ! *********************************************
