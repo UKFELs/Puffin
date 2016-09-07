@@ -1,0 +1,53 @@
+! PUFFIN BEAM FILE
+!
+!Describes electron beams for input into puffin. Multiple beams with
+!different parameters can be used. Please refer to POP-REF for an
+!explanation of the scaled variables used, such as z2 and p2.
+!
+! BEAM PARAMETERS - namelist NBLIST
+!
+! nbeams - number of electron beams
+! dtype  - Input type - simple, distribution, or macroparticle 
+!
+! BEAM PARAMETERS - namelist BLIST
+!========================================================================
+! sSigmaE - gaussian std dev in each dimension - x, y, z2, px, py, gamma, then for additional beams
+! sLenE   - Total length of beam modelled in each dimension - x, y, z2, px, py, gamma...
+! bcenter - Center of beam in z2
+! iNumElectrons  -  Number of macroparticles in each dimension used to model the beam 
+! sEmit_n - Scaled transverse beam emittance
+! sQe - Beam charge 
+! gammaf - Ratio of average beam energy to reference beam energy gamma / gamma_r 
+! chirp  - Energy chirp in z2 i.e. dgamma/dz2
+! mag    - magnitude of energy oscillation on beam
+! freq   - frequency in z2 of beam energy oscillation
+! qRndEj_G - Round edge of flat top?
+! sSigEj_G - Gaussian sigma of tail-off if used
+! qMatched_A - Automatically match beam to focusing channel??
+!========================================================================
+
+
+&NBLIST
+nbeams = 1
+dtype = 'simple'
+/
+
+&BLIST
+sSigmaE =1.0, 1.0, 1E8, 1.0, 1.0, 1E8
+sLenE = 1E-6, 1E-6, 50.0, 1E-6, 1E-6, 1e-4
+iNumElectrons = 1, 1, 73000, 1, 1, 9
+sEmit_n = 6.75599500154485e-01
+sQe = 100E-12
+bcenter = 0.0
+gammaf = 1.0
+chirp = 0.0
+mag = 0.0
+fr = 1.0
+qRndEj_G = .true.
+sSigEj_G = 0.1
+qMatched_A = .false.
+qFixCharge=.true.
+/
+
+
+
