@@ -589,7 +589,7 @@ contains
 !    logical, intent(in) :: qSeparate !<May reinstitute this.
     CHARACTER(LEN=9), PARAMETER :: dsetname = "electrons" !< Dataset name
     CHARACTER(LEN=30) :: aname   !< Attribute name
-    character(32_IP) :: filename
+    character(1024_IP) :: filename
 !    logical, intent(inout) :: qOK
 !    INTEGER(HSIZE_T), DIMENSION(1) :: dims = (/iGloNumElectrons_G/) ! Dataset dimensions
     INTEGER(HSIZE_T), DIMENSION(2) :: dims   !< dims of ptcl dataset (coords*numelecs)
@@ -983,7 +983,7 @@ contains
 !    logical, intent(in) :: qSeparate !<May reinstitute this.
     CHARACTER(LEN=9), PARAMETER :: dsetname = "electrons" !< Dataset name
     CHARACTER(LEN=30) :: aname   !< Attribute name
-    character(32_IP) :: filename
+    character(1024_IP) :: filename !< Filename to write - 1024 chars is overkill but...
 !    logical, intent(inout) :: qOK
 !    INTEGER(HSIZE_T), DIMENSION(1) :: dims = (/iGloNumElectrons_G/) ! Dataset dimensions
     INTEGER(HSIZE_T), DIMENSION(2) :: fdims,dims   !< dims of ptcl dataset (coords*numelecs)

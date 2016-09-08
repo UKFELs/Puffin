@@ -104,6 +104,7 @@ integer(kind=ip) :: iInputType_G
 integer(kind=ip), parameter :: iGenHom_G = 1_ip
 integer(kind=ip), parameter :: iReadDist_G = 2_ip
 integer(kind=ip), parameter :: iReadMASP_G = 3_ip
+integer(kind=ip), parameter :: iReadH5_G = 4_ip
 
 ! Electron macroparticle phase space coordinates 
 

@@ -11,7 +11,7 @@ USE TypesandConstants
 USE Globals
 USE ParallelSetUp
 use MASPin
-
+use H5in
 
 !****************************************************************
 !
@@ -459,7 +459,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
   LOGICAL, INTENT(OUT) :: qSimple
   CHARACTER(*), INTENT(INOUT) :: be_f     ! beam file name
-  CHARACTER(32_ip), INTENT(INOUT), ALLOCATABLE :: dist_f(:)     ! dist file names
+  CHARACTER(1024_ip), INTENT(INOUT), ALLOCATABLE :: dist_f(:)     ! dist file names
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sEmit_n(:),chirp(:), mag(:), fr(:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sSigmaE(:,:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sLenE(:,:)
@@ -490,6 +490,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
 
   namelist /bdlist/ dist_f, nMPs4MASP_G
+  namelist /bh5list/ dist_f
 
   qOK = .FALSE.
   
@@ -641,6 +642,12 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
     read(161,nml=bdlist)
 
     close(UNIT=161,STATUS='KEEP')    
+
+  else if (dtype == 'h5') then
+    iInputType_G = iReadH5_G
+    read(161,nml=bh5list)
+
+    close(UNIT=161,STATUS='KEEP')
 
   end if
 
