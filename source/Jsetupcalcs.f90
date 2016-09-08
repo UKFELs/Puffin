@@ -17,6 +17,7 @@ USE electronInit
 USE gMPsFromDists
 use avwrite
 use MASPin
+use h5in
 use parafield
 use scale
 
@@ -977,6 +978,9 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
       fname_temp = fname(1)
       call readMASPfile(fname_temp)
 
+    else if (iInputType_G == iReadH5_G) then
+      fname_temp = fname(1)
+      call readH5beamfile(fname_temp)
     else 
 
       if (tProcInfo_G%qRoot) print*, 'No beam input type specified....'
