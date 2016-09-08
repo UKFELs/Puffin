@@ -82,7 +82,7 @@ contains
 
 !  LIst of variables to write as attributes available at FssdsPuffin.f90 lines 250 - 375	
 !
-    CHARACTER(32_IP), INTENT(IN) :: zDataFileName
+    CHARACTER(1024_IP), INTENT(IN) :: zDataFileName
     INTEGER(KIND=IP), INTENT(IN) :: iNodes(:)
     INTEGER(KIND=IP), INTENT(IN) :: iNumElectrons(:)
     REAL(KIND=WP),    INTENT(IN) :: sLengthOfElm(:)
@@ -404,7 +404,7 @@ contains
 !    real(kind=wp), intent(out) :: aveGamma(nslices)
 !    real(kind=wp), intent(out) :: aveDgamma(:)
     integer(kind=ip), intent(in) :: iIntWr, iWr !<Aren't these global?
-    character(32_IP), intent(in) :: zDFName 
+    character(1024_IP), intent(in) :: zDFName 
     logical, intent(in) :: qSep !< Probably not used here, whether to write separate files
     logical, intent(inout) :: qOK  !< Flag set if any probs happen
     integer :: error, numSpatialDims
@@ -1475,7 +1475,7 @@ contains
 !    logical, intent(in) :: qSeparate
 !    CHARACTER(LEN=5), PARAMETER :: dsetname = "aperp"     ! Dataset name
     CHARACTER(LEN=16) :: aname   ! Attribute name
-!    character(32_IP), intent(in) :: zDFName
+!    character(1024_IP), intent(in) :: zDFName
     character(64_IP) :: filename
     INTEGER(HSIZE_T), DIMENSION(3) :: dims !<no longer includes component
 ! Data as component*reducedNX*reducedNY*reducedNZ2
@@ -1600,7 +1600,7 @@ contains
 !    logical, intent(in) :: qSeparate
     CHARACTER(LEN=5), PARAMETER :: dsetname = "aperp"     ! Dataset name
     CHARACTER(LEN=16) :: aname   ! Attribute name
-!    character(32_IP), intent(in) :: zDFName
+!    character(1024_IP), intent(in) :: zDFName
     character(64_IP) :: filename
     INTEGER(HSIZE_T), DIMENSION(4) :: fdims,dims !<no longer includes component
     INTEGER(HSIZE_T), DIMENSION(4) :: doffset,dsize,stride !<no longer includes component
@@ -1881,7 +1881,7 @@ contains
 !    logical, intent(in) :: qSeparate
     CHARACTER(LEN=5), PARAMETER :: dsetname = "aperp"     ! Dataset name
     CHARACTER(LEN=16) :: aname   ! Attribute name
-!    character(32_IP), intent(in) :: zDFName
+!    character(1024_IP), intent(in) :: zDFName
     character(64_IP) :: filename
     INTEGER(HSIZE_T), DIMENSION(2) :: fdims,dims !<no longer includes component
     INTEGER(HSIZE_T), DIMENSION(2) :: doffset,dsize !<no longer includes component
@@ -2142,8 +2142,8 @@ contains
 !    logical, intent(in) :: qSeparate
     CHARACTER(LEN=5), PARAMETER :: dsetname = "aperp"     ! Dataset name
     CHARACTER(LEN=16) :: aname   ! Attribute name
-!    character(32_IP), intent(in) :: zDFName
-    character(32_IP) :: filename
+!    character(1024_IP), intent(in) :: zDFName
+    character(1024_IP) :: filename
     INTEGER(HSIZE_T), DIMENSION(4) :: dims 
 ! Data as component*reducedNX*reducedNY*reducedNZ2
 ! Not described as a parameter, so can prob modify 
@@ -2537,7 +2537,7 @@ contains
 !    logical, intent(in) :: qSeparate
 ! assumed these files will be small and written on rank0 for now
     CHARACTER(LEN=16) :: aname   !< Attribute name
-    character(32_IP) :: filename !< output filename
+    character(1024_IP) :: filename !< output filename
     INTEGER(HSIZE_T), DIMENSION(1) :: dims  !< Dataset dimensionality
     INTEGER     ::   rank = 1               !< Dataset rank
     INTEGER(HSIZE_T), DIMENSION(1) :: adims !< Attribute dims
@@ -2961,12 +2961,12 @@ contains
 ! electron phase space.
 
 !    type(cArraySegment), intent(inout) :: tArrayY(:)
-!   character(32_IP), intent(in)   ::   zDFName
+!   character(1024_IP), intent(in)   ::   zDFName
 !    character(*), intent(in), optional  :: zOptionalString
 !    logical, intent(inout) :: qOK
 
 !    integer(kind=ip) :: iap
-!    character(32_IP) :: zFileName
+!    character(1024_IP) :: zFileName
 !    logical :: qOptional, qOKL
 
 

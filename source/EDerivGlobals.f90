@@ -260,7 +260,7 @@ integer(kind=ip) :: iRedistStp_G
 
 
 
-character(32_IP) :: zDataFileName ! filename extension for 
+character(1024_IP) :: zDataFileName ! filename extension for 
                                   ! data files
 
 ! Type arrays describing electron, field and z output files,
@@ -280,7 +280,7 @@ integer(kind=ip) :: iWriteNthSteps, iDumpNthSteps, iIntWriteNthSteps
 
 
 character(132_ip) :: cmd_call_G
-character(32_ip) :: zFileName_G, zBFile_G, zSFile_G
+character(1024_ip) :: zFileName_G, zBFile_G, zSFile_G
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -35,7 +35,7 @@ MODULE FileType
  
   type cFileType
 
-    character(32_IP)  :: zFileName = ''
+    character(1024_IP)  :: zFileName = ''
     logical           :: qFormatted = .false.
     logical           :: qForInput = .false.
     logical           :: qAppend = .false.

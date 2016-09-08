@@ -99,7 +99,7 @@ subroutine writeIM(sZ, &
   integer(kind=ip), intent(in) :: iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps
   integer(kind=ip), intent(in) :: iCstep
   integer(kind=ip) :: nslices
-  character(32_IP), intent(in) :: zDataFileName
+  character(1024_IP), intent(in) :: zDataFileName
   logical, intent(inout) :: qOK
 
   integer error

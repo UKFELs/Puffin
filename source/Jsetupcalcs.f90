@@ -926,7 +926,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
     INTEGER(KIND=IPL) :: sendbuff, recvbuff
     INTEGER sendstat(MPI_STATUS_SIZE)
     INTEGER recvstat(MPI_STATUS_SIZE)
-    character(32) :: fname_temp
+    character(1024) :: fname_temp
     LOGICAL :: qOKL
 
     sQOneE = 1.60217656535E-19
