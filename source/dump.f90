@@ -36,7 +36,7 @@ SUBROUTINE DUMPDATA(sA,rank,nnodes,nelectrons,sz,istep,page)
  INTEGER(KIND=IPL), INTENT(IN) :: nelectrons
  REAL(KIND=WP),INTENT(IN) :: sz
 
- CHARACTER(32_IP) :: FileName
+ CHARACTER(1024_IP) :: FileName
 
 ! FIELD
 
@@ -149,7 +149,7 @@ SUBROUTINE DUMPCHIDATA(chibar,normchi,rank)
  REAL(KIND=WP),DIMENSION(:),INTENT(IN) :: normchi
  INTEGER(KIND=IP),INTENT(IN) :: rank
 
- CHARACTER(32_IP) :: FileName
+ CHARACTER(1024_IP) :: FileName
 
 ! FIELD
 ! Real part

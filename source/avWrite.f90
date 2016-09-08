@@ -192,7 +192,7 @@ contains
     type(cFileType), intent(inout) :: powFType
     logical, intent(in) :: qForm
 
-    character(32_IP) :: fname, vname
+    character(1024_IP) :: fname, vname
     logical :: qOKL
 
     real(kind=wp) :: lx, ly

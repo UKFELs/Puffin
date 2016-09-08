@@ -141,12 +141,12 @@ SUBROUTINE read_in(zfilename, &
 !********************************************************
   CHARACTER(*),INTENT(IN) :: zfilename
 
-  CHARACTER(32_IP),  INTENT(OUT)  :: zDataFileName
+  CHARACTER(1024_IP),  INTENT(OUT)  :: zDataFileName
   LOGICAL,           INTENT(OUT)  :: qSeparateFiles
   LOGICAL,           INTENT(OUT)  :: qFormattedFiles
   LOGICAL,           INTENT(OUT)  :: qResume
   REAL(KIND=WP) ,    INTENT(OUT)  :: sZ0
-  CHARACTER(32_IP),  INTENT(INOUT):: LattFile
+  CHARACTER(1024_IP),  INTENT(INOUT):: LattFile
     
   INTEGER(KIND=IP),  INTENT(OUT)  :: iWriteNthSteps, iWriteIntNthSteps
   TYPE(cArraySegment)             :: tArrayZ
@@ -182,7 +182,7 @@ SUBROUTINE read_in(zfilename, &
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sSigmaF(:,:)
   LOGICAL, ALLOCATABLE, INTENT(OUT) :: qFlatTopS(:)
   LOGICAL, INTENT(out) :: qSimple
-  CHARACTER(32_ip), ALLOCATABLE, INTENT(INOUT) :: dist_f(:)
+  CHARACTER(1024_ip), ALLOCATABLE, INTENT(INOUT) :: dist_f(:)
   
   REAL(KIND=WP),     INTENT(OUT)  :: sFiltFrac,sDiffFrac,sBeta
   REAL(KIND=WP),     INTENT(OUT)  :: srho
@@ -206,7 +206,7 @@ SUBROUTINE read_in(zfilename, &
   integer(kind=ip) :: nwaves
 
   INTEGER::ios
-  CHARACTER(32_IP) :: beam_file, seed_file
+  CHARACTER(1024_IP) :: beam_file, seed_file
   LOGICAL :: qOKL, qMatched !   TEMP VAR FOR NOW, SHOULD MAKE FOR EACH BEAM
 
   logical :: qWriteZ, qWriteA, &

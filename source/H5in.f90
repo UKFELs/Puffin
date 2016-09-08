@@ -1,4 +1,4 @@
-module MASPin
+module H5in
 
 use paratype
 use globals
@@ -9,7 +9,6 @@ use HDF5
 implicit none
 
 
-integer(kind=ip) :: nMPs4MASP_G
 
 contains
 
@@ -17,7 +16,6 @@ contains
   subroutine readH5Beamfile(zFile)
 
     character(*), intent(in) :: zFile
-    implicit none
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier 
     INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
@@ -35,6 +33,7 @@ contains
 !    logical, intent(inout) :: qOK
 !    INTEGER(HSIZE_T), DIMENSION(1) :: dims = (/iGloNumElectrons_G/) ! Dataset dimensions
     INTEGER(HSIZE_T), DIMENSION(2) :: dims   !< dims of ptcl dataset (coords*numelecs)
+    INTEGER(HSIZE_T), DIMENSION(2) :: mdims   !< maxdims of ptcl dataset (coords*numelecs)
     INTEGER(HSIZE_T), DIMENSION(2) :: doffset!< Offset for write, could be rank dependent
     INTEGER(HSIZE_T), DIMENSION(2) :: dsize  !< Size of hyperslab to write
     INTEGER     ::  rank = 2                 !< Particle Dataset rank
@@ -55,10 +54,10 @@ contains
     !integer(kind=ip) :: iep
     integer :: error ! Error flag
     character(LEN=40) :: errorstr !<String to write an error
+    integer(kind=ip) :: nMPs
 
     filename = zfile ! unless this is naughty due to different length
     ! could filename need a trim
-    integer(kind=ip) :: nMPs
     CALL h5open_f(error)
       if (tProcInfo_G%qRoot) then 
     Print*,'h5in:H5 interface opened'
@@ -69,13 +68,13 @@ contains
       CALL h5dopen_f (file_id, dsetname, dset_id, error)
       Print*,'hdf5_puff:readH5Beamfile(dataset opened in serial)'
       Print*,error
-      CALL h5get_type_f (dset_id, dtype, error)
+      CALL h5dget_type_f (dset_id, dtype, error)
       Print*,'hdf5_puff:readH5Beamfile(checking data type)'
       Print*,error
       CALL h5tget_class_f (dtype, dclass, error)
       Print*,'hdf5_puff:readH5Beamfile(dataset opened in serial)'
       Print*,error
-      if (dclass==H5T_DOUBLE_F) then
+      if (dclass==H5T_NATIVE_DOUBLE) then
        print*,'data is double precision'
       else
       errorstr = trim("data is not double float")
@@ -84,7 +83,7 @@ contains
       CALL h5Dget_space_f(dset_id,dspace_id,error)
       Print*,'hdf5_puff:readH5Beamfile(dataspace opened in serial)'
       Print*,error
-      CALL h5Dget_simple_extent_ndims(dspace_id,rank,error)
+      CALL h5Sget_simple_extent_ndims_f(dspace_id,rank,error)
       Print*,'hdf5_puff:readH5Beamfile(dataspace opened in serial)'
       Print*,error
       if (dclass==2) then
@@ -93,18 +92,20 @@ contains
       errorstr = trim("data does not have rank 2")
       goto 1000
       end if
-      CALL h5Dget_simple_extent_dims_f(dspace_id,dims,error)
+      CALL h5Sget_simple_extent_dims_f(dspace_id,dims,mdims,error)
       Print*,'hdf5_puff:readH5Beamfile(dataspace opened in serial)'
       Print*,error
-      if (dims[2]==7) then
+      if (dims(2)==7) then
        print*,'data has seven columns, which is good'
       else
       errorstr = trim("data does not have seven columns")
       goto 1000
       end if
      print*,"number of particles in file: "
-     print*, dims[1]
+     print*, dims(1)
    end if
 
 1000 print*, "abort, abort, in readH5Beamfile",errorstr
   end subroutine readH5Beamfile
+
+end module H5in
