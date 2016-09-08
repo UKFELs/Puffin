@@ -644,6 +644,14 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
     close(UNIT=161,STATUS='KEEP')    
 
   else if (dtype == 'h5') then
+    if (nbeams /= 1) then 
+      
+      if (tProcInfo_G%qRoot) print*, 'WARNING - currently only 1 file', &
+                                      'is supported for the h5 beam type'
+      if (tProcInfo_G%qRoot) print*, 'Only the 1st file will be read in....'
+
+    end if
+    allocate(dist_f(nbeams))
     iInputType_G = iReadH5_G
     read(161,nml=bh5list)
 
