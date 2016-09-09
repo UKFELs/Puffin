@@ -1,11 +1,13 @@
 module H5in
 
 use paratype
+USE ParallelInfoType
 use globals
 use ParallelSetUp
 use parBeam
 use scale
 use HDF5
+
 implicit none
 
 
@@ -62,8 +64,8 @@ contains
 
     filename = zfile ! unless this is naughty due to different length
     ! could filename need a trim
-    CALL h5open_f(error)
       if (tProcInfo_G%qRoot) then 
+    CALL h5open_f(error)
     Print*,'h5in:H5 interface opened'
       print*,'reading hdf5 input - first opening file on rank 0'
       CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
@@ -110,7 +112,6 @@ contains
       goto 1000
       end if
      nMPs=dims(2)
-     iGloNumElectrons_G = nMPs
      print*,"number of particles in file: "
      print*, nMPs
      call h5sclose_f(dspace_id,error) !dspace_id
@@ -129,8 +130,13 @@ contains
 !   CALL h5pset_fapl_mpio_f(plist_id, tProcInfo_G%comm, mpiinfo, error)
 
 ! Allocate local MP arrays
+      if (tProcInfo_G%qRoot) then 
     nMPsLoc=nMPs
-
+iNumberElectrons_G=nMPs
+else
+nMPsLoc=0
+iNumberElectrons_G=0
+end if
 
     allocate(sElX_G(nMPsLoc),   &
              sElY_G(nMPsLoc),   &
@@ -242,8 +248,8 @@ contains
      print*,"h5d dset closed"
       call h5fclose_f(file_id,error)
      print*,"h5f file_id closed"
-      end if !not on root any more.
-
+    CALL h5close_f(error)
+     print*,"h5 interface closed"
 !
 ! Low quality smoke test
 !
@@ -251,6 +257,11 @@ print*,"Low grade smoke test"
 print*,SElx_G(100)
 print*,S_chi_bar_G(200)
 print*,"Now, you tell me if we had electrons"
+      end if !not on root any more.
+
+    CALL MPI_ALLREDUCE(iNumberElectrons_G, iGloNumElectrons_G, &
+                       1, MPI_INTEGER, &
+                       MPI_SUM, MPI_COMM_WORLD, error)
     GoTo 2000
 
 ! Error Handler - Error log Subroutine in CIO.f90 line 709
