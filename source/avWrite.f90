@@ -510,7 +510,12 @@ contains
       li1 = 1_wp - li2
 
       if ((li2 < 0.0_wp) .or. (li1<0.0_wp)) then
-        print*, 'interps are negative!'
+        print*, 'Unable to calculate correct interpolation fraction'
+        print*, 'Particle coords'
+        print*, sElX_G(ij)
+        print*, sElY_G(ij)
+        print*, sElZ2_G(ij)
+        print*, 'Interps are negative!'
         STOP
       end if
 
