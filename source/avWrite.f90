@@ -485,28 +485,36 @@ contains
 
     use typesAndConstants
 
+    implicit none
     real(kind=wp), intent(in) :: sam_len
     real(kind=wp), intent(inout) :: Iarray(:)
 
-    integer(kind=ip) :: ij, inl, inu
-    real(kind=wp) :: li1, li2, locz2
+    integer(kind=ip) :: ij, inl, inu, inlc, inuc
+    real(kind=wp) :: li1, li2, locz2, ijpos
 
     Iarray = 0.0_wp   ! initialize
 
     do ij = 1, size(sElX_G)
 
       !   Array indices 
-      inl = ceiling(sElZ2_G(ij)/sam_len)
-      inu = inl + 1
-
+!      inl = ceiling(sElZ2_G(ij)/sam_len)
+!      inu = inl + 1
+      inlc=int(sElZ2_G(ij)/sam_len)
+      inuc=inlc+1
+      ijpos = sElZ2_G(ij)/sam_len  !"index" of position
       if ((inu > NZ2_G) .or. (inl<0)) then
         print*, 'NODES OUTSIDE BOUNDS'
         STOP
       end if
-
+      inl=inlc+1
+      inu=inl+1
       ! Interpolation fractions
-      locz2 = sElZ2_G(ij) - (inl-1) * sam_len
-      li2 = locz2 / sam_len
+!      locz2 = sElZ2_G(ij) - (inl-1_ip) * sam_len
+!      locz2 = dmod(ijpos,1.0_wp)
+!      locz2=sElZ2_G/sam_len
+!      li2 = locz2 / sam_len
+!      li2 = locz2-(inl-1_ip)
+      li2 = dmod(ijpos,1.0_wp)
       li1 = 1_wp - li2
 
       if ((li2 < 0.0_wp) .or. (li1<0.0_wp)) then
@@ -515,6 +523,10 @@ contains
         print*, sElX_G(ij)
         print*, sElY_G(ij)
         print*, sElZ2_G(ij)
+        print*, 'ij:',ij,' locz2:',locz2, inl, li2, li1
+        print*, 'sample len', sam_len
+        print*, 'num elements', NZ2_g
+        print*, 'max allowed z2', sam_len*NZ2_g
         print*, 'Interps are negative!'
         STOP
       end if
