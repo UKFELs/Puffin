@@ -77,7 +77,7 @@ CONTAINS
 !
     IMPLICIT NONE
 !
-    CHARACTER(32_IP), INTENT(IN) :: zDataFileName
+    CHARACTER(1024_IP), INTENT(IN) :: zDataFileName
     INTEGER(KIND=IP), INTENT(IN) :: iNodes(:)
     INTEGER(KIND=IP), INTENT(IN) :: iNumElectrons(:)
     REAL(KIND=WP),    INTENT(IN) :: sLengthOfElm(:)
@@ -439,7 +439,7 @@ CONTAINS
     type(cArraySegment), intent(inout) :: tArrayA(:), tArrayE(:), tArrayZ
     integer(kind=ip), intent(in) :: istep
     integer(kind=ip), intent(in) :: iIntWr, iWr
-    character(32_IP), intent(in) :: zDFName
+    character(1024_IP), intent(in) :: zDFName
     logical, intent(in) :: qSep
     logical, intent(inout) :: qOK
 
@@ -498,7 +498,7 @@ CONTAINS
 !     type(cArraySegment), intent(inout) :: tArrayA(:), tArrayE(:), tArrayZ
 !     integer(kind=ip), intent(in) :: istep
 !     integer(kind=ip), intent(in) :: iIntWr, iWr
-!     character(32_IP), intent(in) :: zDFName
+!     character(1024_IP), intent(in) :: zDFName
 !     logical, intent(in) :: qSep, qWDisp
 !     logical, intent(inout) :: qOK
 
@@ -593,12 +593,12 @@ CONTAINS
 ! electron phase space.
 
     type(cArraySegment), intent(inout) :: tArrayY(:)
-    character(32_IP), intent(in)   ::   zDFName
+    character(1024_IP), intent(in)   ::   zDFName
     character(*), intent(in), optional  :: zOptionalString
     logical, intent(inout) :: qOK
 
     integer(kind=ip) :: iap
-    character(32_IP) :: zFileName
+    character(1024_IP) :: zFileName
     logical :: qOptional, qOKL
 
 
@@ -683,7 +683,7 @@ CONTAINS
     type(cArraySegment), intent(inout) :: tArrayA(:)
     integer(kind=ip), intent(in) :: iStep
     logical, intent(in) :: qSeparate
-    character(32_IP), intent(in) :: zDFName
+    character(1024_IP), intent(in) :: zDFName
     logical, intent(inout) :: qOK
 
 
@@ -792,7 +792,7 @@ CONTAINS
     type(cArraySegment), intent(inout) :: tArrayE(:)
     integer(kind=ip), intent(in) :: iStep
     logical, intent(in) :: qSeparate
-    character(32_IP), intent(in) :: zDFName
+    character(1024_IP), intent(in) :: zDFName
     logical, intent(inout) :: qOK
 
 ! Local vars
@@ -910,7 +910,7 @@ CONTAINS
     type(cArraySegment), intent(inout) :: tArrayZ
     integer(kind=ip), intent(in) :: iStep
     logical, intent(in) :: qSeparate
-    character(32_IP), intent(in) :: zDFName
+    character(1024_IP), intent(in) :: zDFName
     logical, intent(inout) :: qOK
 
 ! Local vars...
@@ -980,12 +980,12 @@ CONTAINS
 ! Create Files - creates file for Zbar
 
     type(cArraySegment), intent(inout) :: tArrayY
-    character(32_IP), intent(in)   ::   zDFName
+    character(1024_IP), intent(in)   ::   zDFName
     character(*), intent(in), optional  :: zOptionalString
     logical, intent(inout) :: qOK
 
 
-    character(32_IP) :: zFileName
+    character(1024_IP) :: zFileName
     logical :: qOptional, qOKL
 
 

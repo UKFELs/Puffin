@@ -11,7 +11,7 @@ USE TypesandConstants
 USE Globals
 USE ParallelSetUp
 use MASPin
-
+use H5in
 
 !****************************************************************
 !
@@ -141,12 +141,12 @@ SUBROUTINE read_in(zfilename, &
 !********************************************************
   CHARACTER(*),INTENT(IN) :: zfilename
 
-  CHARACTER(32_IP),  INTENT(OUT)  :: zDataFileName
+  CHARACTER(1024_IP),  INTENT(OUT)  :: zDataFileName
   LOGICAL,           INTENT(OUT)  :: qSeparateFiles
   LOGICAL,           INTENT(OUT)  :: qFormattedFiles
   LOGICAL,           INTENT(OUT)  :: qResume
   REAL(KIND=WP) ,    INTENT(OUT)  :: sZ0
-  CHARACTER(32_IP),  INTENT(INOUT):: LattFile
+  CHARACTER(1024_IP),  INTENT(INOUT):: LattFile
     
   INTEGER(KIND=IP),  INTENT(OUT)  :: iWriteNthSteps, iWriteIntNthSteps
   TYPE(cArraySegment)             :: tArrayZ
@@ -182,7 +182,7 @@ SUBROUTINE read_in(zfilename, &
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sSigmaF(:,:)
   LOGICAL, ALLOCATABLE, INTENT(OUT) :: qFlatTopS(:)
   LOGICAL, INTENT(out) :: qSimple
-  CHARACTER(32_ip), ALLOCATABLE, INTENT(INOUT) :: dist_f(:)
+  CHARACTER(1024_ip), ALLOCATABLE, INTENT(INOUT) :: dist_f(:)
   
   REAL(KIND=WP),     INTENT(OUT)  :: sFiltFrac,sDiffFrac,sBeta
   REAL(KIND=WP),     INTENT(OUT)  :: srho
@@ -206,7 +206,7 @@ SUBROUTINE read_in(zfilename, &
   integer(kind=ip) :: nwaves
 
   INTEGER::ios
-  CHARACTER(32_IP) :: beam_file, seed_file
+  CHARACTER(1024_IP) :: beam_file, seed_file
   LOGICAL :: qOKL, qMatched !   TEMP VAR FOR NOW, SHOULD MAKE FOR EACH BEAM
 
   logical :: qWriteZ, qWriteA, &
@@ -459,7 +459,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
   LOGICAL, INTENT(OUT) :: qSimple
   CHARACTER(*), INTENT(INOUT) :: be_f     ! beam file name
-  CHARACTER(32_ip), INTENT(INOUT), ALLOCATABLE :: dist_f(:)     ! dist file names
+  CHARACTER(1024_ip), INTENT(INOUT), ALLOCATABLE :: dist_f(:)     ! dist file names
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sEmit_n(:),chirp(:), mag(:), fr(:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sSigmaE(:,:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sLenE(:,:)
@@ -490,6 +490,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
 
   namelist /bdlist/ dist_f, nMPs4MASP_G
+  namelist /bh5list/ dist_f
 
   qOK = .FALSE.
   
@@ -641,6 +642,20 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
     read(161,nml=bdlist)
 
     close(UNIT=161,STATUS='KEEP')    
+
+  else if (dtype == 'h5') then
+    if (nbeams /= 1) then 
+      
+      if (tProcInfo_G%qRoot) print*, 'WARNING - currently only 1 file', &
+                                      'is supported for the h5 beam type'
+      if (tProcInfo_G%qRoot) print*, 'Only the 1st file will be read in....'
+
+    end if
+    allocate(dist_f(nbeams))
+    iInputType_G = iReadH5_G
+    read(161,nml=bh5list)
+
+    close(UNIT=161,STATUS='KEEP')
 
   end if
 

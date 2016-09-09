@@ -192,7 +192,7 @@ contains
     type(cFileType), intent(inout) :: powFType
     logical, intent(in) :: qForm
 
-    character(32_IP) :: fname, vname
+    character(1024_IP) :: fname, vname
     logical :: qOKL
 
     real(kind=wp) :: lx, ly
@@ -510,7 +510,12 @@ contains
       li1 = 1_wp - li2
 
       if ((li2 < 0.0_wp) .or. (li1<0.0_wp)) then
-        print*, 'interps are negative!'
+        print*, 'Unable to calculate correct interpolation fraction'
+        print*, 'Particle coords'
+        print*, sElX_G(ij)
+        print*, sElY_G(ij)
+        print*, sElZ2_G(ij)
+        print*, 'Interps are negative!'
         STOP
       end if
 
