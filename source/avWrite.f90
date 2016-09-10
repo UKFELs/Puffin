@@ -632,8 +632,23 @@ contains
       cs2data(5,5,is)=cs2data(5,5,is)+s_chi_bar_G(ip)*sElpY_G(ip)*sElpY_G(ip)
       csdata(6,is)=csdata(6,is)+s_chi_bar_G(ip)*sElGam_G(ip)
       cs2data(6,6,is)=cs2data(6,6,is)+s_chi_bar_G(ip)*sElgam_G(ip)*sElgam_G(ip)
-      b1r(is)=b1r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(2*sRho_G))
-      b1i(is)=b1i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(2*sRho_G))
+
+
+      b1r(is) = b1r(is) + s_chi_bar_G(ip)*cos(sElz2_G(ip)/(2*sRho_G)) &
+                          * ( (is*sliceSizeZ2 - sElz2_G(ip)) / sliceSizeZ2 )
+
+      b1r(is+1) = b1r(is+1) + s_chi_bar_G(ip)*cos(sElz2_G(ip)/(2*sRho_G)) &
+                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ip)) / sliceSizeZ2 )
+
+      b1i(is) = b1i(is) + s_chi_bar_G(ip)*sin(sElz2_G(ip)/(2*sRho_G)) &
+                          * ( (is*sliceSizeZ2 - sElz2_G(ip)) / sliceSizeZ2 )
+
+      b1i(is+1) = b1i(is+1) + s_chi_bar_G(ip)*sin(sElz2_G(ip)/(2*sRho_G)) &
+                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ip)) / sliceSizeZ2 )
+
+
+!      b1r(is)=b1r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(2*sRho_G))
+!      b1i(is)=b1i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(2*sRho_G))
       b2r(is)=b2r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(4*sRho_G))
       b2i(is)=b2i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(4*sRho_G))
       b3r(is)=b3r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(6*sRho_G))
