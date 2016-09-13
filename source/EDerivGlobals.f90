@@ -392,6 +392,8 @@ logical   ::  qInnerXYOK_G
 
 logical   ::  qscaled_G
 
+logical   ::  qInitWrLat_G
+
 
 
 End Module Globals
