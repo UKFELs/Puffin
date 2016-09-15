@@ -18,15 +18,44 @@
 
 \begin{document}
 
-\title{Puffin: Overview}
+\title{Puffin Manual}
 
 \maketitle
 
-The code Puffin\cite{puffin} is an FEL simulation code  - it is a so-called `unaveraged' FEL code, which has an enhanced resolution over that of more conventional averaged codes. It can model fast changes in both the electron beam and radiation temporal structure, and can model any frequency (limited by the Niquist condition).  The code has undergone many improvements and extended its functionality since the initial publication in \cite{puffin}. It no longer uses an external linear solver package, and some of the scaling has changed - see below. Before, only the electron beam was distributed in memory across MPI nodes - now both the field and the beam are stored and solved in parallel, enabling the modelling of extremely large systems.
+\newpage
 
-Puffin can now output data in hdf5 format, with VizSchema metadata added to allow visualization with \textit{e.g.} Visit on a cluster. Some visualization examples are shown below in figures \ref{bbd1} and \ref{bbd2}.
+\tableofcontents
+
+\newpage
+
+\section{Introduction}
+
+%The code Puffin\cite{puffin} is an FEL simulation code  - it is a so-called `unaveraged' FEL code, which has an enhanced resolution over that of more conventional averaged codes. It can model fast changes in both the electron beam and radiation temporal structure, and can model any frequency (limited by the Niquist condition) and electron energy.  The code has undergone many improvements and extended its functionality since the initial publication in \cite{puffin}. It no longer uses an external linear solver package, and some of the scaling has changed - see below. Before, only the electron beam was distributed in memory across MPI nodes - now both the field and the beam are stored and solved in parallel, enabling the modelling of extremely large systems.
+
+%Puffin can now output data in hdf5 format, with VizSchema metadata added to allow visualization with \textit{e.g.} Visit on a cluster. Some visualization examples are shown below in figures \ref{bbd1} and \ref{bbd2}.
 
 
+
+Puffin (Parallel Unaveraged Fel INtegrator) simulates a Free Electron Laser (FEL). Puffin is a massively parallel numerical solver for an unaveraged, 3D FEL system of equations, and is written mostly in Fortran 90, using MPI and OpenMP.
+
+The initial publication describing the first version of the code is in \cite{puffin}. The code has undergone many improvements and extended its functionality since then. It no longer uses an external linear solver package, and the only external package now required is FFTW v2.1.5.
+
+Puffin is a so-called 'unaveraged' FEL code - meaning it is absent of the slowly varying envelope approximation (SVEA) and wiggler period averaging approximations. It does not utilize a 'slicing' model of the beam phase space and radiation field, and instead utilizes an algorithm which is much more similar to a Particle-In-Cell (PIC) code methodology.
+
+In addition, some accelerator components are included for simulation of the 'realistic' undulator line, and together with the lack of restrictions, means it may model:
+
+\begin{itemize}
+\item The full, broad bandwidth frequency spectrum, limited only by the Niquist frequency of the mesh
+\item Full electron beam transport
+\item Transport of large energy spread beams through the undulator, and the radiation emitted from these beams
+\item Tapered undulators
+\item Fully 3D undulators, including modelling of the wiggler entries/exits and natural focusing
+\item Interleaved undulator-chicane lattices
+\item Variably polarized undulators
+\item Undulator tuning of each module
+\end{itemize}
+
+It presently does not include the effects of space charge, and ignores emission of the backwards wave from the e-beam.
 
 \begin{figure*}
 \centering
@@ -50,7 +79,7 @@ Puffin can now output data in hdf5 format, with VizSchema metadata added to allo
 
 \newpage
 
-\section{Overview}
+\section{Analytic Equations Solved by Puffin}
 
 The system of equations solved by Puffin have been altered from those described in \cite{puffin}. They are now:
 \begin{align}
@@ -120,90 +149,13 @@ The formalism for including a variation in the magnetic undulator field, so that
 
 In the most basic form, the input requires 3 files - a `main' input file for parameters, numerical integration, and description of the field mesh, a `beam' input file descibing the electron beam, and a `seed' input file describing the radiation seed. Optionally, a lattice file can be used to setup an undulator-chicane lattice.
 
-\subsection{Parameters}
-
-Description of parameters:-
-
-{\bf sRho}
-
-$\rho$, the FEL parameter. This specifies the scaling of the system. It does {\bf not} have to be strictly correct - it only descibes the scaling. The simulation can be performed, and the system may be scaled back to SI units using the supplied scripts (NOT SUPPLIED YET!!). If it is correct, however (meaning, it has been calculated from the beam and undulator parameters input), then the scaled notation becomes physically relevant. For an ideal, 1D system, the system should saturate at intensity $|A|^2 \approx 1$, and the system should be firmly in the high or exponential gain regime at $\bar{z} \approx 2-3$. This allows one to see how efficiently the system is lasing w.r.t its ideal case.
-
-
-{\bf saw}
-
-$a_u$, the undulator parameter defined with the peak on-axis magnetic field.
-
-{\bf sgamma\_r}
-
-$\gamma_0$, the reference (usually the mean) beam energy.
-
-{\bf lambda\_w}
-
-$\lambda_u$, the undulator, or wiggler, period.
-
-{\bf zundType}
-
-Allows one to select from a choice of undulators. Choices are `curved', `planepole', and `helical', described analytically below. If neither of these are chosen, then the default elliptical undulator is chosen, with polarization specified by $u_x$ and $u_y$.
-
-{\bf sux, suy}
-
-$u_x$ and $u_y$ - the relative peak magnetic field of the undulator in each transverse polarization. Usually, at least one should be $=1$, and the other between $0$ (planar) and $1$ (helical). If they are not defined, the default is helical, $u_x=u_y=1$.
-
-
-{\bf qOneD}
-
-Logical. If  {\bf .true.}, Puffin will be run in 1D mode. Default is  {\bf .true.}, since this is the least computationally expensive option.
-
-{\bf qFieldEvolve}
-
-Logical. If = {\bf .false.}, then the radiation field evolution will be switched off. This is obviously artificial and very rarely used, but can be useful for debugging in some instances. Default is = {\bf .true}.
-
-{\bf qElectronsEvolve}
-
-Logical. If = {\bf .false.}, then the electron equations are not solved in the integration steps. Like when qFieldEvolve= {\bf .false.},  this is obviously artificial and very rarely used, but can be useful for debugging in some instances. Default is = {\bf .true.}.
-
-{\bf qElectronFieldCoupling}
-
-Logical. If = {\bf .false.}, then the radiation field feedback onto the electrons is switched off by setting the field terms in the electron evolution equations = 0, and so switches off the amplification of the radiation from the electrons. This is unphysical, but is used more often than when qFieldEvolve and qElectronsEvolve ={\bf .false.} . It can often be used to check for gain in the FEL in low gain situations, or to check whether amplification has occurred rather than coherent emission (CSE) effects due to \textit{e.g.} fine structure in the beam. When ={\bf .false.}, this will give the purely spontaneous emission (coherent or incoherent) from the electrons in the wiggler. If there is no appreciable difference between the qElectronFieldCoupling=true and false cases, then there has been negligible FEL amplification.
-
-{\bf qFocussing}
-
-Allows one to switch the strong focussing channel on or off. If ={bf .true.}, the strong focusing is switched on with calues specified by sKBetaXSF and sKBetaYSF. If qFocussing={\bf .true.}, yet no focussing strength is specified (sKBetaXSF or sKBetaYSF), then strong focusing is effectively switched off in that dimension. Default = {\bf .false.}.
-
-{\bf qDiffraction}
-
-Switches modelling of diffraction of the radiation field on or off. If ={\bf .true.}, field diffraction is modelled. This can be useful to switch off only really for debugging purposes. Default ={\bf .true.}.
-
-{\bf nodesPerLambdar}
-
-Number of nodes in the field mesh to use in the longitudinal dimension per reference resonant wavelength. The reference resonant wavelength is defined from the reference energy {\bf sgamma\_r}, the undulator period {\bf lambda\_w} and the base or reference undulator parameter {\bf saw} in the usual way.
-
-{\bf sFModelLengthZ2}
-
-The full length of the field mesh in the longitudinal or temporal dimension. This must be long enough to contain the entire beam as it propagates through the undulator. It is auto-checked at the start of the simulation for the simple beam case only, and the check is only an estimate.
-
-{\bf sElectronThreshold}
-
-When using the simple beam generation, any macroparticles generated with weight below the threshold will be removed. The threshold is defined using this variable, which expresses the threshold as a percentage of the mean particle weight.
-
-{\bf lattFile}
-
-The name of the lattice file, if required. If not required, supply a blank string (enter {\bf `'}).
-
-{\bf nPeriods}
-
-Number of undulator periods in the single (non-lattice) undulator case. If a lattice file is suppiled, then this is ignored.
-
-{\bf stepsPerPeriod}
-
-Number of integration steps for the electron beam and field source term per undulator period. Should usually be $\gtrsim$ {\bf nodesPerLambdar} for a beam with energy and wiggler parameter close to the reference parameters.
 
 
 
 
 \subsection{3D Magnetic Fields}
 
-The undulator is modelled analytically, and the model must include the fast wiggle motion. Puffin may be modified in the future to allow a map of the undulator field to be input. For now, there are a few generic undulator model employed. The magnetic fields for use in Puffin are the helical, plane-pole, and canted-pole undulator fields discussed in \cite{scharlemann1}, which in the scaled notation here are:-
+The undulator is modelled analytically, and the model must include the fast wiggle motion. Puffin may be modified in the future to allow a map of the undulator field to be input. For now, there are a few generic undulator models employed. The magnetic fields available for use in Puffin are the helical, plane-pole, and canted-pole undulator fields discussed in \cite{scharlemann1}, which in the scaled notation here are:-
 
 {\bf helical}
 \begin{align}
@@ -497,7 +449,7 @@ One may use the variables {\bf iRedNodesX, iRedNodesY} to fix the mesh around th
 
 
 
-\section{Lattice Input}
+\subsection{Lattice Input}
 
 There are five supported lattice element types, being undulators, quads, chicanes, drifts, and modulations. These are specified in the lattice file by the first 2 characters of each line.
 
@@ -523,6 +475,113 @@ For the drift, one must specify length in units of the number of undulator perio
 
 For the modulation section, one may add an energy modulation to the beam specified by $k_M$ and $\Delta \gamma$.
 
+
+\newpage
+
+
+\section{Parameters}
+
+Below is an exhaustive list of parameters, for each filetype. Some options are only really useful for investigating runitme errors or strange behaviour. I general, the parameter list for each file is sorted from most to least useful or relevant to the average user.
+
+
+\subsection{Main Input File}
+
+{\bf sRho}
+
+$\rho$, the FEL parameter. This specifies the scaling of the system. It does {\bf not} have to be strictly correct - it only descibes the scaling. The simulation can be performed, and the system may be scaled back to SI units using the supplied scripts (NOT SUPPLIED YET!!). If it is correct, however (meaning, it has been calculated from the beam and undulator parameters input), then the scaled notation becomes physically relevant. For an ideal, 1D system, the system should saturate at intensity $|A|^2 \approx 1$, and the system should be firmly in the high or exponential gain regime at $\bar{z} \approx 2-3$. This allows one to see how efficiently the system is lasing w.r.t its ideal case.
+
+
+{\bf saw}
+
+$a_u$, the undulator parameter defined with the peak on-axis magnetic field.
+
+{\bf sgamma\_r}
+
+$\gamma_0$, the reference (usually the mean) beam energy.
+
+{\bf lambda\_w}
+
+$\lambda_u$, the undulator, or wiggler, period.
+
+{\bf zundType}
+
+Allows one to select from a choice of undulators. Choices are `curved', `planepole', and `helical', described analytically below. If neither of these are chosen, then the default elliptical undulator is chosen, with polarization specified by $u_x$ and $u_y$.
+
+{\bf sux, suy}
+
+$u_x$ and $u_y$ - the relative peak magnetic field of the undulator in each transverse polarization. Usually, at least one should be $=1$, and the other between $0$ (planar) and $1$ (helical). If they are not defined, the default is helical, $u_x=u_y=1$.
+
+{\bf taper}
+
+Taper in the single, simple undulator case, $\dfrac{d\alpha}{d \bar{z}}$. Ignored if a lattice file is supplied.
+
+{\bf iWriteNthSteps}
+
+Steps at which to write the full data dumps at. This sets the periodicity of the data dumps, in integration steps.
+
+{\bf iWriteIntNthSteps}
+
+Steps at which to write the integrated data at. This sets the periodicity of the writes, in integration steps.
+
+{\bf sFiltFrac}
+
+During the field diffraction step, the lower frequencies are filtered out. This sets the cutoff for the high-pass filter, in units of the reference resonant frequency - (so should usually be $\leq 0.3$).
+
+{\bf sDiffFrac}
+
+Length of the diffraction step, in units of the undulator period. Usually $=1$.
+
+{\bf sBeta}
+
+Absorption coefficient for the absorbing boundaries on the transverse grid.
+
+{\bf qOneD}
+
+Logical. If  {\bf .true.}, Puffin will be run in 1D mode. Default is  {\bf .true.}, since this is the least computationally expensive option.
+
+{\bf qFieldEvolve}
+
+Logical. If = {\bf .false.}, then the radiation field evolution will be switched off. This is obviously artificial and very rarely used, but can be useful for debugging in some instances. Default is = {\bf .true}.
+
+{\bf qElectronsEvolve}
+
+Logical. If = {\bf .false.}, then the electron equations are not solved in the integration steps. Like when qFieldEvolve= {\bf .false.},  this is obviously artificial and very rarely used, but can be useful for debugging in some instances. Default is = {\bf .true.}.
+
+{\bf qElectronFieldCoupling}
+
+Logical. If = {\bf .false.}, then the radiation field feedback onto the electrons is switched off by setting the field terms in the electron evolution equations = 0, and so switches off the amplification of the radiation from the electrons. This is unphysical, but is used more often than when qFieldEvolve and qElectronsEvolve ={\bf .false.} . It can often be used to check for gain in the FEL in low gain situations, or to check whether amplification has occurred rather than coherent emission (CSE) effects due to \textit{e.g.} fine structure in the beam. When ={\bf .false.}, this will give the purely spontaneous emission (coherent or incoherent) from the electrons in the wiggler. If there is no appreciable difference between the qElectronFieldCoupling=true and false cases, then there has been negligible FEL amplification.
+
+{\bf qFocussing}
+
+Allows one to switch the strong focussing channel on or off. If ={bf .true.}, the strong focusing is switched on with calues specified by sKBetaXSF and sKBetaYSF. If qFocussing={\bf .true.}, yet no focussing strength is specified (sKBetaXSF or sKBetaYSF), then strong focusing is effectively switched off in that dimension. Default = {\bf .false.}.
+
+{\bf qDiffraction}
+
+Switches modelling of diffraction of the radiation field on or off. If ={\bf .true.}, field diffraction is modelled. This can be useful to switch off only really for debugging purposes. Default ={\bf .true.}.
+
+{\bf nodesPerLambdar}
+
+Number of nodes in the field mesh to use in the longitudinal dimension per reference resonant wavelength. The reference resonant wavelength is defined from the reference energy {\bf sgamma\_r}, the undulator period {\bf lambda\_w} and the base or reference undulator parameter {\bf saw} in the usual way.
+
+{\bf sFModelLengthZ2}
+
+The full length of the field mesh in the longitudinal or temporal dimension. This must be long enough to contain the entire beam as it propagates through the undulator. It is auto-checked at the start of the simulation for the simple beam case only, and the check is only an estimate.
+
+{\bf sElectronThreshold}
+
+When using the simple beam generation, any macroparticles generated with weight below the threshold will be removed. The threshold is defined using this variable, which expresses the threshold as a percentage of the mean particle weight.
+
+{\bf lattFile}
+
+The name of the lattice file, if required. If not required, supply a blank string (enter {\bf `'}).
+
+{\bf nPeriods}
+
+Number of undulator periods in the single (non-lattice) undulator case. If a lattice file is suppiled, then this is ignored.
+
+{\bf stepsPerPeriod}
+
+Number of integration steps for the electron beam and field source term per undulator period. Should usually be $\gtrsim$ {\bf nodesPerLambdar} for a beam with energy and wiggler parameter close to the reference parameters.
 
 
 
