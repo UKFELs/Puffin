@@ -96,24 +96,21 @@
 ! Begin input:-
 
 &MDATA
- qOneD                  = .false.       
- iNumNodesX             = 85      
- iNumNodesY             = 85 
- nodesPerLambdar        = 14
- sFModelLengthX         = 44.49088 
- sFModelLengthY         = 44.49088 
- sFModelLengthZ2        = 31.0
- iRedNodesX             = 20
- iRedNodesY             = 20
- zundType               = 'helical'
- srho                   = 0.00555
- sgamma_r               = 700.0
+ qOneD                  = .true.   
+ beam_file              = 'beam_file.in'  
+ seed_file              = 'seed_file.in'   
+ sElectronThreshold     = 0.05
+ nodesPerLambdar        = 17
+ sFModelLengthZ2        = 30.0
+ srho                   = 0.005
+ sux                    = 1.0
+ suy                    = 1.0
  saw                    = 1.0
- lambda_w               = 0.025
+ sgamma_r               = 100.0
+ lambda_w               = 0.04
+ lattFile               = ''
  stepsPerPeriod         = 30
- nPeriods               = 250
- seed_file              = 'seed_file.in'
- beam_file              = 'beam_file.in' 
- iWriteNthSteps         = 1500
+ nPeriods               = 240
+ iWriteNthSteps         = 300
  iWriteIntNthSteps      = 30
  /

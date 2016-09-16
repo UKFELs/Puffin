@@ -21,7 +21,9 @@ implicit none
 integer(kind=ip) :: NX_G, NBX_G
 integer(kind=ip) :: NY_G, NBY_G
 integer(kind=ip) :: NZ2_G, NBZ2_G
-integer(kind=ip) :: ntrnds_G
+integer(kind=ip) :: ntrnds_G, ntrndsi_G
+
+integer(kind=ip) :: nspinDX, nspinDY
 
 real(kind=wp)    :: sLengthOfElmX_G 
 real(kind=wp)    :: sLengthOfElmY_G 
@@ -102,6 +104,7 @@ integer(kind=ip) :: iInputType_G
 integer(kind=ip), parameter :: iGenHom_G = 1_ip
 integer(kind=ip), parameter :: iReadDist_G = 2_ip
 integer(kind=ip), parameter :: iReadMASP_G = 3_ip
+integer(kind=ip), parameter :: iReadH5_G = 4_ip
 
 ! Electron macroparticle phase space coordinates 
 
@@ -257,7 +260,7 @@ integer(kind=ip) :: iRedistStp_G
 
 
 
-character(32_IP) :: zDataFileName ! filename extension for 
+character(1024_IP) :: zDataFileName ! filename extension for 
                                   ! data files
 
 ! Type arrays describing electron, field and z output files,
@@ -277,7 +280,7 @@ integer(kind=ip) :: iWriteNthSteps, iDumpNthSteps, iIntWriteNthSteps
 
 
 character(132_ip) :: cmd_call_G
-character(32_ip) :: zFileName_G, zBFile_G, zSFile_G
+character(1024_ip) :: zFileName_G, zBFile_G, zSFile_G
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -329,6 +332,8 @@ logical   ::  qWrite             ! Write data?
 logical   ::  qOneD_G
 
 logical   ::  qPArrOK_G
+
+logical   ::  qInnerXYOK_G
 
 logical   ::  qscaled_G
 

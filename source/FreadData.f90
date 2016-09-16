@@ -11,7 +11,7 @@ USE TypesandConstants
 USE Globals
 USE ParallelSetUp
 use MASPin
-
+use H5in
 
 !****************************************************************
 !
@@ -141,12 +141,12 @@ SUBROUTINE read_in(zfilename, &
 !********************************************************
   CHARACTER(*),INTENT(IN) :: zfilename
 
-  CHARACTER(32_IP),  INTENT(OUT)  :: zDataFileName
+  CHARACTER(1024_IP),  INTENT(OUT)  :: zDataFileName
   LOGICAL,           INTENT(OUT)  :: qSeparateFiles
   LOGICAL,           INTENT(OUT)  :: qFormattedFiles
   LOGICAL,           INTENT(OUT)  :: qResume
   REAL(KIND=WP) ,    INTENT(OUT)  :: sZ0
-  CHARACTER(32_IP),  INTENT(INOUT):: LattFile
+  CHARACTER(1024_IP),  INTENT(INOUT):: LattFile
     
   INTEGER(KIND=IP),  INTENT(OUT)  :: iWriteNthSteps, iWriteIntNthSteps
   TYPE(cArraySegment)             :: tArrayZ
@@ -182,7 +182,7 @@ SUBROUTINE read_in(zfilename, &
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sSigmaF(:,:)
   LOGICAL, ALLOCATABLE, INTENT(OUT) :: qFlatTopS(:)
   LOGICAL, INTENT(out) :: qSimple
-  CHARACTER(32_ip), ALLOCATABLE, INTENT(INOUT) :: dist_f(:)
+  CHARACTER(1024_ip), ALLOCATABLE, INTENT(INOUT) :: dist_f(:)
   
   REAL(KIND=WP),     INTENT(OUT)  :: sFiltFrac,sDiffFrac,sBeta
   REAL(KIND=WP),     INTENT(OUT)  :: srho
@@ -206,7 +206,7 @@ SUBROUTINE read_in(zfilename, &
   integer(kind=ip) :: nwaves
 
   INTEGER::ios
-  CHARACTER(32_IP) :: beam_file, seed_file
+  CHARACTER(1024_IP) :: beam_file, seed_file
   LOGICAL :: qOKL, qMatched !   TEMP VAR FOR NOW, SHOULD MAKE FOR EACH BEAM
 
   logical :: qWriteZ, qWriteA, &
@@ -245,7 +245,8 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  sZ0, zDataFileName, iWriteNthSteps, &
                  iWriteIntNthSteps, iDumpNthSteps, sPEOut, &
                  qFMesh_G, sKBetaXSF, sKBetaYSF, sRedistLen, &
-                 iRedistStp, qscaled, t_mag_G, t_fr_G, qFMod_G
+                 iRedistStp, qscaled, t_mag_G, t_fr_G, qFMod_G, &
+                 nspinDX, nspinDY
 
 
 ! Begin subroutine:
@@ -297,6 +298,8 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   sFModelLengthZ2        = 4.0
   iRedNodesX             = -1
   iRedNodesY             = -1
+  nspinDX                = -1
+  nspinDY                = -1
   sFiltFrac              = 0.3
   sDiffFrac              = 1.0
   sBeta                  = 1.0
@@ -458,7 +461,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
   LOGICAL, INTENT(OUT) :: qSimple
   CHARACTER(*), INTENT(INOUT) :: be_f     ! beam file name
-  CHARACTER(32_ip), INTENT(INOUT), ALLOCATABLE :: dist_f(:)     ! dist file names
+  CHARACTER(1024_ip), INTENT(INOUT), ALLOCATABLE :: dist_f(:)     ! dist file names
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sEmit_n(:),chirp(:), mag(:), fr(:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sSigmaE(:,:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sLenE(:,:)
@@ -489,6 +492,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
 
   namelist /bdlist/ dist_f, nMPs4MASP_G
+  namelist /bh5list/ dist_f
 
   qOK = .FALSE.
   
@@ -548,7 +552,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   sLenE(1,6) = 0.006_wp
 
   iNumElectrons(1,1:2) = 1
-  iNumElectrons(1,3) = 1200
+  iNumElectrons(1,3) = -1
   iNumElectrons(1,4:5) = 1
   iNumElectrons(1,6) = 19
 
@@ -640,6 +644,12 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
     read(161,nml=bdlist)
 
     close(UNIT=161,STATUS='KEEP')    
+
+  else if (dtype == 'h5') then
+    iInputType_G = iReadH5_G
+    read(161,nml=bh5list)
+
+    close(UNIT=161,STATUS='KEEP')
 
   end if
 
