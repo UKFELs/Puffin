@@ -567,6 +567,10 @@ Number of nodes in the field mesh to use in the longitudinal dimension per refer
 
 The full length of the field mesh in the longitudinal or temporal dimension. This must be long enough to contain the entire beam as it propagates through the undulator. It is auto-checked at the start of the simulation for the simple beam case only, and the check is only an estimate.
 
+{\bf sFModelLengthX}, {\bf sFModelLengthY}
+
+The full length of the field mesh in the x and y (transverse) dimensions. This must be long enough to contain the entire beam as it propagates through the undulator. It is auto-checked at the start of the simulation for the simple beam case only, and the check is only an estimate.
+
 {\bf sElectronThreshold}
 
 When using the simple beam generation, any macroparticles generated with weight below the threshold will be removed. The threshold is defined using this variable, which expresses the threshold as a percentage of the mean particle weight.
