@@ -147,7 +147,7 @@ Compared to the original Puffin paper \cite{puffin}, now the peak magnetic field
 
 The formalism for including a variation in the magnetic undulator field, so that $B_0(\bar{z})$ now varies, was included in \cite{2col}, and is varied using the parameter $\alpha(\bar{z}) = \dfrac{B_0(\bar{z})}{B_0(\bar{z}=0)}$.
 
-In the most basic form, the input requires 3 files - a `main' input file for parameters, numerical integration, and description of the field mesh, a `beam' input file descibing the electron beam, and a `seed' input file describing the radiation seed. Optionally, a lattice file can be used to setup an undulator-chicane lattice.
+In the most basic form, the input requires 3 files - a `main' input file for parameters, numerical integration, and description of the field mesh, a `beam' input file descibing the electron beam, and a `seed' input file describing the radiation seed. Optionally, a lattice file can be used to setup an undulator lattice, including quads, chicanes, and drifts.
 
 
 
@@ -334,13 +334,13 @@ If {\bf qFocussing} is true and the strong betatron wavenumber is given, then th
 
 \subsection{To scale or not to scale?}
 
-The main algorithm in Puffin utilizes scaled variables to make the numbers `nicer' to work with. The system saturates with scaled intensity $\sim 1$, the scaled perpindicular momentum of the beam in the wiggler oscillates between $-1$ and $1$, and so forth. The distance through the wiggler is given in units of a (1D) gain length, and the beam coordinate in the radiation frame is in units of the cooperation length, so that an electron slips $1l_c$ through the radiation field in $1$ gain  length. The scaling defines a frame of reference which normalises the quantities not only to numerically more manageable numbers, but to \textit{characteristic} variables. 
+The main algorithm in Puffin utilizes scaled variables to make the numbers `nicer' to work with. The system saturates with scaled intensity $\sim 1$, the scaled perpindicular momentum of the beam in the wiggler oscillates between $-1$ and $1$, and so forth. The distance through the wiggler is given in units of a (1D) gain length, and the beam coordinate in the radiation frame is in units of the cooperation length, so that a reference electron slips $1l_c$ through the radiation field in $1$ gain  length. The scaling defines a frame of reference which normalises the quantities not only to numerically more manageable numbers, but to \textit{characteristic} variables. 
 
 The two dominant variables for the scaling are $\rho$ and $\eta$. $\eta$ is a function of the wiggler parameters $a_u$ and $\lambda_u$, and reference beam energy $\gamma_r$, and is calculated in Puffin from the input. The $\rho$ parameter is dependent on the peak electron beam number density, amongst other things.
 
 The beam and radiation field parameters may be input in either SI units or the scaled units. Use the variable {\bf qscaled} in the main input file to do this. If $=$ {\bf .true.}, then Puffin expects scaled variables are being used. If SI units are used, then the input parameters will be scaled according to the scaling values specified in the main input file. 
 
-Note that they are only \textit{scaling} parameters. The FEL parameter as input does not have to correspond to the beam being input for the results to be correct. The scaled parameters will behave `nicely' if it does, but it is not necessary. When the result is unscaled, the resut will still be correct.
+Note that they are only \textit{scaling} parameters. The FEL parameter as input does not have to correspond to the beam being input for the results to be correct. The scaled parameters will behave `nicely' if it does, but it is not necessary. When the result is unscaled, the result will still be correct.
 
 
 
@@ -389,7 +389,7 @@ There are 3 different ways of defining and initializing the electron beam in Puf
 
 The beam is described in terms of a homogeneous Gaussian function in every dimension. Some simple correlations in energy can be achieved by specifying an oscillation in the beam energy as a function of $\bar{z}_2$, or as a simple linear energy chirp in $\bar{z}_2$. The beam is generated in Puffin according to this description.
 
-In general, the correct noise statistics are added to the beam with the method described in REF (see figure REF). This method, like other noise algorithms, requires a quiet beam to add the noise to. We include two methods of generating the beam - one with the correct noise in all dimensions, and one with the correct noise only in the temporal/$\bar{z}_2$ dimension. In both methods, the beam is initially quiet in the temporal dimension before adding the noise, with an equispaced layout of the particles in this dimension. The beam MUST be created to appropriately sample the wavelength of emission/amplification - so at least 10 equispaced particles per resonant wavelength. The methods are:-
+In general, the correct noise statistics are added to the beam with the method described in \cite{noise1} (see figure REF). This method, like other noise algorithms, requires a quiet beam to add the noise to. We include two methods of generating the beam - one with the correct noise in all dimensions, and one with the correct noise only in the temporal/$\bar{z}_2$ dimension. In both methods, the beam is initially quiet in the temporal dimension before adding the noise, with an equispaced layout of the particles in this dimension. The beam MUST be created to appropriately sample the wavelength of emission/amplification - so at least 10 equispaced particles per resonant wavelength. The methods are:-
 
 % qSI - input in SI units - so x, y, z, px, py and gamma - system is then scaled to rho
 % Rho and charge are decoupled - so the simulation will always be correct. For the scaled notation to make sense, the rho must be approximately correct for the given beam charge.
@@ -611,6 +611,9 @@ L.T. Campbell and B.W.J. McNeil, Physics of Plasmas {\bf 19}, 093119 (2012)
 L T Campbell, B.W.J. McNeil and S. Reiche, New J. Phys. {\bf 16} (2014) 103019
 \bibitem{scharlemann1}
 E.T. Scharlemann, in High Gain, High Power FELs (edited by R. Bonifacio \textit{et al} ) (1989)
+\bibitem{noise1} 
+B. W. J. McNeil, M. W. Poole, and G. R. M. Robb, Phys. Rev. ST Accel. Beams {\bf 6}, 070701 (2003)
+
 
 \end{thebibliography}
 

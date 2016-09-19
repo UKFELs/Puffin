@@ -216,7 +216,7 @@ SUBROUTINE read_in(zfilename, &
   logical :: qOneD, qFieldEvolve, qElectronsEvolve, &
              qElectronFieldCoupling, qFocussing, &
              qDiffraction, qDump, qUndEnds, qhdf5, qsdds, &
-             qscaled
+             qscaled, qInitWrLat
 
   integer(kind=ip) :: iNumNodesX, iNumNodesY, nodesPerLambdar
   real(kind=wp) :: sFModelLengthX, sFModelLengthY, sFModelLengthZ2
@@ -245,7 +245,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  sZ0, zDataFileName, iWriteNthSteps, &
                  iWriteIntNthSteps, iDumpNthSteps, sPEOut, &
                  qFMesh_G, sKBetaXSF, sKBetaYSF, sRedistLen, &
-                 iRedistStp, qscaled, nspinDX, nspinDY
+                 iRedistStp, qscaled, nspinDX, nspinDY, qInitWrLat
 
 
 ! Begin subroutine:
@@ -282,6 +282,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qhdf5 = .false.
   qFMesh_G = .true.
   qscaled = .true.
+  qInitWrLat = .false.
 !  qplain = .false.
 
   beam_file = 'beam_file.in'
@@ -343,7 +344,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qsdds_G  = qsdds
   qhdf5_G = qhdf5
   qscaled_G = qscaled
-
+  qInitWrLat_G = qInitWrLat
 
 
 

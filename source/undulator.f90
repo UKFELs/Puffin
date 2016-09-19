@@ -195,7 +195,7 @@ contains
         call inner2Outer(ac_rfield_in, ac_ifield_in)
   
         if ((iStep == nSteps) .or. &
-             qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps) ) then
+             qWriteq(iStep, iCsteps, iWriteNthSteps, iIntWriteNthSteps, nSteps) ) then
     
           call diffractIM(diffStep * 0.5_wp, &
                           qDiffrctd, qOKL)
@@ -218,7 +218,7 @@ contains
  
   iCount = iCount + 1_IP
   
-  if ( qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps) ) then
+  if ( qWriteq(iStep, iCsteps, iWriteNthSteps, iIntWriteNthSteps, nSteps) ) then
 
     call inner2Outer(ac_rfield_in, ac_ifield_in)
 
