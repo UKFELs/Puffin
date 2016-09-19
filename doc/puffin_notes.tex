@@ -451,6 +451,8 @@ One may use the variables {\bf iRedNodesX, iRedNodesY} to fix the mesh around th
 
 \subsection{Lattice Input}
 
+A lattice file may be supplied in the main input file with the variable `lattFile'. This is the name of the lattice file, containing details of the undulator module lattice layout. If blank, then a single undulator as specified in the main input file will be used.
+
 There are five supported lattice element types, being undulators, quads, chicanes, drifts, and modulations. These are specified in the lattice file by the first 2 characters of each line.
 
 Undulator - UN
@@ -463,7 +465,9 @@ Drift - DR
 
 Modulation - MO
 
-For the undulator, we must specify type, Nw, alpha, taper, ux, uy, qends, qfocus, kbx, kby, and steps per period.
+Each entry must be followed by the options specifying that lattice element, on the same line, delimited by spaces.
+
+For the undulator,  one must specify the undulator type, the number of wiggler periods $Nw$, the undulator parameter relative to the base undulator parameter in the main input file $\alpha$, the linear taper $\dfrac{d \alpha}{d \bar{z}}$, the polarization $ux$ and $uy$ (ignored for the non-variable polarized undulator types), a logical specifying if undulator ends are being used for this module, another logical spcifying if a strong focusing channel is being used in the undulator, and the strong focusing strengths $\bar{k}_{\beta x}$ and $\bar{k}_{\beta y}$, and the number of integration steps per period to be used in this module.
 
 For the quad, we must specify $k$ and $L$.
 
@@ -473,7 +477,7 @@ This approach of being able to vary the 3 parameters above is quite flexible, bu
 
 For the drift, one must specify length in units of the number of undulator periods.
 
-For the modulation section, one may add an energy modulation to the beam specified by $k_M$ and $\Delta \gamma$.
+For the modulation section, one may add an energy modulation to the beam specified by $\bar{k}_M = \dfrac{2 \pi}{\bar{\lambda}_M}$ and $\dfrac{\Delta \gamma}{\gamma_r}$.
 
 
 \newpage
