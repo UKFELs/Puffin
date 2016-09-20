@@ -17,6 +17,7 @@ USE electronInit
 USE gMPsFromDists
 use avwrite
 use MASPin
+use h5in
 use parafield
 use scale
 
@@ -744,7 +745,7 @@ end subroutine calcScaling
 subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
                        sStepSize, stepsPerPeriod, nSteps, &
                        nperiods, nodesperlambda, sGamFrac, &
-                       sLenEPulse)
+                       sLenEPulse, iNumElectrons)
 
 
   real(kind=wp), intent(inout) :: sFieldModelLength(:)
@@ -756,12 +757,14 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
   real(kind=wp), intent(out) :: sLengthOfElm(:), sStepSize
                                 
+                                
 
-  integer(kind=ip), intent(inout) :: iNumNodes(:)
+  integer(kind=ip), intent(inout) :: iNumNodes(:), iNumElectrons(:,:)
   integer(kind=ip), intent(out) :: nSteps
 
   real(kind=wp), allocatable :: smeanp2(:), fmlensTmp(:)
-  real(kind=wp) :: dz2, szbar, fmlenTmp
+  real(kind=wp) :: dz2, szbar, fmlenTmp, slamr
+  integer(kind=ip) :: minENum, minESample
 
 
 
@@ -826,12 +829,36 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
   szbar = nperiods * 4.0_WP * pi * srho_G
 
 
+
+
+
+  slamr = 4.0_WP * pi * srho_G
+  minESample = 15_ip   ! minimum MP's per wavelength
+  !dztemp = slamr / minESample
+  minENum = ceiling(sLenEPulse(1,iZ2_CG) / (slamr / real(minESample, kind=wp)) )
+
+
+  if ((iNumElectrons(1,iZ2_CG) < 0) .or. (iNumElectrons(1,iZ2_CG) < minENum) ) then
+
+    if (tProcInfo_G%qRoot) print*, '******************************'
+    if (tProcInfo_G%qRoot) print*, ''
+    if (tProcInfo_G%qRoot) print*, 'WARNING - e-beam macroparticles sampling &
+                                    & in z2 not fine enough - fixing...'
+
+    iNumElectrons(1,3) = minENum
+
+    if (tProcInfo_G%qRoot) print*, 'num MPs in z2 now = ', &
+                                iNumElectrons(1,iZ2_CG)
+
+  end if
+
+
 !   MAX P2 -
 
   allocate(smeanp2(size(sGamFrac)), fmlensTmp(size(sGamFrac)))
   smeanp2 = 1.0_wp / sGamFrac**2.0_wp  ! Estimate of p2...
 
-  fmlensTmp = sLenEPulse(:,iZ2_CG) + smeanp2(:)
+  fmlensTmp = sLenEPulse(:,iZ2_CG) + (smeanp2(:) * szbar)
   fmlenTmp = maxval(fmlensTmp)
 
   if (sFieldModelLength(iZ2_CG) <= fmlenTmp + 1.0_wp) then
@@ -899,7 +926,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
     INTEGER(KIND=IPL) :: sendbuff, recvbuff
     INTEGER sendstat(MPI_STATUS_SIZE)
     INTEGER recvstat(MPI_STATUS_SIZE)
-    character(32) :: fname_temp
+    character(1024) :: fname_temp
     LOGICAL :: qOKL
 
     sQOneE = 1.60217656535E-19
@@ -951,6 +978,9 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
       fname_temp = fname(1)
       call readMASPfile(fname_temp)
 
+    else if (iInputType_G == iReadH5_G) then
+      fname_temp = fname(1)
+      call readH5beamfile(fname_temp)
     else 
 
       if (tProcInfo_G%qRoot) print*, 'No beam input type specified....'

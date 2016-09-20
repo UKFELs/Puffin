@@ -48,9 +48,12 @@ subroutine getAlpha(sZ)
 
     else
 
-      n2col = sqrt(  ( ( 1 + sAw_G**2.0_wp ) / (sAw_G**2.0_wp * &
-                           (1 + t_mag_G*sin(t_fr_G * (sz - sZFS)   ))) ) &
-                  - (1.0_wp /sAw_G**2.0_wp) )
+!      n2col = sqrt(  ( ( 1 + sAw_G**2.0_wp ) / (sAw_G**2.0_wp * &
+!                           (1 + t_mag_G*sin(t_fr_G * (sz - sZFS)   ))) ) &
+!                  - (1.0_wp /sAw_G**2.0_wp) )
+
+      n2col = 1 + t_mag_G * sin( t_fr_G * (sz - sZFS) )  ! For pure wiggler oscillation
+
 
 !    else
 

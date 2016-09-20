@@ -43,7 +43,7 @@ contains
 !     University of Strathclyde
 !     2015
 
-    character(32_ip), intent(in) :: LattFile 
+    character(1024_ip), intent(in) :: LattFile 
     real(kind=wp), intent(inout) :: taper
     real(kind=wp), intent(in) :: sRho, dz_f
     integer(kind=ip), intent(in) :: nsteps_f
@@ -140,7 +140,7 @@ contains
 ! ModNum        Number of Modules (INPUT)
 ! rho           FEL parameter
 
-  CHARACTER(32_IP), INTENT(IN) :: lattFile
+  CHARACTER(1024_IP), INTENT(IN) :: lattFile
   REAL(KIND=WP), DIMENSION(:), INTENT(INOUT) :: zMod,delta,D
   REAL(KIND=WP), INTENT(IN) :: Dfact
   REAL(KIND=WP), INTENT(INOUT)  ::  taper
