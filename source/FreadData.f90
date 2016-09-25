@@ -245,7 +245,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  sZ0, zDataFileName, iWriteNthSteps, &
                  iWriteIntNthSteps, iDumpNthSteps, sPEOut, &
                  qFMesh_G, sKBetaXSF, sKBetaYSF, sRedistLen, &
-                 iRedistStp, qscaled
+                 iRedistStp, qscaled, nspinDX, nspinDY
 
 
 ! Begin subroutine:
@@ -294,6 +294,8 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   sFModelLengthZ2        = 4.0
   iRedNodesX             = -1
   iRedNodesY             = -1
+  nspinDX                = -1
+  nspinDY                = -1
   sFiltFrac              = 0.3
   sDiffFrac              = 1.0
   sBeta                  = 1.0
@@ -547,7 +549,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   sLenE(1,6) = 0.006_wp
 
   iNumElectrons(1,1:2) = 1
-  iNumElectrons(1,3) = 1200
+  iNumElectrons(1,3) = -1
   iNumElectrons(1,4:5) = 1
   iNumElectrons(1,6) = 19
 

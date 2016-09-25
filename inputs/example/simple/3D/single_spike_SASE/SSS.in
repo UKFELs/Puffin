@@ -96,29 +96,31 @@
 ! Begin input:-
 
 &MDATA
- qOneD                  = .true.   
+ qOneD                  = .false.   
  qFieldEvolve           = .true. 
  qElectronsEvolve       = .true. 
  qElectronFieldCoupling = .true.  
- qFocussing             = .false. 
- qDiffraction           = .false.   
- qFilter                = .true.   
- q_noise                = .true.  
+ qFocussing             = .true. 
+ qDiffraction           = .true.   
  beam_file              = 'beam_file.in'     
  sElectronThreshold     = 0.05
- nodesPerLambdar        = 17
- sFModelLengthZ2        = 30.0
+ iNumNodesX             = 85      
+ iNumNodesY             = 85 
+ nodesPerLambdar        = 14
+ sFModelLengthX         = 44.49088 
+ sFModelLengthY         = 44.49088 
+ sFModelLengthZ2        = 31.0
+ iRedNodesX             = 20
+ iRedNodesY             = 20
  seed_file              = 'seed_file.in'
- srho                   = 0.005
- sux                    = 1.0
- suy                    = 1.0
+ srho                   = 0.00555
  saw                    = 1.0
- sgamma_r               = 100.0
- lambda_w               = 0.04
- lattFile               = ''
+ sgamma_r               = 700.0
+ lambda_w               = 0.025
+ zundType               = 'helical'
  stepsPerPeriod         = 30
- nPeriods               = 240
- iWriteNthSteps         = 300
+ nPeriods               = 250
+ sZ0                    = 0.0
+ iWriteNthSteps         = 1500
  iWriteIntNthSteps      = 30
- iDumpNthSteps          = 3000
  /

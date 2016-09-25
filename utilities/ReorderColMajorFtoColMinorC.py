@@ -63,21 +63,27 @@ print outfilename
 tables.copy_file(filename,outfilename,overwrite=1)
 h5=tables.open_file(outfilename,'r+')
 print h5.root.aperp.shape
-
 # While this works it may be better to just read using numpy.asfortranarray() 
 # ie fieldin=numpy.asfortranarray(h5.root.aperp.read()) or whatever actually works
 fieldin=h5.root.aperp.read()
+print "The input has "+str(len(fieldin.shape))+" dimensions"
 print "fieldin shape "+str(fieldin.shape)
 testfield=numpy.asarray(fieldin, order='C')
 print "testfield shape"+str(testfield.shape)
 testfield=numpy.asfortranarray(fieldin)
 print "testfield shape"+str(testfield.shape)
-fieldout=numpy.zeros((fieldin.shape[3],fieldin.shape[2],fieldin.shape[1],fieldin.shape[0]))
-print "fieldout shape"+str(fieldout.shape)
-for i in range(fieldin.shape[0]):
-  for j in range(fieldin.shape[2]):
-    fieldout[:,j,:,i]=fieldin[i,:,j,:].T
-#.reshape(numpy.array((h5.root.aperp.shape[3],h5.root.aperp.shape[2],h5.root.aperp.shape[1],2)),order='F')
+if len(fieldin.shape)==4:
+  fieldout=numpy.zeros((fieldin.shape[3],fieldin.shape[2],fieldin.shape[1],fieldin.shape[0]))
+  print "fieldout shape"+str(fieldout.shape)
+  print "3d plus component"
+  for i in range(fieldin.shape[0]):
+    for j in range(fieldin.shape[2]):
+      fieldout[:,j,:,i]=fieldin[i,:,j,:].T
+elif len(fieldin.shape)==2:
+      fieldout=fieldin.T
+else:
+  print "Do not recognise structure of file "+filename+" setting the _C file as just a copy"
+      #.reshape(numpy.array((h5.root.aperp.shape[3],h5.root.aperp.shape[2],h5.root.aperp.shape[1],2)),order='F')
 print fieldout.shape
 h5.create_array('/','aperpN',fieldout)
 h5.copy_node_attrs('/aperp','/aperpN')

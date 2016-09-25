@@ -1,17 +1,3 @@
-==================== Puffin v1.5.1 ======================
-
-The code 'Puffin' solves the unaveraged 3D FEL system of equations. 
-The code requires FFTW_2.1.5 and uses MPI.
-
-Puffin (Parallel Unaveraged Fel INtegrator) is described in:-
-LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
-
-The code has undergone many improvements and extended its
-functionality since then. It no longer uses an external linear 
-solver package. 
-
-The only external package now required is FFTW v2.1.5.
-
 The sub-directories include:
 
 
@@ -208,8 +194,8 @@ The only external package now required by Puffin is FFTW.
 
 =============================================================
 Contact Information:
-Dr Lawrence Campbell:	lawrence.campbell@strath.ac.uk
-Dr Brian McNeil:		b.w.j.mcneil@strath.ac.uk
+Dr Lawrence Campbell: lawrence.campbell@strath.ac.uk
+Dr Brian McNeil:    b.w.j.mcneil@strath.ac.uk
 
 [1] http://www.aps.anl.gov/Accelerator_Systems_Division/Accelerator_Operations_Physics/SDDSInfo.shtml
 [2] https://www.hdfgroup.org/HDF5/

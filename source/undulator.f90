@@ -160,6 +160,9 @@ contains
           if (tProcInfo_G%qRoot) print*, 'Layout not working'
           if (tProcInfo_G%qRoot) print*, 'Rearranging...'
           call deallact_rk4_arrs()
+          if (.not. qInnerXYOK_G) then
+            call getInNode()
+          end if
           call getLocalFieldIndices(sRedistLen_G)
           call allact_rk4_arrs()
         else 
@@ -188,6 +191,8 @@ contains
       if ((sZ>(nextDiff-sStepsize/100.0_WP)) .or. (iStep == nSteps))  then
 
 !        call deallact_rk4_arrs()
+
+        call inner2Outer(ac_rfield_in, ac_ifield_in)
   
         if ((iStep == nSteps) .or. &
              qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps) ) then
@@ -201,6 +206,8 @@ contains
                           qDiffrctd, qOKL)
     
         end if
+
+        call outer2Inner(ac_rfield_in, ac_ifield_in)
   
         nextDiff = nextDiff + diffStep
     
@@ -212,6 +219,8 @@ contains
   iCount = iCount + 1_IP
   
   if ( qWriteq(iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps) ) then
+
+    call inner2Outer(ac_rfield_in, ac_ifield_in)
 
     call writeIM(sZ, &
                  zDataFileName, iStep, iCsteps, iWriteNthSteps, &
@@ -228,6 +237,8 @@ contains
                          qDiffrctd, qOKL)
    
      end if
+
+    call outer2Inner(ac_rfield_in, ac_ifield_in)
    
   end if
 
