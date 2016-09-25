@@ -29,7 +29,18 @@ use MASPin
 
 CONTAINS
 
-SUBROUTINE read_in(zfilename, &
+
+!> read_in Read in the namelist data files for Puffin.
+!! @params zfilename, Name of the main input file passed to Puffin
+!! at runtime.
+!! @params zDataFileName, Base name of the sdds output files.
+!! @params qSeparateFiles, Turn on individual (rather than collective)
+!! MPI rank writing in the hdf5 output files.
+!! @todo Individual and collective writing to combined file to come
+!! For collective write, we want to work out how many particles on
+!! each rank, what the cumulative num electrons is, and then determine
+!! the array slice based on that.
+subroutine read_in(zfilename, &
        zDataFileName, &
        qSeparateFiles, &
        qFormattedFiles, &
@@ -85,9 +96,9 @@ SUBROUTINE read_in(zfilename, &
        qSwitches, &
        qMatched_A, &
        qOK)
-       
+
        IMPLICIT NONE
-       
+
 !******************************************************
 ! Read input data from the main Puffin input file
 ! 
@@ -96,33 +107,33 @@ SUBROUTINE read_in(zfilename, &
 ! nColProcessors     - Number of column processors
 !
 ! zDataFileName      - Data file name
-! qSeparateStepFiles - if to write data to separate step 
+! qSeparateStepFiles - if to write data to separate step
 !                      files or all steps in one file
-! qFormattedFiles    - if output data files to be 
+! qFormattedFiles    - if output data files to be
 !                      formatted or binary
 ! sStepSize          - Step size for integration
-! nSteps             - Number of steps 
+! nSteps             - Number of steps
 ! sZ                 - IN: Starting z position
 !                    - OUT: Final z position
-! iWriteNthSteps     - Steps to write data at (optional) 
+! iWriteNthSteps     - Steps to write data at (optional)
 !                       (eg every 4th step)
 ! tArrayZ            - Write out Z data
 ! tArrayVariables    - Write out A,p,Q,Z2 data
 !
 ! sLenEPulse(3)      - Length of electron Pulse in
 !                      x,y,z2 direction
-! iNumNodes(3) 	     - Total number of nodes 
+! iNumNodes(3) 	     - Total number of nodes
 ! sWigglerLength(3)  - Length of wiggler in x,y,z2
 !                      direction
 ! i_RealE            - Number of real electrons
 ! q_noise            - Noise in initial electron
 !                      distribution
 !
-! iNumElectrons(3)   - Number of electrons in 
+! iNumElectrons(3)   - Number of electrons in
 !                      x,y,z2 direction
 ! sSigmaGaussian     - Sigma spread of electron
 !                      gaussian distribution
-! sElectronThreshold - Beyond this threshold level, 
+! sElectronThreshold - Beyond this threshold level,
 !                      electrons are ignored/removed
 !
 ! sA0_Re,            - Initial field value (real)
@@ -131,7 +142,7 @@ SUBROUTINE read_in(zfilename, &
 ! sEmit_n            - Normalised beam emittance
 ! srho               - Pierce parameter
 ! saw                - Wiggler parameter
-! sgamma_r           - Mean electron velocity at 
+! sgamma_r           - Mean electron velocity at
 !                      resonance
 ! sWiggleWaveLength  - Wiggler wave length
 ! sSeedSigma         - Seed field sigma spread for
@@ -147,7 +158,7 @@ SUBROUTINE read_in(zfilename, &
   LOGICAL,           INTENT(OUT)  :: qResume
   REAL(KIND=WP) ,    INTENT(OUT)  :: sZ0
   CHARACTER(32_IP),  INTENT(INOUT):: LattFile
-    
+
   INTEGER(KIND=IP),  INTENT(OUT)  :: iWriteNthSteps, iWriteIntNthSteps
   TYPE(cArraySegment)             :: tArrayZ
   TYPE(cArraySegment)             :: tArrayA(:)
@@ -155,24 +166,24 @@ SUBROUTINE read_in(zfilename, &
 
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sLenEPulse(:,:)
   INTEGER(KIND=IP),  INTENT(OUT)  :: iNumNodes(:)
-    
-  REAL(KIND=WP),     INTENT(OUT)  :: sWigglerLength(:)   
-    
+
+  REAL(KIND=WP),     INTENT(OUT)  :: sWigglerLength(:)
+
   INTEGER(KIND=IP),  INTENT(OUT)  :: iRedNodesX,&
                                        iRedNodesY
-    
+
   REAL(KIND=WP),  ALLOCATABLE, INTENT(OUT)  :: sQe(:)
   LOGICAL,           INTENT(OUT)  :: q_noise
-    
+
   INTEGER(KIND=IP),  ALLOCATABLE, INTENT(OUT)  :: iNumElectrons(:,:)
-    
+
   REAL(KIND=WP),  ALLOCATABLE, INTENT(OUT)  :: sSigmaGaussian(:,:)
-  
+
   REAL(KIND=WP),     INTENT(OUT)  :: sElectronThreshold
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: bcenter(:), gamma_d(:), &
                                               chirp(:), sEmit_n(:), &
                                               mag(:), fr(:)
-  
+
   INTEGER(KIND=IP), INTENT(INOUT) :: nbeams, nseeds
 
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sA0_Re(:)
@@ -183,7 +194,7 @@ SUBROUTINE read_in(zfilename, &
   LOGICAL, ALLOCATABLE, INTENT(OUT) :: qFlatTopS(:)
   LOGICAL, INTENT(out) :: qSimple
   CHARACTER(32_ip), ALLOCATABLE, INTENT(INOUT) :: dist_f(:)
-  
+
   REAL(KIND=WP),     INTENT(OUT)  :: sFiltFrac,sDiffFrac,sBeta
   REAL(KIND=WP),     INTENT(OUT)  :: srho
   REAL(KIND=WP),     INTENT(OUT)  :: saw
@@ -200,7 +211,7 @@ SUBROUTINE read_in(zfilename, &
   LOGICAL,           INTENT(OUT)  :: qOK
 
 ! Define local variables
-    
+
   integer(kind=ip), intent(out) :: stepsPerPeriod, nodesperlambda, nperiods ! Steps per lambda_w, nodes per lambda_r
   real(kind=wp) :: dz2, zbar
   integer(kind=ip) :: nwaves
@@ -216,7 +227,7 @@ SUBROUTINE read_in(zfilename, &
   logical :: qOneD, qFieldEvolve, qElectronsEvolve, &
              qElectronFieldCoupling, qFocussing, &
              qDiffraction, qDump, qUndEnds, qhdf5, qsdds, &
-             qscaled
+             qscaled, qInitWrLat
 
   integer(kind=ip) :: iNumNodesX, iNumNodesY, nodesPerLambdar
   real(kind=wp) :: sFModelLengthX, sFModelLengthY, sFModelLengthZ2
@@ -240,16 +251,16 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  iRedNodesX, iRedNodesY, sFiltFrac, &
                  sDiffFrac, sBeta, seed_file, srho, &
                  sux, suy, saw, sgamma_r, sFocusfactor, &
-                 lambda_w, Dfact, zundType, taper, &                 
+                 lambda_w, Dfact, zundType, taper, &
                  LattFile, stepsPerPeriod, nPeriods, &
                  sZ0, zDataFileName, iWriteNthSteps, &
                  iWriteIntNthSteps, iDumpNthSteps, sPEOut, &
                  qFMesh_G, sKBetaXSF, sKBetaYSF, sRedistLen, &
-                 iRedistStp, qscaled, nspinDX, nspinDY
+                 iRedistStp, qscaled, nspinDX, nspinDY, qInitWrLat
 
 
 ! Begin subroutine:
-! Set error flag to false         
+! Set error flag to false
 
   qOK = .FALSE.
 
@@ -282,12 +293,13 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qhdf5 = .false.
   qFMesh_G = .true.
   qscaled = .true.
+  qInitWrLat = .false.
 !  qplain = .false.
 
   beam_file = 'beam_file.in'
   sElectronThreshold     = 0.05
-  iNumNodesX             = 129      
-  iNumNodesY             = 129 
+  iNumNodesX             = 129
+  iNumNodesY             = 129
   nodesPerLambdar        = 17
   sFModelLengthX         = 1.0
   sFModelLengthY         = 1.0
@@ -338,40 +350,40 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qSwitches(iFocussing_CG) = qFocussing
   qSwitches(iDiffraction_CG) = qDiffraction
   qSwitches(iDump_CG) = qDump
-  
+
   qUndEnds_G = qUndEnds
   qsdds_G  = qsdds
   qhdf5_G = qhdf5
   qscaled_G = qscaled
-
+  qInitWrLat_G = qInitWrLat
 
 
 
   tArrayZ%qWrite = qWriteZ
   tArrayZ%zVariable = 'Z' ! Assign SDDS column names
-    
+
   tArrayA(iRe_A_CG)%qWrite = qWriteA
   tArrayA(iRe_A_CG)%zVariable = 'RE_A'
-    
+
   tArrayA(iIm_A_CG)%qWrite = qWriteA
   tArrayA(iIm_A_CG)%zVariable = 'IM_A'
-    
+
   tArrayVariables(iRe_PPerp_CG)%qWrite = qWritePperp
   tArrayVariables(iRe_PPerp_CG)%zVariable = 'RE_PPerp'
   tArrayVariables(iIm_PPerp_CG)%qWrite = qWritePperp
   tArrayVariables(iIm_PPerp_CG)%zVariable = 'IM_PPerp'
-    
+
   tArrayVariables(iRe_Gam_CG)%qWrite = qWriteP2
   tArrayVariables(iRe_Gam_CG)%zVariable = 'Gamma'
-    
+
   tArrayVariables(iRe_Z2_CG)%qWrite = qWriteZ2
   tArrayVariables(iRe_Z2_CG)%zVariable = 'Z2'
-    
+
   tArrayVariables(iRe_X_CG)%qWrite = qWriteX
-  tArrayVariables(iRe_X_CG)%zVariable = 'X'	
-    	
+  tArrayVariables(iRe_X_CG)%zVariable = 'X'
+
   tArrayVariables(iRe_Y_CG)%qWrite = qWriteY
-  tArrayVariables(iRe_Y_CG)%zVariable = 'Y'	
+  tArrayVariables(iRe_Y_CG)%zVariable = 'Y'
 
 
   iNumNodes(iX_CG) = iNumNodesX
@@ -424,22 +436,22 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
 
   if (qOneD) qEquiXY_G = .true.
 
-  
+
   IF  (.NOT. qOKL) GOTO 1000
 
   call get_exec()
 
-!  CALL read_seedfile(32_IP)  ! SOON ! 
+!  CALL read_seedfile(32_IP)  ! SOON !
 
 
 ! Set the error flag and exit
   qOK = .TRUE.
-  GOTO 2000      
-            
+  GOTO 2000
+
 1000 CALL Error_log('Error in read_data:read_in',tErrorLog_G)
   PRINT*,'Error in readData'
 2000 CONTINUE
-    
+
 END SUBROUTINE read_in
 
 !********************************************************
@@ -492,8 +504,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   namelist /bdlist/ dist_f, nMPs4MASP_G
 
   qOK = .FALSE.
-  
-! Open the file         
+
+! Open the file
 !  OPEN(UNIT=168,FILE=be_f,IOSTAT=ios,&
 !    ACTION='READ',POSITION='REWIND')
 !  IF  (ios/=0_IP) THEN
@@ -507,13 +519,13 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 !  dtype = TRIM(ADJUSTL(dtype))
 
 
-!!!!! Need to make qMatched an array 
+!!!!! Need to make qMatched an array
 !!!!! Maybe make qMathcField or something to choose which beam is matched to transverse field area (numerically - sampling wise)..???
 
 
 !  Default vals
 
-  nbeams = 1  
+  nbeams = 1
   dtype = 'simple'
 
 
@@ -609,11 +621,11 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
     sSigmaE = 1
 
 !    !!!!!!!!!!!!!!!!
-!    !!!!!!!!!!!!!!!! 
+!    !!!!!!!!!!!!!!!!
 !    ! READ IN FNAMES
 !    !!!!!!!!!!!!!!!!
 !    !!!!!!!!!!!!!!!!
-!    READ(UNIT=161,FMT=*) 
+!    READ(UNIT=161,FMT=*)
 !    READ(UNIT=161,FMT=*)
 !    READ(UNIT=161,FMT=*)
 !
@@ -625,8 +637,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
   else if (dtype == 'particle') then
 
-    if (nbeams /= 1) then 
-      
+    if (nbeams /= 1) then
+
       if (tProcInfo_G%qRoot) print*, 'WARNING - currently only 1 file', &
                                       'is supported for the particle beam type'
       if (tProcInfo_G%qRoot) print*, 'Only the 1st file will be read in....'
@@ -640,7 +652,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
     read(161,nml=bdlist)
 
-    close(UNIT=161,STATUS='KEEP')    
+    close(UNIT=161,STATUS='KEEP')
 
   end if
 
@@ -652,7 +664,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
 ! Set the error flag and exit
   qOK = .TRUE.
-  GOTO 2000 
+  GOTO 2000
 
 1000 CALL Error_log('Error in Read_Data:read_beamfile',tErrorLog_G)
     PRINT*,'Error in read_beamfile'
@@ -698,8 +710,8 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
 
   nseeds = 1
 
-  
-! Open the file         
+
+! Open the file
   open(161,file=se_f, status='OLD', recl=80, delim='APOSTROPHE')
 
 
@@ -713,7 +725,7 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
 
 !  Default value
 
-  sSigmaF = 1.0_wp   
+  sSigmaF = 1.0_wp
   freqf = 1.0_wp
   ph_sh = 0.0_wp
   sA0_X = 1.0_wp
@@ -730,7 +742,7 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
 
 ! Set the error flag and exit
   qOK = .TRUE.
-  GOTO 2000 
+  GOTO 2000
 
 1000 CALL Error_log('Error in Read_Data:read_seedfile',tErrorLog_G)
     PRINT*,'Error in read_seedfile'
@@ -742,12 +754,12 @@ END SUBROUTINE read_seedfile
 
 
 subroutine get_exec()
-  
+
 
 ! Retrieves command line used to initiate run
 
   call get_command(cmd_call_G)
-  
+
 end subroutine get_exec
 
 

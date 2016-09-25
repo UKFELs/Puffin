@@ -13,7 +13,6 @@ USE ParallelInfoType
 USE TransformInfoType
 USE FFTW_Constants
 USE Globals
-USE Derivative
 USE IO
 USE masks
 

@@ -627,16 +627,100 @@ contains
       cs2data(5,5,is)=cs2data(5,5,is)+s_chi_bar_G(ip)*sElpY_G(ip)*sElpY_G(ip)
       csdata(6,is)=csdata(6,is)+s_chi_bar_G(ip)*sElGam_G(ip)
       cs2data(6,6,is)=cs2data(6,6,is)+s_chi_bar_G(ip)*sElgam_G(ip)*sElgam_G(ip)
-      b1r(is)=b1r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(2*sRho_G))
-      b1i(is)=b1i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(2*sRho_G))
-      b2r(is)=b2r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(4*sRho_G))
-      b2i(is)=b2i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(4*sRho_G))
-      b3r(is)=b3r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(6*sRho_G))
-      b3i(is)=b3i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(6*sRho_G))
-      b4r(is)=b4r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(8*sRho_G))
-      b4i(is)=b4i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(8*sRho_G))
-      b5r(is)=b5r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(10*sRho_G))
-      b5i(is)=b5i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(10*sRho_G))
+
+
+      b1r(is) = b1r(is) + s_chi_bar_G(ip)*cos(sElz2_G(ip)/(2*sRho_G)) &
+                          * ( (is*sliceSizeZ2 - sElz2_G(ip)) / sliceSizeZ2 )
+
+      b1r(is+1) = b1r(is+1) + s_chi_bar_G(ip)*cos(sElz2_G(ip)/(2*sRho_G)) &
+                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ip)) / sliceSizeZ2 )
+
+      b1i(is) = b1i(is) + s_chi_bar_G(ip)*sin(sElz2_G(ip)/(2*sRho_G)) &
+                          * ( (is*sliceSizeZ2 - sElz2_G(ip)) / sliceSizeZ2 )
+
+      b1i(is+1) = b1i(is+1) + s_chi_bar_G(ip)*sin(sElz2_G(ip)/(2*sRho_G)) &
+                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ip)) / sliceSizeZ2 )
+
+
+!      b1r(is)=b1r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(2*sRho_G))
+!      b1i(is)=b1i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(2*sRho_G))
+
+!      b2r(is)=b2r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(4*sRho_G))
+
+
+
+!      b2i(is)=b2i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(4*sRho_G))
+
+
+      b2r(is) = b2r(is) + s_chi_bar_G(ip)*cos(2.0_wp*sElz2_G(ip)/(2.0_wp*sRho_G)) &
+                          * ( (is*sliceSizeZ2 - sElz2_G(ip)) / sliceSizeZ2 )
+
+      b2r(is+1) = b2r(is+1) + s_chi_bar_G(ip)*cos(2.0_wp*sElz2_G(ip)/(2.0_wp*sRho_G)) &
+                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ip)) / sliceSizeZ2 )
+
+      b2i(is) = b2i(is) + s_chi_bar_G(ip)*sin(2.0_wp*sElz2_G(ip)/(2.0_wp*sRho_G)) &
+                          * ( (is*sliceSizeZ2 - sElz2_G(ip)) / sliceSizeZ2 )
+
+      b2i(is+1) = b2i(is+1) + s_chi_bar_G(ip)*sin(2.0_wp*sElz2_G(ip)/(2.0_wp*sRho_G)) &
+                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ip)) / sliceSizeZ2 )
+
+
+
+      b3r(is) = b3r(is) + s_chi_bar_G(ip)*cos(3.0_wp*sElz2_G(ip)/(2.0_wp*sRho_G)) &
+                          * ( (is*sliceSizeZ2 - sElz2_G(ip)) / sliceSizeZ2 )
+
+      b3r(is+1) = b3r(is+1) + s_chi_bar_G(ip)*cos(3.0_wp*sElz2_G(ip)/(2.0_wp*sRho_G)) &
+                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ip)) / sliceSizeZ2 )
+
+      b3i(is) = b3i(is) + s_chi_bar_G(ip)*sin(3.0_wp*sElz2_G(ip)/(2.0_wp*sRho_G)) &
+                          * ( (is*sliceSizeZ2 - sElz2_G(ip)) / sliceSizeZ2 )
+
+      b3i(is+1) = b3i(is+1) + s_chi_bar_G(ip)*sin(3.0_wp*sElz2_G(ip)/(2.0_wp*sRho_G)) &
+                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ip)) / sliceSizeZ2 )
+
+
+
+
+
+      b4r(is) = b4r(is) + s_chi_bar_G(ip)*cos(4.0_wp*sElz2_G(ip)/(2.0_wp*sRho_G)) &
+                          * ( (is*sliceSizeZ2 - sElz2_G(ip)) / sliceSizeZ2 )
+
+      b4r(is+1) = b4r(is+1) + s_chi_bar_G(ip)*cos(4.0_wp*sElz2_G(ip)/(2.0_wp*sRho_G)) &
+                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ip)) / sliceSizeZ2 )
+
+      b4i(is) = b4i(is) + s_chi_bar_G(ip)*sin(4.0_wp*sElz2_G(ip)/(2.0_wp*sRho_G)) &
+                          * ( (is*sliceSizeZ2 - sElz2_G(ip)) / sliceSizeZ2 )
+
+      b4i(is+1) = b4i(is+1) + s_chi_bar_G(ip)*sin(4.0_wp*sElz2_G(ip)/(2.0_wp*sRho_G)) &
+                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ip)) / sliceSizeZ2 )
+
+
+
+
+      b5r(is) = b5r(is) + s_chi_bar_G(ip)*cos(5.0_wp*sElz2_G(ip)/(2.0_wp*sRho_G)) &
+                          * ( (is*sliceSizeZ2 - sElz2_G(ip)) / sliceSizeZ2 )
+
+      b5r(is+1) = b5r(is+1) + s_chi_bar_G(ip)*cos(5.0_wp*sElz2_G(ip)/(2.0_wp*sRho_G)) &
+                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ip)) / sliceSizeZ2 )
+
+      b5i(is) = b5i(is) + s_chi_bar_G(ip)*sin(5.0_wp*sElz2_G(ip)/(2.0_wp*sRho_G)) &
+                          * ( (is*sliceSizeZ2 - sElz2_G(ip)) / sliceSizeZ2 )
+
+      b5i(is+1) = b5i(is+1) + s_chi_bar_G(ip)*sin(5.0_wp*sElz2_G(ip)/(2.0_wp*sRho_G)) &
+                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ip)) / sliceSizeZ2 )
+
+
+
+
+
+
+
+!      b3r(is)=b3r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(6*sRho_G))
+!      b3i(is)=b3i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(6*sRho_G))
+!      b4r(is)=b4r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(8*sRho_G))
+!      b4i(is)=b4i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(8*sRho_G))
+!      b5r(is)=b5r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(10*sRho_G))
+!      b5i(is)=b5i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(10*sRho_G))
 !    call sum2RootArr(cs2data(, size(cs2data), 0)
 1000    end do
  print*,"Bringing arrays onto rank0"

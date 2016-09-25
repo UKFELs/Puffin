@@ -91,7 +91,7 @@ do iL = 1, modNum
  
   else if (iElmType(iL) == iQuad) then
  
-!    call Quad
+    call Quad(iL)
  
   else if (iElmType(iL) == iChic) then
  
@@ -99,8 +99,12 @@ do iL = 1, modNum
  
   else if (iElmType(iL) == iDrift) then
  
-!    call drift
+    call driftSection(iL)
+
+  else if (iElmType(iL) == iModulation) then
  
+    call BModulation(iL)
+
   end if
   
 

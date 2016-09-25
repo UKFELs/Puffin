@@ -249,7 +249,8 @@ MODULE Setup
 
 
 
-  call setupMods(lattFile, taper, sRho, nSteps, sStepSize)
+  call setupMods(lattFile, taper, sRho, nSteps, sStepSize, fx, fy, &
+                  sKBetaXSF_G, sKBetaYSF_G)
       
 !     Pass local vars to global vars
 
