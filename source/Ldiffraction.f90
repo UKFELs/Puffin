@@ -138,15 +138,18 @@ SUBROUTINE multiplyexp(h,qOK)
 
               IF (kz2_loc_G(z2_inc)/=0.0_WP) THEN
 
-                Afftw(x_inc,y_inc,z2_inc) = exp(posI*h*(kx_G(x_inc)**2 + &
-                           ky_G(y_inc)**2) / &
-                           (2.0_WP*kz2_loc_G(z2_inc)))*Afftw(x_inc,y_inc,z2_inc)
+                Afftw(x_inc+1,y_inc+1,z2_inc+1) = &
+                           exp(posI*h*(kx_G(x_inc)**2 + &
+                                     ky_G(y_inc)**2) / &
+                                (2.0_WP*kz2_loc_G(z2_inc))) * &
+                           Afftw(x_inc+1,y_inc+1,z2_inc+1)
 
               END IF
 
            ELSE
 
-              IF (qFilter) Afftw(x_inc,y_inc,z2_inc) = CMPLX(0.0, 0.0, C_DOUBLE_COMPLEX)
+              IF (qFilter) Afftw(x_inc+1,y_inc+1,z2_inc+1) = &
+                         CMPLX(0.0, 0.0, C_DOUBLE_COMPLEX)
 
            END IF
 
