@@ -14,6 +14,8 @@ use parafield
 
 implicit none
 
+use, intrinsic :: iso_c_binding
+
 contains
 
 subroutine diffractIM(sStep, &
@@ -126,22 +128,22 @@ SUBROUTINE multiplyexp(h,Field,qOK)
      DO y_inc=0,NY_G-1_IP
         DO x_inc=0,NX_G-1_IP
 
-           ind=x_inc+y_inc*NX_G+z2_inc*NX_G*NY_G
+           !ind=x_inc+y_inc*NX_G+z2_inc*NX_G*NY_G
 
            IF ((kz2_loc_G(z2_inc)>cutoff) .OR. &
                 (kz2_loc_G(z2_inc)<-cutoff)) THEN
 
               IF (kz2_loc_G(z2_inc)/=0.0_WP) THEN
 
-                Field(ind)=exp(posI*h*(kx_G(x_inc)**2 + &
+                Afftw(x_inc,y_inc,z2_inc) = exp(posI*h*(kx_G(x_inc)**2 + &
                            ky_G(y_inc)**2) / &
-                           (2.0_WP*kz2_loc_G(z2_inc)))*Field(ind)
+                           (2.0_WP*kz2_loc_G(z2_inc)))*Afftw(x_inc,y_inc,z2_inc)
 
               END IF
 
            ELSE
 
-              IF (qFilter) Field(ind) = CMPLX(0.0, 0.0, C_DOUBLE_COMPLEX)
+              IF (qFilter) Afftw(x_inc,y_inc,z2_inc) = CMPLX(0.0, 0.0, C_DOUBLE_COMPLEX)
 
            END IF
 
