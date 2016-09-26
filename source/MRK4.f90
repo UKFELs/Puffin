@@ -8,7 +8,8 @@ module RK4int
 
 use ParallelInfoType
 use TransformInfoType
-use FFTW_Constants
+!use FFTW_Constants
+
 use Globals
 use Derivative
 use IO

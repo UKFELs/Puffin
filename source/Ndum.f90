@@ -1,11 +1,13 @@
 module dummyf
 
-USE FFTW_Constants
+!USE FFTW_Constants
+
 USE sddsPuffin
 USE lattice
 USE RK4int
 use dumpFiles
 !use hdf5_puff
+
 use pln_puff
 use ParaField
 

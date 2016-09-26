@@ -7,7 +7,8 @@
 MODULE Setup
 
   USE SETUPTRANS
-  USE FFTW_Constants
+!  USE FFTW_Constants
+
   USE setupcalcs
   USE transforms
   USE sddsPuffin

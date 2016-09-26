@@ -8,9 +8,9 @@ MODULE TransformInfoType
 
       USE paratype
 
+      use, intrinsic :: iso_c_binding
       IMPLICIT NONE
 
-      use, intrinsic :: iso_c_binding
       include 'fftw3-mpi.f03'
 !
 !-----------------------------------------------------------------

@@ -14,7 +14,8 @@ module undulator
 !  use TransformInfoType
 !  use stiffness
 
-use FFTW_Constants
+! use FFTW_Constants
+
 use pdiff
 use sddsPuffin
 use lattice

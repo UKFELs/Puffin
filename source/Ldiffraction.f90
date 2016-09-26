@@ -7,14 +7,17 @@ use parallelinfotype
 use transforminfotype
 use transforms
 use masks
-USE FFTW_Constants
+!USE FFTW_Constants
+
 USE Globals
 use IO
 use parafield
 
+use, intrinsic :: iso_c_binding
+
 implicit none
 
-use, intrinsic :: iso_c_binding
+
 
 contains
 
@@ -79,7 +82,7 @@ end subroutine diffractIM
 
 !     ######################################################
 
-SUBROUTINE multiplyexp(h,Field,qOK)
+SUBROUTINE multiplyexp(h,qOK)
 
   IMPLICIT NONE
 !
@@ -94,8 +97,8 @@ SUBROUTINE multiplyexp(h,Field,qOK)
 
   REAL(KIND=WP), INTENT(IN) :: h
 
-  COMPLEX(C_DOUBLE_COMPLEX), pointer, &
-                INTENT(INOUT) :: field(:)
+!  COMPLEX(C_DOUBLE_COMPLEX), pointer, &
+!                INTENT(INOUT) :: field(:)
 
   LOGICAL, INTENT(OUT) :: qOK
 
@@ -234,7 +237,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
   end if
 
 
-  sA_local = 0.0_wp
+!  sA_local = 0.0_wp
   ntrh = NX_G * NY_G
 
   do iz = 1, tTransInfo_G%loc_nz2
@@ -282,7 +285,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 
 !    Multiply field by the exp factor to obtain A(kx,ky,kz2,zbar+h)
 
-  CALL MultiplyExp(h,Afftw,qOKL)
+  CALL MultiplyExp(h,qOKL)
 
 
   call Get_time(tr_time_e)
@@ -337,7 +340,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
   end if
 
 
-  DEALLOCATE(work)
+!  DEALLOCATE(work)
 
 !   Collect data back onto global field var sA on every process
 
@@ -359,7 +362,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
       do ix = 1, NX_G
 
         sAr(ix + nx_g*(iy-1) + ntrh*(iz-1)) = real(Afftw(ix,iy,iz), kind=wp)
-        sAi(ix + nx_g*(iy-1) + ntrh*(iz-1)) = aimag(Afftw(ix,iy,iz), kind=wp)
+        sAi(ix + nx_g*(iy-1) + ntrh*(iz-1)) = aimag(Afftw(ix,iy,iz))
 
       end do
     end do
@@ -506,8 +509,8 @@ SUBROUTINE AbsorptionStep(sAl,work,h,loc_nz2,ffact)
 
 !     FFT sAb
 
-  CALL Transform(tTransInfo_G%fplan, &
-       work, sAl, qOKL)
+!  CALL Transform(tTransInfo_G%fplan, &
+!       sAl, qOKL)
 
 !     Apply filter, by decreasing fourier coefficients
 
@@ -537,10 +540,10 @@ SUBROUTINE AbsorptionStep(sAl,work,h,loc_nz2,ffact)
 
 !     Inverse FFT
 
-  CALL Transform(tTransInfo_G%bplan, &
-       work, &
-       sAl, &
-       qOKL)
+!  CALL Transform(tTransInfo_G%bplan, &
+!       work, &
+!       sAl, &
+!       qOKL)
 
 !CALL MPI_BARRIER(tProcInfo_G%comm,error)
 

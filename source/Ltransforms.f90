@@ -11,15 +11,16 @@ MODULE transforms
 
 USE ParallelInfoType
 USE TransformInfoType
-USE FFTW_Constants
+!USE FFTW_Constants
+
 USE Globals
 USE IO
 USE masks
 
+use, intrinsic :: iso_c_binding
 IMPLICIT NONE
 
-use, intrinsic :: iso_c_binding
-INCLUDE 'fftw3-mpi.f03'
+!INCLUDE 'fftw3-mpi.f03'
 
 real(kind=wp) :: tr_time_s, tr_time_e
 type(C_PTR) :: cdata
@@ -60,7 +61,8 @@ SUBROUTINE getTransformPlans4FEL(nnodes,qOK)
 !     Determine if 1D or 3D transform is needed
   IF(nnodes(iX_CG) == 1 .AND. nnodes(iY_CG) == 1) THEN
      tTransInfo_G%qOneD=.TRUE.
-     CALL getTransformPlans_OneD(nnodes(iZ2_CG),qOKL)
+     !CALL getTransformPlans_OneD(nnodes(iZ2_CG),qOKL)
+     qOKL = .true.
   ELSE
      tTransInfo_G%qOneD=.FALSE.
      CALL getTransformPlans_MultiD(nnodes,3,qOKL)
@@ -109,25 +111,25 @@ SUBROUTINE getTransformPlans_MultiD(sizes,nDims,qOK)
 
   qOK = .FALSE.
 
-  L = integer(sizes(iX_CG), C_INTPTR_T)
-  M = integer(sizes(iY_CG), C_INTPTR_T)
-  N = integer(sizes(iZ2_CG), C_INTPTR_T)
+  L = int(sizes(iX_CG), C_INTPTR_T)
+  M = int(sizes(iY_CG), C_INTPTR_T)
+  N = int(sizes(iZ2_CG), C_INTPTR_T)
 
 !      Get the local sizes for the distribution of the transform data.
 
 
-  alloc_local = fftw_mpi_local_size_3d(N, M, L,
+  alloc_local = fftw_mpi_local_size_3d(N, M, L, &
                                     tProcInfo_G%comm, &
                                     local_N, local_j_offset)
 
 
-  tTransInfo_G%loc_nz2 = integer(local_N, kind=ip)
+  tTransInfo_G%loc_nz2 = int(local_N, kind=ip)
 
   tTransInfo_G%loc_z2_start = &
-                   integer(local_j_offset, kind=ip)
+                   int(local_j_offset, kind=ip)
 
   tTransInfo_G%total_local_size = &
-                   integer(alloc_local, kind=ip)
+                   int(alloc_local, kind=ip)
 
 
 !     Allocate data
@@ -478,9 +480,9 @@ subroutine Transform(plan, &
 !                    2.1.5 documentation.
 ! qOK       OUT    Error flag; if .false. error has occured
 
-  type(C_PTR), intent(in) :: plan
+  type(C_PTR), intent(inout) :: plan
 
-  complex(C_DOUBLE_COMPLEX), pointer, intent(inout) :: local_in(:)
+  complex(C_DOUBLE_COMPLEX), pointer, intent(inout) :: local_in(:,:,:)
 
   logical, intent(out) :: qOK
 
@@ -499,7 +501,7 @@ subroutine Transform(plan, &
   if (tTransInfo_G%qOneD) then
      !call Transform_OneD(plan,work,local_in,qOKL)
   else
-     call Transform_MultiD(plan,work,local_in,qOKL)
+     call Transform_MultiD(plan,local_in,qOKL)
   end if
 
   if (.NOT. qOKL) GOTO 1000
@@ -554,7 +556,7 @@ subroutine Transform_MultiD(plan, local_in, qOK)
 
   type(C_PTR), intent(inout) :: plan
 
-  complex(C_DOUBLE_COMPLEX), pointer, intent(inout) :: local_in(:)
+  complex(C_DOUBLE_COMPLEX), pointer, intent(inout) :: local_in(:,:,:)
 
   logical, intent(out) :: qOK
 
