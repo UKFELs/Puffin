@@ -7,11 +7,11 @@
 MODULE TransformInfoType
 
       USE paratype
-      
+
       IMPLICIT NONE
 
       include 'fftw3-mpi.f03'
-!      
+!
 !-----------------------------------------------------------------
 ! Author - Lawrence Campbell
 ! Place -  University of Strathclyde
@@ -22,7 +22,7 @@ MODULE TransformInfoType
 ! Type definition: -
 ! Stores Information required for the FFTW transform data distributions
 !
-! 
+!
 ! fplan - The forward transform FFTW-MPI plan
 ! bplan - The backward transform FFTW-MPI plan
 ! loc_nz2 - The number of nodes in z2 the local processor holds.
@@ -31,23 +31,23 @@ MODULE TransformInfoType
 !                    transform.
 ! loc_y_start_aft_trans - The starting y value on which the local transform data begins
 !                         after the tranform.
-! total_local_size - The total number of elements(nodes) the local processor needs 
+! total_local_size - The total number of elements(nodes) the local processor needs
 !                    allocated to it.
 !--------------------------------------------------------------------
 
       TYPE cTransformInfoType
 
-         INTEGER*8            :: fplan
-         INTEGER*8            :: bplan	 
+         type(C_PTR)          :: fplan
+         type(C_PTR)          :: bplan
          INTEGER(KIND=IP)     :: loc_nz2
          INTEGER(KIND=IP)     :: loc_z2_start
          INTEGER(KIND=IP)     :: loc_nz2_aft_trans
          INTEGER(KIND=IP)     :: loc_z2_start_aft_trans
          INTEGER(KIND=IP)     :: total_local_size
          LOGICAL              :: qOneD
-         
+
       END TYPE cTransformInfoType
-      
+
 !
 !====================================================================
 ! Define Global variables
@@ -61,6 +61,3 @@ MODULE TransformInfoType
       SAVE tTransInfo_G
 
 END MODULE TransformInfoType
-       
-      
-      

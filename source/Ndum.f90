@@ -4,8 +4,8 @@ USE FFTW_Constants
 USE sddsPuffin
 USE lattice
 USE RK4int
-use dumpFiles 
-use hdf5_puff
+use dumpFiles
+!use hdf5_puff
 use pln_puff
 use ParaField
 
@@ -56,16 +56,16 @@ subroutine writeIM(sZ, &
   end if
 
   if (qhdf5_G) then
-     nslices=ceiling( (sLengthOfElmZ2_G*NZ2_G)/(4*pi*srho_g))
-     
-    call wr_h5(sZ, tArrayA, tArrayE, tArrayZ, &
-                 iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
-                 zDataFileName, qWriteFull, &
-                 qWriteInt, nslices, qOK)
+!     nslices=ceiling( (sLengthOfElmZ2_G*NZ2_G)/(4*pi*srho_g))
+
+!    call wr_h5(sZ, tArrayA, tArrayE, tArrayZ, &
+!                 iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
+!                 zDataFileName, qWriteFull, &
+!                 qWriteInt, nslices, qOK)
 
   end if
 
-!  else 
+!  else
 
 !    call wr_pln()
 
@@ -96,7 +96,7 @@ end subroutine writeIM
 
     implicit none
 
-!   Figure out whether to write integrated data or 
+!   Figure out whether to write integrated data or
 !   full particle dump
 
 
@@ -107,7 +107,7 @@ end subroutine writeIM
     logical ::  qOKL
 
     qOK = .false.
-    
+
     qWriteInt = .false.
     qWriteFull = .false.
 
