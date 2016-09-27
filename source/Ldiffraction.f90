@@ -334,7 +334,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 
 !      Now solve for the absorbing boundary layer
 
-!  CALL AbsorptionStep(sA_local,work,h,tTransInfo_G%loc_nz2,ffact)
+  call AbsorptionStep(Afftw, h, ffact)
 
   call Get_time(tr_time_e)
 
@@ -407,7 +407,7 @@ END SUBROUTINE DiffractionStep
 
 !***********************************************************
 
-SUBROUTINE AbsorptionStep(sAl,work,h,loc_nz2,ffact)
+SUBROUTINE AbsorptionStep(sAl,h,ffact)
 
 ! This subroutine implements a boundary region
 ! in the x, y and z2 directions. The method used
@@ -446,26 +446,28 @@ SUBROUTINE AbsorptionStep(sAl,work,h,loc_nz2,ffact)
 !
 !                ARGUMENTS
 
-  COMPLEX(KIND=WP), INTENT(INOUT) :: sAl(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1)
-  COMPLEX(KIND=WP), INTENT(INOUT) :: work(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1)
-  INTEGER(KIND=IP), INTENT(IN) :: loc_nz2
+  complex(C_DOUBLE_COMPLEX), pointer, intent(inout) :: sAl(:,:,:)
+
   REAL(KIND=WP), INTENT(IN) :: h,ffact
 
 !               LOCAL ARGS
 
   REAL(KIND=WP), allocatable :: mask(:), mask_z2(:)
-  COMPLEX(KIND=WP), allocatable :: sAnb(:)
+  COMPLEX(KIND=WP), allocatable :: sAnb(:,:,:)
   COMPLEX(KIND=WP) :: posI
-  INTEGER(KIND=IP) :: iz2, x_inc, y_inc, z2_inc, ind
+  INTEGER(KIND=IP) :: iz2, x_inc, y_inc, z2_inc, ind, ix, iy
+  INTEGER(KIND=IP) :: loc_nz2
   integer :: error
   LOGICAL :: qOKL
 
+! ############################
 
+  loc_nz2 = tTransInfo_G%loc_nz2
 
 ! ****************************
 
-  allocate(mask(NX_G*NY_G), mask_z2(0:tTransInfo_G%loc_nz2-1))
-  allocate(sAnb(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1))
+  allocate(mask(NX_G*NY_G), mask_z2(tTransInfo_G%loc_nz2))
+  allocate(sAnb(nx_g, ny_g, loc_nz2))
 
 ! ****************************
 
@@ -490,63 +492,58 @@ SUBROUTINE AbsorptionStep(sAl,work,h,loc_nz2,ffact)
 
 
 
-    DO iz2 = 0_IP, loc_nz2 - 1_IP
+    do iz2 = 1_IP, loc_nz2
+      do iy = 1_ip, ny_g
+        do ix = 1_ip, nx_g
 
-      sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)  = (1.0_WP - (mask   +  ( mask_z2(iz2) *  (1.0_WP - mask) ) ) ) * &
-                                                            sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
-
-
-
+          sAnb(ix, iy, iz2) = (1.0_WP - (mask(ix+((iy-1)*nx_g)) +  &
+                  ( mask_z2(iz2) *  (1.0_WP - mask(ix+((iy-1)*nx_g) ) ) ) ) ) * &
+                  sAl(ix,iy,iz2)
 
 !    sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP) =   (1.0_WP - mask_z2(iz2)) * sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
 
+          sAl(ix, iy, iz2) = (mask(ix+((iy-1)*nx_g))   +  &
+                  ( mask_z2(iz2) *  (1.0_WP - mask(ix+((iy-1)*nx_g) ) ) ) ) * &
+                  sAl(ix,iy,iz2)
 
+        end do
+      end do
+    end do
 
-      sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP) =  (mask   +  ( mask_z2(iz2) *  (1.0_WP - mask) ) ) * &
-                                                           sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
-
-
-    END DO
-
-  END IF
+  end if
 
 !     FFT sAb
 
-!  CALL Transform(tTransInfo_G%fplan, &
-!       sAl, qOKL)
+  CALL Transform(tTransInfo_G%fplan, sAl, qOKL)
 
 !     Apply filter, by decreasing fourier coefficients
 
-  DO z2_inc=0,loc_nz2-1_IP
-    DO y_inc=0,NY_G-1_IP
-      DO x_inc=0,NX_G-1_IP
+  do z2_inc=0,loc_nz2-1_IP
+    do y_inc=0,NY_G-1_IP
+      do x_inc=0,NX_G-1_IP
 
-        ind=x_inc+y_inc*NX_G+z2_inc*NX_G*NY_G
-
-        IF (kz2_loc_G(z2_inc)/=0.0_WP) THEN
+        if (kz2_loc_G(z2_inc)/=0.0_WP) then
 
               !  sAl(ind)=exp(-posI*h*(kx_G(x_inc)**2 + &
               !             ky_G(y_inc)**2) / &
               !             (2.0_WP*kz2_loc_G(z2_inc)))*sAl(ind)
 
-         sAl(ind) = exp(-h*sBeta_G*(abs(kx_G(x_inc)) + &
-                       abs(ky_G(y_inc))) / &
-                       (sqrt(abs(2.0_WP * kz2_loc_G(z2_inc))))) * sAl(ind)
+           sAl(x_inc+1,y_inc+1,z2_inc+1) = exp(-h*sBeta_G*(abs(kx_G(x_inc)) + &
+                          abs(ky_G(y_inc))) / &
+                          (sqrt(abs(2.0_WP * kz2_loc_G(z2_inc))))) * &
+                          sAl(x_inc+1,y_inc+1,z2_inc+1)
 
 !          sAl(ind) = exp(-h*sBeta_G) * sAl(ind)
 
-        END IF
+        end if
 
-      END DO
-    END DO
-  END DO
+      end do
+    end do
+  end do
 
 !     Inverse FFT
 
-!  CALL Transform(tTransInfo_G%bplan, &
-!       work, &
-!       sAl, &
-!       qOKL)
+  call transform(tTransInfo_G%bplan, sAl, qOKL)
 
 !CALL MPI_BARRIER(tProcInfo_G%comm,error)
 

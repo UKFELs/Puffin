@@ -360,6 +360,8 @@ SUBROUTINE clearTransformPlans_ThreeD(qOK)
   CALL fftw_destroy_plan(tTransInfo_G%fplan)
   CALL fftw_destroy_plan(tTransInfo_G%bplan)
 
+  call fftw_free(cdata)
+
   qOK = .TRUE.
 
   GOTO 2000
