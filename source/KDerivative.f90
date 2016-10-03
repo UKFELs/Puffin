@@ -34,7 +34,7 @@ contains
 ! sz      INPUT     value of z to evaluate derivative at
 ! sy      INPUT     Value of y at this z
 ! sdydz   OUTPUT    Derivative of z and y
-	
+
     real(kind=wp), intent(in)  :: sz
     real(kind=wp), intent(in)  :: sAr(:), sAi(:)
     real(kind=wp), intent(in)  :: sx(:), sy(:), sz2(:), &
@@ -64,7 +64,7 @@ contains
 
     CALL getrhs(sz, &
                 sAr, sAi, &
-                sx, sy, sz2, & 
+                sx, sy, sz2, &
                 spr, spi, sp2, &
                 sdx, sdy, sdz2, &
                 sdpr, sdpi, sdp2, &
@@ -92,7 +92,7 @@ contains
             MPI_INTEGER, &
             MPI_SUM, MPI_COMM_WORLD, error)
 
-      if (iArEr > 0_ip) then 
+      if (iArEr > 0_ip) then
         qPArrOK_G = .false.
         if (tProcInfo_G%qRoot) then
           print*, 'electron outside parallel bounds!'
@@ -104,6 +104,27 @@ contains
         end if
       end if
 
+
+
+      if (.not. qInnerXYOK_G) then
+        iArEr = 1_ip
+      else
+        iArEr = 0_ip
+      end if
+
+      call mpi_allreduce(mpi_in_place, iArEr, 1, &
+            MPI_INTEGER, &
+            MPI_SUM, MPI_COMM_WORLD, error)
+
+      if (iArEr > 0_ip) then
+        qInnerXYOK_G = .false.
+        if (tProcInfo_G%qRoot) then
+          print*, 'electron outside transverse bounds!'
+          print*, 'Emergency redistribute!!!'
+        end if
+      end if
+
+
 !    scatter dadz to local MPI process (split amongst processors)
 
 !    CALL scatter2Loc(sda, ldadz, local_rows, &
@@ -111,7 +132,7 @@ contains
 
 
 !    DEALLOCATE(LDADz)
-    
+
     GOTO 2000
 
 !     Error Handler
