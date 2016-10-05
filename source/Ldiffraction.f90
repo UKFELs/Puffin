@@ -10,12 +10,72 @@ use masks
 USE FFTW_Constants
 USE Globals
 use IO
+use parafield
 
 implicit none
 
 contains
 
+subroutine diffractIM(sStep, &
+                      qDiffrctd, qOK)
 
+
+! Subroutine which diffracts the field, after making the preparations
+! necessary when Puffin is within an undulator module.
+!
+! Lawrence Campbell
+! University of Strathclyde
+! Jan 2015
+
+
+  implicit none
+
+  real(kind=wp), intent(in) :: sStep
+  logical, intent(out) :: qDiffrctd, qOK
+
+  logical :: qOKL
+
+
+  qOK = .false.
+  
+
+!      Change data layout to FFTW -
+
+  call redist2FFTWlt()
+
+
+
+  CALL DiffractionStep(sStep,&
+       tre_fft, tim_fft,&
+       qOKL)
+  if (.not. qOKL) goto 1000
+
+  qDiffrctd = .true.
+  
+
+
+!    Change back to wiggler data layout
+
+  call redistbackFFT()
+
+
+!              Set error flag and exit
+
+  qOK = .TRUE.
+
+  GOTO 2000
+
+1000  CALL Error_log('Error in diffractIM',tErrorLog_G)
+
+2000 CONTINUE
+
+
+end subroutine diffractIM
+
+
+
+
+!     ###################################################### 
 
 SUBROUTINE multiplyexp(h,Field,qOK)
 

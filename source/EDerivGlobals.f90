@@ -184,17 +184,73 @@ real(kind=wp)       :: Dfact  ! Dispersion strength factor for chicane
                               ! (=1 for 'normal' dispersion, =0 for 
                               ! isochronous chicanes)
 
-real(kind=wp), allocatable    :: D(:), delta(:), zMod(:), &
-                                 mf(:), delmz(:), tapers(:)
+
+
+
+! ****************************************************
+! ****************************************************
+!     For lattice element type 'undulator'
+
+real(kind=wp), allocatable    :: zMod(:), mf(:), delmz(:), tapers(:), &
+                                 ux_arr(:), uy_arr(:), &
+                                 kbnx_arr(:), kbny_arr(:) 
+
+                                 
+character(32_ip), allocatable :: zundtype_arr(:)
 
 integer(kind=ip), allocatable :: nSteps_arr(:)
-integer(kind=ip) :: iCsteps  ! Cumulative steps
-
-integer(kind=ip)    :: ModNum, ModCount
 
 
 
+! ****************************************************
+! ****************************************************
+!     For lattice element type 'chicane'
 
+real(kind=wp), allocatable    :: chic_zbar(:), chic_slip(:), &
+                                 chic_disp(:)
+
+
+! ****************************************************
+! ****************************************************
+!     For lattice element type 'drift'
+
+
+real(kind=wp), allocatable    :: drift_zbar(:) 
+
+
+
+! ****************************************************
+! ****************************************************
+!     For lattice element type 'modulation'
+
+
+real(kind=wp), allocatable    :: enmod_wavenum(:), enmod_mag(:)
+
+
+
+! ****************************************************
+! ****************************************************
+!     For lattice element type 'quadrupole'
+
+
+real(kind=wp), allocatable    :: quad_fx(:), quad_fy(:) 
+
+
+!     End module specific array definitions
+! ****************************************************
+! ****************************************************
+
+
+
+
+
+integer(kind=ip) :: numOfUnds, numOfChics, numOfDrifts, numOfModulations, numOfQuads
+
+
+
+integer(kind=ip) :: iCsteps  ! Cumulative steps across all modules
+
+integer(kind=ip)    :: ModNum, ModCount   !  Number of modules and module counter
 
 
 
@@ -336,6 +392,8 @@ logical   ::  qPArrOK_G
 logical   ::  qInnerXYOK_G
 
 logical   ::  qscaled_G
+
+logical   ::  qInitWrLat_G
 
 
 

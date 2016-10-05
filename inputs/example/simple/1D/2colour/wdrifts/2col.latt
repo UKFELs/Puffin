@@ -4,14 +4,19 @@ Module file for Puffin
 
 !Below are 6 25 period undulators, with different aw's.
 !They lase at 2 different colours.
-!There are no drift section between modules.
+!There are 20 period drifts between modules.
 
 
 UN  ''  25   1.0   0.0   30   1.0   1.0   0.0    0.0
+DR  20.0
 UN  ''  25   1.0   0.0   30   1.0   1.0   0.0    0.0
+DR  20.0
 UN  ''  25   1.945667391924941   0.0   30   1.0   1.0   0.0    0.0
+DR  20.0
 UN  ''  25   1.0   0.0   30   1.0   1.0   0.0    0.0
+DR  20.0
 UN  ''  25   1.945667391924941   0.0   30   1.0   1.0   0.0    0.0
+DR  20.0
 UN  ''  25   1.945667391924941   0.0   30   1.0   1.0   0.0    0.0
 
 

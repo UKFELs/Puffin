@@ -835,51 +835,58 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
   slamr = 4.0_WP * pi * srho_G
   minESample = 15_ip   ! minimum MP's per wavelength
   !dztemp = slamr / minESample
-  minENum = ceiling(sLenEPulse(1,iZ2_CG) / (slamr / real(minESample, kind=wp)) )
+
+  if (iInputType_G == iGenHom_G) then
 
 
-  if ((iNumElectrons(1,iZ2_CG) < 0) .or. (iNumElectrons(1,iZ2_CG) < minENum) ) then
+    minENum = ceiling(sLenEPulse(1,iZ2_CG) / (slamr / real(minESample, kind=wp)) )
 
-    if (tProcInfo_G%qRoot) print*, '******************************'
-    if (tProcInfo_G%qRoot) print*, ''
-    if (tProcInfo_G%qRoot) print*, 'WARNING - e-beam macroparticles sampling &
-                                    & in z2 not fine enough - fixing...'
 
-    iNumElectrons(1,3) = minENum
+    if ((iNumElectrons(1,iZ2_CG) < 0) .or. (iNumElectrons(1,iZ2_CG) < minENum) ) then
 
-    if (tProcInfo_G%qRoot) print*, 'num MPs in z2 now = ', &
-                                iNumElectrons(1,iZ2_CG)
+      if (tProcInfo_G%qRoot) print*, '******************************'
+      if (tProcInfo_G%qRoot) print*, ''
+      if (tProcInfo_G%qRoot) print*, 'WARNING - e-beam macroparticles sampling &
+                                      & in z2 not fine enough - fixing...'
 
-  end if
+      iNumElectrons(1,3) = minENum
+
+      if (tProcInfo_G%qRoot) print*, 'num MPs in z2 now = ', &
+                                  iNumElectrons(1,iZ2_CG)
+
+    end if
+
+
 
 
 !   MAX P2 -
 
-  allocate(smeanp2(size(sGamFrac)), fmlensTmp(size(sGamFrac)))
-  smeanp2 = 1.0_wp / sGamFrac**2.0_wp  ! Estimate of p2...
+    allocate(smeanp2(size(sGamFrac)), fmlensTmp(size(sGamFrac)))
+    smeanp2 = 1.0_wp / sGamFrac**2.0_wp  ! Estimate of p2...
 
-  fmlensTmp = sLenEPulse(:,iZ2_CG) + (smeanp2(:) * szbar)
-  fmlenTmp = maxval(fmlensTmp)
+    fmlensTmp = sLenEPulse(:,iZ2_CG) + (smeanp2(:) * szbar)
+    fmlenTmp = maxval(fmlensTmp)
 
-  if (sFieldModelLength(iZ2_CG) <= fmlenTmp + 1.0_wp) then
+    if (sFieldModelLength(iZ2_CG) <= fmlenTmp + 1.0_wp) then
 
 
-    if (tProcInfo_G%qRoot) print*, '******************************'
-    if (tProcInfo_G%qRoot) print*, ''
-    if (tProcInfo_G%qRoot) print*, 'WARNING - field mesh may not be large &
-                                   &enough in z2 - fixing....'
+      if (tProcInfo_G%qRoot) print*, '******************************'
+      if (tProcInfo_G%qRoot) print*, ''
+      if (tProcInfo_G%qRoot) print*, 'WARNING - field mesh may not be large &
+                                     &enough in z2 - fixing....'
 
-    sFieldModelLength(iZ2_CG) = fmlenTmp + 10.0_wp  ! Add buffer 10 long for
-                                                    ! extra security...
+      sFieldModelLength(iZ2_CG) = fmlenTmp + 10.0_wp  ! Add buffer 10 long for
+                                                      ! extra security...
 
-    if (tProcInfo_G%qRoot) print*, 'Field mesh length in z2 now = ', &
-                                sFieldModelLength(iZ2_CG)
-    if (tProcInfo_G%qRoot) print*, ''
+      if (tProcInfo_G%qRoot) print*, 'Field mesh length in z2 now = ', &
+                                  sFieldModelLength(iZ2_CG)
+      if (tProcInfo_G%qRoot) print*, ''
+
+    end if
+
+    deallocate(smeanp2, fmlensTmp)
 
   end if
-
-  deallocate(smeanp2, fmlensTmp)
-
   
   dz2 = 4.0_WP * pi * sRho_G / real(nodesperlambda-1_IP,kind=wp)
 
