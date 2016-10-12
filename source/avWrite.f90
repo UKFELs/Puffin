@@ -499,7 +499,7 @@ contains
       inl = ceiling(sElZ2_G(ij)/sam_len)
       inu = inl + 1
 
-      if ((inu > NZ2_G) .or. (inl<0)) then
+      if ((inu > NZ2_G) .or. (inl<1)) then
         print*, 'NODES OUTSIDE BOUNDS'
         STOP
       end if
