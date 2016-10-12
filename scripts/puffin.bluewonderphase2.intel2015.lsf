@@ -1,0 +1,30 @@
+#!/bin/bash
+#BSUB -o 3Dtest.out
+#BSUB -e 3Dtest.err
+#BSUB -R "span[ptile=16]"
+#BSUB -n 32
+#BSUB -J testPuffin
+#BSUB -W 360
+export MYHOME=`pwd`
+export OMP_NUM_PROCS=4
+# setup modules
+. /etc/profile.d/modules.sh
+#module load puffin-gcc
+module load intel/15.2.164 openmpi/1.8
+#source $HOME/../shared/contrib-sys-gcc491/visitall.sh
+export PUFFIN_DIR=/gpfs/stfc/local/HCP084/bwm06/shared/volatile-intel2015-openmpi/puffin-1.5.1-nw/bin
+#/gpfs/stfc/local/HCP084/bwm06/shared/install-gcc491-sysopenmpi1.8/puffin-1.5.1-new-write/bin
+export MYJOB=fig7
+export MYINPUT=${MYJOB}.in
+
+mpirun -n 16 $PUFFIN_DIR/puffin ${MYINPUT} | tee ${MYJOB}.log
+#do something while this .log file is reasonably current
+#postprocessing - sort out fields
+for i in $(ls fig7_aperp_0_*.h5); do  python $PUFFIN_DIR/ReorderColMajorFtoColMinorC.py $i; done
+#postprocessing - join up particles
+python $PUFFIN_DIR/mergeParticles.py fig7_electrons
+#postprocessing - merge power outputs
+python $PUFFIN_DIR/aggregatePower.py fig7_power_0
+python $PUFFIN_DIR/aggregatePower.py fig7_current_0
+#reduce particles for ease of visualisation
+for i in $(ls fig7_electrons_*.vsh5); do python reduce_particles.py $i 10000; done

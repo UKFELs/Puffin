@@ -103,14 +103,17 @@ emps_per_wave = 24         # Electron macroparticles per resonant wavelength
 steps_per_per = 100        # should be roughly 4-5* elms_per_wave
 
 # Undulator and beam parameters
+# Below similar to CLARA parameters
 
-aw = 2.0               # rms wiggler parameter
-emit = 4.976711101413333e-07       # Unnormalised Emittance
-lambda_w = 0.07        # Undulator period
+E = 250e6            # Beam energy
+gamma = E / ( (m_e * pow(c,2) / q_e) ) # Rel. factor
+aw = 1.0               # rms wiggler parameter
+emit = 1e-6 / gamma       # Unnormalised Emittance
+lambda_w = 0.027        # Undulator period
 N_w = 200              # Number of undulator periods
-gamma = 100.0          # Relativistic factor
+# gamma = 100.0          # Relativistic factor
 ff = math.sqrt(2)      # Focus factor
-Q = 2e-9               # Charge
+Q = 0.25e-9               # Charge
 qFlatTopZ2 = 1         # =1 if flat top current profile, else gaussian.
 qHardEdgeX = 0         # =1 if disk (circle) in transverse plane, else gaussian.
 qRoundZ2 = 1           # If rounding off edges of flat top in z2
@@ -119,11 +122,11 @@ bEnOscMag = 0          # Magnitude of oscillation on beam energy | Units of gamm
 bEnOscFr = 7E3         # Frequency (2pi/lambda, where lambda in units of ct) of oscillation on beam energy 
 #E = 300e6            # Beam energy
 #gamma = E / (m_e * pow(c,2)) # Rel. factor
-sig_gamma = 0.001      # Energy spread
+sig_gamma = 0.0004      # Energy spread
 
 
 k_w = 2 * pi / lambda_w             # Get wiggler wavenumber
-sigt = 0.005570423008216 / c        # Get sigma in t dimension
+sigt = 250e-15 # 0.005570423008216 / c        # Get sigma in t dimension
 sigz = c * sigt                     # Convert sigma in t to z
 k_beta = aw * k_w / ( ff * gamma )  # Betatron wavelength
 N = Q / q_e                         # Number of real electrons in pulse
@@ -186,6 +189,7 @@ B = pow((2 * Z_bar_R),(3.0/2.0))                       # Saldin diffraction para
 
 
 NL = N/sigz2 * lambda_z2                           # electrons per radiation period
+
 Anoise = 6 * sqrt(pi) * rho / (NL * sqrt(log(NL/rho)))  # Spontaneous noise estimate (in scaled units)
 Acse = 16 * pow(rho,2)                             # CSE estimate for flat-top current
 

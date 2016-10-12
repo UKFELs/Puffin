@@ -1,39 +1,35 @@
-PUFFIN SEED FILE
+! PUFFIN SEED FILE
+!
+!Describes seed fields for input into puffin. Multiple seeds with
+!different frequencies, profiles and positions can be used. Please 
+!refer to POP-REF for an explanation of the scaled variables used, 
+!such as z2.
+!
+!READ IN SEED CHARACTERISTICS
+!========================================================================
+!PARAMETERS:-
+!
+!freqf            Ratio of seed to resonant frequency i.e. omega_s / omega_r
+!sA0_X                Initial peak field value (real, also the x-polarized field)
+!sA0_Y                Initial peak field value (imaginary, also the y-polarized field)
+!sSigmaF              Seed field sigma in each spatial direction 
+!qFlatTop             =.TRUE. if flat top seed, else gaussian is assumed
+!meanZ2               Mean or center position of seed in Z2
+!qRndFj_G             round edge of flat top? 
+!sSigEj               Sigma of gaussian roll off for flat top
+!========================================================================
 
-Describes seed fields for input into puffin. Multiple seeds with
-different frequencies, profiles and positions can be used. Please 
-refer to POP-REF for an explanation of the scaled variables used, 
-such as z2.
+&NSLIST
+nseeds = 2
+/
 
-2         # of seeds
-
-READ IN SEED CHARACTERISTICS
-========================================================================
-SEED 1:-
-
-1.0                    FreqFrac            Ratio of seed to resonant frequency i.e. omega_s / omega_r
-0.01                    A0_X                Initial peak field value (real, also the x-polarized field)
-0.01                    A0_Y                Initial peak field value (imaginary, also the y-polarized field)
-0.7             SigmaX              Seed field sigma in x direction (Calculated in code for matched beam) =1E8 for flat top
-0.7             SigmaY              Seed field sigma in y direction (Calculated in code for matched beam) =1E8 for flat top
-1E8           SigmaZ2             Seed field sigma in z2 direction =1E8 for flat top
-.TRUE.                 qFlatTop            =.TRUE. if flat top seed, else gaussian is assumed
-0.0                    MeanZ2              Mean or center position of seed in Z2
-.false.                 round edge of flat top? 
-0.1                     sSigEj Sigma of gaussian roll off for flat top
-========================================================================
-
-========================================================================
-SEED 2:-
-
-0.4167                  FreqFrac            Ratio of seed to resonant frequency i.e. omega_s / omega_r
-0.01                    A0_X                Initial peak field value (real, also the x-polarized field)
-0.01                    A0_Y                Initial peak field value (imaginary, also the y-polarized field)
-0.7             SigmaX              Seed field sigma in x direction (Calculated in code for matched beam) =1E8 for flat top
-0.7             SigmaY              Seed field sigma in y direction (Calculated in code for matched beam) =1E8 for flat top
-1E8           SigmaZ2             Seed field sigma in z2 direction =1E8 for flat top
-.TRUE.                 qFlatTop            =.TRUE. if flat top seed, else gaussian is assumed
-0.0                    MeanZ2              Mean or center position of seed in Z2
-.false.                 round edge of flat top? 
-0.1                     sSigEj Sigma of gaussian roll off for flat top
-========================================================================
+&SLIST
+freqf = 1.0, 0.4167
+sA0_X = 0.01, 0.01
+sA0_Y = 0.01, 0.01
+sSigmaF = 2.0, 2.0, 2.0, 2.0, 1E8, 1E8
+qFlatTop = .true., .true.
+meanZ2 = 0.0, 0.0
+qRndFj_G = .false., .false.
+sSigFj_G = 0.1, 0.1
+/

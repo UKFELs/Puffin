@@ -21,6 +21,9 @@ implicit none
 integer(kind=ip) :: NX_G, NBX_G
 integer(kind=ip) :: NY_G, NBY_G
 integer(kind=ip) :: NZ2_G, NBZ2_G
+integer(kind=ip) :: ntrnds_G, ntrndsi_G
+
+integer(kind=ip) :: nspinDX, nspinDY
 
 real(kind=wp)    :: sLengthOfElmX_G 
 real(kind=wp)    :: sLengthOfElmY_G 
@@ -28,8 +31,8 @@ real(kind=wp)    :: sLengthOfElmZ2_G
 
 
 
-integer(kind=ip) :: ReducedNX_G
-integer(kind=ip) :: ReducedNY_G
+integer(kind=ip) :: iRedNodesX_G
+integer(kind=ip) :: iRedNodesY_G
 integer(kind=ip) :: outnodex_G,outnodey_G
 
 integer(kind=ip) :: iNodesPerElement_G
@@ -50,6 +53,10 @@ real(kind=wp)  :: sfilt   ! Frequency cutoff for high pass filter, in units
 real(kind=wp) :: delta_G  ! Volume of field element (dx * dy * dz2)
 
 
+
+real(kind=wp) :: sMNum_G
+
+
 real(kind=wp), allocatable :: x_ax_G(:), y_ax_G(:) ! x and y axis for field integration
 
 !   ---   For rounded edge seed field   ---   !
@@ -59,13 +66,17 @@ logical, allocatable :: qRndFj_G(:)  ! Rounding edges of flat top seed?
 real(kind=wp), allocatable :: sSigFj_G(:) ! sigma of gaussian tail off
                                           ! for flat top seed
 
+logical, allocatable :: qMatchS_G(:)
+logical :: qFMesh_G
+
+integer(kind=ip) :: nseqparts_G
+logical :: qEquiXY_G
+logical :: qFixCharge_G
 
 
+integer(kind=ip) :: npts_I_G    !  Specifying mesh 4 current calculation
 
-
-
-
-
+real(kind=wp) :: dz2_I_G
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! electron vars
@@ -89,6 +100,11 @@ real(kind=wp), allocatable :: sSigEj_G(:)
 real(kind=wp), parameter :: gExtEj_G = 7.5_wp
 
 
+integer(kind=ip) :: iInputType_G
+integer(kind=ip), parameter :: iGenHom_G = 1_ip
+integer(kind=ip), parameter :: iReadDist_G = 2_ip
+integer(kind=ip), parameter :: iReadMASP_G = 3_ip
+
 ! Electron macroparticle phase space coordinates 
 
 real(kind=wp), allocatable     :: sElX_G(:)
@@ -96,10 +112,12 @@ real(kind=wp), allocatable     :: sElY_G(:)
 real(kind=wp), allocatable     :: sElZ2_G(:)
 real(kind=wp), allocatable     :: sElPX_G(:)
 real(kind=wp), allocatable     :: sElPY_G(:)
-real(kind=wp), allocatable     :: sElPZ2_G(:)
+real(kind=wp), allocatable     :: sElGam_G(:)
 
 
 
+
+real(kind=wp), allocatable     :: dadz_w(:)
 
 
 
@@ -140,9 +158,8 @@ real(kind=wp), allocatable     :: sElPZ2_G(:)
 
 
 
-real(kind=wp)    :: sRho_save_G,sAw_save_G
 real(kind=wp)    :: sRho_G,sAw_G,sGammaR_G
-real(kind=wp)    :: sEta_G,sKBeta_G
+real(kind=wp)    :: sEta_G,sKBeta_G, sKappa_G
 real(kind=wp)    :: sFocusfactor_G
 real(kind=wp)    :: sFocusfactor_save_G
 real(kind=wp)    :: fx_G, fy_G
@@ -158,6 +175,9 @@ character(32_IP) :: zUndType_G     ! Selects undulator type
 
 real(kind=wp) :: kx_und_G, ky_und_G    ! kx and ky for 3D undulator B-field variation
 
+real(kind=wp) :: sKBetaX_G, sKBetaY_G
+
+real(kind=wp) :: sKBetaXSF_G, sKBetaYSF_G
 
 real(kind=wp)       :: Dfact  ! Dispersion strength factor for chicane
                               ! (=1 for 'normal' dispersion, =0 for 
@@ -165,6 +185,9 @@ real(kind=wp)       :: Dfact  ! Dispersion strength factor for chicane
 
 real(kind=wp), allocatable    :: D(:), delta(:), zMod(:), &
                                  mf(:), delmz(:), tapers(:)
+
+integer(kind=ip), allocatable :: nSteps_arr(:)
+integer(kind=ip) :: iCsteps  ! Cumulative steps
 
 integer(kind=ip)    :: ModNum, ModCount
 
@@ -192,10 +215,19 @@ real(kind=wp) :: n2col0  ! Initial alpha in the current undulator module
 real(kind=wp) :: m2col   ! Fractional change in eta due to change in aw
                          ! (redundant) 
 
+logical :: qUndEnds_G     ! If modelling undulator ends
 
+logical :: qhdf5_G, qsdds_G  ! Switches for data output file formats
 
+real(kind=wp) :: sZFS, sZFE  ! Markers for wiggler ends
 
+! Indicates which part of the wiggler we're in -
+! i.e. start, middle or end
 
+integer(kind=ip) :: iUndPlace_G
+integer(kind=ip), parameter :: iUndStart_G = 1_ip, &
+                               iUndEnd_G = 2_ip, &
+                               iUndMain_G = 0_ip
 
 real(kind=wp)  :: diffStep ! Stepsize in zbar used for diffraction 
 
@@ -204,6 +236,8 @@ real(kind=wp)  :: ffact    ! Scaling factor for fourier transforms
 
 
 
+
+real(kind=wp) :: cf1_G
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -216,6 +250,9 @@ integer(kind=ip) :: nSteps
 real(kind=wp)   :: start_time,end_time
 real(kind=wp)   :: time1, time2 !!!FOR DEBUGGING!!!
 
+
+real(kind=wp) :: sRedistLen_G
+integer(kind=ip) :: iRedistStp_G
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Data writing
@@ -240,9 +277,9 @@ TYPE(cFileType), save :: tPowF   ! Type array describing the power file
 
 integer(kind=ip) :: iWriteNthSteps, iDumpNthSteps, iIntWriteNthSteps
 
-character(32_ip) :: wrMeth_G
 
-
+character(132_ip) :: cmd_call_G
+character(32_ip) :: zFileName_G, zBFile_G, zSFile_G
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -256,17 +293,6 @@ character(32_ip) :: wrMeth_G
 ! ...for the full field, when split according to FFTW...
 
 integer(kind=ip), allocatable :: frecvs(:), fdispls(:)
-
-! ...for the full (or 'large') field array, when spread as 
-! evenly as possible across processes...
-
-integer(kind=ip), allocatable :: lrecvs(:), ldispls(:)
-
-! ...and for the reduced or active field nodes, split 
-! evenly across processes.
-
-integer(kind=ip), allocatable :: mrecvs(:), mdispls(:)
-
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -302,10 +328,13 @@ logical   ::  qResume            ! Reading from previously crashed runs dump fil
 
 logical   ::  qWrite             ! Write data?
 
+logical   ::  qOneD_G
 
+logical   ::  qPArrOK_G
 
+logical   ::  qInnerXYOK_G
 
-
+logical   ::  qscaled_G
 
 
 

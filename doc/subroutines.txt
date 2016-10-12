@@ -1,0 +1,97 @@
+avWrite.f90:  subroutine writeIntData(sA)
+avWrite.f90:  subroutine oPower(sA)
+avWrite.f90:  subroutine writePower(power,powFType)
+avWrite.f90:  subroutine initPFile(powFType, qForm)
+avWrite.f90:  subroutine gPower(field, power)
+avWrite.f90:  subroutine fPower_1D(field, power)
+avWrite.f90:  subroutine fPower_3D(field,xaxis,yaxis, power)
+avWrite.f90:  subroutine getCurrNpts(sam_len, npts)
+avWrite.f90:  subroutine getCurr(sam_len, Iarray)
+BCIOWrapper.f90:  SUBROUTINE C_OpenFileForOutput(zFileName, qOK)
+BCIOWrapper.f90:  SUBROUTINE C_WriteInteger(zFileName, iNum, qOK)
+BCIOWrapper.f90:  SUBROUTINE C_WriteIntegerL(zFileName, iNum, qOK)
+BCIOWrapper.f90:  SUBROUTINE C_WriteReal(zFileName, sNum, qOK)
+BCIOWrapper.f90:  SUBROUTINE C_WriteString(zFileName, zString, qOK, qNewLine )
+BCIOWrapper.f90:  SUBROUTINE C_WriteIntegerArray1D(zFileName, iNum, qOK)
+BCIOWrapper.f90:      SUBROUTINE C_WriteIntegerArray2D(zFileName,        &
+BCIOWrapper.f90:      SUBROUTINE C_WriteIntegerArray3D(zFileName,        &
+BCIOWrapper.f90:      SUBROUTINE C_WriteRealArray1D(zFileName,        &
+BCIOWrapper.f90:      SUBROUTINE C_WriteRealArray2D(zFileName,        &
+BCIOWrapper.f90:      SUBROUTINE C_WriteRealArray3D(zFileName,        &
+CIO.f90:      SUBROUTINE WriteLOGICINTEGER(qLogic,        &
+CIO.f90:      SUBROUTINE WriteINTEGER(iInt,        &
+CIO.f90:      SUBROUTINE WriteINTEGERL(iInt,        &
+CIO.f90:      SUBROUTINE WriteRealNumber(sReal,        &
+CIO.f90:      SUBROUTINE Write1DRealArray(sReal,        &
+CIO.f90:      SUBROUTINE Write2DRealArray(sReal,        &
+CIO.f90:      SUBROUTINE Write3DRealArray(sReal,        &
+CIO.f90:      SUBROUTINE OpenFileForOutput(zFileName, &
+CIO.f90:      SUBROUTINE CloseFile(tFILETYPE, &
+CIO.f90: SUBROUTINE Error_log(zError,tFileType)
+CIO.f90:      SUBROUTINE OpenFileForAppend(zFileName, &
+CIO.f90:      SUBROUTINE FileNameNoExtension(zFileName, &
+createSDDS.f90:  subroutine CreateSDDSFile(zDataFileName,  &
+createSDDS.f90:  subroutine CloseDataFiles(tArraySegment, qOK)
+Dchecks.f90:  subroutine checkRndEjLens(iNMP, eSamLen, sigs, nbeams)
+DParallelSetUp.f90:      SUBROUTINE Get_time(in_time)
+DParallelSetUp.f90:      SUBROUTINE  UnDefineParallelLibrary(qOK)
+DParallelSetUp.f90:      SUBROUTINE  StopCode(qOK)
+DParallelSetUp.f90:  SUBROUTINE sum_mpi_int14(in1,o1)
+DParallelSetUp.f90:  SUBROUTINE sum_mpi_real(in1,o1)
+Ffunctions.f90:  SUBROUTINE GaussianGrid(i_Macro,s_MeanGuass,s_SigmaGuass,s_start,s_end,sgrid)
+Ffunctions.f90:  SUBROUTINE GaussianDistribution(i_Macro,s_grid,&
+Ffunctions.f90:  SUBROUTINE GaussianDistributionz2(i_Macro,s_grid,&
+Ffunctions.f90:  SUBROUTINE hpsort(N,RA)
+FgToP2.f90:  subroutine getGamma(gamma, p2, px, py, eta, gamma0, aw)
+FgToP2.f90:  subroutine getP2(p2, gamma, px, py, eta, gamma0, aw)
+FparBeam.f90:  SUBROUTINE splitBeam(N, globLen, numproc, rank, &
+FsddsPuffin.f90:  SUBROUTINE  WriteParameterData(zDataFileName, &
+FsddsPuffin.f90:  subroutine wr_sdds(sA, sZ, istep, tArrayA, tArrayE, tArrayZ, &
+FsddsPuffin.f90:  subroutine createFFiles(tArrayY, zDFName, zOptionalString, qOK)
+FsddsPuffin.f90:  subroutine outputField(sA, tArrayA, iStep, qSeparate, zDFName, qOK)
+FsddsPuffin.f90:  subroutine outputBeamFiles(tArrayE, iStep, qSeparate, zDFName, qOK)
+FsddsPuffin.f90:  subroutine wrt_phs_coord(iPh_id,ph_coord,qOK)
+FsddsPuffin.f90:  subroutine outputZ(sZ, tArrayZ, iStep, qSeparate, zDFName, qOK)
+FsddsPuffin.f90:  subroutine createZFile(tArrayY, zDFName, zOptionalString, qOK)
+FsddsPuffin.f90:  SUBROUTINE WriteEleData(zDataFileName,fname,vname,&
+GenMacros.f90:  SUBROUTINE genMacros(i_total_electrons, &
+GenMacros.f90:  subroutine getGlobalnpk(npk_num, npk_numl)
+GEquations.f90:  subroutine dppdz_r_f(sx, sy, sz2, spr, spi, sgam, &
+GEquations.f90:  subroutine dppdz_i_f(sx, sy, sz2, spr, spi, sgam, sZ, &
+GEquations.f90:  subroutine dgamdz_f(sx, sy, sz2, spr, spi, sgam, &
+GEquations.f90:  subroutine dxdz_f(sx, sy, sz2, spr, spi, sgam, &
+GEquations.f90:  subroutine dydz_f(sx, sy, sz2, spr, spi, sgam, &
+GEquations.f90:  subroutine dz2dz_f(sx, sy, sz2, spr, spi, sgam, &
+GEquations.f90:  subroutine alct_e_srtcts(ar_sz)
+GEquations.f90:  subroutine dalct_e_srtcts()
+GEquations.f90:  subroutine adjUndPlace(szl)
+GparticleFunctions.f90:  SUBROUTINE PulseGrid(iGridType,iNumMP,sStart,&
+GparticleFunctions.f90:  SUBROUTINE EvalIntegral(s_gridPoints,s_mean,s_sigma,&
+GparticleFunctions.f90:  SUBROUTINE DistributionIntegral(iDistributionType,&
+GparticleFunctions.f90:  SUBROUTINE DistributionIntegralz2(iDistributionType,&
+Hgrids.f90:  SUBROUTINE getExtent(off,length,start,endm)
+Hgrids.f90:  SUBROUTINE getStEnd(nbeams,totalmps_b,b_sts,b_ends)
+IelectronGrid.f90:  SUBROUTINE electron_grid(i_RealE, &
+Jresume.f90:  SUBROUTINE initFD(sA,sZ,qOK)
+Jrhs.f90:  subroutine getrhs(sz, &
+KDerivative.f90:  subroutine derivs(sz, sA, sx, sy, sz2, spr, spi, sp2, &
+Lattice.f90:  subroutine setupMods(lattFile, taper, sRho, nSteps_f, dz_f)
+Lattice.f90:  SUBROUTINE readLatt(lattFile,zMod,delta,D,Dfact,ModNum,taper,rho,&
+Lattice.f90:  SUBROUTINE disperse(iL)
+Lattice.f90:  subroutine correctTrans()
+Lattice.f90:  subroutine matchOut(sZ)
+Lattice.f90:  subroutine matchIn(sZ)
+Lattice.f90:  subroutine initUndulator(iM, sZ, szl)
+MASPin.f90:  subroutine readMASPfile(zFile)
+Msetup.f90:  SUBROUTINE init(sA, sZ, qOK)
+Msetup.f90:  SUBROUTINE cleanup(sA,sZ)
+Ndum.f90:  subroutine int_or_full(istep, iIntWr, iWr, &
+newGM.f90:  SUBROUTINE genMacrosNew(i_total_electrons, &
+plnout_puff.f90:	subroutine wr_pln()
+sddsROutput.f90:  subroutine OutputIntegrationData_RealArray(tFileType,sY,&
+sddsROutput.f90:  subroutine OutputIntegrationData_ParRealArray(tFileType, &
+sddsROutput.f90:  subroutine OutputIntegrationData_RealValue(tFileType, sY, qOK)
+sddsSetup.f90:  subroutine InitBasicSDDSFile(zOutFile, tFileType, qOK)
+sddsSetup.f90:  subroutine WriteSDDSHeader(tFileType, qOK)
+sddsSetup.f90:  subroutine WriteSDDSNewPage(tFileType, qOK)
+undulator.f90:  subroutine UndSection(iM, sA, sZ)

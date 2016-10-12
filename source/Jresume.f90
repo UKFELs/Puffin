@@ -32,7 +32,9 @@ MODULE RESUME
 
 !         LOCAL ARGS:-
 
-    INTEGER(KIND=IP) :: sendbuff,recvbuff,statr,req,lrank,rrank
+    INTEGER(KIND=IP) :: sendbuff,recvbuff,req,lrank,rrank
+    integer statr(MPI_STATUS_SIZE)
+    integer sendstat(MPI_STATUS_SIZE)
     INTEGER(KIND=IP) :: i
     LOGICAL :: qOKL
     INTEGER :: error
@@ -62,7 +64,7 @@ MODULE RESUME
     ALLOCATE(sElZ2_G(iNumberElectrons_G))
     ALLOCATE(sElPX_G(iNumberElectrons_G))
     ALLOCATE(sElPY_G(iNumberElectrons_G))
-    ALLOCATE(sElPZ2_G(iNumberElectrons_G))
+    ALLOCATE(sElGam_G(iNumberElectrons_G))
 
 
     ALLOCATE(sA(nFieldEquations_CG*iNumberNodes_G))
@@ -152,7 +154,7 @@ MODULE RESUME
     
       CALL MPI_ISSEND( sendbuff,1,MPI_INTEGER,rrank,0,tProcInfo_G%comm,req,error )
       CALL MPI_RECV( recvbuff,1,MPI_INTEGER,lrank,0,tProcInfo_G%comm,statr,error )
-      CALL MPI_WAIT( req,statr,error )	  
+      CALL MPI_WAIT( req,sendstat,error )	  
   
       procelectrons_G(i) = recvbuff
     
@@ -256,7 +258,7 @@ if (nelectrons>0) then
  
  OPEN(UNIT=213,FILE=FileName,STATUS='OLD',ACTION='READ',POSITION='REWIND',&
  FORM='UNFORMATTED')
- READ(213) sElPZ2_G
+ READ(213) sElGam_G
  CLOSE(UNIT=213,STATUS='KEEP') 
 ! Z2 
  FileName = 'Z2-'//TRIM(IntegerToString(RANK))//'.dump'

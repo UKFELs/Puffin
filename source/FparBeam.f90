@@ -11,6 +11,7 @@ module parBeam
 
 use paratype
 use typesandconstants
+use globals
 
 implicit none
 
@@ -104,7 +105,7 @@ SUBROUTINE splitBeams(iNMP,samLenE,nBeams,numproc,rank,&
   iNumLocalElectrons(:,iY_CG) = iNMP(:,iY_CG)
   iNumLocalElectrons(:,iPX_CG) = iNMP(:,iPX_CG)
   iNumLocalElectrons(:,iPY_CG) = iNMP(:,iPY_CG)
-  iNumLocalElectrons(:,iPZ2_CG) = iNMP(:,iPZ2_CG)
+  iNumLocalElectrons(:,iGam_CG) = iNMP(:,iGam_CG)
 
   DO ind = 1, nBeams
 
@@ -112,7 +113,17 @@ SUBROUTINE splitBeams(iNMP,samLenE,nBeams,numproc,rank,&
                    iNumLocalElectrons(ind,iZ2_CG), local_start, local_end)
                    
 !             Total no of MPs in this beam
-    totalmps_b(ind) = PRODUCT(INT(iNumLocalElectrons(ind,:),KIND=IPL)) 
+
+    if (qEquiXY_G) then
+
+      totalmps_b(ind) = PRODUCT(INT(iNumLocalElectrons(ind,:),KIND=IPL)) 
+
+    else
+
+      totalmps_b(ind) = INT(iNumLocalElectrons(ind,iZ2_CG) * &
+                               nseqparts_G,KIND=IPL)
+
+    end if
 
   END DO
 

@@ -1,3 +1,9 @@
+!************* THIS HEADER MUST NOT BE REMOVED *******************!
+!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
+!** This program must not be copied, distributed or altered in  **!
+!** any way without the prior permission of the above authors.  **!
+!*****************************************************************!
+
 MODULE lattice
 
 USE paratype
@@ -6,12 +12,109 @@ USE ArrayFunctions
 USE ElectronInit
 use gtop2
 use initConds
+use functions
 
-IMPLICIT NONE
+implicit none
 
-CONTAINS
+integer(kind=ip), parameter :: iUnd = 1_ip, &
+                               iChic = 2_ip, &
+                               iDrift = 3_ip, &
+                               iQuad = 4_ip
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+integer(kind=ip), allocatable :: iElmType(:)
+
+integer(kind=ip) :: iUnd_cr, iChic_cr, iDrift_cr, iQuad_cr    ! Counters for each element type
+
+!integer(kind=ip) :: inum_latt_elms
+
+contains
+
+!    ####################################################
+
+
+
+
+  subroutine setupMods(lattFile, taper, sRho, nSteps_f, dz_f)
+
+    implicit none
+
+!     Sets up elements in wiggler lattice. The elements
+!     are read in from the file specified.
+!
+!     Dr Lawrence Campbell
+!     University of Strathclyde
+!     2015
+
+    character(32_ip), intent(in) :: LattFile 
+    real(kind=wp), intent(inout) :: taper
+    real(kind=wp), intent(in) :: sRho, dz_f
+    integer(kind=ip), intent(in) :: nSteps_f
+
+
+    if (lattFile=='') then
+      qMod_G = .false.
+      if(tProcInfo_G%qRoot) print*, 'There are no dispersive sections'
+    else
+      qMod_G = .true.
+      if(tProcInfo_G%qRoot) print*, 'There are dispersive sections'
+    end if
+
+
+    IF (qMod_G) then
+
+      modNum=numOfMods(lattFile)
+
+      allocate(D(ModNum),zMod(ModNum),delta(modNum))
+      allocate(mf(ModNum),delmz(ModNum),tapers(modNum))
+      allocate(nSteps_arr(ModNum))
+
+!    Latt file name, number of wigg periods converted to z-bar,
+!    slippage in chicane in z-bar, 2 dispersive constants, 
+!    number of modules
+
+      allocate(iElmType(2*modNum))   !  For now, using old lattice file format...
+      call readLatt(lattFile,zMod,delta,D,Dfact,ModNum,taper,sRho,sStepSize)
+      ModCount = 1
+      modNum = 2_ip * modNum
+
+    else 
+
+      modNum = 1
+      
+      allocate(D(ModNum),zMod(ModNum),delta(modNum))
+      allocate(mf(ModNum),delmz(ModNum),tapers(modNum))
+      allocate(nSteps_arr(ModNum))
+      
+      allocate(iElmType(modNum))
+      
+      iElmType(1) = iUnd
+      mf(1) = 1_wp
+      delmz(1) = dz_f
+      tapers(1) = taper
+      nSteps_arr(1) = nSteps_f
+      iUnd_cr = 1_ip
+      nSteps_arr(1) = nSteps_f
+      delmz(1) = dz_f
+      mf(1) = 1_wp
+      tapers(1) = taper
+
+
+    end if
+
+    iUnd_cr=1_ip
+    iChic_cr=1_ip
+    iDrift_cr=1_ip
+    iQuad_cr=1_ip
+
+    iCsteps = 1_ip
+
+  end subroutine setupMods
+
+
+
+
+!    #####################################################
+
 
   SUBROUTINE readLatt(lattFile,zMod,delta,D,Dfact,ModNum,taper,rho,&
                       sStepSize)
@@ -80,12 +183,17 @@ CONTAINS
 
 !     Calculate cumulative interaction length of modules
 
+    nSteps_arr(i) = nw * nperlam(i)
+
     if (i==1) then  
       zMod(i) = real(nw,KIND=WP)
       zMod(i) = 2.0_WP*pi*c1*zMod(i)
     else
       zMod(i) = zMod(i-1)+2.0_WP*pi*c1*real(nw,KIND=WP) 
     end if
+
+    iElmType(2*i-1) = iUnd
+    iElmType(2*i) = iChic
 
   end do
 	
@@ -103,7 +211,7 @@ CONTAINS
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  SUBROUTINE disperse(D,delta,i,sStepSize,sZ)
+  SUBROUTINE disperse(iL)
 
   IMPLICIT NONE
 
@@ -121,91 +229,136 @@ CONTAINS
 !                  dispersive strength factor of the chicane
 ! delta            Slippage in resonant wavelengths
 	
-  REAL(KIND=WP), INTENT(IN) :: D,delta
-  INTEGER(KIND=IP), INTENT(IN) :: i
-  REAL(KIND=WP), INTENT(OUT) :: sStepSize
-  REAL(KIND=WP), INTENT(INOUT) :: sZ
-
-  INTEGER(KIND=IP)  ::  e_tot
+  INTEGER(KIND=IP), INTENT(IN) :: iL
  
-  REAL(KIND=WP), ALLOCATABLE :: sgamma_j(:),spx0_offset(:),spy0_offset(:), &
-                                sx_offset(:),sy_offset(:)
-
-  REAL(KIND=WP)     :: shift_corr, awo, sx_offseto, sx_offsetn, &
-                       sy_offseto, sy_offsetn, sZ_new, spx0_offseto, &
-                       spy0_offseto, spx0_offsetn, spy0_offsetn, &
-                       beta_av, sEta_eff, sl1
-
   LOGICAL :: qOKL
 
+!     Propagate through chicane
+
+
+  sElZ2_G = sElZ2_G - 2.0_WP * D(iChic_cr) *  &
+               (sElGam_G - 1_wp) &
+               + delta(iChic_cr)
+
+  iChic_cr = iChic_cr + 1_ip
+
+
+  END SUBROUTINE disperse	
 
 
 
-
-  e_tot = iGloNumElectrons_G
-
+! ##############################################
 
 
 
+  subroutine correctTrans()
+
+! Apply a virtual 'magnet corrector' at the end of the wiggler
+! module. It simply centers the beam in the transverse dimensions
+
+    real(kind=wp) :: spx_m, spy_m, sx_m, sy_m
+
+
+! Calculate means 
+
+    spx_m = arr_mean_para_weighted(sElPX_G, s_chi_bar_G)
+    spy_m = arr_mean_para_weighted(sElPY_G, s_chi_bar_G)
+
+    sx_m = arr_mean_para_weighted(sElX_G, s_chi_bar_G)
+    sy_m = arr_mean_para_weighted(sElY_G, s_chi_bar_G)
+
+! Correct coordinates
+
+    sElPX_G = sElPX_G - spx_m
+    sElPY_G = sElPY_G - spy_m
+
+    sElX_G = sElX_G - sx_m
+    sElY_G = sElY_G - sy_m
+
+
+  end subroutine correctTrans
+
+
+!  #############################################
 
 
 
+  subroutine matchOut(sZ)
+
+    real(kind=wp), intent(in) :: sZ
+
+    real(kind=wp), allocatable :: spx0_offset(:),spy0_offset(:), &
+                                  sx_offset(:),sy_offset(:)
+
+    real(kind=wp) :: kx, ky
 
 
-!     NEW FOR SWISSFEL - TWO COLOUR UNDULATOR SCHEME
-
-!     Factors for redefining undulator parameter in
-!     2 colour undulator scheme.
+    kx = kx_und_G
+    ky = ky_und_G
 
 
+    allocate(spx0_offset(iNumberElectrons_G), spy0_offset(iNumberElectrons_G))
+    allocate(sx_offset(iNumberElectrons_G),sy_offset(iNumberElectrons_G))
+
+!     Get offsets for start of undulator
 
 
-!     Match beam to new undulator module - only need to 
-!     do this if diffrent from last module
+    if (zUndType_G == 'curved') then
+
+! used for curved pole puffin, the 2 order expansion of cosh and sinh
+! allows us to simply add a correction term to the intial position
+! when calculating initial conditions, this may need change eventually
 
 
-  !IF (mf(i+1) /= mf(i)) THEN
+        spx0_offset = pxOffset(sZ, srho_G, fy_G) & 
+            - 0.5_WP * kx**2 * sElX_G**2 &
+            -  0.5_WP * kY**2 * sElY_G**2
+     
+        spy0_offset = -1_wp *  &
+                      ( pyOffset(sZ, srho_G, fx_G) &
+                      - kx**2 *  sElX_G  * sElY_G)
 
 
-!     Find gamma for each electron
+    else if (zUndType_G == 'planepole') then 
 
-    sl1 = 2.0_WP*sAw_G**2.0_WP/ (fx_G**2.0_WP + fy_G**2.0_WP)
-
-    ALLOCATE(sgamma_j(iNumberElectrons_G))
-
-    sgamma_j = SQRT((1.0_WP + ( sl1 * (sElPX_G**2.0_WP  &
-                                   + sElPY_G**2.0_WP) )) * &
-                  (1.0_WP + sEta_G * sElPZ2_G )**2.0_WP / &
-                  ( sEta_G * sElPZ2_G * &
-                              (sEta_G * sElPZ2_G + 2.0_WP) ) )
-
-
-
-
-
-
-
-
-!     Get p_perp and x, y offsets for this undulator module
-
-    ALLOCATE(spx0_offset(iNumberElectrons_G), spy0_offset(iNumberElectrons_G))
-    ALLOCATE(sx_offset(iNumberElectrons_G),sy_offset(iNumberElectrons_G))
-
-    spx0_offset    = pxOffset(sZ, sRho_G, fy_G)
-    spy0_offset    = -1.0_wp * pyOffset(sZ, sRho_G, fx_G)
+! plane pole initial conditions are calculated as a 2nd order expansion
+! and added as a correction term.
 
 
 
-    sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
+        spx0_offset = pxOffset(sZ, srho_G, fy_G) & 
+            - 0.5_WP * (sEta_G / (4 * sRho_G**2)) * sElX_G**2 
+
+        spy0_offset = -1_wp * &
+                      pyOffset(sZ, srho_G, fx_G) 
+
+
+    else
+
+! "normal" PUFFIN case with no off-axis undulator
+! field variation
+
+
+        spx0_offset = pxOffset(sZ, srho_G, fy_G) 
+
+        spy0_offset = -1.0_wp * & 
+                     pyOffset(sZ, srho_G, fx_G) 
+
+
+    end if
+
+
+    sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
+                           sEta_G, sKappa_G, sFocusfactor_G, spx0_offset, spy0_offset, &
                            fx_G, fy_G, sZ)
 
-    sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
+    sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
+                           sEta_G, sKappa_G, sFocusfactor_G, spx0_offset, spy0_offset, &
                            fx_G, fy_G, sZ)
 
 
-!     Take off tranverse phase space offsets to center the beam
+!     Add on new offset to initialize beam for undulator module
+
 
     sElX_G = sElX_G - sx_offset
     sElY_G = sElY_G - sy_offset
@@ -213,85 +366,158 @@ CONTAINS
     sElPY_G = sElPY_G - spy0_offset
 
 
-
-
-!     Propagate through chicane
-
-    sElZ2_G = sElZ2_G - 2.0_WP * D *  &
-                 (sgamma_j - sGammaR_G) / sGammaR_G &
-                 + delta
-
-
-!     Change undulator tuning factor to next undulator module
-
-    n2col0 = mf(i+1)
-    n2col = mf(i+1)
-    undgrad = tapers(i+1)
-    sz0 = sz
-    
-
-!     Get new pperp offsets with new undulator tuning factors
-
-    spx0_offset    = pxOffset(sZ, sRho_G, fy_G)
-    spy0_offset    = -1.0_wp * pyOffset(sZ, sRho_G, fx_G)
+    deallocate(spx0_offset,spy0_offset,sx_offset,sy_offset)
 
 
 
-    sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
+  end subroutine matchOut
+
+
+
+
+! ###############################################
+
+
+
+
+  subroutine matchIn(sZ)
+
+    real(kind=wp), intent(in) :: sZ
+
+    real(kind=wp), allocatable :: spx0_offset(:),spy0_offset(:), &
+                                  sx_offset(:),sy_offset(:)
+
+    real(kind=wp) :: kx, ky
+
+    integer :: error
+
+    kx = kx_und_G
+    ky = ky_und_G
+
+
+    allocate(spx0_offset(iNumberElectrons_G), spy0_offset(iNumberElectrons_G))
+    allocate(sx_offset(iNumberElectrons_G),sy_offset(iNumberElectrons_G))
+
+!     Get offsets for start of undulator
+
+    if (zUndType_G == 'curved') then
+
+! used for curved pole puffin, the 2 order expansion of cosh and sinh
+! allows us to simply add a correction term to the intial position
+! when calculating initial conditions, this may need change eventually
+
+
+        spx0_offset = pxOffset(sZ, srho_G, fy_G) & 
+            - 0.5_WP * kx**2 * sElX_G**2 &
+            -  0.5_WP * kY**2 * sElY_G**2
+     
+        spy0_offset = -1_wp *  &
+                      ( pyOffset(sZ, srho_G, fx_G) &
+                      - kx**2 *  sElX_G  * sElY_G)
+
+
+    else if (zUndType_G == 'planepole') then 
+
+! plane pole initial conditions are calculated as a 2nd order expansion
+! and added as a correction term.
+
+
+
+        spx0_offset = pxOffset(sZ, srho_G, fy_G) & 
+            - 0.5_WP * (sEta_G / (4 * sRho_G**2)) * sElX_G**2 
+
+        spy0_offset = -1_wp * &
+                      pyOffset(sZ, srho_G, fx_G) 
+
+
+    else
+
+! "normal" PUFFIN case with no off-axis undulator
+! field variation
+
+
+        spx0_offset = pxOffset(sZ, srho_G, fy_G) 
+
+        spy0_offset = -1.0_wp * & 
+                     pyOffset(sZ, srho_G, fx_G) 
+
+
+    end if
+
+
+    sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
+                           sEta_G, sKappa_G, sFocusfactor_G, spx0_offset, -spy0_offset, &
                            fx_G, fy_G, sZ)
 
-    sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G, &
-                           sEta_G, sKBeta_G, sFocusfactor_G, spx0_offset, spy0_offset, &
+
+    sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
+                           sEta_G, sKappa_G, sFocusfactor_G, spx0_offset, -spy0_offset, &
                            fx_G, fy_G, sZ)
 
 
-!     Add on new offset to initialize beam for new undulator module
-
+!     Add on new offset to initialize beam for undulator module
 
     sElX_G = sElX_G + sx_offset
     sElY_G = sElY_G + sy_offset
     sElPX_G = sElPX_G + spx0_offset
     sElPY_G = sElPY_G + spy0_offset
-    sElPZ2_G = getP2(sgamma_j, sElPX_G, &
-                      -sElPY_G, sEta_G, sAw_G)   ! get new p2
+
+
+    deallocate(spx0_offset,spy0_offset,sx_offset,sy_offset)
+
+  end subroutine matchIn
 
 
 
 
-!     Get new p2 required to keep energy constant
+! #########################################################
 
 
-!          beta = SQRT( 1.0_WP - ((1.0_WP/sgamma_j**2) * (1.0_WP + ( sl1 * ( Vector(iRe_PPerp_CG,y_e)**2.0_WP + Vector(iIm_PPerp_CG,y_e)**2.0_WP  ) ) ) ) )
-!     p2 = (1/eta) * ( (1/beta_z)  - 1)
+  subroutine initUndulator(iM, sZ, szl)
+
+    integer(kind=ip), intent(in) :: iM
+    real(kind=wp), intent(in) :: sZ
+    real(kind=wp), intent(inout) :: szl
+
+! Want to update using arrays describing each module...
+
+!     Update undulator parameter:
+
+    n2col0 = mf(iM)
+    n2col = mf(iM)
+    undgrad = tapers(iM)
+    sz0 = sz
+    szl = 0_wp
 
 
-    DEALLOCATE(sgamma_j,spx0_offset,spy0_offset,sx_offset,sy_offset)
+!     Update stepsize    
 
-!     Work out new effective eta
+    sStepSize = delmz(iM) ! Change step size - make sure is still integer
+                           ! of 4pirho in input file!!
 
-
-    beta_av = SQRT(sGammaR_G**2.0_WP - 1.0_WP - (saw_G)**2.0_WP) / &
-                   sGammaR_G
-
-    sEta_eff = (1.0_WP - beta_av) / beta_av
-
-!     Ratio between effective and initial etas:-
-
-    m2col = sEta_eff / sEta_G
+    nSteps = nSteps_arr(iM)
 
 
-  !END IF
+!     Setup undulator ends
+
+    if (qUndEnds_G) then
+
+      sZFS = 4_wp * pi * sRho_G  *  2.0_wp
+      sZFE = nSteps * sStepSize - &
+               4_wp * pi * sRho_G  *  2.0_wp
+
+    else 
+
+      sZFS = 0_wp
+      sZFE = nSteps * sStepSize
+
+    end if
+
+  end subroutine initUndulator
 
 
-  sStepSize = delmz(i+1) ! Change step size - make sure is still integer
-                         ! of 4pirho in input file!!
 
-
-
-  END SUBROUTINE disperse	
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! #########################################################
 	
   FUNCTION lineCount(fname)
 

@@ -1,97 +1,53 @@
-PUFFIN BEAM FILE
+! PUFFIN BEAM FILE
+!
+!Describes electron beams for input into puffin. Multiple beams with
+!different parameters can be used. Please refer to POP-REF for an
+!explanation of the scaled variables used, such as z2 and p2.
+!
+! BEAM PARAMETERS - namelist NBLIST
+!
+! nbeams - number of electron beams
+! dtype  - Input type - simple, distribution, or macroparticle 
+!
+! BEAM PARAMETERS - namelist BLIST
+!========================================================================
+! sSigmaE - gaussian std dev in each dimension - x, y, z2, px, py, gamma, then for additional beams
+! sLenE   - Total length of beam modelled in each dimension - x, y, z2, px, py, gamma...
+! bcenter - Center of beam in z2
+! iNumElectrons  -  Number of macroparticles in each dimension used to model the beam 
+! sEmit_n - Scaled transverse beam emittance
+! sQe - Beam charge 
+! gammaf - Ratio of average beam energy to reference beam energy gamma / gamma_r 
+! chirp  - Energy chirp in z2 i.e. dgamma/dz2
+! mag    - magnitude of energy oscillation on beam
+! freq   - frequency in z2 of beam energy oscillation
+! qRndEj_G - Round edge of flat top?
+! sSigEj_G - Gaussian sigma of tail-off if used
+! qMatched_A - Automatically match beam to focusing channel??
+!========================================================================
 
-Describes electron beams for input into puffin. Multiple beams with
-different parameters can be used. Please refer to POP-REF for an
-explanation of the scaled variables used, such as z2 and p2.
+&NBLIST
+nbeams = 2
+dtype = 'simple'
+/
 
-2         # of beams
+&BLIST
+sSigmaE(1,:) = 1.0, 1.0, 1E8, 1.0, 1.0, 1.0
+sSigmaE(2,:) = 1.0, 1.0, 1E8, 1.0, 1.0, 1.0
+sLenE(1,:) = 1E-6, 1E-6, 3.0, 1E-6, 1E-6, 1E-6
+sLenE(2,:) = 1E-6, 1E-6, 3.0, 1E-6, 1E-6, 1E-6
+iNumElectrons(1,:) = 1, 1, 2500, 1, 1, 1 
+iNumElectrons(2,:) = 1, 1, 2500, 1, 1, 1
+sEmit_n = 1.0, 1.0
+sQe = 1.0E-9, 4.0E-9
+bcenter = 0.0, 0.0
+gammaf = 1.0, 1.1
+chirp = 0.0
+mag = 0.0
+fr = 1.0
+qRndEj_G = .false.
+sSigEj_G = 0.02
+qMatched_A = .false.
+/
 
-READ IN BEAM CHARACTERISTICS
-========================================================================
-BEAM 1:-
-
-STANDARD DEVIATION OF BEAM IN EACH DIMENSION (=1E8 FOR FLAT TOP)   - REAL
-
-5.356003951848080E-03   SIGXBAR       (overwritten for matched beam)
-7.036658865168611E-05   SIGYBAR       (overwritten for matched beam)
-1.000000000000000E+08   SIGZ2
-5.000000000000000E-01   SIGPXBAR      (overwritten for matched beam)
-1.000000000000000E+00   SIGPYBAR      (overwritten for matched beam)
-1.000000000000000E+00   SIGGAMMA
-
-TOTAL MODELLED LENGTH OF BEAM IN EACH DIMENSION    - REAL
-
-1.000000000000000E+00   LENXBAR       (overwritten for matched beam)
-1.000000000000000E+00   LENYBAR       (overwritten for matched beam)
-3.0                     LENZ2
-1.000000000000000E+00   LENPXBAR      (overwritten for matched beam)
-1.000000000000000E+00   LENPYBAR      (overwritten for matched beam)
-6.000000000000000E+00   LENGAMMA
-
-NUMBER OF MACROPARTICLES TO MODEL BEAM IN EACH DIMENSION (EQUISPACED BEFORE NOISE IS ADDED, IF USED)   - INTEGER
-
-1                       NUMX
-1                       NUMY
-2500                     NUMZ2
-1                       NUMPX
-1                       NUMPY
-1                      NUMGAMMA
-
-BEAM PARAMETERS
-
-.TRUE.                  Match beam to undulator?
-1.000000000000000E+00   Ratio of average beam energy to resonant beam energy gamma / gamma_r
-1.000000000000000E+00   Scaled emittance (bar{epsilon})
-0.000000000000000E+00   Energy chirp in z2 i.e. dgamma/dz2
-0.000000000000000E+00   Center of beam in z2
-0.0                     mag 
-1.0                     freq
-.true.                 Round edge of flat top?
-0.1                     sigma of gaussian edge for flat top
-3.000000000000000E-12   Charge in coulombs
-========================================================================
-
-========================================================================
-BEAM 2:-
-
-STANDARD DEVIATION OF BEAM IN EACH DIMENSION (=1E8 FOR FLAT TOP)   - REAL
-
-1.000000000000000E-01   SIGX       (overwritten for matched beam)
-1.000000000000000E-01   SIGY       (overwritten for matched beam)
-1.000000000000000E+08   SIGZ2
-5.000000000000000E-01   SIGPX      (overwritten for matched beam)
-5.000000000000000E-01   SIGPY      (overwritten for matched beam)
-0.16666700000E-03   SIGGAMMA
-
-TOTAL MODELLED LENGTH OF BEAM IN EACH DIMENSION    - REAL
-
-6.000000000000000E-01   LENX       (overwritten for matched beam)
-6.000000000000000E-01   LENY       (overwritten for matched beam)
-3.000000000000000E+00   LENZ2
-3.000000000000000E+00   LENPX      (overwritten for matched beam)
-3.000000000000000E+00   LENPY      (overwritten for matched beam)
-1.000000000000000E-03   LENGAMMA
-
-NUMBER OF MACROPARTICLES TO MODEL BEAM IN EACH DIMENSION (EQUISPACED BEFORE NOISE IS ADDED, IF USED)   - INTEGER
-
-1                       NUMX
-1                       NUMY
-2500                     NUMZ2
-1                       NUMPX
-1                       NUMPY
-1                      NUMGAMMA
-
-BEAM PARAMETERS
-
-.TRUE.                  Match beam to undulator?
-1.100000000000000E+00   Ratio of average beam energy to resonant beam energy gamma / gamma_r
-1.000000000000000E+00   Scaled emittance (bar{epsilon})
-0.000000000000000E+00   Energy chirp in z2 i.e. dgamma/dz2
-0.000000000000000E+00   Center of beam in z2
-0.0                     mag 
-1.0                     freq
-.true.                 Round edge of flat top?
-0.1                     sigma of gaussian edge for flat top
-1.000000000000000E-12   Charge in coulombs
-========================================================================
 

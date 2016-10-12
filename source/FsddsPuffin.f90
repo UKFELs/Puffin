@@ -13,6 +13,7 @@ USE ParallelSetUp
 Use avWrite
 use sddsROutput
 use createSDDS
+use parafield
 
 
 implicit none
@@ -142,7 +143,7 @@ CONTAINS
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('iNumElectronsPY','long',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
-       call SddsWriteParameter('iNumElectronsPZ2','long',tFileType=tParamFile)
+       call SddsWriteParameter('iNumElectronsGam','long',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('sLengthOfElmX','double',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
@@ -164,7 +165,7 @@ CONTAINS
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('sLenEPulsePY','double',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
-       call SddsWriteParameter('sLenEPulsePZ2','double',tFileType=tParamFile)
+       call SddsWriteParameter('sLenEPulseGam','double',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('sWigglerLengthX','double',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
@@ -182,7 +183,7 @@ CONTAINS
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('sSigmaGaussianPY','double',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
-       call SddsWriteParameter('sSigmaGaussianPZ2','double',&
+       call SddsWriteParameter('sSigmaGaussianGam','double',&
             tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('sA0_Re','double',tFileType=tParamFile)	   
@@ -193,7 +194,7 @@ CONTAINS
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('aw','double',tFileType=tParamFile)	  
        If (.NOT. qOKL) Goto 1000
-       call SddsWriteParameter('epsilon','double',tFileType=tParamFile)	  
+       call SddsWriteParameter('eta','double',tFileType=tParamFile)	  
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('gamma_r','double',tFileType=tParamFile)	  
        If (.NOT. qOKL) Goto 1000
@@ -239,14 +240,19 @@ CONTAINS
        call SddsWriteParameter('qElectronFieldCoupling',&
             'long',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
-       call SddsWriteParameter('qFocussing_CG','long',tFileType=tParamFile)
+       call SddsWriteParameter('qFocussing','long',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
-       call SddsWriteParameter('qMatchedBeam_CG','long',tFileType=tParamFile)
+       call SddsWriteParameter('qMatchedBeam','long',tFileType=tParamFile)
+       If (.NOT. qOKL) Goto 1000
+       call SddsWriteParameter('qOneD','long',tFileType=tParamFile)
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('fx','double',tFileType=tParamFile)	   
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('fy','double',tFileType=tParamFile)	   
        If (.NOT. qOKL) Goto 1000
+       call SddsWriteParameter('kappa','double',tFileType=tParamFile)     
+       If (.NOT. qOKL) Goto 1000
+
 
 ! Write data mode - This subroutine is in BsddsWriter.f90  line 316
        call SddsWriteDataMode('ascii',tFileType=tParamFile)	
@@ -267,7 +273,7 @@ CONTAINS
        If (.NOT. qOKL) Goto 1000
        call WriteINTEGER(iNumElectrons(iPY_CG),tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
-       call WriteINTEGER(iNumElectrons(iPZ2_CG),tParamFile,qOKL)
+       call WriteINTEGER(iNumElectrons(iGam_CG),tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
        call WriteRealNumber(sLengthOfElm(iX_CG),tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
@@ -289,7 +295,7 @@ CONTAINS
        If (.NOT. qOKL) Goto 1000
        call WriteRealNumber(sLenEPulse(iPY_CG),tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
-       call WriteRealNumber(sLenEPulse(iPZ2_CG),tParamFile,qOKL)
+       call WriteRealNumber(sLenEPulse(iGam_CG),tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
        call WriteRealNumber(sWigglerLength(iX_CG),tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
@@ -307,7 +313,7 @@ CONTAINS
        If (.NOT. qOKL) Goto 1000
        call WriteRealNumber(sSigmaGaussian(iPY_CG),tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
-       call WriteRealNumber(sSigmaGaussian(iPZ2_CG),tParamFile,qOKL)
+       call WriteRealNumber(sSigmaGaussian(iGam_CG),tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
        call WriteRealNumber(sA0_Re,tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
@@ -367,10 +373,16 @@ CONTAINS
        If (.NOT. qOKL) Goto 1000
        call WriteLOGICINTEGER(qSwitch(iMatchedBeam_CG),tParamFile,qOKL) 
        If (.NOT. qOKL) Goto 1000
+       call WriteLOGICINTEGER(qOneD_G,tParamFile,qOKL) 
+       If (.NOT. qOKL) Goto 1000
        call WriteRealNumber(fx,tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
        call WriteRealNumber(fy,tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
+       call WriteRealNumber(sKappa_G,tParamFile,qOKL)
+       If (.NOT. qOKL) Goto 1000
+
+
 
 ! close data file - This subroutine is in CIO.f90 line 560       
        call CloseFile(tParamFile, qOKL) 
@@ -414,8 +426,8 @@ CONTAINS
 
 
 
-  subroutine wr_sdds(sA, sZ, istep, tArrayA, tArrayE, tArrayZ, &
-                     iIntWr, iWr, qSep, zDFname, qWDisp, qWriteFull, &
+  subroutine wr_sdds(sZ, istep, tArrayA, tArrayE, tArrayZ, &
+                     iIntWr, iWr, qSep, zDFname, qWriteFull, &
                      qWriteInt, qOK)
 
     implicit none
@@ -423,12 +435,12 @@ CONTAINS
 ! Write Data FileS
 
 
-    real(kind=wp), intent(in) :: sA(:), sZ
+    real(kind=wp), intent(in) :: sZ
     type(cArraySegment), intent(inout) :: tArrayA(:), tArrayE(:), tArrayZ
     integer(kind=ip), intent(in) :: istep
     integer(kind=ip), intent(in) :: iIntWr, iWr
     character(32_IP), intent(in) :: zDFName
-    logical, intent(in) :: qSep, qWDisp
+    logical, intent(in) :: qSep
     logical, intent(inout) :: qOK
 
     logical :: qWriteInt, qWriteFull, qOKL
@@ -438,7 +450,7 @@ CONTAINS
       call outputBeamFiles(tArrayE, iStep, qSep, zDFName, qOKL)
       if (.not. qOKL) goto 1000
 
-      call outputField(sA, tArrayA, iStep, qSep, zDFName, qOKL)
+      call outputField(tArrayA, iStep, qSep, zDFName, qOKL)
       if (.not. qOKL) goto 1000
 
       call outputZ(sZ, tArrayZ, iStep, qSep, zDFName, qOKL)
@@ -446,11 +458,14 @@ CONTAINS
 
     end if
 
-    if (qWriteInt) then
-
-      call writeIntData(sA)
     
-    end if
+
+     if (qWriteInt) then
+ 
+       call writeIntData()
+     
+     end if
+
 
 !  Set error flag and exit         
     qOK = .TRUE.            
@@ -657,7 +672,7 @@ CONTAINS
 
 
 
-  subroutine outputField(sA, tArrayA, iStep, qSeparate, zDFName, qOK)
+  subroutine outputField(tArrayA, iStep, qSeparate, zDFName, qOK)
 
     implicit none
 
@@ -665,7 +680,6 @@ CONTAINS
 
 ! Arguments
 
-    real(kind=wp), intent(in) :: sA(:)
     type(cArraySegment), intent(inout) :: tArrayA(:)
     integer(kind=ip), intent(in) :: iStep
     logical, intent(in) :: qSeparate
@@ -685,39 +699,43 @@ CONTAINS
 
 
 
-    if (qSeparate) then
+!    if (qSeparate) then
 
       call createFFiles(tArrayA, zDFName, trim(IntegerToString(iStep)),qOKL)
       if (.not. qOKL) goto 1000
 
-    end if
+!    end if
+
+
+    call writeParaField(tArrayA(1)%tFileType, tArrayA(2)%tFileType)
+
 
 !     Write out field data:-only root processor needs to do this
     
-    fieldsize = SIZE(sA)/2_IP
-
-
-
-    if (tProcInfo_G%qRoot) then
-
-      do ifp = 1_IP, size(tArrayA)
-
-        if (tArrayA(ifp)%qWrite) then
-
-!     Write the data
-      
-          call OutputIntegrationData(tArrayA(ifp)%tFileType, &
-                                     sA(((ifp-1)*fieldsize) + 1: ifp*fieldsize), &
-                                     fieldsize, &
-                                     qOKL)
-
-          if (.not. qOKL) goto 1000
-
-        end if
-
-      end do
-
-    end if
+!    fieldsize = SIZE(sA)/2_IP
+!
+!
+!
+!    if (tProcInfo_G%qRoot) then
+!
+!      do ifp = 1_IP, size(tArrayA)
+!
+!        if (tArrayA(ifp)%qWrite) then
+!
+!!     Write the data
+!      
+!          call OutputIntegrationData(tArrayA(ifp)%tFileType, &
+!                                     sA(((ifp-1)*fieldsize) + 1: ifp*fieldsize), &
+!                                     fieldsize, &
+!                                     qOKL)
+!
+!          if (.not. qOKL) goto 1000
+!
+!        end if
+!
+!      end do
+!
+!    end if
 
 
 
@@ -791,12 +809,12 @@ CONTAINS
 
 
 
-    if (qSeparate) then
+!    if (qSeparate) then
 
       call createFFiles(tArrayE, zDFName, trim(IntegerToString(iStep)), qOKL)
       if (.not. qOKL) goto 1000
 
-    end if
+!    end if
 
 
 
@@ -809,7 +827,7 @@ CONTAINS
     call wrt_phs_coord(iRe_Z2_CG, sElZ2_G, qOKL)
     call wrt_phs_coord(iRe_PPerp_CG, sElPX_G, qOKL)
     call wrt_phs_coord(iIm_PPerp_CG, sElPY_G, qOKL)
-    call wrt_phs_coord(iRe_Q_CG, sElPZ2_G, qOKL)
+    call wrt_phs_coord(iRe_Gam_CG, sElGam_G, qOKL)
     if (.not. qOKL) goto 1000
 
 !     Set error flag and exit
@@ -905,12 +923,12 @@ CONTAINS
 
     qOK = .false.
 
-    if (qSeparate) then
+!    if (qSeparate) then
 
       call createZFile(tArrayZ, zDFName, trim(IntegerToString(iStep)),qOKL)
       if (.not. qOKL) goto 1000
 
-    end if
+!    end if
 
 !     Write out Zbar data:-only root processor needs to do this
     

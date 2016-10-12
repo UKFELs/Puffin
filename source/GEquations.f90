@@ -30,28 +30,17 @@ implicit none
 
 contains
 
-!  subroutine dppdz_r(sInv2rho,ZOver2rho,salphaSq,&
-!    sField4ElecReal,nd,Lj,kbeta,sb,sy,dp2f,qOK)
-
-  subroutine dppdz_r_f(sx, sy, sz2, spr, spi, sp2, &
-                       sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
-                       Lj, qOK)
+  subroutine dppdz_r_f(sx, sy, sz2, spr, spi, sgam, &
+                       sZ, sdpr, qOK)
 
   	implicit none
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sp2(:)
-    real(kind=wp), intent(in) :: sdx(:), sdy(:), sdz2(:), sdpi(:), sdp2(:)
-    real(kind=wp), intent(in) :: Lj(:)
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:), sZ
     real(kind=wp), intent(out) :: sdpr(:)
 
-!    REAL(KIND=WP),INTENT(IN) :: sInv2rho
-!    REAL(KIND=WP),INTENT(IN) :: ZOver2rho,salphaSq
-!    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE ,INTENT(IN):: sField4ElecReal
-!    REAL(KIND=WP),ALLOCATABLE ,INTENT(IN):: Lj(:), dp2f(:)
-!    REAL(KIND=WP),INTENT(IN) :: kbeta,nd
-!    REAL(KIND=WP),INTENT(IN) :: sy(:)
-!    REAL(KIND=WP),INTENT(OUT) :: sb(:)
+    real(kind=wp) :: szt
+
     logical, intent(inout) :: qOK
 
     
@@ -59,73 +48,25 @@ contains
 
     qOK = .false.
 
-    if (zUndType_G == 'curved') then
+!$OMP WORKSHARE
+    sdpr = sInv2rho * ( n2col * byu  & 
+                        - sEta_G * sp2 / sKappa_G**2 *    &
+                        sField4ElecReal ) & 
+           + sKappa_G * spi / sgam * (1 + sEta_G * sp2) &
+               * n2col * bzu
+!$OMP END WORKSHARE
 
-!     For curved pole undulator
-
-        sdpr = sInv2rho * ( cosh(sx * kx_und_G) * &
-                        sinh(sy * ky_und_G) * sqrt(2.0_WP) &
-                        * sqrt(sEta_G) * Lj * spi  &      
-                        *  cos(ZOver2rho) &
-                        / (sqrt(salphaSq) * ky_und_G) + &
-                        cosh(sx * kx_und_G) &
-                        * cosh(sy * ky_und_G) * sin(ZOver2rho) - &
-                        sEta_G * sp2 * salphaSq * sField4ElecReal)
-
-        
-
-    else if (zUndType_G == 'planepole')  then
-
-!     Re(p_perp) equation for plane-poled undulator
-
-        sdpr = sInv2rho * (-sField4ElecReal*salphaSq * &
-                        sEta_G * sp2 &
-                        + ((sqrt(6.0_WP) *sRho_G) /sqrt(salphaSq)) * &
-                        sinh(sInv2rho * sy &
-                        * sqrt(sEta_G))  * cos(ZOver2rho) * Lj * &
-                        spi + &
-                        cosh(sInv2rho * sy * &
-                        sqrt(sEta_G)) *sin(ZOver2rho))
-
-    else 
-
-!     "normal" PUFFIN case with no off-axis undulator
-!     field variation
-
-      if (qFocussing_G) then
-
-        sdpr = sInv2rho * (fy_G*n2col*sin(ZOver2rho) - &
-                        (salphaSq * sEta_G * sp2 * &
-                        sField4ElecReal ) ) - & 
-                        nd / Lj * & ! focusing term
-                        (  ( kbeta**2 * sx) + (sEta_G / &
-                        ( 1.0_WP + (sEta_G * sp2) ) * &
-                        sdx * dp2f ) )
-
-      else 
-
-
-        sdpr = sInv2rho * (fy_G* n2col * sin(ZOver2rho) - &
-              ( salphaSq * sEta_G * sp2 * &
-              sField4ElecReal ) )
-
-
-      end if
-
-
-    end if
-
-    ! Set the error flag and exit
+! Set the error flag and exit
 
     qOK = .true.
 
-    goto 2000 
+    !goto 2000 
 
-    1000 call Error_log('Error in equations:dppdz_r',tErrorLog_G)
+    !1000 call Error_log('Error in equations:dppdz_r',tErrorLog_G)
     
-    print*,'Error in equations:dppdz_r'
+    !print*,'Error in equations:dppdz_r'
 
-    2000 continue
+    !2000 continue
 
   end subroutine dppdz_r_f
 
@@ -137,30 +78,17 @@ contains
 
 
 
-  subroutine dppdz_i_f(sx, sy, sz2, spr, spi, sp2, &
-                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
-                     Lj, qOK)
+  subroutine dppdz_i_f(sx, sy, sz2, spr, spi, sgam, sZ, &
+                       sdpi, qOK)
 
     implicit none
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sp2(:)
-    real(kind=wp), intent(in) :: sdx(:), sdy(:), sdz2(:), sdpr(:), sdp2(:)
-    real(kind=wp), intent(in) :: Lj(:)
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:), sZ
     real(kind=wp), intent(out) :: sdpi(:)
 
+    real(kind=wp) :: szt
 
-!  	implicit none
-
-
-
-!    REAL(KIND=WP),INTENT(IN) :: sInv2rho
-!    REAL(KIND=WP),INTENT(IN) :: ZOver2rho,salphaSq
-!    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE ,INTENT(IN):: sField4ElecImag
-!    REAL(KIND=WP),ALLOCATABLE,INTENT(IN) :: Lj(:), dp2f(:)
-!    REAL(KIND=WP),INTENT(IN) :: kbeta,nd
-!    REAL(KIND=WP),INTENT(IN) :: sy(:)
-!    REAL(KIND=WP),INTENT(OUT) :: sb(:)
     logical, intent(inout) :: qOK
 
     LOGICAL :: qOKL                   
@@ -168,78 +96,25 @@ contains
 
     qOK = .false.
 
+!$OMP WORKSHARE
+    sdpi = sInv2rho * (  n2col * bxu  & 
+           - sEta_G * sp2 / sKappa_G**2 * &
+                        sField4ElecReal ) & 
+           - sKappa_G * spr / sgam * (1 + sEta_G * sp2) &
+               * n2col * bzu
+!$OMP END WORKSHARE
 
-    if (zUndType_G == 'curved') then
-
-
-!     For curved pole undulator
-
-        sdpi = sInv2rho * ( -1.0_WP * sqrt(2.0_WP) * sqrt(sEta_G) &
-                        * Lj * spr &
-                        * cosh(sx * kx_und_G) &
-                        * sinh(sy * ky_und_G) &
-                        * cos(ZOver2rho)  / (sqrt(salphaSq) * ky_und_G) &
-                        + sin(ZOver2rho) * kx_und_G/ky_und_G * &
-                        sinh(sx * kx_und_G) * &
-                        sinh(sy * ky_und_G) & 
-                        - sEta_G * sp2 * salphaSq * &
-                        sField4ElecImag)
-
-
-    else if (zUndType_G == 'planepole') then 
-
-!     Im(p_perp) equation for plane-poled undulator
-
-
-
-        sdpi = sInv2rho * (- sField4ElecImag * salphaSq * &
-                        sEta_G * sp2  &
-                        - ((sqrt(6.0_WP) * sRho_G)/ sqrt(salphaSq)) * &
-                        sinh(sInv2rho * sy &
-                        * sqrt(sEta_G)) * cos(ZOver2rho) * Lj * &
-                        spr)
-
-
-    else
-
-!     "normal" PUFFIN case with no off-axis undulator
-!     field variation
-
-
-      if (qFocussing_G) then
-
-        sdpi = sInv2rho * (fx_G*n2col*cos(ZOver2rho) - &
-                        (salphaSq * sEta_G * sp2 * &
-                        sField4ElecImag ) ) + &
-                        nd / Lj * & ! focusing term
-                        (  ( kbeta**2 * sy) + (sEta_G / &
-                        ( 1.0_WP + (sEta_G * sp2) ) * &
-                        sdy * dp2f ) )
-
-
-      else
-
-
-        sdpi = sInv2rho * (fx_G * n2col * cos(ZOver2rho) - &
-                      ( salphaSq * sEta_G * sp2 * &
-                      sField4ElecImag ) )
-
-      end if
-
-
-    end if
-
-    ! Set the error flag and exit
+! Set the error flag and exit
 
     qOK = .true.
 
-    goto 2000 
+    !goto 2000 
 
-    1000 call Error_log('Error in equations:dppdz_i',tErrorLog_G)
+    !1000 call Error_log('Error in equations:dppdz_i',tErrorLog_G)
     
-    print*,'Error in equations:dppdz_i'
+    !print*,'Error in equations:dppdz_i'
     
-    2000 continue
+    !2000 continue
 
 
   end subroutine dppdz_i_f
@@ -252,30 +127,15 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine dp2dz_f(sx, sy, sz2, spr, spi, sp2, &
-                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
-                     Lj, qOK)
+  subroutine dgamdz_f(sx, sy, sz2, spr, spi, sgam, &
+                      sdgam, qOK)
 
     implicit none
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sp2(:)
-    real(kind=wp), intent(in) :: sdx(:), sdy(:), sdz2(:), sdpr(:), sdpi(:)
-    real(kind=wp), intent(in) :: Lj(:)
-    real(kind=wp), intent(out) :: sdp2(:)
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
+    real(kind=wp), intent(out) :: sdgam(:)
 
-
-!  	implicit none
-!
-!
-!
-!    REAL(KIND=WP),INTENT(IN) :: sInv2rho
-!    REAL(KIND=WP),INTENT(IN) :: ZOver2rho,salphaSq
-!    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE ,INTENT(IN):: sField4ElecReal,sField4ElecImag
-!    REAL(KIND=WP),ALLOCATABLE,INTENT(IN) :: Lj(:), dp2f(:)
-!    REAL(KIND=WP),INTENT(IN) :: kbeta,nd,nb
-!    REAL(KIND=WP),INTENT(IN) :: sy(:)
-!    REAL(KIND=WP),INTENT(OUT) :: sb(:)   
     logical, intent(inout) :: qOK
 
     LOGICAL :: qOKL
@@ -283,94 +143,36 @@ contains
 
     qOK = .false.
 
-    if (zUndType_G == 'curved') then
+!$OMP WORKSHARE
 
+    sdgam = -sRho_G * ( 1 + sEta_G * sp2 ) / sgam * 2_wp *   &
+           ( spr * sField4ElecReal + spi * sField4ElecImag ) 
 
-!     For curved pole undulator
-
-        sdp2 = (4_WP * sRho_G / sEta_G) * Lj**2 * &
-                        ( (spr * sField4ElecReal &
-                        + spi * sField4ElecImag) * &
-                        sp2 * sEta_G &
-                        + (1.0_WP/salphaSq) * (1 + sEta_G * sp2) &
-                        * sin(ZOver2rho) * &
-                        (spr * cosh(sx &
-                        * kx_und_G) * cosh(sy * ky_und_G) &
-                        + spi * kx_und_G/ky_und_G * &
-                        sinh(sx * kx_und_G) * &
-                        sinh(sy * ky_und_G)))
-
-
-    else if (zUndType_G == 'planepole') then 
-
-!     p2 equation for plane-poled undulator
-
- 
-        sdp2 = (4_WP * sRho_G / sEta_G) * Lj**2 * &
-                        ( (spr * sField4ElecReal &
-                        + spi * sField4ElecImag) * &
-                        sp2 * sEta_G &
-                        + (1.0_WP/salphaSq) * (1 + sEta_G * sp2) &
-                        * cosh(sInv2rho * sy * sqrt(sEta_G)) &
-                        * sin(ZOver2rho) *  spr  )
-
- 
-    else
-
-!     "normal" PUFFIN case with no off-axis undulator
-!     field variation
-
-      if (qFocussing_G) then
-
-        sdp2 = 2.0_WP * nb * Lj**2 * &
-                        ((sEta_G * sp2 + 1.0_WP) &
-                        / salphaSq * n2col * &
-                        (spi * fx_G*cos(ZOver2Rho) + &
-                        spr * fy_G*sin(ZOver2rho)) + &
-                        sEta_G * sp2 * &
-                        (spr*sField4ElecReal + &
-                        spi*sField4ElecImag)) &
-                        + dp2f
-
-      else
-
-
-        sdp2 = 2.0_WP * nb * Lj**2.0_WP * &
-                ((sEta_G * sp2 + 1.0_WP)/ salphaSq * n2col * &
-                (spi * fx_G*cos(ZOver2Rho) + &
-                spr * fy_G*sin(ZOver2rho)) + &
-                sEta_G * sp2 * &
-                (spr * sField4ElecReal + &
-                spi * sField4ElecImag))
-
-      end if
-
-    end if
+!$OMP END WORKSHARE
 
     ! Set the error flag and exit
 
     qOK = .true.
 
-    goto 2000 
+    !goto 2000 
 
-    1000 call Error_log('Error in equations:dp2dz',tErrorLog_G)
+    !1000 call Error_log('Error in equations:dp2dz',tErrorLog_G)
     
-    print*,'Error in equations:dp2dz'
+    !print*,'Error in equations:dp2dz'
 
-    2000 continue
-
-
-  end subroutine dp2dz_f
+    !2000 continue
 
 
+  end subroutine dgamdz_f
 
 
 
 
 
-  subroutine dxdz_f(sx, sy, sz2, spr, spi, sp2, &
-                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
-                     Lj, qOK)
+
+
+  subroutine dxdz_f(sx, sy, sz2, spr, spi, sgam, &
+                    sdx, qOK)
 
     implicit none
 
@@ -379,9 +181,7 @@ contains
 !              Arguments:
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sp2(:)
-    real(kind=wp), intent(in) :: sdy(:), sdz2(:), sdpr(:), sdpi(:), sdp2(:)
-    real(kind=wp), intent(in) :: Lj(:)
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
     real(kind=wp), intent(out) :: sdx(:)
 
 
@@ -397,16 +197,24 @@ contains
     qOK = .false.
 
 
-    sdx = spr * Lj / nd
+!$OMP WORKSHARE
 
+    sdx = 2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
+          (1 + sEta_G * sp2) / sgam *  &
+          spr
+
+!$OMP END WORKSHARE
+
+!    sdx = spr * Lj / nd
+    
 
     qOK = .true.
     
-    goto 2000
+    !goto 2000
     
-    1000 call Error_log('Error in equations:dxdz',tErrorLog_G)
+    !1000 call Error_log('Error in equations:dxdz',tErrorLog_G)
     
-    2000 continue
+    !2000 continue
 
 
   end subroutine dxdz_f
@@ -415,9 +223,8 @@ contains
 
 
 
-  subroutine dydz_f(sx, sy, sz2, spr, spi, sp2, &
-                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
-                     Lj, qOK)
+  subroutine dydz_f(sx, sy, sz2, spr, spi, sgam, &
+                    sdy, qOK)
 
     implicit none
 
@@ -426,14 +233,9 @@ contains
 !              Arguments:
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sp2(:)
-    real(kind=wp), intent(in) :: sdx(:), sdz2(:), sdpr(:), sdpi(:), sdp2(:)
-    real(kind=wp), intent(in) :: Lj(:)
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
     real(kind=wp), intent(out) :: sdy(:)
 
-
-!    real(kind=wp), intent(in) :: sy(:), Lj(:), nd
-!    real(kind=wp), intent(inout) :: sb(:)
     logical, intent(inout) :: qOK
 
 !              Local vars
@@ -443,16 +245,25 @@ contains
 
     qOK = .false.
 
-    sdy = - spi * Lj / nd
+
+!$OMP WORKSHARE
+
+    sdy = - 2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
+          (1 + sEta_G * sp2) / sgam *  &
+          spi
+
+!$OMP END WORKSHARE
+
+!    sdy = - spi * Lj / nd
 
 
     qOK = .true.
     
-    goto 2000
+    !goto 2000
     
-    1000 call Error_log('Error in equations:dydz',tErrorLog_G)
+    !1000 call Error_log('Error in equations:dydz',tErrorLog_G)
     
-    2000 continue
+    !2000 continue
 
 
   end subroutine dydz_f
@@ -460,9 +271,8 @@ contains
 
 
 
-  subroutine dz2dz_f(sx, sy, sz2, spr, spi, sp2, &
-                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
-                     Lj, qOK)
+  subroutine dz2dz_f(sx, sy, sz2, spr, spi, sgam, &
+                     sdz2, qOK)
 
     implicit none
 
@@ -471,9 +281,7 @@ contains
 !              Arguments:
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sp2(:)
-    real(kind=wp), intent(in) :: sdx(:), sdy(:), sdpr(:), sdpi(:), sdp2(:)
-    real(kind=wp), intent(in) :: Lj(:)
+    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
     real(kind=wp), intent(out) :: sdz2(:)
 
 
@@ -488,58 +296,24 @@ contains
 
     qOK = .false.
 
+!$OMP WORKSHARE
+
     sdz2 = sp2
 
+!$OMP END WORKSHARE
 
     qOK = .true.
     
-    goto 2000
+    !goto 2000
     
-    1000 call Error_log('Error in equations:dz2dz',tErrorLog_G)
+    !1000 call Error_log('Error in equations:dz2dz',tErrorLog_G)
     
-    2000 continue
+    !2000 continue
 
   end subroutine dz2dz_f
   
 
 
-
-
-
-
-  subroutine caldp2f_f(sx, sy, sdx, sdy, sp2, kbeta, qOK)
-
-    real(kind=wp), intent(in) :: sx(:), sy(:), sdx(:), sdy(:), sp2(:)
-    real(kind=wp), intent(in) :: kbeta
-
-    logical, intent(inout) :: qOK
-
-    qOK = .false.
-
-    if (qFocussing_G) then
-
-        dp2f = -(kbeta**2.0_WP) * &   ! New focusing term
-               (1.0_WP + (sEta_G * sp2  ) ) * &
-               ( ( sx * sdx  ) + & 
-               ( sy * sdy  ) ) / &
-               (1.0_WP + sEta_G * ( ( sdx )**2.0_WP  + &
-               sdy**2.0_WP ) )
-
-    else 
-
-        dp2f=0.0_WP
-
-    end if
-
-    qOK = .true.
-    
-    goto 2000
-    
-    1000 call Error_log('Error in equations:caldp2f',tErrorLog_G)
-    
-    2000 continue
-
-  end subroutine caldp2f_f
 
 
 
@@ -553,9 +327,10 @@ contains
 
     integer(kind=ip), intent(in) :: ar_sz
 
-    allocate(dp2f(ar_sz), sField4ElecReal(ar_sz), &
+    allocate(sp2(ar_sz), sField4ElecReal(ar_sz), &
              sField4ElecImag(ar_sz))! , Lj(ar_sz))
 
+    allocate(bxu(ar_sz), byu(ar_sz), bzu(ar_sz))
 
   end subroutine alct_e_srtcts
 
@@ -568,11 +343,57 @@ contains
 ! Allocate the arrays used in the calculation of
 ! the electron eqns  
 
-    deallocate(dp2f, sField4ElecReal, &
+    deallocate(sp2, sField4ElecReal, &
              sField4ElecImag)! , Lj(ar_sz))
 
+    deallocate(bxu, byu, bzu)
 
   end subroutine dalct_e_srtcts
 
 
+
+  subroutine adjUndPlace(szl)
+
+    real(kind=wp) :: szl
+
+      if (qUndEnds_G) then
+
+        if (szl < 0) then
+
+          print*, 'undulator section not recognised, sz < 0!!'
+          stop
+
+        else if (sZl <= sZFS) then 
+
+          iUndPlace_G = iUndStart_G
+
+        else if (sZl >= sZFE) then
+ 
+          iUndPlace_G = iUndEnd_G
+
+        else if ((sZl > sZFS) .and. (sZl < sZFE)) then
+
+          iUndPlace_G = iUndMain_G
+
+        else 
+
+          print*, 'undulator section not recognised, sz > sZFE!!'
+          stop
+
+        end if
+
+      else
+
+        iUndPlace_G = iUndMain_G
+
+      end if
+
+  end subroutine adjUndPlace
+
+
+
+
+
+
 end module equations
+

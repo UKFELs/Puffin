@@ -16,6 +16,9 @@ use grids
 use initConds
 use parallelSetup
 use gtop2
+use addNoise
+use pseqs
+
 
 IMPLICIT NONE
 
@@ -60,7 +63,8 @@ CONTAINS
     REAL(KIND=WP), INTENT(INOUT):: beamCenZ2(:)
     INTEGER(KIND=IP), INTENT(IN):: iNMP(:,:)
     LOGICAL, INTENT(IN)         :: q_noise
-    REAL(KIND=WP), INTENT(IN)	:: sZ, chirp(:), mag(:), fr(:)
+    REAL(KIND=WP), INTENT(IN)   :: sZ
+    REAL(KIND=WP), INTENT(INOUT) :: chirp(:), mag(:), fr(:)
 
 
     INTEGER(KIND=IP), INTENT(IN) :: nbeams
@@ -149,7 +153,7 @@ CONTAINS
 
     CALL splitBeams(iNMP,samLenE,nBeams,numproc,rank,&
                     iNumLocalElectrons,totalmps_b)
-                      
+
     TOTALMPS = SUM(INT(totalmps_b,KIND=IPL)) ! Total no of MPs
 
 !     Allocate electrons position and momenta arrays
@@ -175,9 +179,11 @@ CONTAINS
 !!!!!!  TEMP
 !!!!!!  CONVERT SIGPX -> SIX_{DX/DZ}
 
-    um = sqrt(fx_G**2.0_WP + fy_G**2.0_WP)
-    afact = sqrt(2.0_WP) * saw_G / um
+!    um = sqrt(fx_G**2.0_WP + fy_G**2.0_WP)
+!    afact = sqrt(2.0_WP) * saw_G / um
     
+    afact = saw_G
+
 !    sigE(:,iPX_CG) = sigE(:,iPX_CG) * afact * &
 !                     sqrt((sEta_G * (sEta_G + 2.0_WP) / (1 + afact**2.0_WP)))
                      
@@ -218,17 +224,17 @@ CONTAINS
                       
     END DO
 
-    npk_bar_G = maxval(s_tmp_max_av) ! record peak density
+!    npk_bar_G = maxval(s_tmp_max_av) ! record peak density
     
-    
-    CALL getChi(s_tmp_macro, s_tmp_Vk, maxval(s_tmp_max_av), &
+    CALL getChi(s_tmp_macro, s_tmp_Vk, npk_bar_G, &
                 Tmp_chibar, Tmp_Normchi)
     
     DEALLOCATE(s_tmp_macro,s_tmp_Vk)
 
     CALL removeLow(Tmp_chibar, Tmp_Normchi, b_sts, b_ends, sElectronThreshold, &
-                   chirp,mag,fr,nbeams,x_tmpcoord,y_tmpcoord,z2_tmpcoord,px_tmpvector,&
+                   nbeams,x_tmpcoord,y_tmpcoord,z2_tmpcoord,px_tmpvector,&
                    py_tmpvector, pz2_tmpvector,totalmps_b,beamCenZ2)
+
 
     DEALLOCATE(x_tmpcoord)
     DEALLOCATE(y_tmpcoord)
@@ -254,11 +260,11 @@ CONTAINS
     
     tconv = sElPX_G**2.0_WP + sElPY_G**2.0_WP
 
-    sElPX_G = sqrt((sElPZ2_G**2.0_WP - 1.0_WP) / &
+    sElPX_G = sqrt((sElGam_G**2.0_WP - 1.0_WP) / &
                             (1.0_WP + tconv))  &
                         / afact * sElPX_G
 
-    sElPY_G = sqrt((sElPZ2_G**2.0_WP - 1.0_WP) / &
+    sElPY_G = sqrt((sElGam_G**2.0_WP - 1.0_WP) / &
                             (1.0_WP + tconv))  &
                         / afact * sElPY_G
 
@@ -266,77 +272,37 @@ CONTAINS
     DEALLOCATE(tconv)
 
 
-    kx = SQRT(sEta_G/(8.0_WP*sRho_G**2))
-    ky = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+!     We currently have gamma -
+!     need to change to gamma / gamma_r
 
-
-
-
-    if (zUndType_G == 'curved') then
-
-! used for curved pole puffin, the 2 order expansion of cosh and sinh
-! allows us to simply add a correction term to the intial position
-! when calculating initial conditions, this may need change eventually
-
-
-        sElPX_G = sElPX_G + &
-        pxOffset(sZ, srho_G, fy_G) & 
-        - 0.5_WP * kx**2 * sElX_G**2 &
-        -  0.5_WP * kY**2 * sElY_G**2
-     
-        sElPY_G = sElPY_G &
-        + pyOffset(sZ, srho_G, fx_G) &
-        - kx**2 *  sElX_G  * sElY_G
-
-
-
-
-
-    else if (zUndType_G == 'planepole') then 
-
-! plane pole initial conditions are calculated as a 2nd order expansion
-! and added as a correction term.
-
-
-
-        sElPX_G = sElPX_G + &
-        pxOffset(sZ, srho_G, fy_G) & 
-        - 0.5_WP * (sEta_G / (4 * sRho_G**2)) * sElX_G**2 
-
-        sElPY_G = sElPY_G &
-        + pyOffset(sZ, srho_G, fx_G) 
-
-
-    else
-
-! "normal" PUFFIN case with no off-axis undulator
-! field variation
-
-
-        sElPX_G = sElPX_G &
-        + pxOffset(sZ, srho_G, fy_G) 
-
-        sElPY_G = sElPY_G &
-        + pyOffset(sZ, srho_G, fx_G) 
-
-
-    end if
-
-
-
-!     We currently have gamma in the p2 position array -
-!     need to change to p2
-
-    sElPZ2_G = getP2(sElPZ2_G, sElPX_G,&
-                               sElPY_G, sEta_G, sAw_G)
-
-
+    sElGam_G = sElGam_G / sGammaR_G
 
     sElPY_G = - sElPY_G
 
 !     Sum the local num of macroparticles to a global number
 
     call sum_mpi_int14(iNumberElectrons_G,iGloNumElectrons_G)
+
+    mag(:) = mag(:) / sGammaR_G
+    chirp(:) = chirp(:) / sGammaR_G
+
+    do b_ind = 1, nbeams
+  
+      call addChirp(sElGam_G(b_sts(b_ind):b_ends(b_ind)), &
+                    sElZ2_G(b_sts(b_ind):b_ends(b_ind)), &
+                    b_ends(b_ind) - b_sts(b_ind) + 1, beamCenZ2(b_ind), &
+                    chirp(b_ind))
+  
+  
+      call addModulation(sElGam_G(b_sts(b_ind):b_ends(b_ind)), &
+                         sElZ2_G(b_sts(b_ind):b_ends(b_ind)), &
+                         b_ends(b_ind) - b_sts(b_ind) + 1, &
+                         mag(b_ind), fr(b_ind))
+  
+
+    end do
+
+
 
 !     Set error flag and exit         
 
@@ -388,20 +354,27 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
   INTEGER(KIND=IP), ALLOCATABLE :: iLocalIntegralType(:)
   REAL(KIND=WP) :: offsets(6)
   integer :: error
+  integer(kind=ip) :: nseqparts
+  real(kind=wp), allocatable :: xseq(:), yseq(:), pxseq(:), &
+                                pyseq(:), gamseq(:)
+
+  real(kind=wp), allocatable :: nktemp(:), z2base(:), vkt(:)
+
+  integer(kind=ip) :: ij
 
   ALLOCATE(sx_grid(iNMP_loc(iX_CG)+1))
   ALLOCATE(sy_grid(iNMP_loc(iY_CG)+1))
   ALLOCATE(sz2_grid(iNMP_loc(iZ2_CG)+1))
   ALLOCATE(spx_grid(iNMP_loc(iPX_CG)+1))
   ALLOCATE(spy_grid(iNMP_loc(iPY_CG)+1))   
-  ALLOCATE(spz2_grid(iNMP_loc(iPZ2_CG)+1))
+  ALLOCATE(spz2_grid(iNMP_loc(iGam_CG)+1))
 
   ALLOCATE(sX_integral(iNMP_loc(iX_CG)))
   ALLOCATE(sY_integral(iNMP_loc(iY_CG)))
   ALLOCATE(sz2_integral(iNMP_loc(iZ2_CG)))
   ALLOCATE(sPX_integral(iNMP_loc(iPX_CG)))
   ALLOCATE(sPY_integral(iNMP_loc(iPY_CG)))
-  ALLOCATE(sPZ2_integral(iNMP_loc(iPZ2_CG))) 
+  ALLOCATE(sPZ2_integral(iNMP_loc(iGam_CG))) 
 
   ALLOCATE(iLocalIntegralType(6))
 
@@ -415,6 +388,8 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
 !!!!!!!!!! TEMP
 !!!!!!!!!! CENTERING BEAM IN DX/DZ, DY/DZ = 0
 
+  offsets(iX_CG) = 0.0_WP
+  offsets(iY_CG) = 0.0_WP
   offsets(iPX_CG) = 0.0_WP
   offsets(iPY_CG) = 0.0_WP
   
@@ -430,10 +405,21 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
 !     Allocate electrons' position and momenta arrays
 
 
+
+
+! #####################################################################
+!
+!  For equispaced grids in EVERY dimension - this can be memory intensive,
+!  and you may end up with more macroparticles than real electrons!!!
+!  The noise statistics will be correct in every dimension - but you may be
+!  better doing a one-to-one simulation in this case.
+!
+
+
   IF (qOneD) THEN ! If 1D, only need z2 and p2 to generate macroparticles
-
-    IF (iNMP(iPZ2_CG) == 1_IP) THEN ! Cold beam case (important for noise)
-
+  
+    IF (iNMP(iGam_CG) == 1_IP) THEN ! Cold beam case (important for noise)
+  
       CALL genMacros(i_total_electrons=i_RealE, &
            q_noise=q_noise,                & 
            x_1_grid=sz2_grid,               &
@@ -442,15 +428,15 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
            s_vol_element=s_tmp_Vk,          &
            max_av=s_tmp_max_av,             &
            x_1_coord=z2_tmpcoord)
-
-      pz2_tmpvector = offsets(iPZ2_CG)
-
+  
+      pz2_tmpvector = offsets(iGam_CG)
+  
     ELSE
-
+  
       CALL genMacros(i_total_electrons=i_RealE, &
                      q_noise=q_noise,                & 
                      x_1_grid=sz2_grid,               &
-                     x_1_integral=sZ2_integral,       &	
+                     x_1_integral=sZ2_integral,       & 
                      p_3_grid=spz2_grid,              &
                      p_3_integral=sPZ2_integral,      &
                      s_number_macro=s_tmp_macro,     &
@@ -458,40 +444,140 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
                      max_av=s_tmp_max_av,            & 
                      x_1_coord=z2_tmpcoord,           &
                      p_3_vector=pz2_tmpvector)
-
+  
     END IF
-
+  
     x_tmpcoord  = offsets(iX_CG) 
     y_tmpcoord  = offsets(iY_CG)
     px_tmpvector = offsets(iPX_CG)
     py_tmpvector = offsets(iPY_CG)    
-
+  
   ELSE ! 6D beam
 
-    CALL genMacros(i_total_electrons=i_RealE, &
-                   q_noise=q_noise,                     & 
-                   x_1_grid=sx_grid,               &
-                   x_1_integral=sX_integral,       &
-                   x_2_grid=sy_grid,               &
-                   x_2_integral=sY_integral,       & 
-                   x_3_grid=sz2_grid,                   &
-                   x_3_integral=sZ2_integral,      &	
-                   p_1_grid=spx_grid,              &
-                   p_1_integral=sPX_integral,      &	 
-                   p_2_grid=spy_grid,              &
-                   p_2_integral=sPY_integral,      &	
-                   p_3_grid=spz2_grid,             &
-                   p_3_integral=sPZ2_integral,     &
-                   s_number_macro=s_tmp_macro,     &
-                   s_vol_element=s_tmp_Vk,         &
-                   max_av=s_tmp_max_av,            &
-                   x_1_coord=x_tmpcoord,           &
-                   x_2_coord=y_tmpcoord,           &
-                   x_3_coord=z2_tmpcoord,          &
-                   p_1_vector=px_tmpvector,        &
-                   p_2_vector=py_tmpvector,        &
-                   p_3_vector=pz2_tmpvector)
-  END IF
+    if (qEquiXY_G) then
+
+      CALL genMacros(i_total_electrons=i_RealE, &
+                     q_noise=q_noise,                     & 
+                     x_1_grid=sx_grid,               &
+                     x_1_integral=sX_integral,       &
+                     x_2_grid=sy_grid,               &
+                     x_2_integral=sY_integral,       & 
+                     x_3_grid=sz2_grid,                   &
+                     x_3_integral=sZ2_integral,      &  
+                     p_1_grid=spx_grid,              &
+                     p_1_integral=sPX_integral,      &   
+                     p_2_grid=spy_grid,              &
+                     p_2_integral=sPY_integral,      &  
+                     p_3_grid=spz2_grid,             &
+                     p_3_integral=sPZ2_integral,     &
+                     s_number_macro=s_tmp_macro,     &
+                     s_vol_element=s_tmp_Vk,         &
+                     max_av=s_tmp_max_av,            &
+                     x_1_coord=x_tmpcoord,           &
+                     x_2_coord=y_tmpcoord,           &
+                     x_3_coord=z2_tmpcoord,          &
+                     p_1_vector=px_tmpvector,        &
+                     p_2_vector=py_tmpvector,        &
+                     p_3_vector=pz2_tmpvector)
+    
+
+    else    ! using sequences in transverse plane
+
+
+
+
+
+
+! #####################################################################
+!
+!  For equispaced particles (before noise is added) in z2 only -
+!  a random or low-discrepancy sequence will be used for every other 
+!  dimension. The same sequences will be reused for every slice,
+!  creating 'beamlets' in the 6D phase space in z2.
+!
+!  This ensures a quiet start in z2 only, and so the noise statistics
+!  will only be correct in z2.
+!
+!  Currently, only random sequences in the other dimensions are used.
+!  Halton/Hammersley or other low-disprecpency sequences may be added 
+!  later...
+
+      nseqparts = nseqparts_G
+ 
+      allocate(nktemp(iNMP_loc(iZ2_CG)), z2base(iNMP_loc(iZ2_CG)))
+      allocate(vkt(iNMP_loc(iZ2_CG)))
+   
+
+!    if (tProcInfo_G%qRoot) then
+!    print*, 'size z2 grid = ', size(sz2_grid)
+!    print*, 'size z2 int = ', size(sZ2_integral)
+!    print*, 'size nks = ', size(nktemp)
+!    print*, 'size Vk', size(s_tmp_Vk)
+!    print*, 'size z2 temp', size(z2_tmpcoord)
+!    print*, 'sigmas are...', sigE
+!    end if
+
+
+!    call mpi_finalize(error)
+!    stop
+
+!   Create quiet 'base' beam in z2...
+
+      CALL genMacros(i_total_electrons=i_RealE, &
+                     q_noise=.false.,           & 
+                     x_1_grid=sz2_grid,         &
+                     x_1_integral=sZ2_integral, &
+                     s_number_macro=nktemp,   & 
+                     s_vol_element=vkt,       &
+                     max_av=s_tmp_max_av,     &
+                     x_1_coord=z2base)
+
+!   ...then generate some random sequences for the other 5 dimensions...
+
+      allocate(xseq(nseqparts), yseq(nseqparts), &
+               pxseq(nseqparts), pyseq(nseqparts), &
+               gamseq(nseqparts))  ! to store 'constant' sequences which will be replicated for each z2 slice
+
+      call getSeqs(xseq, yseq, pxseq, pyseq, gamseq, sigE)
+
+!   ...then, each particle in this 1D beam (which has perfectly equispaced particles)
+!   is split into many particles with the same temporal/longitudinal coordinate
+!   with transverse positions given by the random particle distributions
+
+      gamseq = gamseq + offsets(iGam_CG)
+
+      do ij = 1, iNMP_loc(iZ2_CG)
+
+        s_tmp_macro((ij-1)*nseqparts+1:(ij*nseqparts)) &
+                         = nktemp(ij) / nseqparts   ! split charge evenly across MPs
+
+        z2_tmpcoord((ij-1)*nseqparts+1:(ij*nseqparts)) = z2base(ij)
+        x_tmpcoord((ij-1)*nseqparts+1:(ij*nseqparts)) = xseq(:)
+        y_tmpcoord((ij-1)*nseqparts+1:(ij*nseqparts)) = yseq(:)
+        px_tmpvector((ij-1)*nseqparts+1:(ij*nseqparts)) = pxseq(:)
+        py_tmpvector((ij-1)*nseqparts+1:(ij*nseqparts)) = pyseq(:)
+        pz2_tmpvector((ij-1)*nseqparts+1:(ij*nseqparts)) = gamseq(:)   ! Sequences constructed!!
+
+        s_tmp_Vk((ij-1)*nseqparts+1:(ij*nseqparts)) = vkt(ij)
+
+      ! Need to rename z2, x, y etc above
+      ! to use z2_tmpcoord etc...
+      ! Make a new temp z2 array to put into genMacros
+
+      end do
+
+      deallocate(xseq, yseq, pxseq, pyseq, gamseq)
+      deallocate(nktemp, z2base)
+
+      if (q_noise) call applyNoise(z2_tmpcoord, sz2_grid(2) - sz2_grid(1), s_tmp_macro)  ! add noise in z2
+
+    end if 
+
+  end if
+
+
+
+
 
   DEALLOCATE(iLocalIntegralType)
   DEALLOCATE(sx_grid, sy_grid, sz2_grid, spx_grid, spy_grid)

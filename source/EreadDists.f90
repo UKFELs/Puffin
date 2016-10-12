@@ -26,7 +26,7 @@ contains
 
 
 subroutine readPartDists(fname, z2m, gam_m, xm, ym, pxm, pym, &
-	                       gam_d, pxd, pyd, Ne, nZ2)
+	                       gam_d, x_d, y_d, pxd, pyd, Ne, nZ2)
 
   implicit none
 
@@ -36,7 +36,8 @@ subroutine readPartDists(fname, z2m, gam_m, xm, ym, pxm, pym, &
 
   real(kind=wp), intent(inout) :: z2m(:), & 
                                pxm(:), pym(:), xm(:), ym(:), &
-                               gam_m(:), gam_d(:), pxd(:), pyd(:), &
+                               gam_m(:), gam_d(:), x_d(:), y_d(:), &
+                               pxd(:), pyd(:), &
                                Ne(:)
 
 !              Local args
@@ -66,15 +67,12 @@ subroutine readPartDists(fname, z2m, gam_m, xm, ym, pxm, pym, &
 
   call readBlanks(fid, 4)  
 
-  do k = 1,NZ2
+  do k = 1, nZ2
 
     !        Read in z2, gamma, x, y, px, py etc...
 
-
     call readLine(fid, z2m(k), gam_m(k), xm(k), ym(k), pxm(k), pym(k), &
-                  gam_d(k), pxd(k), pyd(k), Ne(k))
-
-
+                  gam_d(k), x_d(k), y_d(k), pxd(k), pyd(k), Ne(k))
 
   end do
 
@@ -173,7 +171,7 @@ end subroutine readBlanks
 !!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-subroutine readLine(fid, z2, gam, x, y, px, py, gam_d, pxd, pyd, Ne)
+subroutine readLine(fid, z2, gam, x, y, px, py, gam_d, x_d, y_d, pxd, pyd, Ne)
 
 ! Reads in one 'line' of the dist file. Note that a line is 1
 ! complete sequence of data, and not 1 actual line in the file.
@@ -182,12 +180,13 @@ subroutine readLine(fid, z2, gam, x, y, px, py, gam_d, pxd, pyd, Ne)
 
   implicit none
 
-  real(kind=wp), intent(inout) :: z2, gam, x, y, px, py, gam_d, pxd, pyd, Ne
+  real(kind=wp), intent(inout) :: z2, gam, x, y, px, py, gam_d, pxd, pyd, &
+                                  x_d, y_d, Ne
   integer(kind=ip), intent(in) :: fid
 
-  read(UNIT=fid, FMT=*) z2, gam, x, y, px, py, gam_d, pxd
+  read(UNIT=fid, FMT=*) z2, gam, x, y, x_d, y_d, px, py
 
-  read(UNIT=fid, FMT=*) pyd, Ne
+  read(UNIT=fid, FMT=*) gam_d, pxd, pyd, Ne
 
 
 end subroutine readLine

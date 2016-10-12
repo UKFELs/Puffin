@@ -16,11 +16,13 @@ use Globals
 use Functions
 use TransformInfoType
 use ParallelInfoType
-use stiffness
 use Equations
 use wigglerVar
 use FiElec1D
 use FiElec
+use gtop2
+use ParaField
+use bfields
 
 
 implicit none
@@ -28,12 +30,12 @@ implicit none
 contains
 
   subroutine getrhs(sz, &
-                    sA, &
+                    sAr, sAi, &
                     sx, sy, sz2, &
-                    spr, spi, sp2, &
+                    spr, spi, sgam, &
                     sdx, sdy, sdz2, &
-                    sdpr, sdpi, sdp2, &                    
-                    sDADz, &
+                    sdpr, sdpi, sdgam, &                    
+                    sDADzr, sDADzi, &
                     qOK)
 
   use rhs_vars
@@ -51,20 +53,19 @@ contains
 ! sDADz - RHS of field source term
 
   real(kind=wp), intent(in) :: sz
-  real(kind=wp), intent(in) :: sA(:)
+  real(kind=wp), intent(in) :: sAr(:), sAi(:)
   real(kind=wp), intent(in)  :: sx(:), sy(:), sz2(:), &
-                                spr(:), spi(:), sp2(:)
+                                spr(:), spi(:), sgam(:)
 
   
   real(kind=wp), intent(inout)  :: sdx(:), sdy(:), sdz2(:), &
-                                   sdpr(:), sdpi(:), sdp2(:)
+                                   sdpr(:), sdpi(:), sdgam(:)
 
-  real(kind=wp), intent(inout) :: sDADz(:) !!!!!!!
+  real(kind=wp), intent(inout) :: sDADzr(:), sDADzi(:) !!!!!!!
   logical, intent(inout) :: qOK
 
-
-  real(kind=wp) :: li1, li2, dadzRInst, dadzIInst, locz2
   integer(kind=ipl) :: i, z2node
+  integer :: error
   logical qOKL
 
 !     Begin
@@ -75,7 +76,7 @@ contains
 !     SETUP AND INITIALISE THE PARTICLE'S POSITION
 !     ALLOCATE THE ARRAYS
 
-  allocate(Lj(iNumberElectrons_G)) 
+!  allocate(Lj(iNumberElectrons_G)) 
   allocate(p_nodes(iNumberElectrons_G))
   call alct_e_srtcts(iNumberElectrons_G)
   
@@ -97,51 +98,66 @@ contains
 !     Adjust undulator tuning
 
   call getAlpha(sZ)
+  call adjUndPlace(sZ)
 
+!$OMP PARALLEL
 
-!     Calculate Lj term
-
-  Lj = sqrt((1.0_WP - (1.0_WP / ( 1.0_WP + (sEta_G * sp2)) )**2.0_WP) &
-             / (1.0_WP + nc* ( spr**2.0_wp  +  &
-                               spi**2.0_wp )   )) &
-          * (1.0_WP + sEta_G *  sp2) * sGammaR_G
-
+  call getP2(sp2, sgam, spr, spi, sEta_G, sGammaR_G, saw_G)
 
 
 
 
   
   if (tTransInfo_G%qOneD) then
+
+!$OMP WORKSHARE
  
-    p_nodes = floor(sz2 / dz2) + 1_IP
+    p_nodes = floor(sz2 / dz2) + 1_IP - (fz2-1)
+
+!$OMP END WORKSHARE
 
   else
 
-    p_nodes = (floor( (sx+halfx)  / dx)  + 1_IP) + &
-              (floor( (sy+halfy)  / dy) * ReducedNX_G )  + &   !  y 'slices' before primary node
-              (ReducedNX_G * ReducedNY_G * &
-                              floor(sz2  / dz2) )  ! transverse slices before primary node
+!$OMP WORKSHARE
 
+!    p_nodes = (floor( (sx+halfx)  / dx)  + 1_IP) + &
+!              (floor( (sy+halfy)  / dy) * ReducedNX_G )  + &   !  y 'slices' before primary node
+!              (ReducedNX_G * ReducedNY_G * &
+!                              floor(sz2  / dz2) ) - &
+!                              (fz2-1)*ntrnds_G  ! transverse slices before primary node
+
+    p_nodes = (floor( (sx+halfx)  / dx)  + 1_IP) + &
+              (floor( (sy+halfy)  / dy) * nspinDX )  + &   !  y 'slices' before primary node
+              (nspinDX * nspinDY * &
+                              floor(sz2  / dz2) ) - &
+                              (fz2-1)*ntrndsi_G  ! transverse slices before primary node
+
+
+!$OMP END WORKSHARE
 
   end if  
+
+
 
 
 
   if (tTransInfo_G%qOneD) then
 
     call getInterps_1D(sz2)
-    call getFFelecs_1D(sA)
-    call getSource_1D(sDADz, spr, spi)
+    if (qPArrOK_G) then
+      call getFFelecs_1D(sAr, sAi)
+      call getSource_1D(sDADzr, sDADzi,  spr, spi, sgam, sEta_G)
+    end if
 
   else
 
     call getInterps_3D(sx, sy, sz2)
-    call getFFelecs_3D(sA)    
-    call getSource_3D(sDADz, spr, spi)
+    if ((qPArrOK_G) .and. (qInnerXYOK_G)) then 
+      call getFFelecs_3D(sAr, sAi)    
+      call getSource_3D(sDADzr, sDADzi, spr, spi, sgam, sEta_G)
+    end if
 
   end if
-
-  deallocate(p_nodes)
 
 
 
@@ -162,73 +178,67 @@ contains
 
     if (qElectronsEvolve_G) then   
 
+        call getBFields(sx, sy, sz, &
+                        bxu, byu, bzu)
+
 !     z2
 
-        CALL dz2dz_f(sx, sy, sz2, spr, spi, sp2, &
-                   sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
-                   Lj,qOKL)
-        if (.not. qOKL) goto 1000
+        CALL dz2dz_f(sx, sy, sz2, spr, spi, sgam, &
+                     sdz2, qOKL)
+        !if (.not. qOKL) goto 1000
 
 !     X
 
-        call dxdz_f(sx, sy, sz2, spr, spi, sp2, &
-                  sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
-                  Lj,qOKL)
-        if (.not. qOKL) goto 1000             
+        call dxdz_f(sx, sy, sz2, spr, spi, sgam, &
+                    sdx, qOKL)
+        !if (.not. qOKL) goto 1000             
 
 !     Y
 
-        call dydz_f(sx, sy, sz2, spr, spi, sp2, &
-                  sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
-                  Lj,qOKL)
-        if (.not. qOKL) goto 1000
-
-
-!     dp2f is the focusing correction for dp2/dz
-
-        call caldp2f_f(sx, sy, sdx, sdy, sp2, kbeta, qOKL)
-        if (.not. qOKL) goto 1000
-
+        call dydz_f(sx, sy, sz2, spr, spi, sgam, &
+                    sdy, qOKL)
+        !if (.not. qOKL) goto 1000
 
 
 !     PX (Real pperp)
        
-        call dppdz_r_f(sx, sy, sz2, spr, spi, sp2, &
-                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
-                     Lj,qOKL)
-        if (.not. qOKL) goto 1000
+        call dppdz_r_f(sx, sy, sz2, spr, spi, sgam, sZ, &
+                       sdpr, qOKL)
+        !if (.not. qOKL) goto 1000
 
 
 !     -PY (Imaginary pperp)
 
-        call dppdz_i_f(sx, sy, sz2, spr, spi, sp2, &
-                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
-                     Lj,qOKL)
-        if (.not. qOKL) goto 1000
+        call dppdz_i_f(sx, sy, sz2, spr, spi, sgam, sz, &
+                       sdpi, qOKL)
+        !if (.not. qOKL) goto 1000
 
 !     P2
 
-        call dp2dz_f(sx, sy, sz2, spr, spi, sp2, &
-                   sdx, sdy, sdz2, sdpr, sdpi, sdp2, &
-                   Lj,qOKL)
-        if (.not. qOKL) goto 1000
+        call dgamdz_f(sx, sy, sz2, spr, spi, sgam, &
+                     sdgam, qOKL)
+        !if (.not. qOKL) goto 1000
  
     end if 
 
 
 
+!$OMP END PARALLEL
 
 
 
-    if (qFieldEvolve_G) then
+!    if (qFieldEvolve_G) then
 
 !     Sum dadz from different MPI processes together
 
-        call sum2RootArr(sDADz,ReducedNX_G*ReducedNY_G*NZ2_G*2,0)
+!        call sum2RootArr(sDADz,ReducedNX_G*ReducedNY_G*NZ2_G*2,0)
 
 !     Boundary condition dadz = 0 at head of field
 
-        if (tProcInfo_G%qRoot) sDADz(1:ReducedNX_G*ReducedNY_G) = 0.0_WP
+!        if (tProcInfo_G%qRoot) sDADz(1:ReducedNX_G*ReducedNY_G) = 0.0_WP
+!        if (tProcInfo_G%qRoot) sDADz(ReducedNX_G*ReducedNY_G*NZ2_G + 1: &
+!                                     ReducedNX_G*ReducedNY_G*NZ2_G + &
+!                                     ReducedNX_G*ReducedNY_G) = 0.0_WP
  
         !if (tTransInfo_G%qOneD) then
         !  if (tProcInfo_G%qRoot) sDADz=sDADz !sDADz=6.0_WP*sDADz
@@ -236,12 +246,13 @@ contains
         !   if (tProcInfo_G%qRoot) sDADz=sDADz !216.0_WP/8.0_WP*sDADz
         !end if
 
-    end if
+!    end if
     
 !     Switch field off
 
     if (.not. qFieldEvolve_G) then
-       sDADz = 0.0_WP
+       sDADzr = 0.0_WP
+       sDADzi = 0.0_WP
     end if
 
 !     if electrons not allowed to evolve then      
@@ -249,7 +260,7 @@ contains
     if (.not. qElectronsEvolve_G) then
        sdpr = 0.0_wp
        sdpi = 0.0_wp
-       sdp2 = 0.0_wp
+       sdgam = 0.0_wp
        sdx   = 0.0_wp
        sdy   = 0.0_wp
        sdz2 = 0.0_wp
@@ -259,9 +270,11 @@ contains
 
 !    deallocate(i_n4e,N,iNodeList_Re,iNodeList_Im,i_n4ered)
 !    deallocate(sField4ElecReal,sField4ElecImag,Lj,dp2f)
-    deallocate(Lj)
+    !deallocate(Lj)
     deallocate(lis_GR)
+    deallocate(p_nodes)
     call dalct_e_srtcts()
+
 
     ! Set the error flag and exit
 
@@ -312,11 +325,11 @@ real(kind=wp), intent(in) :: sz
 
 !     number of transverse nodes
 
-  ntrans = ReducedNX_G * ReducedNY_G
+  ntrans = NX_G * NY_G
 
 !     Diff between real and imaginary nodes in the reduced system
 
-  retim = ReducedNX_G*ReducedNY_G*nZ2_G
+  retim = nspinDX*nspinDY*nZ2_G
 
 
   fkb= sFocusfactor_G * kbeta
@@ -334,14 +347,14 @@ real(kind=wp), intent(in) :: sz
   qoutside=.FALSE.
   iOutside=0_IP
 
-  halfx = ((ReducedNX_G-1) / 2.0_WP) * sLengthOfElmX_G
-  halfy = ((ReducedNY_G-1) / 2.0_WP) * sLengthOfElmY_G
+!  halfx = ((ReducedNX_G-1) / 2.0_WP) * sLengthOfElmX_G
+!  halfy = ((ReducedNY_G-1) / 2.0_WP) * sLengthOfElmY_G
 
+  halfx = ((nspinDX-1) / 2.0_WP) * sLengthOfElmX_G
+  halfy = ((nspinDY-1) / 2.0_WP) * sLengthOfElmY_G
 
 
 end subroutine rhs_tmsavers
-
-
 
 
 

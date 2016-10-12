@@ -50,7 +50,7 @@ MODULE typesAndConstants
       INTEGER(KIND=IP), PARAMETER    :: iZ2_CG  = 3_IP
       INTEGER(KIND=IP), PARAMETER    :: iPX_CG  = 4_IP
       INTEGER(KIND=IP), PARAMETER    :: iPY_CG  = 5_IP
-      INTEGER(KIND=IP), PARAMETER    :: iPZ2_CG = 6_IP
+      INTEGER(KIND=IP), PARAMETER    :: iGam_CG = 6_IP
 !
       INTEGER(KIND=IP), PARAMETER    :: nSwitches_CG              = 11_IP
       INTEGER(KIND=IP), PARAMETER    :: iFieldEvolve_CG           = 1_IP

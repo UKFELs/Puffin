@@ -75,13 +75,14 @@ IMPLICIT NONE
 
 REAL(KIND=WP), ALLOCATABLE  :: sLenEPulse(:,:)
 INTEGER(KIND=IP), ALLOCATABLE  :: iNumElectrons(:,:)
-REAL(KIND=WP), ALLOCATABLE     :: sSigmaGaussian(:,:)
+REAL(KIND=WP), ALLOCATABLE     :: sEleSig(:,:)
 REAL(KIND=WP), ALLOCATABLE    :: sQe(:), beamCenZ2(:), gamma_d(:), &
                                  chirp(:), sEmit_n(:), mag(:), fr(:)
 
 REAL(KIND=WP), ALLOCATABLE :: sA0_Re(:),sA0_Im(:)
 
 INTEGER(KIND=IP) :: nbeams
+logical, allocatable :: qMatched_A(:)
 
 !!!
 !!! END NEW
@@ -93,7 +94,7 @@ INTEGER(KIND=IP) :: nbeams
 !!!
 
 INTEGER(KIND=IP) :: nseeds
-REAL(KIND=WP), ALLOCATABLE :: freqf(:), SmeanZ2(:)
+REAL(KIND=WP), ALLOCATABLE :: freqf(:), ph_sh(:), SmeanZ2(:)
 LOGICAL, ALLOCATABLE :: qFlatTopS(:)
 REAL(KIND=WP), ALLOCATABLE    :: sSeedSigma(:,:)
 
@@ -106,7 +107,7 @@ CHARACTER(32_IP) :: infile, emptstring
 CHARACTER(32_IP) :: zUndType
 
 
-REAL(KIND=WP)    :: sWigglerLength(nSpaceDimensions_CG)   
+REAL(KIND=WP)    :: sFieldModelLength(nSpaceDimensions_CG)   
 
 
 
@@ -154,6 +155,9 @@ INTEGER  :: ndims
       
 INTEGER(KIND=IP)  :: iRedNodesX,iRedNodesY
 REAL(KIND=WP)  :: redwigglengthX,redwigglengthY
+
+integer(kind=ip) :: nodesperlambda, stepsPerPeriod, &
+                    nperiods
 
 
 !=============================================================

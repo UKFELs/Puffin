@@ -16,7 +16,7 @@ implicit none
 contains
 
 
-subroutine applyNoise(x,dx,gam,dgam,Nks)
+subroutine applyNoise(x,dx,Nks)
 
 ! This routine adds noise to the macroparticle 
 ! weight and phase space coordinate in each
@@ -26,12 +26,13 @@ subroutine applyNoise(x,dx,gam,dgam,Nks)
 
 !            ARGUMENTS
 
-  real(kind=wp), intent(inout) :: x(:), gam(:), Nks(:)
-  real(kind=wp), intent(in) :: dx, dgam
+  real(kind=wp), intent(inout) :: x(:), Nks(:)
+  real(kind=wp), intent(in) :: dx
 
 !            LOCAL ARGS
 
   real(kind=wp) :: u
+  real(kind=wp) :: sv
   integer(kind=ipl) :: k, Nm
 
 
@@ -41,11 +42,13 @@ subroutine applyNoise(x,dx,gam,dgam,Nks)
 
   do k = 1,Nm
 
+    sv = Nks(k)
     Nks(k) = random_Poisson(Nks(k), .TRUE.)
-
-    x(k)   = addxDev(x(k), dx, Nks(k), u)
-
-    gam(k) = addxDev(gam(k), dgam, Nks(k), u)
+    if (Nks(k) <= 0.0_wp) then
+      Nks(k) = sv
+    else
+      x(k)   = addxDev(x(k), dx, Nks(k), u)
+    end if
 
   end do
 

@@ -70,7 +70,7 @@ SUBROUTINE removeLowNC(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold,
   ALLOCATE(sElZ2_G(SUM(b_keepn)))
   ALLOCATE(sElPX_G(SUM(b_keepn)))
   ALLOCATE(sElPY_G(SUM(b_keepn)))
-  ALLOCATE(sElPZ2_G(SUM(b_keepn)))
+  ALLOCATE(sElGam_G(SUM(b_keepn)))
   ALLOCATE(s_chi_bar_G(SUM(b_keepn)))
   ALLOCATE(s_Normalised_chi_G(SUM(b_keepn)))
 
@@ -93,7 +93,7 @@ SUBROUTINE removeLowNC(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold,
     sElZ2_G(ist:ien)  = z2_tmpcoord(ikeepos + prev)
     sElPX_G(ist:ien)  = px_tmpvector(ikeepos + prev)
     sElPY_G(ist:ien)  = py_tmpvector(ikeepos + prev)
-    sElPZ2_G(ist:ien) = pz2_tmpvector(ikeepos + prev)
+    sElGam_G(ist:ien) = pz2_tmpvector(ikeepos + prev)
     s_chi_bar_G(ist:ien)        = Tmp_chibar(ikeepos + prev)
     s_Normalised_chi_G(ist:ien) = Tmp_Normchi(ikeepos + prev)
 
@@ -113,16 +113,17 @@ SUBROUTINE removeLowNC(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold,
 !     We currently have gamma in the p2 position array -
 !     need to change to p2
 
-    sElPZ2_G = getP2(sElPZ2_G, sElPX_G,&
-                     sElPY_G, sEta_G, sAw_G)
-
+!    sElGam_G = getP2(sElGam_G, sElPX_G,&
+!                     sElPY_G, sEta_G, sAw_G)
+     
+  sElGam_G = sElGam_G / sGammaR_G
 
 END SUBROUTINE removeLowNC
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 SUBROUTINE removeLow(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
-                     chirp,mag,fr,nbeams,x_tmpcoord,y_tmpcoord,z2_tmpcoord,px_tmpvector,&
+                     nbeams,x_tmpcoord,y_tmpcoord,z2_tmpcoord,px_tmpvector,&
                      py_tmpvector, pz2_tmpvector,totalmps_b,&
                      sZ2_center)
                    
@@ -138,9 +139,8 @@ SUBROUTINE removeLow(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
                                x_tmpcoord(:), y_tmpcoord(:), &
                                z2_tmpcoord(:), px_tmpvector(:),&
                                py_tmpvector(:), pz2_tmpvector(:)
-  INTEGER(KIND=IPL), INTENT(IN) :: b_sts(:), b_ends(:)
+  INTEGER(KIND=IPL), INTENT(INOUT) :: b_sts(:), b_ends(:)
   INTEGER(KIND=IP), INTENT(IN) :: nbeams
-  REAL(KIND=WP), INTENT(IN) :: chirp(:), mag(:), fr(:)
   REAL(KIND=WP), INTENT(IN) :: sElectronThreshold
   INTEGER(KIND=IPL), INTENT(IN) :: totalmps_b(:)
   REAL(KIND=WP), INTENT(IN) :: sZ2_center(:)
@@ -169,7 +169,7 @@ SUBROUTINE removeLow(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
   ALLOCATE(sElZ2_G(SUM(b_keepn)))
   ALLOCATE(sElPX_G(SUM(b_keepn)))
   ALLOCATE(sElPY_G(SUM(b_keepn)))
-  ALLOCATE(sElPZ2_G(SUM(b_keepn)))
+  ALLOCATE(sElGam_G(SUM(b_keepn)))
   ALLOCATE(s_chi_bar_G(SUM(b_keepn)))
   ALLOCATE(s_Normalised_chi_G(SUM(b_keepn)))
 
@@ -192,7 +192,7 @@ SUBROUTINE removeLow(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
     sElZ2_G(ist:ien)  = z2_tmpcoord(ikeepos + prev)
     sElPX_G(ist:ien)  = px_tmpvector(ikeepos + prev)
     sElPY_G(ist:ien)  = py_tmpvector(ikeepos + prev)
-    sElPZ2_G(ist:ien) = pz2_tmpvector(ikeepos + prev)
+    sElGam_G(ist:ien) = pz2_tmpvector(ikeepos + prev)
     s_chi_bar_G(ist:ien)        = Tmp_chibar(ikeepos + prev)
     s_Normalised_chi_G(ist:ien) = Tmp_Normchi(ikeepos + prev)
 
@@ -200,17 +200,10 @@ SUBROUTINE removeLow(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
 
     DEALLOCATE(ikeepos,iendpos)
 
-!     Add linear chirp to the beam....TEMP
-
-
-    call addChirp(sElPZ2_G(ist:ien), sElZ2_G(ist:ien), &
-                  b_keepn(b_ind), sZ2_center(b_ind), chirp(b_ind))
-
-
-    call addModulation(sElPZ2_G(ist:ien), sElZ2_G(ist:ien), &
-                       b_keepn(b_ind), mag(b_ind), fr(b_ind))
-
     prev = prev + totalmps_b(b_ind)
+
+    b_sts(b_ind) = ist
+    b_ends(b_ind) = ien
 
   END DO
 

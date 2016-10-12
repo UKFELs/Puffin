@@ -23,7 +23,7 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
        sLengthofElm,iNodes,sWigglerLength,sStepSize,&
        nSteps,srho,saw,sgammar,focusfactor,mag,sSigE,f_x, f_y, &
        iRedNodesX, iRedNodesY,qSwitches,qSimple,sSigF, &
-       freqf, SmeanZ2, qFlatTopS, nseeds,qOK)
+       freqf, SmeanZ2, qFlatTopS, nseeds, qOK)
 
   implicit none
 
@@ -96,6 +96,9 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
     call checkRndEjLens(iNumElectrons, sLenEPulse, sSigE, nbeams)
 
+!   Work out charge for each beam...
+
+!    call calcCharge()
 
  
     do i = 1, nSeeds
@@ -107,6 +110,9 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
 
   end if
+
+
+
 
 
 
@@ -125,6 +131,36 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
 end subroutine CheckParameters
   
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+!subroutine calcCharge()
+!
+!! ! This has to be called AFTER the beam is matched and so forth
+!
+!if (qHardEdgeX) then
+!    r_av = sig_av                 # Hard edged circle in x and y
+!else
+!    r_av = sqrt(2) * sig_av  # Gaussian dist in x and y
+!end if
+!
+!tArea = pi * r_av**2.0_wp          # Tranverse beam area
+!
+!if (qFlatTopZ2) then
+!    if (qRoundZ2) then
+!        lArea = sqrt(2.0_wp*pi) * sigRoundz  &
+!               + (sigz-(gExtEj_G*sigRoundz))     # flat top + gaussian
+!    else
+!        lArea = sigz                  # longitudinal integral over charge dist (flat top)
+!    end if
+!else
+!    lArea = sqrt(2*pi) * sigz     # longitudinal integral over charge dist(gaussian)
+!end if
+!
+!n_p = N / (tArea * lArea)              # Electron number density
+!
+!end subroutine calcCharge
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
