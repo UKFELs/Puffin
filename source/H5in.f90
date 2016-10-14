@@ -271,8 +271,63 @@ print*,"Now, you tell me if we had electrons"
 2000 CONTINUE
   end subroutine readH5Beamfile
 
-  subroutine readH5Fieldfile(zFile)
-  end subroutine readH5Fieldfile
+  subroutine readH5FieldfileSerialSingleDump(zFile)
+    character(*), intent(in) :: zFile
+    INTEGER(HID_T) :: file_id       !< File identifier
+    INTEGER(HID_T) :: dset_id       !< Dataset identifier 
+    INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
+    INTEGER(HID_T) :: dtype         !< So we can check we're reading in doubles
+    INTEGER(HID_T) :: dclass         !< So we can check we're reading in doubles
+    INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
+    INTEGER(HID_T) :: memspace     !< Dataspace identifier in file
+    CHARACTER(LEN=5), PARAMETER :: dsetname = "aperp"     ! Dataset name
+       if (tProcInfo_G%qRoot) then 
+    CALL h5open_f(error)
+    Print*,'h5in:H5 interface opened'
+      print*,'reading hdf5 input - first opening file on rank 0'
+      CALL h5fopen_f(zFile, H5F_ACC_RDONLY_F, file_id, error)
+      Print*,'hdf5_puff:outputH5Beamfile(file opened in serial)'
+      Print*,error
+      CALL h5dopen_f (file_id, dsetname, dset_id, error)
+      Print*,'hdf5_puff:readH5Beamfile(dataset opened in serial)'
+      Print*,error
+      CALL h5dget_type_f (dset_id, dtype, error)
+      Print*,'hdf5_puff:readH5Beamfile(checking data type)'
+      Print*,error
+      CALL h5tget_class_f (dtype, dclass, error)
+      Print*,'hdf5_puff:readH5Beamfile(dataset opened in serial)'
+      Print*,error
+!      if (dclass==H5T_NATIVE_DOUBLE) then
+      if (dclass==H5T_FLOAT_F) then
+       print*,'data is float'
+      else
+      errorstr = trim("data is no float")
+      print*,dclass
+      goto 1000
+      end if
+      CALL h5Dget_space_f(dset_id,dspace_id,error)
+      Print*,'hdf5_puff:readH5Beamfile(dataspace opened in serial)'
+      Print*,error
+      CALL h5Sget_simple_extent_ndims_f(dspace_id,rank,error)
+      Print*,'hdf5_puff:readH5Beamfile(dataspace opened in serial)'
+      Print*,rank
+      Print*,error
+
+! rank should depend on whether we have 1D or 3D fields.
+
+      call h5fclose_f(file_id,error)
+     print*,"h5f file_id closed"
+    CALL h5close_f(error)
+     print*,"h5 interface closed"
+    end if
+    GoTo 2000
+
+! Error Handler - Error log Subroutine in CIO.f90 line 709
+1000 call Error_log('Error in H5in:readH5FieldfileSerialSingleDump',&
+          tErrorLog_G)
+   print*, "abort, abort, Error in readH5FieldfileSerialSingleDump",errorstr
+2000 CONTINUE
+  end subroutine readH5FieldfileSerialSingleDump
   
 
 end module H5in
