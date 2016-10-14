@@ -271,4 +271,8 @@ print*,"Now, you tell me if we had electrons"
 2000 CONTINUE
   end subroutine readH5Beamfile
 
+  subroutine readH5Fieldfile(zFile)
+  end subroutine readH5Fieldfile
+  
+
 end module H5in
