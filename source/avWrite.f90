@@ -592,16 +592,16 @@ contains
 !    sliceSizeZ2=(sLengthOfElmZ2_G*NBZ2)/(nslices-1)
 !    sliceSizeZ2=((sLengthOfElmZ2_G*NZ2_G)-slicetrim)/(nslices)
     sliceSizeZ2=4*pi*srho_g
-    print *,"evaluating slices of size",4*pi*srho_g,sliceSizeZ2,slicetrim
+!    print *,"evaluating slices of size",4*pi*srho_g,sliceSizeZ2,slicetrim
     do ip = 1, size(sElX_G)
       is = ceiling(sElZ2_G(ip)/sliceSizeZ2)
       if ((is>nslices) .or. (is <1)) then
          print*,"slice index, is, out of bounds in slice computation"
          goto 1000
       end if  
-      if (mod(ip,10000) .eq. 0) then
-        print*,"at particle ",ip
-      end if
+!      if (mod(ip,10000) .eq. 0) then
+!        print*,"at particle ",ip
+!      end if
       sdata(is)=sdata(is)+s_chi_bar_G(ip)
 !      do ic1 = 1,ncoord
 !        select case (ncoord)
