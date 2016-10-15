@@ -57,7 +57,7 @@ subroutine writeIM(sZ, &
   end if
 
   if (qhdf5_G) then
-!     nslices=ceiling( (sLengthOfElmZ2_G*NZ2_G)/(4*pi*srho_g))
+     nslices=ceiling( (sLengthOfElmZ2_G*NZ2_G)/(4*pi*srho_g))
 
     call wr_h5(sZ, tArrayA, tArrayE, tArrayZ, &
                  iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
