@@ -859,7 +859,7 @@ contains
     CALL h5aclose_f(attr_id, error)
     aname="vsUpperBounds"
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
-    Print*,'hdf5_puff:outputH5BeamFiles(upper bounds attribute created)'
+    !Print*,'hdf5_puff:outputH5BeamFiles(upper bounds attribute created)'
     limdata(1)=0.5*NX_G*sLengthOfElmX_G
 ! Particles inhabit a 3D physical space even for 1D simulations.
 !    if (numSpatialDims .GT. 1) then

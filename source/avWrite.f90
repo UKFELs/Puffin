@@ -723,7 +723,7 @@ contains
 !      b5i(is)=b5i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(10*sRho_G))
 !    call sum2RootArr(cs2data(, size(cs2data), 0)
 1000    end do
- print*,"Bringing arrays onto rank0"
+! print*,"Bringing arrays onto rank0"
     call sum2RootArr(sdata, size(sdata), 0)
     call sum2RootArr(csdata(1,:), size(csdata(1,:)), 0)
     call sum2RootArr(csdata(2,:), size(csdata(2,:)), 0)
