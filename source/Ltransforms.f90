@@ -144,17 +144,24 @@ SUBROUTINE getTransformPlans_MultiD(sizes,nDims,qOK)
 
 !     Create plans
 
-  tTransInfo_G%fplan = fftw_mpi_plan_dft_3d(N, M, L, &
-                        Afftw, Afftw, tProcInfo_G%comm, &
-                        FFTW_FORWARD, FFTW_MEASURE)
+  if (tProcInfo_G%qroot) print*, 'Creating FFTW3 plans'
+
+  if (qDiffraction_G) then
+
+    tTransInfo_G%fplan = fftw_mpi_plan_dft_3d(N, M, L, &
+                          Afftw, Afftw, tProcInfo_G%comm, &
+                          FFTW_FORWARD, FFTW_MEASURE)
 
 
-  tTransInfo_G%bplan = fftw_mpi_plan_dft_3d(N, M, L, &
-                        Afftw, Afftw, tProcInfo_G%comm, &
-                        FFTW_BACKWARD, FFTW_MEASURE)
+    tTransInfo_G%bplan = fftw_mpi_plan_dft_3d(N, M, L, &
+                          Afftw, Afftw, tProcInfo_G%comm, &
+                          FFTW_BACKWARD, FFTW_MEASURE)
 
+  end if
 
-
+  if (tProcInfo_G%qroot) print*, 'Created FFTW3 plans'
+  if (tProcInfo_G%qroot) print*,  ''
+  if (tProcInfo_G%qroot) print*, '***********************'
 
 
 !!!!!!!!!!!!!!!!     OOOLLLDDDD
