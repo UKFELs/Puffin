@@ -634,7 +634,7 @@ contains
 
     filename = ( trim(adjustl(zFilename_G)) // '_electrons_' // &
                  trim(adjustl(IntegerToString(tProcInfo_G%Rank))) // &
-		 '_' // trim(adjustl(IntegerToString(iStep))) // '.h5' )
+		 '_' // trim(adjustl(IntegerToString(iCSteps))) // '.h5' )
 
     CALL h5open_f(error)
 !    Print*,'hdf5_puff:outputH5BeamFiles(file opened)'
@@ -1045,7 +1045,7 @@ contains
 ! Prepare filename
 
     filename = ( trim(adjustl(zFilename_G)) // '_electrons_' // &
-                 trim(adjustl(IntegerToString(iStep))) // '.h5' )
+                 trim(adjustl(IntegerToString(iCSteps))) // '.h5' )
 
 
     CALL h5open_f(error)
@@ -1523,7 +1523,7 @@ contains
 !    Print*,('Spatialdims: ' // trim(IntegerToString(numSpatialDims)))
     filename = (trim(adjustl(zFilename_G)) // '_' // trim(adjustl(dsetname)) &
         // '_' // trim(adjustl(IntegerToString(tProcInfo_G%Rank))) &
-        // '_' // trim(adjustl(IntegerToString(iStep))) // '.h5' )
+        // '_' // trim(adjustl(IntegerToString(iCSteps))) // '.h5' )
       CALL h5open_f(error)
       CALL h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error)
       CALL h5screate_simple_f(rank, dims, filespace, error)
@@ -1940,7 +1940,7 @@ contains
 
 !    Print*,('Spatialdims: ' // trim(IntegerToString(numSpatialDims)))
     filename = (trim(adjustl(zFilename_G)) // '_' // trim(adjustl(dsetname)) &
-        // '_' // trim(adjustl(IntegerToString(iStep))) // '.h5' )
+        // '_' // trim(adjustl(IntegerToString(iCSteps))) // '.h5' )
       CALL h5open_f(error)
       CALL h5pcreate_f(H5P_FILE_ACCESS_F, plist_id, error)
 !      Print*,'hdf5_puff:outputH5FieldSD(property created)'
@@ -2563,7 +2563,7 @@ contains
 
       filename = ( trim(adjustl(zFilename_G)) // '_' // trim(adjustl(dsetname)) & 
 	    // '_' // trim(adjustl(IntegerToString(tProcInfo_G%Rank))) &
-        // '_' //trim(adjustl(IntegerToString(iStep))) &
+        // '_' //trim(adjustl(IntegerToString(iCSteps))) &
         // '.h5' )
 !      PRINT *,'size of writeData: ' // trim(adjustl(dsetname))
 !      PRINT *, dims
@@ -3029,4 +3029,3 @@ END FUNCTION IntegerToString
 	
 	
 end module hdf5_puff
-
