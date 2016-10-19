@@ -416,7 +416,7 @@ contains
 ! now this is passed in so that we can set the arrays properly
     !    nslices = int( (sLengthOfElmZ2_G*NZ2_G)/(4*pi*srho_g))
     if (qWriteFull) then
-      time = real(iCSteps,kind=wp)*sStepSize*lg_G/c
+      time = sZ*lg_G/c ! real(iCSteps,kind=wp)*sStepSize*lg_G/c
       if (qSep) then
 !        print *,'Dumping particles individually...'
         call cpu_time(stime)
@@ -512,7 +512,7 @@ contains
       call gPowerP(power)
 
       if (tProcInfo_G%qRoot) then
-        time = real(iCSteps,kind=wp)*sStepSize*lg_G/c
+        time = sZ*lg_G/c !real(iCSteps,kind=wp)*sStepSize*lg_G/c
         !CALL gPower(sA,power)
         call outputH5Field1DFloat(power, 'power', time, error)
       if (error .ne. 0) goto 1000
@@ -794,7 +794,7 @@ contains
     CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
     CALL h5aclose_f(attr_id, error)
     aname="distanceThroughMachine"
-    attr_data_double=real(iCSteps,kind=wp)*sStepSize*lg_G
+    attr_data_double=time*c !real(iCSteps,kind=wp)*sStepSize*lg_G
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
     CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
     CALL h5aclose_f(attr_id, error)
@@ -1264,7 +1264,7 @@ contains
     CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
     CALL h5aclose_f(attr_id, error)
     aname="distanceThroughMachine"
-    attr_data_double=real(iCSteps,kind=wp)*sStepSize*lg_G
+    attr_data_double = time * c !real(iCSteps,kind=wp)*sStepSize*lg_G
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
     CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
     CALL h5aclose_f(attr_id, error)
@@ -1809,7 +1809,7 @@ contains
 
 ! Create dataset floating point attributes.
      CALL addH5FloatAttribute(dset_id, "time", time,aspace_id)
-     CALL addH5FloatAttribute(dset_id, "z", 1.0*iStep*sStepSize,aspace_id)
+     CALL addH5FloatAttribute(dset_id, "z", time*c/lg_G,aspace_id)
 
 !    CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
 !      aname="time"
