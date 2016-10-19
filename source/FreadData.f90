@@ -311,7 +311,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   sFiltFrac              = 0.3
   sDiffFrac              = 1.0
   sBeta                  = 1.0
-  seed_file              = 'seed_file.in'
+  seed_file              = ''
   srho                   = 0.01
   sux                    = 1.0
   suy                    = 1.0
@@ -429,10 +429,13 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   CALL read_seedfile(seed_file,nseeds,sSigmaF,sA0_Re,sA0_Im,freqf,&
                      ph_sh, qFlatTopS,SmeanZ2,qOKL)
 
-
   call FileNameNoExtension(beam_file, zBFile_G, qOKL)
-  call FileNameNoExtension(seed_file, zSFile_G, qOKL)
-
+  
+  if (seed_file == '') then
+    zSFile_G = 'unused'
+  else
+    call FileNameNoExtension(seed_file, zSFile_G, qOKL)
+  end if
 
   if (qOneD) qEquiXY_G = .true.
 
@@ -711,11 +714,12 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
   nseeds = 1
 
 
-! Open the file
-  open(161,file=se_f, status='OLD', recl=80, delim='APOSTROPHE')
+!   Open the file
 
-
-  read(161,nml=nslist)
+  if (se_f .ne. '') then
+    open(161,file=se_f, status='OLD', recl=80, delim='APOSTROPHE')
+    read(161,nml=nslist)
+  end if
 
   ALLOCATE(sSigmaF(nseeds,3))
   ALLOCATE(sA0_X(nseeds), sA0_Y(nseeds), ph_sh(nseeds))
@@ -728,17 +732,18 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
   sSigmaF = 1.0_wp
   freqf = 1.0_wp
   ph_sh = 0.0_wp
-  sA0_X = 1.0_wp
-  sA0_Y = 1.0_wp
+  sA0_X = 0.0_wp
+  sA0_Y = 0.0_wp
   qFlatTop = .false.
   meanZ2 = 0.0_wp
   qRndFj_G = .false.
   sSigFj_G = 0.01_wp
   qMatchS_G = .true.
 
-  read(161,nml=slist)
-  close(UNIT=161,STATUS='KEEP')
-
+  if (se_f .ne. '') then
+    read(161,nml=slist)
+    close(UNIT=161,STATUS='KEEP')
+  end if
 
 ! Set the error flag and exit
   qOK = .TRUE.
