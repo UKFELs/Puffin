@@ -359,7 +359,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
     END IF
 
 
-    dz2_I_G = sLengthOfElmZ2_G
+    dz2_I_G = 4.0_wp * pi * sRho_G
     call getCurrNpts(dz2_I_G, npts_I_G)
 
 

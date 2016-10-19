@@ -499,13 +499,13 @@ contains
       inl = ceiling(sElZ2_G(ij)/sam_len)
       inu = inl + 1
 
-      if ((inu > NZ2_G) .or. (inl<0)) then
+      if ((inu > npts_I_G) .or. (inl<=0)) then
         print*, 'NODES OUTSIDE BOUNDS'
         STOP
       end if
 
       ! Interpolation fractions
-      locz2 = sElZ2_G(ij) - (inl-1) * sam_len
+      locz2 = sElZ2_G(ij) - real((inl-1_ip),kind=wp) * sam_len
       li2 = locz2 / sam_len
       li1 = 1_wp - li2
 
