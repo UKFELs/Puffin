@@ -282,9 +282,9 @@ contains
     CALL h5acreate_f(location, aname, atype_id, aspace_id, attr_id, error)
 !    Print*,'hdf5_puff:write3DintAttribute(' // trim(adjustl(aname)) // ')'
     CALL h5awrite_f(attr_id, atype_id, valarray, adims, error) 
-    Print*,error
+    !Print*,error
     CALL h5aclose_f(attr_id, error)
-    Print*,error
+    !Print*,error
     CALL h5tclose_f(atype_id, error)
     CALL h5sclose_f(aspace_id, error)
   END SUBROUTINE write3DintAttribute
@@ -484,7 +484,7 @@ contains
 !          ,ftime-stime,tprocinfo_g%rank
 
       else
-        print *, "Dumping all fields together"
+!        print *, "Dumping all fields together"
         call cpu_time(stime)
         call outputH5Field3DSD(time, error, tlflen, fr_rfield,  ffs, ffe, 0, 1, .false.)
         call outputH5Field3DSD(time, error, tlflen, fr_ifield,  ffs, ffe, 1, 2, .false.)
@@ -2305,9 +2305,9 @@ contains
     limdata(2)=-0.5*(NY_G-1_IP)*sLengthOfElmY_G
     limdata(3)=0.0
     CALL h5awrite_f(attr_id, atype_id, limdata, adims, error) 
-    Print*,error
+    !Print*,error
     CALL h5aclose_f(attr_id, error)
-    Print*,error
+    !Print*,error
     aname="vsUpperBounds"
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
 !    Print*,'hdf5_puff:outputH5Field(lim group upper bounds attribute created)'
@@ -2329,7 +2329,7 @@ contains
     attr_data_string="mesh"
     attr_string_len=4
     CALL h5tset_size_f(atype_id, attr_string_len, error)
-    Print*,error   
+    !Print*,error   
     CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
 !    Print*,'hdf5_puff:outputH5Field(scalar attribute space created)'
 !    Print*,error   
