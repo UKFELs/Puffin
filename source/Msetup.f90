@@ -486,9 +486,11 @@ MODULE Setup
 !                 iIntWriteNthSteps, iWriteNthSteps, .true., &
 !                 zDataFileName, .true., .true., qOK)
 
+  iCSteps = 0_ip
   call writeIM(sZ, &
                zDataFileName, 0_ip, 0_ip, iWriteNthSteps, &
                iIntWriteNthSteps, nSteps, qOKL)
+  iCsteps = 1_ip
 
 !  if (qWrite) call wdfs(sA, sZ, 0, tArrayA, tArrayE, tArrayZ, &
 !                        iIntWriteNthSteps, iWriteNthSteps, &

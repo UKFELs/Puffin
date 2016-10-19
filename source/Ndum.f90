@@ -44,7 +44,7 @@ subroutine writeIM(sZ, &
   qOK = .false.
 
 
-  call int_or_full(istep, iCsteps, iIntWriteNthSteps, iWriteNthSteps, &
+  call int_or_full(istep, iCstep, iIntWriteNthSteps, iWriteNthSteps, &
                    qWriteInt, qWriteFull, qOK)
 
   if (qsdds_G) then
