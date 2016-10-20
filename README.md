@@ -45,6 +45,7 @@ of the backwards wave from the e-beam.
     tunings, and tapers can now be used in the one run. Quads, drifts, and better
     chicane modelling (with proper diffraction of the radiation field) are now
     included.
+  - Now uses FFTW v3.3 onwards. FFTW 2.1.5 support removed.
 
 1.5.1:
   - Added use of inner mesh to the parallel model to reduce communication between MPI nodes.
