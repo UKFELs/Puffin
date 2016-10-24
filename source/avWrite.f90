@@ -499,13 +499,13 @@ contains
       inl = ceiling(sElZ2_G(ij)/sam_len)
       inu = inl + 1
 
-      if ((inu > NZ2_G) .or. (inl<0)) then
+      if ((inu > npts_I_G) .or. (inl<=0)) then
         print*, 'NODES OUTSIDE BOUNDS'
         STOP
       end if
 
       ! Interpolation fractions
-      locz2 = sElZ2_G(ij) - (inl-1) * sam_len
+      locz2 = sElZ2_G(ij) - real((inl-1_ip),kind=wp) * sam_len
       li2 = locz2 / sam_len
       li1 = 1_wp - li2
 
@@ -597,16 +597,16 @@ contains
 !    sliceSizeZ2=(sLengthOfElmZ2_G*NBZ2)/(nslices-1)
 !    sliceSizeZ2=((sLengthOfElmZ2_G*NZ2_G)-slicetrim)/(nslices)
     sliceSizeZ2=4*pi*srho_g
-    print *,"evaluating slices of size",4*pi*srho_g,sliceSizeZ2,slicetrim
+!    print *,"evaluating slices of size",4*pi*srho_g,sliceSizeZ2,slicetrim
     do ip = 1, size(sElX_G)
       is = ceiling(sElZ2_G(ip)/sliceSizeZ2)
       if ((is>nslices) .or. (is <1)) then
          print*,"slice index, is, out of bounds in slice computation"
          goto 1000
       end if  
-      if (mod(ip,10000) .eq. 0) then
-        print*,"at particle ",ip
-      end if
+!      if (mod(ip,10000) .eq. 0) then
+!        print*,"at particle ",ip
+!      end if
       sdata(is)=sdata(is)+s_chi_bar_G(ip)
 !      do ic1 = 1,ncoord
 !        select case (ncoord)
@@ -728,7 +728,7 @@ contains
 !      b5i(is)=b5i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(10*sRho_G))
 !    call sum2RootArr(cs2data(, size(cs2data), 0)
 1000    end do
- print*,"Bringing arrays onto rank0"
+! print*,"Bringing arrays onto rank0"
     call sum2RootArr(sdata, size(sdata), 0)
     call sum2RootArr(csdata(1,:), size(csdata(1,:)), 0)
     call sum2RootArr(csdata(2,:), size(csdata(2,:)), 0)

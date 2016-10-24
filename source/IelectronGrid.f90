@@ -190,11 +190,11 @@ CONTAINS
 !    sigE(:,iPY_CG) = sigE(:,iPY_CG) * afact * &
 !                     sqrt((sEta_G * (sEta_G + 2.0_WP) / (1 + afact**2.0_WP)))                     
 
-    sigE(:,iPX_CG) = sigE(:,iPX_CG) * afact * &
-                     (1.0_WP + sEta_G) / sgammaR_G
+!    sigE(:,iPX_CG) = sigE(:,iPX_CG) * afact * &
+!                     (1.0_WP + sEta_G) / sgammaR_G
                      
-    sigE(:,iPY_CG) = sigE(:,iPY_CG) * afact * &
-                     (1.0_WP + sEta_G) / sgammaR_G
+!    sigE(:,iPY_CG) = sigE(:,iPY_CG) * afact * &
+!                     (1.0_WP + sEta_G) / sgammaR_G
     
 
 !    samLenE(:,iPX_CG) = samLenE(:,iPX_CG) * afact * &
@@ -203,8 +203,8 @@ CONTAINS
 !    samLenE(:,iPY_CG) = samLenE(:,iPY_CG) * afact * &
 !                     sqrt((sEta_G * (sEta_G + 2.0_WP) / (1.0_WP + afact**2.0_WP))) 
 
-     samLenE(:,iPX_CG) = sigE(:,iPX_CG) * 6.0_WP
-     samLenE(:,iPY_CG) = sigE(:,iPY_CG) * 6.0_WP
+!     samLenE(:,iPX_CG) = sigE(:,iPX_CG) * 6.0_WP
+!     samLenE(:,iPY_CG) = sigE(:,iPY_CG) * 6.0_WP
 
     DO b_ind = 1,nbeams
 
@@ -258,15 +258,15 @@ CONTAINS
 
     ALLOCATE(tconv(size(sElPX_G)))
     
-    tconv = sElPX_G**2.0_WP + sElPY_G**2.0_WP
+!    tconv = sElPX_G**2.0_WP + sElPY_G**2.0_WP
 
-    sElPX_G = sqrt((sElGam_G**2.0_WP - 1.0_WP) / &
-                            (1.0_WP + tconv))  &
-                        / afact * sElPX_G
+!    sElPX_G = sqrt((sElGam_G**2.0_WP - 1.0_WP) / &
+!                            (1.0_WP + tconv))  &
+!                        / afact * sElPX_G
 
-    sElPY_G = sqrt((sElGam_G**2.0_WP - 1.0_WP) / &
-                            (1.0_WP + tconv))  &
-                        / afact * sElPY_G
+!    sElPY_G = sqrt((sElGam_G**2.0_WP - 1.0_WP) / &
+!                            (1.0_WP + tconv))  &
+!                        / afact * sElPY_G
 
 
     DEALLOCATE(tconv)
