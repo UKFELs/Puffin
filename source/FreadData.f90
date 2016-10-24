@@ -11,7 +11,7 @@ USE TypesandConstants
 USE Globals
 USE ParallelSetUp
 use MASPin
-use H5in
+
 
 !****************************************************************
 !
@@ -157,13 +157,9 @@ subroutine read_in(zfilename, &
   LOGICAL,           INTENT(OUT)  :: qFormattedFiles
   LOGICAL,           INTENT(OUT)  :: qResume
   REAL(KIND=WP) ,    INTENT(OUT)  :: sZ0
-<<<<<<< HEAD
-  CHARACTER(1024_IP),  INTENT(INOUT):: LattFile
-    
-=======
-  CHARACTER(32_IP),  INTENT(INOUT):: LattFile
 
->>>>>>> dev
+  CHARACTER(1024_IP),  INTENT(INOUT):: LattFile
+
   INTEGER(KIND=IP),  INTENT(OUT)  :: iWriteNthSteps, iWriteIntNthSteps
   TYPE(cArraySegment)             :: tArrayZ
   TYPE(cArraySegment)             :: tArrayA(:)
@@ -198,13 +194,9 @@ subroutine read_in(zfilename, &
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sSigmaF(:,:)
   LOGICAL, ALLOCATABLE, INTENT(OUT) :: qFlatTopS(:)
   LOGICAL, INTENT(out) :: qSimple
-<<<<<<< HEAD
+
   CHARACTER(1024_ip), ALLOCATABLE, INTENT(INOUT) :: dist_f(:)
   
-=======
-  CHARACTER(32_ip), ALLOCATABLE, INTENT(INOUT) :: dist_f(:)
-
->>>>>>> dev
   REAL(KIND=WP),     INTENT(OUT)  :: sFiltFrac,sDiffFrac,sBeta
   REAL(KIND=WP),     INTENT(OUT)  :: srho
   REAL(KIND=WP),     INTENT(OUT)  :: saw
@@ -515,7 +507,6 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
 
   namelist /bdlist/ dist_f, nMPs4MASP_G
-  namelist /bh5list/ dist_f
 
   qOK = .FALSE.
 
@@ -665,20 +656,6 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
     nMPs4MASP_G = 3455789_ip  ! default?
 
     read(161,nml=bdlist)
-
-    close(UNIT=161,STATUS='KEEP')
-
-  else if (dtype == 'h5') then
-    if (nbeams /= 1) then 
-      
-      if (tProcInfo_G%qRoot) print*, 'WARNING - currently only 1 file', &
-                                      'is supported for the h5 beam type'
-      if (tProcInfo_G%qRoot) print*, 'Only the 1st file will be read in....'
-
-    end if
-    allocate(dist_f(nbeams))
-    iInputType_G = iReadH5_G
-    read(161,nml=bh5list)
 
     close(UNIT=161,STATUS='KEEP')
 
