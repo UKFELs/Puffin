@@ -286,21 +286,21 @@ CONTAINS
     mag(:) = mag(:) / sGammaR_G
     chirp(:) = chirp(:) / sGammaR_G
 
-    do b_ind = 1, nbeams
-  
-      call addChirp(sElGam_G(b_sts(b_ind):b_ends(b_ind)), &
-                    sElZ2_G(b_sts(b_ind):b_ends(b_ind)), &
-                    b_ends(b_ind) - b_sts(b_ind) + 1, beamCenZ2(b_ind), &
-                    chirp(b_ind))
-  
-  
-      call addModulation(sElGam_G(b_sts(b_ind):b_ends(b_ind)), &
-                         sElZ2_G(b_sts(b_ind):b_ends(b_ind)), &
-                         b_ends(b_ind) - b_sts(b_ind) + 1, &
-                         mag(b_ind), fr(b_ind))
-  
-
-    end do
+!    do b_ind = 1, nbeams
+!  
+!      call addChirp(sElGam_G(b_sts(b_ind):b_ends(b_ind)), &
+!                    sElZ2_G(b_sts(b_ind):b_ends(b_ind)), &
+!                    b_ends(b_ind) - b_sts(b_ind) + 1, beamCenZ2(b_ind), &
+!                    dp20_G)
+!  
+!  
+!      call addModulation(sElGam_G(b_sts(b_ind):b_ends(b_ind)), &
+!                         sElZ2_G(b_sts(b_ind):b_ends(b_ind)), &
+!                         b_ends(b_ind) - b_sts(b_ind) + 1, &
+!                         mag(b_ind), fr(b_ind))
+!  
+!
+!    end do
 
 
 

@@ -442,6 +442,9 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   if (qOneD) qEquiXY_G = .true.
 
 
+  dp20_G = -2.0_wp / sgamma_r * chirp(1)
+  slsz2_G = bcenter(1)
+
   IF  (.NOT. qOKL) GOTO 1000
 
   call get_exec()

@@ -51,7 +51,7 @@ contains
 
 ! Local args
 
-    real(kind=wp), allocatable  :: sAr(:), Ar_local(:)
+    real(kind=wp), allocatable  :: sAr(:), Ar_local(:), sp2(:)
     integer(kind=ip) :: iPer, iS ! Loop index - period counter
     integer(kind=ip) :: nW
     integer(kind=ip) :: iSteps4Diff, igoes
@@ -84,6 +84,35 @@ contains
 
   if (.not. qUndEnds_G) call matchIn(sZ)
 
+
+!!!!!!!!! CUSTOM - now beam intialized, the linear chirp in 
+!!!!!!!!! p2 may be added
+
+
+  allocate(sp2(size(sElGam_G)))
+
+  call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, sEta_G, sGammaR_G, sAw_G)
+
+  print*, 'adding chirp of ', dp20_G
+  print*, 'sp2 1 = ', sp2(1)
+
+  call addChirp(sp2, sElZ2_G, iNumberElectrons_G, slsz2_G, &
+                dp20_G)
+
+  print*, 'sp2 1 = ', sp2(1)
+
+  call getGamma(sElGam_G, sp2, sElPX_G, sElPY_G, sEta_G, sGammaR_G, sAw_G)
+
+  print*, 'gamma 1 = ', sElGam_G(1)
+
+  deallocate(sp2)
+  
+  
+  
+  
+  
+!!!!!!!!!! END CUSTOM  
+  
 
   qDiffrctd = .false.
 

@@ -186,6 +186,8 @@ real(kind=wp)       :: Dfact  ! Dispersion strength factor for chicane
 
 
 
+real(kind=wp) :: dp20_G, slsz2_g
+
 
 ! ****************************************************
 ! ****************************************************

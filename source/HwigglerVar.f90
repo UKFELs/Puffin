@@ -34,7 +34,8 @@ subroutine getAlpha(sZ)
 
   if ((sZ >= sZFS) .and. (sZ <= sZFE)) then
 
-    n2col = n2col0  + undgrad*(sz - sZFS)  ! linear taper
+!    n2col = n2col0  + undgrad*(sz - sZFS)  ! linear taper
+     n2col = sqrt( (exp(dp20_G * sZ) * (1 + sAw_G**2.0_wp)) - 1.0_wp  ) / sAw_G
 
   else if (sZ > sZFE) then
 
