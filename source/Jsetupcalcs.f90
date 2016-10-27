@@ -17,6 +17,7 @@ USE electronInit
 USE gMPsFromDists
 use avwrite
 use MASPin
+use h5in
 use parafield
 use scale
 
@@ -932,7 +933,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
     INTEGER(KIND=IPL) :: sendbuff, recvbuff
     INTEGER sendstat(MPI_STATUS_SIZE)
     INTEGER recvstat(MPI_STATUS_SIZE)
-    character(32) :: fname_temp
+    character(1024) :: fname_temp
     LOGICAL :: qOKL
 
     sQOneE = 1.60217656535E-19
@@ -984,6 +985,10 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
       fname_temp = fname(1)
       call readMASPfile(fname_temp)
 
+    else if (iInputType_G == iReadH5_G) then
+      fname_temp = fname(1)
+      call readH5beamfile(fname_temp)
+    print *,"Rank ", tProcInfo_G%Rank
     else 
 
       if (tProcInfo_G%qRoot) print*, 'No beam input type specified....'
@@ -998,8 +1003,12 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
        GOTO 1000    
     END IF
 
-
-    totNk_loc = sum(s_chi_bar_G) * npk_bar_G
+    if (iNumberElectrons_G>0_IPL) then
+      totNk_loc = sum(s_chi_bar_G) * npk_bar_G
+    else
+      totNk_loc = 0._WP
+    end if
+    print *,"Rank ", tProcInfo_G%Rank, " sum ",totNk_loc
     CALL MPI_ALLREDUCE(totNk_loc, totNk_glob, 1, MPI_DOUBLE_PRECISION, &
                        MPI_SUM, MPI_COMM_WORLD, error)
 

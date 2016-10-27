@@ -177,7 +177,7 @@ contains
     type(cFileType), intent(inout) :: powFType !< Input/output Power filetype, describing power file.
     logical, intent(in) :: qForm !< Input Whether sdds output is to be formatted or not.
 
-    character(32_IP) :: fname, & !< Filename (unused)
+    character(1024_IP) :: fname, & !< Filename (unused)
                         vname    !< SDDS Variable name
     logical :: qOKL  !< Local error flag
 
@@ -500,7 +500,12 @@ contains
       li1 = 1_wp - li2
 
       if ((li2 < 0.0_wp) .or. (li1<0.0_wp)) then
-        print*, 'interps are negative!'
+        print*, 'Unable to calculate correct interpolation fraction'
+        print*, 'Particle coords'
+        print*, sElX_G(ij)
+        print*, sElY_G(ij)
+        print*, sElZ2_G(ij)
+        print*, 'Interps are negative!'
         STOP
       end if
 
