@@ -37,7 +37,7 @@ integer(kind=ip) :: outnodex_G,outnodey_G
 
 integer(kind=ip) :: iNodesPerElement_G
 
-integer(kind=ip) :: iNumberNodes_G
+integer(kind=ipn) :: iNumberNodes_G
 
 integer(kind=ip) :: seedend
 
