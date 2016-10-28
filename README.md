@@ -11,7 +11,7 @@ LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
 
 The code has undergone many improvements and extended its functionality
 since then. It no longer uses an external linear solver package, and the
-only external package now required is FFTW v2.1.5.
+only external package now required is FFTW (version 3.3 onwards).
 
 ## Features
 
