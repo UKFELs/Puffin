@@ -37,7 +37,7 @@ implicit none
   REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dz2m, dz2t, z2t
   REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dpz2m, dpz2t, pz2t
 
-  real(kind=wp), allocatable :: dEdx(:,:), dEm(:,:), dEt(:,:), Et(:,:)
+  real(kind=wp), allocatable :: dEdx(:,:), dEm(:,:), dEt(:,:), Et(:,:), Enow(:,:)
 
 contains
 
@@ -382,7 +382,14 @@ subroutine allact_rk4_arrs()
   tllen43D = tllen * ntrndsi_G
 
 
+!!        Setup electron structured arrays
 
+! E, dEdx, etc are Electron macroparticles
+! phase space coords and associated charge weights.
+!
+! Think carefully about order of these - z2, gamma, px, py, x, y, chi??
+! If want this to be efficient, probably want to end up having big loop 
+! through macroparticles???
 
 !  allocate(DxDx(iNumberElectrons_G))
 !  allocate(DyDx(iNumberElectrons_G))
@@ -391,10 +398,26 @@ subroutine allact_rk4_arrs()
 !  allocate(Dz2Dx(iNumberElectrons_G))
 !  allocate(Dpz2Dx(iNumberElectrons_G))
 
+  allocate(Enow(7_ip, iNumberElectrons_G))
+
   allocate(dEdx(7_ip, iNumberElectrons_G))
 
+  allocate(dEm(7_ip, iNumberElectrons_G), &
+           dEt(7_ip, iNumberElectrons_G), &
+           Et(7_ip, iNumberElectrons_G))
+
+  call popStrArrsE(Enow)
+
+
+!!           Setup field structured arrays
 
   allocate(dadz_r0(tllen43D), dadz_i0(tllen43D))
+  
+  
+  
+  
+  
+  
   allocate(dadz_r1(tllen43D), dadz_i1(tllen43D))
   allocate(dadz_r2(tllen43D), dadz_i2(tllen43D))
 
@@ -419,9 +442,6 @@ subroutine allact_rk4_arrs()
 !  allocate(dpz2m(iNumberElectrons_G), &
 !    dpz2t(iNumberElectrons_G), pz2t(iNumberElectrons_G))
 
-  allocate(dEm(7_ip, iNumberElectrons_G), &
-           dEt(7_ip, iNumberElectrons_G), &
-           Et(7_ip, iNumberElectrons_G))
 
   allocate(dadz_w(iNumberElectrons_G))
 
@@ -449,25 +469,37 @@ subroutine deallact_rk4_arrs()
   deallocate(A_localtr2, A_localti2)
   deallocate(A_localtr3, A_localti3)
 
-  deallocate(DxDx)
-  deallocate(DyDx)
-  deallocate(DpxDx)
-  deallocate(DpyDx)
-  deallocate(Dz2Dx)
-  deallocate(Dpz2Dx)
 
-  deallocate(dxm, &
-    dxt, xt)
-  deallocate(dym, &
-    dyt, yt)
-  deallocate(dpxm, &
-    dpxt, pxt)
-  deallocate(dpym, &
-    dpyt, pyt)
-  deallocate(dz2m, &
-    dz2t, z2t)
-  deallocate(dpz2m, &
-    dpz2t, pz2t)
+
+  call popNormArrsE(Enow)
+
+  allocate(Enow(7_ip, iNumberElectrons_G))
+
+  allocate(dEdx(7_ip, iNumberElectrons_G))
+
+  allocate(dEm(7_ip, iNumberElectrons_G), &
+           dEt(7_ip, iNumberElectrons_G), &
+           Et(7_ip, iNumberElectrons_G))
+
+!  deallocate(DxDx)
+!  deallocate(DyDx)
+!  deallocate(DpxDx)
+!  deallocate(DpyDx)
+!  deallocate(Dz2Dx)
+!  deallocate(Dpz2Dx)
+!
+!  deallocate(dxm, &
+!    dxt, xt)
+!  deallocate(dym, &
+!    dyt, yt)
+!  deallocate(dpxm, &
+!    dpxt, pxt)
+!  deallocate(dpym, &
+!    dpyt, pyt)
+!  deallocate(dz2m, &
+!    dz2t, z2t)
+!  deallocate(dpz2m, &
+!    dpz2t, pz2t)
 
   deallocate(dadz_w)
 
