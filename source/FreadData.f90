@@ -4,6 +4,16 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
+
+! Module Read_data
+!> @author
+!> Lawrence Campbell, University of Strathclyde
+!> @brief
+!> Module containing the routines which read in the input files
+!> in Puffin.
+
+
+
 MODULE Read_data
 
 USE ArrayFunctions
@@ -12,34 +22,22 @@ USE Globals
 USE ParallelSetUp
 use MASPin
 
-
-!****************************************************************
-!
-! Module containing the routines which read in the data files
-! in Puffin.
-!
-! -Lawrence Campbell
-! lawrence.campbell@strath.ac.uk
-! University of Strathclyde
-! June 2016
-!
-!****************************************************************
-
-
-
 CONTAINS
 
 
 !> read_in Read in the namelist data files for Puffin.
-!! @params zfilename, Name of the main input file passed to Puffin
-!! at runtime.
-!! @params zDataFileName, Base name of the sdds output files.
-!! @params qSeparateFiles, Turn on individual (rather than collective)
-!! MPI rank writing in the hdf5 output files.
-!! @todo Individual and collective writing to combined file to come
-!! For collective write, we want to work out how many particles on
-!! each rank, what the cumulative num electrons is, and then determine
-!! the array slice based on that.
+!> @param zfilename Name of the main input file passed to Puffin
+!> at runtime.
+!> @param zDataFileName Base name of the sdds output files.
+!> @param qSeparateFiles Turn on individual (rather than collective)
+!> MPI rank writing in the hdf5 output files.
+!> @param qFormattedFiles Turn on ascii format files (in SDDS only)
+!> @param qResume Whether reuming from a previous run
+!> @param sZ0 Initial zbar
+!> @param LattFile Name of Puffin lattice file
+!> @param iWriteNthSteps Steps to write full 'raw' data at
+!> @param iWriteIntNthSteps Steps to write integrated data at
+
 subroutine read_in(zfilename, &
        zDataFileName, &
        qSeparateFiles, &
