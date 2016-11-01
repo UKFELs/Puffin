@@ -100,17 +100,17 @@ END SUBROUTINE InitializeProcessors
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	
-      SUBROUTINE Get_time(in_time)
+SUBROUTINE Get_time(in_time)
 	  
-      IMPLICIT NONE
+  IMPLICIT NONE
 	  
-	  REAL(KIND=WP)	::	in_time
+  REAL(KIND=WP)	::	in_time
 	  
-	  INTEGER(KIND=IP)	::	error
+  INTEGER(KIND=IP)	::	error
 	  
-	  in_time = MPI_Wtime()
+  in_time = MPI_Wtime()
 	  
-	  END SUBROUTINE Get_time
+END SUBROUTINE Get_time
 
 !------------------------------------------------
 

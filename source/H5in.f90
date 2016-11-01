@@ -17,6 +17,7 @@ contains
 
   subroutine readH5BeamfileSerial(zFile)
 
+
     character(*), intent(in) :: zFile
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier 
@@ -39,7 +40,7 @@ contains
     INTEGER(HSIZE_T), DIMENSION(2) :: mdims   !< maxdims of ptcl dataset (coords*numelecs)
     INTEGER(HSIZE_T), DIMENSION(2) :: doffset!< Offset for write, could be rank dependent
     INTEGER(HSIZE_T), DIMENSION(2) :: dsize  !< Size of hyperslab to write
-    INTEGER(kind=ip) ::  rank = 2                 !< Particle Dataset rank
+    INTEGER(kind=ip) ::  rank                !< Particle Dataset rank
     INTEGER     ::  arank = 1                !< Attribute rank - 1 is vector
     INTEGER(HSIZE_T), DIMENSION(1) :: adims  !< Attribute dims
     INTEGER(HSIZE_T), DIMENSION(1) :: attr_data_int !< For integer attribs (numdims)
@@ -603,5 +604,4 @@ print*,"Now, you tell me if we had electrons"
 2000 CONTINUE
   end subroutine readH5FieldfileSerialSingleDump
   
-
 end module H5in
