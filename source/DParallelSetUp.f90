@@ -4,19 +4,20 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Module containing routines to setup and deallocate MPI processes,
+!> and handle MPI communication in Puffin.
+
+
 Module ParallelSetUp
 
-! Module containing routines to setup and deallocate MPI processes,
-! and handle MPI communication in Puffin.
-!
-! -Lawrence Campbell
-!  University of STrathclyde
-!  14/06/2012
-!
-
-USE paratype
-USE ParallelInfoType
-USE IO
+use paratype
+use ParallelInfoType
+use IO
 ! use mpi
 
 

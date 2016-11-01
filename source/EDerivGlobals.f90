@@ -4,9 +4,14 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
-module Globals
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Module defining shared (global) variables used in Puffin
 
-! Module defining shared (global) variables used in Puffin
+module Globals
 
 use paratype
 use typesAndConstants

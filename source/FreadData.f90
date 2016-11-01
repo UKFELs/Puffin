@@ -5,38 +5,47 @@
 !*****************************************************************!
 
 
-! Module Read_data
 !> @author
-!> Lawrence Campbell, University of Strathclyde
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
 !> @brief
-!> Module containing the routines which read in the input files
-!> in Puffin.
+!> Module containing the routines which read in the input files in Puffin.
 
 
 
-MODULE Read_data
+module Read_data
 
-USE ArrayFunctions
-USE TypesandConstants
-USE Globals
-USE ParallelSetUp
+use ArrayFunctions
+use TypesandConstants
+use Globals
+use ParallelSetUp
 use MASPin
 
-CONTAINS
+contains
 
 
 !> read_in Read in the namelist data files for Puffin.
-!> @param zfilename Name of the main input file passed to Puffin
+!> @param[in] zfilename Name of the main input file passed to Puffin
 !> at runtime.
-!> @param zDataFileName Base name of the sdds output files.
-!> @param qSeparateFiles Turn on individual (rather than collective)
+!> @param[out] zDataFileName Base name of the sdds output files.
+!> @param[out] qSeparateFiles Turn on individual (rather than collective)
 !> MPI rank writing in the hdf5 output files.
-!> @param qFormattedFiles Turn on ascii format files (in SDDS only)
-!> @param qResume Whether reuming from a previous run
-!> @param sZ0 Initial zbar
-!> @param LattFile Name of Puffin lattice file
-!> @param iWriteNthSteps Steps to write full 'raw' data at
-!> @param iWriteIntNthSteps Steps to write integrated data at
+!> @param[out] qFormattedFiles Turn on ascii format files (in SDDS only)
+!> @param[out] qResume Whether reuming from a previous run
+!> @param[out] sZ0 Initial zbar
+!> @param[out] LattFile Name of Puffin lattice file
+!> @param[out] iWriteNthSteps Steps to write full 'raw' data at
+!> @param[out] iWriteIntNthSteps Steps to write integrated data at
+!> @param[out] tArrayZ SDDS filetype for Z data
+!> @param[out] tArrayA SDDS filetype for field data
+!> @param[out] tArrayVariables SDDS filetype for electron macroparticle dump data
+!> @param[out] sLenEPulse 6*nbeams element array - Length of electron pulse in x, y, z2, px, 
+!> py, and gamma, in the simple beam case
+!> @param[out] iNumNodes 3 element array - Number of field nodes in x, y, and z2
+!> @param[out] sWigglerLength 3 element array - Length of radiation field mesh in
+!> x, y, and z2
+
 
 subroutine read_in(zfilename, &
        zDataFileName, &
