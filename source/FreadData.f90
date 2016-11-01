@@ -358,6 +358,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qSwitches(iElectronFieldCoupling_CG) = qElectronFieldCoupling
   qSwitches(iFocussing_CG) = qFocussing
   qSwitches(iDiffraction_CG) = qDiffraction
+  qDiffraction_G = qDiffraction
   qSwitches(iDump_CG) = qDump
 
   qUndEnds_G = qUndEnds
