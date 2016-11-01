@@ -19,7 +19,12 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-
+!> Subroutine which calculate d/dz of the local electron and field 
+!> variables, and then sums the global regions together.
+!> @param sz position in undulator module.
+!> @param sAr real field 
+!> @param sAi imaginary field 
+!> @param sx electron macroparticles' x position
 
 
   subroutine derivs(sz, sAr, sAi, sx, sy, sz2, spr, spi, sp2, &
