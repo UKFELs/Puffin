@@ -117,7 +117,6 @@ LOGICAL          :: q_noise
 
 REAL(KIND=WP)    :: sElectronThreshold, sDiffFrac, sBeta
 
-REAL(KIND=WP)    :: sPEOut
 REAL(KIND=WP)    :: srho, saw, sgammar, lambda_w
 REAL(KIND=WP)    :: fx, fy
 REAL(KIND=WP)    :: sFocusfactor

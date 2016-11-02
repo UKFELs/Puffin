@@ -95,7 +95,27 @@ contains
 !> @param[out] lambda_w Undulator period
 !> @param[out] sEmit_n Array of length nbeams. Scaled RMS Beam emittance in 
 !> simple beam case.
-
+!> @param[out] sux Relative magnitude of undulator magnetic field in 
+!> x-direction. Either sux OR suy should = 1. For Puffin undulator type
+!> only.
+!> @param[out] suy Relative magnitude of undulator magnetic field in 
+!> y-direction.
+!> @param[out] taper Taper of magnetic undulator field as function of z, only
+!> used in simple wiggler case (no lattice). In units of 
+!> \f$ \frac{d \alpha}{d \bar{z}} \f$.
+!> @param[out] zUndType Undulator type to be use in simple wiggler case.
+!> @param[out] sSigmaF Standard deviation of radiation seed field magnitude in 
+!> each dimension.
+!> @param[out] freqf Frequency of seed field, scaled to the reference resonant 
+!> frequency.
+!> @param[out] SmeanZ2 Mean position of seed in z2.
+!> @param[out] ph_sh Phase shift of seed
+!> @param[out] qFlatTopS If using flat top seed profile
+!> @param[out] nseeds Number of radiation seeds 
+!> @param[out] qSwitches Various simulation control flags
+!> @param[out] qMatched_A If matching transverse area of beam to wiggler. Simple
+!> beam case only.
+>! @param[out] qOK Error flag
 
 subroutine read_in(zfilename, &
        zDataFileName, &
@@ -140,16 +160,12 @@ subroutine read_in(zfilename, &
        sEmit_n, &
        sux, &
        suy, &
-       Dfact, &
-       sFocusfactor, &
        taper,    &
        zUndType, &
        sSigmaF, &
        freqf, SmeanZ2, &
        ph_sh, &
        qFlatTopS, nseeds, &
-       sPEOut, &
-       iDumpNthSteps, &
        qSwitches, &
        qMatched_A, &
        qOK)
@@ -260,11 +276,8 @@ subroutine read_in(zfilename, &
   REAL(KIND=WP),     INTENT(OUT)  :: sgamma_r, lambda_w
   REAL(KIND=WP),     INTENT(OUT)  :: sux
   REAL(KIND=WP),     INTENT(OUT)  :: suy
-  REAL(KIND=WP),     INTENT(OUT)  :: Dfact
-  REAL(KIND=WP),     INTENT(OUT)  :: sFocusfactor, taper
+  REAL(KIND=WP),     INTENT(OUT)  :: taper
   character(32_IP),  intent(out)  :: zUndType
-  REAL(KIND=WP),     INTENT(OUT)  :: sPEOut
-  INTEGER(KIND=IP),  INTENT(OUT)  :: iDumpNthSteps
   LOGICAL,           INTENT(OUT)  :: qSwitches(:)
   LOGICAL, ALLOCATABLE, INTENT(OUT)  :: qMatched_A(:)
   LOGICAL,           INTENT(OUT)  :: qOK
@@ -309,11 +322,11 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  sFModelLengthY, sFModelLengthZ2, &
                  iRedNodesX, iRedNodesY, sFiltFrac, &
                  sDiffFrac, sBeta, seed_file, srho, &
-                 sux, suy, saw, sgamma_r, sFocusfactor, &
-                 lambda_w, Dfact, zundType, taper, &
+                 sux, suy, saw, sgamma_r, &
+                 lambda_w, zundType, taper, &
                  LattFile, stepsPerPeriod, nPeriods, &
                  sZ0, zDataFileName, iWriteNthSteps, &
-                 iWriteIntNthSteps, iDumpNthSteps, sPEOut, &
+                 iWriteIntNthSteps, &
                  qFMesh_G, sKBetaXSF, sKBetaYSF, sRedistLen, &
                  iRedistStp, qscaled, nspinDX, nspinDY, qInitWrLat
 
@@ -376,9 +389,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   suy                    = 1.0
   saw                    = 1.0
   sgamma_r               = 100.0
-  sFocusfactor           = 1.41213562373095
   lambda_w               = 0.04
-  Dfact                  = 0.0
   zundType               = ''
   taper                  = 0.0
   lattFile               = ''
@@ -388,8 +399,6 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   zDataFileName          = 'DataFile.dat'
   iWriteNthSteps         = 30
   iWriteIntNthSteps      = 30
-  iDumpNthSteps          = 3000
-  sPEOut                 = 100.0
   sKBetaXSF = -0.1_wp
   sKBetaYSF = -0.1_wp
 

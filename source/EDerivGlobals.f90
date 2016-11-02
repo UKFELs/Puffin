@@ -185,10 +185,6 @@ real(kind=wp) :: sKBetaX_G, sKBetaY_G
 
 real(kind=wp) :: sKBetaXSF_G, sKBetaYSF_G
 
-real(kind=wp)       :: Dfact  ! Dispersion strength factor for chicane
-                              ! (=1 for 'normal' dispersion, =0 for 
-                              ! isochronous chicanes)
-
 
 
 
@@ -337,7 +333,7 @@ TYPE(cFileType), save :: tPowF   ! Type array describing the power file
 
 
 
-integer(kind=ip) :: iWriteNthSteps, iDumpNthSteps, iIntWriteNthSteps
+integer(kind=ip) :: iWriteNthSteps, iIntWriteNthSteps
 
 
 character(132_ip) :: cmd_call_G

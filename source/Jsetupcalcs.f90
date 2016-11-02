@@ -50,7 +50,7 @@ CONTAINS
 
 SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
                          sElmLen, qSimple, iNMPs, fx, fy, &
-                         sFocusFactor, taper, sFiltFrac, &
+                         taper, sFiltFrac, &
                          dStepFrac, sBeta, zUndType, &
                          qFormatted, qSwitch, qOK)
 
@@ -78,7 +78,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
     REAL(KIND=WP),     INTENT(IN)    :: rho,aw,gamr, lam_w
     INTEGER(KIND=IP),  INTENT(IN)    :: iNN(:), iNMPs(:,:)
     REAL(KIND=WP),     INTENT(IN)    :: sElmLen(:)	
-    REAL(KIND=WP),     INTENT(IN)    :: fx,fy,sFocusFactor, taper
+    REAL(KIND=WP),     INTENT(IN)    :: fx,fy, taper
     REAL(KIND=WP),     INTENT(IN)    :: sFiltFrac, dStepFrac, sBeta
     LOGICAL,           INTENT(IN)    :: qSwitch(nSwitches_CG), qFormatted, &
                                         qSimple
@@ -668,11 +668,11 @@ end subroutine scaleParams
 
 
 
-subroutine calcScaling(srho, saw, sgamr, slam_w, sFocusFactor, & 
+subroutine calcScaling(srho, saw, sgamr, slam_w, & 
                        zUndType, sfx, sfy)
 
   real(kind=wp), intent(in) :: srho, saw, sgamr, slam_w, &
-                               sFocusFactor, sfx, sfy
+                               sfx, sfy
 
   CHARACTER(32_IP), intent(in) :: zUndType
 
@@ -730,10 +730,6 @@ subroutine calcScaling(srho, saw, sgamr, slam_w, sFocusFactor, &
   sEta_G = (1.0_WP - sbetaz) / sbetaz
   sKappa_G = saw / 2.0_WP / srho / sgamr
   sKBeta_G = sKappa_G ! aw_rms / 2.0_WP / sFocusFactor / srho / sgamr
-
-
-  sFocusFactor_G = sFocusFactor
-
 
   sAw_G = saw
 

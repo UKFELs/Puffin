@@ -142,16 +142,12 @@ MODULE Setup
        sEmit_n,           &
        fx,                &
        fy,                &
-       Dfact,             &
-       sFocusfactor,      &
        taper,             &
        zUndType,          &
        sSeedSigma,        &
        freqf, SmeanZ2,    &
        ph_sh, &
        qFlatTopS, nseeds, &
-       sPEOut,            &
-       iDumpNthSteps,     &
        qSwitches,         &
        qMatched_A,        &
        qOKL)
@@ -164,7 +160,7 @@ MODULE Setup
 
 
   call calcScaling(srho, saw, sgammar, lambda_w, &
-    sFocusFactor, zUndType, fx, fy)
+                   zUndType, fx, fy)
 
   
   if (.not. qscaled_G) then
@@ -195,7 +191,7 @@ MODULE Setup
 
   CALL CheckParameters(sLenEPulse,iNumElectrons,nbeams,sLengthofElm,iNodes,&
                        sFieldModelLength,sStepSize,nSteps,srho,saw,sgammar, &
-                       sFocusfactor, mag, sEleSig,fx,fy, iRedNodesX, &
+                       mag, sEleSig,fx,fy, iRedNodesX, &
                        iRedNodesY,qSwitches,qSimple, sSeedSigma, freqf, & 
                        SmeanZ2, qFlatTopS, nseeds, qOKL)
   
@@ -257,7 +253,7 @@ MODULE Setup
 
   CALL passToGlobals(srho,saw,sgammar,lambda_w,iNodes, &
                      sLengthOfElm, qSimple, iNumElectrons, &
-                     fx,fy,sFocusFactor,taper, &
+                     fx,fy,taper, &
                      sFiltFrac,sDiffFrac,sBeta, &
                      zUndType,qFormattedFiles, qSwitches,qOK)
 
@@ -451,7 +447,6 @@ MODULE Setup
                              sEta_G,&
                              sGammaR_G,&
                              sKBeta_G, &
-                             sFocusfactor_G, &
                              lam_w_G, lam_r_G, &
                              lg_G, lc_G, &
                              npk_bar_G, &  
