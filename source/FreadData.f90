@@ -119,7 +119,7 @@ contains
 !> @param[out] qSwitches Various simulation control flags
 !> @param[out] qMatched_A If matching transverse area of beam to wiggler. Simple
 !> beam case only.
->! @param[out] qOK Error flag
+!> @param[out] qOK Error flag
 
 subroutine read_in(zfilename, &
        zDataFileName, &
