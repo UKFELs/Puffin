@@ -168,7 +168,7 @@ contains
 
 
 !> initPFile This subroutine initializes the SDDS power file, and must be
-!! called before any writing to the sdds power file takes place.
+!> called before any writing to the sdds power file takes place.
 
   subroutine initPFile(powFType, qForm)
 
@@ -180,10 +180,6 @@ contains
     character(1024_IP) :: fname, & !< Filename (unused)
                         vname    !< SDDS Variable name
     logical :: qOKL  !< Local error flag
-
-    real(kind=wp) :: lx, &  !< Length of field mesh in x
-                     ly     !< Length of field mesh in x
-
     powFType%qformatted = qForm
     powFType%zFileName = 'power.sdds' !  filename
     vname = 'power' !  SDDS variable name
@@ -196,6 +192,15 @@ contains
 
     end if
 
+  end subroutine initPFile
+
+!> initPowerCalc This subroutine stes up array structures to be 
+!> use in the power calculation.
+
+  subroutine initPowerCalc()
+
+    real(kind=wp) :: lx, &  !< Length of field mesh in x
+                     ly     !< Length of field mesh in x
 
     allocate(x_ax_G(NX_G), y_ax_G(NY_G))
 
@@ -209,8 +214,7 @@ contains
 
     end if
 
-  end subroutine initPFile
-
+  end subroutine initPowerCalc
 
 
 
@@ -487,11 +491,7 @@ contains
       inl = ceiling(sElZ2_G(ij)/sam_len)
       inu = inl + 1
 
-!<<<<<<< HEAD
-!      if ((inu > NZ2_G) .or. (inl<1)) then
-!=======
       if ((inu > npts_I_G) .or. (inl<=0)) then
-!>>>>>>> dev
         print*, 'NODES OUTSIDE BOUNDS'
         STOP
       end if
