@@ -24,8 +24,12 @@ use MASPin
 
 contains
 
-
-!> read_in Read in the namelist data files for Puffin.
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Read in the namelist data files for Puffin.
 !> @param[in] zfilename Name of the main input file passed to Puffin
 !> at runtime.
 !> @param[out] zDataFileName Base name of the sdds output files.
