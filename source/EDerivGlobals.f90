@@ -99,12 +99,17 @@ logical, allocatable :: qRndEj_G(:)
 real(kind=wp), allocatable :: sSigEj_G(:) 
 real(kind=wp), parameter :: gExtEj_G = 7.5_wp
 
-
+!  --- Read particle set algorithms ---
 integer(kind=ip) :: iInputType_G
 integer(kind=ip), parameter :: iGenHom_G = 1_ip
 integer(kind=ip), parameter :: iReadDist_G = 2_ip
 integer(kind=ip), parameter :: iReadMASP_G = 3_ip
 integer(kind=ip), parameter :: iReadH5_G = 4_ip
+
+! --- Reading field algorithms
+integer(kind=ip) :: iFieldSeedType_G
+integer(kind=ip), parameter :: iSimpleSeed_G = 1_ip
+integer(kind=ip), parameter :: iReadH5Field_G = 2_ip
 
 ! Electron macroparticle phase space coordinates 
 

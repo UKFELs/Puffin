@@ -480,7 +480,7 @@ end subroutine getQFmNpk
 
 SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
                               qFlatTopS, sSigmaF, &
-                              sA0_x, sA0_y, qOK)
+                              sA0_x, sA0_y, field_file, qOK)
 
     IMPLICIT NONE
 !
@@ -506,6 +506,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
     REAL(KIND=WP), INTENT(IN)    :: sA0_x(:)
     REAL(KIND=WP), INTENT(IN)    :: sA0_y(:)
 !    REAL(KIND=WP), INTENT(INOUT) :: sA(:)
+    CHARACTER(LEN=1024),INTENT(IN) :: field_file(:)
     LOGICAL,       INTENT(OUT)   :: qOK
 
 !                LOCAL ARGS
@@ -514,6 +515,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
 ! iZ2          Number of nodes in Z2
 ! iXY          Number of nodes in XY plane
 ! sA0gauss_Re  Initial field over all planes
+    CHARACTER(Len=1024) :: h5FieldFileName
 
     LOGICAL           :: qOKL
     LOGICAL           :: qInitialGauss
@@ -526,7 +528,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
 !     Set error flag to false
 
     qOK = .FALSE. 
-
+    h5FieldFileName=field_file(1)
     iZ2 = NZ2_G
     iXY = NX_G*NY_G
 
@@ -543,9 +545,17 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
 !    CALL getSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,freqf, &
 !                  ph_sh, nseeds,sLengthOfElm,sAreal,sAimag)
 
+    if (iFieldSeedType_G==iSimpleSeed_G) then
+
     call getPaSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,&
                     freqf,ph_sh,nseeds,sLengthOfElm)
+    end if
 
+    if (iFieldSeedType_G==iReadH5Field_G) then
+
+    call readH5FieldfileSingleDump(h5FieldFileName)
+
+    end if
 !    sA(1:iXY*iZ2) = sAreal
 !    sA(iXY*iZ2 + 1:2*iXY*iZ2) = sAimag
 

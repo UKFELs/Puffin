@@ -129,6 +129,7 @@ MODULE Setup
        mag, fr,           &
        nbeams,            &
        dist_f,            &
+       field_file,        &
        qSimple,           &
        sA0_Re,            &
        sA0_Im,            &
@@ -353,6 +354,7 @@ MODULE Setup
                             sSeedSigma, &
                             sA0_Re,&
                             sA0_Im,&
+                            field_file, &
                             qOKL)
   
 

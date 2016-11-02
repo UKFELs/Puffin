@@ -343,16 +343,16 @@ print*,"Now, you tell me if we had electrons"
 !      Print*,'hdf5_puff:outputH5BeamSD(property set up)'
 !      Print*,error
       CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error, access_prp = plist_id)
-      Print*,'h5in:readH5Beamfile(file opened in serial)'
+      Print*,'h5in:readH5Beamfile(file opened in parallel)'
       Print*,error
       CALL h5dopen_f (file_id, dsetname, dset_id, error)
-      Print*,'h5in:readH5Beamfile(dataset opened in serial)'
+      Print*,'h5in:readH5Beamfile(dataset opened in parallel)'
       Print*,error
       CALL h5dget_type_f (dset_id, dtype, error)
       Print*,'h5in:readH5Beamfile(checking data type)'
       Print*,error
       CALL h5tget_class_f (dtype, dclass, error)
-      Print*,'h5in:readH5Beamfile(dataset opened in serial)'
+      Print*,'h5in:readH5Beamfile(dataset opened in parallel)'
       Print*,error
 !      if (dclass==H5T_NATIVE_DOUBLE) then
       if (dclass==H5T_FLOAT_F) then
@@ -363,10 +363,10 @@ print*,"Now, you tell me if we had electrons"
       goto 1000
       end if
       CALL h5Dget_space_f(dset_id,dspace_id,error)
-      Print*,'h5in:readH5Beamfile(dataspace opened in serial)'
+      Print*,'h5in:readH5Beamfile(dataspace opened in parallel)'
       Print*,error
       CALL h5Sget_simple_extent_ndims_f(dspace_id,rank,error)
-      Print*,'h5in:readH5Beamfile(dataspace opened in serial)'
+      Print*,'h5in:readH5Beamfile(dataspace opened in parallel)'
       Print*,rank
       Print*,error
       if (rank==2) then
@@ -543,34 +543,49 @@ print*,"Now, you tell me if we had electrons"
 2000 CONTINUE
   end subroutine readH5Beamfile
 
-  subroutine readH5FieldfileSerialSingleDump(zFile)
+  subroutine readH5FieldfileSingleDump(zFile)
     character(*), intent(in) :: zFile
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier 
     INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
+    INTEGER(HID_T) :: plist_id      !< (parallel) Property list identifier
     INTEGER(HID_T) :: dtype         !< So we can check we're reading in doubles
     INTEGER(HID_T) :: dclass         !< So we can check we're reading in doubles
     INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
     INTEGER(HID_T) :: memspace     !< Dataspace identifier in file
     INTEGER(kind=ip) ::  rank       !< Field file Dataset rank
+    INTEGER(HSIZE_T), DIMENSION(2) :: dims1d   !< dims of ptcl dataset (NZ2_G*components)
+    INTEGER(HSIZE_T), DIMENSION(4) :: dims3d   !< dims of ptcl dataset (NX_G,NY_G,NZ2_G,components)
+    INTEGER(HSIZE_T), DIMENSION(2) :: mdims1d   !< maxdims of ptcl dataset (coords*numelecs)
+    INTEGER(HSIZE_T), DIMENSION(4) :: mdims3d   !< maxdims of ptcl dataset (coords*numelecs)
     CHARACTER(LEN=5), PARAMETER :: dsetname = "aperp"     ! Dataset name
+    character(1024_IP) :: filename
     integer :: error !< Error flag
     character(LEN=40) :: errorstr !<String to write an error
-       if (tProcInfo_G%qRoot) then 
+    integer(kind=ip) :: mpiinfo
+
+    mpiinfo=MPI_INFO_NULL
+    filename = zFile
     CALL h5open_f(error)
     Print*,'h5in:H5 interface opened'
-      print*,'reading hdf5 input - first opening file on rank 0'
-      CALL h5fopen_f(zFile, H5F_ACC_RDONLY_F, file_id, error)
-      Print*,'hdf5_puff:outputH5Beamfile(file opened in serial)'
+      print*,'reading hdf5 input'
+    CALL h5pcreate_f(H5P_FILE_ACCESS_F, plist_id, error)
+      Print*,'h5in:readH5FieldfileSingleDump(property created)'
+      Print*,error
+      CALL h5pset_fapl_mpio_f(plist_id, tProcInfo_G%comm, mpiinfo, error)
+!      Print*,'hdf5_puff:outputH5BeamSD(property set up)'
+!      Print*,error
+      CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error, access_prp = plist_id)
+      Print*,'h5in:readH5fieldfile(file opened in parallel)'
       Print*,error
       CALL h5dopen_f (file_id, dsetname, dset_id, error)
-      Print*,'hdf5_puff:readH5Beamfile(dataset opened in serial)'
+      Print*,'hdf5_puff:readH5fieldfile(dataset opened in parallel)'
       Print*,error
       CALL h5dget_type_f (dset_id, dtype, error)
-      Print*,'hdf5_puff:readH5Beamfile(checking data type)'
+      Print*,'hdf5_puff:readH5fieldfile(checking data type)'
       Print*,error
       CALL h5tget_class_f (dtype, dclass, error)
-      Print*,'hdf5_puff:readH5Beamfile(dataset opened in serial)'
+      Print*,'hdf5_puff:readH5fieldfile(dataset opened in parallel)'
       Print*,error
 !      if (dclass==H5T_NATIVE_DOUBLE) then
       if (dclass==H5T_FLOAT_F) then
@@ -581,20 +596,48 @@ print*,"Now, you tell me if we had electrons"
       goto 1000
       end if
       CALL h5Dget_space_f(dset_id,dspace_id,error)
-      Print*,'hdf5_puff:readH5Beamfile(dataspace opened in serial)'
+      Print*,'hdf5_puff:readH5Fieldfile(dataspace opened in parallel)'
       Print*,error
       CALL h5Sget_simple_extent_ndims_f(dspace_id,rank,error)
-      Print*,'hdf5_puff:readH5Beamfile(dataspace opened in serial)'
+      Print*,'hdf5_puff:readH5Fieldfile(dataspace opened in parallel)'
       Print*,rank
       Print*,error
+      if (rank == 2) then
+        print*, "Seems to be 1D input field"
+        if (qoned_g) then
+          ! Do some reading
+          print*, "checking size"
+          CALL h5Sget_simple_extent_dims_f(dspace_id,dims1d,mdims1d,error)
+          Print*,'hdf5_puff:readH5FieldFile(dataspace getting dims)'
+        else
+          errorstr=trim("2D input (z2+comp), but not a 1D sim")
+          print*,"Abort - 1D + component input but not 1D sim."
+          goto 1000
+        end if
+      else if (rank == 4) then
+        print*, "Seems to be 3D input field"
+        if (.not. qoned_g) then
+        ! Do some reading
+          print*, "checking size"
+          CALL h5Sget_simple_extent_dims_f(dspace_id,dims3d,mdims3d,error)
+          Print*,'hdf5_puff:readH5fieldFile(dataspace getting dims)'
 
+        else
+        errorstr=trim("4D input (3d+comp), but not 3D sim")
+        print*,"Abort - 3D + component input but not 3D sim."
+        goto 1000
+        end if
+      else
+        print*,"The rank of this data is not what I expected at all"
+        errorstr="Error with dimensionality of input data"
+        goto 1000 
+      end if
 ! rank should depend on whether we have 1D or 3D fields.
 
       call h5fclose_f(file_id,error)
      print*,"h5f file_id closed"
     CALL h5close_f(error)
      print*,"h5 interface closed"
-    end if
     GoTo 2000
 
 ! Error Handler - Error log Subroutine in CIO.f90 line 709
@@ -602,6 +645,6 @@ print*,"Now, you tell me if we had electrons"
           tErrorLog_G)
    print*, "abort, abort, Error in readH5FieldfileSerialSingleDump",errorstr
 2000 CONTINUE
-  end subroutine readH5FieldfileSerialSingleDump
+  end subroutine readH5FieldfileSingleDump
   
 end module H5in
