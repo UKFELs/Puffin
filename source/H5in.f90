@@ -5,6 +5,7 @@ USE ParallelInfoType
 use globals
 use ParallelSetUp
 use parBeam
+use paraField
 use scale
 use HDF5
 
@@ -554,10 +555,15 @@ print*,"Now, you tell me if we had electrons"
     INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
     INTEGER(HID_T) :: memspace     !< Dataspace identifier in file
     INTEGER(kind=ip) ::  rank       !< Field file Dataset rank
-    INTEGER(HSIZE_T), DIMENSION(2) :: dims1d   !< dims of ptcl dataset (NZ2_G*components)
-    INTEGER(HSIZE_T), DIMENSION(4) :: dims3d   !< dims of ptcl dataset (NX_G,NY_G,NZ2_G,components)
-    INTEGER(HSIZE_T), DIMENSION(2) :: mdims1d   !< maxdims of ptcl dataset (coords*numelecs)
-    INTEGER(HSIZE_T), DIMENSION(4) :: mdims3d   !< maxdims of ptcl dataset (coords*numelecs)
+    INTEGER(HSIZE_T), DIMENSION(2) :: dims1d   !< dims of field dataset (NZ2_G*components)
+    INTEGER(HSIZE_T), DIMENSION(4) :: dims3d   !< dims of field dataset (NX_G,NY_G,NZ2_G,components)
+    INTEGER(HSIZE_T), DIMENSION(2) :: mdims1d   !< maxdims of field dataset (coords*numcomps)
+    INTEGER(HSIZE_T), DIMENSION(4) :: mdims3d   !< maxdims of field dataset (coords*numcomps)
+    INTEGER(HSIZE_T), DIMENSION(2) :: dsize1d   !< chunk of field file to read
+    INTEGER(HSIZE_T), DIMENSION(4) :: dsize3d   !< chunk of field file to read
+    INTEGER(HSIZE_T), DIMENSION(2) :: doffset1d   !< maxdims of ptcl dataset (coords*numelecs)
+    INTEGER(HSIZE_T), DIMENSION(4) :: doffset3d   !< maxdims of ptcl dataset (coords*numelecs)
+
     INTEGER(kind=ip) :: loopindex
     CHARACTER(LEN=5), PARAMETER :: dsetname = "aperp"     ! Dataset name
     character(1024_IP) :: filename
@@ -571,23 +577,23 @@ print*,"Now, you tell me if we had electrons"
     Print*,'h5in:H5 interface opened'
       print*,'reading hdf5 input'
     CALL h5pcreate_f(H5P_FILE_ACCESS_F, plist_id, error)
-      Print*,'h5in:readH5FieldfileSingleDump(property created)'
-      Print*,error
+      Print*,error,tprocinfo_g%rank, &
+        'h5in:readH5FieldfileSingleDump(property created)'
       CALL h5pset_fapl_mpio_f(plist_id, tProcInfo_G%comm, mpiinfo, error)
 !      Print*,'hdf5_puff:outputH5BeamSD(property set up)'
 !      Print*,error
       CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error, access_prp = plist_id)
-      Print*,'h5in:readH5fieldfile(file opened in parallel)'
-      Print*,error
+      Print*,error,tprocinfo_g%rank, &
+        'h5in:readH5fieldfile(file opened in parallel)'
       CALL h5dopen_f (file_id, dsetname, dset_id, error)
-      Print*,'hdf5_puff:readH5fieldfile(dataset opened in parallel)'
-      Print*,error
+      Print*,error,tprocinfo_g%rank, &
+        'hdf5_puff:readH5fieldfile(dataset opened in parallel)'
       CALL h5dget_type_f (dset_id, dtype, error)
-      Print*,'hdf5_puff:readH5fieldfile(checking data type)'
-      Print*,error
+      Print*,error,tprocinfo_g%rank, &
+        'hdf5_puff:readH5fieldfile(checking data type)'
       CALL h5tget_class_f (dtype, dclass, error)
-      Print*,'hdf5_puff:readH5fieldfile(dataset opened in parallel)'
-      Print*,error
+      Print*,error,tprocinfo_g%rank, &
+        'hdf5_puff:readH5fieldfile(dataset opened in parallel)'
 !      if (dclass==H5T_NATIVE_DOUBLE) then
       if (dclass==H5T_FLOAT_F) then
        print*,'data is float'
@@ -597,16 +603,15 @@ print*,"Now, you tell me if we had electrons"
       goto 1000
       end if
       CALL h5Dget_space_f(dset_id,dspace_id,error)
-      Print*,'hdf5_puff:readH5Fieldfile(dataspace opened in parallel)'
-      Print*,error
+      Print*,error,tprocinfo_g%rank, &
+        'hdf5_puff:readH5Fieldfile(dataspace opened in parallel)'
       CALL h5Sget_simple_extent_ndims_f(dspace_id,rank,error)
-      Print*,'hdf5_puff:readH5Fieldfile(dataspace opened in parallel)'
-      Print*,rank
-      Print*,error
+      Print*,error,tprocinfo_g%rank, &
+        'hdf5_puff:readH5Fieldfile(dataspace opened in parallel)'
       if (rank == 2) then
         print*, "Seems to be 1D input field"
         if (qoned_g) then
-          ! Do some reading
+          ! Do further checks
           print*, "checking size"
           CALL h5Sget_simple_extent_dims_f(dspace_id,dims1d,mdims1d,error)
           Print*,'hdf5_puff:readH5FieldFile(dataspace getting dims)'
@@ -614,6 +619,87 @@ print*,"Now, you tell me if we had electrons"
             print*,"rank ", tProcInfo_G%rank, "  dim: ",loopindex,&
               ":",dims1d(loopindex)
           end do
+          if (dims1d(1)==NZ2_G) then
+            print*,"NZ2 dims in file match"
+          else
+            print*,"NZ2 in .in:", NX_G, ", NZ2 in h5 file:", dims1d(1)
+            errorstr="NZ2 dims mismatch between in and h5"
+            goto 1000
+          end if 
+          if (dims1d(2)==2) then
+            print*,"expected num components (2) present in hdf5 file"
+          else
+            print*,"Wrong number of components in h5 field file:", &
+              dims1d(2)
+            errorstr="num components incorrect in h5 field"
+            goto 1000
+          end if 
+
+          ! Do some reading
+          doffset1d=(/(ffs-1),0/)
+          dsize1d=(/tlflen,1/)          
+          CALL h5screate_simple_f(rank, dsize1d, memspace, error)
+          print*,error,tprocinfo_g%rank,"h5s fr  memspace created"
+          CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset1d, &
+            dsize1d, error)
+          print*,error,tprocinfo_g%rank,"h5s slab fr_rfield selected"
+          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, fr_rfield, dsize1d, error, &
+           file_space_id = dspace_id, mem_space_id = memspace)
+          print*,error,tprocinfo_g%rank,"h5d slab fr_rfield read"
+! use same memspace again
+          doffset1d=(/(ffs-1),1/)
+          CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset1d, &
+            dsize1d, error)
+          print*,error,tprocinfo_g%rank,"h5s slab fr_ifield selected"
+          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, fr_ifield, dsize1d, error, &
+           file_space_id = dspace_id, mem_space_id = memspace)
+          print*,error,tprocinfo_g%rank,"h5d slab fr_ifield read"
+          call h5sclose_f(memspace,error)
+          print*,error,tprocinfo_g%rank,"h5s fr memspace closed"
+
+          doffset1d=(/(fz2-1),0/)
+          dsize1d=(/mainlen,1/)          
+          CALL h5screate_simple_f(rank, dsize1d, memspace, error)
+          print*,error,tprocinfo_g%rank,"h5s ac memspace created"
+          CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset1d, &
+            dsize1d, error)
+          print*,error,tprocinfo_g%rank,"h5s slab ac_rfield selected"
+          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, ac_rfield, dsize1d, error, &
+           file_space_id = dspace_id, mem_space_id = memspace)
+          print*,error,tprocinfo_g%rank,"h5d slab ac_rfield read"
+! use same memspace again
+          doffset1d=(/(fz2-1),1/)
+          CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset1d, &
+            dsize1d, error)
+          print*,error,tprocinfo_g%rank,"h5s slab ac_ifield selected"
+          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, ac_ifield, dsize1d, error, &
+           file_space_id = dspace_id, mem_space_id = memspace)
+          print*,error,tprocinfo_g%rank,"h5d slab ac_ifield read"
+          call h5sclose_f(memspace,error)
+          print*,error,tprocinfo_g%rank,"h5s ac memspace closed"
+
+          doffset1d=(/(ees-1),0/)
+          dsize1d=(/tlelen,1/)          
+          CALL h5screate_simple_f(rank, dsize1d, memspace, error)
+          print*,error,tprocinfo_g%rank,"h5s back memspace created"
+          CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset1d, &
+            dsize1d, error)
+          print*,error,tprocinfo_g%rank,"h5s slab bk_rfield selected"
+          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, bk_rfield, dsize1d, error, &
+           file_space_id = dspace_id, mem_space_id = memspace)
+          print*,error,tprocinfo_g%rank,"h5d slab bk_rfield read"
+! use same memspace again
+          doffset1d=(/(ees-1),1/)
+          CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset1d, &
+            dsize1d, error)
+          print*,error,tprocinfo_g%rank,"h5s slab bk_ifield selected"
+          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, bk_ifield, dsize1d, error, &
+           file_space_id = dspace_id, mem_space_id = memspace)
+          print*,error,tprocinfo_g%rank,"h5d slab bk_ifield read"
+          call h5sclose_f(memspace,error)
+          print*,error,tprocinfo_g%rank,"h5s back memspace closed"
+
+
         else
           errorstr=trim("2D input (z2+comp), but not a 1D sim")
           print*,"Abort - 1D + component input but not 1D sim."
@@ -630,8 +716,100 @@ print*,"Now, you tell me if we had electrons"
             print*,"rank ", tProcInfo_G%rank, "  dim: ",loopindex,&
               ":",dims3d(loopindex)
           end do
+          if (dims3d(1)==NX_G) then
+            print*,"NX dims in file match"
+          else
+            print*,"NX in .in:", NX_G, ", NX in h5 file:", dims3d(1)
+            errorstr="NX dims mismatch between in and h5"
+            goto 1000
+          end if 
+          if (dims3d(2)==NY_G) then
+            print*,"NY dims in file match"
+          else
+            print*,"NY in .in:", NY_G, ", NY in h5 file:", dims3d(2)
+            errorstr="NY dims mismatch between in and h5"
+            goto 1000
+          end if 
+          if (dims3d(3)==NZ2_G) then
+            print*,"NZ2 dims in file match"
+          else
+            print*,"NZ2 in .in:", NZ2_G, ", NZ2 in h5 file:", dims3d(3)
+            errorstr="NZ2 dims mismatch between in and h5"
+            goto 1000
+          end if 
+          if (dims3d(4)==2) then
+            print*,"expected number of components present"
+          else
+            print*,"Wrong number of components in h5 field file:", &
+              dims3d(4)
+            errorstr="num components incorrect in h5 field"
+            goto 1000
+          end if  
 
-        else
+          doffset3d=(/0,0,(ffs-1),0/)
+          dsize3d=(/NX_G,NY_G,tlflen,1/)          
+          CALL h5screate_simple_f(rank, dsize3d, memspace, error)
+          print*,error,tprocinfo_g%rank,"h5s memspace 3d created"
+          CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset3d, &
+            dsize3d, error)
+          print*,error,tprocinfo_g%rank,"h5s slab fr_rfield 3d selected"
+          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, fr_rfield, dsize3d, error, &
+           file_space_id = dspace_id, mem_space_id = memspace)
+          print*,error,tprocinfo_g%rank,"h5d slab fr_rfield 3d read"
+! keep memspace
+          doffset3d=(/0,0,(ffs-1),1/)
+          CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset3d, &
+            dsize3d, error)
+          print*,error,tprocinfo_g%rank,"h5s slab fr_ifield 3d selected"
+          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, fr_ifield, dsize3d, error, &
+           file_space_id = dspace_id, mem_space_id = memspace)
+          print*,error,tprocinfo_g%rank,"h5d slab fr_ifield 3d read"
+          call h5sclose_f(memspace,error)
+          print*,error,tprocinfo_g%rank,"h5s memspace 3d closed"
+
+          doffset3d=(/0,0,(fz2-1),0/)
+          dsize3d=(/NX_G,NY_G,mainlen,1/)          
+          CALL h5screate_simple_f(rank, dsize3d, memspace, error)
+          print*,error,tprocinfo_g%rank,"h5s memspace 3d created"
+          CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset3d, &
+            dsize3d, error)
+          print*,error,tprocinfo_g%rank,"h5s slab ac_rfield 3d selected"
+          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, ac_rfield, dsize3d, error, &
+           file_space_id = dspace_id, mem_space_id = memspace)
+          print*,error,tprocinfo_g%rank,"h5d slab ac_rfield 3d read"
+! keep memspace
+          doffset3d=(/0,0,(fz2-1),1/)
+          CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset3d, &
+            dsize3d, error)
+          print*,error,tprocinfo_g%rank,"h5s slab ac_rfield 3d selected"
+          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, ac_ifield, dsize3d, error, &
+           file_space_id = dspace_id, mem_space_id = memspace)
+          print*,error,tprocinfo_g%rank,"h5d slab ac_rfield 3d read"
+          call h5sclose_f(memspace,error)
+          print*,error,tprocinfo_g%rank,"h5s memspace 3d closed"
+
+          doffset3d=(/0,0,(ees-1),0/)
+          dsize3d=(/NX_G,NY_G,tlelen,1/)
+          CALL h5screate_simple_f(rank, dsize3d, memspace, error)
+          print*,error,tprocinfo_g%rank,"h5s back memspace 3d created"
+          CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset3d, &
+            dsize3d, error)
+          print*,error,tprocinfo_g%rank,"h5s slab bk_rfield 3d selected"
+          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, bk_rfield, dsize3d, error, &
+           file_space_id = dspace_id, mem_space_id = memspace)
+          print*,error,tprocinfo_g%rank,"h5d slab bk_rfield 3d read"
+! keep memspace
+          doffset3d=(/0,0,(ees-1),1/)
+          CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset3d, &
+            dsize3d, error)
+          print*,error,tprocinfo_g%rank,"h5s slab bk_rfield 3d selected"
+          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, bk_ifield, dsize3d, error, &
+           file_space_id = dspace_id, mem_space_id = memspace)
+          print*,error,tprocinfo_g%rank,"h5d slab bkrfield 3d read"
+          call h5sclose_f(memspace,error)
+          print*,error,tprocinfo_g%rank,"h5s back memspace 3d closed"
+
+       else
         errorstr=trim("4D input (3d+comp), but not 3D sim")
         print*,"Abort - 3D + component input but not 3D sim."
         goto 1000
@@ -644,8 +822,7 @@ print*,"Now, you tell me if we had electrons"
 ! rank should depend on whether we have 1D or 3D fields.
 
       call h5sclose_f(dspace_id,error)
-     print*,"h5s memspace closed"
-!      call h5sclose_f(filespace,error)
+     print*,error,tprocinfo_g%rank,"h5s memspace dspace_id closed"
       call h5dclose_f(dset_id,error)
      print*,"h5d dset closed"
 
