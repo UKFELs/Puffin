@@ -45,6 +45,56 @@ contains
 !> @param[out] iNumNodes 3 element array - Number of field nodes in x, y, and z2
 !> @param[out] sWigglerLength 3 element array - Length of radiation field mesh in
 !> x, y, and z2
+!> @param[out] iRedNodesX The number of inner nodes of the main mesh which the 
+!> beam will be contained within. Forces a resize of the mesh if specified, 
+!> resized so that these inner nodes contain the beam.
+!> @param[out] iRedNodesY Same as iRedNodesX, but in y.
+!> @param[out] nodesperlambda Number of radiation nodes to be used in the mesh 
+!> per reference resonant wavelength in z2.
+!> @param[out] stepsPerPeriod Number of integration steps per undulator period 
+!> (ignored if lattuce is specified).
+!> @param[out] nPeriods Number of periods in undulator. Ignored if lattice is 
+!> specified
+!> @param[out] sQe Charge in the electron beam if simple beam input is used.
+!> @param[out] q_noise If adding shot-noise to the beam (can switch off to see 
+!> only Coherent Spontaneous Emission (CSE))
+!> iNumElectrons[out] Number of electron macroparticles in each dimension,
+!> for simple beam case.
+!> @param[out] sSigmaGaussian Gaussian sigma of electron beam density profile
+!> in each dimension (use 1E8 for flat top) for simple beam input
+!> @param[out] sElectronThreshold Macroparticle charge weight limit, below which
+!> the electron macroparticle will be thrown away, expressed as a % of the mean 
+!> charge weight.
+!> @param[out] bcenter Center of beam in z2 / t.
+!> @param[out] gamma_d Array of size nbeams. Energy of beam in the simple beam case, 
+!> scaled to the reference energy (gamma_r). So gamma_d = 1 for beam energy 
+!> gamma_r.
+!> @param[out] chirp Array of size nbeams. Energy chirp of electron beam in simple
+!> beam case. Expressed in units of \f$ \frac{d \gamma}{d \bar{z}_2} \f$ in the 
+!> scaled case, and \f$ \frac{d \gamma}{d t} \f$ in the unscaled (SI) case. Only
+!> specified in simple beam case.
+!> @param[out] mag Magnitude of beam energy oscillation. The oscillation is 
+!> sinusoidal. Set to zero to have no energy oscillation. Default = 0. In units 
+!> of \f$ \gamma \f$ 
+!> @param[out] fr Wavenumber \f$ (\frac{2 \pi}{\lambda}) \f$ of beam modulation.
+!> @param[out] nbeams Number of electron beams input into FEL
+!> @param[out] dist_f Name of external files to read from in the dist and 
+!> particle cases.
+!> @param[out] qSimple If simple beam input is beaing used.
+!> @param[out] sA0_Re Magnitude of x-polarized injected seed field, if used. 
+!> @param[out] sA0_Im Magnitude of y-polarized injected seed field, if used.
+!> @param[out] sFiltFrac Cutoff frequency for high-pass filter in diffraction 
+!> step. Expressed as a fraction of the resonant reference frequency.
+!> @param[out] sDiffFrac Diffraction step size, expressed as fraction of 
+!> reference resonant frequency
+!> @param[out] sBeta Absorption coefficient for absorbing boundaries in the 
+!> field mesh in the transverse plane.
+!> @param[out] sRho FEL, or pierce, parameter
+!> @param[out] saw Undulator parameter (peak, not rms) for reference frame
+!> @param[out] sgamma_r Reference beam energy
+!> @param[out] lambda_w Undulator period
+!> @param[out] sEmit_n Array of length nbeams. Scaled RMS Beam emittance in 
+!> simple beam case.
 
 
 subroutine read_in(zfilename, &
