@@ -544,6 +544,8 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
    
 !    CALL getSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,freqf, &
 !                  ph_sh, nseeds,sLengthOfElm,sAreal,sAimag)
+   print*,'It is seedy, but what type...' 
+   print*,iFieldSeedType_G
 
     if (iFieldSeedType_G==iSimpleSeed_G) then
 

@@ -558,6 +558,7 @@ print*,"Now, you tell me if we had electrons"
     INTEGER(HSIZE_T), DIMENSION(4) :: dims3d   !< dims of ptcl dataset (NX_G,NY_G,NZ2_G,components)
     INTEGER(HSIZE_T), DIMENSION(2) :: mdims1d   !< maxdims of ptcl dataset (coords*numelecs)
     INTEGER(HSIZE_T), DIMENSION(4) :: mdims3d   !< maxdims of ptcl dataset (coords*numelecs)
+    INTEGER(kind=ip) :: loopindex
     CHARACTER(LEN=5), PARAMETER :: dsetname = "aperp"     ! Dataset name
     character(1024_IP) :: filename
     integer :: error !< Error flag
@@ -609,6 +610,10 @@ print*,"Now, you tell me if we had electrons"
           print*, "checking size"
           CALL h5Sget_simple_extent_dims_f(dspace_id,dims1d,mdims1d,error)
           Print*,'hdf5_puff:readH5FieldFile(dataspace getting dims)'
+          Do loopindex=1,rank
+            print*,"rank ", tProcInfo_G%rank, "  dim: ",loopindex,&
+              ":",dims1d(loopindex)
+          end do
         else
           errorstr=trim("2D input (z2+comp), but not a 1D sim")
           print*,"Abort - 1D + component input but not 1D sim."
@@ -621,6 +626,10 @@ print*,"Now, you tell me if we had electrons"
           print*, "checking size"
           CALL h5Sget_simple_extent_dims_f(dspace_id,dims3d,mdims3d,error)
           Print*,'hdf5_puff:readH5fieldFile(dataspace getting dims)'
+          Do loopindex=1,rank
+            print*,"rank ", tProcInfo_G%rank, "  dim: ",loopindex,&
+              ":",dims3d(loopindex)
+          end do
 
         else
         errorstr=trim("4D input (3d+comp), but not 3D sim")
@@ -633,6 +642,16 @@ print*,"Now, you tell me if we had electrons"
         goto 1000 
       end if
 ! rank should depend on whether we have 1D or 3D fields.
+
+      call h5sclose_f(dspace_id,error)
+     print*,"h5s memspace closed"
+!      call h5sclose_f(filespace,error)
+      call h5dclose_f(dset_id,error)
+     print*,"h5d dset closed"
+
+     call h5pclose_f(plist_id,error)
+     print*,error
+     print*,"h5p prop list closed"
 
       call h5fclose_f(file_id,error)
      print*,"h5f file_id closed"

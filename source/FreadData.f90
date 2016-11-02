@@ -706,7 +706,7 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
                                              sA0_X(:),sA0_Y(:), &
                                              freqf(:), meanZ2(:), &
                                              ph_sh(:)
-  CHARACTER(1024_ip), INTENT(INOUT), ALLOCATABLE :: field_file(:) ! field file names
+  CHARACTER(len=1024), INTENT(INOUT), ALLOCATABLE :: field_file(:) ! field file names
   INTEGER(KIND=IP), INTENT(INOUT) :: nseeds
 
   LOGICAL, ALLOCATABLE, INTENT(OUT) :: qFlatTop(:)
@@ -716,7 +716,7 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
 
   INTEGER(KIND=IP) :: s_ind
   INTEGER::ios
-  CHARACTER(1024) :: dtype
+  CHARACTER(len=1024) :: dtype
 
 
   namelist /nslist/ nseeds,dtype
@@ -732,6 +732,7 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
 
   nseeds = 1
   dtype = 'simple'
+  allocate(field_file(1))
   field_file = ''
 
 !   Open the file
@@ -739,7 +740,6 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
     open(161,file=se_f, status='OLD', recl=80, delim='APOSTROPHE')
     read(161,nml=nslist)
   end if
-  if (dtype == 'simple') then
   ALLOCATE(sSigmaF(nseeds,3))
   ALLOCATE(sA0_X(nseeds), sA0_Y(nseeds), ph_sh(nseeds))
   ALLOCATE(freqf(nseeds),qFlatTop(nseeds),meanZ2(nseeds))
@@ -758,25 +758,31 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
   qRndFj_G = .false.
   sSigFj_G = 0.01_wp
   qMatchS_G = .true.
-  if (se_f .ne. '') then
-    read(161,nml=slist)
-    close(UNIT=161,STATUS='KEEP')
-  end if
+  if (dtype == 'simple') then 
+    if (se_f .ne. '') then
+      read(161,nml=slist)
+      close(UNIT=161,STATUS='KEEP')
+    end if
 
-  iFieldSeedType_G=iSimpleSeed_G
+    iFieldSeedType_G=iSimpleSeed_G
 
 ! Set the error flag and exit
-  qOK = .TRUE.
-  GOTO 2000
+    qOK = .TRUE.
+    GOTO 2000
   end if
+
+
+
   if (dtype == 'h5') then
-  if (se_f .ne. '') then
-    read(161,nml=sh5list)
-    close(UNIT=161,STATUS='KEEP')
-  end if
-  iFieldSeedType_G=iReadH5Field_G
-  qOK = .TRUE.
-  GOTO 2000
+    iFieldSeedType_G=iReadH5Field_G
+
+    if (se_f .ne. '') then
+      read(161,nml=sh5list)
+      close(UNIT=161,STATUS='KEEP')
+    end if
+
+    qOK = .TRUE.
+    GOTO 2000
     
   end if
 
