@@ -4,6 +4,14 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Module which calculates d/dz of the local electron and field variables, and 
+!> then sums the global regions together.
+
 module Derivative
 
 ! Module to calculate derivative required to integrate

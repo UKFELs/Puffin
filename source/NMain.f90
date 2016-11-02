@@ -4,6 +4,13 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Main top-level Puffin program.
+
 program main
 
 !use FFTW_Constants
