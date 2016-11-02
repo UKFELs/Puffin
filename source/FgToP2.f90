@@ -4,11 +4,16 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
-module gtop2
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This module contains functions to transform macroparticle variables
+!> from the relativistic factor gamma to the scaled longitudinal 
+!> velocity p2, and vice-versa.
 
-! This module contains functions to transform macroparticle variables
-! from the relativistic factor gamma to the scaled longitudinal 
-! velocity p2, and vice-versa.
+module gtop2
 
 use paratype
 

@@ -4,16 +4,23 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This module contains the subroutines for dumping 
+!> the data in Puffin. The dumping is very dirty, and
+!> creates a file for each variable, for each process.
+!> This enables Puffin to resume from these dump files
+!> in the even of a crash. This is the only purpose
+!> of these dump files, and they are not intended for
+!> any post-processing.
+
 MODULE dumpFiles
 
 
-! This module contains the subroutines for dumping 
-! the data in Puffin. The dumping is very dirty, and
-! creates a file for each variable, for each process.
-! This enables Puffin to resume from these dump files
-! in the even of a crash. This is the only purpose
-! of these dump files, and they are not intended for
-! any post-processing.
+
 
 
   USE paratype

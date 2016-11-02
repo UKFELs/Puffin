@@ -4,6 +4,16 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Top-level module for generating electron beam macroparticles in the simple
+!> beam case. Can generate multiple simple beams with homogeneous distributions
+!> in 6 dimensions.
+
 MODULE ElectronInit
 
 USE paratype
