@@ -4,6 +4,14 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Module to check various parameters specified in the input file
+!> by the user
+
 module checks
 
 use Paratype

@@ -4,7 +4,13 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
-
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This module defines subroutines used to create SDDS files for use in
+!> Puffin
 
 module createSDDS
 

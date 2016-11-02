@@ -1,3 +1,17 @@
+!************* THIS HEADER MUST NOT BE REMOVED *******************!
+!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
+!** This program must not be copied, distributed or altered in  **!
+!** any way without the prior permission of the above authors.  **!
+!*****************************************************************!
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Module to add additional preparation steps to the electron beam. Can add
+!> beam modulations in z2, and/or a linear energy chirp.
+
 module beamPrep
 
 use paratype
