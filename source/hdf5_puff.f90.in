@@ -710,6 +710,9 @@ contains
         call outputH5Field1DFloat(bun5, 'bunching5thHarmonic', time, error)
         call outputH5Field1DFloat(sq, 'sliceCharge', time, error)
 
+
+        call CreateIntegrated1DFloat(time,error)
+!        call addH5integratedField(Iarray, 'beamCurrent',error)
         if (error .ne. 0) goto 1000
 ! Todo not yet implemented
 !     call outputH5SliceEmittance
@@ -2717,6 +2720,50 @@ contains
 
   end subroutine outputH5Field3DoldD
 
+!> CreateIntegrated1DFloat(simtime,error)
+!! Creates a single integrated file for the 1D datasets
+  subroutine CreateIntegrated1DFloat(simtime,error)
+
+    implicit none
+
+    REAL(kind=WP), intent(in) :: simtime      !< simulation time
+    integer(kind=ip) :: error !< Local Error flag
+    INTEGER(HID_T) :: file_id       !< File identifier
+    INTEGER(HID_T) :: attr_id       !< Attribute identifier
+    INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
+    INTEGER(HID_T) :: atype_id      !< Attribute Data type identifier
+    INTEGER(HID_T) :: group_id      !< Group identifier
+    CHARACTER(LEN=4), PARAMETER :: timegrpname = "time"  !< Time Group name
+    CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  !< Lims Group name
+    CHARACTER(LEN=14), PARAMETER :: limgrpnameSI = "globalLimitsSI"  !< Lims Group name
+    CHARACTER(LEN=10), PARAMETER :: meshScaledGrpname = "meshScaled" !< Mesh Group name
+    CHARACTER(LEN=6), PARAMETER :: meshSIGrpname = "meshSI"  !< SI Mesh Group name
+    CHARACTER(LEN=16) :: scaleToSIstring !< placeholder for scaling factor strings
+    character(1024_IP) :: filename !< output filename
+    REAL(kind=WP), ALLOCATABLE :: limdata (:)  !< dataset containing limits to write
+    INTEGER(kind=IP), ALLOCATABLE :: numcelldata (:)  !< Dataset to write with numcells
+    if (tProcInfo_G%qRoot) then
+      filename = ( trim(adjustl(zFilename_G)) // '_integrated_' &
+         // trim(adjustl(IntegerToString(tProcInfo_G%Rank))) &
+        // '_' //trim(adjustl(IntegerToString(iCSteps))) &
+        // '.h5' )
+      CALL h5open_f(error)
+      CALL h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error)
+      CALL writeH5TimeGroup(file_id, timegrpname, simtime, 'intH5field1D', error)
+      CALL writeH5RunInfo(file_id, 'integratedH5Field1D', error)
+! Limits group
+!      CALL h5gcreate_f(file_id, limgrpname, group_id, error)
+      CALL write1DlimGrp(file_id,limgrpname,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G)
+      CALL write1DlimGrp(file_id,limgrpnameSI,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g)
+      CALL write1DuniformMesh(file_id,meshScaledGrpname,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G,NZ2_G)
+      CALL write1DuniformMesh(file_id,meshSIGrpname,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g,NZ2_G)
+!
+! Close the file.
+!
+      CALL h5fclose_f(file_id, error)
+      CALL h5close_f(error)
+    end if 
+  end subroutine   CreateIntegrated1DFloat
 !> outputH5Field1DFloat
 !! Output a 1D, 1 comp float eg of radiation power, electron current, etc
 !! 
