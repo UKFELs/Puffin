@@ -172,57 +172,6 @@ subroutine read_in(zfilename, &
 
        IMPLICIT NONE
 
-!******************************************************
-! Read input data from the main Puffin input file
-! 
-! zFileName          - FileName containing input data
-! nRowProcessors     - Number of row processors
-! nColProcessors     - Number of column processors
-!
-! zDataFileName      - Data file name
-! qSeparateStepFiles - if to write data to separate step
-!                      files or all steps in one file
-! qFormattedFiles    - if output data files to be
-!                      formatted or binary
-! sStepSize          - Step size for integration
-! nSteps             - Number of steps
-! sZ                 - IN: Starting z position
-!                    - OUT: Final z position
-! iWriteNthSteps     - Steps to write data at (optional)
-!                       (eg every 4th step)
-! tArrayZ            - Write out Z data
-! tArrayVariables    - Write out A,p,Q,Z2 data
-!
-! sLenEPulse(3)      - Length of electron Pulse in
-!                      x,y,z2 direction
-! iNumNodes(3) 	     - Total number of nodes
-! sWigglerLength(3)  - Length of wiggler in x,y,z2
-!                      direction
-! i_RealE            - Number of real electrons
-! q_noise            - Noise in initial electron
-!                      distribution
-!
-! iNumElectrons(3)   - Number of electrons in
-!                      x,y,z2 direction
-! sSigmaGaussian     - Sigma spread of electron
-!                      gaussian distribution
-! sElectronThreshold - Beyond this threshold level,
-!                      electrons are ignored/removed
-!
-! sA0_Re,            - Initial field value (real)
-! sA0_Im,            - Initial field value (imaginary)
-!
-! sEmit_n            - Normalised beam emittance
-! srho               - Pierce parameter
-! saw                - Wiggler parameter
-! sgamma_r           - Mean electron velocity at
-!                      resonance
-! sWiggleWaveLength  - Wiggler wave length
-! sSeedSigma         - Seed field sigma spread for
-!                      gaussian seed field
-! qSwitches          - if allowing different scenarios
-! qOK                - Error flag
-!********************************************************
   CHARACTER(*),INTENT(IN) :: zfilename
 
   CHARACTER(1024_IP),  INTENT(OUT)  :: zDataFileName
