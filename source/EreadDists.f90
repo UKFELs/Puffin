@@ -4,18 +4,14 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This module was created to read in the dist files used by Puffin
+
 module readDists
-
-
-! This module was created to read in the dist files used by Puffin
-!
-! Dr Lawrence Campbell
-! Center for Free Electron Laser Science (CFEL) 
-! c/o DESY, building 99, Luruper Chaussee 149
-! 22761 Hamburg
-! Germany
-! 
-! Nov 2013
 
 USE paratype
 USE parallelInfoType
