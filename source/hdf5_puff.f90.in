@@ -2820,6 +2820,7 @@ contains
     character(1024_IP) :: filename !< output filename
     integer(kind=ip) :: error !< Local Error flag
     real(kind=wp), intent(in) :: writeData(:) !< data to be written
+    real(kind=wp), allocatable :: writeDataSI(:) !< data to be written
     CHARACTER(LEN=*), intent(in) :: dsetname  !< Dataset name
     REAL(kind=WP), intent(in) :: scalefac      !< scaling factor for SI var
     CHARACTER(LEN=*), INTENT(IN) :: meshname !<name of mesh to assign integrated data
@@ -2882,16 +2883,51 @@ contains
       end if
       CALL addH5StringAttribute(dset_id,"vsIndexOrder","compMinorF",aspace_id)
       CALL addH5StringAttribute(dset_id,"vsTimeGroup",timegrpname,aspace_id)
-      CALL addH5StringAttribute(dset_id,"vsLimits",limgrpname,aspace_id)
+      CALL addH5StringAttribute(dset_id,"vsLimits",limgrpnameSI,aspace_id)
       CALL addH5StringAttribute(dset_id,"vsMesh",(meshname//"Sc"),aspace_id)
-      aname=trim(adjustl(dsetname)) // "SI"
-      write(scaleToSIstring, '(E16.9)' ) (scalefac) 
-      attr_data_string=(trim(adjustl(dsetname)) // "*" // scaleToSIstring)
-      attr_string_len=len(trim(adjustl(attr_data_string)))
-      CALL addH5derivedVariableSI(file_id,aname,attr_data_string,meshname,error)
+!      aname=trim(adjustl(dsetname)) // "SI"
+!      write(scaleToSIstring, '(E16.9)' ) (scalefac) 
+!      attr_data_string=(trim(adjustl(dsetname)) // "*" // scaleToSIstring)
+!      attr_string_len=len(trim(adjustl(attr_data_string)))
+!      CALL addH5derivedVariableSI(file_id,aname,attr_data_string,meshname,error)
 
       CALL h5sclose_f(aspace_id, error)
       CALL h5dclose_f(dset_id, error)
+
+      CALL h5screate_simple_f(rank, dims, filespace, error)
+      CALL h5dcreate_f(file_id, trim(adjustl(dsetname // "SI")), H5T_NATIVE_DOUBLE, filespace, &
+        dset_id, error)
+      allocate(writeDataSI(size(writeData)))
+      writeDataSI=writeData*scalefac
+      CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, writeData, dims, error)
+      deallocate(writeDataSI)
+      CALL h5sclose_f(filespace, error)
+! scalar dataset for simpler values
+      CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
+      CALL addH5FloatAttribute(dset_id, "time", simtime,aspace_id)
+      CALL addH5FloatAttribute(dset_id, "z", 1.0*iStep*sStepSize*lg_g,aspace_id)
+      CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
+      aname="vsLabels"
+      attr_data_string=trim(adjustl(dsetname))
+      attr_string_len=len(trim(adjustl(dsetname))) 
+      CALL h5tset_size_f(atype_id, attr_string_len, error)
+      CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
+      CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+      CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+      CALL h5aclose_f(attr_id, error)
+      CALL addH5StringAttribute(dset_id,"vsType","variable",aspace_id)
+      if (size(writeData) .eq. NZ2_G) then
+        CALL addH5StringAttribute(dset_id,"vsCentering","nodal",aspace_id) 
+      else
+        CALL addH5StringAttribute(dset_id,"vsCentering","zonal",aspace_id) 
+      end if
+      CALL addH5StringAttribute(dset_id,"vsIndexOrder","compMinorF",aspace_id)
+      CALL addH5StringAttribute(dset_id,"vsTimeGroup",timegrpname,aspace_id)
+      CALL addH5StringAttribute(dset_id,"vsLimits",limgrpname,aspace_id)
+      CALL addH5StringAttribute(dset_id,"vsMesh",(meshname//"SI"),aspace_id)
+      CALL h5sclose_f(aspace_id, error)
+      CALL h5dclose_f(dset_id, error)
+
  
       CALL h5fclose_f(file_id, error)
       CALL h5close_f(error)
