@@ -635,8 +635,8 @@ contains
           call outputH5Field3DID(time, error, tlelen, 'aperp_back_real', bk_rfield,  ees, eee, .false.)
           call outputH5Field3DID(time, error, tlelen, 'aperp_back_imag', bk_rfield,  ees, eee, .false.)
           call cpu_time(ftime)
-!        print '("Dumped separate fields. Took time = ",f6.3," secs on rank ",i5)' &
-!          ,ftime-stime,tprocinfo_g%rank
+        print '("Dumped separate fields. Took time = ",f6.3," secs on rank ",i5)' &
+          ,ftime-stime,tprocinfo_g%rank
 
         else
 
@@ -649,8 +649,8 @@ contains
           call outputH5Field3DSD(time, error, tlelen, bk_rfield,  ees, eee, 0, 2, .false.)
           call outputH5Field3DSD(time, error, tlelen, bk_ifield,  ees, eee, 1, 2, .false.)
           call cpu_time(ftime)
-!        print '("Dumped fields together. Took time = ",f6.3," secs on rank ",i5)' &
-!          ,ftime-stime,tprocinfo_g%rank
+        print '("Dumped fields together. Took time = ",f6.3," secs on rank ",i5)' &
+          ,ftime-stime,tprocinfo_g%rank
         end if
 !      call outputH5Field3DSDattrs(time, error, tlflen, fr_rfield,  ffs, ffe, 0, .false.)
         if (error .ne. 0) goto 1000
@@ -668,50 +668,61 @@ contains
 
     if (qWriteInt) then
 
-! For starters, write on rank 0 only
+! These call requires all ranks to participate
       call gPowerP(power)
-
-      if (tProcInfo_G%qRoot) then
-      
-        time = sZ*lg_G/c !real(iCSteps,kind=wp)*sStepSize*lg_G/c
-        !CALL gPower(sA,power)
-      
-        call outputH5Field1DFloat(power, 'power', time, error)
-      
-        if (error .ne. 0) goto 1000
-      
-      end if
-
-! This call requires all ranks to participate
-
       call getCurr(dz2_I_G, Iarray)
-
       call getSliceTwiss(nslices,slicetrim,aveX,aveY,avePX,avePY &
     ,sdX,sdY,eX,eY,ax,ay,bx,by,aveGamma,aveDgamma,bun1,bun2,bun3,bun4,bun5,sq)
+
+! For starters, write on rank 0 only
+
 
 ! but the write operation does not, as the data has been collected on rank0.
 
       if (tProcInfo_G%qRoot) then
-        call outputH5Field1DFloat(Iarray, 'beamCurrent', time, error)
-        call outputH5Field1DFloat(aveX, 'meanPosX', time, error)
-        call outputH5Field1DFloat(aveY, 'meanPosY', time, error)
-        call outputH5Field1DFloat(avepy, 'meanMomentumX', time, error)
-        call outputH5Field1DFloat(avepy, 'meanMomentumY', time, error)
-        call outputH5Field1DFloat(aveGamma, 'meanGamma', time, error)
-        call outputH5Field1DFloat(aveDGamma, 'meanDeltaGamma', time, error)
-        call outputH5Field1DFloat(sdx, 'sigmaX', time, error)
-        call outputH5Field1DFloat(sdy, 'sigmaY', time, error)
-        call outputH5Field1DFloat(ex, 'emittanceX', time, error)
-        call outputH5Field1DFloat(ey, 'emittanceY', time, error)
-        call outputH5Field1DFloat(bun1, 'bunchingFundamental', time, error)
-        call outputH5Field1DFloat(bun2, 'bunching2ndHarmonic', time, error)
-        call outputH5Field1DFloat(bun3, 'bunching3rdHarmonic', time, error)
-        call outputH5Field1DFloat(bun4, 'bunching4thHarmonic', time, error)
-        call outputH5Field1DFloat(bun5, 'bunching5thHarmonic', time, error)
-        call outputH5Field1DFloat(sq, 'sliceCharge', time, error)
+        time = sZ*lg_G/c !real(iCSteps,kind=wp)*sStepSize*lg_G/c
+        if (qSep) then
+      
+          call outputH5Field1DFloat(power, 'power', time, error)
+          call outputH5Field1DFloat(Iarray, 'beamCurrent', time, error)
+          call outputH5Field1DFloat(aveX, 'meanPosX', time, error)
+          call outputH5Field1DFloat(aveY, 'meanPosY', time, error)
+          call outputH5Field1DFloat(avepy, 'meanMomentumX', time, error)
+          call outputH5Field1DFloat(avepy, 'meanMomentumY', time, error)
+          call outputH5Field1DFloat(aveGamma, 'meanGamma', time, error)
+          call outputH5Field1DFloat(aveDGamma, 'meanDeltaGamma', time, error)
+          call outputH5Field1DFloat(sdx, 'sigmaX', time, error)
+          call outputH5Field1DFloat(sdy, 'sigmaY', time, error)
+          call outputH5Field1DFloat(ex, 'emittanceX', time, error)
+          call outputH5Field1DFloat(ey, 'emittanceY', time, error)
+          call outputH5Field1DFloat(bun1, 'bunchingFundamental', time, error)
+          call outputH5Field1DFloat(bun2, 'bunching2ndHarmonic', time, error)
+          call outputH5Field1DFloat(bun3, 'bunching3rdHarmonic', time, error)
+          call outputH5Field1DFloat(bun4, 'bunching4thHarmonic', time, error)
+          call outputH5Field1DFloat(bun5, 'bunching5thHarmonic', time, error)
+          call outputH5Field1DFloat(sq, 'sliceCharge', time, error)
+        else
 
-
-        call CreateIntegrated1DFloat(time,error)
+          call CreateIntegrated1DFloat(time,error)
+          call addH5Field1DFloat(power, 'power', time, error)
+          call addH5Field1DFloat(Iarray, 'beamCurrent', time, error)
+          call addH5Field1DFloat(aveX, 'meanPosX', time, error)
+          call addH5Field1DFloat(aveY, 'meanPosY', time, error)
+          call addH5Field1DFloat(avepy, 'meanMomentumX', time, error)
+          call addH5Field1DFloat(avepy, 'meanMomentumY', time, error)
+          call addH5Field1DFloat(aveGamma, 'meanGamma', time, error)
+          call addH5Field1DFloat(aveDGamma, 'meanDeltaGamma', time, error)
+          call addH5Field1DFloat(sdx, 'sigmaX', time, error)
+          call addH5Field1DFloat(sdy, 'sigmaY', time, error)
+          call addH5Field1DFloat(ex, 'emittanceX', time, error)
+          call addH5Field1DFloat(ey, 'emittanceY', time, error)
+          call addH5Field1DFloat(bun1, 'bunchingFundamental', time, error)
+          call addH5Field1DFloat(bun2, 'bunching2ndHarmonic', time, error)
+          call addH5Field1DFloat(bun3, 'bunching3rdHarmonic', time, error)
+          call addH5Field1DFloat(bun4, 'bunching4thHarmonic', time, error)
+          call addH5Field1DFloat(bun5, 'bunching5thHarmonic', time, error)
+          call addH5Field1DFloat(sq, 'sliceCharge', time, error)
+        end if
 !        call addH5integratedField(Iarray, 'beamCurrent',error)
         if (error .ne. 0) goto 1000
 ! Todo not yet implemented
@@ -2727,7 +2738,6 @@ contains
     implicit none
 
     REAL(kind=WP), intent(in) :: simtime      !< simulation time
-    integer(kind=ip) :: error !< Local Error flag
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: attr_id       !< Attribute identifier
     INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
@@ -2742,6 +2752,7 @@ contains
     character(1024_IP) :: filename !< output filename
     REAL(kind=WP), ALLOCATABLE :: limdata (:)  !< dataset containing limits to write
     INTEGER(kind=IP), ALLOCATABLE :: numcelldata (:)  !< Dataset to write with numcells
+    integer(kind=ip) :: error !< Local Error flag
     if (tProcInfo_G%qRoot) then
       filename = ( trim(adjustl(zFilename_G)) // '_integrated_' &
          // trim(adjustl(IntegerToString(tProcInfo_G%Rank))) &
@@ -2764,6 +2775,81 @@ contains
       CALL h5close_f(error)
     end if 
   end subroutine   CreateIntegrated1DFloat
+!>addH5Field1DFloat() This subroutine writes data
+  subroutine addH5Field1DFloat(writeData, dsetname, simtime, error)
+
+    implicit none
+
+    character(1024_IP) :: filename !< output filename
+    integer(kind=ip) :: error !< Local Error flag
+    real(kind=wp), intent(in) :: writeData(:) !< data to be written
+    REAL(kind=WP), intent(in) :: simtime      !< simulation time
+    CHARACTER(LEN=*), intent(in) :: dsetname  !< Dataset name
+    INTEGER(HID_T) :: file_id       !< File identifier
+    INTEGER(HID_T) :: dset_id       !< Dataset identifier 
+    INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
+    INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
+    INTEGER     ::   rank = 1               !< Dataset rank
+    INTEGER(HSIZE_T), DIMENSION(1) :: dims  !< Dataset dimensionality
+    INTEGER(HSIZE_T), DIMENSION(1) :: adims !< Attribute dims
+    INTEGER(HID_T) :: attr_id       !< Attribute identifier
+    INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
+    INTEGER(HID_T) :: atype_id      !< Attribute Data type identifier
+    CHARACTER(LEN=16) :: aname   !< Attribute name
+    REAL(kind=WP) :: attr_data_double       !< for attrs of type double
+    CHARACTER(LEN=100) :: attr_data_string  !< attrs of type string
+    INTEGER(HSIZE_T) :: attr_string_len     !< len of attrs of type string
+    INTEGER(kind=IP) :: numSpatialDims = 1  !< Attr content,  
+    CHARACTER(LEN=4), PARAMETER :: timegrpname = "time"  !< Time Group name
+    CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  !< Lims Group name
+    CHARACTER(LEN=14), PARAMETER :: limgrpnameSI = "globalLimitsSI"  !< Lims Group name
+    CHARACTER(LEN=10), PARAMETER :: meshScaledGrpname = "meshScaled" !< Mesh Group name
+    CHARACTER(LEN=6), PARAMETER :: meshSIGrpname = "meshSI"  !< SI Mesh Group name
+    INTEGER     ::  arank = 1               !< Attribute Dataset rank
+    if (tProcInfo_G%qRoot) then
+      dims = size(writeData) ! Dataset dimensions
+      filename = ( trim(adjustl(zFilename_G)) // '_integrated_' &
+         // trim(adjustl(IntegerToString(tProcInfo_G%Rank))) &
+        // '_' //trim(adjustl(IntegerToString(iCSteps))) &
+        // '.h5' )
+      CALL h5open_f(error)
+      CALL h5fopen_f(filename, H5F_ACC_RDWR_F, file_id, error)
+      CALL h5screate_simple_f(rank, dims, filespace, error)
+      CALL h5dcreate_f(file_id, trim(adjustl(dsetname)), H5T_NATIVE_DOUBLE, filespace, &
+        dset_id, error)
+      CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, writeData, dims, error)
+      CALL h5sclose_f(filespace, error)
+! scalar dataset for simpler values
+      CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
+      CALL addH5FloatAttribute(dset_id, "time", simtime,aspace_id)
+      CALL addH5FloatAttribute(dset_id, "z", 1.0*iStep*sStepSize,aspace_id)
+      CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
+      aname="vsLabels"
+      attr_data_string=trim(adjustl(dsetname))
+      attr_string_len=len(trim(adjustl(dsetname))) 
+      CALL h5tset_size_f(atype_id, attr_string_len, error)
+      CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
+      CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+      CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+      CALL h5aclose_f(attr_id, error)
+      CALL addH5StringAttribute(dset_id,"vsType","variable",aspace_id)
+      if (size(writeData) .eq. NZ2_G) then
+        CALL addH5StringAttribute(dset_id,"vsCentering","nodal",aspace_id) 
+      else
+        CALL addH5StringAttribute(dset_id,"vsCentering","zonal",aspace_id) 
+      end if
+      CALL addH5StringAttribute(dset_id,"vsIndexOrder","compMinorC",aspace_id)
+      CALL addH5StringAttribute(dset_id,"vsTimeGroup",timegrpname,aspace_id)
+      CALL addH5StringAttribute(dset_id,"vsLimits",limgrpname,aspace_id)
+      CALL addH5StringAttribute(dset_id,"vsMesh",meshScaledGrpname,aspace_id)
+      CALL h5sclose_f(aspace_id, error)
+      CALL h5dclose_f(dset_id, error)
+ 
+      CALL h5fclose_f(file_id, error)
+      CALL h5close_f(error)
+    end if
+  end subroutine addH5Field1DFloat
+
 !> outputH5Field1DFloat
 !! Output a 1D, 1 comp float eg of radiation power, electron current, etc
 !! 
