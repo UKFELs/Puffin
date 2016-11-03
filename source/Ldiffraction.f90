@@ -193,6 +193,21 @@ end subroutine multiplyexp
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Subroutine to perform free space radiation field diffraction
+!> in the dimensionless scaled notation.
+!> Diffraction step algorithm described in
+!> LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
+!> @param[in] h Diffraction step size \f$ \Delta \bar{z} \f$
+!> @param[inout] sAr Real part of \f$ A_\bot \f$
+!> @param[inout] sAi Imaginary part of \f$ A_\bot \f$
+!> @param[out] qOK Error flag.
+
 SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 
   IMPLICIT NONE
@@ -429,6 +444,21 @@ END SUBROUTINE DiffractionStep
 
 !***********************************************************
 
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This subroutine implements a boundary region
+!> in the x, y and z2 directions.The boundary 
+!> layer absorbs the outgoing radiation to 
+!> minimize the reflections of the diffracted
+!> radiation.
+!> @param[inout] sAl Complex field \f$ A_\bot \f$
+!> @param[in] h Diffraction step size \f$ \Delta \bar{z} \f$
+!> @param[in] ffact Absorption coefficient
+
 SUBROUTINE AbsorptionStep(sAl,h,ffact)
 
 ! This subroutine implements a boundary region
@@ -593,6 +623,16 @@ END SUBROUTINE AbsorptionStep
 !**************************************************
 
 !**************************************************
+
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Sets field to zero behind electron beam.
+!> @param[inout] sA Complex field \f$ A_\bot \f$
+!> @param[in] ffact Absorption coefficient
 
 SUBROUTINE clearA(sA, qOK)
 
