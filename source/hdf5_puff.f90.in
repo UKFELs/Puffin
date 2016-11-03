@@ -297,7 +297,7 @@ contains
     call h5screate_f(H5S_SCALAR_F, aspace_id, error)
     call addH5StringAttribute(group_id,"vsType","vsVars",aspace_id)
     call addH5StringAttribute(group_id,"vsMesh","meshSI",aspace_id)
-    call addH5StringAttribute(group_id,"vsLimits","globalLimitsSI",aspace_id)
+!    call addH5StringAttribute(group_id,"vsLimits","globalLimitsSI",aspace_id)
     call addH5StringAttribute(group_id,varName,expression,aspace_id)
     call h5sclose_f(aspace_id, error)
     call h5gclose_f(group_id, error)
