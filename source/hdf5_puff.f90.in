@@ -506,12 +506,13 @@ contains
 
   !> Subroutine to write 1d mesh data
 
-  subroutine write1DuniformMesh(location,meshname,lb,ub,numcells)
+  subroutine write1DuniformMesh(location,meshname,lb,ub,numcells,labels)
 
     implicit none
 
     integer(HID_T), intent(in) :: location        !< h5 handle of write location
     character(len=*), intent(in) :: meshname    !<derived var name
+    character(len=*), intent(in) :: labels    !<derived var name
     real(kind=wp), intent(in) :: ub, lb   !<Bounds to write
     integer(kind=IP), intent(in) :: numcells !<the array to be written
     integer(kind=IP) :: startcell=0 !<another array to be written
@@ -520,23 +521,15 @@ contains
     integer(HID_T) :: aspace_id              !< Attribute Dataspace identifier
 
     call h5gcreate_f(location, meshname, group_id, error)
-
     call h5screate_f(H5S_SCALAR_F, aspace_id, error)
-
     call addH5StringAttribute(group_id,"vsType","mesh",aspace_id)
-
     call addH5StringAttribute(group_id,"vsKind","uniform",aspace_id)
-
     call addH5StringAttribute(group_id,"vsCentering","nodal",aspace_id)
-
     call addH5StringAttribute(group_id,"vsIndexOrder","compMajorF",aspace_id)
-
+    call addH5StringAttribute(group_id,"vsAxisLabels",labels,aspace_id)
     call addH5FloatAttribute(group_id, "vsLowerBounds", lb,aspace_id)
-
     call addH5FloatAttribute(group_id, "vsUpperBounds", ub,aspace_id)
-
     call addH5IntegerAttribute(group_id, "vsStartCell", startcell,aspace_id)
-
     call addH5IntegerAttribute(group_id, "vsNumCells", numcells,aspace_id)
 
     call h5sclose_f(aspace_id, error)    
@@ -2355,7 +2348,7 @@ contains
           ub=NZ2_G*sLengthOfElmZ2_G
 
           call write1DlimGrp(file_id,limgrpname,lb,ub)
-          call write1DuniformMesh(file_id,meshScaledGrpname,lb,ub,(NZ2_G-1))
+          call write1DuniformMesh(file_id,meshScaledGrpname,lb,ub,(NZ2_G-1),"z2,A_perp radiation field")
 
           aname="intensityScaled"
           attr_data_string="sqr(aperp_real)+sqr(aperp_imaginary)"
@@ -2801,10 +2794,14 @@ contains
 !      CALL h5gcreate_f(file_id, limgrpname, group_id, error)
       CALL write1DlimGrp(file_id,limgrpname,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G)
       CALL write1DlimGrp(file_id,limgrpnameSI,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g)
-      CALL write1DuniformMesh(file_id,"intFieldMeshSc",0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G,NZ2_G)
-      CALL write1DuniformMesh(file_id,"intPtclMeshSc",0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G,nslices)
-      CALL write1DuniformMesh(file_id,"intFieldMeshSI",0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g,NZ2_g)
-      CALL write1DuniformMesh(file_id,"intPtclMeshSI",0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g,nslices)
+      CALL write1DuniformMesh(file_id,"intFieldMeshSc",0._wp, &
+        real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G,NZ2_G,"z2,scaled parameter")
+      CALL write1DuniformMesh(file_id,"intPtclMeshSc",0._wp, &
+        real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G,nslices,"z2,scaled parameter")
+      CALL write1DuniformMesh(file_id,"intFieldMeshSI",0._wp, &
+        real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g,NZ2_g,"z2 [m], SI parameter")
+      CALL write1DuniformMesh(file_id,"intPtclMeshSI",0._wp, &
+        real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g,nslices,"z2 [m], SI parameter")
 !
 ! Close the file.
 !
@@ -2885,6 +2882,7 @@ contains
       CALL addH5StringAttribute(dset_id,"vsTimeGroup",timegrpname,aspace_id)
       CALL addH5StringAttribute(dset_id,"vsLimits",limgrpnameSI,aspace_id)
       CALL addH5StringAttribute(dset_id,"vsMesh",(meshname//"Sc"),aspace_id)
+      CALL addH5StringAttribute(dset_id,"vsAxisLabels","z2,"//dsetname//"(scaled)",aspace_id)
 !      aname=trim(adjustl(dsetname)) // "SI"
 !      write(scaleToSIstring, '(E16.9)' ) (scalefac) 
 !      attr_data_string=(trim(adjustl(dsetname)) // "*" // scaleToSIstring)
@@ -2899,7 +2897,7 @@ contains
         dset_id, error)
       allocate(writeDataSI(size(writeData)))
       writeDataSI=writeData*scalefac
-      CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, writeData, dims, error)
+      CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, writeDataSI, dims, error)
       deallocate(writeDataSI)
       CALL h5sclose_f(filespace, error)
 ! scalar dataset for simpler values
@@ -2925,6 +2923,8 @@ contains
       CALL addH5StringAttribute(dset_id,"vsTimeGroup",timegrpname,aspace_id)
       CALL addH5StringAttribute(dset_id,"vsLimits",limgrpname,aspace_id)
       CALL addH5StringAttribute(dset_id,"vsMesh",(meshname//"SI"),aspace_id)
+      CALL addH5StringAttribute(dset_id,"vsAxisLabels","z2 [m],"//dsetname//"(SI)",aspace_id)
+      CALL addH5StringAttribute(dset_id,"vsAxisUnits","m,(SI)",aspace_id)
       CALL h5sclose_f(aspace_id, error)
       CALL h5dclose_f(dset_id, error)
 
