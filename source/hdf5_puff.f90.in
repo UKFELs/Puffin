@@ -250,10 +250,7 @@ contains
 
 
 
-
-
-!> Add vizschema derived variable
-
+!> addH5derivedVariable() add vizschema derived variable
   subroutine addH5derivedVariable(location,varName,expression,error)
 
     implicit none
@@ -278,6 +275,34 @@ contains
     call h5gclose_f(group_id, error)
 
   end subroutine addH5derivedVariable
+
+!> addH5derivedVariable() add vizschema derived variable
+  subroutine addH5derivedVariableSI(location,varName,expression,error)
+
+    implicit none
+
+    integer(HID_T), intent(in) :: location !< h5 handle of write location
+    character(len=*), intent(in) :: varName !<derived var name
+    character(len=*), intent(in) :: expression !<expression value
+
+    ! Local vars
+
+    integer(HID_T) :: group_id      !< Group identifier
+    integer(HID_T) :: aspace_id     !< Attribute Dataspace identifier
+    integer :: error ! Error flag
+
+!               We make a new group
+
+    call h5gcreate_f(location, varName, group_id, error)
+    call h5screate_f(H5S_SCALAR_F, aspace_id, error)
+    call addH5StringAttribute(group_id,"vsType","vsVars",aspace_id)
+    call addH5StringAttribute(group_id,"vsMesh","meshSI",aspace_id)
+    call addH5StringAttribute(group_id,"vsLimits","globalLimitsSI",aspace_id)
+    call addH5StringAttribute(group_id,varName,expression,aspace_id)
+    call h5sclose_f(aspace_id, error)
+    call h5gclose_f(group_id, error)
+
+  end subroutine addH5derivedVariableSI
 
 
 
@@ -537,7 +562,7 @@ contains
     type(cArraySegment), intent(inout) :: tArrayA(:), tArrayE(:), tArrayZ
     integer(kind=ip), intent(in)  :: nslices
     real(kind=wp), dimension(nslices) :: aveX,aveY,avePX,avePY,aveGamma,aveDgamma
-    real(kind=wp), dimension(nslices) :: sdX, sdY, eX, ey, aX, aY, bX, bY
+    real(kind=wp), dimension(nslices) :: sdX, sdY, sdpx, sdpy, eX, ey, aX, aY, bX, bY
     real(kind=wp), dimension(nslices) :: bun1,bun2,bun3,bun4,bun5,sq
 
     integer(kind=ip), intent(in) :: iIntWr, iWr !<Aren't these global?
@@ -671,8 +696,9 @@ contains
 ! These call requires all ranks to participate
       call gPowerP(power)
       call getCurr(dz2_I_G, Iarray)
-      call getSliceTwiss(nslices,slicetrim,aveX,aveY,avePX,avePY &
-    ,sdX,sdY,eX,eY,ax,ay,bx,by,aveGamma,aveDgamma,bun1,bun2,bun3,bun4,bun5,sq)
+      call getSliceTwiss(nslices,slicetrim,aveX,aveY,avePX,avePY, &
+        sdX,sdY,sdpx,sdpy,eX,eY,ax,ay,bx,by,aveGamma,aveDgamma, &
+        bun1,bun2,bun3,bun4,bun5,sq)
 
 ! For starters, write on rank 0 only
 
@@ -693,6 +719,8 @@ contains
           call outputH5Field1DFloat(aveDGamma, 'meanDeltaGamma', time, error)
           call outputH5Field1DFloat(sdx, 'sigmaX', time, error)
           call outputH5Field1DFloat(sdy, 'sigmaY', time, error)
+          call outputH5Field1DFloat(sdpx, 'sigmapX', time, error)
+          call outputH5Field1DFloat(sdpy, 'sigmapY', time, error)
           call outputH5Field1DFloat(ex, 'emittanceX', time, error)
           call outputH5Field1DFloat(ey, 'emittanceY', time, error)
           call outputH5Field1DFloat(bun1, 'bunchingFundamental', time, error)
@@ -704,24 +732,26 @@ contains
         else
 
           call CreateIntegrated1DFloat(time,error)
-          call addH5Field1DFloat(power, 'power', time, error)
-          call addH5Field1DFloat(Iarray, 'beamCurrent', time, error)
-          call addH5Field1DFloat(aveX, 'meanPosX', time, error)
-          call addH5Field1DFloat(aveY, 'meanPosY', time, error)
-          call addH5Field1DFloat(avepy, 'meanMomentumX', time, error)
-          call addH5Field1DFloat(avepy, 'meanMomentumY', time, error)
-          call addH5Field1DFloat(aveGamma, 'meanGamma', time, error)
-          call addH5Field1DFloat(aveDGamma, 'meanDeltaGamma', time, error)
-          call addH5Field1DFloat(sdx, 'sigmaX', time, error)
-          call addH5Field1DFloat(sdy, 'sigmaY', time, error)
-          call addH5Field1DFloat(ex, 'emittanceX', time, error)
-          call addH5Field1DFloat(ey, 'emittanceY', time, error)
-          call addH5Field1DFloat(bun1, 'bunchingFundamental', time, error)
-          call addH5Field1DFloat(bun2, 'bunching2ndHarmonic', time, error)
-          call addH5Field1DFloat(bun3, 'bunching3rdHarmonic', time, error)
-          call addH5Field1DFloat(bun4, 'bunching4thHarmonic', time, error)
-          call addH5Field1DFloat(bun5, 'bunching5thHarmonic', time, error)
-          call addH5Field1DFloat(sq, 'sliceCharge', time, error)
+          call addH5Field1DFloat(power, 'power', 1._wp, time, error)
+          call addH5Field1DFloat(Iarray, 'beamCurrent', 1._wp, time, error)
+          call addH5Field1DFloat(aveX, 'meanPosX', (DSQRT(lg_G*lc_G)), time, error)
+          call addH5Field1DFloat(aveY, 'meanPosY', (DSQRT(lg_G*lc_G)), time, error)
+          call addH5Field1DFloat(avepy, 'meanMomentumX', 1._wp, time, error)
+          call addH5Field1DFloat(avepy, 'meanMomentumY', 1._wp, time, error)
+          call addH5Field1DFloat(aveGamma, 'meanGamma', 1._wp, time, error)
+          call addH5Field1DFloat(aveDGamma, 'meanDeltaGamma', 1._wp, time, error)
+          call addH5Field1DFloat(sdx, 'sigmaX', (DSQRT(lg_G*lc_G)), time, error)
+          call addH5Field1DFloat(sdy, 'sigmaY', (DSQRT(lg_G*lc_G)), time, error)
+          call addH5Field1DFloat(sdpx, 'sigmapX', 1._wp, time, error)
+          call addH5Field1DFloat(sdpy, 'sigmapY', 1._wp, time, error)
+          call addH5Field1DFloat(ex, 'emittanceX', 1._wp, time, error)
+          call addH5Field1DFloat(ey, 'emittanceY', 1._wp, time, error)
+          call addH5Field1DFloat(bun1, 'bunchingFundamental', 1._wp, time, error)
+          call addH5Field1DFloat(bun2, 'bunching2ndHarmonic', 1._wp, time, error)
+          call addH5Field1DFloat(bun3, 'bunching3rdHarmonic', 1._wp, time, error)
+          call addH5Field1DFloat(bun4, 'bunching4thHarmonic', 1._wp, time, error)
+          call addH5Field1DFloat(bun5, 'bunching5thHarmonic', 1._wp, time, error)
+          call addH5Field1DFloat(sq, 'sliceCharge', 1._wp, time, error)
         end if
 !        call addH5integratedField(Iarray, 'beamCurrent',error)
         if (error .ne. 0) goto 1000
@@ -2776,7 +2806,7 @@ contains
     end if 
   end subroutine   CreateIntegrated1DFloat
 !>addH5Field1DFloat() This subroutine writes data
-  subroutine addH5Field1DFloat(writeData, dsetname, simtime, error)
+  subroutine addH5Field1DFloat(writeData, dsetname, scalefac, simtime, error)
 
     implicit none
 
@@ -2784,6 +2814,7 @@ contains
     integer(kind=ip) :: error !< Local Error flag
     real(kind=wp), intent(in) :: writeData(:) !< data to be written
     REAL(kind=WP), intent(in) :: simtime      !< simulation time
+    REAL(kind=WP), intent(in) :: scalefac      !< scaling factor for SI var
     CHARACTER(LEN=*), intent(in) :: dsetname  !< Dataset name
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier 
@@ -2805,6 +2836,7 @@ contains
     CHARACTER(LEN=14), PARAMETER :: limgrpnameSI = "globalLimitsSI"  !< Lims Group name
     CHARACTER(LEN=10), PARAMETER :: meshScaledGrpname = "meshScaled" !< Mesh Group name
     CHARACTER(LEN=6), PARAMETER :: meshSIGrpname = "meshSI"  !< SI Mesh Group name
+    CHARACTER(LEN=16) :: scaleToSIstring !< placeholder for scaling factor strings
     INTEGER     ::  arank = 1               !< Attribute Dataset rank
     if (tProcInfo_G%qRoot) then
       dims = size(writeData) ! Dataset dimensions
@@ -2842,6 +2874,12 @@ contains
       CALL addH5StringAttribute(dset_id,"vsTimeGroup",timegrpname,aspace_id)
       CALL addH5StringAttribute(dset_id,"vsLimits",limgrpname,aspace_id)
       CALL addH5StringAttribute(dset_id,"vsMesh",meshScaledGrpname,aspace_id)
+      aname=trim(adjustl(dsetname)) // "SI"
+      write(scaleToSIstring, '(E16.9)' ) (scalefac) 
+      attr_data_string=(trim(adjustl(dsetname)) // "*" // scaleToSIstring)
+      attr_string_len=len(trim(adjustl(attr_data_string)))
+      CALL addH5derivedVariableSI(file_id,aname,attr_data_string,error)
+
       CALL h5sclose_f(aspace_id, error)
       CALL h5dclose_f(dset_id, error)
  

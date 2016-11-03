@@ -225,16 +225,6 @@ contains
 
 
 
-
-
-
-
-
-
-
-
-
-
 !> gPower Get radiation field power in z2 from input field.
 
 
@@ -265,14 +255,6 @@ contains
     end if
 
   end subroutine gPower
-
-
-
-
-
-
-
-
 
 
 
@@ -384,20 +366,16 @@ contains
 
 
 
-
+!> Integration over x and then y, using trapezoidal rule
 
   real function m_trapz2D(x, y, fxy)
 
     implicit none
 
-! Integration over x and then y, using trapezoidal rule
-!
-!           ARGUMENTS
-
-    real(kind=wp), dimension(:) :: x,y
-    real(kind=wp), dimension(:,:) :: fxy
-    integer(kind=ip) :: xe, ye, i, j
-    real(kind=wp), allocatable :: cul(:)
+    real(kind=wp), dimension(:) :: x,y !<tranverse dims over which to integrate
+    real(kind=wp), dimension(:,:) :: fxy !<the function of x and y to integrate
+    integer(kind=ip) :: xe, ye, i, j !<element extents and element indices
+    real(kind=wp), allocatable :: cul(:) !<cumulative sum.
 
     allocate(cul(size(y)))
 
@@ -420,19 +398,16 @@ contains
 
 
 
-
+!> Integration of y(x) by trapezoidal rule
 
   real function m_trapz(x, y, lower, upper)
 
     implicit none
 
-! Integration of y(x) by trapezoidal rule
-!
-!           ARGUMENTS
 
-    real(kind=wp), dimension(:) :: x,y
-    integer(kind=ip), optional :: lower, upper
-    integer(kind=ip) :: l, u, i
+    real(kind=wp), dimension(:) :: x,y !<transverse dims
+    integer(kind=ip), optional :: lower, upper !< extents
+    integer(kind=ip) :: l, u, i !< indices 
 
     if (present(lower)) then
       l = lower
@@ -471,17 +446,17 @@ contains
 
 
 
-
+!> Calculate the current through interpolating the charge into bins
 
   subroutine getCurr(sam_len, Iarray)
 
     use typesAndConstants
 
-    real(kind=wp), intent(in) :: sam_len
-    real(kind=wp), intent(inout) :: Iarray(:)
+    real(kind=wp), intent(in) :: sam_len !< length of bins in z2
+    real(kind=wp), intent(inout) :: Iarray(:) !< data containing the current info
 
-    integer(kind=ip) :: ij, inl, inu
-    real(kind=wp) :: li1, li2, locz2
+    integer(kind=ip) :: ij, inl, inu !<electron indices over which to integrate
+    real(kind=wp) :: li1, li2, locz2 !<interpolation fractions
 
     Iarray = 0.0_wp   ! initialize
 
@@ -529,12 +504,13 @@ contains
 !> getSliceTwiss computes twiss parameters
 !! in universal coordinates - so need scaling
 !! to get back to SI
-  subroutine getSliceTwiss(nslices,slicetrim,aveX,aveY,avePX,avePY &
-    ,sdX,sdY,eX,eY,ax,ay,bx,by,aveGamma,aveDgamma,b1,b2,b3,b4,b5,sdata)
+  subroutine getSliceTwiss(nslices,slicetrim,aveX,aveY,avePX,avePY, &
+     sdX,sdY,sdpx,sdpy,eX,eY,ax,ay,bx,by, &
+     aveGamma,aveDgamma,b1,b2,b3,b4,b5,sdata)
     integer(kind=ip), intent(in) :: nslices
     real(kind=wp), intent(in) :: slicetrim
     real(kind=wp), intent(out), DIMENSION(nslices) :: aveX,aveY,avePX,avePY,aveGamma,aveDgamma
-    real(kind=wp), intent(out), DIMENSION(nslices) :: sdX, sdY, eX, eY, ax, ay, bx, by
+    real(kind=wp), intent(out), DIMENSION(nslices) :: sdX, sdY, sdpx, sdpy, eX, eY, ax, ay, bx, by
     real(kind=wp), intent(out), DIMENSION(nslices) :: b1,b2,b3,b4,b5,sdata
 !    real(kind=wp), intent(out) :: sdX(nslices)
 !    real(kind=wp), intent(out) :: sdY(nslices)
@@ -560,6 +536,8 @@ contains
     avepY = 0.0_wp  ! initialize
     sdX = 0.0_wp   ! initialize
     sdY = 0.0_wp   ! initialize
+    sdpX = 0.0_wp   ! initialize
+    sdpY = 0.0_wp   ! initialize
     eX = 0.0_wp    ! initialize
     eY = 0.0_wp    ! initialize
     aX = 0.0_wp    ! initialize
@@ -755,6 +733,8 @@ contains
         aveGamma(is)=csdata(6,is)/sdata(is)
         sdx(is)=sqrt((cs2data(1,1,is)-(csdata(1,is)**2)/sdata(is))/sdata(is))
         sdy(is)=sqrt((cs2data(2,2,is)-(csdata(2,is)**2)/sdata(is))/sdata(is))
+        sdpx(is)=sqrt((cs2data(4,4,is)-(csdata(4,is)**2)/sdata(is))/sdata(is))
+        sdpy(is)=sqrt((cs2data(5,5,is)-(csdata(5,is)**2)/sdata(is))/sdata(is))
         avedgamma(is)=sqrt((cs2data(6,6,is)-(csdata(6,is)**2)/sdata(is))/sdata(is))
         if (tprocinfo_g%qroot) then
 !          print*, "ex terms for slice "
@@ -780,6 +760,8 @@ contains
         aveGamma(is)=0._wp
         sdX(is)=0._wp
         sdY(is)=0._wp
+        sdpX(is)=0._wp
+        sdpY(is)=0._wp
         eX(is)=0._wp
         eY(is)=0._wp
         avedgamma(is)=0._wp
