@@ -277,13 +277,14 @@ contains
   end subroutine addH5derivedVariable
 
 !> addH5derivedVariable() add vizschema derived variable
-  subroutine addH5derivedVariableSI(location,varName,expression,error)
+  subroutine addH5derivedVariableSI(location,varName,expression,meshname,error)
 
     implicit none
 
     integer(HID_T), intent(in) :: location !< h5 handle of write location
     character(len=*), intent(in) :: varName !<derived var name
     character(len=*), intent(in) :: expression !<expression value
+    character(len=*), intent(in) :: meshname !<expression value
 
     ! Local vars
 
@@ -296,7 +297,7 @@ contains
     call h5gcreate_f(location, varName, group_id, error)
     call h5screate_f(H5S_SCALAR_F, aspace_id, error)
     call addH5StringAttribute(group_id,"vsType","vsVars",aspace_id)
-    call addH5StringAttribute(group_id,"vsMesh","meshSI",aspace_id)
+    call addH5StringAttribute(group_id,"vsMesh",trim(adjustl(meshname // "SI")),aspace_id)
 !    call addH5StringAttribute(group_id,"vsLimits","globalLimitsSI",aspace_id)
     call addH5StringAttribute(group_id,varName,expression,aspace_id)
     call h5sclose_f(aspace_id, error)
@@ -735,27 +736,27 @@ contains
           PowScale = lg_G * lc_G * c * e_0 * ((sgammaR_G * m_e * c**2.0_wp ) / &
                                  (q_e * skappa_G * lg_G ))**2.0_wp
 
-          call CreateIntegrated1DFloat(time,error)
-          call addH5Field1DFloat(power, 'power', PowScale, time, error)
-          call addH5Field1DFloat(Iarray, 'beamCurrent', 1._wp, time, error)
-          call addH5Field1DFloat(aveX, 'meanPosX', (DSQRT(lg_G*lc_G)), time, error)
-          call addH5Field1DFloat(aveY, 'meanPosY', (DSQRT(lg_G*lc_G)), time, error)
-          call addH5Field1DFloat(avepy, 'meanMomentumX', 1._wp, time, error)
-          call addH5Field1DFloat(avepy, 'meanMomentumY', 1._wp, time, error)
-          call addH5Field1DFloat(aveGamma, 'meanGamma', 1._wp, time, error)
-          call addH5Field1DFloat(aveDGamma, 'meanDeltaGamma', 1._wp, time, error)
-          call addH5Field1DFloat(sdx, 'sigmaX', (DSQRT(lg_G*lc_G)), time, error)
-          call addH5Field1DFloat(sdy, 'sigmaY', (DSQRT(lg_G*lc_G)), time, error)
-          call addH5Field1DFloat(sdpx, 'sigmapX', 1._wp, time, error)
-          call addH5Field1DFloat(sdpy, 'sigmapY', 1._wp, time, error)
-          call addH5Field1DFloat(ex, 'emittanceX', 1._wp, time, error)
-          call addH5Field1DFloat(ey, 'emittanceY', 1._wp, time, error)
-          call addH5Field1DFloat(bun1, 'bunchingFundamental', 1._wp, time, error)
-          call addH5Field1DFloat(bun2, 'bunching2ndHarmonic', 1._wp, time, error)
-          call addH5Field1DFloat(bun3, 'bunching3rdHarmonic', 1._wp, time, error)
-          call addH5Field1DFloat(bun4, 'bunching4thHarmonic', 1._wp, time, error)
-          call addH5Field1DFloat(bun5, 'bunching5thHarmonic', 1._wp, time, error)
-          call addH5Field1DFloat(sq, 'sliceCharge', 1._wp, time, error)
+          call CreateIntegrated1DFloat(time,error,nslices)
+          call addH5Field1DFloat(power, 'power', PowScale, "intFieldMesh", time, error)
+          call addH5Field1DFloat(Iarray, 'beamCurrent', 1._wp, "intPtclMesh", time, error)
+          call addH5Field1DFloat(aveX, 'meanPosX', (DSQRT(lg_G*lc_G)), "intPtclMesh", time, error)
+          call addH5Field1DFloat(aveY, 'meanPosY', (DSQRT(lg_G*lc_G)), "intPtclMesh", time, error)
+          call addH5Field1DFloat(avepy, 'meanMomentumX', 1._wp, "intPtclMesh", time, error)
+          call addH5Field1DFloat(avepy, 'meanMomentumY', 1._wp, "intPtclMesh", time, error)
+          call addH5Field1DFloat(aveGamma, 'meanGamma', 1._wp, "intPtclMesh", time, error)
+          call addH5Field1DFloat(aveDGamma, 'meanDeltaGamma', 1._wp, "intPtclMesh", time, error)
+          call addH5Field1DFloat(sdx, 'sigmaX', (DSQRT(lg_G*lc_G)), "intPtclMesh", time, error)
+          call addH5Field1DFloat(sdy, 'sigmaY', (DSQRT(lg_G*lc_G)), "intPtclMesh", time, error)
+          call addH5Field1DFloat(sdpx, 'sigmapX', 1._wp, "intPtclMesh", time, error)
+          call addH5Field1DFloat(sdpy, 'sigmapY', 1._wp, "intPtclMesh", time, error)
+          call addH5Field1DFloat(ex, 'emittanceX', 1._wp, "intPtclMesh", time, error)
+          call addH5Field1DFloat(ey, 'emittanceY', 1._wp, "intPtclMesh", time, error)
+          call addH5Field1DFloat(bun1, 'bunchingFundamental', 1._wp, "intPtclMesh", time, error)
+          call addH5Field1DFloat(bun2, 'bunching2ndHarmonic', 1._wp, "intPtclMesh", time, error)
+          call addH5Field1DFloat(bun3, 'bunching3rdHarmonic', 1._wp, "intPtclMesh", time, error)
+          call addH5Field1DFloat(bun4, 'bunching4thHarmonic', 1._wp, "intPtclMesh", time, error)
+          call addH5Field1DFloat(bun5, 'bunching5thHarmonic', 1._wp, "intPtclMesh", time, error)
+          call addH5Field1DFloat(sq, 'sliceCharge', 1._wp, "intPtclMesh", time, error)
         end if
 !        call addH5integratedField(Iarray, 'beamCurrent',error)
         if (error .ne. 0) goto 1000
@@ -2767,11 +2768,12 @@ contains
 
 !> CreateIntegrated1DFloat(simtime,error)
 !! Creates a single integrated file for the 1D datasets
-  subroutine CreateIntegrated1DFloat(simtime,error)
+  subroutine CreateIntegrated1DFloat(simtime,error,nslices)
 
     implicit none
 
     REAL(kind=WP), intent(in) :: simtime      !< simulation time
+    INTEGER(kind=IP),intent(in) :: nslices       !< Number of slices
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: attr_id       !< Attribute identifier
     INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
@@ -2799,8 +2801,10 @@ contains
 !      CALL h5gcreate_f(file_id, limgrpname, group_id, error)
       CALL write1DlimGrp(file_id,limgrpname,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G)
       CALL write1DlimGrp(file_id,limgrpnameSI,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g)
-      CALL write1DuniformMesh(file_id,meshScaledGrpname,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G,NZ2_G)
-      CALL write1DuniformMesh(file_id,meshSIGrpname,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g,NZ2_G)
+      CALL write1DuniformMesh(file_id,"intFieldMeshSc",0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G,NZ2_G)
+      CALL write1DuniformMesh(file_id,"intPtclMeshSc",0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G,nslices)
+      CALL write1DuniformMesh(file_id,"intFieldMeshSI",0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g,NZ2_g)
+      CALL write1DuniformMesh(file_id,"intPtclMeshSI",0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g,nslices)
 !
 ! Close the file.
 !
@@ -2809,16 +2813,17 @@ contains
     end if 
   end subroutine   CreateIntegrated1DFloat
 !>addH5Field1DFloat() This subroutine writes data
-  subroutine addH5Field1DFloat(writeData, dsetname, scalefac, simtime, error)
+  subroutine addH5Field1DFloat(writeData, dsetname, scalefac, meshname, simtime, error)
 
     implicit none
 
     character(1024_IP) :: filename !< output filename
     integer(kind=ip) :: error !< Local Error flag
     real(kind=wp), intent(in) :: writeData(:) !< data to be written
-    REAL(kind=WP), intent(in) :: simtime      !< simulation time
-    REAL(kind=WP), intent(in) :: scalefac      !< scaling factor for SI var
     CHARACTER(LEN=*), intent(in) :: dsetname  !< Dataset name
+    REAL(kind=WP), intent(in) :: scalefac      !< scaling factor for SI var
+    CHARACTER(LEN=*), INTENT(IN) :: meshname !<name of mesh to assign integrated data
+    REAL(kind=WP), intent(in) :: simtime      !< simulation time
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier 
     INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
@@ -2837,8 +2842,10 @@ contains
     CHARACTER(LEN=4), PARAMETER :: timegrpname = "time"  !< Time Group name
     CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  !< Lims Group name
     CHARACTER(LEN=14), PARAMETER :: limgrpnameSI = "globalLimitsSI"  !< Lims Group name
-    CHARACTER(LEN=10), PARAMETER :: meshScaledGrpname = "meshScaled" !< Mesh Group name
-    CHARACTER(LEN=6), PARAMETER :: meshSIGrpname = "meshSI"  !< SI Mesh Group name
+!    CHARACTER(LEN=10), PARAMETER :: meshScaledGrpname = "meshScaled" !< Mesh Group name
+!    CHARACTER(LEN=6), PARAMETER :: meshSIGrpname = "meshSI"  !< SI Mesh Group name
+!    CHARACTER(LEN=15), PARAMETER :: meshScaledGrpname = "meshIntPtclData" !< Mesh Group name
+!    CHARACTER(LEN=6), PARAMETER :: meshSIGrpname = "meshIntPtclSI"  !< SI Mesh Group name
     CHARACTER(LEN=40) :: scaleToSIstring !< placeholder for scaling factor strings
     INTEGER     ::  arank = 1               !< Attribute Dataset rank
     if (tProcInfo_G%qRoot) then
@@ -2873,15 +2880,15 @@ contains
       else
         CALL addH5StringAttribute(dset_id,"vsCentering","zonal",aspace_id) 
       end if
-      CALL addH5StringAttribute(dset_id,"vsIndexOrder","compMinorC",aspace_id)
+      CALL addH5StringAttribute(dset_id,"vsIndexOrder","compMinorF",aspace_id)
       CALL addH5StringAttribute(dset_id,"vsTimeGroup",timegrpname,aspace_id)
       CALL addH5StringAttribute(dset_id,"vsLimits",limgrpname,aspace_id)
-      CALL addH5StringAttribute(dset_id,"vsMesh",meshScaledGrpname,aspace_id)
+      CALL addH5StringAttribute(dset_id,"vsMesh",(meshname//"Sc"),aspace_id)
       aname=trim(adjustl(dsetname)) // "SI"
       write(scaleToSIstring, '(E16.9)' ) (scalefac) 
       attr_data_string=(trim(adjustl(dsetname)) // "*" // scaleToSIstring)
       attr_string_len=len(trim(adjustl(attr_data_string)))
-      CALL addH5derivedVariableSI(file_id,aname,attr_data_string,error)
+      CALL addH5derivedVariableSI(file_id,aname,attr_data_string,meshname,error)
 
       CALL h5sclose_f(aspace_id, error)
       CALL h5dclose_f(dset_id, error)
@@ -3015,7 +3022,7 @@ contains
     else
       CALL addH5StringAttribute(dset_id,"vsCentering","zonal",aspace_id) 
     end if
-    CALL addH5StringAttribute(dset_id,"vsIndexOrder","compMinorC",aspace_id)
+    CALL addH5StringAttribute(dset_id,"vsIndexOrder","compMinorF",aspace_id)
     CALL addH5StringAttribute(dset_id,"vsTimeGroup",timegrpname,aspace_id)
     CALL addH5StringAttribute(dset_id,"vsLimits",limgrpname,aspace_id)
     CALL addH5StringAttribute(dset_id,"vsMesh",meshScaledGrpname,aspace_id)
