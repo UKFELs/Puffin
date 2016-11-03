@@ -573,6 +573,7 @@ contains
     real(kind=wp) :: slicetrim
     logical :: qWriteInt, qWriteFull !<Flags identifying if it is time to write
     real(kind=wp) :: time,stime,ftime !<Simulation time, calcualted here
+    real(kind=wp) :: PowScale !< Scaling factor for power
     error = 0
     slicetrim=(4*pi*srho_g*nslices)-sLengthOfElmZ2_G*NZ2_G
 
@@ -731,8 +732,11 @@ contains
           call outputH5Field1DFloat(sq, 'sliceCharge', time, error)
         else
 
+          PowScale = lg_G * lc_G * c * e_0 * ((sgammaR_G * m_e * c**2.0_wp ) / &
+                                 (q_e * skappa_G * lg_G ))**2.0_wp
+
           call CreateIntegrated1DFloat(time,error)
-          call addH5Field1DFloat(power, 'power', 1._wp, time, error)
+          call addH5Field1DFloat(power, 'power', PowScale, time, error)
           call addH5Field1DFloat(Iarray, 'beamCurrent', 1._wp, time, error)
           call addH5Field1DFloat(aveX, 'meanPosX', (DSQRT(lg_G*lc_G)), time, error)
           call addH5Field1DFloat(aveY, 'meanPosY', (DSQRT(lg_G*lc_G)), time, error)
