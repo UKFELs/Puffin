@@ -336,7 +336,9 @@ If {\bf qFocussing} is true and the strong betatron wavenumber is given, then th
 
 The main algorithm in Puffin utilizes scaled variables to make the numbers `nicer' to work with. The system saturates with scaled intensity $\sim 1$, the scaled perpindicular momentum of the beam in the wiggler oscillates between $-1$ and $1$, and so forth. The distance through the wiggler is given in units of a (1D) gain length, and the beam coordinate in the radiation frame is in units of the cooperation length, so that a reference electron slips $1l_c$ through the radiation field in $1$ gain  length. The scaling defines a frame of reference which normalises the quantities not only to numerically more manageable numbers, but to \textit{characteristic} variables. 
 
-The two dominant variables for the scaling are $\rho$ and $\eta$. $\eta$ is a function of the wiggler parameters $a_u$ and $\lambda_u$, and reference beam energy $\gamma_r$, and is calculated in Puffin from the input. The $\rho$ parameter is dependent on the peak electron beam number density, amongst other things.
+The two dominant variables for the scaling are $\rho$ and $\eta$. $\eta$ is a function of the wiggler parameters $a_u$ and $\lambda_u$, and reference beam energy $\gamma_r$, and is calculated in Puffin from the input. It defines the velocity of the scaled reference frame. The $\bar{z}_2$ coordinate is in the scaled frame travelling with the field (at velocity $c$) - $\eta$ determines how quickly the electrons slip back through this frame, such that an electron with energy $\gamma_r$, travelling in a wiggler with parameters $a_u$ and $lambda_u$, slips back with scaled velocity $p_2 \equiv \dfrac{d zbar{z}_2}{d\bar{z}} = 1$.
+
+The $\rho$ parameter is dependent on the peak electron beam number density, amongst other things.
 
 The beam and radiation field parameters may be input in either SI units or the scaled units. Use the variable {\bf qscaled} in the main input file to do this. If $=$ {\bf .true.}, then Puffin expects scaled variables are being used. If SI units are used, then the input parameters will be scaled according to the scaling values specified in the main input file. 
 
