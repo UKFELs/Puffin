@@ -1,8 +1,16 @@
 !************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
+!** Copyright 2013-2016, Lawrence Campbell and Brian McNeil.    **!
 !** This program must not be copied, distributed or altered in  **!
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> A module which contains top-level subroutines to allocate and initialize, 
+!> or destroy, the data used in Puffin.
 
 MODULE Setup
 
@@ -21,9 +29,6 @@ MODULE Setup
   use dumpFiles
   use ParaField
   use dummyf
-
-! A module which allocates and initializes - or 
-! destroys - the data used in Puffin.
 
   IMPLICIT NONE
 

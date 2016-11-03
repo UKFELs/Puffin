@@ -1,3 +1,15 @@
+!************* THIS HEADER MUST NOT BE REMOVED *******************!
+!** Copyright 2013-2016, Lawrence Campbell and Brian McNeil.    **!
+!** This program must not be copied, distributed or altered in  **!
+!** any way without the prior permission of the above authors.  **!
+!*****************************************************************!
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Module for calculating sequences used in the macroparticle generation.
 
 module pseqs
 
