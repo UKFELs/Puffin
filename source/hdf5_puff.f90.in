@@ -2782,7 +2782,6 @@ contains
     CHARACTER(LEN=14), PARAMETER :: limgrpnameSI = "globalLimitsSI"  !< Lims Group name
     CHARACTER(LEN=10), PARAMETER :: meshScaledGrpname = "meshScaled" !< Mesh Group name
     CHARACTER(LEN=6), PARAMETER :: meshSIGrpname = "meshSI"  !< SI Mesh Group name
-    CHARACTER(LEN=16) :: scaleToSIstring !< placeholder for scaling factor strings
     character(1024_IP) :: filename !< output filename
     REAL(kind=WP), ALLOCATABLE :: limdata (:)  !< dataset containing limits to write
     INTEGER(kind=IP), ALLOCATABLE :: numcelldata (:)  !< Dataset to write with numcells
@@ -2830,7 +2829,7 @@ contains
     INTEGER(HID_T) :: attr_id       !< Attribute identifier
     INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
     INTEGER(HID_T) :: atype_id      !< Attribute Data type identifier
-    CHARACTER(LEN=16) :: aname   !< Attribute name
+    CHARACTER(LEN=40) :: aname   !< Attribute name
     REAL(kind=WP) :: attr_data_double       !< for attrs of type double
     CHARACTER(LEN=100) :: attr_data_string  !< attrs of type string
     INTEGER(HSIZE_T) :: attr_string_len     !< len of attrs of type string
@@ -2840,7 +2839,7 @@ contains
     CHARACTER(LEN=14), PARAMETER :: limgrpnameSI = "globalLimitsSI"  !< Lims Group name
     CHARACTER(LEN=10), PARAMETER :: meshScaledGrpname = "meshScaled" !< Mesh Group name
     CHARACTER(LEN=6), PARAMETER :: meshSIGrpname = "meshSI"  !< SI Mesh Group name
-    CHARACTER(LEN=16) :: scaleToSIstring !< placeholder for scaling factor strings
+    CHARACTER(LEN=40) :: scaleToSIstring !< placeholder for scaling factor strings
     INTEGER     ::  arank = 1               !< Attribute Dataset rank
     if (tProcInfo_G%qRoot) then
       dims = size(writeData) ! Dataset dimensions
