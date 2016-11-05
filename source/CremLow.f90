@@ -4,11 +4,18 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This module defines subroutines used to remove electron
+!> macroparticles with a low chi weighting factor from 
+!> the initially generated macroparticles.
+
+
 module remLow
 
-! This module defines subroutines used to remove electron
-! macroparticles with a low chi weighting factor from 
-! the initially generated macroparticles.
 
 use paratype
 use Globals

@@ -187,7 +187,7 @@ SUBROUTINE READNELEC(rank,nelectrons)
 
   INTEGER(KIND=IP),INTENT(IN) :: rank
   INTEGER(KIND=IPL),INTENT(INOUT) :: nelectrons
-  CHARACTER(32_IP) :: FileName
+  CHARACTER(1024_IP) :: FileName
   
   FileName = 'nelectrons'//TRIM(IntegerToString(RANK))//'.dump'
  
@@ -209,7 +209,7 @@ SUBROUTINE READDUMP(sA,rank,nnodes,nelectrons,sz,istep,page)
  INTEGER(KIND=IPL), INTENT(INOUT) :: nelectrons
  REAL(KIND=WP),INTENT(OUT) :: sz
 
- CHARACTER(32_IP) :: FileName
+ CHARACTER(1024_IP) :: FileName
 
 ! FIELD
 
@@ -324,7 +324,7 @@ SUBROUTINE READINCHIDATA(chibar,normchi,rank)
  REAL(KIND=WP),DIMENSION(:),INTENT(OUT) :: normchi
  INTEGER(KIND=IP),INTENT(IN) :: rank
 
- CHARACTER(32_IP) :: FileName
+ CHARACTER(1024_IP) :: FileName
 
 ! FIELD
 ! Real part

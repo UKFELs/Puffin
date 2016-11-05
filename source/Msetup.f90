@@ -7,7 +7,8 @@
 MODULE Setup
 
   USE SETUPTRANS
-  USE FFTW_Constants
+!  USE FFTW_Constants
+
   USE setupcalcs
   USE transforms
   USE sddsPuffin
@@ -299,7 +300,9 @@ MODULE Setup
 
   end if
 
-  call initPFile(tPowF, qFormattedFiles) ! initialize power file type
+  if (qsdds_G) call initPFile(tPowF, qFormattedFiles) ! initialize power file type
+
+  call initPowerCalc()
 
 !     Generate macroelectrons
 
@@ -419,52 +422,55 @@ MODULE Setup
 
 !    Write the various parameter data to file.
 
-  IF(tProcInfo_G%qROOT) PRINT *, 'Writing parameter data to file' 
+  if (qsdds_G) then
 
-  qSeparateStepFiles_G = qSeparateStepFiles
+    if (tProcInfo_G%qROOT) print*, 'Writing parameter data to file' 
 
-  CALL WriteEleData(zDataFileName,'Chi','s_chi_bar',qFormattedFiles, &
-       iGlonumElectrons_G,s_chi_bar_G,qOKL)
-  If (.NOT. qOKL) GOTO 1000
+    qSeparateStepFiles_G = qSeparateStepFiles
+
+    call WriteEleData(zDataFileName,'Chi','s_chi_bar',qFormattedFiles, &
+         iGlonumElectrons_G,s_chi_bar_G,qOKL)
+    if (.not. qOKL) goto 1000
   
-  CALL WriteEleData(zDataFileName,'NormChi','s_Normalised_chi',qFormattedFiles, &
-       iGlonumElectrons_G,s_Normalised_chi_G,qOKL)
-  If (.NOT. qOKL) GOTO 1000
+    call WriteEleData(zDataFileName,'NormChi','s_Normalised_chi',qFormattedFiles, &
+                      iGlonumElectrons_G,s_Normalised_chi_G,qOKL)
+    if (.not. qOKL) goto 1000
   
-  IF (tProcInfo_G%qRoot) THEN
-    CALL WriteParameterData(zDataFileName,&
-         iNodes,&
-         iNumElectrons(1,:),&
-         sLengthOfElm, &
-         sStepSize,    &
-         nSteps,&
-         sLenEPulse(1,:),&
-         sFieldModelLength,&
-         sEleSig(1,:),&
-         sA0_Re(1),&
-         sA0_Im(1),&
-         srho,&
-         saw_G,&
-         sEta_G,&
-         sGammaR_G,&
-         sKBeta_G, &
-         sFocusfactor_G, &
-         lam_w_G, lam_r_G, &
-         lg_G, lc_G, &
-         npk_bar_G, &  
-         iGloNumElectrons_G,&
-         nFieldEquations_CG,&
-         nElectronEquations_CG,&  
-         sZ,&
-         iWriteNthSteps, &
-         iIntWriteNthSteps, &
-         sSeedSigma(1,:),&
-         qSwitches,&
-         fx,fy,&
-         qOKL)                             
-    IF (.NOT. qOKL) GOTO 1000
+    if (tProcInfo_G%qRoot) then
+      call WriteParameterData(zDataFileName,&
+                             iNodes,&
+                             iNumElectrons(1,:),&
+                             sLengthOfElm, &
+                             sStepSize,    &
+                             nSteps,&
+                             sLenEPulse(1,:),&
+                             sFieldModelLength,&
+                             sEleSig(1,:),&
+                             sA0_Re(1),&
+                             sA0_Im(1),&
+                             srho,&
+                             saw_G,&
+                             sEta_G,&
+                             sGammaR_G,&
+                             sKBeta_G, &
+                             sFocusfactor_G, &
+                             lam_w_G, lam_r_G, &
+                             lg_G, lc_G, &
+                             npk_bar_G, &  
+                             iGloNumElectrons_G,&
+                             nFieldEquations_CG,&
+                             nElectronEquations_CG,&  
+                             sZ,&
+                             iWriteNthSteps, &
+                             iIntWriteNthSteps, &
+                             sSeedSigma(1,:),&
+                             qSwitches,&
+                             fx,fy,&
+                             qOKL)                             
+      if (.not. qOKL) goto 1000
           
-  END IF
+    end if
+  end if
 
 !    Write out initial values of electron and field data.
 !    If not using separate files for each step then open 
@@ -482,9 +488,11 @@ MODULE Setup
 !                 iIntWriteNthSteps, iWriteNthSteps, .true., &
 !                 zDataFileName, .true., .true., qOK)
 
+  iCSteps = 0_ip
   call writeIM(sZ, &
                zDataFileName, 0_ip, 0_ip, iWriteNthSteps, &
                iIntWriteNthSteps, nSteps, qOKL)
+  iCsteps = 1_ip
 
 !  if (qWrite) call wdfs(sA, sZ, 0, tArrayA, tArrayE, tArrayZ, &
 !                        iIntWriteNthSteps, iWriteNthSteps, &

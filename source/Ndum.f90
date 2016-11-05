@@ -1,10 +1,11 @@
 module dummyf
 
-USE FFTW_Constants
+!USE FFTW_Constants
+
 USE sddsPuffin
 USE lattice
 USE RK4int
-use dumpFiles 
+use dumpFiles
 use hdf5_puff
 use pln_puff
 use ParaField
@@ -33,7 +34,7 @@ subroutine writeIM(sZ, &
   integer(kind=ip), intent(in) :: iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps
   integer(kind=ip), intent(in) :: iCstep
   integer(kind=ip) :: nslices
-  character(32_IP), intent(in) :: zDataFileName
+  character(1024_IP), intent(in) :: zDataFileName
   logical, intent(inout) :: qOK
 
   integer error
@@ -43,7 +44,7 @@ subroutine writeIM(sZ, &
   qOK = .false.
 
 
-  call int_or_full(istep, iCsteps, iIntWriteNthSteps, iWriteNthSteps, &
+  call int_or_full(istep, iCstep, iIntWriteNthSteps, iWriteNthSteps, &
                    qWriteInt, qWriteFull, qOK)
 
   if (qsdds_G) then
@@ -57,7 +58,7 @@ subroutine writeIM(sZ, &
 
   if (qhdf5_G) then
      nslices=ceiling( (sLengthOfElmZ2_G*NZ2_G)/(4*pi*srho_g))
-     
+
     call wr_h5(sZ, tArrayA, tArrayE, tArrayZ, &
                  iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
                  zDataFileName, qWriteFull, &
@@ -65,7 +66,7 @@ subroutine writeIM(sZ, &
 
   end if
 
-!  else 
+!  else
 
 !    call wr_pln()
 
@@ -96,7 +97,7 @@ end subroutine writeIM
 
     implicit none
 
-!   Figure out whether to write integrated data or 
+!   Figure out whether to write integrated data or
 !   full particle dump
 
 
@@ -107,7 +108,7 @@ end subroutine writeIM
     logical ::  qOKL
 
     qOK = .false.
-    
+
     qWriteInt = .false.
     qWriteFull = .false.
 

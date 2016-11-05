@@ -4,9 +4,14 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
-module Globals
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Module defining shared (global) variables used in Puffin
 
-! Module defining shared (global) variables used in Puffin
+module Globals
 
 use paratype
 use typesAndConstants
@@ -104,6 +109,7 @@ integer(kind=ip) :: iInputType_G
 integer(kind=ip), parameter :: iGenHom_G = 1_ip
 integer(kind=ip), parameter :: iReadDist_G = 2_ip
 integer(kind=ip), parameter :: iReadMASP_G = 3_ip
+integer(kind=ip), parameter :: iReadH5_G = 4_ip
 
 ! Electron macroparticle phase space coordinates 
 
@@ -315,7 +321,7 @@ integer(kind=ip) :: iRedistStp_G
 
 
 
-character(32_IP) :: zDataFileName ! filename extension for 
+character(1024_IP) :: zDataFileName ! filename extension for 
                                   ! data files
 
 ! Type arrays describing electron, field and z output files,
@@ -335,7 +341,7 @@ integer(kind=ip) :: iWriteNthSteps, iDumpNthSteps, iIntWriteNthSteps
 
 
 character(132_ip) :: cmd_call_G
-character(32_ip) :: zFileName_G, zBFile_G, zSFile_G
+character(1024_ip) :: zFileName_G, zBFile_G, zSFile_G
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

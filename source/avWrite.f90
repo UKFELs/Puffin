@@ -25,7 +25,7 @@ contains
 
 !> writeIntData Top level routine for writing reduced/integrated data
 !! Outputs integrated data e.g. power, current
-!! bunching, etc
+!! bunching, etc in sdds format. Only writes power (in sdds format) at present.
 
 
   subroutine writeIntData()
@@ -39,20 +39,25 @@ contains
 
 
 
-
+!> gPowerP Subroutine to calculate the radiation power. The power
+!! is calculated from the global distributed radiation field arrays.
+!! @params power, output array containing the calculated power
+!! as a function of z2. The power is calculated on an equispaced
+!! 1D mesh at nodes equal to the nodes in z2 of the radiation field.
+!! So e.g. the power node separation is sLengthOfElmZ2_G.
 
   subroutine gPowerP(power)
 
     implicit none
 
 
-    real(kind=wp), intent(out) :: power(:)
+    real(kind=wp), intent(out) :: power(:)  !< Returned power array
 
-    real(kind=wp), allocatable :: fr_power(:), &
-                                  bk_power(:), &
-                                  ac_power(:)
+    real(kind=wp), allocatable :: fr_power(:), &  !< Power in 'front' field section
+                                  bk_power(:), &  !< Power in 'back' field section
+                                  ac_power(:)     !< Power in 'active' field section
 
-    integer :: error
+    integer :: error  !< Error flag for MPI routines
 
     allocate(ac_power(mainlen), fr_power(tlflen4arr), bk_power(tlelen4arr))
 
@@ -61,7 +66,7 @@ contains
 !    wfield = complex(reshape(sA(1:nnodes),(/nx,ny,nz2/)), &
 !                reshape(sA(nnodes+1:2*nnodes),(/nx,ny,nz2/)))
 
-  
+
     if ((ffe_GGG > 0) .and. (tlflen > 0) ) then
 
       call gPower(fr_rfield, fr_ifield, fr_power)
@@ -70,7 +75,7 @@ contains
 
 !    call mpi_barrier(tProcInfo_G%comm, error)
 !    print*, 'got FRONT powsss'
-    
+
 
 !    if (count(abs(ac_rfield) > 0.0_wp) <= 0) print*, 'HELP IM RUBBUSH POW'
 
@@ -92,7 +97,7 @@ contains
 !    call mpi_barrier(tProcInfo_G%comm, error)
 !    print*, 'got powsss'
 
-    
+
     call UpdateGlobalPow(fr_power, ac_power, bk_power, power)
 
 !    call mpi_barrier(tProcInfo_G%comm, error)
@@ -104,34 +109,27 @@ contains
   end subroutine gPowerP
 
 
+!> oPower This subroutine retrieves the power in z2 (using gPowerP) and
+!! outputs it to a file (by calling writePower).
+!! @params nz2_G Number of nodes in z2.
+!! @params tPowF Global type for storing sdds file data about the power file.
 
   subroutine oPower()
 
     implicit none
 
-! This subroutine retrieves the power in z2 and
-! outputs it to a file.
-!
-!
-! wfield          array used to hold the field in 3D form
-
-!    complex(kind=wp), allocatable :: wfield(:,:,:)
-    real(kind=wp), allocatable :: power(:)
-    integer :: error
+    real(kind=wp), allocatable :: power(:)  !< Radiation field power
+    integer :: error  !< Error code for MPI routines
 
 
     allocate(power(nz2_g))
 
     call gPowerP(power)
 
-
-
     call writePower(power,tPowF)
-
 
 !    call mpi_barrier(tProcInfo_G%comm, error)
 !    print*, 'written'
-
 
     deallocate(power)
 
@@ -141,37 +139,27 @@ contains
 
 
 
-
-
-
-
-
-
+!> writePower This subroutine appends the power at the current
+!! step to the SDDS power file.
 
   subroutine writePower(power,powFType)
 
     implicit none
 
-! This subroutine appends the power at the current
-! step to the SDDS power file.
-!
-! inputs
+    real(kind=wp), intent(in) :: power(:)  !< Input radiation power
+    type(cFileType), intent(inout) :: powFType  !< Input/ouput type describing the power output file
 
-    real(kind=wp), intent(in) :: power(:)
-    type(cFileType), intent(inout) :: powFType
-
-    integer(kind=ip) :: nnz2
-    logical :: qOKL
-
+    integer(kind=ip) :: nnz2 !< number of power sampling nodes in z2
+    logical :: qOKL  !< Error flag
 
     nnz2 = size(power)
 
-    if (tProcInfo_G%qRoot) then 
+    if (tProcInfo_G%qRoot) then
 
       call OutputIntegrationData(powFType,&
               power,nnz2,qOKL)
 
-    end if  
+    end if
 
   end subroutine writePower
 
@@ -179,23 +167,19 @@ contains
 
 
 
-
+!> initPFile This subroutine initializes the SDDS power file, and must be
+!> called before any writing to the sdds power file takes place.
 
   subroutine initPFile(powFType, qForm)
 
     implicit none
 
-! This subroutine initializes the SDDS power file
-!
-! inputs
+    type(cFileType), intent(inout) :: powFType !< Input/output Power filetype, describing power file.
+    logical, intent(in) :: qForm !< Input Whether sdds output is to be formatted or not.
 
-    type(cFileType), intent(inout) :: powFType
-    logical, intent(in) :: qForm
-
-    character(32_IP) :: fname, vname
-    logical :: qOKL
-
-    real(kind=wp) :: lx, ly
+    character(1024_IP) :: fname, & !< Filename (unused)
+                        vname    !< SDDS Variable name
+    logical :: qOKL  !< Local error flag
 
     powFType%qformatted = qForm
     powFType%zFileName = 'power.sdds' !  filename
@@ -208,12 +192,21 @@ contains
                           vname, powFType, qOKL)
 
     end if
-  
+
+  end subroutine initPFile
+
+!> initPowerCalc This subroutine stes up array structures to be 
+!> use in the power calculation.
+
+  subroutine initPowerCalc()
+
+    real(kind=wp) :: lx, &  !< Length of field mesh in x
+                     ly     !< Length of field mesh in x
 
     allocate(x_ax_G(NX_G), y_ax_G(NY_G))
 
     if ( .not. ((NX_G == 1_IP) .and. (NY_G == 1_IP)) ) then
-    
+
       lx = sLengthOfElmX_G * (NX_G-1)
       ly = sLengthOfElmY_G * (NY_G-1)
 
@@ -222,7 +215,7 @@ contains
 
     end if
 
-  end subroutine initPFile
+  end subroutine initPowerCalc
 
 
 
@@ -243,8 +236,7 @@ contains
 
 
 
-
-
+!> gPower Get radiation field power in z2 from input field.
 
 
   subroutine gPower(rfield, ifield, power)
@@ -256,17 +248,18 @@ contains
 !
 !       ARGUMENTS
 
-    real(kind=wp), intent(in) :: rfield(:), ifield(:)
+    real(kind=wp), intent(in) :: rfield(:), &  !< Input real part of A_perp
+                                 ifield(:)     !< Input imaginary part of A_perp
 
-    real(kind=wp), intent(out) :: power(:)
-    
+    real(kind=wp), intent(out) :: power(:)   !< Output Power cal'd from rfield and ifield
+
     power = 0.0_wp     ! init
 
     if ((NX_G == 1_IP) .and. (NY_G == 1_IP)) then
 
       call fPower_1D(rfield, ifield, power)
 
-    else 
+    else
 
       call fPower_3D(rfield,ifield,x_ax_G,y_ax_G,power)
 
@@ -311,7 +304,7 @@ contains
                                  xaxis(:), yaxis(:)
 
     real(kind=wp), intent(out) :: power(:)
-    
+
     real(kind=wp), allocatable :: intens(:), intens2(:,:)
     integer(kind=ip) :: i, bt, et, ntr, nx, ny, nz2, nno
 
@@ -330,7 +323,7 @@ contains
 
     do i = 1, nZ2
 
-      bt = (i-1) * ntr + 1_IP 
+      bt = (i-1) * ntr + 1_IP
       et = i * ntr
 
       !call mpi_barrier(tProcInfo_G%comm, error)
@@ -340,7 +333,7 @@ contains
 
       !call mpi_barrier(tProcInfo_G%comm, error)
       !print*, 'got intensity', i, intens(1:20)
-      
+
 
 
       intens2 = reshape(intens, (/nx,ny/))
@@ -418,7 +411,7 @@ contains
     m_trapz2D = m_trapz(y,cul)
 
     deallocate(cul)
-        
+
   end function m_trapz2D
 
 
@@ -459,12 +452,12 @@ contains
     do i = l,u-1
       m_trapz = m_trapz + (x(i+1)-x(i))*(y(i+1)+y(i))/2.0
     end do
-    
+
   end function m_trapz
 
 
 
-   
+
 
 
   subroutine getCurrNpts(sam_len, npts)
@@ -495,22 +488,27 @@ contains
 
     do ij = 1, size(sElX_G)
 
-      !   Array indices 
+      !   Array indices
       inl = ceiling(sElZ2_G(ij)/sam_len)
       inu = inl + 1
 
-      if ((inu > NZ2_G) .or. (inl<0)) then
+      if ((inu > npts_I_G) .or. (inl<=0)) then
         print*, 'NODES OUTSIDE BOUNDS'
         STOP
       end if
 
       ! Interpolation fractions
-      locz2 = sElZ2_G(ij) - (inl-1) * sam_len
+      locz2 = sElZ2_G(ij) - real((inl-1_ip),kind=wp) * sam_len
       li2 = locz2 / sam_len
       li1 = 1_wp - li2
 
       if ((li2 < 0.0_wp) .or. (li1<0.0_wp)) then
-        print*, 'interps are negative!'
+        print*, 'Unable to calculate correct interpolation fraction'
+        print*, 'Particle coords'
+        print*, sElX_G(ij)
+        print*, sElY_G(ij)
+        print*, sElZ2_G(ij)
+        print*, 'Interps are negative!'
         STOP
       end if
 
@@ -592,21 +590,21 @@ contains
 !    sliceSizeZ2=(sLengthOfElmZ2_G*NBZ2)/(nslices-1)
 !    sliceSizeZ2=((sLengthOfElmZ2_G*NZ2_G)-slicetrim)/(nslices)
     sliceSizeZ2=4*pi*srho_g
-    print *,"evaluating slices of size",4*pi*srho_g,sliceSizeZ2,slicetrim
+!    print *,"evaluating slices of size",4*pi*srho_g,sliceSizeZ2,slicetrim
     do ip = 1, size(sElX_G)
       is = ceiling(sElZ2_G(ip)/sliceSizeZ2)
       if ((is>nslices) .or. (is <1)) then
          print*,"slice index, is, out of bounds in slice computation"
          goto 1000
-      end if  
-      if (mod(ip,10000) .eq. 0) then
-        print*,"at particle ",ip
       end if
+!      if (mod(ip,10000) .eq. 0) then
+!        print*,"at particle ",ip
+!      end if
       sdata(is)=sdata(is)+s_chi_bar_G(ip)
 !      do ic1 = 1,ncoord
 !        select case (ncoord)
 !          case (1) csdata(ic1,is)=s_chi_bar_G(ip)*sX_G
-!        !! Would be tidier, but sadly our data is not structured nicely for this        
+!        !! Would be tidier, but sadly our data is not structured nicely for this
 !      end do
       csdata(1,is)=csdata(1,is)+s_chi_bar_G(ip)*sElX_G(ip)
       cs2data(1,1,is)=cs2data(1,1,is)+s_chi_bar_G(ip)*sElX_G(ip)*sElX_G(ip)
@@ -723,7 +721,7 @@ contains
 !      b5i(is)=b5i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(10*sRho_G))
 !    call sum2RootArr(cs2data(, size(cs2data), 0)
 1000    end do
- print*,"Bringing arrays onto rank0"
+! print*,"Bringing arrays onto rank0"
     call sum2RootArr(sdata, size(sdata), 0)
     call sum2RootArr(csdata(1,:), size(csdata(1,:)), 0)
     call sum2RootArr(csdata(2,:), size(csdata(2,:)), 0)
@@ -760,7 +758,7 @@ contains
         sdy(is)=sqrt((cs2data(2,2,is)-(csdata(2,is)**2)/sdata(is))/sdata(is))
         avedgamma(is)=sqrt((cs2data(6,6,is)-(csdata(6,is)**2)/sdata(is))/sdata(is))
         if (tprocinfo_g%qroot) then
-!          print*, "ex terms for slice " 
+!          print*, "ex terms for slice "
 !          print*, is
 !          print*,cs2data(1,1,is)
 !          print*,cs2data(4,4,is)

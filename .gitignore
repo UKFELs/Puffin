@@ -15,6 +15,12 @@ local.properties
 .classpath
 .settings/
 .loadpath
+*.toc
+*.mod
+*.o
+*.synctex.gz
+*.aux
+doxygen
 
 # External tool builders
 .externalToolBuilders/
