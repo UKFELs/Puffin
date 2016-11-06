@@ -209,6 +209,8 @@ dadz_w(1:iNumberElectrons_G) = (s_chi_bar_G(1:iNumberElectrons_G)/dV3) &
 
 ! ... similarly for A_im
 
+    iElm = p_nodes(i)
+
     !dadzIInst = dadz_w(i) * spi(i)
 
     sDADzi(1:8, iElm) =         &
