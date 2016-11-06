@@ -38,12 +38,12 @@ implicit none
 contains
 
   subroutine getrhs(sz, &
-                    sAr, sAi, &
+                    sEAr, sEAi, &
                     sx, sy, sz2, &
                     spr, spi, sgam, &
                     sdx, sdy, sdz2, &
                     sdpr, sdpi, sdgam, &                    
-                    sDADzr, sDADzi, &
+                    sEDADzr, sEDADzi, &
                     qOK)
 
   use rhs_vars
@@ -61,7 +61,7 @@ contains
 ! sDADz - RHS of field source term
 
   real(kind=wp), intent(in) :: sz
-  real(kind=wp), intent(in) :: sAr(:), sAi(:)
+  real(kind=wp), intent(in) :: sEAr(:,:), sEAi(:,:)
   real(kind=wp), intent(in)  :: sx(:), sy(:), sz2(:), &
                                 spr(:), spi(:), sgam(:)
 
@@ -69,7 +69,7 @@ contains
   real(kind=wp), intent(inout)  :: sdx(:), sdy(:), sdz2(:), &
                                    sdpr(:), sdpi(:), sdgam(:)
 
-  real(kind=wp), intent(inout) :: sDADzr(:), sDADzi(:) !!!!!!!
+  real(kind=wp), intent(inout) :: sEDADzr(:,:), sEDADzi(:,:) !!!!!!!
   logical, intent(inout) :: qOK
 
   integer(kind=ipl) :: i, z2node
@@ -135,10 +135,10 @@ contains
 !                              (fz2-1)*ntrnds_G  ! transverse slices before primary node
 
     p_nodes = (floor( (sx+halfx)  / dx)  + 1_IP) + &
-              (floor( (sy+halfy)  / dy) * nspinDX )  + &   !  y 'slices' before primary node
-              (nspinDX * nspinDY * &
+              (floor( (sy+halfy)  / dy) * (nspinDX-1_ip) )  + &   !  y 'slices' before primary node
+              ( (nspinDX-1_ip) * (nspinDY-1_ip) * &
                               floor(sz2  / dz2) ) - &
-                              (fz2-1)*ntrndsi_G  ! transverse slices before primary node
+                              (fz2-1)*((nspinDX-1_ip) * (nspinDY-1_ip))  ! transverse slices before primary node
 
 
 !$OMP END WORKSHARE
@@ -151,18 +151,18 @@ contains
 
   if (tTransInfo_G%qOneD) then
 
-    call getInterps_1D(sz2)
-    if (qPArrOK_G) then
-      call getFFelecs_1D(sAr, sAi)
-      call getSource_1D(sDADzr, sDADzi,  spr, spi, sgam, sEta_G)
-    end if
+!    call getInterps_1D(sz2)
+!    if (qPArrOK_G) then
+!      call getFFelecs_1D(sAr, sAi)
+!      call getSource_1D(sDADzr, sDADzi,  spr, spi, sgam, sEta_G)
+!    end if
 
   else
 
     call getInterps_3D(sx, sy, sz2)
     if ((qPArrOK_G) .and. (qInnerXYOK_G)) then 
-      call getFFelecs_3D(sAr, sAi)    
-      call getSource_3D(sDADzr, sDADzi, spr, spi, sgam, sEta_G)
+      call getFFelecs_3D(sEAr, sEAi)    
+      call getSource_3D(sEDADzr, sEDADzi, spr, spi, sgam, sEta_G)
     end if
 
   end if
@@ -259,8 +259,8 @@ contains
 !     Switch field off
 
     if (.not. qFieldEvolve_G) then
-       sDADzr = 0.0_WP
-       sDADzi = 0.0_WP
+       sEDADzr = 0.0_WP
+       sEDADzi = 0.0_WP
     end if
 
 !     if electrons not allowed to evolve then      

@@ -28,6 +28,9 @@ implicit none
 
   REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: ac_rfield_in, ac_ifield_in
 
+  REAL(KIND=WP), DIMENSION(:,:),ALLOCATABLE :: sEA_re, sEA_im
+  REAL(KIND=WP), DIMENSION(:,:),ALLOCATABLE :: sEdA_re, sEdA_im
+
   REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dxdx, dydx, dz2dx, dpxdx, dpydx, dpz2dx
 
 
@@ -38,7 +41,7 @@ implicit none
   REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dz2m, dz2t, z2t
   REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dpz2m, dpz2t, pz2t
 
-  real(kind=wp), allocatable :: dEdx(:,:), dEm(:,:), dEt(:,:), Et(:,:), Enow(:,:)
+!  real(kind=wp), allocatable :: dEdx(:,:), dEm(:,:), dEt(:,:), Et(:,:), Enow(:,:)
 
 contains
 
@@ -178,10 +181,10 @@ subroutine rk4par(sZ,h,qD)
 
 !    Get derivatives
 
-  call derivs(sZ, A_localtr0, A_localti0, &
+  call derivs(sZ, A_localtr0, A_localti0, sEA_re, sEA_im, &
               sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, &
               dxdx, dydx, dz2dx, dpxdx, dpydx, dpz2dx, &
-              dadz_r0, dadz_i0)
+              dadz_r0, dadz_i0, sEdA_re, sEdA_im)
 
 !call mpi_finalize(error)
 !stop
@@ -216,10 +219,10 @@ subroutine rk4par(sZ,h,qD)
 !    Get derivatives
 
   if (qPArrOK_G) &
-    call derivs(szh, A_localtr1, A_localti1, &
+    call derivs(szh, A_localtr1, A_localti1, sEA_re, sEA_im, &
        xt, yt, z2t, pxt, pyt, pz2t, &
        dxt, dyt, dz2t, dpxt, dpyt, dpz2t, &
-       dadz_r1, dadz_i1)
+       dadz_r1, dadz_i1, sEdA_re, sEdA_im)
 
 
 
@@ -252,10 +255,10 @@ subroutine rk4par(sZ,h,qD)
 
 
   if (qPArrOK_G) &
-    call derivs(szh, A_localtr2, A_localti2, &
+    call derivs(szh, A_localtr2, A_localti2, sEA_re, sEA_im, &
        xt, yt, z2t, pxt, pyt, pz2t, &
        dxm, dym, dz2m, dpxm, dpym, dpz2m, &
-       dadz_r2, dadz_i2)
+       dadz_r2, dadz_i2, sEdA_re, sEdA_im)
 
 !    Incrementing
 
@@ -299,10 +302,10 @@ subroutine rk4par(sZ,h,qD)
 !    Get derivatives
 
   if (qPArrOK_G) &
-      call derivs(szh, A_localtr3, A_localti3, &
+      call derivs(szh, A_localtr3, A_localti3, sEA_re, sEA_im, &
        xt, yt, z2t, pxt, pyt, pz2t, &
        dxt, dyt, dz2t, dpxt, dpyt, dpz2t, &
-       dadz_r1, dadz_i1)
+       dadz_r1, dadz_i1, sEdA_re, sEdA_im)
 
 
 !    Accumulate increments with proper weights
@@ -375,12 +378,18 @@ end subroutine rk4par
 
 
 
+!> @author
+!> Lawrence Campbell
+!> University of Strathclyde
+!> Glasgow, UK
 
 subroutine allact_rk4_arrs()
 
-  integer(kind=ip) :: tllen43D
+  integer(kind=ip) :: tllen43D, iNumElms
 
   tllen43D = tllen * ntrndsi_G
+
+  iNumElms = tllen * (nspindx-1) * (nspindy-1)
 
 
 !!        Setup electron structured arrays
@@ -392,32 +401,27 @@ subroutine allact_rk4_arrs()
 ! If want this to be efficient, probably want to end up having big loop 
 ! through macroparticles???
 
-!  allocate(DxDx(iNumberElectrons_G))
-!  allocate(DyDx(iNumberElectrons_G))
-!  allocate(DpxDx(iNumberElectrons_G))
-!  allocate(DpyDx(iNumberElectrons_G))
-!  allocate(Dz2Dx(iNumberElectrons_G))
-!  allocate(Dpz2Dx(iNumberElectrons_G))
+  allocate(DxDx(iNumberElectrons_G))
+  allocate(DyDx(iNumberElectrons_G))
+  allocate(DpxDx(iNumberElectrons_G))
+  allocate(DpyDx(iNumberElectrons_G))
+  allocate(Dz2Dx(iNumberElectrons_G))
+  allocate(Dpz2Dx(iNumberElectrons_G))
 
-  allocate(Enow(7_ip, iNumberElectrons_G))
+!  allocate(Enow(7_ip, iNumberElectrons_G))
+!
+!  allocate(dEdx(7_ip, iNumberElectrons_G))
+!
+!  allocate(dEm(7_ip, iNumberElectrons_G), &
+!           dEt(7_ip, iNumberElectrons_G), &
+!           Et(7_ip, iNumberElectrons_G))
 
-  allocate(dEdx(7_ip, iNumberElectrons_G))
-
-  allocate(dEm(7_ip, iNumberElectrons_G), &
-           dEt(7_ip, iNumberElectrons_G), &
-           Et(7_ip, iNumberElectrons_G))
-
-  call popStrArrsE(Enow)
+!  call popStrArrsE(Enow)
 
 
 !!           Setup field structured arrays
 
   allocate(dadz_r0(tllen43D), dadz_i0(tllen43D))
-  
-  
-  
-  
-  
   
   allocate(dadz_r1(tllen43D), dadz_i1(tllen43D))
   allocate(dadz_r2(tllen43D), dadz_i2(tllen43D))
@@ -430,21 +434,26 @@ subroutine allact_rk4_arrs()
   allocate(ac_rfield_in(tllen43D), ac_ifield_in(tllen43D))
 
 
-!  allocate(dxm(iNumberElectrons_G), &
-!    dxt(iNumberElectrons_G), xt(iNumberElectrons_G))
-!  allocate(dym(iNumberElectrons_G), &
-!    dyt(iNumberElectrons_G), yt(iNumberElectrons_G))
-!  allocate(dpxm(iNumberElectrons_G), &
-!    dpxt(iNumberElectrons_G), pxt(iNumberElectrons_G))
-!  allocate(dpym(iNumberElectrons_G), &
-!    dpyt(iNumberElectrons_G), pyt(iNumberElectrons_G))
-!  allocate(dz2m(iNumberElectrons_G), &
-!    dz2t(iNumberElectrons_G), z2t(iNumberElectrons_G))
-!  allocate(dpz2m(iNumberElectrons_G), &
-!    dpz2t(iNumberElectrons_G), pz2t(iNumberElectrons_G))
+  allocate(dxm(iNumberElectrons_G), &
+    dxt(iNumberElectrons_G), xt(iNumberElectrons_G))
+  allocate(dym(iNumberElectrons_G), &
+    dyt(iNumberElectrons_G), yt(iNumberElectrons_G))
+  allocate(dpxm(iNumberElectrons_G), &
+    dpxt(iNumberElectrons_G), pxt(iNumberElectrons_G))
+  allocate(dpym(iNumberElectrons_G), &
+    dpyt(iNumberElectrons_G), pyt(iNumberElectrons_G))
+  allocate(dz2m(iNumberElectrons_G), &
+    dz2t(iNumberElectrons_G), z2t(iNumberElectrons_G))
+  allocate(dpz2m(iNumberElectrons_G), &
+    dpz2t(iNumberElectrons_G), pz2t(iNumberElectrons_G))
 
 
   allocate(dadz_w(iNumberElectrons_G))
+
+! Element representation of Areal and Aimag
+
+  allocate(sEA_re(8,iNumElms), sEA_im(8,iNumElms))
+  allocate(sEdA_re(8,iNumElms), sEdA_im(8,iNumElms))
 
   call outer2Inner(ac_rfield_in, ac_ifield_in)
 
@@ -454,6 +463,11 @@ end subroutine allact_rk4_arrs
 
 
 
+
+!> @author
+!> Lawrence Campbell
+!> University of Strathclyde
+!> Glasgow, UK
 
 subroutine deallact_rk4_arrs()
 
@@ -472,37 +486,42 @@ subroutine deallact_rk4_arrs()
 
 
 
-  call popNormArrsE(Enow)
+!  call popNormArrsE(Enow)
 
-  allocate(Enow(7_ip, iNumberElectrons_G))
-
-  allocate(dEdx(7_ip, iNumberElectrons_G))
-
-  allocate(dEm(7_ip, iNumberElectrons_G), &
-           dEt(7_ip, iNumberElectrons_G), &
-           Et(7_ip, iNumberElectrons_G))
-
-!  deallocate(DxDx)
-!  deallocate(DyDx)
-!  deallocate(DpxDx)
-!  deallocate(DpyDx)
-!  deallocate(Dz2Dx)
-!  deallocate(Dpz2Dx)
+!  allocate(Enow(7_ip, iNumberElectrons_G))
 !
-!  deallocate(dxm, &
-!    dxt, xt)
-!  deallocate(dym, &
-!    dyt, yt)
-!  deallocate(dpxm, &
-!    dpxt, pxt)
-!  deallocate(dpym, &
-!    dpyt, pyt)
-!  deallocate(dz2m, &
-!    dz2t, z2t)
-!  deallocate(dpz2m, &
-!    dpz2t, pz2t)
+!  allocate(dEdx(7_ip, iNumberElectrons_G))
+!
+!  allocate(dEm(7_ip, iNumberElectrons_G), &
+!           dEt(7_ip, iNumberElectrons_G), &
+!           Et(7_ip, iNumberElectrons_G))
+
+  deallocate(DxDx)
+  deallocate(DyDx)
+  deallocate(DpxDx)
+  deallocate(DpyDx)
+  deallocate(Dz2Dx)
+  deallocate(Dpz2Dx)
+
+  deallocate(dxm, &
+    dxt, xt)
+  deallocate(dym, &
+    dyt, yt)
+  deallocate(dpxm, &
+    dpxt, pxt)
+  deallocate(dpym, &
+    dpyt, pyt)
+  deallocate(dz2m, &
+    dz2t, z2t)
+  deallocate(dpz2m, &
+    dpz2t, pz2t)
 
   deallocate(dadz_w)
+
+
+  deallocate(sEA_re, sEA_im)
+  deallocate(sEdA_re, sEdA_im)
+
 
 end subroutine deallact_rk4_arrs
 
