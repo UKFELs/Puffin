@@ -43,18 +43,21 @@ contains
 
     logical, intent(inout) :: qOK
 
-    
+    integer(kind=ip) :: i
+
     LOGICAL :: qOKL
 
     qOK = .false.
 
-!$OMP WORKSHARE
-    sdpr = sInv2rho * ( n2col * byu  & 
-                        - sEta_G * sp2 / sKappa_G**2 *    &
-                        sField4ElecReal ) & 
-           + sKappa_G * spi / sgam * (1 + sEta_G * sp2) &
-               * n2col * bzu
-!$OMP END WORKSHARE
+!$OMP DO
+    do i=1,iNumberElectrons_G
+      sdpr(i) = sInv2rho * ( n2col * byu(i)  & 
+                          - sEta_G * sp2(i) / sKappa_G**2 *    &
+                          sField4ElecReal(i) ) & 
+             + sKappa_G * spi(i) / sgam(i) * (1 + sEta_G * sp2(i)) &
+                 * n2col * bzu(i)
+    end do
+!$OMP END DO
 
 ! Set the error flag and exit
 
@@ -91,18 +94,22 @@ contains
 
     logical, intent(inout) :: qOK
 
+    integer(kind=ip) :: i
+    
     LOGICAL :: qOKL                   
 
 
     qOK = .false.
 
-!$OMP WORKSHARE
-    sdpi = sInv2rho * (  n2col * bxu  & 
-           - sEta_G * sp2 / sKappa_G**2 * &
-                        sField4ElecReal ) & 
-           - sKappa_G * spr / sgam * (1 + sEta_G * sp2) &
-               * n2col * bzu
-!$OMP END WORKSHARE
+!$OMP DO
+    do i=1,iNumberElectrons_G
+      sdpi(i) = sInv2rho * (  n2col * bxu(i)  & 
+             - sEta_G * sp2(i) / sKappa_G**2 * &
+                          sField4ElecReal(i) ) & 
+             - sKappa_G * spr(i) / sgam(i) * (1 + sEta_G * sp2(i)) &
+                 * n2col * bzu(i)
+    end do
+!$OMP END DO
 
 ! Set the error flag and exit
 
@@ -138,17 +145,19 @@ contains
 
     logical, intent(inout) :: qOK
 
+    integer(kind=ip) :: i
+
     LOGICAL :: qOKL
 
 
     qOK = .false.
 
-!$OMP WORKSHARE
-
-    sdgam = -sRho_G * ( 1 + sEta_G * sp2 ) / sgam * 2_wp *   &
-           ( spr * sField4ElecReal + spi * sField4ElecImag ) 
-
-!$OMP END WORKSHARE
+!$OMP DO
+    do i=1,iNumberElectrons_G
+      sdgam(i) = -sRho_G * ( 1 + sEta_G * sp2(i) ) / sgam(i) * 2_wp *   &
+             ( spr(i) * sField4ElecReal(i) + spi(i) * sField4ElecImag(i) ) 
+    end do
+!$OMP END DO
 
     ! Set the error flag and exit
 
@@ -191,19 +200,21 @@ contains
 
 !              Local vars
 
+    integer(kind=ip) :: i
+
     logical :: qOKL ! Local error flag
 
 
     qOK = .false.
 
 
-!$OMP WORKSHARE
-
-    sdx = 2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
-          (1 + sEta_G * sp2) / sgam *  &
-          spr
-
-!$OMP END WORKSHARE
+!$OMP DO
+    do i=1,iNumberElectrons_G
+      sdx(i) = 2_wp * sRho_G * sKappa_G / sqrt(sEta_G) * &
+            (1 + sEta_G * sp2(i)) / sgam(i) *  &
+            spr(i)
+    end do
+!$OMP END DO
 
 !    sdx = spr * Lj / nd
     
@@ -240,19 +251,21 @@ contains
 
 !              Local vars
 
+    integer(kind=ip) :: i
+
     logical :: qOKL ! Local error flag
 
 
     qOK = .false.
 
 
-!$OMP WORKSHARE
-
-    sdy = - 2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
-          (1 + sEta_G * sp2) / sgam *  &
-          spi
-
-!$OMP END WORKSHARE
+!$OMP DO
+    do i=1,iNumberElectrons_G
+      sdy(i) = - 2_wp * sRho_G * sKappa_G / sqrt(sEta_G) * &
+            (1 + sEta_G * sp2(i)) / sgam(i) *  &
+            spi(i)
+    end do
+!$OMP END DO
 
 !    sdy = - spi * Lj / nd
 
@@ -291,16 +304,17 @@ contains
 
 !              Local vars
 
+    integer(kind=ip) :: i
     logical :: qOKL ! Local error flag
 
 
     qOK = .false.
 
-!$OMP WORKSHARE
-
-    sdz2 = sp2
-
-!$OMP END WORKSHARE
+!$OMP DO
+    do i=1,iNumberElectrons_G
+      sdz2(i) = sp2(i)
+    end do
+!$OMP END DO
 
     qOK = .true.
     

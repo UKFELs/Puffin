@@ -16,6 +16,7 @@
 module gtop2
 
 use paratype
+use globals
 
 implicit none
 
@@ -79,13 +80,14 @@ contains
 
     real(kind=wp), intent(out) :: p2(:)
 
+    integer(kind=ip) :: i !inels
 
-!$OMP WORKSHARE
-
-    p2 = (( 1_wp/sqrt(1_wp - 1_wp / (gamma0**2 * gamma**2) * ( 1 + &
-             aw**2*(px**2 + py**2))))-1_wp) / eta
-
-!$OMP END WORKSHARE
+!$OMP DO
+    do i = 1, iNumberElectrons_G
+      p2(i) = (( 1_wp/sqrt(1_wp - 1_wp / (gamma0**2 * gamma(i)**2) * ( 1 + &
+               aw**2*(px(i)**2 + py(i)**2))))-1_wp) / eta
+    end do
+!$OMP END DO
   
   end subroutine getP2
 

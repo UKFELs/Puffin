@@ -108,8 +108,6 @@ contains
   call getAlpha(sZ)
   call adjUndPlace(sZ)
 
-!$OMP PARALLEL
-
   call getP2(sp2, sgam, spr, spi, sEta_G, sGammaR_G, saw_G)
 
 
@@ -126,22 +124,23 @@ contains
 
   else
 
-!$OMP WORKSHARE
+!$OMP DO
 
 !    p_nodes = (floor( (sx+halfx)  / dx)  + 1_IP) + &
 !              (floor( (sy+halfy)  / dy) * ReducedNX_G )  + &   !  y 'slices' before primary node
 !              (ReducedNX_G * ReducedNY_G * &
 !                              floor(sz2  / dz2) ) - &
 !                              (fz2-1)*ntrnds_G  ! transverse slices before primary node
-
-    p_nodes = (floor( (sx+halfx)  / dx)  + 1_IP) + &
-              (floor( (sy+halfy)  / dy) * (nspinDX-1_ip) )  + &   !  y 'slices' before primary node
-              ( (nspinDX-1_ip) * (nspinDY-1_ip) * &
-                              floor(sz2  / dz2) ) - &
-                              (fz2-1)*((nspinDX-1_ip) * (nspinDY-1_ip))  ! transverse slices before primary node
-
-
-!$OMP END WORKSHARE
+    do i = 1, iNumberElectrons_G
+      
+      p_nodes(i) = (floor( (sx(i)+halfx)  / dx)  + 1_IP) + &
+                (floor( (sy(i)+halfy)  / dy) * (nspinDX-1_ip) )  + &   !  y 'slices' before primary node
+                ( (nspinDX-1_ip) * (nspinDY-1_ip) * &
+                                floor(sz2(i)  / dz2) ) - &
+                                (fz2-1)*((nspinDX-1_ip) * (nspinDY-1_ip))  ! transverse slices before primary node
+    
+    end do
+!$OMP END DO
 
   end if  
 
@@ -231,7 +230,7 @@ contains
 
 
 
-!$OMP END PARALLEL
+
 
 
 
