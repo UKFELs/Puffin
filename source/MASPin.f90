@@ -128,16 +128,16 @@ contains
       call mpi_barrier(tProcInfo_G%comm, error)
 
 !      if ( tProcInfo_G%qRoot ) then
-          print*, 'rank', tProcInfo_G%rank,' made it 1.2 on loop with rank ' &
-            , ir, &
-            ' with displs  ', displs_eb(ir+1), NEW_LINE('a'), &
-            '  max/min x: ', maxval(sElx_g), minval(sElx_g), NEW_LINE('a'), &
-            '  max/min y: ', maxval(sEly_g), minval(sEly_g), NEW_LINE('a'),&
-            '  max/min z: ', maxval(sElz2_g), minval(sElz2_g), NEW_LINE('a'),&
-            '  max/min px: ', maxval(sElpx_g), minval(sElpx_g), NEW_LINE('a'),&
-            '  max/min py: ', maxval(sElpy_g), minval(sElpy_g), NEW_LINE('a'),&
-            '  max/min gam: ', maxval(sElgam_g), minval(sElgam_g), NEW_LINE('a'),&
-            '  max/min chi: ', maxval(s_chi_bar_g), minval(s_chi_bar_g)
+!          print*, 'rank', tProcInfo_G%rank,' made it 1.2 on loop with rank ' &
+!            , ir, &
+!            ' with displs  ', displs_eb(ir+1), NEW_LINE('a'), &
+!            '  max/min x: ', maxval(sElx_g), minval(sElx_g), NEW_LINE('a'), &
+!            '  max/min y: ', maxval(sEly_g), minval(sEly_g), NEW_LINE('a'),&
+!            '  max/min z: ', maxval(sElz2_g), minval(sElz2_g), NEW_LINE('a'),&
+!            '  max/min px: ', maxval(sElpx_g), minval(sElpx_g), NEW_LINE('a'),&
+!            '  max/min py: ', maxval(sElpy_g), minval(sElpy_g), NEW_LINE('a'),&
+!            '  max/min gam: ', maxval(sElgam_g), minval(sElgam_g), NEW_LINE('a'),&
+!            '  max/min chi: ', maxval(s_chi_bar_g), minval(s_chi_bar_g)
 
 !       end if
 
@@ -167,4 +167,3 @@ contains
 
 
 end module MASPin
-
