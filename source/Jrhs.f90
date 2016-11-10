@@ -85,14 +85,14 @@ contains
 !     ALLOCATE THE ARRAYS
 
 !  allocate(Lj(iNumberElectrons_G)) 
-  allocate(p_nodes(iNumberElectrons_G))
-  call alct_e_srtcts(iNumberElectrons_G)
-  
-  if (tTransInfo_G%qOneD) then
-    allocate(lis_GR(2,iNumberElectrons_G))
-  else
-    allocate(lis_GR(8,iNumberElectrons_G))
-  end if
+!!  allocate(p_nodes(iNumberElectrons_G))
+!!  call alct_e_srtcts(iNumberElectrons_G)
+!!  
+!!  if (tTransInfo_G%qOneD) then
+!!    allocate(lis_GR(2,iNumberElectrons_G))
+!!  else
+!!    allocate(lis_GR(8,iNumberElectrons_G))
+!!  end if
 
 
 !     Initialise right hand side to zero
@@ -278,9 +278,9 @@ contains
 !    deallocate(i_n4e,N,iNodeList_Re,iNodeList_Im,i_n4ered)
 !    deallocate(sField4ElecReal,sField4ElecImag,Lj,dp2f)
     !deallocate(Lj)
-    deallocate(lis_GR)
-    deallocate(p_nodes)
-    call dalct_e_srtcts()
+!!    deallocate(lis_GR)
+!!    deallocate(p_nodes)
+!!    call dalct_e_srtcts()
 
 
     ! Set the error flag and exit

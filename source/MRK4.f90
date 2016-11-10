@@ -359,8 +359,10 @@ subroutine rk4par(sZ,h,qD)
 
 !$OMP DO
     do i = 1, tllen43D
-      ac_rfield_in = ac_rfield_in + h6 * (dadz_r0 + dadz_r1 + 2.0_WP * dadz_r2)
-      ac_ifield_in = ac_ifield_in + h6 * (dadz_i0 + dadz_i1 + 2.0_WP * dadz_i2)
+      ac_rfield_in(i) = ac_rfield_in(i) + h6 * (dadz_r0(i) + dadz_r1(i) &
+                            + 2.0_WP * dadz_r2(i))
+      ac_ifield_in(i) = ac_ifield_in(i) + h6 * (dadz_i0(i) + dadz_i1(i) &
+                            + 2.0_WP * dadz_i2(i))
     end do
 !$OMP END DO
 
@@ -492,6 +494,16 @@ subroutine allact_rk4_arrs()
     dpz2t(iNumberElectrons_G), pz2t(iNumberElectrons_G))
 
 
+    allocate(p_nodes(iNumberElectrons_G))
+    call alct_e_srtcts(iNumberElectrons_G)
+    if (tTransInfo_G%qOneD) then
+      allocate(lis_GR(2,iNumberElectrons_G))
+    else
+      allocate(lis_GR(8,iNumberElectrons_G))
+    end if
+
+
+
   allocate(dadz_w(iNumberElectrons_G))
 
 ! Element representation of Areal and Aimag
@@ -560,6 +572,10 @@ subroutine deallact_rk4_arrs()
   deallocate(dpz2m, &
     dpz2t, pz2t)
 
+  deallocate(lis_GR)
+  deallocate(p_nodes)
+  call dalct_e_srtcts()
+    
   deallocate(dadz_w)
 
 
