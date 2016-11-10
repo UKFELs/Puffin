@@ -497,7 +497,11 @@ Modulation & {\bf MO} \\
 
 Each entry must be followed by the options specifying that lattice element, on the same line, delimited by spaces.
 
+{\bf UN} - Undulator Module
+
 For the undulator,  one must specify the undulator type, the number of wiggler periods $N_w$, the undulator parameter relative to the base undulator parameter in the main input file $\alpha$, the linear taper $\dfrac{d \alpha}{d \bar{z}}$, the polarization $u_x$ and $u_y$ (ignored for the non-variable polarized undulator types), a logical specifying if undulator ends are being used for this module, another logical spcifying if a strong focusing channel is being used in the undulator, and the strong focusing strengths $\bar{k}_{\beta x}$ and $\bar{k}_{\beta y}$, and the number of integration steps per period to be used in this module.
+
+{\bf QU} - Quadrupole
 
 For the quad, we must specify $\bar{F}_x$ and $\bar{F}_y$. These are scaled transverse components of the transform matrix for the quad. The quad is only a point transform, currently, and does not have a length, so the length must be included in a drift section. The transforms for the quad, in S.I. units, are defined as
 \begin{align}
@@ -511,6 +515,11 @@ which in the scaled notation becomes:
 \end{align}
 where $\bar{F}_{x,y} = \dfrac{F_{x,y}}{l_g}$.
 
+In $x$ (unscaled) focal length is taken as 
+\begin{align}
+\frac{1}{F_x} = \frac{g L_Q}{B\rho},
+\end{align}
+where $g$ is the quad magnetic field gradient in $Tm^{-1}$, $L_Q$ is the length of the quad, and $B\rho = \beta E / 0.2998$ is the so-called magnetic rigidity in $Tm$, with the beam energy $E$ in $GeV$. 
 
 For the chicane, one must specify physical length, slippage length, and dispersion enhancement (R56). The length is the physical length of the device in undulator periods, and is used to calculate the diffraction properly. The slippage length tells how many wavelengths to delay the beam by relative to the radiation field in resonant radiation wavelengths - be careful, this should not be $\leq 0$, or the beam will then be faster than light speed! Similarly, it is left up to the user to decide what is appropriate to delay the beam by with respect to the physical length of the device. The dispersive enhancement is the R56 of the device - using $\gamma_r$ in the main input as the mean $\gamma$ for the chicane. 
 
