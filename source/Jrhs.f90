@@ -24,13 +24,13 @@ use Globals
 use Functions
 use TransformInfoType
 use ParallelInfoType
-use Equations
+use Equations2
 use wigglerVar
 use FiElec1D
 use FiElec
 use gtop2
 use ParaField
-use bfields
+use bfields2
 
 
 implicit none
@@ -73,6 +73,18 @@ contains
   logical, intent(inout) :: qOK
 
   integer(kind=ipl) :: i, z2node
+  
+  
+  integer(kind=ip) :: xnode, ynode
+  real(kind=wp) :: locx, x_in1, x_in2, &
+                   locy, y_in1, y_in2, &
+                   locz2, z2_in1, z2_in2
+  real(kind=wp) :: tx, ty, tz2, tpr, tpi, tgam, &
+                   tdx, tdy, tdz2, tdpr, tdpi, tdgam, &
+                   bxut, byut, bzut, tp2
+
+  integer(kind=ip) :: ii, ipart, iv, iElm
+
   integer :: error
   logical qOKL
 
@@ -108,63 +120,165 @@ contains
   call getAlpha(sZ)
   call adjUndPlace(sZ)
 
-  call getP2(sp2, sgam, spr, spi, sEta_G, sGammaR_G, saw_G)
 
+!  nVCS = 64_ip
 
+  do ii = 1, iNumberElectrons_G, nVCS
 
+!    call getP2_T(sp2, sgam, spr, spi, sEta_G, sGammaR_G, saw_G)
 
-  
-  if (tTransInfo_G%qOneD) then
-
-!$OMP WORKSHARE
- 
-    p_nodes = floor(sz2 / dz2) + 1_IP - (fz2-1)
-
-!$OMP END WORKSHARE
-
-  else
-
-!$OMP DO
-
-!    p_nodes = (floor( (sx+halfx)  / dx)  + 1_IP) + &
-!              (floor( (sy+halfy)  / dy) * ReducedNX_G )  + &   !  y 'slices' before primary node
-!              (ReducedNX_G * ReducedNY_G * &
-!                              floor(sz2  / dz2) ) - &
-!                              (fz2-1)*ntrnds_G  ! transverse slices before primary node
-    do i = 1, iNumberElectrons_G
+!$OMP SIMD
+    do i = 1, MIN(nVCS, iNumberElectrons_G - ii + 1_ip)
       
-      p_nodes(i) = (floor( (sx(i)+halfx)  / dx)  + 1_IP) + &
-                (floor( (sy(i)+halfy)  / dy) * (nspinDX-1_ip) )  + &   !  y 'slices' before primary node
-                ( (nspinDX-1_ip) * (nspinDY-1_ip) * &
-                                floor(sz2(i)  / dz2) ) - &
-                                (fz2-1)*((nspinDX-1_ip) * (nspinDY-1_ip))  ! transverse slices before primary node
-    
+      ipart = i + ii - 1
+
+!                    Get element for this particle 
+      p_nodes(i) = (floor( (sx(ipart)+halfx)  / dx)  + 1_IP) + &
+                    (floor( (sy(ipart)+halfy)  / dy) * (nspinDX-1_ip) )  + &   !  y 'slices' before primary node
+                    ( (nspinDX-1_ip) * (nspinDY-1_ip) * &
+                              floor(sz2(ipart)  / dz2) ) - &
+                      (fz2-1)*((nspinDX-1_ip) * (nspinDY-1_ip))  ! transverse slices before primary node
+
+
+!        Get instantaneous dadz
+      call getP2_T(tp2, sgam(ipart), spr(ipart), spi(ipart), &
+                    sEta_G, sGammaR_G, saw_G)
+
+      sp2(i) = tp2
+
+      dadz_w(i) = (s_chi_bar_G(ipart)/dV3) &
+                  * (1.0_wp + sEta_G * tp2 ) &
+                          / sgam(ipart)
+
+      xnode = floor( (sx(ipart) + halfx ) / dx)  + 1_IP
+      locx = sx(ipart) + halfx - real(xnode  - 1_IP, kind=wp) * dx
+      x_in2 = locx / dx
+      x_in1 = (1.0_wp - x_in2)
+      ynode = floor( (sy(ipart) + halfy )  / dy)  + 1_IP
+      locy = sy(ipart) + halfy - real(ynode  - 1_IP, kind=wp) * dy
+      y_in2 = locy / dy
+      y_in1 = (1.0_wp - y_in2)
+      z2node = floor(sz2(ipart)  / dz2)  + 1_IP
+      locz2 = sz2(ipart) - real(z2node  - 1_IP, kind=wp) * dz2
+      z2_in2 = locz2 / dz2
+      z2_in1 = (1.0_wp - z2_in2)
+      
+
+!            Get weights for interpolant
+
+      lis_GR(1,i) = x_in1 * y_in1 * z2_in1
+      lis_GR(2,i) = x_in2 * y_in1 * z2_in1
+      lis_GR(3,i) = x_in1 * y_in2 * z2_in1
+      lis_GR(4,i) = x_in2 * y_in2 * z2_in1
+      lis_GR(5,i) = x_in1 * y_in1 * z2_in2
+      lis_GR(6,i) = x_in2 * y_in1 * z2_in2
+      lis_GR(7,i) = x_in1 * y_in2 * z2_in2
+      lis_GR(8,i) = x_in2 * y_in2 * z2_in2
+
     end do
-!$OMP END DO
 
-  end if  
+    do i = 1, MIN(nVCS, iNumberElectrons_G - ii + 1_ip)
+
+      ipart = i + ii - 1
+!                  Get element ID
+
+      iElm = p_nodes(i)
+
+!                  Get 'instantaneous' dAdz
+
+      !dadzRInst = dadz_w(i) * spr(i)
+!$OMP SIMD
+      do iv = 1, 8
+        sEDADzr(iv, iElm) =         &
+          lis_GR(iv,i) * (dadz_w(i) * spr(ipart)) + sEDADzr(iv, iElm)
+!      end do
+
+      !dadzIInst = dadz_w(i) * spi(i)
+
+! !$OMP SIMD
+!      do iv = 1, 8
+        sEDADzi(iv, iElm) =         &
+            lis_GR(iv,i) * (dadz_w(i) * spi(ipart)) + sEDADzi(iv, iElm)
+!      end do
+
+! !$OMP SIMD
+!      do iv = 1, 8
+
+        sField4ElecReal(i) = sField4ElecReal(i) + lis_GR(iv,i) * sEAr(iv, iElm)
+
+        sField4ElecImag(i) = sField4ElecImag(i) + lis_GR(iv,i) * sEAi(iv, iElm)
+      
+      end do 
+
+    end do
+
+!  Now calc d/dz of electron quantities....
+
+!  ...first get b-fields
+
+!$OMP SIMD
+    do i = 1, MIN(nVCS, iNumberElectrons_G - ii + 1_ip)
+
+      ipart = i + ii - 1
+
+      tx = sx(ipart)
+      ty = sy(ipart)
+      tz2 = sz2(ipart)
+      tpr = spr(ipart)
+      tpi = spi(ipart)
+      tgam = sgam(ipart)
+      tp2 = sp2(i)
+!      call getP2_T(tp2, tgam, tpr, tpi, sEta_G, sGammaR_G, saw_G)
+
+      call getBFields_T(tx, ty, tz2, &
+                        bxut, byut, bzut)
+
+
+      call dz2dz_fT(tx, ty, tz2, tpr, tpi, tgam, tp2, &
+                        tdz2, qOKL)
+
+      call dxdz_fT(tx, ty, tz2, tpr, tpi, tgam, tp2, &
+                    tdx, qOKL)
+
+      call dydz_fT(tx, ty, tz2, tpr, tpi, tgam, tp2, &
+                    tdy, qOKL)
+
+      call dppdz_r_fT(tx, ty, tz2, tpr, tpi, tgam, sZ, tp2, &
+                     sField4ElecReal(i), sField4ElecImag(i), &
+                     bxut, byut, bzut, tdpr, qOKL)                            
+
+      call dppdz_i_fT(tx, ty, tz2, tpr, tpi, tgam, sz, tp2, &
+                     sField4ElecReal(i), sField4ElecImag(i), &
+                     bxut, byut, bzut, tdpi, qOKL)
+
+      call dgamdz_fT(tx, ty, tz2, tpr, tpi, tgam, tp2, &
+                     sField4ElecReal(i), sField4ElecImag(i), &
+                     tdgam, qOKL)
+
+
+      sdz2(ipart) = tdz2
+      sdx(ipart) = tdx
+      sdy(ipart) = tdy
+      sdpr(ipart) = tdpr
+      sdpi(ipart) = tdpi
+      sdgam(ipart) = tdgam
+
+    end do
 
 
 
 
 
-  if (tTransInfo_G%qOneD) then
+!   END MASTER LOOP
 
-!    call getInterps_1D(sz2)
-!    if (qPArrOK_G) then
-!      call getFFelecs_1D(sAr, sAi)
-!      call getSource_1D(sDADzr, sDADzi,  spr, spi, sgam, sEta_G)
-!    end if
+  end do    
 
-  else
+!      call getInterps_3D(sx, sy, sz2)
+!      if ((qPArrOK_G) .and. (qInnerXYOK_G)) then 
+!        call getFFelecs_3D(sEAr, sEAi)    
+!        call getSource_3D(sEDADzr, sEDADzi, spr, spi, sgam, sEta_G)
+!      end if
 
-    call getInterps_3D(sx, sy, sz2)
-    if ((qPArrOK_G) .and. (qInnerXYOK_G)) then 
-      call getFFelecs_3D(sEAr, sEAi)    
-      call getSource_3D(sEDADzr, sEDADzi, spr, spi, sgam, sEta_G)
-    end if
-
-  end if
 
 
 
@@ -183,50 +297,50 @@ contains
   end if
 
 
-    if (qElectronsEvolve_G) then   
-
-        call getBFields(sx, sy, sz, &
-                        bxu, byu, bzu)
-
-!     z2
-
-        CALL dz2dz_f(sx, sy, sz2, spr, spi, sgam, &
-                     sdz2, qOKL)
-        !if (.not. qOKL) goto 1000
-
-!     X
-
-        call dxdz_f(sx, sy, sz2, spr, spi, sgam, &
-                    sdx, qOKL)
-        !if (.not. qOKL) goto 1000             
-
-!     Y
-
-        call dydz_f(sx, sy, sz2, spr, spi, sgam, &
-                    sdy, qOKL)
-        !if (.not. qOKL) goto 1000
-
-
-!     PX (Real pperp)
-       
-        call dppdz_r_f(sx, sy, sz2, spr, spi, sgam, sZ, &
-                       sdpr, qOKL)
-        !if (.not. qOKL) goto 1000
-
-
-!     -PY (Imaginary pperp)
-
-        call dppdz_i_f(sx, sy, sz2, spr, spi, sgam, sz, &
-                       sdpi, qOKL)
-        !if (.not. qOKL) goto 1000
-
-!     P2
-
-        call dgamdz_f(sx, sy, sz2, spr, spi, sgam, &
-                     sdgam, qOKL)
-        !if (.not. qOKL) goto 1000
- 
-    end if 
+!    if (qElectronsEvolve_G) then   
+!
+!        call getBFields(sx, sy, sz, &
+!                        bxu, byu, bzu)
+!
+!!     z2
+!
+!        CALL dz2dz_f(sx, sy, sz2, spr, spi, sgam, &
+!                     sdz2, qOKL)
+!        !if (.not. qOKL) goto 1000
+!
+!!     X
+!
+!        call dxdz_f(sx, sy, sz2, spr, spi, sgam, &
+!                    sdx, qOKL)
+!        !if (.not. qOKL) goto 1000             
+!
+!!     Y
+!
+!        call dydz_f(sx, sy, sz2, spr, spi, sgam, &
+!                    sdy, qOKL)
+!        !if (.not. qOKL) goto 1000
+!
+!
+!!     PX (Real pperp)
+!       
+!        call dppdz_r_f(sx, sy, sz2, spr, spi, sgam, sZ, &
+!                       sdpr, qOKL)
+!        !if (.not. qOKL) goto 1000
+!
+!
+!!     -PY (Imaginary pperp)
+!
+!        call dppdz_i_f(sx, sy, sz2, spr, spi, sgam, sz, &
+!                       sdpi, qOKL)
+!        !if (.not. qOKL) goto 1000
+!
+!!     P2
+!
+!        call dgamdz_f(sx, sy, sz2, spr, spi, sgam, &
+!                     sdgam, qOKL)
+!        !if (.not. qOKL) goto 1000
+! 
+!    end if 
 
 
 

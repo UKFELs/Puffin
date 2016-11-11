@@ -198,26 +198,41 @@ subroutine rk4par(sZ,h,qD)
 
   if (qPArrOK_G) then
 
-!$OMP DO
-    do i = 1, iNumberElectrons_G
-      xt(i) = sElX_G(i)  +  hh*dxdx(i)
-      yt(i) = sElY_G(i)  +  hh*dydx(i)
-      z2t(i) = sElZ2_G(i)    +  hh*dz2dx(i)
-      pxt(i) = sElPX_G(i)    +  hh*dpxdx(i)
-      pyt(i) = sElPY_G(i)    +  hh*dpydx(i)
-      pz2t(i) = sElGam_G(i)  +  hh*dpz2dx(i)
-    end do
-!$OMP END DO
-
-!$OMP DO
-    do i = 1, tllen43D
-      A_localtr1(i) = A_localtr0(i) + hh * dadz_r0(i)
-      A_localti1(i) = A_localti0(i) + hh * dadz_i0(i)
-    end do
-!$OMP END DO
+!!!   !$OMP DO
+!!!       do i = 1, iNumberElectrons_G
+!!!         xt(i) = sElX_G(i)  +  hh*dxdx(i)
+!!!         yt(i) = sElY_G(i)  +  hh*dydx(i)
+!!!         z2t(i) = sElZ2_G(i)    +  hh*dz2dx(i)
+!!!         pxt(i) = sElPX_G(i)    +  hh*dpxdx(i)
+!!!         pyt(i) = sElPY_G(i)    +  hh*dpydx(i)
+!!!         pz2t(i) = sElGam_G(i)  +  hh*dpz2dx(i)
+!!!       end do
+!!!   !$OMP END DO
+!!!   
+!!!   !$OMP DO
+!!!       do i = 1, tllen43D
+!!!         A_localtr1(i) = A_localtr0(i) + hh * dadz_r0(i)
+!!!         A_localti1(i) = A_localti0(i) + hh * dadz_i0(i)
+!!!       end do
+!!!   !$OMP END DO
 
 !    Update large field array with new values
 !  call local2globalA(A_localt,sA,recvs,displs,tTransInfo_G%qOneD)
+
+
+
+      xt = sElX_G  +  hh*dxdx
+      yt = sElY_G  +  hh*dydx
+      z2t = sElZ2_G    +  hh*dz2dx
+      pxt = sElPX_G    +  hh*dpxdx
+      pyt = sElPY_G    +  hh*dpydx
+      pz2t = sElGam_G  +  hh*dpz2dx
+
+      A_localtr1 = A_localtr0 + hh * dadz_r0
+      A_localti1 = A_localti0 + hh * dadz_i0
+
+
+
 
     call upd8a(A_localtr1, A_localti1)
 
@@ -242,24 +257,38 @@ subroutine rk4par(sZ,h,qD)
 
   if (qPArrOK_G) then
 
-!$OMP DO
-    do i = 1, iNumberElectrons_G
-      xt(i) = sElX_G(i)      +  hh*dxt(i)
-      yt(i) = sElY_G(i)      +  hh*dyt(i)
-      z2t(i) = sElZ2_G(i)    +  hh*dz2t(i)
-      pxt(i) = sElPX_G(i)    +  hh*dpxt(i)
-      pyt(i) = sElPY_G(i)    +  hh*dpyt(i)
-      pz2t(i) = sElGam_G(i)  +  hh*dpz2t(i)
-    end do
-!$OMP END DO
+!!!! !$OMP DO
+!!!!     do i = 1, iNumberElectrons_G
+!!!!       xt(i) = sElX_G(i)      +  hh*dxt(i)
+!!!!       yt(i) = sElY_G(i)      +  hh*dyt(i)
+!!!!       z2t(i) = sElZ2_G(i)    +  hh*dz2t(i)
+!!!!       pxt(i) = sElPX_G(i)    +  hh*dpxt(i)
+!!!!       pyt(i) = sElPY_G(i)    +  hh*dpyt(i)
+!!!!       pz2t(i) = sElGam_G(i)  +  hh*dpz2t(i)
+!!!!     end do
+!!!! !$OMP END DO
+!!!! 
+!!!! 
+!!!! !$OMP DO
+!!!!     do i = 1, tllen43D
+!!!!       A_localtr2(i) = A_localtr0(i) + hh * dadz_r1(i)
+!!!!       A_localti2(i) = A_localti0(i) + hh * dadz_i1(i)
+!!!!     end do
+!!!! !$OMP END DO
 
 
-!$OMP DO
-    do i = 1, tllen43D
-      A_localtr2(i) = A_localtr0(i) + hh * dadz_r1(i)
-      A_localti2(i) = A_localti0(i) + hh * dadz_i1(i)
-    end do
-!$OMP END DO
+
+      xt = sElX_G      +  hh*dxt
+      yt = sElY_G      +  hh*dyt
+      z2t = sElZ2_G    +  hh*dz2t
+      pxt = sElPX_G    +  hh*dpxt
+      pyt = sElPY_G    +  hh*dpyt
+      pz2t = sElGam_G  +  hh*dpz2t
+
+      A_localtr2 = A_localtr0 + hh * dadz_r1
+      A_localti2 = A_localti0 + hh * dadz_i1
+
+
 
 !    Update full field array
 
@@ -283,48 +312,74 @@ subroutine rk4par(sZ,h,qD)
 
   if (qPArrOK_G) then
 
-!$OMP DO
-    do i = 1, iNumberElectrons_G
-      xt(i) = sElX_G(i)  +  h * dxm(i)
-      yt(i) = sElY_G(i)  +  h * dym(i)
-      z2t(i) = sElZ2_G(i)    +  h * dz2m(i)
-      pxt(i) = sElPX_G(i)    +  h * dpxm(i)
-      pyt(i) = sElPY_G(i)    +  h * dpym(i)
-      pz2t(i) = sElGam_G(i)  +  h * dpz2m(i)
-    end do
-!$OMP END DO
+!!! !$OMP DO
+!!!     do i = 1, iNumberElectrons_G
+!!!       xt(i) = sElX_G(i)  +  h * dxm(i)
+!!!       yt(i) = sElY_G(i)  +  h * dym(i)
+!!!       z2t(i) = sElZ2_G(i)    +  h * dz2m(i)
+!!!       pxt(i) = sElPX_G(i)    +  h * dpxm(i)
+!!!       pyt(i) = sElPY_G(i)    +  h * dpym(i)
+!!!       pz2t(i) = sElGam_G(i)  +  h * dpz2m(i)
+!!!     end do
+!!! !$OMP END DO
+!!! 
+!!! !$OMP DO
+!!!     do i = 1, tllen43D
+!!!       A_localtr3(i) = A_localtr0(i) + h * dadz_r2(i)
+!!!       A_localti3(i) = A_localti0(i) + h * dadz_i2(i)
+!!!     end do
+!!! !$OMP END DO
 
-!$OMP DO
-    do i = 1, tllen43D
-      A_localtr3(i) = A_localtr0(i) + h * dadz_r2(i)
-      A_localti3(i) = A_localti0(i) + h * dadz_i2(i)
-    end do
-!$OMP END DO
+
+      xt = sElX_G  +  h * dxm
+      yt = sElY_G  +  h * dym
+      z2t = sElZ2_G    +  h * dz2m
+      pxt = sElPX_G    +  h * dpxm
+      pyt = sElPY_G    +  h * dpym
+      pz2t = sElGam_G  +  h * dpz2m
+
+      A_localtr3 = A_localtr0 + h * dadz_r2
+      A_localti3 = A_localti0 + h * dadz_i2
+
+
 
 !  call local2globalA(A_localt, sA, recvs, displs, tTransInfo_G%qOneD)
 
     call upd8a(A_localtr3, A_localti3)
 
-!$OMP DO
-    do i = 1, iNumberElectrons_G
-      dxm(i) = dxt(i) + dxm(i)
-      dym(i) = dyt(i) + dym(i)
-      dz2m(i) = dz2t(i) + dz2m(i)
-      dpxm(i) = dpxt(i) + dpxm(i)
-      dpym(i) = dpyt(i) + dpym(i)
-      dpz2m(i) = dpz2t(i) + dpz2m(i)
-    end do
-!$OMP END DO
+!!! !$OMP DO
+!!!     do i = 1, iNumberElectrons_G
+!!!       dxm(i) = dxt(i) + dxm(i)
+!!!       dym(i) = dyt(i) + dym(i)
+!!!       dz2m(i) = dz2t(i) + dz2m(i)
+!!!       dpxm(i) = dpxt(i) + dpxm(i)
+!!!       dpym(i) = dpyt(i) + dpym(i)
+!!!       dpz2m(i) = dpz2t(i) + dpz2m(i)
+!!!     end do
+!!! !$OMP END DO
+!!! 
+!!! 
+!!! !$OMP DO
+!!!     do i = 1, tllen43D
+!!!       dadz_r2(i) = dadz_r1(i) + dadz_r2(i)
+!!!       dadz_i2(i) = dadz_i1(i) + dadz_i2(i)
+!!!       dadz_r1(i) = 0_wp
+!!!       dadz_i1(i) = 0_wp
+!!!     end do
+!!! !$OMP END DO
 
 
-!$OMP DO
-    do i = 1, tllen43D
-      dadz_r2(i) = dadz_r1(i) + dadz_r2(i)
-      dadz_i2(i) = dadz_i1(i) + dadz_i2(i)
-      dadz_r1(i) = 0_wp
-      dadz_i1(i) = 0_wp
-    end do
-!$OMP END DO
+      dxm = dxt + dxm
+      dym = dyt + dym
+      dz2m = dz2t + dz2m
+      dpxm = dpxt + dpxm
+      dpym = dpyt + dpym
+      dpz2m = dpz2t + dpz2m
+
+      dadz_r2 = dadz_r1 + dadz_r2
+      dadz_i2 = dadz_i1 + dadz_i2
+      dadz_r1 = 0_wp
+      dadz_i1 = 0_wp
 
   end if
 
@@ -346,25 +401,46 @@ subroutine rk4par(sZ,h,qD)
 
   if (qPArrOK_G) then
 
-!$OMP DO
-    do i = 1, iNumberElectrons_G
-      sElX_G(i)    = sElX_G(i) + h6 * ( dxdx(i) + dxt(i) + 2.0_WP * dxm(i) )
-      sElY_G(i)    = sElY_G(i) + h6 * ( dydx(i) + dyt(i) + 2.0_WP * dym(i) )
-      sElZ2_G(i)   = sElZ2_G(i)  + h6 * ( dz2dx(i)  + dz2t(i)  + 2.0_WP * dz2m(i) )
-      sElPX_G(i)   = sElPX_G(i)  + h6 * ( dpxdx(i)  + dpxt(i)  + 2.0_WP * dpxm(i) )
-      sElPY_G(i)   = sElPY_G(i)  + h6 * ( dpydx(i)  + dpyt(i)  + 2.0_WP * dpym(i) )
-      sElGam_G(i)  = sElGam_G(i) + h6 * ( dpz2dx(i) + dpz2t(i) + 2.0_WP * dpz2m(i))
-    end do
-!$OMP END DO
+!!! !$OMP DO
+!!!     do i = 1, iNumberElectrons_G
+!!!       sElX_G(i)    = sElX_G(i) + h6 * ( dxdx(i) + dxt(i) + 2.0_WP * dxm(i) )
+!!!       sElY_G(i)    = sElY_G(i) + h6 * ( dydx(i) + dyt(i) + 2.0_WP * dym(i) )
+!!!       sElZ2_G(i)   = sElZ2_G(i)  + h6 * ( dz2dx(i)  + dz2t(i)  + 2.0_WP * dz2m(i) )
+!!!       sElPX_G(i)   = sElPX_G(i)  + h6 * ( dpxdx(i)  + dpxt(i)  + 2.0_WP * dpxm(i) )
+!!!       sElPY_G(i)   = sElPY_G(i)  + h6 * ( dpydx(i)  + dpyt(i)  + 2.0_WP * dpym(i) )
+!!!       sElGam_G(i)  = sElGam_G(i) + h6 * ( dpz2dx(i) + dpz2t(i) + 2.0_WP * dpz2m(i))
+!!!     end do
+!!! !$OMP END DO
+!!! 
+!!! !$OMP DO
+!!!     do i = 1, tllen43D
+!!!       ac_rfield_in(i) = ac_rfield_in(i) + h6 * (dadz_r0(i) + dadz_r1(i) &
+!!!                             + 2.0_WP * dadz_r2(i))
+!!!       ac_ifield_in(i) = ac_ifield_in(i) + h6 * (dadz_i0(i) + dadz_i1(i) &
+!!!                             + 2.0_WP * dadz_i2(i))
+!!!     end do
+!!! !$OMP END DO
 
-!$OMP DO
-    do i = 1, tllen43D
-      ac_rfield_in(i) = ac_rfield_in(i) + h6 * (dadz_r0(i) + dadz_r1(i) &
-                            + 2.0_WP * dadz_r2(i))
-      ac_ifield_in(i) = ac_ifield_in(i) + h6 * (dadz_i0(i) + dadz_i1(i) &
-                            + 2.0_WP * dadz_i2(i))
-    end do
-!$OMP END DO
+
+
+
+
+      sElX_G    = sElX_G + h6 * ( dxdx + dxt + 2.0_WP * dxm )
+      sElY_G    = sElY_G + h6 * ( dydx + dyt + 2.0_WP * dym )
+      sElZ2_G   = sElZ2_G  + h6 * ( dz2dx  + dz2t  + 2.0_WP * dz2m )
+      sElPX_G   = sElPX_G  + h6 * ( dpxdx  + dpxt  + 2.0_WP * dpxm )
+      sElPY_G   = sElPY_G  + h6 * ( dpydx  + dpyt  + 2.0_WP * dpym )
+      sElGam_G  = sElGam_G + h6 * ( dpz2dx + dpz2t + 2.0_WP * dpz2m)
+
+      ac_rfield_in = ac_rfield_in + h6 * (dadz_r0 + dadz_r1 &
+                            + 2.0_WP * dadz_r2)
+      ac_ifield_in = ac_ifield_in + h6 * (dadz_i0 + dadz_i1 &
+                            + 2.0_WP * dadz_i2)
+
+
+
+
+
 
 !  if (count(abs(dadz_r0) > 0.0_wp) <= 0) print*, 'HELP IM TOO RUBBUSH'
 
@@ -494,17 +570,17 @@ subroutine allact_rk4_arrs()
     dpz2t(iNumberElectrons_G), pz2t(iNumberElectrons_G))
 
 
-    allocate(p_nodes(iNumberElectrons_G))
-    call alct_e_srtcts(iNumberElectrons_G)
+    allocate(p_nodes(nVCS))
+    call alct_e_srtcts(nVCS)
     if (tTransInfo_G%qOneD) then
-      allocate(lis_GR(2,iNumberElectrons_G))
+      allocate(lis_GR(2,nVCS))
     else
-      allocate(lis_GR(8,iNumberElectrons_G))
+      allocate(lis_GR(8,nVCS))
     end if
 
 
 
-  allocate(dadz_w(iNumberElectrons_G))
+  allocate(dadz_w(nVCS))
 
 ! Element representation of Areal and Aimag
 

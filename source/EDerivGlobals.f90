@@ -20,6 +20,9 @@ use ArrayFunctions
 implicit none
 
 
+
+integer(kind=ip), parameter :: nVCS = 16_ip
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! field vars
 

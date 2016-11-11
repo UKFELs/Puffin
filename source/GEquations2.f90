@@ -4,7 +4,7 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
-module Equations
+module Equations2
 
 
 use paratype
@@ -30,14 +30,15 @@ implicit none
 
 contains
 
-  subroutine dppdz_r_f(sx, sy, sz2, spr, spi, sgam, &
-                       sZ, sdpr, qOK)
+  subroutine dppdz_r_fT(sx, sy, sz2, spr, spi, sgam, sZ, spt2, &
+                       sF4ER, sF4EI, bxut, byut, bzut, sdpr, qOK)
 
   	implicit none
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:), sZ
-    real(kind=wp), intent(out) :: sdpr(:)
+    real(kind=wp), intent(in) :: sx, sy, sz2, spr, spi, sgam, sZ, &
+                                 spt2, sF4ER, sF4EI, bxut, byut, bzut
+    real(kind=wp), intent(out) :: sdpr
 
     real(kind=wp) :: szt
 
@@ -49,15 +50,15 @@ contains
 
     qOK = .false.
 
-!$OMP DO
-    do i=1,iNumberElectrons_G
-      sdpr(i) = sInv2rho * ( n2col * byu(i)  & 
-                          - sEta_G * sp2(i) / sKappa_G**2 *    &
-                          sField4ElecReal(i) ) & 
-             + sKappa_G * spi(i) / sgam(i) * (1 + sEta_G * sp2(i)) &
-                 * n2col * bzu(i)
-    end do
-!$OMP END DO
+! !$OMP DO
+!    do i=1,iNumberElectrons_G
+      sdpr = sInv2rho * ( n2col * byut  & 
+                          - sEta_G * spt2 / sKappa_G**2 *    &
+                          sF4ER ) & 
+             + sKappa_G * spi / sgam * (1 + sEta_G * spt2) &
+                 * n2col * bzut
+!    end do
+! !$OMP END DO
 
 ! Set the error flag and exit
 
@@ -71,7 +72,7 @@ contains
 
     !2000 continue
 
-  end subroutine dppdz_r_f
+  end subroutine dppdz_r_fT
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -81,14 +82,15 @@ contains
 
 
 
-  subroutine dppdz_i_f(sx, sy, sz2, spr, spi, sgam, sZ, &
-                       sdpi, qOK)
+  subroutine dppdz_i_fT(sx, sy, sz2, spr, spi, sgam, sZ, spt2, &
+                       sF4ER, sF4EI, bxut, byut, bzut, sdpi, qOK)
 
     implicit none
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:), sZ
-    real(kind=wp), intent(out) :: sdpi(:)
+    real(kind=wp), intent(in) :: sx, sy, sz2, spr, spi, sgam, sZ, &
+                                 spt2, sF4ER, sF4EI, bxut, byut, bzut
+    real(kind=wp), intent(out) :: sdpi
 
     real(kind=wp) :: szt
 
@@ -101,15 +103,15 @@ contains
 
     qOK = .false.
 
-!$OMP DO
-    do i=1,iNumberElectrons_G
-      sdpi(i) = sInv2rho * (  n2col * bxu(i)  & 
-             - sEta_G * sp2(i) / sKappa_G**2 * &
-                          sField4ElecImag(i) ) & 
-             - sKappa_G * spr(i) / sgam(i) * (1 + sEta_G * sp2(i)) &
-                 * n2col * bzu(i)
-    end do
-!$OMP END DO
+! !$OMP DO
+!    do i=1,iNumberElectrons_G
+      sdpi = sInv2rho * (  n2col * bxut  & 
+             - sEta_G * spt2 / sKappa_G**2 * &
+                          sF4EI ) & 
+             - sKappa_G * spr / sgam * (1 + sEta_G * spt2) &
+                 * n2col * bzut
+!    end do
+! !$OMP END DO
 
 ! Set the error flag and exit
 
@@ -124,7 +126,7 @@ contains
     !2000 continue
 
 
-  end subroutine dppdz_i_f
+  end subroutine dppdz_i_fT
 
 
 
@@ -134,14 +136,14 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine dgamdz_f(sx, sy, sz2, spr, spi, sgam, &
-                      sdgam, qOK)
+  subroutine dgamdz_fT(sx, sy, sz2, spr, spi, sgam, spt2, &
+                      sF4ER, sF4EI, sdgam, qOK)
 
     implicit none
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
-    real(kind=wp), intent(out) :: sdgam(:)
+    real(kind=wp), intent(in) :: sx, sy, sz2, spr, spi, sgam, spt2, sF4ER, sF4EI
+    real(kind=wp), intent(out) :: sdgam
 
     logical, intent(inout) :: qOK
 
@@ -152,12 +154,12 @@ contains
 
     qOK = .false.
 
-!$OMP DO
-    do i=1,iNumberElectrons_G
-      sdgam(i) = -sRho_G * ( 1 + sEta_G * sp2(i) ) / sgam(i) * 2_wp *   &
-             ( spr(i) * sField4ElecReal(i) + spi(i) * sField4ElecImag(i) ) 
-    end do
-!$OMP END DO
+! !$OMP DO
+!    do i=1,iNumberElectrons_G
+      sdgam = -sRho_G * ( 1 + sEta_G * spt2 ) / sgam * 2_wp *   &
+             ( spr * sF4ER + spi * sF4EI ) 
+!    end do
+! !$OMP END DO
 
     ! Set the error flag and exit
 
@@ -172,7 +174,7 @@ contains
     !2000 continue
 
 
-  end subroutine dgamdz_f
+  end subroutine dgamdz_fT
 
 
 
@@ -180,7 +182,7 @@ contains
 
 
 
-  subroutine dxdz_f(sx, sy, sz2, spr, spi, sgam, &
+  subroutine dxdz_fT(sx, sy, sz2, spr, spi, sgam, spt2, &
                     sdx, qOK)
 
     implicit none
@@ -190,8 +192,8 @@ contains
 !              Arguments:
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
-    real(kind=wp), intent(out) :: sdx(:)
+    real(kind=wp), intent(in) :: sx, sy, sz2, spr, spi, sgam, spt2
+    real(kind=wp), intent(out) :: sdx
 
 
 !    real(kind=wp), intent(in) :: sy(:), Lj(:), nd
@@ -208,13 +210,13 @@ contains
     qOK = .false.
 
 
-!$OMP DO
-    do i=1,iNumberElectrons_G
-      sdx(i) = 2_wp * sRho_G * sKappa_G / sqrt(sEta_G) * &
-            (1 + sEta_G * sp2(i)) / sgam(i) *  &
-            spr(i)
-    end do
-!$OMP END DO
+! !$OMP DO
+!    do i=1,iNumberElectrons_G
+      sdx = 2_wp * sRho_G * sKappa_G / sqrt(sEta_G) * &
+            (1 + sEta_G * spt2) / sgam *  &
+            spr
+!    end do
+! !$OMP END DO
 
 !    sdx = spr * Lj / nd
     
@@ -228,13 +230,13 @@ contains
     !2000 continue
 
 
-  end subroutine dxdz_f
+  end subroutine dxdz_fT
 
 
 
 
 
-  subroutine dydz_f(sx, sy, sz2, spr, spi, sgam, &
+  subroutine dydz_fT(sx, sy, sz2, spr, spi, sgam, spt2, &
                     sdy, qOK)
 
     implicit none
@@ -244,8 +246,8 @@ contains
 !              Arguments:
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
-    real(kind=wp), intent(out) :: sdy(:)
+    real(kind=wp), intent(in) :: sx, sy, sz2, spr, spi, sgam, spt2
+    real(kind=wp), intent(out) :: sdy
 
     logical, intent(inout) :: qOK
 
@@ -259,13 +261,13 @@ contains
     qOK = .false.
 
 
-!$OMP DO
-    do i=1,iNumberElectrons_G
-      sdy(i) = - 2_wp * sRho_G * sKappa_G / sqrt(sEta_G) * &
-            (1 + sEta_G * sp2(i)) / sgam(i) *  &
-            spi(i)
-    end do
-!$OMP END DO
+! !$OMP DO
+!    do i=1,iNumberElectrons_G
+      sdy = - 2_wp * sRho_G * sKappa_G / sqrt(sEta_G) * &
+            (1 + sEta_G * spt2) / sgam *  &
+            spi
+!    end do
+! !$OMP END DO
 
 !    sdy = - spi * Lj / nd
 
@@ -279,12 +281,12 @@ contains
     !2000 continue
 
 
-  end subroutine dydz_f
+  end subroutine dydz_fT
 
 
 
 
-  subroutine dz2dz_f(sx, sy, sz2, spr, spi, sgam, &
+  subroutine dz2dz_fT(sx, sy, sz2, spr, spi, sgam, spt2, &
                      sdz2, qOK)
 
     implicit none
@@ -294,8 +296,8 @@ contains
 !              Arguments:
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
-    real(kind=wp), intent(out) :: sdz2(:)
+    real(kind=wp), intent(in) :: sx, sy, sz2, spr, spi, sgam, spt2
+    real(kind=wp), intent(out) :: sdz2
 
 
 !    real(kind=wp), intent(in) :: sy(:), Lj(:), nd
@@ -310,11 +312,11 @@ contains
 
     qOK = .false.
 
-!$OMP DO
-    do i=1,iNumberElectrons_G
-      sdz2(i) = sp2(i)
-    end do
-!$OMP END DO
+! !$OMP DO
+!    do i=1,iNumberElectrons_G
+      sdz2 = spt2
+!    end do
+! !$OMP END DO
 
     qOK = .true.
     
@@ -324,7 +326,7 @@ contains
     
     !2000 continue
 
-  end subroutine dz2dz_f
+  end subroutine dz2dz_fT
   
 
 
@@ -344,7 +346,7 @@ contains
     allocate(sp2(ar_sz), sField4ElecReal(ar_sz), &
              sField4ElecImag(ar_sz))! , Lj(ar_sz))
 
-    allocate(bxu(ar_sz), byu(ar_sz), bzu(ar_sz))
+!    allocate(bxu(ar_sz), byu(ar_sz), bzu(ar_sz))
 
   end subroutine alct_e_srtcts
 
@@ -360,7 +362,7 @@ contains
     deallocate(sp2, sField4ElecReal, &
              sField4ElecImag)! , Lj(ar_sz))
 
-    deallocate(bxu, byu, bzu)
+!    deallocate(bxu, byu, bzu)
 
   end subroutine dalct_e_srtcts
 
@@ -409,5 +411,5 @@ contains
 
 
 
-end module equations
+end module equations2
 

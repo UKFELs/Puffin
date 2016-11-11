@@ -92,5 +92,54 @@ contains
   end subroutine getP2
 
 
+  subroutine getP2_T(p2, gamma, px, py, eta, gamma0, aw)
+
+  implicit none
+  
+! Return p2, given Gamma, px, py and eta
+!
+!  ###########################################
+! 
+!           ARGUMENTS
+!
+!
+!
+!  p2       :          Scaled velocity along wiggler axis (output)
+!
+!  gamma    :          Relativistic factor normalised to gamma_0
+!
+!  px, py   :          Electron macroparticle transverse momenta,
+!                      normalised to aw * m_e * c
+!
+!  eta      :          Scaled longitudinal velocity of 'reference' 
+!                      energy
+!
+!  gamma_0  :          Relativistic factor of 'reference' energy
+!
+!  aw       :          Undulator parameter (peak) 
+!
+
+    real(kind=wp), intent(in) :: px, py, gamma, eta, gamma0, aw
+
+!            OUTPUT
+
+    real(kind=wp), intent(out) :: p2
+
+    integer(kind=ip) :: i !inels
+
+! !$OMP DO
+!    do i = 1, iNumberElectrons_G
+      p2 = (( 1_wp/sqrt(1_wp - 1_wp / (gamma0**2 * gamma**2) * ( 1 + &
+               aw**2*(px**2 + py**2))))-1_wp) / eta
+!    end do
+! !$OMP END DO
+  
+  end subroutine getP2_T
+  
+  
+  
+  
+  
+
 
 end module gtop2
