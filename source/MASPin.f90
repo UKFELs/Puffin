@@ -103,7 +103,7 @@ contains
              ACTION='READ',POSITION='REWIND')   
   
         nBlanks = displs_eb(ir+1) + nBlanks_head
-        print*, 'num of blanks now ', nblanks
+        !print*, 'num of blanks now ', nblanks
         do ij = 1,nBlanks 
         	READ(UNIT=fid, FMT=*) 
         end do

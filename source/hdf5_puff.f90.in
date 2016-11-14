@@ -1843,7 +1843,7 @@ contains
 
 !    Print*,('Spatialdims: ' // trim(IntegerToString(numSpatialDims)))
     filename = (trim(adjustl(zFilename_G)) // '_' // trim(adjustl(dsetname)) &
-        // '_' // trim(adjustl(IntegerToString(iStep))) // '.h5' )
+        // '_' // trim(adjustl(IntegerToString(iCSteps))) // '.h5' )
       CALL h5open_f(error)
       CALL h5pcreate_f(H5P_FILE_ACCESS_F, plist_id, error)
 !      Print*,'hdf5_puff:outputH5FieldSD(property created)'
@@ -2275,7 +2275,7 @@ contains
 
 !     Create dataset floating point attributes.
           call addH5FloatAttribute(dset_id, "time", time,aspace_id)
-          call addH5FloatAttribute(dset_id, "z", 1.0*iStep*sStepSize,aspace_id)
+          call addH5FloatAttribute(dset_id, "z", time*c/lg_G,aspace_id)
 
           call addH5StringAttribute(dset_id,"vsLabels","aperp_real, aperp_imaginary",aspace_id)
           call addH5StringAttribute(dset_id,"vsType","variable",aspace_id)
@@ -2825,7 +2825,7 @@ contains
 !    CALL h5aclose_f(attr_id, error)
 !    CALL h5tclose_f(atype_id, error)
      CALL addH5FloatAttribute(dset_id, "time", simtime,aspace_id)
-     CALL addH5FloatAttribute(dset_id, "z", 1.0*iStep*sStepSize,aspace_id)
+     CALL addH5FloatAttribute(dset_id, "z", simtime * c,aspace_id)
 
     !      text attributes
     CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
