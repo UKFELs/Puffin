@@ -31,7 +31,7 @@ means it may model:
   - Fully 3D undulators, including modelling of the wiggler entries/exits and natural focusing
   - Interleaved undulator-chicane lattices
   - Variably polarized undulators
-  - Undulator tuning of each module
+  - Tuning of each undulator module
 
 It presently does not include the effects of space charge, and ignores emission
 of the backwards wave from the e-beam.

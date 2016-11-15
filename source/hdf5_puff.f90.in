@@ -575,9 +575,11 @@ contains
 
     !    nslices = int( (sLengthOfElmZ2_G*NZ2_G)/(4*pi*srho_g))
 
+    time = sZ
+
     if (qWriteFull) then
 
-      time = sZ*lg_G/c ! real(iCSteps,kind=wp)*sStepSize*lg_G/c
+!      time = sZ ! real(iCSteps,kind=wp)*sStepSize*lg_G/c
 
       if (qSep) then
 !        print *,'Dumping particles individually...'
@@ -1010,8 +1012,13 @@ contains
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
     CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
     CALL h5aclose_f(attr_id, error)
-    aname="distanceThroughMachine"
-    attr_data_double=time*c !real(iCSteps,kind=wp)*sStepSize*lg_G
+    aname="zbarInter"
+    attr_data_double=time !real(iCSteps,kind=wp)*sStepSize*lg_G
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+    aname="zInter"
+    attr_data_double=time*lg_G !real(iCSteps,kind=wp)*sStepSize*lg_G
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
     CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
     CALL h5aclose_f(attr_id, error)
@@ -1480,11 +1487,17 @@ contains
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
     CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
     CALL h5aclose_f(attr_id, error)
-    aname="distanceThroughMachine"
-    attr_data_double = time * c !real(iCSteps,kind=wp)*sStepSize*lg_G
+    aname="zbarInter"
+    attr_data_double=time !real(iCSteps,kind=wp)*sStepSize*lg_G
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
     CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
     CALL h5aclose_f(attr_id, error)
+    aname="zInter"
+    attr_data_double=time*lg_G !real(iCSteps,kind=wp)*sStepSize*lg_G
+    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
+    CALL h5aclose_f(attr_id, error)
+
     aname="gainLength"
     attr_data_double=lg_G
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
@@ -1759,6 +1772,9 @@ contains
 !      Print*,'hdf5_puff:outputH5Field(scalar space created)'
 !      CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
       CALL addH5FloatAttribute(dset_id, "time", time,aspace_id)
+      CALL addH5FloatAttribute(dset_id, "zbarInter", time,aspace_id)
+      CALL addH5FloatAttribute(dset_id, "zInter", time*lg_G,aspace_id)
+      
 !      CALL addH5FloatAttribute(dset_id, z, iStep*,aspace_id)
 !      aname="time"
 !      attr_data_double=time
@@ -1884,7 +1900,7 @@ contains
 
     Print*,('Spatialdims: ' // trim(IntegerToString(numSpatialDims)))
     filename = (trim(adjustl(zFilename_G)) // '_' // trim(adjustl(dsetname)) &
-        // '_' // trim(adjustl(IntegerToString(iStep))) // '.h5' )
+        // '_' // trim(adjustl(IntegerToString(iCSteps))) // '.h5' )
       CALL h5open_f(error)
       CALL h5pcreate_f(H5P_FILE_ACCESS_F, plist_id, error)
 !      Print*,'hdf5_puff:outputH5FieldSD(property created)'
@@ -2026,7 +2042,9 @@ contains
 
 ! Create dataset floating point attributes.
      CALL addH5FloatAttribute(dset_id, "time", time,aspace_id)
-     CALL addH5FloatAttribute(dset_id, "z", 1.0*iStep*sStepSize,aspace_id)
+     CALL addH5FloatAttribute(dset_id, "zbarInter", time, aspace_id)
+     CALL addH5FloatAttribute(dset_id, "zInter", time*lg_G, aspace_id)
+
 !    CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
 !      aname="time"
 !      attr_data_double=time
@@ -2315,7 +2333,8 @@ contains
 
 !     Create dataset floating point attributes.
           call addH5FloatAttribute(dset_id, "time", time,aspace_id)
-          call addH5FloatAttribute(dset_id, "z", 1.0*iStep*sStepSize,aspace_id)
+          call addH5FloatAttribute(dset_id, "zBarInter", time, aspace_id)
+          call addH5FloatAttribute(dset_id, "zInter", time*lg_G, aspace_id)
 
           call addH5StringAttribute(dset_id,"vsLabels","aperp_real, aperp_imaginary",aspace_id)
           call addH5StringAttribute(dset_id,"vsType","variable",aspace_id)
@@ -3039,8 +3058,9 @@ contains
 !    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
 !    CALL h5aclose_f(attr_id, error)
 !    CALL h5tclose_f(atype_id, error)
-     CALL addH5FloatAttribute(dset_id, "time", simtime,aspace_id)
-     CALL addH5FloatAttribute(dset_id, "z", 1.0*iStep*sStepSize,aspace_id)
+     CALL addH5FloatAttribute(dset_id, "time", simtime, aspace_id)
+     CALL addH5FloatAttribute(dset_id, "zbarInter", simtime, aspace_id)
+     CALL addH5FloatAttribute(dset_id, "zInter", simtime*lg_G, aspace_id)
 
     !      text attributes
     CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
