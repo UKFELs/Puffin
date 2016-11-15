@@ -703,7 +703,7 @@ contains
 ! but the write operation does not, as the data has been collected on rank0.
 
       if (tProcInfo_G%qRoot) then
-        time = sZ*lg_G/c !real(iCSteps,kind=wp)*sStepSize*lg_G/c
+!        time = sZ*lg_G/c !real(iCSteps,kind=wp)*sStepSize*lg_G/c
         if (qSep) then
       
           call outputH5Field1DFloat(power, 'power', time, error)
@@ -2881,7 +2881,8 @@ contains
 ! scalar dataset for simpler values
       CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
       CALL addH5FloatAttribute(dset_id, "time", simtime,aspace_id)
-      CALL addH5FloatAttribute(dset_id, "z", 1.0*iStep*sStepSize,aspace_id)
+      CALL addH5FloatAttribute(dset_id, "zbarInter", simtime,aspace_id)
+      CALL addH5FloatAttribute(dset_id, "zInter", simtime * lg_G,aspace_id)
       CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
       aname="vsLabels"
       attr_data_string=trim(adjustl(dsetname))
@@ -2922,7 +2923,8 @@ contains
 ! scalar dataset for simpler values
       CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
       CALL addH5FloatAttribute(dset_id, "time", simtime,aspace_id)
-      CALL addH5FloatAttribute(dset_id, "z", 1.0*iStep*sStepSize*lg_g,aspace_id)
+      CALL addH5FloatAttribute(dset_id, "zbarInter", simtime,aspace_id)
+      CALL addH5FloatAttribute(dset_id, "zInter", simtime * lg_G,aspace_id)
       CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
       aname="vsLabels"
       attr_data_string=trim(adjustl(dsetname))
