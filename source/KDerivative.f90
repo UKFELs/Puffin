@@ -4,6 +4,14 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Module which calculates d/dz of the local electron and field variables, and 
+!> then sums the global regions together.
+
 module Derivative
 
 ! Module to calculate derivative required to integrate
@@ -19,7 +27,12 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-
+!> Subroutine which calculate d/dz of the local electron and field 
+!> variables, and then sums the global regions together.
+!> @param sz position in undulator module.
+!> @param sAr real field 
+!> @param sAi imaginary field 
+!> @param sx electron macroparticles' x position
 
 
   subroutine derivs(sz, sAr, sAi, sx, sy, sz2, spr, spi, sp2, &

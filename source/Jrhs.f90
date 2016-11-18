@@ -4,6 +4,14 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Module to calculate d/dz of the field values and electron macroparticle 
+!> coordinates.
+
 module rhs
 
 ! Module to calculate the RHS of the field source equation

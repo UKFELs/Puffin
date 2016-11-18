@@ -4,6 +4,15 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Various routines to setup and scale the constants in the simulation.
+
+
+
 MODULE setupcalcs
 
 USE Paratype
