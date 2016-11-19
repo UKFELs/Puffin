@@ -18,6 +18,8 @@ local.properties
 *.toc
 *.mod
 *.o
+*.synctex.gz
+*.aux
 doxygen
 
 # External tool builders

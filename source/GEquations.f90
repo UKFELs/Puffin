@@ -99,7 +99,7 @@ contains
 !$OMP WORKSHARE
     sdpi = sInv2rho * (  n2col * bxu  & 
            - sEta_G * sp2 / sKappa_G**2 * &
-                        sField4ElecReal ) & 
+                        sField4ElecImag ) & 
            - sKappa_G * spr / sgam * (1 + sEta_G * sp2) &
                * n2col * bzu
 !$OMP END WORKSHARE

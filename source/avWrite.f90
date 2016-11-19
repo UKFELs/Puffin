@@ -175,7 +175,7 @@ contains
 
 
 !> initPFile This subroutine initializes the SDDS power file, and must be
-!! called before any writing to the sdds power file takes place.
+!> called before any writing to the sdds power file takes place.
 
   subroutine initPFile(powFType, qForm)
 
@@ -187,11 +187,6 @@ contains
     character(1024_IP) :: fname, & !< Filename (unused)
                         vname    !< SDDS Variable name
     logical :: qOKL  !< Local error flag
-
-    real(kind=wp) :: lx, &  !< Length of field mesh in x
-                     ly     !< Length of field mesh in x
-
-
 
     powFType%qformatted = qForm
     powFType%zFileName = 'power.sdds' !  filename
@@ -205,6 +200,15 @@ contains
 
     end if
 
+  end subroutine initPFile
+
+!> initPowerCalc This subroutine stes up array structures to be 
+!> use in the power calculation.
+
+  subroutine initPowerCalc()
+
+    real(kind=wp) :: lx, &  !< Length of field mesh in x
+                     ly     !< Length of field mesh in x
 
     allocate(x_ax_G(NX_G), y_ax_G(NY_G))
 
@@ -218,8 +222,7 @@ contains
 
     end if
 
-  end subroutine initPFile
-
+  end subroutine initPowerCalc
 
 
 

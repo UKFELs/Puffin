@@ -303,6 +303,8 @@ MODULE Setup
 
   if (qsdds_G) call initPFile(tPowF, qFormattedFiles) ! initialize power file type
 
+  call initPowerCalc()
+
 !     Generate macroelectrons
 
 

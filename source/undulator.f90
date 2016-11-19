@@ -189,7 +189,7 @@ contains
 
     if (qDiffraction_G) then
   
-      if ((sZ>(nextDiff-sStepsize/100.0_WP)) .or. (iStep == nSteps))  then
+      if ((sZl>(nextDiff-sStepsize/100.0_WP)) .or. (iStep == nSteps))  then
 
 !        call deallact_rk4_arrs()
 
