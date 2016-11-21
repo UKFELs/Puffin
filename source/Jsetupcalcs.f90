@@ -348,7 +348,9 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
 !     Get the number of nodes
 
-    iNumberNodes_G = iNN(iX_CG)*iNN(iY_CG)*iNN(iZ2_CG)
+    iNumberNodes_G = int(iNN(iX_CG), kind=IPN) * &
+                       int(iNN(iY_CG), kind=IPN) * &
+                         int(iNN(iZ2_CG), kind=IPN)
 
 
 
@@ -363,8 +365,8 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
 
 
-    IF(iNumberNodes_G <= 0_IP) THEN
-       CALL Error_log('iNumberNodes_G <=0.',tErrorLog_G)
+    IF(iNumberNodes_G <= 0_IPN) THEN
+       CALL Error_log('iNumberNodes_G <= 0.',tErrorLog_G)
        GOTO 1000    
     END IF
 

@@ -1122,7 +1122,7 @@ contains
 
 !     Write length of column data - see CIO.f90 line 100          
 
-      call WriteINTEGERL(iNumberNodes_G,tFileTyper,qOKL)
+      call WriteINTEGERL64(iNumberNodes_G,tFileTyper,qOKL)
       if (.NOT. qOKL) Goto 1000
 
 !     Close File 
@@ -1271,7 +1271,7 @@ contains
 
 !     Write length of column data - see CIO.f90 line 100          
 
-      call WriteINTEGERL(iNumberNodes_G,tFileTypei,qOKL)
+      call WriteINTEGERL64(iNumberNodes_G,tFileTypei,qOKL)
       if (.NOT. qOKL) Goto 1000
 
 !     Close File 

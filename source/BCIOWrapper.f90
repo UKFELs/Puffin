@@ -189,6 +189,53 @@ MODULE CIOWrapper
 
 
 
+  SUBROUTINE C_WriteIntegerL64(zFileName, iNum, qOK)
+
+!     Write integer to file using C
+
+!     zFileName - INPUT    - FileName
+!     iNum      - INPUT    - Integer to write
+!     qOK       - OUTPUT   - Error flag
+!
+!     Define local variables
+
+    IMPLICIT NONE
+
+    CHARACTER(*),      INTENT(IN)   :: zFileName
+    INTEGER(KIND=IPN), INTENT(IN)   :: iNum
+    LOGICAL,           INTENT(OUT)  :: qOK     
+
+!     Set error flag to false         
+
+    qOK = .FALSE.
+
+!     Write data
+
+    Call writeinteger_c(Trim(CString(zFileName)), iNum)
+
+!     Set error flag and exit         
+
+      qOK = .TRUE.				    
+      GoTo 2000     
+
+!     Error Handler
+
+!1000 call Error_log('Error in BCIOWrapper:C_WriteInteger',tErrorLog_G)
+
+2000 CONTINUE
+	      
+  END SUBROUTINE C_WriteIntegerL64
+
+
+
+
+
+
+
+
+
+
+
   SUBROUTINE C_WriteReal(zFileName, sNum, qOK)
 
 !     Write real to file using C
