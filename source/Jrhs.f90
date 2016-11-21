@@ -14,10 +14,6 @@
 
 module rhs
 
-! Module to calculate the RHS of the field source equation
-! and d/dz of electron equations.
-!
-
 use paratype
 use ArrayFunctions
 use Globals
@@ -42,7 +38,8 @@ contains
 !> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Read in the namelist data files for Puffin.
+!> Calculate d/dz of radiation field and electron macroparticle coordinates in
+!> 6D phase space
 !> @param[in] sz zbar
 !> @param[in] sAr Real (x) component of A_perp
 !> @param[in] sAi Imaginary (-y) component of A_perp
@@ -326,6 +323,14 @@ contains
 !        #########################################
 
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Initialize data used in the calculation of d/dz of electron beam + radiation
+!> field quantities
+!> @param[in] sz zbar
 
 subroutine rhs_tmsavers(sz)
 
