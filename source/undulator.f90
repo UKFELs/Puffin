@@ -224,7 +224,7 @@ contains
     call inner2Outer(ac_rfield_in, ac_ifield_in)
 
     call writeIM(sZ, &
-                 zDataFileName, iStep, iCsteps, iWriteNthSteps, &
+                 zDataFileName, iStep, iCsteps, iM, iWriteNthSteps, &
                  iIntWriteNthSteps, nSteps, qOKL)
 
 
