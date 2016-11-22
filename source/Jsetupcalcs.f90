@@ -560,15 +560,16 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
 
     if (iFieldSeedType_G==iSimpleSeed_G) then
 
-    call getPaSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,&
-                    freqf,ph_sh,nseeds,sLengthOfElm)
+      call getPaSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,&
+                      freqf,ph_sh,nseeds,sLengthOfElm)
     end if
 
     if (iFieldSeedType_G==iReadH5Field_G) then
 
-    call readH5FieldfileSingleDump(h5FieldFileName)
+      call readH5FieldfileSingleDump(h5FieldFileName)
 
     end if
+
 !    sA(1:iXY*iZ2) = sAreal
 !    sA(iXY*iZ2 + 1:2*iXY*iZ2) = sAimag
 
