@@ -182,7 +182,7 @@ contains
 
     sZl = sZl + sStepSize
     sZ = sZ0 + szl
-
+    sZi_G = sZi_G + sStepSize
 
 
 !   diffract field to complete diffraction step
@@ -223,7 +223,7 @@ contains
 
     call inner2Outer(ac_rfield_in, ac_ifield_in)
 
-    call writeIM(sZ, &
+    call writeIM(sZ, sZl, &
                  zDataFileName, iStep, iCsteps, iM, iWriteNthSteps, &
                  iIntWriteNthSteps, nSteps, qOKL)
 

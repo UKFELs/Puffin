@@ -103,11 +103,11 @@ do iL = 1, modNum
 
   else if (iElmType(iL) == iChic) then
 
-    call disperse(iL)
+    call disperse(iL, sZ)
 
   else if (iElmType(iL) == iDrift) then
 
-    call driftSection(iL)
+    call driftSection(iL, sZ)
 
   else if (iElmType(iL) == iModulation) then
 

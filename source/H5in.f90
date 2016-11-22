@@ -623,7 +623,7 @@ print*,"Now, you tell me if we had electrons"
           if (dims1d(1)==NZ2_G) then
             print*,"NZ2 dims in file match"
           else
-            print*,"NZ2 in .in:", NX_G, ", NZ2 in h5 file:", dims1d(1)
+            print*,"NZ2 in .in:", NZ2_G, ", NZ2 in h5 file:", dims1d(1)
             errorstr="NZ2 dims mismatch between in and h5"
             goto 1000
           end if 

@@ -350,7 +350,7 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine disperse(iL)
+  subroutine disperse(iL, sZ)
 
   implicit none
 
@@ -369,6 +369,7 @@ contains
 ! delta            Slippage in resonant wavelengths
 
   integer(kind=ip), intent(in) :: iL
+  real(kind=wp), intent(out) :: sZ
 
   real(kind=wp) :: szbar4d
   real(kind=wp), allocatable :: sp2(:)
@@ -395,6 +396,7 @@ contains
 
   end if
 
+  sZ = sZ + szbar4d
   iChic_cr = iChic_cr + 1_ip
 
   end subroutine disperse
@@ -405,9 +407,10 @@ contains
 
 
 
-  subroutine driftSection(iL)
+  subroutine driftSection(iL, sZ)
 
     integer(kind=ip), intent(in) :: iL
+    real(kind=wp), intent(out) :: sZ
 
     real(kind=wp) :: del_dr_z
 
@@ -441,6 +444,7 @@ contains
 
     deallocate(sp2)
 
+    sZ = sZ + del_dr_z
     iDrift_cr = iDrift_cr + 1_ip
 
   end subroutine driftSection

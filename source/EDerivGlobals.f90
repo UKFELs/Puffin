@@ -133,6 +133,10 @@ real(kind=wp), allocatable     :: dadz_w(:)
 
 
 
+! For recording the INTERACTION zbar only - the distance
+! with no drifts
+
+real(kind=wp) :: sZi_G, sZlSt_G
 
 
 ! Temporary intermediate arrays for RK4

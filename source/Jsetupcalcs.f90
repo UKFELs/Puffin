@@ -540,6 +540,10 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
 
     qOK = .FALSE. 
     h5FieldFileName=field_file(1)
+    
+    sZi_G = 0.0_wp
+    sZlSt_G = 0.0_wp
+
     iZ2 = NZ2_G
     iXY = NX_G*NY_G
 

@@ -491,7 +491,7 @@ MODULE Setup
 !                 zDataFileName, .true., .true., qOK)
 
   iCSteps = 0_ip
-  call writeIM(sZ, &
+  call writeIM(sZ, sZlSt_G, &
                zDataFileName, 0_ip, 0_ip, 0_ip, iWriteNthSteps, &
                iIntWriteNthSteps, nSteps, qOKL)
   iCsteps = 1_ip

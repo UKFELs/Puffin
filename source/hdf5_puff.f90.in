@@ -544,17 +544,25 @@ contains
 
 
 
-  subroutine writeCommonAtts(dset_id, simtime, iL, aspace_id)
+  subroutine writeCommonAtts(dset_id, simtime, z_loc, iL, aspace_id)
 
     integer(HID_T), intent(in) :: dset_id   !< h5 handle of write location
     real(kind=wp), intent(in) :: simtime   !< Current simulation 'time' (zbar)
+    real(kind=wp), intent(in) :: z_loc     !< zbar local to current undulator module
     integer(kind=ip), intent(in) :: iL        !< lattice element counter
     integer(HID_T), intent(in) :: aspace_id   !< h5 handle of write location
 
-    CALL addH5FloatAttribute(dset_id, "time", simtime,aspace_id)
-    CALL addH5FloatAttribute(dset_id, "zbarInter", simtime,aspace_id)
-    CALL addH5FloatAttribute(dset_id, "zInter", simtime * lg_G,aspace_id)
+    CALL addH5FloatAttribute(dset_id, "time", simtime, aspace_id)
     
+    call addH5FloatAttribute(dset_id, "zbarTotal", simtime, aspace_id)
+    call addH5FloatAttribute(dset_id, "zTotal", simtime * lg_G, aspace_id)
+
+    CALL addH5FloatAttribute(dset_id, "zbarInter", sZi_G, aspace_id)
+    CALL addH5FloatAttribute(dset_id, "zInter", sZi_G * lg_G, aspace_id)
+    
+    call addH5FloatAttribute(dset_id, "zbarLocal", z_loc, aspace_id)
+    call addH5FloatAttribute(dset_id, "zLocal", z_loc * lg_G,aspace_id)
+
     CALL addH5IntegerAttribute(dset_id, "iCsteps", iCsteps, aspace_id)
     CALL addH5IntegerAttribute(dset_id, "istep", istep, aspace_id)
     
@@ -575,13 +583,13 @@ contains
 !! Not including the integrated quantities
 !! @ Todo remove unused vars - filename parameters are not required.
 
-  subroutine wr_h5(sZ, tArrayA, tArrayE, tArrayZ, iL, &
-                     iIntWr, iWr, qSep, zDFname, qWriteFull, &
-                     qWriteInt, nslices, qOK)
+  subroutine wr_h5(sZ, sZ_loc, tArrayA, tArrayE, tArrayZ, iL, &
+                   iIntWr, iWr, qSep, zDFname, qWriteFull, &
+                   qWriteInt, nslices, qOK)
 
     implicit none
 
-    real(kind=wp), intent(in) :: sZ   !<Global field data
+    real(kind=wp), intent(in) :: sZ, sZ_loc  !< zbar and local zbar for current module
     real(kind=wp), dimension(NZ2_G) :: power !<power data (called here)
     real(kind=wp), dimension(npts_I_G) :: Iarray !< current data (called here)
     type(cArraySegment), intent(inout) :: tArrayA(:), tArrayE(:), tArrayZ
@@ -616,7 +624,7 @@ contains
 !        print *,'Dumping particles individually...'
 
         call cpu_time(stime)
-        call outputH5BeamFilesID(time, iL, error)
+        call outputH5BeamFilesID(time, sz_loc, iL, error)
         call cpu_time(ftime)
 !        print '("Dumped particles separately. Took time = ",f6.3," secs on rank ",i5)'&
 !          ,ftime-stime,tProcInfo_G%rank
@@ -625,7 +633,7 @@ contains
 
 !        print *,'Dumping particles to single file...'
         call cpu_time(stime)
-        call outputH5BeamFilesSD(time, iL, error)
+        call outputH5BeamFilesSD(time, sz_loc, iL, error)
         call cpu_time(ftime)
 !        print '("Dumped particles to one file. Took time = ",f6.3," seconds on rank ",i5)'&
 !          ,ftime-stime,tProcInfo_G%rank
@@ -641,12 +649,12 @@ contains
 !      print *,'2 component 1D field output not currently supported'
 !        print *, "But trying anyway - Dumping all fields together"
         call cpu_time(stime)
-        call outputH5Field1D2CompSD(time, iL, error, tlflen, fr_rfield,  ffs, ffe, 0, 1, .false.)
-        call outputH5Field1D2CompSD(time, iL, error, tlflen, fr_ifield,  ffs, ffe, 1, 2, .false.)
-        call outputH5Field1D2CompSD(time, iL, error, mainlen, ac_rfield, fz2, ez2, 0, 2, .true.)
-        call outputH5Field1D2CompSD(time, iL, error, mainlen, ac_ifield, fz2, ez2, 1, 2, .true.)
-        call outputH5Field1D2CompSD(time, iL, error, tlelen, bk_rfield,  ees, eee, 0, 2, .false.)
-        call outputH5Field1D2CompSD(time, iL, error, tlelen, bk_ifield,  ees, eee, 1, 2, .false.)
+        call outputH5Field1D2CompSD(time, sz_loc, iL, error, tlflen, fr_rfield,  ffs, ffe, 0, 1, .false.)
+        call outputH5Field1D2CompSD(time, sz_loc, iL, error, tlflen, fr_ifield,  ffs, ffe, 1, 2, .false.)
+        call outputH5Field1D2CompSD(time, sz_loc, iL, error, mainlen, ac_rfield, fz2, ez2, 0, 2, .true.)
+        call outputH5Field1D2CompSD(time, sz_loc, iL, error, mainlen, ac_ifield, fz2, ez2, 1, 2, .true.)
+        call outputH5Field1D2CompSD(time, sz_loc, iL, error, tlelen, bk_rfield,  ees, eee, 0, 2, .false.)
+        call outputH5Field1D2CompSD(time, sz_loc, iL, error, tlelen, bk_ifield,  ees, eee, 1, 2, .false.)
         call cpu_time(ftime)
 
 !        print '("Dumped fields together. Took time = ",f6.3," secs on rank ",i5)' &
@@ -681,12 +689,12 @@ contains
 !        print *, "Dumping separate fields"
 
           call cpu_time(stime)
-          call outputH5Field3DID(time, iL, error, tlflen, 'aperp_front_real', fr_rfield,  ffs, ffe, .false.)
-          call outputH5Field3DID(time, iL, error, tlflen, 'aperp_front_imag', fr_ifield,  ffs, ffe, .false.)
-          call outputH5Field3DID(time, iL, error, mainlen, 'aperp_active_real', ac_rfield,  fz2, ez2, .true.)
-          call outputH5Field3DID(time, iL, error, mainlen, 'aperp_active_imag', ac_ifield,  fz2, ez2, .true.)
-          call outputH5Field3DID(time, iL, error, tlelen, 'aperp_back_real', bk_rfield,  ees, eee, .false.)
-          call outputH5Field3DID(time, iL, error, tlelen, 'aperp_back_imag', bk_rfield,  ees, eee, .false.)
+          call outputH5Field3DID(time, sz_loc, iL, error, tlflen, 'aperp_front_real', fr_rfield,  ffs, ffe, .false.)
+          call outputH5Field3DID(time, sz_loc, iL, error, tlflen, 'aperp_front_imag', fr_ifield,  ffs, ffe, .false.)
+          call outputH5Field3DID(time, sz_loc, iL, error, mainlen, 'aperp_active_real', ac_rfield,  fz2, ez2, .true.)
+          call outputH5Field3DID(time, sz_loc, iL, error, mainlen, 'aperp_active_imag', ac_ifield,  fz2, ez2, .true.)
+          call outputH5Field3DID(time, sz_loc, iL, error, tlelen, 'aperp_back_real', bk_rfield,  ees, eee, .false.)
+          call outputH5Field3DID(time, sz_loc, iL, error, tlelen, 'aperp_back_imag', bk_rfield,  ees, eee, .false.)
           call cpu_time(ftime)
         print '("Dumped separate fields. Took time = ",f6.3," secs on rank ",i5)' &
           ,ftime-stime,tprocinfo_g%rank
@@ -695,12 +703,12 @@ contains
 
 !        print *, "Dumping all fields together"
           call cpu_time(stime)
-          call outputH5Field3DSD(time, iL, error, tlflen, fr_rfield,  ffs, ffe, 0, 1, .false.)
-          call outputH5Field3DSD(time, iL, error, tlflen, fr_ifield,  ffs, ffe, 1, 2, .false.)
-          call outputH5Field3DSD(time, iL, error, mainlen, ac_rfield, fz2, ez2, 0, 2, .true.)
-          call outputH5Field3DSD(time, iL, error, mainlen, ac_ifield, fz2, ez2, 1, 2, .true.)
-          call outputH5Field3DSD(time, iL, error, tlelen, bk_rfield,  ees, eee, 0, 2, .false.)
-          call outputH5Field3DSD(time, iL, error, tlelen, bk_ifield,  ees, eee, 1, 2, .false.)
+          call outputH5Field3DSD(time, sz_loc, iL, error, tlflen, fr_rfield,  ffs, ffe, 0, 1, .false.)
+          call outputH5Field3DSD(time, sz_loc, iL, error, tlflen, fr_ifield,  ffs, ffe, 1, 2, .false.)
+          call outputH5Field3DSD(time, sz_loc, iL, error, mainlen, ac_rfield, fz2, ez2, 0, 2, .true.)
+          call outputH5Field3DSD(time, sz_loc, iL, error, mainlen, ac_ifield, fz2, ez2, 1, 2, .true.)
+          call outputH5Field3DSD(time, sz_loc, iL, error, tlelen, bk_rfield,  ees, eee, 0, 2, .false.)
+          call outputH5Field3DSD(time, sz_loc, iL, error, tlelen, bk_ifield,  ees, eee, 1, 2, .false.)
           call cpu_time(ftime)
         print '("Dumped fields together. Took time = ",f6.3," secs on rank ",i5)' &
           ,ftime-stime,tprocinfo_g%rank
@@ -737,52 +745,52 @@ contains
 !        time = sZ*lg_G/c !real(iCSteps,kind=wp)*sStepSize*lg_G/c
         if (qSep) then
       
-          call outputH5Field1DFloat(power, 'power', time, iL, error)
-          call outputH5Field1DFloat(Iarray, 'beamCurrent', time, iL, error)
-          call outputH5Field1DFloat(aveX, 'meanPosX', time, iL, error)
-          call outputH5Field1DFloat(aveY, 'meanPosY', time, iL, error)
-          call outputH5Field1DFloat(avepy, 'meanMomentumX', time, iL, error)
-          call outputH5Field1DFloat(avepy, 'meanMomentumY', time, iL, error)
-          call outputH5Field1DFloat(aveGamma, 'meanGamma', time, iL, error)
-          call outputH5Field1DFloat(aveDGamma, 'meanDeltaGamma', time, iL, error)
-          call outputH5Field1DFloat(sdx, 'sigmaX', time, iL, error)
-          call outputH5Field1DFloat(sdy, 'sigmaY', time, iL, error)
-          call outputH5Field1DFloat(sdpx, 'sigmapX', time, iL, error)
-          call outputH5Field1DFloat(sdpy, 'sigmapY', time, iL, error)
-          call outputH5Field1DFloat(ex, 'emittanceX', time, iL, error)
-          call outputH5Field1DFloat(ey, 'emittanceY', time, iL, error)
-          call outputH5Field1DFloat(bun1, 'bunchingFundamental', time, iL, error)
-          call outputH5Field1DFloat(bun2, 'bunching2ndHarmonic', time, iL, error)
-          call outputH5Field1DFloat(bun3, 'bunching3rdHarmonic', time, iL, error)
-          call outputH5Field1DFloat(bun4, 'bunching4thHarmonic', time, iL, error)
-          call outputH5Field1DFloat(bun5, 'bunching5thHarmonic', time, iL, error)
-          call outputH5Field1DFloat(sq, 'sliceCharge', time, iL, error)
+          call outputH5Field1DFloat(power, 'power', time, sz_loc, iL, error)
+          call outputH5Field1DFloat(Iarray, 'beamCurrent', time, sz_loc, iL, error)
+          call outputH5Field1DFloat(aveX, 'meanPosX', time, sz_loc, iL, error)
+          call outputH5Field1DFloat(aveY, 'meanPosY', time, sz_loc, iL, error)
+          call outputH5Field1DFloat(avepy, 'meanMomentumX', time, sz_loc, iL, error)
+          call outputH5Field1DFloat(avepy, 'meanMomentumY', time, sz_loc, iL, error)
+          call outputH5Field1DFloat(aveGamma, 'meanGamma', time, sz_loc, iL, error)
+          call outputH5Field1DFloat(aveDGamma, 'meanDeltaGamma', time, sz_loc, iL, error)
+          call outputH5Field1DFloat(sdx, 'sigmaX', time, sz_loc, iL, error)
+          call outputH5Field1DFloat(sdy, 'sigmaY', time, sz_loc, iL, error)
+          call outputH5Field1DFloat(sdpx, 'sigmapX', time, sz_loc, iL, error)
+          call outputH5Field1DFloat(sdpy, 'sigmapY', time, sz_loc, iL, error)
+          call outputH5Field1DFloat(ex, 'emittanceX', time, sz_loc, iL, error)
+          call outputH5Field1DFloat(ey, 'emittanceY', time, sz_loc, iL, error)
+          call outputH5Field1DFloat(bun1, 'bunchingFundamental', time, sz_loc, iL, error)
+          call outputH5Field1DFloat(bun2, 'bunching2ndHarmonic', time, sz_loc, iL, error)
+          call outputH5Field1DFloat(bun3, 'bunching3rdHarmonic', time, sz_loc, iL, error)
+          call outputH5Field1DFloat(bun4, 'bunching4thHarmonic', time, sz_loc, iL, error)
+          call outputH5Field1DFloat(bun5, 'bunching5thHarmonic', time, sz_loc, iL, error)
+          call outputH5Field1DFloat(sq, 'sliceCharge', time, sz_loc, iL, error)
         else
 
           PowScale = lg_G * lc_G * c * e_0 * ((sgammaR_G * m_e * c**2.0_wp ) / &
                                  (q_e * skappa_G * lg_G ))**2.0_wp
 
           call CreateIntegrated1DFloat(time,error,nslices)
-          call addH5Field1DFloat(power, 'power', PowScale, "intFieldMesh", time, iL, error)
-          call addH5Field1DFloat(Iarray, 'beamCurrent', 1._wp, "intPtclMesh", time, iL, error)
-          call addH5Field1DFloat(aveX, 'meanPosX', (DSQRT(lg_G*lc_G)), "intPtclMesh", time, iL, error)
-          call addH5Field1DFloat(aveY, 'meanPosY', (DSQRT(lg_G*lc_G)), "intPtclMesh", time, iL, error)
-          call addH5Field1DFloat(avepy, 'meanMomentumX', 1._wp, "intPtclMesh", time, iL, error)
-          call addH5Field1DFloat(avepy, 'meanMomentumY', 1._wp, "intPtclMesh", time, iL, error)
-          call addH5Field1DFloat(aveGamma, 'meanGamma', 1._wp, "intPtclMesh", time, iL, error)
-          call addH5Field1DFloat(aveDGamma, 'meanDeltaGamma', 1._wp, "intPtclMesh", time, iL, error)
-          call addH5Field1DFloat(sdx, 'sigmaX', (DSQRT(lg_G*lc_G)), "intPtclMesh", time, iL, error)
-          call addH5Field1DFloat(sdy, 'sigmaY', (DSQRT(lg_G*lc_G)), "intPtclMesh", time, iL, error)
-          call addH5Field1DFloat(sdpx, 'sigmapX', 1._wp, "intPtclMesh", time, iL, error)
-          call addH5Field1DFloat(sdpy, 'sigmapY', 1._wp, "intPtclMesh", time, iL, error)
-          call addH5Field1DFloat(ex, 'emittanceX', 1._wp, "intPtclMesh", time, iL, error)
-          call addH5Field1DFloat(ey, 'emittanceY', 1._wp, "intPtclMesh", time, iL, error)
-          call addH5Field1DFloat(bun1, 'bunchingFundamental', 1._wp, "intPtclMesh", time, iL, error)
-          call addH5Field1DFloat(bun2, 'bunching2ndHarmonic', 1._wp, "intPtclMesh", time, iL, error)
-          call addH5Field1DFloat(bun3, 'bunching3rdHarmonic', 1._wp, "intPtclMesh", time, iL, error)
-          call addH5Field1DFloat(bun4, 'bunching4thHarmonic', 1._wp, "intPtclMesh", time, iL, error)
-          call addH5Field1DFloat(bun5, 'bunching5thHarmonic', 1._wp, "intPtclMesh", time, iL, error)
-          call addH5Field1DFloat(sq, 'sliceCharge', 1._wp, "intPtclMesh", time, iL, error)
+          call addH5Field1DFloat(power, 'power', PowScale, "intFieldMesh", time, sz_loc, iL, error)
+          call addH5Field1DFloat(Iarray, 'beamCurrent', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
+          call addH5Field1DFloat(aveX, 'meanPosX', (DSQRT(lg_G*lc_G)), "intPtclMesh", time, sz_loc, iL, error)
+          call addH5Field1DFloat(aveY, 'meanPosY', (DSQRT(lg_G*lc_G)), "intPtclMesh", time, sz_loc, iL, error)
+          call addH5Field1DFloat(avepy, 'meanMomentumX', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
+          call addH5Field1DFloat(avepy, 'meanMomentumY', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
+          call addH5Field1DFloat(aveGamma, 'meanGamma', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
+          call addH5Field1DFloat(aveDGamma, 'meanDeltaGamma', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
+          call addH5Field1DFloat(sdx, 'sigmaX', (DSQRT(lg_G*lc_G)), "intPtclMesh", time, sz_loc, iL, error)
+          call addH5Field1DFloat(sdy, 'sigmaY', (DSQRT(lg_G*lc_G)), "intPtclMesh", time, sz_loc, iL, error)
+          call addH5Field1DFloat(sdpx, 'sigmapX', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
+          call addH5Field1DFloat(sdpy, 'sigmapY', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
+          call addH5Field1DFloat(ex, 'emittanceX', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
+          call addH5Field1DFloat(ey, 'emittanceY', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
+          call addH5Field1DFloat(bun1, 'bunchingFundamental', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
+          call addH5Field1DFloat(bun2, 'bunching2ndHarmonic', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
+          call addH5Field1DFloat(bun3, 'bunching3rdHarmonic', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
+          call addH5Field1DFloat(bun4, 'bunching4thHarmonic', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
+          call addH5Field1DFloat(bun5, 'bunching5thHarmonic', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
+          call addH5Field1DFloat(sq, 'sliceCharge', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
         end if
 !        call addH5integratedField(Iarray, 'beamCurrent',error)
         if (error .ne. 0) goto 1000
@@ -823,11 +831,12 @@ contains
 !! each rank, what the cumulative num electrons is, and then determine
 !! the array slice based on that.
 
-  subroutine outputH5BeamFilesID(time, iL, error)
+  subroutine outputH5BeamFilesID(time, sz_loc, iL, error)
     
     implicit none
     
     real(kind=wp),intent(in) :: time !< Current time
+    real(kind=wp),intent(in) :: sz_loc
     integer(kind=ip), intent(in) :: iL !< Lattice element number
     integer(HID_T) :: file_id        !< File identifier
     integer(HID_T) :: dset_id        !< Dataset identifier 
@@ -1046,7 +1055,7 @@ contains
     CALL h5aclose_f(attr_id, error)
 
 
-    call writeCommonAtts(dset_id, time, iL, aspace_id)
+    call writeCommonAtts(dset_id, time, sz_loc, iL, aspace_id)
 
     
 !    call addH5IntegerAttribute(dset_id, "iUnd_cr", iUnd_cr, aspace_id)
@@ -1236,9 +1245,10 @@ contains
 !! each rank, what the cumulative num electrons is, and then determine
 !! the array slice based on that.
 !! so instead of 
-  subroutine outputH5BeamFilesSD(time, iL, error)
+  subroutine outputH5BeamFilesSD(time, sz_loc, iL, error)
     implicit none
     REAL(kind=WP),intent(in) :: time !< Current time
+    REAL(kind=WP),intent(in) :: sz_loc
     integer(kind=ip), intent(in) :: iL  !< lattice element number
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier 
@@ -1534,7 +1544,7 @@ contains
     CALL h5aclose_f(attr_id, error)
     
     
-    call writeCommonAtts(dset_id, time, iL, aspace_id)
+    call writeCommonAtts(dset_id, time, sz_loc, iL, aspace_id)
 !    aname="zbarInter"
 !    attr_data_double=time !real(iCSteps,kind=wp)*sStepSize*lg_G
 !    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
@@ -1742,9 +1752,9 @@ contains
 
 !> outputH5Field3DID is for writing the full field output.
 !! This version dumps on each rank separately.
-  subroutine outputH5Field3DID(time, iL, error, nlonglength, dsetname, rawdata, nlo, nhi, chkactiveflag)
+  subroutine outputH5Field3DID(time, sz_loc, iL, error, nlonglength, dsetname, rawdata, nlo, nhi, chkactiveflag)
     implicit none
-    REAL(kind=WP), intent(in) :: time, rawdata(:) !< The data to write
+    REAL(kind=WP), intent(in) :: time, sz_loc, rawdata(:) !< The data to write
     integer(kind=ip), intent(in) :: iL
     CHARACTER(*), intent(in) :: dsetname !< Dataset name
     INTEGER(kind=IP), intent(in) :: nlonglength !<number of cells in z in this section
@@ -1830,7 +1840,7 @@ contains
 !      CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
 
 
-      call writeCommonAtts(dset_id, time, iL, aspace_id)
+      call writeCommonAtts(dset_id, time, sz_loc, iL, aspace_id)
 
 !      CALL addH5FloatAttribute(dset_id, "time", time,aspace_id)
 !      CALL addH5FloatAttribute(dset_id, "zbarInter", time,aspace_id)
@@ -1880,9 +1890,9 @@ contains
 
 !> outputH5Field3DSD is for writing the full field output.
 !! This version dumps one single file, but writes individually rather than collectively
-  subroutine outputH5Field3DSD(time, iL, error, nlonglength, rawdata, nlo, nhi, component, createNewFlag, chkactiveflag)
+  subroutine outputH5Field3DSD(time, sz_loc, iL, error, nlonglength, rawdata, nlo, nhi, component, createNewFlag, chkactiveflag)
     implicit none
-    REAL(kind=WP), intent(in) :: time, rawdata(:) !< The data to write
+    REAL(kind=WP), intent(in) :: time, sz_loc, rawdata(:) !< The data to write
     integer(kind=ip), intent(in) :: iL
     INTEGER(kind=IP), intent(in) :: nlonglength !<number of cells in z in this section
     INTEGER(kind=IP), intent(in) :: nlo,nhi !< cell range in z in this raw data selection
@@ -2111,7 +2121,7 @@ contains
 
 ! Create dataset floating point attributes.
 
-    call writeCommonAtts(dset_id, time, iL, aspace_id)
+    call writeCommonAtts(dset_id, time, sz_loc, iL, aspace_id)
 
 !     CALL addH5FloatAttribute(dset_id, "time", time,aspace_id)
 !     CALL addH5FloatAttribute(dset_id, "zbarInter", time, aspace_id)
@@ -2174,14 +2184,14 @@ contains
 !> outputH5Field3DSD is for writing the full field output.
 !! This version dumps one single file, but writes individually rather than collectively
 
-  subroutine outputH5Field1D2CompSD(time, iL, error, nlonglength, rawdata, nlo, &
+  subroutine outputH5Field1D2CompSD(time, sz_loc, iL, error, nlonglength, rawdata, nlo, &
                                   nhi, component, createNewFlag, chkactiveflag)
 
 
     implicit none
 
 
-    real(kind=wp), intent(in) :: time, rawdata(:)  !< The data to write
+    real(kind=wp), intent(in) :: time, sz_loc, rawdata(:)  !< The data to write
     integer(kind=ip), intent(in) :: iL
     integer(kind=ip), intent(in) :: nlonglength    !<number of cells in z in this section
     integer(kind=ip), intent(in) :: nlo,nhi        !< cell range in z in this raw data selection
@@ -2413,7 +2423,7 @@ contains
 
 !     Create dataset floating point attributes.
 
-          call writeCommonAtts(dset_id, time, iL, aspace_id)
+          call writeCommonAtts(dset_id, time, sz_loc, iL, aspace_id)
 
 !          call addH5FloatAttribute(dset_id, "time", time,aspace_id)
 !          call addH5FloatAttribute(dset_id, "zBarInter", time, aspace_id)
@@ -2921,7 +2931,7 @@ contains
   end subroutine   CreateIntegrated1DFloat
 !>addH5Field1DFloat() This subroutine writes data
   subroutine addH5Field1DFloat(writeData, dsetname, scalefac, meshname, simtime, &
-                               iL, error)
+                               sz_loc, iL, error)
 
     implicit none
 
@@ -2933,6 +2943,7 @@ contains
     REAL(kind=WP), intent(in) :: scalefac      !< scaling factor for SI var
     CHARACTER(LEN=*), INTENT(IN) :: meshname !<name of mesh to assign integrated data
     REAL(kind=WP), intent(in) :: simtime      !< simulation time
+    real(kind=wp), intent(in) :: sz_loc  !< zbar local to the current undulator module
     integer(kind=ip), intent(in) :: iL !< Lattice element number
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier 
@@ -2974,7 +2985,7 @@ contains
 ! scalar dataset for simpler values
       CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
 
-      call writeCommonAtts(dset_id, simtime, iL, aspace_id)
+      call writeCommonAtts(dset_id, simtime, sz_loc, iL, aspace_id)
 
       
       
@@ -3018,7 +3029,7 @@ contains
 ! scalar dataset for simpler values
       CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
       
-      call writeCommonAtts(dset_id, simtime, iL, aspace_id)
+      call writeCommonAtts(dset_id, simtime, sz_loc, iL, aspace_id)
       
 !      CALL addH5FloatAttribute(dset_id, "time", simtime, aspace_id)
 !      CALL addH5FloatAttribute(dset_id, "zbarInter", simtime, aspace_id)
@@ -3068,12 +3079,13 @@ contains
 !> outputH5Field1DFloat
 !! Output a 1D, 1 comp float eg of radiation power, electron current, etc
 !! 
-  subroutine outputH5Field1DFloat(writeData, dsetname, simtime, iL, error)
+  subroutine outputH5Field1DFloat(writeData, dsetname, simtime, sz_loc, iL, error)
 
     implicit none
 
     real(kind=wp), intent(in) :: writeData(:) !< data to be written
-    REAL(kind=WP), intent(in) :: simtime      !< simulation time
+    real(kind=wp), intent(in) :: simtime      !< simulation time
+    real(kind=wp), intent(in) :: sz_loc   !< zbar local to current undulator module 
     CHARACTER(LEN=*), intent(in) :: dsetname  !< Dataset name
     integer(kind=ip), intent(in) :: iL  !< Lattice element number
     INTEGER(HID_T) :: file_id       !< File identifier
@@ -3172,7 +3184,7 @@ contains
 !    CALL h5aclose_f(attr_id, error)
 !    CALL h5tclose_f(atype_id, error)
 
-     call writeCommonAtts(dset_id, simtime, iL, aspace_id)
+     call writeCommonAtts(dset_id, simtime, sz_loc, iL, aspace_id)
 !     CALL addH5FloatAttribute(dset_id, "time", simtime, aspace_id)
 !     CALL addH5FloatAttribute(dset_id, "zbarInter", simtime, aspace_id)
 !     CALL addH5FloatAttribute(dset_id, "zInter", simtime*lg_G, aspace_id)
