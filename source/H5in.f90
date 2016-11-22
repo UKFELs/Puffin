@@ -407,7 +407,7 @@ print*,"Now, you tell me if we had electrons"
     firstParticleToRead=(nMPs*tProcInfo_g%rank/tProcInfo_g%size)+1 !does integer arithmetic, no NINT needed
     lastParticleToRead=(nMPs*(tProcInfo_g%rank+1)/tProcInfo_g%size) ! does integer arithmetic
     nMPsLoc=(lastParticleToRead-firstParticleToRead)+1
-    iNumberElectrons_G=nMPs
+    iNumberElectrons_G=nMPsLoc
 
     allocate(sElX_G(nMPsLoc),   &
              sElY_G(nMPsLoc),   &
@@ -535,6 +535,11 @@ print*,"Now, you tell me if we had electrons"
     CALL MPI_ALLREDUCE(iNumberElectrons_G, iGloNumElectrons_G, &
                        1, MPI_INTEGER, &
                        MPI_SUM, MPI_COMM_WORLD, error)
+
+                       print*, 'nMPsLoc', nMPsLoc
+                       print*, 'iNumberElectrons_G', iNumberElectrons_G
+                       print*, 'iGloNumberElectrons_G', iGloNumElectrons_G
+
     GoTo 2000
 
 ! Error Handler - Error log Subroutine in CIO.f90 line 709
