@@ -74,7 +74,7 @@ print "1: " +sys.argv[1]
 #baseName="Power_0"
 #baseName="fig7_Power_0"
 baseName=sys.argv[1]
-inputFilename1,inputFilename2,inputFilename3,datasetnameT,mpirank=baseName.split('_')
+inputFilename1,datasetnameT,mpirank=baseName.split('_')
 datasetname='power'
 outfilename=baseName+'_all.vsh5'
 h5=tables.open_file(outfilename,'w')
@@ -116,9 +116,13 @@ if minZZ is not None:
 
 fieldData=numpy.zeros((numSpatialPoints, numTimes))
 fieldNormData=numpy.zeros((numSpatialPoints, numTimes))
+zData=numpy.zeros((numSpatialPoints))
 fieldCount=0
 
 
+
+# so want to do this for power and power_SI...???
+# since datasetname = power here...
 
 for slice in filelist:
   h5in=tables.open_file(slice,'r')
@@ -129,14 +133,20 @@ for slice in filelist:
     fieldNormData[:,fieldCount]=h5in.root._f_getChild(datasetname).read()/peakData[fieldCount]
   else:
     fieldNormData[:,fieldCount]=h5in.root._f_getChild(datasetname).read()
+  # for including drifts
+  zData[fieldCount] = h5in.root._f_getChild("power")._v_attrs.zTotal 
+  # for no drifts
+  # zData[fieldCount] = h5in.root._f_getChild("power")._v_attrs.zInter
   h5in.close()
   fieldCount+=1
 
 
 
+# Creating SI power and normalized power datasets...
 h5.create_array('/',datasetname+'_SI',fieldData)
 h5.create_array('/',datasetname+'_SI_Norm',fieldNormData)
 
+# ...each of which is on the same SI mesh (TODO:- not yet!!! This is scaled)
 for fieldname in [datasetname+'_SI',datasetname+'_SI_Norm']:
   h5.root._v_children[fieldname]._v_attrs.vsMesh="gridZ_SI"
   h5.root._v_children[fieldname]._v_attrs.vsTimeGroup="time"
@@ -154,12 +164,55 @@ h5.root.time._v_attrs.vsTime=0.
 h5.root.time._v_attrs.vsStep=0
 
 
+
+
+
+
+
+
+
+
+# Derived variable - same as SI power, but on scaled mesh
+# (TODO - should change power to be scaled, or SI power to actual SI power)
+
+h5.create_group('/','powerZZ2','')
+h5.root.powerZZ2._v_attrs.vsMesh='gridZScaled'
+h5.root.powerZZ2._v_attrs.vsType='vsVars'
+h5.root.powerZZ2._v_attrs.powerScaled='power_SI'
+
+
+
+h5.create_group('/','powerZZ2Norm','')
+h5.root.powerZZ2._v_attrs.vsMesh='gridZScaled'
+h5.root.powerZZ2._v_attrs.vsType='vsVars'
+h5.root.powerZZ2._v_attrs.powerScaled_Norm='power_SI_Norm'
+
+
+
+
+# Scaled energy 
 h5.create_array('/','Energy',sumData)
+h5.root.Energy._v_attrs.vsMesh='zSeries2'
+h5.root.Energy._v_attrs.vsType='variable'
+h5.root.Energy._v_attrs.vsAxisLabels='zbar, Energy'
+
+
+# Scaled peak power
 h5.create_array('/','PeakPower',peakData)
-h5.create_group('/',datasetname+'_integralz','sumData as function of z')
-h5.create_group('/',datasetname+'_peakz','peakData as a function of z')
+h5.root.PeakPower._v_attrs.vsMesh='zSeries'
+h5.root.PeakPower._v_attrs.vsType='variable'
+h5.root.Energy._v_attrs.vsAxisLabels='zbar, Pk Power'
 
 
+
+
+# 2D meshes of z2 vs z (scaled) and (ct-z) vs z (unscaled)
+
+
+
+
+
+# 1D grids for enrgy plots
 h5.create_group('/','timeSeries','Time information')
 h5.root.timeSeries._v_attrs.vsKind='uniform'
 h5.root.timeSeries._v_attrs.vsType='mesh'
@@ -179,25 +232,44 @@ h5.root.zSeries._v_attrs.vsUpperBounds=maxZZ
 h5.root.zSeries._v_attrs.vsAxisLabels="zbar"
 
 
+
+h5.create_array('/','zSeries2', zData)
+h5.root.zSeries2._v_attrs.vsKind='structured'
+h5.root.zSeries2._v_attrs.vsType='mesh'
+h5.root.zSeries2._v_attrs.vsStartCell=0
+h5.root.zSeries2._v_attrs.vsNumCells=numTimes-1 # -1 as zonal
+h5.root.zSeries2._v_attrs.vsLowerBounds=minZZ
+h5.root.zSeries2._v_attrs.vsUpperBounds=maxZZ
+h5.root.zSeries2._v_attrs.vsAxisLabels="zbar"
+
+
+
+
+# Write to file
 h5in=tables.open_file(filelist[-1])
 h5in.root.runInfo._f_copy(h5.root)
 h5in.close()
 
 
-h5.create_group('/','powerZZ2','')
-h5.root.powerZZ2._v_attrs.vsMesh='gridZScaled'
-h5.root.powerZZ2._v_attrs.vsType='vsVars'
-h5.root.powerZZ2._v_attrs.powerScaled='power_SI'
+
+
+
+
+
+# h5.create_group('/',datasetname+'_integralz','sumData as function of z')
+# h5.root.power_integralz._v_attrs.vsType='vsVars'
+# h5.root.power_integralz._v_attrs.power_integralz='Energy'
+# h5.root.power_integralz._v_attrs.vsMesh='zSeries'
+
 
 
 # for fieldname in [datasetname+'_integral',datasetname+'_peak']:
 
-h5.root.Energy._v_attrs.vsMesh='timeSeries'
-h5.root.Energy._v_attrs.vsType='variable'
-h5.root.Energy._v_attrs.vsAxisLabels='zbar, Energy'
 
-h5.root.PeakPower._v_attrs.vsMesh='zSeries'
-h5.root.PeakPower._v_attrs.vsType='variable'
+
+
+
+
 
 #  h5.root._v_children[fieldname+"z"]._v_attrs.vsMesh='zSeries'
 #  h5.root._v_children[fieldname+"z"]._v_attrs.vsType='vsVars'
@@ -206,8 +278,7 @@ h5.root.PeakPower._v_attrs.vsType='variable'
   #h5.root._v_children[fieldname+"z"]._f_setattr(fieldname+"z",fieldname)
 
 
-h5.root.power_integralz._v_attrs.vsType='vsVars'
-h5.root.power_integralz._v_attrs.power_integralz='power_integral'
-h5.root.power_integralz._v_attrs.vsMesh='zSeries'
+# h5.create_group('/',datasetname+'_peakz','peakData as a function of z')
+
 
 h5.close()
