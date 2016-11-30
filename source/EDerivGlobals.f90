@@ -4,9 +4,14 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
-module Globals
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Module defining shared (global) variables used in Puffin
 
-! Module defining shared (global) variables used in Puffin
+module Globals
 
 use paratype
 use typesAndConstants
@@ -37,7 +42,7 @@ integer(kind=ip) :: outnodex_G,outnodey_G
 
 integer(kind=ip) :: iNodesPerElement_G
 
-integer(kind=ip) :: iNumberNodes_G
+integer(kind=ipn) :: iNumberNodes_G
 
 integer(kind=ip) :: seedend
 
@@ -99,12 +104,17 @@ logical, allocatable :: qRndEj_G(:)
 real(kind=wp), allocatable :: sSigEj_G(:) 
 real(kind=wp), parameter :: gExtEj_G = 7.5_wp
 
-
+!  --- Read particle set algorithms ---
 integer(kind=ip) :: iInputType_G
 integer(kind=ip), parameter :: iGenHom_G = 1_ip
 integer(kind=ip), parameter :: iReadDist_G = 2_ip
 integer(kind=ip), parameter :: iReadMASP_G = 3_ip
 integer(kind=ip), parameter :: iReadH5_G = 4_ip
+
+! --- Reading field algorithms
+integer(kind=ip) :: iFieldSeedType_G
+integer(kind=ip), parameter :: iSimpleSeed_G = 1_ip
+integer(kind=ip), parameter :: iReadH5Field_G = 2_ip
 
 ! Electron macroparticle phase space coordinates 
 
@@ -123,6 +133,10 @@ real(kind=wp), allocatable     :: dadz_w(:)
 
 
 
+! For recording the INTERACTION zbar only - the distance
+! with no drifts
+
+real(kind=wp) :: sZi_G, sZlSt_G
 
 
 ! Temporary intermediate arrays for RK4

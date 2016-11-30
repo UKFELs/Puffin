@@ -14,7 +14,8 @@ module undulator
 !  use TransformInfoType
 !  use stiffness
 
-use FFTW_Constants
+! use FFTW_Constants
+
 use pdiff
 use sddsPuffin
 use lattice
@@ -181,14 +182,14 @@ contains
 
     sZl = sZl + sStepSize
     sZ = sZ0 + szl
-
+    sZi_G = sZi_G + sStepSize
 
 
 !   diffract field to complete diffraction step
 
     if (qDiffraction_G) then
   
-      if ((sZ>(nextDiff-sStepsize/100.0_WP)) .or. (iStep == nSteps))  then
+      if ((sZl>(nextDiff-sStepsize/100.0_WP)) .or. (iStep == nSteps))  then
 
 !        call deallact_rk4_arrs()
 
@@ -222,8 +223,8 @@ contains
 
     call inner2Outer(ac_rfield_in, ac_ifield_in)
 
-    call writeIM(sZ, &
-                 zDataFileName, iStep, iCsteps, iWriteNthSteps, &
+    call writeIM(sZ, sZl, &
+                 zDataFileName, iStep, iCsteps, iM, iWriteNthSteps, &
                  iIntWriteNthSteps, nSteps, qOKL)
 
 

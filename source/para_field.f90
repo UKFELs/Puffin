@@ -1,4 +1,15 @@
+!************* THIS HEADER MUST NOT BE REMOVED *******************!
+!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
+!** This program must not be copied, distributed or altered in  **!
+!** any way without the prior permission of the above authors.  **!
+!*****************************************************************!
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Module controlling the field mesh parallelism in Puffin
 
 module ParaField
 
@@ -1111,7 +1122,7 @@ contains
 
 !     Write length of column data - see CIO.f90 line 100          
 
-      call WriteINTEGERL(iNumberNodes_G,tFileTyper,qOKL)
+      call WriteINTEGERL64(iNumberNodes_G,tFileTyper,qOKL)
       if (.NOT. qOKL) Goto 1000
 
 !     Close File 
@@ -1260,7 +1271,7 @@ contains
 
 !     Write length of column data - see CIO.f90 line 100          
 
-      call WriteINTEGERL(iNumberNodes_G,tFileTypei,qOKL)
+      call WriteINTEGERL64(iNumberNodes_G,tFileTypei,qOKL)
       if (.NOT. qOKL) Goto 1000
 
 !     Close File 

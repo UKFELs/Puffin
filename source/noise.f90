@@ -4,6 +4,13 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Module to apply noise to macroparticle positions in one dimension.
+
 MODULE addNoise
 
 use paratype

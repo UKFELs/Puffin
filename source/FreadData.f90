@@ -4,42 +4,98 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
-MODULE Read_data
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Module containing the routines which read in the input files in Puffin.
 
-USE ArrayFunctions
-USE TypesandConstants
-USE Globals
-USE ParallelSetUp
+
+module Read_data
+
+use ArrayFunctions
+use TypesandConstants
+use Globals
+use ParallelSetUp
 use MASPin
 use H5in
 
-!****************************************************************
-!
-! Module containing the routines which read in the data files
-! in Puffin.
-!
-! -Lawrence Campbell
-! lawrence.campbell@strath.ac.uk
-! University of Strathclyde
-! June 2016
-!
-!****************************************************************
-
-
-
-CONTAINS
+contains
 
 
 !> read_in Read in the namelist data files for Puffin.
-!! @params zfilename, Name of the main input file passed to Puffin
-!! at runtime.
-!! @params zDataFileName, Base name of the sdds output files.
-!! @params qSeparateFiles, Turn on individual (rather than collective)
-!! MPI rank writing in the hdf5 output files.
-!! @todo Individual and collective writing to combined file to come
-!! For collective write, we want to work out how many particles on
-!! each rank, what the cumulative num electrons is, and then determine
-!! the array slice based on that.
+!> @param[in] zfilename Name of the main input file passed to Puffin
+!> at runtime.
+!> @param[out] zDataFileName Base name of the sdds output files.
+!> @param[out] qSeparateFiles Turn on individual (rather than collective)
+!> MPI rank writing in the hdf5 output files.
+!> @param[out] qFormattedFiles Turn on ascii format files (in SDDS only)
+!> @param[out] qResume Whether reuming from a previous run
+!> @param[out] sZ0 Initial zbar
+!> @param[out] LattFile Name of Puffin lattice file
+!> @param[out] iWriteNthSteps Steps to write full 'raw' data at
+!> @param[out] iWriteIntNthSteps Steps to write integrated data at
+!> @param[out] tArrayZ SDDS filetype for Z data
+!> @param[out] tArrayA SDDS filetype for field data
+!> @param[out] tArrayVariables SDDS filetype for electron macroparticle dump data
+!> @param[out] sLenEPulse 6*nbeams element array - Length of electron pulse in x, y, z2, px, 
+!> py, and gamma, in the simple beam case
+!> @param[out] iNumNodes 3 element array - Number of field nodes in x, y, and z2
+!> @param[out] sWigglerLength 3 element array - Length of radiation field mesh in
+!> x, y, and z2
+!> @param[out] iRedNodesX The number of inner nodes of the main mesh which the 
+!> beam will be contained within. Forces a resize of the mesh if specified, 
+!> resized so that these inner nodes contain the beam.
+!> @param[out] iRedNodesY Same as iRedNodesX, but in y.
+!> @param[out] nodesperlambda Number of radiation nodes to be used in the mesh 
+!> per reference resonant wavelength in z2.
+!> @param[out] stepsPerPeriod Number of integration steps per undulator period 
+!> (ignored if lattuce is specified).
+!> @param[out] nPeriods Number of periods in undulator. Ignored if lattice is 
+!> specified
+!> @param[out] sQe Charge in the electron beam if simple beam input is used.
+!> @param[out] q_noise If adding shot-noise to the beam (can switch off to see 
+!> only Coherent Spontaneous Emission (CSE))
+!> iNumElectrons[out] Number of electron macroparticles in each dimension,
+!> for simple beam case.
+!> @param[out] sSigmaGaussian Gaussian sigma of electron beam density profile
+!> in each dimension (use 1E8 for flat top) for simple beam input
+!> @param[out] sElectronThreshold Macroparticle charge weight limit, below which
+!> the electron macroparticle will be thrown away, expressed as a % of the mean 
+!> charge weight.
+!> @param[out] bcenter Center of beam in z2 / t.
+!> @param[out] gamma_d Array of size nbeams. Energy of beam in the simple beam case, 
+!> scaled to the reference energy (gamma_r). So gamma_d = 1 for beam energy 
+!> gamma_r.
+!> @param[out] chirp Array of size nbeams. Energy chirp of electron beam in simple
+!> beam case. Expressed in units of \f$ \frac{d \gamma}{d \bar{z}_2} \f$ in the 
+!> scaled case, and \f$ \frac{d \gamma}{d t} \f$ in the unscaled (SI) case. Only
+!> specified in simple beam case.
+!> @param[out] mag Magnitude of beam energy oscillation. The oscillation is 
+!> sinusoidal. Set to zero to have no energy oscillation. Default = 0. In units 
+!> of \f$ \gamma \f$ 
+!> @param[out] fr Wavenumber \f$ (\frac{2 \pi}{\lambda}) \f$ of beam modulation.
+!> @param[out] nbeams Number of electron beams input into FEL
+!> @param[out] dist_f Name of external files to read from in the dist and 
+!> particle cases.
+!> @param[out] qSimple If simple beam input is beaing used.
+!> @param[out] sA0_Re Magnitude of x-polarized injected seed field, if used. 
+!> @param[out] sA0_Im Magnitude of y-polarized injected seed field, if used.
+!> @param[out] sFiltFrac Cutoff frequency for high-pass filter in diffraction 
+!> step. Expressed as a fraction of the resonant reference frequency.
+!> @param[out] sDiffFrac Diffraction step size, expressed as fraction of 
+!> reference resonant frequency
+!> @param[out] sBeta Absorption coefficient for absorbing boundaries in the 
+!> field mesh in the transverse plane.
+!> @param[out] sRho FEL, or pierce, parameter
+!> @param[out] saw Undulator parameter (peak, not rms) for reference frame
+!> @param[out] sgamma_r Reference beam energy
+!> @param[out] lambda_w Undulator period
+!> @param[out] sEmit_n Array of length nbeams. Scaled RMS Beam emittance in 
+!> simple beam case.
+
+
 subroutine read_in(zfilename, &
        zDataFileName, &
        qSeparateFiles, &
@@ -70,6 +126,7 @@ subroutine read_in(zfilename, &
        mag, fr, &
        nbeams, &
        dist_f, &
+       field_file, &
        qSimple, &
        sA0_Re, &
        sA0_Im, &
@@ -157,8 +214,7 @@ subroutine read_in(zfilename, &
   LOGICAL,           INTENT(OUT)  :: qFormattedFiles
   LOGICAL,           INTENT(OUT)  :: qResume
   REAL(KIND=WP) ,    INTENT(OUT)  :: sZ0
-  CHARACTER(32_IP),  INTENT(INOUT):: LattFile
-
+  CHARACTER(1024_IP),  INTENT(INOUT):: LattFile
   INTEGER(KIND=IP),  INTENT(OUT)  :: iWriteNthSteps, iWriteIntNthSteps
   TYPE(cArraySegment)             :: tArrayZ
   TYPE(cArraySegment)             :: tArrayA(:)
@@ -194,7 +250,8 @@ subroutine read_in(zfilename, &
   LOGICAL, ALLOCATABLE, INTENT(OUT) :: qFlatTopS(:)
   LOGICAL, INTENT(out) :: qSimple
 
-  CHARACTER(32_ip), ALLOCATABLE, INTENT(INOUT) :: dist_f(:)
+  CHARACTER(1024_ip), ALLOCATABLE, INTENT(INOUT) :: dist_f(:), & !< particle distribution file
+                                                field_file(:)    !< field input file (if any)
 
   REAL(KIND=WP),     INTENT(OUT)  :: sFiltFrac,sDiffFrac,sBeta
   REAL(KIND=WP),     INTENT(OUT)  :: srho
@@ -316,7 +373,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   sFiltFrac              = 0.3
   sDiffFrac              = 1.0
   sBeta                  = 1.0
-  seed_file              = 'seed_file.in'
+  seed_file              = ''
   srho                   = 0.01
   sux                    = 1.0
   suy                    = 1.0
@@ -354,6 +411,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qSwitches(iElectronFieldCoupling_CG) = qElectronFieldCoupling
   qSwitches(iFocussing_CG) = qFocussing
   qSwitches(iDiffraction_CG) = qDiffraction
+  qDiffraction_G = qDiffraction
   qSwitches(iDump_CG) = qDump
 
   qUndEnds_G = qUndEnds
@@ -427,12 +485,15 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                      qMatched_A,qOKL)
 
   CALL read_seedfile(seed_file,nseeds,sSigmaF,sA0_Re,sA0_Im,freqf,&
-                     ph_sh, qFlatTopS,SmeanZ2,qOKL)
-
+                     ph_sh, qFlatTopS,SmeanZ2,field_file,qOKL)
 
   call FileNameNoExtension(beam_file, zBFile_G, qOKL)
-  call FileNameNoExtension(seed_file, zSFile_G, qOKL)
-
+  
+  if (seed_file == '') then
+    zSFile_G = 'unused'
+  else
+    call FileNameNoExtension(seed_file, zSFile_G, qOKL)
+  end if
 
   if (qOneD) qEquiXY_G = .true.
 
@@ -488,7 +549,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   INTEGER(KIND=IP) :: b_ind
   logical :: qFixCharge
   INTEGER::ios
-  CHARACTER(96) :: dum1, dum2, dtype
+  CHARACTER(96) :: dtype
 
 
 
@@ -656,6 +717,14 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
     close(UNIT=161,STATUS='KEEP')
 
   else if (dtype == 'h5') then
+    if (nbeams /= 1) then 
+      
+      if (tProcInfo_G%qRoot) print*, 'WARNING - currently only 1 file', &
+                                      'is supported for the h5 beam type'
+      if (tProcInfo_G%qRoot) print*, 'Only the 1st file will be read in....'
+
+    end if
+    allocate(dist_f(nbeams))
     iInputType_G = iReadH5_G
     read(161,nml=bh5list)
 
@@ -682,7 +751,7 @@ END SUBROUTINE read_beamfile
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
-                         qFlatTop, meanZ2,qOK)
+                         qFlatTop, meanZ2,field_file,qOK)
 
   IMPLICIT NONE
 
@@ -693,6 +762,7 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
                                              sA0_X(:),sA0_Y(:), &
                                              freqf(:), meanZ2(:), &
                                              ph_sh(:)
+  CHARACTER(len=1024), INTENT(INOUT), ALLOCATABLE :: field_file(:) ! field file names
   INTEGER(KIND=IP), INTENT(INOUT) :: nseeds
 
   LOGICAL, ALLOCATABLE, INTENT(OUT) :: qFlatTop(:)
@@ -702,13 +772,14 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
 
   INTEGER(KIND=IP) :: s_ind
   INTEGER::ios
+  CHARACTER(len=1024) :: dtype
 
 
-  namelist /nslist/ nseeds
+  namelist /nslist/ nseeds,dtype
   namelist /slist/ freqf, ph_sh, sA0_X, sA0_Y, sSigmaF, &
                    qFlatTop, meanZ2, qRndFj_G,  sSigFj_G, &
                    qMatchS_G
-
+  namelist /sh5list/ field_file
 
   qOK = .FALSE.
 
@@ -716,14 +787,15 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
 ! Default vals
 
   nseeds = 1
+  dtype = 'simple'
+  allocate(field_file(1))
+  field_file = ''
 
-
-! Open the file
-  open(161,file=se_f, status='OLD', recl=80, delim='APOSTROPHE')
-
-
-  read(161,nml=nslist)
-
+!   Open the file
+  if (se_f .ne. '') then
+    open(161,file=se_f, status='OLD', recl=80, delim='APOSTROPHE')
+    read(161,nml=nslist)
+  end if
   ALLOCATE(sSigmaF(nseeds,3))
   ALLOCATE(sA0_X(nseeds), sA0_Y(nseeds), ph_sh(nseeds))
   ALLOCATE(freqf(nseeds),qFlatTop(nseeds),meanZ2(nseeds))
@@ -735,21 +807,40 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
   sSigmaF = 1.0_wp
   freqf = 1.0_wp
   ph_sh = 0.0_wp
-  sA0_X = 1.0_wp
-  sA0_Y = 1.0_wp
+  sA0_X = 0.0_wp
+  sA0_Y = 0.0_wp
   qFlatTop = .false.
   meanZ2 = 0.0_wp
   qRndFj_G = .false.
   sSigFj_G = 0.01_wp
   qMatchS_G = .true.
+  if (dtype == 'simple') then 
+    if (se_f .ne. '') then
+      read(161,nml=slist)
+      close(UNIT=161,STATUS='KEEP')
+    end if
 
-  read(161,nml=slist)
-  close(UNIT=161,STATUS='KEEP')
-
+    iFieldSeedType_G=iSimpleSeed_G
 
 ! Set the error flag and exit
-  qOK = .TRUE.
-  GOTO 2000
+    qOK = .TRUE.
+    GOTO 2000
+  end if
+
+
+
+  if (dtype == 'h5') then
+    iFieldSeedType_G=iReadH5Field_G
+
+    if (se_f .ne. '') then
+      read(161,nml=sh5list)
+      close(UNIT=161,STATUS='KEEP')
+    end if
+
+    qOK = .TRUE.
+    GOTO 2000
+    
+  end if
 
 1000 CALL Error_log('Error in Read_Data:read_seedfile',tErrorLog_G)
     PRINT*,'Error in read_seedfile'

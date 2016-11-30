@@ -237,6 +237,70 @@ END SUBROUTINE WriteINTEGER
 END SUBROUTINE WriteINTEGERL
 
 
+SUBROUTINE WriteINTEGERL64(iInt,        &
+      tFileType,    &
+      qOK,          &
+      zFormat)
+!
+!********************************************************************
+! Write INTEGER(KIND=IP) data to file
+!********************************************************************
+!
+! iInt      - INPUT    - Inetger data    
+! tFileType - INPUT    - Properties of output file
+! qOK       - OUTPUT   - Error flag
+! zFormat   - OPTIONAL - Format for data write
+!
+!====================================================================
+! Define local variables
+!!
+!=====================================================================
+!	
+IMPLICIT NONE
+
+INTEGER(KIND=IPN),INTENT(IN)             :: iInt
+TYPE(cFileType), INTENT(INOUT)          :: tFileType
+CHARACTER(*),    INTENT(IN),  OPTIONAL  :: zFormat 
+LOGICAL,         INTENT(OUT)	      :: qOK      
+
+LOGICAL           :: qOKL
+
+
+!     Set error flag to false
+
+qOK = .FALSE.
+
+!          Write data       
+
+IF (tFileType%qFormatted) THEN 
+   IF (PRESENT(zFormat) ) THEN
+      WRITE (tFileType%iUnit,zFormat) (iInt)
+   ELSE
+     WRITE (tFileType%iUnit,'(I14)') (iInt)
+   END IF
+ELSE
+   call C_WriteIntegerL64(tFileType%zFileName, iInt, qOKL)
+If (.NOT. qOKL) Goto 1000
+END IF 
+!
+!--------------------------------------------------------------------------------	
+!  Set error flag and exit         
+!--------------------------------------------------------------------------------	
+!
+qOK = .TRUE.				    
+GoTo 2000     
+!
+!--------------------------------------------------------------------------------
+! Error Handler
+!--------------------------------------------------------------------------------
+!            
+1000 call Error_log('Error in DIO:WriteINTEGER',tErrorLog_G)
+Print*,'Error in DIO:WriteINTEGER'
+2000 CONTINUE      
+
+END SUBROUTINE WriteINTEGERL64
+
+
 
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------

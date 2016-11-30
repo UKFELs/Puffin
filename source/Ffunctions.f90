@@ -4,6 +4,13 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Some basic low-level functions (Gaussian, linspace etc).
+
 MODULE Functions
 
 USE paratype

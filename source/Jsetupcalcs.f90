@@ -4,6 +4,15 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Various routines to setup and scale the constants in the simulation.
+
+
+
 MODULE setupcalcs
 
 USE Paratype
@@ -339,7 +348,9 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
 !     Get the number of nodes
 
-    iNumberNodes_G = iNN(iX_CG)*iNN(iY_CG)*iNN(iZ2_CG)
+    iNumberNodes_G = int(iNN(iX_CG), kind=IPN) * &
+                       int(iNN(iY_CG), kind=IPN) * &
+                         int(iNN(iZ2_CG), kind=IPN)
 
 
 
@@ -354,13 +365,13 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
 
 
-    IF(iNumberNodes_G <= 0_IP) THEN
-       CALL Error_log('iNumberNodes_G <=0.',tErrorLog_G)
+    IF(iNumberNodes_G <= 0_IPN) THEN
+       CALL Error_log('iNumberNodes_G <= 0.',tErrorLog_G)
        GOTO 1000    
     END IF
 
 
-    dz2_I_G = sLengthOfElmZ2_G
+    dz2_I_G = 4.0_wp * pi * sRho_G
     call getCurrNpts(dz2_I_G, npts_I_G)
 
 
@@ -480,7 +491,7 @@ end subroutine getQFmNpk
 
 SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
                               qFlatTopS, sSigmaF, &
-                              sA0_x, sA0_y, qOK)
+                              sA0_x, sA0_y, field_file, qOK)
 
     IMPLICIT NONE
 !
@@ -506,6 +517,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
     REAL(KIND=WP), INTENT(IN)    :: sA0_x(:)
     REAL(KIND=WP), INTENT(IN)    :: sA0_y(:)
 !    REAL(KIND=WP), INTENT(INOUT) :: sA(:)
+    CHARACTER(LEN=1024),INTENT(IN) :: field_file(:)
     LOGICAL,       INTENT(OUT)   :: qOK
 
 !                LOCAL ARGS
@@ -514,6 +526,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
 ! iZ2          Number of nodes in Z2
 ! iXY          Number of nodes in XY plane
 ! sA0gauss_Re  Initial field over all planes
+    CHARACTER(Len=1024) :: h5FieldFileName
 
     LOGICAL           :: qOKL
     LOGICAL           :: qInitialGauss
@@ -526,6 +539,10 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
 !     Set error flag to false
 
     qOK = .FALSE. 
+    h5FieldFileName=field_file(1)
+    
+    sZi_G = 0.0_wp
+    sZlSt_G = 0.0_wp
 
     iZ2 = NZ2_G
     iXY = NX_G*NY_G
@@ -542,9 +559,20 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
    
 !    CALL getSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,freqf, &
 !                  ph_sh, nseeds,sLengthOfElm,sAreal,sAimag)
+   print*,'It is seedy, but what type...' 
+   print*,iFieldSeedType_G
 
-    call getPaSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,&
-                    freqf,ph_sh,nseeds,sLengthOfElm)
+    if (iFieldSeedType_G==iSimpleSeed_G) then
+
+      call getPaSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,&
+                      freqf,ph_sh,nseeds,sLengthOfElm)
+    end if
+
+    if (iFieldSeedType_G==iReadH5Field_G) then
+
+      call readH5FieldfileSingleDump(h5FieldFileName)
+
+    end if
 
 !    sA(1:iXY*iZ2) = sAreal
 !    sA(iXY*iZ2 + 1:2*iXY*iZ2) = sAimag
@@ -988,6 +1016,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
     else if (iInputType_G == iReadH5_G) then
       fname_temp = fname(1)
       call readH5beamfile(fname_temp)
+    print *,"Rank ", tProcInfo_G%Rank
     else 
 
       if (tProcInfo_G%qRoot) print*, 'No beam input type specified....'
@@ -1002,8 +1031,12 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
        GOTO 1000    
     END IF
 
-
-    totNk_loc = sum(s_chi_bar_G) * npk_bar_G
+    if (iNumberElectrons_G>0_IPL) then
+      totNk_loc = sum(s_chi_bar_G) * npk_bar_G
+    else
+      totNk_loc = 0._WP
+    end if
+    print *,"Rank ", tProcInfo_G%Rank, " sum ",totNk_loc
     CALL MPI_ALLREDUCE(totNk_loc, totNk_glob, 1, MPI_DOUBLE_PRECISION, &
                        MPI_SUM, MPI_COMM_WORLD, error)
 

@@ -164,7 +164,8 @@ SUBROUTINE genGrid(b_num, inttype,gridtype,centre,sigma,length,&
 
   IF (qParallel) THEN
 
-    if (qRndEj_G(b_num)) then !!!  If rounding edges of flat-top
+    if ((qRndEj_G(b_num)) .and. &
+           (inttype == iTopHatDistribution_CG) ) then !!!  If rounding edges of flat-top
   
       CALL splitBeam(iNMP, length, tProcInfo_G%size, tProcInfo_G%rank, &
                      locN, local_start, local_fin)

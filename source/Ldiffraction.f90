@@ -7,12 +7,17 @@ use parallelinfotype
 use transforminfotype
 use transforms
 use masks
-USE FFTW_Constants
+!USE FFTW_Constants
+
 USE Globals
 use IO
 use parafield
 
+use, intrinsic :: iso_c_binding
+
 implicit none
+
+
 
 contains
 
@@ -37,7 +42,7 @@ subroutine diffractIM(sStep, &
 
 
   qOK = .false.
-  
+
 
 !      Change data layout to FFTW -
 
@@ -51,7 +56,7 @@ subroutine diffractIM(sStep, &
   if (.not. qOKL) goto 1000
 
   qDiffrctd = .true.
-  
+
 
 
 !    Change back to wiggler data layout
@@ -75,9 +80,9 @@ end subroutine diffractIM
 
 
 
-!     ###################################################### 
+!     ######################################################
 
-SUBROUTINE multiplyexp(h,Field,qOK)
+SUBROUTINE multiplyexp(h,qOK)
 
   IMPLICIT NONE
 !
@@ -92,8 +97,8 @@ SUBROUTINE multiplyexp(h,Field,qOK)
 
   REAL(KIND=WP), INTENT(IN) :: h
 
-  COMPLEX(KIND=WP), INTENT(INOUT) :: &
-       Field(0:tTransInfo_G%total_local_size-1)
+!  COMPLEX(C_DOUBLE_COMPLEX), pointer, &
+!                INTENT(INOUT) :: field(:)
 
   LOGICAL, INTENT(OUT) :: qOK
 
@@ -104,7 +109,7 @@ SUBROUTINE multiplyexp(h,Field,qOK)
 ! ind,x_inc,y_inc,z2_inc      Indices for loop
 ! loc_nz2                     Number of FT field nodes
 !                             on the local process
-   
+
   COMPLEX(KIND=WP) :: posI
   INTEGER(KIND=IP) :: ind,x_inc,y_inc,z2_inc
   INTEGER(KIND=IP) :: loc_nz2
@@ -121,28 +126,31 @@ SUBROUTINE multiplyexp(h,Field,qOK)
   loc_nz2 = tTransInfo_G%loc_nz2
 
 !      Main loop, multiply FT field by exp factor
-  
+
   DO z2_inc=0,loc_nz2-1_IP
      DO y_inc=0,NY_G-1_IP
         DO x_inc=0,NX_G-1_IP
 
-           ind=x_inc+y_inc*NX_G+z2_inc*NX_G*NY_G
+           !ind=x_inc+y_inc*NX_G+z2_inc*NX_G*NY_G
 
            IF ((kz2_loc_G(z2_inc)>cutoff) .OR. &
                 (kz2_loc_G(z2_inc)<-cutoff)) THEN
-              
+
               IF (kz2_loc_G(z2_inc)/=0.0_WP) THEN
 
-                Field(ind)=exp(posI*h*(kx_G(x_inc)**2 + &
-                           ky_G(y_inc)**2) / &
-                           (2.0_WP*kz2_loc_G(z2_inc)))*Field(ind)
+                Afftw(x_inc+1,y_inc+1,z2_inc+1) = &
+                           exp(posI*h*(kx_G(x_inc)**2 + &
+                                     ky_G(y_inc)**2) / &
+                                (2.0_WP*kz2_loc_G(z2_inc))) * &
+                           Afftw(x_inc+1,y_inc+1,z2_inc+1)
 
               END IF
 
            ELSE
-              
-              IF (qFilter) Field(ind)=CMPLX(0.0_WP,0.0_WP)
-              
+
+              IF (qFilter) Afftw(x_inc+1,y_inc+1,z2_inc+1) = &
+                         CMPLX(0.0, 0.0, C_DOUBLE_COMPLEX)
+
            END IF
 
         END DO
@@ -167,7 +175,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 
   IMPLICIT NONE
 !
-! Subroutine to perform free space radiation field diffraction 
+! Subroutine to perform free space radiation field diffraction
 ! in the dimensionless scaled notation.
 ! Diffraction step algorithm described in
 ! LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
@@ -180,8 +188,8 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 ! displs       IN         Arrays for MPI communication.
 !                         They describe the layout of data
 !                         across processes. See MPI docs.
-! sV           IN         Electron macroparticle array, 
-!                         containing coordinates in each 
+! sV           IN         Electron macroparticle array,
+!                         containing coordinates in each
 !                         of the 6 scaled dimensions of this
 !                         process's local macroparticles.
 ! sA           INOUT      Input as global field array at
@@ -200,9 +208,9 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 ! sA_local      The local Fourier transformed field array
 ! qOKL          Local error flag
 
-  COMPLEX(KIND=WP), DIMENSION(:), ALLOCATABLE :: &
-       work,sA_local
-  integer(kind=ip) :: ntrh
+!  COMPLEX(KIND=WP), DIMENSION(:), ALLOCATABLE :: &
+!       work,sA_local
+  integer(kind=ip) :: ntrh, ix, iy, iz
   LOGICAL :: qOKL
   integer :: error
 
@@ -210,7 +218,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 
   qOK = .FALSE.
 
-!     Allocate arrays and get distributed FT of field. 
+!     Allocate arrays and get distributed FT of field.
 !     Transforming from A(x,y,z2,zbar) to A(kx,ky,kz2,zbar)
 
 
@@ -218,12 +226,12 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
     print*,' inside diffraction... ',iCsteps, end_time-start_time
   end if
 
-    
+
   call Get_time(tr_time_s)
 
 
-  ALLOCATE(sA_local(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1))
-  ALLOCATE(work(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1))
+!  ALLOCATE(sA_local(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1))
+!  ALLOCATE(work(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1))
 
   call Get_time(tr_time_e)
 
@@ -232,12 +240,19 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
   end if
 
 
-  sA_local = 0.0_wp
+!  sA_local = 0.0_wp
   ntrh = NX_G * NY_G
 
-  sA_local(0:(tTransInfo_G%loc_nz2 * ntrh) - 1) = &
-          CMPLX(sAr(1:tTransInfo_G%loc_nz2 * ntrh), &
-                 sAi(1:tTransInfo_G%loc_nz2 * ntrh), kind=wp)
+  do iz = 1, tTransInfo_G%loc_nz2
+    do iy = 1, NY_G
+      do ix = 1, NX_G
+
+        Afftw(ix,iy,iz) = CMPLX(sAr(ix + nx_g*(iy-1) + ntrh*(iz-1)), &
+                     sAi(ix + nx_g*(iy-1) + ntrh*(iz-1)), C_DOUBLE_COMPLEX)
+
+      end do
+    end do
+  end do
 
   call Get_time(tr_time_e)
 
@@ -245,20 +260,19 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
     print*,' assigning data took... ', tr_time_e-tr_time_s
   end if
 
-!  CALL setupParallelFourierField(sA_local, work, qOKL) 
+!  CALL setupParallelFourierField(sA_local, work, qOKL)
 
-!  CALL Transform(tTransInfo_G%fplan, &
-!       work, &
-!       sA_local, &
-!       qOKL)
+  CALL Transform(tTransInfo_G%fplan, &
+       Afftw, &
+       qOKL)
 
 
 !  call mpi_barrier(tProcInfo_G%comm, error)
 !  print*, size(sA_local), size(sAr), size(sAi), tTransInfo_G%loc_nz2
 
-  CALL fftwnd_f77_mpi(tTransInfo_G%fplan,1,sA_local,&
-                      work,USE_WORK,&
-                      FFTW_NORMAL_ORDER) 
+!  CALL fftwnd_f77_mpi(tTransInfo_G%fplan,1,sA_local,&
+!                      work,USE_WORK,&
+!                      FFTW_NORMAL_ORDER)
 
 
   call Get_time(tr_time_e)
@@ -274,9 +288,9 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 
 !    Multiply field by the exp factor to obtain A(kx,ky,kz2,zbar+h)
 
-  CALL MultiplyExp(h,sA_local,qOKL)	
+  CALL MultiplyExp(h,qOKL)
 
- 
+
   call Get_time(tr_time_e)
 
   if (tProcInfo_G%QROOT ) then
@@ -286,14 +300,15 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 
 !   Perform the backward fourier transform to obtain A(x,y,z2,zbar+h)
 
-!  CALL Transform(tTransInfo_G%bplan, &
-!       work, &
-!       sA_local, &
-!       qOKL)
+  CALL Transform(tTransInfo_G%bplan, &
+       Afftw, &
+       qOKL)
 
-  CALL fftwnd_f77_mpi(tTransInfo_G%bplan,1,sA_local,&
-                      work,USE_WORK,&
-                      FFTW_NORMAL_ORDER) 
+
+
+!  CALL fftwnd_f77_mpi(tTransInfo_G%bplan,1,sA_local,&
+!                      work,USE_WORK,&
+!                      FFTW_NORMAL_ORDER)
 
   call Get_time(tr_time_e)
 
@@ -314,12 +329,12 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 
 !      Scale the field data to normalize transforms
 
-  sA_local = sA_local/ffact
+  Afftw = Afftw/ffact
 
 
 !      Now solve for the absorbing boundary layer
 
-  CALL AbsorptionStep(sA_local,work,h,tTransInfo_G%loc_nz2,ffact)
+  call AbsorptionStep(Afftw, h, ffact)
 
   call Get_time(tr_time_e)
 
@@ -328,7 +343,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
   end if
 
 
-  DEALLOCATE(work)
+!  DEALLOCATE(work)
 
 !   Collect data back onto global field var sA on every process
 
@@ -340,23 +355,38 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 
 
 
-! assign data back to real and img parts for integration 
+! assign data back to real and imag parts for integration
 ! through undulator
 
-  sAr(1:tTransInfo_G%loc_nz2 * ntrh) = &
-          real(sA_local(0:(tTransInfo_G%loc_nz2 * ntrh) - 1), &
-                            kind=wp)
 
 
-  sAi(1:tTransInfo_G%loc_nz2 * ntrh) = &
-          aimag(sA_local(0:(tTransInfo_G%loc_nz2 * ntrh) - 1))
+  do iz = 1, tTransInfo_G%loc_nz2
+    do iy = 1, NY_G
+      do ix = 1, NX_G
+
+        sAr(ix + nx_g*(iy-1) + ntrh*(iz-1)) = real(Afftw(ix,iy,iz), kind=wp)
+        sAi(ix + nx_g*(iy-1) + ntrh*(iz-1)) = aimag(Afftw(ix,iy,iz))
+
+      end do
+    end do
+  end do
+
+
+
+!  sAr(1:tTransInfo_G%loc_nz2 * ntrh) = &
+!          real(Afftw(0:(tTransInfo_G%loc_nz2 * ntrh) - 1), &
+!                            kind=wp)
+
+
+!  sAi(1:tTransInfo_G%loc_nz2 * ntrh) = &
+!          aimag(Afftw(0:(tTransInfo_G%loc_nz2 * ntrh) - 1))
 
 !call mpi_barrier(tProcInfo_G%comm, error)
 !  call mpi_finalize(error)
 !  stop
 
 
-  DEALLOCATE(sA_local)
+!  DEALLOCATE(sA_local)
 
 
 !        Clear up field emerging outside e-beam
@@ -377,14 +407,14 @@ END SUBROUTINE DiffractionStep
 
 !***********************************************************
 
-SUBROUTINE AbsorptionStep(sAl,work,h,loc_nz2,ffact)
+SUBROUTINE AbsorptionStep(sAl,h,ffact)
 
 ! This subroutine implements a boundary region
 ! in the x, y and z2 directions. The method used
 ! is similar to e.g. REF.
 !
 ! The boundary layer absorbs the outgoing radiation
-! to minimize the reflections of the diffracted 
+! to minimize the reflections of the diffracted
 ! radiation.
 !
 ! Written by
@@ -394,16 +424,16 @@ SUBROUTINE AbsorptionStep(sAl,work,h,loc_nz2,ffact)
 
 
 
-! 
+!
 ! APPLY ABSORPTION FIRST IN THE TRANSVERSE DIRECTION,
-! THEN IN THE LONGITUDINAL. 
+! THEN IN THE LONGITUDINAL.
 !
 ! SO, FIRST, TRANSVERSE MASK, THEN FT, THEN:
 !
 !          NEW_Af = Af * EXP(delz*beta*(-kx-ky)/kz2)
 !
-! i.e. EXPONENTIALLY DECREASE FREQUENCY COMPONENTS 
-! DEPENDANT ON *BOTH* TRANSVERSE AND LONGITUDINAL 
+! i.e. EXPONENTIALLY DECREASE FREQUENCY COMPONENTS
+! DEPENDANT ON *BOTH* TRANSVERSE AND LONGITUDINAL
 ! WAVENUMBER.
 !
 ! THEN FFT BACK TO A.
@@ -416,26 +446,28 @@ SUBROUTINE AbsorptionStep(sAl,work,h,loc_nz2,ffact)
 !
 !                ARGUMENTS
 
-  COMPLEX(KIND=WP), INTENT(INOUT) :: sAl(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1)
-  COMPLEX(KIND=WP), INTENT(INOUT) :: work(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1)
-  INTEGER(KIND=IP), INTENT(IN) :: loc_nz2
+  complex(C_DOUBLE_COMPLEX), pointer, intent(inout) :: sAl(:,:,:)
+
   REAL(KIND=WP), INTENT(IN) :: h,ffact
 
 !               LOCAL ARGS
 
   REAL(KIND=WP), allocatable :: mask(:), mask_z2(:)
-  COMPLEX(KIND=WP), allocatable :: sAnb(:)
+  COMPLEX(KIND=WP), allocatable :: sAnb(:,:,:)
   COMPLEX(KIND=WP) :: posI
-  INTEGER(KIND=IP) :: iz2, x_inc, y_inc, z2_inc, ind
+  INTEGER(KIND=IP) :: iz2, x_inc, y_inc, z2_inc, ind, ix, iy
+  INTEGER(KIND=IP) :: loc_nz2
   integer :: error
   LOGICAL :: qOKL
 
+! ############################
 
+  loc_nz2 = tTransInfo_G%loc_nz2
 
 ! ****************************
 
-  allocate(mask(NX_G*NY_G), mask_z2(0:tTransInfo_G%loc_nz2-1))
-  allocate(sAnb(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1))
+  allocate(mask(NX_G*NY_G), mask_z2(tTransInfo_G%loc_nz2))
+  allocate(sAnb(nx_g, ny_g, loc_nz2))
 
 ! ****************************
 
@@ -445,7 +477,7 @@ SUBROUTINE AbsorptionStep(sAl,work,h,loc_nz2,ffact)
 
   CALL getMask(NX_G, NY_G, sLengthOfElmX_G, sLengthOfElmY_G, &
                NBX_G, NBY_G, mask)
- 
+
 
 
 !  Now also using boundary in z2....so mask in z2 is....
@@ -458,65 +490,60 @@ SUBROUTINE AbsorptionStep(sAl,work,h,loc_nz2,ffact)
 !!!!!      sAl is local      !!!!!
 !!!!!      goes from 0,total_local_size     !!!!!!!
 
-  
-
-    DO iz2 = 0_IP, loc_nz2 - 1_IP
-  
-      sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)  = (1.0_WP - (mask   +  ( mask_z2(iz2) *  (1.0_WP - mask) ) ) ) * &
-                                                            sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
 
 
+    do iz2 = 1_IP, loc_nz2
+      do iy = 1_ip, ny_g
+        do ix = 1_ip, nx_g
 
+          sAnb(ix, iy, iz2) = (1.0_WP - (mask(ix+((iy-1)*nx_g)) +  &
+                  ( mask_z2(iz2) *  (1.0_WP - mask(ix+((iy-1)*nx_g) ) ) ) ) ) * &
+                  sAl(ix,iy,iz2)
 
 !    sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP) =   (1.0_WP - mask_z2(iz2)) * sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
 
+          sAl(ix, iy, iz2) = (mask(ix+((iy-1)*nx_g))   +  &
+                  ( mask_z2(iz2) *  (1.0_WP - mask(ix+((iy-1)*nx_g) ) ) ) ) * &
+                  sAl(ix,iy,iz2)
 
+        end do
+      end do
+    end do
 
-      sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP) =  (mask   +  ( mask_z2(iz2) *  (1.0_WP - mask) ) ) * &
-                                                           sAl(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
-  
-  
-    END DO
-  
-  END IF
+  end if
 
 !     FFT sAb
 
-  CALL Transform(tTransInfo_G%fplan, &
-       work, sAl, qOKL)
+  CALL Transform(tTransInfo_G%fplan, sAl, qOKL)
 
 !     Apply filter, by decreasing fourier coefficients
 
-  DO z2_inc=0,loc_nz2-1_IP
-    DO y_inc=0,NY_G-1_IP
-      DO x_inc=0,NX_G-1_IP
+  do z2_inc=0,loc_nz2-1_IP
+    do y_inc=0,NY_G-1_IP
+      do x_inc=0,NX_G-1_IP
 
-        ind=x_inc+y_inc*NX_G+z2_inc*NX_G*NY_G
-              
-        IF (kz2_loc_G(z2_inc)/=0.0_WP) THEN
+        if (kz2_loc_G(z2_inc)/=0.0_WP) then
 
               !  sAl(ind)=exp(-posI*h*(kx_G(x_inc)**2 + &
               !             ky_G(y_inc)**2) / &
               !             (2.0_WP*kz2_loc_G(z2_inc)))*sAl(ind)
 
-         sAl(ind) = exp(-h*sBeta_G*(abs(kx_G(x_inc)) + &
-                       abs(ky_G(y_inc))) / &
-                       (sqrt(abs(2.0_WP * kz2_loc_G(z2_inc))))) * sAl(ind)
+           sAl(x_inc+1,y_inc+1,z2_inc+1) = exp(-h*sBeta_G*(abs(kx_G(x_inc)) + &
+                          abs(ky_G(y_inc))) / &
+                          (sqrt(abs(2.0_WP * kz2_loc_G(z2_inc))))) * &
+                          sAl(x_inc+1,y_inc+1,z2_inc+1)
 
 !          sAl(ind) = exp(-h*sBeta_G) * sAl(ind)
 
-        END IF
+        end if
 
-      END DO
-    END DO
-  END DO
+      end do
+    end do
+  end do
 
 !     Inverse FFT
 
-  CALL Transform(tTransInfo_G%bplan, &
-       work, &
-       sAl, &
-       qOKL)
+  call transform(tTransInfo_G%bplan, sAl, qOKL)
 
 !CALL MPI_BARRIER(tProcInfo_G%comm,error)
 

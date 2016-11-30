@@ -11,7 +11,7 @@ LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
 
 The code has undergone many improvements and extended its functionality
 since then. It no longer uses an external linear solver package, and the
-only external package now required is FFTW v2.1.5.
+only external package now required is FFTW (version 3.3 onwards).
 
 ## Features
 
@@ -31,7 +31,7 @@ means it may model:
   - Fully 3D undulators, including modelling of the wiggler entries/exits and natural focusing
   - Interleaved undulator-chicane lattices
   - Variably polarized undulators
-  - Undulator tuning of each module
+  - Tuning of each undulator module
 
 It presently does not include the effects of space charge, and ignores emission
 of the backwards wave from the e-beam.
@@ -45,6 +45,8 @@ of the backwards wave from the e-beam.
     tunings, and tapers can now be used in the one run. Quads, drifts, and better
     chicane modelling (with proper diffraction of the radiation field) are now
     included.
+  - Now uses FFTW v3.3 onwards. FFTW 2.1.5 support removed.
+  - Supplying the radiation seed file is now optional.
 
 1.5.1:
   - Added use of inner mesh to the parallel model to reduce communication between MPI nodes.

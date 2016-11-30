@@ -46,7 +46,7 @@ contains
 !     University of Strathclyde
 !     2015
 
-    character(32_ip), intent(in) :: LattFile
+    character(1024_ip), intent(in) :: LattFile 
     real(kind=wp), intent(inout) :: taper
     real(kind=wp), intent(in) :: sRho
     real(kind=wp), intent(inout) :: dz_f, ux_f, uy_f, kbnx_f, kbny_f
@@ -183,7 +183,8 @@ contains
 ! rho           FEL parameter
 
 
-  CHARACTER(32_IP), INTENT(IN) :: lattFile
+  CHARACTER(1024_IP), INTENT(IN) :: lattFile
+
   REAL(KIND=WP), INTENT(IN) :: rho
   REAL(KIND=WP), INTENT(OUT)   :: sStepSize
 
@@ -347,7 +348,7 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine disperse(iL)
+  subroutine disperse(iL, sZ)
 
   implicit none
 
@@ -366,6 +367,7 @@ contains
 ! delta            Slippage in resonant wavelengths
 
   integer(kind=ip), intent(in) :: iL
+  real(kind=wp), intent(out) :: sZ
 
   real(kind=wp) :: szbar4d
   real(kind=wp), allocatable :: sp2(:)
@@ -392,6 +394,7 @@ contains
 
   end if
 
+  sZ = sZ + szbar4d
   iChic_cr = iChic_cr + 1_ip
 
   end subroutine disperse
@@ -402,9 +405,10 @@ contains
 
 
 
-  subroutine driftSection(iL)
+  subroutine driftSection(iL, sZ)
 
     integer(kind=ip), intent(in) :: iL
+    real(kind=wp), intent(out) :: sZ
 
     real(kind=wp) :: del_dr_z
 
@@ -438,6 +442,7 @@ contains
 
     deallocate(sp2)
 
+    sZ = sZ + del_dr_z
     iDrift_cr = iDrift_cr + 1_ip
 
   end subroutine driftSection
@@ -465,7 +470,7 @@ contains
                  (2 * sRho_G * sKappa_G) * sElX_G / &
                  (1 + (sEta_G * sp2)) / quad_fx(iQuad_cr)
 
-      sElPY_G = sElPY_G + sqrt(sEta_G) * sElGam_G / &
+      sElPY_G = sElPY_G - sqrt(sEta_G) * sElGam_G / &
                  (2 * sRho_G * sKappa_G) * sElY_G / &
                  (1 + (sEta_G * sp2)) / quad_fy(iQuad_cr)
 

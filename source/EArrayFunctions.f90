@@ -4,9 +4,17 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Module to retrieve and populate array
+
+
 Module ArrayFunctions
 
-! Module to retrieve and populate array
+
 
   USE paratype
   USE ParallelInfoType
