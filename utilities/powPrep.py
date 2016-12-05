@@ -11,6 +11,11 @@ This should write VizSchema file with aggregated power output
 """
 import numpy,tables,glob,os,sys
 
+qScale = 0
+print "scaling is qscale", str(qScale)
+
+
+
 def getTimeSlices(baseName):
   """ getTimeSlices(baseName) gets a list of files
 
@@ -63,8 +68,12 @@ def getNumSpatialPoints(filelist,datasetname):
   """
   h5in=tables.open_file(filelist[0],'r')
   length=h5in.root._f_getChild(datasetname).shape[0]
-  min=h5in.root.globalLimits._v_attrs.vsLowerBounds
-  max=h5in.root.globalLimits._v_attrs.vsUpperBounds
+  if qScale == 0:
+    min=h5in.root.globalLimitsSI._v_attrs.vsLowerBounds
+    max=h5in.root.globalLimitsSI._v_attrs.vsUpperBounds
+  else:
+    min=h5in.root.globalLimits._v_attrs.vsLowerBounds
+    max=h5in.root.globalLimits._v_attrs.vsUpperBounds
   h5in.close()
   print "length: "+str(length)
   return length,min,max
@@ -88,8 +97,6 @@ peakData=numpy.zeros(numTimes)
 print "files in order:"
 print filelist
 
-qScale = 0
-print "scaling is qscale", str(qScale)
 
 
 h5.create_group('/','gridZ_SI','')
