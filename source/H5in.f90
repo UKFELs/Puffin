@@ -281,6 +281,8 @@ print*,"Now, you tell me if we had electrons"
 
   subroutine readH5Beamfile(zFile)
 
+    use parBeam
+
     character(*), intent(in) :: zFile
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier 
@@ -324,7 +326,7 @@ print*,"Now, you tell me if we had electrons"
     character(LEN=40) :: errorstr !<String to write an error
     integer(kind=ip) :: nMPs
     integer(kind=ip) :: nMPsLoc,firstParticleToRead,lastParticleToRead
-    integer(kind=ip) :: mpiinfo
+    integer(kind=ip) :: mpiinfo, mpierr
 
     mpiinfo=MPI_INFO_NULL
     filename = zfile ! unless this is naughty due to different length
@@ -404,9 +406,16 @@ print*,"Now, you tell me if we had electrons"
 !   CALL h5pset_fapl_mpio_f(plist_id, tProcInfo_G%comm, mpiinfo, error)
 
 ! Allocate local MP arrays
-    firstParticleToRead=(nMPs*tProcInfo_g%rank/tProcInfo_g%size)+1 !does integer arithmetic, no NINT needed
-    lastParticleToRead=(nMPs*(tProcInfo_g%rank+1)/tProcInfo_g%size) ! does integer arithmetic
-    nMPsLoc=(lastParticleToRead-firstParticleToRead)+1
+
+    call mpi_barrier(tProcInfo_G%comm, mpierr)
+
+    call divMPs(nMPs, tProcInfo_g%size, tProcInfo_g%rank, &
+                nMPsLoc, firstParticleToRead, lastParticleToRead)
+                  
+                  
+!    firstParticleToRead=(nMPs*tProcInfo_g%rank/tProcInfo_g%size)+1 !does integer arithmetic, no NINT needed
+!    lastParticleToRead=(nMPs*(tProcInfo_g%rank+1)/tProcInfo_g%size) ! does integer arithmetic
+!    nMPsLoc=(lastParticleToRead-firstParticleToRead)+1
     iNumberElectrons_G=nMPsLoc
 
     allocate(sElX_G(nMPsLoc),   &
