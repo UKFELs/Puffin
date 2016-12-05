@@ -70,13 +70,27 @@ def getNumSpatialPoints(filelist,datasetname):
   return length,min,max
 
 print "passed "+str(len(sys.argv))+" arguments"
-print "1: " +sys.argv[1]
+print "File basename specified as: " +sys.argv[1]
+
+baseName=sys.argv[1]
+
+
+if len(sys.argv) > 2:
+  outfilename = sys.argv[2]
+  print "Output file specified as: " + sys.argv[2]
+else:
+  outfilename = baseName + '_all.vsh5'
+  print "No output file specified - will be written to: " + outfilename
+
+
 #baseName="Power_0"
 #baseName="fig7_Power_0"
-baseName=sys.argv[1]
+
+
 inputFilename1,datasetnameT,mpirank=baseName.split('_')
+
 datasetname='power'
-outfilename=baseName+'_all.vsh5'
+
 h5=tables.open_file(outfilename,'w')
 filelist=getTimeSlices(baseName)
 numTimes,minZT,maxZT,minZZ,maxZZ=getTimeSliceInfo(filelist,datasetname)
@@ -348,7 +362,7 @@ else:
 
 
 
-# Write to file
+# Copy runInfo from one of the files to the new aggregate file
 h5in=tables.open_file(filelist[-1])
 h5in.root.runInfo._f_copy(h5.root)
 h5in.close()
