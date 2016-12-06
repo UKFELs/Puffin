@@ -98,7 +98,10 @@ else:
 
 inputFilename1,datasetnameT,mpirank=baseName.split('_')
 
-datasetname='power'
+if qScale == 0:
+  datasetname='powerSI'
+else:
+  datasetname='power'
 
 h5=tables.open_file(outfilename,'w')
 filelist=getTimeSlices(baseName)
@@ -165,6 +168,11 @@ for slice in filelist:
   # zData[fieldCount] = h5in.root._f_getChild("power")._v_attrs.zInter
   h5in.close()
   fieldCount+=1
+
+c0 = 2.998E8
+
+if qScale == 0:
+    sumData = sumData / c0   # power = integral over t, not z = ct!!
 
 # print str(zData)
 
