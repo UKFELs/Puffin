@@ -401,6 +401,8 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   read(168,nml=mdata)
   close(UNIT=168,STATUS='KEEP')
 
+  if (qOneD) qDiffraction = .false.
+
   qSwitches(iOneD_CG) = qOneD
   qSwitches(iFieldEvolve_CG) = qFieldEvolve
   qSwitches(iElectronsEvolve_CG) = qElectronsEvolve
