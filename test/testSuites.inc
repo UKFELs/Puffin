@@ -1,1 +1,3 @@
-ADD_TEST_SUITE(helloworld_suite)
+ADD_TEST_SUITE(testTests_suite)
+ADD_TEST_SUITE(testFFunctions_suite)
+ADD_TEST_SUITE(testHdf5Puff_suite)

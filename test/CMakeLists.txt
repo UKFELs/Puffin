@@ -2,7 +2,6 @@
 enable_language (Fortran)
 ##set (PFUNIT /home/jonny/contrib-gcc540/pFUnit-3.2.8-ser)
 set (CMAKE_VERBOSE_MAKEFILE "On")
-set (PFUNIT_SOURCE_DIR "/home/jonny/build-gcc540/pFUnit-3.2.8/source")
 find_library(PFUNITLIB NAMES pfunit
   PATHS ${PFUNIT} ${PFUNIT}/lib
   )
@@ -17,10 +16,10 @@ include_directories(
   )
 message(STATUS "PFUNIT ${PFUNIT}")
 set (PFTESTS testTests testFFunctions)
-FILE(GLOB PFUNIT_MODULES ${PFUNIT}/mod/*.mod)
-FILE(GLOB PFUNIT_TOOLS ${PFUNIT_SOURCE_DIR}/*F90)
+#FILE(GLOB PFUNIT_MODULES ${PFUNIT}/mod/*.mod)
 FILE(GLOB F_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../source/*f90)
 FILE(GLOB C_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../source/*.c)
+set(F_SOURCES ${F_SOURCES} "${CMAKE_CURRENT_SOURCE_DIR}/../source/hdf5_puff.f90")
 foreach(PFTEST ${PFTESTS})
 #  execute_process (COMMAND ("$PFUNIT/bin/pFUnitParser.py" ${PFTEST}".pf" ${PFTEST}".F90")
 #    RESULT_VARIABLE PFPREPROCESS_RESULT
@@ -69,10 +68,6 @@ add_custom_command(OUTPUT "AIO.c.o"
   VERBATIM
   )
 
-###### FOR TESTING ONLY ###########
-set(F_SOURCE_MODS "Ffunctions.f90.o" "DParallelSetUp.f90.o" "Ferror_fn.f90.o" "BCIOWrapper.f90.o" "Bnrutil.f90.o" "BParallelInfoType.f90.o" "CIO.f90.o" "FgToP2.f90.o" "Hgrids.f90.o" "FparBeam.f90.o" "IelectronGrid.f90.o" "GparticleFunctions.f90.o" "beamPrep.f90.o" "EDerivGlobals.f90.o" "GenMacros.f90.o" "noise.f90.o" "Erandom.f90.o" "CinitConds.f90.o" "pseqs.f90.o" "CremLow.f90.o")
-
-
 message(STATUS "F_SOURCE_MODS : ${F_SOURCE_MODS}")
 
 add_custom_command(OUTPUT libpfunit.a
@@ -82,15 +77,13 @@ add_custom_command(OUTPUT libpfunit.a
   )
 
 add_custom_target(fortran_test_files DEPENDS ${PFTEST_FORTRAN_FILES})
-#build-gcc540/puffin/par/source/CMakeFiles/puffin.dir
 add_custom_target(fortran_source_modules DEPENDS ${F_SOURCE_MODS})
 
 message(STATUS "fortran test files: " ${PFTEST_FORTRAN_FILES})
 message(STATUS "include directories: ${PFUNIT} and ${CMAKE_CURRENT_SOURCE_DIR}")
 message(STATUS "PFUNIT MODULES: ${PFUNIT_MODULES}")
-#add_executable(testexe ${PFUNIT}/include/driver.F90 ${PFTEST_FORTRAN_FILES} ${PFUNIT_TOOLS})
 
-#Nearly working with these two.
+
 add_executable(testexe ${PFUNIT}/include/driver.F90 ${PFTEST_FORTRAN_FILES} "AIO.c.o" ${F_SOURCE_MODS})
 #link_directories(${PFUNIT}/mod/ ${PFUNIT}/include ${CMAKE_CURRENT_SOURCE_DIR}/../source ${CMAKE_CURRENT_BINARY_DIR}/../source ${Fftw3_LIBRARY_DIRS} ${Hdf5_LIBRARY_DIRS} ${MPI_Fortran_LIBRARIES})
 link_directories(${PFUNIT}/mod/ ${PFUNIT}/include ${CMAKE_CURRENT_SOURCE_DIR}/../source ${CMAKE_CURRENT_BINARY_DIR}/../source  ${MPI_Fortran_LIBRARIES})
@@ -98,12 +91,16 @@ link_directories(${PFUNIT}/mod/ ${PFUNIT}/include ${CMAKE_CURRENT_SOURCE_DIR}/..
 
 set_target_properties(testexe PROPERTIES
    COMPILE_FLAGS "-c -g -O0 -DGNU -DBUILD_ROBUST -fbacktrace -fbounds-check -fcheck=mem -I${PFUNIT}/include -I${PFUNIT}/mod -I${CMAKE_CURRENT_BINARY_DIR}/../source"
-   LINK_FLAGS "-g -O0 -fbacktrace -fbounds-check -fcheck=mem -DGNU -DBUILD_ROBUST -I.  -I${PFUNIT}/mod -I${CMAKE_CURRENT_BINARY_DIR}/../source"
+   LINK_FLAGS "-g -O0 -fbacktrace -fbounds-check -fcheck=mem -DGNU -DBUILD_ROBUST -I.  -I${PFUNIT}/mod -I${CMAKE_CURRENT_BINARY_DIR}/../source  -I${Hdf5_INCLUDE_DIRS} -I${Fftw3_INCLUDE_DIRS}"
    )
-#   LINK_FLAGS "-g -O0 -fbacktrace -fbounds-check -fcheck=mem -DGNU -DBUILD_ROBUST -I.  -I${PFUNIT}/mod -I${CMAKE_CURRENT_BINARY_DIR}/../source -I${Fftw3_INCLUDE_DIRS} -I${Hdf5_INCLUDE_DIRS}"
 
-#target_link_libraries(testexe ${PFUNITLIB} ${Fftw3_LIBRARIES} ${Hdf5_LIBRARIES} ${MPI_Fortran_LIBRARIES} dl m)
-target_link_libraries(testexe ${PFUNITLIB}  ${MPI_Fortran_LIBRARIES} dl m)
+ ###
+ #  Duplicate Fftw3 libs seems like a typo but it isn't.
+ # Currently these are being set in the wrong order, but by
+ # including twice the FFTW_MPI lib before and after the other lib
+ # (which this implicitly does) it is able to resolve its symbols correctly
+ ###
+target_link_libraries(testexe ${PFUNITLIB} ${Hdf5_LIBRARIES} ${Fftw3_LIBRARIES} ${Fftw3_LIBRARIES} ${MPI_Fortran_LIBRARIES} dl m)
 add_dependencies(testexe puffin fortran_test_files fortran_source_modules)
 
 add_test(testall testexe)
