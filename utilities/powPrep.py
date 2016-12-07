@@ -178,8 +178,23 @@ if qScale == 0:
 
 
 # Creating SI power and normalized power datasets...
-h5.create_array('/',datasetname+'_SI',fieldData)
-h5.create_array('/',datasetname+'_SI_Norm',fieldNormData)
+
+if (qScale == 0):
+  h5.create_array('/','power_SI',fieldData)
+  h5.create_array('/','power_SI_Norm',fieldNormData)
+  
+  for fieldname in ['power_SI','power_SI_Norm']:
+    h5.root._v_children[fieldname]._v_attrs.vsMesh="gridTPowEv"
+    h5.root._v_children[fieldname]._v_attrs.vsType="variable"
+
+else:
+  h5.create_array('/','power_scaled',fieldData)
+  h5.create_array('/','power_scaled_Norm',fieldNormData)
+
+  for fieldname in ['power_scaled','power_scaled_Norm']:
+    h5.root._v_children[fieldname]._v_attrs.vsMesh="gridTPowEv"
+    h5.root._v_children[fieldname]._v_attrs.vsType="variable"
+
 
 # ...each of which is on the same SI mesh (TODO:- not yet!!! This is scaled)
 for fieldname in [datasetname+'_SI',datasetname+'_SI_Norm']:
