@@ -29,8 +29,8 @@ implicit none
 contains
 
 
-subroutine writeIM(sZ, &
-                   zDataFileName, iStep, iCstep, iWriteNthSteps, &
+subroutine writeIM(sZ, sZl, &
+                   zDataFileName, iStep, iCstep, iL, iWriteNthSteps, &
                    iIntWriteNthSteps, nSteps, qOK)
 
 
@@ -44,9 +44,9 @@ subroutine writeIM(sZ, &
 
   implicit none
 
-  real(kind=wp), intent(inout) :: sZ
+  real(kind=wp), intent(inout) :: sZ, sZl
   integer(kind=ip), intent(in) :: iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps
-  integer(kind=ip), intent(in) :: iCstep
+  integer(kind=ip), intent(in) :: iCstep, iL
   integer(kind=ip) :: nslices
   character(1024_IP), intent(in) :: zDataFileName
   logical, intent(inout) :: qOK
@@ -73,10 +73,10 @@ subroutine writeIM(sZ, &
   if (qhdf5_G) then
      nslices=ceiling( (sLengthOfElmZ2_G*NZ2_G)/(4*pi*srho_g))
 
-    call wr_h5(sZ, tArrayA, tArrayE, tArrayZ, &
-                 iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
-                 zDataFileName, qWriteFull, &
-                 qWriteInt, nslices, qOK)
+    call wr_h5(sZ, szl, tArrayA, tArrayE, tArrayZ, iL, &
+               iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
+               zDataFileName, qWriteFull, &
+               qWriteInt, nslices, qOK)
 
   end if
 

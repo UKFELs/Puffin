@@ -134,6 +134,7 @@ MODULE Setup
        mag, fr,           &
        nbeams,            &
        dist_f,            &
+       field_file,        &
        qSimple,           &
        sA0_Re,            &
        sA0_Im,            &
@@ -303,6 +304,8 @@ MODULE Setup
 
   if (qsdds_G) call initPFile(tPowF, qFormattedFiles) ! initialize power file type
 
+  call initPowerCalc()
+
 !     Generate macroelectrons
 
 
@@ -354,6 +357,7 @@ MODULE Setup
                             sSeedSigma, &
                             sA0_Re,&
                             sA0_Im,&
+                            field_file, &
                             qOKL)
   
 
@@ -487,8 +491,8 @@ MODULE Setup
 !                 zDataFileName, .true., .true., qOK)
 
   iCSteps = 0_ip
-  call writeIM(sZ, &
-               zDataFileName, 0_ip, 0_ip, iWriteNthSteps, &
+  call writeIM(sZ, sZlSt_G, &
+               zDataFileName, 0_ip, 0_ip, 0_ip, iWriteNthSteps, &
                iIntWriteNthSteps, nSteps, qOKL)
   iCsteps = 1_ip
 

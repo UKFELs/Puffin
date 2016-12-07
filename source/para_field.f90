@@ -1122,7 +1122,7 @@ contains
 
 !     Write length of column data - see CIO.f90 line 100          
 
-      call WriteINTEGERL(iNumberNodes_G,tFileTyper,qOKL)
+      call WriteINTEGERL64(iNumberNodes_G,tFileTyper,qOKL)
       if (.NOT. qOKL) Goto 1000
 
 !     Close File 
@@ -1271,7 +1271,7 @@ contains
 
 !     Write length of column data - see CIO.f90 line 100          
 
-      call WriteINTEGERL(iNumberNodes_G,tFileTypei,qOKL)
+      call WriteINTEGERL64(iNumberNodes_G,tFileTypei,qOKL)
       if (.NOT. qOKL) Goto 1000
 
 !     Close File 
@@ -2053,23 +2053,32 @@ contains
 
   inBuf = 3_ip
 
-  smaxx = abs(maxval(sElX_G))
-  sminx = abs(minval(sElX_G))
+  if (iNumberElectrons_G > 0_ipl) then
 
-  smaxy = abs(maxval(sElY_G))
-  sminy = abs(minval(sElY_G))
+    smaxx = abs(maxval(sElX_G))
+    sminx = abs(minval(sElX_G))
 
-  imaxx = ceiling(smaxx / sLengthOfElmX_G)
-  iminx = floor(sminx / sLengthOfElmX_G)
+    smaxy = abs(maxval(sElY_G))
+    sminy = abs(minval(sElY_G))
 
-  imaxy = ceiling(smaxy / sLengthOfElmY_G)
-  iminy = floor(sminy / sLengthOfElmY_G)
+    imaxx = ceiling(smaxx / sLengthOfElmX_G)
+    iminx = floor(sminx / sLengthOfElmX_G)
 
-  nspinDX = maxval((/imaxx,iminx/)) + inBuf
-  nspinDY = maxval((/imaxy,iminy/)) + inBuf
+    imaxy = ceiling(smaxy / sLengthOfElmY_G)
+    iminy = floor(sminy / sLengthOfElmY_G)
 
-  nspinDX = nspinDX * 2
-  nspinDY = nspinDY * 2
+    nspinDX = maxval((/imaxx,iminx/)) + inBuf
+    nspinDY = maxval((/imaxy,iminy/)) + inBuf
+
+    nspinDX = nspinDX * 2
+    nspinDY = nspinDY * 2
+
+  else   ! arbitrary minimum in case of zero MPs...
+
+    nspinDX = 2_ipl
+    nspinDY = 2_ipl
+
+  end if
 
   if (mod(nx_g, 2) .ne. mod(nspinDX, 2) ) then
  
@@ -2286,6 +2295,8 @@ contains
 
     ! get buffer location
 
+    if (iNumberElectrons_G > 0_ipl) then
+
     allocate(sp2(iNumberElectrons_G))
 
     call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, sEta_G, sGammaR_G, sAw_G)
@@ -2297,6 +2308,12 @@ contains
 !    print*, 'max p2 is ', maxval(sp2)
 
     deallocate(sp2)
+
+    else
+
+      bz2_len = (ez2 + 2_ip) * sLengthOfElmZ2_G  ! Just have 2 node boundary for no macroparticles
+
+    end if
 
 !    print*, tProcInfo_G%rank, 'is inside calcBuff, with buffer length', bz2_len
 
@@ -2313,6 +2330,7 @@ contains
 
     if (tProcInfo_G%rank == tProcInfo_G%size-1) then
 
+      print*, bz2
       bz2 = bz2_globm
 
     else 
