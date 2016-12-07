@@ -197,11 +197,11 @@ else:
 
 
 # ...each of which is on the same SI mesh (TODO:- not yet!!! This is scaled)
-for fieldname in [datasetname+'_SI',datasetname+'_SI_Norm']:
-  h5.root._v_children[fieldname]._v_attrs.vsMesh="gridTPowEv"
+#for fieldname in [datasetname+'_SI',datasetname+'_SI_Norm']:
+#  h5.root._v_children[fieldname]._v_attrs.vsMesh="gridTPowEv"
 #  h5.root._v_children[fieldname]._v_attrs.vsTimeGroup="time"
 #  h5.root._v_children[fieldname]._v_attrs.time=0.
-  h5.root._v_children[fieldname]._v_attrs.vsType="variable"
+#  h5.root._v_children[fieldname]._v_attrs.vsType="variable"
 #  h5.root._v_children[fieldname]._v_attrs.vsLabels="toottoot"
 #  h5.root._v_children[fieldname]._v_attrs.vsAxisLabels="z,z2 or tt"
 
