@@ -391,6 +391,7 @@ print*,"Now, you tell me if we had electrons"
      nMPs=dims(2)
      print*,"number of particles in file: "
      print*, nMPs
+     CALL h5pclose_f(plist_id, error)
      call h5sclose_f(dspace_id,error) !dspace_id
      print*,error
      print*,"h5s closed"
@@ -411,7 +412,8 @@ print*,"Now, you tell me if we had electrons"
 
     call divMPs(nMPs, tProcInfo_g%size, tProcInfo_g%rank, &
                 nMPsLoc, firstParticleToRead, lastParticleToRead)
-                  
+
+    call mpi_barrier(tProcInfo_G%comm, mpierr)                  
                   
 !    firstParticleToRead=(nMPs*tProcInfo_g%rank/tProcInfo_g%size)+1 !does integer arithmetic, no NINT needed
 !    lastParticleToRead=(nMPs*(tProcInfo_g%rank+1)/tProcInfo_g%size) ! does integer arithmetic
@@ -454,8 +456,11 @@ print*,"Now, you tell me if we had electrons"
 !       dims, error)
      print*,error
      print*,"h5s slab selected"
+     call h5pcreate_f(H5P_DATASET_XFER_F, plist_id, error) 
+     CALL h5pset_dxpl_mpio_f(plist_id, H5FD_MPIO_COLLECTIVE_F, error)
+
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, sElX_G, dims, error, &
-       file_space_id = dspace_id, mem_space_id = memspace)
+       xfer_prp = plist_id, file_space_id = dspace_id, mem_space_id = memspace)
      print*,error
      print*,"h5d slab read"
 !      call h5sclose_f(dspace_id,error)
@@ -468,7 +473,7 @@ print*,"Now, you tell me if we had electrons"
      print*,error
      print*,"h5s slab1 selected"
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, sElY_G, dims, error, &
-       file_space_id = dspace_id, mem_space_id = memspace)
+       xfer_prp = plist_id, file_space_id = dspace_id, mem_space_id = memspace)
      print*,error
      print*,"h5d slab1 read"
 !      call h5sclose_f(dspace_id,error)
@@ -478,7 +483,7 @@ print*,"Now, you tell me if we had electrons"
        dims, error)
      print*,"h5s slab2 selected"
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, sElZ2_G, dims, error, &
-       file_space_id = dspace_id, mem_space_id = memspace)
+       xfer_prp = plist_id, file_space_id = dspace_id, mem_space_id = memspace)
      print*,error
      print*,"h5d slab2 read"
 !      call h5sclose_f(dspace_id,error)
@@ -487,7 +492,7 @@ print*,"Now, you tell me if we had electrons"
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, sElPX_G, dims, error, &
-       file_space_id = dspace_id, mem_space_id = memspace)
+       xfer_prp = plist_id, file_space_id = dspace_id, mem_space_id = memspace)
      print*,error
      print*,"h5d slab3 read"
 !      call h5sclose_f(dspace_id,error)
@@ -496,7 +501,7 @@ print*,"Now, you tell me if we had electrons"
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, sElPY_G, dims, error, &
-       file_space_id = dspace_id, mem_space_id = memspace)
+       xfer_prp = plist_id, file_space_id = dspace_id, mem_space_id = memspace)
      print*,error
      print*,"h5d slab4 read"
 !      call h5sclose_f(dspace_id,error)
@@ -505,7 +510,7 @@ print*,"Now, you tell me if we had electrons"
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, sElGam_G, dims, error, &
-       file_space_id = dspace_id, mem_space_id = memspace)
+       xfer_prp = plist_id, file_space_id = dspace_id, mem_space_id = memspace)
      print*,error
      print*,"h5d slab5 read"
 !      call h5sclose_f(dspace_id,error)
@@ -514,7 +519,7 @@ print*,"Now, you tell me if we had electrons"
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, s_chi_bar_G, dims, error, &
-       file_space_id = dspace_id, mem_space_id = memspace)
+       xfer_prp = plist_id, file_space_id = dspace_id, mem_space_id = memspace)
      print*,error
      print*,"h5d slab6 read"
       call h5sclose_f(dspace_id,error)
