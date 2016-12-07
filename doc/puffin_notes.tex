@@ -98,6 +98,42 @@ The main input file contains the name of the beam file and the other optional fi
 
 In addition, one may also supply a lattice file, which descibes the layout of undulator modules, quads, chicanes, drifts \textit{etc}. If this is not supplied, then a single undulator is set up as detailed in the main input file. One may also supply a radiation seed file.
 
+\subsection{To scale or not to scale?}
+
+The main algorithm in Puffin utilizes the scaled variables above to make the numbers `nicer' to work with. The system saturates with scaled intensity $\sim 1$, the scaled perpindicular momentum of the beam in the wiggler oscillates between $-1$ and $1$, and so forth. The distance through the wiggler is given in units of a (1D) gain length, and the beam coordinate in the radiation frame is in units of the cooperation length, so that a reference electron slips $1l_c$ through the radiation field in $1$ gain  length. The scaling defines a frame of reference which normalises the quantities not only to numerically more manageable numbers, but to \textit{characteristic} variables. 
+
+The two dominant variables for the scaling are $\rho$ and $\eta$. $\eta$ is a function of the wiggler parameters $a_u$ and $\lambda_u$, and reference beam energy $\gamma_r$, and is calculated in Puffin from the input. It defines the velocity of the `reference' electron in the scaled radiation frame. The $\bar{z}_2$ coordinate is in the scaled frame travelling with the field (at velocity $c$) - $\eta$ determines how quickly the electrons slip back through this frame, such that an electron with energy $\gamma_r$, travelling in a wiggler with parameters $a_u$ and $\lambda_u$, slips back with scaled velocity $p_2 \equiv \dfrac{d \bar{z}_2}{d\bar{z}} = 1$.
+
+The $\rho$ parameter is dependent on the peak electron beam number density, amongst other things.
+
+Although the Puffin algorithm uses scaled variables, the beam and radiation field parameters may be input in either SI units or the scaled units. Use the variable {\bf qscaled} in the main input file to specify whether scaled or SI units are being used. If $=$ {\bf .true.}, then Puffin expects scaled variables are being used. % If SI units are used, then the input parameters will be scaled according automatically to the scaling values specified in the main input file. 
+
+Note, however, that they are only \textit{scaling} parameters. The FEL parameter as input by the user does not have to correspond to the beam or wiggler being input for the results to be correct. The scaled parameters will behave `nicely' if it does, but it is not necessary for the result to be physically correct. When the result is unscaled, the result will still be correct. The user should be able to input in SI units, and get output in SI units.
+
+
+
+\begin{table}
+\centering
+\caption[Input Units]{Input Dimensions and Units for Beam and Radiation Field}
+\begin{tabular}{|  c   | c  |   c   |}
+\hline
+Unscaled & units & unscaled equivalent (dimensionless) \\
+\hline
+$x$ & metres (m) & $\bar{x}$ \\
+\hline
+$y$ & metres (m) & $\bar{y}$ \\
+\hline
+$dx/dz$ & dimensionless & $\bar{p}_x$ \\
+\hline
+$dy/dz$ & dimensionless & $\bar{p}_y$ \\
+\hline
+$t$ & seconds (s) & $\bar{z}_2$ \\
+\hline
+\end{tabular}
+\label{table}
+\vspace*{-\baselineskip}
+\end{table}
+
 
 \newpage
 
@@ -173,41 +209,6 @@ In the most basic form, the input requires 3 files - a `main' input file for par
 
 
 
-\subsection{To scale or not to scale?}
-
-The main algorithm in Puffin utilizes the scaled variables above to make the numbers `nicer' to work with. The system saturates with scaled intensity $\sim 1$, the scaled perpindicular momentum of the beam in the wiggler oscillates between $-1$ and $1$, and so forth. The distance through the wiggler is given in units of a (1D) gain length, and the beam coordinate in the radiation frame is in units of the cooperation length, so that a reference electron slips $1l_c$ through the radiation field in $1$ gain  length. The scaling defines a frame of reference which normalises the quantities not only to numerically more manageable numbers, but to \textit{characteristic} variables. 
-
-The two dominant variables for the scaling are $\rho$ and $\eta$. $\eta$ is a function of the wiggler parameters $a_u$ and $\lambda_u$, and reference beam energy $\gamma_r$, and is calculated in Puffin from the input. It defines the velocity of the `reference' electron in the scaled radiation frame. The $\bar{z}_2$ coordinate is in the scaled frame travelling with the field (at velocity $c$) - $\eta$ determines how quickly the electrons slip back through this frame, such that an electron with energy $\gamma_r$, travelling in a wiggler with parameters $a_u$ and $\lambda_u$, slips back with scaled velocity $p_2 \equiv \dfrac{d \bar{z}_2}{d\bar{z}} = 1$.
-
-The $\rho$ parameter is dependent on the peak electron beam number density, amongst other things.
-
-Although the Puffin algorithm uses scaled variables, the beam and radiation field parameters may be input in either SI units or the scaled units. Use the variable {\bf qscaled} in the main input file to specify whether scaled or SI units are being used. If $=$ {\bf .true.}, then Puffin expects scaled variables are being used. % If SI units are used, then the input parameters will be scaled according automatically to the scaling values specified in the main input file. 
-
-Note, however, that they are only \textit{scaling} parameters. The FEL parameter as input by the user does not have to correspond to the beam or wiggler being input for the results to be correct. The scaled parameters will behave `nicely' if it does, but it is not necessary for the result to be physically correct. When the result is unscaled, the result will still be correct. The user should be able to input in SI units, and get output in SI units.
-
-
-
-\begin{table}
-\centering
-\caption[Input Units]{Input Dimensions and Units for Beam and Radiation Field}
-\begin{tabular}{|  c   | c  |   c   |}
-\hline
-Unscaled & units & unscaled equivalent (dimensionless) \\
-\hline
-$x$ & metres (m) & $\bar{x}$ \\
-\hline
-$y$ & metres (m) & $\bar{y}$ \\
-\hline
-$dx/dz$ & dimensionless & $\bar{p}_x$ \\
-\hline
-$dy/dz$ & dimensionless & $\bar{p}_y$ \\
-\hline
-$t$ & seconds (s) & $\bar{z}_2$ \\
-\hline
-\end{tabular}
-\label{table}
-\vspace*{-\baselineskip}
-\end{table}
 
 
 \subsection{3D Magnetic Fields}
@@ -552,14 +553,37 @@ For the modulation section, one may add an energy modulation to the beam specifi
 
 \newpage
 
+\section{Numerical Model}
+
+\newpage
+
 \section{Data Output and Post-Processing}
 
+\subsection{Data Output}
+
+Data output is classified as either `full' or `integrated' (reduced) data. The full data dumps consist of the $x$ and $y$ field values on the field mesh, and the macroparticle coordinates in 6D phase space. In a 3D run, this data can easily be $>100$GB's per dump, so it is advisable to limit the frequency of the dumps, which is controlled in the main input file by the variable {\bf iWriteNthSteps}.
+
+On the other hand, the reduced data sizes are much smaller, and typically can be written every undulator period. It can still be quite large, depending on the modelled FEL and length of the run, but it will always be significantly smaller than the full data dumps for 3D runs. Integrated data includes quantities like radiation power, bunching, energy spread, current, emittance, beam radius \textit{etc} as functions of $\bar{z}_2$ or $ct-z$. Frequency of the integrated dumps is controlled with {\bf iWriteIntNthSteps} in the main input file.
+
+\subsection{Output Format}
+
+The output is usually in the HDF5 file format, or optionally in the SDDS format. Currently, SDDS support is quite limited, and full data dumps and only the radiation power of the integrated data is output. Much more integrated data is output in the HDF5 files.
+
+\subsubsection{HDF5}
+
+The HDF5 file naming convention in Puffin is: $<$basename$>\_<$type$>\_<$step$>$.h5, where basename is the input file basename (i.e.the input file name without the postfix `.in')
+
+Type can be integrated, aperp, or electrons.
+
+\subsubsection{SDDS}
+
+\subsection{Post-processing}
 
 \newpage
 
 \section{Parameters}
 
-Below is an exhaustive list of parameters, for each filetype. Some options are only really useful for investigating runitme errors or strange behaviour. The parameter list for each file is loosely sorted from most to least useful to the average user.
+Below is an exhaustive list of parameters, for each input file type. Some options are only really useful for investigating runitme errors or strange behaviour. The parameter list for each file is loosely sorted from most to least useful to the average user.
 
 
 \subsection{Main Input File}
