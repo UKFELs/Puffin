@@ -567,7 +567,9 @@ On the other hand, the reduced data sizes are much smaller, and typically can be
 
 \subsection{Output Format}
 
-The output is usually in the HDF5 file format, or optionally in the SDDS format. Currently, SDDS support is quite limited, and full data dumps and only the radiation power of the integrated data is output. Much more integrated data is output in the HDF5 files.
+When running Puffin, a few different files will be produced besides the data output files. A *.log file provides any information on errors. A rec.out file tracks the step number the simulation is at in the main integration loop (this is also printed to standard out, but on some job submission systems the stdout will not be visible till AFTER the job has finished. rec.out should be available as the job is running to track the job progress).
+
+The data output is usually in the HDF5 file format, or optionally in the SDDS format. Currently, SDDS support is quite limited, and full data dumps and only the radiation power of the integrated data is output. Much more integrated data is output in the HDF5 files.
 
 \subsubsection{HDF5}
 
@@ -575,9 +577,21 @@ The HDF5 file naming convention in Puffin is: $<$basename$>\_<$type$>\_<$step$>$
 
 Type can be integrated, aperp, or electrons.
 
+The runInfo group contains information about how the job was called, which version of Puffin was used, the compiler used etc, as well as the scaling constants used in the simulation. Info about the particular point when the data was written, such as the integration step number, point in the machine etc are stored as attributes of the data itself.
+
 \subsubsection{SDDS}
 
+
+
+
 \subsection{Post-processing}
+
+The powPrep.py script will process the power data in the integrated data files to produce a file named basename-integrated-all.vsh5, which contains the power data normalised and formatted for use as a surface plot in Visit, to show the evolution of the temporal power profile as a function of distance through the undulator, see figure. It also contains the energy and peak power data for plotting.
+
+\subsection{Plotting}
+
+Puffin comes bundled with a few python scripts to plot the various data. (TODO)
+
 
 \newpage
 
