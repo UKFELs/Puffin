@@ -96,7 +96,7 @@ else:
 #baseName="fig7_Power_0"
 
 
-inputFilename1,datasetnameT,mpirank=baseName.split('_')
+#inputFilename1,datasetnameT,mpirank=baseName.split('_')
 
 if qScale == 0:
   datasetname='powerSI'
