@@ -6,17 +6,13 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Module to calculate d/dz of the field values and electron macroparticle 
+!> Module to calculate d/dz of the field values and electron macroparticle
 !> coordinates.
 
 module rhs
-
-! Module to calculate the RHS of the field source equation
-! and d/dz of electron equations.
-!
 
 use paratype
 use ArrayFunctions
@@ -37,12 +33,38 @@ implicit none
 
 contains
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Calculate d/dz of radiation field and electron macroparticle coordinates in
+!> 6D phase space
+!> @param[in] sz zbar
+!> @param[in] sAr Real (x) component of A_perp
+!> @param[in] sAi Imaginary (-y) component of A_perp
+!> @param[in] sx scaled electron x coordinates
+!> @param[in] sy scaled electron y coordinates
+!> @param[in] sz2 scaled electron z2 coordinates
+!> @param[in] spr scaled real (px) p_perp electron coordinates
+!> @param[in] spi scaled real (-py) p_perp electron coordinates
+!> @param[in] sgam scaled energy (gamma) electron coordinates
+!> @param[out] sdx d/dz of scaled electron x coordinates
+!> @param[out] sdy d/dz of scaled electron y coordinates
+!> @param[out] sdz2 d/dz of scaled electron z2 coordinates
+!> @param[out] sdpr d/dz of scaled real (px) p_perp electron coordinates
+!> @param[out] sdpi d/dz of scaled real (-py) p_perp electron coordinates
+!> @param[out] sdgam d/dz of scaled energy (gamma) electron coordinates
+!> @param[out] sDADzr d/dz of real (x) component of A_perp
+!> @param[out] sDADzi d/dz of real (-y) component of A_perp
+!> @param[out] qOK Error flag
+
   subroutine getrhs(sz, &
                     sAr, sAi, &
                     sx, sy, sz2, &
                     spr, spi, sgam, &
                     sdx, sdy, sdz2, &
-                    sdpr, sdpi, sdgam, &                    
+                    sdpr, sdpi, sdgam, &
                     sDADzr, sDADzi, &
                     qOK)
 
@@ -50,12 +72,12 @@ contains
 
   implicit none
 
-! Inputs %%%
+!> Inputs %%%
 !
 ! sZ - Propagation distance
 ! sA - current radiation field vals
 ! sy - current electron coordinates in all dimensions
-! 
+!
 ! Output
 ! sb  - d/dz of electron phase space positions
 ! sDADz - RHS of field source term
@@ -65,7 +87,7 @@ contains
   real(kind=wp), intent(in)  :: sx(:), sy(:), sz2(:), &
                                 spr(:), spi(:), sgam(:)
 
-  
+
   real(kind=wp), intent(inout)  :: sdx(:), sdy(:), sdz2(:), &
                                    sdpr(:), sdpi(:), sdgam(:)
 
@@ -80,14 +102,14 @@ contains
 
   qOK = .false.
   qOKL = .false.
-    
+
 !     SETUP AND INITIALISE THE PARTICLE'S POSITION
 !     ALLOCATE THE ARRAYS
 
-!  allocate(Lj(iNumberElectrons_G)) 
+!  allocate(Lj(iNumberElectrons_G))
   allocate(p_nodes(iNumberElectrons_G))
   call alct_e_srtcts(iNumberElectrons_G)
-  
+
   if (tTransInfo_G%qOneD) then
     allocate(lis_GR(2,iNumberElectrons_G))
   else
@@ -115,11 +137,11 @@ contains
 
 
 
-  
+
   if (tTransInfo_G%qOneD) then
 
 !$OMP WORKSHARE
- 
+
     p_nodes = floor(sz2 / dz2) + 1_IP - (fz2-1)
 
 !$OMP END WORKSHARE
@@ -143,7 +165,7 @@ contains
 
 !$OMP END WORKSHARE
 
-  end if  
+  end if
 
 
 
@@ -160,8 +182,8 @@ contains
   else
 
     call getInterps_3D(sx, sy, sz2)
-    if ((qPArrOK_G) .and. (qInnerXYOK_G)) then 
-      call getFFelecs_3D(sAr, sAi)    
+    if ((qPArrOK_G) .and. (qInnerXYOK_G)) then
+      call getFFelecs_3D(sAr, sAi)
       call getSource_3D(sDADzr, sDADzi, spr, spi, sgam, sEta_G)
     end if
 
@@ -169,7 +191,7 @@ contains
 
 
 
-!    IF (ioutside>0) THEN 
+!    IF (ioutside>0) THEN
 !       Print*, 'WARNING: ',ioutside,&
 !            ' electrons are outside the inner driving core'
 !    END IF
@@ -184,7 +206,7 @@ contains
   end if
 
 
-    if (qElectronsEvolve_G) then   
+    if (qElectronsEvolve_G) then
 
         call getBFields(sx, sy, sz, &
                         bxu, byu, bzu)
@@ -199,7 +221,7 @@ contains
 
         call dxdz_f(sx, sy, sz2, spr, spi, sgam, &
                     sdx, qOKL)
-        !if (.not. qOKL) goto 1000             
+        !if (.not. qOKL) goto 1000
 
 !     Y
 
@@ -209,7 +231,7 @@ contains
 
 
 !     PX (Real pperp)
-       
+
         call dppdz_r_f(sx, sy, sz2, spr, spi, sgam, sZ, &
                        sdpr, qOKL)
         !if (.not. qOKL) goto 1000
@@ -226,8 +248,8 @@ contains
         call dgamdz_f(sx, sy, sz2, spr, spi, sgam, &
                      sdgam, qOKL)
         !if (.not. qOKL) goto 1000
- 
-    end if 
+
+    end if
 
 
 
@@ -247,7 +269,7 @@ contains
 !        if (tProcInfo_G%qRoot) sDADz(ReducedNX_G*ReducedNY_G*NZ2_G + 1: &
 !                                     ReducedNX_G*ReducedNY_G*NZ2_G + &
 !                                     ReducedNX_G*ReducedNY_G) = 0.0_WP
- 
+
         !if (tTransInfo_G%qOneD) then
         !  if (tProcInfo_G%qRoot) sDADz=sDADz !sDADz=6.0_WP*sDADz
         !else
@@ -255,7 +277,7 @@ contains
         !end if
 
 !    end if
-    
+
 !     Switch field off
 
     if (.not. qFieldEvolve_G) then
@@ -263,7 +285,7 @@ contains
        sDADzi = 0.0_WP
     end if
 
-!     if electrons not allowed to evolve then      
+!     if electrons not allowed to evolve then
 
     if (.not. qElectronsEvolve_G) then
        sdpr = 0.0_wp
@@ -288,7 +310,7 @@ contains
 
     qOK = .true.
 
-    goto 2000 
+    goto 2000
 
 1000 call Error_log('Error in rhs:getrhs',tErrorLog_G)
     print*,'Error in rhs:getrhs'
@@ -301,6 +323,14 @@ contains
 !        #########################################
 
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Initialize data used in the calculation of d/dz of electron beam + radiation
+!> field quantities
+!> @param[in] sz zbar
 
 subroutine rhs_tmsavers(sz)
 
@@ -345,12 +375,12 @@ real(kind=wp), intent(in) :: sz
   econst = sAw_G/(sRho_G*sqrt(2.0_WP*(fx_G**2.0_WP+fy_G**2.0_WP)))
 
   nc = 2.0_WP*saw_G**2/(fx_G**2.0_WP + fy_G**2.0_WP)
-    
+
   nd = sqrt((fx_G**2.0_WP+fy_G**2.0_WP)*(sEta_G))/(2.0_WP*sqrt(2.0_WP)* &
                              fkb*sRho_G)
-    
+
   nb = 2.0_WP * sRho_G / ((fx_G**2.0_WP+fy_G**2.0_WP)*sEta_G)
-    
+
   maxEl = maxval(procelectrons_G)
   qoutside=.FALSE.
   iOutside=0_IP
