@@ -15,7 +15,7 @@ include_directories(
   ${PFUNIT}/mod
   )
 message(STATUS "PFUNIT ${PFUNIT}")
-set (PFTESTS testTests testFFunctions)
+set (PFTESTS testTests testFFunctions testHdf5Puff)
 #FILE(GLOB PFUNIT_MODULES ${PFUNIT}/mod/*.mod)
 FILE(GLOB F_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../source/*f90)
 FILE(GLOB C_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../source/*.c)
