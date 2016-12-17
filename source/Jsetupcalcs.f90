@@ -559,8 +559,8 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
    
 !    CALL getSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,freqf, &
 !                  ph_sh, nseeds,sLengthOfElm,sAreal,sAimag)
-   print*,'It is seedy, but what type...' 
-   print*,iFieldSeedType_G
+!   print*,'It is seedy, but what type...' 
+!   print*,iFieldSeedType_G
 
     if (iFieldSeedType_G==iSimpleSeed_G) then
 
@@ -1036,7 +1036,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
     else
       totNk_loc = 0._WP
     end if
-    print *,"Rank ", tProcInfo_G%Rank, " sum ",totNk_loc
+!    print *,"Rank ", tProcInfo_G%Rank, " sum ",totNk_loc
     CALL MPI_ALLREDUCE(totNk_loc, totNk_glob, 1, MPI_DOUBLE_PRECISION, &
                        MPI_SUM, MPI_COMM_WORLD, error)
 
