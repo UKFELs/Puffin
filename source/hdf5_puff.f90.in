@@ -2106,10 +2106,10 @@ end if
 !      dsize = (/nx_g,ny_g,nhi-nlo+1,1/)
       dsize = (/nx_g,ny_g,nlonglength,1/)
     end if
-    print *,IntegerToString(size(rawdata)) // " vs " // &
-      trim(adjustl(IntegerToString(Nx_g*ny_g*nlonglength))) // &
-      "   nlo-1 : " // trim(adjustl(IntegerToString(nlo-1))) // &
-      "   nlo+nlonglength-1 : " // trim(adjustl(IntegerToString(nlo+nlonglength-1)))
+!    print *,IntegerToString(size(rawdata)) // " vs " // &
+!      trim(adjustl(IntegerToString(Nx_g*ny_g*nlonglength))) // &
+!      "   nlo-1 : " // trim(adjustl(IntegerToString(nlo-1))) // &
+!      "   nlo+nlonglength-1 : " // trim(adjustl(IntegerToString(nlo+nlonglength-1)))
 !! repeat for some next y dataset
 !    doffset=(/1,0/)
 !    CALL H5Dget_space_f(dset_id, filespace, error)
@@ -2121,7 +2121,7 @@ end if
 !    CALL h5sclose_f(filespace, error) 
 
 
-    Print*,('Spatialdims: ' // trim(IntegerToString(numSpatialDims)))
+!    Print*,('Spatialdims: ' // trim(IntegerToString(numSpatialDims)))
     filename = (trim(adjustl(zFilename_G)) // '_' // trim(adjustl(dsetname)) &
         // '_' // trim(adjustl(IntegerToString(iCSteps))) // '.h5' )
       CALL h5open_f(error)
