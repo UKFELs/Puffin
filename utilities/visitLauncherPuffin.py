@@ -150,6 +150,7 @@ def TimeSeriesS1():
   visit.DrawPlots()
 
 def plotEnergyLinear():
+  data=visit.OpenDatabase(localPowerAllDB,0,'Vs')
   visit.AddPlot('Curve','Energy')
   AnnotationAtts = visit.AnnotationAttributes()
   AnnotationAtts.axes2D.yAxis.grid = 0
@@ -179,6 +180,7 @@ def plotEnergyLinear():
 
 
 def plotEnergy():
+  data=visit.OpenDatabase(localPowerAllDB,0,'Vs')
   visit.AddPlot('Curve','Energy',1,1) # For log scale equivalent plot
   ViewCurveAtts = visit.ViewCurveAttributes()
   ViewCurveAtts.domainScale = ViewCurveAtts.LINEAR  # LINEAR, LOG
@@ -220,6 +222,7 @@ def plotEnergy():
 
 
 def plotPowNorm():
+  data=visit.OpenDatabase(localPowerAllDB,0,'Vs')
   visit.AddPlot('Pseudocolor','power_SI_Norm')  
   visit.DrawPlots()
   View2DAtts = visit.View2DAttributes()
@@ -389,13 +392,13 @@ def current():
 
 visit.Launch(vdir=localVisItDir)
 
-if runRemotely:
-  p2=SetupPhase2()
-#  data2=visit.OpenDatabase(remoteTimeSeriesAstraDB,0,'Vs')
-  data2=visit.OpenDatabase(remoteTimeSeriesEleSigmaDB,0,'Vs')
-
-else:
-  data=visit.OpenDatabase(localPowerAllDB,0,'Vs')
+# if runRemotely:
+#   p2=SetupPhase2()
+# #  data2=visit.OpenDatabase(remoteTimeSeriesAstraDB,0,'Vs')
+#   data2=visit.OpenDatabase(remoteTimeSeriesEleSigmaDB,0,'Vs')
+# 
+# else:
+#   data=visit.OpenDatabase(localPowerAllDB,0,'Vs')
 
 plotEnergyLinear()
 
