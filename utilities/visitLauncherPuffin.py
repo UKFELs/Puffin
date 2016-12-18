@@ -1,4 +1,16 @@
 import os
+import sys
+import tables
+
+# Set local visit and visit's python package locations
+# laptop:-
+#localVisItDir = "/home/tml/tmp/visit/visit2_10_3.linux-x86_64"
+#localPythonPackageDir = "/home/tml/tmp/visit/visit2_10_3.linux-x86_64/2.10.3/linux-x86_64/lib/site-packages" 
+# desktop:-
+localVisItDir = "/home/mightylorenzo/bin/visit/visit2_10_0.linux-x86_64"
+localPythonPackageDir = "/home/mightylorenzo/bin/visit/visit2_10_0.linux-x86_64/2.10.0/linux-x86_64/lib/site-packages" 
+sys.path.insert(0,localPythonPackageDir)
+import visit
 
 def SetupSerialLauncher():
   lp2=visit.LaunchProfile()
@@ -50,22 +62,36 @@ def SaveWindow(filename):
 
 # either load parameters from file, or enter them afresh using serialize/pickle
 # LocalSettings
-localVisItDir = "/home/tml/tmp/visit/visit2_10_3.linux-x86_64"
-localPythonPackageDir = "/home/tml/tmp/visit/visit2_10_3.linux-x86_64/2.10.3/linux-x86_64/lib/site-packages" 
+
+##localPythonPackageDir = "/home/tml/tmp/visit/visit2_10_3.linux-x86_64/2.10.3/linux-x86_64/lib/site-packages" 
 runRemotely=0
-remoteTimeSeriesAstraDB='phase2.wonder.hartree.stfc.ac.uk:/gpfs/stfc/local/HCP084/bwm06/shared/testastra/working/test_analyzeBeam.h5'
-remoteTimeSeriesEleSigmaDB='phase2.wonder.hartree.stfc.ac.uk:/gpfs/stfc/local/HCP084/bwm06/shared/testele/phase100/clara.sig-page1.h5'
-remoteElePhaseSpaceDB='phase2.wonder.hartree.stfc.ac.uk:/gpfs/stfc/local/HCP084/bwm06/shared/testele/clara_track_electrons_*.vsh5 database'
+##remoteTimeSeriesAstraDB='phase2.wonder.hartree.stfc.ac.uk:/gpfs/stfc/local/HCP084/bwm06/shared/testastra/working/test_analyzeBeam.h5'
+##remoteTimeSeriesEleSigmaDB='phase2.wonder.hartree.stfc.ac.uk:/gpfs/stfc/local/HCP084/bwm06/shared/testele/phase100/clara.sig-page1.h5'
+##remoteElePhaseSpaceDB='phase2.wonder.hartree.stfc.ac.uk:/gpfs/stfc/local/HCP084/bwm06/shared/testele/clara_track_electrons_*.vsh5 database'
 #remoteElePhaseSpaceDB='phase2.wonder.hartree.stfc.ac.uk:/gpfs/stfc/local/HCP084/bwm06/shared/testele/clara_track_electrons_1.vsh5'
 # currDir="/home/tml/tmp/test/test-fftw3/visit"
 
-pBaseName = "f2main"
+
+pBaseName=sys.argv[1]
+# pBaseName = "f2main"
 
 currDir = os.getcwd()
-localPowerAllDB=currDir + "/" + pBaseName + "_integrated_0_all.vsh5"
 
-import tables
+# Database suffixes for power, electron macroparticle and integrated data respectively
 
+pFileSffx = "_integrated_0_all.vsh5"
+eFileSffx = "_electrons_* database"
+iFileSffx = "_integrated_0_* database"
+
+
+# Full database paths
+
+eDB = "localhost:" + currDir + "/" + pBaseName + eFileSffx
+iDB = "localhost:" + currDir + "/" + pBaseName + iFileSffx
+localPowerAllDB=currDir + "/" + pBaseName + pFileSffx
+
+
+# Get upper and lower limits for energy plots
 h5in=tables.open_file(localPowerAllDB,'r')
 minZ = h5in.root.zSeries._v_attrs.vsLowerBounds
 maxZ = h5in.root.zSeries._v_attrs.vsUpperBounds
@@ -123,7 +149,7 @@ def TimeSeriesS1():
   visit.SetAnnotationAttributes(AnnotationAtts)
   visit.DrawPlots()
 
-def IntegratedPower():
+def plotEnergyLinear():
   visit.AddPlot('Curve','Energy')
   AnnotationAtts = visit.AnnotationAttributes()
   AnnotationAtts.axes2D.yAxis.grid = 0
@@ -151,7 +177,8 @@ def IntegratedPower():
   CurveAtts.showLegend = 0
   visit.SetPlotOptions(CurveAtts)
 
-  visit.AddWindow()
+
+def plotEnergy():
   visit.AddPlot('Curve','Energy',1,1) # For log scale equivalent plot
   ViewCurveAtts = visit.ViewCurveAttributes()
   ViewCurveAtts.domainScale = ViewCurveAtts.LINEAR  # LINEAR, LOG
@@ -165,7 +192,7 @@ def IntegratedPower():
   visit.SetViewCurve(ViewCurveAtts) 
   visit.DrawPlots()
   
-  
+  AnnotationAtts = visit.AnnotationAttributes()
   AnnotationAtts.axes2D.yAxis.grid = 1
   AnnotationAtts.axes2D.xAxis.grid = 1
   AnnotationAtts.axes2D.xAxis.title.userTitle = 1
@@ -191,7 +218,8 @@ def IntegratedPower():
   CurveAtts.showLabels = 0
   visit.SetPlotOptions(CurveAtts)
 
-  visit.AddWindow()
+
+def plotPowNorm():
   visit.AddPlot('Pseudocolor','power_SI_Norm')  
   visit.DrawPlots()
   View2DAtts = visit.View2DAttributes()
@@ -222,8 +250,7 @@ def IntegratedPower():
 
 
 def binPhase():
-  visit.AddWindow()
-  visit.OpenDatabase("localhost:" + currDir + "/" + pBaseName + "_electrons_* database", 0)
+  visit.OpenDatabase(eDB, 0)
   visit.AddPlot("Pseudocolor", "operators/DataBinning/2D/electrons", 1, 1)
   DataBinningAtts = visit.DataBinningAttributes()
   DataBinningAtts.numDimensions = DataBinningAtts.Two  # One, Two, Three
@@ -270,8 +297,7 @@ def binPhase():
 
 def bunching():
   #visit.OpenDatabase("localhost:/home/tml/tmp/test/build/examples/simple/1D/OptCommV165pp65-70/fig2/f2main_bunching1st_0_* database", 0)
-  visit.OpenDatabase("localhost:" + currDir + "/" + pBaseName + "_integrated_0_* database", 0)
-  visit.AddWindow()
+  visit.OpenDatabase(iDB, 0)
   visit.AddPlot("Curve", "bunchingFundamental", 1, 1)
   visit.SetTimeSliderState(0)
   # Begin spontaneous state
@@ -312,8 +338,7 @@ def bunching():
 
 
 def current():
-  visit.OpenDatabase("localhost:" + currDir + "/" + pBaseName + "_integrated_0_* database", 0)
-  visit.AddWindow()
+  visit.OpenDatabase(iDB, 0)
   visit.AddPlot("Curve", "beamCurrent", 1, 1)
   visit.DrawPlots()
   # Begin spontaneous state
@@ -362,20 +387,6 @@ def current():
 
   
 
-
-
-
-
-
-
-
-
-
-
-
-import sys
-sys.path.insert(0,localPythonPackageDir)
-import visit
 visit.Launch(vdir=localVisItDir)
 
 if runRemotely:
@@ -385,9 +396,22 @@ if runRemotely:
 
 else:
   data=visit.OpenDatabase(localPowerAllDB,0,'Vs')
-IntegratedPower()
+
+plotEnergyLinear()
+
+visit.AddWindow()
+plotEnergy()
+
+visit.AddWindow()
+plotPowNorm()
+
+visit.AddWindow()
 binPhase()
+
+visit.AddWindow()
 bunching()
+
+visit.AddWindow()
 current()
 visit.SetWindowLayout(6)
 #TimeSeriesS1()
