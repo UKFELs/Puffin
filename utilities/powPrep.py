@@ -303,8 +303,8 @@ h5.root.zSeries._v_attrs.vsKind='structured'
 h5.root.zSeries._v_attrs.vsType='mesh'
 h5.root.zSeries._v_attrs.vsStartCell=0
 #h5.root.zSeries._v_attrs.vsNumCells=numTimes-1 # -1 as zonal
-#h5.root.zSeries._v_attrs.vsLowerBounds=minZZ
-#h5.root.zSeries._v_attrs.vsUpperBounds=maxZZ
+h5.root.zSeries._v_attrs.vsLowerBounds=zData[0]
+h5.root.zSeries._v_attrs.vsUpperBounds=zData[-1]
 if (qScale==0):
   h5.root.zSeries._v_attrs.vsAxisLabels="z (m)"
 else:
@@ -360,6 +360,8 @@ h5.create_array('/','gridTPowEv',comb)
 h5.root.gridTPowEv._v_attrs.vsKind="structured"
 h5.root.gridTPowEv._v_attrs.vsType="mesh"
 h5.root.gridTPowEv._v_attrs.vsCentering="nodal"
+h5.root.gridTPowEv._v_attrs.vsLowerBounds=numpy.array((numpy.double(zData[0]),numpy.double(z2Data[0])))
+h5.root.gridTPowEv._v_attrs.vsUpperBounds=numpy.array((numpy.double(zData[-1]),numpy.double(z2Data[-1])))
 if (qScale==0):
   h5.root.gridTPowEv._v_attrs.vsAxisLabels="ct-z, z"
 else:
