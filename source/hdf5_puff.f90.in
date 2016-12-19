@@ -760,8 +760,8 @@ contains
           call outputH5Field3DID(time, sz_loc, iL, error, tlelen, 'aperp_back_real', bk_rfield,  ees, eee, .false.)
           call outputH5Field3DID(time, sz_loc, iL, error, tlelen, 'aperp_back_imag', bk_rfield,  ees, eee, .false.)
           call cpu_time(ftime)
-        print '("Dumped separate fields. Took time = ",f6.3," secs on rank ",i5)' &
-          ,ftime-stime,tprocinfo_g%rank
+!        print '("Dumped separate fields. Took time = ",f6.3," secs on rank ",i5)' &
+!          ,ftime-stime,tprocinfo_g%rank
 
         else
 
@@ -774,8 +774,8 @@ contains
           call outputH5Field3DSD(time, sz_loc, iL, error, tlelen, bk_rfield,  ees, eee, 0, 2, .false.)
           call outputH5Field3DSD(time, sz_loc, iL, error, tlelen, bk_ifield,  ees, eee, 1, 2, .false.)
           call cpu_time(ftime)
-        print '("Dumped fields together. Took time = ",f6.3," secs on rank ",i5)' &
-          ,ftime-stime,tprocinfo_g%rank
+!        print '("Dumped fields together. Took time = ",f6.3," secs on rank ",i5)' &
+!          ,ftime-stime,tprocinfo_g%rank
         end if
 !      call outputH5Field3DSDattrs(time, error, tlflen, fr_rfield,  ffs, ffe, 0, .false.)
         if (error .ne. 0) goto 1000
@@ -1959,16 +1959,16 @@ end if
       numSpatialDims=3
       dims = (/nx_g,ny_g,nlonglength/) ! Dataset dimensions
     end if
-    print *,IntegerToString(size(fr_rfield)) // " vs " //trim(adjustl(IntegerToString(Nx_g*ny_g*nlonglength)))
+!    print *,IntegerToString(size(fr_rfield)) // " vs " //trim(adjustl(IntegerToString(Nx_g*ny_g*nlonglength)))
 
-    Print*,('Spatialdims: ' // trim(IntegerToString(numSpatialDims)))
+!    Print*,('Spatialdims: ' // trim(IntegerToString(numSpatialDims)))
     filename = (trim(adjustl(zFilename_G)) // '_' // trim(adjustl(dsetname)) &
         // '_' // trim(adjustl(IntegerToString(tProcInfo_G%Rank))) &
         // '_' // trim(adjustl(IntegerToString(iStep))) // '.h5' )
       CALL h5open_f(error)
       CALL h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error)
       CALL h5screate_simple_f(rank, dims, filespace, error)
-      Print*,'hdf5_puff:outputH5FieldID(filespace created)'
+!      Print*,'hdf5_puff:outputH5FieldID(filespace created)'
       CALL h5dcreate_f(file_id, dsetname, H5T_NATIVE_DOUBLE, filespace, &
        dset_id, error)
 !      Print*,'hdf5_puff:outputH5FieldID(dataset created)'
@@ -2106,10 +2106,10 @@ end if
 !      dsize = (/nx_g,ny_g,nhi-nlo+1,1/)
       dsize = (/nx_g,ny_g,nlonglength,1/)
     end if
-    print *,IntegerToString(size(rawdata)) // " vs " // &
-      trim(adjustl(IntegerToString(Nx_g*ny_g*nlonglength))) // &
-      "   nlo-1 : " // trim(adjustl(IntegerToString(nlo-1))) // &
-      "   nlo+nlonglength-1 : " // trim(adjustl(IntegerToString(nlo+nlonglength-1)))
+!    print *,IntegerToString(size(rawdata)) // " vs " // &
+!      trim(adjustl(IntegerToString(Nx_g*ny_g*nlonglength))) // &
+!      "   nlo-1 : " // trim(adjustl(IntegerToString(nlo-1))) // &
+!      "   nlo+nlonglength-1 : " // trim(adjustl(IntegerToString(nlo+nlonglength-1)))
 !! repeat for some next y dataset
 !    doffset=(/1,0/)
 !    CALL H5Dget_space_f(dset_id, filespace, error)
@@ -2121,7 +2121,7 @@ end if
 !    CALL h5sclose_f(filespace, error) 
 
 
-    Print*,('Spatialdims: ' // trim(IntegerToString(numSpatialDims)))
+!    Print*,('Spatialdims: ' // trim(IntegerToString(numSpatialDims)))
     filename = (trim(adjustl(zFilename_G)) // '_' // trim(adjustl(dsetname)) &
         // '_' // trim(adjustl(IntegerToString(iCSteps))) // '.h5' )
       CALL h5open_f(error)
