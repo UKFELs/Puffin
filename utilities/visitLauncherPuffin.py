@@ -1,6 +1,8 @@
 import os
 import sys
 import tables
+import getDBNames
+import plotPowNorm
 
 # Set local visit and visit's python package locations
 # laptop:-
@@ -75,32 +77,32 @@ runRemotely=0
 pBaseName=sys.argv[1]
 # pBaseName = "f2main"
 
-def getDBNames():
+# def getDBNames():
+# 
+#   currDir = os.getcwd()
+# 
+# # Database suffixes for power, electron macroparticle and integrated data respectively
+# 
+#   pFileSffx = "_integrated_0_all.vsh5"
+#   eFileSffx = "_electrons_* database"
+#   iFileSffx = "_integrated_0_* database"
+# 
+# 
+# # Full database paths
+# 
+#   if os.name == 'nt':  # If OS is windows...
+#     eDB1 = "localhost:" + currDir + "\\" + pBaseName + eFileSffx
+#     iDB1 = "localhost:" + currDir + "\\" + pBaseName + iFileSffx
+#     localPowerAllDB1 = currDir + "\\" + pBaseName + pFileSffx
+#   else:   # else assuming linux!!
+#     eDB1 = "localhost:" + currDir + "/" + pBaseName + eFileSffx
+#     iDB1 = "localhost:" + currDir + "/" + pBaseName + iFileSffx
+#     localPowerAllDB1 = currDir + "/" + pBaseName + pFileSffx
+# 
+#   return eDB1, iDB1, localPowerAllDB1
 
-  currDir = os.getcwd()
 
-# Database suffixes for power, electron macroparticle and integrated data respectively
-
-  pFileSffx = "_integrated_0_all.vsh5"
-  eFileSffx = "_electrons_* database"
-  iFileSffx = "_integrated_0_* database"
-
-
-# Full database paths
-
-  if os.name == 'nt':  # If OS is windows...
-    eDB1 = "localhost:" + currDir + "\\" + pBaseName + eFileSffx
-    iDB1 = "localhost:" + currDir + "\\" + pBaseName + iFileSffx
-    localPowerAllDB1 = currDir + "\\" + pBaseName + pFileSffx
-  else:   # else assuming linux!!
-    eDB1 = "localhost:" + currDir + "/" + pBaseName + eFileSffx
-    iDB1 = "localhost:" + currDir + "/" + pBaseName + iFileSffx
-    localPowerAllDB1 = currDir + "/" + pBaseName + pFileSffx
-
-  return eDB1, iDB1, localPowerAllDB1
-
-
-eDB, iDB, localPowerAllDB = getDBNames()
+eDB, iDB, localPowerAllDB = getDBNames.getDBNames(pBaseName)
 
 # Get upper and lower limits for energy plots
 h5in=tables.open_file(localPowerAllDB,'r')
@@ -232,34 +234,34 @@ def plotEnergy():
   visit.SetPlotOptions(CurveAtts)
 
 
-def plotPowNorm():
-  data=visit.OpenDatabase(localPowerAllDB,0,'Vs')
-  visit.AddPlot('Pseudocolor','power_SI_Norm')  
-  visit.DrawPlots()
-  View2DAtts = visit.View2DAttributes()
-#  View2DAtts.windowCoords = (0, 30, 0, 15.0796)
-#  View2DAtts.viewportCoords = (0.2, 0.95, 0.15, 0.95)
-#  View2DAtts.fullFrameAutoThreshold = 100
-  View2DAtts.xScale = View2DAtts.LINEAR  # LINEAR, LOG
-  View2DAtts.yScale = View2DAtts.LINEAR  # LINEAR, LOG
-  View2DAtts.windowValid = 1
-  View2DAtts.fullFrameActivationMode = View2DAtts.On  # On, Off, Auto
-  #View2DAtts.fullFrameAutoThreshold = 100
-  visit.SetView2D(View2DAtts)
-  visit.ResetView()
-  AnnotationAtts = visit.AnnotationAttributes()
-  AnnotationAtts.userInfoFlag = 0
-  AnnotationAtts.databaseInfoFlag = 0
-  AnnotationAtts.axes2D.xAxis.title.userTitle = 1
-  AnnotationAtts.axes2D.xAxis.title.userUnits = 1
-  AnnotationAtts.axes2D.xAxis.title.title = "ct-z"
-  AnnotationAtts.axes2D.xAxis.title.units = "m"
-  AnnotationAtts.axes2D.yAxis.title.userTitle = 1
-  AnnotationAtts.axes2D.yAxis.title.userUnits = 1
-  AnnotationAtts.axes2D.yAxis.title.title = "z"
-  AnnotationAtts.axes2D.yAxis.title.units = "m"
-  # AnnotationAtts.legendInfoFlag = 0
-  visit.SetAnnotationAttributes(AnnotationAtts)
+# def plotPowNorm():
+#   data=visit.OpenDatabase(localPowerAllDB,0,'Vs')
+#   visit.AddPlot('Pseudocolor','power_SI_Norm')  
+#   visit.DrawPlots()
+#   View2DAtts = visit.View2DAttributes()
+# #  View2DAtts.windowCoords = (0, 30, 0, 15.0796)
+# #  View2DAtts.viewportCoords = (0.2, 0.95, 0.15, 0.95)
+# #  View2DAtts.fullFrameAutoThreshold = 100
+#   View2DAtts.xScale = View2DAtts.LINEAR  # LINEAR, LOG
+#   View2DAtts.yScale = View2DAtts.LINEAR  # LINEAR, LOG
+#   View2DAtts.windowValid = 1
+#   View2DAtts.fullFrameActivationMode = View2DAtts.On  # On, Off, Auto
+#   #View2DAtts.fullFrameAutoThreshold = 100
+#   visit.SetView2D(View2DAtts)
+#   visit.ResetView()
+#   AnnotationAtts = visit.AnnotationAttributes()
+#   AnnotationAtts.userInfoFlag = 0
+#   AnnotationAtts.databaseInfoFlag = 0
+#   AnnotationAtts.axes2D.xAxis.title.userTitle = 1
+#   AnnotationAtts.axes2D.xAxis.title.userUnits = 1
+#   AnnotationAtts.axes2D.xAxis.title.title = "ct-z"
+#   AnnotationAtts.axes2D.xAxis.title.units = "m"
+#   AnnotationAtts.axes2D.yAxis.title.userTitle = 1
+#   AnnotationAtts.axes2D.yAxis.title.userUnits = 1
+#   AnnotationAtts.axes2D.yAxis.title.title = "z"
+#   AnnotationAtts.axes2D.yAxis.title.units = "m"
+#   # AnnotationAtts.legendInfoFlag = 0
+#   visit.SetAnnotationAttributes(AnnotationAtts)
 
 
 
@@ -417,7 +419,7 @@ visit.AddWindow()
 plotEnergy()
 
 visit.AddWindow()
-plotPowNorm()
+plotPowNorm.plotPowNorm(localPowerAllDB)
 
 visit.AddWindow()
 binPhase()
