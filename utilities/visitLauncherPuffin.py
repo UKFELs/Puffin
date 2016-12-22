@@ -7,8 +7,8 @@ import tables
 #localVisItDir = "/home/tml/tmp/visit/visit2_10_3.linux-x86_64"
 #localPythonPackageDir = "/home/tml/tmp/visit/visit2_10_3.linux-x86_64/2.10.3/linux-x86_64/lib/site-packages" 
 # desktop:-
-localVisItDir = "/home/mightylorenzo/bin/visit/visit2_10_0.linux-x86_64"
-localPythonPackageDir = "/home/mightylorenzo/bin/visit/visit2_10_0.linux-x86_64/2.10.0/linux-x86_64/lib/site-packages" 
+localVisItDir = "/home/tml/bin/visit/visit2_10_3.linux-x86_64"
+localPythonPackageDir = "/home/tml/bin/visit/visit2_10_3.linux-x86_64/2.10.3/linux-x86_64/lib/site-packages" 
 sys.path.insert(0,localPythonPackageDir)
 import visit
 
@@ -75,21 +75,32 @@ runRemotely=0
 pBaseName=sys.argv[1]
 # pBaseName = "f2main"
 
-currDir = os.getcwd()
+def getDBNames():
+
+  currDir = os.getcwd()
 
 # Database suffixes for power, electron macroparticle and integrated data respectively
 
-pFileSffx = "_integrated_0_all.vsh5"
-eFileSffx = "_electrons_* database"
-iFileSffx = "_integrated_0_* database"
+  pFileSffx = "_integrated_0_all.vsh5"
+  eFileSffx = "_electrons_* database"
+  iFileSffx = "_integrated_0_* database"
 
 
 # Full database paths
 
-eDB = "localhost:" + currDir + "/" + pBaseName + eFileSffx
-iDB = "localhost:" + currDir + "/" + pBaseName + iFileSffx
-localPowerAllDB=currDir + "/" + pBaseName + pFileSffx
+  if os.name == 'nt':  # If OS is windows...
+    eDB1 = "localhost:" + currDir + "\\" + pBaseName + eFileSffx
+    iDB1 = "localhost:" + currDir + "\\" + pBaseName + iFileSffx
+    localPowerAllDB1 = currDir + "\\" + pBaseName + pFileSffx
+  else:   # else assuming linux!!
+    eDB1 = "localhost:" + currDir + "/" + pBaseName + eFileSffx
+    iDB1 = "localhost:" + currDir + "/" + pBaseName + iFileSffx
+    localPowerAllDB1 = currDir + "/" + pBaseName + pFileSffx
 
+  return eDB1, iDB1, localPowerAllDB1
+
+
+eDB, iDB, localPowerAllDB = getDBNames()
 
 # Get upper and lower limits for energy plots
 h5in=tables.open_file(localPowerAllDB,'r')
