@@ -148,13 +148,13 @@ SUBROUTINE getTransformPlans_MultiD(sizes,nDims,qOK)
 
   if (qDiffraction_G) then
 
-    tTransInfo_G%fplan = fftw_mpi_plan_dft_3d(N, M, L, &
-                          Afftw, Afftw, tProcInfo_G%comm, &
+    tTransInfo_G%fplan = fftw_plan_dft_3d(tTransInfo_G%loc_nz2, sizes(iY_CG), sizes(iX_CG), &
+                          Afftw, Afftw, &
                           FFTW_FORWARD, FFTW_MEASURE)
 
 
-    tTransInfo_G%bplan = fftw_mpi_plan_dft_3d(N, M, L, &
-                          Afftw, Afftw, tProcInfo_G%comm, &
+    tTransInfo_G%bplan = fftw_plan_dft_3d(tTransInfo_G%loc_nz2, sizes(iY_CG), sizes(iX_CG), &
+                          Afftw, Afftw, &
                           FFTW_BACKWARD, FFTW_MEASURE)
 
   end if
@@ -581,7 +581,7 @@ subroutine Transform_MultiD(plan, local_in, qOK)
 !       FFTW_NORMAL_ORDER)
 
 
-  call fftw_mpi_execute_dft(plan, local_in, local_in)
+  call fftw_execute_dft(plan, local_in, local_in)
 
 
 !              Set error flag and exit
