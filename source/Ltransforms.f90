@@ -134,8 +134,9 @@ SUBROUTINE getTransformPlans_MultiD(sizes,nDims,qOK)
 
 !     Allocate data
 
-  cdata = fftw_alloc_complex(alloc_local)
-
+!  cdata = fftw_alloc_complex(alloc_local)
+  cdata = fftw_alloc_complex(int(L * M * local_N, C_SIZE_T))
+  
 !     Assign to fortran pointer
 
   call c_f_pointer(cdata, Afftw, [L,M,local_N])
