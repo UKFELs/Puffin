@@ -50,10 +50,14 @@ subroutine diffractIM(sStep, &
 
 
 
-  CALL DiffractionStep(sStep,&
-       tre_fft, tim_fft,&
-       qOKL)
-  if (.not. qOKL) goto 1000
+  if (tTransInfo_G%loc_nz2 > 0) then
+
+    CALL DiffractionStep(sStep,&
+         tre_fft, tim_fft,&
+         qOKL)
+    if (.not. qOKL) goto 1000
+
+  end if
 
   qDiffrctd = .true.
 
