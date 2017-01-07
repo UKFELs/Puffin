@@ -35,7 +35,7 @@ if (ENABLE_PARALLEL)
   SciFindPackage(PACKAGE "Fftw3"
                 INSTALL_DIR "${Fftw3_SEARCH}"
                 HEADERS "fftw3.h;fftw3.f;fftw3-mpi.h"
-                LIBRARIES "fftw3;libfftw3_mpi"
+                LIBRARIES "fftw3;fftw3_mpi"
                 )
 else ()
   message(STATUS "Looking for serial FFTW3")

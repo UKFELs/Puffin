@@ -5,7 +5,17 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Definitions of data types used in Puffin
+
+
 MODULE paratype
+
+use, intrinsic :: iso_fortran_env
 
 IMPLICIT NONE
 
@@ -23,6 +33,7 @@ INTEGER, PARAMETER     ::      WP      =double
 INTEGER, PARAMETER     ::      IPL     =long
 INTEGER, PARAMETER     ::      IP      =long
 INTEGER, PARAMETER     ::      LP      =long
+INTEGER, PARAMETER     ::      IPN     =int64
 
 INTEGER, PARAMETER     ::      LGT     =KIND(.true.)	
 

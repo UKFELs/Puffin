@@ -4,9 +4,14 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
-module Globals
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Module defining shared (global) variables used in Puffin
 
-! Module defining shared (global) variables used in Puffin
+module Globals
 
 use paratype
 use typesAndConstants
@@ -37,7 +42,7 @@ integer(kind=ip) :: outnodex_G,outnodey_G
 
 integer(kind=ip) :: iNodesPerElement_G
 
-integer(kind=ip) :: iNumberNodes_G
+integer(kind=ipn) :: iNumberNodes_G
 
 integer(kind=ip) :: seedend
 
@@ -99,11 +104,17 @@ logical, allocatable :: qRndEj_G(:)
 real(kind=wp), allocatable :: sSigEj_G(:) 
 real(kind=wp), parameter :: gExtEj_G = 7.5_wp
 
-
+!  --- Read particle set algorithms ---
 integer(kind=ip) :: iInputType_G
 integer(kind=ip), parameter :: iGenHom_G = 1_ip
 integer(kind=ip), parameter :: iReadDist_G = 2_ip
 integer(kind=ip), parameter :: iReadMASP_G = 3_ip
+integer(kind=ip), parameter :: iReadH5_G = 4_ip
+
+! --- Reading field algorithms
+integer(kind=ip) :: iFieldSeedType_G
+integer(kind=ip), parameter :: iSimpleSeed_G = 1_ip
+integer(kind=ip), parameter :: iReadH5Field_G = 2_ip
 
 ! Electron macroparticle phase space coordinates 
 
@@ -122,6 +133,10 @@ real(kind=wp), allocatable     :: dadz_w(:)
 
 
 
+! For recording the INTERACTION zbar only - the distance
+! with no drifts
+
+real(kind=wp) :: sZi_G, sZlSt_G
 
 
 ! Temporary intermediate arrays for RK4
@@ -183,17 +198,73 @@ real(kind=wp)       :: Dfact  ! Dispersion strength factor for chicane
                               ! (=1 for 'normal' dispersion, =0 for 
                               ! isochronous chicanes)
 
-real(kind=wp), allocatable    :: D(:), delta(:), zMod(:), &
-                                 mf(:), delmz(:), tapers(:)
+
+
+
+! ****************************************************
+! ****************************************************
+!     For lattice element type 'undulator'
+
+real(kind=wp), allocatable    :: zMod(:), mf(:), delmz(:), tapers(:), &
+                                 ux_arr(:), uy_arr(:), &
+                                 kbnx_arr(:), kbny_arr(:) 
+
+                                 
+character(32_ip), allocatable :: zundtype_arr(:)
 
 integer(kind=ip), allocatable :: nSteps_arr(:)
-integer(kind=ip) :: iCsteps  ! Cumulative steps
-
-integer(kind=ip)    :: ModNum, ModCount
 
 
 
+! ****************************************************
+! ****************************************************
+!     For lattice element type 'chicane'
 
+real(kind=wp), allocatable    :: chic_zbar(:), chic_slip(:), &
+                                 chic_disp(:)
+
+
+! ****************************************************
+! ****************************************************
+!     For lattice element type 'drift'
+
+
+real(kind=wp), allocatable    :: drift_zbar(:) 
+
+
+
+! ****************************************************
+! ****************************************************
+!     For lattice element type 'modulation'
+
+
+real(kind=wp), allocatable    :: enmod_wavenum(:), enmod_mag(:)
+
+
+
+! ****************************************************
+! ****************************************************
+!     For lattice element type 'quadrupole'
+
+
+real(kind=wp), allocatable    :: quad_fx(:), quad_fy(:) 
+
+
+!     End module specific array definitions
+! ****************************************************
+! ****************************************************
+
+
+
+
+
+integer(kind=ip) :: numOfUnds, numOfChics, numOfDrifts, numOfModulations, numOfQuads
+
+
+
+integer(kind=ip) :: iCsteps  ! Cumulative steps across all modules
+
+integer(kind=ip)    :: ModNum, ModCount   !  Number of modules and module counter
 
 
 
@@ -259,7 +330,7 @@ integer(kind=ip) :: iRedistStp_G
 
 
 
-character(32_IP) :: zDataFileName ! filename extension for 
+character(1024_IP) :: zDataFileName ! filename extension for 
                                   ! data files
 
 ! Type arrays describing electron, field and z output files,
@@ -279,7 +350,7 @@ integer(kind=ip) :: iWriteNthSteps, iDumpNthSteps, iIntWriteNthSteps
 
 
 character(132_ip) :: cmd_call_G
-character(32_ip) :: zFileName_G, zBFile_G, zSFile_G
+character(1024_ip) :: zFileName_G, zBFile_G, zSFile_G
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -335,6 +406,8 @@ logical   ::  qPArrOK_G
 logical   ::  qInnerXYOK_G
 
 logical   ::  qscaled_G
+
+logical   ::  qInitWrLat_G
 
 
 

@@ -102,7 +102,7 @@ REAL(KIND=WP), ALLOCATABLE    :: sSeedSigma(:,:)
 !!!
 !!!!!!!!!!!!!!!!!!!!
 
-CHARACTER(32_IP) :: infile, emptstring
+CHARACTER(1024_IP) :: infile, emptstring
 
 CHARACTER(32_IP) :: zUndType
 
@@ -131,11 +131,11 @@ LOGICAL          :: qFormattedFiles
 REAL(KIND=WP)    :: sFiltFrac, taper
 
 logical          :: qSimple
-character(32_IP), allocatable :: dist_f(:)
+character(1024_IP), allocatable :: dist_f(:),field_file(:)
 
-CHARACTER(32_IP) :: zFileName
-CHARACTER(32_IP) :: zFile
-CHARACTER(32_IP) :: LattFile 
+CHARACTER(1024_IP) :: zFileName
+CHARACTER(1024_IP) :: zFile
+CHARACTER(1024_IP) :: LattFile 
 
 !===============================================================
 ! The following variables are used to store the electron

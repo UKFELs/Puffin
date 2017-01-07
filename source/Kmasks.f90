@@ -11,7 +11,7 @@ MODULE masks
 ! of the absorbing boundaries used in the FEL
 ! simulation code Puffin.
 !
-! A useful reference for the boundaries employed 
+! A useful reference for the boundaries employed
 ! here is REF.
 !
 ! Dr Lawrence Campbell
@@ -20,7 +20,7 @@ MODULE masks
 ! Luruper Chaussee 149
 ! 22761 Hamburg
 ! Germany
-!  
+!
 
 USE paratype
 USE typesAndConstants
@@ -83,7 +83,7 @@ FUNCTION Mask1D(x,dx,nx,nb)
 !            Lawrence Campbell
 !       University of Hamburg / DESY
 !                  2013
-! 
+!
 
   REAL(KIND=WP), INTENT(IN) :: x(:), dx
   INTEGER(KIND=IP), INTENT(IN) :: nb, nx
@@ -100,7 +100,7 @@ FUNCTION Mask1D(x,dx,nx,nb)
   x0 = x(nx) - Lb/2.0_WP
 
 !     Mask initialized as a cos^2 at each end
-  
+
   Mask1D(nx-nb+1_IP:nx) = cos(pi * (x(nx-nb+1_IP:nx)-x0) / Lb) ** 2.0_WP
 
   Mask1D(1_IP:nb) = cos(pi * (x(1_IP:nb) + x0) / Lb) ** 2.0_WP
@@ -119,7 +119,7 @@ FUNCTION Mask2D(x,y,dx,dy,nx,ny,nbx,nby)
 
 ! This function constructs the 2D mask to be applied
 ! to the absorbing boundary of the radiation field nodes
-! in the transverse plane. The mask should decrease from 
+! in the transverse plane. The mask should decrease from
 ! unity at the center of the transverse boundaries
 ! to zero at the edges of the boundary. Here, a cos^2
 ! function peaked at the center of the boundary is used.
@@ -164,7 +164,7 @@ FUNCTION Mask2D(x,y,dx,dy,nx,ny,nbx,nby)
   	DO ix = 1,nx
 
   	  Mask2D(ix,iy) = masky2(iy)*maskx(ix) + maskx2(ix)*masky(iy)
-    
+
     END DO
   END DO
 
@@ -195,7 +195,7 @@ FUNCTION Maskf1(x,dx,nx,nb)
   x0 = x(nx) - Lb/2.0_WP
 
 !     Mask initialized as a cos^2 at each end
-  
+
   Maskf1(nx-nb+1_IP:nx) = cos(pi * (x(nx-nb+1_IP:nx)-x0) / Lb) ** 2.0_WP
 
   Maskf1(1_IP:nb) = cos(pi * (x(1_IP:nb) + x0) / Lb) ** 2.0_WP
@@ -230,7 +230,7 @@ FUNCTION Maskf2(x,dx,nx,nb)
   x0 = x(nx) - Lb/2.0_WP
 
 !     Mask initialized as a cos^2 at each end
-  
+
   Maskf2(nx-nb+1_IP:nx) = cos(pi * (x(nx-nb+1_IP:nx)-x0) / Lb + pi/2.0_WP) ** 2.0_WP
   Maskf2(1_IP:nb) = cos(pi * (x(1_IP:nb) + x0) / Lb + pi/2.0_WP) ** 2.0_WP
 
@@ -254,7 +254,7 @@ FUNCTION Mask1D2(x,dx,nx,nb)
 !            Lawrence Campbell
 !       University of Hamburg / DESY
 !                  2013
-! 
+!
 
   REAL(KIND=WP), INTENT(IN) :: x(:), dx
   INTEGER(KIND=IP), INTENT(IN) :: nb, nx
@@ -273,7 +273,7 @@ FUNCTION Mask1D2(x,dx,nx,nb)
    x02 = x(1)
 
 !     Mask initialized as a cos^2 at each end
-  
+
   Mask1D2(nx-nb+1_IP:nx) = cos(pi * (x(nx-nb+1_IP:nx)-x01) / (2.0_WP * Lb)) ** 2.0_WP
 
   Mask1D2(1_IP:nb) = cos(pi * (x(1_IP:nb) - x02) / (2.0_WP * Lb)) ** 2.0_WP
@@ -300,7 +300,7 @@ FUNCTION Maskf3(x,dx,nx,nb)
   REAL(KIND=WP) :: Maskf3(nx)
 
 !     Mask initialized as unity everywhere
-  
+
   Maskf3(:) = 1.0_WP
 
 
@@ -333,7 +333,7 @@ FUNCTION Maskf4(x,dx,nx,nb)
   x02 = x(nb)
 
 !     Mask initialized as a cos^2 at each end
-  
+
   Maskf4(nx-nb+1_IP:nx) = cos(pi * (x(nx-nb+1_IP:nx)-x01) / (2.0_WP * Lb)) ** 2.0_WP
   Maskf4(1_IP:nb) = cos(pi * (x(1_IP:nb) - x02) / (2.0_WP * Lb)) ** 2.0_WP
 
@@ -358,13 +358,13 @@ FUNCTION getZ2Mask(dx,nx,loc_nx,nb,loc_start)
 !            Lawrence Campbell
 !       University of Hamburg / DESY
 !                  2013
-! 
+!
 
   REAL(KIND=WP), INTENT(IN) :: dx
   INTEGER(KIND=IP), INTENT(IN) :: nb, nx, loc_nx, loc_start
-  REAL(KIND=WP) :: getZ2Mask(0:loc_nx-1)
+  REAL(KIND=WP) :: getZ2Mask(loc_nx)
 
-  REAL(KIND=WP) :: Lb, x0, Lf, fbn, x(0:loc_nx-1)
+  REAL(KIND=WP) :: Lb, x0, Lf, fbn, x(loc_nx)
   integer(kind=ip) :: ind
 
 
@@ -389,15 +389,15 @@ FUNCTION getZ2Mask(dx,nx,loc_nx,nb,loc_start)
   x0 = Lf - Lb/2.0_WP
 
 
-  fbn = nx - nb  ! 1st boundary node  (in C style, so 1st node index is zero)
+  fbn = nx - nb + 1 ! 1st boundary node
 
 !     Mask initialized as a cos^2 at one end
-  
-  getZ2Mask(0:loc_nx-1) = 0.0_WP   !   Init all to zero
+
+  getZ2Mask(1:loc_nx) = 0.0_WP   !   Init all to zero
 
 
 !    getZ2Mask(nx-nb+1_IP:nx) = cos(pi * (x(nx-nb+1_IP:nx)-x0) / Lb) ** 2.0_WP
-  do ind = 0,loc_nx-1
+  do ind = 1,loc_nx
 
     if (  loc_start + ind >= fbn ) getZ2Mask(ind) = cos(pi * (x(ind)-x0) / Lb) ** 2.0_WP
 
@@ -408,7 +408,7 @@ FUNCTION getZ2Mask(dx,nx,loc_nx,nb,loc_start)
 
   !getZ2Mask(1_IP:nb) = cos(pi * (x(1_IP:nb) + x0) / Lb) ** 2.0_WP
 
-  
+
 END FUNCTION getZ2Mask
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

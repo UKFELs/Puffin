@@ -4,7 +4,13 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
-
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This module defines subroutines used to create SDDS files for use in
+!> Puffin
 
 module createSDDS
 
@@ -38,7 +44,7 @@ contains
 
 !     IMPLICIT NONE
 
-!     character(32_IP),        INTENT(IN)                :: zDataFileName
+!     character(1024_IP),        INTENT(IN)                :: zDataFileName
 !     logical,                 INTENT(IN)                :: qFormattedFiles
 !     TYPE(cArraySegment),     INTENT(INOUT)             :: tWriteZData
 !     TYPE(cArraySegment),     INTENT(INOUT)             :: tWriteAData(:)
@@ -53,7 +59,7 @@ contains
 ! ! qOKL   - Local error flag
 
 !     INTEGER(KIND=IP)               :: iSegment
-!     character(32_IP)               :: zFileName
+!     character(1024_IP)               :: zFileName
 !     LOGICAL                        :: qOptional
 !     LOGICAL                        :: qOKL
 
@@ -239,7 +245,7 @@ contains
 
 
 
-    character(32_IP),  intent(in)      :: zDataFileName
+    character(1024_IP),  intent(in)      :: zDataFileName
     character(32_IP),  intent(in)      :: zVariable
     type(cFileType),   intent(inout)   :: tYDataFile
     logical,           intent(out)     :: qOK      

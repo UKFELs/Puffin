@@ -8,7 +8,7 @@ MODULE MacrosGen
 
 USE paratype
 USE ParallelInfoType
-USE sddsPuffin
+!USE sddsPuffin
 USE randomGauss
 USE ParallelSetUp
 USE Globals
@@ -144,7 +144,7 @@ CONTAINS
     !REAL(KIND=WP) ::  radius,sLOne,sLTwo
     INTEGER(KIND=IP) :: error,nprocs,proc
     LOGICAL :: qOKL  	
-    CHARACTER(32_IP) :: zDataFileName
+    CHARACTER(1024_IP) :: zDataFileName
 
 !     Determine the number of macroparticles in each dimension
 !     If the dimension is not present, then the number of macroparticles
