@@ -334,40 +334,44 @@ contains
   fr_ifield = 0_wp
 
 
-  call redist2new(ff_ar_old, ff_ar, fr_rfield_old, fr_rfield)
-  call redist2new(ff_ar_old, ff_ar, fr_ifield_old, fr_ifield)
+  call redist2new2(ff_ar_old, ff_ar, fr_rfield_old, fr_rfield)
+  call redist2new2(ff_ar_old, ff_ar, fr_ifield_old, fr_ifield)
 
-  call redist2new(ee_ar_old, ff_ar, bk_rfield_old, fr_rfield)
-  call redist2new(ee_ar_old, ff_ar, bk_ifield_old, fr_ifield)
+  call redist2new2(ee_ar_old, ff_ar, bk_rfield_old, fr_rfield)
+  call redist2new2(ee_ar_old, ff_ar, bk_ifield_old, fr_ifield)
 
-  call redist2new(ac_ar_old, ff_ar, ac_rfield_old, fr_rfield)
-  call redist2new(ac_ar_old, ff_ar, ac_ifield_old, fr_ifield)
-
-
-
-
-
-  call redist2new(ff_ar_old, ee_ar, fr_rfield_old, bk_rfield)
-  call redist2new(ff_ar_old, ee_ar, fr_ifield_old, bk_ifield)
-
-  call redist2new(ee_ar_old, ee_ar, bk_rfield_old, bk_rfield)
-  call redist2new(ee_ar_old, ee_ar, bk_ifield_old, bk_ifield)
-
-  call redist2new(ac_ar_old, ee_ar, ac_rfield_old, bk_rfield)
-  call redist2new(ac_ar_old, ee_ar, ac_ifield_old, bk_ifield)
+  call redist2new2(ac_ar_old, ff_ar, ac_rfield_old, fr_rfield)
+  call redist2new2(ac_ar_old, ff_ar, ac_ifield_old, fr_ifield)
 
 
 
 
 
-  call redist2new(ff_ar_old, ac_ar, fr_rfield_old, ac_rfield)
-  call redist2new(ff_ar_old, ac_ar, fr_ifield_old, ac_ifield)
+  call redist2new2(ff_ar_old, ee_ar, fr_rfield_old, bk_rfield)
+  call redist2new2(ff_ar_old, ee_ar, fr_ifield_old, bk_ifield)
 
-  call redist2new(ee_ar_old, ac_ar, bk_rfield_old, ac_rfield)
-  call redist2new(ee_ar_old, ac_ar, bk_ifield_old, ac_ifield)
+  call redist2new2(ee_ar_old, ee_ar, bk_rfield_old, bk_rfield)
+  call redist2new2(ee_ar_old, ee_ar, bk_ifield_old, bk_ifield)
 
-  call redist2new(ac_ar_old, ac_ar, ac_rfield_old, ac_rfield)
-  call redist2new(ac_ar_old, ac_ar, ac_ifield_old, ac_ifield)
+
+  call redist2new2(ac_ar_old, ee_ar, ac_rfield_old, bk_rfield)
+  call redist2new2(ac_ar_old, ee_ar, ac_ifield_old, bk_ifield)
+
+!  call mpi_finalize(error)
+!  stop
+
+
+
+
+
+  call redist2new2(ff_ar_old, ac_ar, fr_rfield_old, ac_rfield)
+  call redist2new2(ff_ar_old, ac_ar, fr_ifield_old, ac_ifield)
+
+  call redist2new2(ee_ar_old, ac_ar, bk_rfield_old, ac_rfield)
+  call redist2new2(ee_ar_old, ac_ar, bk_ifield_old, ac_ifield)
+
+  call redist2new2(ac_ar_old, ac_ar, ac_rfield_old, ac_rfield)
+  call redist2new2(ac_ar_old, ac_ar, ac_ifield_old, ac_ifield)
 
 
 
@@ -2851,6 +2855,158 @@ contains
   end subroutine getFrBk
 
 
+  subroutine redist2new2(old_dist, new_dist, field_old, field_new)
+
+  implicit none
+
+! Alternative subroutine to redistribute the field values in field_old
+! to field_new. The layout of the field in field_old is
+! described in old_dist, and the layout of the new field 
+! is described in new_dist. This subroutine uses mpi_alltoallv, in 
+! contrast to redist2new which uses mpi the sends and recvs
+
+! inputs
+
+    integer(kind=ip), intent(in) :: old_dist(:,:), new_dist(:,:)
+    real(kind=wp), intent(inout) :: field_old(:), field_new(:)
+
+! local
+
+    integer(kind=ip) :: iproc_s, iproc_r
+    integer(kind=ip) :: st_ind_new, ed_ind_new, &
+                        st_ind_old, ed_ind_old, &
+                        nbase, obase
+    integer(kind=ip), allocatable :: send_ptrs(:,:), recv_ptrs(:,:)
+
+    integer(kind=ip), allocatable :: sdispls(:), rdispls(:)
+    
+
+    integer(kind=ip), allocatable :: nsends(:), nrecvs(:)
+    integer :: error, req, ij
+    integer statr(MPI_STATUS_SIZE)
+    integer sendstat(MPI_STATUS_SIZE)
+
+
+
+    allocate(send_ptrs(tProcInfo_G%size, 3))
+    allocate(recv_ptrs(tProcInfo_G%size, 3))
+
+    allocate(sdispls(tProcInfo_G%size))
+    allocate(rdispls(tProcInfo_G%size))
+
+    allocate(nsends(tProcInfo_G%size), nrecvs(tProcInfo_G%size))
+
+    call golaps(old_dist(tProcInfo_G%rank+1,2), &
+                old_dist(tProcInfo_G%rank+1,3), &
+                new_dist, send_ptrs)
+
+    call golaps(new_dist(tProcInfo_G%rank+1,2), &
+                new_dist(tProcInfo_G%rank+1,3), &
+                old_dist, recv_ptrs)
+
+
+
+    nsends = send_ptrs(:,1) * ntrnds_G
+    nrecvs = recv_ptrs(:,1) * ntrnds_G
+
+!            nbase = new_dist(iproc_r+1, 2) - 1 
+
+!            st_ind_new = send_ptrs(iproc_r+1, 2) - nbase
+!            st_ind_new = (st_ind_new - 1)* ntrnds_G + 1
+            
+            
+
+!    send_ptrs(iproc_r+1, 2) - nbase
+    
+
+
+    sdispls = ( (send_ptrs(:,2) - (old_dist(tProcInfo_G%rank+1, 2) - 1) ) - 1_ip) * ntrnds_G 
+
+
+!    do ij = 1, tProcInfo_G%size
+
+!      if ((ij == 1) .and. () )
+
+!      sdispls(ij) = ( (send_ptrs(ij,2) - (new_dist(ij, 2) - 1) ) - 1_ip) * ntrnds_G 
+
+!    end do
+
+
+
+    rdispls = ( (recv_ptrs(:,2) - (new_dist(tProcInfo_G%rank+1, 2) - 1) ) - 1_ip) * ntrnds_G 
+
+    do ij = 1, tProcInfo_G%size
+
+      if (send_ptrs(ij,1) == 0) then
+
+        if (ij-1 == 0) then
+
+          sdispls(ij) = 0_ip
+
+        else
+
+          sdispls(ij) = sdispls(ij-1)! + nsends(ij-1)
+
+        end if
+
+      end if
+
+    end do
+
+
+    do ij = 1, tProcInfo_G%size
+
+      if (recv_ptrs(ij,1) == 0) then
+
+        if (ij-1 == 0) then
+
+          rdispls(ij) = 0_ip
+
+        else
+
+          rdispls(ij) = rdispls(ij-1)! + nrecvs(ij-1)
+
+        end if
+
+      end if
+
+    end do
+
+
+!    print*, tProcInfo_G%rank, 'nrecvs = ', nrecvs
+!    print*, tProcInfo_G%rank, 'rdispls = ', rdispls
+!    print*, tProcInfo_G%rank, 'recv_ptrs(:,2) = ', recv_ptrs(:,2)
+!    print*, tProcInfo_G%rank, 'nsends = ', nsends
+!    print*, tProcInfo_G%rank, 'sdispls = ', sdispls
+!    print*, tProcInfo_G%rank, 'send_ptrs(:,2) = ', send_ptrs(:,2)
+
+!    call mpi_barrier(tProcInfo_G%comm, error)    
+    
+    call mpi_alltoallv(field_old, nsends, sdispls, mpi_double_precision, &
+                       field_new, nrecvs, rdispls, mpi_double_precision, &
+                       tProcInfo_G%comm, error)
+
+
+    deallocate(nsends, nrecvs)
+    deallocate(send_ptrs, recv_ptrs)
+    deallocate(sdispls, rdispls)
+
+!    print*, 'called me NOW'
+
+!    call mpi_barrier(tProcInfo_G%comm, error)
+!    call mpi_finalize(error)
+!    stop
+
+  end subroutine redist2new2
+
+
+
+
+
+
+
+
+
 
   subroutine redist2new(old_dist, new_dist, field_old, field_new)
 
@@ -2898,7 +3054,7 @@ contains
 !      if (tProcInfo_G%qroot) print*, 'olaps are ', send_ptrs, 'for old nodes ', old_dist(iproc_s+1,2), &
 !          'to', old_dist(iproc_s+1,3)
 
-      call mpi_barrier(tProcInfo_G%comm, error)
+!      call mpi_barrier(tProcInfo_G%comm, error)
 
       do iproc_r = 0, tProcInfo_G%size-1
   
@@ -2971,7 +3127,7 @@ contains
 
             end if
 
-            if (tProcInfo_G%rank == iproc_s) call mpi_wait( req,sendstat,error )
+            !if (tProcInfo_G%rank == iproc_s) call mpi_wait( req,sendstat,error )
   !          call mpi_barrier(tProcInfo_G%comm, error)
     
    !         call mpi_finalize(error)
@@ -2983,11 +3139,14 @@ contains
         end if
   
       end do
+    
+!    if (tProcInfo_G%rank == iproc_s) call mpi_wait( req,sendstat,error )
   
     end do
    
     deallocate(send_ptrs)
 
+    call mpi_barrier(tProcInfo_G%comm, error)
 
    end subroutine redist2new
 
@@ -3476,17 +3635,17 @@ contains
 !    print*, 'fft array layout is ', ft_ar
 
   
-    call redist2new(ff_ar, ft_ar, fr_rfield, tre_fft)
-    call redist2new(ff_ar, ft_ar, fr_ifield, tim_fft)
+    call redist2new2(ff_ar, ft_ar, fr_rfield, tre_fft)
+    call redist2new2(ff_ar, ft_ar, fr_ifield, tim_fft)
   
   
-    call redist2new(ee_ar, ft_ar, bk_rfield, tre_fft)
-    call redist2new(ee_ar, ft_ar, bk_ifield, tim_fft)
+    call redist2new2(ee_ar, ft_ar, bk_rfield, tre_fft)
+    call redist2new2(ee_ar, ft_ar, bk_ifield, tim_fft)
   
   
   
-    call redist2new(ac_ar, ft_ar, ac_rfield, tre_fft)
-    call redist2new(ac_ar, ft_ar, ac_ifield, tim_fft)
+    call redist2new2(ac_ar, ft_ar, ac_rfield, tre_fft)
+    call redist2new2(ac_ar, ft_ar, ac_ifield, tim_fft)
 
 
   end subroutine redist2FFTWlt
@@ -3501,17 +3660,17 @@ contains
 
     implicit none
   
-    call redist2new(ft_ar, ff_ar, tre_fft, fr_rfield)
-    call redist2new(ft_ar, ff_ar, tim_fft, fr_ifield)
+    call redist2new2(ft_ar, ff_ar, tre_fft, fr_rfield)
+    call redist2new2(ft_ar, ff_ar, tim_fft, fr_ifield)
   
   
-    call redist2new(ft_ar, ee_ar, tre_fft, bk_rfield)
-    call redist2new(ft_ar, ee_ar, tim_fft, bk_ifield)
+    call redist2new2(ft_ar, ee_ar, tre_fft, bk_rfield)
+    call redist2new2(ft_ar, ee_ar, tim_fft, bk_ifield)
   
   
   
-    call redist2new(ft_ar, ac_ar, tre_fft, ac_rfield)
-    call redist2new(ft_ar, ac_ar, tim_fft, ac_ifield)
+    call redist2new2(ft_ar, ac_ar, tre_fft, ac_rfield)
+    call redist2new2(ft_ar, ac_ar, tim_fft, ac_ifield)
 
 
     deallocate(tre_fft, tim_fft)
