@@ -131,7 +131,7 @@ LOGICAL          :: qFormattedFiles
 REAL(KIND=WP)    :: sFiltFrac, taper
 
 logical          :: qSimple
-character(1024_IP), allocatable :: dist_f(:)
+character(1024_IP), allocatable :: dist_f(:),field_file(:)
 
 CHARACTER(1024_IP) :: zFileName
 CHARACTER(1024_IP) :: zFile

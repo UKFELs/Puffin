@@ -15,6 +15,8 @@
 
 MODULE paratype
 
+use, intrinsic :: iso_fortran_env
+
 IMPLICIT NONE
 
 !              Definitions of data types
@@ -31,6 +33,7 @@ INTEGER, PARAMETER     ::      WP      =double
 INTEGER, PARAMETER     ::      IPL     =long
 INTEGER, PARAMETER     ::      IP      =long
 INTEGER, PARAMETER     ::      LP      =long
+INTEGER, PARAMETER     ::      IPN     =int64
 
 INTEGER, PARAMETER     ::      LGT     =KIND(.true.)	
 

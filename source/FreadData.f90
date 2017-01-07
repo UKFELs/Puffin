@@ -4,14 +4,12 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
-
 !> @author
 !> Lawrence Campbell,
 !> University of Strathclyde, 
 !> Glasgow, UK
 !> @brief
 !> Module containing the routines which read in the input files in Puffin.
-
 
 
 module Read_data
@@ -21,6 +19,7 @@ use TypesandConstants
 use Globals
 use ParallelSetUp
 use MASPin
+use H5in
 
 contains
 
@@ -127,6 +126,7 @@ subroutine read_in(zfilename, &
        mag, fr, &
        nbeams, &
        dist_f, &
+       field_file, &
        qSimple, &
        sA0_Re, &
        sA0_Im, &
@@ -214,9 +214,7 @@ subroutine read_in(zfilename, &
   LOGICAL,           INTENT(OUT)  :: qFormattedFiles
   LOGICAL,           INTENT(OUT)  :: qResume
   REAL(KIND=WP) ,    INTENT(OUT)  :: sZ0
-
   CHARACTER(1024_IP),  INTENT(INOUT):: LattFile
-
   INTEGER(KIND=IP),  INTENT(OUT)  :: iWriteNthSteps, iWriteIntNthSteps
   TYPE(cArraySegment)             :: tArrayZ
   TYPE(cArraySegment)             :: tArrayA(:)
@@ -252,7 +250,8 @@ subroutine read_in(zfilename, &
   LOGICAL, ALLOCATABLE, INTENT(OUT) :: qFlatTopS(:)
   LOGICAL, INTENT(out) :: qSimple
 
-  CHARACTER(1024_ip), ALLOCATABLE, INTENT(INOUT) :: dist_f(:)
+  CHARACTER(1024_ip), ALLOCATABLE, INTENT(INOUT) :: dist_f(:), & !< particle distribution file
+                                                field_file(:)    !< field input file (if any)
   
   REAL(KIND=WP),     INTENT(OUT)  :: sFiltFrac,sDiffFrac,sBeta
   REAL(KIND=WP),     INTENT(OUT)  :: srho
@@ -402,6 +401,8 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   read(168,nml=mdata)
   close(UNIT=168,STATUS='KEEP')
 
+  if (qOneD) qDiffraction = .false.
+
   qSwitches(iOneD_CG) = qOneD
   qSwitches(iFieldEvolve_CG) = qFieldEvolve
   qSwitches(iElectronsEvolve_CG) = qElectronsEvolve
@@ -487,7 +488,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                      qMatched_A,qOKL)
 
   CALL read_seedfile(seed_file,nseeds,sSigmaF,sA0_Re,sA0_Im,freqf,&
-                     ph_sh, qFlatTopS,SmeanZ2,qOKL)
+                     ph_sh, qFlatTopS,SmeanZ2,field_file,qOKL)
 
   call FileNameNoExtension(beam_file, zBFile_G, qOKL)
   
@@ -551,7 +552,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   INTEGER(KIND=IP) :: b_ind
   logical :: qFixCharge
   INTEGER::ios
-  CHARACTER(96) :: dum1, dum2, dtype
+  CHARACTER(96) :: dtype
 
 
 
@@ -565,6 +566,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
 
   namelist /bdlist/ dist_f, nMPs4MASP_G
+  namelist /bh5list/ dist_f
 
   qOK = .FALSE.
 
@@ -717,6 +719,20 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
     close(UNIT=161,STATUS='KEEP')
 
+  else if (dtype == 'h5') then
+    if (nbeams /= 1) then 
+      
+      if (tProcInfo_G%qRoot) print*, 'WARNING - currently only 1 file', &
+                                      'is supported for the h5 beam type'
+      if (tProcInfo_G%qRoot) print*, 'Only the 1st file will be read in....'
+
+    end if
+    allocate(dist_f(nbeams))
+    iInputType_G = iReadH5_G
+    read(161,nml=bh5list)
+
+    close(UNIT=161,STATUS='KEEP')
+
   end if
 
 
@@ -738,7 +754,7 @@ END SUBROUTINE read_beamfile
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
-                         qFlatTop, meanZ2,qOK)
+                         qFlatTop, meanZ2,field_file,qOK)
 
   IMPLICIT NONE
 
@@ -749,6 +765,7 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
                                              sA0_X(:),sA0_Y(:), &
                                              freqf(:), meanZ2(:), &
                                              ph_sh(:)
+  CHARACTER(len=1024), INTENT(INOUT), ALLOCATABLE :: field_file(:) ! field file names
   INTEGER(KIND=IP), INTENT(INOUT) :: nseeds
 
   LOGICAL, ALLOCATABLE, INTENT(OUT) :: qFlatTop(:)
@@ -758,13 +775,14 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
 
   INTEGER(KIND=IP) :: s_ind
   INTEGER::ios
+  CHARACTER(len=1024) :: dtype
 
 
-  namelist /nslist/ nseeds
+  namelist /nslist/ nseeds,dtype
   namelist /slist/ freqf, ph_sh, sA0_X, sA0_Y, sSigmaF, &
                    qFlatTop, meanZ2, qRndFj_G,  sSigFj_G, &
                    qMatchS_G
-
+  namelist /sh5list/ field_file
 
   qOK = .FALSE.
 
@@ -772,15 +790,15 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
 ! Default vals
 
   nseeds = 1
-
+  dtype = 'simple'
+  allocate(field_file(1))
+  field_file = ''
 
 !   Open the file
-
   if (se_f .ne. '') then
     open(161,file=se_f, status='OLD', recl=80, delim='APOSTROPHE')
     read(161,nml=nslist)
   end if
-
   ALLOCATE(sSigmaF(nseeds,3))
   ALLOCATE(sA0_X(nseeds), sA0_Y(nseeds), ph_sh(nseeds))
   ALLOCATE(freqf(nseeds),qFlatTop(nseeds),meanZ2(nseeds))
@@ -799,15 +817,33 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
   qRndFj_G = .false.
   sSigFj_G = 0.01_wp
   qMatchS_G = .true.
+  if (dtype == 'simple') then 
+    if (se_f .ne. '') then
+      read(161,nml=slist)
+      close(UNIT=161,STATUS='KEEP')
+    end if
 
-  if (se_f .ne. '') then
-    read(161,nml=slist)
-    close(UNIT=161,STATUS='KEEP')
-  end if
+    iFieldSeedType_G=iSimpleSeed_G
 
 ! Set the error flag and exit
-  qOK = .TRUE.
-  GOTO 2000
+    qOK = .TRUE.
+    GOTO 2000
+  end if
+
+
+
+  if (dtype == 'h5') then
+    iFieldSeedType_G=iReadH5Field_G
+
+    if (se_f .ne. '') then
+      read(161,nml=sh5list)
+      close(UNIT=161,STATUS='KEEP')
+    end if
+
+    qOK = .TRUE.
+    GOTO 2000
+    
+  end if
 
 1000 CALL Error_log('Error in Read_Data:read_seedfile',tErrorLog_G)
     PRINT*,'Error in read_seedfile'

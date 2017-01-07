@@ -79,6 +79,21 @@ It presently does not include the effects of space charge, and ignores emission 
 
 \newpage
 
+\section{Overview}
+
+Puffin comes with a few example input files for reference. At a minimum, one must specify 2 files for use in Puffin - a `main' input file, and a `beam' input file. The main input file describes the system scaling and reference frame, the numerical field mesh, and other numerical integration options, and the beam file describes the electron beam.
+
+
+
+At a minimum, one must specify 2 files for use in Puffin - a main input file, and a beam input file. The main file sets up the system scaling, the field mesh, the integration step sizes, and other simulation options. It also specifies the names of the other input files, including the beam file. 
+
+The beam file specifies the electron beam parameters - there are 3 different types of beam input, detailed later. 
+
+In addition, one may also supply a lattice file, which descibes the layout of undulator modules, quads, chicanes, drifts \textit{etc}. If this is not supplied, then a single undulator is set up as detailed in the main input file. One may also supply a radiation seed file.
+
+
+\newpage
+
 \section{Analytic Equations Solved by Puffin}
 
 The system of equations solved by Puffin have been altered from those described in \cite{puffin}. They are now:
@@ -155,11 +170,11 @@ In the most basic form, the input requires 3 files - a `main' input file for par
 
 The main algorithm in Puffin utilizes the scaled variables above to make the numbers `nicer' to work with. The system saturates with scaled intensity $\sim 1$, the scaled perpindicular momentum of the beam in the wiggler oscillates between $-1$ and $1$, and so forth. The distance through the wiggler is given in units of a (1D) gain length, and the beam coordinate in the radiation frame is in units of the cooperation length, so that a reference electron slips $1l_c$ through the radiation field in $1$ gain  length. The scaling defines a frame of reference which normalises the quantities not only to numerically more manageable numbers, but to \textit{characteristic} variables. 
 
-The two dominant variables for the scaling are $\rho$ and $\eta$. $\eta$ is a function of the wiggler parameters $a_u$ and $\lambda_u$, and reference beam energy $\gamma_r$, and is calculated in Puffin from the input. It defines the velocity of the scaled reference frame. The $\bar{z}_2$ coordinate is in the scaled frame travelling with the field (at velocity $c$) - $\eta$ determines how quickly the electrons slip back through this frame, such that an electron with energy $\gamma_r$, travelling in a wiggler with parameters $a_u$ and $\lambda_u$, slips back with scaled velocity $p_2 \equiv \dfrac{d \bar{z}_2}{d\bar{z}} = 1$.
+The two dominant variables for the scaling are $\rho$ and $\eta$. $\eta$ is a function of the wiggler parameters $a_u$ and $\lambda_u$, and reference beam energy $\gamma_r$, and is calculated in Puffin from the input. It defines the velocity of the `reference' electron in the scaled radiation frame. The $\bar{z}_2$ coordinate is in the scaled frame travelling with the field (at velocity $c$) - $\eta$ determines how quickly the electrons slip back through this frame, such that an electron with energy $\gamma_r$, travelling in a wiggler with parameters $a_u$ and $\lambda_u$, slips back with scaled velocity $p_2 \equiv \dfrac{d \bar{z}_2}{d\bar{z}} = 1$.
 
 The $\rho$ parameter is dependent on the peak electron beam number density, amongst other things.
 
-Although the Puffin algorithm uses scaled variables, the beam and radiation field parameters may be input in either SI units or the scaled units. Use the variable {\bf qscaled} in the main input file to do specify whether scaled or SI units are being used. If $=$ {\bf .true.}, then Puffin expects scaled variables are being used. % If SI units are used, then the input parameters will be scaled according automatically to the scaling values specified in the main input file. 
+Although the Puffin algorithm uses scaled variables, the beam and radiation field parameters may be input in either SI units or the scaled units. Use the variable {\bf qscaled} in the main input file to specify whether scaled or SI units are being used. If $=$ {\bf .true.}, then Puffin expects scaled variables are being used. % If SI units are used, then the input parameters will be scaled according automatically to the scaling values specified in the main input file. 
 
 Note, however, that they are only \textit{scaling} parameters. The FEL parameter as input by the user does not have to correspond to the beam or wiggler being input for the results to be correct. The scaled parameters will behave `nicely' if it does, but it is not necessary for the result to be physically correct. When the result is unscaled, the result will still be correct. The user should be able to input in SI units, and get output in SI units.
 
@@ -186,8 +201,6 @@ $t$ & seconds (s) & $\bar{z}_2$ \\
 \label{table}
 \vspace*{-\baselineskip}
 \end{table}
-
-
 
 
 \subsection{3D Magnetic Fields}
@@ -497,7 +510,11 @@ Modulation & {\bf MO} \\
 
 Each entry must be followed by the options specifying that lattice element, on the same line, delimited by spaces.
 
+{\bf UN} - Undulator Module
+
 For the undulator,  one must specify the undulator type, the number of wiggler periods $N_w$, the undulator parameter relative to the base undulator parameter in the main input file $\alpha$, the linear taper $\dfrac{d \alpha}{d \bar{z}}$, the polarization $u_x$ and $u_y$ (ignored for the non-variable polarized undulator types), a logical specifying if undulator ends are being used for this module, another logical spcifying if a strong focusing channel is being used in the undulator, and the strong focusing strengths $\bar{k}_{\beta x}$ and $\bar{k}_{\beta y}$, and the number of integration steps per period to be used in this module.
+
+{\bf QU} - Quadrupole
 
 For the quad, we must specify $\bar{F}_x$ and $\bar{F}_y$. These are scaled transverse components of the transform matrix for the quad. The quad is only a point transform, currently, and does not have a length, so the length must be included in a drift section. The transforms for the quad, in S.I. units, are defined as
 \begin{align}
@@ -511,6 +528,11 @@ which in the scaled notation becomes:
 \end{align}
 where $\bar{F}_{x,y} = \dfrac{F_{x,y}}{l_g}$.
 
+In $x$ (unscaled) focal length is taken as 
+\begin{align}
+\frac{1}{F_x} = \frac{g L_Q}{B\rho},
+\end{align}
+where $g$ is the quad magnetic field gradient in $Tm^{-1}$, $L_Q$ is the length of the quad, and $B\rho = \beta E / 0.2998$ is the so-called magnetic rigidity in $Tm$, with the beam energy $E$ in $GeV$. 
 
 For the chicane, one must specify physical length, slippage length, and dispersion enhancement (R56). The length is the physical length of the device in undulator periods, and is used to calculate the diffraction properly. The slippage length tells how many wavelengths to delay the beam by relative to the radiation field in resonant radiation wavelengths - be careful, this should not be $\leq 0$, or the beam will then be faster than light speed! Similarly, it is left up to the user to decide what is appropriate to delay the beam by with respect to the physical length of the device. The dispersive enhancement is the R56 of the device - using $\gamma_r$ in the main input as the mean $\gamma$ for the chicane. 
 
@@ -523,6 +545,10 @@ For the modulation section, one may add an energy modulation to the beam specifi
 
 \newpage
 
+\section{Data Output and Post-Processing}
+
+
+\newpage
 
 \section{Parameters}
 

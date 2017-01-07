@@ -348,7 +348,9 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
 !     Get the number of nodes
 
-    iNumberNodes_G = iNN(iX_CG)*iNN(iY_CG)*iNN(iZ2_CG)
+    iNumberNodes_G = int(iNN(iX_CG), kind=IPN) * &
+                       int(iNN(iY_CG), kind=IPN) * &
+                         int(iNN(iZ2_CG), kind=IPN)
 
 
 
@@ -363,8 +365,8 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
 
 
-    IF(iNumberNodes_G <= 0_IP) THEN
-       CALL Error_log('iNumberNodes_G <=0.',tErrorLog_G)
+    IF(iNumberNodes_G <= 0_IPN) THEN
+       CALL Error_log('iNumberNodes_G <= 0.',tErrorLog_G)
        GOTO 1000    
     END IF
 
@@ -489,7 +491,7 @@ end subroutine getQFmNpk
 
 SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
                               qFlatTopS, sSigmaF, &
-                              sA0_x, sA0_y, qOK)
+                              sA0_x, sA0_y, field_file, qOK)
 
     IMPLICIT NONE
 !
@@ -515,6 +517,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
     REAL(KIND=WP), INTENT(IN)    :: sA0_x(:)
     REAL(KIND=WP), INTENT(IN)    :: sA0_y(:)
 !    REAL(KIND=WP), INTENT(INOUT) :: sA(:)
+    CHARACTER(LEN=1024),INTENT(IN) :: field_file(:)
     LOGICAL,       INTENT(OUT)   :: qOK
 
 !                LOCAL ARGS
@@ -523,6 +526,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
 ! iZ2          Number of nodes in Z2
 ! iXY          Number of nodes in XY plane
 ! sA0gauss_Re  Initial field over all planes
+    CHARACTER(Len=1024) :: h5FieldFileName
 
     LOGICAL           :: qOKL
     LOGICAL           :: qInitialGauss
@@ -535,6 +539,10 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
 !     Set error flag to false
 
     qOK = .FALSE. 
+    h5FieldFileName=field_file(1)
+    
+    sZi_G = 0.0_wp
+    sZlSt_G = 0.0_wp
 
     iZ2 = NZ2_G
     iXY = NX_G*NY_G
@@ -551,9 +559,20 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
    
 !    CALL getSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,freqf, &
 !                  ph_sh, nseeds,sLengthOfElm,sAreal,sAimag)
+!   print*,'It is seedy, but what type...' 
+!   print*,iFieldSeedType_G
 
-    call getPaSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,&
-                    freqf,ph_sh,nseeds,sLengthOfElm)
+    if (iFieldSeedType_G==iSimpleSeed_G) then
+
+      call getPaSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,&
+                      freqf,ph_sh,nseeds,sLengthOfElm)
+    end if
+
+    if (iFieldSeedType_G==iReadH5Field_G) then
+
+      call readH5FieldfileSingleDump(h5FieldFileName)
+
+    end if
 
 !    sA(1:iXY*iZ2) = sAreal
 !    sA(iXY*iZ2 + 1:2*iXY*iZ2) = sAimag
@@ -1017,7 +1036,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
     else
       totNk_loc = 0._WP
     end if
-    print *,"Rank ", tProcInfo_G%Rank, " sum ",totNk_loc
+!    print *,"Rank ", tProcInfo_G%Rank, " sum ",totNk_loc
     CALL MPI_ALLREDUCE(totNk_loc, totNk_glob, 1, MPI_DOUBLE_PRECISION, &
                        MPI_SUM, MPI_COMM_WORLD, error)
 
