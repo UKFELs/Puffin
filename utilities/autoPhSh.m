@@ -8,6 +8,8 @@ rho = 0.005;
 aw = 1.0121809;
 aw_rms = aw ./ sqrt(2);  % if helical - should be same as aw...!!!
 
+gammaFr = 1.03;   % Fractional gammaFr = gamma / gamma_r
+
 alpha = 1;
 npts = 1000;
 
@@ -25,7 +27,7 @@ pperp = - alpha .* sin(zbar./16./rho).^2 .* cos(zbar./2./rho);
 ppsq = abs(pperp).^2;
 
 
-p2 = 1 ./ (1 + aw_rms.^2) .* (1 + (aw.^2 .* ppsq));
+p2 = (1./gammaFr) ./ (1 + aw_rms.^2) .* (1 + (aw.^2 .* ppsq));
 
 z2a = trapz(zbar, p2);   %  actual shift in z2 from end
 
@@ -63,7 +65,7 @@ pperp = - alpha .* cos(zbar./16./rho).^2 .* cos(zbar./2./rho);
 ppsq = abs(pperp).^2;
 
 
-p2 = 1 ./ (1 + aw_rms.^2) .* (1 + (aw.^2 .* ppsq));
+p2 = (1./gammaFr) ./ (1 + aw_rms.^2) .* (1 + (aw.^2 .* ppsq));
 
 z2a = trapz(zbar, p2);   %  actual shift in z2 from end
 
@@ -81,7 +83,7 @@ z2modab = z2modnw * 4 * pi * rho; % ...and in units of z2
 
 z2modT = z2modaf + z2modab
 
-
+z2modTnw = z2modT / (4 * pi * rho)
 
 
 
