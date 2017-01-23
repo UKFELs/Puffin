@@ -5,8 +5,8 @@
 %%% ...front...
 
 rho = 0.005;
-aw = 1;
-aw_rms = aw ./ sqrt(2);
+aw = 1.0121809;
+aw_rms = aw ./ sqrt(2);  % if helical - should be same as aw...!!!
 
 alpha = 1;
 npts = 1000;
