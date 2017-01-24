@@ -4,6 +4,16 @@
 !** any way without the prior permission of the above authors.  **!
 !*****************************************************************!
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This module contains subroutines to read in the lattice file and setup the
+!> elements in the undulator line. It also contains the subroutines/functions 
+!> for all the non-undulator segements, and the initialization of the undulator
+!> segments.
+
 MODULE lattice
 
 USE paratype
@@ -35,19 +45,47 @@ contains
 
 
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Top-level subroutine for setting up the elements in the undulator line, 
+!> either from a supplied lattice file, or as the single undulator specified
+!> in the main input file. It takes as inputs the simple/single undulator 
+!> parameters as specified in the main input file. If a lattice file is 
+!> supplied, these values are updated. If no lattice file is supplied, then
+!> the undulator line is set up as one undulator with these parameters. Note:
+!> the lattice filename is not an optional parameter! If wishing to not 
+!> specify a lattice file, the filename should be input as a blank string ('')
+!> @param[in] lattFile String: The lattice file name
+!> @param[inout] taper The taper of the initial undulator module. Input as 
+!> the taper specified in the main input file. Updated if a lattice file is 
+!> supplied.
+!> @param[in] sRho The FEL, or Pierce, parameter
+!> @param[inout] nSteps_f Number of steps in the first undulator module. Input
+!> as the number of steps calculated from the main input file. Updated if a  
+!> lattice file is supplied.
+!> @param[inout] dz_f Integration step size in the first undulator module. Input
+!> as the step size specified in the main input file. Updated if a lattice file 
+!> is supplied.
+!> @param[inout] ux_f ux (see manual) in the first undulator module. Input
+!> as the ux specified in the main input file. Updated if a lattice file 
+!> is supplied.
+!> @param[inout] uy_f uy (see manual) in the first undulator module. Input
+!> as the uy specified in the main input file. Updated if a lattice file 
+!> is supplied.
+!> @param[inout] kbnx_f Strong (scaled) in-undulator wavenumber in x (see manual) 
+!> in the first undulator module. Input as the kbetax_SF specified in the main 
+!> input file. Updated if a lattice file is supplied.
+!> @param[inout] kbny_f Strong (scaled) in-undulator wavenumber in y (see manual) 
+!> in the first undulator module. Input as the kbetay_SF specified in the main 
+!> input file. Updated if a lattice file is supplied.
 
   subroutine setupMods(lattFile, taper, sRho, nSteps_f, dz_f, &
                        ux_f, uy_f, kbnx_f, kbny_f)
 
     implicit none
-
-!     Sets up elements in wiggler lattice. The elements
-!     are read in from the file specified.
-!
-!     Dr Lawrence Campbell
-!     University of Strathclyde
-!     2015
-
 
     character(1024_ip), intent(in) :: LattFile 
     real(kind=wp), intent(inout) :: taper
@@ -94,7 +132,7 @@ contains
 
       allocate(iElmType(modNum))   !  For now, using old lattice file format...
 
-      call readLatt(lattFile, sRho, sStepSize)
+      call readLatt(lattFile, sRho)
 
       ModCount = 1
 
@@ -162,33 +200,23 @@ contains
 
 !    #####################################################
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Subroutine for reading in the lattice file and setting up the lattice 
+!> element arrays. The element arrays are globally defined in this module.
+!> @param[in] lattFile String: The lattice file name
+!> @param[in] rho The FEL, or Pierce, parameter
 
-  SUBROUTINE readLatt(lattFile, rho, sStepSize)
+  SUBROUTINE readLatt(lattFile, rho)
 
   IMPLICIT NONE
-
-! Subroutine to read the information from the lattice file
-! and define some of the dispersion parameters.
-!
-! Modified from Brian McNeil's 1D lattice FEL code
-! to work with this 3D unaveraged model.
-!
-!                ARGUMENTS
-!
-! lattFile      The name of the lattice file (INPUT)
-! delta         Array containing lengths of dispersive
-!               sections in slippage lengths (OUTPUT)
-! D             Dispersive factor of the chicane,
-!               D=10*Dfact/6*delta (OUTPUT)
-! Dfact         Dispersive strength of the chicane (INPUT)
-! ModNum        Number of Modules (INPUT)
-! rho           FEL parameter
-
 
   CHARACTER(1024_IP), INTENT(IN) :: lattFile
 
   REAL(KIND=WP), INTENT(IN) :: rho
-  REAL(KIND=WP), INTENT(OUT)   :: sStepSize
 
 !                LOCAL VARS
 
@@ -350,23 +378,19 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Subroutine for modelling the chicane element in Puffin. This is achieved
+!> only through a simple point tranform.
+!> @param[in] iL The element number in the lattice
+!> @param[out] sZ Scaled distance through the machine
+
   subroutine disperse(iL, sZ)
 
   implicit none
-
-! Subroutine to apply phase changes to electrons beam
-! due to passing through a chicane...
-! Modified from Brian McNeil's Phase shift routine to
-! work with p2 (electron momentum in z2 frame) as opposed
-! to bar{p}_z
-!
-!              ARGUMENTS
-!
-! y_e              electron array data
-! D                Dispersion parameter for the chicane
-!                  (D=10*Dfact/6*delta, Dfact is the
-!                  dispersive strength factor of the chicane
-! delta            Slippage in resonant wavelengths
 
   integer(kind=ip), intent(in) :: iL
   real(kind=wp), intent(out) :: sZ
@@ -405,7 +429,14 @@ contains
 
 ! ##############################################
 
-
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Subroutine to model the electron drift between other lattice elements.
+!> @param[in] iL The element number in the lattice
+!> @param[out] sZ Scaled distance through the machine
 
   subroutine driftSection(iL, sZ)
 
@@ -451,7 +482,14 @@ contains
 
 ! ##############################################
 
-
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Subroutine to model the quad element in Puffin. This is implemented as a 
+!> simple point transform.
+!> @param[in] iL The element number in the lattice
 
   subroutine Quad(iL)
 
@@ -489,6 +527,14 @@ contains
 
 ! ##############################################
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Apply a simple energy modulation to the beam in Puffin.
+!> @param[in] iL The element number in the lattice
+
   subroutine bModulation(iL)
 
     integer(kind=ip), intent(in) :: iL
@@ -507,12 +553,15 @@ contains
 
 ! ##############################################
 
-
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Apply a virtual 'magnet corrector' at the end of the wiggler
+!> module. It simply centers the beam in the transverse dimensions (x,y,px,py)
 
   subroutine correctTrans()
-
-! Apply a virtual 'magnet corrector' at the end of the wiggler
-! module. It simply centers the beam in the transverse dimensions
 
     real(kind=wp) :: spx_m, spy_m, sx_m, sy_m
 
