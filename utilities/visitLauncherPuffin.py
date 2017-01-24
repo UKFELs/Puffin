@@ -1,3 +1,19 @@
+import os
+import sys
+import tables
+import getDBNames
+import plotPowNorm
+
+# Set local visit and visit's python package locations
+# laptop:-
+#localVisItDir = "/home/tml/tmp/visit/visit2_10_3.linux-x86_64"
+#localPythonPackageDir = "/home/tml/tmp/visit/visit2_10_3.linux-x86_64/2.10.3/linux-x86_64/lib/site-packages" 
+# desktop:-
+localVisItDir = "/home/tml/bin/visit/visit2_10_3.linux-x86_64"
+localPythonPackageDir = "/home/tml/bin/visit/visit2_10_3.linux-x86_64/2.10.3/linux-x86_64/lib/site-packages" 
+sys.path.insert(0,localPythonPackageDir)
+import visit
+
 def SetupSerialLauncher():
   lp2=visit.LaunchProfile()
   lp2.SetTimeout(60)
@@ -48,14 +64,54 @@ def SaveWindow(filename):
 
 # either load parameters from file, or enter them afresh using serialize/pickle
 # LocalSettings
-localVisItDir = "/home/tml/tmp/visit/visit2_10_3.linux-x86_64"
-localPythonPackageDir = "/home/tml/tmp/visit/visit2_10_3.linux-x86_64/2.10.3/linux-x86_64/lib/site-packages" 
+
+##localPythonPackageDir = "/home/tml/tmp/visit/visit2_10_3.linux-x86_64/2.10.3/linux-x86_64/lib/site-packages" 
 runRemotely=0
-remoteTimeSeriesAstraDB='phase2.wonder.hartree.stfc.ac.uk:/gpfs/stfc/local/HCP084/bwm06/shared/testastra/working/test_analyzeBeam.h5'
-remoteTimeSeriesEleSigmaDB='phase2.wonder.hartree.stfc.ac.uk:/gpfs/stfc/local/HCP084/bwm06/shared/testele/phase100/clara.sig-page1.h5'
-remoteElePhaseSpaceDB='phase2.wonder.hartree.stfc.ac.uk:/gpfs/stfc/local/HCP084/bwm06/shared/testele/clara_track_electrons_*.vsh5 database'
+##remoteTimeSeriesAstraDB='phase2.wonder.hartree.stfc.ac.uk:/gpfs/stfc/local/HCP084/bwm06/shared/testastra/working/test_analyzeBeam.h5'
+##remoteTimeSeriesEleSigmaDB='phase2.wonder.hartree.stfc.ac.uk:/gpfs/stfc/local/HCP084/bwm06/shared/testele/phase100/clara.sig-page1.h5'
+##remoteElePhaseSpaceDB='phase2.wonder.hartree.stfc.ac.uk:/gpfs/stfc/local/HCP084/bwm06/shared/testele/clara_track_electrons_*.vsh5 database'
 #remoteElePhaseSpaceDB='phase2.wonder.hartree.stfc.ac.uk:/gpfs/stfc/local/HCP084/bwm06/shared/testele/clara_track_electrons_1.vsh5'
-localPowerAllDB="/home/tml/tmp/test/build/examples/simple/1D/OptCommV165pp65-70/fig2/f2main_power_0_all.vsh5"
+# currDir="/home/tml/tmp/test/test-fftw3/visit"
+
+
+pBaseName=sys.argv[1]
+# pBaseName = "f2main"
+
+# def getDBNames():
+# 
+#   currDir = os.getcwd()
+# 
+# # Database suffixes for power, electron macroparticle and integrated data respectively
+# 
+#   pFileSffx = "_integrated_0_all.vsh5"
+#   eFileSffx = "_electrons_* database"
+#   iFileSffx = "_integrated_0_* database"
+# 
+# 
+# # Full database paths
+# 
+#   if os.name == 'nt':  # If OS is windows...
+#     eDB1 = "localhost:" + currDir + "\\" + pBaseName + eFileSffx
+#     iDB1 = "localhost:" + currDir + "\\" + pBaseName + iFileSffx
+#     localPowerAllDB1 = currDir + "\\" + pBaseName + pFileSffx
+#   else:   # else assuming linux!!
+#     eDB1 = "localhost:" + currDir + "/" + pBaseName + eFileSffx
+#     iDB1 = "localhost:" + currDir + "/" + pBaseName + iFileSffx
+#     localPowerAllDB1 = currDir + "/" + pBaseName + pFileSffx
+# 
+#   return eDB1, iDB1, localPowerAllDB1
+
+
+eDB, iDB, localPowerAllDB = getDBNames.getDBNames(pBaseName)
+
+# Get upper and lower limits for energy plots
+h5in=tables.open_file(localPowerAllDB,'r')
+minZ = h5in.root.zSeries._v_attrs.vsLowerBounds
+maxZ = h5in.root.zSeries._v_attrs.vsUpperBounds
+h5in.close()
+
+
+
 #Remote settings
 def isOpenDatabase(filename):
   pass
@@ -106,19 +162,20 @@ def TimeSeriesS1():
   visit.SetAnnotationAttributes(AnnotationAtts)
   visit.DrawPlots()
 
-def IntegratedPower():
-  visit.AddPlot('Curve','power_integral')
+def plotEnergyLinear():
+  data=visit.OpenDatabase(localPowerAllDB,0,'Vs')
+  visit.AddPlot('Curve','Energy')
   AnnotationAtts = visit.AnnotationAttributes()
   AnnotationAtts.axes2D.yAxis.grid = 0
   AnnotationAtts.axes2D.xAxis.grid = 0
   AnnotationAtts.axes2D.xAxis.title.userTitle = 1
   AnnotationAtts.axes2D.xAxis.title.userUnits = 1
-  AnnotationAtts.axes2D.xAxis.title.title = "zbar"
-  AnnotationAtts.axes2D.xAxis.title.units = "gain lengths"
+  AnnotationAtts.axes2D.xAxis.title.title = "z"
+  AnnotationAtts.axes2D.xAxis.title.units = "m"
   AnnotationAtts.axes2D.yAxis.title.userTitle = 1
   AnnotationAtts.axes2D.yAxis.title.userUnits = 1
   AnnotationAtts.axes2D.yAxis.title.title = "Energy"
-  AnnotationAtts.axes2D.yAxis.title.units = "scaled units"
+  AnnotationAtts.axes2D.yAxis.title.units = "J"
   AnnotationAtts.userInfoFlag = 0
   AnnotationAtts.databaseInfoFlag = 0
   AnnotationAtts.legendInfoFlag = 0
@@ -134,27 +191,33 @@ def IntegratedPower():
   CurveAtts.showLegend = 0
   visit.SetPlotOptions(CurveAtts)
 
-  visit.AddWindow()
-  visit.AddPlot('Curve','power_integral') # For log scale equivalent plot
+
+def plotEnergy():
+  data=visit.OpenDatabase(localPowerAllDB,0,'Vs')
+  visit.AddPlot('Curve','Energy',1,1) # For log scale equivalent plot
   ViewCurveAtts = visit.ViewCurveAttributes()
   ViewCurveAtts.domainScale = ViewCurveAtts.LINEAR  # LINEAR, LOG
   ViewCurveAtts.rangeScale = ViewCurveAtts.LOG  # LINEAR, LOG
   visit.SetViewCurve(ViewCurveAtts) 
   visit.DrawPlots()
-  ViewCurveAtts.domainCoords = (0, 15.01681327819824)
-  ViewCurveAtts.rangeCoords = (-6, 2)
+
+  ViewCurveAtts.domainCoords = (minZ, maxZ)
+  ViewCurveAtts.rangeCoords = (-12, 2)
   ViewCurveAtts.viewportCoords = (0.2, 0.95, 0.15, 0.95)
   visit.SetViewCurve(ViewCurveAtts) 
+  visit.DrawPlots()
+  
+  AnnotationAtts = visit.AnnotationAttributes()
   AnnotationAtts.axes2D.yAxis.grid = 1
   AnnotationAtts.axes2D.xAxis.grid = 1
   AnnotationAtts.axes2D.xAxis.title.userTitle = 1
   AnnotationAtts.axes2D.xAxis.title.userUnits = 1
-  AnnotationAtts.axes2D.xAxis.title.title = "zbar"
-  AnnotationAtts.axes2D.xAxis.title.units = "gain lengths"
+  AnnotationAtts.axes2D.xAxis.title.title = "z"
+  AnnotationAtts.axes2D.xAxis.title.units = "m"
   AnnotationAtts.axes2D.yAxis.title.userTitle = 1
   AnnotationAtts.axes2D.yAxis.title.userUnits = 1
   AnnotationAtts.axes2D.yAxis.title.title = "Energy"
-  AnnotationAtts.axes2D.yAxis.title.units = "scaled units"
+  AnnotationAtts.axes2D.yAxis.title.units = "J"
   AnnotationAtts.userInfoFlag = 0
   AnnotationAtts.databaseInfoFlag = 0
   AnnotationAtts.legendInfoFlag = 0
@@ -170,30 +233,40 @@ def IntegratedPower():
   CurveAtts.showLabels = 0
   visit.SetPlotOptions(CurveAtts)
 
-  visit.AddWindow()
-  visit.AddPlot('Pseudocolor','power_ST_Norm')  
-  visit.DrawPlots()
-  View2DAtts = visit.View2DAttributes()
-  View2DAtts.windowCoords = (0, 30, 0, 15.0796)
-  View2DAtts.viewportCoords = (0.2, 0.95, 0.15, 0.95)
-  View2DAtts.fullFrameAutoThreshold = 100
-  View2DAtts.xScale = View2DAtts.LINEAR  # LINEAR, LOG
-  View2DAtts.yScale = View2DAtts.LINEAR  # LINEAR, LOG
-  View2DAtts.windowValid = 1
-  View2DAtts.fullFrameActivationMode = View2DAtts.On  # On, Off, Auto
-  #View2DAtts.fullFrameAutoThreshold = 100
-  visit.SetView2D(View2DAtts)
-  AnnotationAtts = visit.AnnotationAttributes()
-  AnnotationAtts.userInfoFlag = 0
-  AnnotationAtts.databaseInfoFlag = 0
-  # AnnotationAtts.legendInfoFlag = 0
-  visit.SetAnnotationAttributes(AnnotationAtts)
+
+# def plotPowNorm():
+#   data=visit.OpenDatabase(localPowerAllDB,0,'Vs')
+#   visit.AddPlot('Pseudocolor','power_SI_Norm')  
+#   visit.DrawPlots()
+#   View2DAtts = visit.View2DAttributes()
+# #  View2DAtts.windowCoords = (0, 30, 0, 15.0796)
+# #  View2DAtts.viewportCoords = (0.2, 0.95, 0.15, 0.95)
+# #  View2DAtts.fullFrameAutoThreshold = 100
+#   View2DAtts.xScale = View2DAtts.LINEAR  # LINEAR, LOG
+#   View2DAtts.yScale = View2DAtts.LINEAR  # LINEAR, LOG
+#   View2DAtts.windowValid = 1
+#   View2DAtts.fullFrameActivationMode = View2DAtts.On  # On, Off, Auto
+#   #View2DAtts.fullFrameAutoThreshold = 100
+#   visit.SetView2D(View2DAtts)
+#   visit.ResetView()
+#   AnnotationAtts = visit.AnnotationAttributes()
+#   AnnotationAtts.userInfoFlag = 0
+#   AnnotationAtts.databaseInfoFlag = 0
+#   AnnotationAtts.axes2D.xAxis.title.userTitle = 1
+#   AnnotationAtts.axes2D.xAxis.title.userUnits = 1
+#   AnnotationAtts.axes2D.xAxis.title.title = "ct-z"
+#   AnnotationAtts.axes2D.xAxis.title.units = "m"
+#   AnnotationAtts.axes2D.yAxis.title.userTitle = 1
+#   AnnotationAtts.axes2D.yAxis.title.userUnits = 1
+#   AnnotationAtts.axes2D.yAxis.title.title = "z"
+#   AnnotationAtts.axes2D.yAxis.title.units = "m"
+#   # AnnotationAtts.legendInfoFlag = 0
+#   visit.SetAnnotationAttributes(AnnotationAtts)
 
 
 
 def binPhase():
-  visit.AddWindow()
-  visit.OpenDatabase("localhost:/home/tml/tmp/test/build/examples/simple/1D/OptCommV165pp65-70/fig2/f2main_electrons_* database", 0)
+  visit.OpenDatabase(eDB, 0)
   visit.AddPlot("Pseudocolor", "operators/DataBinning/2D/electrons", 1, 1)
   DataBinningAtts = visit.DataBinningAttributes()
   DataBinningAtts.numDimensions = DataBinningAtts.Two  # One, Two, Three
@@ -239,9 +312,9 @@ def binPhase():
 
 
 def bunching():
-  visit.OpenDatabase("localhost:/home/tml/tmp/test/build/examples/simple/1D/OptCommV165pp65-70/fig2/f2main_bunching1st_0_* database", 0)
-  visit.AddWindow()
-  visit.AddPlot("Curve", "bunching1st", 1, 1)
+  #visit.OpenDatabase("localhost:/home/tml/tmp/test/build/examples/simple/1D/OptCommV165pp65-70/fig2/f2main_bunching1st_0_* database", 0)
+  visit.OpenDatabase(iDB, 0)
+  visit.AddPlot("Curve", "bunchingFundamental", 1, 1)
   visit.SetTimeSliderState(0)
   # Begin spontaneous state
   ViewCurveAtts = visit.ViewCurveAttributes()
@@ -281,9 +354,8 @@ def bunching():
 
 
 def current():
-  visit.OpenDatabase("localhost:/home/tml/tmp/test/build/examples/simple/1D/OptCommV165pp65-70/fig2/f2main_current_0_* database", 0)
-  visit.AddWindow()
-  visit.AddPlot("Curve", "current", 1, 1)
+  visit.OpenDatabase(iDB, 0)
+  visit.AddPlot("Curve", "beamCurrent", 1, 1)
   visit.DrawPlots()
   # Begin spontaneous state
   ViewCurveAtts = visit.ViewCurveAttributes()
@@ -331,31 +403,31 @@ def current():
 
   
 
-
-
-
-
-
-
-
-
-
-
-
-import sys
-sys.path.insert(0,localPythonPackageDir)
-import visit
 visit.Launch(vdir=localVisItDir)
-if runRemotely:
-  p2=SetupPhase2()
-#  data2=visit.OpenDatabase(remoteTimeSeriesAstraDB,0,'Vs')
-  data2=visit.OpenDatabase(remoteTimeSeriesEleSigmaDB,0,'Vs')
 
-else:
-  data=visit.OpenDatabase(localPowerAllDB,0,'Vs')
-IntegratedPower()
+# if runRemotely:
+#   p2=SetupPhase2()
+# #  data2=visit.OpenDatabase(remoteTimeSeriesAstraDB,0,'Vs')
+#   data2=visit.OpenDatabase(remoteTimeSeriesEleSigmaDB,0,'Vs')
+# 
+# else:
+#   data=visit.OpenDatabase(localPowerAllDB,0,'Vs')
+
+plotEnergyLinear()
+
+visit.AddWindow()
+plotEnergy()
+
+visit.AddWindow()
+plotPowNorm.plotPowNorm(localPowerAllDB)
+
+visit.AddWindow()
 binPhase()
+
+visit.AddWindow()
 bunching()
+
+visit.AddWindow()
 current()
 visit.SetWindowLayout(6)
 #TimeSeriesS1()

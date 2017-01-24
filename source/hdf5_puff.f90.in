@@ -1416,22 +1416,25 @@ contains
 ! Select hyperslab in the file.
 
 
-      if (procelectrons_G(1).GT.0) then
+!      if (procelectrons_G(1).GT.0) then
 ! for the corresponding space on disk
         CALL h5screate_simple_f(rank, dsize, dspace_id, error)
+        if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(dspace_id, error)
+
 !        Print*,'hdf5_puff:outputH5BeamFilesSD(memory dataspace allocated)'
 !        Print*,error
         CALL h5dget_space_f(dset_id, filespace, error)
         CALL h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, doffset, dsize, error)
+        if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-      else
+!      else
 ! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
-        CALL h5sselect_none_f(filespace,error)
+!        CALL h5sselect_none_f(filespace,error)
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-        CALL h5sselect_none_f(dspace_id,error)
-      end if
+!        CALL h5sselect_none_f(dspace_id,error)
+!      end if
       CALL h5pcreate_f(H5P_DATASET_XFER_F, plist_id, error) 
 !      CALL h5pset_dxpl_mpio_f(plist_id, H5FD_MPIO_INDEPENDENT_F, error)
       CALL h5pset_dxpl_mpio_f(plist_id, H5FD_MPIO_COLLECTIVE_F, error)
@@ -1455,19 +1458,19 @@ contains
 
     doffset=(/1,startOffset/)
 
-if (procelectrons_G(1).GT.0) then
+!if (procelectrons_G(1).GT.0) then
 ! for the corresponding space on disk
 
   CALL h5dget_space_f(dset_id, filespace, error)
   CALL h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, doffset, dsize, error)
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-else
+!else
 ! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
-  CALL h5sselect_none_f(filespace,error)
+  if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-end if
+!end if
 
 
 
@@ -1490,19 +1493,19 @@ end if
 ! repeat for some next z dataset
     doffset=(/2,startOffset/)
     
-    if (procelectrons_G(1).GT.0) then
+!    if (procelectrons_G(1).GT.0) then
     ! for the corresponding space on disk
 
       CALL h5dget_space_f(dset_id, filespace, error)
       CALL h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, doffset, dsize, error)
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-    else
+!    else
     ! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
-      CALL h5sselect_none_f(filespace,error)
+      if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-    end if
+!    end if
     
     CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, &
        sElZ2_G, dsize, error, &
@@ -1515,19 +1518,20 @@ end if
 ! repeat for some next px dataset
     doffset=(/3,startOffset/)
     
-    if (procelectrons_G(1).GT.0) then
+!    if (procelectrons_G(1).GT.0) then
     ! for the corresponding space on disk
 
       CALL h5dget_space_f(dset_id, filespace, error)
       CALL h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, doffset, dsize, error)
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-    else
+!    else
     ! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
-      CALL h5sselect_none_f(filespace,error)
+      if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
+     
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-    end if
+!    end if
 
 !    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, &
 !       sElPX_G((startOffset+1):(startOffset+procelectrons_G(1))), dsize, error, &
@@ -1543,19 +1547,19 @@ end if
 ! repeat for some next py dataset
     doffset=(/4,startOffset/)
 
-    if (procelectrons_G(1).GT.0) then
+!    if (procelectrons_G(1).GT.0) then
     ! for the corresponding space on disk
 
       CALL h5dget_space_f(dset_id, filespace, error)
       CALL h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, doffset, dsize, error)
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-    else
+!    else
     ! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
-      CALL h5sselect_none_f(filespace,error)
+      if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-    end if
+!    end if
     
 !    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, &
 !       sElPY_G((startOffset+1):(startOffset+procelectrons_G(1))), dsize, error, &
@@ -1571,19 +1575,19 @@ end if
 ! repeat for some next gamma dataset (actually beta*gamma)
     doffset=(/5,startOffset/)
 
-    if (procelectrons_G(1).GT.0) then
+!    if (procelectrons_G(1).GT.0) then
     ! for the corresponding space on disk
 
       CALL h5dget_space_f(dset_id, filespace, error)
       CALL h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, doffset, dsize, error)
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-    else
+!    else
     ! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
-      CALL h5sselect_none_f(filespace,error)
+      if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-    end if
+!    end if
     
 !    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, &
 !       sElgam_G((startOffset+1):(startOffset+procelectrons_G(1))), dsize, error, &
@@ -1604,19 +1608,19 @@ end if
 ! the size of this column from every written file.
     doffset=(/6,startOffset/)
 
-    if (procelectrons_G(1).GT.0) then
+!    if (procelectrons_G(1).GT.0) then
     ! for the corresponding space on disk
 
       CALL h5dget_space_f(dset_id, filespace, error)
       CALL h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, doffset, dsize, error)
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-    else
+!    else
     ! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
-      CALL h5sselect_none_f(filespace,error)
+      if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-    end if
+!    end if
     
 !    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, &
 !       s_chi_bar_G((startOffset+1):(startOffset+procelectrons_G(1))), dsize, error, &
@@ -2158,20 +2162,21 @@ end if
         CALL h5pclose_f(plist_id, error)
       end if
       CALL h5screate_simple_f(rank, dims, dspace_id, error)
+      CALL h5sselect_none_f(dspace_id,error)
  ! For the space in memory
-      if (nlonglength.GT.0) then
+      !if (nlonglength.GT.0) then
 ! for the corresponding space on disk
         CALL h5dget_space_f(dset_id, filespace, error)
         CALL h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, doffset, dims, error)
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting slab on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-      else
+      !else
 ! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
         CALL h5sselect_none_f(filespace,error)
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting empty slab on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
 !        CALL h5sselect_none_f(dspace_id,error)
-      end if
+      !end if
 
       
       CALL h5pcreate_f(H5P_DATASET_XFER_F, plist_id, error) 
@@ -2465,9 +2470,11 @@ end if
       
       call h5screate_simple_f(rank, dims, dspace_id, error)
 
+      if (nlonglength <= 0) call h5sselect_none_f(dspace_id,error)
+
 ! For the space in memory
 
-      if (nlonglength > 0) then
+!      if (nlonglength > 0) then
 
 ! for the corresponding space on disk
 
@@ -2478,16 +2485,16 @@ end if
         call h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, doffset, &
                                     dims, error)
 
-      else
+      !else
 
 !         all ranks must participate, so select no space to write when dealing
 !         with ranks which hold no data for this field fr_real, etc
 
 !          Selecting empty slab on rank
 
-        call h5sselect_none_f(filespace,error)
+        if (nlonglength <= 0) call h5sselect_none_f(filespace,error)
 
-      end if
+!      end if
 
       
       call h5pcreate_f(H5P_DATASET_XFER_F, plist_id, error) 
