@@ -545,6 +545,55 @@ For the modulation section, one may add an energy modulation to the beam specifi
 
 \newpage
 
+\section{Building puffin from source on linux}
+
+These instructions assume your computer already has compilers installed (often this is a package called build-essential or similar), and packages for the subversion and git version control systems.
+
+Puffin depends on cmake (for the build system), hdf5 (for I/O), and fftw3, for field solution, and MPI libraries for parallelization (mpich or openmpi shoudl work). It has soft dependencies on python and various python packages (numpy, tables), and the VisIt visualisation software. If these are not installed you will not be able to use our postprocessing tools effectively.
+
+The dependencies can all be built with bilder, a Large Computation Facilities aware meta-package management system. This will ensure compatible builds are available of the relevant packages, and handles multiple compiler toolchains.
+
+Bilder is open source, available under the eclipse public license http://ice.txcorp.com/svnrepos/code/bilder/trunk/EclipseLicense.txt.
+
+Bilder can be downloaded from the Tech-X website, where it is actively maintained, use
+svn co http://ice.txcorp.com/svnrepos/code/bilder/visitall/trunk bilder-visit
+
+This will also download VisIt source code. As this is large, it is good to know you can normally proceed to build hdf5, fftw, cmake and MPI with bilder once subversion is checking out.
+
+We recommend you build the minimum number of packages necessary for installing puffin, adding numpy, tables, ipython, etc once you have puffin successfully running.
+
+First, a warning. bilder does not currently recognise the hostname on ubuntu 16 - if you have an ubuntu 16 system please run
+
+export FQHOSTNAME=$HOSTNAME
+(assuming echo $HOSTNAME tells you the name of your computer)
+or
+export FQHOSTNAME=emycomputer.mydomain.edu
+(substituting your own $HOSTNAME for whatever is appropriate)
+
+Then build the necessary packages.
+
+If your system already has MPI installed (eg through the package manager)
+
+./mkvisitall.sh -i \$HOME/software-gcc540 -k \$HOME/software-gcc540 cmake,fftw3,hdf5
+
+OR to build with openMPI
+
+env OPENMPI_BUILDS=nodl ./mkvisitall.sh -i /home/jonny/test-issue-51/software-gcc540 -k /home/jonny/test-issue-51/software-gcc540 cmake,fftw3,hdf5,openmpi
+
+OR to build with MPICH
+
+env MPICH_BUILDS=static ./mkvisitall.sh -i /home/jonny/test-issue-51/software-gcc540 -k /home/jonny/test-issue-51/software-gcc540 cmake,fftw3,hdf5,mpich
+
+This could take a while. You may wish to get a coffee at this point.
+
+If you find the parallel versions of hdf5 and fftw3 are not built,
+<software installation directory>/software-gcc540/visitall.sh
+You may need to set up environment variables to MPICC, MPICXX, MPIFC, MPIF77, MPIF90, to point to the MPI installation you just built, then re-run the same command.
+
+
+
+\newpage
+
 \section{Data Output and Post-Processing}
 
 
