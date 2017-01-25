@@ -2,12 +2,16 @@
 #
 # SciLinkChecks: check/set various link flags
 #
-# $Id: SciLinkChecks.cmake 790 2015-04-15 21:42:06Z techxdws $
+# $Id: SciLinkChecks.cmake 1102 2016-11-02 21:55:51Z alexanda $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
 #
 ######################################################################
+
+message(STATUS "")
+message(STATUS "[SciLinkChecks]: STARTING.")
+message(STATUS "")
 
 ######################################################################
 #
@@ -35,7 +39,7 @@ if (BUILD_SHARED_LIBS)
 # point to directories outside the build tree to the install RPATH
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
   endif ()
-  message(STATUS "After further modification:")
+  message(STATUS "[SciLinkChecks]: After further modification:")
   foreach (type EXE SHARED)
     SciPrintVar(CMAKE_${type}_LINKER_FLAGS)
   endforeach ()
@@ -53,7 +57,7 @@ endif ()
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL Darwin)
 # Get major version
   string(REPLACE "Darwin-" "" SCI_SYSTEM_VERSION "${CMAKE_SYSTEM}")
-  message(STATUS "SCI_SYSTEM_VERSION = ${SCI_SYSTEM_VERSION}.")
+  message(STATUS "[SciLinkChecks]: SCI_SYSTEM_VERSION = ${SCI_SYSTEM_VERSION}.")
   string(REGEX REPLACE "\\..*$" "" SCI_SYSTEM_MAJVER "${SCI_SYSTEM_VERSION}")
   if ("${SCI_SYSTEM_MAJVER}" LESS 11)   # Before Lion (Snow Leopard or before)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -mmacosx-version-min=10.4")
@@ -94,7 +98,7 @@ if ("${CMAKE_SYSTEM_NAME}" STREQUAL Linux)
     message("libcxx is ${libcxx}")
     if (${libcxx} MATCHES "^/")
       get_filename_component(CXX_LIBDIR ${libcxx}/.. REALPATH)
-      message(STATUS "libstdc++ is in ${CXX_LIBDIR}.")
+      message(STATUS "[SciLinkChecks]: libstdc++ is in ${CXX_LIBDIR}.")
 # Add to build rpath
       set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,${CXX_LIBDIR}")
       set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath,${CXX_LIBDIR}")
@@ -105,12 +109,22 @@ endif ()
 
 ######################################################################
 #
+# Parallel
+#
+######################################################################
+
+if (MPI_LINK_FLAGS AND NOT SCI_HAVE_MPICXX_COMPILER_WRAPPER)
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MPI_LINK_FLAGS}")
+endif ()
+
+######################################################################
+#
 # Print results
 #
 ######################################################################
 
 message(STATUS "")
-message(STATUS "Link flags:")
+message(STATUS "[SciLinkChecks]: Link flags:")
 foreach (type EXE SHARED)
   foreach (bld FULL RELEASE RELWITHDEBINFO MINSIZEREL DEBUG)
     SciPrintVar(CMAKE_${type}_LINKER_FLAGS_${bld})
@@ -119,3 +133,4 @@ foreach (type EXE SHARED)
   message(STATUS "")
 endforeach ()
 
+message(STATUS "[SciLinkChecks]: FINISHED.")

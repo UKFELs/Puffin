@@ -3,9 +3,9 @@
 # SciSseAvx: Determine sse and avx capabilities to processor and add
 #            to appropriate flags.
 #
-# $Id: SciOmpSseAvx.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: SciOmpSseAvx.cmake 1081 2016-09-10 15:44:42Z cary $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
 #
 #
@@ -108,10 +108,16 @@ include(CheckCXXSourceRuns)
 
 message(STATUS "Checking vector capabilities.  CMAKE_REQUIRED_FLAGS = ${CMAKE_REQUIRED_FLAGS}.")
 
-# message(STATUS "Checking sse2 capabilities.")
+set(SCI_MOST_POWERFUL_ISA Generic)
+
 set(CMAKE_REQUIRED_FLAGS_SAV "${CMAKE_REQUIRED_FLAGS}")
 set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} ${SSE2_FLAG}")
-# message(STATUS "SSE2_FLAG = ${SSE2_FLAG}.")
+if (WIN32)
+  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} /WX /W3")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
+      "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror")
+endif ()
 check_c_source_compiles(
 "
 #include <emmintrin.h>
@@ -139,12 +145,19 @@ int main(int argc, char** argv) {
 endif ()
 set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS_SAV}")
 SciPrintVar(SSE2_RUNS)
+if (SSE2_RUNS)
+  set(SCI_MOST_POWERFUL_ISA SSE2)
+endif ()
 
 # Check whether have avx.
-# message(STATUS "Checking avx capabilities.")
 set(CMAKE_REQUIRED_FLAGS_SAV "${CMAKE_REQUIRED_FLAGS}")
 set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} ${AVX_FLAG}")
-# message(STATUS "AVX_FLAG = ${AVX_FLAG}.")
+if (WIN32)
+  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} /WX /W3")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
+      "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror")
+endif ()
 check_c_source_compiles(
 "
 #include <immintrin.h>
@@ -172,12 +185,19 @@ int main(int argc, char** argv) {
 endif ()
 set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS_SAV}")
 SciPrintVar(AVX_RUNS)
+if (AVX_RUNS)
+  set(SCI_MOST_POWERFUL_ISA AVX)
+endif ()
 
 # Check whether have avx2.
-# message(STATUS "Checking avx2 capabilities.")
 set(CMAKE_REQUIRED_FLAGS_SAV "${CMAKE_REQUIRED_FLAGS}")
-set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} ${AVX_FLAG} ${AVX2_FLAG}")
-# message(STATUS "AVX2_FLAG = ${AVX2_FLAG}.")
+set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} ${AVX2_FLAG}")
+if (WIN32)
+  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} /WX /W3")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
+      "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror")
+endif ()
 check_cxx_source_compiles(
 "
 #include <immintrin.h>
@@ -207,12 +227,19 @@ int main(int argc, char** argv) {
 endif ()
 set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS_SAV}")
 SciPrintVar(AVX2_RUNS)
+if (AVX2_RUNS)
+  set(SCI_MOST_POWERFUL_ISA AVX2)
+endif ()
 
 # Check whether have avx512.
-# message(STATUS "Checking avx512 capabilities.")
 set(CMAKE_REQUIRED_FLAGS_SAV "${CMAKE_REQUIRED_FLAGS}")
-set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} ${AVX_FLAG} ${AVX512_FLAG}")
-# message(STATUS "AVX512_FLAG = ${AVX512_FLAG}.")
+set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} ${AVX512_FLAG}")
+if (WIN32)
+  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} /WX /W3")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
+      "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror")
+endif ()
 check_cxx_source_compiles(
 "
 #include <immintrin.h>
@@ -240,22 +267,24 @@ int main(int argc, char** argv) {
 endif ()
 set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS_SAV}")
 SciPrintVar(AVX512_RUNS)
+if (AVX512_RUNS)
+  set(SCI_MOST_POWERFUL_ISA AVX512)
+endif ()
+SciPrintVar(SCI_MOST_POWERFUL_ISA)
 
 ######################################################################
-# Now handle the flags for sse2 and avx
-# If we do runtime detection, we can add these flags more liberally
+# Now handle the compiler flags.
+# We build the optimized build types for SSE2.
+# The Full build type is compiled for the most powerful instruction set
+# supported by the CPU we're  building on.
 ######################################################################
 
 if (SSE2_COMPILES)
-  set(SSE2_BUILDS FULL RELEASE RELWITHDEBINFO MINSIZEREL)
+  set(SSE2_BUILDS RELEASE RELWITHDEBINFO MINSIZEREL)
   if (ALLOW_SSE2)
     set(SSE2_BUILDS ${SSE2_BUILDS} ${CMAKE_BUILD_TYPE_UC})
   endif ()
   list(REMOVE_DUPLICATES SSE2_BUILDS)
-  list(FIND SSE2_BUILDS ${CMAKE_BUILD_TYPE_UC} sse2found)
-  if (NOT ${sse2found} EQUAL -1)
-    set(HAVE_SSE2 TRUE)
-  endif ()
   foreach (cmp C CXX)
     foreach (bld ${SSE2_BUILDS})
       set(CMAKE_${cmp}_FLAGS_${bld} "${CMAKE_${cmp}_FLAGS_${bld}} ${SSE2_FLAG}")
@@ -263,23 +292,9 @@ if (SSE2_COMPILES)
   endforeach ()
 endif ()
 
-foreach (INSTSET AVX AVX2 AVX512)
-  if (${INSTSET}_RUNS)
-    set(${INSTSET}_BUILDS FULL)
-    if (ALLOW_${INSTSET})
-      set(${INSTSET}_BUILDS ${${INSTSET}_BUILDS} ${CMAKE_BUILD_TYPE_UC})
-    endif ()
-    list(REMOVE_DUPLICATES ${INSTSET}_BUILDS)
-    list(FIND ${INSTSET}_BUILDS ${CMAKE_BUILD_TYPE_UC} avxfound)
-    if (NOT ${avxfound} EQUAL -1)
-      set(HAVE_${INSTSET} TRUE)
-    endif ()
-    foreach (cmp C CXX)
-      foreach (bld ${${INSTSET}_BUILDS})
-        set(CMAKE_${cmp}_FLAGS_${bld} "${CMAKE_${cmp}_FLAGS_${bld}} ${${INSTSET}_FLAG}")
-      endforeach ()
-    endforeach ()
-  endif ()
+foreach (cmp C CXX)
+  set(CMAKE_${cmp}_FLAGS_FULL
+      "${CMAKE_${cmp}_FLAGS_FULL} ${${SCI_MOST_POWERFUL_ISA}_FLAG}")
 endforeach ()
 
 ######################################################################
@@ -291,12 +306,14 @@ if (USE_OPENMP)
   if (OPENMP_FLAGS)
     message(STATUS "OpenMP flag defined.")
     set(HAVE_OPENMP TRUE)
+    set(OPENMP_FOUND TRUE CACHE STRING "Whether OpenMP is found")
   else ()
     message(STATUS "Seeking OpenMP.")
     find_package(OpenMP)
     if (OPENMP_FOUND)
       message(STATUS "OpenMP found.")
       set(HAVE_OPENMP TRUE)
+      set(OPENMP_FOUND TRUE CACHE STRING "Whether OpenMP is found")
       set(OPENMP_FLAGS ${OpenMP_C_FLAGS})
     else ()
       message(WARNING "OpenMP requested but flags not known.")
@@ -304,6 +321,7 @@ if (USE_OPENMP)
   endif ()
   if (HAVE_OPENMP)
     message(STATUS "OPENMP_FLAGS = ${OPENMP_FLAGS}.")
+    set(OPENMP_FLAGS "${OPENMP_FLAGS}" CACHE STRING "OpenMP compiler flags")
 # To test for openmp4, need to add openmp flags for compilation
     set(CMAKE_CXX_FLAGS_SAV "${CMAKE_CXX_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPENMP_FLAGS}")
@@ -312,7 +330,6 @@ if (USE_OPENMP)
       # OUTPUT_VARIABLE BUILD_OUT
     )
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_SAV}")
-    # message(STATUS "Build result = \n ${BUILD_OUT}")
     if (HAVE_PRAGMA_OMP_SIMD)
       message(STATUS "OpenMP 4 pragma omp simd available")
     else ()

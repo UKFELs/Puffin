@@ -14,9 +14,9 @@
 #
 # FindSciFftw3: find includes and libraries for Fftw3
 #
-# $Id: FindSciFftw3.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: FindSciFftw3.cmake 1079 2016-09-09 00:05:24Z cary $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
 #
 #
@@ -35,7 +35,7 @@ if (ENABLE_PARALLEL)
   SciFindPackage(PACKAGE "Fftw3"
                 INSTALL_DIR "${Fftw3_SEARCH}"
                 HEADERS "fftw3.h;fftw3.f;fftw3-mpi.h"
-                LIBRARIES "fftw3;fftw3_mpi"
+                LIBRARIES "fftw3;libfftw3_mpi"
                 )
 else ()
   message(STATUS "Looking for serial FFTW3")
@@ -55,3 +55,4 @@ else ()
     message(FATAL_ERROR "Failed.")
   endif ()
 endif ()
+

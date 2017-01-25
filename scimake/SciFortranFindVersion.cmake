@@ -2,11 +2,10 @@
 #
 # SciFortranFindVersion: Determine compiler version for any compiler
 #
-# $Id: SciFortranFindVersion.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: SciFortranFindVersion.cmake 975 2016-01-09 20:04:17Z cary $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
-#
 #
 ######################################################################
 
@@ -84,9 +83,9 @@ elseif ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL Intel)
     # Works on verus: '(ICC) m.n.r' no trailing space on stix
     # string(REGEX MATCH '(GCC) [0-9]+\\.[0-9]+\\.[0-9]+'
 
-##
+#
 # Roopa: Check if its ICC or IFORT
-##
+#
     string(FIND ${fc_version_str} "(ICC)" fc_icc_tmp)
     string(FIND ${fc_version_str} "(IFORT)" fc_ifort_tmp)
 

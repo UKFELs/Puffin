@@ -15,9 +15,9 @@
 # SciFindPetsc: find includes and libraries for petsc.  Complex
 # due to the many libraries that petsc builds
 #
-# $Id: FindSciPetsc.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: FindSciPetsc.cmake 1079 2016-09-09 00:05:24Z cary $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
 #
 #
@@ -272,3 +272,4 @@ foreach (vartype SUPERLU LINALG MPI DL SYSTEM)
     SciPrintvar(Petsc_${vartype}_${var})
   endforeach ()
 endforeach ()
+

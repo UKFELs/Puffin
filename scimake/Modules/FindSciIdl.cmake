@@ -17,9 +17,9 @@
 #
 # FindSciIdl.cmake: Find the IDL executable
 #
-# $Id: FindSciIdl.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: FindSciIdl.cmake 1081 2016-09-10 15:44:42Z cary $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
 #
 #
@@ -82,7 +82,6 @@ endif ()
 if (NOT "$ENV{IDL_DIR}" STREQUAL "")
   set(_Idl_SEARCH_DIRS "$ENV{IDL_DIR}")
 endif ()
-
 
 find_path(Idl_INCLUDE_DIR
   idl_export.h

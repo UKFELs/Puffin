@@ -26,9 +26,9 @@
 #
 # FindSciMpi: check whether the compiler wraps MPI, if not, find MPI
 #
-# $Id: FindSciMpi.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: FindSciMpi.cmake 1060 2016-04-28 17:07:54Z kruger $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
 #
 #
@@ -50,6 +50,8 @@ if (SCI_HAVE_MPICXX_COMPILER_WRAPPER)
   if (${CMAKE_CXX_COMPILER} MATCHES "CC$")
     set(SEARCH_FOR_MPI FALSE)
   endif ()
+else ()
+  set(SCI_SERIAL_C_COMPILER ${CMAKE_C_COMPILER})
 endif ()
 
 # If have fortran determine whether mpi is already in the Fortran compiler
@@ -125,13 +127,14 @@ endif ()
 # If know more than compiler wrappers, pull out standard values
 set(MPI_IS_OPEN_MPI FALSE)
 if (MPI_FOUND)
-  # Fix up problems with the stock find_package(MPI)
+# Fix up problems with the stock find_package(MPI)
   if (NOT MPI_INCLUDE_DIRS OR NOT MPI_LIBRARIES OR NOT MPIEXEC)
     if (${CMAKE_C_COMPILER_ID} MATCHES "Intel")
       execute_process(
         COMMAND ${CMAKE_C_COMPILER} -show
         OUTPUT_VARIABLE mpiiccOutput
       )
+      string(STRIP ${mpiiccOutput} mpiiccOutput)
       string(REPLACE " " ";" mpiiccOutputList "${mpiiccOutput}")
       foreach (arg ${mpiiccOutputList})
         if (${arg} MATCHES "^-I")
@@ -145,7 +148,7 @@ if (MPI_FOUND)
           list(APPEND MPI_LIBRARIES ${lib})
         endif ()
       endforeach ()
-      # Try to find both static and dynamic
+# Try to find both static and dynamic
       set(MPI_DYLIBS)
       if (WIN32)
         set(libsuffix "lib")
@@ -161,6 +164,9 @@ if (MPI_FOUND)
         list(APPEND MPI_DYLIBS ${libdyn})
         list(APPEND MPI_STLIBS ${libst})
       endforeach ()
+      if (LINUX)
+         set(MPIEXEC mpiexec.hydra)
+      endif()
     endif ()
     set(MPI_LIBRARY ${MPI_DYLIBS})
   endif ()
@@ -224,18 +230,26 @@ if (MPI_FOUND)
   endif ()
 
 # Assume only one include dir
-  if (MPI_DIR AND MPI_INCLUDE_DIRS)
+  if (MPI_INCLUDE_DIRS AND NOT MPI_DIR)
     get_filename_component(MPI_DIR ${MPI_INCLUDE_DIRS}/.. REALPATH)
+    set(MPI_ROOT_DIR ${MPI_DIR})
   endif ()
 
 # Get module includes
   set(MPI_MODULE_DIRS ${MPI_Fortran_INCLUDE_PATH})
 
+# If mpiexec not found, find it
+  if (MPI_DIR AND NOT MPIEXEC)
+    find_program(MPIEXEC NAMES mpiexec PATHS ${MPI_DIR}/bin NO_DEFAULT_PATH)
+  endif ()
+
 # Get the executables
   get_filename_component(MPI_PROGRAMS ${MPIEXEC} REALPATH)
 
 # set the root directory variable
-  get_filename_component(MPI_ROOT_DIR ${MPIEXEC}/../.. REALPATH)
+  if (NOT MPI_ROOT_DIR)
+    get_filename_component(MPI_ROOT_DIR ${MPIEXEC}/../.. REALPATH)
+  endif ()
 
 # determine if openmpi
   string(FIND "${MPI_ROOT_DIR}" "openmpi"  OPENMPI_SUBSTR_LOC)
@@ -255,7 +269,21 @@ if (MPI_FOUND)
 
   message(STATUS "Enabling MPI")
   SciPrintCMakeResults("MPI")
+  SciPrintVar(MPIEXEC)
   SciPrintVar(MPI_LINK_FLAGS)
+  if (SCI_HAVE_MPICXX_COMPILER_WRAPPER)
+# Find the Serial C compiler
+# Does this work in general?
+    execute_process(COMMAND ${CMAKE_C_COMPILER} --showme:command
+        OUTPUT_VARIABLE SCI_SERIAL_C_COMPILER
+        RESULT_VARIABLE SERIAL_C_COMPILER_RESULT
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if (NOT SERIAL_C_COMPILER_RESULT EQUAL 0)
+      set(SCI_SERIAL_C_COMPILER ${CMAKE_C_COMPILER})
+    endif ()
+  endif ()
+  SciPrintVar(SCI_SERIAL_C_COMPILER)
 
 # Pass up the found variable.  This is all caps.
   set(SCIMPI_FOUND TRUE)

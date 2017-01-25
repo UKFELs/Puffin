@@ -33,13 +33,13 @@
 #
 # SciFindSuperlu: find includes and libraries for Superlu.
 #
-# $Id: FindSciSuperlu.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: FindSciSuperlu.cmake 975 2016-01-09 20:04:17Z cary $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
 #
-#
 ######################################################################
+
 set(SUPRA_SEARCH_PATH ${SUPRA_SEARCH_PATH})
 
 if (WIN32)
@@ -68,8 +68,8 @@ else ()
   endif ()
 endif ()
 
-###
-##  Define what to search for
+#
+#  Define what to search for
 #
 if (ENABLE_PARALLEL)
   set(Superlu_MESSAGE_SEARCH "superlu_dist")

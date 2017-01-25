@@ -1,9 +1,9 @@
 ##############################################################################
 # Adding OpenSplics DDS Data Model related files to the build.
 #
-# $Id: SciOSPLMacros.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: SciOSPLMacros.cmake 1081 2016-09-10 15:44:42Z cary $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
 #
 #
@@ -40,8 +40,6 @@
 #    * Better error handling/robustness.
 #
 ##############################################################################
-
-
 
 # Macro to create a list with all the generated source files for a given .idl filename
 macro(DEFINE_OpenSplice_LANG_SOURCES lang idl)
@@ -182,3 +180,4 @@ macro(ADD_OSPL_DATAMODEL)
     set(${SCIADM_NAME}_OSPLDDS_DATAMODEL ${iall_ospldds_datamodel})
 
 endmacro(ADD_OSPL_DATAMODEL)
+

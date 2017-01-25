@@ -17,11 +17,10 @@
 #
 # SciSphinxFunction
 #
-# $Id: SciSphinxFunctions.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: SciSphinxFunctions.cmake 1079 2016-09-09 00:05:24Z cary $
 #
-# Copyright &copy; 2012-2015, Tech-X Corporation, Boulder, CO.
+# Copyright &copy; 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
-#
 #
 #################################################################
 
@@ -56,8 +55,8 @@ macro(SciSphinxTarget)
         SOURCE_DIR;INSTALL_SUPERDIR;INSTALL_SUBDIR)
   set(multValArgs FILE_DEPS;ALL_BUILDS) # e.g., lists
   cmake_parse_arguments(FD "${opts}" "${oneValArgs}" "${multValArgs}" ${ARGN})
-  ###
-  ## Defaults
+  #
+  # Defaults
   #
   if (NOT DEFINED FD_SOURCE_DIR)
     set(FD_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -76,9 +75,12 @@ macro(SciSphinxTarget)
   else ()
     set(instdir ${CMAKE_INSTALL_PREFIX})
   endif ()
+  if (NOT DEFINED USE_WHOOSH )
+    set(USE_WHOOSH false)
+  endif ()
 
-  ###
-  ##  Basic sanity checks
+  #
+  #  Basic sanity checks
   #
   get_filename_component(thissubdir ${CMAKE_CURRENT_SOURCE_DIR} NAME)
   if (NOT NOWARN_NOTMATCH_DIR)
@@ -117,8 +119,8 @@ macro(SciSphinxTarget)
     message(STATUS "[SciSphinxFunctions]: SPHINX_DOCTREE_DIR= ${FD_SPHINX_DOCTREE_DIR} ")
   endif ()
 
-  ###
-  ##  Do the standard builds
+  #
+  #  Do the standard builds
   #
   if (NOT EXISTS ${FD_SOURCE_DIR}/${FD_RST_FILE_BASE}.rst)
      set(html_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/html/${FD_RST_FILE_BASE}.html)
@@ -148,12 +150,25 @@ macro(SciSphinxTarget)
         DEPENDS ${FD_FILE_DEPS}
       )
       add_custom_target(${FD_TARGET}-${build} DEPENDS ${${build}_OUTPUT})
+      if (USE_WHOOSH AND "${build}" STREQUAL html)
+        message(STATUS "XXXXXXXXXXX")
+        set(whoosh_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/html/whoosh.txt)
+        set(all_opts -b whoosh -c ${CMAKE_CURRENT_BINARY_DIR} ${Sphinx_OPTS} ${FD_SPHINX_ADDL_OPTS} ${FD_SPHINX_DOCTREE_DIR})
+        add_custom_command(
+          OUTPUT ${whoosh_OUTPUT}
+          COMMAND ${Sphinx_EXECUTABLE}
+          ARGS ${all_opts} ${FD_SOURCE_DIR} ${${build}_DIR}
+          DEPENDS ${FD_FILE_DEPS}
+        )
+        add_custom_target(${FD_TARGET}-whoosh
+                          DEPENDS ${whoosh_OUTPUT})
+       endif ()
     endif ()
   endforeach ()
 
-  ###
-  ##  PDF is special
-  ##   This must be make, as sphinx generates a unix makefile
+  #
+  #  PDF is special
+  #   This must be make, as sphinx generates a unix makefile
   #
   add_custom_command(
     OUTPUT ${pdf_OUTPUT}
@@ -163,8 +178,8 @@ macro(SciSphinxTarget)
   )
   add_custom_target(${FD_TARGET}-pdf DEPENDS ${pdf_OUTPUT})
 
-  ###
-  ##  Each install is a one-off
+  #
+  #  Each install is a one-off
   #
   list(FIND FD_SPHINX_INSTALLS "pdf" indx)
   if (NOT indx EQUAL -1)

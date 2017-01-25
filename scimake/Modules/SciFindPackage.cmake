@@ -68,9 +68,9 @@
 #
 # SciFindPackage: find includes and libraries of a package
 #
-# $Id: SciFindPackage.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: SciFindPackage.cmake 1081 2016-09-10 15:44:42Z cary $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
 #
 #
@@ -619,6 +619,7 @@ endfunction()
 # PROGRAM_SUBDIRS: executable subdirs
 # INCLUDE_SUBDIRS: include subdirectories
 # LIBRARY_SUBDIRS: library subdirectories
+# MODULE_SUBDIRS: library subdirectories
 # FILE_SUBDIRS: file subdirectories
 #
 # NOTE: One cannot reset calling variables
@@ -642,10 +643,10 @@ macro(SciFindPackage)
 # This message is purposefully NOT a STATUS message
 # To provide more readable output
   if (NOT DEBUG_CMAKE AND TFP_FIND_QUIETLY)
-    message(STATUS "Looking for ${TFP_PACKAGE}.")
+    message(STATUS "Seeking ${TFP_PACKAGE}.")
   else ()
     message("")
-    message("--------- SciFindPackage looking for ${TFP_PACKAGE} ---------")
+    message("--------- SciFindPackage seeking ${TFP_PACKAGE} ---------")
   endif ()
 
   if (DEBUG_CMAKE)
@@ -660,10 +661,12 @@ macro(SciFindPackage)
       HEADERS          = ${TFP_HEADERS}
       LIBRARIES        = ${TFP_LIBRARIES}
       MODULES          = ${TFP_MODULES}
+      FILES            = ${TFP_FILES}
       CONFIG_SUBDIRS   = ${TFP_CONFIG_SUBDIRS}
       PROGRAM_SUBDIRS  = ${TFP_PROGRAM_SUBDIRS}
       INCLUDE_SUBDIRS  = ${TFP_INCLUDE_SUBDIRS}
       LIBRARY_SUBDIRS  = ${TFP_LIBRARY_SUBDIRS}
+      MODULE_SUBDIRS  = ${TFP_LIBRARY_SUBDIRS}
       FILE_SUBDIRS     = ${TFP_FILE_SUBDIRS}
       FIND_QUIETLY     = ${TFP_FIND_QUIETLY}
       ALLOW_LIBRARY_DUPLICATES = ${TFP_ALLOW_LIBRARY_DUPLICATES}
@@ -849,7 +852,7 @@ macro(SciFindPackage)
           if (${scitype} STREQUAL PROGRAM)
             set(scifilesubdirs bin)
           elseif (${scitype} STREQUAL FILE)
-            set(scifilesubdirs share)
+            set(scifilesubdirs share share/macros)
           elseif (${scitype} STREQUAL INCLUDE)
             set(scifilesubdirs include)
           elseif (${scitype} STREQUAL LIBRARY)
@@ -907,6 +910,10 @@ macro(SciFindPackage)
 # Find static libraries
     if (${scipkgreg}_LIBRARIES)
       SciGetStaticLibs("${${scipkgreg}_LIBRARIES}" ${scipkgreg}_STLIBS)
+# Prefer static if found
+      if (NOT USE_SHARED_LIBS AND DEFINED USE_SHARED_LIBS AND ${scipkgreg}_STLIBS)
+        set(${scipkgreg}_LIBRARIES ${${scipkgreg}_STLIBS})
+      endif ()
     endif ()
 
     if (${scipkgreg}_DLLS)

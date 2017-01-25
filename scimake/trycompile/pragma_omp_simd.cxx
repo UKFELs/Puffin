@@ -1,10 +1,10 @@
 /**
- * $Id: pragma_omp_simd.cxx 792 2015-04-17 14:07:44Z jrobcary $
+ * $Id: pragma_omp_simd.cxx 975 2016-01-09 20:04:17Z cary $
  *
  * Code stub for determining whether the compiler supports simd pragmas
  * from OpenMP 4.
  *
- * Copyright &copy; 2013-2015, Tech-X Corporation, Boulder, CO.
+ * Copyright &copy; 2015-2016, Tech-X Corporation, Boulder, CO.
  * See LICENSE file (EclipseLicense.txt) for conditions of use.
  */
 #include <omp.h>

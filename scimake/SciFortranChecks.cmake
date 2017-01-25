@@ -2,9 +2,9 @@
 #
 # SciFortranChecks: check various Fortran capabilities
 #
-# $Id: SciFortranChecks.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: SciFortranChecks.cmake 1079 2016-09-09 00:05:24Z cary $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
 #
 # THIS FILE NEEDS ALOT OF WORK.  JUST STARTING WITH GNU.
@@ -67,6 +67,11 @@ elseif ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL XL)
     set(Fortran_COMP_LIB_SUBDIR xlC${Fortran_MAJOR_VERSION})
   endif ()
   set(SEPARATE_INSTANTIATIONS 1 CACHE BOOL "Whether to separate instantiations -- for correct compilation on xl")
+# Customize flags because cmake defaults are very poor
+  set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -qnooptdebug -qreport -qmaxmem=-1")
+  set(CMAKE_Fortran_FLAGS_FULL "${CMAKE_Fortran_FLAGS_RELEASE}")
+  set(CMAKE_Fortran_FLAGS_RELWITHDEBINFO "-O2")
+  set(CMAKE_Fortran_FLAGS_DEBUG "-g -qnoopt -O0 -qcheck")
   set(FC_DOUBLE_FLAGS "-qautodbl=dbl4")
 endif ()
 if (SCI_FC_PROMOTE_REAL_TO_DOUBLE)
@@ -76,11 +81,12 @@ set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${FC_MOD_FLAGS}")
 SciPrintString("  Fortran_COMP_LIB_SUBDIR = ${Fortran_COMP_LIB_SUBDIR}")
 
 SciPrintString("")
-SciPrintString("  RESULTS FOR cmake detected fortran implicit libraries before cleaning:")
+SciPrintString("  CMake detected fortran implicit libraries:")
 SciPrintVar(CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES)
 SciPrintVar(CMAKE_Fortran_IMPLICIT_LINK_DIRECTORIES)
 
-# Remove mpi and system libs
+# The variables below will contain the libraries needed to add to
+# a C++ linked executable when it links fortran compiled objects
 set(Fortran_IMPLICIT_LIBRARY_DIRS "")
 set(Fortran_IMPLICIT_LIBRARY_NAMES "")
 set(Fortran_IMPLICIT_LIBRARIES "")
@@ -233,19 +239,6 @@ list(REMOVE_DUPLICATES Fortran_IMPLICIT_LIBRARY_NAMES)
 list(REMOVE_DUPLICATES Fortran_IMPLICIT_LIBRARY_DIRS)
 SciGetStaticLibs("${Fortran_IMPLICIT_LIBRARIES}" Fortran_IMPLICIT_STLIBS)
 
-# JRC, 20111203: Why are we doing this?  We can use the other variables.
-if (0)
-unset(Fortran_IMPLICIT_LIBFLAGS)
-foreach (scilibdir ${Fortran_IMPLICIT_LIBRARY_DIRS})
-  set(Fortran_IMPLICIT_LIBFLAGS
-    "${Fortran_IMPLICIT_LIBFLAGS} -L${scilibdir} -Wl,-rpath,${scilibdir}")
-endforeach ()
-foreach (scilib ${Fortran_IMPLICIT_LIBRARY_NAMES})
-  set(Fortran_IMPLICIT_LIBFLAGS
-    "${Fortran_IMPLICIT_LIBFLAGS} -l${scilib}")
-endforeach ()
-endif ()
-
 if (Fortran_IMPLICIT_LIBFLAGS)
   string(STRIP ${Fortran_IMPLICIT_LIBFLAGS} Fortran_IMPLICIT_LIBFLAGS)
 endif ()
@@ -348,3 +341,4 @@ if (CHECK_FortranC_INTERFACE)
 endif ()
 
 SciPrintString("")
+

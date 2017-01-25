@@ -1,3 +1,16 @@
+######################################################################
+#
+# @file    FindSciFacetsIfc.cmake
+#
+# @brief   For finding libraries and include directories for FacetsIfc
+#
+# @version $Id: FindSciFacetsIfc.cmake 1081 2016-09-10 15:44:42Z cary $
+#
+# Copyright &copy; 2012-2016, Tech-X Corporation, Boulder, CO.
+# See LICENSE file (EclipseLicense.txt) for conditions of use.
+#
+######################################################################
+
 # - FindSciFacetsIfc: Module to find include directories and
 #   libraries for FacetsIfc.
 #
@@ -9,16 +22,6 @@
 #  FacetsIfc_INCLUDE_DIRS       = Location of FacetsIfc includes
 #  FacetsIfc_LIBRARY_DIRS       = Location of FacetsIfc libraries
 #  FacetsIfc_LIBRARIES          = Required libraries
-
-######################################################################
-#
-# FindSciGeom: find includes for FacetsIfc
-#
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
-# See LICENSE file (EclipseLicense.txt) for conditions of use.
-#
-#
-######################################################################
 
 SciFindPackage(PACKAGE "FacetsIfc"
               HEADERS "FacetsIfc.h"
@@ -33,3 +36,4 @@ else ()
     message(FATAL_ERROR "Failed.")
   endif ()
 endif ()
+
