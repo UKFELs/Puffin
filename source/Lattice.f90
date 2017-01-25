@@ -588,7 +588,15 @@ contains
 
 !  #############################################
 
-
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> When not using undulator ends, this subroutine re-centres the beam after
+!> the undulator exit. This may be redundant, as we usually also apply
+!> the correctTrans subroutine after the exit to correct the transverse motion...
+!> @param[in] sZ zbar position
 
   subroutine matchOut(sZ)
 
@@ -685,7 +693,15 @@ contains
 ! ###############################################
 
 
-
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> When not using undulator ends, this subroutine initializes the transverse beam
+!> coordinates to satisfy the initial offset conditions in the undulator. 
+!> the undulator exit. 
+!> @param[in] sZ zbar position
 
   subroutine matchIn(sZ)
 
@@ -780,6 +796,18 @@ contains
 ! #########################################################
 
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> When not using undulator ends, this subroutine initializes the transverse beam
+!> coordinates to satisfy the initial offset conditions in the undulator. 
+!> the undulator exit. 
+!> @param[in] iM Undulator number
+!> @param[in] sZ zbar position in the machine
+!> @param[inout] sZ zbar position local to undulator (initialized to = 0) here
+
   subroutine initUndulator(iM, sZ, szl)
 
     integer(kind=ip), intent(in) :: iM
@@ -832,10 +860,17 @@ contains
 
 ! #########################################################
 
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Function to count the number of lines on a file 
+!> @param[in] fname Filename
+
   FUNCTION lineCount(fname)
 
-!     Function to count the number of lines on a file
-!
 !                ARGUMENTS
 
   INTEGER(KIND=IP)          :: lineCount
@@ -861,11 +896,16 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Function to count the number of each type of element in the lattice file
+!> @param[in] fname Filename
+
   function numOfMods(fname)
 
-!     Function to count the number of each type of element
-!     in the lattice file
-!
 !                ARGUMENTS
 
   integer(kind=ip)          :: numOfMods
