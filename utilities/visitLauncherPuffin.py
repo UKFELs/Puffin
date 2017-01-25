@@ -3,6 +3,9 @@ import sys
 import tables
 import getDBNames
 import plotPowNorm
+import binPhase
+import plotEnergyLinear
+import plotEnergy
 
 # Set local visit and visit's python package locations
 # laptop:-
@@ -162,76 +165,76 @@ def TimeSeriesS1():
   visit.SetAnnotationAttributes(AnnotationAtts)
   visit.DrawPlots()
 
-def plotEnergyLinear():
-  data=visit.OpenDatabase(localPowerAllDB,0,'Vs')
-  visit.AddPlot('Curve','Energy')
-  AnnotationAtts = visit.AnnotationAttributes()
-  AnnotationAtts.axes2D.yAxis.grid = 0
-  AnnotationAtts.axes2D.xAxis.grid = 0
-  AnnotationAtts.axes2D.xAxis.title.userTitle = 1
-  AnnotationAtts.axes2D.xAxis.title.userUnits = 1
-  AnnotationAtts.axes2D.xAxis.title.title = "z"
-  AnnotationAtts.axes2D.xAxis.title.units = "m"
-  AnnotationAtts.axes2D.yAxis.title.userTitle = 1
-  AnnotationAtts.axes2D.yAxis.title.userUnits = 1
-  AnnotationAtts.axes2D.yAxis.title.title = "Energy"
-  AnnotationAtts.axes2D.yAxis.title.units = "J"
-  AnnotationAtts.userInfoFlag = 0
-  AnnotationAtts.databaseInfoFlag = 0
-  AnnotationAtts.legendInfoFlag = 0
-  visit.SetAnnotationAttributes(AnnotationAtts)
-  visit.DrawPlots()
-  CurveAtts = visit.CurveAttributes()
-  CurveAtts.showLines = 1
-  CurveAtts.lineStyle = CurveAtts.SOLID  # SOLID, DASH, DOT, DOTDASH
-  CurveAtts.lineWidth = 2
-  CurveAtts.curveColorSource = CurveAtts.Custom  # Cycle, Custom
-  CurveAtts.curveColor = (255, 0, 0, 255)
-  CurveAtts.showLabels = 0
-  CurveAtts.showLegend = 0
-  visit.SetPlotOptions(CurveAtts)
+#def plotEnergyLinear():
+#  data=visit.OpenDatabase(localPowerAllDB,0,'Vs')
+#  visit.AddPlot('Curve','Energy')
+#  AnnotationAtts = visit.AnnotationAttributes()
+#  AnnotationAtts.axes2D.yAxis.grid = 0
+#  AnnotationAtts.axes2D.xAxis.grid = 0
+#  AnnotationAtts.axes2D.xAxis.title.userTitle = 1
+#  AnnotationAtts.axes2D.xAxis.title.userUnits = 1
+#  AnnotationAtts.axes2D.xAxis.title.title = "z"
+#  AnnotationAtts.axes2D.xAxis.title.units = "m"
+#  AnnotationAtts.axes2D.yAxis.title.userTitle = 1
+#  AnnotationAtts.axes2D.yAxis.title.userUnits = 1
+#  AnnotationAtts.axes2D.yAxis.title.title = "Energy"
+#  AnnotationAtts.axes2D.yAxis.title.units = "J"
+#  AnnotationAtts.userInfoFlag = 0
+#  AnnotationAtts.databaseInfoFlag = 0
+#  AnnotationAtts.legendInfoFlag = 0
+#  visit.SetAnnotationAttributes(AnnotationAtts)
+#  visit.DrawPlots()
+#  CurveAtts = visit.CurveAttributes()
+#  CurveAtts.showLines = 1
+#  CurveAtts.lineStyle = CurveAtts.SOLID  # SOLID, DASH, DOT, DOTDASH
+#  CurveAtts.lineWidth = 2
+#  CurveAtts.curveColorSource = CurveAtts.Custom  # Cycle, Custom
+#  CurveAtts.curveColor = (255, 0, 0, 255)
+#  CurveAtts.showLabels = 0
+#  CurveAtts.showLegend = 0
+#  visit.SetPlotOptions(CurveAtts)
 
 
-def plotEnergy():
-  data=visit.OpenDatabase(localPowerAllDB,0,'Vs')
-  visit.AddPlot('Curve','Energy',1,1) # For log scale equivalent plot
-  ViewCurveAtts = visit.ViewCurveAttributes()
-  ViewCurveAtts.domainScale = ViewCurveAtts.LINEAR  # LINEAR, LOG
-  ViewCurveAtts.rangeScale = ViewCurveAtts.LOG  # LINEAR, LOG
-  visit.SetViewCurve(ViewCurveAtts) 
-  visit.DrawPlots()
-
-  ViewCurveAtts.domainCoords = (minZ, maxZ)
-  ViewCurveAtts.rangeCoords = (-12, 2)
-  ViewCurveAtts.viewportCoords = (0.2, 0.95, 0.15, 0.95)
-  visit.SetViewCurve(ViewCurveAtts) 
-  visit.DrawPlots()
-  
-  AnnotationAtts = visit.AnnotationAttributes()
-  AnnotationAtts.axes2D.yAxis.grid = 1
-  AnnotationAtts.axes2D.xAxis.grid = 1
-  AnnotationAtts.axes2D.xAxis.title.userTitle = 1
-  AnnotationAtts.axes2D.xAxis.title.userUnits = 1
-  AnnotationAtts.axes2D.xAxis.title.title = "z"
-  AnnotationAtts.axes2D.xAxis.title.units = "m"
-  AnnotationAtts.axes2D.yAxis.title.userTitle = 1
-  AnnotationAtts.axes2D.yAxis.title.userUnits = 1
-  AnnotationAtts.axes2D.yAxis.title.title = "Energy"
-  AnnotationAtts.axes2D.yAxis.title.units = "J"
-  AnnotationAtts.userInfoFlag = 0
-  AnnotationAtts.databaseInfoFlag = 0
-  AnnotationAtts.legendInfoFlag = 0
-  visit.SetAnnotationAttributes(AnnotationAtts)
-  visit.DrawPlots()
-  CurveAtts = visit.CurveAttributes()
-  CurveAtts.showLines = 1
-  CurveAtts.lineStyle = CurveAtts.SOLID  # SOLID, DASH, DOT, DOTDASH
-  CurveAtts.lineWidth = 2
-  CurveAtts.curveColorSource = CurveAtts.Custom  # Cycle, Custom
-  CurveAtts.curveColor = (51, 153, 102, 255)
-  CurveAtts.showLegend = 0
-  CurveAtts.showLabels = 0
-  visit.SetPlotOptions(CurveAtts)
+#def plotEnergy():
+#  data=visit.OpenDatabase(localPowerAllDB,0,'Vs')
+#  visit.AddPlot('Curve','Energy',1,1) # For log scale equivalent plot
+#  ViewCurveAtts = visit.ViewCurveAttributes()
+#  ViewCurveAtts.domainScale = ViewCurveAtts.LINEAR  # LINEAR, LOG
+#  ViewCurveAtts.rangeScale = ViewCurveAtts.LOG  # LINEAR, LOG
+#  visit.SetViewCurve(ViewCurveAtts) 
+#  visit.DrawPlots()
+#
+#  ViewCurveAtts.domainCoords = (minZ, maxZ)
+#  ViewCurveAtts.rangeCoords = (-12, 2)
+#  ViewCurveAtts.viewportCoords = (0.2, 0.95, 0.15, 0.95)
+#  visit.SetViewCurve(ViewCurveAtts) 
+#  visit.DrawPlots()
+#  
+#  AnnotationAtts = visit.AnnotationAttributes()
+#  AnnotationAtts.axes2D.yAxis.grid = 1
+#  AnnotationAtts.axes2D.xAxis.grid = 1
+#  AnnotationAtts.axes2D.xAxis.title.userTitle = 1
+#  AnnotationAtts.axes2D.xAxis.title.userUnits = 1
+#  AnnotationAtts.axes2D.xAxis.title.title = "z"
+#  AnnotationAtts.axes2D.xAxis.title.units = "m"
+#  AnnotationAtts.axes2D.yAxis.title.userTitle = 1
+#  AnnotationAtts.axes2D.yAxis.title.userUnits = 1
+#  AnnotationAtts.axes2D.yAxis.title.title = "Energy"
+#  AnnotationAtts.axes2D.yAxis.title.units = "J"
+#  AnnotationAtts.userInfoFlag = 0
+#  AnnotationAtts.databaseInfoFlag = 0
+#  AnnotationAtts.legendInfoFlag = 0
+#  visit.SetAnnotationAttributes(AnnotationAtts)
+#  visit.DrawPlots()
+#  CurveAtts = visit.CurveAttributes()
+#  CurveAtts.showLines = 1
+#  CurveAtts.lineStyle = CurveAtts.SOLID  # SOLID, DASH, DOT, DOTDASH
+#  CurveAtts.lineWidth = 2
+#  CurveAtts.curveColorSource = CurveAtts.Custom  # Cycle, Custom
+#  CurveAtts.curveColor = (51, 153, 102, 255)
+#  CurveAtts.showLegend = 0
+#  CurveAtts.showLabels = 0
+#  visit.SetPlotOptions(CurveAtts)
 
 
 # def plotPowNorm():
@@ -265,48 +268,48 @@ def plotEnergy():
 
 
 
-def binPhase():
-  visit.OpenDatabase(eDB, 0)
-  visit.AddPlot("Pseudocolor", "operators/DataBinning/2D/electrons", 1, 1)
-  DataBinningAtts = visit.DataBinningAttributes()
-  DataBinningAtts.numDimensions = DataBinningAtts.Two  # One, Two, Three
-  DataBinningAtts.dim1BinBasedOn = DataBinningAtts.Variable  # X, Y, Z, Variable
-  DataBinningAtts.dim1Var = "electrons_z"
-  DataBinningAtts.dim1SpecifyRange = 1
-  DataBinningAtts.dim1MinRange = 0
-  DataBinningAtts.dim1MaxRange = 31
-  DataBinningAtts.dim1NumBins = 512
-  DataBinningAtts.dim2BinBasedOn = DataBinningAtts.Variable  # X, Y, Z, Variable
-  DataBinningAtts.dim2Var = "electrons_gamma"
-  DataBinningAtts.dim2SpecifyRange = 1
-  DataBinningAtts.dim2MinRange = 0.995
-  DataBinningAtts.dim2MaxRange = 1.005
-  DataBinningAtts.dim2NumBins = 512
-  DataBinningAtts.outOfBoundsBehavior = DataBinningAtts.Clamp  # Clamp, Discard
-  DataBinningAtts.reductionOperator = DataBinningAtts.Sum  # Average, Minimum, Maximum, StandardDeviation, Variance, Sum, Count, RMS, PDF
-  DataBinningAtts.varForReduction = "electrons_chargeSI"
-  DataBinningAtts.emptyVal = 0
-  DataBinningAtts.outputType = DataBinningAtts.OutputOnBins  # OutputOnBins, OutputOnInputMesh
-  DataBinningAtts.removeEmptyValFromCurve = 1
-  visit.SetOperatorOptions(DataBinningAtts, 1)
-  visit.SetTimeSliderState(0)
-  visit.SetTimeSliderState(1)
-  AnnotationAtts = visit.AnnotationAttributes()
-  AnnotationAtts.axes2D.yAxis.grid = 0
-  AnnotationAtts.axes2D.xAxis.grid = 0
-  AnnotationAtts.axes2D.xAxis.title.userTitle = 1
-  AnnotationAtts.axes2D.xAxis.title.userUnits = 1
-  AnnotationAtts.axes2D.xAxis.title.title = "z2bar"
-  AnnotationAtts.axes2D.xAxis.title.units = "cooperation lengths"
-  AnnotationAtts.axes2D.yAxis.title.userTitle = 1
-  AnnotationAtts.axes2D.yAxis.title.userUnits = 1
-  AnnotationAtts.axes2D.yAxis.title.title = "gamma"
-  AnnotationAtts.axes2D.yAxis.title.units = ""
-  AnnotationAtts.userInfoFlag = 0
-  AnnotationAtts.databaseInfoFlag = 0
-  # AnnotationAtts.legendInfoFlag = 0
-  visit.SetAnnotationAttributes(AnnotationAtts)
-  visit.DrawPlots()
+#def binPhase():
+#  visit.OpenDatabase(eDB, 0)
+#  visit.AddPlot("Pseudocolor", "operators/DataBinning/2D/electrons", 1, 1)
+#  DataBinningAtts = visit.DataBinningAttributes()
+#  DataBinningAtts.numDimensions = DataBinningAtts.Two  # One, Two, Three
+#  DataBinningAtts.dim1BinBasedOn = DataBinningAtts.Variable  # X, Y, Z, Variable
+#  DataBinningAtts.dim1Var = "electrons_z"
+#  DataBinningAtts.dim1SpecifyRange = 0
+#  DataBinningAtts.dim1MinRange = 0
+#  DataBinningAtts.dim1MaxRange = 31
+#  DataBinningAtts.dim1NumBins = 512
+#  DataBinningAtts.dim2BinBasedOn = DataBinningAtts.Variable  # X, Y, Z, Variable
+#  DataBinningAtts.dim2Var = "electrons_gamma"
+#  DataBinningAtts.dim2SpecifyRange = 0
+#  DataBinningAtts.dim2MinRange = 0.995
+#  DataBinningAtts.dim2MaxRange = 1.005
+#  DataBinningAtts.dim2NumBins = 512
+#  DataBinningAtts.outOfBoundsBehavior = DataBinningAtts.Clamp  # Clamp, Discard
+#  DataBinningAtts.reductionOperator = DataBinningAtts.Sum  # Average, Minimum, Maximum, StandardDeviation, Variance, Sum, Count, RMS, PDF
+#  DataBinningAtts.varForReduction = "electrons_chargeSI"
+#  DataBinningAtts.emptyVal = 0
+#  DataBinningAtts.outputType = DataBinningAtts.OutputOnBins  # OutputOnBins, OutputOnInputMesh
+#  DataBinningAtts.removeEmptyValFromCurve = 1
+#  visit.SetOperatorOptions(DataBinningAtts, 1)
+#  visit.SetTimeSliderState(0)
+#  visit.SetTimeSliderState(1)
+#  AnnotationAtts = visit.AnnotationAttributes()
+#  AnnotationAtts.axes2D.yAxis.grid = 0
+#  AnnotationAtts.axes2D.xAxis.grid = 0
+#  AnnotationAtts.axes2D.xAxis.title.userTitle = 1
+#  AnnotationAtts.axes2D.xAxis.title.userUnits = 1
+#  AnnotationAtts.axes2D.xAxis.title.title = "z2bar"
+#  AnnotationAtts.axes2D.xAxis.title.units = "cooperation lengths"
+#  AnnotationAtts.axes2D.yAxis.title.userTitle = 1
+#  AnnotationAtts.axes2D.yAxis.title.userUnits = 1
+#  AnnotationAtts.axes2D.yAxis.title.title = "gamma"
+#  AnnotationAtts.axes2D.yAxis.title.units = ""
+#  AnnotationAtts.userInfoFlag = 0
+#  AnnotationAtts.databaseInfoFlag = 0
+#  # AnnotationAtts.legendInfoFlag = 0
+#  visit.SetAnnotationAttributes(AnnotationAtts)
+#  visit.DrawPlots()
 
 
 
@@ -413,16 +416,16 @@ visit.Launch(vdir=localVisItDir)
 # else:
 #   data=visit.OpenDatabase(localPowerAllDB,0,'Vs')
 
-plotEnergyLinear()
+plotEnergyLinear.plotEnergyLinear(localPowerAllDB)
 
 visit.AddWindow()
-plotEnergy()
+plotEnergy.plotEnergy(localPowerAllDB)
 
 visit.AddWindow()
 plotPowNorm.plotPowNorm(localPowerAllDB)
 
 visit.AddWindow()
-binPhase()
+binPhase.binPhase(eDB)
 
 visit.AddWindow()
 bunching()

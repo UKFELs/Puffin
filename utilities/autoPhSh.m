@@ -27,7 +27,7 @@ pperp = - alpha .* sin(zbar./16./rho).^2 .* cos(zbar./2./rho);
 ppsq = abs(pperp).^2;
 
 
-p2 = (1./gammaFr) ./ (1 + aw_rms.^2) .* (1 + (aw.^2 .* ppsq));
+p2 = (1./gammaFr).^2 ./ (1 + aw_rms.^2) .* (1 + (aw.^2 .* ppsq));
 
 z2a = trapz(zbar, p2);   %  actual shift in z2 from end
 
@@ -65,7 +65,7 @@ pperp = - alpha .* cos(zbar./16./rho).^2 .* cos(zbar./2./rho);
 ppsq = abs(pperp).^2;
 
 
-p2 = (1./gammaFr) ./ (1 + aw_rms.^2) .* (1 + (aw.^2 .* ppsq));
+p2 = (1./gammaFr).^2 ./ (1 + aw_rms.^2) .* (1 + (aw.^2 .* ppsq));
 
 z2a = trapz(zbar, p2);   %  actual shift in z2 from end
 
