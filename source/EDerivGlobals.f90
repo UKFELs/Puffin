@@ -16,6 +16,7 @@ module Globals
 use paratype
 use typesAndConstants
 use ArrayFunctions
+use initDataType
 
 implicit none
 
@@ -138,6 +139,11 @@ real(kind=wp), allocatable     :: dadz_w(:)
 
 real(kind=wp) :: sZi_G, sZlSt_G
 
+
+! For restarting from a previous run
+
+
+type(cInitData) :: tInitData_G
 
 ! Temporary intermediate arrays for RK4
 

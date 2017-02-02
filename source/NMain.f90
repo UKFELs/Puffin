@@ -20,6 +20,8 @@ use sddsPuffin
 use lattice
 use Setup
 use undulator
+use initDataType
+use Globals
 
 !!!!!!!!!!!!!!!!!!! Puffin Version 1.6.0 !!!!!!!!!!!!!!!!!!!
 !
@@ -60,7 +62,7 @@ implicit none
 
 !real(kind=wp), allocatable  :: sA(:)
 real(kind=wp)    :: sZ
-integer(kind=ip) :: iL
+integer(kind=ip) :: iL, iLst
 
 logical          :: qOKL
 
@@ -86,9 +88,12 @@ if (tProcInfo_G%qRoot) WRITE(137,*) ' starting..... '
 !!!!!!!!!!!!!!!!!!!!!!!  BEGIN INTEGRATION !!!!!!!!!!!!!!!!!!!!!!!!
 
 
+iLSt = 1_ip
+if (qresume_G) iLst = tInitData_G%iL
 
 
-do iL = 1, modNum
+
+do iL = iLst, modNum
 
 
 

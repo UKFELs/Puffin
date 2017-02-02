@@ -326,33 +326,43 @@ MODULE Setup
   IF (.NOT. qOKL) GOTO 1000  
 
 
+  if (qresume_G) then
+
+    iUnd_cr = tInitData_G%iUnd_cr
+    iChic_cr = tInitData_G%iChic_cr
+    iDrift_cr = tInitData_G%iDrift_cr
+    iQuad_cr = tInitData_G%iQuad_cr
+    iModulation_cr = tInitData_G%iModulation_cr
+    
+  end if
+
 
 !    IF qresume is .TRUE. then we are reading in data from the
 !    dump files from a previous run....
 
-  IF (qResume) THEN
+!  IF (qResume) THEN
 
     !CALL InitFD(sA,sZ,qOKL)
 
     !IF (.NOT. qOKL) GOTO 1000  
   
 
-  ELSE
+!  ELSE
 
 !    ...or if qResume is .FALSE. then we are setting up the data
 !    ourselves....
 
 !    ALLOCATE(sA(nFieldEquations_CG*iNumberNodes_G)) 
 
-    qStart_new = .true.
+  qStart_new = .true.
 
-    call getLocalFieldIndices(sRedistLen_G)
+  call getLocalFieldIndices(sRedistLen_G)
 
 
 
 
   
-    CALL SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, qFlatTopS,&
+  CALL SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, qFlatTopS,&
                             sSeedSigma, &
                             sA0_Re,&
                             sA0_Im,&
@@ -364,9 +374,9 @@ MODULE Setup
 !  call mpi_finalize(error)
 !  stop
 
-    start_step = 1_IP
+  start_step = 1_IP
   	
-  END IF
+!  END IF
 
 
 
@@ -379,11 +389,11 @@ MODULE Setup
    	
 
 
-  IF (qResume) THEN
-    CALL READINCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
+!  IF (qResume) THEN
+!    CALL READINCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
   !ELSE
   !  CALL DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
-  ENDIF
+!  ENDIF
 
 
 
@@ -491,10 +501,16 @@ MODULE Setup
 !                 zDataFileName, .true., .true., qOK)
 
   iCSteps = 0_ip
-  call writeIM(sZ, sZlSt_G, &
-               zDataFileName, 0_ip, 0_ip, 0_ip, iWriteNthSteps, &
-               iIntWriteNthSteps, nSteps, qOKL)
-  iCsteps = 1_ip
+
+  if (.not. qResume_G) then
+
+    call writeIM(sZ, sZlSt_G, &
+                 zDataFileName, 0_ip, 0_ip, 0_ip, iWriteNthSteps, &
+                 iIntWriteNthSteps, nSteps, qOKL)
+
+  end if
+
+!  iCsteps = 1_ip
 
 !  if (qWrite) call wdfs(sA, sZ, 0, tArrayA, tArrayE, tArrayZ, &
 !                        iIntWriteNthSteps, iWriteNthSteps, &

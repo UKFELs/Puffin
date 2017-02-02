@@ -1016,7 +1016,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
     else if (iInputType_G == iReadH5_G) then
       fname_temp = fname(1)
       call readH5beamfile(fname_temp)
-    print *,"Rank ", tProcInfo_G%Rank
+!    print *,"Rank ", tProcInfo_G%Rank
     else 
 
       if (tProcInfo_G%qRoot) print*, 'No beam input type specified....'

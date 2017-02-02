@@ -23,6 +23,7 @@ use RK4int
 use dumpFiles
 use dummyf
 use ParaField
+use InitDataType
 
 
 implicit none
@@ -82,12 +83,23 @@ contains
   call mpi_barrier(tProcInfo_G%comm, error)
   if (tProcInfo_G%qRoot) print*, 'init beam...'
 
-  if (.not. qUndEnds_G) call matchIn(sZ)
+  if (qResume_G) then
 
+    start_step = tInitData_G%iStep
+    iCSteps = tInitData_G%iCSteps
+    sz = tInitData_G%zbarTotal
+    szl = tInitData_G%zbarlocal
+    sZi_G = tInitData_G%Zbarinter
+
+  else
+
+    start_step = 0_ip  ! ...TEMP...
+
+    if (.not. qUndEnds_G) call matchIn(sZ)
+
+  end if
 
   qDiffrctd = .false.
-
-  start_step = 1_ip  ! ...TEMP...
 
   if (start_step==1_IP) then
 
@@ -146,6 +158,13 @@ contains
   istep = start_step
 
   do  
+
+    
+    iStep = iStep + 1_ip
+
+    if (iStep > nSteps) exit
+
+    iCsteps = iCsteps + 1_ip
 
 !   Second half of split step method: electron propagation
 !                    and field driving.
@@ -228,27 +247,31 @@ contains
                  iIntWriteNthSteps, nSteps, qOKL)
 
 
-     if (qDiffraction_G) then
+    if (qDiffraction_G) then
  
  !             If field diffraction occurred this step, need to complete it....  
  !             ...the diffraction only diffracts a half step if data is going
  !             to be written (to match up the split-step data)
  
+      if (iStep /= nSteps) then   ! If not last step
+ 
         if (qDiffrctd) call diffractIM(diffStep * 0.5_wp, &
                          qDiffrctd, qOKL)
-   
-     end if
+
+      end if
+
+    end if
 
     call outer2Inner(ac_rfield_in, ac_ifield_in)
-   
+  
   end if
 
 
   call Get_time(end_time)
     
   if (tProcInfo_G%QROOT ) then
-    print*,' finished step ',iCsteps, end_time-start_time
-    WRITE(137,*) ' finished step ',iCsteps, end_time-start_time
+    print*,' finished step ',iCsteps, istep, end_time-start_time
+    WRITE(137,*) ' finished step ',iCsteps, istep, end_time-start_time
   end if
 
 
@@ -260,13 +283,6 @@ contains
     call allact_rk4_arrs()
     
   end if
-
-
-  iCsteps = iCsteps + 1_ip
-  iStep = iStep + 1_ip
-
-  if (iStep > nSteps) exit
-
 
 !    if (modCount > ModNum) EXIT
 
