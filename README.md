@@ -46,7 +46,8 @@ of the backwards wave from the e-beam.
   - Twiss parameters can be used with the simple beam input
   - Communication time reduced in reorganisation stage of the parallel field algorithm
   - Using doxygen for dev documentation
-  - The example auto-plotting python scripts for Visit have been refactored and can be called seperately
+  - The example auto-plotting python scripts for Visit have been refactored and can be called separately
+  - Added python script (powPrep.py) to collect the power data together
 
 1.6.0:
   - Revamped the form of the lattice file, both to include more components, and to
