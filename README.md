@@ -48,6 +48,7 @@ of the backwards wave from the e-beam.
   - Using doxygen for dev documentation
   - The example auto-plotting python scripts for Visit have been refactored and can be called separately
   - Added python script (powPrep.py) to collect the power data together
+  - Better point transforms for quads, now including energy dependence
 
 1.6.0:
   - Revamped the form of the lattice file, both to include more components, and to
