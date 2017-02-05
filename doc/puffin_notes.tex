@@ -81,7 +81,7 @@ It presently does not include the effects of space charge, and ignores emission 
 
 \section{Overview}
 
-At a minimum, one must specify 2 files for use in Puffin - a `main' input file, and a `beam' input file. The main input file describes the system scaling and reference frame, the numerical field mesh, and other numerical integration options, and the beam file describes the electron beam.
+Puffin, being an unaveraged FEL code, is quite distinct from other FEL codes in it's lack of restrictions on the radiation and electron bandwidth being modelled. Due to the nature of the code, and the likely use cases for such a code, we have attempted to create a resource which is a flexible tool for scientific research into some more esoteric FEL physics and regimes, while still containing enough `realistic'  components to enable modelling of a current or future facility.
 
 At a minimum, one must specify 2 files for use in Puffin - a main input file, and a beam input file. The main file sets up the system scaling, the field mesh, the integration step sizes, and other simulation options. It also specifies the names of the other input files, including the beam file. 
 
