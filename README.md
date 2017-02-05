@@ -40,7 +40,7 @@ of the backwards wave from the e-beam.
 ## Release Notes
 
 1.8.0
-  - Can now input with the Puffin HDF5 output format, 
+  - Can now input with the Puffin HDF5 output format
   - More metadata in the output files
   - Can now resume from previous runs using HDF5 Puffin dumps
   - Twiss parameters can be used with the simple beam input
