@@ -237,8 +237,8 @@ CONTAINS
 
 !           'SI' beta!!! i.e. for dx/dz, not for px or py....
 
-    betax(:) = lg_G * sigE(:,iX_CG)**2.0_wp / sRho_G * emitx(:)
-    betay(:) = lg_G * sigE(:,iY_CG)**2.0_wp / sRho_G * emity(:)
+    betax(:) = lg_G * sigE(:,iX_CG)**2.0_wp / sRho_G / emitx(:)
+    betay(:) = lg_G * sigE(:,iY_CG)**2.0_wp / sRho_G / emity(:)
 
 
 !                getting rms sigma pxbar and pybar from Twiss
