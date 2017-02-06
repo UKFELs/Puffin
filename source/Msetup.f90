@@ -141,6 +141,7 @@ MODULE Setup
        sgammar,           &
        lambda_w,          &
        sEmit_n,           &
+       alphax, alphay, emitx, emity, &
        fx,                &
        fy,                &
        Dfact,             &
@@ -319,7 +320,7 @@ MODULE Setup
   end if
 
   call PopMacroElectrons(qSimple, dist_f, sQe,iNumElectrons,q_noise,sZ,sLenEPulse,&
-                         sEleSig,beamCenZ2,gamma_d,&
+                         sEleSig, alphax, alphay, emitx, emity, beamCenZ2,gamma_d,&
                          sElectronThreshold,chirp, mag, fr, &
                          nbeams, qOK)
 

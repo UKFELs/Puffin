@@ -932,9 +932,10 @@ end subroutine calcSamples
 
 
 
-SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
-                             sigma, beamCenZ2,gamma_d,eThresh, &
-                             chirp,mag,fr,nbeams, qOK)
+SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
+                             sigma, alphax, alphay, emitx, emity, &
+                             beamCenZ2, gamma_d, eThresh, &
+                             chirp, mag, fr, nbeams, qOK)
 
 !                     ARGUMENTS
 
@@ -948,6 +949,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
     REAL(KIND=WP),     INTENT(IN)    :: Z
     REAL(KIND=WP),     INTENT(INOUT) :: LenEPulse(:,:)
     REAL(KIND=WP),     INTENT(INOUT) :: sigma(:,:)
+    real(kind=wp),     intent(in)    :: alphax(:), alphay(:), emitx(:), emity(:)
     REAL(KIND=WP),     INTENT(INOUT) :: beamCenZ2(:)
     REAL(KIND=WP),     INTENT(IN)    :: eThresh
     LOGICAL,           INTENT(OUT)   :: qOK     
@@ -993,13 +995,11 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
 
 !     Setup electrons
 
-
-
-
     if (iInputType_G == iGenHom_G) then
 
       CALL electron_grid(RealE,NE,noise, &
-                         Z,nbeams, LenEPulse,sigma, beamCenZ2, gamma_d, &
+                         Z,nbeams, LenEPulse,sigma, alphax, alphay, &
+                         emitx, emity, beamCenZ2, gamma_d, &
                          eThresh,tTransInfo_G%qOneD, &
                          chirp,mag,fr,qOKL)
       IF (.NOT. qOKL) GOTO 1000

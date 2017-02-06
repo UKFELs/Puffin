@@ -84,6 +84,8 @@ REAL(KIND=WP), ALLOCATABLE :: sA0_Re(:),sA0_Im(:)
 INTEGER(KIND=IP) :: nbeams
 logical, allocatable :: qMatched_A(:)
 
+real(kind=wp), allocatable :: alphax(:), alphay(:), emitx(:), emity(:)
+
 !!!
 !!! END NEW
 !!!!!!!!!!!!!!!!!!!!
