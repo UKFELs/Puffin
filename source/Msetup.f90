@@ -178,7 +178,7 @@ MODULE Setup
     if (tProcInfo_G%qRoot) print*, ''
 
     call scaleParams(sEleSig, sLenEPulse, sSigEj_G, &
-                     beamCenZ2, chirp, sEmit_n, gamma_d, &
+                     beamCenZ2, chirp, sEmit_n, emitx, emity, gamma_d, &
                      sFieldModelLength, sLengthofElm, &
                      sSeedSigma)
   end if
