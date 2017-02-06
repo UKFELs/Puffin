@@ -241,7 +241,7 @@ CONTAINS
     betay(:) = lg_G * sigE(:,iY_CG)**2.0_wp / sRho_G / emity(:)
 
 
-!                getting rms sigma pxbar and pybar from Twiss
+!     getting rms sigma pxbar (@ x=0) and pybar (@ y=0) from Twiss
 
     sigE(:,iPX_CG) = gamma_d(:) * sGammaR_G * sqrt(lg_G*lc_G) * &
                                 sigE(:,iX_CG) / betax(:) / saw_G
