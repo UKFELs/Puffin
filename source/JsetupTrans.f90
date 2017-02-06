@@ -240,7 +240,7 @@ contains
 
 
 
-subroutine MatchBeams(sSigE, sLenE, sEmit, sGamFrac, &
+subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
                       qMatchA)
 
 ! Subroutine which matches the beam in x and y
@@ -254,7 +254,7 @@ subroutine MatchBeams(sSigE, sLenE, sEmit, sGamFrac, &
 
   integer(kind=ip) :: nbeams, ic
   
-  nbeams = size(sEmit)
+  nbeams = size(emitx)
 
   do ic = 1, nbeams
 

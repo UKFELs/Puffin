@@ -768,7 +768,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
   do b_ind = 1, nbeams
 
-    if (qMatched_A(b_ind) = .true.) then
+    if (qMatched_A(b_ind)) then
       qAMatch = .true.
       alphax(b_ind) = 0.0_wp
       alphay(b_ind) = 0.0_wp
@@ -777,13 +777,14 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   end do
 
 
-  if (qAMatch = .true.) then
+  if (qAMatch) then
     
     if (tProcInfo_G%qRoot) print*, 'You have chosen to match at least one beam'
     if (tProcInfo_G%qRoot) print*, 'Please recall that the matching is only done', &
                                   'for the in-undulator weak or strong focusing ', &
                                   'of the first module, and not for any FODO lattice!!! '
     if (tProcInfo_G%qRoot) print*, 'alphax and alphay will then be ignored....'
+    if (tProcInfo_G%qRoot) print*, '(if this is 1D then you wont care about this!)'
       
   end if
 
