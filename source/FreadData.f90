@@ -756,15 +756,31 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   nseqparts_G = nseqparts
   qFixCharge_G = qFixCharge
 
-  if (sEmit_n(1) > 0.0_wp) then
+  do b_ind = 1, nbeams
+
+    if (sEmit_n(b_ind) > 0.0_wp) then
     
-    print*, 'WARNING - use of sEmit_n deprecated - use emitx and emity instead'
-    print*, 'For now, emitx and emity will = sEmit_n where not specified'
+      print*, 'WARNING - use of sEmit_n deprecated - use emitx and emity instead'
+      print*, 'For now, emitx and emity will = sEmit_n where not specified'
     
-    where (emitx <= 0.0_wp) emitx = sEmit_n
-    where (emity <= 0.0_wp) emity = sEmit_n
+      if (emitx(b_ind) <= 0.0_wp) emitx(b_ind) = sEmit_n(b_ind)
+      if (emity(b_ind) <= 0.0_wp) emity(b_ind) = sEmit_n(b_ind)
     
-  end if  
+    end if  
+
+  end do
+
+  qUseAlpha_G = .false.
+
+  do b_ind = 1, nbeams
+
+    if (emitx(b_ind) > 0.0_wp) then
+      qUseAlpha_G = .true.
+    end if
+
+  end do
+  
+  
 
   do b_ind = 1, nbeams
 
