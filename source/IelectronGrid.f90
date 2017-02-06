@@ -243,8 +243,17 @@ CONTAINS
 
 !                getting rms sigma pxbar and pybar from Twiss
 
-    sigE(:,iPX_CG) = gamma_d(:) * sGammaR_G * sigE(:,iX_CG) / betax(:) / saw_G
-    sigE(:,iPY_CG) = gamma_d(:) * sGammaR_G * sigE(:,iY_CG) / betay(:) / saw_G
+    sigE(:,iPX_CG) = gamma_d(:) * sGammaR_G * sqrt(lg_G*lc_G) * &
+                                sigE(:,iX_CG) / betax(:) / saw_G
+    sigE(:,iPY_CG) = gamma_d(:) * sGammaR_G * sqrt(lg_G*lc_G) * &
+                                sigE(:,iY_CG) / betay(:) / saw_G
+
+    print*, 'hey there, I got betax = ', betax
+    print*, 'hey there, I got betay = ', betay
+    print*, 'hey there, I got emitx = ', emitx
+    print*, 'hey there, I got emity = ', emity
+    print*, 'hey there, I got sigpx = ', sigE(:,iPX_CG)
+    print*, 'hey there, I got sigpy = ', sigE(:,iPY_CG)
 
 
 
