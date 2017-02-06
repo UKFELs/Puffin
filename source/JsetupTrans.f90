@@ -292,11 +292,11 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
     call getKBetas(kbx, kby, sEnfrac)
 
     if (tProcInfo_G%qRoot) print*, &
-    'Scaled betatron wavenumber in x (in gain lengths) = ', kbx
+    'Scaled betatron wavenumber in undulator in x (in units of 1 / gain length) = ', kbx
 
     call getKBetas(kbx, kby, sEnfrac)
     if (tProcInfo_G%qRoot) print*, &
-    'Scaled betatron wavenumber in y (in gain lengths) = ', kby
+    'Scaled betatron wavenumber in undulator in y (in units of 1 / gain length) = ', kby
 
     call matchxPx(sSigE(iX_CG), sSigE(iPX_CG), emitx, &
                   kbx, sEnFrac)

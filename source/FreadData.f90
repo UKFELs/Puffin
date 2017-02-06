@@ -759,9 +759,10 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   do b_ind = 1, nbeams
 
     if (sEmit_n(b_ind) > 0.0_wp) then
-    
-      print*, 'WARNING - use of sEmit_n deprecated - use emitx and emity instead'
-      print*, 'For now, emitx and emity will = sEmit_n where not specified'
+      if (tProcInfo_G%qRoot) print*, ''
+      if (tProcInfo_G%qRoot) print*, '************************************************'
+      if (tProcInfo_G%qRoot) print*, 'WARNING - use of sEmit_n deprecated - use emitx and emity instead'
+      if (tProcInfo_G%qRoot) print*, 'For now, emitx and emity will = sEmit_n where not specified'
     
       if (emitx(b_ind) <= 0.0_wp) emitx(b_ind) = sEmit_n(b_ind)
       if (emity(b_ind) <= 0.0_wp) emity(b_ind) = sEmit_n(b_ind)
@@ -776,6 +777,9 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
     if (emitx(b_ind) <= 0.0_wp) then
       alphax(b_ind) = 0.0_wp
+    end if
+
+    if (emity(b_ind) <= 0.0_wp) then
       alphay(b_ind) = 0.0_wp
     end if
 
@@ -789,7 +793,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
 
   if (qAMatch) then
-    
+    if (tProcInfo_G%qRoot) print*, ''
+    if (tProcInfo_G%qRoot) print*, '************************************************'
     if (tProcInfo_G%qRoot) print*, 'You have chosen to match at least one beam'
     if (tProcInfo_G%qRoot) print*, 'Please recall that the matching is only done', &
                                   'for the in-undulator weak or strong focusing ', &
