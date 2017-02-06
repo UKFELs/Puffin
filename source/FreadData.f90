@@ -557,7 +557,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 !                     LOCAL ARGS
 
   INTEGER(KIND=IP) :: b_ind
-  logical :: qFixCharge
+  logical :: qFixCharge, qAMatch
   INTEGER::ios
   CHARACTER(96) :: dtype
 
@@ -577,6 +577,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   namelist /bh5list/ dist_f
 
   qOK = .FALSE.
+
+  qAMatch = .false.
 
 ! Open the file
 !  OPEN(UNIT=168,FILE=be_f,IOSTAT=ios,&
@@ -654,8 +656,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   nseqparts = 1000_ip
   qSimple = .false.
   qFixCharge = .false.
-  alphax = -1.0_wp
-  alphay = -1.0_wp
+  alphax = 0.0_wp
+  alphay = 0.0_wp
   emitx = -1.0_wp
   emity = -1.0_wp
 
@@ -764,7 +766,27 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
     
   end if  
 
-  
+  do b_ind = 1, nbeams
+
+    if (qMatched_A(b_ind) = .true.) then
+      qAMatch = .true.
+      alphax(b_ind) = 0.0_wp
+      alphay(b_ind) = 0.0_wp
+    end if
+
+  end do
+
+
+  if (qAMatch = .true.) then
+    
+    if (tProcInfo_G%qRoot) print*, 'You have chosen to match at least one beam'
+    if (tProcInfo_G%qRoot) print*, 'Please recall that the matching is only done', &
+                                  'for the in-undulator weak or strong focusing ', &
+                                  'of the first module, and not for any FODO lattice!!! '
+    if (tProcInfo_G%qRoot) print*, 'alphax and alphay will then be ignored....'
+      
+  end if
+
 !  if (emitx(1) <= 0.0_wp) emitx(1) = 1.0_wp
 !  if (emity(1) <= 0.0_wp) emity(1) = 1.0_wp
 

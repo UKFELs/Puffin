@@ -275,7 +275,7 @@ MODULE Setup
     if (qSimple) then
 
       call stptrns(sEleSig, sLenEPulse, iNumElectrons, &
-                   sEmit_n, gamma_d, &
+                   emitx, emity, gamma_d, &
                    qMatched_A, qMatchS_G, qFMesh_G, sSeedSigma)
 
       sFieldModelLength(iX_CG) = sLengthOfElmX_G * real((NX_G-1_ip),kind=wp)
