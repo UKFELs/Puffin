@@ -770,19 +770,14 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
   end do
 
-  qUseAlpha_G = .false.
+  
 
   do b_ind = 1, nbeams
 
-    if (emitx(b_ind) > 0.0_wp) then
-      qUseAlpha_G = .true.
+    if (emitx(b_ind) <= 0.0_wp) then
+      alphax(b_ind) = 0.0_wp
+      alphay(b_ind) = 0.0_wp
     end if
-
-  end do
-  
-  
-
-  do b_ind = 1, nbeams
 
     if (qMatched_A(b_ind)) then
       qAMatch = .true.

@@ -234,19 +234,35 @@ CONTAINS
 !    sigpx0 = gamma_d * sGammaR_G * sqrt(emitx / betax) / saw_G
 !    sigpy0 = gamma_d * sGammaR_G * sqrt(emity / betay) / saw_G
 
+    do b_ind = 1, nbeams
+
+      if (emitx(b_ind) > 0.0_wp) then
 
 !           'SI' beta!!! i.e. for dx/dz, not for px or py....
 
-    betax(:) = lg_G * sigE(:,iX_CG)**2.0_wp / sRho_G / emitx(:)
-    betay(:) = lg_G * sigE(:,iY_CG)**2.0_wp / sRho_G / emity(:)
-
+        betax(b_ind) = lg_G * sigE(b_ind,iX_CG)**2.0_wp / sRho_G / emitx(b_ind)
 
 !     getting rms sigma pxbar (@ x=0) and pybar (@ y=0) from Twiss
 
-    sigE(:,iPX_CG) = gamma_d(:) * sGammaR_G * sqrt(lg_G*lc_G) * &
-                                sigE(:,iX_CG) / betax(:) / saw_G
-    sigE(:,iPY_CG) = gamma_d(:) * sGammaR_G * sqrt(lg_G*lc_G) * &
-                                sigE(:,iY_CG) / betay(:) / saw_G
+        sigE(b_ind,iPX_CG) = gamma_d(b_ind) * sGammaR_G * sqrt(lg_G*lc_G) * &
+                                    sigE(b_ind,iX_CG) / betax(b_ind) / saw_G
+
+      else 
+        betax(b_ind) = -1.0_wp
+      end if
+
+      if (emity(b_ind) > 0.0_wp) then
+        
+        betay(b_ind) = lg_G * sigE(b_ind,iY_CG)**2.0_wp / sRho_G / emity(b_ind)
+
+        sigE(b_ind,iPY_CG) = gamma_d(b_ind) * sGammaR_G * sqrt(lg_G*lc_G) * &
+                                    sigE(b_ind,iY_CG) / betay(b_ind) / saw_G
+
+      else 
+        betay(b_ind) = -1.0_wp
+      end if
+
+    end do
 
     print*, 'hey there, I got betax = ', betax
     print*, 'hey there, I got betay = ', betay
@@ -603,8 +619,17 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
       
 !   Rotate phase space to Twiss params...
 
-      gxpx = -alphax / betax
-      gypy = -alphay / betay
+      if (betax > 0.0_wp) then
+        gxpx = -alphax / betax
+      else 
+        gxpx = 0.0_wp
+      end if
+
+      if (betay > 0.0_wp) then
+        gypy = -alphay / betay
+      else
+        gypy = 0.0_wp
+      end if
 
       pxseq = pxseq + gamseq * gxpx * sqrt(lg_G * lc_G) * xseq / saw_G
       pyseq = pyseq + gamseq * gypy * sqrt(lg_G * lc_G) * yseq / saw_G
