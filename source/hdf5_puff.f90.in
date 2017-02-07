@@ -2162,7 +2162,7 @@ contains
         CALL h5pclose_f(plist_id, error)
       end if
       CALL h5screate_simple_f(rank, dims, dspace_id, error)
-      CALL h5sselect_none_f(dspace_id,error)
+      if (nlonglength <= 0) CALL h5sselect_none_f(dspace_id,error)
  ! For the space in memory
       !if (nlonglength.GT.0) then
 ! for the corresponding space on disk
@@ -2172,7 +2172,7 @@ contains
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
       !else
 ! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
-        CALL h5sselect_none_f(filespace,error)
+        if (nlonglength <= 0) CALL h5sselect_none_f(filespace,error)
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting empty slab on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
 !        CALL h5sselect_none_f(dspace_id,error)
