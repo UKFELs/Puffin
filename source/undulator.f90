@@ -61,6 +61,9 @@ contains
     logical :: qWPF
     logical :: qWIF
     logical :: qOKL
+    integer(kind=ip) :: drstart, stepsLeft
+    real(kind=wp) :: dzdS, dzdF, dzd
+    logical :: qDWrDone
     integer error
 
 !    stepsize = delmz(iM)
@@ -118,15 +121,15 @@ contains
   call getLocalFieldIndices(sRedistLen_G*2.0_wp)
 
 
-  if (start_step == 1) then
-    sStep = diffStep*0.5_WP ! Integration step size for first diffraction step
-    nextDiff = 0.0_WP
-  else 
-    sStep = diffStep
-    nextDiff = ceiling(sZ/diffStep) * diffStep
-  end if
+!  if (start_step == 1) then
+!    sStep = diffStep*0.5_WP ! Integration step size for first diffraction step
+!    nextDiff = 0.0_WP
+!  else 
+!    sStep = diffStep
+!    nextDiff = ceiling(sZ/diffStep) * diffStep
+!  end if
 
-
+  iSteps4Diff = nint(diffStep / sStepSize)
 
 
 !     #####
@@ -134,17 +137,68 @@ contains
 
 
 
+
+! if resuming, work out where we are on the diffraction part...
+! will need to do first half step since writes are done on COMPLETED
+! split-steps.
+
+if (qresume_G) then
+  if (qDiffraction_G) then
+
+    drstart = start_step - mod(start_step,isteps4diff)
+
+    if (drstart == nSteps) then
+
+      dzdS = 0.0_wp
+
+    else 
+
+      if ((drstart + isteps4diff) <= nSteps) then
+
+        dzdS = real(isteps4diff,kind=wp) * sStepSize / 2
+
+      else if ((drstart + isteps4diff) > nSteps) then
+
+        stepsLeft = nSteps - drstart
+        dzdS = real(stepsLeft,kind=wp)*sStepSize / 2
+
+      end if
+
+    end if
+
+! If this write was done on a diffraction stage, 
+! need to diffract
+
+    if (dzdS > 0.0_wp) then
+  
+      if (mod(start_step,isteps4diff) == 0_ip) then
+
+        call diffractIM(dzdS, qDiffrctd, qOKL)
+
+      end if
+  
+    end if
+
+  end if
+
+else  ! if not resuming, just do first half diffraction step
+
+  if (qDiffraction_G) then
+
+    dzdS = stepsLeft*sStepSize / 2
+  
+    call diffractIM(dzdS, qDiffrctd, qOKL)
+  
+!    nextDiff = nextDiff + diffStep
+  
+  end if  
+
+end if
+
 !   First step of split-step method:- field diffraction only
 
 
-  if (qDiffraction_G) then
-  
-    call diffractIM(diffStep*0.5_WP, &
-                    qDiffrctd, qOKL)
-  
-    nextDiff = nextDiff + diffStep
-  
-  end if
+
 
 
   call mpi_barrier(tProcInfo_G%comm, error)
@@ -207,66 +261,140 @@ contains
 !   diffract field to complete diffraction step
 
     if (qDiffraction_G) then
-  
-      if ((sZl>(nextDiff-sStepsize/100.0_WP)) .or. (iStep == nSteps))  then
+
+      if ((mod(iStep,isteps4diff) == 0_ip) .or. (iStep == nSteps))  then
 
 !        call deallact_rk4_arrs()
 
         call inner2Outer(ac_rfield_in, ac_ifield_in)
-  
-        if ((iStep == nSteps) .or. &
-             qWriteq(iStep, iCsteps, iWriteNthSteps, iIntWriteNthSteps, nSteps) ) then
-    
-          call diffractIM(diffStep * 0.5_wp, &
-                          qDiffrctd, qOKL)
-  
-        else
-    
-          call diffractIM(diffStep, &
-                          qDiffrctd, qOKL)
-    
-        end if
 
-        call outer2Inner(ac_rfield_in, ac_ifield_in)
-  
-        nextDiff = nextDiff + diffStep
-    
+        dzdF = dzdS  ! Finishing last diffraction step 
+                     ! - must be indentical size
+      
+! Start of next diffraction step is this ->
+! dzdS = either 0, steps4diff*dz / 2, or stepsLeft*dz / 2
+
+        if (iStep == nSteps) then
+
+          dzdS = 0.0_wp
+
+        else
+      
+          if ((iStep + isteps4diff) <= nSteps) then
+
+            dzdS = real(isteps4diff,kind=wp)*sStepSize / 2
+
+          else if ((iStep + isteps4diff) > nSteps) then
+
+            stepsLeft = nSteps - iStep
+            dzdS = real(stepsLeft,kind=wp)*sStepSize / 2
+
+          end if
+
+        end if
+        
+        if (.not. qWriteq(iStep, iCsteps, iWriteNthSteps, iIntWriteNthSteps, &
+                                                         nSteps)) then
+
+        ! if not writing then we can do the last half of the 
+        ! last diffraction step and the first half of the next
+        ! in the same step...
+
+          dzd = dzdF + dzdS
+
+          call diffractIM(dzd, qDiffrctd, qOKL)
+          call outer2Inner(ac_rfield_in, ac_ifield_in)
+        else
+
+        ! If writing in this step, then we need to first
+        ! finish the last diffraction step, and THEN write,
+        ! and then start the next diffraction step.
+
+          call diffractIM(dzdF, qDiffrctd, qOKL)  ! Finish diffraction step
+          call writeIM(sZ, sZl, &
+                       zDataFileName, iStep, iCsteps, iM, iWriteNthSteps, &
+                       iIntWriteNthSteps, nSteps, qOKL)   ! Write data
+          if (dzdS > 0.0_wp) call diffractIM(dzdS, qDiffrctd, qOKL)  ! Start new diffraction step
+          call outer2Inner(ac_rfield_in, ac_ifield_in)
+          qDWrDone = .true.
+
+        end if
       end if
+    end if  ! end diffraction step
+      
+!        if ((iStep == nSteps) .or. &
+!             qWriteq(iStep, iCsteps, iWriteNthSteps, iIntWriteNthSteps, nSteps) ) then
+!    
+!          call diffractIM(diffStep * 0.5_wp, &
+!                          qDiffrctd, qOKL)
+!  
+!        else
+!    
+!          call diffractIM(diffStep, &
+!                          qDiffrctd, qOKL)
+!    
+!        end if
+
+!        call outer2Inner(ac_rfield_in, ac_ifield_in)
   
-    end if
+!        nextDiff = nextDiff + diffStep
+    
+!      end if
+  
+!    end if
 !                   Write result to file
  
   iCount = iCount + 1_IP
   
-  if ( qWriteq(iStep, iCsteps, iWriteNthSteps, iIntWriteNthSteps, nSteps) ) then
+    if (qWriteq(iStep, iCsteps, iWriteNthSteps, iIntWriteNthSteps, nSteps)) then
+      
+      if (.not. qDWrDone) then
 
-    call inner2Outer(ac_rfield_in, ac_ifield_in)
+        ! if not already written in diffraction step
 
-    call writeIM(sZ, sZl, &
-                 zDataFileName, iStep, iCsteps, iM, iWriteNthSteps, &
-                 iIntWriteNthSteps, nSteps, qOKL)
+        call writeIM(sZ, sZl, &
+                     zDataFileName, iStep, iCsteps, iM, iWriteNthSteps, &
+                     iIntWriteNthSteps, nSteps, qOKL)
 
+      else
 
-    if (qDiffraction_G) then
- 
- !             If field diffraction occurred this step, need to complete it....  
- !             ...the diffraction only diffracts a half step if data is going
- !             to be written (to match up the split-step data)
- 
-      if (iStep /= nSteps) then   ! If not last step
- 
-        if (qDiffrctd) call diffractIM(diffStep * 0.5_wp, &
-                         qDiffrctd, qOKL)
+      	qDWrDone = .false.  ! reset
 
       end if
 
     end if
-
-    call outer2Inner(ac_rfield_in, ac_ifield_in)
   
-  end if
-
-
+  
+!  
+!  if ( qWriteq(iStep, iCsteps, iWriteNthSteps, iIntWriteNthSteps, nSteps) ) then
+!
+!    call inner2Outer(ac_rfield_in, ac_ifield_in)
+!
+!    call writeIM(sZ, sZl, &
+!                 zDataFileName, iStep, iCsteps, iM, iWriteNthSteps, &
+!                 iIntWriteNthSteps, nSteps, qOKL)
+!
+!
+!    if (qDiffraction_G) then
+! 
+! !             If field diffraction occurred this step, need to complete it....  
+! !             ...the diffraction only diffracts a half step if data is going
+! !             to be written (to match up the split-step data)
+! 
+!      if (iStep /= nSteps) then   ! If not last step
+! 
+!        if (qDiffrctd) call diffractIM(diffStep * 0.5_wp, &
+!                         qDiffrctd, qOKL)
+!
+!      end if
+!
+!    end if
+!
+!    call outer2Inner(ac_rfield_in, ac_ifield_in)
+!  
+!  end if
+!
+!
   call Get_time(end_time)
     
   if (tProcInfo_G%QROOT ) then
