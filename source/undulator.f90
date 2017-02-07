@@ -131,7 +131,6 @@ contains
 
   iSteps4Diff = nint(diffStep / sStepSize)
 
-
 !     #####
 !     Begin integration through undulator
 
@@ -207,6 +206,7 @@ end if
   call allact_rk4_arrs()
 
 
+  qDWrDone = .false.
 
 
   istep = start_step
@@ -351,6 +351,10 @@ end if
       if (.not. qDWrDone) then
 
         ! if not already written in diffraction step
+
+        print*, 'I AM WRITING!!!'
+
+        call inner2Outer(ac_rfield_in, ac_ifield_in)
 
         call writeIM(sZ, sZl, &
                      zDataFileName, iStep, iCsteps, iM, iWriteNthSteps, &
