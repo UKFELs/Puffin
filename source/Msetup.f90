@@ -376,7 +376,9 @@ MODULE Setup
 !    Define the rescaling parameter "ffact" for rescaling
 !    backwards transform data.
 
-  ffact = iNodes(iX_CG)*iNodes(iY_CG)*iNodes(iZ2_CG)      
+  ffact = real(iNodes(iX_CG), kind=wp) * &
+          real(iNodes(iY_CG), kind=wp) * &
+          real(iNodes(iZ2_CG), kind=wp)      
    	
 
 
