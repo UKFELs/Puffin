@@ -1,3 +1,11 @@
+"""
+@reduceField.py  Exemplar script to create a reduced field mesh file
+from the full dump. This example just forms a 1D field from the
+central transverse node in an example dump. It should be easy to
+extend this to something more sophisticated.
+
+"""
+
 import tables, numpy
 
 
