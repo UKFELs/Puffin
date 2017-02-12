@@ -138,6 +138,7 @@ subroutine read_in(zfilename, &
        sgamma_r, &
        lambda_w, &
        sEmit_n, &
+       alphax, alphay, emitx, emity, &
        sux, &
        suy, &
        Dfact, &
@@ -238,7 +239,9 @@ subroutine read_in(zfilename, &
   REAL(KIND=WP),     INTENT(OUT)  :: sElectronThreshold
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: bcenter(:), gamma_d(:), &
                                               chirp(:), sEmit_n(:), &
-                                              mag(:), fr(:)
+                                              mag(:), fr(:), &
+                                              alphax(:), alphay(:), emitx(:), &
+                                              emity(:)
 
   INTEGER(KIND=IP), INTENT(INOUT) :: nbeams, nseeds
 
@@ -485,6 +488,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
 
 
   CALL read_beamfile(qSimple, dist_f, beam_file,sEmit_n,sSigmaGaussian,sLenEPulse, &
+                     alphax, alphay, emitx, emity, &
                      iNumElectrons,sQe,chirp,bcenter, mag, fr, gamma_d,nbeams, &
                      qMatched_A,qOKL)
 
@@ -523,6 +527,7 @@ END SUBROUTINE read_in
 
 
 SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
+                         alphax, alphay, emitx, emity, &
                          iNumElectrons,sQe,chirp, bcenter, mag, fr,gammaf,nbeams,&
                          qMatched_A,qOK)
 
@@ -540,6 +545,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sEmit_n(:),chirp(:), mag(:), fr(:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sSigmaE(:,:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sLenE(:,:)
+  REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: alphax(:), alphay(:), emitx(:), &
+                                             emity(:)
   INTEGER(KIND=IP), ALLOCATABLE, INTENT(OUT) :: iNumElectrons(:,:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sQe(:),bcenter(:),gammaf(:)
   INTEGER(KIND=IP), INTENT(INOUT) :: nbeams
@@ -551,7 +558,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 !                     LOCAL ARGS
 
   INTEGER(KIND=IP) :: b_ind
-  logical :: qFixCharge
+  logical :: qFixCharge, qAMatch
   INTEGER::ios
   CHARACTER(96) :: dtype
 
@@ -563,13 +570,16 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   namelist /blist/ sSigmaE, sLenE, iNumElectrons, &
                    sEmit_n, sQe, bcenter,  gammaf, &
                    chirp, mag, fr, qRndEj_G, sSigEj_G, &
-                   qMatched_A, qEquiXY, nseqparts, qFixCharge
+                   qMatched_A, qEquiXY, nseqparts, qFixCharge, &
+                   alphax, alphay, emitx, emity
 
 
   namelist /bdlist/ dist_f, nMPs4MASP_G
   namelist /bh5list/ dist_f
 
   qOK = .FALSE.
+
+  qAMatch = .false.
 
 ! Open the file
 !  OPEN(UNIT=168,FILE=be_f,IOSTAT=ios,&
@@ -612,6 +622,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   allocate(chirp(nbeams), qMatched_A(nbeams))
   allocate(mag(nbeams), fr(nbeams))
   allocate(qRndEj_G(nbeams), sSigEj_G(nbeams))
+  allocate(alphax(nbeams), alphay(nbeams))
+  allocate(emitx(nbeams), emity(nbeams))
 
 
 ! &&&&&&&&&& Default vals
@@ -631,7 +643,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   iNumElectrons(1,4:5) = 1
   iNumElectrons(1,6) = 19
 
-  sEmit_n = 1.0_wp
+  sEmit_n = -1.0_wp
   sQe = 1E-9
   bcenter = 0.0_wp
   gammaf = 1.0_wp
@@ -645,6 +657,10 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   nseqparts = 1000_ip
   qSimple = .false.
   qFixCharge = .false.
+  alphax = 0.0_wp
+  alphay = 0.0_wp
+  emitx = -1.0_wp
+  emity = -1.0_wp
 
 ! &&&&&&&&&&&&&&&&&&&&&
 
@@ -740,6 +756,60 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   qEquiXY_G = qEquiXY
   nseqparts_G = nseqparts
   qFixCharge_G = qFixCharge
+
+  do b_ind = 1, nbeams
+
+    if (sEmit_n(b_ind) > 0.0_wp) then
+      if (tProcInfo_G%qRoot) print*, ''
+      if (tProcInfo_G%qRoot) print*, '************************************************'
+      if (tProcInfo_G%qRoot) print*, 'WARNING - use of sEmit_n deprecated - use emitx and emity instead'
+      if (tProcInfo_G%qRoot) print*, 'For now, emitx and emity will = sEmit_n where not specified'
+    
+      if (emitx(b_ind) <= 0.0_wp) emitx(b_ind) = sEmit_n(b_ind)
+      if (emity(b_ind) <= 0.0_wp) emity(b_ind) = sEmit_n(b_ind)
+    
+    end if  
+
+  end do
+
+  
+
+  do b_ind = 1, nbeams
+
+    if (emitx(b_ind) <= 0.0_wp) then
+      alphax(b_ind) = 0.0_wp
+    end if
+
+    if (emity(b_ind) <= 0.0_wp) then
+      alphay(b_ind) = 0.0_wp
+    end if
+
+    if (qMatched_A(b_ind)) then
+      qAMatch = .true.
+      alphax(b_ind) = 0.0_wp
+      alphay(b_ind) = 0.0_wp
+    end if
+
+  end do
+
+
+  if (qAMatch) then
+    if (tProcInfo_G%qRoot) print*, ''
+    if (tProcInfo_G%qRoot) print*, '************************************************'
+    if (tProcInfo_G%qRoot) print*, 'You have chosen to match at least one beam'
+    if (tProcInfo_G%qRoot) print*, 'Please recall that the matching is only done', &
+                                  'for the in-undulator weak or strong focusing ', &
+                                  'of the first module, and not for any FODO lattice!!! '
+    if (tProcInfo_G%qRoot) print*, 'alphax and alphay will then be ignored....'
+    if (tProcInfo_G%qRoot) print*, '(if this is 1D then you wont care about this!)'
+      
+  end if
+
+!  if (emitx(1) <= 0.0_wp) emitx(1) = 1.0_wp
+!  if (emity(1) <= 0.0_wp) emity(1) = 1.0_wp
+
+!  if (alphax(1) <= 0.0_wp) alphax(1) = 1.0_wp
+!  if (alphay(1) <= 0.0_wp) alphay(1) = 1.0_wp
 
 
 ! Set the error flag and exit

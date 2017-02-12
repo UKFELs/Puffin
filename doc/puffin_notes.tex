@@ -81,9 +81,7 @@ It presently does not include the effects of space charge, and ignores emission 
 
 \section{Overview}
 
-Puffin comes with a few example input files for reference. At a minimum, one must specify 2 files for use in Puffin - a `main' input file, and a `beam' input file. The main input file describes the system scaling and reference frame, the numerical field mesh, and other numerical integration options, and the beam file describes the electron beam.
-
-
+Puffin, being an unaveraged FEL code, is quite distinct from other FEL codes in it's lack of restrictions on the radiation and electron bandwidth being modelled. Due to the nature of the code, and the likely use cases for such a code, we have attempted to create a resource which is a flexible tool for scientific research into some more esoteric FEL physics and regimes, while still containing enough `realistic'  components to enable modelling of a current or future facility.
 
 At a minimum, one must specify 2 files for use in Puffin - a main input file, and a beam input file. The main file sets up the system scaling, the field mesh, the integration step sizes, and other simulation options. It also specifies the names of the other input files, including the beam file. 
 
@@ -91,10 +89,9 @@ The beam file specifies the electron beam parameters - there are 3 different typ
 
 In addition, one may also supply a lattice file, which descibes the layout of undulator modules, quads, chicanes, drifts \textit{etc}. If this is not supplied, then a single undulator is set up as detailed in the main input file. One may also supply a radiation seed file.
 
+Puffin comes with a few example input decks for reference.
 
-\newpage
-
-\section{Analytic Equations Solved by Puffin}
+\subsection{Analytic Equations Solved by Puffin}
 
 The system of equations solved by Puffin have been altered from those described in \cite{puffin}. They are now:
 \begin{align}
@@ -168,15 +165,18 @@ In the most basic form, the input requires 3 files - a `main' input file for par
 
 \subsection{To scale or not to scale?}
 
+Although the Puffin algorithm uses scaled variables, the beam and radiation field parameters may be input in either SI units or the scaled units. Use the variable {\bf qscaled} in the main input file to specify whether scaled or SI units are being used. If $=$ {\bf .true.}, then Puffin expects scaled variables are being used. % If SI units are used, then the input parameters will be scaled according automatically to the scaling values specified in the main input file. 
+
 The main algorithm in Puffin utilizes the scaled variables above to make the numbers `nicer' to work with. The system saturates with scaled intensity $\sim 1$, the scaled perpindicular momentum of the beam in the wiggler oscillates between $-1$ and $1$, and so forth. The distance through the wiggler is given in units of a (1D) gain length, and the beam coordinate in the radiation frame is in units of the cooperation length, so that a reference electron slips $1l_c$ through the radiation field in $1$ gain  length. The scaling defines a frame of reference which normalises the quantities not only to numerically more manageable numbers, but to \textit{characteristic} variables. 
 
 The two dominant variables for the scaling are $\rho$ and $\eta$. $\eta$ is a function of the wiggler parameters $a_u$ and $\lambda_u$, and reference beam energy $\gamma_r$, and is calculated in Puffin from the input. It defines the velocity of the `reference' electron in the scaled radiation frame. The $\bar{z}_2$ coordinate is in the scaled frame travelling with the field (at velocity $c$) - $\eta$ determines how quickly the electrons slip back through this frame, such that an electron with energy $\gamma_r$, travelling in a wiggler with parameters $a_u$ and $\lambda_u$, slips back with scaled velocity $p_2 \equiv \dfrac{d \bar{z}_2}{d\bar{z}} = 1$.
 
-The $\rho$ parameter is dependent on the peak electron beam number density, amongst other things.
+The $\rho$ parameter is dependent on the peak electron beam number density, amongst other things, and as far as the discussion of the scaling parameters in Puffin goes, defines a reference for the amplification characteristics. A beam, or indeed, sections of an electron beam with peak number density giving a smaller `localised' $\rho$ will amplify the beam slower with respect to the reference beam specified by $\rho$. 
 
-Although the Puffin algorithm uses scaled variables, the beam and radiation field parameters may be input in either SI units or the scaled units. Use the variable {\bf qscaled} in the main input file to specify whether scaled or SI units are being used. If $=$ {\bf .true.}, then Puffin expects scaled variables are being used. % If SI units are used, then the input parameters will be scaled according automatically to the scaling values specified in the main input file. 
+That is to say, that they are only \textit{scaling} parameters. The FEL parameter as input by the user does not have to correspond to the beam or wiggler being input for the results to be correct. The scaled parameters will behave `nicely' if it does, but it is not necessary for the result to be physically correct. When the result is unscaled, the result will still be correct. The user may input in SI units, and get output in SI units. If using scaled units as input, the user must scale the lengths appropriately, but still, no beam input needs to satisfy the conditions to actually give the $\rho$ input by the user.
 
-Note, however, that they are only \textit{scaling} parameters. The FEL parameter as input by the user does not have to correspond to the beam or wiggler being input for the results to be correct. The scaled parameters will behave `nicely' if it does, but it is not necessary for the result to be physically correct. When the result is unscaled, the result will still be correct. The user should be able to input in SI units, and get output in SI units.
+
+
 
 
 
@@ -204,6 +204,8 @@ $t$ & seconds (s) & $\bar{z}_2$ \\
 
 
 \subsection{3D Magnetic Fields}
+
+\subsubsection{Main Undulator Models}
 
 The undulator is modelled analytically, and the model must include the fast wiggle motion. Puffin may be modified in the future to allow a map of the undulator field to be input. For now, there are a few generic undulator models employed. The magnetic fields available for use in Puffin are the helical, plane-pole, and canted-pole undulator fields discussed in \cite{scharlemann1}, which in the scaled notation here are:-
 
@@ -245,7 +247,7 @@ In the $1$D approximation, $b_z = 0$.
 
 All of the above have an associated `natural' focusing channel, which arises from from the off-axis variation in the magnetic fields. This motion arises naturally when numerically solving the equations, and is not super-imposed upon the electron motion. 
 
-\subsection{Undulator Ends}
+\subsubsection{Undulator Ends}
 
 The undulators also include entry and exit tapers, and they may be switched on or off in the input file with the flag {\bf qUndEnds}. Setting this to true will model a smooth taper up and down of the undulator magnetic fields in the first and last 2 periods of the undulator, taking the form of a $\cos^2$. If they are switched off, the beam is artificially initialized with an `expected' initial condition in the transverse coordinates for that undulator. Including these ends will model a more realistic and natural entry and exit from the undulator, and will reduce CSE effects from the shape of the wiggler.
 
@@ -319,7 +321,7 @@ b_z  =  \frac{\sqrt{\eta}}{2 \rho \bar{k}_{\beta y}}  \cosh(\bar{k}_{\beta x} \b
 
 
 
-\subsection{Natural Undulator Focusing}
+\subsubsection{Natural Undulator Focusing}
 
 Each undulator type has an associated natural focusing wavenumber. In the helical case, the natural betatron wavenumber is
 \begin{align}
@@ -347,7 +349,7 @@ to be physically valid. They determine the focusing strength in the $\bar{x}$ an
 
 
 
-\subsection{Strong Beam Focusing}
+\subsubsection{Strong Beam Focusing}
 
 In addition to the natural focusing channel, a constant, `strong' focussing channel may be utilized, to focus the beam to a smaller transverse area. This is a magnetic field super-imposed upon the wiggler. It may be switched on or off with the flag {\bf qFocussing} in the main input file, and is specified through the use of the variables {\bf sKBetaXSF} and {\bf sKBetaYSF}. It is probably highly artificial - it may be thought of as physically similar to an ion channel. Nevertheless it allows one to obtain strong focusing without using a lattice. It is defined very simply as 
 \begin{align}
@@ -360,9 +362,9 @@ If either {\bf sKBetaXSF} or {\bf sKBetaYSF} are not specified, then no focusing
 Magnetic quads will be added soon.
 
 
-\subsection{Auto beam-matching}
+\subsubsection{Auto beam-matching}
 
-The beam, when specified by the `simple' method (see below) may be matched to the focusing channel automatically with the flag {\bf qMatched\_A} in the beam file - the option can be set for each beam. In the scaled notation,
+The beam, when specified by the `simple' method (see below) may be matched to the focusing channel of the undulator automatically with the flag {\bf qMatched\_A} in the beam file - the option can be set for each beam. (Note this is for the natural or enhanced \textit{undulator} focusing, and matching is not performed for a FODO lattice!) In the scaled notation,
 \begin{align}
 \bar{\sigma}_{x,y} = \sqrt{  \frac{ \rho \bar{\epsilon}_{x,y} }{\bar{k}_{\beta x,y} }  }
 \end{align}
@@ -377,10 +379,15 @@ The spread in the transverse momentum directions is then given by
 \end{align}
 where angular brackets indicate the ensemble average of the beam.
 
-If {\bf qFocussing} is true and the strong betatron wavenumber is given, then the strong betatron wavenumber is used to match the beam. Otherwise the beam is auto-matched to the natural focusing channel of the undulator. 
+If {\bf qFocussing} is true and the strong betatron wavenumber is given, then the strong betatron wavenumber is used to match the beam. Otherwise the beam is auto-matched to the natural focusing channel of the undulator. As this matching is done only for the in-undulator focusing, and not for the FODO lattice, the Twiss ($\alpha_x, \alpha_y$) input parameters will be ignored if {\bf qMatched\_A = .true.} in the input. If one wishes to use a FODO lattice, the matching must be done by the user, and the correct Twiss parameters given. 
 
 
 
+\subsubsection{Twiss Parameters}
+
+One can use Twiss parameters to provide a transverse phase-space `tilt' for the electron beam. In the simple beam case, the user can specify the \textit{r.m.s.} $\bar{\sigma}_x, \bar{\sigma}_{px}$ (or the S.I. equivalents $\sigma_x, \sigma_{x}'$) for the electron beam, along with the usual $\alpha_x$ for the slope of the $x-x'$ correlation. Using this method, the supplied \textit{r.m.s.} $\sigma_{x}'$ should be the standard deviation at $x=0$. If the emittance is supplied by using {emitx}, then the input $\bar{\sigma}_{px}$ is ignored, and is instead calculated from $\sigma_x$, the emittance, and $\alpha_x$. Obviously, the intended method is to input the emittances, so that the transverse momenta parameters are over-written.
+
+In general, giving the emittances over-writes the transverse momenta given in the beam file, whether using the 
 
 
 
@@ -404,7 +411,7 @@ There are 3 different ways of defining and initializing the electron beam in Puf
 
 \subsubsection{Simple}
 
-The beam is described in terms of a homogeneous Gaussian function in every dimension. Some simple correlations in energy can be achieved by specifying an oscillation in the beam energy as a function of $\bar{z}_2$, or as a simple linear energy chirp in $\bar{z}_2$. The beam is generated in Puffin according to this description.
+The beam is described in terms of a homogeneous Gaussian function in every dimension. Some simple correlations in energy can be achieved by specifying an oscillation in the beam energy as a function of $\bar{z}_2$, or as a simple linear energy chirp in $\bar{z}_2$. Twiss parameters may be used to tilt the beam for matching to a FODO lattice (Puffin does not calculate the matched Twiss parameters - this must be done separate to Puffin). The beam is generated in Puffin according to this description.
 
 In general, the correct noise statistics are added to the beam with the method described in \cite{noise1} (see figure REF). This method, like other noise algorithms, requires a quiet beam to add the noise to. We include two methods of generating the beam - one with the correct noise in all dimensions, and one with the correct noise only in the temporal/$\bar{z}_2$ dimension. In both methods, the beam is initially quiet in the temporal dimension before adding the noise, with an equispaced layout of the particles in this dimension. The beam MUST be created to appropriately sample the wavelength of emission/amplification - so at least 10 equispaced particles per resonant wavelength. The methods are:-
 
@@ -428,11 +435,11 @@ To use this, set the option dtype = `simple' in the nblist namelist in the beam 
 
 \subsubsection{Dist input}
 
-The input is composed of a description of temporal slices along the bunch, describing a Gaussian mean and standard deviation in every other dimension for each temporal slice. This information is used to generate the electron beam in Puffin.
+The input is composed of a description of temporal slices along the bunch, describing a Gaussian mean and standard deviation in every other dimension, along with Twiss $\alpha$ parameter, for each temporal slice. This information is used to generate the electron beam in Puffin. The slices must be spaced finely enough to sample the radiation field wavelength being amplified - so \textit{e.g} at least 10 per wavelength.
 
 \subsubsection{Beam input}
 
-This method allows one to read in the 6D scaled particle coordinates from a text file. The beam is generated externally. (Arrangement?) The user is then responsible for the noise in the pulse - it is not added by Puffin in this method.
+This method allows one to read in the 6D scaled particle coordinates from an HDF5 file or a text file. The HDF5 file should be in the same format as the Puffin output. The text input is not recommended, especially for 3D runs, since the reading in is very inefficient, and the files are usually huge for 3D data. The beam is generated externally, and the user is then responsible for ensuring the sampling and the noise in the pulse are correct - it is not added by Puffin in this method.
 
 
 \subsection{Field Mesh}
@@ -444,7 +451,7 @@ This mesh must be large enough to contain the beam through the entire propagatio
 
 It must also be large enough to contain the beam in the transverse plane, see figure \ref{trmsh}. The radiation field is calculated from the driving electron beam by linear interpolants, so the field must adequately sample the area which the beam occupies.  The radiation also diffracts outwards from the beam, so the field mesh must extend to adequately model this diffracting radiation to avoid numerical problems at the boundaries of the grid. There are absorbing boundaries in the outer 16 nodes in the mesh in $x$ and $y$ to mitigate this issue, but an absorbing boundary which works well for the full range of frequencies modelled by Puffin is difficult to realise, and the absorbing boundary should not be relied upon to absorb everything which propagates to the outer reaches of the mesh.
 
-\subsection{Fixing the Radiation Mesh}
+\subsubsection{Fixing the Radiation Mesh}
 
 One may use the variables {\bf iRedNodesX, iRedNodesY} to fix the mesh around the beam - see figure \ref{trmsh}. These variables define an inner set (`reduced' set) of nodes which the beam width will occupy. So the mesh length in $x$ and $y$ will be set up such that the inner set of nodes defined by  {\bf iRedNodesX, iRedNodesY} will contain the beam. In this case, the {\bf sFModelLengthX, sFModelLengthX} inputs will be ignored.
 

@@ -598,7 +598,7 @@ END SUBROUTINE SetUpInitialValues
 
 
 subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
-                       beamCenZ2, chirp, sEmit, gamFrac, &
+                       beamCenZ2, chirp, sEmit, emitx, emity, gamFrac, &
                        sFieldModelLength, sLengthofElm, &
                        sSeedSigma)
 
@@ -607,7 +607,8 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
                                     chirp(:), sEmit(:), &
                                     sFieldModelLength(:), &
                                     sLengthofElm(:), &
-                                    sSeedSigma(:,:)
+                                    sSeedSigma(:,:), &
+                                    emitx(:), emity(:)
 
     real(kind=wp), intent(in) :: gamFrac(:)
 
@@ -646,6 +647,8 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
       call scaleT(chirp(ib), lc_G)
 
       call scaleEmit(sEmit(ib), lam_r_G)
+      call scaleEmit(emitx(ib), lam_r_G)
+      call scaleEmit(emity(ib), lam_r_G)
 
     end do
 
@@ -932,9 +935,10 @@ end subroutine calcSamples
 
 
 
-SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
-                             sigma, beamCenZ2,gamma_d,eThresh, &
-                             chirp,mag,fr,nbeams, qOK)
+SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
+                             sigma, alphax, alphay, emitx, emity, &
+                             beamCenZ2, gamma_d, eThresh, &
+                             chirp, mag, fr, nbeams, qOK)
 
 !                     ARGUMENTS
 
@@ -948,6 +952,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
     REAL(KIND=WP),     INTENT(IN)    :: Z
     REAL(KIND=WP),     INTENT(INOUT) :: LenEPulse(:,:)
     REAL(KIND=WP),     INTENT(INOUT) :: sigma(:,:)
+    real(kind=wp),     intent(in)    :: alphax(:), alphay(:), emitx(:), emity(:)
     REAL(KIND=WP),     INTENT(INOUT) :: beamCenZ2(:)
     REAL(KIND=WP),     INTENT(IN)    :: eThresh
     LOGICAL,           INTENT(OUT)   :: qOK     
@@ -993,13 +998,11 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
 
 !     Setup electrons
 
-
-
-
     if (iInputType_G == iGenHom_G) then
 
       CALL electron_grid(RealE,NE,noise, &
-                         Z,nbeams, LenEPulse,sigma, beamCenZ2, gamma_d, &
+                         Z,nbeams, LenEPulse,sigma, alphax, alphay, &
+                         emitx, emity, beamCenZ2, gamma_d, &
                          eThresh,tTransInfo_G%qOneD, &
                          chirp,mag,fr,qOKL)
       IF (.NOT. qOKL) GOTO 1000
