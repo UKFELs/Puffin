@@ -608,6 +608,7 @@ print*,"Now, you tell me if we had electrons"
     INTEGER(HSIZE_T), DIMENSION(4) :: dsize3d   !< chunk of field file to read
     INTEGER(HSIZE_T), DIMENSION(2) :: doffset1d   !< maxdims of ptcl dataset (coords*numelecs)
     INTEGER(HSIZE_T), DIMENSION(4) :: doffset3d   !< maxdims of ptcl dataset (coords*numelecs)
+    INTEGER(HID_T) :: group_id
 
     INTEGER(kind=ip) :: loopindex
     CHARACTER(LEN=5), PARAMETER :: dsetname = "aperp"     ! Dataset name
@@ -655,6 +656,34 @@ print*,"Now, you tell me if we had electrons"
       PRINT*, 'TESTING, the att is iCSteps and it = ', DUMMYgg
 !      call mpi_finalize(tProcInfo_G%comm, error)
 !      STOP
+
+
+!     open the runInfo group
+
+      call h5gOpen_f(file_id, 'runInfo', group_id, error)
+
+
+!      read attributes in runInfo group
+
+      call readH5FloatAttribute(group_id, "sLengthOfElmX", sLengthOfElmX_G)
+      call readH5FloatAttribute(group_id, "sLengthOfElmY", sLengthOfElmY_G)
+      call readH5FloatAttribute(group_id, "sLengthOfElmZ2", sLengthOfElmZ2_G)
+
+      PRINT*, 'TESTING, the att is dx and it = ', sLengthOfElmX_G
+      PRINT*, 'TESTING, the att is dy and it = ', sLengthOfElmY_G
+      PRINT*, 'TESTING, the att is dz2 and it = ', sLengthOfElmZ2_G
+      
+      delta_G = sLengthOfElmX_G*sLengthOfElmY_G*sLengthOfElmZ2_G
+      
+
+!     Close runInfo group
+      
+      CALL h5gclose_f(group_id, error)
+      
+      
+      
+      
+      
       
       CALL h5Dget_space_f(dset_id,dspace_id,error)
     !  Print*,error,tprocinfo_g%rank, &
