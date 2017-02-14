@@ -304,7 +304,7 @@ MODULE Setup
 
   if (qsdds_G) call initPFile(tPowF, qFormattedFiles) ! initialize power file type
 
-  call initPowerCalc()
+  if (.not. qResume_G) call initPowerCalc()
 
 !     Generate macroelectrons
 
@@ -370,6 +370,14 @@ MODULE Setup
                             field_file, &
                             qOKL)
   
+  if (qResume_G) call initPowerCalc()
+                            sFieldModelLength(iX_CG) = sLengthOfElmX_G * real((NX_G-1_ip),kind=wp)
+                            sFieldModelLength(iY_CG) = sLengthOfElmY_G * real((NY_G-1_ip),kind=wp)
+
+                            sLengthOfElm(iX_CG) = sLengthOfElmX_G
+                            sLengthOfElm(iY_CG) = sLengthOfElmY_G
+
+                            delta_G = sLengthOfElmX_G*sLengthOfElmY_G*sLengthOfElmZ2_G
 
 !  CALL MPI_BARRIER(tProcInfo_G%comm,error)
 !  call mpi_finalize(error)
