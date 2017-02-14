@@ -141,6 +141,7 @@ MODULE Setup
        sgammar,           &
        lambda_w,          &
        sEmit_n,           &
+       alphax, alphay, emitx, emity, &
        fx,                &
        fy,                &
        Dfact,             &
@@ -177,7 +178,7 @@ MODULE Setup
     if (tProcInfo_G%qRoot) print*, ''
 
     call scaleParams(sEleSig, sLenEPulse, sSigEj_G, &
-                     beamCenZ2, chirp, sEmit_n, gamma_d, &
+                     beamCenZ2, chirp, sEmit_n, emitx, emity, gamma_d, &
                      sFieldModelLength, sLengthofElm, &
                      sSeedSigma)
   end if
@@ -274,7 +275,7 @@ MODULE Setup
     if (qSimple) then
 
       call stptrns(sEleSig, sLenEPulse, iNumElectrons, &
-                   sEmit_n, gamma_d, &
+                   emitx, emity, gamma_d, &
                    qMatched_A, qMatchS_G, qFMesh_G, sSeedSigma)
 
       sFieldModelLength(iX_CG) = sLengthOfElmX_G * real((NX_G-1_ip),kind=wp)
@@ -319,7 +320,7 @@ MODULE Setup
   end if
 
   call PopMacroElectrons(qSimple, dist_f, sQe,iNumElectrons,q_noise,sZ,sLenEPulse,&
-                         sEleSig,beamCenZ2,gamma_d,&
+                         sEleSig, alphax, alphay, emitx, emity, beamCenZ2,gamma_d,&
                          sElectronThreshold,chirp, mag, fr, &
                          nbeams, qOK)
 
@@ -393,7 +394,9 @@ MODULE Setup
 !    Define the rescaling parameter "ffact" for rescaling
 !    backwards transform data.
 
-  ffact = iNodes(iX_CG)*iNodes(iY_CG)*iNodes(iZ2_CG)      
+  ffact = real(iNodes(iX_CG), kind=wp) * &
+          real(iNodes(iY_CG), kind=wp) * &
+          real(iNodes(iZ2_CG), kind=wp)      
    	
 
 

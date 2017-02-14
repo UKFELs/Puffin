@@ -379,10 +379,15 @@ The spread in the transverse momentum directions is then given by
 \end{align}
 where angular brackets indicate the ensemble average of the beam.
 
-If {\bf qFocussing} is true and the strong betatron wavenumber is given, then the strong betatron wavenumber is used to match the beam. Otherwise the beam is auto-matched to the natural focusing channel of the undulator. 
+If {\bf qFocussing} is true and the strong betatron wavenumber is given, then the strong betatron wavenumber is used to match the beam. Otherwise the beam is auto-matched to the natural focusing channel of the undulator. As this matching is done only for the in-undulator focusing, and not for the FODO lattice, the Twiss ($\alpha_x, \alpha_y$) input parameters will be ignored if {\bf qMatched\_A = .true.} in the input. If one wishes to use a FODO lattice, the matching must be done by the user, and the correct Twiss parameters given. 
 
 
 
+\subsubsection{Twiss Parameters}
+
+One can use Twiss parameters to provide a transverse phase-space `tilt' for the electron beam. In the simple beam case, the user can specify the \textit{r.m.s.} $\bar{\sigma}_x, \bar{\sigma}_{px}$ (or the S.I. equivalents $\sigma_x, \sigma_{x}'$) for the electron beam, along with the usual $\alpha_x$ for the slope of the $x-x'$ correlation. Using this method, the supplied \textit{r.m.s.} $\sigma_{x}'$ should be the standard deviation at $x=0$. If the emittance is supplied by using {emitx}, then the input $\bar{\sigma}_{px}$ is ignored, and is instead calculated from $\sigma_x$, the emittance, and $\alpha_x$. Obviously, the intended method is to input the emittances, so that the transverse momenta parameters are over-written.
+
+In general, giving the emittances over-writes the transverse momenta given in the beam file, whether using the 
 
 
 
