@@ -1,3 +1,4 @@
+import sys
 import tables
 import numpy as np
 import matplotlib.pyplot as plt
@@ -26,33 +27,51 @@ from matplotlib.pyplot import specgram
 #
 ##
 
-h5f = tables.openFile("test1_aperp_small_14790.h5", mode='r')
+def spectroT(h5fname):
 
-xf = h5f.root.aperp[0,:]
-xfs = xf[65000:85000]
+    h5f = tables.open_file(h5fname, mode='r')
 
-sampleFreq = 1.0 / (4.0*np.pi*0.005 / 19.0)
+    dz2 = h5f.root.runInfo._v_attrs.sLengthOfElmZ2
+    nz2 = h5f.root.runInfo._v_attrs.nZ2
+
+    sampleFreq = 1.0 / dz2
+    
+    z2si = 74000
+    z2ei = 76000
+
+    z2axis = (np.arange(z2si,z2ei) - z2si) * dz2
+
+    xf = h5f.root.aperp[0,:]
+    xfs = xf[z2si:z2ei]
+
+    ax1 = plt.subplot(211)
+    plt.plot(z2axis, xfs)
 
 
-specP, freqs, time, image = specgram(xfs, NFFT=200, Fs=sampleFreq, noverlap=100, cmap=plt.cm.gist_heat)
+    plt.subplot(212, sharex=ax1)
+    specP, freqs, time, image = specgram(xfs, \
+    	NFFT=70, Fs=sampleFreq, noverlap=0)#, cmap=plt.cm.gist_heat)
 
-# then either:
-# plt.imshow(specP,cmap='PRGn')
-# plt.show()
+    # then either:
+    # plt.imshow(specP,cmap='PRGn')
+    # plt.show()
 
-# -or- just
+    # -or- just
 
-plt.show()
+    plt.show()
 
-
-
-
-h5f.close()
+    h5f.close()
 
 # see here for above - http://matplotlib.org/examples/pylab_examples/specgram_demo.html
 
 # see here for var explanation: http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.specgram
 
 # see also: https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.spectrogram.html
+
+if __name__ == '__main__':
+    h5fname=sys.argv[1]
+    spectroT(h5fname)
+    
+
 
 
