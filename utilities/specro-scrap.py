@@ -36,8 +36,11 @@ def spectroT(h5fname):
 
     sampleFreq = 1.0 / dz2
     
-    z2si = 74000
-    z2ei = 76000
+    z2s = 50
+    z2e = 80
+
+    z2si = int(np.floor(z2s / dz2))
+    z2ei = int(np.floor(z2e / dz2))
 
     z2axis = (np.arange(z2si,z2ei) - z2si) * dz2
 
@@ -50,11 +53,11 @@ def spectroT(h5fname):
 
     plt.subplot(212, sharex=ax1)
     specP, freqs, time, image = specgram(xfs, \
-    	NFFT=70, Fs=sampleFreq, noverlap=0)#, cmap=plt.cm.gist_heat)
+    	NFFT=50, Fs=sampleFreq, noverlap=0)#, cmap=plt.cm.gist_heat)
 
     # then either:
-    # plt.imshow(specP,cmap='PRGn')
-    # plt.show()
+    #plt.imshow(specP,cmap='PRGn')
+    #plt.show()
 
     # -or- just
 
