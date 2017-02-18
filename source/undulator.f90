@@ -440,6 +440,7 @@ end if
   call correctTrans()  ! correct transverse motion at undulator exit
 
   iUnd_cr = iUnd_cr + 1_ip
+  qResume_G = .false.
 
 end subroutine UndSection
 
