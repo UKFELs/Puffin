@@ -363,7 +363,7 @@ MODULE Setup
 
 
   
-  CALL SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, qFlatTopS,&
+  CALL SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, sFiltFrac, qFlatTopS,&
                             sSeedSigma, &
                             sA0_Re,&
                             sA0_Im,&

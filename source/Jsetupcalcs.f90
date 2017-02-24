@@ -489,7 +489,7 @@ end subroutine getQFmNpk
 
 
 
-SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
+SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, sFiltFrac, &
                               qFlatTopS, sSigmaF, &
                               sA0_x, sA0_y, field_file, qOK)
 
@@ -516,6 +516,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
     LOGICAL, INTENT(IN) :: qFlatTopS(:)
     REAL(KIND=WP), INTENT(IN)    :: sA0_x(:)
     REAL(KIND=WP), INTENT(IN)    :: sA0_y(:)
+    real(kind=wp), intent(in)    :: sFiltFrac
 !    REAL(KIND=WP), INTENT(INOUT) :: sA(:)
     CHARACTER(LEN=1024),INTENT(IN) :: field_file(:)
     LOGICAL,       INTENT(OUT)   :: qOK
@@ -570,7 +571,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
 
     if (iFieldSeedType_G==iReadH5Field_G) then
 
-      call readH5FieldfileSingleDump(h5FieldFileName)
+      call readH5FieldfileSingleDump(h5FieldFileName, sFiltFrac)
 
     end if
 
