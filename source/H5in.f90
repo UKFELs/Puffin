@@ -589,8 +589,10 @@ print*,"Now, you tell me if we had electrons"
 
   end subroutine readH5Beamfile
 
-  subroutine readH5FieldfileSingleDump(zFile)
+  subroutine readH5FieldfileSingleDump(zFile, sFiltFrac)
+
     character(*), intent(in) :: zFile
+    real(kind=wp), intent(in) :: sFiltFrac
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier 
     INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
@@ -617,6 +619,8 @@ print*,"Now, you tell me if we had electrons"
     character(LEN=40) :: errorstr !<String to write an error
     integer(kind=ip) :: mpiinfo
     integer(kind=ip) :: DUMMYgg
+    
+    real(kind=wp) :: Lenz2, lam_r_bar    
 
     mpiinfo=MPI_INFO_NULL
     filename = zFile
@@ -653,7 +657,7 @@ print*,"Now, you tell me if we had electrons"
 
       call readH5IntegerAttribute(dset_id, "iCsteps", DUMMYgg)
 !(dset_id, "iCsteps", iCsteps, aspace_id)
-      PRINT*, 'TESTING, the att is iCSteps and it = ', DUMMYgg
+!      PRINT*, 'TESTING, the att is iCSteps and it = ', DUMMYgg
 !      call mpi_finalize(tProcInfo_G%comm, error)
 !      STOP
 
@@ -668,10 +672,24 @@ print*,"Now, you tell me if we had electrons"
       call readH5FloatAttribute(group_id, "sLengthOfElmX", sLengthOfElmX_G)
       call readH5FloatAttribute(group_id, "sLengthOfElmY", sLengthOfElmY_G)
       call readH5FloatAttribute(group_id, "sLengthOfElmZ2", sLengthOfElmZ2_G)
+      
+      call readH5IntegerAttribute(group_id, "nX", NX_G)
+      call readH5IntegerAttribute(group_id, "nY", NY_G)
+      call readH5IntegerAttribute(group_id, "nZ2", NZ2_G)
+      
+      ntrnds_G = NX_G * NY_G
 
-      PRINT*, 'TESTING, the att is dx and it = ', sLengthOfElmX_G
-      PRINT*, 'TESTING, the att is dy and it = ', sLengthOfElmY_G
-      PRINT*, 'TESTING, the att is dz2 and it = ', sLengthOfElmZ2_G
+      Lenz2 = sLengthOfElmZ2_G * NZ2_G
+      lam_r_bar = 4*pi*rho
+      sFilt = Lenz2 / lam_r_bar * sFiltFrac
+
+      iNumberNodes_G = int(NX_G, kind=IPN) * &
+                       int(NY_G, kind=IPN) * &
+                         int(NZ2_G, kind=IPN)
+
+!      PRINT*, 'TESTING, the att is dx and it = ', sLengthOfElmX_G
+!      PRINT*, 'TESTING, the att is dy and it = ', sLengthOfElmY_G
+!      PRINT*, 'TESTING, the att is dz2 and it = ', sLengthOfElmZ2_G
       
       delta_G = sLengthOfElmX_G*sLengthOfElmY_G*sLengthOfElmZ2_G
       
