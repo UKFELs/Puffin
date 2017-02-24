@@ -1,14 +1,13 @@
 function hp = wanls2(fname)
 
 
+%%%%%%%%
+%% Example script, which performs a wavelet analysis 
+%% on the x-polarized field in Puffin.
 
 
 
-
-
-%parr = {'nX','nY','nZ2','sLengthOfElmX','sLengthOfElmY', ...
-%'sLengthOfElmZ2','rho','eta','aw','gamma_r',...
-%'iIntWriteNthSteps','sStepSize'};
+%       Read in system attributes
 
 rho = hdf5read(fname,'/runInfo','rho');
 nZ2 = hdf5read(fname,'/runInfo','nZ2');
@@ -20,7 +19,12 @@ zbar = hdf5read(fname,'/aperp','zbarInter');
 nZ2 = double(nZ2);
 lenZ2 = sLengthOfElmZ2 * (nZ2-1);
 
-Z2axis = linspace(0,lenZ2,nZ2);
+Z2axis = linspace(0,lenZ2,nZ2);  % z2 axis
+
+
+
+
+%           Physical constants
 
 h = 6.626e-34; % Planck constant
 q_e = 1.60217646e-19; % Charge on electron
@@ -142,7 +146,7 @@ xlim([z2st   z2ed]);
 
 
 subplot(3,1,3);
-[sst,f] = wsst(xf,Fs,'bump');
+[sst,f] = wsst(xf,Fs,'bump');  % wavelet analysis
 f = ((f * 4 * pi * rho) - 1)/2/rho;
 contour(Z2axis,f,abs(sst));
 %figure; 
