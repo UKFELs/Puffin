@@ -50,6 +50,7 @@ of the backwards wave from the e-beam.
   - Added python script (powPrep.py) to collect the power data together
   - Better point transforms for quads, now including energy dependence
   - Fixed bug of extra half-period diffraction per undulator module
+  - HDF5 output is now the default data output format
 
 1.6.0:
   - Revamped the form of the lattice file, both to include more components, and to
