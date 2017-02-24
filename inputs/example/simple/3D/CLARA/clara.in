@@ -1,9 +1,17 @@
+!!!!!!!!!!!!!!  CLARA input deck  !!!!!!!!!!!!!!
+!!
+!!  233MeV beam,  lasing @ 100nm
+!!  Lattice including drifts and quads is supplied
+!!  The Twiss parameters in the beam field are matched 
+!!  to the quad channel
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! The main input parameters are described below - Puffin takes the namelist blocks at the
 ! bottom of this file as input. This is the 'main' input file, containing info about the 
 ! wiggler, field sampling, and general flags and other numerical instructions for the
-! simulation. This file also points to a beam file, seed file, and optionally a lattice 
-! file.
+! simulation. This file also points to a beam file, describing the electron beam, 
+! and optionally, a seed file (describing a radiation seed) and/or a lattice file.
 !--------------------------------------------------------------------------------------------------!
 ! NAME                       DESCRIPTION
 !--------------------------------------------------------------------------------------------------!
