@@ -680,7 +680,7 @@ print*,"Now, you tell me if we had electrons"
       ntrnds_G = NX_G * NY_G
 
       Lenz2 = sLengthOfElmZ2_G * NZ2_G
-      lam_r_bar = 4*pi*rho
+      lam_r_bar = 4*pi*sRho_G
       sFilt = Lenz2 / lam_r_bar * sFiltFrac
 
       iNumberNodes_G = int(NX_G, kind=IPN) * &
