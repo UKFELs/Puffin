@@ -9,6 +9,7 @@
 %%
 
 \usepackage{graphicx}
+\usepackage{listings}
 \usepackage{amssymb,amsmath,pdfpages}
 \usepackage{bm}
 \linespread{1.3}
@@ -81,15 +82,8 @@ It presently does not include the effects of space charge, and ignores emission 
 
 \section{Overview}
 
-Puffin, being an unaveraged FEL code, is quite distinct from other FEL codes in it's lack of restrictions on the radiation and electron bandwidth being modelled. Due to the nature of the code, and the likely use cases for such a code, we have attempted to create a resource which is a flexible tool for scientific research into some more esoteric FEL physics and regimes, while still containing enough `realistic'  components to enable modelling of a current or future facility.
+Puffin, being an unaveraged FEL code, is quite distinct from other FEL codes in it's lack of restrictions on the radiation and electron bandwidth being modelled. Due to the nature of the code, and the likely use cases for such a code, we have attempted to create a resource which is a flexible tool for scientific research into some more esoteric FEL physics and regimes, while still containing enough `realistic'  components to enable modelling of a current or future facility. Data I/O may be in either SI or the Puffin scaled variables.
 
-At a minimum, one must specify 2 files for use in Puffin - a main input file, and a beam input file. The main file sets up the system scaling, the field mesh, the integration step sizes, and other simulation options. It also specifies the names of the other input files, including the beam file. 
-
-The beam file specifies the electron beam parameters - there are 3 different types of beam input, detailed later. 
-
-In addition, one may also supply a lattice file, which descibes the layout of undulator modules, quads, chicanes, drifts \textit{etc}. If this is not supplied, then a single undulator is set up as detailed in the main input file. One may also supply a radiation seed file.
-
-Puffin comes with a few example input decks for reference.
 
 \subsection{Analytic Equations Solved by Puffin}
 
@@ -102,7 +96,7 @@ The system of equations solved by Puffin have been altered from those described 
 \frac{d\bar{x}_j}{d\bar{z}} &=  \frac{2 \rho \kappa}{\sqrt{\eta} \Gamma_j} (1 + \eta p_{2j}) \Re(\bar{p}_{\bot j}) \label{xeqgen2} \\
 \frac{d\bar{y}_j}{d\bar{z}} &= - \frac{2 \rho \kappa}{\sqrt{\eta} \Gamma_j}  (1 + \eta p_{2j}) \Im(\bar{p}_{\bot j}). \label{yeqgen2}
 \end{align}
-%where $\kappa = \dfrac{a_u}{2 \rho \gamma_r}$, which is actually the scaled natural focussing wavenumber $\kappa = \sqrt{2} \bar{k}_\beta$. 
+%where $\kappa = \dfrac{a_u}{2 \rho \gamma_r}$, which is actually the scaled natural focussing wavenumber $\kappa = \sqrt{2} \bar{k}_\beta$.
 
 
 
@@ -122,16 +116,16 @@ Scaled parameters are:-
 &A_{\bot}&=\frac{e \kappa l_g}{\gamma_0 mc^2 }E_{\bot}, \nonumber \\
 (\bar{x},\bar{y}) &= \frac{(x,y)}{\sqrt{l_g l_c}}, &l_g &= \frac{\lambda_w}{4\pi\rho}, \nonumber \\
 l_c &= \frac{\lambda_r}{4\pi\rho}, & \Gamma_j& = \frac{\gamma_j}{\gamma_0}, \nonumber \\
-\rho &=\frac{1}{\gamma_0}\left(\frac{a_u \omega_p}{4ck_u}\right)^{2/3}, 
+\rho &=\frac{1}{\gamma_0}\left(\frac{a_u \omega_p}{4ck_u}\right)^{2/3},
 &a_u & =\frac{eB_0}{mck_u}, \nonumber \\
 \kappa & = \frac{a_u}{2 \rho \gamma_0}, & b_{\bot} & = b_x - i b_y, \nonumber
 \end{align}
 
 $B_0$ is the peak magnetic field in the wiggler.
-$\omega_p = \sqrt{e^2 n_p / \epsilon_0 m}$ is the (non-relativistic) plasma frequency, and $n_p$ is the peak spatial number density of the electron beam $(N_e / \delta_x \delta_y \delta_z)$. 
+$\omega_p = \sqrt{e^2 n_p / \epsilon_0 m}$ is the (non-relativistic) plasma frequency, and $n_p$ is the peak spatial number density of the electron beam $(N_e / \delta_x \delta_y \delta_z)$.
 $E_\bot = E_x - i E_y$ are the $x$ and $y$ radiation electric field vectors. $\gamma_0$ is the reference energy (Lorentz factor), which is usually taken as the mean beam energy.
 
-The scaled reference velocity, 
+The scaled reference velocity,
 \begin{align}
 \eta = \frac{1 - \beta_{zr}}{\beta_{zr}} = \frac{\lambda_r}{\lambda_u} = \frac{l_c}{l_g},
 \end{align}
@@ -140,38 +134,46 @@ where $\beta_{zr}$ is some reference velocity scaled to $c$, which is sensible (
 \beta_{zr} = \sqrt{ 1 - \frac{1}{\gamma_0^2}\Bigl(1 + \bar{a}_u^2\Bigr)},
 \end{align}
 where $\bar{a}_u$ is the $rms$ undulator parameter.
-This defines the velocity at which the electrons travel in the scaled $\bar{z}_2$ frame. More generally, $\eta$ describes an *ideal* resonance condition - electrons resonant with wavelength $\lambda_r$ will travel with velocity $p_2=1$ through the $\bar{z}_2$ frame. 
+This defines the velocity at which the electrons travel in the scaled $\bar{z}_2$ frame. More generally, $\eta$ describes an *ideal* resonance condition - electrons resonant with wavelength $\lambda_r$ will travel with velocity $p_2=1$ through the $\bar{z}_2$ frame.
 
 
 
 
-$p_{2j}$ may be worked out analytically from 
+$p_{2j}$ may be worked out analytically from
 \begin{align}
 p_{2j} = \frac{1}{\eta}\Bigl[ \Bigl(  1 - \frac{(1 + a_u^2 | \bar{p}_{\bot j} |^2)}{\gamma_r^2 \Gamma^2_j}  \Bigr)^{-1/2} - 1   \Bigr]
 \end{align}
 at each step. It is NOT output from Puffin.
 
-Outputs from Puffin are the scaled radiation field $A_\bot$, electron phase space coords $\bar{x}, \bar{y}, \bar{z}_2, \bar{p}_\bot, \Gamma$, and scaled distance through the undulator $\bar{z}$. The normalized electron weights are in the file NormChiDataFile.dat (normalised to the peak *spatial* (3D) density).
+Outputs from Puffin are classed as either `integrated' data or a full `dump.' The integrated data includes things like the power, beam radius, current, bunching, emittance, etc, as a function of temporal coordinate. The full data dump is the raw data, including the values of the scaled radiation field $A_\bot$ mesh, and the $6$D electron macroparticle phase space coords ($\bar{x}, \bar{y}, \bar{z}_2, \bar{p}_\bot, \Gamma$) and the macroparticle charge weights. Data is in hdf5 format by default, with vizschema metadata for viewing in Visit.
 
-
-
-Compared to the original Puffin paper \cite{puffin}, now the peak magnetic fields are used to scale the system of eqns (as opposed to the $rms$ values used previously). Previously (\textit e.g. as described in \cite{puffin}), the energy exchange was modelled through the scaled longitudinal velocity $p_2$. This was problematic in multiple ways from a computational point of view, since $p_2$ is a function of the energy, $p_x$ and $p_y$, so that the same quantity was essentially being calculated twice, leading to large errors in some cases. The energy exchange is instead now modelled directly through the scaled variable $\Gamma_j = \gamma_j / \gamma_r$, meaning smaller numerical errors and enabling a significantly larger step size. 
+Compared to the original Puffin paper \cite{puffin}, now the peak magnetic fields are used to scale the system of eqns (as opposed to the $rms$ values used previously). Previously (\textit e.g. as described in \cite{puffin}), the energy exchange was modelled through the scaled longitudinal velocity $p_2$. This was problematic in multiple ways from a computational point of view, since $p_2$ is a function of the energy, $p_x$ and $p_y$, so that the same quantity was essentially being calculated twice, leading to large errors in some cases. The energy exchange is instead now modelled directly through the scaled variable $\Gamma_j = \gamma_j / \gamma_r$, meaning smaller numerical errors and enabling a significantly larger step size.
 
 The formalism for including a variation in the magnetic undulator field, so that $B_0(\bar{z})$ now varies, was included in \cite{2col}, and is varied using the parameter $\alpha(\bar{z}) = \dfrac{B_0(\bar{z})}{B_0(\bar{z}=0)}$.
 
-In the most basic form, the input requires 3 files - a `main' input file for parameters, numerical integration, and description of the field mesh, a `beam' input file descibing the electron beam, and a `seed' input file describing the radiation seed. Optionally, a lattice file can be used to setup an undulator lattice, including quads, chicanes, and drifts.
+\subsection{Overview of Input Files}
+
+At a minimum, one must specify 2 files for use in Puffin - a main input file, and a beam input file. The main file sets up the system scaling, the field mesh, the integration step sizes, and other simulation options. It also specifies the names of the other input files, including the beam file.
+
+The beam file specifies the electron beam parameters - there are 3 different types of beam input, detailed later.
+
+In addition, one may also supply a lattice file, which descibes the layout of undulator modules, quads, chicanes, drifts \textit{etc}. If this is not supplied, then a single undulator is set up as detailed in the main input file. One may also supply a radiation seed file.
+
+Puffin comes with a few example input decks for reference.
+
+
 
 
 
 \subsection{To scale or not to scale?}
 
-Although the Puffin algorithm uses scaled variables, the beam and radiation field parameters may be input in either SI units or the scaled units. Use the variable {\bf qscaled} in the main input file to specify whether scaled or SI units are being used. If $=$ {\bf .true.}, then Puffin expects scaled variables are being used. % If SI units are used, then the input parameters will be scaled according automatically to the scaling values specified in the main input file. 
+Although the Puffin algorithm uses scaled variables, the beam and radiation field parameters may be input in either SI units or the scaled units. Use the variable {\bf qscaled} in the main input file to specify whether scaled or SI units are being used. If $=$ {\bf .true.}, then Puffin expects scaled variables are being used. % If SI units are used, then the input parameters will be scaled according automatically to the scaling values specified in the main input file.
 
-The main algorithm in Puffin utilizes the scaled variables above to make the numbers `nicer' to work with. The system saturates with scaled intensity $\sim 1$, the scaled perpindicular momentum of the beam in the wiggler oscillates between $-1$ and $1$, and so forth. The distance through the wiggler is given in units of a (1D) gain length, and the beam coordinate in the radiation frame is in units of the cooperation length, so that a reference electron slips $1l_c$ through the radiation field in $1$ gain  length. The scaling defines a frame of reference which normalises the quantities not only to numerically more manageable numbers, but to \textit{characteristic} variables. 
+The main algorithm in Puffin utilizes the scaled variables above to make the numbers `nicer' to work with. The system saturates with scaled intensity $\sim 1$, the scaled perpindicular momentum of the beam in the wiggler oscillates between $-1$ and $1$, and so forth. The distance through the wiggler is given in units of a (1D) gain length, and the beam coordinate in the radiation frame is in units of the cooperation length, so that a reference electron slips $1l_c$ through the radiation field in $1$ gain  length. The scaling defines a frame of reference which normalises the quantities not only to numerically more manageable numbers, but to \textit{characteristic} variables.
 
 The two dominant variables for the scaling are $\rho$ and $\eta$. $\eta$ is a function of the wiggler parameters $a_u$ and $\lambda_u$, and reference beam energy $\gamma_r$, and is calculated in Puffin from the input. It defines the velocity of the `reference' electron in the scaled radiation frame. The $\bar{z}_2$ coordinate is in the scaled frame travelling with the field (at velocity $c$) - $\eta$ determines how quickly the electrons slip back through this frame, such that an electron with energy $\gamma_r$, travelling in a wiggler with parameters $a_u$ and $\lambda_u$, slips back with scaled velocity $p_2 \equiv \dfrac{d \bar{z}_2}{d\bar{z}} = 1$.
 
-The $\rho$ parameter is dependent on the peak electron beam number density, amongst other things, and as far as the discussion of the scaling parameters in Puffin goes, defines a reference for the amplification characteristics. A beam, or indeed, sections of an electron beam with peak number density giving a smaller `localised' $\rho$ will amplify the beam slower with respect to the reference beam specified by $\rho$. 
+The $\rho$ parameter is dependent on the peak electron beam number density, amongst other things, and as far as the discussion of the scaling parameters in Puffin goes, defines a reference for the amplification characteristics. A beam, or indeed, sections of an electron beam with peak number density giving a smaller `localised' $\rho$ will amplify the beam slower with respect to the reference beam specified by $\rho$.
 
 That is to say, that they are only \textit{scaling} parameters. The FEL parameter as input by the user does not have to correspond to the beam or wiggler being input for the results to be correct. The scaled parameters will behave `nicely' if it does, but it is not necessary for the result to be physically correct. When the result is unscaled, the result will still be correct. The user may input in SI units, and get output in SI units. If using scaled units as input, the user must scale the lengths appropriately, but still, no beam input needs to satisfy the conditions to actually give the $\rho$ input by the user.
 
@@ -243,9 +245,9 @@ b_z & = \frac{\sqrt{\eta}}{2\rho} (u_x \bar{x}\sin({\bar{z} / (2 \rho)}) + u_y \
 \end{align}
 
 
-In the $1$D approximation, $b_z = 0$. 
+In the $1$D approximation, $b_z = 0$.
 
-All of the above have an associated `natural' focusing channel, which arises from from the off-axis variation in the magnetic fields. This motion arises naturally when numerically solving the equations, and is not super-imposed upon the electron motion. 
+All of the above have an associated `natural' focusing channel, which arises from from the off-axis variation in the magnetic fields. This motion arises naturally when numerically solving the equations, and is not super-imposed upon the electron motion.
 
 \subsubsection{Undulator Ends}
 
@@ -256,13 +258,13 @@ The precise description of the undulator ends are as follows. Note the presence 
 {\bf Helical Front}
 
 \begin{align}
-b_x  =  \frac{1}{4}\sin(\bar{z}/16\rho) & \cos(\bar{z}/16\rho)    \sin(\bar{z}/2\rho)   +   \sin^2(\bar{z} / 16\rho)  \cos(\bar{z}/2\rho)  \\  
+b_x  =  \frac{1}{4}\sin(\bar{z}/16\rho) & \cos(\bar{z}/16\rho)    \sin(\bar{z}/2\rho)   +   \sin^2(\bar{z} / 16\rho)  \cos(\bar{z}/2\rho)  \\
 b_y =  - \frac{1}{4}\sin(\bar{z}/16\rho) & \cos(\bar{z}/16\rho)    \cos(\bar{z}/2\rho)   +  \sin^2(\bar{z} / 16\rho)  \sin(\bar{z}/2\rho)\\
 b_z = \frac{\sqrt{\eta}}{2\rho} \Bigl[   \bar{x}\Bigl(& \frac{1}{32}\cos( \bar{z}/8\rho )\sin(\bar{z}/2\rho) +
            \frac{1}{4}\sin(\bar{z}/8\rho)\cos(\bar{z}/2\rho) \nonumber  \\
            & - \sin^2(\bar{z}/16\rho)\sin(\bar{z}/2\rho) \Bigr) \nonumber \\
            \bar{y}\Bigl(& -\frac{1}{32}\cos( \bar{z}/8\rho )\cos(\bar{z}/2\rho) +\frac{1}{4}\sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) \nonumber  \\
-           & + \sin^2(\bar{z}/16\rho)\cos(\bar{z}/2\rho) \Bigr)  \Bigr]  
+           & + \sin^2(\bar{z}/16\rho)\cos(\bar{z}/2\rho) \Bigr)  \Bigr]
 \end{align}
 
 
@@ -275,7 +277,7 @@ b_z = \frac{\sqrt{\eta}}{2\rho} \Bigl[   \bar{x}\Bigl(& -\frac{1}{32}\cos( \bar{
            \frac{1}{4}\sin(\bar{z}/8\rho)\cos(\bar{z}/2\rho) \nonumber  \\
            & - \cos^2(\bar{z}/16\rho)\sin(\bar{z}/2\rho) \Bigr) \nonumber \\
            \bar{y}\Bigl(& \frac{1}{32}\cos( \bar{z}/8\rho )\cos(\bar{z}/2\rho) - \frac{1}{4}\sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) \nonumber  \\
-           & + \cos^2(\bar{z}/16\rho)\cos(\bar{z}/2\rho) \Bigr)  \Bigr] 
+           & + \cos^2(\bar{z}/16\rho)\cos(\bar{z}/2\rho) \Bigr)  \Bigr]
 \end{align}
 
 
@@ -285,7 +287,7 @@ b_z = \frac{\sqrt{\eta}}{2\rho} \Bigl[   \bar{x}\Bigl(& -\frac{1}{32}\cos( \bar{
 \begin{align}
 b_x  =  0,  &    \\
 b_y   = \cosh(\sqrt{\eta}\bar{y} / 2\rho)\Bigl[ -\frac{1}{4}& \sin(\bar{z}/16\rho) \cos(\bar{z}/16\rho) \cos(\bar{z} / 2\rho) +   \sin^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr], \\
-b_z  =  \sinh(\sqrt{\eta}\bar{y} / 2\rho) \Bigl[ -\frac{1}{32} & \cos(\bar{z}/8\rho) \cos(\bar{z}/2\rho) + \nonumber \\ 
+b_z  =  \sinh(\sqrt{\eta}\bar{y} / 2\rho) \Bigl[ -\frac{1}{32} & \cos(\bar{z}/8\rho) \cos(\bar{z}/2\rho) + \nonumber \\
                                                 &\frac{1}{4}  \sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) + \sin^2  (\bar{z}/16\rho) \cos(\bar{z}/2\rho)  \Bigr],
 \end{align}
 
@@ -294,7 +296,7 @@ b_z  =  \sinh(\sqrt{\eta}\bar{y} / 2\rho) \Bigl[ -\frac{1}{32} & \cos(\bar{z}/8\
 \begin{align}
 b_x  =  0,  &    \\
 b_y   = \cosh(\sqrt{\eta}\bar{y} / 2\rho)\Bigl[ \frac{1}{4}& \sin(\bar{z}/16\rho) \cos(\bar{z}/16\rho) \cos(\bar{z} / 2\rho) +   \cos^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr], \\
-b_z  =  \sinh(\sqrt{\eta}\bar{y} / 2\rho) \Bigl[ \frac{1}{32} & \cos(\bar{z}/8\rho) \cos(\bar{z}/2\rho) - \nonumber \\ 
+b_z  =  \sinh(\sqrt{\eta}\bar{y} / 2\rho) \Bigl[ \frac{1}{32} & \cos(\bar{z}/8\rho) \cos(\bar{z}/2\rho) - \nonumber \\
                                                 &\frac{1}{4}  \sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) + \cos^2  (\bar{z}/16\rho) \cos(\bar{z}/2\rho)  \Bigr].
 \end{align}
 
@@ -306,7 +308,7 @@ b_z  =  \sinh(\sqrt{\eta}\bar{y} / 2\rho) \Bigl[ \frac{1}{32} & \cos(\bar{z}/8\r
 \begin{align}
 b_x  =  \frac{\bar{k}_{\beta x}}{\bar{k}_{\beta y}} \sinh(\bar{k}_{\beta x} \bar{x})\sinh(\bar{k}_{\beta y} \bar{y}) \Bigl[ -\frac{1}{8}& \sin(\bar{z}/8\rho) \cos(\bar{z} / 2\rho) +   \sin^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr],    &    \\
 b_y   =  \cosh(\bar{k}_{\beta x} \bar{x})\cosh(\bar{k}_{\beta y} \bar{y}) \Bigl[ -\frac{1}{8}& \sin(\bar{z}/8\rho) \cos(\bar{z} / 2\rho) +   \sin^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr], \\
-b_z  =  \frac{\sqrt{\eta}}{2 \rho \bar{k}_{\beta y}}  \cosh(\bar{k}_{\beta x} \bar{x})\sinh(\bar{k}_{\beta y} \bar{y})  \Bigl[ -\frac{1}{32} & \cos(\bar{z}/8\rho) \cos(\bar{z}/2\rho) + \nonumber \\ 
+b_z  =  \frac{\sqrt{\eta}}{2 \rho \bar{k}_{\beta y}}  \cosh(\bar{k}_{\beta x} \bar{x})\sinh(\bar{k}_{\beta y} \bar{y})  \Bigl[ -\frac{1}{32} & \cos(\bar{z}/8\rho) \cos(\bar{z}/2\rho) + \nonumber \\
                                                 &\frac{1}{4}  \sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) + \sin^2  (\bar{z}/16\rho) \cos(\bar{z}/2\rho)  \Bigr] .
 \end{align}
 
@@ -315,7 +317,7 @@ b_z  =  \frac{\sqrt{\eta}}{2 \rho \bar{k}_{\beta y}}  \cosh(\bar{k}_{\beta x} \b
 \begin{align}
 b_x  =  \frac{\bar{k}_{\beta x}}{\bar{k}_{\beta y}} \sinh(\bar{k}_{\beta x} \bar{x})\sinh(\bar{k}_{\beta y} \bar{y}) \Bigl[ \frac{1}{8}& \sin(\bar{z}/8\rho) \cos(\bar{z} / 2\rho) +   \cos^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr],    &    \\
 b_y   =  \cosh(\bar{k}_{\beta x} \bar{x})\cosh(\bar{k}_{\beta y} \bar{y}) \Bigl[ \frac{1}{8}& \sin(\bar{z}/8\rho) \cos(\bar{z} / 2\rho) +   \cos^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr], \\
-b_z  =  \frac{\sqrt{\eta}}{2 \rho \bar{k}_{\beta y}}  \cosh(\bar{k}_{\beta x} \bar{x})\sinh(\bar{k}_{\beta y} \bar{y})  \Bigl[ \frac{1}{32} & \cos(\bar{z}/8\rho) \cos(\bar{z}/2\rho) - \nonumber \\ 
+b_z  =  \frac{\sqrt{\eta}}{2 \rho \bar{k}_{\beta y}}  \cosh(\bar{k}_{\beta x} \bar{x})\sinh(\bar{k}_{\beta y} \bar{y})  \Bigl[ \frac{1}{32} & \cos(\bar{z}/8\rho) \cos(\bar{z}/2\rho) - \nonumber \\
                                                 &\frac{1}{4}  \sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) + \cos^2  (\bar{z}/16\rho) \cos(\bar{z}/2\rho)  \Bigr] .
 \end{align}
 
@@ -338,7 +340,7 @@ In the canted pole case,
 \begin{align}
 \bar{k}_{\beta n x,y} = \frac{a_w \bar{k}_{x,y}}{\sqrt{2 \eta} \gamma_0},
 \end{align}
-where $\bar{k}_{x,y}$ describe the hyperbolic variation in the transverse directions (see eqns (\ref{cp1} - \ref{cp3})), and must obey 
+where $\bar{k}_{x,y}$ describe the hyperbolic variation in the transverse directions (see eqns (\ref{cp1} - \ref{cp3})), and must obey
 \begin{align}
 \bar{k}_x^2 + \bar{k}_y^2 = \frac{\eta}{4 \rho^2}
 \end{align}
@@ -351,7 +353,7 @@ to be physically valid. They determine the focusing strength in the $\bar{x}$ an
 
 \subsubsection{Strong Beam Focusing}
 
-In addition to the natural focusing channel, a constant, `strong' focussing channel may be utilized, to focus the beam to a smaller transverse area. This is a magnetic field super-imposed upon the wiggler. It may be switched on or off with the flag {\bf qFocussing} in the main input file, and is specified through the use of the variables {\bf sKBetaXSF} and {\bf sKBetaYSF}. It is probably highly artificial - it may be thought of as physically similar to an ion channel. Nevertheless it allows one to obtain strong focusing without using a lattice. It is defined very simply as 
+In addition to the natural focusing channel, a constant, `strong' focussing channel may be utilized, to focus the beam to a smaller transverse area. This is a magnetic field super-imposed upon the wiggler. It may be switched on or off with the flag {\bf qFocussing} in the main input file, and is specified through the use of the variables {\bf sKBetaXSF} and {\bf sKBetaYSF}. It is probably highly artificial - it may be thought of as physically similar to an ion channel. Nevertheless it allows one to obtain strong focusing without using a lattice. It is defined very simply as
 \begin{align}
 b_x = \sqrt{\eta} \frac{\bar{k}_{\beta y}^2}{\kappa}\bar{y}_j, \\
 b_y = - \sqrt{\eta} \frac{\bar{k}_{\beta x}^2}{\kappa}\bar{x}_j
@@ -373,13 +375,13 @@ where $\bar{\epsilon}_{x,y} = \epsilon_{x,y} / (\lambda_r / 4\pi)$ are the trans
 %If we define $\bar{a}_w$ as the $rms$ undulator parameter, so that  $\bar{a}_w = a_w$ in the helical case, and  $\bar{a}_w = a_w / sqrt{2}$ in the planar and canted pole case, then we can write a general expression
 
 
-The spread in the transverse momentum directions is then given by 
+The spread in the transverse momentum directions is then given by
 \begin{align}
-\bar{\sigma}_{px, py} = \frac{\sqrt{\eta}}{2 \kappa} \Bigl<  \frac{\Gamma}{1+\eta p_{2}}  \Bigr> \frac{ \bar{\epsilon}_{x,y} }{\bar{ \sigma}_{x,y}}.   \label{tmtch_spd} 
+\bar{\sigma}_{px, py} = \frac{\sqrt{\eta}}{2 \kappa} \Bigl<  \frac{\Gamma}{1+\eta p_{2}}  \Bigr> \frac{ \bar{\epsilon}_{x,y} }{\bar{ \sigma}_{x,y}}.   \label{tmtch_spd}
 \end{align}
 where angular brackets indicate the ensemble average of the beam.
 
-If {\bf qFocussing} is true and the strong betatron wavenumber is given, then the strong betatron wavenumber is used to match the beam. Otherwise the beam is auto-matched to the natural focusing channel of the undulator. As this matching is done only for the in-undulator focusing, and not for the FODO lattice, the Twiss ($\alpha_x, \alpha_y$) input parameters will be ignored if {\bf qMatched\_A = .true.} in the input. If one wishes to use a FODO lattice, the matching must be done by the user, and the correct Twiss parameters given. 
+If {\bf qFocussing} is true and the strong betatron wavenumber is given, then the strong betatron wavenumber is used to match the beam. Otherwise the beam is auto-matched to the natural focusing channel of the undulator. As this matching is done only for the in-undulator focusing, and not for the FODO lattice, the Twiss ($\alpha_x, \alpha_y$) input parameters will be ignored if {\bf qMatched\_A = .true.} in the input. If one wishes to use a FODO lattice, the matching must be done by the user, and the correct Twiss parameters given.
 
 
 
@@ -387,13 +389,13 @@ If {\bf qFocussing} is true and the strong betatron wavenumber is given, then th
 
 One can use Twiss parameters to provide a transverse phase-space `tilt' for the electron beam. In the simple beam case, the user can specify the \textit{r.m.s.} $\bar{\sigma}_x, \bar{\sigma}_{px}$ (or the S.I. equivalents $\sigma_x, \sigma_{x}'$) for the electron beam, along with the usual $\alpha_x$ for the slope of the $x-x'$ correlation. Using this method, the supplied \textit{r.m.s.} $\sigma_{x}'$ should be the standard deviation at $x=0$. If the emittance is supplied by using {emitx}, then the input $\bar{\sigma}_{px}$ is ignored, and is instead calculated from $\sigma_x$, the emittance, and $\alpha_x$. Obviously, the intended method is to input the emittances, so that the transverse momenta parameters are over-written.
 
-In general, giving the emittances over-writes the transverse momenta given in the beam file, whether using the 
+In general, giving the emittances over-writes the transverse momenta given in the beam file, whether using the
 
 
 
 
 %%% Beam energy - what is the unscaled input?
-%%% Have to explain the 'mean' beam energy and 
+%%% Have to explain the 'mean' beam energy and
 %%% the rms width in energy are in what units...??
 
 
@@ -427,7 +429,7 @@ When using this option, the beam is intialized on an equispaced 6D grid. This re
 
 {\bf Equispaced grid ONLY in $\bar{z}_2$}
 
-If qEquiXY is false, then the beam is intially generated as a 1D beam, with equispaced macroparticles. Each macroparticle is then split into many particles in the other 5 dimensions, with coordinates generated by a quasi-random sequence in each dimension. The SAME SEQUENCE is used for each particle in z2 - the creates a series of beamlets in the $\bar{z}_2$ dimension, giving a quiet start in $\bar{z}_2$. Because random sequences are used, the other 5-dimensions require orders of magnitude less particles to adequately fill the phase space than in the equispaced case. This is the default option, so if not specified, qEquiXY $=$ false. 
+If qEquiXY is false, then the beam is intially generated as a 1D beam, with equispaced macroparticles. Each macroparticle is then split into many particles in the other 5 dimensions, with coordinates generated by a quasi-random sequence in each dimension. The SAME SEQUENCE is used for each particle in z2 - the creates a series of beamlets in the $\bar{z}_2$ dimension, giving a quiet start in $\bar{z}_2$. Because random sequences are used, the other 5-dimensions require orders of magnitude less particles to adequately fill the phase space than in the equispaced case. This is the default option, so if not specified, qEquiXY $=$ false.
 
 Both of the above methods may, of course, be replicated and modified by the user to suit a particular situation. The creation of the beam with the correct statistics, while still retaining the sampling necessary for the FEL interaction, is still an area of ongoing research, and is quite controversial. We ultimately leave it to the user to ensure the beam is appropriately initialized for their situation. The methods above can probably be replicated with just a few lines of \textit{e.g.} Python. The generated beam can then be input into Puffin.
 
@@ -445,7 +447,7 @@ This method allows one to read in the 6D scaled particle coordinates from an HDF
 \subsection{Field Mesh}
 
 
-The radiation field in Puffin is modelled by a simple cartesian mesh, with equispaced nodes in each of the 3 spatial dimensions. Each node samples a value of the $x$ and $y$ polarized radiation field (the $z$ component of the electric field is not modelled). The scaled $\bar{z}_2$ coordinate frame is such that the back of the system is with increasing $\bar{z}_2$ - \textit{i.e.} to the right in figure \ref{lgmsh}. Recall that $\bar{z}_2$ is the stationary radiation frame, so that as the beam propagates through the undulator, the beam slips back through the radiation field, moving to the right in figure \ref{lgmsh}. 
+The radiation field in Puffin is modelled by a simple cartesian mesh, with equispaced nodes in each of the 3 spatial dimensions. Each node samples a value of the $x$ and $y$ polarized radiation field (the $z$ component of the electric field is not modelled). The scaled $\bar{z}_2$ coordinate frame is such that the back of the system is with increasing $\bar{z}_2$ - \textit{i.e.} to the right in figure \ref{lgmsh}. Recall that $\bar{z}_2$ is the stationary radiation frame, so that as the beam propagates through the undulator, the beam slips back through the radiation field, moving to the right in figure \ref{lgmsh}.
 
 This mesh must be large enough to contain the beam through the entire propagation distance through the wiggler.
 
@@ -467,7 +469,7 @@ One may use the variables {\bf iRedNodesX, iRedNodesY} to fix the mesh around th
 \begin{figure*}
 \centering
 \includegraphics[width=150mm]{trans_mesh2.png}
-\caption{Transverse mesh to model the radiation field - the beam is indicated in red. The mesh may be `matched' to the mesh initially by specifying the iRedNodes parameters - these specify an inner set of nodes such that the mesh will be setup so that the beam is contained within this number of nodes. This is only an initial condition, but can aid in setting up the mesh.}
+\caption{Transverse mesh to model the radiation field - the beam is indicated in red. The mesh may be `matched' to the transverse beam profile initially by specifying the iRedNodes parameters - these specify an inner set of nodes such that the mesh will be setup so that the beam is contained within this number of nodes. This is only an initial condition, but can aid in setting up the mesh.}
 \label{trmsh}
 \end{figure*}
 
@@ -535,13 +537,13 @@ which in the scaled notation becomes:
 \end{align}
 where $\bar{F}_{x,y} = \dfrac{F_{x,y}}{l_g}$.
 
-In $x$ (unscaled) focal length is taken as 
+In $x$ (unscaled) focal length is taken as
 \begin{align}
 \frac{1}{F_x} = \frac{g L_Q}{B\rho},
 \end{align}
-where $g$ is the quad magnetic field gradient in $Tm^{-1}$, $L_Q$ is the length of the quad, and $B\rho = \beta E / 0.2998$ is the so-called magnetic rigidity in $Tm$, with the beam energy $E$ in $GeV$. 
+where $g$ is the quad magnetic field gradient in $Tm^{-1}$, $L_Q$ is the length of the quad, and $B\rho = \beta E / 0.2998$ is the so-called magnetic rigidity in $Tm$, with the beam energy $E$ in $GeV$.
 
-For the chicane, one must specify physical length, slippage length, and dispersion enhancement (R56). The length is the physical length of the device in undulator periods, and is used to calculate the diffraction properly. The slippage length tells how many wavelengths to delay the beam by relative to the radiation field in resonant radiation wavelengths - be careful, this should not be $\leq 0$, or the beam will then be faster than light speed! Similarly, it is left up to the user to decide what is appropriate to delay the beam by with respect to the physical length of the device. The dispersive enhancement is the R56 of the device - using $\gamma_r$ in the main input as the mean $\gamma$ for the chicane. 
+For the chicane, one must specify physical length, slippage length, and dispersion enhancement (R56). The length is the physical length of the device in undulator periods, and is used to calculate the diffraction properly. The slippage length tells how many wavelengths to delay the beam by relative to the radiation field in resonant radiation wavelengths - be careful, this should not be $\leq 0$, or the beam will then be faster than light speed! Similarly, it is left up to the user to decide what is appropriate to delay the beam by with respect to the physical length of the device. The dispersive enhancement is the R56 of the device - using $\gamma_r$ in the main input as the mean $\gamma$ for the chicane.
 
 This approach of being able to vary the 3 parameters above is quite flexible, but at the expense of easy automatic checking of the physical relevance of the parameters. For example, one can disperse the beam 'in place', without shifting it w.r.t. the resonant wavelength, which is obviously unphysical. However, this may be useful for a quick setup of the beam for EEHG at the beginning of the undulator, for instance. If one is not sure of the physical length of the actual device, but knows the length between modules and the desired slippage (e.g. for mode locking the FEL), then one can specify the spatial drift between modules using a drift section, and then specify a chicane with zero physical length, but with the desired delay and R56. In this way the radiation diffraction will still be modelled correctly.
 
@@ -554,60 +556,276 @@ For the modulation section, one may add an energy modulation to the beam specifi
 
 \section{Data Output and Post-Processing}
 
+\subsection{Output Format Specification}
+
+Puffin uses primarily hdf5 for output, although sdds dumps can be made if desired. The sdds outputs do not contain the integrated data, except power.
+
+For input filename $=$ {\bf basename.in}, then outputs are as described:
+
+\subsubsection{Full Dumps}
+
+Two files for each step written out - one for the field mesh, and one for the macroparticle positions.
+
+{\bf Field Mesh}
+
+Named {\bf \textit{basename}\_aperp\_\textit{stepnum}.h5}, where {\bf stepnum} is the integration step number the data was written out at. The file has internal hdf5 structure:
+
+\begin{lstlisting}[language=python]
+/ (RootGroup) 
+/aperp (Array(2, nz2, ny, nx)) 
+/globalLimits (Group) 
+/intensityScaled (Group) 
+/meshScaled (Group) 
+/runInfo (Group) 
+/time (Group) 
+\end{lstlisting}
+
+The {\bf aperp} dataset contains the values of the field at each field node. {\bf nz2}, {\bf ny} and {\bf nx} are the number of nodes in the equispaced field mesh in $\bar{z}_2$, $\bar{y}$, and $\bar{x}$, respectively. The data {\bf aperp(1,:,:,:)} contains the values of the x-polarized field, and {\bf aperp(2,:,:,:)} is the \textit{negative} y-polarized field.  It also contains some data about the run itself (some of this data is also in the runInfo group in the file). An example of the data is:-
+
+\begin{lstlisting}[language=python]
+    iChic_cr := 1,
+    iCsteps := 0,
+    iDrift_cr := 1,
+    iL := 0,
+    iModulation_cr := 1,
+    iQuad_cr := 1,
+    iUnd_cr := 1,
+    istep := 0,
+    numSpatialDims := 3,
+    time := 0.0,
+    vsAxisLabels := 'xbar,ybar,z2bar',
+    vsCentering := 'nodal',
+    vsIndexOrder := 'compMajorF',
+    vsLabels := 'aperp_real, aperp_imaginary',
+    vsLimits := 'globalLimits',
+    vsMesh := 'meshScaled',
+    vsNumSpatialDims := 3,
+    vsTimeGroup := 'time',
+    vsType := 'variable',
+    zInter := 0.0,
+    zLocal := 0.0,
+    zTotal := 0.0,
+    zbarInter := 0.0,
+    zbarLocal := 0.0,
+    zbarTotal := 0.0
+\end{lstlisting}
+
+The integers ending in `cr' are counters for the lattice elements which may be present - {\bf iChic} is for the chicane, {\bf iQuad} is for the quads, {\bf iUnd} is for the undulator modules, {\bf iModulation} is for the beam modulator sections, and {\bf iDrift} is for the drift sections. The counter number indicates that the beam has been been completely through the counter number $-1$ (so in the example shown, it has been through no components yet.)
+
+{\bf istep} is the number of completed integration steps through the current undulator module. It is local to the module being integrated through when the data was written.
+
+{\bf iCsteps} is the number of \textit{total} (cumulative) integration steps completed through the entire undulator line, including all previous undulators. 
+
+The {\bf zInter, zLocal} and {\bf zTotal} values are distances through the machine, in metres. {\bf Inter} indicates the \textit{interaction} distance through the machine - that is, the distance of undulators only, discounting the drifts, chicanes, etc. {\bf Local} is the distance through the local undulator module. {\bf Total} is the total distance through the machine when the data was written.
+
+{\bf zbarInter, zbarLocal} and {\bf zbarTotal} correspond to {\bf zInter, zLocal} and {\bf zTotal}, scaled to $L_g$, the 1D gain length.
+
+
+The {\bf intensityScaled} group is a VizSchema derived variable, which tells Visit how to calculate the intensity from the scaled field data.
+
+The {\bf meshScaled}, {\bf globalLimits} and {\bf time} groups are VizSchema metadata for \textit{e.g.} Visit. 
+
+{\bf runInfo} is a group containing data about the run the data is from. It includes data about the physical parameters, the scaling and the mesh sizes, amongst other things. A listing of the metadata in this group is here:
+
+\begin{lstlisting}[language=python]
+    Lc := 1.5887624436132764e-06,
+    Lg := 0.43767608132326558,
+    aw := 1.0121808999999999,
+    eta := 3.6299960436719031e-06,
+    gamma_r := 456.39999999999998,
+    iChic_cr := 1,
+    iDrift_cr := 1,
+    iModulation_cr := 1,
+    iQuad_cr := 1,
+    iUnd_cr := 1,
+    kappa := 0.22177495617879053,
+    lambda_r := 9.9824891200977331e-08,
+    lambda_w := 0.0275,
+    nSteps := 870,
+    nX := 120,
+    nY := 120,
+    nZ2 := 161939,
+    npk_bar := 302255429.89145231,
+    rho := 0.0050000000000000001,
+    sLengthOfElmX := 0.033613445378151259,
+    sLengthOfElmY := 0.033613445378151259,
+    sLengthOfElmZ2 := 0.0033069325981203339,
+    sStepSize := 0.002094395160675049,
+    vsBeamFile := 'beam_file',
+    vsBuildConfigDate := '2017-02-07 20:04',
+    vsBuildHost := 'crb101',
+    vsBuildHostType := 'Linux-2.6.32-642.4.2.el6.x86_64',
+    vsCommandLine := '/gpfs/stfc/local/HCP084/bwm06/ltc84-bwm06/bin/puffin-fftw3/bin/puffin test1.in',
+    vsFCompiler := 'ifort',
+    vsFCompilerFlags := '  -open',
+    vsFCompilerVersion := '15.0.2',
+    vsInputFile := 'test1',
+    vsRunDate := '2017-02-12  18:29:48.648 -0000',
+    vsRunHost := 'nxb3b04',
+    vsSeedFile := 'seed_file',
+    vsSoftware := 'PUFFIN',
+    vsSwRevision := 'dev-twiss : 0e2c73483f1dd246a26363292f932946cd1917c8',
+    vsSwVersion := '1.8.0',
+    vsType := 'runInfo',
+    vsUser := 'root',
+    vsVsVersion := '3.0'
+\end{lstlisting}
+
+{\bf sLengthOfElmX}, {\bf sLengthOfElmY} and {\bf sLengthOfElmZ2} are the distances between field nodes in the respective directions in the field mesh, in scaled notation. The other data should be self-explanatory.
+
+
+
+{\bf Beam Dump}
+
+The electron beam files are named {\bf \textit{basename}\_electrons\_\textit{stepnum}.h5}. The structure of the file is
+
+\begin{lstlisting}[language=python]
+/ (RootGroup) 
+/electrons (Array(numMacroParticles, 7)) 
+/electrons_chargeSI (Group) 
+/electrons_gammaSI (Group) 
+/electrons_numPhysicalParticles (Group) 
+/electrons_pxSI (Group) 
+/electrons_pySI (Group) 
+/electrons_xSI (Group) 
+/electrons_ySI (Group) 
+/electrons_zSI (Group) 
+/globalLimits (Group) 
+/phi_lamda (Group) 
+/runInfo (Group) 
+/slice_nom_lamda (Group) 
+/time (Group) 
+\end{lstlisting}
+
+The main data is the {\bf electrons} dataset, where the each column corresponds to the macroparticle $\bar{x}$, $\bar{y}$, $\bar{z}_2$, $\bar{p}_x$, $-\bar{p}_y$, and $\Gamma$ coordinates, and the macroparticle weight, respectively (note the negative sign in the $\bar{p}_y$ data). The weight $= N_e / \bar{n}_p$, where $N_e$ is the number of real electrons the macroparticle represents, and $\bar{n}_p$ is the peak number density of the electron beam required to get the input value of $\rho$. $\bar{n}_p$ is in the {\bf runInfo} group in the file.
+
+The {\bf ...SI} groups are VizSchema derived datasets, allowing visit to calulate the SI quantities from the scaled data in the file.
+
+The {\bf runInfo} group is as specified in the field dump file.
+
+\subsubsection{Integrated Data Files}
+
+The integrated data files are named {\bf \textit{basename}\_integrated\_\textit{stepnum}.h5}. They contain the following data:
+
+\begin{lstlisting}[language=python]
+/ (RootGroup) ''
+/beamCurrent (Array(8525,)) ''
+/beamCurrentSI (Array(8525,)) ''
+/bunching2ndHarmonic (Array(8524,)) ''
+/bunching2ndHarmonicSI (Array(8524,)) ''
+/bunching3rdHarmonic (Array(8524,)) ''
+/bunching3rdHarmonicSI (Array(8524,)) ''
+/bunching4thHarmonic (Array(8524,)) ''
+/bunching4thHarmonicSI (Array(8524,)) ''
+/bunching5thHarmonic (Array(8524,)) ''
+/bunching5thHarmonicSI (Array(8524,)) ''
+/bunchingFundamental (Array(8524,)) ''
+/bunchingFundamentalSI (Array(8524,)) ''
+/emittanceX (Array(8524,)) ''
+/emittanceXSI (Array(8524,)) ''
+/emittanceY (Array(8524,)) ''
+/emittanceYSI (Array(8524,)) ''
+/meanDeltaGamma (Array(8524,)) ''
+/meanDeltaGammaSI (Array(8524,)) ''
+/meanGamma (Array(8524,)) ''
+/meanGammaSI (Array(8524,)) ''
+/meanMomentumX (Array(8524,)) ''
+/meanMomentumXSI (Array(8524,)) ''
+/meanMomentumY (Array(8524,)) ''
+/meanMomentumYSI (Array(8524,)) ''
+/meanPosX (Array(8524,)) ''
+/meanPosXSI (Array(8524,)) ''
+/meanPosY (Array(8524,)) ''
+/meanPosYSI (Array(8524,)) ''
+/power (Array(161939,)) ''
+/powerSI (Array(161939,)) ''
+/sigmaX (Array(8524,)) ''
+/sigmaXSI (Array(8524,)) ''
+/sigmaY (Array(8524,)) ''
+/sigmaYSI (Array(8524,)) ''
+/sigmapX (Array(8524,)) ''
+/sigmapXSI (Array(8524,)) ''
+/sigmapY (Array(8524,)) ''
+/sigmapYSI (Array(8524,)) ''
+/sliceCharge (Array(8524,)) ''
+/sliceChargeSI (Array(8524,)) ''
+/globalLimits (Group) ''
+/globalLimitsSI (Group) ''
+/intFieldMeshSI (Group) ''
+/intFieldMeshSc (Group) ''
+/intPtclMeshSI (Group) ''
+/intPtclMeshSc (Group) ''
+/runInfo (Group) ''
+/time (Group) ''
+\end{lstlisting}
+
+Data with an appended {\bf SI} indicate the measurement is in SI units. Otherwise, the data is in the scaled notation.
+
+\subsection{Viewing the Data}
+
+Users are free to choose their favourite visualisation method, and none is `officially' supported by Puffin. Nevertheless, the data output itself has vizSchema metadata to tell \textit{e.g.} Visit how to display the data. VisIt allows the ability to plot the data in client-server mode while the data is on a cluster, which is useful when doing large runs. 
+
+Before viewing in VisIt, the field dumps need to be processed by the `ReorderColMajorFtoColMinorC.py' script, since there is currently a bug in VisIt which prevents the data being opened in the native fortran ordering. The field files can easily be 10's to 100's of GB's (or even larger) - so you may wish to process them anyway before attempting to view them. 
+
+There are example Python scripts to subselect portions of the field mesh. For example, you may wish to select only a central portion of the field mesh in the transverse or temporal directions, or you may wish to select portions at a a time to average over, etc.
+
+In addition, there are some scripts supplied to give examples of how to access, manipulate and plot the data in Matlab and Python/matplotlib. Feel free to modify these for your own purposes - we expect each project to require its own bespoke processing just due to the nature of the code.
+
+
 
 \newpage
 
 \section{Parameters}
 
-Below is an exhaustive list of parameters, for each filetype. Some options are only really useful for investigating runitme errors or strange behaviour. The parameter list for each file is loosely sorted from most to least useful to the average user.
+Below is an exhaustive list of parameters, for each filetype. Some options are only really useful for investigating runitme errors or strange behaviour. The parameter list for each file is loosely sorted from most to least useful to the average user (default values are in square brackets after the description).
 
 
 \subsection{Main Input File}
 
 {\bf sRho}
 
-$\rho$, the FEL parameter. This specifies the scaling of the system. It does {\bf not} have to be strictly correct - it only descibes the scaling. The simulation can be performed, and the system may be scaled back to SI units using the supplied scripts (NOT SUPPLIED YET!!). If it is correct, however (meaning, it has been calculated from the beam and undulator parameters input), then the scaled notation becomes physically relevant. For an ideal, 1D system, the system should saturate at intensity $|A|^2 \approx 1$, and the system should be firmly in the high or exponential gain regime at $\bar{z} \approx 2-3$. This allows one to see how efficiently the system is lasing w.r.t its ideal case.
+$\rho$, the FEL parameter. This specifies the scaling of the system. It does {\bf not} have to be strictly correct - it only descibes the scaling. The simulation can be performed, and the system may be scaled back to SI units, and the result should be correct. If the supplied $\rho$ is correct, however (meaning, it has been calculated from the beam and undulator parameters input), then the scaled notation becomes physically relevant. For an ideal, 1D system, the system should saturate at intensity $|A|^2 \approx 1$, and the system should be firmly in the high or exponential gain regime at $\bar{z} \approx 2-3$. This allows one to quickly see how efficiently the system is lasing w.r.t its ideal case. [$0.01$]
 
 
 {\bf saw}
 
-$a_u$, the undulator parameter defined with the peak on-axis magnetic field.
+$a_u$, the undulator parameter defined with the peak on-axis magnetic field. [$1.0$]
 
 {\bf sgamma\_r}
 
-$\gamma_0$, the reference (usually the mean) beam energy.
+$\gamma_0$, the reference (usually the mean) beam energy. [$100$]
 
 {\bf lambda\_w}
 
-$\lambda_u$, the undulator, or wiggler, period.
+$\lambda_u$, the undulator, or wiggler, period. [0.04]
 
 {\bf zundType}
 
-Allows one to select from a choice of undulators. Choices are `curved', `planepole', and `helical', described analytically below. If neither of these are chosen, then the default elliptical undulator is chosen, with polarization specified by $u_x$ and $u_y$.
+Allows one to select from a choice of undulators. Choices are `curved', `planepole', and `helical', described analytically below. If neither of these are chosen, then the default elliptical undulator is chosen, with polarization specified by $u_x$ and $u_y$. [`' (blank - corresponding to the generic variably polarized undulator]
 
 {\bf sux, suy}
 
-$u_x$ and $u_y$ - the relative peak magnetic field of the undulator in each transverse polarization. Usually, at least one should be $=1$, and the other between $0$ (planar) and $1$ (helical). If they are not defined, the default is helical, $u_x=u_y=1$. Ignored if the undulator type is specified as either `helical', `planepole' or `curvedpole'.
+$u_x$ and $u_y$ - the relative peak magnetic field of the undulator in each transverse polarization. Usually, at least one should be $=1$, and the other between $0$ (planar) and $1$ (helical). If they are not defined, the default is helical, $u_x=u_y=1$. Ignored if the undulator type is specified as either `helical', `planepole' or `curvedpole'. [($u_x = u_y = 1.0$)]
 
 {\bf taper}
 
-Taper in the single, simple undulator case, $\dfrac{d\alpha}{d \bar{z}}$. Ignored if a lattice file is supplied.
+Taper in the single, simple undulator case, $\dfrac{d\alpha}{d \bar{z}}$. Ignored if a lattice file is supplied. [$0.0$]
 
 {\bf iWriteNthSteps}
 
-Steps at which to write the full data dumps at. This sets the periodicity of the data dumps, in integration steps.
+Steps at which to write the full data dumps at. This sets the periodicity of the data dumps, in integration steps. [$30$]
 
 {\bf iWriteIntNthSteps}
 
-Steps at which to write the integrated data at. This sets the periodicity of the writes, in integration steps.
+Steps at which to write the integrated data at. This sets the periodicity of the writes, in integration steps. [$30$]
 
 {\bf sFiltFrac}
 
-During the field diffraction step, the lower frequencies are filtered out. This sets the cutoff for the high-pass filter, in units of the reference resonant frequency - (so should usually be $\leq 0.3$).
+During the field diffraction step, the lower frequencies are filtered out. This sets the cutoff for the high-pass filter, in units of the reference resonant frequency - (so should usually be $\leq 0.3$). [0.3]
 
 {\bf sDiffFrac}
 
-Length of the diffraction step, in units of the undulator period. Usually $=1$.
+Length of the diffraction step, in units of the undulator period. Usually $=1$. [1.0]
 
 {\bf sBeta}
 
@@ -623,7 +841,7 @@ Logical. If = {\bf .false.}, then the radiation field evolution will be switched
 
 {\bf qElectronsEvolve}
 
-Logical. If = {\bf .false.}, then the electron equations are not solved in the integration steps. Like when qFieldEvolve= {\bf .false.},  this is obviously artificial and very rarely used, but can be useful for debugging in some instances. Default is = {\bf .true.}.
+Logical. If = {\bf .false.}, then the electron equations are not solved in the integration steps. Like the case when qFieldEvolve= {\bf .false.},  this is obviously artificial and very rarely used, but can be useful for debugging in some instances. Default is = {\bf .true.}.
 
 {\bf qElectronFieldCoupling}
 
@@ -631,7 +849,7 @@ Logical. If = {\bf .false.}, then the radiation field feedback onto the electron
 
 {\bf qSeparateFiles}
 
-If each rank is writing its own file for the hdf5 files. If = true, then the files will need to be gathered together in post for analysis. Depending on the file system, this may be faster or slower.
+If each rank is writing its own file for the hdf5 files. If = true, then the files will need to be gathered together in post for analysis. Depending on the file system, this may be faster or slower for you. There are some post-processing python scripts to show how you might stitch the files together in post.
 
 {\bf qFocussing}
 
@@ -714,7 +932,7 @@ Switch on/off output of particle and field mesh dumps in vizSchema compliant hdf
 
 {\bf qScaled}
 
-Logical turning on/off the input of scaled units into Puffin. If {\bf .true.}, input is assumed to be in the scaled units. 
+Logical turning on/off the input of scaled units into Puffin. If {\bf .true.}, input is assumed to be in the scaled units.
 
 {\bf qFilter}
 
@@ -753,7 +971,7 @@ L.T. Campbell and B.W.J. McNeil, Physics of Plasmas {\bf 19}, 093119 (2012)
 L T Campbell, B.W.J. McNeil and S. Reiche, New J. Phys. {\bf 16} (2014) 103019
 \bibitem{scharlemann1}
 E.T. Scharlemann, in High Gain, High Power FELs (edited by R. Bonifacio \textit{et al} ) (1989)
-\bibitem{noise1} 
+\bibitem{noise1}
 B. W. J. McNeil, M. W. Poole, and G. R. M. Robb, Phys. Rev. ST Accel. Beams {\bf 6}, 070701 (2003)
 
 
