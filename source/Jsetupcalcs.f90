@@ -491,7 +491,7 @@ end subroutine getQFmNpk
 
 SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, sFiltFrac, &
                               qFlatTopS, sSigmaF, &
-                              sA0_x, sA0_y, field_file, qOK)
+                              sA0_x, sA0_y, qOK)
 
     IMPLICIT NONE
 !
@@ -518,7 +518,6 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, sFiltFrac, &
     REAL(KIND=WP), INTENT(IN)    :: sA0_y(:)
     real(kind=wp), intent(in)    :: sFiltFrac
 !    REAL(KIND=WP), INTENT(INOUT) :: sA(:)
-    CHARACTER(LEN=1024),INTENT(IN) :: field_file(:)
     LOGICAL,       INTENT(OUT)   :: qOK
 
 !                LOCAL ARGS
@@ -527,7 +526,6 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, sFiltFrac, &
 ! iZ2          Number of nodes in Z2
 ! iXY          Number of nodes in XY plane
 ! sA0gauss_Re  Initial field over all planes
-    CHARACTER(Len=1024) :: h5FieldFileName
 
     LOGICAL           :: qOKL
     LOGICAL           :: qInitialGauss
@@ -540,8 +538,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, sFiltFrac, &
 !     Set error flag to false
 
     qOK = .FALSE.
-    h5FieldFileName=field_file(1)
-
+    
     sZi_G = 0.0_wp
     sZlSt_G = 0.0_wp
 

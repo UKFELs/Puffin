@@ -368,12 +368,11 @@ MODULE Setup
                             sSeedSigma, &
                             sA0_Re,&
                             sA0_Im,&
-                            field_file, &
                             qOKL)
 
   else if (iFieldSeedType_G==iReadH5Field_G) then
 
-    call readH5FieldfileSingleDump(h5FieldFileName, sFiltFrac)
+    call readH5FieldfileSingleDump(field_file(1), sFiltFrac)
     call initPowerCalc()
 
     sFieldModelLength(iX_CG) = sLengthOfElmX_G * real((NX_G-1_ip),kind=wp)
