@@ -3586,6 +3586,8 @@ contains
 !!   asking for the run information to be written (ie parent routine)
    subroutine writeH5RunInfo(file_id, callerstr, error)
 
+    use PuffProvenance
+
     INTEGER(HID_T), INTENT(in) :: file_id 
     CHARACTER(LEN=12), intent(in) :: callerstr
     INTEGER(kind=ip) :: error
@@ -3627,7 +3629,7 @@ contains
 !    Print*,'hdf5_puff:' // callerstr // '(close timegrpname time attr)'
 !    Print*,error
     CALL addH5StringAttribute(group_id,"vsSoftware","PUFFIN",aspace_id)
-
+    
 !    write(attr_data_string, '(8i5)') values
 !    write(attr_data_string, '(5i4-3i2-3i2) zone (4i3 3i2:3i2:3i2 .4i3)') values
     write(attr_data_string, '(a,a,a,a,a,2x,a,a,a,a,a,1x,a)') date(1:4),'-',date(5:6), &
@@ -3637,20 +3639,20 @@ contains
     CALL addH5StringAttribute(group_id,"vsUser",attr_data_string,aspace_id)
     CALL HOSTNM(attr_data_string)
     CALL addH5StringAttribute(group_id,"vsRunHost",attr_data_string,aspace_id)
-    CALL addH5StringAttribute(group_id,"vsBuildConfigDate",'@CONFIGURE_TIME_STAMP@',aspace_id)
+    CALL addH5StringAttribute(group_id,"vsBuildConfigDate", timeStamp, aspace_id)
 
-    attr_data_string='@GIT_BRANCH@ : @GIT_REVISION@' 
-    CALL addH5StringAttribute(group_id,"vsSwRevision",attr_data_string,aspace_id)
+!    attr_data_string='@GIT_BRANCH@ : @GIT_REVISION@' 
+    CALL addH5StringAttribute(group_id,"vsSwRevision", gitBranch,aspace_id)
 
-    attr_data_string='@Puffin_VERSION_MAJOR@.@Puffin_VERSION_MINOR@.@Puffin_VERSION_PATCH@' 
-    CALL addH5StringAttribute(group_id,"vsSwVersion",attr_data_string,aspace_id)
+!    attr_data_string='@Puffin_VERSION_MAJOR@.@Puffin_VERSION_MINOR@.@Puffin_VERSION_PATCH@' 
+    CALL addH5StringAttribute(group_id,"vsSwVersion", puffVersion,aspace_id)
    
     CALL addH5StringAttribute(group_id,"vsVsVersion","3.0",aspace_id)
-    CALL addH5StringAttribute(group_id,"vsFCompiler","@Fortran_COMPILER_NAME@",aspace_id)
-    CALL addH5StringAttribute(group_id,"vsFCompilerVersion","@Fortran_VERSION@",aspace_id)
-    CALL addH5StringAttribute(group_id,"vsFCompilerFlags","@CMAKE_Fortran_FLAGS@",aspace_id)
-    CALL addH5StringAttribute(group_id,"vsBuildHost","@UQHOSTNAME@",aspace_id)
-    CALL addH5StringAttribute(group_id,"vsBuildHostType","@CMAKE_HOST_SYSTEM@",aspace_id)
+    CALL addH5StringAttribute(group_id,"vsFCompiler", fortCompiler, aspace_id)
+    CALL addH5StringAttribute(group_id,"vsFCompilerVersion", fortVersion, aspace_id)
+    CALL addH5StringAttribute(group_id,"vsFCompilerFlags", fortFlags, aspace_id)
+    CALL addH5StringAttribute(group_id,"vsBuildHost", buildHost, aspace_id)
+    CALL addH5StringAttribute(group_id,"vsBuildHostType", hostType, aspace_id)
 
 ! required Fotran 2003. Not sure if we really want to do this.
     CALL get_command(attr_data_string)
