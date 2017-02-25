@@ -1,3 +1,18 @@
+!************* THIS HEADER MUST NOT BE REMOVED *******************!
+!** Copyright 2013-2017, Lawrence Campbell and Brian McNeil.    **!
+!** This program must not be copied, distributed or altered in  **!
+!** any way without the prior permission of the above authors.  **!
+!*****************************************************************!
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> This module contains definitions of provenance data about e.g. how the
+!> program was built, passed to Puffin from CMake
+
+
 module PuffProvenance
 
 use paratype
