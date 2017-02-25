@@ -2,15 +2,15 @@
 !!
 !!  233MeV beam,  lasing @ 100nm
 !!  Lattice including drifts and quads is supplied
-!!  The Twiss parameters in the beam field are matched 
+!!  The Twiss parameters in the beam field are matched
 !!  to the quad channel
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! The main input parameters are described below - Puffin takes the namelist blocks at the
-! bottom of this file as input. This is the 'main' input file, containing info about the 
+! bottom of this file as input. This is the 'main' input file, containing info about the
 ! wiggler, field sampling, and general flags and other numerical instructions for the
-! simulation. This file also points to a beam file, describing the electron beam, 
+! simulation. This file also points to a beam file, describing the electron beam,
 ! and optionally, a seed file (describing a radiation seed) and/or a lattice file.
 !--------------------------------------------------------------------------------------------------!
 ! NAME                       DESCRIPTION
@@ -39,18 +39,18 @@
 ! qWriteZ2                   Write out Z2 data
 ! qWriteX                    Write out X data
 ! qWriteY                    Write out Y data
-! 
+!
 !               ELECTRON MACROPARTICLE SAMPLING
-! 
-! 
+!
+!
 ! beam_file                  Name of the beam file
 ! sElectronThreshold         Beyond the threshold level(%) * the average of real electrons are removed(ignored)
-! 
-! 
-! 
+!
+!
+!
 !                   FIELD NODE SAMPLING
-! 
-! 
+!
+!
 ! iNumNodesX               Number of nodes to sample radiation field in x direction
 ! iNumNodesY               Number of nodes to sample radiation field in y direction
 ! nodesPerLambdar            Number of nodes per resonant wavelength
@@ -63,14 +63,14 @@
 ! sDiffFrac                  Specifies diffraction step size as fraction of the undulator period
 ! beta                       Absorption coefficient
 ! seed_file                  Name of the seed file
-! 
-! 
+!
+!
 !                  INDEPENDANT VARIABLES
-! 
-! 
+!
+!
 ! Input the scaled independant variables from [1] here
-! 
-! 
+!
+!
 ! srho                        Pierce or FEL parameter, describing the strength of the interaction (or efficiency)
 ! sux                         Normalised magnitude of wiggler magnetic field x-vector: H=1 is helical, H=0 is planar
 ! suy                         Normalised magnitude of wiggler magnetic field y-vector: H=1 is helical, H=0 is planar
@@ -80,16 +80,16 @@
 ! Dfact                      Dispersive strength factor for chicane
 ! zundType                    Undulator type - 'curved' , 'planepole' , else 1D (no off axis variation of aw)
 ! taper                      gradient of taper - d/dz of alpha
-! 
-! 
+!
+!
 !                       INTEGRATION AND OUTPUT
-! 
-! 
+!
+!
 ! Here,a lattice file can be input to specify an undulator-chicane lattice.
-! If it is specified, then the value of nPeriods and stepsPerPeriod supplied 
-! here is ignored. Otherwise the values below are used in a basic single undulator 
+! If it is specified, then the value of nPeriods and stepsPerPeriod supplied
+! here is ignored. Otherwise the values below are used in a basic single undulator
 ! setup.
-! 
+!
 ! lattFile           Name of lattice file (optional).
 ! stepsPerPeriod     Number of steps per wiggler period
 ! nPeriods           Number of wiggler periods
@@ -104,33 +104,20 @@
 ! Begin input:-
 
 &MDATA
- qScaled		= .false.
- qOneD                  = .false.   
- qFieldEvolve           = .true. 
- qElectronsEvolve       = .true. 
- qElectronFieldCoupling = .true.  
- qFocussing             = .false. 
- qDiffraction           = .true.   
- qFilter                = .true.   
- q_noise                = .true.   
- qDump                  = .false.   
- qResume                = .false.   
- qSeparateFiles         = .false.   
- qFormattedFiles        = .false.   
- qWriteZ                = .true.   
- qWriteA                = .true.   
- qWritePperp            = .true.   
- qWriteP2               = .true.   
- qWriteZ2               = .true.   
- qWriteX                = .true.   
- qWriteY                = .true.   
+ qScaled		            = .false.
+ qOneD                  = .false.
+ qFieldEvolve           = .true.
+ qElectronsEvolve       = .true.
+ qElectronFieldCoupling = .true.
+ qFocussing             = .false.
+ qDiffraction           = .true.
  qsdds = .false.
- qhdf5=.true.
+ qhdf5 = .true.
  qUndEnds = .true.
- qFMesh_G = .false. 
- beam_file              = 'beam_file.in'     
+ qFMesh_G = .false.
+ beam_file              = 'beam_file.in'
  sElectronThreshold     = 0.05
- iNumNodesX             = 120      
+ iNumNodesX             = 120
  iNumNodesY             = 120
  nodesPerLambdar        = 20
  sFModelLengthX         = 0.003335537906783215
