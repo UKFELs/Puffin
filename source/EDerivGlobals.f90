@@ -415,6 +415,6 @@ logical   ::  qscaled_G
 
 logical   ::  qInitWrLat_G
 
-
+logical   ::  qDumpEnd_G
 
 End Module Globals

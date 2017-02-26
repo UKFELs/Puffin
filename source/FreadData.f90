@@ -280,7 +280,7 @@ subroutine read_in(zfilename, &
   logical :: qOneD, qFieldEvolve, qElectronsEvolve, &
              qElectronFieldCoupling, qFocussing, &
              qDiffraction, qDump, qUndEnds, qhdf5, qsdds, &
-             qscaled, qInitWrLat
+             qscaled, qInitWrLat, qDumpEnd
 
   integer(kind=ip) :: iNumNodesX, iNumNodesY, nodesPerLambdar
   real(kind=wp) :: sFModelLengthX, sFModelLengthY, sFModelLengthZ2
@@ -309,7 +309,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  sZ0, zDataFileName, iWriteNthSteps, &
                  iWriteIntNthSteps, iDumpNthSteps, sPEOut, &
                  qFMesh_G, sKBetaXSF, sKBetaYSF, sRedistLen, &
-                 iRedistStp, qscaled, nspinDX, nspinDY, qInitWrLat
+                 iRedistStp, qscaled, nspinDX, nspinDY, qInitWrLat, qDumpEnd
 
 
 ! Begin subroutine:
@@ -347,6 +347,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qFMesh_G = .true.
   qscaled = .true.
   qInitWrLat = .false.
+  qDumpEnd = .true.
 !  qplain = .false.
 
   beam_file = 'beam_file.in'
@@ -414,6 +415,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qscaled_G = qscaled
   qInitWrLat_G = qInitWrLat
 
+  qDumpEnd_G = qDumpEnd
 
 
   tArrayZ%qWrite = qWriteZ
