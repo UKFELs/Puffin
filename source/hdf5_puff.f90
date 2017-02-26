@@ -36,12 +36,13 @@ contains
 
     real(kind=wp), intent(in) :: sZ, sZ_loc  !< zbar and local zbar for current module
     real(kind=wp), dimension(NZ2_G) :: power !<power data (called here)
+    real(kind=wp), dimension(NZ2_G) :: wrFArray
     real(kind=wp), dimension(npts_I_G) :: Iarray !< current data (called here)
     type(cArraySegment), intent(inout) :: tArrayA(:), tArrayE(:), tArrayZ
     integer(kind=ip), intent(in)  :: nslices, iL
     real(kind=wp), dimension(nslices) :: aveX,aveY,avePX,avePY,aveGamma,aveDgamma
     real(kind=wp), dimension(nslices) :: sdX, sdY, sdpx, sdpy, eX, ey, aX, aY, bX, bY
-    real(kind=wp), dimension(nslices) :: bun1,bun2,bun3,bun4,bun5,sq
+    real(kind=wp), dimension(nslices) :: bun1,bun2,bun3,bun4,bun5,sq, wrEArray, avGam4Unsc
 
     integer(kind=ip), intent(in) :: iIntWr, iWr !<Aren't these global?
     character(1024_IP), intent(in) :: zDFName 
@@ -191,28 +192,210 @@ contains
         PowScale = lg_G * lc_G * c * e_0 * ((sgammaR_G * m_e * c**2.0_wp ) / &
                                (q_e * skappa_G * lg_G ))**2.0_wp
 
+        avGam4Unsc = aveGamma
+        where (avGam4Unsc == 0.0_wp) avGam4Unsc = 1.0_wp
+
         call CreateIntegrated1DFloat(time,error,nslices)
-        call addH5Field1DFloat(power, 'power', PowScale, "intFieldMesh", time, sz_loc, iL, error)
-        call addH5Field1DFloat(Iarray, 'beamCurrent', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
-        call addH5Field1DFloat(aveX, 'meanPosX', (DSQRT(lg_G*lc_G)), "intPtclMesh", time, sz_loc, iL, error)
-        call addH5Field1DFloat(aveY, 'meanPosY', (DSQRT(lg_G*lc_G)), "intPtclMesh", time, sz_loc, iL, error)
-        call addH5Field1DFloat(avepy, 'meanMomentumX', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
-        call addH5Field1DFloat(avepy, 'meanMomentumY', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
-        call addH5Field1DFloat(aveGamma, 'meanGamma', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
-        call addH5Field1DFloat(aveDGamma, 'meanDeltaGamma', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
-        call addH5Field1DFloat(sdx, 'sigmaX', (DSQRT(lg_G*lc_G)), "intPtclMesh", time, sz_loc, iL, error)
-        call addH5Field1DFloat(sdy, 'sigmaY', (DSQRT(lg_G*lc_G)), "intPtclMesh", time, sz_loc, iL, error)
-        call addH5Field1DFloat(sdpx, 'sigmapX', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
-        call addH5Field1DFloat(sdpy, 'sigmapY', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
-        call addH5Field1DFloat(ex, 'emittanceX', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
-        call addH5Field1DFloat(ey, 'emittanceY', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
-        call addH5Field1DFloat(bun1, 'bunchingFundamental', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
-        call addH5Field1DFloat(bun2, 'bunching2ndHarmonic', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
-        call addH5Field1DFloat(bun3, 'bunching3rdHarmonic', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
-        call addH5Field1DFloat(bun4, 'bunching4thHarmonic', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
-        call addH5Field1DFloat(bun5, 'bunching5thHarmonic', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
-        call addH5Field1DFloat(sq, 'sliceCharge', 1._wp, "intPtclMesh", time, sz_loc, iL, error)
-          
+
+        call addH5Field1DFloat(power, 'power', "intFieldMeshSc", &
+                              "z2, Power (Scaled)", time, sz_loc, iL, error)
+
+        wrFArray = power * powScale
+
+        call addH5Field1DFloat(wrFArray, 'powerSI', "intFieldMeshSI", &
+                              "ct-z (m), Power (W)", time, sz_loc, iL, error)
+        
+        
+        call addH5Field1DFloat(Iarray, 'beamCurrent',  "intPtclMeshSc", &
+                               "z2, Current (A)", time, sz_loc, iL, error)
+
+        call addH5Field1DFloat(Iarray, 'beamCurrentSI',  "intPtclMeshSI", &
+                               "ct-z, Current (A)", time, sz_loc, iL, error)
+
+
+        call addH5Field1DFloat(aveX, 'meanXbar', "intPtclMeshSc", &
+                               "z2, xbar", time, sz_loc, iL, error)
+
+        wrEArray = aveX * (DSQRT(lg_G*lc_G))
+
+        call addH5Field1DFloat(wrEArray, 'meanXSI', "intPtclMeshSI", &
+                               "ct-z (m), x (m)", time, sz_loc, iL, error)
+        
+
+
+
+
+
+        call addH5Field1DFloat(aveY, 'meanYbar', "intPtclMeshSc", &
+                               "z2, ybar", time, sz_loc, iL, error)
+
+        wrEArray = aveY * (DSQRT(lg_G*lc_G))
+
+        call addH5Field1DFloat(wrEArray, 'meanYSI', "intPtclMeshSI", &
+                               "ct-z (m), y (m)", time, sz_loc, iL, error)
+
+
+
+
+
+        call addH5Field1DFloat(avepx, 'meanPXbar', "intPtclMeshSc", &
+                               "z2, pxbar", time, sz_loc, iL, error)
+
+        wrEArray = avepx * 2.0_wp * sRho_G * sKappa_G / avGam4Unsc
+
+
+        call addH5Field1DFloat(wrEArray, 'mean_dxdzSI', "intPtclMeshSI", &
+                               "ct-z (m), dxdz", time, sz_loc, iL, error)
+                               
+
+
+
+        call addH5Field1DFloat(avepy, 'meanPYbar', "intPtclMeshSc", &
+                               "z2, pxbar", time, sz_loc, iL, error)
+
+        wrEArray = -avepy * 2.0_wp * sRho_G * sKappa_G / avGam4Unsc
+
+
+        call addH5Field1DFloat(wrEArray, 'mean_dydzSI', "intPtclMeshSI", &
+                               "ct-z (m), dxdz", time, sz_loc, iL, error)
+
+
+
+
+
+
+        call addH5Field1DFloat(aveGamma, 'meanGamma', "intPtclMeshSc", &
+                               "z2, gamma / gamma0", time, sz_loc, iL, error)
+
+        
+        wrEArray = aveGamma * sGammaR_G * 0.511_wp
+        
+        call addH5Field1DFloat(wrEArray, 'meanEnergySI', "intPtclMeshSI", &
+                               "ct-z (m), E (MeV)", time, sz_loc, iL, error)
+
+
+
+
+        call addH5Field1DFloat(aveDGamma, 'meanSigmaGamma', "intPtclMeshSc", &
+                               "z2, sigma_gamma / gamma0", time, sz_loc, iL, error)
+
+        call addH5Field1DFloat(aveDGamma, 'meanSigmaGammaSI', "intPtclMeshSI", &
+                               "ct-z (m), sigma_gamma / gamma0", time, sz_loc, iL, error)
+
+
+
+
+
+        call addH5Field1DFloat(sdx, 'sigmaXbar', "intPtclMeshSc", &
+                               "z2, sigma_xbar", time, sz_loc, iL, error)
+
+        wrEArray = sdx * (DSQRT(lg_G*lc_G))
+
+        call addH5Field1DFloat(wrEArray, 'sigmaXSI', "intPtclMeshSI", &
+                               "ct-z (m), sigma_x (m)", time, sz_loc, iL, error)
+
+
+        call addH5Field1DFloat(sdy, 'sigmaYbar', "intPtclMeshSc", &
+                               "z2, sigma_ybar", time, sz_loc, iL, error)
+
+        wrEArray = sdy * (DSQRT(lg_G*lc_G))
+
+        call addH5Field1DFloat(wrEArray, 'sigmaYSI', "intPtclMeshSI", &
+                               "ct-z (m), sigma_y (m)", time, sz_loc, iL, error)
+                               
+
+
+        call addH5Field1DFloat(sdpx, 'sigmaPxbar', "intPtclMeshSc", &
+                               "z2, sigma_pxbar", time, sz_loc, iL, error)
+
+        wrEArray = sdpx * 2.0_wp * sRho_G * sKappa_G / avGam4Unsc
+
+        call addH5Field1DFloat(wrEArray, 'sigma_dxdzSI', "intPtclMeshSI", &
+                               "ct-z (m), sigma_dxdz", time, sz_loc, iL, error)
+
+
+
+
+        call addH5Field1DFloat(sdpy, 'sigmaPybar', "intPtclMeshSc", &
+                               "z2, sigma_pybar", time, sz_loc, iL, error)
+
+        wrEArray = -sdpy * 2.0_wp * sRho_G * sKappa_G / avGam4Unsc
+
+        call addH5Field1DFloat(wrEArray, 'sigma_dydzSI', "intPtclMeshSI", &
+                               "ct-z (m), sigma_dydz", time, sz_loc, iL, error)
+
+
+
+        wrEArray = 2.0_wp * sKappa_G / sqrt(sEta_G) /  avGam4Unsc * ex
+        
+        call addH5Field1DFloat(wrEArray, 'emittanceXbar', "intPtclMeshSc", &
+                               "z2, scaled x emittance", time, sz_loc, iL, error)
+
+        wrEArray = wrEArray * sRho_G * lc_G
+
+        call addH5Field1DFloat(wrEArray, 'emittanceXSI', "intPtclMeshSI", &
+                               "ct-z (m), emittance_x (unnormalised)", time, sz_loc, iL, error)
+
+
+
+
+        wrEArray = 2.0_wp * sKappa_G / sqrt(sEta_G) /  avGam4Unsc * ey
+        
+        call addH5Field1DFloat(wrEArray, 'emittanceYbar', "intPtclMeshSc", &
+                               "z2, scaled y emittance", time, sz_loc, iL, error)
+
+        wrEArray = wrEArray * sRho_G * lc_G
+
+        call addH5Field1DFloat(wrEArray, 'emittanceYSI', "intPtclMeshSI", &
+                               "ct-z (m), emittance_y (unnormalised)", time, sz_loc, iL, error)
+                               
+                               
+
+
+        call addH5Field1DFloat(bun1, 'bunchingFundamental', "intPtclMeshSc", &
+                               "z2, bunching", time, sz_loc, iL, error)
+
+        call addH5Field1DFloat(bun1, 'bunchingFundamentalSI', "intPtclMeshSI", &
+                               "ct-z (m), bunching", time, sz_loc, iL, error)
+
+
+        call addH5Field1DFloat(bun2, 'bunching2ndHarmonic', "intPtclMeshSc", &
+                               "z2, 2nd harmonic bunching", time, sz_loc, iL, error)
+
+        call addH5Field1DFloat(bun2, 'bunching2ndHarmonicSI', "intPtclMeshSI", &
+                               "ct-z (m), 2nd harmonic bunching", time, sz_loc, iL, error)
+
+
+
+        call addH5Field1DFloat(bun3, 'bunching3ndHarmonic', "intPtclMeshSc", &
+                               "z2, 3rd harmonic bunching", time, sz_loc, iL, error)
+
+        call addH5Field1DFloat(bun3, 'bunching3ndHarmonicSI', "intPtclMeshSI", &
+                               "ct-z (m), 3rd harmonic bunching", time, sz_loc, iL, error)
+
+
+
+        call addH5Field1DFloat(bun4, 'bunching4thHarmonic', "intPtclMeshSc", &
+                               "z2, 4th harmonic bunching", time, sz_loc, iL, error)
+
+        call addH5Field1DFloat(bun4, 'bunching4thHarmonicSI', "intPtclMeshSI", &
+                               "ct-z (m), 4th harmonic bunching", time, sz_loc, iL, error)
+
+
+
+        call addH5Field1DFloat(bun5, 'bunching5thHarmonic', "intPtclMeshSc", &
+                               "z2, 5th harmonic bunching", time, sz_loc, iL, error)
+
+        call addH5Field1DFloat(bun5, 'bunching5thHarmonicSI', "intPtclMeshSI", &
+                               "ct-z (m), 5th harmonic bunching", time, sz_loc, iL, error)
+                               
+
+        call addH5Field1DFloat(sq, 'Slice Charge', "intPtclMeshSc", &
+                               "z2, Charge", time, sz_loc, iL, error)
+
+        call addH5Field1DFloat(sq, 'Slice Charge SI', "intPtclMeshSI", &
+                               "ct-z (m), Charge", time, sz_loc, iL, error)
+
 
         if (error .ne. 0) goto 1000
 ! Todo not yet implemented

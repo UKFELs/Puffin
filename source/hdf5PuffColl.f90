@@ -1297,9 +1297,9 @@ contains
       CALL write1DuniformMesh(file_id,"intPtclMeshSc",0._wp, &
         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G,nslices,"z2,scaled parameter")
       CALL write1DuniformMesh(file_id,"intFieldMeshSI",0._wp, &
-        real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g,NZ2_g,"z2 [m], SI parameter")
+        real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g,NZ2_g,"z [m], SI parameter")
       CALL write1DuniformMesh(file_id,"intPtclMeshSI",0._wp, &
-        real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g,nslices,"z2 [m], SI parameter")
+        real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g,nslices,"z [m], SI parameter")
 !
 ! Close the file.
 !
@@ -1314,7 +1314,7 @@ contains
   
 !>addH5Field1DFloat() This subroutine writes data
 
-  subroutine addH5Field1DFloat(writeData, dsetname, scalefac, meshname, simtime, &
+  subroutine addH5Field1DFloat(writeData, dsetname, meshname, zLabels, simtime, &
                                sz_loc, iL, error)
 
     implicit none
@@ -1322,9 +1322,9 @@ contains
     character(1024_IP) :: filename !< output filename
     integer(kind=ip) :: error !< Local Error flag
     real(kind=wp), intent(in) :: writeData(:) !< data to be written
+    character(*), intent(in) :: zLabels  !< Axis labels for plotting
     real(kind=wp), allocatable :: writeDataSI(:) !< data to be written
     CHARACTER(LEN=*), intent(in) :: dsetname  !< Dataset name
-    REAL(kind=WP), intent(in) :: scalefac      !< scaling factor for SI var
     CHARACTER(LEN=*), INTENT(IN) :: meshname !<name of mesh to assign integrated data
     REAL(kind=WP), intent(in) :: simtime      !< simulation time
     real(kind=wp), intent(in) :: sz_loc  !< zbar local to the current undulator module
@@ -1390,8 +1390,8 @@ contains
       CALL addH5StringAttribute(dset_id,"vsIndexOrder","compMinorF",aspace_id)
       CALL addH5StringAttribute(dset_id,"vsTimeGroup",timegrpname,aspace_id)
       CALL addH5StringAttribute(dset_id,"vsLimits",limgrpnameSI,aspace_id)
-      CALL addH5StringAttribute(dset_id,"vsMesh",(meshname//"Sc"),aspace_id)
-      CALL addH5StringAttribute(dset_id,"vsAxisLabels","z2,"//dsetname//"(scaled)",aspace_id)
+      CALL addH5StringAttribute(dset_id,"vsMesh", meshname, aspace_id)
+      CALL addH5StringAttribute(dset_id,"vsAxisLabels",zLabels,aspace_id)
 !      aname=trim(adjustl(dsetname)) // "SI"
 !      write(scaleToSIstring, '(E16.9)' ) (scalefac) 
 !      attr_data_string=(trim(adjustl(dsetname)) // "*" // scaleToSIstring)
@@ -1401,57 +1401,57 @@ contains
       CALL h5sclose_f(aspace_id, error)
       CALL h5dclose_f(dset_id, error)
 
-      CALL h5screate_simple_f(rank, dims, filespace, error)
-      CALL h5dcreate_f(file_id, trim(adjustl(dsetname // "SI")), H5T_NATIVE_DOUBLE, filespace, &
-        dset_id, error)
-      allocate(writeDataSI(size(writeData)))
-      writeDataSI=writeData*scalefac
-      CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, writeDataSI, dims, error)
-      deallocate(writeDataSI)
-      CALL h5sclose_f(filespace, error)
-! scalar dataset for simpler values
-      CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
-      
-      call writeCommonAtts(dset_id, simtime, sz_loc, iL, aspace_id)
-      
-!      CALL addH5FloatAttribute(dset_id, "time", simtime, aspace_id)
-!      CALL addH5FloatAttribute(dset_id, "zbarInter", simtime, aspace_id)
-!      CALL addH5FloatAttribute(dset_id, "zInter", simtime * lg_G, aspace_id)
-!
-!      CALL addH5IntegerAttribute(dset_id, "iCsteps", iCsteps, aspace_id)
-!      CALL addH5IntegerAttribute(dset_id, "istep", istep, aspace_id)
-!      
-!      call addH5IntegerAttribute(dset_id, "iUnd_cr", iUnd_cr, aspace_id)
-!      call addH5IntegerAttribute(dset_id, "iChic_cr", iChic_cr, aspace_id)
-!      call addH5IntegerAttribute(dset_id, "iDrift_cr", iDrift_cr, aspace_id)
-!      call addH5IntegerAttribute(dset_id, "iQuad_cr", iQuad_cr, aspace_id)
-!      call addH5IntegerAttribute(dset_id, "iModulation_cr", iModulation_cr, aspace_id)
-!      call addH5IntegerAttribute(dset_id, 'iL', iL, aspace_id)      
-      
-      
-      CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
-      aname="vsLabels"
-      attr_data_string=trim(adjustl(dsetname))
-      attr_string_len=len(trim(adjustl(dsetname))) 
-      CALL h5tset_size_f(atype_id, attr_string_len, error)
-      CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
-      CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
-      CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
-      CALL h5aclose_f(attr_id, error)
-      CALL addH5StringAttribute(dset_id,"vsType","variable",aspace_id)
-      if (size(writeData) .eq. NZ2_G) then
-        CALL addH5StringAttribute(dset_id,"vsCentering","nodal",aspace_id) 
-      else
-        CALL addH5StringAttribute(dset_id,"vsCentering","zonal",aspace_id) 
-      end if
-      CALL addH5StringAttribute(dset_id,"vsIndexOrder","compMinorF",aspace_id)
-      CALL addH5StringAttribute(dset_id,"vsTimeGroup",timegrpname,aspace_id)
-      CALL addH5StringAttribute(dset_id,"vsLimits",limgrpname,aspace_id)
-      CALL addH5StringAttribute(dset_id,"vsMesh",(meshname//"SI"),aspace_id)
-      CALL addH5StringAttribute(dset_id,"vsAxisLabels","z2 [m],"//dsetname//"(SI)",aspace_id)
-      CALL addH5StringAttribute(dset_id,"vsAxisUnits","m,(SI)",aspace_id)
-      CALL h5sclose_f(aspace_id, error)
-      CALL h5dclose_f(dset_id, error)
+!       CALL h5screate_simple_f(rank, dims, filespace, error)
+!       CALL h5dcreate_f(file_id, trim(adjustl(dsetname // "SI")), H5T_NATIVE_DOUBLE, filespace, &
+!         dset_id, error)
+!       allocate(writeDataSI(size(writeData)))
+!       writeDataSI=writeData*scalefac
+!       CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, writeDataSI, dims, error)
+!       deallocate(writeDataSI)
+!       CALL h5sclose_f(filespace, error)
+! ! scalar dataset for simpler values
+!       CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
+!       
+!       call writeCommonAtts(dset_id, simtime, sz_loc, iL, aspace_id)
+!       
+! !      CALL addH5FloatAttribute(dset_id, "time", simtime, aspace_id)
+! !      CALL addH5FloatAttribute(dset_id, "zbarInter", simtime, aspace_id)
+! !      CALL addH5FloatAttribute(dset_id, "zInter", simtime * lg_G, aspace_id)
+! !
+! !      CALL addH5IntegerAttribute(dset_id, "iCsteps", iCsteps, aspace_id)
+! !      CALL addH5IntegerAttribute(dset_id, "istep", istep, aspace_id)
+! !      
+! !      call addH5IntegerAttribute(dset_id, "iUnd_cr", iUnd_cr, aspace_id)
+! !      call addH5IntegerAttribute(dset_id, "iChic_cr", iChic_cr, aspace_id)
+! !      call addH5IntegerAttribute(dset_id, "iDrift_cr", iDrift_cr, aspace_id)
+! !      call addH5IntegerAttribute(dset_id, "iQuad_cr", iQuad_cr, aspace_id)
+! !      call addH5IntegerAttribute(dset_id, "iModulation_cr", iModulation_cr, aspace_id)
+! !      call addH5IntegerAttribute(dset_id, 'iL', iL, aspace_id)      
+!       
+!       
+!       CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
+!       aname="vsLabels"
+!       attr_data_string=trim(adjustl(dsetname))
+!       attr_string_len=len(trim(adjustl(dsetname))) 
+!       CALL h5tset_size_f(atype_id, attr_string_len, error)
+!       CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
+!       CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+!       CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+!       CALL h5aclose_f(attr_id, error)
+!       CALL addH5StringAttribute(dset_id,"vsType","variable",aspace_id)
+!       if (size(writeData) .eq. NZ2_G) then
+!         CALL addH5StringAttribute(dset_id,"vsCentering","nodal",aspace_id) 
+!       else
+!         CALL addH5StringAttribute(dset_id,"vsCentering","zonal",aspace_id) 
+!       end if
+!       CALL addH5StringAttribute(dset_id,"vsIndexOrder","compMinorF",aspace_id)
+!       CALL addH5StringAttribute(dset_id,"vsTimeGroup",timegrpname,aspace_id)
+!       CALL addH5StringAttribute(dset_id,"vsLimits",limgrpname,aspace_id)
+!       CALL addH5StringAttribute(dset_id,"vsMesh",(meshname//"SI"),aspace_id)
+!       CALL addH5StringAttribute(dset_id,"vsAxisLabels","z2 [m],"//dsetname//"(SI)",aspace_id)
+!       CALL addH5StringAttribute(dset_id,"vsAxisUnits","m,(SI)",aspace_id)
+!       CALL h5sclose_f(aspace_id, error)
+!       CALL h5dclose_f(dset_id, error)
 
  
       CALL h5fclose_f(file_id, error)
