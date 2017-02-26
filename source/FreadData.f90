@@ -20,6 +20,7 @@ use Globals
 use ParallelSetUp
 use MASPin
 use H5in
+use cwrites
 
 contains
 
@@ -270,7 +271,7 @@ subroutine read_in(zfilename, &
   integer(kind=ip) :: nwaves, iRedNodesX, iRedNodesY
 
   INTEGER::ios
-  CHARACTER(1024_IP) :: beam_file, seed_file
+  CHARACTER(1024_IP) :: beam_file, seed_file, wr_file
   LOGICAL :: qOKL, qMatched !   TEMP VAR FOR NOW, SHOULD MAKE FOR EACH BEAM
 
   logical :: qWriteZ, qWriteA, &
@@ -309,7 +310,8 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  sZ0, zDataFileName, iWriteNthSteps, &
                  iWriteIntNthSteps, iDumpNthSteps, sPEOut, &
                  qFMesh_G, sKBetaXSF, sKBetaYSF, sRedistLen, &
-                 iRedistStp, qscaled, nspinDX, nspinDY, qInitWrLat, qDumpEnd
+                 iRedistStp, qscaled, nspinDX, nspinDY, qInitWrLat, qDumpEnd, &
+                 wr_file
 
 
 ! Begin subroutine:
@@ -366,6 +368,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   sDiffFrac              = 1.0
   sBeta                  = 1.0
   seed_file              = ''
+  wr_file = ''
   srho                   = 0.01
   sux                    = 1.0
   suy                    = 1.0
@@ -454,6 +457,12 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
 
 
 
+  if (wr_file /= '') then
+    qWrArray_G = .true.
+    call getWrArray(wr_file)
+  else
+    qWrArray_G = .false.
+  end if
 
 
 

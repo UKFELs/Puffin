@@ -9,6 +9,7 @@ use dumpFiles
 use hdf5_puff
 use pln_puff
 use ParaField
+use cwrites
 
 implicit none
 
@@ -137,6 +138,8 @@ end subroutine wr_cho
     integer(kind=ip), intent(in) :: iIntWr, iWr
     logical, intent(inout) :: qWriteInt, qWriteFull, qOK
 
+    integer(kind=ip) :: iw
+
     logical ::  qOKL
 
     qOK = .false.
@@ -177,7 +180,18 @@ end subroutine wr_cho
 
     end if
 
+  if (qWrArray_G) then
 
+    do iw = 1, size(wrarray)
+
+      if (wrarray(iw) == iCsteps) then
+        qWriteFull = .true.
+        qWriteInt = .true.
+      end if
+ 
+    end do
+
+  end if
 
   end subroutine int_or_full
 
@@ -193,6 +207,7 @@ function qWriteq(iStep, iCsteps, iWriteNthSteps, iIntWriteNthSteps, nSteps)
 
   logical :: qWriteq
   integer(kind=ip) :: iStep, iCsteps, iWriteNthSteps, iIntWriteNthSteps, nSteps
+  integer(kind=ip) :: iw
 
 
   if (qInitWrLat_G) then
@@ -220,6 +235,17 @@ function qWriteq(iStep, iCsteps, iWriteNthSteps, iIntWriteNthSteps, nSteps)
       qWriteq = .false.
 
     end if
+
+  end if
+
+
+  if (qWrArray_G) then
+
+    do iw = 1, size(wrarray)
+
+      if (wrarray(iw) == iCsteps) qWriteq = .true.
+ 
+    end do
 
   end if
 
