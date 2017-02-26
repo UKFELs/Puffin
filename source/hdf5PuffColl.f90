@@ -569,15 +569,15 @@ contains
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)!
 ! Were there an SI version of this, we might be in the right place to use it
 
-    aname="electrons_pxSI"
-    write(scaleToSIstring, '(E16.9)' ) sAw_G * m_e * c
-    attr_data_string=("electrons_px*" // scaleToSIstring)
+    aname="electrons_dxdzSI"
+    write(scaleToSIstring, '(E16.9)' ) 2.0_wp * sRho_G * sKappa_G
+    attr_data_string=("electrons_px*" // scaleToSIstring // "/electrons_gamma")
     attr_string_len=len(trim(adjustl(attr_data_string)))
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
-    aname="electrons_pySI"
-    write(scaleToSIstring, '(E16.9)' ) sAw_G * m_e * c
-    attr_data_string=("electrons_py*" // scaleToSIstring)
+    aname="electrons_dydzSI"
+    write(scaleToSIstring, '(E16.9)' ) -2.0_wp * sRho_G * sKappa_G
+    attr_data_string=("electrons_py*" // scaleToSIstring // "/electrons_gamma")
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
     aname="electrons_gammaSI"
