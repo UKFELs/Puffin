@@ -154,8 +154,7 @@ REAL(KIND=WP)    :: sLengthOfElm(nSpaceDimensions_CG)
 INTEGER,DIMENSION(3)  :: iNodes
 
 INTEGER  :: ndims
-      
-INTEGER(KIND=IP)  :: iRedNodesX,iRedNodesY
+
 REAL(KIND=WP)  :: redwigglengthX,redwigglengthY
 
 integer(kind=ip) :: nodesperlambda, stepsPerPeriod, &

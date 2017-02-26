@@ -113,8 +113,6 @@ MODULE Setup
        sLenEPulse,        &
        iNodes,            &
        sFieldModelLength, &
-       iRedNodesX,        &
-       iRedNodesY,        &
        nodesperlambda, &
        stepsPerPeriod, &
        nperiods, &
@@ -197,8 +195,8 @@ MODULE Setup
 
   CALL CheckParameters(sLenEPulse,iNumElectrons,nbeams,sLengthofElm,iNodes,&
                        sFieldModelLength,sStepSize,nSteps,srho,saw,sgammar, &
-                       sFocusfactor, mag, sEleSig,fx,fy, iRedNodesX, &
-                       iRedNodesY,qSwitches,qSimple, sSeedSigma, freqf, &
+                       sFocusfactor, mag, sEleSig,fx,fy, &
+                       qSwitches,qSimple, sSeedSigma, freqf, &
                        SmeanZ2, qFlatTopS, nseeds, qOKL)
 
   IF (.NOT. qOKL) GOTO 1000

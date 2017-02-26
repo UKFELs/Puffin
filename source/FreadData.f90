@@ -44,10 +44,6 @@ contains
 !> @param[out] iNumNodes 3 element array - Number of field nodes in x, y, and z2
 !> @param[out] sWigglerLength 3 element array - Length of radiation field mesh in
 !> x, y, and z2
-!> @param[out] iRedNodesX The number of inner nodes of the main mesh which the 
-!> beam will be contained within. Forces a resize of the mesh if specified, 
-!> resized so that these inner nodes contain the beam.
-!> @param[out] iRedNodesY Same as iRedNodesX, but in y.
 !> @param[out] nodesperlambda Number of radiation nodes to be used in the mesh 
 !> per reference resonant wavelength in z2.
 !> @param[out] stepsPerPeriod Number of integration steps per undulator period 
@@ -111,7 +107,6 @@ subroutine read_in(zfilename, &
        sLenEPulse, &
        iNumNodes, &
        sWigglerLength, &
-       iRedNodesX,iRedNodesY, &
        nodesperlambda, &
        stepsPerPeriod, &
        nperiods, &
@@ -226,9 +221,6 @@ subroutine read_in(zfilename, &
 
   REAL(KIND=WP),     INTENT(OUT)  :: sWigglerLength(:)
 
-  INTEGER(KIND=IP),  INTENT(OUT)  :: iRedNodesX,&
-                                       iRedNodesY
-
   REAL(KIND=WP),  ALLOCATABLE, INTENT(OUT)  :: sQe(:)
   LOGICAL,           INTENT(OUT)  :: q_noise
 
@@ -275,7 +267,7 @@ subroutine read_in(zfilename, &
 
   integer(kind=ip), intent(out) :: stepsPerPeriod, nodesperlambda, nperiods ! Steps per lambda_w, nodes per lambda_r
   real(kind=wp) :: dz2, zbar
-  integer(kind=ip) :: nwaves
+  integer(kind=ip) :: nwaves, iRedNodesX, iRedNodesY
 
   INTEGER::ios
   CHARACTER(1024_IP) :: beam_file, seed_file

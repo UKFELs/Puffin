@@ -172,7 +172,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
         if (qSimple) then
 
-          iRedNodesX_G = inmps(1,iX_CG) + 1_ip
+          iRedNodesX_G = 20_ip
 
         else
 
@@ -188,7 +188,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
         if (qSimple) then
 
-          iRedNodesY_G = inmps(1,iY_CG) + 1_ip
+          iRedNodesY_G = 20_ip
 
         else
 
