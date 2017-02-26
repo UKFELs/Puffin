@@ -1282,8 +1282,7 @@ contains
     integer(kind=ip) :: error !< Local Error flag
     if (tProcInfo_G%qRoot) then
       filename = ( trim(adjustl(zFilename_G)) // '_integrated_' &
-         // trim(adjustl(IntegerToString(tProcInfo_G%Rank))) &
-        // '_' //trim(adjustl(IntegerToString(iCSteps))) &
+        //trim(adjustl(IntegerToString(iCSteps))) &
         // '.h5' )
       CALL h5open_f(error)
       CALL h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error)
@@ -1357,8 +1356,7 @@ contains
     if (tProcInfo_G%qRoot) then
       dims = size(writeData) ! Dataset dimensions
       filename = ( trim(adjustl(zFilename_G)) // '_integrated_' &
-         // trim(adjustl(IntegerToString(tProcInfo_G%Rank))) &
-        // '_' //trim(adjustl(IntegerToString(iCSteps))) &
+        //trim(adjustl(IntegerToString(iCSteps))) &
         // '.h5' )
       CALL h5open_f(error)
       CALL h5fopen_f(filename, H5F_ACC_RDWR_F, file_id, error)
