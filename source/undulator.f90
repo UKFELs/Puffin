@@ -354,8 +354,6 @@ end if
 
         ! if not already written in diffraction step
 
-        print*, 'I AM WRITING!!!'
-
         call inner2Outer(ac_rfield_in, ac_ifield_in)
 
         call writeIM(sZ, sZl, &
