@@ -572,6 +572,10 @@ For the modulation section, one may add an energy modulation to the beam specifi
 
 \section{Data Output and Post-Processing}
 
+One may simply choose which steps to write out through use of the {\bf iWriteNthSteps} and {\bf iWriteIntNthSteps} parameters in the main input file. The former controls the frequency of the full dumps, and the latter specifies the frequency of the integrated data writes.
+
+In addition, one may activate the {\bf qDumpEnd} flag to write a full dump at the end of the simulation - this is {\bf .true.} by defualt, but may be switched off. More useful is the write file. This allows one to specify the exact step numbers at which to write out the full dumps. This will be done in addition to the regular write intervals specified above. The file is pointed to from the main input file by the string {\bf wr\_file}. In this plain text file, specify each step to write at with a line beginning with {\bf WR}, followed by a space (or multiple spaces) and then the step number. Any line not beginning with {\bf WR} will be ignored.
+
 \subsection{Output Format Specification}
 
 Puffin uses primarily hdf5 for output, although sdds dumps can be made if desired. The sdds outputs do not contain the integrated data, except power.
