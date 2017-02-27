@@ -154,12 +154,12 @@ if (qresume_G) then
 
       if ((drstart + isteps4diff) <= nSteps) then
 
-        dzdS = real(isteps4diff,kind=wp) * sStepSize / 2
+        dzdS = real(isteps4diff,kind=wp) * sStepSize / 2.0_wp
 
       else if ((drstart + isteps4diff) > nSteps) then
 
         stepsLeft = nSteps - drstart
-        dzdS = real(stepsLeft,kind=wp)*sStepSize / 2
+        dzdS = real(stepsLeft,kind=wp)*sStepSize / 2.0_wp
 
       end if
 
@@ -184,7 +184,7 @@ else  ! if not resuming, just do first half diffraction step
 
   if (qDiffraction_G) then
 
-    dzdS = stepsLeft*sStepSize / 2
+    dzdS = real(isteps4diff, kind=wp) * sStepSize / 2.0_wp
 
     call diffractIM(dzdS, qDiffrctd, qOKL)
 
