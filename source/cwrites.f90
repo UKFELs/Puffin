@@ -24,6 +24,10 @@ contains
   integer(kind=ip) :: cnt, cntw
   character(40) :: ztest
 
+
+    cntw = 0_ip
+    cnt = 0_ip
+
     nwrts = numOfWrites(fname)
 
     allocate(wrarray(nwrts))
