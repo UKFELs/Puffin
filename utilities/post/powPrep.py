@@ -11,6 +11,11 @@ This should write VizSchema file with aggregated power output
 """
 import numpy,tables,glob,os,sys
 
+qScale = 0
+print "scaling is qscale", str(qScale)
+
+
+
 def getTimeSlices(baseName):
   """ getTimeSlices(baseName) gets a list of files
 
@@ -63,20 +68,41 @@ def getNumSpatialPoints(filelist,datasetname):
   """
   h5in=tables.open_file(filelist[0],'r')
   length=h5in.root._f_getChild(datasetname).shape[0]
-  min=h5in.root.globalLimits._v_attrs.vsLowerBounds
-  max=h5in.root.globalLimits._v_attrs.vsUpperBounds
+  if qScale == 0:
+    min=h5in.root.globalLimitsSI._v_attrs.vsLowerBounds
+    max=h5in.root.globalLimitsSI._v_attrs.vsUpperBounds
+  else:
+    min=h5in.root.globalLimits._v_attrs.vsLowerBounds
+    max=h5in.root.globalLimits._v_attrs.vsUpperBounds
   h5in.close()
   print "length: "+str(length)
   return length,min,max
 
 print "passed "+str(len(sys.argv))+" arguments"
-print "1: " +sys.argv[1]
+print "File basename specified as: " +sys.argv[1]
+
+baseName=sys.argv[1]
+
+
+if len(sys.argv) > 2:
+  outfilename = sys.argv[2]
+  print "Output file specified as: " + sys.argv[2]
+else:
+  outfilename = baseName + '_all.vsh5'
+  print "No output file specified - will be written to: " + outfilename
+
+
 #baseName="Power_0"
 #baseName="fig7_Power_0"
-baseName=sys.argv[1]
-inputFilename1,datasetnameT,mpirank=baseName.split('_')
-datasetname='power'
-outfilename=baseName+'_all.vsh5'
+
+
+#inputFilename1,datasetnameT,mpirank=baseName.split('_')
+
+if qScale == 0:
+  datasetname='powerSI'
+else:
+  datasetname='power'
+
 h5=tables.open_file(outfilename,'w')
 filelist=getTimeSlices(baseName)
 numTimes,minZT,maxZT,minZZ,maxZZ=getTimeSliceInfo(filelist,datasetname)
@@ -88,8 +114,6 @@ peakData=numpy.zeros(numTimes)
 print "files in order:"
 print filelist
 
-qScale = 0
-print "scaling is qscale", str(qScale)
 
 
 h5.create_group('/','gridZ_SI','')
@@ -145,19 +169,39 @@ for slice in filelist:
   h5in.close()
   fieldCount+=1
 
+c0 = 2.998E8
+
+if qScale == 0:
+    sumData = sumData / c0   # power = integral over t, not z = ct!!
+
 # print str(zData)
 
 
 # Creating SI power and normalized power datasets...
-h5.create_array('/',datasetname+'_SI',fieldData)
-h5.create_array('/',datasetname+'_SI_Norm',fieldNormData)
+
+if (qScale == 0):
+  h5.create_array('/','power_SI',fieldData)
+  h5.create_array('/','power_SI_Norm',fieldNormData)
+  
+  for fieldname in ['power_SI','power_SI_Norm']:
+    h5.root._v_children[fieldname]._v_attrs.vsMesh="gridTPowEv"
+    h5.root._v_children[fieldname]._v_attrs.vsType="variable"
+
+else:
+  h5.create_array('/','power_scaled',fieldData)
+  h5.create_array('/','power_scaled_Norm',fieldNormData)
+
+  for fieldname in ['power_scaled','power_scaled_Norm']:
+    h5.root._v_children[fieldname]._v_attrs.vsMesh="gridTPowEv"
+    h5.root._v_children[fieldname]._v_attrs.vsType="variable"
+
 
 # ...each of which is on the same SI mesh (TODO:- not yet!!! This is scaled)
-for fieldname in [datasetname+'_SI',datasetname+'_SI_Norm']:
-  h5.root._v_children[fieldname]._v_attrs.vsMesh="gridTPowEv"
+#for fieldname in [datasetname+'_SI',datasetname+'_SI_Norm']:
+#  h5.root._v_children[fieldname]._v_attrs.vsMesh="gridTPowEv"
 #  h5.root._v_children[fieldname]._v_attrs.vsTimeGroup="time"
 #  h5.root._v_children[fieldname]._v_attrs.time=0.
-  h5.root._v_children[fieldname]._v_attrs.vsType="variable"
+#  h5.root._v_children[fieldname]._v_attrs.vsType="variable"
 #  h5.root._v_children[fieldname]._v_attrs.vsLabels="toottoot"
 #  h5.root._v_children[fieldname]._v_attrs.vsAxisLabels="z,z2 or tt"
 
@@ -259,8 +303,8 @@ h5.root.zSeries._v_attrs.vsKind='structured'
 h5.root.zSeries._v_attrs.vsType='mesh'
 h5.root.zSeries._v_attrs.vsStartCell=0
 #h5.root.zSeries._v_attrs.vsNumCells=numTimes-1 # -1 as zonal
-#h5.root.zSeries._v_attrs.vsLowerBounds=minZZ
-#h5.root.zSeries._v_attrs.vsUpperBounds=maxZZ
+h5.root.zSeries._v_attrs.vsLowerBounds=zData[0]
+h5.root.zSeries._v_attrs.vsUpperBounds=zData[-1]
 if (qScale==0):
   h5.root.zSeries._v_attrs.vsAxisLabels="z (m)"
 else:
@@ -316,6 +360,8 @@ h5.create_array('/','gridTPowEv',comb)
 h5.root.gridTPowEv._v_attrs.vsKind="structured"
 h5.root.gridTPowEv._v_attrs.vsType="mesh"
 h5.root.gridTPowEv._v_attrs.vsCentering="nodal"
+h5.root.gridTPowEv._v_attrs.vsLowerBounds=numpy.array((numpy.double(zData[0]),numpy.double(z2Data[0])))
+h5.root.gridTPowEv._v_attrs.vsUpperBounds=numpy.array((numpy.double(zData[-1]),numpy.double(z2Data[-1])))
 if (qScale==0):
   h5.root.gridTPowEv._v_attrs.vsAxisLabels="ct-z, z"
 else:
@@ -348,7 +394,7 @@ else:
 
 
 
-# Write to file
+# Copy runInfo from one of the files to the new aggregate file
 h5in=tables.open_file(filelist[-1])
 h5in.root.runInfo._f_copy(h5.root)
 h5in.close()

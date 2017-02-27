@@ -30,7 +30,7 @@ contains
 subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
        sLengthofElm,iNodes,sWigglerLength,sStepSize,&
        nSteps,srho,saw,sgammar,focusfactor,mag,sSigE,f_x, f_y, &
-       iRedNodesX, iRedNodesY,qSwitches,qSimple,sSigF, &
+       qSwitches,qSimple,sSigF, &
        freqf, SmeanZ2, qFlatTopS, nseeds, qOK)
 
   implicit none
@@ -60,7 +60,6 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
   REAL(KIND=WP), INTENT(INOUT) :: sSigE(:,:), sSigF(:,:), &
                                   freqf(:), SmeanZ2(:)
   REAL(KIND=WP), INTENT(INOUT) :: f_x, f_y
-  INTEGER(KIND=IP),INTENT(INOUT) :: iRedNodesX,iRedNodesY
   LOGICAL, INTENT(INOUT) :: qSwitches(:)
   logical, intent(in) :: qSimple, qFlatTopS(:)
   LOGICAL, INTENT(OUT)  :: qOK

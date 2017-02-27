@@ -1,0 +1,32 @@
+!************* THIS HEADER MUST NOT BE REMOVED *******************!
+!** Copyright 2013-2017, Lawrence Campbell and Brian McNeil.    **!
+!** This program must not be copied, distributed or altered in  **!
+!** any way without the prior permission of the above authors.  **!
+!*****************************************************************!
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> This module contains definitions of provenance data about e.g. how the
+!> program was built, passed to Puffin from CMake
+
+
+module PuffProvenance
+
+use paratype
+
+!  character(200), parameter  :: timeStamp =  gitBranch, puffVersion, fortCompiler, &
+!                              fortVersion, fortFlags, buildHost, hostType
+
+  character(200), parameter  :: timeStamp = "@CONFIGURE_TIME_STAMP@", &
+                                gitBranch = '@GIT_BRANCH@ : @GIT_REVISION@', &
+  puffVersion = '@Puffin_VERSION_MAJOR@.@Puffin_VERSION_MINOR@.@Puffin_VERSION_PATCH@', &
+                    fortCompiler = '@Fortran_COMPILER_NAME@', &
+                    fortVersion = '@Fortran_VERSION@', &
+                    fortFlags = "@CMAKE_Fortran_FLAGS@", &
+                    buildHost = '@UQHOSTNAME@', &
+                    hostType = '@CMAKE_HOST_SYSTEM@'
+
+end module PuffProvenance

@@ -20,6 +20,8 @@ use sddsPuffin
 use lattice
 use Setup
 use undulator
+use initDataType
+use Globals
 
 !!!!!!!!!!!!!!!!!!! Puffin Version 1.6.0 !!!!!!!!!!!!!!!!!!!
 !
@@ -59,8 +61,8 @@ use undulator
 implicit none
 
 !real(kind=wp), allocatable  :: sA(:)
-real(kind=wp)    :: sZ
-integer(kind=ip) :: iL
+real(kind=wp)    :: sZ, szl
+integer(kind=ip) :: iL, iLst
 
 logical          :: qOKL
 
@@ -86,9 +88,12 @@ if (tProcInfo_G%qRoot) WRITE(137,*) ' starting..... '
 !!!!!!!!!!!!!!!!!!!!!!!  BEGIN INTEGRATION !!!!!!!!!!!!!!!!!!!!!!!!
 
 
+iLSt = 1_ip
+if (qresume_G) iLst = tInitData_G%iL
 
 
-do iL = 1, modNum
+
+do iL = iLst, modNum
 
 
 
@@ -118,6 +123,19 @@ do iL = 1, modNum
 
 
 end do
+
+
+
+
+if (qDumpEnd_G) then
+
+  szl = 0.0_wp
+  call wr_cho(sZ, szl, &
+              zDataFileName, 0_ip, iCsteps, modNum, iWriteNthSteps, &
+              iIntWriteNthSteps, 0_ip, .true., .true., qOKL)
+
+end if
+
 
 
 call cleanup(sZ)   !     Clear arrays and stucts used during integration

@@ -16,6 +16,7 @@ module Globals
 use paratype
 use typesAndConstants
 use ArrayFunctions
+use initDataType
 
 implicit none
 
@@ -77,7 +78,7 @@ logical :: qFMesh_G
 integer(kind=ip) :: nseqparts_G
 logical :: qEquiXY_G
 logical :: qFixCharge_G
-
+logical :: qUseEmit_G
 
 integer(kind=ip) :: npts_I_G    !  Specifying mesh 4 current calculation
 
@@ -138,6 +139,11 @@ real(kind=wp), allocatable     :: dadz_w(:)
 
 real(kind=wp) :: sZi_G, sZlSt_G
 
+
+! For restarting from a previous run
+
+
+type(cInitData) :: tInitData_G
 
 ! Temporary intermediate arrays for RK4
 
@@ -409,7 +415,7 @@ logical   ::  qscaled_G
 
 logical   ::  qInitWrLat_G
 
-
+logical   ::  qDumpEnd_G
 
 
 !    New for frequency oscillation
