@@ -264,12 +264,12 @@ CONTAINS
 
     end do
 
-    print*, 'hey there, I got betax = ', betax
-    print*, 'hey there, I got betay = ', betay
-    print*, 'hey there, I got emitx = ', emitx
-    print*, 'hey there, I got emity = ', emity
-    print*, 'hey there, I got sigpx = ', sigE(:,iPX_CG)
-    print*, 'hey there, I got sigpy = ', sigE(:,iPY_CG)
+!    print*, 'hey there, I got betax = ', betax
+!    print*, 'hey there, I got betay = ', betay
+!    print*, 'hey there, I got emitx = ', emitx
+!    print*, 'hey there, I got emity = ', emity
+!    print*, 'hey there, I got sigpx = ', sigE(:,iPX_CG)
+!    print*, 'hey there, I got sigpy = ', sigE(:,iPY_CG)
 
 
 
