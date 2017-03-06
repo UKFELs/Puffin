@@ -21,14 +21,15 @@ def getTimeSlices(baseName):
 
   That will be used down the line...
   """
-  filelist=glob.glob(os.getcwd()+os.sep+baseName+'_*.h5')
+  filelist=glob.glob(os.getcwd()+os.sep+baseName+'_integrated_*.h5')
+  
   dumpStepNos=[]
   for thisFile in filelist:
     thisDump=int(thisFile.split(os.sep)[-1].split('.')[0].split('_')[-1])
     dumpStepNos.append(thisDump)
 
   for i in range(len(dumpStepNos)):
-    filelist[i]=baseName+'_'+str(sorted(dumpStepNos)[i])+'.h5'
+    filelist[i]=baseName+'_integrated_'+str(sorted(dumpStepNos)[i])+'.h5'
   return filelist
 
 
@@ -88,7 +89,7 @@ if len(sys.argv) > 2:
   outfilename = sys.argv[2]
   print "Output file specified as: " + sys.argv[2]
 else:
-  outfilename = baseName + '_all.vsh5'
+  outfilename = baseName + '_integrated_all.vsh5'
   print "No output file specified - will be written to: " + outfilename
 
 
