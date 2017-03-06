@@ -14,9 +14,9 @@ def getDBNames(pBaseName):
 
 # Database suffixes for power, electron macroparticle and integrated data respectively
 
-  pFileSffx = "_integrated_0_all.vsh5"
+  pFileSffx = "_integrated_all.vsh5"
   eFileSffx = "_electrons_* database"
-  iFileSffx = "_integrated_0_* database"
+  iFileSffx = "_integrated_* database"
 
 
 # Full database paths
