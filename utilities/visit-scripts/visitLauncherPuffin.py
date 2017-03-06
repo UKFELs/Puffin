@@ -6,14 +6,16 @@ import plotPowNorm
 import binPhase
 import plotEnergyLinear
 import plotEnergy
+import visitLoc
 
 # Set local visit and visit's python package locations
 # laptop:-
 #localVisItDir = "/home/tml/tmp/visit/visit2_10_3.linux-x86_64"
 #localPythonPackageDir = "/home/tml/tmp/visit/visit2_10_3.linux-x86_64/2.10.3/linux-x86_64/lib/site-packages" 
 # desktop:-
-localVisItDir = "/home/tml/bin/visit/visit2_10_3.linux-x86_64"
-localPythonPackageDir = "/home/tml/bin/visit/visit2_10_3.linux-x86_64/2.10.3/linux-x86_64/lib/site-packages" 
+
+localVisItDir, localPythonPackageDir = visitLoc.visitLoc()
+
 sys.path.insert(0,localPythonPackageDir)
 import visit
 

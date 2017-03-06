@@ -1,8 +1,8 @@
 import os
 import sys
+import visitLoc
 
-localVisItDir = "/home/tml/bin/visit/visit2_10_3.linux-x86_64"
-localPythonPackageDir = "/home/tml/bin/visit/visit2_10_3.linux-x86_64/2.10.3/linux-x86_64/lib/site-packages" 
+localVisItDir, localPythonPackageDir = visitLoc.visitLoc()
 sys.path.insert(0,localPythonPackageDir)
 
 import visit
