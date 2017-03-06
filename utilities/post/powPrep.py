@@ -43,7 +43,7 @@ def getTimeSliceInfo(filelist,datasetname):
   print "Checking "+filelist[0]
   mint=h5in.root.time._v_attrs.vsTime
   try:
-    minz=h5in.root._f_getChild(datasetname)._v_attrs.zbarTotal
+    minz=h5in.root._f_get_child(datasetname)._v_attrs.zbarTotal
   except:
     print "no min z data present"
     minz=None
@@ -52,7 +52,7 @@ def getTimeSliceInfo(filelist,datasetname):
   print "Checking "+filelist[-1]
   maxt=h5in.root.time._v_attrs.vsTime
   try:
-    maxz=h5in.root._f_getChild(datasetname)._v_attrs.zbarTotal
+    maxz=h5in.root._f_get_child(datasetname)._v_attrs.zbarTotal
   except:
     print "no max z data present"
     maxz=None
@@ -67,7 +67,7 @@ def getNumSpatialPoints(filelist,datasetname):
   What it says on the tin. Same as extent of data.
   """
   h5in=tables.open_file(filelist[0],'r')
-  length=h5in.root._f_getChild(datasetname).shape[0]
+  length=h5in.root._f_get_child(datasetname).shape[0]
   if qScale == 0:
     min=h5in.root.globalLimitsSI._v_attrs.vsLowerBounds
     max=h5in.root.globalLimitsSI._v_attrs.vsUpperBounds
@@ -152,20 +152,20 @@ fieldCount=0
 
 for slice in filelist:
   h5in=tables.open_file(slice,'r')
-  fieldData[:,fieldCount]=h5in.root._f_getChild(datasetname).read()
-  sumData[fieldCount]=numpy.trapz(h5in.root._f_getChild(datasetname).read(), None, deltaz2)
-  peakData[fieldCount]=numpy.max(h5in.root._f_getChild(datasetname).read())
+  fieldData[:,fieldCount]=h5in.root._f_get_child(datasetname).read()
+  sumData[fieldCount]=numpy.trapz(h5in.root._f_get_child(datasetname).read(), None, deltaz2)
+  peakData[fieldCount]=numpy.max(h5in.root._f_get_child(datasetname).read())
   if peakData[fieldCount] != 0:
-    fieldNormData[:,fieldCount]=h5in.root._f_getChild(datasetname).read()/peakData[fieldCount]
+    fieldNormData[:,fieldCount]=h5in.root._f_get_child(datasetname).read()/peakData[fieldCount]
   else:
-    fieldNormData[:,fieldCount]=h5in.root._f_getChild(datasetname).read()
+    fieldNormData[:,fieldCount]=h5in.root._f_get_child(datasetname).read()
   # for including drifts
   if qScale == 0:
-    zData[fieldCount] = h5in.root._f_getChild("power")._v_attrs.zTotal 
+    zData[fieldCount] = h5in.root._f_get_child("power")._v_attrs.zTotal 
   else:
-    zData[fieldCount] = h5in.root._f_getChild("power")._v_attrs.zbarTotal 
+    zData[fieldCount] = h5in.root._f_get_child("power")._v_attrs.zbarTotal 
   # for no drifts
-  # zData[fieldCount] = h5in.root._f_getChild("power")._v_attrs.zInter
+  # zData[fieldCount] = h5in.root._f_get_child("power")._v_attrs.zInter
   h5in.close()
   fieldCount+=1
 
