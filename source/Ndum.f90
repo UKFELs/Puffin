@@ -172,7 +172,7 @@ end subroutine wr_cho
       end if
 
 
-      if ((mod(iCsteps,iWr)==0) .or. (iCsteps == nSteps) .or. (iCsteps == 0) ) then
+      if ((mod(iCsteps,iWr)==0) .or. (iCsteps == 0) ) then
 
         qWriteFull = .true.
 
