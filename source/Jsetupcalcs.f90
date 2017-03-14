@@ -435,6 +435,8 @@ logical, intent(in) :: qTails
 real(kind=wp) :: sEndsLen, sMainLen
 logical :: qFlatTop
 
+qFlatTop = .false.
+
 if (sSigZ2 >= 1e6) qFlatTop = .true.
 
 sEndsLen = 0.0_wp
@@ -538,7 +540,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, sFiltFrac, &
 !     Set error flag to false
 
     qOK = .FALSE.
-    
+
     sZi_G = 0.0_wp
     sZlSt_G = 0.0_wp
 
@@ -560,7 +562,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, sFiltFrac, &
 !   print*,'It is seedy, but what type...'
 !   print*,iFieldSeedType_G
 
-    
+
 
     call getPaSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,&
                     freqf,ph_sh,nseeds,sLengthOfElm)
