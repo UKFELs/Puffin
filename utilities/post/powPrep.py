@@ -21,14 +21,15 @@ def getTimeSlices(baseName):
 
   That will be used down the line...
   """
-  filelist=glob.glob(os.getcwd()+os.sep+baseName+'_*.h5')
+  filelist=glob.glob(os.getcwd()+os.sep+baseName+'_integrated_*.h5')
+  
   dumpStepNos=[]
   for thisFile in filelist:
     thisDump=int(thisFile.split(os.sep)[-1].split('.')[0].split('_')[-1])
     dumpStepNos.append(thisDump)
 
   for i in range(len(dumpStepNos)):
-    filelist[i]=baseName+'_'+str(sorted(dumpStepNos)[i])+'.h5'
+    filelist[i]=baseName+'_integrated_'+str(sorted(dumpStepNos)[i])+'.h5'
   return filelist
 
 
@@ -43,7 +44,7 @@ def getTimeSliceInfo(filelist,datasetname):
   print "Checking "+filelist[0]
   mint=h5in.root.time._v_attrs.vsTime
   try:
-    minz=h5in.root._f_getChild(datasetname)._v_attrs.zbarTotal
+    minz=h5in.root._f_get_child(datasetname)._v_attrs.zbarTotal
   except:
     print "no min z data present"
     minz=None
@@ -52,7 +53,7 @@ def getTimeSliceInfo(filelist,datasetname):
   print "Checking "+filelist[-1]
   maxt=h5in.root.time._v_attrs.vsTime
   try:
-    maxz=h5in.root._f_getChild(datasetname)._v_attrs.zbarTotal
+    maxz=h5in.root._f_get_child(datasetname)._v_attrs.zbarTotal
   except:
     print "no max z data present"
     maxz=None
@@ -67,7 +68,7 @@ def getNumSpatialPoints(filelist,datasetname):
   What it says on the tin. Same as extent of data.
   """
   h5in=tables.open_file(filelist[0],'r')
-  length=h5in.root._f_getChild(datasetname).shape[0]
+  length=h5in.root._f_get_child(datasetname).shape[0]
   if qScale == 0:
     min=h5in.root.globalLimitsSI._v_attrs.vsLowerBounds
     max=h5in.root.globalLimitsSI._v_attrs.vsUpperBounds
@@ -88,7 +89,7 @@ if len(sys.argv) > 2:
   outfilename = sys.argv[2]
   print "Output file specified as: " + sys.argv[2]
 else:
-  outfilename = baseName + '_all.vsh5'
+  outfilename = baseName + '_integrated_all.vsh5'
   print "No output file specified - will be written to: " + outfilename
 
 
@@ -152,20 +153,20 @@ fieldCount=0
 
 for slice in filelist:
   h5in=tables.open_file(slice,'r')
-  fieldData[:,fieldCount]=h5in.root._f_getChild(datasetname).read()
-  sumData[fieldCount]=numpy.trapz(h5in.root._f_getChild(datasetname).read(), None, deltaz2)
-  peakData[fieldCount]=numpy.max(h5in.root._f_getChild(datasetname).read())
+  fieldData[:,fieldCount]=h5in.root._f_get_child(datasetname).read()
+  sumData[fieldCount]=numpy.trapz(h5in.root._f_get_child(datasetname).read(), None, deltaz2)
+  peakData[fieldCount]=numpy.max(h5in.root._f_get_child(datasetname).read())
   if peakData[fieldCount] != 0:
-    fieldNormData[:,fieldCount]=h5in.root._f_getChild(datasetname).read()/peakData[fieldCount]
+    fieldNormData[:,fieldCount]=h5in.root._f_get_child(datasetname).read()/peakData[fieldCount]
   else:
-    fieldNormData[:,fieldCount]=h5in.root._f_getChild(datasetname).read()
+    fieldNormData[:,fieldCount]=h5in.root._f_get_child(datasetname).read()
   # for including drifts
   if qScale == 0:
-    zData[fieldCount] = h5in.root._f_getChild("power")._v_attrs.zTotal 
+    zData[fieldCount] = h5in.root._f_get_child("power")._v_attrs.zTotal 
   else:
-    zData[fieldCount] = h5in.root._f_getChild("power")._v_attrs.zbarTotal 
+    zData[fieldCount] = h5in.root._f_get_child("power")._v_attrs.zbarTotal 
   # for no drifts
-  # zData[fieldCount] = h5in.root._f_getChild("power")._v_attrs.zInter
+  # zData[fieldCount] = h5in.root._f_get_child("power")._v_attrs.zInter
   h5in.close()
   fieldCount+=1
 
@@ -303,8 +304,8 @@ h5.root.zSeries._v_attrs.vsKind='structured'
 h5.root.zSeries._v_attrs.vsType='mesh'
 h5.root.zSeries._v_attrs.vsStartCell=0
 #h5.root.zSeries._v_attrs.vsNumCells=numTimes-1 # -1 as zonal
-#h5.root.zSeries._v_attrs.vsLowerBounds=minZZ
-#h5.root.zSeries._v_attrs.vsUpperBounds=maxZZ
+h5.root.zSeries._v_attrs.vsLowerBounds=zData[0]
+h5.root.zSeries._v_attrs.vsUpperBounds=zData[-1]
 if (qScale==0):
   h5.root.zSeries._v_attrs.vsAxisLabels="z (m)"
 else:
@@ -360,6 +361,8 @@ h5.create_array('/','gridTPowEv',comb)
 h5.root.gridTPowEv._v_attrs.vsKind="structured"
 h5.root.gridTPowEv._v_attrs.vsType="mesh"
 h5.root.gridTPowEv._v_attrs.vsCentering="nodal"
+h5.root.gridTPowEv._v_attrs.vsLowerBounds=numpy.array((numpy.double(zData[0]),numpy.double(z2Data[0])))
+h5.root.gridTPowEv._v_attrs.vsUpperBounds=numpy.array((numpy.double(zData[-1]),numpy.double(z2Data[-1])))
 if (qScale==0):
   h5.root.gridTPowEv._v_attrs.vsAxisLabels="ct-z, z"
 else:

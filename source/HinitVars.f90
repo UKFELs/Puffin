@@ -84,6 +84,8 @@ REAL(KIND=WP), ALLOCATABLE :: sA0_Re(:),sA0_Im(:)
 INTEGER(KIND=IP) :: nbeams
 logical, allocatable :: qMatched_A(:)
 
+real(kind=wp), allocatable :: alphax(:), alphay(:), emitx(:), emity(:)
+
 !!!
 !!! END NEW
 !!!!!!!!!!!!!!!!!!!!
@@ -152,8 +154,7 @@ REAL(KIND=WP)    :: sLengthOfElm(nSpaceDimensions_CG)
 INTEGER,DIMENSION(3)  :: iNodes
 
 INTEGER  :: ndims
-      
-INTEGER(KIND=IP)  :: iRedNodesX,iRedNodesY
+
 REAL(KIND=WP)  :: redwigglengthX,redwigglengthY
 
 integer(kind=ip) :: nodesperlambda, stepsPerPeriod, &

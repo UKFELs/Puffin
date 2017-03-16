@@ -1,6 +1,6 @@
 enable_language(Fortran)
 set (C_SOURCES "AIO.c")
-FILE(GLOB F_SOURCES *.f90 ${PROJECT_BINARY_DIR}/source/hdf5_puff.f90)
+FILE(GLOB F_SOURCES *.f90 ${PROJECT_BINARY_DIR}/source/puffProvenance.f90)
 
 #
 # USE_MKL to be set by user, but actually a flag not just for MKL but for other openMP options
@@ -25,6 +25,7 @@ endif()
 set (FFTW_LIBS fftw3_mpi fftw3)
 set (BASE_LINK_LIBS dl m)
 #add_dependencies() seems not to be needed at this point
+
 if (USE_MKL)
   include_directories(${MKL_INCLUDE_DIRS} ${MPI_Fortran_INCLUDE_PATH})
   link_directories(${MKL_LIBRARY_DIRS} ${MPI_Fortran_LIBRARIES})
@@ -41,7 +42,7 @@ add_definitions(${MPI_C_COMPILE_FLAGS} ${OpenMP_C_FLAGS})
 endif()
 
 #  add_definitions(${MPI_C_COMPILE_FLAGS} "-DMKL_ILP64")
- 
+
 add_library(AIO ${C_SOURCES})
 
 #C definitions are not needed for Fortran apps.

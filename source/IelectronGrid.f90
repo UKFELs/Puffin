@@ -41,6 +41,8 @@ CONTAINS
        nbeams, &
        samLenE, &
        sigE, &
+       alphax, alphay, &
+       emitx, emity, &
        beamCenZ2, &
        gamma_d, &
        sElectronThreshold, &
@@ -69,7 +71,8 @@ CONTAINS
 
     IMPLICIT NONE
 
-    REAL(KIND=WP), INTENT(IN)   :: i_RealE(:)
+    REAL(KIND=WP), INTENT(IN)   :: i_RealE(:), alphax(:), alphay(:), &
+                                   emitx(:), emity(:)
     REAL(KIND=WP), INTENT(INOUT):: beamCenZ2(:)
     INTEGER(KIND=IP), INTENT(IN):: iNMP(:,:)
     LOGICAL, INTENT(IN)         :: q_noise
@@ -136,8 +139,10 @@ CONTAINS
     REAL(KIND=WP), ALLOCATABLE :: s_tmp_max_av(:)
     REAL(KIND=WP) :: local_start, local_end, afact, um, kx, ky
 
-    REAL(KIND=WP) :: offsets(6)
+    REAL(KIND=WP) :: offsets(6), betax(nbeams), betay(nbeams)
 
+    real(kind=wp) :: sigpx0, sigpy0
+    
     REAL(KIND=WP), ALLOCATABLE :: Qchoff(:), tconv(:)
 
     INTEGER(KIND=IPL), ALLOCATABLE :: b_sts(:), b_ends(:)
@@ -216,10 +221,63 @@ CONTAINS
 !     samLenE(:,iPX_CG) = sigE(:,iPX_CG) * 6.0_WP
 !     samLenE(:,iPY_CG) = sigE(:,iPY_CG) * 6.0_WP
 
+
+
+
+
+
+
+
+
+!                 rms px at x = 0 and py at y = 0
+
+!    sigpx0 = gamma_d * sGammaR_G * sqrt(emitx / betax) / saw_G
+!    sigpy0 = gamma_d * sGammaR_G * sqrt(emity / betay) / saw_G
+
+    do b_ind = 1, nbeams
+
+      if (emitx(b_ind) > 0.0_wp) then
+
+!           'SI' beta!!! i.e. for dx/dz, not for px or py....
+
+        betax(b_ind) = lg_G * sigE(b_ind,iX_CG)**2.0_wp / sRho_G / emitx(b_ind)
+
+!     getting rms sigma pxbar (@ x=0) and pybar (@ y=0) from Twiss
+
+        sigE(b_ind,iPX_CG) = gamma_d(b_ind) * sGammaR_G * sqrt(lg_G*lc_G) * &
+                                    sigE(b_ind,iX_CG) / betax(b_ind) / saw_G
+
+      else 
+        betax(b_ind) = -1.0_wp
+      end if
+
+      if (emity(b_ind) > 0.0_wp) then
+        
+        betay(b_ind) = lg_G * sigE(b_ind,iY_CG)**2.0_wp / sRho_G / emity(b_ind)
+
+        sigE(b_ind,iPY_CG) = gamma_d(b_ind) * sGammaR_G * sqrt(lg_G*lc_G) * &
+                                    sigE(b_ind,iY_CG) / betay(b_ind) / saw_G
+
+      else 
+        betay(b_ind) = -1.0_wp
+      end if
+
+    end do
+
+!    print*, 'hey there, I got betax = ', betax
+!    print*, 'hey there, I got betay = ', betay
+!    print*, 'hey there, I got emitx = ', emitx
+!    print*, 'hey there, I got emity = ', emity
+!    print*, 'hey there, I got sigpx = ', sigE(:,iPX_CG)
+!    print*, 'hey there, I got sigpy = ', sigE(:,iPY_CG)
+
+
+
     DO b_ind = 1,nbeams
 
       CALL genBeam(iNMP(b_ind,:),iNumLocalElectrons(b_ind,:),&
-                    sigE(b_ind,:), gamma_d(b_ind), &
+                    sigE(b_ind,:), alphax(b_ind), betax(b_ind), &
+                    alphay(b_ind), betay(b_ind), gamma_d(b_ind), &
                     samLenE(b_ind,:),beamCenZ2(b_ind),numproc, rank, &
                     i_RealE(b_ind), q_noise, qOneD, sZ, &
                     x_tmpcoord(b_sts(b_ind):b_ends(b_ind)), &
@@ -328,7 +386,8 @@ CONTAINS
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, &
+SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
+                   gamma_d, samLenE, sZ2_center, numproc, rank, &
                    i_RealE, q_noise, qOneD, sZ, x_tmpcoord, &
                    y_tmpcoord,z2_tmpcoord,px_tmpvector,py_tmpvector,&
                    pz2_tmpvector,s_tmp_max_av,s_tmp_macro,s_tmp_Vk, b_num)
@@ -339,7 +398,7 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
 
   INTEGER(KIND=IP), INTENT(IN) :: iNMP(:),iNMP_loc(:), b_num
   REAL(KIND=WP), INTENT(IN) :: samLenE(:), sigE(:), i_realE, &
-                               gamma_d, sZ
+                               gamma_d, sZ, alphax, betax, alphay, betay
                                
   REAL(KIND=WP), INTENT(INOUT) ::  sZ2_center
   INTEGER, INTENT(IN) :: numproc, rank
@@ -362,7 +421,7 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
 
   INTEGER(KIND=IP) :: iNumLocalElectrons(6)
   INTEGER(KIND=IP), ALLOCATABLE :: iLocalIntegralType(:)
-  REAL(KIND=WP) :: offsets(6)
+  REAL(KIND=WP) :: offsets(6), gxpx, gypy
   integer :: error
   integer(kind=ip) :: nseqparts
   real(kind=wp), allocatable :: xseq(:), yseq(:), pxseq(:), &
@@ -509,7 +568,7 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
 !  will only be correct in z2.
 !
 !  Currently, only random sequences in the other dimensions are used.
-!  Halton/Hammersley or other low-disprecpency sequences may be added 
+!  Halton/Hammersley or other low-discrepency sequences may be added 
 !  later...
 
       nseqparts = nseqparts_G
@@ -555,6 +614,26 @@ SUBROUTINE genBeam(iNMP,iNMP_loc,sigE,gamma_d,samLenE,sZ2_center,numproc, rank, 
 !   with transverse positions given by the random particle distributions
 
       gamseq = gamseq + offsets(iGam_CG)
+
+
+      
+!   Rotate phase space to Twiss params...
+
+      if (betax > 0.0_wp) then
+        gxpx = -alphax / betax
+      else 
+        gxpx = 0.0_wp
+      end if
+
+      if (betay > 0.0_wp) then
+        gypy = -alphay / betay
+      else
+        gypy = 0.0_wp
+      end if
+
+      pxseq = pxseq + gamseq * gxpx * sqrt(lg_G * lc_G) * xseq / saw_G
+      pyseq = pyseq + gamseq * gypy * sqrt(lg_G * lc_G) * yseq / saw_G
+
 
       do ij = 1, iNMP_loc(iZ2_CG)
 
