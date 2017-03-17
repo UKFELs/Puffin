@@ -1,3 +1,14 @@
+# Copyright (c) 2012-2017, University of Strathclyde
+# Authors: Lawrence T. Campbell & Jonathan Smith (Tech-X UK Ltd)
+# License: BSD-3-Clause
+
+"""
+Plots the radiated energy as a function of distance through the undulator.
+Plotted on a log scale.
+The script reads in the grouped power and energy data file produced by 
+the powPrep.py script, so this must be run before calling this script.
+"""
+
 import sys
 import getDBNames
 import tables

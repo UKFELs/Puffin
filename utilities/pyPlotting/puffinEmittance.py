@@ -1,3 +1,7 @@
+# Copyright (c) 2012-2017, University of Strathclyde
+# Authors: Jonathan Smith (Tech-X UK Ltd)
+# License: BSD-3-Clause
+
 #@ifn input file name, from command line
 #@ifh input file handle
 import numpy,sys,tables,re

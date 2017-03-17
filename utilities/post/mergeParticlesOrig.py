@@ -1,3 +1,7 @@
+# Copyright (c) 2012-2017, University of Strathclyde
+# Authors: Jonathan Smith (Tech-X UK Ltd) & Lawrence T. Campbell
+# License: BSD-3-Clause
+
 """@mergeParticles.py Merges multiple particle files to one file
 
 Expects files in order basename_speciesname_procno_dumpstep.h5

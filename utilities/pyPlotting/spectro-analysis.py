@@ -1,3 +1,12 @@
+# Copyright (c) 2012-2017, University of Strathclyde
+# Authors: Lawrence T. Campbell
+# License: BSD-3-Clause
+
+"""
+This is an examplar script to produce a spectro-temporal plot from the Puffin 
+field.
+"""
+
 import sys
 import tables
 import numpy as np

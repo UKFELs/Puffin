@@ -1,3 +1,13 @@
+# Copyright (c) 2012-2017, University of Strathclyde
+# Authors: Lawrence T. Campbell & Jonathan Smith (Tech-X UK Ltd)
+# License: BSD-3-Clause
+
+"""
+This script takes the macroparticle beam files and bins the particles in a 
+2D mesh in the particle z vs energy phase space, and plots the resulting 
+density mesh in visit.
+"""
+
 import sys
 import getDBNames
 import visitLoc
