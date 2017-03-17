@@ -52,4 +52,32 @@ to add them to your path. So do
 and then you are ready to build Puffin as above. Note that you should link to 
 the `fftw3-par` and `hdf5-par` libs built, and not the serial versions.
 
-### TODO Automatic installation of binary and files.
+
+# Known Issues
+
+  - If you are using a system with mutiple compilers (e.g. HPC systems usually 
+    have a variety of Fortran and C compilers to choose), then it is usually a 
+    good idea to make sure environment variables are set up to tell SciMake and 
+    Bilder which ones to use. These can be explicitly set using CC, F90, etc.
+    So for example, the following example specifies the intel compilers and
+    paths to the OpenMPI wrappers on that system:
+    
+    `export CC=icc; export CXX=icpc; export F90=ifort; export F77=ifort; export FC=ifort'
+
+    'export MPICC="/opt/intel-openmpi/1.8.1/bin/mpicc"; export MPICXX="/opt/intel-openmpi/1.8.1/bin/mpicxx"; export MPIFC="/opt/intel-openmpi/1.8.1/bin/mpif90"; export MPIF77="/opt/intel-openmpi/1.8.1/bin/mpif77" `
+  
+  - The most recent versions of HDF5 built by bilder have 2 module files installed 
+    to a different directory than expected. They are built, however, in the hdf5 
+    sub-directory of the `build` sub-directory specified in the `./mkvisitall.sh`
+    command above, and just need copied over to the correct place. Do
+    
+    `cp /path/to/build/hdf5-1.8.13/par/bin/h5f_provisional.mod /path/to/contrib/hdf5-par/include/`
+
+    `cp /path/to/build/hdf5-1.8.13/par/bin/h5fdmpio.mod /path/to/contrib/hdf5-par/include/`
+
+    Replace the version number in the above with that from your own install, 
+    which may be more recent.
+
+
+
+
