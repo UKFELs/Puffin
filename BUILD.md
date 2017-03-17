@@ -24,10 +24,7 @@ using Bilder (see bottom of this guide).
 
 3. Run cmake, e.g.
 
-`cmake -DCMAKE_INSTALL_PREFIX:PATH=/path/to/puffin-install \ `
-`  -DFftw3_ROOT_DIR='/path/to/fftw3'    \`
-` -DHdf5_ROOT_DIR='/path/to/hdf5'      \`
-` /path/to/Puffin `
+`cmake -DCMAKE_INSTALL_PREFIX:PATH=/path/to/puffin-install -DFftw3_ROOT_DIR='/path/to/fftw3 -DHdf5_ROOT_DIR='/path/to/hdf5' /path/to/Puffin`
 
 4. Do `make && make install`. You should get a puffin binary in /path/to/puffin-install
 
@@ -44,8 +41,7 @@ First, check out bilder from the repository.
 
 Then go into the created bilder-visit directory, and to build the desired libararies, do
 
-`./mkvisitall.sh -k ../contrib -i ../install -b ../build \`
-`fftw,cmake,autotools,hdf5,numpy,tables `
+`./mkvisitall.sh -k ../contrib -i ../install -b ../build fftw,cmake,autotools,hdf5,numpy,tables`
 
 Here, we are also building numpy and tables for the Python post-processing scripts.
 The requested libraries will be in ../contrib, along with a bash script
