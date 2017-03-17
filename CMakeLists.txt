@@ -1,6 +1,6 @@
 ###
-# (c) Strathclyde University
-#
+# Copyright (c) 2012-2017, University of Strathclyde
+# License: BSD-3-Clause
 # 25.6.2015 Jonathan Smith - CMake lists for PUFFIN Project
 ###
 cmake_minimum_required (VERSION 2.8.10)
