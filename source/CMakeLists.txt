@@ -1,3 +1,9 @@
+###
+# Copyright (c) 2012-2017, University of Strathclyde
+# Authors: Jonathan Smith
+# License: BSD-3-Clause
+###
+
 enable_language(Fortran)
 set (C_SOURCES "AIO.c")
 FILE(GLOB F_SOURCES *.f90 ${PROJECT_BINARY_DIR}/source/puffProvenance.f90)
