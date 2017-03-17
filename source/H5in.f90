@@ -1,3 +1,7 @@
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Jonathan Smith (Tech-X UK Ltd) & Lawrence T. Campbell
+! License: BSD-3-Clause
+
 module H5in
 
 use paratype
