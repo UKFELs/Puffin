@@ -53,7 +53,7 @@ and then you are ready to build Puffin as above. Note that you should link to
 the `fftw3-par` and `hdf5-par` libs built, and not the serial versions.
 
 
-# Known Issues
+## Known Issues
 
   - If you are using a system with mutiple compilers (e.g. HPC systems usually 
     have a variety of Fortran and C compilers to choose), then it is usually a 
