@@ -28,16 +28,6 @@ use h5in
 use parafield
 use scale
 
-!****************************************************
-! Module containing miscellaneous routines for setup
-! and initialization of variables in Puffin.
-!
-! Lawrence Campbell
-! lawrence.campbell@strath.ac.uk
-! University of Strathclyde
-! June 2016
-!
-
 IMPLICIT NONE
 
 CONTAINS
@@ -46,17 +36,8 @@ CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
-                         sElmLen, qSimple, iNMPs, fx, fy, &
-                         taper, sFiltFrac, &
-                         dStepFrac, sBeta, zUndType, &
-                         qFormatted, qSwitch, qOK)
 
-    IMPLICIT NONE
 
-!***********************************************************
-! Subroutine to pass all the temporary variables to global
-! vars used in the integration loop.
 !
 ! Some setup is also performed.
 !
@@ -72,6 +53,40 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 ! qSwitch            If letting electrons evolve, field evolve,
 !                    diffraction and gaussian field
 ! qOK                Error flag
+
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Subroutine to pass all the temporary variables to global
+!> vars used in the integration loop.
+!> @param[in] rho FEL or Pierce parameter
+!> @param[in] aw Undulator parameter (peak, not rms)
+!> @param[in] gamr Relativistic factor for reference beam energy
+!> @param[in] lam_w Undulator period
+!> @param[in] iNN Number of nodes in field mesh in x, y and z2
+!> @param[in] iNMPs Number of macroparticles use to sample beam in each dimension
+!> @param[in] fx Polarization parameter for the Puffin elliptical wiggler (see docs)
+!> @param[in] fy Polarization parameter for the Puffin elliptical wiggler (see docs)
+!> @param[in] taper Undulator taper d alpha / d zbar
+!> @param[in] sFiltFrac Cutoff for high pass filter in diffraction stage, in units
+!> of the resonant frequency specified by the reference parameters.
+!> @param[in] dStepFrac Diffraction step size in units of undulator period
+!> @param[in] sBeta Absorption constant for boundaries
+!> @param[in] zUndType Undulator type (helical, planar, elliptical, etc)
+!> @param[in] qFormatted Whether writing formatted data or not (only for SDDS files)
+!> @param[in] qSwitch Array of switches for different simulation options
+!> @param[inout] qOK Error flag.
+
+SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
+                         sElmLen, qSimple, iNMPs, fx, fy, &
+                         taper, sFiltFrac, &
+                         dStepFrac, sBeta, zUndType, &
+                         qFormatted, qSwitch, qOK)
+
+    IMPLICIT NONE
 
     REAL(KIND=WP),     INTENT(IN)    :: rho,aw,gamr, lam_w
     INTEGER(KIND=IP),  INTENT(IN)    :: iNN(:), iNMPs(:,:)
