@@ -27,7 +27,7 @@ contains
 
 subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
        sLengthofElm,iNodes,sWigglerLength,sStepSize,&
-       nSteps,srho,saw,sgammar,focusfactor,mag,sSigE,f_x, f_y, &
+       nSteps,srho,saw,sgammar,mag,sSigE,f_x, f_y, &
        qSwitches,qSimple,sSigF, &
        freqf, SmeanZ2, qFlatTopS, nseeds, qOK)
 

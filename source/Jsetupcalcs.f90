@@ -77,7 +77,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
     INTEGER(KIND=IP),  INTENT(IN)    :: iNN(:), iNMPs(:,:)
 
     REAL(KIND=WP),     INTENT(IN)    :: sElmLen(:)
-    REAL(KIND=WP),     INTENT(IN)    :: fx,fy,sFocusFactor, taper
+    REAL(KIND=WP),     INTENT(IN)    :: fx,fy, taper
 
     REAL(KIND=WP),     INTENT(IN)    :: sFiltFrac, dStepFrac, sBeta
     LOGICAL,           INTENT(IN)    :: qSwitch(nSwitches_CG), qFormatted, &
@@ -684,7 +684,7 @@ end subroutine scaleParams
 
 
 
-subroutine calcScaling(srho, saw, sgamr, slam_w, sFocusFactor, &
+subroutine calcScaling(srho, saw, sgamr, slam_w, &
                        zUndType, sfx, sfy)
 
   real(kind=wp), intent(in) :: srho, saw, sgamr, slam_w, &

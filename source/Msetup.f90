@@ -196,7 +196,7 @@ MODULE Setup
 
   CALL CheckParameters(sLenEPulse,iNumElectrons,nbeams,sLengthofElm,iNodes,&
                        sFieldModelLength,sStepSize,nSteps,srho,saw,sgammar, &
-                       sFocusfactor, mag, sEleSig,fx,fy, &
+                       mag, sEleSig,fx,fy, &
                        qSwitches,qSimple, sSeedSigma, freqf, &
                        SmeanZ2, qFlatTopS, nseeds, qOKL)
 
