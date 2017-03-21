@@ -33,28 +33,6 @@ IMPLICIT NONE
 CONTAINS
 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-
-
-!
-! Some setup is also performed.
-!
-!
-!                    ARGUMENTS
-!
-! rho                Pierce/FEL parameter
-! eta                scaled average z-velocity
-! kbeta              scaled betatron wavenumber
-! iNN                number of nodes in each dimension (x,y,z2)
-! sElmLen            Length of ONE element in each dimension (x,y,z2)
-! fx, fy             specifies undulator polarization
-! qSwitch            If letting electrons evolve, field evolve,
-!                    diffraction and gaussian field
-! qOK                Error flag
-
-
 !> @author
 !> Lawrence Campbell,
 !> University of Strathclyde, 
