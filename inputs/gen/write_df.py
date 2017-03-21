@@ -1,4 +1,6 @@
-#!/usr/bin/python
+# Copyright (c) 2012-2017, University of Strathclyde
+# Authors: Lawrence T. Campbell
+# License: BSD-3-Clause
 #
 # Python script containing the code to write the 3 input files for 
 # Puffin.
