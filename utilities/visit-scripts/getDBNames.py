@@ -1,3 +1,11 @@
+# Copyright (c) 2012-2017, University of Strathclyde
+# Authors: Lawrence T. Campbell & Jonathan Smith (Tech-X UK Ltd)
+# License: BSD-3-Clause
+
+"""
+Defines the names of the datasets from Puffin from the Puffin input basename.
+"""
+
 import os
 import sys
 import visitLoc

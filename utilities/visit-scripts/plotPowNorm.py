@@ -1,3 +1,12 @@
+# Copyright (c) 2012-2017, University of Strathclyde
+# Authors: Lawrence T. Campbell & Jonathan Smith (Tech-X UK Ltd)
+# License: BSD-3-Clause
+
+"""
+Plots the radiated temporal power profile evolving as a function of distance through 
+the undulator.
+"""
+
 import sys
 import getDBNames
 import visitLoc

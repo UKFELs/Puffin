@@ -1,9 +1,6 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013-2016, University of Strathclyde              **!
-!** Written by Jonathan Smith (Tech-X UK Ltd)                   **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Jonathan Smith (Tech-X UK Ltd) & Lawrence T. Campbell
+! License: BSD-3-Clause
 
 module hdf5_puff
 

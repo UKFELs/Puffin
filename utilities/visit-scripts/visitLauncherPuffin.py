@@ -1,3 +1,11 @@
+# Copyright (c) 2012-2017, University of Strathclyde
+# Authors: Lawrence T. Campbell & Jonathan Smith (Tech-X UK Ltd)
+# License: BSD-3-Clause
+
+"""
+Produces a number of plots in visit from Puffin data output.
+"""
+
 import os
 import sys
 import tables

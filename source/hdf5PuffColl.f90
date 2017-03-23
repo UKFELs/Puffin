@@ -1,13 +1,9 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013-2017, Lawrence Campbell and Brian McNeil.    **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Jonathan Smith (Tech-X UK Ltd) & Lawrence T. Campbell
+! License: BSD-3-Clause
 
 !> @author
-!> Lawrence Campbell,
-!> University of Strathclyde,
-!> Glasgow, UK
+!> Jonathan Smith (Tech-X UK Ltd)
 !> @brief
 !> This module contains the routines for writing the dumps and integrated data
 !> collectively in hdf5 format - so only a single file is written for each of

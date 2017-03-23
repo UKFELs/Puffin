@@ -1,3 +1,8 @@
+/* Copyright 2012-2017, University of Strathclyde
+   Authors: Lawrence T. Campbell
+   License: BSD-3-Clause
+*/
+
 /* Simple code to write integer */
 #include <stdio.h>
 #include <string.h>
