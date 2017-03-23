@@ -78,10 +78,6 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
     character(32_ip),  intent(in)    :: zUndType
     LOGICAL,           INTENT(OUT)   :: qOK
 
-!                    LOCAL ARGS
-!
-! lam_r_bar          Resonant wavelength in scaled units
-! qOKL               Local error flag
 
     REAL(KIND=WP) :: lam_r_bar, LenZ2, modfact1, sbetaz, aw_rms
     LOGICAL :: qOKL

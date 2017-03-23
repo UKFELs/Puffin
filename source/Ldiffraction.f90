@@ -46,15 +46,6 @@ contains
 subroutine diffractIM(sStep, &
                       qDiffrctd, qOK)
 
-
-! Subroutine which diffracts the field, after making the preparations
-! necessary when Puffin is within an undulator module.
-!
-! Lawrence Campbell
-! University of Strathclyde
-! Jan 2015
-
-
   implicit none
 
   real(kind=wp), intent(in) :: sStep
