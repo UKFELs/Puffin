@@ -384,10 +384,10 @@ SUBROUTINE chkESampleLens(sLenEPulse,iNumElectrons,rho,qOneD,qOK)
  
 !     Check sampling
 
-  IF (spcing > maxspcing) THEN
-    CALL Error_log('Macroparticle spacing in z2 > 1/8th of resonant wavelength',tErrorLog_G)
-    GOTO 1000
-  END IF 
+!  IF (spcing > maxspcing) THEN
+!    CALL Error_log('Macroparticle spacing in z2 > 1/8th of resonant wavelength',tErrorLog_G)
+!    GOTO 1000
+!  END IF 
     
   DO i= 1, SIZE(sLenEPulse)
 

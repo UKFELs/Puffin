@@ -92,6 +92,10 @@ contains
 !   Fortran index of first particle to be written might be '1', however
 !   We're interested in the offset from the first step.
     startOffset=0
+    
+    print*, 'inumelecs...', iNumberElectrons_G
+    print*, 'proc elecs...', procelectrons_G
+    
     if (tProcInfo_G%rank .GT. 0) then
     Do rankIterator=1,tProcInfo_G%rank
       startOffset = startOffset+procelectrons_G(rankIterator+1)
@@ -519,7 +523,8 @@ contains
     CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
 !    Print*,'hdf5_puff:outputH5BeamFiles(lower bounds attribute created)'
-    ALLOCATE ( limdata(numSpatialDims))
+    !ALLOCATE ( limdata(numSpatialDims))
+    ALLOCATE ( limdata(3))
     limdata(1)=-0.5*NX_G*sLengthOfElmX_G
 ! Particles inhabit a 3D physical space even for 1D simulations.
 !    if (numSpatialDims .GT. 1) then

@@ -871,7 +871,7 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
       if (tProcInfo_G%qRoot) print*, 'WARNING - e-beam macroparticles sampling &
                                       & in z2 not fine enough - fixing...'
 
-      iNumElectrons(1,3) = minENum
+!      iNumElectrons(1,3) = minENum
 
       if (tProcInfo_G%qRoot) print*, 'num MPs in z2 now = ', &
                                   iNumElectrons(1,iZ2_CG)
