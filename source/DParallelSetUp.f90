@@ -1,14 +1,17 @@
+! ###############################################
 ! Copyright 2012-2017, University of Strathclyde
 ! Authors: Lawrence T. Campbell
 ! License: BSD-3-Clause
+! ###############################################
+
+
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Module containing routines to setup and deallocate MPI processes,
 !> and handle MPI communication in Puffin.
-
 
 Module ParallelSetUp
 
@@ -40,7 +43,7 @@ SUBROUTINE  InitializeProcessors(tProcInfo, &
 ! q0k          OUTPUT    Error flag for Puffin
 
   TYPE(cParallelInfoType), INTENT(OUT)	   :: tProcInfo
-  LOGICAL,                 INTENT(OUT)         :: qOk      
+  LOGICAL,                 INTENT(OUT)         :: qOk
 
 !              Local Vars
 !
@@ -54,19 +57,19 @@ SUBROUTINE  InitializeProcessors(tProcInfo, &
   qOK = .FALSE.
 
 !     Initialize MPI
-      
+
   CALL MPI_INIT(error)
 
 !     Define comm as the global communicator.
-	      
+
   tProcInfo%comm = MPI_COMM_WORLD
 
-!     Get local data on processor numbers. Rank is local number in the 
+!     Get local data on processor numbers. Rank is local number in the
 !     global communicator, size is the total number of processors
-	            
+
   CALL MPI_COMM_RANK(tProcInfo%comm, tProcInfo%rank, error)
-			 
-  CALL MPI_COMM_SIZE(tProcInfo%comm, tProcInfo%size, error) 
+
+  CALL MPI_COMM_SIZE(tProcInfo%comm, tProcInfo%size, error)
 
 !     Define root processor as rank 0.
 
@@ -81,33 +84,33 @@ SUBROUTINE  InitializeProcessors(tProcInfo, &
 
 
 !     Set error flag and exit
-      
-  qOK = .TRUE.				    
+
+  qOK = .TRUE.
   GoTo 2000
-      
+
 ! Error Handler
-            
+
 1000 CALL Error_log('Error in ParallelSetUp:DefineParallelLibrary', &
                     tErrorLog_G)
-  
+
   PRINT*,'Error in ParallelSetUp:DefineParallelLibrary'
-       
+
 2000 CONTINUE
-  
+
 END SUBROUTINE InitializeProcessors
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	
+
 SUBROUTINE Get_time(in_time)
-	  
+
   IMPLICIT NONE
-	  
+
   REAL(KIND=WP)	::	in_time
-	  
+
   INTEGER(KIND=IP)	::	error
-	  
+
   in_time = MPI_Wtime()
-	  
+
 END SUBROUTINE Get_time
 
 !------------------------------------------------
@@ -122,44 +125,44 @@ END SUBROUTINE Get_time
 ! qOK                     - OUTPUT   - Error flag
 !
 !********************************************************************
-!	
+!
       IMPLICIT NONE
 !
-      LOGICAL,                 INTENT(OUT)         :: qOK 
-      
-      
-      
-      INTEGER(KIND=IP)		:: error     
+      LOGICAL,                 INTENT(OUT)         :: qOK
+
+
+
+      INTEGER(KIND=IP)		:: error
 !
-!--------------------------------------------------------------------------------	
-! Set error flag to false         
-!--------------------------------------------------------------------------------	
+!--------------------------------------------------------------------------------
+! Set error flag to false
+!--------------------------------------------------------------------------------
 !
-      qOK = .FALSE.    
+      qOK = .FALSE.
 !
-!--------------------------------------------------------------------------------	
+!--------------------------------------------------------------------------------
 ! UnInitialise library
-!--------------------------------------------------------------------------------	
-! 
+!--------------------------------------------------------------------------------
+!
       call MPI_FINALIZE(error)
 !
-!--------------------------------------------------------------------------------	
-!  Set error flag and exit         
-!--------------------------------------------------------------------------------	
+!--------------------------------------------------------------------------------
+!  Set error flag and exit
+!--------------------------------------------------------------------------------
 !
-      qOK = .TRUE.				    
-      GoTo 2000     
+      qOK = .TRUE.
+      GoTo 2000
 !
 !--------------------------------------------------------------------------------
 ! Error Handler
 !--------------------------------------------------------------------------------
-!            
+!
 1000 call Error_log('Error in ParallelSetUp:UnDefineParallelLibrary',tErrorLog_G)
        Print*,'Error in ParallelSetUp:UnDefineParallelLibrary'
 2000 CONTINUE
-      
+
       END SUBROUTINE UnDefineParallelLibrary
-      
+
 
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
@@ -172,57 +175,57 @@ END SUBROUTINE Get_time
 ! qOK                     - OUTPUT   - Error flag
 !
 !********************************************************************
-!	
+!
       IMPLICIT NONE
 !
-      LOGICAL,                 INTENT(OUT)         :: qOK      
+      LOGICAL,                 INTENT(OUT)         :: qOK
 !
 !====================================================================
 ! Define local variables
-! 
-! qOKL  - Error flag 
+!
+! qOKL  - Error flag
 !=====================================================================
-!	
+!
     	LOGICAL           :: qOKL
         INTEGER(KIND=IP)		:: error
 !
-!--------------------------------------------------------------------------------	
-! Set error flag to false         
-!--------------------------------------------------------------------------------	
+!--------------------------------------------------------------------------------
+! Set error flag to false
+!--------------------------------------------------------------------------------
 !
-      qOK = .FALSE.    
+      qOK = .FALSE.
 !
-!--------------------------------------------------------------------------------	
+!--------------------------------------------------------------------------------
 ! UnInitialise library
-!--------------------------------------------------------------------------------	
-! 
+!--------------------------------------------------------------------------------
+!
       call UnDefineParallelLibrary(qOKL)
       If (.NOT. qOKL) Goto 1000
 !
-!--------------------------------------------------------------------------------	
+!--------------------------------------------------------------------------------
 ! Stop
-!--------------------------------------------------------------------------------	
+!--------------------------------------------------------------------------------
 !
       Stop
 !
-!--------------------------------------------------------------------------------	
-!  Set error flag and exit         
-!--------------------------------------------------------------------------------	
+!--------------------------------------------------------------------------------
+!  Set error flag and exit
+!--------------------------------------------------------------------------------
 !
-      qOK = .TRUE.				    
-      GoTo 2000     
+      qOK = .TRUE.
+      GoTo 2000
 !
 !--------------------------------------------------------------------------------
 ! Error Handler
 !--------------------------------------------------------------------------------
-!            
+!
 1000 call Error_log('Error in ParallelSetUp:StopCode',tErrorLog_G)
       Print*,'Error in ParallelSetUp:StopCode'
 2000 CONTINUE
-	      
+
       END SUBROUTINE StopCode
 
-!====================================================================== 
+!======================================================================
 
 SUBROUTINE gather2A(A_local,sA,nA_loc,nA,recvs,displs)
 
@@ -237,16 +240,16 @@ INTEGER(KIND=IP)  ::  error
 
  CALL MPI_ALLGATHERV( A_local(1:nA_loc),nA_loc,MPI_DOUBLE_PRECISION, &
 	                  sA(1:nA), recvs,displs, MPI_DOUBLE_PRECISION, &
-			  		  tProcInfo_G%comm, error) 
-					       
+			  		  tProcInfo_G%comm, error)
+
  CALL MPI_ALLGATHERV( A_local(nA_loc+1:2*nA_loc),nA_loc,MPI_DOUBLE_PRECISION, &
 	                  sA(nA+1:2*nA), recvs,displs, MPI_DOUBLE_PRECISION, &
 			  		  tProcInfo_G%comm, error)
- 
+
 
 END SUBROUTINE gather2A
 
-!====================================================================== 
+!======================================================================
 
 SUBROUTINE gather1A(A_local,sA,nA_loc,nA,recvs,displs)
 
@@ -261,7 +264,7 @@ INTEGER(KIND=IP)  ::  error
 
  CALL MPI_ALLGATHERV( A_local(1:nA_loc),nA_loc,MPI_DOUBLE_PRECISION, &
                     sA(1:nA), recvs,displs, MPI_DOUBLE_PRECISION, &
-              tProcInfo_G%comm, error)  
+              tProcInfo_G%comm, error)
 
 END SUBROUTINE gather1A
 
@@ -325,12 +328,12 @@ INTEGER(KIND=IP)  ::  error
 
  CALL MPI_ALLGATHERV( REAL(A_local(0:nA_loc-1),KIND=WP),nA_loc,MPI_DOUBLE_PRECISION, &
 	                  sA(1:nA), recvs,displs, MPI_DOUBLE_PRECISION, &
-			  		  tProcInfo_G%comm, error) 
-					       
+			  		  tProcInfo_G%comm, error)
+
  CALL MPI_ALLGATHERV( AIMAG(A_local(0:nA_loc-1)),nA_loc,MPI_DOUBLE_PRECISION, &
 	                  sA(nA+1:2*nA), recvs,displs, MPI_DOUBLE_PRECISION, &
 			  		  tProcInfo_G%comm, error)
- 
+
 
 END SUBROUTINE gather2Acomtoreal
 
@@ -342,13 +345,13 @@ INTEGER(KIND=IP),INTENT(IN)  ::  nlocalvals
 INTEGER(KIND=IP),INTENT(OUT)  ::  recvs(:),displs(:)
 
 INTEGER(KIND=IP)  ::  i,error
-   
+
    CALL MPI_ALLGATHER(nlocalvals, 1, MPI_INTEGER, &
    					  recvs, 1, MPI_INTEGER, &
-					  tProcInfo_G%comm, error)  
-   
+					  tProcInfo_G%comm, error)
+
    displs(1) = 0
-   
+
    DO i=2, tProcInfo_G%size
     displs(i) = displs(i-1) + recvs(i-1)
    END DO
@@ -363,7 +366,7 @@ REAL(KIND=WP),INTENT(INOUT)  ::  loc_arr(:)
 INTEGER(KIND=IP),INTENT(IN)  ::  nvals
 
 INTEGER(KIND=IP)  ::  error
- 
+
  CALL MPI_ALLREDUCE(MPI_IN_PLACE,loc_arr,nvals,MPI_DOUBLE_PRECISION,&
  			MPI_SUM,MPI_COMM_WORLD,error)
 
@@ -383,9 +386,9 @@ SUBROUTINE sum2RootArr(loc_arr,nvals,root)
 !           this will be overwritten by the global sum.
 !
 ! nvals   - size of loc_arr
-! 
+!
 ! root    - rank of the 'root' process. The root process is
-!           where the result will be stored. The root 
+!           where the result will be stored. The root
 !           process's array will be overwritten.
 
 REAL(KIND=WP),INTENT(INOUT)  ::  loc_arr(:)
@@ -400,10 +403,10 @@ INTEGER(KIND=IP)  ::  error
  			 MPI_SUM,root,MPI_COMM_WORLD,error)
 
  ELSE
- 
+
   CALL MPI_REDUCE(loc_arr,loc_arr,nvals,MPI_DOUBLE_PRECISION,&
- 			 MPI_SUM,root,MPI_COMM_WORLD,error) 
- 
+ 			 MPI_SUM,root,MPI_COMM_WORLD,error)
+
  END IF
 
 END SUBROUTINE sum2RootArr
@@ -411,37 +414,37 @@ END SUBROUTINE sum2RootArr
 !======================================================================
 
 ! SUBROUTINE GetMPIfiletype(filetype,mpifiletype)
-! 
+!
 ! TYPE(cFileType),INTENT(IN)	::	filetype
 ! INTEGER(KIND=IP),INTENT(OUT)  ::  mpifiletype
-! 
+!
 ! INTEGER(KIND=IP) ::  error
 ! INTEGER(KIND=IP) ::  arrayoftypes(8)
 ! INTEGER(KIND=IP) ::  arrayofdisps(8)
 ! INTEGER(KIND=IP) ::  arrayofblocklengths(8)
 ! INTEGER(KIND=IP) ::  startaddress,address
-! 
+!
 ! arrayoftypes(1)=MPI_CHARACTER
 ! arrayoftypes(2)=MPI_LOGICAL
 ! arrayoftypes(3)=MPI_INTEGER
-! 
+!
 ! arrayofblocklengths(1)=LEN(fileType%zFileName)
 ! arrayofblocklengths(2)=3
 ! arrayofblocklengths(3)=4
-! 
+!
 !  CALL MPI_GET_ADDRESS(filetype%zFileName,startaddress)
 !  CALL MPI_GET_ADDRESS(filetype%qFormatted,address)
 ! arrayofdisps(1)=0
 ! arrayofdisps(2)=address-startaddress
 !  CALL MPI_GET_ADDRESS(filetype%iPos,address)
 ! arrayofdisps(3)=address-startaddress
-! 
+!
 !  CALL MPI_TYPE_STRUCT(3,arrayofblocklengths,&
 !  					  arrayofdisps,arrayoftypes,&
 ! 					  mpifiletype,error)
-! 
+!
 !  CALL MPI_TYPE_COMMIT(mpifiletype,error)
-!    
+!
 ! END SUBROUTINE GetMPIfileType
 
 !================================================================
@@ -473,10 +476,10 @@ strsize=len(filetype%zFileName)
                 tProcInfo_G%comm,error)
 
  CALL MPI_BCAST(filetype%iFileLength,1,MPI_INTEGER,0,&
-                tProcInfo_G%comm,error)				
+                tProcInfo_G%comm,error)
 
  CALL MPI_BCAST(filetype%iPage,1,MPI_INTEGER,0,&
-                tProcInfo_G%comm,error) 
+                tProcInfo_G%comm,error)
 
 END SUBROUTINE shareFileType
 
