@@ -1,12 +1,10 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Various routines to setup and scale the constants in the simulation.
@@ -30,65 +28,56 @@ use h5in
 use parafield
 use scale
 
-!****************************************************
-! Module containing miscellaneous routines for setup
-! and initialization of variables in Puffin.
-!
-! Lawrence Campbell
-! lawrence.campbell@strath.ac.uk
-! University of Strathclyde
-! June 2016
-!
-
 IMPLICIT NONE
 
 CONTAINS
 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Subroutine to pass all the temporary variables to global
+!> vars used in the integration loop.
+!> @param[in] rho FEL or Pierce parameter
+!> @param[in] aw Undulator parameter (peak, not rms)
+!> @param[in] gamr Relativistic factor for reference beam energy
+!> @param[in] lam_w Undulator period
+!> @param[in] iNN Number of nodes in field mesh in x, y and z2
+!> @param[in] iNMPs Number of macroparticles use to sample beam in each dimension
+!> @param[in] fx Polarization parameter for the Puffin elliptical wiggler (see docs)
+!> @param[in] fy Polarization parameter for the Puffin elliptical wiggler (see docs)
+!> @param[in] taper Undulator taper d alpha / d zbar
+!> @param[in] sFiltFrac Cutoff for high pass filter in diffraction stage, in units
+!> of the resonant frequency specified by the reference parameters.
+!> @param[in] dStepFrac Diffraction step size in units of undulator period
+!> @param[in] sBeta Absorption constant for boundaries
+!> @param[in] zUndType Undulator type (helical, planar, elliptical, etc)
+!> @param[in] qFormatted Whether writing formatted data or not (only for SDDS files)
+!> @param[in] qSwitch Array of switches for different simulation options
+!> @param[inout] qOK Error flag.
 
 SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
                          sElmLen, qSimple, iNMPs, fx, fy, &
-                         sFocusFactor, taper, sFiltFrac, &
+                         taper, sFiltFrac, &
                          dStepFrac, sBeta, zUndType, &
                          qFormatted, qSwitch, qOK)
 
     IMPLICIT NONE
 
-!***********************************************************
-! Subroutine to pass all the temporary variables to global
-! vars used in the integration loop.
-!
-! Some setup is also performed.
-!
-!
-!                    ARGUMENTS
-!
-! rho                Pierce/FEL parameter
-! eta                scaled average z-velocity
-! kbeta              scaled betatron wavenumber
-! iNN                number of nodes in each dimension (x,y,z2)
-! sElmLen            Length of ONE element in each dimension (x,y,z2)
-! fx, fy             specifies undulator polarization
-! qSwitch            If letting electrons evolve, field evolve,
-!                    diffraction and gaussian field
-! qOK                Error flag
-
     REAL(KIND=WP),     INTENT(IN)    :: rho,aw,gamr, lam_w
     INTEGER(KIND=IP),  INTENT(IN)    :: iNN(:), iNMPs(:,:)
-    REAL(KIND=WP),     INTENT(IN)    :: sElmLen(:)	
-    REAL(KIND=WP),     INTENT(IN)    :: fx,fy,sFocusFactor, taper
+
+    REAL(KIND=WP),     INTENT(IN)    :: sElmLen(:)
+    REAL(KIND=WP),     INTENT(IN)    :: fx,fy, taper
+
     REAL(KIND=WP),     INTENT(IN)    :: sFiltFrac, dStepFrac, sBeta
     LOGICAL,           INTENT(IN)    :: qSwitch(nSwitches_CG), qFormatted, &
                                         qSimple
     character(32_ip),  intent(in)    :: zUndType
     LOGICAL,           INTENT(OUT)   :: qOK
 
-!                    LOCAL ARGS
-!
-! lam_r_bar          Resonant wavelength in scaled units
-! qOKL               Local error flag
 
     REAL(KIND=WP) :: lam_r_bar, LenZ2, modfact1, sbetaz, aw_rms
     LOGICAL :: qOKL
@@ -104,16 +93,16 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
     ntrnds_G = NX_G * NY_G
 
 !    nspinDX = 31_ip
-!    nspinDY = 31_ip 
+!    nspinDY = 31_ip
 
 !    if ( mod(nx_g, 2) .ne. mod(nspinDX, 2) ) then
-! 
+!
 !      nspinDX =  nspinDX + 1
 !
 !    end if
 !
 !    if ( mod(ny_g, 2) .ne. mod(nspinDY, 2) ) then
-! 
+!
 !      nspinDY =  nspinDY + 1
 !
 !    end if
@@ -125,13 +114,13 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
     ntrndsi_G = nspinDX * nspinDY
 
     IF (NX_G == 1 .AND. NY_G == 1) THEN
-    
+
        iNodesPerElement_G = 2_IP
-    
+
     ELSE
-    
+
        iNodesPerElement_G = 8_IP
-    
+
     END IF
 
 
@@ -158,12 +147,12 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
       nspinDX = 1_ip
       nspinDY = 1_ip
       ntrndsi_G = 1_ip
-    
+
     else
 
 
 !            3D case
-    
+
 
       if (iRedNodesX_G < 0_ip) then
 
@@ -172,9 +161,9 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
         if (qSimple) then
 
-          iRedNodesX_G = inmps(1,iX_CG) + 1_ip
+          iRedNodesX_G = 20_ip
 
-        else 
+        else
 
           iRedNodesX_G = 20_ip
 
@@ -188,7 +177,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
         if (qSimple) then
 
-          iRedNodesY_G = inmps(1,iY_CG) + 1_ip
+          iRedNodesY_G = 20_ip
 
         else
 
@@ -200,7 +189,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
     end if
 
-    
+
     outnodex_G=NX_G-iRedNodesX_G
     outnodey_G=NY_G-iRedNodesY_G
 
@@ -223,7 +212,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
       modfact1 = mf(1)
 
-    else 
+    else
 
       modfact1 = 1.0_WP
 
@@ -367,7 +356,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
     IF(iNumberNodes_G <= 0_IPN) THEN
        CALL Error_log('iNumberNodes_G <= 0.',tErrorLog_G)
-       GOTO 1000    
+       GOTO 1000
     END IF
 
 
@@ -386,7 +375,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
 !     Set error flag and exit
 
-    qOK = .TRUE.				    
+    qOK = .TRUE.
 
     GOTO 2000
 
@@ -435,16 +424,18 @@ logical, intent(in) :: qTails
 real(kind=wp) :: sEndsLen, sMainLen
 logical :: qFlatTop
 
+qFlatTop = .false.
+
 if (sSigZ2 >= 1e6) qFlatTop = .true.
 
 sEndsLen = 0.0_wp
 
 if (qFlatTop) then
-  if (qTails) then 
+  if (qTails) then
     sEndsLen = gExtEj_G * sSigTails
     sMainLen = sLenz2 - sEndsLen
     sLArea = sMainLen + sqrt(2*pi)*sSigTails
-  else 
+  else
     sLArea = sLenz2
   end if
 else
@@ -489,9 +480,9 @@ end subroutine getQFmNpk
 
 
 
-SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
+SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, sFiltFrac, &
                               qFlatTopS, sSigmaF, &
-                              sA0_x, sA0_y, field_file, qOK)
+                              sA0_x, sA0_y, qOK)
 
     IMPLICIT NONE
 !
@@ -516,17 +507,16 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
     LOGICAL, INTENT(IN) :: qFlatTopS(:)
     REAL(KIND=WP), INTENT(IN)    :: sA0_x(:)
     REAL(KIND=WP), INTENT(IN)    :: sA0_y(:)
+    real(kind=wp), intent(in)    :: sFiltFrac
 !    REAL(KIND=WP), INTENT(INOUT) :: sA(:)
-    CHARACTER(LEN=1024),INTENT(IN) :: field_file(:)
     LOGICAL,       INTENT(OUT)   :: qOK
 
 !                LOCAL ARGS
-! 
+!
 ! qOKL         Local error flag
 ! iZ2          Number of nodes in Z2
 ! iXY          Number of nodes in XY plane
 ! sA0gauss_Re  Initial field over all planes
-    CHARACTER(Len=1024) :: h5FieldFileName
 
     LOGICAL           :: qOKL
     LOGICAL           :: qInitialGauss
@@ -538,9 +528,8 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
 
 !     Set error flag to false
 
-    qOK = .FALSE. 
-    h5FieldFileName=field_file(1)
-    
+    qOK = .FALSE.
+
     sZi_G = 0.0_wp
     sZlSt_G = 0.0_wp
 
@@ -556,23 +545,16 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
     sLengthOfElm(iZ2_CG) = sLengthOfElmZ2_G
 
 !    ALLOCATE(sAreal(iXY*iZ2),sAimag(iXY*iZ2))
-   
+
 !    CALL getSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,freqf, &
 !                  ph_sh, nseeds,sLengthOfElm,sAreal,sAimag)
-!   print*,'It is seedy, but what type...' 
+!   print*,'It is seedy, but what type...'
 !   print*,iFieldSeedType_G
 
-    if (iFieldSeedType_G==iSimpleSeed_G) then
 
-      call getPaSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,&
-                      freqf,ph_sh,nseeds,sLengthOfElm)
-    end if
 
-    if (iFieldSeedType_G==iReadH5Field_G) then
-
-      call readH5FieldfileSingleDump(h5FieldFileName)
-
-    end if
+    call getPaSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,&
+                    freqf,ph_sh,nseeds,sLengthOfElm)
 
 !    sA(1:iXY*iZ2) = sAreal
 !    sA(iXY*iZ2 + 1:2*iXY*iZ2) = sAimag
@@ -582,7 +564,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, &
 
 !     Set error flag and exit
 
-    qOK = .TRUE.				    
+    qOK = .TRUE.
     GOTO 2000
 
 1000 CALL Error_log('Error in FEMethod:SetUpInitialValues',tErrorLog_G)
@@ -598,7 +580,7 @@ END SUBROUTINE SetUpInitialValues
 
 
 subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
-                       beamCenZ2, chirp, sEmit, gamFrac, &
+                       beamCenZ2, chirp, sEmit, emitx, emity, gamFrac, &
                        sFieldModelLength, sLengthofElm, &
                        sSeedSigma)
 
@@ -607,7 +589,8 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
                                     chirp(:), sEmit(:), &
                                     sFieldModelLength(:), &
                                     sLengthofElm(:), &
-                                    sSeedSigma(:,:)
+                                    sSeedSigma(:,:), &
+                                    emitx(:), emity(:)
 
     real(kind=wp), intent(in) :: gamFrac(:)
 
@@ -623,7 +606,7 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
 
       call scalePx(sEleSig(ib,iPX_CG), gamFrac(ib), saw_G)
       call scalePx(sEleSig(ib,iPY_CG), gamFrac(ib), saw_G)
- 
+
       call scaleT(sEleSig(ib,iZ2_CG), lc_G)
 
 
@@ -634,7 +617,7 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
 
       call scalePx(sLenEPulse(ib,iPX_CG), gamFrac(ib), saw_G)
       call scalePx(sLenEPulse(ib,iPY_CG), gamFrac(ib), saw_G)
- 
+
       call scaleT(sLenEPulse(ib,iZ2_CG), lc_G)
 
 
@@ -646,6 +629,8 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
       call scaleT(chirp(ib), lc_G)
 
       call scaleEmit(sEmit(ib), lam_r_G)
+      call scaleEmit(emitx(ib), lam_r_G)
+      call scaleEmit(emity(ib), lam_r_G)
 
     end do
 
@@ -659,7 +644,7 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
     call scaleX(sLengthofElm(iY_CG), lg_G, lc_G)
     call scaleT(sLengthofElm(iZ2_CG), lc_G)
 
-    
+
     nseeds = size(sSeedSigma(:,1))
 
     do is = 1, nseeds
@@ -677,7 +662,7 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
 !    chirp in dgamma/dt
 !
 !    field params in x, y, and t
-!    
+!
 
 
 
@@ -687,11 +672,12 @@ end subroutine scaleParams
 
 
 
-subroutine calcScaling(srho, saw, sgamr, slam_w, sFocusFactor, & 
+
+subroutine calcScaling(srho, saw, sgamr, slam_w, &
                        zUndType, sfx, sfy)
 
   real(kind=wp), intent(in) :: srho, saw, sgamr, slam_w, &
-                               sFocusFactor, sfx, sfy
+                               sfx, sfy
 
   CHARACTER(32_IP), intent(in) :: zUndType
 
@@ -739,7 +725,7 @@ subroutine calcScaling(srho, saw, sgamr, slam_w, sFocusFactor, &
   else
 
     saw_rms = saw * SQRT(sfx**2 + sfy**2) / sqrt(2.0_wp)
-    
+
   end if
 
 
@@ -749,10 +735,6 @@ subroutine calcScaling(srho, saw, sgamr, slam_w, sFocusFactor, &
   sEta_G = (1.0_WP - sbetaz) / sbetaz
   sKappa_G = saw / 2.0_WP / srho / sgamr
   sKBeta_G = sKappa_G ! aw_rms / 2.0_WP / sFocusFactor / srho / sgamr
-
-
-  sFocusFactor_G = sFocusFactor
-
 
   sAw_G = saw
 
@@ -784,8 +766,8 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
                                   stepsPerPeriod
 
   real(kind=wp), intent(out) :: sLengthOfElm(:), sStepSize
-                                
-                                
+
+
 
   integer(kind=ip), intent(inout) :: iNumNodes(:), iNumElectrons(:,:)
   integer(kind=ip), intent(out) :: nSteps
@@ -842,7 +824,7 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
     sStepSize = 4.0_WP * pi * srho_G / real(stepsPerPeriod,kind=wp)
     nSteps = nperiods * stepsPerPeriod
 
-  else 
+  else
 
     print*, 'less than one step per period!!'
 
@@ -915,7 +897,7 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
     deallocate(smeanp2, fmlensTmp)
 
   end if
-  
+
   dz2 = 4.0_WP * pi * sRho_G / real(nodesperlambda-1_IP,kind=wp)
 
   iNumNodes(iZ2_CG) = ceiling(sFieldModelLength(iZ2_CG) / dz2) + 1_IP
@@ -932,9 +914,10 @@ end subroutine calcSamples
 
 
 
-SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
-                             sigma, beamCenZ2,gamma_d,eThresh, &
-                             chirp,mag,fr,nbeams, qOK)
+SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
+                             sigma, alphax, alphay, emitx, emity, &
+                             beamCenZ2, gamma_d, eThresh, &
+                             chirp, mag, fr, nbeams, qOK)
 
 !                     ARGUMENTS
 
@@ -948,9 +931,10 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
     REAL(KIND=WP),     INTENT(IN)    :: Z
     REAL(KIND=WP),     INTENT(INOUT) :: LenEPulse(:,:)
     REAL(KIND=WP),     INTENT(INOUT) :: sigma(:,:)
+    real(kind=wp),     intent(in)    :: alphax(:), alphay(:), emitx(:), emity(:)
     REAL(KIND=WP),     INTENT(INOUT) :: beamCenZ2(:)
     REAL(KIND=WP),     INTENT(IN)    :: eThresh
-    LOGICAL,           INTENT(OUT)   :: qOK     
+    LOGICAL,           INTENT(OUT)   :: qOK
 
 !                   LOCAL ARGS
 
@@ -993,13 +977,11 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
 
 !     Setup electrons
 
-
-
-
     if (iInputType_G == iGenHom_G) then
 
       CALL electron_grid(RealE,NE,noise, &
-                         Z,nbeams, LenEPulse,sigma, beamCenZ2, gamma_d, &
+                         Z,nbeams, LenEPulse,sigma, alphax, alphay, &
+                         emitx, emity, beamCenZ2, gamma_d, &
                          eThresh,tTransInfo_G%qOneD, &
                          chirp,mag,fr,qOKL)
       IF (.NOT. qOKL) GOTO 1000
@@ -1016,8 +998,8 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
     else if (iInputType_G == iReadH5_G) then
       fname_temp = fname(1)
       call readH5beamfile(fname_temp)
-    print *,"Rank ", tProcInfo_G%Rank
-    else 
+!    print *,"Rank ", tProcInfo_G%Rank
+    else
 
       if (tProcInfo_G%qRoot) print*, 'No beam input type specified....'
       if (tProcInfo_G%qRoot) print*, 'Exiting...'
@@ -1028,7 +1010,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
 
     IF(iGloNumElectrons_G <= 0_IPL) THEN
        CALL Error_log('iGloNumElectrons_G <=0.',tErrorLog_G)
-       GOTO 1000    
+       GOTO 1000
     END IF
 
     if (iNumberElectrons_G>0_IPL) then
@@ -1098,8 +1080,8 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe,NE,noise,Z,LenEPulse,&
     END DO
 
 !    print*, 'procelectrons = ', procelectrons_G
-!    stop 
-    IF (iNumberElectrons_G==0) qEmpty=.TRUE. 
+!    stop
+    IF (iNumberElectrons_G==0) qEmpty=.TRUE.
 
     if (qSimple) DEALLOCATE(RealE)
 
@@ -1226,7 +1208,7 @@ SUBROUTINE getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
   fsz = size(xfieldt)
 
   !  if (fsz .ne. size(yfieldt)) then
-  
+
   !  Cause error
 
   !  end if
@@ -1238,14 +1220,14 @@ SUBROUTINE getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
   yfieldt = 0.0_WP
 
   DO ind = 1, nSeeds
-  
+
     CALL getSeed(NN(:),sigs(ind,:),cens(ind),magxs(ind),magys(ind),qFTs(ind), &
                  qRndFj_G(ind), sSigFj_G(ind), rho,frs(ind), ph_sh(ind), &
                  dels,iz2_s, iz2_e,xfield,yfield)
 
     xfieldt = xfieldt + xfield
     yfieldt = yfieldt + yfield
-    
+
   END DO
 
   deallocate(xfield, yfield)
@@ -1275,9 +1257,9 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
                    xenv(:), yenv(:), &
                    z2env(:), oscx(:), &
                    oscy(:)
- 
+
   REAL(KIND=WP) :: lx, ly, lz2, z2sl, z2el
-                   
+
   INTEGER(KIND=IP) :: ind1, ind2, ind3, gind, nz2l
 
 
@@ -1305,14 +1287,14 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
     xnds = 1_WP
   ELSE
     xnds = linspace(-lx/2_WP, lx/2_WP, NN(iX_CG))
-  END IF  
+  END IF
 
 
   IF (NN(iY_CG) == 1_IP) THEN
     ynds = 1_WP
   ELSE
     ynds = linspace(-ly/2_WP, ly/2_WP, NN(iY_CG))
-  END IF  
+  END IF
 
 
 !  call linspacesr(z2sl,z2el,nz2l, z2nds)
@@ -1326,24 +1308,24 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
     xenv = gaussian(xnds,0.0_WP,sig(iX_CG))
   END IF
 
-  
+
   IF (NN(iY_CG) == 1_IP) THEN
     yenv = 1_WP
   ELSE
-    yenv = gaussian(ynds,0.0_WP,sig(iY_CG))    
+    yenv = gaussian(ynds,0.0_WP,sig(iY_CG))
   END IF
-   
+
 
   IF (qFT) THEN
- 
+
 
 
 
     if (qRnd) then
- 
+
       call ftron(z2env, 2*sig(iZ2_CG), sSigR, cen, z2nds)
- 
-    else 
+
+    else
 
 
       WHERE (z2nds < (cen - sig(iZ2_CG)))
@@ -1363,7 +1345,7 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
     end if
 
   ELSE
-  
+
     z2env = gaussian(z2nds,cen,sig(iZ2_CG))
 
   END IF
@@ -1379,13 +1361,13 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
   do ind1 = 1, nz2l
     do ind2 = 1,NN(iY_CG)
       do ind3 = 1,NN(iX_CG)
-        
+
         gind = ind3 + NN(iX_CG)*(ind2-1) + NN(iX_CG)*NN(iY_CG)*(ind1-1)
         xfield(gind) = magx * xenv(ind3) * yenv(ind2) * oscx(ind1)
         yfield(gind) = magy * xenv(ind3) * yenv(ind2) * oscy(ind1)
-      
+
       end do
-    end do     
+    end do
   end do
 
 
@@ -1412,7 +1394,7 @@ subroutine ftron(env, fl_len, rn_sig, cen, z2nds)
 
   real(kind=wp), intent(inout) :: env(:)
   real(kind=wp), intent(in) :: fl_len, rn_sig, cen, z2nds(:)
-    
+
 
   real(kind=wp) :: len_gauss, sSt, sEd, sg1cen, sg1st, &
                    sg2cen, sg2st, sftst
@@ -1421,12 +1403,12 @@ subroutine ftron(env, fl_len, rn_sig, cen, z2nds)
 
 
 
-  len_gauss = gExtEj_G * rn_sig /2.0_wp  ! model out how many sigma?? 
-  
+  len_gauss = gExtEj_G * rn_sig /2.0_wp  ! model out how many sigma??
 
 
-  sSt = cen - (fl_len / 2.0_wp) - len_gauss  ! 
-  sEd = cen + (fl_len / 2.0_wp) + len_gauss 
+
+  sSt = cen - (fl_len / 2.0_wp) - len_gauss  !
+  sEd = cen + (fl_len / 2.0_wp) + len_gauss
 
 
 
@@ -1440,11 +1422,11 @@ subroutine ftron(env, fl_len, rn_sig, cen, z2nds)
 
 
 
-  where ((z2nds >= sSt) .and. (z2nds <= sftst)) 
+  where ((z2nds >= sSt) .and. (z2nds <= sftst))
 
     env = gaussian(z2nds, sg1cen, rn_sig)
 
-  elsewhere ((z2nds > sg1cen) .and. (z2nds <= sg2cen)) 
+  elsewhere ((z2nds > sg1cen) .and. (z2nds <= sg2cen))
 
     env = 1.0_wp
 

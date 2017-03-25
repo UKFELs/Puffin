@@ -1,3 +1,17 @@
+! ################################################
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
+! ################################################
+!
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Module containing the routines which calculate the scaled magnetic b-fields
+!> for the Lorentz force in Puffin
+
 
 module bfields
 
@@ -5,6 +19,19 @@ use paratype
 use globals
 
 contains
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Calculate the b-fields. Calls bx, by and bz subroutines
+!> @param[in] sx Macroparticle coordinates in xbar
+!> @param[in] sy Macroparticle coordinates in ybar
+!> @param[in] sz current scaled distance though undulator, zbar
+!> @param[out] bxj scaled b-field in x direction for macroparticles
+!> @param[out] byj scaled b-field in y direction for macroparticles
+!> @param[out] bzj scaled b-field in z direction for macroparticles
 
   subroutine getBFields(sx, sy, sZ, &
                         bxj, byj, bzj)
@@ -54,7 +81,7 @@ subroutine getBXfield(sx, sy, sz, bxj)
 
   if (zUndType_G == 'curved') then
 
-    if (iUndPlace_G == iUndStart_G) then 
+    if (iUndPlace_G == iUndStart_G) then
 
 !$OMP WORKSHARE
       bxj = kx_und_G / ky_und_G * sinh(kx_und_G * sx) &
@@ -65,7 +92,7 @@ subroutine getBXfield(sx, sy, sz, bxj)
 !$OMP END WORKSHARE
 
     else if (iUndPlace_G == iUndEnd_G) then
- 
+
       szt = sZ - sZFE
       szt = szt / 2_wp / sRho_G
 
@@ -103,7 +130,7 @@ subroutine getBXfield(sx, sy, sz, bxj)
 
   else if (zUndType_G == 'planepole')  then
 
-    if (iUndPlace_G == iUndStart_G) then 
+    if (iUndPlace_G == iUndStart_G) then
 
 !$OMP WORKSHARE
       bxj = 0_wp
@@ -141,12 +168,12 @@ subroutine getBXfield(sx, sy, sz, bxj)
 
   else if (zUndType_G == 'helical')  then
 
-    if (iUndPlace_G == iUndStart_G) then 
+    if (iUndPlace_G == iUndStart_G) then
 
 !$OMP WORKSHARE
       bxj = sin(szt / 8_wp) * &
                cos(szt / 8_wp) * sin(szt) / 4_wp   &
-             +  sin(szt/8_wp)**2_wp  * cos(szt) 
+             +  sin(szt/8_wp)**2_wp  * cos(szt)
 !$OMP END WORKSHARE
 
     else if (iUndPlace_G == iUndEnd_G) then
@@ -176,7 +203,7 @@ subroutine getBXfield(sx, sy, sz, bxj)
 
 
 
-  else   
+  else
 
 
 
@@ -187,12 +214,12 @@ subroutine getBXfield(sx, sy, sz, bxj)
 !    'puffin' elliptical undulator...
 !    with variable x and y polarization...
 
-    if (iUndPlace_G == iUndStart_G) then 
+    if (iUndPlace_G == iUndStart_G) then
 
 !$OMP WORKSHARE
       bxj = fx_G * sin(szt / 8_wp) * &
                cos(szt / 8_wp) * sin(szt) / 4_wp   &
-             +  sin(szt/8_wp)**2_wp  * cos(szt) 
+             +  sin(szt/8_wp)**2_wp  * cos(szt)
 !$OMP END WORKSHARE
 
     else if (iUndPlace_G == iUndEnd_G) then
@@ -260,7 +287,7 @@ subroutine getBXfield(sx, sy, sz, bxj)
 
   if (zUndType_G == 'curved') then
 
-    if (iUndPlace_G == iUndStart_G) then 
+    if (iUndPlace_G == iUndStart_G) then
 
 !$OMP WORKSHARE
       byj = cosh(kx_und_G * sx) &
@@ -271,7 +298,7 @@ subroutine getBXfield(sx, sy, sz, bxj)
 !$OMP END WORKSHARE
 
     else if (iUndPlace_G == iUndEnd_G) then
- 
+
       szt = sZ - sZFE
       szt = szt / 2_wp / sRho_G
 
@@ -310,10 +337,10 @@ subroutine getBXfield(sx, sy, sz, bxj)
 
   else if (zUndType_G == 'planepole')  then
 
-    if (iUndPlace_G == iUndStart_G) then 
+    if (iUndPlace_G == iUndStart_G) then
 
 !$OMP WORKSHARE
-      byj = cosh( sqrt(sEta_G) / 2_wp / sRho_G * sy) * & 
+      byj = cosh( sqrt(sEta_G) / 2_wp / sRho_G * sy) * &
             (  (- sin(szt / 8_wp) * &
                cos(szt / 8_wp) * cos(szt) / 4_wp   &
              +  sin(szt/8_wp)**2_wp  * sin(szt) )  )
@@ -325,7 +352,7 @@ subroutine getBXfield(sx, sy, sz, bxj)
       szt = szt / 2_wp / sRho_G
 
 !$OMP WORKSHARE
-      byj = cosh( sqrt(sEta_G) / 2_wp / sRho_G * sy) * & 
+      byj = cosh( sqrt(sEta_G) / 2_wp / sRho_G * sy) * &
             (  cos(szt / 8_wp) * &
               sin(szt / 8_wp) * cos(szt)  / 4_wp  &
             +  cos(szt/8_wp)**2_wp  * sin(szt)  )
@@ -334,7 +361,7 @@ subroutine getBXfield(sx, sy, sz, bxj)
     else if (iUndPlace_G == iUndMain_G) then
 
 !$OMP WORKSHARE
-      byj = cosh( sqrt(sEta_G) / 2_wp / sRho_G * sy) & 
+      byj = cosh( sqrt(sEta_G) / 2_wp / sRho_G * sy) &
             * sin(szt)
 !$OMP END WORKSHARE
 
@@ -357,7 +384,7 @@ subroutine getBXfield(sx, sy, sz, bxj)
 
   else if (zUndType_G == 'helical')  then
 
-    if (iUndPlace_G == iUndStart_G) then 
+    if (iUndPlace_G == iUndStart_G) then
 
 !$OMP WORKSHARE
       byj = (- sin(szt / 8_wp) * &
@@ -394,7 +421,7 @@ subroutine getBXfield(sx, sy, sz, bxj)
 
 
 
-  else   
+  else
 
 
 
@@ -406,7 +433,7 @@ subroutine getBXfield(sx, sy, sz, bxj)
 !    with variable x and y polarization...
 
 
-    if (iUndPlace_G == iUndStart_G) then 
+    if (iUndPlace_G == iUndStart_G) then
 
 !$OMP WORKSHARE
       byj = fy_G * (- sin(szt / 8_wp) * &
@@ -497,7 +524,7 @@ subroutine getBZfield(sx, sy, sz, bzj)
 
   if (zUndType_G == 'curved') then
 
-    if (iUndPlace_G == iUndStart_G) then 
+    if (iUndPlace_G == iUndStart_G) then
 
 !$OMP WORKSHARE
       bzj = sqrt(sEta_G) / 2 / sRho_G / ky_und_G &
@@ -510,7 +537,7 @@ subroutine getBZfield(sx, sy, sz, bzj)
 !$OMP END WORKSHARE
 
     else if (iUndPlace_G == iUndEnd_G) then
- 
+
       szt = sZ - sZFE
       szt = szt / 2_wp / sRho_G
 
@@ -548,10 +575,10 @@ subroutine getBZfield(sx, sy, sz, bzj)
 
   else if (zUndType_G == 'planepole')  then
 
-    if (iUndPlace_G == iUndStart_G) then 
+    if (iUndPlace_G == iUndStart_G) then
 
 !$OMP WORKSHARE
-      bzj = sinh( sqrt(sEta_G) / 2_wp / sRho_G * sy) * & 
+      bzj = sinh( sqrt(sEta_G) / 2_wp / sRho_G * sy) * &
             (  (-1_wp/32_wp * cos(szt/4_wp) * cos(szt)) &
               + (1_wp/4_wp) * sin(szt/4_wp) * sin(szt) + &
                sin(szt/8_wp)**2_wp * cos(szt)  )
@@ -563,7 +590,7 @@ subroutine getBZfield(sx, sy, sz, bzj)
       szt = szt / 2_wp / sRho_G
 
 !$OMP WORKSHARE
-      bzj = sinh( sqrt(sEta_G) / 2_wp / sRho_G * sy) * & 
+      bzj = sinh( sqrt(sEta_G) / 2_wp / sRho_G * sy) * &
             (  (1_wp/32_wp * cos(szt/4_wp) * cos(szt)) &
               - (1_wp/4_wp) * sin(szt/4_wp) * sin(szt) + &
                cos(szt/8_wp)**2_wp * cos(szt)  )
@@ -572,7 +599,7 @@ subroutine getBZfield(sx, sy, sz, bzj)
     else if (iUndPlace_G == iUndMain_G) then
 
 !$OMP WORKSHARE
-      bzj = sinh( sqrt(sEta_G) / 2_wp / sRho_G * sy) & 
+      bzj = sinh( sqrt(sEta_G) / 2_wp / sRho_G * sy) &
             * cos(szt)
 !$OMP END WORKSHARE
 
@@ -592,15 +619,15 @@ subroutine getBZfield(sx, sy, sz, bzj)
 
   else if (zUndType_G == 'helical')  then
 
-    if (iUndPlace_G == iUndStart_G) then 
+    if (iUndPlace_G == iUndStart_G) then
 
 !$OMP WORKSHARE
-      bzj = sqrt(sEta_G) / 2 / sRho_G * (     & 
+      bzj = sqrt(sEta_G) / 2 / sRho_G * (     &
             sx * ( 1/32_wp * cos(szt/4_wp) * sin(szt) + &
-                    1/4_wp * sin(szt/4_wp) * cos(szt) - & 
+                    1/4_wp * sin(szt/4_wp) * cos(szt) - &
                     sin(szt/8_wp)**2 * sin(szt) )    + &
             sy * ( -1/32_wp * cos(szt/4_wp) * cos(szt) + &
-                    1/4_wp * sin(szt/4_wp) * sin(szt) + & 
+                    1/4_wp * sin(szt/4_wp) * sin(szt) + &
                     sin(szt/8_wp)**2 * cos(szt) ) )
 !$OMP END WORKSHARE
 
@@ -610,12 +637,12 @@ subroutine getBZfield(sx, sy, sz, bzj)
       szt = szt / 2_wp / sRho_G
 
 !$OMP WORKSHARE
-      bzj = sqrt(sEta_G) / 2 / sRho_G * (     & 
+      bzj = sqrt(sEta_G) / 2 / sRho_G * (     &
             sx * ( -1/32_wp * cos(szt/4_wp) * sin(szt) - &
-                    1/4_wp * sin(szt/4_wp) * cos(szt) - & 
+                    1/4_wp * sin(szt/4_wp) * cos(szt) - &
                     cos(szt/8_wp)**2 * sin(szt) )    + &
             sy * ( 1/32_wp * cos(szt/4_wp) * cos(szt) - &
-                    1/4_wp * sin(szt/4_wp) * sin(szt) + & 
+                    1/4_wp * sin(szt/4_wp) * sin(szt) + &
                     cos(szt/8_wp)**2 * cos(szt) ) )
 !$OMP END WORKSHARE
 
@@ -635,7 +662,7 @@ subroutine getBZfield(sx, sy, sz, bzj)
 
 
 
-  else 
+  else
 
 
 
@@ -644,15 +671,15 @@ subroutine getBZfield(sx, sy, sz, bzj)
 !    'puffin' elliptical undulator...
 !    with variable x and y polarization...
 
-    if (iUndPlace_G == iUndStart_G) then 
+    if (iUndPlace_G == iUndStart_G) then
 
 !$OMP WORKSHARE
-      bzj = sqrt(sEta_G) / 2 / sRho_G * (     & 
+      bzj = sqrt(sEta_G) / 2 / sRho_G * (     &
         fx_G*sx * ( 1/32_wp * cos(szt/4_wp) * sin(szt) + &
-                    1/4_wp * sin(szt/4_wp) * cos(szt) - & 
+                    1/4_wp * sin(szt/4_wp) * cos(szt) - &
                     sin(szt/8_wp)**2 * sin(szt) )    + &
         fy_G*sy * ( -1/32_wp * cos(szt/4_wp) * cos(szt) + &
-                    1/4_wp * sin(szt/4_wp) * sin(szt) + & 
+                    1/4_wp * sin(szt/4_wp) * sin(szt) + &
                     sin(szt/8_wp)**2 * cos(szt) ) )
 !$OMP END WORKSHARE
 
@@ -662,12 +689,12 @@ subroutine getBZfield(sx, sy, sz, bzj)
       szt = szt / 2_wp / sRho_G
 
 !$OMP WORKSHARE
-      bzj = sqrt(sEta_G) / 2 / sRho_G * (     & 
+      bzj = sqrt(sEta_G) / 2 / sRho_G * (     &
         fx_G*sx * ( -1/32_wp * cos(szt/4_wp) * sin(szt) - &
-                    1/4_wp * sin(szt/4_wp) * cos(szt) - & 
+                    1/4_wp * sin(szt/4_wp) * cos(szt) - &
                     cos(szt/8_wp)**2 * sin(szt) )    + &
         fy_G*sy * ( 1/32_wp * cos(szt/4_wp) * cos(szt) - &
-                    1/4_wp * sin(szt/4_wp) * sin(szt) + & 
+                    1/4_wp * sin(szt/4_wp) * sin(szt) + &
                     cos(szt/8_wp)**2 * cos(szt) ) )
 !$OMP END WORKSHARE
 
@@ -693,4 +720,3 @@ subroutine getBZfield(sx, sy, sz, bzj)
 end subroutine getBZfield
 
 end module bfields
-

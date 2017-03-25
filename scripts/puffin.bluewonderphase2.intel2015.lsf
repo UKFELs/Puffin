@@ -20,11 +20,11 @@ export MYINPUT=${MYJOB}.in
 mpirun -n 16 $PUFFIN_DIR/puffin ${MYINPUT} | tee ${MYJOB}.log
 #do something while this .log file is reasonably current
 #postprocessing - sort out fields
-for i in $(ls fig7_aperp_0_*.h5); do  python $PUFFIN_DIR/ReorderColMajorFtoColMinorC.py $i; done
+for i in $(ls fig7_aperp_0_*.h5); do  python $PUFFIN_DIR/post/ReorderColMajorFtoColMinorC.py $i; done
 #postprocessing - join up particles
-python $PUFFIN_DIR/mergeParticles.py fig7_electrons
+python $PUFFIN_DIR/post/mergeParticles.py fig7_electrons
 #postprocessing - merge power outputs
-python $PUFFIN_DIR/aggregatePower.py fig7_power_0
-python $PUFFIN_DIR/aggregatePower.py fig7_current_0
+python $PUFFIN_DIR/post/aggregatePower.py fig7_power_0
+python $PUFFIN_DIR/post/aggregatePower.py fig7_current_0
 #reduce particles for ease of visualisation
 for i in $(ls fig7_electrons_*.vsh5); do python reduce_particles.py $i 10000; done

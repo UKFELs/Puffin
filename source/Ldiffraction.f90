@@ -1,15 +1,25 @@
+! ###############################################
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
+! ###############################################
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This module contains subroutines for calculating the radiation diffraction 
+!> step.
+
 module PDiff
-
-
 
 use paratype
 use parallelinfotype
 use transforminfotype
 use transforms
 use masks
-!USE FFTW_Constants
-
-USE Globals
+use Globals
 use IO
 use parafield
 
@@ -21,17 +31,20 @@ implicit none
 
 contains
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Setup parallel data structures for diffraction step, call diffraction 
+!> routine, then return data to nominal parallel distribution for RK4 
+!> integration.
+!> @param[in] sStep Diffraction step size - distance to propagate field over.
+!> @param[out] qDiffrctd Whether field has been diffracted.
+!> @param[out] qOK Error flag.
+
 subroutine diffractIM(sStep, &
                       qDiffrctd, qOK)
-
-
-! Subroutine which diffracts the field, after making the preparations
-! necessary when Puffin is within an undulator module.
-!
-! Lawrence Campbell
-! University of Strathclyde
-! Jan 2015
-
 
   implicit none
 
@@ -82,43 +95,43 @@ end subroutine diffractIM
 
 !     ######################################################
 
-SUBROUTINE multiplyexp(h,qOK)
 
-  IMPLICIT NONE
-!
-! Subroutine to calculate the RHS of the diffraction
-! solution in Fourier space.
-!
-!                    ARGUMENTS
-!
-! h          IN                Integration step size
-! Field     INOUT    local portion of Fourier transformed field
-! qOK       OUT       Error flag; if .false. error has occured
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Multiplies Fourier Transformed field by complex exponential to diffract the
+!> field. To diffract field, do \f$ A_\bot(\bar{z}+\Delta \bar{z}) = 
+!> A_\bot(\bar{z}) \exp(\frac{i \Delta \bar{z} (k_x^2 + k_y^2) }{2 k_{z2}}) \f$ :
+!> see LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
+!> @param[in] h Diffraction step size \f$ \Delta \bar{z} \f$
+!> @param[out] qOK Error flag.
 
-  REAL(KIND=WP), INTENT(IN) :: h
+subroutine multiplyexp(h,qOK)
 
-!  COMPLEX(C_DOUBLE_COMPLEX), pointer, &
-!                INTENT(INOUT) :: field(:)
+  implicit none
 
-  LOGICAL, INTENT(OUT) :: qOK
+  real(kind=wp), intent(in) :: h
 
-!                    LOCAL ARGS
-!
-! posI                        Imaginary unit
-!                             (square root of -1)
-! ind,x_inc,y_inc,z2_inc      Indices for loop
-! loc_nz2                     Number of FT field nodes
-!                             on the local process
+  logical, intent(out) :: qOK
 
-  COMPLEX(KIND=WP) :: posI
-  INTEGER(KIND=IP) :: ind,x_inc,y_inc,z2_inc
-  INTEGER(KIND=IP) :: loc_nz2
-  REAL(KIND=WP) :: cutoff,delz2
+  complex(kind=wp) :: posI            !< Imaginary unit
+  
+  integer(kind=IP) :: ind,   &        !< index 
+                      x_inc, &        !< loop index for nodes in x
+                      y_inc, &        !< loop index for nodes in y
+                      z2_inc          !< loop index for nodes in z2
+                      
+  integer(kind=IP) :: loc_nz2         !< Local number of z2 nodes
+  
+  real(kind=wp) :: cutoff, &          !< Frequency cutoff for high pass filter
+                   delz2              !< Mesh spacing in z2
 
 !------------------------------------------------------
 !                      Begin
 
-  qOK = .FALSE.
+  qOK = .false.
 
   posI=CMPLX(0.0,1.0,KIND=WP)
   delz2=sLengthOfElmZ2_G
@@ -127,16 +140,16 @@ SUBROUTINE multiplyexp(h,qOK)
 
 !      Main loop, multiply FT field by exp factor
 
-  DO z2_inc=0,loc_nz2-1_IP
-     DO y_inc=0,NY_G-1_IP
-        DO x_inc=0,NX_G-1_IP
+  do z2_inc=0,loc_nz2-1_IP
+     do y_inc=0,NY_G-1_IP
+        do x_inc=0,NX_G-1_IP
 
            !ind=x_inc+y_inc*NX_G+z2_inc*NX_G*NY_G
 
-           IF ((kz2_loc_G(z2_inc)>cutoff) .OR. &
-                (kz2_loc_G(z2_inc)<-cutoff)) THEN
+           if ((kz2_loc_G(z2_inc)>cutoff) .or. &
+                (kz2_loc_G(z2_inc)<-cutoff)) then
 
-              IF (kz2_loc_G(z2_inc)/=0.0_WP) THEN
+              if (kz2_loc_G(z2_inc)/=0.0_WP) then
 
                 Afftw(x_inc+1,y_inc+1,z2_inc+1) = &
                            exp(posI*h*(kx_G(x_inc)**2 + &
@@ -144,32 +157,47 @@ SUBROUTINE multiplyexp(h,qOK)
                                 (2.0_WP*kz2_loc_G(z2_inc))) * &
                            Afftw(x_inc+1,y_inc+1,z2_inc+1)
 
-              END IF
+              end if
 
-           ELSE
+           else
 
-              IF (qFilter) Afftw(x_inc+1,y_inc+1,z2_inc+1) = &
+              if (qFilter) Afftw(x_inc+1,y_inc+1,z2_inc+1) = &
                          CMPLX(0.0, 0.0, C_DOUBLE_COMPLEX)
 
-           END IF
+           end if
 
-        END DO
-     END DO
-  END DO
+        end do
+     end do
+  end do
 
 !              Set error flag and exit
 
-  qOK = .TRUE.
+  qOK = .true.
 
   GOTO 2000
 
-1000  CALL Error_log('Error in transforms:RearrangeExp',tErrorLog_G)
+1000  call Error_log('Error in transforms:RearrangeExp',tErrorLog_G)
 
-2000 CONTINUE
+2000 continue
 
-END SUBROUTINE multiplyexp
+end subroutine multiplyexp
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Subroutine to perform free space radiation field diffraction
+!> in the dimensionless scaled notation.
+!> Diffraction step algorithm described in
+!> LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
+!> @param[in] h Diffraction step size \f$ \Delta \bar{z} \f$
+!> @param[inout] sAr Real part of \f$ A_\bot \f$
+!> @param[inout] sAi Imaginary part of \f$ A_\bot \f$
+!> @param[out] qOK Error flag.
 
 SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 
@@ -407,6 +435,21 @@ END SUBROUTINE DiffractionStep
 
 !***********************************************************
 
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This subroutine implements a boundary region
+!> in the x, y and z2 directions.The boundary 
+!> layer absorbs the outgoing radiation to 
+!> minimize the reflections of the diffracted
+!> radiation.
+!> @param[inout] sAl Complex field \f$ A_\bot \f$
+!> @param[in] h Diffraction step size \f$ \Delta \bar{z} \f$
+!> @param[in] ffact Absorption coefficient
+
 SUBROUTINE AbsorptionStep(sAl,h,ffact)
 
 ! This subroutine implements a boundary region
@@ -571,6 +614,16 @@ END SUBROUTINE AbsorptionStep
 !**************************************************
 
 !**************************************************
+
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Sets field to zero behind electron beam.
+!> @param[inout] sA Complex field \f$ A_\bot \f$
+!> @param[in] ffact Absorption coefficient
 
 SUBROUTINE clearA(sA, qOK)
 

@@ -1,8 +1,6 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
 
 !> @author
 !> Lawrence Campbell,
@@ -16,6 +14,7 @@ module Globals
 use paratype
 use typesAndConstants
 use ArrayFunctions
+use initDataType
 
 implicit none
 
@@ -77,7 +76,7 @@ logical :: qFMesh_G
 integer(kind=ip) :: nseqparts_G
 logical :: qEquiXY_G
 logical :: qFixCharge_G
-
+logical :: qUseEmit_G
 
 integer(kind=ip) :: npts_I_G    !  Specifying mesh 4 current calculation
 
@@ -139,6 +138,11 @@ real(kind=wp), allocatable     :: dadz_w(:)
 real(kind=wp) :: sZi_G, sZlSt_G
 
 
+! For restarting from a previous run
+
+
+type(cInitData) :: tInitData_G
+
 ! Temporary intermediate arrays for RK4
 
 ! *t is 'temp', for intermediate stages of RK4
@@ -193,10 +197,6 @@ real(kind=wp) :: kx_und_G, ky_und_G    ! kx and ky for 3D undulator B-field vari
 real(kind=wp) :: sKBetaX_G, sKBetaY_G
 
 real(kind=wp) :: sKBetaXSF_G, sKBetaYSF_G
-
-real(kind=wp)       :: Dfact  ! Dispersion strength factor for chicane
-                              ! (=1 for 'normal' dispersion, =0 for 
-                              ! isochronous chicanes)
 
 
 
@@ -346,7 +346,7 @@ TYPE(cFileType), save :: tPowF   ! Type array describing the power file
 
 
 
-integer(kind=ip) :: iWriteNthSteps, iDumpNthSteps, iIntWriteNthSteps
+integer(kind=ip) :: iWriteNthSteps, iIntWriteNthSteps
 
 
 character(132_ip) :: cmd_call_G
@@ -409,6 +409,6 @@ logical   ::  qscaled_G
 
 logical   ::  qInitWrLat_G
 
-
+logical   ::  qDumpEnd_G
 
 End Module Globals

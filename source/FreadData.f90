@@ -1,8 +1,8 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! ###############################################
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
+! ###############################################
 
 !> @author
 !> Lawrence Campbell,
@@ -20,11 +20,16 @@ use Globals
 use ParallelSetUp
 use MASPin
 use H5in
+use cwrites
 
 contains
 
-
-!> read_in Read in the namelist data files for Puffin.
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Read in the namelist data files for Puffin.
 !> @param[in] zfilename Name of the main input file passed to Puffin
 !> at runtime.
 !> @param[out] zDataFileName Base name of the sdds output files.
@@ -44,10 +49,6 @@ contains
 !> @param[out] iNumNodes 3 element array - Number of field nodes in x, y, and z2
 !> @param[out] sWigglerLength 3 element array - Length of radiation field mesh in
 !> x, y, and z2
-!> @param[out] iRedNodesX The number of inner nodes of the main mesh which the 
-!> beam will be contained within. Forces a resize of the mesh if specified, 
-!> resized so that these inner nodes contain the beam.
-!> @param[out] iRedNodesY Same as iRedNodesX, but in y.
 !> @param[out] nodesperlambda Number of radiation nodes to be used in the mesh 
 !> per reference resonant wavelength in z2.
 !> @param[out] stepsPerPeriod Number of integration steps per undulator period 
@@ -94,7 +95,27 @@ contains
 !> @param[out] lambda_w Undulator period
 !> @param[out] sEmit_n Array of length nbeams. Scaled RMS Beam emittance in 
 !> simple beam case.
-
+!> @param[out] sux Relative magnitude of undulator magnetic field in 
+!> x-direction. Either sux OR suy should = 1. For Puffin undulator type
+!> only.
+!> @param[out] suy Relative magnitude of undulator magnetic field in 
+!> y-direction.
+!> @param[out] taper Taper of magnetic undulator field as function of z, only
+!> used in simple wiggler case (no lattice). In units of 
+!> \f$ \frac{d \alpha}{d \bar{z}} \f$.
+!> @param[out] zUndType Undulator type to be use in simple wiggler case.
+!> @param[out] sSigmaF Standard deviation of radiation seed field magnitude in 
+!> each dimension.
+!> @param[out] freqf Frequency of seed field, scaled to the reference resonant 
+!> frequency.
+!> @param[out] SmeanZ2 Mean position of seed in z2.
+!> @param[out] ph_sh Phase shift of seed
+!> @param[out] qFlatTopS If using flat top seed profile
+!> @param[out] nseeds Number of radiation seeds 
+!> @param[out] qSwitches Various simulation control flags
+!> @param[out] qMatched_A If matching transverse area of beam to wiggler. Simple
+!> beam case only.
+!> @param[out] qOK Error flag
 
 subroutine read_in(zfilename, &
        zDataFileName, &
@@ -111,7 +132,6 @@ subroutine read_in(zfilename, &
        sLenEPulse, &
        iNumNodes, &
        sWigglerLength, &
-       iRedNodesX,iRedNodesY, &
        nodesperlambda, &
        stepsPerPeriod, &
        nperiods, &
@@ -138,75 +158,21 @@ subroutine read_in(zfilename, &
        sgamma_r, &
        lambda_w, &
        sEmit_n, &
+       alphax, alphay, emitx, emity, &
        sux, &
        suy, &
-       Dfact, &
-       sFocusfactor, &
        taper,    &
        zUndType, &
        sSigmaF, &
        freqf, SmeanZ2, &
        ph_sh, &
        qFlatTopS, nseeds, &
-       sPEOut, &
-       iDumpNthSteps, &
        qSwitches, &
        qMatched_A, &
        qOK)
 
        IMPLICIT NONE
 
-!******************************************************
-! Read input data from the main Puffin input file
-! 
-! zFileName          - FileName containing input data
-! nRowProcessors     - Number of row processors
-! nColProcessors     - Number of column processors
-!
-! zDataFileName      - Data file name
-! qSeparateStepFiles - if to write data to separate step
-!                      files or all steps in one file
-! qFormattedFiles    - if output data files to be
-!                      formatted or binary
-! sStepSize          - Step size for integration
-! nSteps             - Number of steps
-! sZ                 - IN: Starting z position
-!                    - OUT: Final z position
-! iWriteNthSteps     - Steps to write data at (optional)
-!                       (eg every 4th step)
-! tArrayZ            - Write out Z data
-! tArrayVariables    - Write out A,p,Q,Z2 data
-!
-! sLenEPulse(3)      - Length of electron Pulse in
-!                      x,y,z2 direction
-! iNumNodes(3) 	     - Total number of nodes
-! sWigglerLength(3)  - Length of wiggler in x,y,z2
-!                      direction
-! i_RealE            - Number of real electrons
-! q_noise            - Noise in initial electron
-!                      distribution
-!
-! iNumElectrons(3)   - Number of electrons in
-!                      x,y,z2 direction
-! sSigmaGaussian     - Sigma spread of electron
-!                      gaussian distribution
-! sElectronThreshold - Beyond this threshold level,
-!                      electrons are ignored/removed
-!
-! sA0_Re,            - Initial field value (real)
-! sA0_Im,            - Initial field value (imaginary)
-!
-! sEmit_n            - Normalised beam emittance
-! srho               - Pierce parameter
-! saw                - Wiggler parameter
-! sgamma_r           - Mean electron velocity at
-!                      resonance
-! sWiggleWaveLength  - Wiggler wave length
-! sSeedSigma         - Seed field sigma spread for
-!                      gaussian seed field
-! qSwitches          - if allowing different scenarios
-! qOK                - Error flag
-!********************************************************
   CHARACTER(*),INTENT(IN) :: zfilename
 
   CHARACTER(1024_IP),  INTENT(OUT)  :: zDataFileName
@@ -225,9 +191,6 @@ subroutine read_in(zfilename, &
 
   REAL(KIND=WP),     INTENT(OUT)  :: sWigglerLength(:)
 
-  INTEGER(KIND=IP),  INTENT(OUT)  :: iRedNodesX,&
-                                       iRedNodesY
-
   REAL(KIND=WP),  ALLOCATABLE, INTENT(OUT)  :: sQe(:)
   LOGICAL,           INTENT(OUT)  :: q_noise
 
@@ -238,7 +201,9 @@ subroutine read_in(zfilename, &
   REAL(KIND=WP),     INTENT(OUT)  :: sElectronThreshold
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: bcenter(:), gamma_d(:), &
                                               chirp(:), sEmit_n(:), &
-                                              mag(:), fr(:)
+                                              mag(:), fr(:), &
+                                              alphax(:), alphay(:), emitx(:), &
+                                              emity(:)
 
   INTEGER(KIND=IP), INTENT(INOUT) :: nbeams, nseeds
 
@@ -259,11 +224,8 @@ subroutine read_in(zfilename, &
   REAL(KIND=WP),     INTENT(OUT)  :: sgamma_r, lambda_w
   REAL(KIND=WP),     INTENT(OUT)  :: sux
   REAL(KIND=WP),     INTENT(OUT)  :: suy
-  REAL(KIND=WP),     INTENT(OUT)  :: Dfact
-  REAL(KIND=WP),     INTENT(OUT)  :: sFocusfactor, taper
+  REAL(KIND=WP),     INTENT(OUT)  :: taper
   character(32_IP),  intent(out)  :: zUndType
-  REAL(KIND=WP),     INTENT(OUT)  :: sPEOut
-  INTEGER(KIND=IP),  INTENT(OUT)  :: iDumpNthSteps
   LOGICAL,           INTENT(OUT)  :: qSwitches(:)
   LOGICAL, ALLOCATABLE, INTENT(OUT)  :: qMatched_A(:)
   LOGICAL,           INTENT(OUT)  :: qOK
@@ -272,10 +234,10 @@ subroutine read_in(zfilename, &
 
   integer(kind=ip), intent(out) :: stepsPerPeriod, nodesperlambda, nperiods ! Steps per lambda_w, nodes per lambda_r
   real(kind=wp) :: dz2, zbar
-  integer(kind=ip) :: nwaves
+  integer(kind=ip) :: nwaves, iRedNodesX, iRedNodesY
 
   INTEGER::ios
-  CHARACTER(1024_IP) :: beam_file, seed_file
+  CHARACTER(1024_IP) :: beam_file, seed_file, wr_file
   LOGICAL :: qOKL, qMatched !   TEMP VAR FOR NOW, SHOULD MAKE FOR EACH BEAM
 
   logical :: qWriteZ, qWriteA, &
@@ -285,7 +247,7 @@ subroutine read_in(zfilename, &
   logical :: qOneD, qFieldEvolve, qElectronsEvolve, &
              qElectronFieldCoupling, qFocussing, &
              qDiffraction, qDump, qUndEnds, qhdf5, qsdds, &
-             qscaled, qInitWrLat
+             qscaled, qInitWrLat, qDumpEnd
 
   integer(kind=ip) :: iNumNodesX, iNumNodesY, nodesPerLambdar
   real(kind=wp) :: sFModelLengthX, sFModelLengthY, sFModelLengthZ2
@@ -308,13 +270,14 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  sFModelLengthY, sFModelLengthZ2, &
                  iRedNodesX, iRedNodesY, sFiltFrac, &
                  sDiffFrac, sBeta, seed_file, srho, &
-                 sux, suy, saw, sgamma_r, sFocusfactor, &
-                 lambda_w, Dfact, zundType, taper, &
+                 sux, suy, saw, sgamma_r, &
+                 lambda_w, zundType, taper, &
                  LattFile, stepsPerPeriod, nPeriods, &
                  sZ0, zDataFileName, iWriteNthSteps, &
-                 iWriteIntNthSteps, iDumpNthSteps, sPEOut, &
+                 iWriteIntNthSteps, &
                  qFMesh_G, sKBetaXSF, sKBetaYSF, sRedistLen, &
-                 iRedistStp, qscaled, nspinDX, nspinDY, qInitWrLat
+                 iRedistStp, qscaled, nspinDX, nspinDY, qInitWrLat, qDumpEnd, &
+                 wr_file
 
 
 ! Begin subroutine:
@@ -347,11 +310,12 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qWriteZ2 = .true.
   qWriteX = .true.
   qWriteY = .true.
-  qsdds = .true.
-  qhdf5 = .false.
+  qsdds = .false.
+  qhdf5 = .true.
   qFMesh_G = .true.
   qscaled = .true.
   qInitWrLat = .false.
+  qDumpEnd = .true.
 !  qplain = .false.
 
   beam_file = 'beam_file.in'
@@ -370,14 +334,13 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   sDiffFrac              = 1.0
   sBeta                  = 1.0
   seed_file              = ''
+  wr_file = ''
   srho                   = 0.01
   sux                    = 1.0
   suy                    = 1.0
   saw                    = 1.0
   sgamma_r               = 100.0
-  sFocusfactor           = 1.41213562373095
   lambda_w               = 0.04
-  Dfact                  = 0.0
   zundType               = ''
   taper                  = 0.0
   lattFile               = ''
@@ -387,8 +350,6 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   zDataFileName          = 'DataFile.dat'
   iWriteNthSteps         = 30
   iWriteIntNthSteps      = 30
-  iDumpNthSteps          = 3000
-  sPEOut                 = 100.0
   sKBetaXSF = -0.1_wp
   sKBetaYSF = -0.1_wp
 
@@ -409,6 +370,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qSwitches(iElectronFieldCoupling_CG) = qElectronFieldCoupling
   qSwitches(iFocussing_CG) = qFocussing
   qSwitches(iDiffraction_CG) = qDiffraction
+  qSwitches(iResume_CG) = qResume
   qDiffraction_G = qDiffraction
   qSwitches(iDump_CG) = qDump
 
@@ -418,6 +380,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qscaled_G = qscaled
   qInitWrLat_G = qInitWrLat
 
+  qDumpEnd_G = qDumpEnd
 
 
   tArrayZ%qWrite = qWriteZ
@@ -456,6 +419,12 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
 
 
 
+  if (wr_file /= '') then
+    qWrArray_G = .true.
+    call getWrArray(wr_file)
+  else
+    qWrArray_G = .false.
+  end if
 
 
 
@@ -484,6 +453,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
 
 
   CALL read_beamfile(qSimple, dist_f, beam_file,sEmit_n,sSigmaGaussian,sLenEPulse, &
+                     alphax, alphay, emitx, emity, &
                      iNumElectrons,sQe,chirp,bcenter, mag, fr, gamma_d,nbeams, &
                      qMatched_A,qOKL)
 
@@ -522,6 +492,7 @@ END SUBROUTINE read_in
 
 
 SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
+                         alphax, alphay, emitx, emity, &
                          iNumElectrons,sQe,chirp, bcenter, mag, fr,gammaf,nbeams,&
                          qMatched_A,qOK)
 
@@ -539,6 +510,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sEmit_n(:),chirp(:), mag(:), fr(:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sSigmaE(:,:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sLenE(:,:)
+  REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: alphax(:), alphay(:), emitx(:), &
+                                             emity(:)
   INTEGER(KIND=IP), ALLOCATABLE, INTENT(OUT) :: iNumElectrons(:,:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sQe(:),bcenter(:),gammaf(:)
   INTEGER(KIND=IP), INTENT(INOUT) :: nbeams
@@ -550,7 +523,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 !                     LOCAL ARGS
 
   INTEGER(KIND=IP) :: b_ind
-  logical :: qFixCharge
+  logical :: qFixCharge, qAMatch
   INTEGER::ios
   CHARACTER(96) :: dtype
 
@@ -562,13 +535,16 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   namelist /blist/ sSigmaE, sLenE, iNumElectrons, &
                    sEmit_n, sQe, bcenter,  gammaf, &
                    chirp, mag, fr, qRndEj_G, sSigEj_G, &
-                   qMatched_A, qEquiXY, nseqparts, qFixCharge
+                   qMatched_A, qEquiXY, nseqparts, qFixCharge, &
+                   alphax, alphay, emitx, emity
 
 
   namelist /bdlist/ dist_f, nMPs4MASP_G
   namelist /bh5list/ dist_f
 
   qOK = .FALSE.
+
+  qAMatch = .false.
 
 ! Open the file
 !  OPEN(UNIT=168,FILE=be_f,IOSTAT=ios,&
@@ -611,6 +587,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   allocate(chirp(nbeams), qMatched_A(nbeams))
   allocate(mag(nbeams), fr(nbeams))
   allocate(qRndEj_G(nbeams), sSigEj_G(nbeams))
+  allocate(alphax(nbeams), alphay(nbeams))
+  allocate(emitx(nbeams), emity(nbeams))
 
 
 ! &&&&&&&&&& Default vals
@@ -630,7 +608,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   iNumElectrons(1,4:5) = 1
   iNumElectrons(1,6) = 19
 
-  sEmit_n = 1.0_wp
+  sEmit_n = -1.0_wp
   sQe = 1E-9
   bcenter = 0.0_wp
   gammaf = 1.0_wp
@@ -644,6 +622,10 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   nseqparts = 1000_ip
   qSimple = .false.
   qFixCharge = .false.
+  alphax = 0.0_wp
+  alphay = 0.0_wp
+  emitx = -1.0_wp
+  emity = -1.0_wp
 
 ! &&&&&&&&&&&&&&&&&&&&&
 
@@ -739,6 +721,60 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   qEquiXY_G = qEquiXY
   nseqparts_G = nseqparts
   qFixCharge_G = qFixCharge
+
+  do b_ind = 1, nbeams
+
+    if (sEmit_n(b_ind) > 0.0_wp) then
+      if (tProcInfo_G%qRoot) print*, ''
+      if (tProcInfo_G%qRoot) print*, '************************************************'
+      if (tProcInfo_G%qRoot) print*, 'WARNING - use of sEmit_n deprecated - use emitx and emity instead'
+      if (tProcInfo_G%qRoot) print*, 'For now, emitx and emity will = sEmit_n where not specified'
+    
+      if (emitx(b_ind) <= 0.0_wp) emitx(b_ind) = sEmit_n(b_ind)
+      if (emity(b_ind) <= 0.0_wp) emity(b_ind) = sEmit_n(b_ind)
+    
+    end if  
+
+  end do
+
+  
+
+  do b_ind = 1, nbeams
+
+    if (emitx(b_ind) <= 0.0_wp) then
+      alphax(b_ind) = 0.0_wp
+    end if
+
+    if (emity(b_ind) <= 0.0_wp) then
+      alphay(b_ind) = 0.0_wp
+    end if
+
+    if (qMatched_A(b_ind)) then
+      qAMatch = .true.
+      alphax(b_ind) = 0.0_wp
+      alphay(b_ind) = 0.0_wp
+    end if
+
+  end do
+
+
+  if (qAMatch) then
+    if (tProcInfo_G%qRoot) print*, ''
+    if (tProcInfo_G%qRoot) print*, '************************************************'
+    if (tProcInfo_G%qRoot) print*, 'You have chosen to match at least one beam'
+    if (tProcInfo_G%qRoot) print*, 'Please recall that the matching is only done', &
+                                  'for the in-undulator weak or strong focusing ', &
+                                  'of the first module, and not for any FODO lattice!!! '
+    if (tProcInfo_G%qRoot) print*, 'alphax and alphay will then be ignored....'
+    if (tProcInfo_G%qRoot) print*, '(if this is 1D then you wont care about this!)'
+      
+  end if
+
+!  if (emitx(1) <= 0.0_wp) emitx(1) = 1.0_wp
+!  if (emity(1) <= 0.0_wp) emity(1) = 1.0_wp
+
+!  if (alphax(1) <= 0.0_wp) alphax(1) = 1.0_wp
+!  if (alphay(1) <= 0.0_wp) alphay(1) = 1.0_wp
 
 
 ! Set the error flag and exit

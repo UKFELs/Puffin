@@ -1,8 +1,6 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
 
 MODULE SETUPTRANS
 
@@ -35,10 +33,10 @@ contains
 
 
 
-  subroutine stptrns(sSigE, sLenE, iNMPs, sEmit, sGamFrac, &
+  subroutine stptrns(sSigE, sLenE, iNMPs, emitx, emity, sGamFrac, &
                      qMatchA, qMatchS, qFMesh, sSigF)
 
-    real(kind=wp), intent(in) :: sEmit(:), sGamFrac(:)
+    real(kind=wp), intent(in) :: emitx(:), emity(:), sGamFrac(:)
 
     real(kind=wp), intent(inout) :: sSigE(:,:), sLenE(:,:), sSigF(:,:)
 
@@ -48,7 +46,7 @@ contains
     real(kind=wp) :: sLenF
 
 
-    call MatchBeams(sSigE, sLenE, sEmit, sGamFrac, &
+    call MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
                         qMatchA)
 
     call matchSeeds(qMatchS, sSigE, sSigF)
@@ -240,28 +238,28 @@ contains
 
 
 
-subroutine MatchBeams(sSigE, sLenE, sEmit, sGamFrac, &
+subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
                       qMatchA)
 
 ! Subroutine which matches the beam in x and y
 !
 !         ARGUMENTS
 
-  real(kind=wp), intent(in) :: sEmit(:), sGamFrac(:)
+  real(kind=wp), intent(in) :: emitx(:), emity(:), sGamFrac(:)
   logical, intent(in) :: qMatchA(:)
 
   real(kind=wp), intent(inout) :: sLenE(:,:), sSigE(:,:)
 
   integer(kind=ip) :: nbeams, ic
   
-  nbeams = size(sEmit)
+  nbeams = size(emitx)
 
   do ic = 1, nbeams
 
     if (qMatchA(ic)) then
 
       call matchTransBeam(sSigE(ic,:), sLenE(ic,:), &
-                      sEmit(ic), sGamFrac(ic))
+                      emitx(ic), emity(ic), sGamFrac(ic))
 
       if (tProcInfo_G%qRoot) print*, &
              'New Gaussian sigma of electron beam in x is ',sSigE(ic, iX_CG)
@@ -280,9 +278,9 @@ subroutine MatchBeams(sSigE, sLenE, sEmit, sGamFrac, &
   end subroutine MatchBeams
 
 
-  subroutine matchTransBeam(sSigE, sLenE, sEmit, sEnfrac)
+  subroutine matchTransBeam(sSigE, sLenE, emitx, emity, sEnfrac)
 
-    real(kind=wp), intent(in) :: sEmit, sEnfrac
+    real(kind=wp), intent(in) :: emitx, emity, sEnfrac
     real(kind=wp), intent(out) :: sSigE(:), sLenE(:)
 
     real(kind=wp) :: kbx, kby
@@ -292,20 +290,20 @@ subroutine MatchBeams(sSigE, sLenE, sEmit, sGamFrac, &
     call getKBetas(kbx, kby, sEnfrac)
 
     if (tProcInfo_G%qRoot) print*, &
-    'Scaled betatron wavenumber in x (in gain lengths) = ', kbx
+    'Scaled betatron wavenumber in undulator in x (in units of 1 / gain length) = ', kbx
 
     call getKBetas(kbx, kby, sEnfrac)
     if (tProcInfo_G%qRoot) print*, &
-    'Scaled betatron wavenumber in y (in gain lengths) = ', kby
+    'Scaled betatron wavenumber in undulator in y (in units of 1 / gain length) = ', kby
 
-    call matchxPx(sSigE(iX_CG), sSigE(iPX_CG), sEmit, &
+    call matchxPx(sSigE(iX_CG), sSigE(iPX_CG), emitx, &
                   kbx, sEnFrac)
 
     sLenE(iX_CG) = sSigE(iX_CG) * 6_wp
     sLenE(iPX_CG) = sSigE(iPX_CG) * 6_wp
 
 
-    call matchxPx(sSigE(iY_CG), sSigE(iPY_CG), sEmit, &
+    call matchxPx(sSigE(iY_CG), sSigE(iPY_CG), emity, &
                   kby, sEnFrac)
 
     sLenE(iY_CG) = sSigE(iY_CG) * 6_wp    
