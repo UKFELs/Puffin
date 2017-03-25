@@ -303,7 +303,9 @@ end subroutine clearTransformPlans_ThreeD
 !> @param[in] plan C pointer to FFTW3 plan.
 !> @param[inout] local_in Real array containing the
 !> untransformed field on input, and output as
-!> the fourier transformed field.
+!> the fourier transformed field. Should be distrbuted
+!> amongst MPI ranks according to the FFTW3-MPI
+!> layout specified in the planning stage.
 !> @param[out] qOK Logical error flag, == .true.
 !> for successful completion of subroutine.
 
@@ -312,20 +314,6 @@ subroutine Transform(plan, &
      qOK)
 
   implicit none
-
-! This subroutine performs the FFTW-MPI fourier transfrom
-! described by the given plan.
-!
-!                  ARGUMENTS
-!
-! plan      IN     FFTW-MPI plan. This plan MUST be of
-!                    type integer*8.
-! work      INOUT  The work array of identical size to
-!                    local_in.
-! local_in  INOUT  The data to be transformed, arranged
-!                    in parallel according to the FFTW-MPI
-!                    2.1.5 documentation.
-! qOK       OUT    Error flag; if .false. error has occured
 
   type(C_PTR), intent(inout) :: plan
 
