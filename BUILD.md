@@ -88,5 +88,17 @@ the `fftw3-par` and `hdf5-par` libs built, and not the serial versions.
     which may be more recent.
 
 
+  - Ubuntu 16.04
 
+    Ubuntu now uses a version of CMake which SciMake currently has some problems with, 
+    so an older version must be used. See the section on building with Bilder above - 
+    we recommend doing this if you are using Ubuntu 16.04 onwards for now.
+
+    Another issue with Ubuntu is that Bilder does not currently recognise the 
+    machine hostname on Ubuntu. This may cause problems with the install process.
+    We recommend doing
+
+    `export FQHOSTNAME=$HOSTNAME`
+
+    to make Bilder recognise the machine hostname.
 
