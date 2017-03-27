@@ -28,7 +28,7 @@ where `/path/to/Puffin` is where you want the top level of the Puffin source to 
 
 3. Run cmake, e.g.
 
-`cmake -DCMAKE_INSTALL_PREFIX:PATH=/path/to/puffin-install -DFftw3_ROOT_DIR='/path/to/fftw3 -DHdf5_ROOT_DIR='/path/to/hdf5' /path/to/Puffin`
+`cmake -DCMAKE_INSTALL_PREFIX:PATH=/path/to/puffin-install -DFftw3_ROOT_DIR='/path/to/fftw3' -DHdf5_ROOT_DIR='/path/to/hdf5' /path/to/Puffin`
 
 4. Do `make && make install`. You should get a puffin binary in /path/to/puffin-install
 
