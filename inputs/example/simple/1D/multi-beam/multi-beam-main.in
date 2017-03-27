@@ -120,7 +120,6 @@
  nPeriods               = 200
  iWriteNthSteps         = 400
  iWriteIntNthSteps      = 40
- iDumpNthSteps          = 3000
  /
 
 
