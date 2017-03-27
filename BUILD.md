@@ -18,7 +18,7 @@ using Bilder (see bottom of this guide).
 
 1. Fetch Puffin to /path/to/Puffin. To clone from Github, do
 
-`git@github.com:UKFELs/Puffin.git /path/to/Puffin`
+`git clone git@github.com:UKFELs/Puffin.git /path/to/Puffin`
 
 where `/path/to/Puffin` is where you want the top level of the Puffin source to be downloaded to.
 
