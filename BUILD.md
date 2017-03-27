@@ -16,7 +16,11 @@ make sure these libraries are built with the same build chain as you're going
 to use for Puffin. If you wish, fftw3 and hdf5 may be obtained and built 
 using Bilder (see bottom of this guide). 
 
-1. Fetch Puffin to /path/to/Puffin
+1. Fetch Puffin to /path/to/Puffin. To clone from Github, do
+
+`git@github.com:UKFELs/Puffin.git /path/to/Puffin`
+
+where `/path/to/Puffin` is where you want the top level of the Puffin source to be downloaded to.
 
 2. Make a new dir for the build:
 
