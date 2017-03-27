@@ -28,12 +28,14 @@ using Bilder (see bottom of this guide).
 
 4. Do `make && make install`. You should get a puffin binary in /path/to/puffin-install
 
-## Building hdf5 and fftw3 using bilder
+## Building hdf5 and fftw3 (and more) using bilder
 
 Hdf5 and fftw3 parallel libraries may be combersome to build individually. The most 
 popular linux distros have them in the official repositories. They can also be obtained 
 and built by using bilder, which provides a stable base for building Puffin. This is
-usually what is used for Puffin development.  
+usually what is used for Puffin development. Bilder also allows one to build other
+packages needed for building and post-processing, like CMake and Python packages,
+and so on. In the below, we build fftw3, hdf5, and numpy and tables for Python.
 
 First, check out bilder from the repository.
 
@@ -41,9 +43,12 @@ First, check out bilder from the repository.
 
 Then go into the created bilder-visit directory, and to build the desired libararies, do
 
-`./mkvisitall.sh -k ../contrib -i ../install -b ../build fftw,cmake,autotools,hdf5,numpy,tables`
+`env CMAKE_BLDRVERSION=3.4.1 ./mkvisitall.sh -k ../contrib -i ../install -b ../build fftw3,cmake,autotools,hdf5,numpy,tables`
 
-Here, we are also building numpy and tables for the Python post-processing scripts.
+Note we are specifying a specific version of CMake here. The default version of
+CMake installed using Bilder has a few known issues with SciMake, so until these
+are fixed, we use the older version here.
+
 The requested libraries will be in ../contrib, along with a bash script
 to add them to your path. So do 
 
