@@ -34,7 +34,7 @@ where `/path/to/Puffin` is where you want the top level of the Puffin source to 
 
 ## Building hdf5 and fftw3 (and more) using bilder
 
-Hdf5 and fftw3 parallel libraries may be combersome to build individually. The most 
+Hdf5 and fftw3 parallel libraries may be cumbersome to build individually. The most 
 popular linux distros have them in the official repositories. They can also be obtained 
 and built by using bilder, which provides a stable base for building Puffin. This is
 usually what is used for Puffin development. Bilder also allows one to build other
