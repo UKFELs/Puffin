@@ -2,9 +2,9 @@
 #
 # SciTestConfig: Set variables for testing.
 #
-# $Id: SciTestConfig.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: SciTestConfig.cmake 1102 2016-11-02 21:55:51Z alexanda $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2014-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
 #
 #
@@ -42,14 +42,14 @@ if (NOT DEFINED BUILDNAME)
     endif ()
   endif ()
 endif ()
-SciPrintString("SCIMAKE_BUILD = ${SCIMAKE_BUILD}.")
-SciPrintString("BUILDNAME = ${BUILDNAME}.")
+SciPrintString("[SciTestConfig]: SCIMAKE_BUILD = ${SCIMAKE_BUILD}.")
+SciPrintString("[SciTestConfig]: BUILDNAME = ${BUILDNAME}.")
 
 set(CTEST_DROP_METHOD "http")
 if (NOT CTEST_DROP_SITE AND (NOT "${CTEST_DROP_SITE}" STREQUAL NONE))
   # set(CTEST_DROP_SITE "cdash.${DOMAINNAME}")
 endif ()
-SciPrintString("CTEST_DROP_SITE = ${CTEST_DROP_SITE}.")
+SciPrintString("[SciTestConfig]: CTEST_DROP_SITE = ${CTEST_DROP_SITE}.")
 if (CTEST_DROP_SITE AND (NOT "${CTEST_DROP_SITE}" STREQUAL NONE))
   set(CTEST_DROP_LOCATION "/submit.php?project=${CTEST_PROJECT_NAME}")
   set(CTEST_DROP_SITE_CDASH TRUE)

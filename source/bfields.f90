@@ -1,9 +1,9 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
-
+! ################################################
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
+! ################################################
+!
 !> @author
 !> Lawrence Campbell,
 !> University of Strathclyde,
@@ -11,6 +11,7 @@
 !> @brief
 !> Module containing the routines which calculate the scaled magnetic b-fields
 !> for the Lorentz force in Puffin
+
 
 module bfields
 

@@ -8,9 +8,9 @@
 #
 # Find module for G4engine user documentation installation
 #
-# $Id: FindSciG4userdocs.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: FindSciG4userdocs.cmake 1079 2016-09-09 00:05:24Z cary $
 #
-# Copyright 2014-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2014-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
 #
 ###########################################################
@@ -34,3 +34,4 @@ else ()
     message(FATAL_ERROR "Failed.")
   endif ()
 endif ()
+

@@ -14,9 +14,9 @@
 #
 # FindOce: find includes and libraries for OCE
 #
-# $Id: FindSciOce.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: FindSciOce.cmake 1102 2016-11-02 21:55:51Z alexanda $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
 #
 #
@@ -39,6 +39,9 @@
 # Data exchange
 # TKVRML
 
+message (STATUS "")
+message (STATUS "--------- FindSciOce seeking Oce -----------")
+
 set(OceXdeIges_SEARCHLIBS TKXDEIGES)
 set(OceXdeStep_SEARCHLIBS TKXDESTEP)
 # The libs below were required by TKXDEIGES
@@ -56,9 +59,11 @@ set(OceStep_SEARCHHDRS STEPControl_Reader.hxx)
 # STEP and IGES depend on this, but not STL
 set(OceIoBase_SEARCHLIBS TKXSBase)
 set(OceStl_SEARCHLIBS TKSTL)
-set(OceAlgo_SEARCHLIBS TKShHealing TKTopAlgo TKGeomAlgo)
+set(OceAlgo_SEARCHLIBS TKFeat TKShHealing TKTopAlgo TKGeomAlgo)
 set(OceModelData_SEARCHLIBS TKBRep TKG3d TKG2d TKGeomBase)
-set(OceTools_SEARCHLIBS TKMath TKAdvTools)
+# AdvTools gone as of OCE-0.17
+# set(OceTools_SEARCHLIBS TKMath TKAdvTools)
+set(OceTools_SEARCHLIBS TKMath)
 set(OceKernel_SEARCHLIBS TKernel)
 
 # All the components
@@ -201,4 +206,7 @@ else ()
     message(FATAL_ERROR "Failed.")
   endif ()
 endif ()
+
+message (STATUS "--------- FindSciOce done with Oce -----------")
+message (STATUS "")
 

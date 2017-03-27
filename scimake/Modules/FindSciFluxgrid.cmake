@@ -16,9 +16,9 @@
 #
 # FindSciFluxgrid: find includes and libraries for FLUXGRID
 #
-# $Id: FindSciFluxgrid.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: FindSciFluxgrid.cmake 1079 2016-09-09 00:05:24Z cary $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
 #
 #
@@ -29,5 +29,4 @@ SciFindPackage(PACKAGE "Fluxgrid"
   INSTALL_DIR "fluxgrid"
   PROGRAMS "fluxgrid"
 )
-
 

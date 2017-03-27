@@ -16,9 +16,9 @@
 #
 # FindSciPspline: find includes and libraries for pspline
 #
-# $Id: FindSciPspline.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: FindSciPspline.cmake 1079 2016-09-09 00:05:24Z cary $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
 #
 #
@@ -50,3 +50,4 @@ if (PSPLINE_FOUND)
   # message(STATUS "Found Pspline")
   set(HAVE_PSPLINE 1 CACHE BOOL "Whether have the Pspline library")
 endif ()
+

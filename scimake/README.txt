@@ -1,6 +1,6 @@
 SciMake CONVENTIONS FOR CMAKE FILES AND MODULES
 
-$Id: README.txt 792 2015-04-17 14:07:44Z jrobcary $
+$Id: README.txt 1081 2016-09-10 15:44:42Z cary $
 
 Copyright &copy; 2014-2015, Tech-X Corporation
 
@@ -15,7 +15,6 @@ http://www.phy.bnl.gov/~bviren/lbne/code/ai/external/build/LCG/cmake-2.6.4/Modul
 To commit changes:
 
   svn switch --relocate svn://svn.code.sf.net/p/scimake/code/trunk https://SOURCEFORGE_USERNAME@svn.code.sf.net/p/scimake/code/trunk
-
 
 SHARED FLAGS
 
@@ -54,3 +53,7 @@ SciFindPackage.cmake.  The USE_PYC_LIBS variable and other booleans
 must be set on the cmake command line, with
 e.g. -DUSE_PYC_LIBS:BOOL=TRUE.  When using Bilder this flag should
 be set via a bilder script.
+
+Target properties
+  http://www.kitware.com/blog/home/post/390
+

@@ -1,9 +1,9 @@
 # - FindSciMkl: Module to find include directories and
 #   libraries for Mkl.
 #
-# $Id: FindSciMkl.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: FindSciMkl.cmake 1079 2016-09-09 00:05:24Z cary $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2013-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
 #
 # Module usage:
@@ -18,8 +18,8 @@
 #  Iomp5_LIBRARIES  = Openmp intel libraries
 #
 ######################################################################
-###
-##  Order of precedence: Command-line, environment, hard-code try
+#
+#  Order of precedence: Command-line, environment, hard-code try
 #
 if ("${Mkl_ROOT_DIR}" STREQUAL "")
   if (NOT "$ENV{MKLROOT}" STREQUAL "")
@@ -36,23 +36,32 @@ if ("${Mkl_ROOT_DIR}" STREQUAL "")
   endif (WIN32)
 endif ()
 
-###
-##  By default, just use the blas and lapack, but some may want
-##  to use scalapack and pardiso as well
 #
-if (ENABLE_MKL_SCALAPACK)
-  set(MKL_SEARCH_LIBS "mkl_scalapack_lp64;mkl_intel_lp64;mkl_core;mkl_intel_thread;mkl_blacs_intelmpi_lp64")
-else ()
-  set(MKL_SEARCH_LIBS "mkl_intel_lp64;mkl_intel_thread;mkl_core")
+#  Allow architecture modification: intel64 or mic
+#
+if ("${Mkl_ARCH}" STREQUAL "")
+  set(Mkl_ARCH "intel64")
 endif ()
 
-###
-##  Now start the searching
+#
+#  By default, just use the blas and lapack, but some may want
+#  to use scalapack and pardiso as well
+#
+if ("${Mkl_SEARCH_LIBS}" STREQUAL "")
+  if (ENABLE_MKL_SCALAPACK)
+    set(Mkl_SEARCH_LIBS "mkl_scalapack_lp64;mkl_intel_lp64;mkl_core;mkl_intel_thread;mkl_blacs_intelmpi_lp64")
+  else ()
+    set(Mkl_SEARCH_LIBS "mkl_intel_lp64;mkl_intel_thread;mkl_core")
+  endif ()
+endif ()
+
+#
+#  Now start the searching
 #
 SciFindPackage(PACKAGE "Mkl"
-              LIBRARIES ${MKL_SEARCH_LIBS}
+              LIBRARIES ${Mkl_SEARCH_LIBS}
               INCLUDE_SUBDIRS "include"
-              LIBRARY_SUBDIRS "lib/intel64"
+              LIBRARY_SUBDIRS "lib/${Mkl_ARCH}"
               )
 
 if (NOT MKL_FOUND)
@@ -66,12 +75,12 @@ if (MKL_FOUND)
   set(HAVE_MKL 1 CACHE BOOL "Whether have Mkl")
 endif ()
 
-###
-##  IOMP5 is sometimes needed to get link to work.
-##  Go ahead and find it to be available.
+#
+#  IOMP5 is sometimes needed to get link to work.
+#  Go ahead and find it to be available.
 #
 #  Set iomp_dir
-get_filename_component(Iomp5_ROOT_DIR ${Mkl_ROOT_DIR}/../compiler/lib/intel64 REALPATH)
+get_filename_component(Iomp5_ROOT_DIR ${Mkl_ROOT_DIR}/../compiler/lib/${Mkl_ARCH} REALPATH)
 
 # Not quite sure about this -- this comes from Rood
 if (WIN32)
@@ -79,3 +88,4 @@ if (WIN32)
 else ()
   SciFindPackage(PACKAGE "Iomp5" LIBRARIES "iomp5")
 endif ()
+

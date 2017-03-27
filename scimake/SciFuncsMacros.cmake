@@ -1,12 +1,13 @@
 ######################################################################
 #
-# SciFuncsMacros: Various functions and macros used by Tech-X scimake
+# @file    SciFuncsMacros.cmake
 #
-# $Id: SciFuncsMacros.cmake 799 2015-04-19 14:32:47Z jrobcary $
+# @brief   Various functions and macros used by Tech-X scimake
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# @version $Id: SciFuncsMacros.cmake 1069 2016-07-05 18:23:08Z cary $
+#
+# Copyright 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
-#
 #
 ######################################################################
 
@@ -21,7 +22,7 @@ macro(SciPrintString str)
   if (DEFINED CONFIG_SUMMARY)
     file(APPEND "${CONFIG_SUMMARY}" "${str}\n")
   else ()
-    message(WARNING "Variable CONFIG_SUMMARY is not defined, SciPrintString is unable to write to the summary file.")
+    message(STATUS "NOTE: [SciFuncsMacros] Variable CONFIG_SUMMARY is not defined, SciPrintString is unable to write to the summary file.")
   endif ()
 endmacro()
 
@@ -145,7 +146,7 @@ macro(SciRplCompilerFlags CMPTYPE BLDTYPE)
       if (BUILD_WITH_SHARED_RUNTIME OR BUILD_SHARED_LIBS)
         set(RPLFLGS_ADDFLG "/MD")
       else ()
-        set(RPLFLGS_ADDFLG " ")
+        set(RPLFLGS_ADDFLG "/MT")
       endif ()
     endif ()
   endif ()
@@ -163,19 +164,17 @@ macro(SciRplCompilerFlags CMPTYPE BLDTYPE)
       endif ()
     else () # otherwise replace the unwantedflag with the wanted flag
       string(REPLACE "${RPLFLGS_RMVFLG}" "${RPLFLGS_ADDFLG}" thisval "${thisval}")
-# removed any dangling d that might have been left behind by for example
-# replacing "/MD" with " " when it was actually "/MDd" leaves behind " d"
-      string(REPLACE " d" " " thisval "${thisval}")
     endif ()
+  endif ()
+
 # append /bigobj to the current compiler arguments
 # ...but only if it's not already there
-    string(FIND "${thisval}" "/bigobj" bigobj_found)
-    if (bigobj_found EQUAL -1)
-      set(thisval "${thisval} /bigobj")
-    endif ()
-# force the compiler argument to be recached
-    set(${thisvar} "${thisval}" CACHE STRING "Flags used by the ${CMPTYPE} compiler during ${BLDTYPE} builds" FORCE)
+  string(FIND "${thisval}" "/bigobj" bigobj_found)
+  if (bigobj_found EQUAL -1)
+    set(thisval "${thisval} /bigobj")
   endif ()
+# force the compiler argument to be recached
+  set(${thisvar} "${thisval}" CACHE STRING "Flags used by the ${CMPTYPE} compiler during ${BLDTYPE} builds" FORCE)
 
 endmacro()
 
@@ -219,4 +218,60 @@ macro(SciAddCppCheck bld)
     endif ()
   endif ()
 endmacro()
+
+#
+# Generate an export header that has a general define for the
+# export header created by cmake
+# basedef The define that will lead to the directory definition
+# incincfile The name of the file to be generated
+# dirdef The definition created when basedef is not defined
+# dirincfile The file to be included
+#
+macro(SciGenExportHeaderContainer basedef incincfile dirdef dirincfile)
+  get_filename_component(def ${incincfile} NAME)
+  string(TOUPPER "${def}" def)
+  string(REGEX REPLACE "[\\.-]" "_" def "${def}")
+  set(declinc
+"
+/**
+ * Generated header, do not edit
+ */
+#ifndef ${def}
+#define ${def}
+
+#if !defined(${basedef}) || defined(__CUDA_ARCH__)
+#define ${dirdef}
+#endif
+#include <${dirincfile}>
+
+#endif // ${def}
+
+"
+  )
+  file(WRITE ${incincfile} "${declinc}")
+endmacro()
+
+# A macro for using hdf5
+#
+# libvar the library variable to add hdf5 to
+# Validated for cori-gcc-ser, cori-intel-ser, cori-gcc-par, cori-intel-par
+macro (addHdf5MpiZDlLibs libvar)
+  link_directories(${Hdf5_LIBRARY_DIRS})
+  if (ENABLE_PARALLEL AND NOT SCI_HAVE_MPICXX_COMPILER_WRAPPER)
+    link_directories(${MPI_LIBRARY_DIRS})
+  endif ()
+
+  if (USE_STATIC_SYSLIBS)
+    set(${libvar} ${${libvar}} ${Hdf5_STLIBS})
+  else ()
+    set(${libvar} ${${libvar}} ${Hdf5_LIBRARY_NAMES})
+  endif ()
+  if (ENABLE_PARALLEL AND NOT SCI_HAVE_MPICXX_COMPILER_WRAPPER)
+    set(${libvar} ${${libvar}} ${MPI_LIBRARIES})
+  endif ()
+  set(${libvar} ${${libvar}} ${Z_LIBRARY_NAMES})
+  if (LINUX)
+    set(${libvar} ${${libvar}} dl)
+  endif ()
+endmacro ()
 

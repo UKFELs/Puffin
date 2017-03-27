@@ -25,9 +25,9 @@
 #
 # FindSciBoost: find includes and libraries for boost
 #
-# $Id: FindSciBoost.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: FindSciBoost.cmake 975 2016-01-09 20:04:17Z cary $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
 #
 ######################################################################
@@ -38,7 +38,9 @@ set(BOOST_LIB_PREFIX boost_)
 if (WIN32 AND NOT(USE_SHARED_LIBS OR BUILD_SHARED_LIBS OR ENABLE_SHARED))
   set(BOOST_LIB_PREFIX libboost_)
 endif ()
-message(STATUS "BOOST_LIB_PREFIX = ${BOOST_LIB_PREFIX}.")
+if (DEBUG_CMAKE)
+  message(STATUS "BOOST_LIB_PREFIX = ${BOOST_LIB_PREFIX}.")
+endif ()
 
 # Set boost libraries to find
 if (DEBUG_CMAKE)
@@ -54,7 +56,9 @@ if (DEBUG_CMAKE)
 endif ()
 
 SciGetInstSubdirs(Boost instdirs)
-message(STATUS "Boost instdirs = ${instdirs}.")
+if (DEBUG_CMAKE)
+  message(STATUS "Boost instdirs = ${instdirs}.")
+endif ()
 SciFindPackage(PACKAGE "Boost"
   INSTALL_DIRS ${instdirs}
   HEADERS boost/thread.hpp OPTIONAL boost/align/aligned_allocator.hpp

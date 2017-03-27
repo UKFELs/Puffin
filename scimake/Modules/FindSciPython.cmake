@@ -13,15 +13,17 @@
 #
 # Find module for Python
 #
-# $Id: FindSciPython.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: FindSciPython.cmake 975 2016-01-09 20:04:17Z cary $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
 #
 #
 ##################################################################
 
-message(STATUS "Search for Python executable")
+message("")
+message(STATUS "--------- Looking for Python" --------- )
+message(STATUS "Seeking Python executable")
 # Find in the path
 if (WIN32)
   set(pynames python)

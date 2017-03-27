@@ -2,28 +2,24 @@
 #
 # SciCxxChecks: check various C++ capabilities
 #
-# $Id: SciCxxChecks.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: SciCxxChecks.cmake 975 2016-01-09 20:04:17Z cary $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
 #
 #
 ######################################################################
 
 # Determine compiler version
-SciPrintString("")
-include(${SCIMAKE_DIR}/SciCxxFindVersion.cmake)
-if (CXX_VERSION)
-  SciPrintVar(CXX_VERSION)
-else ()
-  message(FATAL_ERROR "Could not determine compiler version.")
+message("")
+include(${SCIMAKE_DIR}/SciFindCompilerVersion.cmake)
+SciFindCompilerVersion(CXX)
+set(CXX ${CMAKE_CXX_COMPILER})
+if (NOT CXX_VERSION)
+  message(FATAL_ERROR "Could not determine C++ compiler version.")
 endif ()
 
-# Set the lib subdir from the Compiler ID and version
-if (DEBUG_CMAKE)
-  SciPrintVar(CMAKE_CXX_COMPILER_ID)
-endif ()
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL GNU)
+if (CMAKE_CXX_COMPILER_ID STREQUAL GNU)
   if (NOT USING_MINGW)
     if (NOT ("${CMAKE_CXX_FLAGS}" MATCHES "(^| )-pipe($| )"))
       set(CMAKE_CXX_FLAGS "-pipe ${CMAKE_CXX_FLAGS}")
@@ -34,6 +30,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL GNU)
     set(CMAKE_CXX_FLAGS "-ansi ${CMAKE_CXX_FLAGS}")
   else ()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
   endif ()
 # Make it an error not to give the return upe
   if (CXX_VERSION VERSION_GREATER "4.4")
@@ -42,19 +39,22 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL GNU)
 # Obsolete directory installation dir
   string(SUBSTRING ${CXX_VERSION} 0 1 CXX_MAJOR_VERSION)
   set(CXX_COMP_LIB_SUBDIR gcc${CXX_MAJOR_VERSION})
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL Clang)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL Clang)
   string(SUBSTRING ${CXX_VERSION} 0 1 CXX_MAJOR_VERSION)
   set(CXX_COMP_LIB_SUBDIR clang${CXX_MAJOR_VERSION})
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL Cray)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL Cray)
   string(REGEX REPLACE "\\.[0-9]+-.*$" "" CXX_MAJOR_VERSION ${CXX_VERSION})
   set(CXX_COMP_LIB_SUBDIR cray${CXX_MAJOR_VERSION})
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL Intel)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL Intel)
   string(REGEX REPLACE "\\.[0-9]+.*$" "" CXX_MAJOR_VERSION ${CXX_VERSION})
   set(CXX_COMP_LIB_SUBDIR icpc${CXX_MAJOR_VERSION})
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL PathScale)
+# Enable C++11.  Assuming Intel compiler supports.  If not, protect by version.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL PathScale)
   string(SUBSTRING ${CXX_VERSION} 0 1 CXX_MAJOR_VERSION)
   set(CXX_COMP_LIB_SUBDIR path${CXX_MAJOR_VERSION})
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL PGI)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL PGI)
   string(REGEX REPLACE "\\.[0-9]+-.*$" "" CXX_MAJOR_VERSION ${CXX_VERSION})
   set(CXX_COMP_LIB_SUBDIR pgi${CXX_MAJOR_VERSION})
 # Don't automatically include standard library headers.
@@ -66,7 +66,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL PGI)
 # For a fully-optimized build, set IPA options for linker too
   set(CMAKE_EXE_LINKER_FLAGS_RELEASE
     "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Mipa=fast,inline")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL XL)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL XL)
 # This should be the basename of the compiler
   string(REGEX REPLACE "\\.[0-9]+.*$" "" CXX_MAJOR_VERSION ${CXX_VERSION})
   string(REGEX REPLACE "^0+" "" CXX_MAJOR_VERSION ${CXX_MAJOR_VERSION})
@@ -79,6 +79,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL XL)
     set(CXX_COMP_LIB_SUBDIR xlC${CXX_MAJOR_VERSION})
   endif ()
   set(SEPARATE_INSTANTIATIONS 1 CACHE BOOL "Whether to separate instantiations -- for correct compilation on xl")
+  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -qarch=qp -qtune=qp")
 endif ()
 SciPrintVar(CXX_COMP_LIB_SUBDIR)
 
@@ -203,6 +204,11 @@ else ()
   endif ()
 endif ()
 set(HAVE_CXX11_THREAD ${HAVE_CXX11_THREAD} CACHE BOOL "Whether have C++11 threads")
+
+SciPrintString("")
+SciPrintString("  CMake detected C implicit libraries:")
+SciPrintVar(CMAKE_CXX_IMPLICIT_LINK_LIBRARIES)
+SciPrintVar(CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES)
 
 # Add in full flags
 set(CMAKE_CXX_FLAGS_FULL "${CMAKE_C_FLAGS_FULL}")

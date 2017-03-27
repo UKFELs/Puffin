@@ -2,9 +2,9 @@
 #
 # SciFinalize: Do the final stuff for any package
 #
-# $Id: SciFinalize.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: SciFinalize.cmake 1047 2016-04-15 19:15:39Z cary $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
 #
 #
@@ -112,7 +112,10 @@ install(PROGRAMS ${CONFIG_SCRIPTS} DESTINATION ${sharedir}
 # Generate autotools files for inclusion
 # Important for transitioning between autotools and scimake.
 # Used for fciowrappers, ntcc_transport, netlib_lite, fmcfm, facets, etc.
-if (EXISTS ${CMAKE_SOURCE_DIR}/configure.ac)
+if (NOT DEFINED GENERATE_AUTOTOOLS)
+  set(GENERATE_AUTOTOOLS TRUE)
+endif ()
+if (GENERATE_AUTOTOOLS AND EXISTS ${CMAKE_SOURCE_DIR}/configure.ac)
   message(STATUS "make dist will generating autotools files for inclusion in distribution.")
   add_custom_target(cleanconf
     COMMAND config/cleanconf.sh

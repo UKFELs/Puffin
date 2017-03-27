@@ -15,15 +15,19 @@
 #
 # FindMoab: find includes and libraries for hdf5
 #
-# $Id: FindSciMoab.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: FindSciMoab.cmake 975 2016-01-09 20:04:17Z cary $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2014-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
 #
 #
 ######################################################################
 
-set(moabfindlibs dagmc iMesh MOAB)
+if (NOT DEFINED MOAB_COMPONENTS)
+  set(moabfindlibs dagmc iMesh MOAB)
+else ()
+  set(moabfindlibs ${MOAB_COMPONENTS})
+endif ()
 
 set(USE_PYC_LIBS TRUE)
 if (NOT DEFINED USE_SHARED_LIBS)
@@ -33,7 +37,7 @@ SciGetInstSubdirs(moab instdirs)
 
 SciFindPackage(PACKAGE "Moab"
   INSTALL_DIRS ${instdirs}
-  HEADERS "MBCore.hpp"
+  HEADERS "moab/Core.hpp"
   LIBRARIES "${moabfindlibs}"
   LIBRARY_SUBDIRS lib/${CXX_COMP_LIB_SUBDIR} lib
 )

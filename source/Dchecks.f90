@@ -1,8 +1,6 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
 
 !> @author
 !> Lawrence Campbell,
@@ -30,7 +28,7 @@ contains
 subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
        sLengthofElm,iNodes,sWigglerLength,sStepSize,&
        nSteps,srho,saw,sgammar,mag,sSigE,f_x, f_y, &
-       iRedNodesX, iRedNodesY,qSwitches,qSimple,sSigF, &
+       qSwitches,qSimple,sSigF, &
        freqf, SmeanZ2, qFlatTopS, nseeds, qOK)
 
   implicit none
@@ -60,7 +58,6 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
   REAL(KIND=WP), INTENT(INOUT) :: sSigE(:,:), sSigF(:,:), &
                                   freqf(:), SmeanZ2(:)
   REAL(KIND=WP), INTENT(INOUT) :: f_x, f_y
-  INTEGER(KIND=IP),INTENT(INOUT) :: iRedNodesX,iRedNodesY
   LOGICAL, INTENT(INOUT) :: qSwitches(:)
   logical, intent(in) :: qSimple, qFlatTopS(:)
   LOGICAL, INTENT(OUT)  :: qOK

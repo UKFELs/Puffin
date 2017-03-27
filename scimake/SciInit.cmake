@@ -2,16 +2,16 @@
 #
 # SciInit: Do the startup stuff for any package
 #
-# $Id: SciInit.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: SciInit.cmake 1102 2016-11-02 21:55:51Z alexanda $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
 #
 #
 ######################################################################
 
 string(TOUPPER ${PROJECT_NAME} PROJECT_NAMEUC)
-set(HAVE_CMAKE TRUE)
+set(HAVE_CMAKE 1 CACHE STRING "Whether built with CMake")
 set(${PROJECT_NAMEUC}_HAVE_CMAKE TRUE)
 
 #####################################################################
@@ -22,7 +22,6 @@ set(${PROJECT_NAMEUC}_HAVE_CMAKE TRUE)
 
 if (NOT DEFINED SCIMAKE_DIR)
   message(STATUS "[SciInit]: CMAKE_CURRENT_LIST_DIR = ${CMAKE_CURRENT_LIST_DIR}.")
-  # set(SCIMAKE_DIR ${PROJECT_SOURCE_DIR}/scimake)
   set(SCIMAKE_DIR ${CMAKE_CURRENT_LIST_DIR})
 endif ()
 include(${SCIMAKE_DIR}/SciFuncsMacros.cmake)
@@ -49,7 +48,7 @@ SciPrintString(
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif ()
-message(STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}.")
+message(STATUS "[SciInit]: CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}.")
 string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_UC)
 
 #####################################################################
@@ -74,16 +73,16 @@ endif ()
 #
 #####################################################################
 
-message(STATUS "[SciInit.cmake] CMAKE_SYSTEM_NAME is ${CMAKE_SYSTEM_NAME}")
+message(STATUS "[SciInit]: CMAKE_SYSTEM_NAME is ${CMAKE_SYSTEM_NAME}")
 if ("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
   set(MACX TRUE CACHE BOOL "True if compiled on Mac OS X")
-  message(STATUS "[SciInit.cmake] Compiling on MAC, CMAKE_SYSTEM = ${CMAKE_SYSTEM}.")
+  message(STATUS "[SciInit]: Compiling on MAC, CMAKE_SYSTEM = ${CMAKE_SYSTEM}.")
 elseif ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
   set(LINUX TRUE CACHE BOOL "True if compiled on Linux")
-  message(STATUS "[SciInit.cmake] Compiling on LINUX")
+  message(STATUS "[SciInit]: Compiling on LINUX")
 elseif (WIN32)
   set(WINDOWS TRUE CACHE BOOL "True if compiled on Windows")
-  message(STATUS "[SciInit.cmake] Compiling on WINDOWS")
+  message(STATUS "[SciInit]: Compiling on WINDOWS")
 else ()
   message(FATAL_ERROR "[SciInit.cmake] Unrecognized OS!")
 endif ()
@@ -105,7 +104,7 @@ set(CMAKE_MODULE_PATH
 )
 
 if (DEBUG_CMAKE)
-  message(STATUS "CMAKE_MODULE_PATH = ${CMAKE_MODULE_PATH}")
+  message(STATUS "[SciInit]: CMAKE_MODULE_PATH = ${CMAKE_MODULE_PATH}")
   set(SCI_DEBUG_VAR DEBUG)
 endif ()
 
@@ -224,12 +223,12 @@ if (NOT NOFORTRAN)
   include(${CMAKE_ROOT}/Modules/CMakeDetermineFortranCompiler.cmake)
   include(${SCIMAKE_DIR}/SciFortranChecks.cmake)
 else ()
-  message(STATUS "No Fortran, so no implicit fortran link libraries known.")
+  message(STATUS "[SciInit]: No Fortran, so no implicit fortran link libraries known.")
 endif ()
 
 ######################################################################
 #
-# OpenMP, SSE, AVX,OpenCL
+# OpenMP, SSE, AVX, OpenCL
 #
 ######################################################################
 
@@ -238,6 +237,7 @@ option(ENABLE_OPENCL    "Whether to enable OpenCL" OFF)
 if (ENABLE_OPENCL)
 include(${SCIMAKE_DIR}/Modules/FindSciOpenCL.cmake)
 endif ()
+include(${SCIMAKE_DIR}/SciMultiArchKernels.cmake)
 
 ######################################################################
 #
@@ -274,8 +274,8 @@ if (USING_MINGW)
   message("--------- Setting MinGW library prefix and suffix to windows style  ---------")
   set(CMAKE_STATIC_LIBRARY_PREFIX "")
   set(CMAKE_STATIC_LIBRARY_SUFFIX .lib)
-  message(STATUS "CMAKE_STATIC_LIBRARY_PREFIX = ${CMAKE_STATIC_LIBRARY_PREFIX}.")
-  message(STATUS "CMAKE_STATIC_LIBRARY_SUFFIX = ${CMAKE_STATIC_LIBRARY_SUFFIX}.")
+  message(STATUS "[SciInit]: CMAKE_STATIC_LIBRARY_PREFIX = ${CMAKE_STATIC_LIBRARY_PREFIX}.")
+  message(STATUS "[SciInit]: CMAKE_STATIC_LIBRARY_SUFFIX = ${CMAKE_STATIC_LIBRARY_SUFFIX}.")
 endif ()
 
 ######################################################################
@@ -287,11 +287,11 @@ endif ()
 option(ENABLE_PARALLEL "Enable parallel build" OFF)
 message("")
 if (ENABLE_PARALLEL)
-  message(STATUS "ENABLE_PARALLEL requested.  Will search for MPI.")
+  message(STATUS "[SciInit]: ENABLE_PARALLEL requested.  Will search for MPI.")
 elseif (INSTALL_PARALLEL)
-  message(STATUS "INSTALL_PARALLEL requested.  Will search for MPI.")
+  message(STATUS "[SciInit]: INSTALL_PARALLEL requested.  Will search for MPI.")
 else ()
-  message(STATUS "Not searching for MPI.")
+  message(STATUS "[SciInit]: Not searching for MPI because ENABLE_PARALLEL or INSTALL_PARALLEL not set.")
 endif ()
 if (ENABLE_PARALLEL OR INSTALL_PARALLEL)
   find_package(SciMpi REQUIRED)
@@ -305,15 +305,15 @@ endif ()
 
 message("")
 if (NOT RESULTS_DIR)
-  message(STATUS "RESULTS_DIR not specified.")
+  message(STATUS "[SciInit]: RESULTS_DIR not specified.")
 endif ()
 if (RESULTS_DIR_BASE AND NOT RESULTS_DIR)
-  message(STATUS "Looking for results starting with ${RESULTS_DIR_BASE}.")
+  message(STATUS "[SciInit]: Looking for results starting with ${RESULTS_DIR_BASE}.")
 # Get potential files
   file(GLOB resultsdirs RELATIVE ${CMAKE_SOURCE_DIR}
     "${RESULTS_DIR_BASE}-*" "${RESULTS_DIR_BASE}"
   )
-  message(STATUS "resultsdirs = ${resultsdirs}.")
+  message(STATUS "[SciInit]: resultsdirs = ${resultsdirs}.")
 # Looks for first that is a directory
   foreach (resdir ${resultsdirs})
    if (IS_DIRECTORY ${CMAKE_SOURCE_DIR}/${resdir})
@@ -322,11 +322,11 @@ if (RESULTS_DIR_BASE AND NOT RESULTS_DIR)
    endif ()
   endforeach ()
   if (NOT RESULTS_DIR)
-    message(STATUS "RESULTS_DIR not found.")
+    message(STATUS "[SciInit]: RESULTS_DIR not found.")
   endif ()
 endif ()
 if (RESULTS_DIR)
-  message(STATUS "RESULTS_DIR = ${RESULTS_DIR}.")
+  message(STATUS "[SciInit]: RESULTS_DIR = ${RESULTS_DIR}.")
 endif ()
 
 ######################################################################

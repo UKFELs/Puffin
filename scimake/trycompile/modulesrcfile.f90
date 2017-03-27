@@ -3,12 +3,13 @@
 !
 ! @brief   Source code for detecting module file name
 !
-! @version $Id: modulesrcfile.f90 792 2015-04-17 14:07:44Z jrobcary $
+! @version $Id: modulesrcfile.f90 1079 2016-09-09 00:05:24Z cary $
 !
-! Copyright &copy; 2012-2015, Tech-X Corporation, Boulder, CO.
+! Copyright &copy; 2012-2016, Tech-X Corporation, Boulder, CO.
 ! See LICENSE file (EclipseLicense.txt) for conditions of use.
 !
 
 module moduleNAME
   integer :: j
 end module moduleNAME
+

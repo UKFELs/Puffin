@@ -16,14 +16,13 @@
 #
 # FindSciNubeam: find includes and libraries for nubeam
 #
-# $Id: FindSciNubeam.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: FindSciNubeam.cmake 1081 2016-09-10 15:44:42Z cary $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
 #
 #
 ######################################################################
-
 
 if (ENABLE_PARALLEL)
   set(instdir nubeam-par)

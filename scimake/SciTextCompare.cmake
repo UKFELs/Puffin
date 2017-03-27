@@ -3,11 +3,10 @@
 # SciTextCompare: Run an executable and check for differences between
 #                 current and accepted results.
 #
-# $Id: SciTextCompare.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: SciTextCompare.cmake 1087 2016-09-25 13:44:28Z cary $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
-#
 #
 ######################################################################
 
@@ -22,36 +21,65 @@ string(REPLACE " " ";" ARGS_LIST "${ARGS_LIST}")
 
 # make sure the file differ is set
 if (TEST_DIFFER)
-  separate_arguments(TEST_DIFFER)
+  # separate_arguments(TEST_DIFFER)
 else ()
   set(TEST_DIFFER diff --strip-trailing-cr)
 endif ()
+if (TEST_SORTER)
+  message(STATUS "Sorting is on.")
+  set(SORTER_ARGS SORTER ${TEST_SORTER})
+endif ()
+message(STATUS "[SciTextCompare] DIFFER IS = ${TEST_DIFFER}.")
+message(STATUS "[SciTextCompare] SORTER IS = ${TEST_SORTER}.")
 if (TEST_MPIEXEC)
   separate_arguments(TEST_MPIEXEC)
 endif (TEST_MPIEXEC)
+set(DIR_ARGS)
+if (TEST_TEST_DIR)
+  set(DIR_ARGS ${DIR_ARGS} TEST_DIR ${TEST_TEST_DIR})
+endif ()
+if (TEST_DIFF_DIR)
+  set(DIR_ARGS ${DIR_ARGS} DIFF_DIR ${TEST_DIFF_DIR})
+endif ()
 
 # if TEST_STDOUT_FILE is non-empty, then we use it as the output file
-# into for the execute_process(), and we add it to the ${TEST_TEST_FILES}
+# for the execute_process(), and we add it to the ${TEST_TEST_FILES}
 # to be compared. This allows us to have a test which generates one or
 # more files which are to be compared, while also comparing the stdout
 # of the test.
 
+string(REGEX REPLACE "([^\\]|^);" "\\1 " tmpStr "${ARGS_LIST}")
+string(REGEX REPLACE "[\\](.)" "\\1" tmpStr "${tmpStr}")
+set(argStr "${tmpStr}")
+message(STATUS "[SciTextCompare] EXECUTING ... ${TEST_MPIEXEC} ${TEST_PROG} ${argStr}")
+message(STATUS "[SciTextCompare] OUTPUT_FILE = ${TEST_STDOUT_FILE}")
+set(errarg)
+if (TEST_STDERR_FILE)
+  set(errarg ERROR_FILE ${TEST_STDERR_FILE})
+  message(STATUS "[SciTextCompare] ERROR_FILE = ${TEST_STDERR_FILE}")
+endif ()
 if (TEST_STDOUT_FILE)
   execute_process(COMMAND ${TEST_MPIEXEC} ${TEST_PROG} ${ARGS_LIST}
     RESULT_VARIABLE EXEC_ERROR
-    OUTPUT_FILE ${TEST_STDOUT_FILE})
+    OUTPUT_FILE ${TEST_STDOUT_FILE} ${errarg}
+  )
+# Assume stdout is not out of order by threading
   SciDiffFiles("${TEST_STDOUT_FILE}" "${TEST_STDOUT_FILE}" ARE_FILES_EQUAL
-               DIFF_DIR ${TEST_DIFF_DIR})
+      DIFFER ${TEST_DIFFER}
+      ${DIR_ARGS}
+      ${SORTER_ARGS}
+  )
   if (ARE_FILES_EQUAL)
-    message(FATAL_ERROR "Comparison failure: ${TEST_STDOUT_FILE} differ.")
-  else ()
     message(STATUS "Comparison of ${TEST_STDOUT_FILE} succeeded.")
+  else ()
+    message(FATAL_ERROR "Comparison failure: ${TEST_STDOUT_FILE} differ.")
   endif ()
 else ()
   execute_process(COMMAND ${TEST_MPIEXEC} ${TEST_PROG} ${ARGS_LIST}
-    RESULT_VARIABLE EXEC_ERROR)
+    RESULT_VARIABLE EXEC_ERROR
+    # ERROR_VARIABLE errvar
+  )
 endif ()
-
 
 if (EXEC_ERROR)
   message(STATUS "EXEC_ERROR      = ${EXEC_ERROR}")
@@ -84,15 +112,16 @@ if (TEST_TEST_FILES)
   foreach (ifile RANGE ${loopLen})
     list(GET TEST_FILES_LIST ${ifile} testFile)
     list(GET DIFF_FILES_LIST ${ifile} diffFile)
+    message(STATUS "[SciTextCompare] Comparing ${testFile} and ${diffFile} using ${TEST_DIFFER} with ${SORTER_ARGS}.")
     SciDiffFiles("${testFile}" "${diffFile}" ARE_FILES_EQUAL
-                 COMMAND  ${TEST_DIFFER}
-                 TEST_DIR ${TEST_TEST_DIR}
-                 DIFF_DIR ${TEST_DIFF_DIR}
+        DIFFER ${TEST_DIFFER}
+        ${DIR_ARGS}
+        ${SORTER_ARGS}
     )
     if (ARE_FILES_EQUAL)
-      set(diffres "${testFile}")
+      message(STATUS "Comparison of ${testFile} succeeded.")
     else ()
-       message(STATUS "Comparison of ${testFile} succeeded.")
+      set(diffres "${testFile}")
     endif ()
   endforeach ()
   if (diffres)
@@ -100,3 +129,4 @@ if (TEST_TEST_FILES)
   endif ()
   message(STATUS "Comparison succeeded.")
 endif ()
+

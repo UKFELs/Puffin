@@ -14,14 +14,13 @@
 #
 # FindMuparser: find includes and libraries for muparser
 #
-# $Id: FindSciPatoh.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: FindSciPatoh.cmake 1081 2016-09-10 15:44:42Z cary $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
 #
 #
 ######################################################################
-
 
 SciFindPackage(PACKAGE "Patoh"
               INSTALL_DIR "patoh"
@@ -30,11 +29,9 @@ SciFindPackage(PACKAGE "Patoh"
               LIBRARIES "patoh"
               )
 
-
 if (PATOH_FOUND)
   # message(STATUS "Found Patoh")
   set(HAVE_PATOH 1 CACHE BOOL "Whether have the Patoh library")
-
 
 else ()
    message(STATUS "Did not find Patoh.  Use -DPATOH_DIR to specify the installation directory.")

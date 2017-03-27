@@ -2,9 +2,9 @@
 #
 # SciCppCheck: Run cppcheck on a source directory.
 #
-# $Id: SciCppCheck.cmake 795 2015-04-18 16:02:13Z jrobcary $
+# $Id: SciCppCheck.cmake 1016 2016-03-15 17:42:51Z swsides $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
 #
 ######################################################################
@@ -17,7 +17,7 @@ endif ()
 set(CppCheck_suppargs)
 if (EXISTS ${CPPCHECK_SOURCE_DIR}/cppchecksupp.txt)
   set(CppCheck_suppargs
-    --suppressions ${CPPCHECK_SOURCE_DIR}/cppchecksupp.txt
+    --suppressions-list=${CPPCHECK_SOURCE_DIR}/cppchecksupp.txt
   )
 endif ()
 # Run with --xml to get error ids
@@ -36,7 +36,6 @@ execute_process(COMMAND ${cmd}
 # Make sure cppcheck succeeded
 if (EXEC_ERROR)
   message(STATUS "EXEC_ERROR      = ${EXEC_ERROR}")
-  message(STATUS "RESULT_VARIABLE = ${RESULT_VARIABLE}")
   message(FATAL_ERROR "Execution failure.")
 endif ()
 message(STATUS "Execution succeeded.")

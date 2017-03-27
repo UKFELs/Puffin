@@ -36,11 +36,10 @@
 #
 # FindSciTrilinos: find includes and libraries for Trilinos
 #
-# $Id: FindSciTrilinos.cmake 792 2015-04-17 14:07:44Z jrobcary $
+# $Id: FindSciTrilinos.cmake 1079 2016-09-09 00:05:24Z cary $
 #
-# Copyright 2010-2015, Tech-X Corporation, Boulder, CO.
+# Copyright 2012-2016, Tech-X Corporation, Boulder, CO.
 # See LICENSE file (EclipseLicense.txt) for conditions of use.
-#
 #
 ######################################################################
 
@@ -75,6 +74,7 @@ set(Trilinos_LIBRARIES)
 foreach (trilib ${Trilinos_LIBRARY_NAMES})
   find_library(Trilinos_${trilib}_LIBRARY ${trilib}
     PATHS ${Trilinos_LIBRARY_DIRS}
+    NO_DEFAULT_PATH
   )
   set(Trilinos_LIBRARIES ${Trilinos_LIBRARIES} ${Trilinos_${trilib}_LIBRARY})
 endforeach ()
@@ -106,12 +106,18 @@ if (TRILINOS_FOUND)
   set(Trilinos_MUMPS_LIBRARIES)
   set(Trilinos_SYSTEM_LIBRARIES)
   set(Trilinos_WRAPPER_LIBRARIES)
+  set(Trilinos_USE_VENDOR_LINALG)
   foreach (lib ${Trilinos_TPL_LIBRARIES})
     get_filename_component(libname ${lib} NAME_WE)
     if (${libname} MATCHES "blas$" OR ${libname} MATCHES "lapack$" OR
-        ${libname} MATCHES "acml$" OR ${libname} MATCHES "mkl$" OR
+        ${libname} MATCHES "acml$" OR ${libname} MATCHES "mkl" OR
         ${libname} MATCHES "f2c$" OR ${libname} MATCHES "atlas$")
       set(Trilinos_LINALG_LIBRARIES ${Trilinos_LINALG_LIBRARIES} ${lib})
+      list(REMOVE_ITEM Trilinos_TPL_LIBRARIES ${lib})
+      if (${libname} MATCHES "mkl")
+        set(Trilinos_USE_VENDOR_LINALG "mkl")
+      endif()
+      #set(Trilinos_USE_VENDOR_LINALG ${Trilinos_USE_VENDOR_LINALG} PARENT_SCOPE)
 # Cray wrappers include these, but needed for serial build.
     elseif (${libname} MATCHES "sci_pgi" OR ${libname} MATCHES "sci_gnu" OR
         ${libname} MATCHES "sci_intel")
@@ -156,7 +162,7 @@ if (TRILINOS_FOUND)
     endif ()
   endif ()
 
-  # Find the libdirs of all groups
+# Find the libdirs of all groups
   foreach (grp TPL LINALG SLU HYPRE MUMPS MPI SYSTEM)
     set(libs ${Trilinos_${grp}_LIBRARIES})
     unset(Trilinos_${grp}_LIBRARY_DIRS)
@@ -211,7 +217,7 @@ if (TRILINOS_FOUND)
     message(WARNING "Trilinos_LINALG_LIBRARY_NAMES does not contain blas.")
   endif ()
 
-  # Final calculations
+# Get static libs and print
   foreach (grp TPL LINALG MPI SLU HYPRE MUMPS SYSTEM WRAPPER)
     SciGetStaticLibs("${Trilinos_${grp}_LIBRARIES}" Trilinos_${grp}_STLIBS)
     SciPrintVar(Trilinos_${grp}_LIBRARY_DIRS)
@@ -225,3 +231,4 @@ else ()
   message(STATUS "Did not find Trilinos. Use -DTrilinos_ROOT_DIR to specify the installation directory.")
 
 endif ()
+
