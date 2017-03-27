@@ -11,7 +11,8 @@ LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
 
 The code has undergone many improvements and extended its functionality
 since then. It no longer uses an external linear solver package, and the
-only external package now required is FFTW (version 3.3 onwards).
+only external packages now required are FFTW (version 3.3 onwards), and 
+parallel HDF5 libraries.
 
 ## Features
 
@@ -50,6 +51,7 @@ of the backwards wave from the e-beam.
   - Added python script (powPrep.py) to collect the power data together
   - Better point transforms for quads, now including energy dependence
   - Fixed bug of extra half-period diffraction per undulator module
+  - HDF5 output is now the default data output format
 
 1.6.0:
   - Revamped the form of the lattice file, both to include more components, and to

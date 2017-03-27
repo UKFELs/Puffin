@@ -1,6 +1,6 @@
 ###
-# (c) Strathclyde University
-#
+# Copyright (c) 2012-2017, University of Strathclyde
+# License: BSD-3-Clause
 # 25.6.2015 Jonathan Smith - CMake lists for PUFFIN Project
 ###
 cmake_minimum_required (VERSION 2.8.10)
@@ -101,10 +101,13 @@ set(HAVE_CMAKE 1 CACHE STRING "Whether built with CMake")
 #
 ######################################################################
 configure_file(config-cmake.h.in config.h)
-configure_file(source/hdf5_puff.f90.in source/hdf5_puff.f90)
+configure_file(source/puffProvenance.f90.in source/puffProvenance.f90)
 configure_file(doc/fortran.dxg.in doc/fortran.dxg)
 add_subdirectory(source)
-install (DIRECTORY utilities/ DESTINATION bin)
+install (DIRECTORY utilities/post DESTINATION bin)
+install (DIRECTORY utilities/pyPlotting DESTINATION bin)
+install (DIRECTORY utilities/setup DESTINATION bin)
+install (DIRECTORY utilities/visit-scripts DESTINATION bin)
 install (DIRECTORY inputs/example/ DESTINATION examples)
 install (DIRECTORY inputs/gen/ DESTINATION python)
 install (DIRECTORY scripts/ DESTINATION examples/job-submission-scripts)

@@ -1,8 +1,6 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
 
 module undulator
 
@@ -154,12 +152,12 @@ if (qresume_G) then
 
       if ((drstart + isteps4diff) <= nSteps) then
 
-        dzdS = real(isteps4diff,kind=wp) * sStepSize / 2
+        dzdS = real(isteps4diff,kind=wp) * sStepSize / 2.0_wp
 
       else if ((drstart + isteps4diff) > nSteps) then
 
         stepsLeft = nSteps - drstart
-        dzdS = real(stepsLeft,kind=wp)*sStepSize / 2
+        dzdS = real(stepsLeft,kind=wp)*sStepSize / 2.0_wp
 
       end if
 
@@ -184,7 +182,7 @@ else  ! if not resuming, just do first half diffraction step
 
   if (qDiffraction_G) then
 
-    dzdS = stepsLeft*sStepSize / 2
+    dzdS = real(isteps4diff, kind=wp) * sStepSize / 2.0_wp
 
     call diffractIM(dzdS, qDiffrctd, qOKL)
 
@@ -353,8 +351,6 @@ end if
       if (.not. qDWrDone) then
 
         ! if not already written in diffraction step
-
-        print*, 'I AM WRITING!!!'
 
         call inner2Outer(ac_rfield_in, ac_ifield_in)
 

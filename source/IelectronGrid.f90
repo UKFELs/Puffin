@@ -1,9 +1,6 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
-
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
 
 !> @author
 !> Lawrence Campbell,
@@ -264,12 +261,12 @@ CONTAINS
 
     end do
 
-    print*, 'hey there, I got betax = ', betax
-    print*, 'hey there, I got betay = ', betay
-    print*, 'hey there, I got emitx = ', emitx
-    print*, 'hey there, I got emity = ', emity
-    print*, 'hey there, I got sigpx = ', sigE(:,iPX_CG)
-    print*, 'hey there, I got sigpy = ', sigE(:,iPY_CG)
+!    print*, 'hey there, I got betax = ', betax
+!    print*, 'hey there, I got betay = ', betay
+!    print*, 'hey there, I got emitx = ', emitx
+!    print*, 'hey there, I got emity = ', emity
+!    print*, 'hey there, I got sigpx = ', sigE(:,iPX_CG)
+!    print*, 'hey there, I got sigpy = ', sigE(:,iPY_CG)
 
 
 

@@ -1,8 +1,6 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
 
 !> @author
 !> Lawrence Campbell,
@@ -20,6 +18,7 @@ use Globals
 use ParallelSetUp
 use MASPin
 use H5in
+use cwrites
 
 contains
 
@@ -44,10 +43,6 @@ contains
 !> @param[out] iNumNodes 3 element array - Number of field nodes in x, y, and z2
 !> @param[out] sWigglerLength 3 element array - Length of radiation field mesh in
 !> x, y, and z2
-!> @param[out] iRedNodesX The number of inner nodes of the main mesh which the 
-!> beam will be contained within. Forces a resize of the mesh if specified, 
-!> resized so that these inner nodes contain the beam.
-!> @param[out] iRedNodesY Same as iRedNodesX, but in y.
 !> @param[out] nodesperlambda Number of radiation nodes to be used in the mesh 
 !> per reference resonant wavelength in z2.
 !> @param[out] stepsPerPeriod Number of integration steps per undulator period 
@@ -111,7 +106,6 @@ subroutine read_in(zfilename, &
        sLenEPulse, &
        iNumNodes, &
        sWigglerLength, &
-       iRedNodesX,iRedNodesY, &
        nodesperlambda, &
        stepsPerPeriod, &
        nperiods, &
@@ -226,9 +220,6 @@ subroutine read_in(zfilename, &
 
   REAL(KIND=WP),     INTENT(OUT)  :: sWigglerLength(:)
 
-  INTEGER(KIND=IP),  INTENT(OUT)  :: iRedNodesX,&
-                                       iRedNodesY
-
   REAL(KIND=WP),  ALLOCATABLE, INTENT(OUT)  :: sQe(:)
   LOGICAL,           INTENT(OUT)  :: q_noise
 
@@ -275,10 +266,10 @@ subroutine read_in(zfilename, &
 
   integer(kind=ip), intent(out) :: stepsPerPeriod, nodesperlambda, nperiods ! Steps per lambda_w, nodes per lambda_r
   real(kind=wp) :: dz2, zbar
-  integer(kind=ip) :: nwaves
+  integer(kind=ip) :: nwaves, iRedNodesX, iRedNodesY
 
   INTEGER::ios
-  CHARACTER(1024_IP) :: beam_file, seed_file
+  CHARACTER(1024_IP) :: beam_file, seed_file, wr_file
   LOGICAL :: qOKL, qMatched !   TEMP VAR FOR NOW, SHOULD MAKE FOR EACH BEAM
 
   logical :: qWriteZ, qWriteA, &
@@ -288,7 +279,7 @@ subroutine read_in(zfilename, &
   logical :: qOneD, qFieldEvolve, qElectronsEvolve, &
              qElectronFieldCoupling, qFocussing, &
              qDiffraction, qDump, qUndEnds, qhdf5, qsdds, &
-             qscaled, qInitWrLat
+             qscaled, qInitWrLat, qDumpEnd
 
   integer(kind=ip) :: iNumNodesX, iNumNodesY, nodesPerLambdar
   real(kind=wp) :: sFModelLengthX, sFModelLengthY, sFModelLengthZ2
@@ -317,7 +308,8 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  sZ0, zDataFileName, iWriteNthSteps, &
                  iWriteIntNthSteps, iDumpNthSteps, sPEOut, &
                  qFMesh_G, sKBetaXSF, sKBetaYSF, sRedistLen, &
-                 iRedistStp, qscaled, nspinDX, nspinDY, qInitWrLat
+                 iRedistStp, qscaled, nspinDX, nspinDY, qInitWrLat, qDumpEnd, &
+                 wr_file
 
 
 ! Begin subroutine:
@@ -350,11 +342,12 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qWriteZ2 = .true.
   qWriteX = .true.
   qWriteY = .true.
-  qsdds = .true.
-  qhdf5 = .false.
+  qsdds = .false.
+  qhdf5 = .true.
   qFMesh_G = .true.
   qscaled = .true.
   qInitWrLat = .false.
+  qDumpEnd = .true.
 !  qplain = .false.
 
   beam_file = 'beam_file.in'
@@ -373,6 +366,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   sDiffFrac              = 1.0
   sBeta                  = 1.0
   seed_file              = ''
+  wr_file = ''
   srho                   = 0.01
   sux                    = 1.0
   suy                    = 1.0
@@ -422,6 +416,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qscaled_G = qscaled
   qInitWrLat_G = qInitWrLat
 
+  qDumpEnd_G = qDumpEnd
 
 
   tArrayZ%qWrite = qWriteZ
@@ -460,6 +455,12 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
 
 
 
+  if (wr_file /= '') then
+    qWrArray_G = .true.
+    call getWrArray(wr_file)
+  else
+    qWrArray_G = .false.
+  end if
 
 
 
