@@ -47,11 +47,11 @@ First, check out bilder from the repository.
 
 Then go into the created bilder-visit directory, and to build the desired libararies, do
 
-`env CMAKE_BLDRVERSION=3.4.1 ./mkvisitall.sh -k ../contrib -i ../install -b ../build fftw3,cmake,autotools,hdf5,numpy,tables`
+`env CMAKE_BLDRVERSION=3.4.1 env HDF5_BLDRVERSION=1.8.13 ./mkvisitall.sh -k ../contrib-2 -i ../software-2 -b ../builddir-2 fftw3,cmake,autotools,hdf5,numpy,tables`
 
 Note we are specifying a specific version of CMake here. The default version of
 CMake installed using Bilder has a few known issues with SciMake, so until these
-are fixed, we use the older version here.
+are fixed, we use the older version here. We are also grabbing a specific HDF5 build, since unfortunately Bilder does not build the later versions correctly. This can be fixed manually (see issues section below), but for now we recommend just using the earlier version with Bilder if you can do that.
 
 The requested libraries will be in ../contrib, along with a bash script
 to add them to your path. So do 
@@ -101,4 +101,19 @@ the `fftw3-par` and `hdf5-par` libs built, and not the serial versions.
     `export FQHOSTNAME=$HOSTNAME`
 
     to make Bilder recognise the machine hostname.
+
+    Yet another issue is with the OpenMPI/Fortran compilers compatibility with Bilder.
+    The HDF5 libs built by Bilder do not work with the particular configuration on 
+    Ubuntu 16.04. So we recommend using the HDF5 libs supplied in the Ubuntu
+    repositories. They are called `libhdf5-openmpi-dev` - e.g. do 
+    `sudo apt-get install libhdf5-openmpi-dev` to install them. For some reason
+    the headers aren't automatically added to your path, so you need to do 
+
+    `export PATH=/usr/include/hdf5/openmpi:$PATH`
+
+    Then the CMake command to configure the Puffin Makefile becomes:
+
+    `cmake -DCMAKE_INSTALL_PREFIX:PATH=/path/to/puffin-install -DCMAKE_BUILD_TYPE:STRING=Release -DCMAKE_COLOR_MAKEFILE:BOOL=TRUE -DCMAKE_VERBOSE_MAKEFILE:BOOL=TRUE -DENABLE_PARALLEL:BOOL=ON -DDEBUG_CMAKE:BOOL=TRUE -DFftw3_ROOT_DIR='/path/to/fftw3-par' -DHdf5_ROOT_DIR='/usr' -DHdf5_MODULE_DIRS='/usr/include/hdf5/openmpi' -DHdf5_LIBRARY_DIRS='/usr/lib/x86_64-linux-gnu/hdf5/openmpi;/usr/lib/x86_64-linux-gnu' -DHdf5_INCLUDE_DIRS='/usr/include/hdf5/openmpi' -DHdf5_LIBRARY_NAMES='hdf5_openmpi_fortran;hdf5_openmpi' -DHdf5_LIBRARIES='/usr/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.so;/usr/lib/x86_64-linux-gnu/libhdf5_openmpi.so' -DHdf5_STLIBS='/usr/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.a;/usr/lib/x86_64-linux-gnu/libhdf5_openmpi.a' /path/to/Puffin`
+
+
 
