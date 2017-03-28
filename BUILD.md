@@ -47,7 +47,7 @@ First, check out bilder from the repository.
 
 Then go into the created bilder-visit directory, and to build the desired libararies, do
 
-`env CMAKE_BLDRVERSION=3.4.1 env HDF5_BLDRVERSION=1.8.13 ./mkvisitall.sh -k ../contrib-2 -i ../software-2 -b ../builddir-2 fftw3,cmake,autotools,hdf5,numpy,tables`
+`env CMAKE_BLDRVERSION=3.4.1 env HDF5_BLDRVERSION=1.8.13 ./mkvisitall.sh -k ../contrib -i ../software -b ../builddir fftw3,cmake,autotools,hdf5,numpy,tables`
 
 Note we are specifying a specific version of CMake here. The default version of
 CMake installed using Bilder has a few known issues with SciMake, so until these
