@@ -198,6 +198,12 @@ end subroutine multiplyexp
 !> @param[inout] sAr Real part of \f$ A_\bot \f$
 !> @param[inout] sAi Imaginary part of \f$ A_\bot \f$
 !> @param[out] qOK Error flag.
+!> @param ntrh Number of nodes in transverse mesh = nx * ny
+!> @param ix Counter for mesh nodes in x
+!> @param iy Counter for mesh nodes in y
+!> @param iz Counter for mesh nodes in z2
+!> @param qOKL local error flag
+!> @param error Error integer for MPI calls
 
 SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 
@@ -207,44 +213,18 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 ! in the dimensionless scaled notation.
 ! Diffraction step algorithm described in
 ! LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
-!
-!                       ARGUMENTS
-!
-! h            IN         step size forward in units of
-!                         zbar
-! recvs and
-! displs       IN         Arrays for MPI communication.
-!                         They describe the layout of data
-!                         across processes. See MPI docs.
-! sV           IN         Electron macroparticle array,
-!                         containing coordinates in each
-!                         of the 6 scaled dimensions of this
-!                         process's local macroparticles.
-! sA           INOUT      Input as global field array at
-!                         zbar. Output as global field array
-!                         at zbar + h.
-! qOK          OUT        Error flag; if .false. error has occured
 
-  REAL(KIND=WP), INTENT(IN)      ::   h
-  REAL(KIND=WP), DIMENSION(:), INTENT(INOUT)  :: sAr, sAi
-  LOGICAL, INTENT(OUT)  ::  qOK
+  real(kind=wp), intent(in)      ::   h
+  real(kind=wp), dimension(:), intent(inout)  :: sAr, sAi
+  logical, intent(out)  ::  qOK
 
-!                       LOCAL ARGS
-!
-! work          'work' array used to speed up parallel
-!               transforms in FFTW
-! sA_local      The local Fourier transformed field array
-! qOKL          Local error flag
-
-!  COMPLEX(KIND=WP), DIMENSION(:), ALLOCATABLE :: &
-!       work,sA_local
   integer(kind=ip) :: ntrh, ix, iy, iz
-  LOGICAL :: qOKL
+  logical :: qOKL
   integer :: error
 
 !                      Begin
 
-  qOK = .FALSE.
+  qOK = .false.
 
 !     Allocate arrays and get distributed FT of field.
 !     Transforming from A(x,y,z2,zbar) to A(kx,ky,kz2,zbar)
@@ -288,35 +268,20 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
     print*,' assigning data took... ', tr_time_e-tr_time_s
   end if
 
-!  CALL setupParallelFourierField(sA_local, work, qOKL)
-
-  CALL Transform(tTransInfo_G%fplan, &
+  call Transform(tTransInfo_G%fplan, &
        Afftw, &
        qOKL)
 
 
-!  call mpi_barrier(tProcInfo_G%comm, error)
-!  print*, size(sA_local), size(sAr), size(sAi), tTransInfo_G%loc_nz2
-
-!  CALL fftwnd_f77_mpi(tTransInfo_G%fplan,1,sA_local,&
-!                      work,USE_WORK,&
-!                      FFTW_NORMAL_ORDER)
-
-
-  call Get_time(tr_time_e)
+  call Get_time(tr_time_e)  ! ...timing info
 
   if (tProcInfo_G%QROOT ) then
     print*,' forward transform took... ', tr_time_e-tr_time_s
   end if
 
-
-!  call mpi_barrier(tProcInfo_G%comm, error)
-!  print*, 'made it here!!!!'
-
-
 !    Multiply field by the exp factor to obtain A(kx,ky,kz2,zbar+h)
 
-  CALL MultiplyExp(h,qOKL)
+  call MultiplyExp(h,qOKL)
 
 
   call Get_time(tr_time_e)
@@ -326,34 +291,18 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
   end if
 
 
-!   Perform the backward fourier transform to obtain A(x,y,z2,zbar+h)
+!   Perform the backward Fourier transform to obtain A(x,y,z2,zbar+h)
 
-  CALL Transform(tTransInfo_G%bplan, &
+  call Transform(tTransInfo_G%bplan, &
        Afftw, &
        qOKL)
 
-
-
-!  CALL fftwnd_f77_mpi(tTransInfo_G%bplan,1,sA_local,&
-!                      work,USE_WORK,&
-!                      FFTW_NORMAL_ORDER)
 
   call Get_time(tr_time_e)
 
   if (tProcInfo_G%QROOT ) then
     print*,' back transform took... ', tr_time_e-tr_time_s
   end if
-
-
-
-!  call mpi_barrier(tProcInfo_G%comm, error)
-!  print*, 'made it here  2!!!!'
-
-
-
-
-
- ! IF (.NOT. qOKL) GOTO 1000
 
 !      Scale the field data to normalize transforms
 
@@ -371,22 +320,8 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
   end if
 
 
-!  DEALLOCATE(work)
-
-!   Collect data back onto global field var sA on every process
-
-!  CALL gather2Acomtoreal(sA_local,sA, &
-!       (NX_G*NY_G*tTransInfo_G%loc_nz2), &
-!       NX_G*NY_G*NZ2_G, &
-!       tTransInfo_G%TOTAL_LOCAL_SIZE, &
-!       recvs,displs)
-
-
-
-! assign data back to real and imag parts for integration
-! through undulator
-
-
+!      assign data back to real and imag parts for integration
+!                        through undulator
 
   do iz = 1, tTransInfo_G%loc_nz2
     do iy = 1, NY_G
@@ -398,28 +333,6 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
       end do
     end do
   end do
-
-
-
-!  sAr(1:tTransInfo_G%loc_nz2 * ntrh) = &
-!          real(Afftw(0:(tTransInfo_G%loc_nz2 * ntrh) - 1), &
-!                            kind=wp)
-
-
-!  sAi(1:tTransInfo_G%loc_nz2 * ntrh) = &
-!          aimag(Afftw(0:(tTransInfo_G%loc_nz2 * ntrh) - 1))
-
-!call mpi_barrier(tProcInfo_G%comm, error)
-!  call mpi_finalize(error)
-!  stop
-
-
-!  DEALLOCATE(sA_local)
-
-
-!        Clear up field emerging outside e-beam
-
-!  CALL clearA(sA, qOKL)
 
 !              Set error flag and exit
 
