@@ -15,7 +15,7 @@
 ! sLenE   - Total length of beam modelled in each dimension - x, y, z2, px, py, gamma...
 ! bcenter - Center of beam in z2
 ! iNumElectrons  -  Number of macroparticles in each dimension used to model the beam 
-! sEmit_n - Scaled transverse beam emittance
+! emitx, emity - Scaled transverse beam emittance
 ! sQe - Beam charge 
 ! gammaf - Ratio of average beam energy to reference beam energy gamma / gamma_r 
 ! chirp  - Energy chirp in z2 i.e. dgamma/dz2
@@ -36,7 +36,8 @@ dtype = 'simple'
 sSigmaE =1.0, 1.0, 1E8, 1.0, 1.0, 1E8
 sLenE = 1E-6, 1E-6, 50.0, 1E-6, 1E-6, 1e-4
 iNumElectrons = 1, 1, 73000, 1, 1, 1
-sEmit_n = 6.75599500154485e-01
+emitx = 6.75599500154485e-01
+emity = 6.75599500154485e-01
 sQe = 100E-12
 bcenter = 0.0
 gammaf = 1.0
