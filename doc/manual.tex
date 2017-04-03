@@ -369,7 +369,7 @@ b_y = - \sqrt{\eta} \frac{\bar{k}_{\beta x}^2}{\kappa}\bar{x}_j
 
 If either {\bf sKBetaXSF} or {\bf sKBetaYSF} are not specified, then no focusing channel will be added for that dimension, even if the {\bf qFocussing} flag is true.
 
-Magnetic quads will be added soon.
+Magnetic quads between modules can be specified in the lattice file. See section \ref{latt-file}.
 
 
 \subsubsection{Auto beam-matching}
@@ -397,7 +397,7 @@ If {\bf qFocussing} is true and the strong betatron wavenumber is given, then th
 
 One can use Twiss parameters to provide a transverse phase-space `tilt' for the electron beam. In the simple beam case, the user can specify the \textit{r.m.s.} $\bar{\sigma}_x, \bar{\sigma}_{px}$ (or the S.I. equivalents $\sigma_x, \sigma_{x}'$) for the electron beam, along with the usual $\alpha_x$ for the slope of the $x-x'$ correlation. Using this method, the supplied \textit{r.m.s.} $\sigma_{x}'$ should be the standard deviation at $x=0$. If the emittance is supplied by using {emitx}, then the input $\bar{\sigma}_{px}$ is ignored, and is instead calculated from $\sigma_x$, the emittance, and $\alpha_x$. Obviously, the intended method is to input the emittances, so that the transverse momenta parameters are over-written.
 
-In general, giving the emittances over-writes the transverse momenta given in the beam file, whether using the
+% In general, giving the emittances over-writes the transverse momenta given in the beam file, whether using the
 
 
 
@@ -484,6 +484,8 @@ One may use the variables {\bf iRedNodesX, iRedNodesY} to fix the mesh around th
 
 
 \subsection{Lattice Input}
+
+\label{latt-file}
 
 A lattice file may be supplied in the main input file with the variable `lattFile'. This is the name of the lattice file, containing details of the undulator module lattice layout. If blank, then a single undulator as specified in the main input file will be used.
 
