@@ -16,7 +16,11 @@ make sure these libraries are built with the same build chain as you're going
 to use for Puffin. If you wish, fftw3 and hdf5 may be obtained and built 
 using Bilder (see bottom of this guide). 
 
-1. Fetch Puffin to /path/to/Puffin
+1. Fetch Puffin to /path/to/Puffin. To clone from Github, do
+
+`git clone git@github.com:UKFELs/Puffin.git /path/to/Puffin`
+
+where `/path/to/Puffin` is where you want the top level of the Puffin source to be downloaded to.
 
 2. Make a new dir for the build:
 
@@ -24,16 +28,18 @@ using Bilder (see bottom of this guide).
 
 3. Run cmake, e.g.
 
-`cmake -DCMAKE_INSTALL_PREFIX:PATH=/path/to/puffin-install -DFftw3_ROOT_DIR='/path/to/fftw3 -DHdf5_ROOT_DIR='/path/to/hdf5' /path/to/Puffin`
+`cmake -DCMAKE_INSTALL_PREFIX:PATH=/path/to/puffin-install -DFftw3_ROOT_DIR='/path/to/fftw3' -DHdf5_ROOT_DIR='/path/to/hdf5' /path/to/Puffin`
 
 4. Do `make && make install`. You should get a puffin binary in /path/to/puffin-install
 
-## Building hdf5 and fftw3 using bilder
+## Building hdf5 and fftw3 (and more) using bilder
 
-Hdf5 and fftw3 parallel libraries may be combersome to build individually. The most 
+Hdf5 and fftw3 parallel libraries may be cumbersome to build individually. The most 
 popular linux distros have them in the official repositories. They can also be obtained 
 and built by using bilder, which provides a stable base for building Puffin. This is
-usually what is used for Puffin development.  
+usually what is used for Puffin development. Bilder also allows one to build other
+packages needed for building and post-processing, like CMake and Python packages,
+and so on. In the below, we build fftw3, hdf5, and numpy and tables for Python.
 
 First, check out bilder from the repository.
 
@@ -41,9 +47,12 @@ First, check out bilder from the repository.
 
 Then go into the created bilder-visit directory, and to build the desired libararies, do
 
-`./mkvisitall.sh -k ../contrib -i ../install -b ../build fftw,cmake,autotools,hdf5,numpy,tables`
+`env CMAKE_BLDRVERSION=3.4.1 env HDF5_BLDRVERSION=1.8.13 ./mkvisitall.sh -k ../contrib -i ../software -b ../builddir fftw3,cmake,autotools,hdf5,numpy,tables`
 
-Here, we are also building numpy and tables for the Python post-processing scripts.
+Note we are specifying a specific version of CMake here. The default version of
+CMake installed using Bilder has a few known issues with SciMake, so until these
+are fixed, we use the older version here. We are also grabbing a specific HDF5 build, since unfortunately Bilder does not build the later versions correctly. This can be fixed manually (see issues section below), but for now we recommend just using the earlier version with Bilder if you can do that.
+
 The requested libraries will be in ../contrib, along with a bash script
 to add them to your path. So do 
 
@@ -78,6 +87,33 @@ the `fftw3-par` and `hdf5-par` libs built, and not the serial versions.
     Replace the version number in the above with that from your own install, 
     which may be more recent.
 
+
+  - Ubuntu 16.04
+
+    Ubuntu now uses a version of CMake which SciMake currently has some problems with, 
+    so an older version must be used. See the section on building with Bilder above - 
+    we recommend doing this if you are using Ubuntu 16.04 onwards for now.
+
+    Another issue with Ubuntu is that Bilder does not currently recognise the 
+    machine hostname on Ubuntu. This may cause problems with the install process.
+    We recommend doing
+
+    `export FQHOSTNAME=$HOSTNAME`
+
+    to make Bilder recognise the machine hostname.
+
+    Yet another issue is with the OpenMPI/Fortran compilers compatibility with Bilder.
+    The HDF5 libs built by Bilder do not work with the particular configuration on 
+    Ubuntu 16.04. So we recommend using the HDF5 libs supplied in the Ubuntu
+    repositories. They are called `libhdf5-openmpi-dev` - e.g. do 
+    `sudo apt-get install libhdf5-openmpi-dev` to install them. For some reason
+    the headers aren't automatically added to your path, so you need to do 
+
+    `export PATH=/usr/include/hdf5/openmpi:$PATH`
+
+    Then the CMake command to configure the Puffin Makefile becomes:
+
+    `cmake -DCMAKE_INSTALL_PREFIX:PATH=/path/to/puffin-install -DCMAKE_BUILD_TYPE:STRING=Release -DCMAKE_COLOR_MAKEFILE:BOOL=TRUE -DCMAKE_VERBOSE_MAKEFILE:BOOL=TRUE -DENABLE_PARALLEL:BOOL=ON -DDEBUG_CMAKE:BOOL=TRUE -DFftw3_ROOT_DIR='/path/to/fftw3-par' -DHdf5_ROOT_DIR='/usr' -DHdf5_MODULE_DIRS='/usr/include/hdf5/openmpi' -DHdf5_LIBRARY_DIRS='/usr/lib/x86_64-linux-gnu/hdf5/openmpi;/usr/lib/x86_64-linux-gnu' -DHdf5_INCLUDE_DIRS='/usr/include/hdf5/openmpi' -DHdf5_LIBRARY_NAMES='hdf5_openmpi_fortran;hdf5_openmpi' -DHdf5_LIBRARIES='/usr/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.so;/usr/lib/x86_64-linux-gnu/libhdf5_openmpi.so' -DHdf5_STLIBS='/usr/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.a;/usr/lib/x86_64-linux-gnu/libhdf5_openmpi.a' /path/to/Puffin`
 
 
 
