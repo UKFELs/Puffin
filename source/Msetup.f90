@@ -1,8 +1,16 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! ###############################################
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
+! ###############################################
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> A module which contains top-level subroutines to allocate and initialize, 
+!> or destroy, the data used in Puffin.
 
 MODULE Setup
 
@@ -21,9 +29,6 @@ MODULE Setup
   use dumpFiles
   use ParaField
   use dummyf
-
-! A module which allocates and initializes - or
-! destroys - the data used in Puffin.
 
   IMPLICIT NONE
 
@@ -142,16 +147,12 @@ MODULE Setup
        alphax, alphay, emitx, emity, &
        fx,                &
        fy,                &
-       Dfact,             &
-       sFocusfactor,      &
        taper,             &
        zUndType,          &
        sSeedSigma,        &
        freqf, SmeanZ2,    &
        ph_sh, &
        qFlatTopS, nseeds, &
-       sPEOut,            &
-       iDumpNthSteps,     &
        qSwitches,         &
        qMatched_A,        &
        qOKL)
@@ -164,7 +165,7 @@ MODULE Setup
 
 
   call calcScaling(srho, saw, sgammar, lambda_w, &
-    sFocusFactor, zUndType, fx, fy)
+                   zUndType, fx, fy)
 
 
   if (.not. qscaled_G) then
@@ -195,7 +196,7 @@ MODULE Setup
 
   CALL CheckParameters(sLenEPulse,iNumElectrons,nbeams,sLengthofElm,iNodes,&
                        sFieldModelLength,sStepSize,nSteps,srho,saw,sgammar, &
-                       sFocusfactor, mag, sEleSig,fx,fy, &
+                       mag, sEleSig,fx,fy, &
                        qSwitches,qSimple, sSeedSigma, freqf, &
                        SmeanZ2, qFlatTopS, nseeds, qOKL)
 
@@ -257,7 +258,7 @@ MODULE Setup
 
   CALL passToGlobals(srho,saw,sgammar,lambda_w,iNodes, &
                      sLengthOfElm, qSimple, iNumElectrons, &
-                     fx,fy,sFocusFactor,taper, &
+                     fx,fy,taper, &
                      sFiltFrac,sDiffFrac,sBeta, &
                      zUndType,qFormattedFiles, qSwitches,qOK)
 
@@ -479,7 +480,6 @@ MODULE Setup
                              sEta_G,&
                              sGammaR_G,&
                              sKBeta_G, &
-                             sFocusfactor_G, &
                              lam_w_G, lam_r_G, &
                              lg_G, lc_G, &
                              npk_bar_G, &

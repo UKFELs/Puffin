@@ -1,3 +1,17 @@
+! ###############################################
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
+! ###############################################
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This module contains top-level subroutines to write data in SDDS or HDF5
+!> format.
+
 module dummyf
 
 !USE FFTW_Constants
@@ -7,7 +21,6 @@ USE lattice
 USE RK4int
 use dumpFiles
 use hdf5_puff
-use pln_puff
 use ParaField
 use cwrites
 
@@ -172,7 +185,7 @@ end subroutine wr_cho
       end if
 
 
-      if ((mod(iCsteps,iWr)==0) .or. (iCsteps == nSteps) .or. (iCsteps == 0) ) then
+      if ((mod(iCsteps,iWr)==0) .or. (iCsteps == 0) ) then
 
         qWriteFull = .true.
 

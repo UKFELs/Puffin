@@ -1,26 +1,25 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
+
+
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This module contains routines and functions
+!> to construct various masks used in the simulation
+!> of the absorbing boundaries used in the FEL
+!> simulation code Puffin.
+!>
+!> A useful reference for the boundaries employed
+!> here is REF.
 
 MODULE masks
 
-! This module contains routines and functions
-! to construct various masks used in the simulation
-! of the absorbing boundaries used in the FEL
-! simulation code Puffin.
-!
-! A useful reference for the boundaries employed
-! here is REF.
-!
-! Dr Lawrence Campbell
-! Center for Free Electron Laser Science (CFEL)
-! c/o DESY, building 99
-! Luruper Chaussee 149
-! 22761 Hamburg
-! Germany
-!
+
 
 USE paratype
 USE typesAndConstants
@@ -30,11 +29,26 @@ IMPLICIT NONE
 
 CONTAINS
 
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Construct the mask for use in the absorption
+!> step. This outputs a 2D mask (in the transverse
+!> plane) in a 1D array.
+!> @param[in] nX Number of nodes in mesh in x
+!> @param[in] nY Number of nodes in mesh in y
+!> @param[in] dx Distance between nodes in mesh in x
+!> @param[in] dy Distance between nodes in mesh in y
+!> @param[in] nbx Number of nodes to be used for mask in x
+!> @param[in] nby Number of nodes to be used for mask in y
+!> @param[out] Transverse 'mask', defining the boundaries to slow the 
+!> diffraction in.
+
 SUBROUTINE getMask(nX,nY,dx,dy,nbx,nby,mask)
 
-! Construct the mask for use in the absorption
-! step. This outputs a 2D mask (in the transverse
-! plane) in a 1D array.
 !
 !                ARGUMENTS
 
@@ -74,16 +88,20 @@ END SUBROUTINE getMask
 
 !**********************************************************
 
-FUNCTION Mask1D(x,dx,nx,nb)
 
-! This function calculates a simple 1D mask
-! to define the absoribing boundary in Puffin.
-!
-!                Author:
-!            Lawrence Campbell
-!       University of Hamburg / DESY
-!                  2013
-!
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This function calculates a simple 1D mask
+!> to define the absorbing boundary in Puffin.
+!> @param[in] x (1D array) Coordinates of nodes
+!> @param[in] dx Distance between nodes in mesh
+!> @param[in] nx Number of nodes in mesh 
+!> @param[in] nb Number of nodes to be used for mask in x
+
+FUNCTION Mask1D(x,dx,nx,nb)
 
   REAL(KIND=WP), INTENT(IN) :: x(:), dx
   INTEGER(KIND=IP), INTENT(IN) :: nb, nx

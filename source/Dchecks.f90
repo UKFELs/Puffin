@@ -1,8 +1,6 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
 
 !> @author
 !> Lawrence Campbell,
@@ -29,7 +27,7 @@ contains
 
 subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
        sLengthofElm,iNodes,sWigglerLength,sStepSize,&
-       nSteps,srho,saw,sgammar,focusfactor,mag,sSigE,f_x, f_y, &
+       nSteps,srho,saw,sgammar,mag,sSigE,f_x, f_y, &
        qSwitches,qSimple,sSigF, &
        freqf, SmeanZ2, qFlatTopS, nseeds, qOK)
 
@@ -55,7 +53,7 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
   REAL(KIND=WP), INTENT(INOUT) :: sWigglerLength(:)
   REAL(KIND=WP), INTENT(INOUT) :: sStepSize
   INTEGER(KIND=IP), INTENT(INOUT) :: nSteps
-  REAL(KIND=WP), INTENT(IN) :: srho,saw,sgammar,focusfactor
+  REAL(KIND=WP), INTENT(IN) :: srho,saw,sgammar
   real(kind=wp), intent(in) :: mag(:)
   REAL(KIND=WP), INTENT(INOUT) :: sSigE(:,:), sSigF(:,:), &
                                   freqf(:), SmeanZ2(:)
@@ -96,7 +94,7 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
     call checkIntSampling(sStepSize,nSteps,sLengthOfElm,qSwitches,qOKL)
     if (.NOT. qOKL) goto 1000
 
-    call checkFreeParams(srho,saw,sgammar,f_x,f_y,focusfactor,qOKL)
+    call checkFreeParams(srho,saw,sgammar,f_x,f_y,qOKL)
     if (.NOT. qOKL) goto 1000
 
     call checkOscMag(sgammar, mag, nbeams)
@@ -615,9 +613,9 @@ END SUBROUTINE getElmLengths
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE checkFreeParams(srho,saw,sgammar,f_x,f_y,focusfactor,qOK)
+SUBROUTINE checkFreeParams(srho,saw,sgammar,f_x,f_y,qOK)
 
-  REAL(KIND=WP), INTENT(IN) :: srho,saw,sgammar,f_x,f_y,focusfactor
+  REAL(KIND=WP), INTENT(IN) :: srho,saw,sgammar,f_x,f_y
   LOGICAL, INTENT(OUT) :: qOK
 
   qOK = .FALSE.
@@ -645,13 +643,6 @@ SUBROUTINE checkFreeParams(srho,saw,sgammar,f_x,f_y,focusfactor,qOK)
 
   IF (.NOT. (f_x==1.0_WP .OR. f_y==1.0_WP)) THEN
     CALL Error_log('Either fx OR fy must be 1.',tErrorLog_G)
-    GOTO 1000
-  END IF
-
-!     Check got valid value for focusing factor
-
-  IF (focusfactor<=0_WP) THEN
-    CALL Error_log('focusfactor must be > 0.',tErrorLog_G)
     GOTO 1000
   END IF
 

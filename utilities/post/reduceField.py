@@ -1,3 +1,7 @@
+# Copyright (c) 2012-2017, University of Strathclyde
+# Authors: Lawrence T. Campbell
+# License: BSD-3-Clause
+
 """
 @reduceField.py  Exemplar script to create a reduced field mesh file
 from the full dump. This example just forms a 1D field from the

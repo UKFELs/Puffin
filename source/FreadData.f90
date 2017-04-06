@@ -1,8 +1,8 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! ###############################################
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
+! ###############################################
 
 !> @author
 !> Lawrence Campbell,
@@ -24,8 +24,12 @@ use cwrites
 
 contains
 
-
-!> read_in Read in the namelist data files for Puffin.
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Read in the namelist data files for Puffin.
 !> @param[in] zfilename Name of the main input file passed to Puffin
 !> at runtime.
 !> @param[out] zDataFileName Base name of the sdds output files.
@@ -91,7 +95,27 @@ contains
 !> @param[out] lambda_w Undulator period
 !> @param[out] sEmit_n Array of length nbeams. Scaled RMS Beam emittance in 
 !> simple beam case.
-
+!> @param[out] sux Relative magnitude of undulator magnetic field in 
+!> x-direction. Either sux OR suy should = 1. For Puffin undulator type
+!> only.
+!> @param[out] suy Relative magnitude of undulator magnetic field in 
+!> y-direction.
+!> @param[out] taper Taper of magnetic undulator field as function of z, only
+!> used in simple wiggler case (no lattice). In units of 
+!> \f$ \frac{d \alpha}{d \bar{z}} \f$.
+!> @param[out] zUndType Undulator type to be use in simple wiggler case.
+!> @param[out] sSigmaF Standard deviation of radiation seed field magnitude in 
+!> each dimension.
+!> @param[out] freqf Frequency of seed field, scaled to the reference resonant 
+!> frequency.
+!> @param[out] SmeanZ2 Mean position of seed in z2.
+!> @param[out] ph_sh Phase shift of seed
+!> @param[out] qFlatTopS If using flat top seed profile
+!> @param[out] nseeds Number of radiation seeds 
+!> @param[out] qSwitches Various simulation control flags
+!> @param[out] qMatched_A If matching transverse area of beam to wiggler. Simple
+!> beam case only.
+!> @param[out] qOK Error flag
 
 subroutine read_in(zfilename, &
        zDataFileName, &
@@ -137,73 +161,18 @@ subroutine read_in(zfilename, &
        alphax, alphay, emitx, emity, &
        sux, &
        suy, &
-       Dfact, &
-       sFocusfactor, &
        taper,    &
        zUndType, &
        sSigmaF, &
        freqf, SmeanZ2, &
        ph_sh, &
        qFlatTopS, nseeds, &
-       sPEOut, &
-       iDumpNthSteps, &
        qSwitches, &
        qMatched_A, &
        qOK)
 
        IMPLICIT NONE
 
-!******************************************************
-! Read input data from the main Puffin input file
-! 
-! zFileName          - FileName containing input data
-! nRowProcessors     - Number of row processors
-! nColProcessors     - Number of column processors
-!
-! zDataFileName      - Data file name
-! qSeparateStepFiles - if to write data to separate step
-!                      files or all steps in one file
-! qFormattedFiles    - if output data files to be
-!                      formatted or binary
-! sStepSize          - Step size for integration
-! nSteps             - Number of steps
-! sZ                 - IN: Starting z position
-!                    - OUT: Final z position
-! iWriteNthSteps     - Steps to write data at (optional)
-!                       (eg every 4th step)
-! tArrayZ            - Write out Z data
-! tArrayVariables    - Write out A,p,Q,Z2 data
-!
-! sLenEPulse(3)      - Length of electron Pulse in
-!                      x,y,z2 direction
-! iNumNodes(3) 	     - Total number of nodes
-! sWigglerLength(3)  - Length of wiggler in x,y,z2
-!                      direction
-! i_RealE            - Number of real electrons
-! q_noise            - Noise in initial electron
-!                      distribution
-!
-! iNumElectrons(3)   - Number of electrons in
-!                      x,y,z2 direction
-! sSigmaGaussian     - Sigma spread of electron
-!                      gaussian distribution
-! sElectronThreshold - Beyond this threshold level,
-!                      electrons are ignored/removed
-!
-! sA0_Re,            - Initial field value (real)
-! sA0_Im,            - Initial field value (imaginary)
-!
-! sEmit_n            - Normalised beam emittance
-! srho               - Pierce parameter
-! saw                - Wiggler parameter
-! sgamma_r           - Mean electron velocity at
-!                      resonance
-! sWiggleWaveLength  - Wiggler wave length
-! sSeedSigma         - Seed field sigma spread for
-!                      gaussian seed field
-! qSwitches          - if allowing different scenarios
-! qOK                - Error flag
-!********************************************************
   CHARACTER(*),INTENT(IN) :: zfilename
 
   CHARACTER(1024_IP),  INTENT(OUT)  :: zDataFileName
@@ -255,11 +224,8 @@ subroutine read_in(zfilename, &
   REAL(KIND=WP),     INTENT(OUT)  :: sgamma_r, lambda_w
   REAL(KIND=WP),     INTENT(OUT)  :: sux
   REAL(KIND=WP),     INTENT(OUT)  :: suy
-  REAL(KIND=WP),     INTENT(OUT)  :: Dfact
-  REAL(KIND=WP),     INTENT(OUT)  :: sFocusfactor, taper
+  REAL(KIND=WP),     INTENT(OUT)  :: taper
   character(32_IP),  intent(out)  :: zUndType
-  REAL(KIND=WP),     INTENT(OUT)  :: sPEOut
-  INTEGER(KIND=IP),  INTENT(OUT)  :: iDumpNthSteps
   LOGICAL,           INTENT(OUT)  :: qSwitches(:)
   LOGICAL, ALLOCATABLE, INTENT(OUT)  :: qMatched_A(:)
   LOGICAL,           INTENT(OUT)  :: qOK
@@ -304,11 +270,11 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  sFModelLengthY, sFModelLengthZ2, &
                  iRedNodesX, iRedNodesY, sFiltFrac, &
                  sDiffFrac, sBeta, seed_file, srho, &
-                 sux, suy, saw, sgamma_r, sFocusfactor, &
-                 lambda_w, Dfact, zundType, taper, &
+                 sux, suy, saw, sgamma_r, &
+                 lambda_w, zundType, taper, &
                  LattFile, stepsPerPeriod, nPeriods, &
                  sZ0, zDataFileName, iWriteNthSteps, &
-                 iWriteIntNthSteps, iDumpNthSteps, sPEOut, &
+                 iWriteIntNthSteps, &
                  qFMesh_G, sKBetaXSF, sKBetaYSF, sRedistLen, &
                  iRedistStp, qscaled, nspinDX, nspinDY, qInitWrLat, qDumpEnd, &
                  wr_file
@@ -374,9 +340,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   suy                    = 1.0
   saw                    = 1.0
   sgamma_r               = 100.0
-  sFocusfactor           = 1.41213562373095
   lambda_w               = 0.04
-  Dfact                  = 0.0
   zundType               = ''
   taper                  = 0.0
   lattFile               = ''
@@ -386,8 +350,6 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   zDataFileName          = 'DataFile.dat'
   iWriteNthSteps         = 30
   iWriteIntNthSteps      = 30
-  iDumpNthSteps          = 3000
-  sPEOut                 = 100.0
   sKBetaXSF = -0.1_wp
   sKBetaYSF = -0.1_wp
 

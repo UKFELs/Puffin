@@ -1,18 +1,23 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! ###############################################
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
+! ###############################################
 
-! This module sets up types for variables
-! Also sets up physical constants
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This module contains physical constants, and identifiers for array indices
+!> for size arrays in Puffin.
 
 MODULE typesAndConstants
 
       USE paratype
       IMPLICIT NONE
 
-!============== Define physical constants ===============================================
+!============== Define physical constants ===========================
 
       REAL(KIND=WP),    PARAMETER :: pi  = 3.14159265358979323846
       REAL(KIND=WP),    PARAMETER :: c   = 2.99792458e8

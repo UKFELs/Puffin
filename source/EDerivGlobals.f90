@@ -1,8 +1,6 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
 
 !> @author
 !> Lawrence Campbell,
@@ -200,10 +198,6 @@ real(kind=wp) :: sKBetaX_G, sKBetaY_G
 
 real(kind=wp) :: sKBetaXSF_G, sKBetaYSF_G
 
-real(kind=wp)       :: Dfact  ! Dispersion strength factor for chicane
-                              ! (=1 for 'normal' dispersion, =0 for 
-                              ! isochronous chicanes)
-
 
 
 
@@ -352,7 +346,7 @@ TYPE(cFileType), save :: tPowF   ! Type array describing the power file
 
 
 
-integer(kind=ip) :: iWriteNthSteps, iDumpNthSteps, iIntWriteNthSteps
+integer(kind=ip) :: iWriteNthSteps, iIntWriteNthSteps
 
 
 character(132_ip) :: cmd_call_G

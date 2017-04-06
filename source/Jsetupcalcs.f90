@@ -1,8 +1,6 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
 
 !> @author
 !> Lawrence Campbell,
@@ -30,65 +28,56 @@ use h5in
 use parafield
 use scale
 
-!****************************************************
-! Module containing miscellaneous routines for setup
-! and initialization of variables in Puffin.
-!
-! Lawrence Campbell
-! lawrence.campbell@strath.ac.uk
-! University of Strathclyde
-! June 2016
-!
-
 IMPLICIT NONE
 
 CONTAINS
 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Subroutine to pass all the temporary variables to global
+!> vars used in the integration loop.
+!> @param[in] rho FEL or Pierce parameter
+!> @param[in] aw Undulator parameter (peak, not rms)
+!> @param[in] gamr Relativistic factor for reference beam energy
+!> @param[in] lam_w Undulator period
+!> @param[in] iNN Number of nodes in field mesh in x, y and z2
+!> @param[in] iNMPs Number of macroparticles use to sample beam in each dimension
+!> @param[in] fx Polarization parameter for the Puffin elliptical wiggler (see docs)
+!> @param[in] fy Polarization parameter for the Puffin elliptical wiggler (see docs)
+!> @param[in] taper Undulator taper d alpha / d zbar
+!> @param[in] sFiltFrac Cutoff for high pass filter in diffraction stage, in units
+!> of the resonant frequency specified by the reference parameters.
+!> @param[in] dStepFrac Diffraction step size in units of undulator period
+!> @param[in] sBeta Absorption constant for boundaries
+!> @param[in] zUndType Undulator type (helical, planar, elliptical, etc)
+!> @param[in] qFormatted Whether writing formatted data or not (only for SDDS files)
+!> @param[in] qSwitch Array of switches for different simulation options
+!> @param[inout] qOK Error flag.
 
 SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
                          sElmLen, qSimple, iNMPs, fx, fy, &
-                         sFocusFactor, taper, sFiltFrac, &
+                         taper, sFiltFrac, &
                          dStepFrac, sBeta, zUndType, &
                          qFormatted, qSwitch, qOK)
 
     IMPLICIT NONE
 
-!***********************************************************
-! Subroutine to pass all the temporary variables to global
-! vars used in the integration loop.
-!
-! Some setup is also performed.
-!
-!
-!                    ARGUMENTS
-!
-! rho                Pierce/FEL parameter
-! eta                scaled average z-velocity
-! kbeta              scaled betatron wavenumber
-! iNN                number of nodes in each dimension (x,y,z2)
-! sElmLen            Length of ONE element in each dimension (x,y,z2)
-! fx, fy             specifies undulator polarization
-! qSwitch            If letting electrons evolve, field evolve,
-!                    diffraction and gaussian field
-! qOK                Error flag
-
     REAL(KIND=WP),     INTENT(IN)    :: rho,aw,gamr, lam_w
     INTEGER(KIND=IP),  INTENT(IN)    :: iNN(:), iNMPs(:,:)
+
     REAL(KIND=WP),     INTENT(IN)    :: sElmLen(:)
-    REAL(KIND=WP),     INTENT(IN)    :: fx,fy,sFocusFactor, taper
+    REAL(KIND=WP),     INTENT(IN)    :: fx,fy, taper
+
     REAL(KIND=WP),     INTENT(IN)    :: sFiltFrac, dStepFrac, sBeta
     LOGICAL,           INTENT(IN)    :: qSwitch(nSwitches_CG), qFormatted, &
                                         qSimple
     character(32_ip),  intent(in)    :: zUndType
     LOGICAL,           INTENT(OUT)   :: qOK
 
-!                    LOCAL ARGS
-!
-! lam_r_bar          Resonant wavelength in scaled units
-! qOKL               Local error flag
 
     REAL(KIND=WP) :: lam_r_bar, LenZ2, modfact1, sbetaz, aw_rms
     LOGICAL :: qOKL
@@ -435,6 +424,8 @@ logical, intent(in) :: qTails
 real(kind=wp) :: sEndsLen, sMainLen
 logical :: qFlatTop
 
+qFlatTop = .false.
+
 if (sSigZ2 >= 1e6) qFlatTop = .true.
 
 sEndsLen = 0.0_wp
@@ -538,7 +529,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, sFiltFrac, &
 !     Set error flag to false
 
     qOK = .FALSE.
-    
+
     sZi_G = 0.0_wp
     sZlSt_G = 0.0_wp
 
@@ -560,7 +551,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, sFiltFrac, &
 !   print*,'It is seedy, but what type...'
 !   print*,iFieldSeedType_G
 
-    
+
 
     call getPaSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,&
                     freqf,ph_sh,nseeds,sLengthOfElm)
@@ -681,11 +672,12 @@ end subroutine scaleParams
 
 
 
-subroutine calcScaling(srho, saw, sgamr, slam_w, sFocusFactor, &
+
+subroutine calcScaling(srho, saw, sgamr, slam_w, &
                        zUndType, sfx, sfy)
 
   real(kind=wp), intent(in) :: srho, saw, sgamr, slam_w, &
-                               sFocusFactor, sfx, sfy
+                               sfx, sfy
 
   CHARACTER(32_IP), intent(in) :: zUndType
 
@@ -743,10 +735,6 @@ subroutine calcScaling(srho, saw, sgamr, slam_w, sFocusFactor, &
   sEta_G = (1.0_WP - sbetaz) / sbetaz
   sKappa_G = saw / 2.0_WP / srho / sgamr
   sKBeta_G = sKappa_G ! aw_rms / 2.0_WP / sFocusFactor / srho / sgamr
-
-
-  sFocusFactor_G = sFocusFactor
-
 
   sAw_G = saw
 

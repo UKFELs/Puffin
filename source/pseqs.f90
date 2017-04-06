@@ -1,3 +1,15 @@
+! ###############################################
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
+! ###############################################
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Module for calculating sequences used in the macroparticle generation.
 
 module pseqs
 

@@ -11,7 +11,7 @@ LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
 
 The code has undergone many improvements and extended its functionality
 since then. It no longer uses an external linear solver package, and the
-only external packages now required are FFTW (version 3.3 onwards), and 
+only external packages now required are FFTW (version 3.3 onwards), and
 parallel HDF5 libraries.
 
 ## Features
@@ -22,8 +22,8 @@ approximations. It does not utilize a 'slicing' model of the beam phase space
 and radiation field, and instead utilizes an algorithm which is much more
 similar to a Particle-In-Cell (PIC) code methodology.
 
-In addition, some accelerator components are included for simulation of the 
-'realistic' undulator line, and together with the lack of restrictions, 
+In addition, some accelerator components are included for simulation of the
+'realistic' undulator line, and together with the lack of restrictions,
 means it may model:
   - The full, broad bandwidth frequency spectrum, limited only by the Niquist frequency of the mesh
   - Full electron beam transport
@@ -52,6 +52,7 @@ of the backwards wave from the e-beam.
   - Better point transforms for quads, now including energy dependence
   - Fixed bug of extra half-period diffraction per undulator module
   - HDF5 output is now the default data output format
+  - Can now specify specific writing steps for data dumps using a 'write file'
 
 1.6.0:
   - Revamped the form of the lattice file, both to include more components, and to

@@ -1,9 +1,14 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013-2016, Lawrence Campbell and Brian McNeil.    **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell & Jonathan Smith (Tech-X UK Ltd)
+! License: BSD-3-Clause
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This module contains routines for calculating the reduced or integrated data
+!> for Puffin output. This module also writes this data, in the SDDS case. 
 
 module avwrite
 
