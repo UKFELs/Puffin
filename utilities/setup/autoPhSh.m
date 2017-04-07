@@ -65,9 +65,9 @@ ppsq = abs(pperp).^2;
 
 p2 = (1./gammaFr).^2 ./ (1 + aw_rms.^2) .* (1 + (aw.^2 .* ppsq));
 
-z2a = trapz(zbar, p2);   %  actual shift in z2 from end
+z2b = trapz(zbar, p2);   %  actual shift in z2 from end
 
-z2nw = z2a ./ lw;         %  ...and as a fraction of resonant wavelength
+z2nw = z2b ./ lw;         %  ...and as a fraction of resonant wavelength
 
 z2modnw = ceil(z2nw) - z2nw;  % remainder to shift by (in units of lambda_r)
 
