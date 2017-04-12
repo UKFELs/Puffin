@@ -8,11 +8,10 @@ spectrum in 1D (or the intensity spectrum)
 """
 
 import sys
-import tables
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import specgram
-
+import tables
 
 
 #t = np.linspace(-1, 1, 200, endpoint=False)
@@ -63,10 +62,10 @@ def plotSpecPow(h5fname):
     z2axis = (np.arange(0,nz2)) * dz2
 
 
-    xf = h5f.root.aperp[0,:]
+    xf = h5f.root.aperp[:,0]
     # xfs = xf[z2si:z2ei]   # for selecting slice...
 
-    yf = h5f.root.aperp[1,:]
+    yf = h5f.root.aperp[:,1]
 
     intens = np.square(xf) + np.square(yf)
 
@@ -82,28 +81,44 @@ def plotSpecPow(h5fname):
 
     ftfieldtemp = xff[0:NumUniquePts]
 
-    ftpower = np.square(np.absolute(ftfieldtemp))
+    ftxpower = np.square(np.absolute(ftfieldtemp))
 
     if np.remainder(nz2,2) == 1:
-        ftpower[1:] = ftpower[1:]*2
+        ftxpower[1:] = ftxpower[1:]*2
     else:
-       ftpower[1:-1] = ftpower[1:-1]*2
+        ftxpower[1:-1] = ftxpower[1:-1]*2
 
 
+
+    ftfieldtemp = yff[0:NumUniquePts]
+
+    ftypower = np.square(np.absolute(ftfieldtemp))
+
+    if np.remainder(nz2,2) == 1:
+        ftypower[1:] = ftypower[1:]*2
+    else:
+        ftypower[1:-1] = ftypower[1:-1]*2
+       
+       
 
     ftxaxis = (np.arange(0,NumUniquePts)*(fs/nz2))*(4*np.pi*rho)
     sp_x_axis='$$\omega / \omega_r$$'
     sp_title='Intensity Spectrum'
 
     ax1 = plt.subplot(211)
-    plt.plot(z2axis, xf)
-    plt.plot(z2axis, yf)
+    plt.plot(z2axis, xf, label='x field')
+    plt.plot(z2axis, yf, label='y field')
+    plt.legend()
 
 # example for adding subplot
     plt.subplot(212)
-    plt.plot(ftxaxis, ftpower)
+    plt.plot(ftxaxis, ftxpower, label='x power')
+    plt.plot(ftxaxis, ftypower, label='y power')
+    plt.plot(ftxaxis, ftxpower + ftypower, label='combined')
 
+    plt.legend()
     plt.savefig("ExEy-SpecPower3.png")
+
     plt.show()
 
 
@@ -114,3 +129,6 @@ def plotSpecPow(h5fname):
 if __name__ == '__main__':
     h5fname=sys.argv[1]
     plotSpecPow(h5fname)
+    
+
+

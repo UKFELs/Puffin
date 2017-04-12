@@ -61,10 +61,10 @@ def plotPow(h5fname):
     z2axis = (np.arange(0,nz2)) * dz2
 
 
-    xf = h5f.root.aperp[0,:]
+    xf = h5f.root.aperp[:,0]
     # xfs = xf[z2si:z2ei]   # for selecting slice...
 
-    yf = h5f.root.aperp[1,:]
+    yf = h5f.root.aperp[:,1]
 
     intens = np.square(xf) + np.square(yf)
 

@@ -8,13 +8,12 @@ and phase of the fields
 """
 
 import sys
-import tables
 import numpy as np
 from numpy import pi
 from numpy import arange
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import specgram
-
+import tables
 
 
 #t = np.linspace(-1, 1, 200, endpoint=False)
@@ -52,11 +51,11 @@ def FilterField(field,crfr,distfr,nZ2,sLengthOfElmZ2, rho, q1d):
 
         ftfield = np.fft.fft(field)
 
-        ftfield[0:(nn-nns)] = 0
-        ftfield[(nn+nns-1):np.ceil(nZ2/2)] = 0
+        ftfield[0:np.int(nn-nns)] = 0
+        ftfield[np.int(nn+nns-1):np.int(np.ceil(nZ2/2))] = 0
       
-        ftfield[np.ceil(nZ2/2) + 1 - 1:nZ2-(nn+nns)+2] = 0
-        ftfield[(nZ2 - (nn-nns) + 2 - 1 ) : nZ2] = 0
+        ftfield[np.int(np.ceil(nZ2/2) + 1 - 1):np.int(nZ2-(nn+nns)+2)] = 0
+        ftfield[np.int(nZ2 - (nn-nns) + 2 - 1 ) : np.int(nZ2)] = 0
       
         field = np.fft.ifft(ftfield)
       
@@ -214,10 +213,10 @@ def plotFiltPow(h5fname):
     lenz2 = (nz2-1) * dz2
     z2axis = (np.arange(0,nz2)) * dz2
 
-    xf = h5f.root.aperp[0,:]
+    xf = h5f.root.aperp[:,0]
     # xfs = xf[z2si:z2ei]   # for selecting slice...
 
-    yf = h5f.root.aperp[1,:]
+    yf = h5f.root.aperp[:,1]
 
 
     cfr = 1.0
@@ -241,18 +240,28 @@ def plotFiltPow(h5fname):
     c_0 = 2.99792458e8 # Speed of light in vacuum
 
 
-    ax1 = plt.subplot(311)
-    plt.plot(z2axis, xf)
-    plt.plot(z2axis, yf)
+    ax1 = plt.subplot(411)
+    
+    plt.plot(z2axis, xf, label='xfield')
+    plt.plot(z2axis, yf, label='yfield')
+    plt.legend()
+    ax1.set_title('Filtered fields')
+    plt.legend()
 
 # example for adding subplot
-    plt.subplot(312, sharex=ax1)
-    plt.plot(z2axis, mgx)
-    plt.plot(z2axis, mgy)
+    plt.subplot(412, sharex=ax1)
+    plt.plot(z2axis, mgx, label='x magnitude')
+    plt.plot(z2axis, mgy, label='y magnitude')
+    plt.legend()
 
+    plt.subplot(413, sharex=ax1)
+    plt.plot(z2axis, np.square(mgx) + np.square(mgy), label='Intensity')
+    plt.legend()
 
-    plt.subplot(313, sharex=ax1)
-    plt.plot(z2axis, phx)
+    plt.subplot(414, sharex=ax1)
+    plt.plot(z2axis, phx, label='x phase')
+    plt.plot(z2axis, phy, label='y phase')
+    plt.legend()
 
 #    plt.savefig("ExEy-SpecPower3.png")
     plt.show()

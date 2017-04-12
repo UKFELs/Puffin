@@ -3,11 +3,10 @@
 # License: BSD-3-Clause
 
 """
-This is an examplar script to produce a plot of the cycle-averaged magnitude 
-and phase of the fields
+This is an examplar script to produce a plot of the filtered energy.
 """
 
-import sys
+import sys, glob, os
 import numpy as np
 from numpy import pi
 from numpy import arange
@@ -30,6 +29,57 @@ import tables
 
 #plt.imshow(specP)
 #plt.show()
+
+
+
+
+def FilterField(field,crfr,distfr,nZ2,sLengthOfElmZ2, rho, q1d):
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#% filter - HARD FILTER
+
+#%crfr=1.4167;
+#%distfr=0.2;
+
+    nn = np.round(sLengthOfElmZ2 * nZ2 * crfr / (4*pi*rho))
+    nns = np.round(sLengthOfElmZ2 * nZ2 * distfr / (4*pi*rho))
+
+    if (q1d == 1):
+
+#%%%%%    1D    %%%%%%%
+
+        ftfield = np.fft.fft(field)
+
+        ftfield[0:np.int(nn-nns)] = 0
+        ftfield[np.int(nn+nns-1):np.int(np.ceil(nZ2/2))] = 0
+      
+        ftfield[np.int(np.ceil(nZ2/2) + 1 - 1):np.int(nZ2-(nn+nns)+2)] = 0
+        ftfield[np.int(nZ2 - (nn-nns) + 2 - 1 ) : np.int(nZ2)] = 0
+      
+        field = np.fft.ifft(ftfield)
+      
+        xfield = np.real(field)
+
+    else:
+  
+#%%%%%    3D    %%%%%%%
+
+      ftfield = np.fft.fft(field)
+    
+      ftfield[:,:,0:(nn-nns)] = 0
+      ftfield[:,:,(nn+nns-1):ceil(nZ2/2)] = 0
+    
+      ftfield[:,:,ceil(nZ2/2) + 1 - 1:nZ2-(nn+nns)+2] = 0
+      ftfield[:,:,(nZ2 - (nn-nns) + 2 -1 ) : nZ2] = 0
+    
+      field = np.fft.ifft(ftfield)
+    
+      xfield = np.real(field)
+
+    return xfield
+
+#%%%%%%%%%%%%%%%%%%%%%%
+
 
 
 
@@ -136,8 +186,26 @@ def getMagPhase(Ex,nZ2,rho,syslen):
 
 
 
-def plotMagPhase(h5fname):
+def getFileSlices(baseName):
+  """ getTimeSlices(baseName) gets a list of files
 
+  That will be used down the line...
+  """
+  filelist=glob.glob(os.getcwd()+os.sep+baseName+'_aperp_C_*.h5')
+  
+  dumpStepNos=[]
+  for thisFile in filelist:
+    thisDump=int(thisFile.split(os.sep)[-1].split('.')[0].split('_')[-1])
+    dumpStepNos.append(thisDump)
+
+  for i in range(len(dumpStepNos)):
+    filelist[i]=baseName+'_aperp_C_'+str(sorted(dumpStepNos)[i])+'.h5'
+  return filelist
+
+
+
+def getFiltPow(h5fname):
+    
     h5f = tables.open_file(h5fname, mode='r')
 
     dz2 = h5f.root.runInfo._v_attrs.sLengthOfElmZ2
@@ -167,31 +235,79 @@ def plotMagPhase(h5fname):
 
     yf = h5f.root.aperp[:,1]
 
+
+    cfr = 1.0
+    dfr = 0.4
+
+    xf = FilterField(xf, cfr, dfr, nz2, dz2, rho, 1)
+    yf = FilterField(yf, cfr, dfr, nz2, dz2, rho, 1)
+
     intens = np.square(xf) + np.square(yf)
+    h5f.close()
 
-    mgx, phx = getMagPhase(xf,nz2,rho,lenz2)
-    mgy, phy = getMagPhase(yf,nz2,rho,lenz2)
+    return intens
 
-#    xff = np.fft.fft(xf)
-#    yff = np.fft.fft(yf)
+
+def getZData(fname):
+    h5f = tables.open_file(fname, mode='r')
+    zD = h5f.root.aperp._v_attrs.zTotal
+    h5f.close()
+    return zD
+
+
+
+def plotFiltEn(basename):
+
+
+    filelist = getFileSlices(basename)
+    print filelist
+    h5f = tables.open_file(filelist[0], mode='r')
+
+    dz2 = h5f.root.runInfo._v_attrs.sLengthOfElmZ2
+    nz2 = h5f.root.runInfo._v_attrs.nZ2
+    rho = h5f.root.runInfo._v_attrs.rho
+
+    sampleFreq = 1.0 / dz2
+
+#   To select temporal slice of field....
+    
+    #z2s = 50
+    #z2e = 80
+
+    #z2si = int(np.floor(z2s / dz2))
+    #z2ei = int(np.floor(z2e / dz2))
+
+    #z2axis = (np.arange(z2si,z2ei) - z2si) * dz2
+
+
+#    ...otherwise take full field
+
+    lenz2 = (nz2-1) * dz2
+    z2axis = (np.arange(0,nz2)) * dz2
+
+    h5f.close()
+
+    fcount = 0
+    
+    ens = np.zeros(len(filelist))
+    zData = np.zeros(len(filelist))
+#    zData[fieldCount] = h5in.root._f_get_child("power")._v_attrs.zTotal 
+    
+    for ij in filelist:
+        tintens = getFiltPow(ij)
+        ens[fcount] = np.trapz(tintens, x=z2axis)
+        zData[fcount] = getZData(ij)
+        fcount += 1
+
 
     h = 6.626e-34 # Planck constant
     q_e = 1.60217646e-19 # Charge on electron
     c_0 = 2.99792458e8 # Speed of light in vacuum
 
-
-    ax1 = plt.subplot(311)
-    plt.plot(z2axis, xf)
-    plt.plot(z2axis, yf)
-
-# example for adding subplot
-    plt.subplot(312, sharex=ax1)
-    plt.plot(z2axis, mgx)
-    plt.plot(z2axis, mgy)
-
-
-    plt.subplot(313, sharex=ax1)
-    plt.plot(z2axis, phx)
+    ax1 = plt.subplot(111)
+    plt.plot(zData, ens, label='Scaled Energy')
+    ax1.set_title('Filtered Energy')
+    #plt.legend()
 
 #    plt.savefig("ExEy-SpecPower3.png")
     plt.show()
@@ -202,13 +318,6 @@ def plotMagPhase(h5fname):
 
 
 if __name__ == '__main__':
-    h5fname=sys.argv[1]
-    plotMagPhase(h5fname)
+    basename=sys.argv[1]
+    plotFiltEn(basename)
     
-    
-
-
-# plot(xaxis,magxrms);
-# hold on;
-# plot(xaxis,phasex,'r');
-# hold off;
