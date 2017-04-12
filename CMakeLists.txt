@@ -130,7 +130,7 @@ include(${CMAKE_SOURCE_DIR}/scimake/SciFinalize.cmake)
 # build a CPack driven installer package
 include (InstallRequiredSystemLibraries)
 set (CPACK_RESOURCE_FILE_LICENSE  
-     "${CMAKE_CURRENT_SOURCE_DIR}/License.txt")
+     "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.txt")
 set (CPACK_PACKAGE_VERSION_MAJOR "${Puffin_VERSION_MAJOR}")
 set (CPACK_PACKAGE_VERSION_MINOR "${Puffin_VERSION_MINOR}")
 set (CPACK_PACKAGE_VERSION_PATCH "${Puffin_VERSION_PATCH}")
