@@ -1286,7 +1286,7 @@ contains
 
             if (qoned_g) then
 
-              call addH5StringAttribute(dset_id,"vsIndexOrder","compMinorF",aspace_id)
+              call addH5StringAttribute(dset_id,"vsIndexOrder","compMajorC",aspace_id)
 
             else
 
