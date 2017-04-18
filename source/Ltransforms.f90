@@ -49,11 +49,12 @@ contains
 !> @param[out] qOK Logical error flag, == .true.
 !> for successful completion of subroutine.
 
-subroutine getTransformPlans4FEL(nnodes,qOK)
+subroutine getTransformPlans4FEL(nnodes,qmeasure,qOK)
 
   implicit none
 
   integer(kind=ip), intent(in) :: nnodes(3)
+  logical, intent(in) :: qmeasure
   logical, intent(out) :: qOK
 
 !                 LOCAL ARGS
@@ -75,7 +76,7 @@ subroutine getTransformPlans4FEL(nnodes,qOK)
      qOKL = .true.
   else
      tTransInfo_G%qOneD = .false.
-     call getTransformPlans_MultiD(nnodes,3,qOKL)
+     call getTransformPlans_MultiD(nnodes,3,qmeasure,qOKL)
   end if
 
   if (.not. qOKL) goto 1000
@@ -109,7 +110,7 @@ end subroutine getTransformPlans4FEL
 !> @param[out] qOK Logical error flag, == .true.
 !> for successful completion of subroutine.
 
-subroutine getTransformPlans_MultiD(sizes,nDims,qOK)
+subroutine getTransformPlans_MultiD(sizes,nDims,qMeasure,qOK)
 
   implicit none
 
@@ -123,6 +124,7 @@ subroutine getTransformPlans_MultiD(sizes,nDims,qOK)
 
   integer, intent(in) :: sizes(3)
   integer, intent(in) :: nDims
+  logical, intent(in) :: qMeasure
   logical, intent(out) :: qOK
 
 
@@ -170,16 +172,30 @@ subroutine getTransformPlans_MultiD(sizes,nDims,qOK)
   if (tProcInfo_G%qroot) print*, 'Creating FFTW3 plans'
 
   if (qDiffraction_G) then
+    if (qMeasure) then
 
-    tTransInfo_G%fplan = fftw_mpi_plan_dft_3d(N, M, L, &
-                          Afftw, Afftw, tProcInfo_G%comm, &
-                          FFTW_FORWARD, FFTW_MEASURE)
+      tTransInfo_G%fplan = fftw_mpi_plan_dft_3d(N, M, L, &
+                            Afftw, Afftw, tProcInfo_G%comm, &
+                            FFTW_FORWARD, FFTW_MEASURE)
 
 
-    tTransInfo_G%bplan = fftw_mpi_plan_dft_3d(N, M, L, &
-                          Afftw, Afftw, tProcInfo_G%comm, &
-                          FFTW_BACKWARD, FFTW_MEASURE)
+      tTransInfo_G%bplan = fftw_mpi_plan_dft_3d(N, M, L, &
+                            Afftw, Afftw, tProcInfo_G%comm, &
+                            FFTW_BACKWARD, FFTW_MEASURE)
 
+    else
+      
+      tTransInfo_G%fplan = fftw_mpi_plan_dft_3d(N, M, L, &
+                            Afftw, Afftw, tProcInfo_G%comm, &
+                            FFTW_FORWARD, FFTW_ESTIMATE)
+
+
+      tTransInfo_G%bplan = fftw_mpi_plan_dft_3d(N, M, L, &
+                            Afftw, Afftw, tProcInfo_G%comm, &
+                            FFTW_BACKWARD, FFTW_ESTIMATE)      
+
+
+    end if
   end if
 
   if (tProcInfo_G%qroot) print*, 'Created FFTW3 plans'

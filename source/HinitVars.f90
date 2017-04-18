@@ -113,6 +113,7 @@ REAL(KIND=WP)    :: sFieldModelLength(nSpaceDimensions_CG)
 
 LOGICAL          :: q_noise
 
+logical :: qMeasure
 
 
 REAL(KIND=WP)    :: sElectronThreshold, sDiffFrac, sBeta

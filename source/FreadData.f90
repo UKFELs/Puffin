@@ -169,6 +169,7 @@ subroutine read_in(zfilename, &
        qFlatTopS, nseeds, &
        qSwitches, &
        qMatched_A, &
+       qMeasure, &
        qOK)
 
        IMPLICIT NONE
@@ -228,6 +229,7 @@ subroutine read_in(zfilename, &
   character(32_IP),  intent(out)  :: zUndType
   LOGICAL,           INTENT(OUT)  :: qSwitches(:)
   LOGICAL, ALLOCATABLE, INTENT(OUT)  :: qMatched_A(:)
+  logical, intent(out) :: qMeasure
   LOGICAL,           INTENT(OUT)  :: qOK
 
 ! Define local variables
@@ -277,7 +279,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  iWriteIntNthSteps, &
                  qFMesh_G, sKBetaXSF, sKBetaYSF, sRedistLen, &
                  iRedistStp, qscaled, nspinDX, nspinDY, qInitWrLat, qDumpEnd, &
-                 wr_file
+                 wr_file, qMeasure
 
 
 ! Begin subroutine:
@@ -316,6 +318,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qscaled = .true.
   qInitWrLat = .false.
   qDumpEnd = .true.
+  qMeasure = .true.
 !  qplain = .false.
 
   beam_file = 'beam_file.in'

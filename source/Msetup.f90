@@ -155,6 +155,7 @@ MODULE Setup
        qFlatTopS, nseeds, &
        qSwitches,         &
        qMatched_A,        &
+       qmeasure, &
        qOKL)
 
   IF (.NOT. qOKL) GOTO 1000
@@ -207,7 +208,7 @@ MODULE Setup
 
 !    Setup FFTW plans for the forward and backwards transforms.
 
-  CALL getTransformPlans4FEL(iNodes,qOKL)
+  CALL getTransformPlans4FEL(iNodes,qmeasure,qOKL)
 
   IF (.NOT. qOKL) GOTO 1000
 
