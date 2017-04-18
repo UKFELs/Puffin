@@ -318,7 +318,7 @@ contains
     CALL writeH5TimeGroup(file_id, timegrpname, time, 'outputH5Beam', error)
 
 ! Write run info
-    CALL writeH5RunInfo(file_id, 'outputH5Beam', error)
+    CALL writeH5RunInfo(file_id, time, sz_loc, iL, 'outputH5Beam', error)
 
 ! We make the limits
     CALL h5gcreate_f(file_id, limgrpname, group_id, error)
@@ -570,7 +570,7 @@ contains
 ! Time Group 
       CALL writeH5TimeGroup(file_id, timegrpname, time, &
 	     'outH5Field3D', error)
-      CALL writeH5RunInfo(file_id, 'outH5Field3D', error)
+      CALL writeH5RunInfo(file_id, time, sz_loc, iL, 'outH5Field3D', error)
       lb(1)=-0.5*NX_G*sLengthOfElmX_G
       lb(2)=-0.5*NY_G*sLengthOfElmY_G
       lb(3)=(nlo-1)*sLengthOfElmZ2_G

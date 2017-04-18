@@ -192,7 +192,7 @@ contains
         avGam4Unsc = aveGamma
         where (avGam4Unsc == 0.0_wp) avGam4Unsc = 1.0_wp
 
-        call CreateIntegrated1DFloat(time,error,nslices)
+        call CreateIntegrated1DFloat(time, sz_loc, iL,error,nslices)
 
         call addH5Field1DFloat(power, 'power', "intFieldMeshSc", &
                               "z2, Power (Scaled)", time, sz_loc, iL, error)

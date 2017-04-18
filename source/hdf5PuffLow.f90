@@ -459,34 +459,34 @@ contains
 
 
 
-  subroutine writeRunAtts(dset_id, aspace_id)
+  subroutine writeRunAtts(dset_id, simtime, z_loc, iL, aspace_id)
 
     integer(HID_T), intent(in) :: dset_id     !< h5 handle of write location
-    !real(kind=wp), intent(in) :: simtime      !< Current simulation 'time' (zbar)
-    !real(kind=wp), intent(in) :: z_loc        !< zbar local to current undulator module
-    !integer(kind=ip), intent(in) :: iL        !< lattice element counter
+    real(kind=wp), intent(in) :: simtime      !< Current simulation 'time' (zbar)
+    real(kind=wp), intent(in) :: z_loc        !< zbar local to current undulator module
+    integer(kind=ip), intent(in) :: iL        !< lattice element counter
     integer(HID_T), intent(in) :: aspace_id   !< h5 handle of write location
 
-!    CALL addH5FloatAttribute(dset_id, "time", simtime, aspace_id)
+    CALL addH5FloatAttribute(dset_id, "time", simtime, aspace_id)
     
-!    call addH5FloatAttribute(dset_id, "zbarTotal", simtime, aspace_id)
-!    call addH5FloatAttribute(dset_id, "zTotal", simtime * lg_G, aspace_id)
+    call addH5FloatAttribute(dset_id, "zbarTotal", simtime, aspace_id)
+    call addH5FloatAttribute(dset_id, "zTotal", simtime * lg_G, aspace_id)
 
-!    CALL addH5FloatAttribute(dset_id, "zbarInter", sZi_G, aspace_id)
-!    CALL addH5FloatAttribute(dset_id, "zInter", sZi_G * lg_G, aspace_id)
+    CALL addH5FloatAttribute(dset_id, "zbarInter", sZi_G, aspace_id)
+    CALL addH5FloatAttribute(dset_id, "zInter", sZi_G * lg_G, aspace_id)
     
-!    call addH5FloatAttribute(dset_id, "zbarLocal", z_loc, aspace_id)
-!    call addH5FloatAttribute(dset_id, "zLocal", z_loc * lg_G,aspace_id)
+    call addH5FloatAttribute(dset_id, "zbarLocal", z_loc, aspace_id)
+    call addH5FloatAttribute(dset_id, "zLocal", z_loc * lg_G,aspace_id)
 
-!    CALL addH5IntegerAttribute(dset_id, "iCsteps", iCsteps, aspace_id)
-!    CALL addH5IntegerAttribute(dset_id, "istep", istep, aspace_id)
+    CALL addH5IntegerAttribute(dset_id, "iCsteps", iCsteps, aspace_id)
+    CALL addH5IntegerAttribute(dset_id, "istep", istep, aspace_id)
     
     call addH5IntegerAttribute(dset_id, "iUnd_cr", iUnd_cr, aspace_id)
     call addH5IntegerAttribute(dset_id, "iChic_cr", iChic_cr, aspace_id)
     call addH5IntegerAttribute(dset_id, "iDrift_cr", iDrift_cr, aspace_id)
     call addH5IntegerAttribute(dset_id, "iQuad_cr", iQuad_cr, aspace_id)
     call addH5IntegerAttribute(dset_id, "iModulation_cr", iModulation_cr, aspace_id)
-!    call addH5IntegerAttribute(dset_id, 'iL', iL, aspace_id)  
+    call addH5IntegerAttribute(dset_id, 'iL', iL, aspace_id)  
     
     call addH5IntegerAttribute(dset_id, 'nX', nX_G, aspace_id)  
     call addH5IntegerAttribute(dset_id, 'nY', nY_G, aspace_id)  
@@ -605,11 +605,14 @@ contains
 !! @param file_id file identifier, location to put provenance data
 !! @callerstr allows the passing in of information about what is
 !!   asking for the run information to be written (ie parent routine)
-   subroutine writeH5RunInfo(file_id, callerstr, error)
+   subroutine writeH5RunInfo(file_id, simtime, z_loc, iL, callerstr, error)
 
     use PuffProvenance
 
     INTEGER(HID_T), INTENT(in) :: file_id 
+    real(kind=wp), intent(in) :: simtime      !< Current simulation 'time' (zbar)
+    real(kind=wp), intent(in) :: z_loc        !< zbar local to current undulator module
+    integer(kind=ip), intent(in) :: iL        !< lattice element counter
     CHARACTER(LEN=12), intent(in) :: callerstr
     INTEGER(kind=ip) :: error
 !
@@ -685,8 +688,7 @@ contains
     CALL addH5StringAttribute(group_id,"vsBeamFile",zBFile_G,aspace_id)
     CALL addH5StringAttribute(group_id,"vsSeedFile",zSFile_G,aspace_id)
     
-    call writeRunAtts(group_id, aspace_id)
-    
+    call writeRunAtts(group_id,  simtime, z_loc, iL, aspace_id)
 !    aname="vsSeedFile"
 !    attr_data_string=zSFile_G
 !    attr_string_len=len(attr_data_string)

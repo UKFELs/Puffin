@@ -502,7 +502,7 @@ contains
     CALL writeH5TimeGroup(file_id, timegrpname, time, 'outputH5Beam', error)
 
 ! Write run info
-    CALL writeH5RunInfo(file_id, 'outputH5Beam', error)
+    CALL writeH5RunInfo(file_id,  time, sz_loc, iL, 'outputH5Beam', error)
 
 ! We make the limits
     CALL h5gcreate_f(file_id, limgrpname, group_id, error)
@@ -978,7 +978,7 @@ contains
 ! Time Group
           CALL writeH5TimeGroup(file_id, timegrpname, time, &
 	               'outH5Field3D', error)
-          CALL writeH5RunInfo(file_id, 'outH5Field3D', error)
+          CALL writeH5RunInfo(file_id,  time, sz_loc, iL, 'outH5Field3D', error)
           lb(1)=-0.5*NX_G*sLengthOfElmX_G
           lb(2)=-0.5*NY_G*sLengthOfElmY_G
           lb(3)=0.0_WP*sLengthOfElmZ2_G
@@ -1305,7 +1305,7 @@ contains
             call writeH5TimeGroup(file_id, timegrpname, time, &
                                   'radH5Field1D', error)
 
-            call writeH5RunInfo(file_id, 'radH5Field1D', error)
+            call writeH5RunInfo(file_id,  time, sz_loc, iL, 'radH5Field1D', error)
 
             lb=0.0_WP*sLengthOfElmZ2_G  ! Lower and upper bounds...
             ub=NZ2_G*sLengthOfElmZ2_G
@@ -1341,11 +1341,13 @@ contains
 
 !> CreateIntegrated1DFloat(simtime,error)
 !! Creates a single integrated file for the 1D datasets
-  subroutine CreateIntegrated1DFloat(simtime,error,nslices)
+  subroutine CreateIntegrated1DFloat(simtime, sz_loc, iL, error,nslices)
 
     implicit none
 
     REAL(kind=WP), intent(in) :: simtime      !< simulation time
+    real(kind=wp), intent(in) :: sz_loc        !< zbar local to current undulator module
+    integer(kind=ip), intent(in) :: iL        !< lattice element counter
     INTEGER(kind=IP),intent(in) :: nslices       !< Number of slices
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: attr_id       !< Attribute identifier
@@ -1368,7 +1370,7 @@ contains
       CALL h5open_f(error)
       CALL h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error)
       CALL writeH5TimeGroup(file_id, timegrpname, simtime, 'intH5field1D', error)
-      CALL writeH5RunInfo(file_id, 'integratedH5Field1D', error)
+      CALL writeH5RunInfo(file_id,  simtime, sz_loc, iL, 'integratedH5Field1D', error)
 ! Limits group
 !      CALL h5gcreate_f(file_id, limgrpname, group_id, error)
       CALL write1DlimGrp(file_id,limgrpname,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G)
