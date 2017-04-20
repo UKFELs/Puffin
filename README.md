@@ -53,6 +53,7 @@ of the backwards wave from the e-beam.
   - Fixed bug of extra half-period diffraction per undulator module
   - HDF5 output is now the default data output format
   - Can now specify specific writing steps for data dumps using a 'write file'
+  - Can now choose to use estimated or measured FFTW plans from input file
 
 1.6.0:
   - Revamped the form of the lattice file, both to include more components, and to
