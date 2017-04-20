@@ -259,6 +259,16 @@ subroutine read_in(zfilename, &
   real(kind=wp) :: sRedistLen
   integer(kind=ip) :: iRedistStp
 
+
+
+!   redundant data!!! For compatibility only....
+
+  real(kind=wp) :: Dfact, speout
+  integer(kind=ip) :: iDumpNthSteps
+
+
+
+
 namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  qElectronFieldCoupling, qFocussing, &
                  qDiffraction, qFilter, qUndEnds, &
@@ -279,7 +289,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  iWriteIntNthSteps, &
                  qFMesh_G, sKBetaXSF, sKBetaYSF, sRedistLen, &
                  iRedistStp, qscaled, nspinDX, nspinDY, qInitWrLat, qDumpEnd, &
-                 wr_file, qMeasure
+                 wr_file, qMeasure, DFact, iDumpNthSteps, speout
 
 
 ! Begin subroutine:
@@ -319,6 +329,9 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qInitWrLat = .false.
   qDumpEnd = .true.
   qMeasure = .true.
+  Dfact = -1000.0_wp
+  iDumpNthSteps = -1000_ip
+  speout = -1000.0_wp
 !  qplain = .false.
 
   beam_file = 'beam_file.in'
@@ -452,6 +465,41 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   zSFile_G = seed_file
 
 
+
+  if (DFact /= -1000.0_wp) then
+    if (tProcInfo_G%qRoot) then
+
+      print*, ''
+      print*, 'WARNING: Use of Dfact deprecated. It is kept only so your'
+      print*, 'old input files will not break!! It will do nothing. To specify'
+      print*, 'chicane strengths, please use the lattice file.'
+      print*, ''
+
+    end if
+  end if
+
+
+  if (iDumpNthSteps /= -1000_ip) then
+    if (tProcInfo_G%qRoot) then
+
+      print*, ''
+      print*, 'WARNING: Use of iDumpNthSteps deprecated. It is kept only so your'
+      print*, 'old input files will not break!! It will do nothing.'
+      print*, ''
+
+    end if
+  end if
+
+  if (speout /= -1000.0_wp) then
+    if (tProcInfo_G%qRoot) then
+
+      print*, ''
+      print*, 'WARNING: Use of speout deprecated. It is kept only so your'
+      print*, 'old input files will not break!! It will do nothing.'
+      print*, ''
+
+    end if
+  end if
 
 
 
