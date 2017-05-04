@@ -1,6 +1,7 @@
 function [ hf ] = ploth5TInt( fname , sz2 )
-%PLOTH5TINT Summary of this function goes here
-%   Detailed explanation goes here
+
+% Plots the transverse intensity from a field dump....
+
 
 
 rho = hdf5read(fname,'/runInfo','rho');

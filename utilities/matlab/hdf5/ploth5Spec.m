@@ -3,7 +3,7 @@ function [ hf ] = ploth5Spec( fname )
 %   Detailed explanation goes here
 
 
-
+zbar = hdf5read(fname,'/aperp','zbarTotal');
 rho = hdf5read(fname,'/runInfo','rho');
 nZ2 = hdf5read(fname,'/runInfo','nZ2');
 sLengthOfElmZ2 = hdf5read(fname,'/runInfo','sLengthOfElmZ2');
@@ -74,24 +74,27 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Normalised frequency xaxis(1 is resonant frequency)
 
-ftxaxis = ((0:NumUniquePts-1)*(fs/nZ2))*(4*pi*rho);
-sp_x_axis='$$\omega / \omega_r$$';
+% ftxaxis = ((0:NumUniquePts-1)*(fs/nZ2))*(4*pi*rho);
+% %sp_x_axis='$$\omega / \omega_r$$';
+% sp_x_axis='$$\bar{\omega}$$';
+% sp_title='Intensity Spectrum';
+
+
+ftxaxis = c_0 ./ (((0:NumUniquePts-1)*(fs/nZ2)) / lambda_r * (4*pi*rho) * c_0); 
+sp_x_axis='$$\lambda (m)$$';
 sp_title='Intensity Spectrum';
-
-
-%ftxaxis = c_0 ./ (((0:NumUniquePts-1)*(fs/nZ2)) / lambda_r * (4*pi*rho) * c_0); 
-%sp_x_axis='$$\lambda (m)$$';
-%sp_title='Intensity Spectrum';
 
 
 
 figure; 
 %hf = semilogy(ftxaxis, ftpower);
-hf = plot((ftxaxis-1)/2/rho, ftpower);
-xlabel(sp_x_axis);
+hf = plot(ftxaxis, ftpower);
+%hf = plot((ftxaxis-1)/2/rho, ftpower);
+xlabel(sp_x_axis, 'interpreter','latex');
 %xlim([0.9 1.1]);
-xlim(([0.9 1.1] - 1)/2/rho);
-title(sp_title);
+%xlim(([0.9 1.1] - 1)/2/rho);
+xlim([0.9e-7 1.1e-7]);
+%title(strcat(sp_title,' @ zbar = ',num2str(zbar)));
 
 
 
