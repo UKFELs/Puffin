@@ -24,7 +24,7 @@ use masks
 use, intrinsic :: iso_c_binding
 implicit none
 
-!INCLUDE 'fftw3-mpi.f03'
+!INCLUDE 'fftw3.f03'
 
 real(kind=wp) :: tr_time_s, tr_time_e
 type(C_PTR) :: cdata
@@ -129,7 +129,7 @@ subroutine getTransformPlans_MultiD(sizes,nDims,qMeasure,qOK)
 
 
   integer(C_INTPTR_T) :: L, M, N, local_N, local_j_offset, &
-                         alloc_local
+                         alloc_local, threads_ok
 
 
 !                         Begin
@@ -139,7 +139,9 @@ subroutine getTransformPlans_MultiD(sizes,nDims,qMeasure,qOK)
 
 !                  Init FFTW-MPI
 
+  threads_ok = fftw_init_threads()
   call fftw_mpi_init()
+  call fftw_plan_with_nthreads(2)  
 
   L = int(sizes(iX_CG), C_INTPTR_T)
   M = int(sizes(iY_CG), C_INTPTR_T)
