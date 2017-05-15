@@ -39,10 +39,10 @@ contains
 !   subroutine to calculate the scaled magnetic fields
 !   at a given zbar
 
-  real(kind=wp), intent(in) :: sx(:), sy(:)
+  real(kind=wp), contiguous, intent(in) :: sx(:), sy(:)
   real(kind=wp), intent(in) :: sz
 
-  real(kind=wp), intent(out) :: bxj(:), byj(:), bzj(:)
+  real(kind=wp), contiguous, intent(out) :: bxj(:), byj(:), bzj(:)
 
   call getBXfield(sx, sy, sz, bxj)
   call getBYfield(sx, sy, sz, byj)
@@ -58,9 +58,9 @@ contains
 
 subroutine getBXfield(sx, sy, sz, bxj)
 
-  real(kind=wp), intent(in) :: sx(:), sy(:)
+  real(kind=wp), contiguous, intent(in) :: sx(:), sy(:)
   real(kind=wp), intent(in) :: sz
-  real(kind=wp), intent(out) :: bxj(:)
+  real(kind=wp), contiguous, intent(out) :: bxj(:)
 
 !    Local vars:-
 
@@ -268,9 +268,9 @@ subroutine getBXfield(sx, sy, sz, bxj)
 
   subroutine getBYfield(sx, sy, sz, byj)
 
-  real(kind=wp), intent(in) :: sx(:), sy(:)
+  real(kind=wp), contiguous, intent(in) :: sx(:), sy(:)
   real(kind=wp), intent(in) :: sz
-  real(kind=wp), intent(out) :: byj(:)
+  real(kind=wp), contiguous, intent(out) :: byj(:)
 
 !    Local vars:-
 
@@ -486,9 +486,9 @@ subroutine getBXfield(sx, sy, sz, bxj)
 
 subroutine getBZfield(sx, sy, sz, bzj)
 
-  real(kind=wp), intent(in) :: sx(:), sy(:)
+  real(kind=wp), contiguous, intent(in) :: sx(:), sy(:)
   real(kind=wp), intent(in) :: sz
-  real(kind=wp), intent(out) :: bzj(:)
+  real(kind=wp), contiguous, intent(out) :: bzj(:)
 
 !    Local vars:-
 
