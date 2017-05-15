@@ -146,8 +146,6 @@
  zDataFileName          = 'DataFile.dat'
  iWriteNthSteps         = 30
  iWriteIntNthSteps      = 30
- iDumpNthSteps          = 3000
- sPEOut                 = 100.0
  /
 
 

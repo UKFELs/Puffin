@@ -1,8 +1,6 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
 
 !> @author
 !> Lawrence Campbell,
@@ -49,14 +47,14 @@ contains
 ! sdydz   OUTPUT    Derivative of z and y
 
     real(kind=wp), intent(in)  :: sz
-    real(kind=wp), intent(in)  :: sAr(:), sAi(:)
-    real(kind=wp), intent(in)  :: sx(:), sy(:), sz2(:), &
+    real(kind=wp), contiguous, intent(in)  :: sAr(:), sAi(:)
+    real(kind=wp), contiguous, intent(in)  :: sx(:), sy(:), sz2(:), &
                                   spr(:), spi(:), sp2(:)
 
-    real(kind=wp), intent(inout)  :: sdx(:), sdy(:), sdz2(:), &
+    real(kind=wp), contiguous, intent(inout)  :: sdx(:), sdy(:), sdz2(:), &
                                   sdpr(:), sdpi(:), sdp2(:)
 
-    real(kind=wp), intent(inout) :: sdAr(:), sdAi(:)
+    real(kind=wp), contiguous, intent(inout) :: sdAr(:), sdAi(:)
 
 !                 LOCAL ARGS
 !

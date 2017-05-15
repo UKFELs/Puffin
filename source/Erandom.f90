@@ -1,5 +1,23 @@
 MODULE randomGauss
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! NOTICE:
+!
+! This is a very slightly modified form of the module named 'random'
+! written by Alan Miller (see individual function and subroutine
+! comments for details), currently (as of 23rd Jan 2017) hosted at 
+! http://jblevins.org/mirror/amiller/ and released into the public domain.
+!
+! Slightly modified by Lawrence Campbell with a subroutine to initialize
+! a different random seed on each MPI process. It is probably not the best
+! way to initialize a random variable in MPI Fortran...
+!
+! Lawrence Campbell
+! lawrence.campbell@strath.ac.uk
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 USE paratype
 USE ParallelInfoType
 ! A module for random number generation from the following distributions:

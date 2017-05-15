@@ -1,8 +1,6 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
 
 module Equations
 
@@ -36,8 +34,10 @@ contains
   	implicit none
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:), sZ
-    real(kind=wp), intent(out) :: sdpr(:)
+    real(kind=wp), contiguous, intent(in) :: sx(:), sy(:), sz2(:), spr(:), &
+                                             spi(:), sgam(:)
+    real(kind=wp), intent(in) :: sZ
+    real(kind=wp), contiguous, intent(out) :: sdpr(:)
 
     real(kind=wp) :: szt
 
@@ -84,8 +84,10 @@ contains
     implicit none
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:), sZ
-    real(kind=wp), intent(out) :: sdpi(:)
+    real(kind=wp), contiguous, intent(in) :: sx(:), sy(:), sz2(:), spr(:), &
+                                             spi(:), sgam(:) 
+    real(kind=wp), intent(in) :: sZ
+    real(kind=wp), contiguous, intent(out) :: sdpi(:)
 
     real(kind=wp) :: szt
 
@@ -133,8 +135,10 @@ contains
     implicit none
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
-    real(kind=wp), intent(out) :: sdgam(:)
+    real(kind=wp), contiguous, intent(in) :: sx(:), sy(:), sz2(:), spr(:), &
+                                             spi(:), sgam(:)
+
+    real(kind=wp), contiguous, intent(out) :: sdgam(:)
 
     logical, intent(inout) :: qOK
 
@@ -181,8 +185,9 @@ contains
 !              Arguments:
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
-    real(kind=wp), intent(out) :: sdx(:)
+    real(kind=wp), contiguous,  intent(in) :: sx(:), sy(:), sz2(:), spr(:), &
+                                              spi(:), sgam(:)
+    real(kind=wp), contiguous, intent(out) :: sdx(:)
 
 
 !    real(kind=wp), intent(in) :: sy(:), Lj(:), nd
@@ -233,8 +238,10 @@ contains
 !              Arguments:
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
-    real(kind=wp), intent(out) :: sdy(:)
+    real(kind=wp), contiguous, intent(in) :: sx(:), sy(:), sz2(:), spr(:), &
+                                             spi(:), sgam(:)
+    
+    real(kind=wp), contiguous, intent(out) :: sdy(:)
 
     logical, intent(inout) :: qOK
 
@@ -281,8 +288,10 @@ contains
 !              Arguments:
 
 
-    real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:), spr(:), spi(:), sgam(:)
-    real(kind=wp), intent(out) :: sdz2(:)
+    real(kind=wp), contiguous, intent(in) :: sx(:), sy(:), sz2(:), spr(:), &
+                                             spi(:), sgam(:)
+
+    real(kind=wp), contiguous, intent(out) :: sdz2(:)
 
 
 !    real(kind=wp), intent(in) :: sy(:), Lj(:), nd

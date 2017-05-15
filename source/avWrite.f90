@@ -1,9 +1,14 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013-2016, Lawrence Campbell and Brian McNeil.    **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell & Jonathan Smith (Tech-X UK Ltd)
+! License: BSD-3-Clause
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This module contains routines for calculating the reduced or integrated data
+!> for Puffin output. This module also writes this data, in the SDDS case. 
 
 module avwrite
 
@@ -527,8 +532,21 @@ contains
     real(kind=wp) :: sliceSizeZ2
     real(kind=wp),DIMENSION(nslices) :: b1r,b2r,b3r,b4r,b5r
     real(kind=wp),DIMENSION(nslices) :: b1i,b2i,b3i,b4i,b5i
-    real(kind=wp) :: csdata(ncoord,nslices)
-    real(kind=wp) :: cs2data(ncoord,ncoord,nslices)
+
+    real(kind=wp) :: meanX(nslices), meanY(nslices), &
+                     meanGam(nslices), meanPX(nslices), &
+                     meanPY(nslices), &
+                     meanXX(nslices), meanXPX(nslices), &
+                     meanXZ2(nslices), meanXGam(nslices), &
+                     meanXPY(nslices), meanXY(nslices), &
+                     meanYY(nslices), meanYZ2(nslices), &
+                     meanYPX(nslices), meanYPY(nslices), &
+                     meanYGam(nslices), &
+                     meanPXPX(nslices), meanPYPY(nslices), &
+                     meanGamGam(nslices)
+                     
+    integer :: error
+
 
     aveX = 0.0_wp  ! initialize
     aveY = 0.0_wp  ! initialize
@@ -547,8 +565,26 @@ contains
     aveGamma = 0.0_wp   ! initialize
     aveDgamma = 0.0_wp   ! initialize
     sdata = 0.0_wp   ! initialize
-    csdata = 0.0_wp   ! initialize
-    cs2data = 0.0_wp   ! initialize
+
+    meanX = 0.0_wp
+    meanY = 0.0_wp
+    meanGam = 0.0_wp
+    meanPX = 0.0_wp
+    meanPY = 0.0_wp
+    meanXX = 0.0_wp
+    meanXPX = 0.0_wp
+    meanXZ2 = 0.0_wp
+    meanXGam = 0.0_wp
+    meanXPY = 0.0_wp
+    meanXY = 0.0_wp
+    meanYY = 0.0_wp
+    meanYZ2 = 0.0_wp
+    meanYPX = 0.0_wp
+    meanYPY = 0.0_wp
+    meanYGam = 0.0_wp
+    meanPXPX = 0.0_wp
+    meanPYPY = 0.0_wp
+    meanGamGam = 0.0_wp
 !
 ! Should create a parameter hno (harmonic number)
 ! and loop.
@@ -568,7 +604,8 @@ contains
 !    sliceSizeZ2=((sLengthOfElmZ2_G*NZ2_G)-slicetrim)/(nslices)
     sliceSizeZ2=4*pi*srho_g
 !    print *,"evaluating slices of size",4*pi*srho_g,sliceSizeZ2,slicetrim
-    do ip = 1, size(sElX_G)
+    if (iNumberElectrons_G > 0_ipl) then
+    do ip = 1, iNumberElectrons_G
       is = ceiling(sElZ2_G(ip)/sliceSizeZ2)
       if ((is>nslices) .or. (is <1)) then
          print*,"slice index, is, out of bounds in slice computation"
@@ -583,25 +620,30 @@ contains
 !          case (1) csdata(ic1,is)=s_chi_bar_G(ip)*sX_G
 !        !! Would be tidier, but sadly our data is not structured nicely for this
 !      end do
-      csdata(1,is)=csdata(1,is)+s_chi_bar_G(ip)*sElX_G(ip)
-      cs2data(1,1,is)=cs2data(1,1,is)+s_chi_bar_G(ip)*sElX_G(ip)*sElX_G(ip)
-      cs2data(1,2,is)=cs2data(1,2,is)+s_chi_bar_G(ip)*sElX_G(ip)*sElY_G(ip)
-      cs2data(1,3,is)=cs2data(1,3,is)+s_chi_bar_G(ip)*sElX_G(ip)*sElz2_G(ip)
-      cs2data(1,4,is)=cs2data(1,4,is)+s_chi_bar_G(ip)*sElX_G(ip)*sElpX_G(ip)
-      cs2data(1,5,is)=cs2data(1,5,is)+s_chi_bar_G(ip)*sElX_G(ip)*sElpy_G(ip)
-      cs2data(1,6,is)=cs2data(1,6,is)+s_chi_bar_G(ip)*sElX_G(ip)*sElgam_G(ip)
-      csdata(2,is)=csdata(2,is)+s_chi_bar_G(ip)*sElY_G(ip)
-      cs2data(2,2,is)=cs2data(2,2,is)+s_chi_bar_G(ip)*sElY_G(ip)*sElY_G(ip)
-      cs2data(2,3,is)=cs2data(2,3,is)+s_chi_bar_G(ip)*sElY_G(ip)*sElz2_G(ip)
-      cs2data(2,4,is)=cs2data(2,4,is)+s_chi_bar_G(ip)*sElY_G(ip)*sElpX_G(ip)
-      cs2data(2,5,is)=cs2data(2,5,is)+s_chi_bar_G(ip)*sElY_G(ip)*sElpy_G(ip)
-      cs2data(2,6,is)=cs2data(2,6,is)+s_chi_bar_G(ip)*sElY_G(ip)*sElgam_G(ip)
-      csdata(4,is)=csdata(4,is)+s_chi_bar_G(ip)*sElpX_G(ip)
-      cs2data(4,4,is)=cs2data(4,4,is)+s_chi_bar_G(ip)*sElpX_G(ip)*sElpX_G(ip)
-      csdata(5,is)=csdata(5,is)+s_chi_bar_G(ip)*sElpY_G(ip)
-      cs2data(5,5,is)=cs2data(5,5,is)+s_chi_bar_G(ip)*sElpY_G(ip)*sElpY_G(ip)
-      csdata(6,is)=csdata(6,is)+s_chi_bar_G(ip)*sElGam_G(ip)
-      cs2data(6,6,is)=cs2data(6,6,is)+s_chi_bar_G(ip)*sElgam_G(ip)*sElgam_G(ip)
+      meanX(is)=meanX(is)+s_chi_bar_G(ip)*sElX_G(ip)
+      meanY(is)=meanY(is)+s_chi_bar_G(ip)*sElY_G(ip)
+      meanPX(is)=meanPX(is)+s_chi_bar_G(ip)*sElpX_G(ip)
+      meanPY(is)=meanPY(is)+s_chi_bar_G(ip)*sElpY_G(ip)
+      meanGam(is)=meanGam(is)+s_chi_bar_G(ip)*sElGam_G(ip)
+      
+      
+      
+      meanXX(is)=meanXX(is)+s_chi_bar_G(ip)*sElX_G(ip)*sElX_G(ip)
+      meanXY(is)=meanXY(is)+s_chi_bar_G(ip)*sElX_G(ip)*sElY_G(ip)
+      meanXZ2(is)=meanXZ2(is)+s_chi_bar_G(ip)*sElX_G(ip)*sElz2_G(ip)
+      meanXPX(is)=meanXPX(is)+s_chi_bar_G(ip)*sElX_G(ip)*sElpX_G(ip)
+      meanXPY(is)=meanXPY(is)+s_chi_bar_G(ip)*sElX_G(ip)*sElpy_G(ip)
+      meanXGam(is)=meanXGam(is)+s_chi_bar_G(ip)*sElX_G(ip)*sElgam_G(ip)
+      
+      meanYY(is)=meanYY(is)+s_chi_bar_G(ip)*sElY_G(ip)*sElY_G(ip)
+      meanYZ2(is)=meanYZ2(is)+s_chi_bar_G(ip)*sElY_G(ip)*sElz2_G(ip)
+      meanYPX(is)=meanYPX(is)+s_chi_bar_G(ip)*sElY_G(ip)*sElpX_G(ip)
+      meanYPY(is)=meanYPY(is)+s_chi_bar_G(ip)*sElY_G(ip)*sElpy_G(ip)
+      meanYGam(is)=meanYGam(is)+s_chi_bar_G(ip)*sElY_G(ip)*sElgam_G(ip)
+      
+      meanPXPX(is)=meanPXPX(is)+s_chi_bar_G(ip)*sElpX_G(ip)*sElpX_G(ip)      
+      meanPYPY(is)=meanPYPY(is)+s_chi_bar_G(ip)*sElpY_G(ip)*sElpY_G(ip)      
+      meanGamGam(is)=meanGamGam(is)+s_chi_bar_G(ip)*sElgam_G(ip)*sElgam_G(ip)
 
 
       b1r(is) = b1r(is) + s_chi_bar_G(ip)*cos(sElz2_G(ip)/(2*sRho_G)) &
@@ -698,20 +740,23 @@ contains
 !      b5i(is)=b5i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(10*sRho_G))
 !    call sum2RootArr(cs2data(, size(cs2data), 0)
 1000    end do
+      end if
 ! print*,"Bringing arrays onto rank0"
-    call sum2RootArr(sdata, size(sdata), 0)
-    call sum2RootArr(csdata(1,:), size(csdata(1,:)), 0)
-    call sum2RootArr(csdata(2,:), size(csdata(2,:)), 0)
-    call sum2RootArr(csdata(4,:), size(csdata(4,:)), 0)
-    call sum2RootArr(csdata(5,:), size(csdata(5,:)), 0)
-    call sum2RootArr(csdata(6,:), size(csdata(6,:)), 0)
-    call sum2RootArr(cs2data(1,1,:), size(cs2data(1,1,:)), 0)
-    call sum2RootArr(cs2data(1,4,:), size(cs2data(1,4,:)), 0)
-    call sum2RootArr(cs2data(4,4,:), size(cs2data(4,4,:)), 0)
-    call sum2RootArr(cs2data(5,5,:), size(cs2data(5,5,:)), 0)
-    call sum2RootArr(cs2data(2,5,:), size(cs2data(2,5,:)), 0)
-    call sum2RootArr(cs2data(2,2,:), size(cs2data(2,2,:)), 0)
-    call sum2RootArr(cs2data(6,6,:), size(cs2data(6,6,:)), 0)
+
+
+    call sum2RootArr(sdata, nslices, 0)
+    call sum2RootArr(meanX, nslices, 0)
+    call sum2RootArr(meanY, nslices, 0)
+    call sum2RootArr(meanPX, nslices, 0)
+    call sum2RootArr(meanPY, nslices, 0)
+    call sum2RootArr(meanGam, nslices, 0)
+    call sum2RootArr(meanXX, nslices, 0)
+    call sum2RootArr(meanXPX, nslices, 0)
+    call sum2RootArr(meanPXPX, nslices, 0)
+    call sum2RootArr(meanPYPY, nslices, 0)
+    call sum2RootArr(meanYPY, nslices, 0)
+    call sum2RootArr(meanYY, nslices, 0)
+    call sum2RootArr(meanGamGam, nslices, 0)
     call sum2RootArr(b1r, size(b1r), 0)
     call sum2RootArr(b1i, size(b1i), 0)
     call sum2RootArr(b2r, size(b2r), 0)
@@ -724,18 +769,20 @@ contains
     call sum2RootArr(b5i, size(b5i), 0)
 
 !! All ranks calculate, but correct data is now only on rank0.
+
+    if (tProcInfo_G%qRoot) then
     Do is=1,nslices
-      if (sdata(is)>0) then
-        aveX(is)=csdata(1,is)/sdata(is)
-        aveY(is)=csdata(2,is)/sdata(is)
-        avepX(is)=csdata(4,is)/sdata(is)
-        avepY(is)=csdata(5,is)/sdata(is)
-        aveGamma(is)=csdata(6,is)/sdata(is)
-        sdx(is)=sqrt((cs2data(1,1,is)-(csdata(1,is)**2)/sdata(is))/sdata(is))
-        sdy(is)=sqrt((cs2data(2,2,is)-(csdata(2,is)**2)/sdata(is))/sdata(is))
-        sdpx(is)=sqrt((cs2data(4,4,is)-(csdata(4,is)**2)/sdata(is))/sdata(is))
-        sdpy(is)=sqrt((cs2data(5,5,is)-(csdata(5,is)**2)/sdata(is))/sdata(is))
-        avedgamma(is)=sqrt((cs2data(6,6,is)-(csdata(6,is)**2)/sdata(is))/sdata(is))
+      if (sdata(is)>0.0_wp) then
+        aveX(is)=meanX(is)/sdata(is)
+        aveY(is)=meanY(is)/sdata(is)
+        avepX(is)=meanPX(is)/sdata(is)
+        avepY(is)=meanPY(is)/sdata(is)
+        aveGamma(is)=meanGam(is)/sdata(is)
+        sdx(is)= (meanXX(is)/sdata(is)) - (meanX(is) / sdata(is) )**2.0_wp
+        sdy(is)= (meanYY(is)/sdata(is)) - (meanY(is) / sdata(is) )**2.0_wp
+        sdpx(is)=(meanPXPX(is)/sdata(is)) - (meanPX(is) / sdata(is) )**2.0_wp
+        sdpy(is)=(meanPYPY(is)/sdata(is)) - (meanPY(is) / sdata(is) )**2.0_wp
+        avedgamma(is) = (meanGamGam(is)/sdata(is)) - (meanGam(is)/sdata(is))**2.0_wp
         if (tprocinfo_g%qroot) then
 !          print*, "ex terms for slice "
 !          print*, is
@@ -745,8 +792,12 @@ contains
 !          print*,cs2data(1,1,is)*cs2data(4,4,is)
 !          print*,cs2data(1,4,is)**2
         end if
-        ex(is)=sqrt((cs2data(1,1,is)*cs2data(4,4,is)-(cs2data(1,4,is)**2)))/sdata(is)
-        ey(is)=sqrt((cs2data(2,2,is)*cs2data(5,5,is)-(cs2data(2,5,is)**2)))/sdata(is)
+        ex(is)= (meanXX(is)*meanPXPX(is) / sdata(is)**2.0_wp ) &
+                           - ( (meanXPX(is) / sdata(is) )**2.0_wp ) 
+
+        ey(is)= (meanYY(is)*meanPYPY(is) / sdata(is)**2.0_wp ) &
+                           - ( (meanYPY(is) / sdata(is) )**2.0_wp ) 
+
         b1(is)=sqrt(b1r(is)**2+b1i(is)**2)/sliceSizeZ2
         b2(is)=sqrt(b2r(is)**2+b2i(is)**2)/sliceSizeZ2
         b3(is)=sqrt(b3r(is)**2+b3i(is)**2)/sliceSizeZ2
@@ -772,6 +823,27 @@ contains
         b5(is)=0._wp
       end if
     end do
+
+  where (sdx<0.0_wp) sdx = 0.0_wp
+  where (sdy<0.0_wp) sdy = 0.0_wp
+  where (sdpx<0.0_wp) sdpx = 0.0_wp
+  where (sdpy<0.0_wp) sdpy = 0.0_wp
+  where (avedgamma<0.0_wp) avedgamma = 0.0_wp
+  where (ex<0.0_wp) ex = 0.0_wp
+  where (ey<0.0_wp) ey = 0.0_wp
+  
+  sdx = sqrt(sdx)
+  sdy = sqrt(sdy)
+  sdpx = sqrt(sdpx)
+  sdpy = sqrt(sdpy)
+  avedgamma = sqrt(avedgamma)
+  ex = sqrt(ex)
+  ey = sqrt(ey)
+  
+  end if
+
+  call mpi_barrier(tProcInfo_G%comm, error)
+
   end subroutine getSliceTwiss
 
   subroutine getBunchingFundamental(nslices,bunching)

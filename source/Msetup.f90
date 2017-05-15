@@ -1,8 +1,16 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! ###############################################
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
+! ###############################################
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> A module which contains top-level subroutines to allocate and initialize, 
+!> or destroy, the data used in Puffin.
 
 MODULE Setup
 
@@ -22,9 +30,6 @@ MODULE Setup
   use ParaField
   use dummyf
 
-! A module which allocates and initializes - or 
-! destroys - the data used in Puffin.
-
   IMPLICIT NONE
 
   CONTAINS
@@ -37,7 +42,7 @@ MODULE Setup
 
   IMPLICIT NONE
 
-! Subroutine to perform the initialization of 
+! Subroutine to perform the initialization of
 ! the data for Puffin, and to write out initial
 ! values.
 !
@@ -48,7 +53,7 @@ MODULE Setup
 !
 ! sZ             Electron propagation distance in z
 !                through undulator.
-! 
+!
 ! qOK            Error flag; .false. if no error
 
 !  REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sA(:)
@@ -69,7 +74,7 @@ MODULE Setup
   qResume = .FALSE.
   qWrite = .TRUE.
 
-!     Read in input file name 
+!     Read in input file name
 !     (input on command line as variable at runtime)
 
   CALL getarg(1,infile)
@@ -79,7 +84,7 @@ MODULE Setup
 
     PRINT *, 'ERROR, no input filename specified'
     STOP
-    
+
   END IF
 
   CALL FileNameNoExtension(zFileName, zFile, qOKL)
@@ -113,8 +118,6 @@ MODULE Setup
        sLenEPulse,        &
        iNodes,            &
        sFieldModelLength, &
-       iRedNodesX,        &
-       iRedNodesY,        &
        nodesperlambda, &
        stepsPerPeriod, &
        nperiods, &
@@ -141,33 +144,31 @@ MODULE Setup
        sgammar,           &
        lambda_w,          &
        sEmit_n,           &
+       alphax, alphay, emitx, emity, &
        fx,                &
        fy,                &
-       Dfact,             &
-       sFocusfactor,      &
        taper,             &
        zUndType,          &
        sSeedSigma,        &
        freqf, SmeanZ2,    &
        ph_sh, &
        qFlatTopS, nseeds, &
-       sPEOut,            &
-       iDumpNthSteps,     &
        qSwitches,         &
        qMatched_A,        &
+       qmeasure, &
        qOKL)
-  
+
   IF (.NOT. qOKL) GOTO 1000
 
-!    Check all the inputs e.g. wiggler and electron lengths etc 
+!    Check all the inputs e.g. wiggler and electron lengths etc
 !    to avoid errors.
 
 
 
   call calcScaling(srho, saw, sgammar, lambda_w, &
-    sFocusFactor, zUndType, fx, fy)
+                   zUndType, fx, fy)
 
-  
+
   if (.not. qscaled_G) then
 
 
@@ -177,7 +178,7 @@ MODULE Setup
     if (tProcInfo_G%qRoot) print*, ''
 
     call scaleParams(sEleSig, sLenEPulse, sSigEj_G, &
-                     beamCenZ2, chirp, sEmit_n, gamma_d, &
+                     beamCenZ2, chirp, sEmit_n, emitx, emity, gamma_d, &
                      sFieldModelLength, sLengthofElm, &
                      sSeedSigma)
   end if
@@ -196,10 +197,10 @@ MODULE Setup
 
   CALL CheckParameters(sLenEPulse,iNumElectrons,nbeams,sLengthofElm,iNodes,&
                        sFieldModelLength,sStepSize,nSteps,srho,saw,sgammar, &
-                       sFocusfactor, mag, sEleSig,fx,fy, iRedNodesX, &
-                       iRedNodesY,qSwitches,qSimple, sSeedSigma, freqf, & 
+                       mag, sEleSig,fx,fy, &
+                       qSwitches,qSimple, sSeedSigma, freqf, &
                        SmeanZ2, qFlatTopS, nseeds, qOKL)
-  
+
   IF (.NOT. qOKL) GOTO 1000
 
 !  end if
@@ -207,8 +208,8 @@ MODULE Setup
 
 !    Setup FFTW plans for the forward and backwards transforms.
 
-  CALL getTransformPlans4FEL(iNodes,qOKL)
-  
+  CALL getTransformPlans4FEL(iNodes,qmeasure,qOKL)
+
   IF (.NOT. qOKL) GOTO 1000
 
 !    Calculate parameters for matched beam
@@ -230,12 +231,12 @@ MODULE Setup
 !                    sLengthofElm,zUndType,iRedNodesX,iRedNodesY,fx,fy,qOKL)
 !
 !    IF (.NOT. qOKL) GOTO 1000
-!  
+!
 !  END IF
 !
 !
 !
-!!     Check transverse sampled length of field is long enough to model 
+!!     Check transverse sampled length of field is long enough to model
 !!     diffraction of the resonant frequency.
 !
 !  IF (qSwitches(iDiffraction_CG)) THEN
@@ -246,19 +247,19 @@ MODULE Setup
 !                                       sLengthofElm,iNodes,qOKL)
 !
 !    IF (.NOT. qOKL) GOTO 1000
-!  
+!
 !  END IF
 
 
 
   call setupMods(lattFile, taper, sRho, nSteps, sStepSize, fx, fy, &
                   sKBetaXSF_G, sKBetaYSF_G)
-      
+
 !     Pass local vars to global vars
 
   CALL passToGlobals(srho,saw,sgammar,lambda_w,iNodes, &
                      sLengthOfElm, qSimple, iNumElectrons, &
-                     fx,fy,sFocusFactor,taper, &
+                     fx,fy,taper, &
                      sFiltFrac,sDiffFrac,sBeta, &
                      zUndType,qFormattedFiles, qSwitches,qOK)
 
@@ -274,7 +275,7 @@ MODULE Setup
     if (qSimple) then
 
       call stptrns(sEleSig, sLenEPulse, iNumElectrons, &
-                   sEmit_n, gamma_d, &
+                   emitx, emity, gamma_d, &
                    qMatched_A, qMatchS_G, qFMesh_G, sSeedSigma)
 
       sFieldModelLength(iX_CG) = sLengthOfElmX_G * real((NX_G-1_ip),kind=wp)
@@ -296,14 +297,14 @@ MODULE Setup
                            sLengthofElm,iNodes,qOKL)
 
       if (.not. qOKL) goto 1000
-  
+
     end if
 
   end if
 
   if (qsdds_G) call initPFile(tPowF, qFormattedFiles) ! initialize power file type
 
-  call initPowerCalc()
+  if (.not. qResume_G) call initPowerCalc()
 
 !     Generate macroelectrons
 
@@ -319,54 +320,77 @@ MODULE Setup
   end if
 
   call PopMacroElectrons(qSimple, dist_f, sQe,iNumElectrons,q_noise,sZ,sLenEPulse,&
-                         sEleSig,beamCenZ2,gamma_d,&
+                         sEleSig, alphax, alphay, emitx, emity, beamCenZ2,gamma_d,&
                          sElectronThreshold,chirp, mag, fr, &
                          nbeams, qOK)
 
-  IF (.NOT. qOKL) GOTO 1000  
+  IF (.NOT. qOKL) GOTO 1000
 
+
+  if (qresume_G) then
+
+    iUnd_cr = tInitData_G%iUnd_cr
+    iChic_cr = tInitData_G%iChic_cr
+    iDrift_cr = tInitData_G%iDrift_cr
+    iQuad_cr = tInitData_G%iQuad_cr
+    iModulation_cr = tInitData_G%iModulation_cr
+
+  end if
 
 
 !    IF qresume is .TRUE. then we are reading in data from the
 !    dump files from a previous run....
 
-  IF (qResume) THEN
+!  IF (qResume) THEN
 
     !CALL InitFD(sA,sZ,qOKL)
 
-    !IF (.NOT. qOKL) GOTO 1000  
-  
+    !IF (.NOT. qOKL) GOTO 1000
 
-  ELSE
+
+!  ELSE
 
 !    ...or if qResume is .FALSE. then we are setting up the data
 !    ourselves....
 
-!    ALLOCATE(sA(nFieldEquations_CG*iNumberNodes_G)) 
+!    ALLOCATE(sA(nFieldEquations_CG*iNumberNodes_G))
+
+
+  if (iFieldSeedType_G==iSimpleSeed_G) then
 
     qStart_new = .true.
 
     call getLocalFieldIndices(sRedistLen_G)
 
-
-
-
-  
-    CALL SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, qFlatTopS,&
+    CALL SetUpInitialValues(nseeds, freqf, &
+                            ph_sh, SmeanZ2, &
+                            sFiltFrac, qFlatTopS,&
                             sSeedSigma, &
                             sA0_Re,&
                             sA0_Im,&
-                            field_file, &
                             qOKL)
-  
+
+  else if (iFieldSeedType_G==iReadH5Field_G) then
+
+    call readH5FieldfileSingleDump(field_file(1), sFiltFrac)
+    call initPowerCalc()
+
+    sFieldModelLength(iX_CG) = sLengthOfElmX_G * real((NX_G-1_ip),kind=wp)
+    sFieldModelLength(iY_CG) = sLengthOfElmY_G * real((NY_G-1_ip),kind=wp)
+
+    sLengthOfElm(iX_CG) = sLengthOfElmX_G
+    sLengthOfElm(iY_CG) = sLengthOfElmY_G
+    delta_G = sLengthOfElmX_G*sLengthOfElmY_G*sLengthOfElmZ2_G
+
+  end if
 
 !  CALL MPI_BARRIER(tProcInfo_G%comm,error)
 !  call mpi_finalize(error)
 !  stop
 
-    start_step = 1_IP
-  	
-  END IF
+  start_step = 1_IP
+
+!  END IF
 
 
 
@@ -375,15 +399,17 @@ MODULE Setup
 !    Define the rescaling parameter "ffact" for rescaling
 !    backwards transform data.
 
-  ffact = iNodes(iX_CG)*iNodes(iY_CG)*iNodes(iZ2_CG)      
-   	
+  ffact = real(iNodes(iX_CG), kind=wp) * &
+          real(iNodes(iY_CG), kind=wp) * &
+          real(iNodes(iZ2_CG), kind=wp)
 
 
-  IF (qResume) THEN
-    CALL READINCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
+
+!  IF (qResume) THEN
+!    CALL READINCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
   !ELSE
   !  CALL DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
-  ENDIF
+!  ENDIF
 
 
 
@@ -396,28 +422,28 @@ MODULE Setup
       ALLOCATE(kx_G(1),ky_G(1))
       kx_G = 0
       ky_G = 0
-              
-      IF (tTransInfo_G%loc_nz2_aft_trans/=0) THEN      
+
+      IF (tTransInfo_G%loc_nz2_aft_trans/=0) THEN
         ALLOCATE(kz2_loc_G(0:tTransInfo_G%loc_nz2_aft_trans-1))
       END IF
-              
+
     ELSE
       ALLOCATE(kx_G(0:iNodes(iX_CG)-1))
-      ALLOCATE(ky_G(0:iNodes(iY_CG)-1)) 
-        			 
-      IF (tTransInfo_G%loc_nz2/=0) THEN      
+      ALLOCATE(ky_G(0:iNodes(iY_CG)-1))
+
+      IF (tTransInfo_G%loc_nz2/=0) THEN
          ALLOCATE(kz2_loc_G(0:tTransInfo_G%loc_nz2-1))
       END IF
-              
+
     END IF
-           
+
     ALLOCATE(frecvs(tProcInfo_G%size),fdispls(tProcInfo_G%size))
 
-    CALL MPI_BARRIER(tProcInfo_G%comm,error) 
-           
+    CALL MPI_BARRIER(tProcInfo_G%comm,error)
+
     CALL GetKValues(frecvs,fdispls,qOKL)
     IF (.NOT. qOKL) GOTO 1000
-  
+
   END IF
 
 
@@ -426,18 +452,18 @@ MODULE Setup
 
   if (qsdds_G) then
 
-    if (tProcInfo_G%qROOT) print*, 'Writing parameter data to file' 
+    if (tProcInfo_G%qROOT) print*, 'Writing parameter data to file'
 
     qSeparateStepFiles_G = qSeparateStepFiles
 
     call WriteEleData(zDataFileName,'Chi','s_chi_bar',qFormattedFiles, &
          iGlonumElectrons_G,s_chi_bar_G,qOKL)
     if (.not. qOKL) goto 1000
-  
+
     call WriteEleData(zDataFileName,'NormChi','s_Normalised_chi',qFormattedFiles, &
                       iGlonumElectrons_G,s_Normalised_chi_G,qOKL)
     if (.not. qOKL) goto 1000
-  
+
     if (tProcInfo_G%qRoot) then
       call WriteParameterData(zDataFileName,&
                              iNodes,&
@@ -455,27 +481,26 @@ MODULE Setup
                              sEta_G,&
                              sGammaR_G,&
                              sKBeta_G, &
-                             sFocusfactor_G, &
                              lam_w_G, lam_r_G, &
                              lg_G, lc_G, &
-                             npk_bar_G, &  
+                             npk_bar_G, &
                              iGloNumElectrons_G,&
                              nFieldEquations_CG,&
-                             nElectronEquations_CG,&  
+                             nElectronEquations_CG,&
                              sZ,&
                              iWriteNthSteps, &
                              iIntWriteNthSteps, &
                              sSeedSigma(1,:),&
                              qSwitches,&
                              fx,fy,&
-                             qOKL)                             
+                             qOKL)
       if (.not. qOKL) goto 1000
-          
+
     end if
   end if
 
 !    Write out initial values of electron and field data.
-!    If not using separate files for each step then open 
+!    If not using separate files for each step then open
 !    file - In EArrayFunctions.f90 line 449
 
   CALL MPI_BARRIER(tProcInfo_G%comm,error)
@@ -491,10 +516,16 @@ MODULE Setup
 !                 zDataFileName, .true., .true., qOK)
 
   iCSteps = 0_ip
-  call writeIM(sZ, &
-               zDataFileName, 0_ip, 0_ip, iWriteNthSteps, &
-               iIntWriteNthSteps, nSteps, qOKL)
-  iCsteps = 1_ip
+
+  if (.not. qResume_G) then
+
+    call writeIM(sZ, sZlSt_G, &
+                 zDataFileName, 0_ip, 0_ip, 0_ip, iWriteNthSteps, &
+                 iIntWriteNthSteps, nSteps, qOKL)
+
+  end if
+
+!  iCsteps = 1_ip
 
 !  if (qWrite) call wdfs(sA, sZ, 0, tArrayA, tArrayE, tArrayZ, &
 !                        iIntWriteNthSteps, iWriteNthSteps, &
@@ -510,44 +541,44 @@ MODULE Setup
 !          tArrayZ, &
 !          tArrayA, &
 !          tArrayE, &
-!          qOKL)   
+!          qOKL)
 !     IF (.NOT. qOKL) GOTO 1000
-  
+
 !   END IF
-     
-! !    Write initial result to file - see line 374 for 
+
+! !    Write initial result to file - see line 374 for
 ! !    "WriteIntegrationData" routine
 
 !   CALL WriteData(qSeparateStepFiles,&
 !       zDataFileName,tArrayZ,tArrayA,tArrayE,&
 !       iStep,sZ,sA,sV,.TRUE.,qFormattedFiles,qOKL)
 !   IF (.NOT. qOKL) GOTO 1000
-   
+
   CALL MPI_BARRIER(tProcInfo_G%comm,error)
-  
+
   If(tProcInfo_G%qROOT) PRINT *, 'Initial data written'
-  
-  
+
+
 !  if (qSwitches(iDump_CG)) call DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
 !  if (qSwitches(iDump_CG)) call DUMPDATA(sA,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
 !                             iNumberElectrons_G,sZ,istep,tArrayA(1)%tFileType%iPage)
 
   DEALLOCATE(s_Normalised_chi_G)
- 
+
   qOK = .TRUE.
-  
+
   GOTO 2000
-  
+
   1000 CALL Error_log('Error in Setup:init',tErrorLog_G)
-  
+
   2000 CONTINUE
-  
+
   END SUBROUTINE init
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   SUBROUTINE cleanup(sZ)
-  
+
   IMPLICIT NONE
 
 ! Cleanup, deallocate, destroy
@@ -580,7 +611,7 @@ MODULE Setup
 
   IF (qDiffraction_G) THEN
     DEALLOCATE(kx_G)
-    DEALLOCATE(ky_G)      
+    DEALLOCATE(ky_G)
     IF (tTransInfo_G%qOneD) THEN
       IF (tTransInfo_G%loc_nz2_aft_trans/=0) THEN
         DEALLOCATE(kz2_loc_G)
@@ -591,7 +622,7 @@ MODULE Setup
       ENDIF
     ENDIF
   END IF
-  
+
 !    Clear FFTW plans
 
   CALL clearTransformPlans(qOKL)
@@ -605,9 +636,9 @@ MODULE Setup
 !    Finalize MPI to free processors and end code.
 
   CALL UnDefineParallelLibrary(qOKL)
-  
+
   GOTO 2000
-  
+
 1000 PRINT*, 'ERROR IN cleanuptemp'
    STOP
 2000 CONTINUE
@@ -615,4 +646,3 @@ MODULE Setup
   END SUBROUTINE cleanup
 
 END MODULE Setup
-

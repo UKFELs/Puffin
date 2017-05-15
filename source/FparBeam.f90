@@ -1,8 +1,6 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
 
 module parBeam
 
@@ -128,5 +126,61 @@ SUBROUTINE splitBeams(iNMP,samLenE,nBeams,numproc,rank,&
   END DO
 
 END SUBROUTINE splitBeams
+
+
+
+subroutine divMPs(ndpts, numproc, rank, &
+                  locN, local_start, local_end)
+
+! Get local number of nodes and start and global
+! indices of start and end points. 
+! 
+!           ARGUMENTS
+
+  integer(kind=ip), intent(in) :: ndpts, numproc, rank
+  
+  integer(kind=ip), intent(out) :: locN
+  integer(kind=ip), intent(out) :: local_start, local_end
+  
+!          LOCAL ARGS
+  
+  real(kind=wp) :: frac
+  integer(kind=ip) :: lowern, highern, remainder
+
+
+  frac = REAL(ndpts,kind=wp)/REAL(numproc,kind=wp)
+  lowern = FLOOR(frac)
+  highern = CEILING(frac)
+  remainder = MOD(ndpts,numproc)
+   
+  IF (remainder==0) THEN
+     locN = lowern
+  ELSE
+     IF (rank < remainder) THEN
+        locN = highern
+     ELSE
+        locN = lowern
+     ENDIF
+  ENDIF
+
+
+!     Calculate local start and end values.
+
+  IF (rank >= remainder) THEN
+    
+    local_start = (remainder*highern) + ((rank-remainder) * lowern) + 1
+    local_end = local_start + locN - 1
+
+  ELSE
+     
+    local_start = rank*locN + 1
+    local_end = local_start + locN - 1
+  
+  ENDIF
+
+  
+end subroutine divMPs
+
+
 
 end module parBeam

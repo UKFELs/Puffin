@@ -1,8 +1,6 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
 
 module grids
 
@@ -164,7 +162,8 @@ SUBROUTINE genGrid(b_num, inttype,gridtype,centre,sigma,length,&
 
   IF (qParallel) THEN
 
-    if (qRndEj_G(b_num)) then !!!  If rounding edges of flat-top
+    if ((qRndEj_G(b_num)) .and. &
+           (inttype == iTopHatDistribution_CG) ) then !!!  If rounding edges of flat-top
   
       CALL splitBeam(iNMP, length, tProcInfo_G%size, tProcInfo_G%rank, &
                      locN, local_start, local_fin)

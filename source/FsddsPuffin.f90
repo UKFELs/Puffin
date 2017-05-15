@@ -1,8 +1,6 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
 
 MODULE sddsPuffin
 
@@ -32,7 +30,7 @@ CONTAINS
        sA0_Re, &
        sA0_Im, &
        rho,aw,epsilon,gamma_r, &
-       kbeta, ff, &
+       kbeta, &
        lam_w, lam_r, &
        l_g, l_c, &
        npk_bar, &
@@ -89,7 +87,7 @@ CONTAINS
     REAL(KIND=WP),    INTENT(IN) :: sA0_Re   
     REAL(KIND=WP),    INTENT(IN) :: sA0_Im   
     REAL(KIND=WP),    INTENT(IN) :: rho,aw,epsilon,gamma_r
-    REAL(KIND=WP),    INTENT(IN) :: kbeta, ff
+    REAL(KIND=WP),    INTENT(IN) :: kbeta
     real(kind=wp),    intent(in) :: lam_w, lam_r, l_g, l_c
     real(kind=wp),    intent(in) :: npk_bar
     INTEGER(KIND=IPL), INTENT(IN) :: totalNumberElectrons
@@ -199,8 +197,6 @@ CONTAINS
        call SddsWriteParameter('gamma_r','double',tFileType=tParamFile)	  
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('k_beta','double',tFileType=tParamFile)   
-       If (.NOT. qOKL) Goto 1000
-       call SddsWriteParameter('ff','double',tFileType=tParamFile)   
        If (.NOT. qOKL) Goto 1000
        call SddsWriteParameter('lambda_w','double',tFileType=tParamFile)   
        If (.NOT. qOKL) Goto 1000
@@ -328,8 +324,6 @@ CONTAINS
        call WriteRealNumber(gamma_r,tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
        call WriteRealNumber(kbeta,tParamFile,qOKL)
-       If (.NOT. qOKL) Goto 1000
-       call WriteRealNumber(ff,tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000
        call WriteRealNumber(lam_w,tParamFile,qOKL)
        If (.NOT. qOKL) Goto 1000

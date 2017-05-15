@@ -1,8 +1,6 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
 
 module RK4int
 
@@ -191,6 +189,7 @@ subroutine rk4par(sZ,h,qD)
   
   if (qPArrOK_G) then
 
+!$OMP PARALLEL WORKSHARE
     xt = sElX_G      +  hh*dxdx
     yt = sElY_G      +  hh*dydx
     z2t = sElZ2_G    +  hh*dz2dx
@@ -200,6 +199,7 @@ subroutine rk4par(sZ,h,qD)
 
     A_localtr1 = A_localtr0 + hh * dadz_r0
     A_localti1 = A_localti0 + hh * dadz_i0
+!$OMP END PARALLEL WORKSHARE
 
 !    Update large field array with new values 
 !  call local2globalA(A_localt,sA,recvs,displs,tTransInfo_G%qOneD)
@@ -226,7 +226,7 @@ subroutine rk4par(sZ,h,qD)
 !    Incrementing with newest derivative value...
 
   if (qPArrOK_G) then
-
+!$OMP PARALLEL WORKSHARE
     xt = sElX_G      +  hh*dxt
     yt = sElY_G      +  hh*dyt
     z2t = sElZ2_G    +  hh*dz2t
@@ -236,7 +236,7 @@ subroutine rk4par(sZ,h,qD)
 
     A_localtr2 = A_localtr0 + hh * dadz_r1
     A_localti2 = A_localti0 + hh * dadz_i1
-
+!$OMP END PARALLEL WORKSHARE
 !    Update full field array
 
 !  call local2globalA(A_localt,sA,recvs,displs,tTransInfo_G%qOneD)
@@ -258,7 +258,7 @@ subroutine rk4par(sZ,h,qD)
 !    Incrementing
 
   if (qPArrOK_G) then
-
+!$OMP PARALLEL WORKSHARE
     xt = sElX_G      +  h * dxm
     yt = sElY_G      +  h * dym
     z2t = sElZ2_G    +  h * dz2m
@@ -268,12 +268,12 @@ subroutine rk4par(sZ,h,qD)
 
     A_localtr3 = A_localtr0 + h * dadz_r2
     A_localti3 = A_localti0 + h * dadz_i2
-
+!$OMP END PARALLEL WORKSHARE
 !  call local2globalA(A_localt, sA, recvs, displs, tTransInfo_G%qOneD)
 
     call upd8a(A_localtr3, A_localti3)
 
-
+!$OMP PARALLEL WORKSHARE
     dxm = dxt + dxm
     dym = dyt + dym
     dz2m = dz2t + dz2m
@@ -286,7 +286,7 @@ subroutine rk4par(sZ,h,qD)
 
     dadz_r1 = 0_wp
     dadz_i1 = 0_wp
-
+!$OMP END PARALLEL WORKSHARE
   end if
 
 !    Fourth step       
@@ -306,7 +306,7 @@ subroutine rk4par(sZ,h,qD)
 !    Accumulate increments with proper weights       
 
   if (qPArrOK_G) then
-
+!$OMP PARALLEL WORKSHARE
     sElX_G    = sElX_G   + h6 * ( dxdx   + dxt   + 2.0_WP * dxm  )
     sElY_G    = sElY_G   + h6 * ( dydx   + dyt   + 2.0_WP * dym  )
     sElZ2_G   = sElZ2_G  + h6 * ( dz2dx  + dz2t  + 2.0_WP * dz2m )
@@ -316,7 +316,7 @@ subroutine rk4par(sZ,h,qD)
 
     ac_rfield_in = ac_rfield_in + h6 * (dadz_r0 + dadz_r1 + 2.0_WP * dadz_r2)
     ac_ifield_in = ac_ifield_in + h6 * (dadz_i0 + dadz_i1 + 2.0_WP * dadz_i2)
-
+!$OMP END PARALLEL WORKSHARE
 !  if (count(abs(dadz_r0) > 0.0_wp) <= 0) print*, 'HELP IM TOO RUBBUSH'
 
 !  if (count(abs(ac_rfield) > 0.0_wp) <= 0) print*, 'HELP IM RUBBUSH'
