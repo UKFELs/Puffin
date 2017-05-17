@@ -384,8 +384,8 @@ For the quad, we must specify $\bar{F}_x$ and $\bar{F}_y$. These are scaled tran
 \end{align}
 which in the scaled notation becomes:
 \begin{align}
-\frac{d \bar{p}_{xj}}{d \bar{z}} \bigg|_{new} = \frac{d \bar{p}_{xj}}{d \bar{z}}  \bigg|_{old} +\frac{\sqrt{\eta}\Gamma_j}{2\rho\kappa} \frac{1}{1+\eta p_{2j}}  \frac{\bar{x}_j}{\bar{F}_x} \\
-\frac{d \bar{p}_{yj}}{d \bar{z}}  \bigg|_{new} = \frac{d \bar{p}_{yj}}{d \bar{z}}  \bigg|_{old} +\frac{\sqrt{\eta}\Gamma_j}{2\rho\kappa} \frac{1}{1+\eta p_{2j}}  \frac{\bar{y}_j}{\bar{F}_y}
+\frac{d \bar{p}_{xj}}{d \bar{z}} \bigg|_{new} = \frac{d \bar{p}_{xj}}{d \bar{z}}  \bigg|_{old} +\frac{\sqrt{\eta}}{2\rho\kappa} \frac{\bar{x}_j}{\bar{F}_x} \\
+\frac{d \bar{p}_{yj}}{d \bar{z}}  \bigg|_{new} = \frac{d \bar{p}_{yj}}{d \bar{z}}  \bigg|_{old} +\frac{\sqrt{\eta}}{2\rho\kappa} \frac{\bar{y}_j}{\bar{F}_y}
 \end{align}
 where $\bar{F}_{x,y} = \dfrac{F_{x,y}}{l_g}$.
 
@@ -393,7 +393,7 @@ In $x$ (unscaled) focal length is taken as
 \begin{align}
 \frac{1}{F_x} = \frac{g L_Q}{B\rho},
 \end{align}
-where $g$ is the quad magnetic field gradient in $Tm^{-1}$, $L_Q$ is the length of the quad, and $B\rho = \beta E / 0.2998$ is the so-called magnetic rigidity in $Tm$, with the beam energy $E$ in $GeV$.
+where $g$ is the quad magnetic field gradient in $Tm^{-1}$, $L_Q$ is the length of the quad, and $B\rho = \beta E_0 / 0.2998$ is the so-called magnetic rigidity in $Tm$, with the beam energy $E_0$ in $GeV$ (corresponding to the scaling energy defined in the input file).
 
 {\bf CH} - Chicane
 
