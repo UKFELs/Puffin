@@ -1572,7 +1572,7 @@ contains
     ! Data is added to array in next process, not
     ! written over.
 
-      real(kind=wp), intent(inout) :: dadz_r(:), dadz_i(:)
+      real(kind=wp), contiguous, intent(inout) :: dadz_r(:), dadz_i(:)
 
       integer :: req, error
       integer(kind=ip) :: ij, si, sst, sse
@@ -1765,7 +1765,7 @@ contains
     ! Send sA from buffer to process on the left
     ! Data in 'buffer' on the left is overwritten.
 
-      real(kind=wp), intent(inout) :: ac_rl(:), ac_il(:)
+      real(kind=wp), contiguous, intent(inout) :: ac_rl(:), ac_il(:)
 
       integer(kind=ip) :: req, error, ij, si, sst, sse
       integer statr(MPI_STATUS_SIZE)
@@ -1969,7 +1969,7 @@ contains
 
     implicit none
 
-    real(kind=wp), intent(in) :: inner_ra(:), inner_ia(:)
+    real(kind=wp), contiguous, intent(in) :: inner_ra(:), inner_ia(:)
 
     integer(kind=ip) :: iz, ssti, ssei, iy, sst, sse
     integer(kind=ip) :: nxout, nyout ! should be made global and calculated
@@ -2011,7 +2011,7 @@ contains
 
     implicit none
 
-    real(kind=wp), intent(out) :: inner_ra(:), inner_ia(:)
+    real(kind=wp), contiguous, intent(out) :: inner_ra(:), inner_ia(:)
 
     integer(kind=ip) :: iz, sst, sse, ssti, ssei
     integer(kind=ip) :: nxout, nyout, iy ! should be made global and calculated

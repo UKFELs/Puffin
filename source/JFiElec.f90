@@ -122,13 +122,13 @@ subroutine getFFelecs_3D(sAr, sAi)
 
 use rhs_vars
 
-real(kind=wp), intent(in) :: sAr(:), sAi(:)
+real(kind=wp), contiguous, intent(in) :: sAr(:), sAi(:)
 integer(kind=ip) :: i
 
 !$OMP DO
-  do i = 1, maxEl
+  do i = 1, procelectrons_G(1)
   
-    if (i<=procelectrons_G(1)) then
+!    if (i<=procelectrons_G(1)) then
 
       sField4ElecReal(i) = lis_GR(1,i) * sAr(p_nodes(i)) + sField4ElecReal(i)
       sField4ElecReal(i) = lis_GR(2,i) * sAr(p_nodes(i) + 1_ip) + sField4ElecReal(i)
@@ -148,7 +148,7 @@ integer(kind=ip) :: i
       sField4ElecImag(i) = lis_GR(7,i) * sAi(p_nodes(i)  + ntrndsi_G + nspinDX) + sField4ElecImag(i)
       sField4ElecImag(i) = lis_GR(8,i) * sAi(p_nodes(i)  + ntrndsi_G + nspinDX + 1) + sField4ElecImag(i)
 
-    end if
+!    end if
   
   end do 
 !$OMP END DO
