@@ -181,48 +181,82 @@ subroutine  StopCode(qOK)
 
 end subroutine StopCode
 
-!======================================================================
+! ############################################################
 
-SUBROUTINE gather2A(A_local,sA,nA_loc,nA,recvs,displs)
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Gather from local A to global A on all processes.
+!> Global A is stored on all MPI processes, and has form all real values followed
+!> by all imaginary values.
+!> @param[in] A_local Local portion of A on this MPI process, reall array
+!> of size 2*nA_loc (see nA_loc definition). All real values followed by 
+!> all imaginary values, so real values are on A_local(1:nA_loc), and imaginary
+!> values are on A_local(nA_loc+1:2*nA_loc).
+!> @param[out] sA Global field. Full copy on every process. Of size 2*nA, real 
+!> values on sA(1:nA) and imaginary on sA(nA+1:2*nA).
+!> @param[in] nA_loc Number of field nodes on this process.
+!> @param[in] nA Number of field nodes globally.
+!> @param[in] recvs Array of size = number of MPI processes, describing
+!> layout of data.
+!> @param[in] displs Array of size = number of MPI processes, describing
+!> layout of data.
 
-! Gather from A_local to A
+subroutine gather2A(A_local,sA,nA_loc,nA,recvs,displs)
 
-REAL(KIND=WP),INTENT(IN)  ::  A_local(:)
-INTEGER,INTENT(IN)  ::  nA_loc,nA
-INTEGER,INTENT(IN)  ::  recvs(:),displs(:)
-REAL(KIND=WP),INTENT(OUT) ::  sA(:)
+  real(kind=wp), contiguous, intent(in) :: A_local(:)
+  integer, intent(in)  ::  nA_loc,nA
+  integer, contiguous, intent(in)  ::  recvs(:),displs(:)
+  real(kind=wp), contiguous, intent(out) ::  sA(:)
 
-INTEGER(KIND=IP)  ::  error
+  integer(kind=ip) :: error
 
- CALL MPI_ALLGATHERV( A_local(1:nA_loc),nA_loc,MPI_DOUBLE_PRECISION, &
-	                  sA(1:nA), recvs,displs, MPI_DOUBLE_PRECISION, &
+  call MPI_ALLGATHERV( A_local(1:nA_loc),nA_loc,MPI_DOUBLE_PRECISION, &
+              sA(1:nA), recvs,displs, MPI_DOUBLE_PRECISION, &
 			  		  tProcInfo_G%comm, error)
 
- CALL MPI_ALLGATHERV( A_local(nA_loc+1:2*nA_loc),nA_loc,MPI_DOUBLE_PRECISION, &
-	                  sA(nA+1:2*nA), recvs,displs, MPI_DOUBLE_PRECISION, &
+  call MPI_ALLGATHERV( A_local(nA_loc+1:2*nA_loc),nA_loc,MPI_DOUBLE_PRECISION, &
+              sA(nA+1:2*nA), recvs,displs, MPI_DOUBLE_PRECISION, &
 			  		  tProcInfo_G%comm, error)
 
 
-END SUBROUTINE gather2A
+end subroutine gather2A
 
-!======================================================================
+! ############################################################
 
-SUBROUTINE gather1A(A_local,sA,nA_loc,nA,recvs,displs)
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Gather from local A to global A on all processes. A and local A are real.
+!> Global A is stored on all MPI processes.
+!> @param[in] A_local Local portion of A on this MPI process, of size nA_loc.
+!> @param[out] sA Global field. Full copy on every process. Real array of size 
+!> nA.
+!> @param[in] nA_loc Number of field nodes on this process.
+!> @param[in] nA Number of field nodes globally.
+!> @param[in] recvs Array of size = number of MPI processes, describing
+!> layout of data.
+!> @param[in] displs Array of size = number of MPI processes, describing
+!> layout of data.
 
-! Gather from A_local to A
+subroutine gather1A(A_local,sA,nA_loc,nA,recvs,displs)
 
-REAL(KIND=WP),INTENT(IN)  ::  A_local(:)
-INTEGER(kind=ip),INTENT(IN)  ::  nA_loc,nA
-INTEGER(kind=ip),INTENT(IN)  ::  recvs(:),displs(:)
-REAL(KIND=WP),INTENT(OUT) ::  sA(:)
+  real(kind=wp),intent(in)  ::  A_local(:)
+  integer(kind=ip),intent(in)  ::  nA_loc,nA
+  integer(kind=ip),intent(in)  ::  recvs(:),displs(:)
+  real(kind=wp),intent(out) ::  sA(:)
 
-INTEGER(KIND=IP)  ::  error
+  integer(kind=ip)  ::  error
 
- CALL MPI_ALLGATHERV( A_local(1:nA_loc),nA_loc,MPI_DOUBLE_PRECISION, &
-                    sA(1:nA), recvs,displs, MPI_DOUBLE_PRECISION, &
+  call MPI_ALLGATHERV( A_local(1:nA_loc),nA_loc,MPI_DOUBLE_PRECISION, &
+              sA(1:nA), recvs,displs, MPI_DOUBLE_PRECISION, &
               tProcInfo_G%comm, error)
 
-END SUBROUTINE gather1A
+end subroutine gather1A
 
 !======================================================================
 
