@@ -6,20 +6,20 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> This module contains the type definition to hold the constants 
+!> This module contains the type definition to hold the constants
 !> pertaining to the numerical integration.
 
 module typeNumInt
 
   use paratype
-		
+
   implicit none
-      
+
   type fNumInt
-  
+
 !     These describe the field mesh:
 
     real(kind=wp) :: dx
@@ -40,10 +40,6 @@ module typeNumInt
 
     integer(kind=ip) :: v3d  ! formerly 'delta_g'
 
-!     Integration step size
-
-    real(kind=wp) :: stepSize
-    
   end type fNumInt
-  
+
 end module typeNumInt
