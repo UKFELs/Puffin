@@ -12,13 +12,13 @@
 !> This module contains the type definition to hold the constants
 !> pertaining to the numerical integration.
 
-module typeNumInt
+module typeFMesh
 
   use paratype
 
   implicit none
 
-  type fNumInt
+  type fFmesh
 
 !     These describe the field mesh:
 
@@ -40,6 +40,6 @@ module typeNumInt
 
     integer(kind=ip) :: v3d  ! formerly 'delta_g'
 
-  end type fNumInt
+  end type fFmesh
 
-end module typeNumInt
+end module typeFMesh
