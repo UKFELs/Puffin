@@ -19,7 +19,7 @@ MODULE randomGauss
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 USE paratype
-USE ParallelInfoType
+USE typempicomm
 ! A module for random number generation from the following distributions:
 !
 !     Distribution                    Function/subroutine name

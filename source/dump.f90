@@ -24,7 +24,7 @@ MODULE dumpFiles
   USE paratype
   USE typesandconstants
   USE Globals
-  USE ParallelInfoType
+  USE typempicomm
   USE sddsPuffin
 
   IMPLICIT NONE

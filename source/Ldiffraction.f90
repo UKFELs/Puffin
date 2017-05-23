@@ -15,7 +15,7 @@
 module PDiff
 
 use paratype
-use parallelinfotype
+use typempicomm
 use transforminfotype
 use transforms
 use masks

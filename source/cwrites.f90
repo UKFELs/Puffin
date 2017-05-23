@@ -5,7 +5,7 @@
 module cwrites
 
 use paratype
-use ParallelInfoType
+use typempicomm
 
 
 integer(kind=ip), allocatable :: wrarray(:)

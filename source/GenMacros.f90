@@ -5,7 +5,7 @@
 MODULE MacrosGen
 
 USE paratype
-USE ParallelInfoType
+USE typempicomm
 !USE sddsPuffin
 USE randomGauss
 USE ParallelSetUp
@@ -258,7 +258,7 @@ CONTAINS
     nprocs=tProcInfo_G%size
     index=0_IPL
     icount=0_IPL
-!   If (tParallelInfoType_G%qROOT) PRINT *, 'noise',q_noise
+!   If (ttypempicomm_G%qROOT) PRINT *, 'noise',q_noise
     s_number_macro=0.0_WP
 !radius=(x_1_grid(size(x_1_grid))-x_1_grid(1))/2.0_WP
 
@@ -269,7 +269,7 @@ CONTAINS
 
 !    DO proc = 0,nprocs-1
 !    IF (tProcInfo_G%rank==proc) THEN
-!If (tParallelInfoType_G%qROOT) PRINT *, 'Radius= ', radius
+!If (ttypempicomm_G%qROOT) PRINT *, 'Radius= ', radius
 
 !workout kx and ky for 3D undulator
 kx = SQRT(sEta_G/(8.0_WP*sRho_G**2))

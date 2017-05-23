@@ -17,7 +17,7 @@ module hdf5PuffID
 use paratype
 use HDF5
 use globals
-use ParallelInfoType
+use typempicomm
 use lattice
 USE ParallelSetUp
 USE ArrayFunctions

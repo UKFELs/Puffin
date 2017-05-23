@@ -17,7 +17,7 @@ use ArrayFunctions
 use Globals
 use Functions
 use TransformInfoType
-use ParallelInfoType
+use typempicomm
 use Equations
 use wigglerVar
 use FiElec1D

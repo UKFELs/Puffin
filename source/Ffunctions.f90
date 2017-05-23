@@ -12,7 +12,7 @@
 MODULE Functions
 
 USE paratype
-USE ParallelInfoType 
+USE typempicomm 
 USE error_fn
 USE typesAndConstants
 

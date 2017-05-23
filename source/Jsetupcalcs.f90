@@ -14,7 +14,7 @@
 MODULE setupcalcs
 
 USE Paratype
-USE ParallelInfoType
+USE typempicomm
 USE TransformInfoType
 USE IO
 USE ArrayFunctions

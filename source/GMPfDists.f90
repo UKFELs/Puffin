@@ -7,7 +7,7 @@ module gMPsFromDists
 use paratype
 use readDists
 use MacrosGenNew
-use parallelInfoType
+use typempicomm
 use Globals
 use typesAndConstants
 use parBeam

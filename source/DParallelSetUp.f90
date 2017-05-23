@@ -4,7 +4,6 @@
 ! License: BSD-3-Clause
 ! ###############################################
 
-
 !> @author
 !> Lawrence Campbell,
 !> University of Strathclyde,
@@ -13,52 +12,48 @@
 !> Module containing routines to setup and deallocate MPI processes,
 !> and handle MPI communication in Puffin.
 
-Module ParallelSetUp
+module ParallelSetUp
 
 use paratype
-use ParallelInfoType
+use typempicomm
 use IO
 ! use mpi
 
 
-IMPLICIT NONE
+implicit none
 
-INCLUDE 'mpif.h'
+include 'mpif.h'
 
-INTEGER :: MPI_INT_HIGH
+integer :: MPI_INT_HIGH
 
-CONTAINS
+contains
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Initialize and retrieve info on the MPI processes. Just sets up the basic
+!> MPI communicator across all processes.
+!> @param[out] tProcInfo Custom type to hold MPI info
+!> @param[out] qOK Error flag for Puffin
 
-SUBROUTINE  InitializeProcessors(tProcInfo, &
-				       qOk)
+subroutine InitializeProcessors(tProcInfo, qOk)
 
-  IMPLICIT NONE
+  implicit none
 
-! Initialize and retrieve info on the MPI processes
-!
-!               ARGUMENTS
-!
-! tProcInfo    OUTPUT    Custom type to hold MPI info
-! q0k          OUTPUT    Error flag for Puffin
+  type(fMPIComm), intent(out)	   :: tProcInfo  
+	logical,  intent(out) :: qOk
 
-  TYPE(cParallelInfoType), INTENT(OUT)	   :: tProcInfo
-  LOGICAL,                 INTENT(OUT)         :: qOk
-
-!              Local Vars
-!
-! error - error flag for MPI
-
-  INTEGER(KIND=IP)    :: error, provided
-
+  integer(kind=ip)    :: error, provided
 
 !     Begin
 
-  qOK = .FALSE.
+  qOK = .false.
 
 !     Initialize MPI
 
-  CALL MPI_INIT_THREAD(MPI_THREAD_FUNNELED, provided, error)
+  call MPI_INIT_THREAD(MPI_THREAD_FUNNELED, provided, error)
 
 !     Define comm as the global communicator.
 
@@ -67,15 +62,15 @@ SUBROUTINE  InitializeProcessors(tProcInfo, &
 !     Get local data on processor numbers. Rank is local number in the
 !     global communicator, size is the total number of processors
 
-  CALL MPI_COMM_RANK(tProcInfo%comm, tProcInfo%rank, error)
+  call MPI_COMM_RANK(tProcInfo%comm, tProcInfo%rank, error)
 
-  CALL MPI_COMM_SIZE(tProcInfo%comm, tProcInfo%size, error)
+  call MPI_COMM_SIZE(tProcInfo%comm, tProcInfo%size, error)
 
 !     Define root processor as rank 0.
 
-  IF (tProcInfo%rank==0) THEN
-    tProcInfo%qRoot = .TRUE.
-  END IF
+  if (tProcInfo%rank==0) then
+    tProcInfo%qRoot = .true.
+  end if
 
 !     Define MPI type for high precision integers
 
@@ -85,145 +80,106 @@ SUBROUTINE  InitializeProcessors(tProcInfo, &
 
 !     Set error flag and exit
 
-  qOK = .TRUE.
+  qOK = .true.
   GoTo 2000
 
 ! Error Handler
 
-1000 CALL Error_log('Error in ParallelSetUp:DefineParallelLibrary', &
+1000 call Error_log('Error in ParallelSetUp:DefineParallelLibrary', &
                     tErrorLog_G)
 
-  PRINT*,'Error in ParallelSetUp:DefineParallelLibrary'
+  print*,'Error in ParallelSetUp:DefineParallelLibrary'
 
-2000 CONTINUE
+2000 continue
 
-END SUBROUTINE InitializeProcessors
+end subroutine InitializeProcessors
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! ############################################################
 
-SUBROUTINE Get_time(in_time)
 
-  IMPLICIT NONE
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Get system time from MPI
+!> @param[inout] in_time System time
 
-  REAL(KIND=WP)	::	in_time
+subroutine Get_time(in_time)
 
-  INTEGER(KIND=IP)	::	error
+  implicit none
+
+  real(kind=wp), intent(inout)	::	in_time
+  integer(kind=ip)	::	error
 
   in_time = MPI_Wtime()
 
-END SUBROUTINE Get_time
+end subroutine Get_time
 
-!------------------------------------------------
+! ############################################################
 
-      SUBROUTINE  UnDefineParallelLibrary(qOK)
-!
-!********************************************************************
-! Define the parallel library grid
-! Set up parallel processors
-!********************************************************************
-!
-! qOK                     - OUTPUT   - Error flag
-!
-!********************************************************************
-!
-      IMPLICIT NONE
-!
-      LOGICAL,                 INTENT(OUT)         :: qOK
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Destroy the MPI environment
+!> @param[out] qOK Error flag for Puffin
 
+subroutine  UnDefineParallelLibrary(qOK)
 
+  implicit none
+  logical, intent(out) :: qOK
 
-      INTEGER(KIND=IP)		:: error
-!
-!--------------------------------------------------------------------------------
-! Set error flag to false
-!--------------------------------------------------------------------------------
-!
-      qOK = .FALSE.
-!
-!--------------------------------------------------------------------------------
-! UnInitialise library
-!--------------------------------------------------------------------------------
-!
-      call MPI_FINALIZE(error)
-!
-!--------------------------------------------------------------------------------
-!  Set error flag and exit
-!--------------------------------------------------------------------------------
-!
-      qOK = .TRUE.
-      GoTo 2000
-!
-!--------------------------------------------------------------------------------
-! Error Handler
-!--------------------------------------------------------------------------------
-!
+  integer(kind=ip)  :: error
+
+  qOK = .FALSE.
+
+  call MPI_FINALIZE(error)
+
+  qOK = .TRUE.
+  goto 2000
+
 1000 call Error_log('Error in ParallelSetUp:UnDefineParallelLibrary',tErrorLog_G)
        Print*,'Error in ParallelSetUp:UnDefineParallelLibrary'
 2000 CONTINUE
 
-      END SUBROUTINE UnDefineParallelLibrary
+end subroutine UnDefineParallelLibrary
 
+! ############################################################
 
-!--------------------------------------------------------------------------------
-!--------------------------------------------------------------------------------
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Stop code
+!> @param[out] qOK Error flag for Puffin
 
-      SUBROUTINE  StopCode(qOK)
-!
-!********************************************************************
-! Stop code runing
-!********************************************************************
-! qOK                     - OUTPUT   - Error flag
-!
-!********************************************************************
-!
-      IMPLICIT NONE
-!
-      LOGICAL,                 INTENT(OUT)         :: qOK
-!
-!====================================================================
-! Define local variables
-!
-! qOKL  - Error flag
-!=====================================================================
-!
-    	LOGICAL           :: qOKL
-        INTEGER(KIND=IP)		:: error
-!
-!--------------------------------------------------------------------------------
-! Set error flag to false
-!--------------------------------------------------------------------------------
-!
-      qOK = .FALSE.
-!
-!--------------------------------------------------------------------------------
-! UnInitialise library
-!--------------------------------------------------------------------------------
-!
-      call UnDefineParallelLibrary(qOKL)
-      If (.NOT. qOKL) Goto 1000
-!
-!--------------------------------------------------------------------------------
-! Stop
-!--------------------------------------------------------------------------------
-!
-      Stop
-!
-!--------------------------------------------------------------------------------
-!  Set error flag and exit
-!--------------------------------------------------------------------------------
-!
-      qOK = .TRUE.
-      GoTo 2000
-!
-!--------------------------------------------------------------------------------
-! Error Handler
-!--------------------------------------------------------------------------------
-!
+subroutine  StopCode(qOK)
+
+  implicit none
+
+  logical, intent(out) :: qOK
+
+  logical :: qOKL
+  integer(kind=ip)  :: error
+
+  qOK = .false.
+
+  call UnDefineParallelLibrary(qOKL)
+  if (.not. qOKL) goto 1000
+
+  stop
+
+  qOK = .true.
+  goto 2000
+
 1000 call Error_log('Error in ParallelSetUp:StopCode',tErrorLog_G)
       Print*,'Error in ParallelSetUp:StopCode'
-2000 CONTINUE
+2000 continue
 
-      END SUBROUTINE StopCode
+end subroutine StopCode
 
 !======================================================================
 

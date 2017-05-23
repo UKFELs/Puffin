@@ -14,7 +14,7 @@
 module pseqs
 
 use paratype
-use ParallelInfoType
+use typempicomm
 use parallelsetup
 use globals
 use randomGauss

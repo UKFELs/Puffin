@@ -13,7 +13,7 @@ MODULE addNoise
 
 use paratype
 use randomGauss
-use parallelInfoType
+use typempicomm
 use macrosGen
 
 implicit none

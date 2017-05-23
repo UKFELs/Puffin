@@ -12,7 +12,7 @@
 module readDists
 
 USE paratype
-USE parallelInfoType
+USE typempicomm
 
 implicit none
 

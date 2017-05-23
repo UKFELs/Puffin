@@ -5,7 +5,7 @@
 MODULE particleFunctions
 
 USE paratype
-USE ParallelInfoType
+USE typempicomm
 USE error_fn
 USE Functions
 USE typesAndConstants

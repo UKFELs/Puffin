@@ -17,7 +17,7 @@ use paratype
 use arrayfunctions
 use CIOWrapper
 use IO
-use ParallelInfoType
+use typempicomm
 use sddsSetup
 
 
@@ -62,7 +62,7 @@ contains
 !     LOGICAL                        :: qOKL
 
 ! !     Set error flag to false         
-! !     This type is defined is "ParallelInfoType.f90"
+! !     This type is defined is "typempicomm.f90"
 
 !     qOK = .false.    
 

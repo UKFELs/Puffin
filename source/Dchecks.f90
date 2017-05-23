@@ -13,7 +13,7 @@
 module checks
 
 use Paratype
-use ParallelInfoType
+use typempicomm
 use TransformInfoType
 use IO
 use typesAndConstants

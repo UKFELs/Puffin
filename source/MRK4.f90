@@ -4,7 +4,7 @@
 
 module RK4int
 
-use ParallelInfoType
+use typempicomm
 use TransformInfoType
 !use FFTW_Constants
 

@@ -14,7 +14,7 @@
 
 module transforms
 
-use ParallelInfoType
+use typempicomm
 use TransformInfoType
 !use FFTW_Constants
 use Globals

@@ -8,7 +8,7 @@ MODULE IO
 !--------------------------------------------------------------------------------
 
       USE paratype
-      USE ParallelInfoType
+      USE typempicomm
       USE FileType
       USE SddsWriter
       USE CIOWrapper

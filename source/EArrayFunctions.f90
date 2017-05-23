@@ -15,7 +15,7 @@ Module ArrayFunctions
 
 
   USE paratype
-  USE ParallelInfoType
+  USE typempicomm
   USE FileType
   USE IO
   USE ParallelSetup

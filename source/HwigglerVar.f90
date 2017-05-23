@@ -6,7 +6,7 @@ module wigglerVar
 
 use globals
 use paratype
-use ParallelInfoType
+use typempicomm
 use lattice
 
 contains 

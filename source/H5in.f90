@@ -5,7 +5,7 @@
 module H5in
 
 use paratype
-USE ParallelInfoType
+USE typempicomm
 use globals
 use ParallelSetUp
 use parBeam

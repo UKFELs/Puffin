@@ -14,7 +14,7 @@
 MODULE ElectronInit
 
 USE paratype
-USE ParallelInfoType
+USE typempicomm
 USE Globals
 USE MacrosGen
 use parBeam

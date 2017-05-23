@@ -5,7 +5,7 @@
 MODULE SETUPTRANS
 
 USE paratype
-USE ParallelInfoType
+USE typempicomm
 USE typesAndConstants
 USE functions
 USE IO
