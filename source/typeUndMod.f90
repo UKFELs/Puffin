@@ -30,7 +30,7 @@ module typeUndMod
     logical :: qUndEnds   ! If simulating undulator ends
     character(32_ip) :: zundtype_arr
 
-!          Describe numerical integration: (may spin out to seperate type...)
+!        These describe numerical integration: (may spin out to seperate type...)
 
     real(kind=wp) :: delmz           ! Integration step size
     integer(kind=ip) :: isteps4diff  ! Steps per diffraction step
