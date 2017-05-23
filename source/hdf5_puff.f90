@@ -316,7 +316,7 @@ contains
         call addH5Field1DFloat(sdpy, 'sigmaPybar', "intPtclMeshSc", &
                                "z2, sigma_pybar", time, sz_loc, iL, error)
 
-        wrEArray = -sdpy * 2.0_wp * sRho_G * sKappa_G / avGam4Unsc
+        wrEArray = sdpy * 2.0_wp * sRho_G * sKappa_G / avGam4Unsc
 
         call addH5Field1DFloat(wrEArray, 'sigma_dydzSI', "intPtclMeshSI", &
                                "ct-z (m), sigma_dydz", time, sz_loc, iL, error)

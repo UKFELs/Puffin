@@ -623,7 +623,7 @@ contains
       meanX(is)=meanX(is)+s_chi_bar_G(ip)*sElX_G(ip)
       meanY(is)=meanY(is)+s_chi_bar_G(ip)*sElY_G(ip)
       meanPX(is)=meanPX(is)+s_chi_bar_G(ip)*sElpX_G(ip)
-      meanPY(is)=meanPY(is)+s_chi_bar_G(ip)*sElpY_G(ip)
+      meanPY(is)=meanPY(is)-s_chi_bar_G(ip)*sElpY_G(ip)
       meanGam(is)=meanGam(is)+s_chi_bar_G(ip)*sElGam_G(ip)
       
       
@@ -632,13 +632,13 @@ contains
       meanXY(is)=meanXY(is)+s_chi_bar_G(ip)*sElX_G(ip)*sElY_G(ip)
       meanXZ2(is)=meanXZ2(is)+s_chi_bar_G(ip)*sElX_G(ip)*sElz2_G(ip)
       meanXPX(is)=meanXPX(is)+s_chi_bar_G(ip)*sElX_G(ip)*sElpX_G(ip)
-      meanXPY(is)=meanXPY(is)+s_chi_bar_G(ip)*sElX_G(ip)*sElpy_G(ip)
+      meanXPY(is)=meanXPY(is)-s_chi_bar_G(ip)*sElX_G(ip)*sElpy_G(ip)
       meanXGam(is)=meanXGam(is)+s_chi_bar_G(ip)*sElX_G(ip)*sElgam_G(ip)
       
       meanYY(is)=meanYY(is)+s_chi_bar_G(ip)*sElY_G(ip)*sElY_G(ip)
       meanYZ2(is)=meanYZ2(is)+s_chi_bar_G(ip)*sElY_G(ip)*sElz2_G(ip)
       meanYPX(is)=meanYPX(is)+s_chi_bar_G(ip)*sElY_G(ip)*sElpX_G(ip)
-      meanYPY(is)=meanYPY(is)+s_chi_bar_G(ip)*sElY_G(ip)*sElpy_G(ip)
+      meanYPY(is)=meanYPY(is)-s_chi_bar_G(ip)*sElY_G(ip)*sElpy_G(ip)
       meanYGam(is)=meanYGam(is)+s_chi_bar_G(ip)*sElY_G(ip)*sElgam_G(ip)
       
       meanPXPX(is)=meanPXPX(is)+s_chi_bar_G(ip)*sElpX_G(ip)*sElpX_G(ip)      
@@ -792,17 +792,20 @@ contains
 !          print*,cs2data(1,1,is)*cs2data(4,4,is)
 !          print*,cs2data(1,4,is)**2
         end if
-        ex(is)= (meanXX(is)*meanPXPX(is) / sdata(is)**2.0_wp ) &
-                           - ( (meanXPX(is) / sdata(is) )**2.0_wp ) 
+        
+        ex(is) = sdx(is) * sdpx(is) - &
+                (meanxpx(is) / sdata(is) - (aveX(is)*avepX(is)) ) 
 
-        ey(is)= (meanYY(is)*meanPYPY(is) / sdata(is)**2.0_wp ) &
-                           - ( (meanYPY(is) / sdata(is) )**2.0_wp ) 
+        ey(is) = sdy(is) * sdpy(is) - &
+                (meanypy(is) / sdata(is) - (aveY(is)*avepY(is)) ) 
 
         b1(is)=sqrt(b1r(is)**2+b1i(is)**2)/sliceSizeZ2
         b2(is)=sqrt(b2r(is)**2+b2i(is)**2)/sliceSizeZ2
         b3(is)=sqrt(b3r(is)**2+b3i(is)**2)/sliceSizeZ2
         b4(is)=sqrt(b4r(is)**2+b4i(is)**2)/sliceSizeZ2
         b5(is)=sqrt(b5r(is)**2+b5i(is)**2)/sliceSizeZ2
+        
+        
       else
         aveX(is)=0._wp
         aveY(is)=0._wp

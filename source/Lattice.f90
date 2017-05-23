@@ -504,13 +504,13 @@ contains
 
     if (.not. qOneD_G) then
 
-      sElPX_G = sElPX_G + sqrt(sEta_G) * sElGam_G / &
-                 (2 * sRho_G * sKappa_G) * sElX_G / &
-                 (1 + (sEta_G * sp2)) / quad_fx(iQuad_cr)
+      sElPX_G = sElPX_G + sqrt(sEta_G) / &
+                  (2 * sRho_G * sKappa_G) * sElX_G &
+                   / quad_fx(iQuad_cr)
 
-      sElPY_G = sElPY_G - sqrt(sEta_G) * sElGam_G / &
-                 (2 * sRho_G * sKappa_G) * sElY_G / &
-                 (1 + (sEta_G * sp2)) / quad_fy(iQuad_cr)
+      sElPY_G = sElPY_G - sqrt(sEta_G) / &
+                  (2 * sRho_G * sKappa_G) * sElY_G &
+                  / quad_fy(iQuad_cr)
 
     end if
 
