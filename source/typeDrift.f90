@@ -48,6 +48,8 @@ module typeDrift
 
   subroutine driftSection(tDrift, sX, sY, sZ2, sPr, sPi, sGam, sAperp, sZ)
  
+    use gtop2
+ 
     type(fDrift), intent(in) :: tDrift
     real(kind=wp), contiguous, intent(inout) :: sX(:), sY(:)
     real(kind=wp), contiguous, intent(in) :: sZ2(:), sPr(:), sPi(:), sGam(:)

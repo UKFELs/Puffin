@@ -45,6 +45,8 @@ module typeQuad
 
   subroutine Quad(tQuad, sX, sY, sZ2, sPr, sPi, sGam)
  
+    use gtop2
+ 
     type(fQuad), intent(in) :: tQuad
     real(kind=wp), contiguous, intent(inout) :: sPr(:), sPi(:)
     real(kind=wp), contiguous, intent(in) :: sX(:), sY(:), sZ2(:), sGam(:)
