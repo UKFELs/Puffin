@@ -26,6 +26,29 @@ module typeBModulate
 
   end type fBModulate
 
+! ##############################################
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Apply a simple energy modulation to the beam in Puffin.
+!> @param[in] tBMod Beam energy modulation described by Fortran type
+!> @param[in] sz2 Electron z2 coordinates
+!> @param[inout] sgam Electron scaled energy coordinates
+
+  subroutine bModulation(tBMod, sZ2, sGam)
+
+    type(tBMod), intent(in) :: tBMod
+    real(kind=wp), contiguous, intent(in) :: sZ2(:)
+    real(kind=wp), contiguous, intent(inout) :: sGam(:)
+
+    sGam = sGam + ( tBMod%mag &
+               * cos(tBMod%wavenum * sZ2) )
+
+  end subroutine bModulation
+
 end module typeBModulate
 
 

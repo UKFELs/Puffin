@@ -29,4 +29,57 @@ module typeChicane
 
   end type fChicane
 
+
+
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Subroutine for modelling the chicane element in Puffin. This is achieved
+!> only through a simple point tranform.
+!> @param[in] tChicane Chicane described by Fortran type
+!> @param[inout] sz2 Electron z2 coordinates
+!> @param[in] sgam Electron scaled energy coordinates
+!> @param[inout] saperp Scaled field
+!> @param[inout] sZ Scaled distance through the machine
+
+  subroutine disperse(tChicane, sz2, sgam, saperp, sZ)
+
+    implicit none
+
+    type(fchicane), intent(in) :: tChicane
+    real(kind=wp), contiguous, intent(inout) :: sz2(:)
+    real(kind=wp), contiguous, intent(in) :: sgam(:)
+    real(kind=wp), contiguous, intent(inout) :: saperp(:)
+    real(kind=wp), intent(inout) :: sZ
+
+    real(kind=wp) :: szbar4d
+    logical :: qDummy
+
+    logical :: qOKL
+
+    szbar4d = tChicane%zbar
+
+!     Propagate through chicane
+
+    sz2 = sz2 - 2.0_WP * tChicane%disp *  &
+                 (sgam - 1_wp) &
+                 + tChicane%slip
+
+    if (qDiffraction_G) then
+
+!  Convert slippage in z2bar to spatial length for diffraction
+
+        if (szbar4d > 0.0_wp) call diffractIM(szbar4d, qDummy, qOKL)
+
+    end if
+
+    sZ = sZ + szbar4d
+
+  end subroutine disperse
+
+
+
 end module typeChicane
