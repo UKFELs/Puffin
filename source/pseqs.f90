@@ -107,24 +107,23 @@ end subroutine genGSeq
 !> @param[in] sigE 6 element array of requested gaussian r.m.s. width 
 !> in the Puffin order (x,y,z2,px,py,gamma).
 
-subroutine getSeqs(xcom, ycom, pxcom, pycom, gcom, sigE)
+subroutine getSeqs(xcom, ycom, pxcom, pycom, gcom, sigE, iTrLoad)
 
   real(kind=wp), contiguous, intent(inout) :: xcom(:), ycom(:), &
                                 pxcom(:), pycom(:), &
                                 gcom(:)
 
   real(kind=wp), intent(in) :: sigE(:)
-
+  integer(kind=ip), intent(in) :: iTrLoad
 
 !  Keep these local for now...add more sequences later
 
-  integer(kind=ip) :: iTrLoad
   integer(kind=ip), parameter :: iRandSeq = 1_ip
   integer(kind=ip), parameter :: iHaltonSeq = 2_ip
   integer :: error
 
 
-  iTrLoad = iRandSeq  ! ....for now
+!  iTrLoad = iHaltonSeq  ! ....for now
 
 !  gen sequences on root process only...
 

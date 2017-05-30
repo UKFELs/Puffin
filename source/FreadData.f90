@@ -573,7 +573,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
 !                     LOCAL ARGS
 
-  INTEGER(KIND=IP) :: b_ind
+  INTEGER(KIND=IP) :: b_ind, TrLdMeth
   logical :: qFixCharge, qAMatch
   INTEGER::ios
   CHARACTER(96) :: dtype
@@ -587,7 +587,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
                    sEmit_n, sQe, bcenter,  gammaf, &
                    chirp, mag, fr, qRndEj_G, sSigEj_G, &
                    qMatched_A, qEquiXY, nseqparts, qFixCharge, &
-                   alphax, alphay, emitx, emity
+                   alphax, alphay, emitx, emity, TrLdMeth
 
 
   namelist /bdlist/ dist_f, nMPs4MASP_G
@@ -677,6 +677,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   alphay = 0.0_wp
   emitx = -1.0_wp
   emity = -1.0_wp
+  TrLdMeth = 1_ip
 
 ! &&&&&&&&&&&&&&&&&&&&&
 
@@ -772,6 +773,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   qEquiXY_G = qEquiXY
   nseqparts_G = nseqparts
   qFixCharge_G = qFixCharge
+  TrLdMeth_G = TrLdMeth
 
   do b_ind = 1, nbeams
 

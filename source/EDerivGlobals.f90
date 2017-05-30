@@ -125,6 +125,8 @@ real(kind=wp), allocatable     :: sElPY_G(:)
 real(kind=wp), allocatable     :: sElGam_G(:)
 
 
+integer(kind=ip) :: TrLdMeth_G
+
 
 
 real(kind=wp), allocatable     :: dadz_w(:)
