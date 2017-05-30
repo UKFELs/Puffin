@@ -21,7 +21,7 @@ module typeDrift
 
 !     These describe the physical element:
 
-    real(kind=wp) :: zbar = 0.0_wp  ! Scaled focusing factors for x and y
+    real(kind=wp) :: zbar = 0.0_wp  ! Scaled length of drift
 
   end type fDrift
 
