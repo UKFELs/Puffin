@@ -39,9 +39,6 @@ module typeUndMod
     real(kind=wp) :: sZFS, sZFE ! Start and end of the 'main' undulator,
                                 ! when ignoring the ends (local - so with
                                 ! no ends, sZFS = 0, and sZFE = module length).
-
-    logical :: qUndEnds   ! Whether modelling ends
-
   end type fUndMod
 
 end module typeUndMod

@@ -39,6 +39,8 @@ module typeFMesh
     integer(kind=ip) :: nspinDY
 
     integer(kind=ip) :: v3d  ! formerly 'delta_g'
+    
+    logical qDiff
 
   end type fFmesh
 
