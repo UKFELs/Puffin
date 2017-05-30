@@ -3,7 +3,7 @@
 ! License: BSD-3-Clause
 
 !> @author
-!> Lawrence Campbell,
+!> Lawrence Campbell, Cynthia Nam
 !> University of Strathclyde, 
 !> Glasgow, UK
 !> @brief

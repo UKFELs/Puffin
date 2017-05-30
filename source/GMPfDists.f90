@@ -406,7 +406,7 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
          pxseqb(nseqparts_G), pyseqb(nseqparts_G), &
          gamseqb(nseqparts_G))
     call getSeqs(xseqb, yseqb, pxseqb, pyseqb, gamseqb, &
-             (/1.0_wp, 1.0_wp, 1.0_wp, 1.0_wp, 1.0_wp, 1.0_wp/))
+             (/1.0_wp, 1.0_wp, 1.0_wp, 1.0_wp, 1.0_wp, 1.0_wp/), TrLdMeth_G)
     !sigxpr = 1.0_wp
     !sigpxpr = 1.0_wp
     !sigypr = 1.0_wp

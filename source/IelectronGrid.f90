@@ -604,7 +604,7 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
                pxseq(nseqparts), pyseq(nseqparts), &
                gamseq(nseqparts))  ! to store 'constant' sequences which will be replicated for each z2 slice
 
-      call getSeqs(xseq, yseq, pxseq, pyseq, gamseq, sigE)
+      call getSeqs(xseq, yseq, pxseq, pyseq, gamseq, sigE, TrLdMeth_G)
 
 !   ...then, each particle in this 1D beam (which has perfectly equispaced particles)
 !   is split into many particles with the same temporal/longitudinal coordinate
