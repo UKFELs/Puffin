@@ -148,6 +148,8 @@ subroutine getSeqs(xcom, ycom, pxcom, pycom, gcom, sigE)
       call genHSeq(pycom, nseqparts_G, 7_ip, sigE(iPY_CG))
       call genHSeq(gcom, nseqparts_G, 11_ip, sigE(iGam_CG))
 
+!      print*, xcom
+
     end if
 
   end if
@@ -257,9 +259,11 @@ subroutine projectRSeq(seq)
 
   integer(kind=ip), parameter :: GS = 1_ip
   integer(kind=ip), parameter :: JP = 2_ip
-  integer(kind=ip), parameter :: iIntMesh = 1000_ip
+  integer(kind=ip), parameter :: iIntMesh = 2000_ip
 
   real(kind=wp), allocatable :: tseq(:), yf(:), cdf(:)
+
+  iMeth = GS
 
   is = size(seq)
 
@@ -278,7 +282,7 @@ subroutine projectRSeq(seq)
     end do
     
     ! interpolate as MATLAB interp1(cdf, yf, seq)
-
+!    print*, cdf
     call interps(cdf, yf, seq, tseq)
 
     seq = tseq
@@ -350,18 +354,33 @@ function interp1(x, func, smplx) result(smpl_interp)
   is = size(func)
   ic = 1_ip
 
-  do while (smplx < x(ic)) 
-    ic = ic + 1_ip
-  end do
+  if ((smplx > x(1)) .and. (smplx < x(is))) then
+    
+    do while (smplx > x(ic)) 
+      ic = ic + 1_ip
+    end do
 
-  ifl = ic
-  ifu = ic + 1_ip
+    ifl = ic
+    ifu = ic + 1_ip
 
-  dx = x(ifu) - x(ifl)
-  locx = smplx - x(ifl)
+    dx = x(ifu) - x(ifl)
+    locx = smplx - x(ifl)
 
-  smpl_interp = func(ifl) * (1.0_wp - locx/dx)
-  smpl_interp = smpl_interp + func(ifu) * locx / dx
+!    smpl_interp = func(ifu) ! snap to lower
+    smpl_interp = func(ifl) * (1.0_wp - locx/dx)
+    smpl_interp = smpl_interp + func(ifu) * locx / dx
+
+  else if (smplx <= x(1)) then
+    
+    smpl_interp = func(1)
+!    print*, 'eh, why here? func(1) = ', func(1), 'smplx = ', smplx
+
+  else if (smplx >= x(is)) then
+    
+    smpl_interp = func(is)
+!    print*, 'eh, why here? func(1) = ', func(1), 'smplx = ', smplx
+
+  end if
 
 end function interp1
 
