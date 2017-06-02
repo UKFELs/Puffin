@@ -315,11 +315,21 @@ CONTAINS
     DEALLOCATE(iNumLocalElectrons)
 
 
+    !   1D limit:--
+
+    if (qOneD_G) then
+      
+      s_chi_bar_G = s_chi_bar_G / ata_G * fillFact_G
+      
+    end if
+      
+
 !!!!!!! TEMP
 !!!!!!! COVERT DX/DZ AND DY/DZ -> SCALED PX, PY AND ADD OFFSET
 !!!!!!! BECAUSE PXBAR OFFSET IS NOT DEPENDENT ON GAMMA, BUT SIGMA_PXBAR 
 !!!!!!! IS - AND DXDZ OFFSET *IS* DEPENDANT ON GAMMA, BUT SIGMA_DXDZ
 !!!!!!! IS NOT
+
 
     ALLOCATE(tconv(size(sElPX_G)))
     

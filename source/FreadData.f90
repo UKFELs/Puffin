@@ -570,6 +570,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   logical, intent(inout), allocatable :: qMatched_A(:)
   logical :: qEquiXY
   integer(kind=ip) :: nseqparts
+  real(kind=wp) :: fillFact
 
 !                     LOCAL ARGS
 
@@ -587,7 +588,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
                    sEmit_n, sQe, bcenter,  gammaf, &
                    chirp, mag, fr, qRndEj_G, sSigEj_G, &
                    qMatched_A, qEquiXY, nseqparts, qFixCharge, &
-                   alphax, alphay, emitx, emity, TrLdMeth
+                   alphax, alphay, emitx, emity, TrLdMeth, fillFact
 
 
   namelist /bdlist/ dist_f, nMPs4MASP_G
@@ -678,6 +679,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   emitx = -1.0_wp
   emity = -1.0_wp
   TrLdMeth = 1_ip
+  fillFact = 1_wp
 
 ! &&&&&&&&&&&&&&&&&&&&&
 
@@ -774,6 +776,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   nseqparts_G = nseqparts
   qFixCharge_G = qFixCharge
   TrLdMeth_G = TrLdMeth
+  fillFact_G = fillFact
 
   do b_ind = 1, nbeams
 

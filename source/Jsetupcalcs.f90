@@ -60,7 +60,7 @@ CONTAINS
 
 SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
                          sElmLen, qSimple, iNMPs, fx, fy, &
-                         taper, sFiltFrac, &
+                         taper, sFSigX, sFSigY, sFiltFrac, &
                          dStepFrac, sBeta, zUndType, &
                          qFormatted, qSwitch, qOK)
 
@@ -69,7 +69,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
     REAL(KIND=WP),     INTENT(IN)    :: rho,aw,gamr, lam_w
     INTEGER(KIND=IP),  INTENT(IN)    :: iNN(:), iNMPs(:,:)
 
-    REAL(KIND=WP),     INTENT(IN)    :: sElmLen(:)
+    REAL(KIND=WP),     INTENT(IN)    :: sElmLen(:), sFSigX, sFSigY
     REAL(KIND=WP),     INTENT(IN)    :: fx,fy, taper
 
     REAL(KIND=WP),     INTENT(IN)    :: sFiltFrac, dStepFrac, sBeta
@@ -91,6 +91,8 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
     NZ2_G = iNN(iZ2_CG)
 
     ntrnds_G = NX_G * NY_G
+
+    ata_G = 2.0_wp * pi * sFSigX * sFSigY
 
 !    nspinDX = 31_ip
 !    nspinDY = 31_ip
@@ -500,7 +502,8 @@ subroutine getQFmNpk(sQb, sTarea, sLarea, qOneD)
 !  Set phase space volume
 
     if (qOneD) then
-      sVol = sLArea
+      sVol = sLArea * ata_G
+      if (tProcInfo_G%qRoot) print*, 'TRANS AREA = ', ata_G
     else
       sVol = sLArea * sTArea
     end if
