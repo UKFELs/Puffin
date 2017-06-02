@@ -385,91 +385,130 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
 END SUBROUTINE passToGlobals
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! ***************************************************************
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Subroutine to recalculate the beam charge to match the value of rho
+!> supplied.
+!> @param[out] sQb Beam charge
+!> @param[in] sSigz2 Beam standard deviation in z2
+!> @param[in] sLenz2 Beam total length in z2
+!> @param[in] sSigTails Standard deviation used in z2 for the current profile
+!> tail-off, if used
+!> @param[in] qTails If tapering off the current profile with gaussian tails.
+!> @param[in] sSigX Standard deviation of beam current density profile in xbar
+!> @param[in] sSigY Standard deviation of beam current density profile in ybar
 
 subroutine fixCharge(sQb, sSigz2, sLenz2, sSigTails, qTails, &
                     sSigX, sSigY)
 
-! Only 1D for now
+  real(kind=wp), intent(out) :: sQb
+  real(kind=wp), intent(in) :: sSigz2, sLenz2, sSigTails, &
+                                 sSigX, sSigY
 
-real(kind=wp), intent(out) :: sQb
-real(kind=wp), intent(in) :: sSigz2, sLenz2, sSigTails, &
-                               sSigX, sSigY
-logical, intent(in) :: qTails
+  logical, intent(in) :: qTails
 
-real(kind=wp) :: sLArea, sTArea
-logical :: qOneD
+  real(kind=wp) :: sLArea, sTArea
+  logical :: qOneD
 
-qOneD = qOneD_G
+  qOneD = qOneD_G
 
-sTArea = sqrt(2.0_wp*pi) * sSigX &
-          * sqrt(2.0_wp*pi) * sSigY
+  sTArea = sqrt(2.0_wp*pi) * sSigX &
+            * sqrt(2.0_wp*pi) * sSigY
 
-call getLBArea(sLArea, sSigz2, sLenz2, sSigTails, qTails)
+  call getLBArea(sLArea, sSigz2, sLenz2, sSigTails, qTails)
 
-call getQFmNpk(sQb, sTarea, sLarea, qOneD)
+  call getQFmNpk(sQb, sTarea, sLarea, qOneD)
 
-if (tProcInfo_G%qroot) print*, 'FIXING CHARGE '
-if (tProcInfo_G%qroot) print*, 'Q =  ', sQb
+  if (tProcInfo_G%qroot) print*, 'FIXING CHARGE '
+  if (tProcInfo_G%qroot) print*, 'Q =  ', sQb
 
 end subroutine fixCharge
 
+! ***************************************************************
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Calculates the area under the current profile in z2.
+!> @param[out] sLArea Area under the curve of the current distribution.
+!> @param[in] sSigz2 Beam standard deviation in z2
+!> @param[in] sLenz2 Beam total length in z2
+!> @param[in] sSigTails Standard deviation used in z2 for the current profile
+!> tail-off, if used
+!> @param[in] qTails If tapering off the current profile with gaussian tails.
+
 subroutine getLBArea(sLArea, sSigz2, sLenz2, sSigTails, qTails)
 
-real(kind=wp), intent(out) :: sLArea
-real(kind=wp), intent(in) :: sSigz2, sLenz2, sSigTails
-logical, intent(in) :: qTails
+  real(kind=wp), intent(out) :: sLArea
+  real(kind=wp), intent(in) :: sSigz2, sLenz2, sSigTails
+  logical, intent(in) :: qTails
 
-real(kind=wp) :: sEndsLen, sMainLen
-logical :: qFlatTop
+  real(kind=wp) :: sEndsLen, sMainLen
+  logical :: qFlatTop
 
-qFlatTop = .false.
+  qFlatTop = .false.
 
-if (sSigZ2 >= 1e6) qFlatTop = .true.
+  if (sSigZ2 >= 1e6) qFlatTop = .true.
 
-sEndsLen = 0.0_wp
+  sEndsLen = 0.0_wp
 
-if (qFlatTop) then
-  if (qTails) then
-    sEndsLen = gExtEj_G * sSigTails
-    sMainLen = sLenz2 - sEndsLen
-    sLArea = sMainLen + sqrt(2*pi)*sSigTails
+  if (qFlatTop) then
+    if (qTails) then
+      sEndsLen = gExtEj_G * sSigTails
+      sMainLen = sLenz2 - sEndsLen
+      sLArea = sMainLen + sqrt(2*pi)*sSigTails
+    else
+      sLArea = sLenz2
+    end if
   else
-    sLArea = sLenz2
+    sLArea = sqrt(2*pi) * sSigz2
   end if
-else
-  sLArea = sqrt(2*pi) * sSigz2
-end if
 
 end subroutine getLBArea
 
+! ***************************************************************
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Calculates the area under the current profile in z2.
+!> @param[out] sLArea Area under the curve of the current distribution.
+!> @param[in] sSigz2 Beam standard deviation in z2
+!> @param[in] sLenz2 Beam total length in z2
+!> @param[in] sSigTails Standard deviation used in z2 for the current profile
+!> tail-off, if used
+!> @param[in] qTails If tapering off the current profile with gaussian tails.
 
 subroutine getQFmNpk(sQb, sTarea, sLarea, qOneD)
 
-real(kind=wp), intent(out) :: sQb
-real(kind=wp), intent(in) :: sTArea, sLArea
-logical, intent(in) :: qOneD
+  real(kind=wp), intent(out) :: sQb
+  real(kind=wp), intent(in) :: sTArea, sLArea
+  logical, intent(in) :: qOneD
 
-real(kind=wp) :: sVol, sNe
+  real(kind=wp) :: sVol, sNe
 
 
 !  Set phase space volume
 
-  if (qOneD) then
-    sVol = sLArea
-  else
-    sVol = sLArea * sTArea
-  end if
-
+    if (qOneD) then
+      sVol = sLArea
+    else
+      sVol = sLArea * sTArea
+    end if
 
 ! Number of electrons
 
-
-  sNe = npk_bar_G * sVol
-  sQb = q_e * sNe
-
-
+    sNe = npk_bar_G * sVol
+    sQb = q_e * sNe
 
 end subroutine getQFmNpk
 
