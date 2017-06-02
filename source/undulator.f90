@@ -15,10 +15,10 @@ module undulator
 ! use FFTW_Constants
 
 use pdiff
-use sddsPuffin
+!use sddsPuffin
 use lattice
 use RK4int
-use dumpFiles
+!use dumpFiles
 use dummyf
 use ParaField
 use InitDataType

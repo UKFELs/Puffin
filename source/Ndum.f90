@@ -6,7 +6,7 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> This module contains top-level subroutines to write data in SDDS or HDF5
@@ -16,10 +16,10 @@ module dummyf
 
 !USE FFTW_Constants
 
-USE sddsPuffin
+!USE sddsPuffin
 USE lattice
 USE RK4int
-use dumpFiles
+!use dumpFiles
 use hdf5_puff
 use ParaField
 use cwrites
@@ -112,15 +112,15 @@ subroutine wr_cho(sZ, sZl, &
 
   if (qsdds_G) then
 
-    call wr_sdds(sZ, iCstep, tArrayA, tArrayE, tArrayZ, &
-                 iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
-                 zDataFileName, qWriteFull, &
-                 qWriteInt, qOK)
+!    call wr_sdds(sZ, iCstep, tArrayA, tArrayE, tArrayZ, &
+!                 iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
+!                 zDataFileName, qWriteFull, &
+!                 qWriteInt, qOK)
 
   end if
 
   if (qhdf5_G) then
-    
+
      nslices=ceiling( (sLengthOfElmZ2_G*NZ2_G)/(4*pi*srho_g))
 
     call wr_h5(sZ, szl, tArrayA, tArrayE, tArrayZ, iL, &
@@ -129,7 +129,7 @@ subroutine wr_cho(sZ, sZl, &
                qWriteInt, nslices, qOK)
 
   end if
-  
+
 end subroutine wr_cho
 
 
@@ -201,7 +201,7 @@ end subroutine wr_cho
         qWriteFull = .true.
         qWriteInt = .true.
       end if
- 
+
     end do
 
   end if
@@ -257,7 +257,7 @@ function qWriteq(iStep, iCsteps, iWriteNthSteps, iIntWriteNthSteps, nSteps)
     do iw = 1, size(wrarray)
 
       if (wrarray(iw) == iCsteps) qWriteq = .true.
- 
+
     end do
 
   end if

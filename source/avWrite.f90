@@ -16,8 +16,8 @@ use paratype
 use arrayfunctions
 use globals
 use functions
-use sddsROutput
-use createSDDS
+!use sddsROutput
+!use createSDDS
 use ParallelSetUp
 use parafield
 
@@ -45,11 +45,11 @@ contains
 
 
 !> gPowerP Subroutine to calculate the radiation power. The power
-!! is calculated from the global distributed radiation field arrays.
-!! @params power, output array containing the calculated power
-!! as a function of z2. The power is calculated on an equispaced
-!! 1D mesh at nodes equal to the nodes in z2 of the radiation field.
-!! So e.g. the power node separation is sLengthOfElmZ2_G.
+!> is calculated from the global distributed radiation field arrays.
+!> @params power, output array containing the calculated power
+!> as a function of z2. The power is calculated on an equispaced
+!> 1D mesh at nodes equal to the nodes in z2 of the radiation field.
+!> So e.g. the power node separation is sLengthOfElmZ2_G.
 
   subroutine gPowerP(power)
 
@@ -115,9 +115,9 @@ contains
 
 
 !> oPower This subroutine retrieves the power in z2 (using gPowerP) and
-!! outputs it to a file (by calling writePower).
-!! @params nz2_G Number of nodes in z2.
-!! @params tPowF Global type for storing sdds file data about the power file.
+!> outputs it to a file (by calling writePower).
+!> @params nz2_G Number of nodes in z2.
+!> @params tPowF Global type for storing sdds file data about the power file.
 
   subroutine oPower()
 
@@ -145,7 +145,7 @@ contains
 
 
 !> writePower This subroutine appends the power at the current
-!! step to the SDDS power file.
+!> step to the SDDS power file.
 
   subroutine writePower(power,powFType)
 
@@ -161,8 +161,8 @@ contains
 
     if (tProcInfo_G%qRoot) then
 
-      call OutputIntegrationData(powFType,&
-              power,nnz2,qOKL)
+!      call OutputIntegrationData(powFType,&
+!              power,nnz2,qOKL)
 
     end if
 
@@ -192,8 +192,8 @@ contains
 
     if (tProcInfo_G%qRoot) then
 
-      call CreateSDDSFile(powFType%zFileName, &
-                          vname, powFType, qOKL)
+!      call CreateSDDSFile(powFType%zFileName, &
+!                          vname, powFType, qOKL)
 
     end if
 

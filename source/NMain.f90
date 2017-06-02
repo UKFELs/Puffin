@@ -14,7 +14,7 @@ program main
 !use FFTW_Constants
 
 use transforms
-use sddsPuffin
+!use sddsPuffin
 use lattice
 use Setup
 use undulator

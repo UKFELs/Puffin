@@ -18,9 +18,9 @@ use ParallelSetUp
 use TransformInfoType
 use gtop2
 use filetype
-use createSDDS
-use sddsROutput
-use sddsSetup
+!use createSDDS
+!use sddsROutput
+!use sddsSetup
 
 
 implicit none
@@ -1119,8 +1119,8 @@ contains
 
 !     Set up new page - see CIO.f90 line 651
 
-      call WriteSDDSNewPage(tFileTyper,qOKL)
-      if (.NOT. qOKL) Goto 1000
+!      call WriteSDDSNewPage(tFileTyper,qOKL)
+!      if (.NOT. qOKL) Goto 1000
 
 !     Write length of column data - see CIO.f90 line 100
 
@@ -1268,8 +1268,8 @@ contains
 
 !     Set up new page - see CIO.f90 line 651
 
-      call WriteSDDSNewPage(tFileTypei,qOKL)
-      if (.NOT. qOKL) Goto 1000
+!      call WriteSDDSNewPage(tFileTypei,qOKL)
+!      if (.NOT. qOKL) Goto 1000
 
 !     Write length of column data - see CIO.f90 line 100
 

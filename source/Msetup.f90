@@ -6,10 +6,10 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> A module which contains top-level subroutines to allocate and initialize, 
+!> A module which contains top-level subroutines to allocate and initialize,
 !> or destroy, the data used in Puffin.
 
 MODULE Setup
@@ -19,14 +19,14 @@ MODULE Setup
 
   USE setupcalcs
   USE transforms
-  USE sddsPuffin
+!  USE sddsPuffin
   USE lattice
   USE Globals
-  USE resume
+!  USE resume
   USE electronInit
   USE Read_data
   USE checks
-  use dumpFiles
+!  use dumpFiles
   use ParaField
   use dummyf
 
@@ -450,54 +450,7 @@ MODULE Setup
 
 !    Write the various parameter data to file.
 
-  if (qsdds_G) then
 
-    if (tProcInfo_G%qROOT) print*, 'Writing parameter data to file'
-
-    qSeparateStepFiles_G = qSeparateStepFiles
-
-    call WriteEleData(zDataFileName,'Chi','s_chi_bar',qFormattedFiles, &
-         iGlonumElectrons_G,s_chi_bar_G,qOKL)
-    if (.not. qOKL) goto 1000
-
-    call WriteEleData(zDataFileName,'NormChi','s_Normalised_chi',qFormattedFiles, &
-                      iGlonumElectrons_G,s_Normalised_chi_G,qOKL)
-    if (.not. qOKL) goto 1000
-
-    if (tProcInfo_G%qRoot) then
-      call WriteParameterData(zDataFileName,&
-                             iNodes,&
-                             iNumElectrons(1,:),&
-                             sLengthOfElm, &
-                             sStepSize,    &
-                             nSteps,&
-                             sLenEPulse(1,:),&
-                             sFieldModelLength,&
-                             sEleSig(1,:),&
-                             sA0_Re(1),&
-                             sA0_Im(1),&
-                             srho,&
-                             saw_G,&
-                             sEta_G,&
-                             sGammaR_G,&
-                             sKBeta_G, &
-                             lam_w_G, lam_r_G, &
-                             lg_G, lc_G, &
-                             npk_bar_G, &
-                             iGloNumElectrons_G,&
-                             nFieldEquations_CG,&
-                             nElectronEquations_CG,&
-                             sZ,&
-                             iWriteNthSteps, &
-                             iIntWriteNthSteps, &
-                             sSeedSigma(1,:),&
-                             qSwitches,&
-                             fx,fy,&
-                             qOKL)
-      if (.not. qOKL) goto 1000
-
-    end if
-  end if
 
 !    Write out initial values of electron and field data.
 !    If not using separate files for each step then open
