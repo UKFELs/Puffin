@@ -109,7 +109,7 @@ set(CXX ${CMAKE_CXX_COMPILER})
 set(CFLAGS "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${CBT_UC}}")
 set(CXXFLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${CBT_UC}}")
 set(HAVE_CMAKE 1 CACHE STRING "Whether built with CMake")
-
+enable_testing()
 ######################################################################
 #
 # Create the configure file
@@ -117,17 +117,24 @@ set(HAVE_CMAKE 1 CACHE STRING "Whether built with CMake")
 ######################################################################
 
 configure_file(config-cmake.h.in config.h)
+
 configure_file(source/puffProvenance.f90.in source/puffProvenance.f90)
 configure_file(doc/fortran.dxg.in doc/fortran.dxg)
 
 add_subdirectory(source)
 
+if (ENABLE_TESTING)
+  add_subdirectory(test)
+endif (ENABLE_TESTING)
+
 install (DIRECTORY utilities/post DESTINATION bin)
 install (DIRECTORY utilities/pyPlotting DESTINATION bin)
 install (DIRECTORY utilities/setup DESTINATION bin)
 install (DIRECTORY utilities/visit-scripts DESTINATION bin)
+
 install (DIRECTORY inputs/example/ DESTINATION examples)
 install (DIRECTORY inputs/gen/ DESTINATION python)
+
 install (DIRECTORY scripts/ DESTINATION examples/job-submission-scripts)
 
 ######################################################################
