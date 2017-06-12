@@ -32,16 +32,16 @@ dtype = 'simple'
 /
 
 &BLIST
-sSigmaE =1.0, 1.0, 1E8, 1.0, 1.0, 0.001
+sSigmaE =0.084, 0.084, 1E8, 1.0, 1.0, 0.001
 sLenE = 1E-6, 1E-6, 50.0, 1E-6, 1E-6, 0.006
-iNumElectrons = 7, 7, 10000, 7, 7, 7
+iNumElectrons = 1, 1, 10000, 1, 1, 19
 emitx = 1.0
 emity = 1.0
-sQe = 3.5908E-11
+sQe = 250E-12
 bcenter = 0.0
 gammaf = 1.0
 qRndEj_G = .true.
 sSigEj_G = 0.1
-qFixCharge = .true.
+qFixCharge = .false.
 qMatched_A = .true.
 /
