@@ -36,7 +36,8 @@
 %%%
 %%%
 %%% The script takes the cumulative shift from all sections, and calculates
-%%% the additional shift required to correct the phase drift.
+%%% the additional shift required to correct the phase drift. This number
+%%% for the phase shift should be used in a chicane BETWEEN the 2 modules.
 %%%
 %%%% COMMON PARAMETERS:
 %%%% (these describe the 'reference' undulator and beam)
@@ -219,6 +220,6 @@ fprintf('Shift from the drift section = %.14e\n', z2d/lw);
 
 fprintf('\n');
 
-fprintf('Number of periods to phase shift by = %.14e\n', z2modnw);
+fprintf('Number of resonant wavelengths to shift by = %.14e\n', z2modnw);
 fprintf('\n');
 
