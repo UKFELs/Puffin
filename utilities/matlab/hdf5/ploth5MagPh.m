@@ -3,10 +3,11 @@ function [ hf ] = ploth5MagPh( fname )
 %   Detailed explanation goes here
 
 
-
+zbar = hdf5read(fname,'/aperp','zbarTotal');
 rho = hdf5read(fname,'/runInfo','rho');
 nZ2 = hdf5read(fname,'/runInfo','nZ2');
 sLengthOfElmZ2 = hdf5read(fname,'/runInfo','sLengthOfElmZ2');
+
 
 nZ2 = double(nZ2);
 lenZ2 = sLengthOfElmZ2 * (nZ2-1);
@@ -25,7 +26,7 @@ fs = (nZ2)/lenZ2; %sampling frequency
 
 %apcz2 = h5read(fname,'/aperp',[60,60,1,1],[1,1,nZ2,2]);
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % For 3D
 %apcz2 = zeros(1,1,nZ2,1);
 
@@ -39,7 +40,7 @@ fs = (nZ2)/lenZ2; %sampling frequency
 %xf = reshape(xf,[nZ2,1]);
 
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % For 1D
 
 apcz2 = h5read(fname,'/aperp',[1,1],[nZ2,2]);
@@ -48,11 +49,11 @@ apcz2 = h5read(fname,'/aperp',[1,1],[nZ2,2]);
 xf = apcz2(:,1);
 yf = -apcz2(:,2);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+field = xf - 1j*yf;
 
-
-
-
+[xf   yf] = FilterField(field,1.0,0.05,nZ2,sLengthOfElmZ2, rho, 1);
 
 [magx phasex]=getStokesf(xf,nZ2,rho,lenZ2);
 
@@ -78,6 +79,7 @@ hf = plot(Z2axis,xf.^2);%,'LineWidth',2);
 %xlim([0    lenZ2]);
 xlim([0  150]);
 %ylim([0   6e-3]);
+title(strcat('zbar = ',num2str(zbar)));
 
 xlabel('$$\bar{z}_2$$','interpreter','latex','fontsize',14);  
 ylabel('x-field sqd','interpreter','latex','fontsize',14);

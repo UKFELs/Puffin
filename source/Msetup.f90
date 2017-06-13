@@ -259,7 +259,7 @@ MODULE Setup
 
   CALL passToGlobals(srho,saw,sgammar,lambda_w,iNodes, &
                      sLengthOfElm, qSimple, iNumElectrons, &
-                     fx,fy,taper, &
+                     fx,fy,taper, sEleSig(1,iX_CG), sEleSig(1,iY_CG), &
                      sFiltFrac,sDiffFrac,sBeta, &
                      zUndType,qFormattedFiles, qSwitches,qOK)
 

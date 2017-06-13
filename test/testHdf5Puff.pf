@@ -1,0 +1,25 @@
+@test
+subroutine testCreateIntegrated1DFloat()
+
+  use pFUnit_mod
+  use hdf5_puff
+
+  implicit none
+
+  real(KIND=WP) :: simtime
+  integer(KIND=IP) :: error,nslices,tol
+
+  simtime = 0.0_WP
+  error = 0_IP
+  nslices = 10_IP
+  tol = 1_IP
+
+  call CreateIntegrated1DFloat(simtime,error,nslices)
+
+  @AssertEqualUserDefined(error,0_IP,message='Should return 0 error status')
+!  &
+!    // 'Integrated1DFloat should return with 0 error' &
+!    // 'status. Results checked outside pFUnit.')
+
+end subroutine testCreateIntegrated1DFloat
+

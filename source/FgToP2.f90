@@ -71,11 +71,12 @@ contains
 !  aw       :          Undulator parameter (peak) 
 !
 
-    real(kind=wp), intent(in) :: px(:), py(:), gamma(:), eta, gamma0, aw
+    real(kind=wp), contiguous, intent(in) :: px(:), py(:), gamma(:)
+    real(kind=wp), intent(in) :: eta, gamma0, aw
 
 !            OUTPUT
 
-    real(kind=wp), intent(out) :: p2(:)
+    real(kind=wp), contiguous, intent(out) :: p2(:)
 
 
 !$OMP WORKSHARE

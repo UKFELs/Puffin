@@ -194,15 +194,38 @@ contains
 
         call CreateIntegrated1DFloat(time, sz_loc, iL,error,nslices)
 
-        call addH5Field1DFloat(power, 'power', "intFieldMeshSc", &
-                              "z2, Power (Scaled)", time, sz_loc, iL, error)
+        if (qOneD_G) then
 
-        wrFArray = power * powScale
+          call addH5Field1DFloat(power, 'Intensity', "intFieldMeshSc", &
+                                "z2, Intensity (Scaled)", time, sz_loc, iL, error)
 
-        call addH5Field1DFloat(wrFArray, 'powerSI', "intFieldMeshSI", &
-                              "ct-z (m), Power (W)", time, sz_loc, iL, error)
-        
-        
+          wrFArray = power * powScale / lg_G * lc_G
+
+          call addH5Field1DFloat(wrFArray, 'IntensitySI', "intFieldMeshSI", &
+                                "ct-z (m), Intensity (Wm-2)", time, sz_loc, iL, error)
+
+          wrFArray = power * ata_G
+
+          call addH5Field1DFloat(wrFArray, 'power', "intFieldMeshSc", &
+                                "z2, Power (Scaled)", time, sz_loc, iL, error)
+
+          wrFArray = power * powScale * ata_G
+
+          call addH5Field1DFloat(wrFArray, 'powerSI', "intFieldMeshSI", &
+                                "ct-z (m), Power (W)", time, sz_loc, iL, error)
+
+        else
+
+          call addH5Field1DFloat(power, 'power', "intFieldMeshSc", &
+                                "z2, Power (Scaled)", time, sz_loc, iL, error)
+
+          wrFArray = power * powScale
+
+          call addH5Field1DFloat(wrFArray, 'powerSI', "intFieldMeshSI", &
+                                "ct-z (m), Power (W)", time, sz_loc, iL, error)
+
+        end if
+
         call addH5Field1DFloat(Iarray, 'beamCurrent',  "intPtclMeshSc", &
                                "z2, Current (A)", time, sz_loc, iL, error)
 
@@ -316,7 +339,7 @@ contains
         call addH5Field1DFloat(sdpy, 'sigmaPybar', "intPtclMeshSc", &
                                "z2, sigma_pybar", time, sz_loc, iL, error)
 
-        wrEArray = -sdpy * 2.0_wp * sRho_G * sKappa_G / avGam4Unsc
+        wrEArray = sdpy * 2.0_wp * sRho_G * sKappa_G / avGam4Unsc
 
         call addH5Field1DFloat(wrEArray, 'sigma_dydzSI', "intPtclMeshSI", &
                                "ct-z (m), sigma_dydz", time, sz_loc, iL, error)

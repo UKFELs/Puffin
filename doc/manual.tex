@@ -82,85 +82,25 @@ It presently does not include the effects of space charge, and ignores emission 
 
 \section{Overview}
 
-Puffin, being an unaveraged FEL code, is quite distinct from other FEL codes in it's lack of restrictions on the radiation and electron bandwidth being modelled. Due to the nature of the code, and the likely use cases for such a code, we have attempted to create a resource which is a flexible tool for scientific research into some more esoteric FEL physics and regimes, while still containing enough `realistic'  components to enable modelling of a current or future facility. Data I/O may be in either SI or the Puffin scaled variables.
+Puffin, being an unaveraged FEL code, is quite distinct from other FEL codes in it's lack of restrictions on the radiation and electron bandwidth being modelled. Due to the nature of the code, and the likely use cases for such a code, we have attempted to create a resource which is a flexible tool for numerical scientific research into some more esoteric FEL physics and regimes, while still containing enough `realistic'  components to enable modelling of a current or future facility. 
 
+The main Puffin algorithm solves the FEL system in a scaled reference frame - see section \ref{puff-eqns} for a description. Data I/O may be in either SI or the Puffin scaled variables.
 
-\subsection{Analytic Equations Solved by Puffin}
+\subsection{Input Files}
 
+At a minimum, one must specify 2 files for use in Puffin - a main input file, and a beam input file. The main file sets up the system scaling, the field mesh, the integration step sizes, and other simulation options. A simple, single undulator system can be setup here. It also specifies the names of the other input files, including the beam file.
 
-The system of equations solved by Puffin have been altered from those described in \cite{puffin}. They are now:
-\begin{align}
-\Bigl[\frac{1}{2}\Bigl(\frac{\partial^2}{\partial\bar{x}^2} + \frac{\partial^2}{\partial\bar{y}^2}\Bigr) -  \frac{\partial^2}{\partial\bar{z}\partial\bar{z}_2}\Bigr]A_{\bot}  & = -\frac{1}{\bar{n}_p}\frac{\partial}{\partial \bar{z}_2}\sum_{j=1}^{N} \frac{\bar{p}_{\bot j}}{\Gamma_j} (1+\eta p_{2j})     \delta^3(\bar{x}_j,\bar{y}_j,\bar{z}_{2j})  \label{fieldeq2} \\
-\frac{d \bar{p}_{\bot j}}{d \bar{z}} = & \frac{1}{2\rho}\Bigl[ i \alpha b_{\bot} - \frac{\eta p_{2j}}{\kappa^2}A_{\bot} \Bigr] - i\kappa \frac{ \bar{p}_{\bot j}}{\Gamma_j} (1 + \eta p_{2j})  \alpha b_z \label{pperpeqn2} \\
-\frac{d \Gamma_{j}}{d \bar{z}} &= - \rho \frac{(1 + \eta p_{2j})}{\Gamma_j} (\bar{p}_{\bot j} A^*_{\bot j} + c.c.)  \label{gameqn} \\
-\frac{d\bar{z}_{2j}}{d\bar{z}}& = p_{2j}  \label{z2eqgen2} \\
-\frac{d\bar{x}_j}{d\bar{z}} &=  \frac{2 \rho \kappa}{\sqrt{\eta} \Gamma_j} (1 + \eta p_{2j}) \Re(\bar{p}_{\bot j}) \label{xeqgen2} \\
-\frac{d\bar{y}_j}{d\bar{z}} &= - \frac{2 \rho \kappa}{\sqrt{\eta} \Gamma_j}  (1 + \eta p_{2j}) \Im(\bar{p}_{\bot j}). \label{yeqgen2}
-\end{align}
-%where $\kappa = \dfrac{a_u}{2 \rho \gamma_r}$, which is actually the scaled natural focussing wavenumber $\kappa = \sqrt{2} \bar{k}_\beta$.
+The beam file specifies the electron beam parameters - there are 3 different types of beam input, detailed later in section \ref{beamfls}. Multiple beams can be specified, each with different characteristics, such as energies, lengths, charges, current profiles, etc.
 
+Optionally, one may also supply a radiation seed file, to describe an injected radiation seed into the FEL with the electron beam. Similarly to the beam file, many radiation seeds can be specified here, at different frequencies, intensity profiles, \textit{etc}.
 
+In addition, one may also supply a lattice file, which describes the layout of undulator modules, focusing quadrupoles, chicanes, drifts \textit{etc}. If this is not supplied, then a single undulator is set up as detailed in the main input file. If it is supplied, the wiggler in the main input file is ignored. Undulators can have independently variable polarizations, magnetic field strengths, etc. A description of available 3D undulator types is available in section \ref{und-fields}.
 
-Scaled parameters are:-
+The main input file sets the frequency of data dumps from Puffin. Additionally, a `write file' can be supplied to give more flexibility and specify exactly when the data is written.
 
+Puffin can be resumed from a previous run - if your cluster crashes, for instance. You could even resume from a previous run to extend or change undulator parameters, for instance.
 
-%\begin{align}
-%\eta = \frac{\lambda_r}{\lambda_w} = \frac{k_w}{k_r}
-%\end{align}
-
-
-
-
-\begin{align}
-\bar{z}_{2j} &= \frac{ct_j - z}{l_c}, &\bar{z} &= \frac{z}{l_g}, \nonumber \\
-\bar{p}_{\bot} &= \frac{p_{\bot}}{mc a_u},
-&A_{\bot}&=\frac{e \kappa l_g}{\gamma_0 mc^2 }E_{\bot}, \nonumber \\
-(\bar{x},\bar{y}) &= \frac{(x,y)}{\sqrt{l_g l_c}}, &l_g &= \frac{\lambda_w}{4\pi\rho}, \nonumber \\
-l_c &= \frac{\lambda_r}{4\pi\rho}, & \Gamma_j& = \frac{\gamma_j}{\gamma_0}, \nonumber \\
-\rho &=\frac{1}{\gamma_0}\left(\frac{a_u \omega_p}{4ck_u}\right)^{2/3},
-&a_u & =\frac{eB_0}{mck_u}, \nonumber \\
-\kappa & = \frac{a_u}{2 \rho \gamma_0}, & b_{\bot} & = b_x - i b_y, \nonumber
-\end{align}
-
-$B_0$ is the peak magnetic field in the wiggler.
-$\omega_p = \sqrt{e^2 n_p / \epsilon_0 m}$ is the (non-relativistic) plasma frequency, and $n_p$ is the peak spatial number density of the electron beam $(N_e / \delta_x \delta_y \delta_z)$.
-$E_\bot = E_x - i E_y$ are the $x$ and $y$ radiation electric field vectors. $\gamma_0$ is the reference energy (Lorentz factor), which is usually taken as the mean beam energy.
-
-The scaled reference velocity,
-\begin{align}
-\eta = \frac{1 - \beta_{zr}}{\beta_{zr}} = \frac{\lambda_r}{\lambda_u} = \frac{l_c}{l_g},
-\end{align}
-where $\beta_{zr}$ is some reference velocity scaled to $c$, which is sensible (but not, strictly speaking, necessary) to take as the mean longitudinal electron velocity in the wiggler, so that
-\begin{align}
-\beta_{zr} = \sqrt{ 1 - \frac{1}{\gamma_0^2}\Bigl(1 + \bar{a}_u^2\Bigr)},
-\end{align}
-where $\bar{a}_u$ is the $rms$ undulator parameter.
-This defines the velocity at which the electrons travel in the scaled $\bar{z}_2$ frame. More generally, $\eta$ describes an *ideal* resonance condition - electrons resonant with wavelength $\lambda_r$ will travel with velocity $p_2=1$ through the $\bar{z}_2$ frame.
-
-
-
-
-$p_{2j}$ may be worked out analytically from
-\begin{align}
-p_{2j} = \frac{1}{\eta}\Bigl[ \Bigl(  1 - \frac{(1 + a_u^2 | \bar{p}_{\bot j} |^2)}{\gamma_r^2 \Gamma^2_j}  \Bigr)^{-1/2} - 1   \Bigr]
-\end{align}
-at each step. It is NOT output from Puffin.
-
-Outputs from Puffin are classed as either `integrated' data or a full `dump.' The integrated data includes things like the power, beam radius, current, bunching, emittance, etc, as a function of temporal coordinate. The full data dump is the raw data, including the values of the scaled radiation field $A_\bot$ mesh, and the $6$D electron macroparticle phase space coords ($\bar{x}, \bar{y}, \bar{z}_2, \bar{p}_\bot, \Gamma$) and the macroparticle charge weights. Data is in hdf5 format by default, with vizschema metadata for viewing in Visit.
-
-Compared to the original Puffin paper \cite{puffin}, now the peak magnetic fields are used to scale the system of eqns (as opposed to the $rms$ values used previously). Previously (\textit e.g. as described in \cite{puffin}), the energy exchange was modelled through the scaled longitudinal velocity $p_2$. This was problematic in multiple ways from a computational point of view, since $p_2$ is a function of the energy, $p_x$ and $p_y$, so that the same quantity was essentially being calculated twice, leading to large errors in some cases. The energy exchange is instead now modelled directly through the scaled variable $\Gamma_j = \gamma_j / \gamma_r$, meaning smaller numerical errors and enabling a significantly larger step size.
-
-The formalism for including a variation in the magnetic undulator field, so that $B_0(\bar{z})$ now varies, was included in \cite{2col}, and is varied using the parameter $\alpha(\bar{z}) = \dfrac{B_0(\bar{z})}{B_0(\bar{z}=0)}$.
-
-\subsection{Overview of Input Files}
-
-At a minimum, one must specify 2 files for use in Puffin - a main input file, and a beam input file. The main file sets up the system scaling, the field mesh, the integration step sizes, and other simulation options. It also specifies the names of the other input files, including the beam file.
-
-The beam file specifies the electron beam parameters - there are 3 different types of beam input, detailed later.
-
-In addition, one may also supply a lattice file, which descibes the layout of undulator modules, quads, chicanes, drifts \textit{etc}. If this is not supplied, then a single undulator is set up as detailed in the main input file. One may also supply a radiation seed file.
-
-Puffin comes with a few example input decks for reference.
+Figure \ref{inputs1} shows a schematic of the Puffin input decks. Puffin comes with a few example input decks for reference.
 
 \begin{figure*}
 \centering
@@ -168,7 +108,6 @@ Puffin comes with a few example input decks for reference.
 \caption{Schematic of input files - dashed lines indicate optional files.}
 \label{inputs1}
 \end{figure*}
-
 
 
 
@@ -180,7 +119,7 @@ The main algorithm in Puffin utilizes the scaled variables above to make the num
 
 The two dominant variables for the scaling are $\rho$ and $\eta$. $\eta$ is a function of the wiggler parameters $a_u$ and $\lambda_u$, and reference beam energy $\gamma_r$, and is calculated in Puffin from the input. It defines the velocity of the `reference' electron in the scaled radiation frame. The $\bar{z}_2$ coordinate is in the scaled frame travelling with the field (at velocity $c$) - $\eta$ determines how quickly the electrons slip back through this frame, such that an electron with energy $\gamma_r$, travelling in a wiggler with parameters $a_u$ and $\lambda_u$, slips back with scaled velocity $p_2 \equiv \dfrac{d \bar{z}_2}{d\bar{z}} = 1$.
 
-The $\rho$ parameter is dependent on the peak electron beam number density, amongst other things, and as far as the discussion of the scaling parameters in Puffin goes, defines a reference for the amplification characteristics. A beam, or indeed, sections of an electron beam with peak number density giving a smaller `localised' $\rho$ will amplify the beam slower with respect to the reference beam specified by $\rho$.
+The $\rho$ parameter is dependent on the peak electron beam number density, amongst other things, and as far as the discussion of the scaling parameters in Puffin goes, defines a reference for the amplification characteristics. A beam, or indeed, sections of an electron beam with peak number density giving a smaller `localised' $\rho$ will amplify the beam more slowly with respect to the reference beam specified by $\rho$.
 
 That is to say, that they are only \textit{scaling} parameters. The FEL parameter as input by the user does not have to correspond to the beam or wiggler being input for the results to be correct. The scaled parameters will behave `nicely' if it does, but it is not necessary for the result to be physically correct. When the result is unscaled, the result will still be correct. The user may input in SI units, and get output in SI units. If using scaled units as input, the user must scale the lengths appropriately, but still, no beam input needs to satisfy the conditions to actually give the $\rho$ input by the user.
 
@@ -215,119 +154,19 @@ $t$ & seconds (s) & $\bar{z}_2$ \\
 
 \subsection{3D Magnetic Fields}
 
+\label{und-fields}
+
 \subsubsection{Main Undulator Models}
 
-The undulator is modelled analytically, and the model must include the fast wiggle motion. Puffin may be modified in the future to allow a map of the undulator field to be input. For now, there are a few generic undulator models employed. The magnetic fields available for use in Puffin are the helical, plane-pole, and canted-pole undulator fields discussed in \cite{scharlemann1}, which in the scaled notation here are:-
+The undulator is modelled analytically, and the model must include the fast wiggle motion. Puffin may be modified in the future to allow a map of the undulator field to be input. For now, there are a few generic undulator models employed. The undulator magnetic fields are chosen with the {\bf zundType} string in the main input file. 
 
-{\bf helical}
-\begin{align}
-b_x  & = \cos({\bar{z}/2\rho}) \\
-b_y & =  \sin({\bar{z}/2\rho}) \\
-b_z & = \frac{\sqrt{\eta}}{2\rho} (-\bar{x}\sin({\bar{z} / (2 \rho)}) + \bar{y}\cos({\bar{z} / (2 \rho)}))
-\end{align}
+Available options for use in Puffin are `helical', `planepole' - corresponding to a planar wiggler with flat pole faces with natural focusing only in one direction, `curved' - correspnding to a planar undulator with curved, or canted, pole faces providing natural focusing in both transverse directions equally, and the default Puffin undulator, chosen with a blank string (`'), where the transverse polarization is chosen with the {\bf sux, suy} inputs, controlling the relative magnitudes of the peak magnetic fields in $x$ and $y$, respectively. These may vary between $0$ and $1$, allowing a general elliptic field to be described.
 
-
-{\bf plane-pole}
-\begin{align}
-b_x  & = 0 \\
-b_y & =  \cosh((\sqrt{\eta}/{2\rho}) \bar{y}) \sin({\bar{z}/2\rho}) \\
-b_z & =   \sinh((\sqrt{\eta}/{2\rho}) \bar{y}) \cos({\bar{z} / (2 \rho)}
-\end{align}
-
-
-
-
-{\bf canted-pole}
-\begin{align}
-b_x  & =  \frac{\bar{k}_{\beta x}}{\bar{k}_{\beta y}}  \sinh(\bar{k}_{\beta x} \bar{x} )  \sinh(   \bar{k}_{\beta y} \bar{y}    )   \sin({\bar{z}/2\rho}) \label{cp1} \\
-b_y & =   \cosh(\bar{k}_{\beta x} \bar{x} )  \cosh(   \bar{k}_{\beta y} \bar{y}    )   \sin({\bar{z}/2\rho}) \label{cp2}\\
-b_z & = \frac{\sqrt{\eta}}{2\rho \bar{k}_{\beta x}}     \cosh(\bar{k}_{\beta x} \bar{x} )    \sinh(   \bar{k}_{\beta y} \bar{y}    )    \cos({\bar{z}/2\rho}) \label{cp3}
-\end{align}
-
-
-{\bf variably polarized elliptical}
-\begin{align}
-b_x  & = u_x \cos({\bar{z}/2\rho}) \\
-b_y & =  u_y \sin({\bar{z}/2\rho}) \\
-b_z & = \frac{\sqrt{\eta}}{2\rho} (u_x \bar{x}\sin({\bar{z} / (2 \rho)}) + u_y \bar{y}\cos({\bar{z} / (2 \rho)}))
-\end{align}
-
-
-In the $1$D approximation, $b_z = 0$.
-
-All of the above have an associated `natural' focusing channel, which arises from from the off-axis variation in the magnetic fields. This motion arises naturally when numerically solving the equations, and is not super-imposed upon the electron motion.
+All of the undulator fields have an associated `natural' focusing channel, which arises from from the off-axis variation in the magnetic fields. This motion arises naturally when numerically solving the equations, and is not super-imposed artificially upon the electron motion.
 
 \subsubsection{Undulator Ends}
 
 The undulators also include entry and exit tapers, and they may be switched on or off in the input file with the flag {\bf qUndEnds}. Setting this to true will model a smooth taper up and down of the undulator magnetic fields in the first and last 2 periods of the undulator, taking the form of a $\cos^2$. If they are switched off, the beam is artificially initialized with an `expected' initial condition in the transverse coordinates for that undulator. Including these ends will model a more realistic and natural entry and exit from the undulator, and will reduce CSE effects from the shape of the wiggler.
-
-The precise description of the undulator ends are as follows. Note the presence of corrective terms in addition to the main $\cos^2$ term, which ensure the beam oscillates close to the axis. (Note also the very small non-zero initial $z-$magnetic field in each case, which we find  has no noticable deleterious effects in practice.)
-
-{\bf Helical Front}
-
-\begin{align}
-b_x  =  \frac{1}{4}\sin(\bar{z}/16\rho) & \cos(\bar{z}/16\rho)    \sin(\bar{z}/2\rho)   +   \sin^2(\bar{z} / 16\rho)  \cos(\bar{z}/2\rho)  \\
-b_y =  - \frac{1}{4}\sin(\bar{z}/16\rho) & \cos(\bar{z}/16\rho)    \cos(\bar{z}/2\rho)   +  \sin^2(\bar{z} / 16\rho)  \sin(\bar{z}/2\rho)\\
-b_z = \frac{\sqrt{\eta}}{2\rho} \Bigl[   \bar{x}\Bigl(& \frac{1}{32}\cos( \bar{z}/8\rho )\sin(\bar{z}/2\rho) +
-           \frac{1}{4}\sin(\bar{z}/8\rho)\cos(\bar{z}/2\rho) \nonumber  \\
-           & - \sin^2(\bar{z}/16\rho)\sin(\bar{z}/2\rho) \Bigr) \nonumber \\
-           \bar{y}\Bigl(& -\frac{1}{32}\cos( \bar{z}/8\rho )\cos(\bar{z}/2\rho) +\frac{1}{4}\sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) \nonumber  \\
-           & + \sin^2(\bar{z}/16\rho)\cos(\bar{z}/2\rho) \Bigr)  \Bigr]
-\end{align}
-
-
-{\bf Helical Back}
-
-\begin{align}
-b_x  =  -\frac{1}{4}\cos(\bar{z}/16\rho) & \sin(\bar{z}/16\rho)    \sin(\bar{z}/2\rho)   +   \cos^2(\bar{z} / 16\rho)  \cos(\bar{z}/2\rho)  \\
-b_y =  \frac{1}{4}\cos(\bar{z}/16\rho) & \sin(\bar{z}/16\rho)    \cos(\bar{z}/2\rho)   +  \cos^2(\bar{z} / 16\rho)  \sin(\bar{z}/2\rho)\\
-b_z = \frac{\sqrt{\eta}}{2\rho} \Bigl[   \bar{x}\Bigl(& -\frac{1}{32}\cos( \bar{z}/8\rho )\sin(\bar{z}/2\rho) -
-           \frac{1}{4}\sin(\bar{z}/8\rho)\cos(\bar{z}/2\rho) \nonumber  \\
-           & - \cos^2(\bar{z}/16\rho)\sin(\bar{z}/2\rho) \Bigr) \nonumber \\
-           \bar{y}\Bigl(& \frac{1}{32}\cos( \bar{z}/8\rho )\cos(\bar{z}/2\rho) - \frac{1}{4}\sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) \nonumber  \\
-           & + \cos^2(\bar{z}/16\rho)\cos(\bar{z}/2\rho) \Bigr)  \Bigr]
-\end{align}
-
-
-
-{\bf Plane-Pole Front}
-
-\begin{align}
-b_x  =  0,  &    \\
-b_y   = \cosh(\sqrt{\eta}\bar{y} / 2\rho)\Bigl[ -\frac{1}{4}& \sin(\bar{z}/16\rho) \cos(\bar{z}/16\rho) \cos(\bar{z} / 2\rho) +   \sin^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr], \\
-b_z  =  \sinh(\sqrt{\eta}\bar{y} / 2\rho) \Bigl[ -\frac{1}{32} & \cos(\bar{z}/8\rho) \cos(\bar{z}/2\rho) + \nonumber \\
-                                                &\frac{1}{4}  \sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) + \sin^2  (\bar{z}/16\rho) \cos(\bar{z}/2\rho)  \Bigr],
-\end{align}
-
-{\bf Plane-Pole Back}
-
-\begin{align}
-b_x  =  0,  &    \\
-b_y   = \cosh(\sqrt{\eta}\bar{y} / 2\rho)\Bigl[ \frac{1}{4}& \sin(\bar{z}/16\rho) \cos(\bar{z}/16\rho) \cos(\bar{z} / 2\rho) +   \cos^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr], \\
-b_z  =  \sinh(\sqrt{\eta}\bar{y} / 2\rho) \Bigl[ \frac{1}{32} & \cos(\bar{z}/8\rho) \cos(\bar{z}/2\rho) - \nonumber \\
-                                                &\frac{1}{4}  \sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) + \cos^2  (\bar{z}/16\rho) \cos(\bar{z}/2\rho)  \Bigr].
-\end{align}
-
-
-
-{\bf Curved-Pole Front}
-
-
-\begin{align}
-b_x  =  \frac{\bar{k}_{\beta x}}{\bar{k}_{\beta y}} \sinh(\bar{k}_{\beta x} \bar{x})\sinh(\bar{k}_{\beta y} \bar{y}) \Bigl[ -\frac{1}{8}& \sin(\bar{z}/8\rho) \cos(\bar{z} / 2\rho) +   \sin^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr],    &    \\
-b_y   =  \cosh(\bar{k}_{\beta x} \bar{x})\cosh(\bar{k}_{\beta y} \bar{y}) \Bigl[ -\frac{1}{8}& \sin(\bar{z}/8\rho) \cos(\bar{z} / 2\rho) +   \sin^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr], \\
-b_z  =  \frac{\sqrt{\eta}}{2 \rho \bar{k}_{\beta y}}  \cosh(\bar{k}_{\beta x} \bar{x})\sinh(\bar{k}_{\beta y} \bar{y})  \Bigl[ -\frac{1}{32} & \cos(\bar{z}/8\rho) \cos(\bar{z}/2\rho) + \nonumber \\
-                                                &\frac{1}{4}  \sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) + \sin^2  (\bar{z}/16\rho) \cos(\bar{z}/2\rho)  \Bigr] .
-\end{align}
-
-{\bf Curved-Pole Back}
-
-\begin{align}
-b_x  =  \frac{\bar{k}_{\beta x}}{\bar{k}_{\beta y}} \sinh(\bar{k}_{\beta x} \bar{x})\sinh(\bar{k}_{\beta y} \bar{y}) \Bigl[ \frac{1}{8}& \sin(\bar{z}/8\rho) \cos(\bar{z} / 2\rho) +   \cos^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr],    &    \\
-b_y   =  \cosh(\bar{k}_{\beta x} \bar{x})\cosh(\bar{k}_{\beta y} \bar{y}) \Bigl[ \frac{1}{8}& \sin(\bar{z}/8\rho) \cos(\bar{z} / 2\rho) +   \cos^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr], \\
-b_z  =  \frac{\sqrt{\eta}}{2 \rho \bar{k}_{\beta y}}  \cosh(\bar{k}_{\beta x} \bar{x})\sinh(\bar{k}_{\beta y} \bar{y})  \Bigl[ \frac{1}{32} & \cos(\bar{z}/8\rho) \cos(\bar{z}/2\rho) - \nonumber \\
-                                                &\frac{1}{4}  \sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) + \cos^2  (\bar{z}/16\rho) \cos(\bar{z}/2\rho)  \Bigr] .
-\end{align}
 
 
 
@@ -337,10 +176,11 @@ Each undulator type has an associated natural focusing wavenumber. In the helica
 \begin{align}
 \bar{k}_{\beta n x} = \bar{k}_{\beta n y} = \frac{a_w}{2 \sqrt{2} \rho \gamma_0},
 \end{align}
-with $\gamma_0$ being the average beam energy (and not necessarily = $\gamma_r$)
+with $\gamma_0$ being the average energy of the electron beam (and not necessarily = $\gamma_r$, which only sets the scaling of the system.)
 
 In the planar case,
 \begin{align}
+\bar{k}_{\beta n y} = 0, \\
 \bar{k}_{\beta n y} = \frac{a_w}{2 \sqrt{2} \rho \gamma_0}.
 \end{align}
 
@@ -389,13 +229,15 @@ The spread in the transverse momentum directions is then given by
 \end{align}
 where angular brackets indicate the ensemble average of the beam.
 
-If {\bf qFocussing} is true and the strong betatron wavenumber is given, then the strong betatron wavenumber is used to match the beam. Otherwise the beam is auto-matched to the natural focusing channel of the undulator. As this matching is done only for the in-undulator focusing, and not for the FODO lattice, the Twiss ($\alpha_x, \alpha_y$) input parameters will be ignored if {\bf qMatched\_A = .true.} in the input. If one wishes to use a FODO lattice, the matching must be done by the user, and the correct Twiss parameters given.
+If {\bf qFocussing} is true and the strong betatron wavenumber is given, then the strong betatron wavenumber is used to match the beam. Otherwise the beam is auto-matched to the natural focusing channel of the undulator. As this matching is done only for the in-undulator focusing, and not for the FODO lattice, the Twiss ($\alpha_x, \alpha_y$) input parameters will be ignored if {\bf qMatched\_A = .true.} in the input. If one wishes to use a FODO lattice, the matching must be done by the user - the matched Twiss parameters are not calculated by Puffin. See section \ref{section-twiss} for how to input Twiss parameters.
 
 
 
 \subsubsection{Twiss Parameters}
 
-One can use Twiss parameters to provide a transverse phase-space `tilt' for the electron beam. In the simple beam case, the user can specify the \textit{r.m.s.} $\bar{\sigma}_x, \bar{\sigma}_{px}$ (or the S.I. equivalents $\sigma_x, \sigma_{x}'$) for the electron beam, along with the usual $\alpha_x$ for the slope of the $x-x'$ correlation. Using this method, the supplied \textit{r.m.s.} $\sigma_{x}'$ should be the standard deviation at $x=0$. If the emittance is supplied by using {emitx}, then the input $\bar{\sigma}_{px}$ is ignored, and is instead calculated from $\sigma_x$, the emittance, and $\alpha_x$. Obviously, the intended method is to input the emittances, so that the transverse momenta parameters are over-written.
+\label{section-twiss}
+
+One can use Twiss parameters to provide a transverse phase-space `tilt' for the electron beam. In the simple beam case, the user can specify the \textit{r.m.s.} $\bar{\sigma}_x, \bar{\sigma}_{px}$ (or the S.I. equivalents $\sigma_x, \sigma_{x}'$) for the electron beam, along with the usual $\alpha_x$ for the slope of the $x-x'$ correlation. Using this method, the supplied \textit{r.m.s.} $\sigma_{x}'$ should be the standard deviation at $x=0$. If the emittance is supplied by using {\bf emitx}, then the input $\bar{\sigma}_{px}$ is ignored, and is instead calculated from $\sigma_x$, the emittance, and $\alpha_x$. Obviously, the intended method is to input the emittances, so that the transverse momenta parameters are over-written.
 
 % In general, giving the emittances over-writes the transverse momenta given in the beam file, whether using the
 
@@ -463,7 +305,7 @@ It must also be large enough to contain the beam in the transverse plane, see fi
 
 \subsubsection{Fixing the Radiation Mesh}
 
-One may use the variables {\bf iRedNodesX, iRedNodesY} to fix the mesh around the beam when initializing a simple beam - see figure \ref{trmsh}. These variables define an inner set (`reduced' set) of nodes which the beam width will occupy. So the mesh length in $x$ and $y$ will be set up such that the inner set of nodes defined by  {\bf iRedNodesX, iRedNodesY} will contain the beam. In this case, the {\bf sFModelLengthX, sFModelLengthX} inputs will be ignored.
+One may use the variables {\bf iRedNodesX, iRedNodesY} to fix the mesh around the beam when initializing a simple beam - see figure \ref{trmsh}. These variables define an inner set (`reduced' set) of nodes which the beam width will occupy. So the mesh length in $x$ and $y$ will be set up such that the inner set of nodes defined by  {\bf iRedNodesX, iRedNodesY} will contain the beam. In this case, the {\bf sFModelLengthX, sFModelLengthY} inputs will be ignored.
 
 
 \begin{figure*}
@@ -542,8 +384,8 @@ For the quad, we must specify $\bar{F}_x$ and $\bar{F}_y$. These are scaled tran
 \end{align}
 which in the scaled notation becomes:
 \begin{align}
-\frac{d \bar{p}_{xj}}{d \bar{z}} \bigg|_{new} = \frac{d \bar{p}_{xj}}{d \bar{z}}  \bigg|_{old} +\frac{\sqrt{\eta}\Gamma_j}{2\rho\kappa} \frac{1}{1+\eta p_{2j}}  \frac{\bar{x}_j}{\bar{F}_x} \\
-\frac{d \bar{p}_{yj}}{d \bar{z}}  \bigg|_{new} = \frac{d \bar{p}_{yj}}{d \bar{z}}  \bigg|_{old} +\frac{\sqrt{\eta}\Gamma_j}{2\rho\kappa} \frac{1}{1+\eta p_{2j}}  \frac{\bar{y}_j}{\bar{F}_y}
+\frac{d \bar{p}_{xj}}{d \bar{z}} \bigg|_{new} = \frac{d \bar{p}_{xj}}{d \bar{z}}  \bigg|_{old} +\frac{\sqrt{\eta}}{2\rho\kappa} \frac{\bar{x}_j}{\bar{F}_x} \\
+\frac{d \bar{p}_{yj}}{d \bar{z}}  \bigg|_{new} = \frac{d \bar{p}_{yj}}{d \bar{z}}  \bigg|_{old} +\frac{\sqrt{\eta}}{2\rho\kappa} \frac{\bar{y}_j}{\bar{F}_y}
 \end{align}
 where $\bar{F}_{x,y} = \dfrac{F_{x,y}}{l_g}$.
 
@@ -551,7 +393,7 @@ In $x$ (unscaled) focal length is taken as
 \begin{align}
 \frac{1}{F_x} = \frac{g L_Q}{B\rho},
 \end{align}
-where $g$ is the quad magnetic field gradient in $Tm^{-1}$, $L_Q$ is the length of the quad, and $B\rho = \beta E / 0.2998$ is the so-called magnetic rigidity in $Tm$, with the beam energy $E$ in $GeV$.
+where $g$ is the quad magnetic field gradient in $Tm^{-1}$, $L_Q$ is the length of the quad, and $B\rho = \beta E_0 / 0.2998$ is the so-called magnetic rigidity in $Tm$, with the beam energy $E_0$ in $GeV$ (corresponding to the scaling energy defined in the input file).
 
 {\bf CH} - Chicane
 
@@ -822,6 +664,210 @@ Users are free to choose their favourite visualisation method, and none is `offi
 There are example Python scripts to subselect portions of the field mesh. For example, you may wish to select only a central portion of the field mesh in the transverse or temporal directions, or you may wish to select portions at a a time to average over, etc.
 
 In addition, there are some scripts supplied to give examples of how to access, manipulate and plot the data in Matlab and Python/matplotlib. Feel free to modify these for your own purposes - we expect each project to require its own bespoke processing just due to the nature of the code.
+
+
+\newpage
+
+\section{Analytic Equations Solved by Puffin}
+
+\label{puff-eqns}
+
+The system of equations solved by Puffin have been altered from those described in \cite{puffin}. They are now:
+\begin{align}
+\Bigl[\frac{1}{2}\Bigl(\frac{\partial^2}{\partial\bar{x}^2} + \frac{\partial^2}{\partial\bar{y}^2}\Bigr) -  \frac{\partial^2}{\partial\bar{z}\partial\bar{z}_2}\Bigr]A_{\bot}  & = -\frac{1}{\bar{n}_p}\frac{\partial}{\partial \bar{z}_2}\sum_{j=1}^{N} \frac{\bar{p}_{\bot j}}{\Gamma_j} (1+\eta p_{2j})     \delta^3(\bar{x}_j,\bar{y}_j,\bar{z}_{2j})  \label{fieldeq2} \\
+\frac{d \bar{p}_{\bot j}}{d \bar{z}} = & \frac{1}{2\rho}\Bigl[ i \alpha b_{\bot} - \frac{\eta p_{2j}}{\kappa^2}A_{\bot} \Bigr] - i\kappa \frac{ \bar{p}_{\bot j}}{\Gamma_j} (1 + \eta p_{2j})  \alpha b_z \label{pperpeqn2} \\
+\frac{d \Gamma_{j}}{d \bar{z}} &= - \rho \frac{(1 + \eta p_{2j})}{\Gamma_j} (\bar{p}_{\bot j} A^*_{\bot j} + c.c.)  \label{gameqn} \\
+\frac{d\bar{z}_{2j}}{d\bar{z}}& = p_{2j}  \label{z2eqgen2} \\
+\frac{d\bar{x}_j}{d\bar{z}} &=  \frac{2 \rho \kappa}{\sqrt{\eta} \Gamma_j} (1 + \eta p_{2j}) \Re(\bar{p}_{\bot j}) \label{xeqgen2} \\
+\frac{d\bar{y}_j}{d\bar{z}} &= - \frac{2 \rho \kappa}{\sqrt{\eta} \Gamma_j}  (1 + \eta p_{2j}) \Im(\bar{p}_{\bot j}). \label{yeqgen2}
+\end{align}
+%where $\kappa = \dfrac{a_u}{2 \rho \gamma_r}$, which is actually the scaled natural focussing wavenumber $\kappa = \sqrt{2} \bar{k}_\beta$.
+
+
+
+Scaled parameters are:-
+
+
+%\begin{align}
+%\eta = \frac{\lambda_r}{\lambda_w} = \frac{k_w}{k_r}
+%\end{align}
+
+
+
+
+\begin{align}
+\bar{z}_{2j} &= \frac{ct_j - z}{l_c}, &\bar{z} &= \frac{z}{l_g}, \nonumber \\
+\bar{p}_{\bot} &= \frac{p_{\bot}}{mc a_u},
+&A_{\bot}&=\frac{e \kappa l_g}{\gamma_0 mc^2 }E_{\bot}, \nonumber \\
+(\bar{x},\bar{y}) &= \frac{(x,y)}{\sqrt{l_g l_c}}, &l_g &= \frac{\lambda_w}{4\pi\rho}, \nonumber \\
+l_c &= \frac{\lambda_r}{4\pi\rho}, & \Gamma_j& = \frac{\gamma_j}{\gamma_0}, \nonumber \\
+\rho &=\frac{1}{\gamma_0}\left(\frac{a_u \omega_p}{4ck_u}\right)^{2/3},
+&a_u & =\frac{eB_0}{mck_u}, \nonumber \\
+\kappa & = \frac{a_u}{2 \rho \gamma_0}, & b_{\bot} & = b_x - i b_y, \nonumber
+\end{align}
+
+$B_0$ is the peak magnetic field in the wiggler.
+$\omega_p = \sqrt{e^2 n_p / \epsilon_0 m}$ is the (non-relativistic) plasma frequency, and $n_p$ is the peak spatial number density of the electron beam $(N_e / \delta_x \delta_y \delta_z)$.
+$E_\bot = E_x - i E_y$ are the $x$ and $y$ radiation electric field vectors. $\gamma_0$ is the reference energy (Lorentz factor), which is usually taken as the mean beam energy.
+
+The scaled reference velocity,
+\begin{align}
+\eta = \frac{1 - \beta_{zr}}{\beta_{zr}} = \frac{\lambda_r}{\lambda_u} = \frac{l_c}{l_g},
+\end{align}
+where $\beta_{zr}$ is some reference velocity scaled to $c$, which is sensible (but not, strictly speaking, necessary) to take as the mean longitudinal electron velocity in the wiggler, so that
+\begin{align}
+\beta_{zr} = \sqrt{ 1 - \frac{1}{\gamma_0^2}\Bigl(1 + \bar{a}_u^2\Bigr)},
+\end{align}
+where $\bar{a}_u$ is the $rms$ undulator parameter.
+This defines the velocity at which the electrons travel in the scaled $\bar{z}_2$ frame. More generally, $\eta$ describes an *ideal* resonance condition - electrons resonant with wavelength $\lambda_r$ will travel with velocity $p_2=1$ through the $\bar{z}_2$ frame.
+
+
+
+
+$p_{2j}$ may be worked out analytically from
+\begin{align}
+p_{2j} = \frac{1}{\eta}\Bigl[ \Bigl(  1 - \frac{(1 + a_u^2 | \bar{p}_{\bot j} |^2)}{\gamma_r^2 \Gamma^2_j}  \Bigr)^{-1/2} - 1   \Bigr]
+\end{align}
+at each step. It is NOT output from Puffin.
+
+Outputs from Puffin are classed as either `integrated' data or a full `dump.' The integrated data includes things like the power, beam radius, current, bunching, emittance, etc, as a function of temporal coordinate. The full data dump is the raw data, including the values of the scaled radiation field $A_\bot$ mesh, and the $6$D electron macroparticle phase space coords ($\bar{x}, \bar{y}, \bar{z}_2, \bar{p}_\bot, \Gamma$) and the macroparticle charge weights. Data is in hdf5 format by default, with vizschema metadata for viewing in Visit.
+
+Compared to the original Puffin paper \cite{puffin}, now the peak magnetic fields are used to scale the system of eqns (as opposed to the $rms$ values used previously). Previously (\textit e.g. as described in \cite{puffin}), the energy exchange was modelled through the scaled longitudinal velocity $p_2$. This was problematic in multiple ways from a computational point of view, since $p_2$ is a function of the energy, $p_x$ and $p_y$, so that the same quantity was essentially being calculated twice, leading to large errors in some cases. The energy exchange is instead now modelled directly through the scaled variable $\Gamma_j = \gamma_j / \gamma_r$, meaning smaller numerical errors and enabling a significantly larger step size.
+
+The formalism for including a variation in the magnetic undulator field, so that $B_0(\bar{z})$ now varies, was included in \cite{2col}, and is varied using the parameter $\alpha(\bar{z}) = \dfrac{B_0(\bar{z})}{B_0(\bar{z}=0)}$.
+
+
+
+
+
+
+\subsection{Full Magnetic Undulator Field Analytic Description}
+
+The analytic description of the undulator fields are based on those discussed in \cite{scharlemann1}, which in the scaled notation here are:-
+
+{\bf helical}
+\begin{align}
+b_x  & = \cos({\bar{z}/2\rho}) \\
+b_y & =  \sin({\bar{z}/2\rho}) \\
+b_z & = \frac{\sqrt{\eta}}{2\rho} (-\bar{x}\sin({\bar{z} / (2 \rho)}) + \bar{y}\cos({\bar{z} / (2 \rho)}))
+\end{align}
+
+
+{\bf plane-pole}
+\begin{align}
+b_x  & = 0 \\
+b_y & =  \cosh((\sqrt{\eta}/{2\rho}) \bar{y}) \sin({\bar{z}/2\rho}) \\
+b_z & =   \sinh((\sqrt{\eta}/{2\rho}) \bar{y}) \cos({\bar{z} / (2 \rho)}
+\end{align}
+
+
+
+
+{\bf canted-pole}
+\begin{align}
+b_x  & =  \frac{\bar{k}_{\beta x}}{\bar{k}_{\beta y}}  \sinh(\bar{k}_{\beta x} \bar{x} )  \sinh(   \bar{k}_{\beta y} \bar{y}    )   \sin({\bar{z}/2\rho}) \label{cp1} \\
+b_y & =   \cosh(\bar{k}_{\beta x} \bar{x} )  \cosh(   \bar{k}_{\beta y} \bar{y}    )   \sin({\bar{z}/2\rho}) \label{cp2}\\
+b_z & = \frac{\sqrt{\eta}}{2\rho \bar{k}_{\beta x}}     \cosh(\bar{k}_{\beta x} \bar{x} )    \sinh(   \bar{k}_{\beta y} \bar{y}    )    \cos({\bar{z}/2\rho}) \label{cp3}
+\end{align}
+
+
+{\bf variably polarized elliptical}
+\begin{align}
+b_x  & = u_x \cos({\bar{z}/2\rho}) \\
+b_y & =  u_y \sin({\bar{z}/2\rho}) \\
+b_z & = \frac{\sqrt{\eta}}{2\rho} (u_x \bar{x}\sin({\bar{z} / (2 \rho)}) + u_y \bar{y}\cos({\bar{z} / (2 \rho)}))
+\end{align}
+
+
+In the $1$D approximation, $b_z = 0$.
+
+All of the above have an associated `natural' focusing channel, which arises from from the off-axis variation in the magnetic fields. This motion arises naturally when numerically solving the equations, and is not super-imposed upon the electron motion.
+
+\subsubsection{Magnetic Undulator Field Ends}
+
+
+\begin{figure*}
+\centering
+\includegraphics[width=120mm]{bx-field.png}
+\includegraphics[width=120mm]{by-field.png}
+\caption{Schematic of undulator field ends. The magnetic poles are increased linearly over the first 2 periods as shown. }
+\label{ends1}
+\end{figure*}
+
+
+
+Figure \ref{ends1} shows the entry tapers. The $x$ field envelope inceases more rapidly so that the first `pole' is at full strength. The $x$ field is symmetric, and the $y$ field is antisymmetric. The ends of the $x$ field shift the beam off-center by a small amount in the $y$ plane. The $x$ plane motion is not off-set by the $y$ field. Neither causes a velocity offset (or spatial drift) along the undulator. Note that the symmetry of the $x$ field technically results in an extra half-period of full-strength field oscillation in that direction.
+
+These same entry/exit tapers are used for all of the undulator types in Puffin.
+
+% The precise description of the undulator ends are as follows. Note the presence of corrective terms in addition to the main $\cos^2$ term, which ensure the beam oscillates close to the axis. (Note also the very small non-zero initial $z-$magnetic field in each case, which we find  has no noticable deleterious effects in practice.)
+
+%{\bf Helical Front}
+
+%\begin{align}
+%b_x  =  \frac{1}{4}\sin(\bar{z}/16\rho) & \cos(\bar{z}/16\rho)    \sin(\bar{z}/2\rho)   +   \sin^2(\bar{z} / 16\rho)  \cos(\bar{z}/2\rho)  \\
+%b_y =  - \frac{1}{4}\sin(\bar{z}/16\rho) & \cos(\bar{z}/16\rho)    \cos(\bar{z}/2\rho)   +  \sin^2(\bar{z} / 16\rho)  \sin(\bar{z}/2\rho)\\
+%b_z = \frac{\sqrt{\eta}}{2\rho} \Bigl[   \bar{x}\Bigl(& \frac{1}{32}\cos( \bar{z}/8\rho )\sin(\bar{z}/2\rho) +
+%           \frac{1}{4}\sin(\bar{z}/8\rho)\cos(\bar{z}/2\rho) \nonumber  \\
+%           & - \sin^2(\bar{z}/16\rho)\sin(\bar{z}/2\rho) \Bigr) \nonumber \\
+%           \bar{y}\Bigl(& -\frac{1}{32}\cos( \bar{z}/8\rho )\cos(\bar{z}/2\rho) +\frac{1}{4}\sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) \nonumber  \\
+%           & + \sin^2(\bar{z}/16\rho)\cos(\bar{z}/2\rho) \Bigr)  \Bigr]
+%\end{align}
+
+
+%{\bf Helical Back}
+
+%\begin{align}
+%b_x  =  -\frac{1}{4}\cos(\bar{z}/16\rho) & \sin(\bar{z}/16\rho)    \sin(\bar{z}/2\rho)   +   \cos^2(\bar{z} / 16\rho)  \cos(\bar{z}/2\rho)  \\
+%b_y =  \frac{1}{4}\cos(\bar{z}/16\rho) & \sin(\bar{z}/16\rho)    \cos(\bar{z}/2\rho)   +  \cos^2(\bar{z} / 16\rho)  \sin(\bar{z}/2\rho)\\
+%b_z = \frac{\sqrt{\eta}}{2\rho} \Bigl[   \bar{x}\Bigl(& -\frac{1}{32}\cos( \bar{z}/8\rho )\sin(\bar{z}/2\rho) -
+%           \frac{1}{4}\sin(\bar{z}/8\rho)\cos(\bar{z}/2\rho) \nonumber  \\
+%           & - \cos^2(\bar{z}/16\rho)\sin(\bar{z}/2\rho) \Bigr) \nonumber \\
+%           \bar{y}\Bigl(& \frac{1}{32}\cos( \bar{z}/8\rho )\cos(\bar{z}/2\rho) - \frac{1}{4}\sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) \nonumber  \\
+%           & + \cos^2(\bar{z}/16\rho)\cos(\bar{z}/2\rho) \Bigr)  \Bigr]
+%\end{align}
+
+
+
+%{\bf Plane-Pole Front}
+
+%\begin{align}
+%b_x  =  0,  &    \\
+%b_y   = \cosh(\sqrt{\eta}\bar{y} / 2\rho)\Bigl[ -\frac{1}{4}& \sin(\bar{z}/16\rho) \cos(\bar{z}/16\rho) \cos(\bar{z} / 2\rho) +   \sin^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr], \\
+%b_z  =  \sinh(\sqrt{\eta}\bar{y} / 2\rho) \Bigl[ -\frac{1}{32} & \cos(\bar{z}/8\rho) \cos(\bar{z}/2\rho) + \nonumber \\
+%                                                &\frac{1}{4}  \sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) + \sin^2  (\bar{z}/16\rho) \cos(\bar{z}/2\rho)  \Bigr],
+%\end{align}
+
+%{\bf Plane-Pole Back}
+
+%\begin{align}
+%b_x  =  0,  &    \\
+%b_y   = \cosh(\sqrt{\eta}\bar{y} / 2\rho)\Bigl[ \frac{1}{4}& \sin(\bar{z}/16\rho) \cos(\bar{z}/16\rho) \cos(\bar{z} / 2\rho) +   \cos^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr], \\
+%b_z  =  \sinh(\sqrt{\eta}\bar{y} / 2\rho) \Bigl[ \frac{1}{32} & \cos(\bar{z}/8\rho) \cos(\bar{z}/2\rho) - \nonumber \\
+%                                                &\frac{1}{4}  \sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) + \cos^2  (\bar{z}/16\rho) \cos(\bar{z}/2\rho)  \Bigr].
+%\end{align}
+
+
+
+%{\bf Curved-Pole Front}
+
+
+%\begin{align}
+%b_x  =  \frac{\bar{k}_{\beta x}}{\bar{k}_{\beta y}} \sinh(\bar{k}_{\beta x} \bar{x})\sinh(\bar{k}_{\beta y} \bar{y}) \Bigl[ -\frac{1}{8}& \sin(\bar{z}/8\rho) \cos(\bar{z} / 2\rho) +   \sin^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr],    &    \\
+%b_y   =  \cosh(\bar{k}_{\beta x} \bar{x})\cosh(\bar{k}_{\beta y} \bar{y}) \Bigl[ -\frac{1}{8}& \sin(\bar{z}/8\rho) \cos(\bar{z} / 2\rho) +   \sin^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr], \\
+%b_z  =  \frac{\sqrt{\eta}}{2 \rho \bar{k}_{\beta y}}  \cosh(\bar{k}_{\beta x} \bar{x})\sinh(\bar{k}_{\beta y} \bar{y})  \Bigl[ -\frac{1}{32} & %\cos(\bar{z}/8\rho) \cos(\bar{z}/2\rho) + \nonumber \\
+%                                                &\frac{1}{4}  \sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) + \sin^2  (\bar{z}/16\rho) \cos(\bar{z}/2\rho)  \Bigr] .
+%\end{align}
+
+%{\bf Curved-Pole Back}
+
+%\begin{align}
+%b_x  =  \frac{\bar{k}_{\beta x}}{\bar{k}_{\beta y}} \sinh(\bar{k}_{\beta x} \bar{x})\sinh(\bar{k}_{\beta y} \bar{y}) \Bigl[ \frac{1}{8}& \sin(\bar{z}/8\rho) \cos(\bar{z} / 2\rho) +   \cos^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr],    &    \\
+%b_y   =  \cosh(\bar{k}_{\beta x} \bar{x})\cosh(\bar{k}_{\beta y} \bar{y}) \Bigl[ \frac{1}{8}& \sin(\bar{z}/8\rho) \cos(\bar{z} / 2\rho) +   \cos^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr], \\
+%b_z  =  \frac{\sqrt{\eta}}{2 \rho \bar{k}_{\beta y}}  \cosh(\bar{k}_{\beta x} \bar{x})\sinh(\bar{k}_{\beta y} \bar{y})  \Bigl[ \frac{1}{32} & \cos(\bar{z}/8\rho) \cos(\bar{z}/2\rho) - \nonumber \\
+%                                                &\frac{1}{4}  \sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) + \cos^2  (\bar{z}/16\rho) \cos(\bar{z}/2\rho)  \Bigr] .
+%\end{align}
+
 
 
 

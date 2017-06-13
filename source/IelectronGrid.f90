@@ -315,11 +315,21 @@ CONTAINS
     DEALLOCATE(iNumLocalElectrons)
 
 
+    !   1D limit:--
+
+    if (qOneD_G) then
+      
+      s_chi_bar_G = s_chi_bar_G / ata_G * fillFact_G
+      
+    end if
+      
+
 !!!!!!! TEMP
 !!!!!!! COVERT DX/DZ AND DY/DZ -> SCALED PX, PY AND ADD OFFSET
 !!!!!!! BECAUSE PXBAR OFFSET IS NOT DEPENDENT ON GAMMA, BUT SIGMA_PXBAR 
 !!!!!!! IS - AND DXDZ OFFSET *IS* DEPENDANT ON GAMMA, BUT SIGMA_DXDZ
 !!!!!!! IS NOT
+
 
     ALLOCATE(tconv(size(sElPX_G)))
     
@@ -604,7 +614,7 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
                pxseq(nseqparts), pyseq(nseqparts), &
                gamseq(nseqparts))  ! to store 'constant' sequences which will be replicated for each z2 slice
 
-      call getSeqs(xseq, yseq, pxseq, pyseq, gamseq, sigE)
+      call getSeqs(xseq, yseq, pxseq, pyseq, gamseq, sigE, TrLdMeth_G)
 
 !   ...then, each particle in this 1D beam (which has perfectly equispaced particles)
 !   is split into many particles with the same temporal/longitudinal coordinate

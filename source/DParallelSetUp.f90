@@ -49,7 +49,7 @@ SUBROUTINE  InitializeProcessors(tProcInfo, &
 !
 ! error - error flag for MPI
 
-  INTEGER(KIND=IP)    :: error
+  INTEGER(KIND=IP)    :: error, provided
 
 
 !     Begin
@@ -58,7 +58,7 @@ SUBROUTINE  InitializeProcessors(tProcInfo, &
 
 !     Initialize MPI
 
-  CALL MPI_INIT(error)
+  CALL MPI_INIT_THREAD(MPI_THREAD_FUNNELED, provided, error)
 
 !     Define comm as the global communicator.
 

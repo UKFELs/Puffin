@@ -81,15 +81,15 @@ contains
 ! sDADz - RHS of field source term
 
   real(kind=wp), intent(in) :: sz
-  real(kind=wp), intent(in) :: sAr(:), sAi(:)
-  real(kind=wp), intent(in)  :: sx(:), sy(:), sz2(:), &
-                                spr(:), spi(:), sgam(:)
+  real(kind=wp), contiguous, intent(in) :: sAr(:), sAi(:)
+  real(kind=wp), contiguous, intent(in)  :: sx(:), sy(:), sz2(:), &
+                                            spr(:), spi(:), sgam(:)
 
 
-  real(kind=wp), intent(inout)  :: sdx(:), sdy(:), sdz2(:), &
+  real(kind=wp), contiguous, intent(inout)  :: sdx(:), sdy(:), sdz2(:), &
                                    sdpr(:), sdpi(:), sdgam(:)
 
-  real(kind=wp), intent(inout) :: sDADzr(:), sDADzi(:) !!!!!!!
+  real(kind=wp), contiguous,  intent(inout) :: sDADzr(:), sDADzi(:) !!!!!!!
   logical, intent(inout) :: qOK
 
   integer(kind=ipl) :: i, z2node
@@ -106,6 +106,10 @@ contains
 
 !  allocate(Lj(iNumberElectrons_G))
   allocate(p_nodes(iNumberElectrons_G))
+!  allocate(p_nodes2(ispt))
+!  allocate(tmp1(500000))
+!  allocate(tmp2(ispt))
+  
   call alct_e_srtcts(iNumberElectrons_G)
 
   if (tTransInfo_G%qOneD) then
@@ -114,12 +118,10 @@ contains
     allocate(lis_GR(8,iNumberElectrons_G))
   end if
 
-
 !     Initialise right hand side to zero
 
   sField4ElecReal = 0.0_WP
   sField4ElecImag = 0.0_WP
-
 
   call rhs_tmsavers(sz)  ! This can be moved later...
 
@@ -128,21 +130,40 @@ contains
   call getAlpha(sZ)
   call adjUndPlace(sZ)
 
+
+
 !$OMP PARALLEL
+
+! !$OMP SIMD
+!     do i = 1, iNumberElectrons_G
+!       tmp1(i) = sz2(i) * 4.2_wp ! + 1_IP - (fz2-1)
+!     end do
+! !$OMP END SIMD
 
   call getP2(sp2, sgam, spr, spi, sEta_G, sGammaR_G, saw_G)
 
 
 
 
-
   if (tTransInfo_G%qOneD) then
 
-!$OMP WORKSHARE
 
-    p_nodes = floor(sz2 / dz2) + 1_IP - (fz2-1)
 
-!$OMP END WORKSHARE
+    p_nodes = int(sz2 / dz2, kind=ip) + 1_IP - (fz2-1)
+! !$OMP WORKSHARE
+!!$OMP SIMD
+!    do i = 1, iNumberElectrons_G
+!      tmp1(i) = sz2(i) * 4.2_wp ! + 1_IP - (fz2-1)
+!    end do
+!!$OMP END SIMD
+!    tmp1 = sz2 * 4.2_wp
+    !!$OMP SIMD
+!    do i = 1, iNumberElectrons_G
+!      p_nodes(i) = int(sz2(i) / dz2, kind=ip) + 1_IP - (fz2-1)
+!    end do
+    !!$OMP END SIMD
+
+! !$OMP END WORKSHARE
 
   else
 
@@ -154,12 +175,11 @@ contains
 !                              floor(sz2  / dz2) ) - &
 !                              (fz2-1)*ntrnds_G  ! transverse slices before primary node
 
-    p_nodes = (floor( (sx+halfx)  / dx)  + 1_IP) + &
-              (floor( (sy+halfy)  / dy) * nspinDX )  + &   !  y 'slices' before primary node
+    p_nodes = (int( (sx+halfx)  / dx, kind=ip)  + 1_IP) + &
+              (int( (sy+halfy)  / dy, kind=ip) * nspinDX )  + &   !  y 'slices' before primary node
               (nspinDX * nspinDY * &
-                              floor(sz2  / dz2) ) - &
+                              int(sz2  / dz2, kind=ip) ) - &
                               (fz2-1)*ntrndsi_G  ! transverse slices before primary node
-
 
 !$OMP END WORKSHARE
 
@@ -391,7 +411,5 @@ real(kind=wp), intent(in) :: sz
 
 
 end subroutine rhs_tmsavers
-
-
 
 end module rhs

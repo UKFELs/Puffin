@@ -136,6 +136,11 @@ subroutine getTransformPlans_MultiD(sizes,nDims,qMeasure,qOK)
 
   qOK = .FALSE.
 
+
+!                  Init FFTW-MPI
+
+  call fftw_mpi_init()
+
   L = int(sizes(iX_CG), C_INTPTR_T)
   M = int(sizes(iY_CG), C_INTPTR_T)
   N = int(sizes(iZ2_CG), C_INTPTR_T)
