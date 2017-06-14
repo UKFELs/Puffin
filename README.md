@@ -28,7 +28,7 @@ similar to a Particle-In-Cell (PIC) code methodology.
 In addition, some accelerator components are included for simulation of the
 'realistic' undulator line, and together with the lack of restrictions,
 means it may model:
-  - The full, broad bandwidth frequency spectrum, limited only by the Niquist frequency of the mesh
+  - The full, broad bandwidth frequency spectrum, limited only by the Nyquist frequency of the mesh
   - Full electron beam transport
   - Transport of large energy spread beams through the undulator, and the radiation emitted from these beams
   - Tapered undulators
