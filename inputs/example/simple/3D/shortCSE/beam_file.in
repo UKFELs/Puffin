@@ -24,6 +24,9 @@
 ! qRndEj_G - Round edge of flat top?
 ! sSigEj_G - Gaussian sigma of tail-off if used
 ! qMatched_A - Automatically match beam to focusing channel??
+! TrLdMeth - Beam loading method in 5D transverse and energy planes:
+!                TrLdMeth = 1 for random sequences (default)
+!                TrLdMeth = 2 for Halton sequences
 !========================================================================
 
 &NBLIST
@@ -42,4 +45,5 @@ gammaf = 1.0
 qRndEj_G = .false.
 sSigEj_G = 0.06
 qMatched_A = .true.
+TrLdMeth = 2
 /
