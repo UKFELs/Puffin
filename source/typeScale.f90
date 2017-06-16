@@ -92,7 +92,7 @@ module typeScale
 !> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Convert unnormalised emittance -> Puffin scaled emittance
+!> Convert unnormalised emittance -> Puffin scaled emittance \f$ \bar{\epsilon} \f$ 
 !> @param[in] tScaling Custom Fortran type describing scaling
 !> @param[inout] sEmit Input geometric emittance, is output as Scaled emittance
 
@@ -110,7 +110,7 @@ module typeScale
 !> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Convert Puffin scaled emittance ->  unnormalised emittance
+!> Convert Puffin scaled emittance \f$ \bar{\epsilon} \f$ ->  unnormalised emittance
 !> @param[in] tScaling Custom Fortran type describing scaling
 !> @param[inout] sEmit Input Scaled emittance, is output as geometric emittance
 
@@ -140,7 +140,7 @@ module typeScale
 !> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Convert Lorentz (gamma) factor ->  Puffin scaled energy
+!> Convert Lorentz factor \f$ \Gamma \f$ ->  Puffin scaled energy \f$ \Gamma \f$
 !> @param[in] tScaling Custom Fortran type describing scaling
 !> @param[inout] sGamma Lorentz factor in input, Scaled energy on output
 
@@ -158,7 +158,7 @@ module typeScale
 !> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Convert Puffin scaled energy ->  Lorentz (gamma) factor
+!> Convert Puffin scaled energy \f$ \Gamma \f$ ->  Lorentz factor \f$ \gamma \f$
 !> @param[in] tScaling Custom Fortran type describing scaling
 !> @param[inout] sGamma Scaled energy in input, Lorentz factor on output
 
@@ -177,7 +177,7 @@ module typeScale
 !> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Convert Lorentz (gamma) factor ->  Puffin scaled energy
+!> Convert Lorentz factor \f$ \gamma \f$ ->  Puffin scaled energy \f$ \Gamma \f$
 !> @param[in] tScaling Custom Fortran type describing scaling
 !> @param[inout] sGamma Lorentz factor in input, Scaled energy on output
 
@@ -195,7 +195,7 @@ module typeScale
 !> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Convert Puffin scaled energy ->  Lorentz (gamma) factor
+!> Convert Puffin scaled energy \f$ \Gamma \f$ ->  Lorentz factor \f$ \gamma \f$
 !> @param[in] tScaling Custom Fortran type describing scaling
 !> @param[inout] sGamma Scaled energy in input, Lorentz factor on output
 
@@ -216,6 +216,8 @@ module typeScale
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!  Scaling of transverse coordinate X
 
+
+
     subroutine scaleX_single(sx, Lg, Lc)
 
       real(kind=wp), intent(inout) :: sx
@@ -225,6 +227,15 @@ module typeScale
 
     end subroutine scaleX_single
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Convert transverse (x or y) coordinate -> Puffin scaled transverse coordinate
+!> (\f$ \bar{x} \f$ or \f$ \bar{y} \f$)
+!> @param[in] tScaling Custom Fortran type describing scaling
+!> @param[inout] sGamma Scaled energy in input, Lorentz factor on output
 
     subroutine unscaleX_single(sx, Lg, Lc)
 
