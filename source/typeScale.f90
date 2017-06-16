@@ -267,8 +267,9 @@ module typeScale
 !> @param[inout] sx Transverse (x or y) coordinate in input, scaled \f$ \bar{x} \f$ 
 !> or \f$ \bar{y} \f$ on output.
 
-    subroutine scaleX_array(sx, Lg, Lc)
+    subroutine scaleX_array(tScaling, sx)
 
+      type(fScale), intent(in) :: tScaling
       real(kind=wp), intent(inout) :: sx(:)
 
       sx = sx / sqrt(tScaling%lg * tScaling%lc)
@@ -286,12 +287,12 @@ module typeScale
 !> @param[inout] sx Scaled \f$ \bar{x} \f$ or scaled \f$ \bar{y} \f$ on input,
 !> transverse (x or y) coordinate on output, in meters.
 
-    subroutine unscaleX_array(sx, Lg, Lc)
+    subroutine unscaleX_array(tScaling, sx)
 
+      type(fScale), intent(in) :: tScaling
       real(kind=wp), intent(inout) :: sx(:)
-      real(kind=wp), intent(in) :: Lg, Lc
 
-      sx = sx * sqrt(Lg*Lc)
+      sx = sx * sqrt(tScaling%lg * tScaling%lc)
 
     end subroutine unscaleX_array
 
