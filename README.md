@@ -12,7 +12,10 @@ LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
 The code has undergone many improvements and extended its functionality
 since then. It no longer uses an external linear solver package, and the
 only external packages now required are FFTW (version 3.3 onwards), and
-parallel HDF5 libraries.
+parallel HDF5 libraries. 
+
+Please note Puffin is currently under active development. An 'official'
+release will be tagged soon.
 
 ## Features
 

@@ -97,6 +97,8 @@ real(kind=wp) :: npk_bar_G  ! peak electron number density
                             ! in the scaled xbar, ybar and z2bar
                             ! dimensions
 
+real(kind=wp) :: fillFact_G, ata_G
+
 !   ---   For rounded edge beam   ---   !
 
 logical, allocatable :: qRndEj_G(:)
@@ -124,6 +126,8 @@ real(kind=wp), allocatable     :: sElPX_G(:)
 real(kind=wp), allocatable     :: sElPY_G(:)
 real(kind=wp), allocatable     :: sElGam_G(:)
 
+
+integer(kind=ip) :: TrLdMeth_G
 
 
 

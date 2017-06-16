@@ -783,75 +783,90 @@ In the $1$D approximation, $b_z = 0$.
 
 All of the above have an associated `natural' focusing channel, which arises from from the off-axis variation in the magnetic fields. This motion arises naturally when numerically solving the equations, and is not super-imposed upon the electron motion.
 
-\subsubsection{Analytic Description of Magnetic Undulator Field Ends}
-
-The precise description of the undulator ends are as follows. Note the presence of corrective terms in addition to the main $\cos^2$ term, which ensure the beam oscillates close to the axis. (Note also the very small non-zero initial $z-$magnetic field in each case, which we find  has no noticable deleterious effects in practice.)
-
-{\bf Helical Front}
-
-\begin{align}
-b_x  =  \frac{1}{4}\sin(\bar{z}/16\rho) & \cos(\bar{z}/16\rho)    \sin(\bar{z}/2\rho)   +   \sin^2(\bar{z} / 16\rho)  \cos(\bar{z}/2\rho)  \\
-b_y =  - \frac{1}{4}\sin(\bar{z}/16\rho) & \cos(\bar{z}/16\rho)    \cos(\bar{z}/2\rho)   +  \sin^2(\bar{z} / 16\rho)  \sin(\bar{z}/2\rho)\\
-b_z = \frac{\sqrt{\eta}}{2\rho} \Bigl[   \bar{x}\Bigl(& \frac{1}{32}\cos( \bar{z}/8\rho )\sin(\bar{z}/2\rho) +
-           \frac{1}{4}\sin(\bar{z}/8\rho)\cos(\bar{z}/2\rho) \nonumber  \\
-           & - \sin^2(\bar{z}/16\rho)\sin(\bar{z}/2\rho) \Bigr) \nonumber \\
-           \bar{y}\Bigl(& -\frac{1}{32}\cos( \bar{z}/8\rho )\cos(\bar{z}/2\rho) +\frac{1}{4}\sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) \nonumber  \\
-           & + \sin^2(\bar{z}/16\rho)\cos(\bar{z}/2\rho) \Bigr)  \Bigr]
-\end{align}
+\subsubsection{Magnetic Undulator Field Ends}
 
 
-{\bf Helical Back}
-
-\begin{align}
-b_x  =  -\frac{1}{4}\cos(\bar{z}/16\rho) & \sin(\bar{z}/16\rho)    \sin(\bar{z}/2\rho)   +   \cos^2(\bar{z} / 16\rho)  \cos(\bar{z}/2\rho)  \\
-b_y =  \frac{1}{4}\cos(\bar{z}/16\rho) & \sin(\bar{z}/16\rho)    \cos(\bar{z}/2\rho)   +  \cos^2(\bar{z} / 16\rho)  \sin(\bar{z}/2\rho)\\
-b_z = \frac{\sqrt{\eta}}{2\rho} \Bigl[   \bar{x}\Bigl(& -\frac{1}{32}\cos( \bar{z}/8\rho )\sin(\bar{z}/2\rho) -
-           \frac{1}{4}\sin(\bar{z}/8\rho)\cos(\bar{z}/2\rho) \nonumber  \\
-           & - \cos^2(\bar{z}/16\rho)\sin(\bar{z}/2\rho) \Bigr) \nonumber \\
-           \bar{y}\Bigl(& \frac{1}{32}\cos( \bar{z}/8\rho )\cos(\bar{z}/2\rho) - \frac{1}{4}\sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) \nonumber  \\
-           & + \cos^2(\bar{z}/16\rho)\cos(\bar{z}/2\rho) \Bigr)  \Bigr]
-\end{align}
+\begin{figure*}
+\centering
+\includegraphics[width=120mm]{bx-field.png}
+\includegraphics[width=120mm]{by-field.png}
+\caption{Schematic of undulator field ends. The magnetic poles are increased linearly over the first 2 periods as shown. }
+\label{ends1}
+\end{figure*}
 
 
 
-{\bf Plane-Pole Front}
+Figure \ref{ends1} shows the entry tapers. The $x$ field envelope inceases more rapidly so that the first `pole' is at full strength. The $x$ field is symmetric, and the $y$ field is antisymmetric. The ends of the $x$ field shift the beam off-center by a small amount in the $y$ plane. The $x$ plane motion is not off-set by the $y$ field. Neither causes a velocity offset (or spatial drift) along the undulator. Note that the symmetry of the $x$ field technically results in an extra half-period of full-strength field oscillation in that direction.
 
-\begin{align}
-b_x  =  0,  &    \\
-b_y   = \cosh(\sqrt{\eta}\bar{y} / 2\rho)\Bigl[ -\frac{1}{4}& \sin(\bar{z}/16\rho) \cos(\bar{z}/16\rho) \cos(\bar{z} / 2\rho) +   \sin^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr], \\
-b_z  =  \sinh(\sqrt{\eta}\bar{y} / 2\rho) \Bigl[ -\frac{1}{32} & \cos(\bar{z}/8\rho) \cos(\bar{z}/2\rho) + \nonumber \\
-                                                &\frac{1}{4}  \sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) + \sin^2  (\bar{z}/16\rho) \cos(\bar{z}/2\rho)  \Bigr],
-\end{align}
+These same entry/exit tapers are used for all of the undulator types in Puffin.
 
-{\bf Plane-Pole Back}
+% The precise description of the undulator ends are as follows. Note the presence of corrective terms in addition to the main $\cos^2$ term, which ensure the beam oscillates close to the axis. (Note also the very small non-zero initial $z-$magnetic field in each case, which we find  has no noticable deleterious effects in practice.)
 
-\begin{align}
-b_x  =  0,  &    \\
-b_y   = \cosh(\sqrt{\eta}\bar{y} / 2\rho)\Bigl[ \frac{1}{4}& \sin(\bar{z}/16\rho) \cos(\bar{z}/16\rho) \cos(\bar{z} / 2\rho) +   \cos^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr], \\
-b_z  =  \sinh(\sqrt{\eta}\bar{y} / 2\rho) \Bigl[ \frac{1}{32} & \cos(\bar{z}/8\rho) \cos(\bar{z}/2\rho) - \nonumber \\
-                                                &\frac{1}{4}  \sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) + \cos^2  (\bar{z}/16\rho) \cos(\bar{z}/2\rho)  \Bigr].
-\end{align}
+%{\bf Helical Front}
 
-
-
-{\bf Curved-Pole Front}
+%\begin{align}
+%b_x  =  \frac{1}{4}\sin(\bar{z}/16\rho) & \cos(\bar{z}/16\rho)    \sin(\bar{z}/2\rho)   +   \sin^2(\bar{z} / 16\rho)  \cos(\bar{z}/2\rho)  \\
+%b_y =  - \frac{1}{4}\sin(\bar{z}/16\rho) & \cos(\bar{z}/16\rho)    \cos(\bar{z}/2\rho)   +  \sin^2(\bar{z} / 16\rho)  \sin(\bar{z}/2\rho)\\
+%b_z = \frac{\sqrt{\eta}}{2\rho} \Bigl[   \bar{x}\Bigl(& \frac{1}{32}\cos( \bar{z}/8\rho )\sin(\bar{z}/2\rho) +
+%           \frac{1}{4}\sin(\bar{z}/8\rho)\cos(\bar{z}/2\rho) \nonumber  \\
+%           & - \sin^2(\bar{z}/16\rho)\sin(\bar{z}/2\rho) \Bigr) \nonumber \\
+%           \bar{y}\Bigl(& -\frac{1}{32}\cos( \bar{z}/8\rho )\cos(\bar{z}/2\rho) +\frac{1}{4}\sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) \nonumber  \\
+%           & + \sin^2(\bar{z}/16\rho)\cos(\bar{z}/2\rho) \Bigr)  \Bigr]
+%\end{align}
 
 
-\begin{align}
-b_x  =  \frac{\bar{k}_{\beta x}}{\bar{k}_{\beta y}} \sinh(\bar{k}_{\beta x} \bar{x})\sinh(\bar{k}_{\beta y} \bar{y}) \Bigl[ -\frac{1}{8}& \sin(\bar{z}/8\rho) \cos(\bar{z} / 2\rho) +   \sin^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr],    &    \\
-b_y   =  \cosh(\bar{k}_{\beta x} \bar{x})\cosh(\bar{k}_{\beta y} \bar{y}) \Bigl[ -\frac{1}{8}& \sin(\bar{z}/8\rho) \cos(\bar{z} / 2\rho) +   \sin^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr], \\
-b_z  =  \frac{\sqrt{\eta}}{2 \rho \bar{k}_{\beta y}}  \cosh(\bar{k}_{\beta x} \bar{x})\sinh(\bar{k}_{\beta y} \bar{y})  \Bigl[ -\frac{1}{32} & \cos(\bar{z}/8\rho) \cos(\bar{z}/2\rho) + \nonumber \\
-                                                &\frac{1}{4}  \sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) + \sin^2  (\bar{z}/16\rho) \cos(\bar{z}/2\rho)  \Bigr] .
-\end{align}
+%{\bf Helical Back}
 
-{\bf Curved-Pole Back}
+%\begin{align}
+%b_x  =  -\frac{1}{4}\cos(\bar{z}/16\rho) & \sin(\bar{z}/16\rho)    \sin(\bar{z}/2\rho)   +   \cos^2(\bar{z} / 16\rho)  \cos(\bar{z}/2\rho)  \\
+%b_y =  \frac{1}{4}\cos(\bar{z}/16\rho) & \sin(\bar{z}/16\rho)    \cos(\bar{z}/2\rho)   +  \cos^2(\bar{z} / 16\rho)  \sin(\bar{z}/2\rho)\\
+%b_z = \frac{\sqrt{\eta}}{2\rho} \Bigl[   \bar{x}\Bigl(& -\frac{1}{32}\cos( \bar{z}/8\rho )\sin(\bar{z}/2\rho) -
+%           \frac{1}{4}\sin(\bar{z}/8\rho)\cos(\bar{z}/2\rho) \nonumber  \\
+%           & - \cos^2(\bar{z}/16\rho)\sin(\bar{z}/2\rho) \Bigr) \nonumber \\
+%           \bar{y}\Bigl(& \frac{1}{32}\cos( \bar{z}/8\rho )\cos(\bar{z}/2\rho) - \frac{1}{4}\sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) \nonumber  \\
+%           & + \cos^2(\bar{z}/16\rho)\cos(\bar{z}/2\rho) \Bigr)  \Bigr]
+%\end{align}
 
-\begin{align}
-b_x  =  \frac{\bar{k}_{\beta x}}{\bar{k}_{\beta y}} \sinh(\bar{k}_{\beta x} \bar{x})\sinh(\bar{k}_{\beta y} \bar{y}) \Bigl[ \frac{1}{8}& \sin(\bar{z}/8\rho) \cos(\bar{z} / 2\rho) +   \cos^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr],    &    \\
-b_y   =  \cosh(\bar{k}_{\beta x} \bar{x})\cosh(\bar{k}_{\beta y} \bar{y}) \Bigl[ \frac{1}{8}& \sin(\bar{z}/8\rho) \cos(\bar{z} / 2\rho) +   \cos^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr], \\
-b_z  =  \frac{\sqrt{\eta}}{2 \rho \bar{k}_{\beta y}}  \cosh(\bar{k}_{\beta x} \bar{x})\sinh(\bar{k}_{\beta y} \bar{y})  \Bigl[ \frac{1}{32} & \cos(\bar{z}/8\rho) \cos(\bar{z}/2\rho) - \nonumber \\
-                                                &\frac{1}{4}  \sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) + \cos^2  (\bar{z}/16\rho) \cos(\bar{z}/2\rho)  \Bigr] .
-\end{align}
+
+
+%{\bf Plane-Pole Front}
+
+%\begin{align}
+%b_x  =  0,  &    \\
+%b_y   = \cosh(\sqrt{\eta}\bar{y} / 2\rho)\Bigl[ -\frac{1}{4}& \sin(\bar{z}/16\rho) \cos(\bar{z}/16\rho) \cos(\bar{z} / 2\rho) +   \sin^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr], \\
+%b_z  =  \sinh(\sqrt{\eta}\bar{y} / 2\rho) \Bigl[ -\frac{1}{32} & \cos(\bar{z}/8\rho) \cos(\bar{z}/2\rho) + \nonumber \\
+%                                                &\frac{1}{4}  \sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) + \sin^2  (\bar{z}/16\rho) \cos(\bar{z}/2\rho)  \Bigr],
+%\end{align}
+
+%{\bf Plane-Pole Back}
+
+%\begin{align}
+%b_x  =  0,  &    \\
+%b_y   = \cosh(\sqrt{\eta}\bar{y} / 2\rho)\Bigl[ \frac{1}{4}& \sin(\bar{z}/16\rho) \cos(\bar{z}/16\rho) \cos(\bar{z} / 2\rho) +   \cos^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr], \\
+%b_z  =  \sinh(\sqrt{\eta}\bar{y} / 2\rho) \Bigl[ \frac{1}{32} & \cos(\bar{z}/8\rho) \cos(\bar{z}/2\rho) - \nonumber \\
+%                                                &\frac{1}{4}  \sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) + \cos^2  (\bar{z}/16\rho) \cos(\bar{z}/2\rho)  \Bigr].
+%\end{align}
+
+
+
+%{\bf Curved-Pole Front}
+
+
+%\begin{align}
+%b_x  =  \frac{\bar{k}_{\beta x}}{\bar{k}_{\beta y}} \sinh(\bar{k}_{\beta x} \bar{x})\sinh(\bar{k}_{\beta y} \bar{y}) \Bigl[ -\frac{1}{8}& \sin(\bar{z}/8\rho) \cos(\bar{z} / 2\rho) +   \sin^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr],    &    \\
+%b_y   =  \cosh(\bar{k}_{\beta x} \bar{x})\cosh(\bar{k}_{\beta y} \bar{y}) \Bigl[ -\frac{1}{8}& \sin(\bar{z}/8\rho) \cos(\bar{z} / 2\rho) +   \sin^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr], \\
+%b_z  =  \frac{\sqrt{\eta}}{2 \rho \bar{k}_{\beta y}}  \cosh(\bar{k}_{\beta x} \bar{x})\sinh(\bar{k}_{\beta y} \bar{y})  \Bigl[ -\frac{1}{32} & %\cos(\bar{z}/8\rho) \cos(\bar{z}/2\rho) + \nonumber \\
+%                                                &\frac{1}{4}  \sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) + \sin^2  (\bar{z}/16\rho) \cos(\bar{z}/2\rho)  \Bigr] .
+%\end{align}
+
+%{\bf Curved-Pole Back}
+
+%\begin{align}
+%b_x  =  \frac{\bar{k}_{\beta x}}{\bar{k}_{\beta y}} \sinh(\bar{k}_{\beta x} \bar{x})\sinh(\bar{k}_{\beta y} \bar{y}) \Bigl[ \frac{1}{8}& \sin(\bar{z}/8\rho) \cos(\bar{z} / 2\rho) +   \cos^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr],    &    \\
+%b_y   =  \cosh(\bar{k}_{\beta x} \bar{x})\cosh(\bar{k}_{\beta y} \bar{y}) \Bigl[ \frac{1}{8}& \sin(\bar{z}/8\rho) \cos(\bar{z} / 2\rho) +   \cos^2(\bar{z}/16\rho) \sin(\bar{z} / 2\rho)   \Bigr], \\
+%b_z  =  \frac{\sqrt{\eta}}{2 \rho \bar{k}_{\beta y}}  \cosh(\bar{k}_{\beta x} \bar{x})\sinh(\bar{k}_{\beta y} \bar{y})  \Bigl[ \frac{1}{32} & \cos(\bar{z}/8\rho) \cos(\bar{z}/2\rho) - \nonumber \\
+%                                                &\frac{1}{4}  \sin(\bar{z}/8\rho)\sin(\bar{z}/2\rho) + \cos^2  (\bar{z}/16\rho) \cos(\bar{z}/2\rho)  \Bigr] .
+%\end{align}
 
 
 
