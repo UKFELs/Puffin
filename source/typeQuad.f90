@@ -26,6 +26,8 @@ module typeQuad
 
   end type fQuad
 
+  contains
+
 ! ##############################################
 
 !> @author
@@ -43,11 +45,13 @@ module typeQuad
 !> @param[inout] sPi Electron scaled momenta in y, imag(p_perp) = -py
 !> @param[in] sgam Electron scaled energy coordinates
 
-  subroutine Quad(tQuad, sX, sY, sZ2, sPr, sPi, sGam)
- 
+  subroutine Quad(tQuad, sX, sY, sZ2, sPr, sPi, sGam, tScale)
+
     use gtop2
- 
+    use typeScale
+
     type(fQuad), intent(in) :: tQuad
+    type(fScale), intent(in) :: tScale
     real(kind=wp), contiguous, intent(inout) :: sPr(:), sPi(:)
     real(kind=wp), contiguous, intent(in) :: sX(:), sY(:), sZ2(:), sGam(:)
 
@@ -58,19 +62,19 @@ module typeQuad
 
     allocate(sp2(iNMPs))
 
-    call getP2(sp2, sGam, sPr, sPi, sEta_G, sGammaR_G, saw_G)
+    call getP2(sp2, sGam, sPr, sPi, tScale%eta, tScale%gamma_r, tScale%aw)
 
 !    Apply quad transform (point transform)
 
 
-    if (.not. qOneD_G) then
+    if (.not. tScale%qOneD) then
 
-      sPr = sPr + sqrt(sEta_G) / &
-                  (2 * sRho_G * sKappa_G) * sX &
+      sPr = sPr + sqrt(tScale%eta) / &
+                  (2 * tScale%rho * tScale%kappa) * sX &
                    / tQuad%qfx
 
-      sPi = sPi - sqrt(sEta_G) / &
-                  (2 * sRho_G * sKappa_G) * sY &
+      sPi = sPi - sqrt(tScale%eta) / &
+                  (2 * tScale%rho * tScale%kappa) * sY &
                   / tQuad%qfy
 
     end if

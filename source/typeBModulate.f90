@@ -26,6 +26,8 @@ module typeBModulate
 
   end type fBModulate
 
+  contains
+
 ! ##############################################
 
 !> @author
@@ -40,7 +42,7 @@ module typeBModulate
 
   subroutine bModulation(tBMod, sZ2, sGam)
 
-    type(tBMod), intent(in) :: tBMod
+    type(fBModulate), intent(in) :: tBMod
     real(kind=wp), contiguous, intent(in) :: sZ2(:)
     real(kind=wp), contiguous, intent(inout) :: sGam(:)
 

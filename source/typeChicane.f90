@@ -29,7 +29,7 @@ module typeChicane
 
   end type fChicane
 
-
+  contains
 
 
 !> @author
@@ -45,11 +45,15 @@ module typeChicane
 !> @param[inout] saperp Scaled field
 !> @param[inout] sZ Scaled distance through the machine
 
-  subroutine disperse(tChicane, sz2, sgam, saperp, sZ)
+  subroutine disperse(tChicane, sz2, sgam, saperp,  tFMesh, sZ)
+
+    use typeFMesh
+    use pDiff
 
     implicit none
 
     type(fchicane), intent(in) :: tChicane
+    type(fFMesh), intent(in) :: tFMesh
     real(kind=wp), contiguous, intent(inout) :: sz2(:)
     real(kind=wp), contiguous, intent(in) :: sgam(:)
     real(kind=wp), contiguous, intent(inout) :: saperp(:)
@@ -68,7 +72,7 @@ module typeChicane
                  (sgam - 1_wp) &
                  + tChicane%slip
 
-    if (qDiffraction_G) then
+    if (tFMesh%qDiff) then
 
 !  Convert slippage in z2bar to spatial length for diffraction
 

@@ -30,6 +30,8 @@ module typeScale
     real(kind=wp) :: lambda_r
     real(kind=wp) :: lc, lg
     real(kind=wp) :: ux, uy
+    real(kind=wp) :: kappa
+    logical :: qOneD
 
   end type fScale
 
