@@ -216,14 +216,23 @@ module typeScale
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!  Scaling of transverse coordinate X
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Convert Puffin scaled transverse coordinate (\f$ \bar{x} \f$ or \f$ \bar{y} \f$)
+!> ->  transverse (x or y) coordinate (in meters).
+!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[inout] sx Transverse (x or y) coordinate in input, scaled \f$ \bar{x} \f$ 
+!> or \f$ \bar{y} \f$ on output.
 
+    subroutine scaleX_single(tScaling, sx)
 
-    subroutine scaleX_single(sx, Lg, Lc)
-
+      type(fScale), intent(in) :: tScaling
       real(kind=wp), intent(inout) :: sx
-      real(kind=wp), intent(in) :: Lg, Lc
 
-      sx = sx / sqrt(Lg*Lc)
+      sx = sx / sqrt(tScaling%lg * tScaling%lc)
 
     end subroutine scaleX_single
 
@@ -232,30 +241,50 @@ module typeScale
 !> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Convert transverse (x or y) coordinate -> Puffin scaled transverse coordinate
-!> (\f$ \bar{x} \f$ or \f$ \bar{y} \f$)
-!> @param[in] tScaling Custom Fortran type describing scaling
-!> @param[inout] sGamma Scaled energy in input, Lorentz factor on output
+!> Convert transverse (x or y) coordinate (in meters) -> Puffin scaled transverse
+!> coordinate (\f$ \bar{x} \f$ or \f$ \bar{y} \f$).
+!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[inout] sx Scaled \f$ \bar{x} \f$ or scaled \f$ \bar{y} \f$ on input,
+!> transverse (x or y) coordinate on output, in meters.
 
-    subroutine unscaleX_single(sx, Lg, Lc)
+    subroutine unscaleX_single(tScaling, sx)
 
+      type(fScale), intent(in) :: tScaling
   	  real(kind=wp), intent(inout) :: sx
-      real(kind=wp), intent(in) :: Lg, Lc
 
-      sx = sx * sqrt(Lg*Lc)
+      sx = sx * sqrt(tScaling%lg * tScaling%lc)
 
     end subroutine unscaleX_single
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Convert Puffin scaled transverse coordinate (\f$ \bar{x} \f$ or \f$ \bar{y} \f$)
+!> ->  transverse (x or y) coordinate (in meters).
+!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[inout] sx Transverse (x or y) coordinate in input, scaled \f$ \bar{x} \f$ 
+!> or \f$ \bar{y} \f$ on output.
 
     subroutine scaleX_array(sx, Lg, Lc)
 
       real(kind=wp), intent(inout) :: sx(:)
-      real(kind=wp), intent(in) :: Lg, Lc
 
-      sx = sx / sqrt(Lg*Lc)
+      sx = sx / sqrt(tScaling%lg * tScaling%lc)
 
     end subroutine scaleX_array
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Convert transverse (x or y) coordinate (in meters) -> Puffin scaled transverse
+!> coordinate (\f$ \bar{x} \f$ or \f$ \bar{y} \f$).
+!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[inout] sx Scaled \f$ \bar{x} \f$ or scaled \f$ \bar{y} \f$ on input,
+!> transverse (x or y) coordinate on output, in meters.
 
     subroutine unscaleX_array(sx, Lg, Lc)
 
