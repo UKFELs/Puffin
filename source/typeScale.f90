@@ -221,11 +221,12 @@ module typeScale
 !> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Convert Puffin scaled transverse coordinate (\f$ \bar{x} \f$ or \f$ \bar{y} \f$)
-!> ->  transverse (x or y) coordinate (in meters).
+!> Convert transverse (x or y) coordinate (in meters) -> Puffin scaled transverse
+!> coordinate (\f$ \bar{x} \f$ or \f$ \bar{y} \f$).
 !> @param[in] tScaling Custom Fortran type describing scaling.
 !> @param[inout] sx Transverse (x or y) coordinate in input, scaled \f$ \bar{x} \f$ 
 !> or \f$ \bar{y} \f$ on output.
+
 
     subroutine scaleX_single(tScaling, sx)
 
@@ -241,8 +242,8 @@ module typeScale
 !> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Convert transverse (x or y) coordinate (in meters) -> Puffin scaled transverse
-!> coordinate (\f$ \bar{x} \f$ or \f$ \bar{y} \f$).
+!> Convert Puffin scaled transverse coordinate (\f$ \bar{x} \f$ or \f$ \bar{y} \f$)
+!> ->  transverse (x or y) coordinate (in meters).
 !> @param[in] tScaling Custom Fortran type describing scaling.
 !> @param[inout] sx Scaled \f$ \bar{x} \f$ or scaled \f$ \bar{y} \f$ on input,
 !> transverse (x or y) coordinate on output, in meters.
@@ -261,8 +262,8 @@ module typeScale
 !> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Convert Puffin scaled transverse coordinate (\f$ \bar{x} \f$ or \f$ \bar{y} \f$)
-!> ->  transverse (x or y) coordinate (in meters).
+!> Convert transverse (x or y) coordinate (in meters) -> Puffin scaled transverse
+!> coordinate (\f$ \bar{x} \f$ or \f$ \bar{y} \f$).
 !> @param[in] tScaling Custom Fortran type describing scaling.
 !> @param[inout] sx Transverse (x or y) coordinate in input, scaled \f$ \bar{x} \f$ 
 !> or \f$ \bar{y} \f$ on output.
@@ -281,8 +282,8 @@ module typeScale
 !> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Convert transverse (x or y) coordinate (in meters) -> Puffin scaled transverse
-!> coordinate (\f$ \bar{x} \f$ or \f$ \bar{y} \f$).
+!> Convert Puffin scaled transverse coordinate (\f$ \bar{x} \f$ or \f$ \bar{y} \f$)
+!> ->  transverse (x or y) coordinate (in meters).
 !> @param[in] tScaling Custom Fortran type describing scaling.
 !> @param[inout] sx Scaled \f$ \bar{x} \f$ or scaled \f$ \bar{y} \f$ on input,
 !> transverse (x or y) coordinate on output, in meters.
@@ -303,59 +304,91 @@ module typeScale
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Scaling of transverse momenta px
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Convert transverse \f$ \frac{dx}{dz} \f$ or \f$ \frac{dy}{dz} \f$ -> Puffin scaled transverse
+!> momenta \f$ \bar{p}_x \f$ or \f$ \bar{p}_y \f$.
+!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[in] sgamma Lorentz factor \f$ \gamma \f$ of particle. 
+!> @param[inout] sPx Transverse \f$ dx/dz \f$ on input, scaled \f$ \bar{p}_x \f$ 
+!> on output.
 
+    subroutine scalePx_single(tScaling, sgamma, sPx)
 
-    subroutine scalePx_single(sPx, sgamma, saw)
-
-!    Inputting dx/dz, outputting \bar{px}
-
+      type(fScale), intent(in) :: tScaling
+      real(kind=wp), intent(in) :: sgamma
       real(kind=wp), intent(inout) :: sPx
-      real(kind=wp), intent(in) :: saw, sgamma
 
-
-      sPx = sPx * sgamma / saw
+      sPx = sPx * sgamma / tScaling%aw
 
     end subroutine scalePx_single
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Convert Puffin scaled transverse momenta \f$ \bar{p}_x \f$ or \f$ \bar{p}_y \f$
+!> -> transverse \f$ \frac{dx}{dz} \f$ or \f$ \frac{dy}{dz} \f$. 
+!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[in] sgamma Lorentz factor \f$ \gamma \f$ of particle. 
+!> @param[inout] sPx Scaled \f$ \bar{p}_x \f$ on input, transverse \f$ dx/dz \f$
+!> on output.
 
+    subroutine unscalePx_single(tScaling, sgamma, sPx)
 
-    subroutine unscalePx_single(sPx, sgamma, saw)
-
-!    Inputting \bar{px}, outputting dx/dz
-
+      type(fScale), intent(in) :: tScaling
+      real(kind=wp), intent(in) :: sgamma
       real(kind=wp), intent(inout) :: sPx
-      real(kind=wp), intent(in) :: saw, sgamma
 
-
-      sPx = sPx * saw / sgamma 
+      sPx = sPx * tScaling%aw / sgamma 
 
     end subroutine unscalePx_single
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Convert transverse \f$ \frac{dx}{dz} \f$ or \f$ \frac{dy}{dz} \f$ -> Puffin scaled transverse
+!> momenta \f$ \bar{p}_x \f$ or \f$ \bar{p}_y \f$.
+!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[in] sgamma Lorentz factor \f$ \gamma \f$ of particle. 
+!> @param[inout] sPx Transverse \f$ dx/dz \f$ on input, scaled \f$ \bar{p}_x \f$ 
+!> on output.
 
+    subroutine scalePx_array(tScaling, sgamma, sPx)
 
-    subroutine scalePx_array(sPx, sgamma, saw)
-
-!    Inputting dx/dz, outputting \bar{px}
-
+      type(fScale), intent(in) :: tScaling
+      real(kind=wp), intent(in) :: sgamma(:)
       real(kind=wp), intent(inout) :: sPx(:)
-      real(kind=wp), intent(in) :: saw, sgamma(:)
 
-
-      sPx = sPx * sgamma / saw
+      sPx = sPx * sgamma / tScaling%aw
 
     end subroutine scalePx_array
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Convert Puffin scaled transverse momenta \f$ \bar{p}_x \f$ or \f$ \bar{p}_y \f$
+!> -> transverse \f$ \frac{dx}{dz} \f$ or \f$ \frac{dy}{dz} \f$. 
+!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[in] sgamma Lorentz factor \f$ \gamma \f$ of particle. 
+!> @param[inout] sPx Scaled \f$ \bar{p}_x \f$ on input, transverse \f$ dx/dz \f$
+!> on output.
 
+    subroutine unscalePx_array(tScaling, sgamma, sPx)
 
-    subroutine unscalePx_array(sPx, sgamma, saw)
-
-!    Inputting \bar{px}, outputting dx/dz
-
+      type(fScale), intent(in) :: tScaling
       real(kind=wp), intent(inout) :: sPx(:)
       real(kind=wp), intent(in) :: saw, sgamma(:)
 
-
-      sPx = sPx * saw / sgamma 
+      sPx = sPx * tScaling%aw / sgamma 
 
     end subroutine unscalePx_array
 
