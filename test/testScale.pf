@@ -1,0 +1,24 @@
+@test
+subroutine testMatchBRad( )
+
+  use pFUnit_mod
+  use typeScale
+  use paratype
+
+  implicit none
+
+  real(kind=wp) :: sEmit
+  type(fScale) :: tScaling
+  real(kind=wp) :: sEmit_exact, tol
+
+  tol = 0.0000001_WP
+  sEmit_exact = 12.566370614359172_wp
+
+  sEmit = 1e-9
+  tScaling%lambda_r = 1e-9
+
+  call scaleEmit(tScaling, sEmit)
+
+  @AssertEqual( sEmit, sEmit_exact, tol )
+
+end subroutine testMatchBRad
