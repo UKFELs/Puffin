@@ -10,7 +10,8 @@
 !> Glasgow, UK
 !> @brief
 !> This module contains the type definition to hold the scaling constants
-!> describing the \f$  (\bar{z}, \bar{z}_2) \f$ radiation frame used in Puffin.
+!> describing the \f$  (\bar{z}, \bar{z}_2) \f$ radiation frame used in Puffin
+!> and associated subroutines.
 
 module typeScale
 
