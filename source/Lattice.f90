@@ -4,11 +4,11 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> This module contains subroutines to read in the lattice file and setup the
-!> elements in the undulator line. It also contains the subroutines/functions 
+!> elements in the undulator line. It also contains the subroutines/functions
 !> for all the non-undulator segements, and the initialization of the undulator
 !> segments.
 
@@ -45,51 +45,52 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Top-level subroutine for setting up the elements in the undulator line, 
+!> Top-level subroutine for setting up the elements in the undulator line,
 !> either from a supplied lattice file, or as the single undulator specified
-!> in the main input file. It takes as inputs the simple/single undulator 
-!> parameters as specified in the main input file. If a lattice file is 
+!> in the main input file. It takes as inputs the simple/single undulator
+!> parameters as specified in the main input file. If a lattice file is
 !> supplied, these values are updated. If no lattice file is supplied, then
 !> the undulator line is set up as one undulator with these parameters. Note:
-!> the lattice filename is not an optional parameter! If wishing to not 
+!> the lattice filename is not an optional parameter! If wishing to not
 !> specify a lattice file, the filename should be input as a blank string ('')
 !> @param[in] lattFile String: The lattice file name
-!> @param[inout] taper The taper of the initial undulator module. Input as 
-!> the taper specified in the main input file. Updated if a lattice file is 
+!> @param[inout] taper The taper of the initial undulator module. Input as
+!> the taper specified in the main input file. Updated if a lattice file is
 !> supplied.
 !> @param[in] sRho The FEL, or Pierce, parameter
 !> @param[inout] nSteps_f Number of steps in the first undulator module. Input
-!> as the number of steps calculated from the main input file. Updated if a  
+!> as the number of steps calculated from the main input file. Updated if a
 !> lattice file is supplied.
 !> @param[inout] dz_f Integration step size in the first undulator module. Input
-!> as the step size specified in the main input file. Updated if a lattice file 
+!> as the step size specified in the main input file. Updated if a lattice file
 !> is supplied.
 !> @param[inout] ux_f ux (see manual) in the first undulator module. Input
-!> as the ux specified in the main input file. Updated if a lattice file 
+!> as the ux specified in the main input file. Updated if a lattice file
 !> is supplied.
 !> @param[inout] uy_f uy (see manual) in the first undulator module. Input
-!> as the uy specified in the main input file. Updated if a lattice file 
+!> as the uy specified in the main input file. Updated if a lattice file
 !> is supplied.
-!> @param[inout] kbnx_f Strong (scaled) in-undulator wavenumber in x (see manual) 
-!> in the first undulator module. Input as the kbetax_SF specified in the main 
+!> @param[inout] kbnx_f Strong (scaled) in-undulator wavenumber in x (see manual)
+!> in the first undulator module. Input as the kbetax_SF specified in the main
 !> input file. Updated if a lattice file is supplied.
-!> @param[inout] kbny_f Strong (scaled) in-undulator wavenumber in y (see manual) 
-!> in the first undulator module. Input as the kbetay_SF specified in the main 
+!> @param[inout] kbny_f Strong (scaled) in-undulator wavenumber in y (see manual)
+!> in the first undulator module. Input as the kbetay_SF specified in the main
 !> input file. Updated if a lattice file is supplied.
 
-  subroutine setupMods(lattFile, taper, sRho, nSteps_f, dz_f, &
-                       ux_f, uy_f, kbnx_f, kbny_f)
+  subroutine setupMods(lattFile, tUndMod_arr, tChic_arr, tDrift_arr, &
+                       tBMods_arr, tQuad_arr)
 
     implicit none
 
-    character(1024_ip), intent(in) :: LattFile 
-    real(kind=wp), intent(inout) :: taper
-    real(kind=wp), intent(in) :: sRho
-    real(kind=wp), intent(inout) :: dz_f, ux_f, uy_f, kbnx_f, kbny_f
-    integer(kind=ip), intent(inout) :: nSteps_f
+    character(1024_ip), intent(in) :: LattFile
+    type(fUndMod), allocatable, intent(inout) :: tUndMod_arr(:)
+    type(fChicane), allocatable, intent(inout) :: tChic_arr(:)
+    type(fDrift), allocatable, intent(inout) :: tDrift_arr(:)
+    type(fUndMod), allocatable, intent(inout) :: tBMods_arr(:)
+    type(fBModulate), allocatable, intent(inout) :: tQuad_arr(:)
 
 
     if (lattFile=='') then
@@ -105,24 +106,11 @@ contains
 
       modNum=numOfMods(lattFile)
 
-
-      allocate(mf(numOfUnds),delmz(numOfUnds),tapers(numOfUnds))
-      allocate(nSteps_arr(numOfUnds), zMod(numOfUnds))
-      allocate(ux_arr(numOfUnds), uy_arr(numOfUnds), &
-               kbnx_arr(numOfUnds), kbny_arr(numOfUnds))
-      allocate(zundtype_arr(numOfUnds))
-
-
-      allocate(chic_disp(numOfChics), chic_slip(numOfChics), &
-               chic_zbar(numOfChics))
-
-      allocate(drift_zbar(numOfDrifts))
-
-      allocate(enmod_wavenum(numOfModulations), &
-                 enmod_mag(numOfModulations)) 
-
-      allocate(quad_fx(numOfQuads), quad_fy(numOfQuads))
-
+      allocate(tUndMod_arr(numOfUnds))
+      allocate(tChic_arr(numOfChics))
+      allocate(tDrift_arr(numOfDrifts))
+      allocate(tBMods_arr(numOfModulations))
+      allocate(tQuad_arr(numOfQuads))
 
 !    Latt file name, number of wigg periods converted to z-bar,
 !    slippage in chicane in z-bar, 2 dispersive constants,
@@ -130,7 +118,8 @@ contains
 
       allocate(iElmType(modNum))   !  For now, using old lattice file format...
 
-      call readLatt(lattFile, sRho)
+      call readLatt(lattFile, sRho, tUndMod_arr, tChic_arr, tDrift_arr, &
+                    tBMods_arr, tQuad_arr)
 
       ModCount = 1
 
@@ -162,7 +151,7 @@ contains
       allocate(drift_zbar(numOfDrifts))
 
       allocate(enmod_wavenum(numOfModulations), &
-                 enmod_mag(numOfModulations)) 
+                 enmod_mag(numOfModulations))
 
       allocate(quad_fx(numOfQuads), quad_fy(numOfQuads))
 
@@ -178,8 +167,8 @@ contains
       tapers(1) = taper
       ux_arr(1) = ux_f
       uy_arr(1) = uy_f
-      kbnx_arr(1) = kbnx_f 
-      kbny_arr(1) = kbny_f 
+      kbnx_arr(1) = kbnx_f
+      kbny_arr(1) = kbny_f
 
     end if
 
@@ -200,26 +189,33 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Subroutine for reading in the lattice file and setting up the lattice 
+!> Subroutine for reading in the lattice file and setting up the lattice
 !> element arrays. The element arrays are globally defined in this module.
 !> @param[in] lattFile String: The lattice file name
 !> @param[in] rho The FEL, or Pierce, parameter
 
-  SUBROUTINE readLatt(lattFile, rho)
+  subroutine readLatt(lattFile, rho, tUndMod_arr, tChic_arr, tDrift_arr, &
+                tBMods_arr, tQuad_arr)
 
-  IMPLICIT NONE
+  implicit none
 
-  CHARACTER(1024_IP), INTENT(IN) :: lattFile
+  character(1024_IP), intent(in) :: lattFile
 
-  REAL(KIND=WP), INTENT(IN) :: rho
+  real(kind=wp), intent(in) :: rho
+
+  type(fUndMod), intent(inout) :: tUndMod_arr(:)
+  type(fChicane), intent(inout) :: tChic_arr(:)
+  type(fDrift), intent(inout) :: tDrift_arr(:)
+  type(fUndMod), intent(inout) :: tBMods_arr(:)
+  type(fBModulate), intent(inout) :: tQuad_arr(:)
 
 !                LOCAL VARS
 
-  INTEGER(KIND=IP)   :: i,ios,nw,error,ri,NL
-  REAL(KIND=WP)      :: c1, slamw
+  integer(kind=ip)   :: i,ios,error,ri,NL
+  real(kind=wp)      :: c1, slamw
 
   integer(kind=ip) :: nperlam
 
@@ -247,7 +243,7 @@ contains
   end if
 
 
-  do 
+  do
 
     read (168,*, IOSTAT=ios) ztest  ! probe the line
 
@@ -274,7 +270,7 @@ contains
 
         cntq = cntq + 1
 
-        read (168,*, IOSTAT=ios) ztest, quad_fx(cntq), quad_fy(cntq)  ! read vars
+        read (168,*, IOSTAT=ios) ztest, tQuad_arr(cntq)%qfx, tQuad_arr(cntq)%qfy  ! read vars
 
         cntt = cntt + 1
         iElmType(cntt) = iQuad
@@ -285,39 +281,48 @@ contains
 
         cntu = cntu + 1
 
-!       reading ... element ID, undulator type, num of periods, alpha (aw / aw0), 
-!       taper (d alpha / dz), integration steps per period, ux and uy (polarization 
-!       control), and kbnx and kbny, betatron wavenumbers for in-undulator strong 
-!       focusing (applied in the wiggler!!! NOT from quads. Remember the natural 
+!       reading ... element ID, undulator type, num of periods, alpha (aw / aw0),
+!       taper (d alpha / dz), integration steps per period, ux and uy (polarization
+!       control), and kbnx and kbny, betatron wavenumbers for in-undulator strong
+!       focusing (applied in the wiggler!!! NOT from quads. Remember the natural
 !       undulator focusing is also included IN ADDITION to this...)
 
-        read (168,*, IOSTAT=ios) ztest, zundtype_arr(cntu), nw, mf(cntu), tapers(cntu), &
-                                 nperlam, ux_arr(cntu), uy_arr(cntu), kbnx_arr(cntu), &
-                                 kbny_arr(cntu)  ! read vars
+        read (168,*, IOSTAT=ios) ztest, tUndMod_arr(cntu)%zundtype, &
+                                 tUndMod_arr(cntu)%nw, &
+                                 tUndMod_arr(cntu)%mf, tUndMod_arr(cntu)%taper, &
+                                 nperlam, tUndMod_arr(cntu)%ux, &
+                                 tUndMod_arr(cntu)%uy, &
+                                 tUndMod_arr(cntu)%kbx, &
+                                 tUndMod_arr(cntu)%kby  ! read vars
 
         cntt = cntt + 1
         iElmType(cntt) = iUnd
 
-
-        nSteps_arr(cntu) = nw * nperlam
+        tUndMod_arr(cntu)%nSteps = tUndMod_arr(cntu)%nw * nperlam
 
         slamw = 4.0_WP * pi * rho
-        delmz(cntu) = slamw / real(nperlam, kind=wp)
-  
-        if (zundtype_arr(cntu) == 'curved') then
+        tUndMod_arr(cntu)%delmz = slamw / real(nperlam, kind=wp)
 
-          ux_arr(cntu) = 0   ! Temp fix for initialization bug
-          uy_arr(cntu) = 1
+        if (tUndMod_arr(cntu)%zundtype == 'curved') then
 
-        else if (zundtype_arr(cntu) == 'planepole') then
+          tUndMod_arr(cntu)%ux = 0   ! Temp fix for initialization bug
+          tUndMod_arr(cntu)%uy = 1
 
-          ux_arr(cntu) = 0   ! Temp fix for initialization bug
-          uy_arr(cntu) = 1
+          tUndMod_arr(cntu)%kux = SQRT(sEta_G/(8.0_WP*sRho_G**2)) ! Giving equal focusing for now....
+          tUndMod_arr(cntu)%kuy = SQRT(sEta_G/(8.0_WP*sRho_G**2))
 
-        else if (zundtype_arr(cntu) == 'helical') then
+        else if (tUndMod_arr(cntu)%zundtype == 'planepole') then
 
-          ux_arr(cntu) = 1   ! Temp fix for initialization bug
-          uy_arr(cntu) = 1
+          tUndMod_arr(cntu)%kux = 0.0_wp ! Giving equal focusing for now....
+          tUndMod_arr(cntu)%kuy = 0.0_wp
+
+          tUndMod_arr(cntu)%ux = 0   ! Temp fix for initialization bug
+          tUndMod_arr(cntu)%uy = 1
+
+        else if (tUndMod_arr(cntu)%zundtype == 'helical') then
+
+          tUndMod_arr(cntu)%ux = 1   ! Temp fix for initialization bug
+          tUndMod_arr(cntu)%uy = 1
 
         end if
 
@@ -329,14 +334,14 @@ contains
 
         backspace(168)
         cntc = cntc + 1
-        read (168,*, IOSTAT=ios) ztest, chic_zbar(cntc), chic_slip(cntc), chic_disp(cntc)  ! read vars
+        read (168,*, IOSTAT=ios) ztest, tChic_arr(cntc)%zbar, &
+                         tChic_arr(cntc)%slip, tChic_arr(cntc)%disp  ! read vars
 
         cntt = cntt + 1
         iElmType(cntt) = iChic
 
-
-        chic_slip(cntc) = 2.0_WP*pi*c1*chic_slip(cntc)
-        chic_zbar(cntc) = 2.0_WP*pi*c1*chic_zbar(cntc)
+        tChic_arr(cntc)%slip = 2.0_WP*pi*c1*tChic_arr(cntc)%slip
+        tChic_arr(cntc)%zbar = 2.0_WP*pi*c1*tChic_arr(cntc)%zbar
         ! D = Dfact*10.0/6.0*delta ! The Dispersion parameter
 
 
@@ -344,18 +349,19 @@ contains
 
         backspace(168)
         cntd = cntd + 1
-        read (168,*, IOSTAT=ios) ztest, drift_zbar(cntd)   ! read vars
+        read (168,*, IOSTAT=ios) ztest, tDrift_arr(cntd)%zbar   ! read vars
 
         cntt = cntt + 1
         iElmType(cntt) = iDrift
 
-        drift_zbar(cntd) = drift_zbar(cntd) * 4.0_wp * pi * sRho_G
+        tDrift_arr(cntd)%zbar = tDrift_arr(cntd)%zbar * 4.0_wp * pi * sRho_G
 
       else if (ztest(1:2) == 'MO') then
 
         backspace(168)
         cntm = cntm + 1
-        read (168,*, IOSTAT=ios) ztest, enmod_wavenum(cntm), enmod_mag(cntm) ! read vars
+        read (168,*, IOSTAT=ios) ztest, tBMods_arr(cntm)%wavenum, &
+                           tBMods_arr(cntm)%mag ! read vars
 
         cntt = cntt + 1
         iElmType(cntt) = iModulation
@@ -368,192 +374,17 @@ contains
 
     end if
 
-  end do    
+  end do
 
   close(168, STATUS='KEEP')
 
   end subroutine readLatt
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-!> @author
-!> Lawrence Campbell,
-!> University of Strathclyde, 
-!> Glasgow, UK
-!> @brief
-!> Subroutine for modelling the chicane element in Puffin. This is achieved
-!> only through a simple point tranform.
-!> @param[in] iL The element number in the lattice
-!> @param[out] sZ Scaled distance through the machine
-
-  subroutine disperse(iL, sZ)
-
-  implicit none
-
-  integer(kind=ip), intent(in) :: iL
-  real(kind=wp), intent(out) :: sZ
-
-  real(kind=wp) :: szbar4d
-  real(kind=wp), allocatable :: sp2(:)
-  logical :: qDummy
-
-
-
-  logical :: qOKL
-
-  szbar4d = chic_zbar(iChic_cr)
-
-!     Propagate through chicane
-
-
-  sElZ2_G = sElZ2_G - 2.0_WP * chic_disp(iChic_cr) *  &
-               (sElGam_G - 1_wp) &
-               + chic_slip(iChic_cr)
-
-  if (qDiffraction_G) then
-
-!  Convert slippage in z2bar to spatial length for diffraction
-
-    if (szbar4d > 0.0_wp) call diffractIM(szbar4d, qDummy, qOKL)
-
-  end if
-
-  sZ = sZ + szbar4d
-  iChic_cr = iChic_cr + 1_ip
-
-  end subroutine disperse
-
-
-
 ! ##############################################
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
-!> Glasgow, UK
-!> @brief
-!> Subroutine to model the electron drift between other lattice elements.
-!> @param[in] iL The element number in the lattice
-!> @param[out] sZ Scaled distance through the machine
-
-  subroutine driftSection(iL, sZ)
-
-    integer(kind=ip), intent(in) :: iL
-    real(kind=wp), intent(out) :: sZ
-
-    real(kind=wp) :: del_dr_z
-
-    real(kind=wp), allocatable :: sp2(:)
-    logical :: qDummy, qOKL
-
-
-    del_dr_z = drift_zbar(iDrift_cr) ! dummy until global
-
-    allocate(sp2(iNumberElectrons_G))
-
-    call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, sEta_G, sGammaR_G, saw_G)
-
-    sElZ2_G = sElZ2_G + del_dr_z * sp2
-
-    if (.not. qOneD_G) then
-    
-      ! drift in x and y...
-
-      sElX_G = sElX_G + (2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
-            (1 + sEta_G * sp2) / sElGam_G *  &
-            sElPX_G) * del_dr_z
-
-      sElY_G = sElY_G - (2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
-            (1 + sEta_G * sp2) / sElGam_G *  &
-            sElPY_G) * del_dr_z
-
-    end if
-
-    if (qDiffraction_G) call diffractIM(del_dr_z, qDummy, qOKL)
-
-    deallocate(sp2)
-
-    sZ = sZ + del_dr_z
-    iDrift_cr = iDrift_cr + 1_ip
-
-  end subroutine driftSection
-
-! ##############################################
-
-!> @author
-!> Lawrence Campbell,
-!> University of Strathclyde, 
-!> Glasgow, UK
-!> @brief
-!> Subroutine to model the quad element in Puffin. This is implemented as a 
-!> simple point transform.
-!> @param[in] iL The element number in the lattice
-
-  subroutine Quad(iL)
-
-    integer(kind=ip), intent(in) :: iL
-
-    real(kind=wp), allocatable :: sp2(:)
-
-    allocate(sp2(iNumberElectrons_G))
-
-    call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, sEta_G, sGammaR_G, saw_G)
-
-!    Apply quad transform (point transform)
-
-
-    if (.not. qOneD_G) then
-
-      sElPX_G = sElPX_G + sqrt(sEta_G) / &
-                  (2 * sRho_G * sKappa_G) * sElX_G &
-                   / quad_fx(iQuad_cr)
-
-      sElPY_G = sElPY_G - sqrt(sEta_G) / &
-                  (2 * sRho_G * sKappa_G) * sElY_G &
-                  / quad_fy(iQuad_cr)
-
-    end if
-
-
-  deallocate(sp2)
-
-  iQuad_cr = iQuad_cr + 1_ip
-
-  end subroutine Quad
-
-
-
-! ##############################################
-
-!> @author
-!> Lawrence Campbell,
-!> University of Strathclyde, 
-!> Glasgow, UK
-!> @brief
-!> Apply a simple energy modulation to the beam in Puffin.
-!> @param[in] iL The element number in the lattice
-
-  subroutine bModulation(iL)
-
-    integer(kind=ip), intent(in) :: iL
-
-    sElGam_G = sElGam_G + ( enmod_mag(iModulation_cr) &
-               * cos(enmod_wavenum(iModulation_cr) * sElZ2_G) )
-
-
-    iModulation_cr = iModulation_cr + 1
-
-  end subroutine bModulation
-
-
-
-
-
-! ##############################################
-
-!> @author
-!> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Apply a virtual 'magnet corrector' at the end of the wiggler
@@ -588,7 +419,7 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> When not using undulator ends, this subroutine re-centres the beam after
@@ -632,12 +463,12 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> When not using undulator ends, this subroutine initializes the transverse beam
-!> coordinates to satisfy the initial offset conditions in the undulator. 
-!> the undulator exit. 
+!> coordinates to satisfy the initial offset conditions in the undulator.
+!> the undulator exit.
 !> @param[in] sZ zbar position
 
   subroutine matchIn(tScaling, tUndMod, sZ)
@@ -769,12 +600,12 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> When not using undulator ends, this subroutine initializes the transverse beam
-!> coordinates to satisfy the initial offset conditions in the undulator. 
-!> the undulator exit. 
+!> coordinates to satisfy the initial offset conditions in the undulator.
+!> the undulator exit.
 !> @param[in] iM Undulator number
 !> @param[in] sZ zbar position in the machine
 !> @param[inout] sZ zbar position local to undulator (initialized to = 0) here
@@ -834,10 +665,10 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Function to count the number of lines on a file 
+!> Function to count the number of lines on a file
 !> @param[in] fname Filename
 
   FUNCTION lineCount(fname)
@@ -869,7 +700,7 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Function to count the number of each type of element in the lattice file
@@ -902,7 +733,7 @@ contains
     stop "OPEN(input file) not performed correctly, IOSTAT /= 0"
   end if
 
-  do 
+  do
 
     read (168,*, IOSTAT=ios) ztest  ! probe the line
 
