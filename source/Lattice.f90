@@ -80,11 +80,12 @@ contains
 !> in the first undulator module. Input as the kbetay_SF specified in the main
 !> input file. Updated if a lattice file is supplied.
 
-  subroutine setupMods(lattFile, tUndMod_arr, tChic_arr, tDrift_arr, &
+  subroutine setupMods(tScaling, lattFile, tUndMod_arr, tChic_arr, tDrift_arr, &
                        tBMods_arr, tQuad_arr)
 
     implicit none
 
+    type(fScale), intent(in) :: tScaling
     character(1024_ip), intent(in) :: LattFile
     type(fUndMod), allocatable, intent(inout) :: tUndMod_arr(:)
     type(fChicane), allocatable, intent(inout) :: tChic_arr(:)
@@ -118,7 +119,7 @@ contains
 
       allocate(iElmType(modNum))   !  For now, using old lattice file format...
 
-      call readLatt(lattFile, sRho, tUndMod_arr, tChic_arr, tDrift_arr, &
+      call readLatt(tScaling, lattFile, sRho, tUndMod_arr, tChic_arr, tDrift_arr, &
                     tBMods_arr, tQuad_arr)
 
       ModCount = 1
@@ -195,17 +196,14 @@ contains
 !> Subroutine for reading in the lattice file and setting up the lattice
 !> element arrays. The element arrays are globally defined in this module.
 !> @param[in] lattFile String: The lattice file name
-!> @param[in] rho The FEL, or Pierce, parameter
 
-  subroutine readLatt(lattFile, rho, tUndMod_arr, tChic_arr, tDrift_arr, &
-                tBMods_arr, tQuad_arr)
+  subroutine readLatt(tScaling, lattFile, tUndMod_arr, tChic_arr, tDrift_arr, &
+                      tBMods_arr, tQuad_arr)
 
   implicit none
 
+  type(fScale), intent(in) :: tScaling
   character(1024_IP), intent(in) :: lattFile
-
-  real(kind=wp), intent(in) :: rho
-
   type(fUndMod), intent(inout) :: tUndMod_arr(:)
   type(fChicane), intent(inout) :: tChic_arr(:)
   type(fDrift), intent(inout) :: tDrift_arr(:)
@@ -300,16 +298,16 @@ contains
 
         tUndMod_arr(cntu)%nSteps = tUndMod_arr(cntu)%nw * nperlam
 
-        slamw = 4.0_WP * pi * rho
+        slamw = 4.0_wp * pi * rho
         tUndMod_arr(cntu)%delmz = slamw / real(nperlam, kind=wp)
 
         if (tUndMod_arr(cntu)%zundtype == 'curved') then
 
-          tUndMod_arr(cntu)%ux = 0   ! Temp fix for initialization bug
-          tUndMod_arr(cntu)%uy = 1
+          tUndMod_arr(cntu)%ux = 0.0_wp   ! Temp fix for initialization bug
+          tUndMod_arr(cntu)%uy = 1.0_wp
 
-          tUndMod_arr(cntu)%kux = SQRT(sEta_G/(8.0_WP*sRho_G**2)) ! Giving equal focusing for now....
-          tUndMod_arr(cntu)%kuy = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+          tUndMod_arr(cntu)%kux = SQRT(sEta_G/(8.0_wp*tScaling%rho**2)) ! Giving equal focusing for now....
+          tUndMod_arr(cntu)%kuy = SQRT(sEta_G/(8.0_wp*tScaling%rho**2))
 
         else if (tUndMod_arr(cntu)%zundtype == 'planepole') then
 
@@ -354,7 +352,7 @@ contains
         cntt = cntt + 1
         iElmType(cntt) = iDrift
 
-        tDrift_arr(cntd)%zbar = tDrift_arr(cntd)%zbar * 4.0_wp * pi * sRho_G
+        tDrift_arr(cntd)%zbar = tDrift_arr(cntd)%zbar * 4.0_wp * pi * tScaling%rho
 
       else if (ztest(1:2) == 'MO') then
 
@@ -504,7 +502,7 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Calculates the expected offset (analytical, ignoring energy losses to FEL etc).
@@ -529,12 +527,12 @@ contains
 
     real(kind=wp), allocatable :: unscEn(:)
     real(kind=wp) :: kx, ky
-  
-    allocate(unscEn(iNumberElectrons_G))  
+
+    allocate(unscEn(iNumberElectrons_G))
 
     kx = tUndMod%kux
     ky = tUndMod%kuy
-    
+
     if (zUndType_G == 'curved') then
 
 ! used for curved pole puffin, the 2 order expansion of cosh and sinh
@@ -603,61 +601,56 @@ contains
 !> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> When not using undulator ends, this subroutine initializes the transverse beam
-!> coordinates to satisfy the initial offset conditions in the undulator.
-!> the undulator exit.
+!> Initialize undulator local tracking coord for distance travelled in machine
+!> and local distance in this module.
 !> @param[in] iM Undulator number
 !> @param[in] sZ zbar position in the machine
-!> @param[inout] sZ zbar position local to undulator (initialized to = 0) here
+!> @param[inout] sZl zbar position local to undulator (initialized to = 0) here
 
-  subroutine initUndulator(iM, sZ, szl)
+  subroutine initUndulator(sZ, szl)
 
-    integer(kind=ip), intent(in) :: iM
     real(kind=wp), intent(in) :: sZ
     real(kind=wp), intent(inout) :: szl
 
-! Want to update using arrays describing each module...
-
-!     Update undulator parameter:
-
-    n2col0 = mf(iM)
-    n2col = mf(iM)
-    undgrad = tapers(iM)
     sz0 = sz
     szl = 0_wp
 
+  end subroutine initUndulator
 
-!     Update stepsize
 
-    sStepSize = delmz(iM) ! Change step size - make sure is still integer
-                           ! of 4pirho in input file!!
 
-    nSteps = nSteps_arr(iM)
+! #########################################################
 
-    zUndType_G = zundtype_arr(iM)
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Setup undulator ends.
+!> @param[inout] tUndMod Custom Fortran type describing undulator.
+!> @param[in] tScaling Custom Fortran type describing Puffin scaled frame.
 
-    fx_G = ux_arr(iM)
-    fy_G = uy_arr(iM)
+  subroutine setUndEnds(tUndMod, tScaling)
 
-    sKBetaXSF_G = kbnx_arr(iM)
-    sKBetaYSF_G = kbny_arr(iM)
-
-!     Setup undulator ends
+    type(fUndMod), intent(inout) :: tUndMod
+    type(fScale), intent(in) :: tScaling
 
     if (qUndEnds_G) then
 
-      sZFS = 4_wp * pi * sRho_G  *  2.0_wp
-      sZFE = nSteps * sStepSize - &
-               4_wp * pi * sRho_G  *  2.0_wp
+      tUndMod%sZFS = 4_wp * pi * tScaling%rho  *  2.0_wp
+      tUndMod%sZFE = nSteps * sStepSize - &
+                     4_wp * pi * tScaling%rho  *  2.0_wp
 
     else
 
-      sZFS = 0_wp
-      sZFE = nSteps * sStepSize
+      tUndMod%sZFS = 0_wp
+      tUndMod%sZFE = nSteps * sStepSize
 
     end if
 
-  end subroutine initUndulator
+  end subroutine setUndEnds
+
+
 
 
 ! #########################################################

@@ -35,7 +35,7 @@ CONTAINS
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Subroutine to pass all the temporary variables to global
@@ -391,7 +391,7 @@ END SUBROUTINE passToGlobals
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Subroutine to recalculate the beam charge to match the value of rho
@@ -435,7 +435,7 @@ end subroutine fixCharge
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Calculates the area under the current profile in z2.
@@ -479,7 +479,7 @@ end subroutine getLBArea
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Calculates the area under the current profile in z2.
@@ -709,88 +709,6 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
 
 
 end subroutine scaleParams
-
-
-
-
-
-
-subroutine calcScaling(srho, saw, sgamr, slam_w, &
-                       zUndType, sfx, sfy)
-
-  real(kind=wp), intent(in) :: srho, saw, sgamr, slam_w, &
-                               sfx, sfy
-
-  CHARACTER(32_IP), intent(in) :: zUndType
-
-  real(kind=wp) :: saw_rms, sBetaz
-
-  sRho_G = srho
-
-
-  fx_G = sfx
-  fy_G = sfy
-
-
-
-
-  sGammaR_G = sgamr
-
-
-
-  if (zUndType == 'curved') then
-
-    saw_rms =  saw / sqrt(2.0_wp)
-
-    kx_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2)) ! Giving equal focusing for now....
-    ky_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2))
-
-    sKBetaX_G = saw / sqrt(2.0_wp * sEta_G) / sGammaR_G * kx_und_G
-    sKBetaY_G = saw / sqrt(2.0_wp * sEta_G) / sGammaR_G * ky_und_G
-
-
-    fx_G = 0   ! Temp fix for initialization bug
-    fy_G = 1
-
-  else if (zUndType == 'planepole') then
-
-    saw_rms =  saw / sqrt(2.0_wp)
-    fx_G = 0   ! Temp fix for initialization bug
-    fy_G = 1
-
-  else if (zUndType == 'helical') then
-
-    saw_rms = saw
-    fx_G = 1   ! Temp fix for initialization bug
-    fy_G = 1
-
-  else
-
-    saw_rms = saw * SQRT(sfx**2 + sfy**2) / sqrt(2.0_wp)
-
-  end if
-
-
-  sbetaz = SQRT(sgamr**2.0_WP - 1.0_WP - (saw_rms)**2.0_WP) / &
-           sgamr
-
-  sEta_G = (1.0_WP - sbetaz) / sbetaz
-  sKappa_G = saw / 2.0_WP / srho / sgamr
-  sKBeta_G = sKappa_G ! aw_rms / 2.0_WP / sFocusFactor / srho / sgamr
-
-  sAw_G = saw
-
-
-  lam_w_G = slam_w
-  lam_r_G = slam_w * sEta_G
-
-  lg_G = lam_w_G / 4.0_WP / pi / srho
-  lc_G = lam_r_G / 4.0_WP / pi / srho
-
-
-end subroutine calcScaling
-
-
 
 
 

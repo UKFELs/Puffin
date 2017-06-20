@@ -6,41 +6,40 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> A module which contains top-level subroutines to allocate and initialize, 
+!> A module which contains top-level subroutines to allocate and initialize,
 !> or destroy, the data used in Puffin.
 
-MODULE Setup
+module Setup
 
-  USE SETUPTRANS
-!  USE FFTW_Constants
-
-  USE setupcalcs
-  USE transforms
-  USE sddsPuffin
-  USE lattice
-  USE Globals
-  USE resume
-  USE electronInit
-  USE Read_data
-  USE checks
+  use setuptrans
+  use setupcalcs
+  use transforms
+  use sddsPuffin
+  use lattice
+  use Globals
+  use resume
+  use electronInit
+  use Read_data
+  use checks
   use dumpFiles
   use ParaField
   use dummyf
 
-  IMPLICIT NONE
+  implicit none
 
-  CONTAINS
+  contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  SUBROUTINE init(tScaling, sZ, qOK)
+  subroutine init(tScaling, tUndMod_arr, tChic_arr, tDrift_arr, &
+                       tBMods_arr, tQuad_arr, sZ, qOK)
 
-  USE InitVars
+  use InitVars
 
-  IMPLICIT NONE
+  implicit none
 
 ! Subroutine to perform the initialization of
 ! the data for Puffin, and to write out initial
@@ -59,8 +58,13 @@ MODULE Setup
 !  REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sA(:)
 
   type(fScale), intent(inout) :: tScaling
-  REAL(KIND=WP), INTENT(OUT) :: sZ
-  LOGICAL, INTENT(OUT)   ::  qOK
+  type(fUndMod), allocatable, intent(inout) :: tUndMod_arr(:)
+  type(fChicane), allocatable, intent(inout) :: tChic_arr(:)
+  type(fDrift), allocatable, intent(inout) :: tDrift_arr(:)
+  type(fUndMod), allocatable, intent(inout) :: tBMods_arr(:)
+  type(fBModulate), allocatable, intent(inout) :: tQuad_arr(:)
+  real(kind=wp), intent(out) :: sZ
+  logical, intent(out)   ::  qOK
 
 !     Set error flag
 
@@ -167,7 +171,7 @@ MODULE Setup
 
 
 
-  call calcScaling(srho, saw, sgammar, lambda_w, &
+  call initScaling(tScaling, srho, saw, sgammar, lambda_w, &
                    zUndType, fx, fy)
 
 
@@ -254,8 +258,8 @@ MODULE Setup
 
 
 
-  call setupMods(lattFile, taper, sRho, nSteps, sStepSize, fx, fy, &
-                  sKBetaXSF_G, sKBetaYSF_G)
+  call setupMods(tScaling, lattFile, tUndMod_arr, tChic_arr, tDrift_arr, &
+                       tBMods_arr, tQuad_arr)
 
 !     Pass local vars to global vars
 
