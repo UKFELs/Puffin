@@ -10,7 +10,7 @@
 !> Glasgow, UK
 !> @brief
 !> This module contains the type definition to hold the scaling constants
-!> describing the z2 radiation frame used in Puffin.
+!> describing the \f$  (\bar{z}, \bar{z}_2) \f$ radiation frame used in Puffin.
 
 module typeScale
 
@@ -451,47 +451,86 @@ module typeScale
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Scaling of t -> z2
 
-    subroutine scaleT_single(sT, Lc)
 
-! Subroutine to scale t -> z2, for use in Puffin
-! Takes in Lc, the cooperation length
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Convert temporal coordinate \f$ t \f$ (in seconds) -> Puffin scaled coordinate 
+!> \f$ \bar{z}_2 \f$.
+!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[inout] sT temporal coordinate \f$ t \f$ on input, Puffin scaled
+!> coordinate \f$ \bar{z}_2 \f$ on output.
+
+    subroutine scaleT_single(tScaling, sT)
+
+      type(fScale), intent(in) :: tScaling
       real(kind=wp), intent(inout) :: sT
-      real(kind=wp), intent(in) :: Lc
 
-      sT = c * sT / Lc
+      sT = c * sT / tScaling%lc
 
     end subroutine scaleT_single
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Convert Puffin scaled coordinate \f$ \bar{z}_2 \f$ -> temporal coordinate 
+!> \f$ t \f$ (in seconds).
+!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[inout] sT Puffin scaled coordinate \f$ \bar{z}_2 \f$ on input,
+!> temporal coordinate \f$ t \f$ (in seconds) on output.
 
-    subroutine unscaleT_single(sT, Lc)
+    subroutine unscaleT_single(tScaling, sT)
 
+      type(fScale), intent(in) :: tScaling
       real(kind=wp), intent(inout) :: sT
-      real(kind=wp), intent(in) :: Lc
 
-      sT = sT * Lc / c
+      sT = sT * tScaling%lc / c
 
     end subroutine unscaleT_single
 
-    subroutine scaleT_array(sT, Lc)
 
-! Subroutine to scale t -> z2, for use in Puffin
-! Takes in Lc, the cooperation length
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Convert temporal coordinate \f$ t \f$ (in seconds) -> Puffin scaled coordinate 
+!> \f$ \bar{z}_2 \f$.
+!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[inout] sT temporal coordinate \f$ t \f$ on input, Puffin scaled
+!> coordinate \f$ \bar{z}_2 \f$ on output.
 
+    subroutine scaleT_array(tScaling, sT)
+
+      type(fScale), intent(in) :: tScaling
       real(kind=wp), intent(inout) :: sT(:)
-      real(kind=wp), intent(in) :: Lc
 
-      sT = c * sT / Lc
+      sT = c * sT / tScaling%lc
 
     end subroutine scaleT_array
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Convert Puffin scaled coordinate \f$ \bar{z}_2 \f$ -> temporal coordinate 
+!> \f$ t \f$ (in seconds).
+!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[inout] sT Puffin scaled coordinate \f$ \bar{z}_2 \f$ on input,
+!> temporal coordinate \f$ t \f$ (in seconds) on output.
 
-    subroutine unscaleT_array(sT, Lc)
+    subroutine unscaleT_array(tScaling, sT)
 
+      type(fScale), intent(in) :: tScaling
       real(kind=wp), intent(inout) :: sT(:)
-      real(kind=wp), intent(in) :: Lc
 
-      sT = sT * Lc / c
+      sT = sT * tScaling%lc / c
 
     end subroutine unscaleT_array
 
@@ -502,32 +541,47 @@ module typeScale
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Scaling of z -> zbar
 
-    subroutine scaleZ(sZ, Lg)
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Convert propagation distance \f$ z \f$ (in seconds) -> Puffin scaled coordinate 
+!> \f$ \bar{z} = z / l_g \f$.
+!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[inout] sT Distance \f$ z \f$ (in metres) on input, Puffin scaled
+!> coordinate \f$ \bar{z} \f$ on output.
 
+    subroutine scaleZ(tScaling, sZ)
+
+      type(fScale), intent(in) :: tScaling
       real(kind=wp), intent(inout) :: sZ
-      real(kind=wp), intent(in) :: Lg
 
-      sZ = sZ / Lg
+      sZ = sZ / tScaling%lg
 
     end subroutine scaleZ
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Convert Puffin scaled distance \f$ \bar{z} \f$ -> propagation distance 
+!> \f$ z \f$ (in metres).
+!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[inout] sT Puffin scaled distance \f$ \bar{z} \f$ on input,
+!> propagation distance \f$ z \f$ (in metres) on output.
 
-    subroutine unscaleZ(sZ, Lg)
+    subroutine unscaleZ(tScaling, sZ)
 
+      type(fScale), intent(in) :: tScaling
       real(kind=wp), intent(inout) :: sZ
-      real(kind=wp), intent(in) :: Lg
 
-      sZ = sZ * Lg
+      sZ = sZ * tScaling%lg
 
     end subroutine unscaleZ
 
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-
-
-
-
 
 end module typeScale
