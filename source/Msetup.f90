@@ -36,7 +36,7 @@ MODULE Setup
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  SUBROUTINE init(sZ, qOK)
+  SUBROUTINE init(tScaling, sZ, qOK)
 
   USE InitVars
 
@@ -57,6 +57,8 @@ MODULE Setup
 ! qOK            Error flag; .false. if no error
 
 !  REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sA(:)
+
+  type(fScale), intent(inout) :: tScaling
   REAL(KIND=WP), INTENT(OUT) :: sZ
   LOGICAL, INTENT(OUT)   ::  qOK
 
@@ -519,7 +521,7 @@ MODULE Setup
 
   if (.not. qResume_G) then
 
-    call writeIM(sZ, sZlSt_G, &
+    call writeIM(tScaling, sZ, sZlSt_G, &
                  zDataFileName, 0_ip, 0_ip, 0_ip, iWriteNthSteps, &
                  iIntWriteNthSteps, nSteps, qOKL)
 

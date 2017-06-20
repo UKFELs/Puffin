@@ -14,8 +14,6 @@
 
 module dummyf
 
-!USE FFTW_Constants
-
 USE sddsPuffin
 USE lattice
 USE RK4int
@@ -29,7 +27,7 @@ implicit none
 contains
 
 
-subroutine writeIM(sZ, sZl, &
+subroutine writeIM(tScaling, sZ, sZl, &
                    zDataFileName, iStep, iCstep, iL, iWriteNthSteps, &
                    iIntWriteNthSteps, nSteps, qOK)
 
@@ -44,6 +42,7 @@ subroutine writeIM(sZ, sZl, &
 
   implicit none
 
+  type(fScale), intent(in) :: tScaling
   real(kind=wp), intent(inout) :: sZ, sZl
   integer(kind=ip), intent(in) :: iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps
   integer(kind=ip), intent(in) :: iCstep, iL
@@ -62,7 +61,7 @@ subroutine writeIM(sZ, sZl, &
                    qWriteInt, qWriteFull, qOK)
 
 
-  call wr_cho(sZ, sZl, &
+  call wr_cho(tScaling, sZ, sZl, &
               zDataFileName, iStep, iCstep, iL, iWriteNthSteps, &
               iIntWriteNthSteps, nSteps, qWriteInt, qWriteFull, qOK)
 
@@ -85,7 +84,7 @@ end subroutine writeIM
 
 
 
-subroutine wr_cho(sZ, sZl, &
+subroutine wr_cho(tScaling, sZ, sZl, &
                   zDataFileName, iStep, iCstep, iL, iWriteNthSteps, &
                   iIntWriteNthSteps, nSteps, qWriteInt, qWriteFull, qOK)
 
@@ -98,6 +97,7 @@ subroutine wr_cho(sZ, sZl, &
 
   implicit none
 
+  type(fScale), intent(in) :: tScaling
   real(kind=wp), intent(inout) :: sZ, sZl
   integer(kind=ip), intent(in) :: iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps
   integer(kind=ip), intent(in) :: iCstep, iL
@@ -121,9 +121,9 @@ subroutine wr_cho(sZ, sZl, &
 
   if (qhdf5_G) then
     
-     nslices=ceiling( (sLengthOfElmZ2_G*NZ2_G)/(4*pi*srho_g))
+    nslices=ceiling( (sLengthOfElmZ2_G*NZ2_G)/(4*pi*srho_g))
 
-    call wr_h5(sZ, szl, tArrayA, tArrayE, tArrayZ, iL, &
+    call wr_h5(tScaling, sZ, szl, tArrayA, tArrayE, tArrayZ, iL, &
                iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
                zDataFileName, qWriteFull, &
                qWriteInt, nslices, qOK)

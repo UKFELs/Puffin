@@ -24,6 +24,10 @@ module typeUndMod
     real(kind=wp) :: alpha ! scaled tuning alpha = aw / aw0
     real(kind=wp) :: ux, uy ! undulator polarization
     real(kind=wp) :: taper
+
+    real(kind=wp) :: kux, kuy  ! undulator field x and y variation (from curved 
+                               ! poles, if used)
+
     real(kind=wp) :: kbx, kby  ! Scaled betatron wavenumbers in x and y from
                                ! in-undulator 'strong' focusing
     integer(kind=ip) :: Nw     ! Number of periods

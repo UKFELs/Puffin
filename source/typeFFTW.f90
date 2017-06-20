@@ -2,15 +2,24 @@
 ! Authors: Lawrence T. Campbell
 ! License: BSD-3-Clause
 
-MODULE TransformInfoType
 
-      USE paratype
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> This module contains the type definition to hold the info calculated by FFTW
+!> for the parallel fourier transforms used in Puffin.
+
+module TransformInfoType
+
+      use paratype
 
       use, intrinsic :: iso_c_binding
-      IMPLICIT NONE
+      implicit none
 
       include 'fftw3-mpi.f03'
-!
+
 !-----------------------------------------------------------------
 ! Author - Lawrence Campbell
 ! Place -  University of Strathclyde
@@ -34,29 +43,20 @@ MODULE TransformInfoType
 !                    allocated to it.
 !--------------------------------------------------------------------
 
-      TYPE cTransformInfoType
+      type cTransformInfoType
 
          type(C_PTR)          :: fplan
          type(C_PTR)          :: bplan
-         INTEGER(KIND=IP)     :: loc_nz2
-         INTEGER(KIND=IP)     :: loc_z2_start
-         INTEGER(KIND=IP)     :: loc_nz2_aft_trans
-         INTEGER(KIND=IP)     :: loc_z2_start_aft_trans
-         INTEGER(KIND=IP)     :: total_local_size
-         LOGICAL              :: qOneD
+         integer(kind=ip)     :: loc_nz2
+         integer(kind=ip)     :: loc_z2_start
+         integer(kind=ip)     :: loc_nz2_aft_trans
+         integer(kind=ip)     :: loc_z2_start_aft_trans
+         integer(kind=ip)     :: total_local_size
+         logical              :: qOneD
 
-      END TYPE cTransformInfoType
+      end type cTransformInfoType
 
-!
-!====================================================================
-! Define Global variables
-!
-! tTransInfo_G - Transform distribution information
-!
-!=====================================================================
-!
-!
-      TYPE(cTransformInfoType) :: tTransInfo_G
-      SAVE tTransInfo_G
+      type(cTransformInfoType) :: tTransInfo_G
+      save tTransInfo_G
 
-END MODULE TransformInfoType
+end module TransformInfoType

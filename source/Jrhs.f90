@@ -57,7 +57,7 @@ contains
 !> @param[out] sDADzi d/dz of real (-y) component of A_perp
 !> @param[out] qOK Error flag
 
-  subroutine getrhs(sz, &
+  subroutine getrhs(tScaling, sz, &
                     sAr, sAi, &
                     sx, sy, sz2, &
                     spr, spi, sgam, &
@@ -80,6 +80,7 @@ contains
 ! sb  - d/dz of electron phase space positions
 ! sDADz - RHS of field source term
 
+  type(fScale), intent(in) :: tScaling
   real(kind=wp), intent(in) :: sz
   real(kind=wp), contiguous, intent(in) :: sAr(:), sAi(:)
   real(kind=wp), contiguous, intent(in)  :: sx(:), sy(:), sz2(:), &
@@ -226,7 +227,7 @@ contains
 
     if (qElectronsEvolve_G) then
 
-        call getBFields(sx, sy, sz, &
+        call getBFields(tScaling, sx, sy, sz, &
                         bxu, byu, bzu)
 
 !     z2

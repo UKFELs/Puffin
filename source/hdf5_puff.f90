@@ -25,12 +25,13 @@ contains
 !! Not including the integrated quantities
 !! @ Todo remove unused vars - filename parameters are not required.
 
-  subroutine wr_h5(sZ, sZ_loc, tArrayA, tArrayE, tArrayZ, iL, &
+  subroutine wr_h5(tScaling, sZ, sZ_loc, tArrayA, tArrayE, tArrayZ, iL, &
                    iIntWr, iWr, qSep, zDFname, qWriteFull, &
                    qWriteInt, nslices, qOK)
 
     implicit none
 
+    type(fScale), intent(in) :: tScaling
     real(kind=wp), intent(in) :: sZ, sZ_loc  !< zbar and local zbar for current module
     real(kind=wp), dimension(NZ2_G) :: power !<power data (called here)
     real(kind=wp), dimension(NZ2_G) :: wrFArray
@@ -175,7 +176,7 @@ contains
 ! These call requires all ranks to participate
       call gPowerP(power)
       call getCurr(dz2_I_G, Iarray)
-      call getSliceTwiss(nslices,slicetrim,aveX,aveY,avePX,avePY, &
+      call getSliceTwiss(tScaling, nslices,slicetrim,aveX,aveY,avePX,avePY, &
         sdX,sdY,sdpx,sdpy,eX,eY,ax,ay,bx,by,aveGamma,aveDgamma, &
         bun1,bun2,bun3,bun4,bun5,sq)
 

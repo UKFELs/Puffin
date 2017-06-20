@@ -596,82 +596,23 @@ contains
 !> the correctTrans subroutine after the exit to correct the transverse motion...
 !> @param[in] sZ zbar position
 
-  subroutine matchOut(sZ)
+  subroutine matchOut(tScaling, tUndMod, sZ)
 
+    type(fScale), intent(in) :: tScaling
+    type(fUndMod), intent(in) :: tUndMod
     real(kind=wp), intent(in) :: sZ
 
     real(kind=wp), allocatable :: spx0_offset(:),spy0_offset(:), &
                                   sx_offset(:),sy_offset(:)
 
-    real(kind=wp) :: kx, ky
-
-
-    kx = kx_und_G
-    ky = ky_und_G
-
-
     allocate(spx0_offset(iNumberElectrons_G), spy0_offset(iNumberElectrons_G))
     allocate(sx_offset(iNumberElectrons_G),sy_offset(iNumberElectrons_G))
 
-!     Get offsets for start of undulator
+    call getLocalOffsets(tScaling, tUndMod, sZ, &
+                         spx0_offset, spy0_offset, &
+                         sx_offset, sy_offset)
 
-
-    if (zUndType_G == 'curved') then
-
-! used for curved pole puffin, the 2 order expansion of cosh and sinh
-! allows us to simply add a correction term to the intial position
-! when calculating initial conditions, this may need change eventually
-
-
-        spx0_offset = pxOffset(sZ, srho_G, fy_G) &
-            - 0.5_WP * kx**2 * sElX_G**2 &
-            -  0.5_WP * kY**2 * sElY_G**2
-
-        spy0_offset = -1_wp *  &
-                      ( pyOffset(sZ, srho_G, fx_G) &
-                      - kx**2 *  sElX_G  * sElY_G)
-
-
-    else if (zUndType_G == 'planepole') then
-
-! plane pole initial conditions are calculated as a 2nd order expansion
-! and added as a correction term.
-
-
-
-        spx0_offset = pxOffset(sZ, srho_G, fy_G) &
-            - 0.5_WP * (sEta_G / (4 * sRho_G**2)) * sElX_G**2
-
-        spy0_offset = -1_wp * &
-                      pyOffset(sZ, srho_G, fx_G)
-
-
-    else
-
-! "normal" PUFFIN case with no off-axis undulator
-! field variation
-
-
-        spx0_offset = pxOffset(sZ, srho_G, fy_G)
-
-        spy0_offset = -1.0_wp * &
-                     pyOffset(sZ, srho_G, fx_G)
-
-
-    end if
-
-
-    sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
-                           sEta_G, sKappa_G, sFocusfactor_G, spx0_offset, spy0_offset, &
-                           fx_G, fy_G, sZ)
-
-    sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
-                           sEta_G, sKappa_G, sFocusfactor_G, spx0_offset, spy0_offset, &
-                           fx_G, fy_G, sZ)
-
-
-!     Add on new offset to initialize beam for undulator module
-
+!     Take away undulator offset to exit module
 
     sElX_G = sElX_G - sx_offset
     sElY_G = sElY_G - sy_offset
@@ -680,8 +621,6 @@ contains
 
 
     deallocate(spx0_offset,spy0_offset,sx_offset,sy_offset)
-
-
 
   end subroutine matchOut
 
@@ -701,26 +640,70 @@ contains
 !> the undulator exit. 
 !> @param[in] sZ zbar position
 
-  subroutine matchIn(sZ)
+  subroutine matchIn(tScaling, tUndMod, sZ)
 
+    type(fScale), intent(in) :: tScaling
+    type(fUndMod), intent(in) :: tUndMod
     real(kind=wp), intent(in) :: sZ
 
     real(kind=wp), allocatable :: spx0_offset(:),spy0_offset(:), &
                                   sx_offset(:),sy_offset(:)
 
-    real(kind=wp) :: kx, ky
-
     integer :: error
-
-    kx = kx_und_G
-    ky = ky_und_G
-
 
     allocate(spx0_offset(iNumberElectrons_G), spy0_offset(iNumberElectrons_G))
     allocate(sx_offset(iNumberElectrons_G),sy_offset(iNumberElectrons_G))
 
-!     Get offsets for start of undulator
+    call getLocalOffsets(tScaling, tUndMod, sZ, &
+                           spx0_offset, spy0_offset, &
+                           sx_offset, sy_offset)
 
+!     Add on new offset to initialize beam for undulator module
+
+    sElX_G = sElX_G + sx_offset
+    sElY_G = sElY_G + sy_offset
+    sElPX_G = sElPX_G + spx0_offset
+    sElPY_G = sElPY_G + spy0_offset
+
+    deallocate(spx0_offset, spy0_offset, sx_offset, sy_offset)
+
+  end subroutine matchIn
+
+!       #################################################
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Calculates the expected offset (analytical, ignoring energy losses to FEL etc).
+!> It calculates this for each macroparticle.
+!> @param[in] tScaling Type describing the FEL scaled reference frame
+!> @param[in] tUndMod Type describing the undulator module
+!> @param[in] sZ zbar position (LOCAL)
+!> @param[inout] spx0_offset Particle offsets in px
+!> @param[inout] spy0_offset Particle offsets in py
+!> @param[inout] sx_offset Particle offsets in xbar
+!> @param[inout] sy_offset Particle offsets in ybar
+
+  subroutine getLocalOffsets(tScaling, tUndMod, sZ, &
+                             spx0_offset, spy0_offset, &
+                             sx_offset, sy_offset)
+
+    type(fScale), intent(in) :: tScaling
+    type(fUndMod), intent(in) :: tUndMod
+    real(kind=wp), intent(in) :: sZ
+    real(kind=wp), contiguous, intent(inout) :: spx0_offset(:),spy0_offset(:), &
+                                                sx_offset(:),sy_offset(:)
+
+    real(kind=wp), allocatable :: unscEn(:)
+    real(kind=wp) :: kx, ky
+  
+    allocate(unscEn(iNumberElectrons_G))  
+
+    kx = tUndMod%kux
+    ky = tUndMod%kuy
+    
     if (zUndType_G == 'curved') then
 
 ! used for curved pole puffin, the 2 order expansion of cosh and sinh
@@ -728,12 +711,12 @@ contains
 ! when calculating initial conditions, this may need change eventually
 
 
-        spx0_offset = pxOffset(sZ, srho_G, fy_G) &
+        spx0_offset = pxOffset(tScaling, tUndMod, sZ) &
             - 0.5_WP * kx**2 * sElX_G**2 &
-            -  0.5_WP * kY**2 * sElY_G**2
+            -  0.5_WP * ky**2 * sElY_G**2
 
         spy0_offset = -1_wp *  &
-                      ( pyOffset(sZ, srho_G, fx_G) &
+                      ( pyOffset(tScaling, tUndMod, sZ) &
                       - kx**2 *  sElX_G  * sElY_G)
 
 
@@ -744,11 +727,11 @@ contains
 
 
 
-        spx0_offset = pxOffset(sZ, srho_G, fy_G) &
-            - 0.5_WP * (sEta_G / (4 * sRho_G**2)) * sElX_G**2
+        spx0_offset = pxOffset(tScaling, tUndMod, sZ) &
+            - 0.5_WP * (tScaling%eta / (4 * tScaling%rho**2)) * sElX_G**2
 
         spy0_offset = -1_wp * &
-                      pyOffset(sZ, srho_G, fx_G)
+                      pyOffset(tScaling, tUndMod, sZ)
 
 
     else
@@ -757,37 +740,27 @@ contains
 ! field variation
 
 
-        spx0_offset = pxOffset(sZ, srho_G, fy_G)
+        spx0_offset = pxOffset(tScaling, tUndMod, sZ)
 
         spy0_offset = -1.0_wp * &
-                     pyOffset(sZ, srho_G, fx_G)
+                     pyOffset(tScaling, tUndMod, sZ)
 
 
     end if
 
 
-    sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
-                           sEta_G, sKappa_G, sFocusfactor_G, spx0_offset, -spy0_offset, &
-                           fx_G, fy_G, sZ)
+    unscEn = tScaling%gamma_r * sElGam_G
+
+    sx_offset =    xOffSet(tScaling, tUndMod, unscEn, &
+                           spx0_offset, -spy0_offset, sZ)
 
 
-    sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
-                           sEta_G, sKappa_G, sFocusfactor_G, spx0_offset, -spy0_offset, &
-                           fx_G, fy_G, sZ)
+    sy_offset =    yOffSet(tScaling, tUndMod, unscEn, &
+                           spx0_offset, -spy0_offset, sZ)
 
+    deallocate(unscEn)
 
-!     Add on new offset to initialize beam for undulator module
-
-    sElX_G = sElX_G + sx_offset
-    sElY_G = sElY_G + sy_offset
-    sElPX_G = sElPX_G + spx0_offset
-    sElPY_G = sElPY_G + spy0_offset
-
-
-    deallocate(spx0_offset,spy0_offset,sx_offset,sy_offset)
-
-  end subroutine matchIn
-
+  end subroutine getLocalOffsets
 
 
 

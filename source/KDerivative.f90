@@ -33,7 +33,7 @@ contains
 !> @param sx electron macroparticles' x position
 
 
-  subroutine derivs(sz, sAr, sAi, sx, sy, sz2, spr, spi, sp2, &
+  subroutine derivs(tScaling, sz, sAr, sAi, sx, sy, sz2, spr, spi, sp2, &
                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, sdAr, sdAi)
 
   implicit none
@@ -46,6 +46,7 @@ contains
 ! sy      INPUT     Value of y at this z
 ! sdydz   OUTPUT    Derivative of z and y
 
+    type(fScale), intent(in) :: tScaling
     real(kind=wp), intent(in)  :: sz
     real(kind=wp), contiguous, intent(in)  :: sAr(:), sAi(:)
     real(kind=wp), contiguous, intent(in)  :: sx(:), sy(:), sz2(:), &
@@ -73,7 +74,7 @@ contains
 
 !     Get RHS of field eqn and d/dz of electron variables
 
-    CALL getrhs(sz, &
+    CALL getrhs(tScaling, sz, &
                 sAr, sAi, &
                 sx, sy, sz2, &
                 spr, spi, sp2, &

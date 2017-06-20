@@ -30,7 +30,7 @@ implicit none
 contains
 
 
-  subroutine UndSection(iM, sZ)
+  subroutine UndSection(tScaling, iM, sZ)
 
 
     implicit none
@@ -44,6 +44,7 @@ contains
 ! sA              -      Field array
 ! sZ              -      zbar
 
+    type(fScale), intent(in) :: tScaling
     integer(kind=ip), intent(in) :: iM
     real(kind=wp), intent(inout) :: sZ ! , sA(:)
 
@@ -96,7 +97,7 @@ contains
 
     start_step = 0_ip  ! ...TEMP...
 
-    if (.not. qUndEnds_G) call matchIn(sZ)
+    if (.not. qUndEnds_G) call matchIn(sZl)
 
   end if
 
@@ -228,7 +229,7 @@ end if
 
       igoes = 1_ip
       do
-        call rk4par(sZl,sStepSize,qDiffrctd)
+        call rk4par(tScaling, sZl,sStepSize,qDiffrctd)
         if (igoes>3_ip) exit
         if (.not. qPArrOK_G) then
           if (tProcInfo_G%qRoot) print*, 'Layout not working'
@@ -311,7 +312,7 @@ end if
         ! and then start the next diffraction step.
 
           call diffractIM(dzdF, qDiffrctd, qOKL)  ! Finish diffraction step
-          call writeIM(sZ, sZl, &
+          call writeIM(tScaling, sZ, sZl, &
                        zDataFileName, iStep, iCsteps, iM, iWriteNthSteps, &
                        iIntWriteNthSteps, nSteps, qOKL)   ! Write data
           if (dzdS > 0.0_wp) call diffractIM(dzdS, qDiffrctd, qOKL)  ! Start new diffraction step
@@ -354,7 +355,7 @@ end if
 
         call inner2Outer(ac_rfield_in, ac_ifield_in)
 
-        call writeIM(sZ, sZl, &
+        call writeIM(tScaling, sZ, sZl, &
                      zDataFileName, iStep, iCsteps, iM, iWriteNthSteps, &
                      iIntWriteNthSteps, nSteps, qOKL)
 
@@ -431,7 +432,7 @@ end if
 
   end if
 
-  if (.not. qUndEnds_G) call matchOut(sZ)
+  if (.not. qUndEnds_G) call matchOut(sZl)
 
   call correctTrans()  ! correct transverse motion at undulator exit
 
