@@ -147,8 +147,8 @@ module typeScale
 
       tScaling%lambda_r = tScaling%lambda_w * tScaling%eta
 
-      tScaling%lg = lam_w_G / 4.0_WP / pi / srho
-      tScaling%lc = lam_r_G / 4.0_WP / pi / srho
+      tScaling%lg = tScaling%lambda_w / 4.0_WP / pi / srho
+      tScaling%lc = tScaling%lambda_r / 4.0_WP / pi / srho
 
     end subroutine initScaling
 
