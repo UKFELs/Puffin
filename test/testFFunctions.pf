@@ -26,72 +26,96 @@ end subroutine testMatchBRad
 
 @test
 subroutine testDiffractionLength()
-   use pFUnit_mod
-   use Functions
-   use paratype
+    
+  use pFUnit_mod
+  use Functions
+  use paratype
    
-   implicit none 
-   real(KIND=WP) :: z,sRaleighLength,sigma
-   real(KIND=WP) :: DiffLenResult, DiffLenExact_exact, tol
-	z=1
-    sRaleighLength=1
-	sigma=3
-	DiffLenExact_exact=36
-   tol = 0.0000001_WP
-	DiffLenResult=DiffractionLength(z,sRaleighLength,sigma)
+  implicit none 
+  
+  real(KIND=WP) :: z,sRaleighLength,sigma
+  real(KIND=WP) :: DiffLenResult, DiffLenExact_exact, tol
+	  
+  z=1
+  sRaleighLength=1
+  sigma=3
+  DiffLenExact_exact=36
+  tol = 0.0000001_WP
+  DiffLenResult=DiffractionLength(z,sRaleighLength,sigma)
 
-	@AssertEqual( DiffLenResult, DiffLenExact_exact, tol)
+  @AssertEqual( DiffLenResult, DiffLenExact_exact, tol)
+
 end subroutine testDiffractionLength
+
 
 @test
 subroutine testGainLength()
-   use pFUnit_mod
-   use Functions
-   use paratype
-	implicit none
-	real(KIND=WP) :: sWigglerWaveLength,rho
-	real(KIND=WP) :: GainResult,GainResult_exact,tol
-	tol = 0.0000001_WP
-	GainResult_exact=1.5915494309189532E-07
-	sWigglerWaveLength=100.E-9
-	rho=0.05
-	GainResult=GainLength(sWigglerWaveLength,rho)
-	@AssertEqual(GainResult, GainResult_exact, tol)
+
+  use pFUnit_mod
+  use Functions
+  use paratype
+
+  implicit none
+
+  real(KIND=WP) :: sWigglerWaveLength,rho
+  real(KIND=WP) :: GainResult,GainResult_exact,tol
+
+  tol = 0.0000001_WP
+  GainResult_exact=1.5915494309189532E-07
+  sWigglerWaveLength=100.E-9
+  rho=0.05
+
+  GainResult=GainLength(sWigglerWaveLength,rho)
+  @AssertEqual(GainResult, GainResult_exact, tol)
+
 end subroutine testGainLength
+
 
 @test
 subroutine testRaleighLength()
-   use pFUnit_mod
-   use Functions
-   use paratype
-	implicit none
-	real(KIND=WP) :: srho,sigma
-	real(KIND=WP) :: RLResult,RLResult_exact,tol
-	tol = 0.0000001_WP
-	srho=0.05_WP
-	sigma=1.0_WP
-	RLResult_exact=10.0_WP
-	RLResult=RaleighLength(srho,sigma)
-	@AssertEqual(RLResult,RLResult_exact,tol)
+  
+  use pFUnit_mod
+  use Functions
+  use paratype
+  
+  implicit none
+  
+  real(KIND=WP) :: srho,sigma
+  real(KIND=WP) :: RLResult,RLResult_exact,tol
+  
+  tol = 0.0000001_WP
+  srho=0.05_WP
+  sigma=1.0_WP
+  RLResult_exact=10.0_WP
+  RLResult=RaleighLength(srho,sigma)
+  
+  @AssertEqual(RLResult,RLResult_exact,tol)
+
 end subroutine testRaleighLength
 
 @test
 subroutine testGaussian()
-   use pFUnit_mod
-   use Functions
-   use paratype
-	implicit none
-	real(KIND=WP) :: x(3)
-	real(KIND=WP) :: xc,sigma
-	real(KIND=WP) :: GaussResult(3),GaussResult_exact(3)
-	real(KIND=WP) :: tol
+
+  use pFUnit_mod
+  use Functions
+  use paratype
+  
+  implicit none
+
+  real(KIND=WP) :: x(3)
+  real(KIND=WP) :: xc,sigma
+  real(KIND=WP) :: GaussResult(3),GaussResult_exact(3)
+  real(KIND=WP) :: tol
 	
-	tol = 0.0000001_WP
-	x=(/1.0,2.0,3.0/)
-	xc=0.5_WP
-	sigma=0.5_WP
-	GaussResult=gaussian(x,xc,sigma)
-	GaussResult_exact=(/0.6065307,0.1110900E-01,0.3726653E-05/)
-	@AssertEqual(GaussResult,GaussResult_exact,tol)
+  tol = 0.0000001_WP
+  x=(/1.0,2.0,3.0/)
+  xc=0.5_WP
+  sigma=0.5_WP
+
+  GaussResult=gaussian(x,xc,sigma)
+  GaussResult_exact=(/0.6065307,0.1110900E-01,0.3726653E-05/)
+
+  @AssertEqual(GaussResult,GaussResult_exact,tol)
+
 end subroutine testGaussian
 

@@ -49,3 +49,122 @@ subroutine testUnscaleEmit( )
   @AssertEqual( sEmit, sEmit_exact, tol )
 
 end subroutine testUnscaleEmit
+
+
+@test
+subroutine testScaleGammaS( )
+
+  use pFUnit_mod
+  use typeScale
+  use paratype
+
+  implicit none
+
+  real(kind=wp) :: sGam
+  type(fScale) :: tScaling
+  real(kind=wp) :: sGamSc_exact, tol
+
+  tol = 0.0000001_WP
+  sGamSc_exact = 1.0_wp
+
+  sGam = 1200.0_wp
+  tScaling%gamma_r = 1200.0_wp
+
+  call scaleEmit(tScaling, sGam)
+
+  @AssertEqual( sGam, sGamSc_exact, tol )
+
+end subroutine testScaleGammaS
+
+
+
+
+@test
+subroutine testScaleGammaA( )
+
+  use pFUnit_mod
+  use typeScale
+  use paratype
+
+  implicit none
+
+  real(kind=wp) :: sGam(5)
+  type(fScale) :: tScaling
+  real(kind=wp) :: sGamSc_exact(5), tol
+
+  tol = 0.0000001_WP
+
+  sGam = [1200.0_wp, 1300.0_wp, 1100.0_wp, 500.0_wp, 1200.0_wp]
+  tScaling%gamma_r = 1200.0_wp
+
+  sGamSc_exact = sGam / 1200.0_wp
+
+  call scaleEmit(tScaling, sGam)
+
+  @AssertEqual( sGam, sGamSc_exact, tol )
+
+end subroutine testScaleGammaA
+
+
+
+
+
+
+@test
+subroutine testUnscaleGammaA( )
+
+  use pFUnit_mod
+  use typeScale
+  use paratype
+
+  implicit none
+
+  real(kind=wp) :: sGam(5)
+  type(fScale) :: tScaling
+  real(kind=wp) :: sGamUnsc_exact(5), tol
+
+  tol = 0.0000001_WP
+
+  sGam = [1.2_wp, 7.0_wp, 0.1_wp, 5.0_wp, 3.2_wp]
+  tScaling%gamma_r = 1200.0_wp
+
+  sGamUnsc_exact = sGam * 1200.0_wp
+
+  call scaleEmit(tScaling, sGam)
+
+  @AssertEqual( sGam, sGamUnsc_exact, tol )
+
+end subroutine testUnscaleGammaA
+
+
+
+
+@test
+subroutine testScaleGammaS( )
+
+  use pFUnit_mod
+  use typeScale
+  use paratype
+
+  implicit none
+
+  real(kind=wp) :: sGam
+  type(fScale) :: tScaling
+  real(kind=wp) :: sGamSc_exact, tol
+
+  tol = 0.0000001_WP
+  sEmit_exact = 1200.0_wp
+
+  sGam = 1.0_wp
+  tScaling%gamma_r = 1200.0_wp
+
+  call scaleEmit(tScaling, sGam)
+
+  @AssertEqual( sGam, sGamSc_exact, tol )
+
+end subroutine testScaleGammaS
+
+
+
+
+
