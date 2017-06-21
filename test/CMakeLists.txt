@@ -1,10 +1,11 @@
 #enable_language(Fortran)
 enable_language (Fortran)
 ##set (PFUNIT /home/jonny/contrib-gcc540/pFUnit-3.2.8-ser)
-set (PFUNIT /home/tml/src/pFUnit)
+# set (PFUNIT /home/tml/src/pFUnit)
+set (PFUNIT /home/tml/bin/pfunit-parallel)
 set (CMAKE_VERBOSE_MAKEFILE "On")
 find_library(PFUNITLIB NAMES pfunit
-  PATHS ${PFUNIT} ${PFUNIT}/source
+  PATHS ${PFUNIT} ${PFUNIT}/lib
   )
 
 include_directories(
@@ -12,8 +13,8 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/../source
   ${CMAKE_CURRENT_BINARY_DIR}
   ${CMAKE_CURRENT_BINARY_DIR}/../source
+  ${PFUNIT}/mod
   ${PFUNIT}/include
-  ${PFUNIT}/source
   )
 
 
@@ -125,8 +126,8 @@ link_directories(${PFUNIT}/bin/ ${PFUNIT}/include ${CMAKE_CURRENT_SOURCE_DIR}/..
 
 
 set_target_properties(testexe PROPERTIES
-   COMPILE_FLAGS "-c -g -O0 -DGNU -DBUILD_ROBUST -fbacktrace -fbounds-check -fcheck=mem -I${PFUNIT}/include -I${PFUNIT}/source -I${CMAKE_CURRENT_BINARY_DIR}/../source"
-   LINK_FLAGS "-g -O0 -fbacktrace -fbounds-check -fcheck=mem -DGNU -DBUILD_ROBUST -I.  -I${PFUNIT}/source -I${CMAKE_CURRENT_BINARY_DIR}/../source  -I${Hdf5_INCLUDE_DIRS} -I${Fftw3_INCLUDE_DIRS}"
+   COMPILE_FLAGS "-c -g -O0 -DGNU -DBUILD_ROBUST -fbacktrace -fbounds-check -fcheck=mem -I${PFUNIT}/include -I${PFUNIT}/include -I${CMAKE_CURRENT_BINARY_DIR}/../source"
+   LINK_FLAGS "-g -O0 -fbacktrace -fbounds-check -fcheck=mem -DGNU -DBUILD_ROBUST -I.  -I${PFUNIT}/include -I${CMAKE_CURRENT_BINARY_DIR}/../source  -I${Hdf5_INCLUDE_DIRS} -I${Fftw3_INCLUDE_DIRS}"
    )
 
  ###
