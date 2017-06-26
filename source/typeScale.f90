@@ -20,13 +20,15 @@ module typeScale
 
   implicit none
 
-  type fScale
+  private
+
+  type, public :: fScale
 
     real(kind=wp) :: eta
     real(kind=wp) :: rho
     real(kind=wp) :: aw
     real(kind=wp) :: lambda_w
-    real(kind=wp) :: gamma_r
+    real(kind=wp) :: gamma0
 
     real(kind=wp) :: lambda_r
     real(kind=wp) :: lc, lg
@@ -34,48 +36,31 @@ module typeScale
     real(kind=wp) :: kappa
     logical :: qOneD
 
+  contains
+    
+    procedure :: init => initScaling
+    procedure :: scaleEmit, unscaleEmit
+    procedure :: scaleZ, unscaleZ
+
+    generic :: scaleG => scaleG_single, scaleG_array
+    generic :: unscaleG => unScaleG_single, unscaleG_array
+    generic :: scaleX => scaleX_single, scaleX_array
+    generic :: unscaleX => unscaleX_single, unscaleX_array
+    generic :: scalePx => scalePX_single, scalePX_array
+    generic :: unscalePx => unscalePX_single, unscalePX_array
+    generic :: scaleT => scaleT_single, scaleT_array
+    generic :: unscaleT => unscaleT_single, unscaleT_array
+    
+    procedure :: scaleG_single, scaleG_array
+    procedure :: unScaleG_single, unscaleG_array
+    procedure :: scaleX_single, scaleX_array
+    procedure :: unscaleX_single, unscaleX_array
+    procedure :: scalePX_single, scalePX_array
+    procedure :: unscalePX_single, unscalePX_array
+    procedure :: scaleT_single, scaleT_array
+    procedure :: unscaleT_single, unscaleT_array
+    
   end type fScale
-
-
-  interface scaleG
-      module procedure scaleG_single, scaleG_array
-  end interface
-
-
-  interface unscaleG
-      module procedure unscaleG_single, unscaleG_array
-  end interface
-
-
-  interface scaleX
-      module procedure scaleX_single, scaleX_array
-  end interface
-
-
-  interface unscaleX
-      module procedure unscaleX_single, unscaleX_array
-  end interface
-
-
-  interface scalePx
-      module procedure scalePx_single, scalePx_array
-  end interface
-
-
-  interface unscalePx
-      module procedure unscalePx_single, unscalePx_array
-  end interface
-
-
-  interface scaleT
-      module procedure scaleT_single, scaleT_array
-  end interface
-
-
-  interface unscaleT
-      module procedure unscaleT_single, unscaleT_array
-  end interface
-
 
   contains
 
@@ -85,10 +70,10 @@ module typeScale
 !> Glasgow, UK
 !> @brief
 !> Initialize the scaling frame type in Puffin.
-!> @param[inout] tScaling Puffin scaling type.
+!> @param[inout] this Puffin scaling type.
 !> @param[in] srho FEL parameter \f$ \rho \f$.
 !> @param[in] saw Peak undulator parameter \f$ a_w \f$ (or \f$ K \f$).
-!> @param[in] sgamr Lorentz factor \f$ \gamma_r \f$ of reference beam.
+!> @param[in] sgamr Lorentz factor \f$ \gamma0 \f$ of reference beam.
 !> @param[in] sgamr Undulator period \f$ \lambda_w \f$ (meters).
 !> @param[in] zUndType String - undulator type. See manual for legal options.
 !> @param[in] sfx Undulator x-polarization \f$ u_x \f$. Ignored for non-empty
@@ -96,10 +81,10 @@ module typeScale
 !> @param[in] sfx Undulator y-polarization \f$ u_y \f$. Ignored for non-empty
 !> zUndType.
 
-    subroutine initScaling(tScaling, srho, saw, sgamr, slam_w, &
+    subroutine initScaling(this, srho, saw, sgamr, slam_w, &
                            zUndType, sfx, sfy)
 
-      type(fScale), intent(inout) :: tScaling
+      class(fScale), intent(inout) :: this
       real(kind=wp), intent(in) :: srho, saw, sgamr, slam_w, &
                                    sfx, sfy
 
@@ -107,31 +92,31 @@ module typeScale
 
       real(kind=wp) :: saw_rms, sBetaz
 
-      tScaling%rho = srho
-      tScaling%ux = sfx
-      tScaling%uy = sfy
-      tScaling%gamma_r = sgamr
-      tScaling%aw = saw
-      tScaling%lambda_w = slam_w
+      this%rho = srho
+      this%ux = sfx
+      this%uy = sfy
+      this%gamma0 = sgamr
+      this%aw = saw
+      this%lambda_w = slam_w
 
 
       if (zUndType == 'curved') then
 
         saw_rms =  saw / sqrt(2.0_wp)
-        tScaling%ux = 0.0_wp
-        tScaling%uy = 1.0_wp
+        this%ux = 0.0_wp
+        this%uy = 1.0_wp
 
       else if (zUndType == 'planepole') then
 
         saw_rms =  saw / sqrt(2.0_wp)
-        tScaling%ux = 0.0_wp
-        tScaling%uy = 1.0_wp
+        this%ux = 0.0_wp
+        this%uy = 1.0_wp
 
       else if (zUndType == 'helical') then
 
         saw_rms = saw
-        tScaling%ux = 1.0_wp
-        tScaling%uy = 1.0_wp
+        this%ux = 1.0_wp
+        this%uy = 1.0_wp
 
       else  ! Puffin elliptical wiggler...
 
@@ -142,13 +127,13 @@ module typeScale
       sbetaz = SQRT(sgamr**2.0_WP - 1.0_WP - (saw_rms)**2.0_WP) / &
                sgamr
 
-      tScaling%eta = (1.0_WP - sbetaz) / sbetaz
-      tScaling%kappa = saw / 2.0_WP / srho / sgamr
+      this%eta = (1.0_WP - sbetaz) / sbetaz
+      this%kappa = saw / 2.0_WP / srho / sgamr
 
-      tScaling%lambda_r = tScaling%lambda_w * tScaling%eta
+      this%lambda_r = this%lambda_w * this%eta
 
-      tScaling%lg = tScaling%lambda_w / 4.0_WP / pi / srho
-      tScaling%lc = tScaling%lambda_r / 4.0_WP / pi / srho
+      this%lg = this%lambda_w / 4.0_WP / pi / srho
+      this%lc = this%lambda_r / 4.0_WP / pi / srho
 
     end subroutine initScaling
 
@@ -166,15 +151,15 @@ module typeScale
 !> Glasgow, UK
 !> @brief
 !> Convert unnormalised emittance -> Puffin scaled emittance \f$ \bar{\epsilon} \f$
-!> @param[in] tScaling Custom Fortran type describing scaling
+!> @param[in] this Custom Fortran type describing scaling
 !> @param[inout] sEmit Input geometric emittance, is output as Scaled emittance
 
-    subroutine scaleEmit(tScaling, sEmit)
+    subroutine scaleEmit(this, sEmit)
 
+      class(fScale), intent(in) :: this
       real(kind=wp), intent(inout) :: sEmit
-      type(fScale), intent(in) :: tScaling
 
-      sEmit = sEmit / (tScaling%lambda_r / (4.0_wp * pi) )
+      sEmit = sEmit / (this%lambda_r / (4.0_wp * pi) )
 
     end subroutine scaleEmit
 
@@ -184,16 +169,15 @@ module typeScale
 !> Glasgow, UK
 !> @brief
 !> Convert Puffin scaled emittance \f$ \bar{\epsilon} \f$ ->  unnormalised emittance
-!> @param[in] tScaling Custom Fortran type describing scaling
+!> @param[in] this Custom Fortran type describing scaling
 !> @param[inout] sEmit Input Scaled emittance, is output as geometric emittance
 
-    subroutine unscaleEmit(tScaling, sEmit)
+    subroutine unscaleEmit(this, sEmit)
 
+      class(fScale), intent(in) :: this
       real(kind=wp), intent(inout) :: sEmit
-      type(fScale), intent(in) :: tScaling
 
-
-      sEmit = sEmit * (tScaling%lambda_r / (4.0_wp * pi) )
+      sEmit = sEmit * (this%lambda_r / (4.0_wp * pi) )
 
     end subroutine unscaleEmit
 
@@ -214,15 +198,15 @@ module typeScale
 !> Glasgow, UK
 !> @brief
 !> Convert Lorentz factor \f$ \Gamma \f$ ->  Puffin scaled energy \f$ \Gamma \f$
-!> @param[in] tScaling Custom Fortran type describing scaling
+!> @param[in] this Custom Fortran type describing scaling
 !> @param[inout] sGamma Lorentz factor in input, Scaled energy on output
 
-    subroutine scaleG_single(tScaling, sGamma)
+    subroutine scaleG_single(this, sGamma)
 
-      type(fScale), intent(in) :: tScaling
+      class(fScale), intent(in) :: this
       real(kind=wp), intent(inout) :: sGamma
 
-      sGamma = sGamma / tScaling%gamma_r
+      sGamma = sGamma / this%gamma0
 
     end subroutine scaleG_single
 
@@ -232,15 +216,15 @@ module typeScale
 !> Glasgow, UK
 !> @brief
 !> Convert Puffin scaled energy \f$ \Gamma \f$ ->  Lorentz factor \f$ \gamma \f$
-!> @param[in] tScaling Custom Fortran type describing scaling
+!> @param[in] this Custom Fortran type describing scaling
 !> @param[inout] sGamma Scaled energy in input, Lorentz factor on output
 
-    subroutine unscaleG_single(tScaling, sGamma)
+    subroutine unscaleG_single(this, sGamma)
 
-      type(fScale), intent(in) :: tScaling
+      class(fScale), intent(in) :: this
       real(kind=wp), intent(inout) :: sGamma
 
-      sGamma = sGamma * tScaling%gamma_r
+      sGamma = sGamma * this%gamma0
 
     end subroutine unscaleG_single
 
@@ -251,15 +235,15 @@ module typeScale
 !> Glasgow, UK
 !> @brief
 !> Convert Lorentz factor \f$ \gamma \f$ ->  Puffin scaled energy \f$ \Gamma \f$
-!> @param[in] tScaling Custom Fortran type describing scaling
+!> @param[in] this Custom Fortran type describing scaling
 !> @param[inout] sGamma Lorentz factor in input, Scaled energy on output
 
-    subroutine scaleG_array(tScaling, sGamma)
+    subroutine scaleG_array(this, sGamma)
 
-      type(fScale), intent(in) :: tScaling
+      class(fScale), intent(in) :: this
       real(kind=wp), intent(inout) :: sGamma(:)
 
-      sGamma = sGamma / tScaling%gamma_r
+      sGamma = sGamma / this%gamma0
 
     end subroutine scaleG_array
 
@@ -269,15 +253,15 @@ module typeScale
 !> Glasgow, UK
 !> @brief
 !> Convert Puffin scaled energy \f$ \Gamma \f$ ->  Lorentz factor \f$ \gamma \f$
-!> @param[in] tScaling Custom Fortran type describing scaling
+!> @param[in] this Custom Fortran type describing scaling
 !> @param[inout] sGamma Scaled energy in input, Lorentz factor on output
 
-    subroutine unscaleG_array(tScaling, sGamma)
+    subroutine unscaleG_array(this, sGamma)
 
-      type(fScale), intent(in) :: tScaling
+      class(fScale), intent(in) :: this
       real(kind=wp), intent(inout) :: sGamma(:)
 
-      sGamma = sGamma * tScaling%gamma_r
+      sGamma = sGamma * this%gamma0
 
     end subroutine unscaleG_array
 
@@ -296,17 +280,17 @@ module typeScale
 !> @brief
 !> Convert transverse (x or y) coordinate (in meters) -> Puffin scaled transverse
 !> coordinate (\f$ \bar{x} \f$ or \f$ \bar{y} \f$).
-!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[in] this Custom Fortran type describing scaling.
 !> @param[inout] sx Transverse (x or y) coordinate in input, scaled \f$ \bar{x} \f$
 !> or \f$ \bar{y} \f$ on output.
 
 
-    subroutine scaleX_single(tScaling, sx)
+    subroutine scaleX_single(this, sx)
 
-      type(fScale), intent(in) :: tScaling
+      class(fScale), intent(in) :: this
       real(kind=wp), intent(inout) :: sx
 
-      sx = sx / sqrt(tScaling%lg * tScaling%lc)
+      sx = sx / sqrt(this%lg * this%lc)
 
     end subroutine scaleX_single
 
@@ -317,16 +301,16 @@ module typeScale
 !> @brief
 !> Convert Puffin scaled transverse coordinate (\f$ \bar{x} \f$ or \f$ \bar{y} \f$)
 !> ->  transverse (x or y) coordinate (in meters).
-!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[in] this Custom Fortran type describing scaling.
 !> @param[inout] sx Scaled \f$ \bar{x} \f$ or scaled \f$ \bar{y} \f$ on input,
 !> transverse (x or y) coordinate on output, in meters.
 
-    subroutine unscaleX_single(tScaling, sx)
+    subroutine unscaleX_single(this, sx)
 
-      type(fScale), intent(in) :: tScaling
+      class(fScale), intent(in) :: this
   	  real(kind=wp), intent(inout) :: sx
 
-      sx = sx * sqrt(tScaling%lg * tScaling%lc)
+      sx = sx * sqrt(this%lg * this%lc)
 
     end subroutine unscaleX_single
 
@@ -337,16 +321,16 @@ module typeScale
 !> @brief
 !> Convert transverse (x or y) coordinate (in meters) -> Puffin scaled transverse
 !> coordinate (\f$ \bar{x} \f$ or \f$ \bar{y} \f$).
-!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[in] this Custom Fortran type describing scaling.
 !> @param[inout] sx Transverse (x or y) coordinate in input, scaled \f$ \bar{x} \f$
 !> or \f$ \bar{y} \f$ on output.
 
-    subroutine scaleX_array(tScaling, sx)
+    subroutine scaleX_array(this, sx)
 
-      type(fScale), intent(in) :: tScaling
+      class(fScale), intent(in) :: this
       real(kind=wp), intent(inout) :: sx(:)
 
-      sx = sx / sqrt(tScaling%lg * tScaling%lc)
+      sx = sx / sqrt(this%lg * this%lc)
 
     end subroutine scaleX_array
 
@@ -357,16 +341,16 @@ module typeScale
 !> @brief
 !> Convert Puffin scaled transverse coordinate (\f$ \bar{x} \f$ or \f$ \bar{y} \f$)
 !> ->  transverse (x or y) coordinate (in meters).
-!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[in] this Custom Fortran type describing scaling.
 !> @param[inout] sx Scaled \f$ \bar{x} \f$ or scaled \f$ \bar{y} \f$ on input,
 !> transverse (x or y) coordinate on output, in meters.
 
-    subroutine unscaleX_array(tScaling, sx)
+    subroutine unscaleX_array(this, sx)
 
-      type(fScale), intent(in) :: tScaling
+      class(fScale), intent(in) :: this
       real(kind=wp), intent(inout) :: sx(:)
 
-      sx = sx * sqrt(tScaling%lg * tScaling%lc)
+      sx = sx * sqrt(this%lg * this%lc)
 
     end subroutine unscaleX_array
 
@@ -384,18 +368,18 @@ module typeScale
 !> @brief
 !> Convert transverse \f$ \frac{dx}{dz} \f$ or \f$ \frac{dy}{dz} \f$ -> Puffin scaled transverse
 !> momenta \f$ \bar{p}_x \f$ or \f$ \bar{p}_y \f$.
-!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[in] this Custom Fortran type describing scaling.
 !> @param[in] sgamma Lorentz factor \f$ \gamma \f$ of particle.
 !> @param[inout] sPx Transverse \f$ dx/dz \f$ on input, scaled \f$ \bar{p}_x \f$
 !> on output.
 
-    subroutine scalePx_single(tScaling, sgamma, sPx)
+    subroutine scalePx_single(this, sgamma, sPx)
 
-      type(fScale), intent(in) :: tScaling
+      class(fScale), intent(in) :: this
       real(kind=wp), intent(in) :: sgamma
       real(kind=wp), intent(inout) :: sPx
 
-      sPx = sPx * sgamma / tScaling%aw
+      sPx = sPx * sgamma / this%aw
 
     end subroutine scalePx_single
 
@@ -406,18 +390,18 @@ module typeScale
 !> @brief
 !> Convert Puffin scaled transverse momenta \f$ \bar{p}_x \f$ or \f$ \bar{p}_y \f$
 !> -> transverse \f$ \frac{dx}{dz} \f$ or \f$ \frac{dy}{dz} \f$.
-!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[in] this Custom Fortran type describing scaling.
 !> @param[in] sgamma Lorentz factor \f$ \gamma \f$ of particle.
 !> @param[inout] sPx Scaled \f$ \bar{p}_x \f$ on input, transverse \f$ dx/dz \f$
 !> on output.
 
-    subroutine unscalePx_single(tScaling, sgamma, sPx)
+    subroutine unscalePx_single(this, sgamma, sPx)
 
-      type(fScale), intent(in) :: tScaling
+      class(fScale), intent(in) :: this
       real(kind=wp), intent(in) :: sgamma
       real(kind=wp), intent(inout) :: sPx
 
-      sPx = sPx * tScaling%aw / sgamma
+      sPx = sPx * this%aw / sgamma
 
     end subroutine unscalePx_single
 
@@ -428,18 +412,18 @@ module typeScale
 !> @brief
 !> Convert transverse \f$ \frac{dx}{dz} \f$ or \f$ \frac{dy}{dz} \f$ -> Puffin scaled transverse
 !> momenta \f$ \bar{p}_x \f$ or \f$ \bar{p}_y \f$.
-!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[in] this Custom Fortran type describing scaling.
 !> @param[in] sgamma Lorentz factor \f$ \gamma \f$ of particle.
 !> @param[inout] sPx Transverse \f$ dx/dz \f$ on input, scaled \f$ \bar{p}_x \f$
 !> on output.
 
-    subroutine scalePx_array(tScaling, sgamma, sPx)
+    subroutine scalePx_array(this, sgamma, sPx)
 
-      type(fScale), intent(in) :: tScaling
+      class(fScale), intent(in) :: this
       real(kind=wp), intent(in) :: sgamma(:)
       real(kind=wp), intent(inout) :: sPx(:)
 
-      sPx = sPx * sgamma / tScaling%aw
+      sPx = sPx * sgamma / this%aw
 
     end subroutine scalePx_array
 
@@ -450,18 +434,18 @@ module typeScale
 !> @brief
 !> Convert Puffin scaled transverse momenta \f$ \bar{p}_x \f$ or \f$ \bar{p}_y \f$
 !> -> transverse \f$ \frac{dx}{dz} \f$ or \f$ \frac{dy}{dz} \f$.
-!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[in] this Custom Fortran type describing scaling.
 !> @param[in] sgamma Lorentz factor \f$ \gamma \f$ of particle.
 !> @param[inout] sPx Scaled \f$ \bar{p}_x \f$ on input, transverse \f$ dx/dz \f$
 !> on output.
 
-    subroutine unscalePx_array(tScaling, sgamma, sPx)
+    subroutine unscalePx_array(this, sgamma, sPx)
 
-      type(fScale), intent(in) :: tScaling
+      class(fScale), intent(in) :: this
       real(kind=wp), intent(inout) :: sPx(:)
-      real(kind=wp), intent(in) :: saw, sgamma(:)
+      real(kind=wp), intent(in) :: sgamma(:)
 
-      sPx = sPx * tScaling%aw / sgamma
+      sPx = sPx * this%aw / sgamma
 
     end subroutine unscalePx_array
 
@@ -533,16 +517,16 @@ module typeScale
 !> @brief
 !> Convert temporal coordinate \f$ t \f$ (in seconds) -> Puffin scaled coordinate
 !> \f$ \bar{z}_2 \f$.
-!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[in] this Custom Fortran type describing scaling.
 !> @param[inout] sT temporal coordinate \f$ t \f$ on input, Puffin scaled
 !> coordinate \f$ \bar{z}_2 \f$ on output.
 
-    subroutine scaleT_single(tScaling, sT)
+    subroutine scaleT_single(this, sT)
 
-      type(fScale), intent(in) :: tScaling
+      class(fScale), intent(in) :: this
       real(kind=wp), intent(inout) :: sT
 
-      sT = c * sT / tScaling%lc
+      sT = c * sT / this%lc
 
     end subroutine scaleT_single
 
@@ -553,16 +537,16 @@ module typeScale
 !> @brief
 !> Convert Puffin scaled coordinate \f$ \bar{z}_2 \f$ -> temporal coordinate
 !> \f$ t \f$ (in seconds).
-!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[in] this Custom Fortran type describing scaling.
 !> @param[inout] sT Puffin scaled coordinate \f$ \bar{z}_2 \f$ on input,
 !> temporal coordinate \f$ t \f$ (in seconds) on output.
 
-    subroutine unscaleT_single(tScaling, sT)
+    subroutine unscaleT_single(this, sT)
 
-      type(fScale), intent(in) :: tScaling
+      class(fScale), intent(in) :: this
       real(kind=wp), intent(inout) :: sT
 
-      sT = sT * tScaling%lc / c
+      sT = sT * this%lc / c
 
     end subroutine unscaleT_single
 
@@ -574,16 +558,16 @@ module typeScale
 !> @brief
 !> Convert temporal coordinate \f$ t \f$ (in seconds) -> Puffin scaled coordinate
 !> \f$ \bar{z}_2 \f$.
-!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[in] this Custom Fortran type describing scaling.
 !> @param[inout] sT temporal coordinate \f$ t \f$ on input, Puffin scaled
 !> coordinate \f$ \bar{z}_2 \f$ on output.
 
-    subroutine scaleT_array(tScaling, sT)
+    subroutine scaleT_array(this, sT)
 
-      type(fScale), intent(in) :: tScaling
+      class(fScale), intent(in) :: this
       real(kind=wp), intent(inout) :: sT(:)
 
-      sT = c * sT / tScaling%lc
+      sT = c * sT / this%lc
 
     end subroutine scaleT_array
 
@@ -594,16 +578,16 @@ module typeScale
 !> @brief
 !> Convert Puffin scaled coordinate \f$ \bar{z}_2 \f$ -> temporal coordinate
 !> \f$ t \f$ (in seconds).
-!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[in] this Custom Fortran type describing scaling.
 !> @param[inout] sT Puffin scaled coordinate \f$ \bar{z}_2 \f$ on input,
 !> temporal coordinate \f$ t \f$ (in seconds) on output.
 
-    subroutine unscaleT_array(tScaling, sT)
+    subroutine unscaleT_array(this, sT)
 
-      type(fScale), intent(in) :: tScaling
+      class(fScale), intent(in) :: this
       real(kind=wp), intent(inout) :: sT(:)
 
-      sT = sT * tScaling%lc / c
+      sT = sT * this%lc / c
 
     end subroutine unscaleT_array
 
@@ -621,16 +605,16 @@ module typeScale
 !> @brief
 !> Convert propagation distance \f$ z \f$ (in seconds) -> Puffin scaled coordinate
 !> \f$ \bar{z} = z / l_g \f$.
-!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[in] this Custom Fortran type describing scaling.
 !> @param[inout] sT Distance \f$ z \f$ (in metres) on input, Puffin scaled
 !> coordinate \f$ \bar{z} \f$ on output.
 
-    subroutine scaleZ(tScaling, sZ)
+    subroutine scaleZ(this, sZ)
 
-      type(fScale), intent(in) :: tScaling
+      class(fScale), intent(in) :: this
       real(kind=wp), intent(inout) :: sZ
 
-      sZ = sZ / tScaling%lg
+      sZ = sZ / this%lg
 
     end subroutine scaleZ
 
@@ -641,16 +625,16 @@ module typeScale
 !> @brief
 !> Convert Puffin scaled distance \f$ \bar{z} \f$ -> propagation distance
 !> \f$ z \f$ (in metres).
-!> @param[in] tScaling Custom Fortran type describing scaling.
+!> @param[in] this Custom Fortran type describing scaling.
 !> @param[inout] sT Puffin scaled distance \f$ \bar{z} \f$ on input,
 !> propagation distance \f$ z \f$ (in metres) on output.
 
-    subroutine unscaleZ(tScaling, sZ)
+    subroutine unscaleZ(this, sZ)
 
-      type(fScale), intent(in) :: tScaling
+      class(fScale), intent(in) :: this
       real(kind=wp), intent(inout) :: sZ
 
-      sZ = sZ * tScaling%lg
+      sZ = sZ * this%lg
 
     end subroutine unscaleZ
 
