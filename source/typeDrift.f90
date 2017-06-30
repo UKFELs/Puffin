@@ -14,14 +14,22 @@
 module typeDrift
 
   use paratype
+  use typeLattElm
 
   implicit none
 
-  type fDrift
+! extensible indicates this is a base class
+
+
+  type, extends(lelm) :: fDrift
 
 !     These describe the physical element:
 
     real(kind=wp) :: zbar = 0.0_wp  ! Scaled length of drift
+
+  contains
+
+    procedure :: prop => driftSection
 
   end type fDrift
 
@@ -46,7 +54,7 @@ module typeDrift
 !> @param[inout] saperp Scaled field
 !> @param[inout] sZ Scaled distance through the machine
 
-  subroutine driftSection(tDrift, sX, sY, sZ2, sPr, sPi, sGam, sAperp, tFMesh, &
+  subroutine driftSection(self, sX, sY, sZ2, sPr, sPi, sGam, sAperp, tFMesh, &
                           tScale, sZ)
  
     use gtop2
@@ -54,11 +62,11 @@ module typeDrift
     use typeScale
     use pDiff
 
-    type(fDrift), intent(in) :: tDrift
+    class(fDrift), intent(in) :: self
     type(fFMesh), intent(in) :: tFMesh
     type(fScale), intent(in) :: tScale
     real(kind=wp), contiguous, intent(inout) :: sX(:), sY(:), sZ2(:)
-    real(kind=wp), contiguous, intent(in) :: sPr(:), sPi(:), sGam(:)
+    real(kind=wp), contiguous, intent(inout) :: sPr(:), sPi(:), sGam(:)
     real(kind=wp), contiguous, intent(inout) :: sAperp(:)
 
     real(kind=wp), intent(inout) :: sZ
@@ -70,13 +78,13 @@ module typeDrift
     logical :: qDummy, qOKL
 
 
-    del_dr_z = tDrift%zbar
+    del_dr_z = self%zbar
 
     iNMPs = size(sX)
 
     allocate(sp2(iNMPs))
 
-    call getP2(sp2, sGam, sPr, sPi, tScale%eta, tScale%gamma_r, tScale%aw)
+    call getP2(sp2, sGam, sPr, sPi, tScale%eta, tScale%gamma0, tScale%aw)
 
     sZ2 = sZ2 + del_dr_z * sp2
 
