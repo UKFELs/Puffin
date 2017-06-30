@@ -17,13 +17,19 @@ module typeQuad
 
   implicit none
 
-  type fQuad
+  private
+
+  type, public :: fQuad
 
 !     These describe the physical element:
 
     real(kind=wp) :: qfx  ! Scaled focusing factors for x and y
     real(kind=wp) :: qfy
-
+    
+  contains
+  
+    procedure :: quad
+    
   end type fQuad
 
   contains
@@ -37,7 +43,7 @@ module typeQuad
 !> @brief
 !> Subroutine to model the quad element in Puffin. This is implemented as a
 !> simple point transform.
-!> @param[in] tQuad Quad described by Fortran type
+!> @param[in] this Quad described by Fortran type
 !> @param[in] sx Electron scaled x coords
 !> @param[in] sy Electron scaled y coords
 !> @param[in] sz2 Electron z2 coordinates
@@ -45,12 +51,12 @@ module typeQuad
 !> @param[inout] sPi Electron scaled momenta in y, imag(p_perp) = -py
 !> @param[in] sgam Electron scaled energy coordinates
 
-  subroutine Quad(tQuad, sX, sY, sZ2, sPr, sPi, sGam, tScale)
+  subroutine Quad(this, sX, sY, sZ2, sPr, sPi, sGam, tScale)
 
     use gtop2
     use typeScale
 
-    type(fQuad), intent(in) :: tQuad
+    class(fQuad), intent(in) :: this
     type(fScale), intent(in) :: tScale
     real(kind=wp), contiguous, intent(inout) :: sPr(:), sPi(:)
     real(kind=wp), contiguous, intent(in) :: sX(:), sY(:), sZ2(:), sGam(:)
@@ -62,7 +68,7 @@ module typeQuad
 
     allocate(sp2(iNMPs))
 
-    call getP2(sp2, sGam, sPr, sPi, tScale%eta, tScale%gamma_r, tScale%aw)
+    call getP2(sp2, sGam, sPr, sPi, tScale%eta, tScale%gamma0, tScale%aw)
 
 !    Apply quad transform (point transform)
 
@@ -71,11 +77,11 @@ module typeQuad
 
       sPr = sPr + sqrt(tScale%eta) / &
                   (2 * tScale%rho * tScale%kappa) * sX &
-                   / tQuad%qfx
+                   / this%qfx
 
       sPi = sPi - sqrt(tScale%eta) / &
                   (2 * tScale%rho * tScale%kappa) * sY &
-                  / tQuad%qfy
+                  / this%qfy
 
     end if
 
