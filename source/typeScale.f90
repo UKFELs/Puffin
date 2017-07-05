@@ -37,10 +37,11 @@ module typeScale
     logical :: qOneD
 
   contains
-    
+
     procedure :: init => initScaling
     procedure :: scaleEmit, unscaleEmit
     procedure :: scaleZ, unscaleZ
+    procedure :: getP2, getGamma
 
     generic :: scaleG => scaleG_single, scaleG_array
     generic :: unscaleG => unScaleG_single, unscaleG_array
@@ -50,7 +51,7 @@ module typeScale
     generic :: unscalePx => unscalePX_single, unscalePX_array
     generic :: scaleT => scaleT_single, scaleT_array
     generic :: unscaleT => unscaleT_single, unscaleT_array
-    
+
     procedure :: scaleG_single, scaleG_array
     procedure :: unScaleG_single, unscaleG_array
     procedure :: scaleX_single, scaleX_array
@@ -59,7 +60,7 @@ module typeScale
     procedure :: unscalePX_single, unscalePX_array
     procedure :: scaleT_single, scaleT_array
     procedure :: unscaleT_single, unscaleT_array
-    
+
   end type fScale
 
   contains
@@ -640,5 +641,64 @@ module typeScale
 
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! Scaling of gamma -> p2
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Convert Puffin scaled energy \f$ \Gamma \f$ -> scaled velocity in 
+!> \f$ \bar{z}_2 \f$ frame, \f$ p_2 \f$.
+!> @param[in] this Custom Fortran type describing scaling.
+!> @param[out] p2 scaled velocity \f$ p_2 \f$.
+!> @param[in] gamma Puffin scaled energy \f$ Gamma \f$.
+!> @param[in] px scaled \f$ x \f$ momenta \f$ \bar{p}_x \f$.
+!> @param[in] py scaled \f$ y \f$ momenta \f$ \bar{p}_y \f$.
+
+  subroutine getP2(this, p2, gamma, px, py)
+
+    class(fScale), intent(in) :: this
+    real(kind=wp), contiguous, intent(in) :: px(:), py(:), gamma(:)
+    real(kind=wp), contiguous, intent(out) :: p2(:)
+
+!$OMP WORKSHARE
+
+    p2 = (( 1.0_wp/sqrt(1.0_wp - 1.0_wp / (this%gamma0**2.0_wp * gamma**2.0_wp) * ( 1.0_wp + &
+             this%aw**2.0_wp*(px**2.0_wp + py**2.0_wp))))-1.0_wp) / this%eta
+
+!$OMP END WORKSHARE
+  
+  end subroutine getP2
+
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Convert Puffin scaled velocity in \f$ \bar{z}_2 \f$ frame, \f$ p_2 \f$, ->
+!> Puffin scaled energy \f$ \Gamma \f$. 
+!> @param[in] this Custom Fortran type describing scaling.
+!> @param[out] gamma Puffin scaled energy \f$ Gamma \f$.
+!> @param[in] p2 scaled velocity \f$ p_2 \f$.
+!> @param[in] px scaled \f$ x \f$ momenta \f$ \bar{p}_x \f$.
+!> @param[in] py scaled \f$ y \f$ momenta \f$ \bar{p}_y \f$.
+
+  subroutine getGamma(this, gamma, p2, px, py)
+
+    class(fScale), intent(in) :: this
+    real(kind=wp), contiguous, intent(in) :: px(:), py(:), p2(:)
+    real(kind=wp), contiguous, intent(out) :: gamma(:)
+
+!$OMP WORKSHARE
+    gamma = sqrt((1.0_WP + ( this%aw**2 * (px**2.0_WP + py**2.0_WP) )) * &
+                  (1.0_WP + this%eta * p2 )**2.0_WP / &
+                  ( this%eta * p2 * (this%eta * p2 + 2.0_WP) ) ) / this%gamma0
+!$OMP WORKSHARE
+  
+  end subroutine getGamma
 
 end module typeScale

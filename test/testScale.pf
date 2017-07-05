@@ -22,6 +22,8 @@ subroutine fullScaleTest( )
   real(kind=wp) :: gamma_a(3), gamma_asave(3), gamma_ascaled(3)
   real(kind=wp) :: xrada(3), xradasave(3), xradascaled(3)
   real(kind=wp) :: tlena(3), tlenaSave(3), tlenaScaled(3)
+  real(kind=wp) :: p2_a(3), p2_a_corr(3), gamfp2(3), &
+                   pxfp2(3), pyfp2(3)
   real(kind=wp) :: tol
   type(fScale) :: gg
   character(32_ip) :: und
@@ -93,6 +95,11 @@ subroutine fullScaleTest( )
   dxradasave = dxrada
   dxradaScaled = [0.51_wp, 2.0_wp, 2.5_wp]
 
+
+  p2_a_corr = [1.0000000000869005_wp, 0.69444412617348883_wp, 2.0408195128891902_wp]
+  gamfp2 = [1.0_wp, 1.2_wp, 0.7_wp]
+  pxfp2 = [1.0_wp, 1.0_wp, 1.0_wp]
+  pyfp2 = [0.0_wp, 0.0_wp, 0.0_wp]
 
   call gg%init(rho, aw, gamma0, lamw, und, ux, uy)
 
@@ -190,6 +197,16 @@ subroutine fullScaleTest( )
 
   call gg%unscaleZ(zlen)
   @AssertEqual( zlen, zlenSave, tol )
+
+
+
+  tol = 1e-10_wp
+  call gg%getP2(p2_a, gamfp2, pxfp2, pyfp2)
+  @AssertEqual( p2_a, p2_a_corr, tol )
+
+  call gg%getGamma(gamma_a, p2_a, pxfp2, pyfp2)
+  @AssertEqual( gamma_a, gamfp2, tol )
+
 
 end subroutine fullScaleTest
 
