@@ -241,8 +241,7 @@ subroutine testScaleEmit( )
   sEmit = 1.0e-9_wp
   tScaling%lambda_r = 1.0e-9_wp
 
-  call tScaling%scaleEmit(sEmit)
-  print*, sEmit
+  call tScaling%scaleEmit(sEmit)  
   @AssertEqual( sEmit, sEmit_exact, tol )
 
 end subroutine testScaleEmit

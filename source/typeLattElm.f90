@@ -20,7 +20,7 @@ implicit none
 
   type lelm
 
-      real(kind=wp) :: distance
+      real(kind=wp) :: zbar
 
     contains
 
@@ -53,10 +53,9 @@ implicit none
   subroutine prop(self, sX, sY, sZ2, sPr, sPi, sGam, sAperp, tFMesh, &
                           tScale, sZ)
 
-    use gtop2
     use typeFMesh
     use typeScale
-    
+
     class(lelm), intent(in) :: self
     type(fFMesh), intent(in) :: tFMesh
     type(fScale), intent(in) :: tScale
@@ -64,10 +63,8 @@ implicit none
     real(kind=wp), contiguous, intent(inout) :: sPr(:), sPi(:), sGam(:)
     real(kind=wp), contiguous, intent(inout) :: sAperp(:)
     real(kind=wp), intent(inout) :: sZ
-    
-    
-    
+
   end subroutine prop
 
-  
+
 end module typeLattElm

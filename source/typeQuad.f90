@@ -14,12 +14,13 @@
 module typeQuad
 
   use paratype
+  use typeLattElm
 
   implicit none
 
   private
 
-  type, public :: fQuad
+  type, extends(lelm), public :: fQuad
 
 !     These describe the physical element:
 
@@ -28,7 +29,7 @@ module typeQuad
     
   contains
   
-    procedure :: quad
+    procedure :: prop => quad
     
   end type fQuad
 
@@ -51,15 +52,20 @@ module typeQuad
 !> @param[inout] sPi Electron scaled momenta in y, imag(p_perp) = -py
 !> @param[in] sgam Electron scaled energy coordinates
 
-  subroutine Quad(this, sX, sY, sZ2, sPr, sPi, sGam, tScale)
+  subroutine Quad(self, sX, sY, sZ2, sPr, sPi, sGam, sAperp, tFMesh, &
+                          tScale, sZ)
 
-    use gtop2
     use typeScale
+    use typeFMesh
 
-    class(fQuad), intent(in) :: this
+    class(fQuad), intent(in) :: self
+    type(fFMesh), intent(in) :: tFMesh
     type(fScale), intent(in) :: tScale
-    real(kind=wp), contiguous, intent(inout) :: sPr(:), sPi(:)
-    real(kind=wp), contiguous, intent(in) :: sX(:), sY(:), sZ2(:), sGam(:)
+    real(kind=wp), contiguous, intent(inout) :: sX(:), sY(:), sZ2(:)
+    real(kind=wp), contiguous, intent(inout) :: sPr(:), sPi(:), sGam(:)
+    real(kind=wp), contiguous, intent(inout) :: sAperp(:)
+
+    real(kind=wp), intent(inout) :: sZ
 
     real(kind=wp), allocatable :: sp2(:)
     integer(kind=ip) :: iNMPs
@@ -68,7 +74,7 @@ module typeQuad
 
     allocate(sp2(iNMPs))
 
-    call getP2(sp2, sGam, sPr, sPi, tScale%eta, tScale%gamma0, tScale%aw)
+    call tScale%getP2(sp2, sGam, sPr, sPi)
 
 !    Apply quad transform (point transform)
 
@@ -77,11 +83,11 @@ module typeQuad
 
       sPr = sPr + sqrt(tScale%eta) / &
                   (2 * tScale%rho * tScale%kappa) * sX &
-                   / this%qfx
+                   / self%qfx
 
       sPi = sPi - sqrt(tScale%eta) / &
                   (2 * tScale%rho * tScale%kappa) * sY &
-                  / this%qfy
+                  / self%qfy
 
     end if
 
