@@ -18,14 +18,15 @@ module typeDrift
 
   implicit none
 
+  private
+
 ! extensible indicates this is a base class
 
-
-  type, extends(lelm) :: fDrift
+  type, extends(lelm), public :: fDrift
 
 !     These describe the physical element:
 
-    real(kind=wp) :: zbar = 0.0_wp  ! Scaled length of drift
+!    real(kind=wp) :: zbar = 0.0_wp  ! Scaled length of drift
 
   contains
 
@@ -44,7 +45,7 @@ module typeDrift
 !> Glasgow, UK
 !> @brief
 !> Subroutine to model the electron drift between other lattice elements.
-!> @param[in] tDrift Drift described by Fortran type
+!> @param[in] self Drift described by Fortran type
 !> @param[inout] sx Electron scaled x coords
 !> @param[inout] sy Electron scaled y coords
 !> @param[in] sz2 Electron z2 coordinates
@@ -56,8 +57,7 @@ module typeDrift
 
   subroutine driftSection(self, sX, sY, sZ2, sPr, sPi, sGam, sAperp, tFMesh, &
                           tScale, sZ)
- 
-    use gtop2
+
     use typeFMesh
     use typeScale
     use pDiff
@@ -84,7 +84,7 @@ module typeDrift
 
     allocate(sp2(iNMPs))
 
-    call getP2(sp2, sGam, sPr, sPi, tScale%eta, tScale%gamma0, tScale%aw)
+    call tScale%getP2(sp2, sGam, sPr, sPi)
 
     sZ2 = sZ2 + del_dr_z * sp2
 

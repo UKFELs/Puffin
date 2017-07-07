@@ -1,0 +1,87 @@
+
+
+@test
+subroutine fullDriftTest( )
+
+  use paratype
+  use typeScale
+  use typeDrift
+  use typeFMesh
+  use pfunit_mod
+
+  implicit none
+
+  real(kind=wp) :: gamma0, rho, aw, ux, uy, lamw
+  character(32_ip) :: und
+
+  type(fScale) :: tScale
+  type(fDrift) :: tDrift
+  type(fFmesh) :: tfmesh
+
+
+  real(kind=wp) :: sX(5), sY(5), sZ2(5), sPr(5), sPi(5), sGam(5)
+
+  real(kind=wp) :: sA(10)
+  
+  real(kind=wp) :: sX_ex(5), sY_ex(5), sZ2_ex(5), sPr_ex(5), sPi_ex(5), sGam_ex(5)
+
+  real(kind=wp) :: sA_ex(10)
+  real(kind=wp) :: sZ, sZ_ex
+
+  real(kind=wp) :: tol
+
+  rho = 0.001_wp
+  aw = 1.0_wp
+  gamma0 = 1000.0_wp
+  lamw = 0.04_wp
+  ux = 1.0_wp
+  uy = 1.0_wp
+  und = ''
+
+
+  call tScale%init(rho, aw, gamma0, lamw, und, ux, uy)
+
+  tScale%qOneD = .false.  ! should probably not have qOneD in scaling type...
+
+
+  sX = [0.1_wp, 0.05_wp, 0.0_wp, -0.05_wp, -0.1_wp]
+  sY = [0.1_wp, 0.05_wp, 0.0_wp, -0.05_wp, -0.1_wp]
+  sZ2 = [0.1_wp, 0.05_wp, 0.0_wp, -0.05_wp, -0.1_wp]
+  sPr = [0.1_wp, 0.05_wp, 0.0_wp, -0.05_wp, -0.1_wp]
+  sPi = [0.1_wp, 0.05_wp, 0.0_wp, -0.05_wp, -0.1_wp]
+  sGam = [0.9_wp, 1.0_wp, 2.1_wp, 1.0_wp, 1.2_wp]
+  sA(:) = 1.0_wp
+  sZ = 0.0_wp
+
+  sX_ex = [ 0.12222221954774454_wp, 5.99999975251875E-002_wp, &
+            0.0000000000000000_wp, -5.99999975251875E-002_wp, &
+            -0.11666666006975569_wp]
+  sY_ex = [7.7777780452255474E-002_wp, 4.0000002474812460E-002_wp, &
+           0.0000000000000000_wp, -4.0000002474812460E-002_wp, &
+           -8.3333339930244318E-002_wp]
+  sZ2_ex = [0.22592585595180403_wp, 0.15049992502627030_wp, &
+            2.2675706783426171E-002_wp,  5.0499925026270279E-002_wp, &
+            -2.9166735300871938E-002_wp]
+  sPr_ex = sPr
+  sPi_ex = sPi
+  sGam_ex = sGam
+  sA_ex = sA
+  sZ_ex = sZ + 0.2_wp
+
+  tDrift = fDrift(0.2_wp)  ! Implicit constructor
+
+  tol = 1e-9_wp
+
+
+  call tDrift%prop(sX, sY, sZ2, sPr, sPi, sGam, sA, tfmesh, tScale, sZ)
+
+  @AssertEqual( sX, sX_ex, tol )
+  @AssertEqual( sY, sY_ex, tol )
+  @AssertEqual( sZ2, sZ2_ex, tol )
+  @AssertEqual( sPr, sPr_ex, tol )
+  @AssertEqual( sPi, sPi_ex, tol )
+  @AssertEqual( sGam, sGam_ex, tol )
+  @AssertEqual( sA, sA_ex, tol )
+  @AssertEqual( sZ, sZ_ex, tol )
+
+end subroutine fullDriftTest
