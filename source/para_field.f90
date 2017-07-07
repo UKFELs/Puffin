@@ -25,34 +25,40 @@ use sddsSetup
 
 implicit none
 
-real(kind=wp), allocatable :: fr_rfield(:), bk_rfield(:), ac_rfield(:), &
-                              fr_ifield(:), bk_ifield(:), ac_ifield(:), &
-                              tre_fft(:), tim_fft(:)
+private
 
-real(kind=wp), allocatable :: tmp_A(:)
+type, public :: pMesh
 
-integer(kind=ip), allocatable :: recvs_pf(:), displs_pf(:), recvs_ff(:), &
-                                 displs_ff(:), recvs_ef(:), displs_ef(:)
+  real(kind=wp), allocatable :: fr_rfield(:,:,:), bk_rfield(:,:,:), ac_rfield(:,:,:), &
+                                fr_ifield(:,:,:), bk_ifield(:,:,:), ac_ifield(:,:,:), &
+                                tre_fft(:,:,:), tim_fft(:,:,:)
 
-integer(kind=ip), allocatable :: recvs_ppf(:), displs_ppf(:), recvs_fpf(:), &
-                                 displs_fpf(:), recvs_epf(:), displs_epf(:)
+  real(kind=wp), allocatable :: tmp_A(:,:,:)
 
-integer(kind=ip) :: fz2, ez2, lTr, bz2, fbuffLen, fbuffLenM, tllen, mainlen, &
-                    fz2_GGG, ez2_GGG
+  integer(kind=ip), allocatable :: recvs_pf(:), displs_pf(:), recvs_ff(:), &
+                                   displs_ff(:), recvs_ef(:), displs_ef(:)
 
-integer(kind=ip) :: ffs, ffe, tlflen, ees, eee, tlelen, tlflen_glob, tlelen_glob, &
-                    tlflen4arr, tlelen4arr, ffs_GGG, ffe_GGG, ees_GGG, eee_GGG
+  integer(kind=ip), allocatable :: recvs_ppf(:), displs_ppf(:), recvs_fpf(:), &
+                                   displs_fpf(:), recvs_epf(:), displs_epf(:)
+
+  integer(kind=ip) :: fz2, ez2, lTr, bz2, fbuffLen, fbuffLenM, tllen, mainlen, &
+                      fz2_GGG, ez2_GGG
+
+  integer(kind=ip) :: ffs, ffe, tlflen, ees, eee, tlelen, tlflen_glob, tlelen_glob, &
+                      tlflen4arr, tlelen4arr, ffs_GGG, ffe_GGG, ees_GGG, eee_GGG
 
 
 
 !!!   For parallel algorithm to deal with over-compression...
 
-integer(kind=ip), allocatable :: lrank_v(:), rrank_v(:,:), &
-                                 lrfromwhere(:)
+  integer(kind=ip), allocatable :: lrank_v(:), rrank_v(:,:), &
+                                   lrfromwhere(:)
 
-integer(kind=ip) :: nsnds_bf, nrecvs_bf
+  integer(kind=ip) :: nsnds_bf, nrecvs_bf
 
-logical :: qUnique
+  logical :: qUnique
+
+
 
 ! if fz2 to ez2 overlaps, give warning - but not fail...
 ! No, fz2 to ez2 will only overlap if less nodes than procs...
@@ -67,19 +73,28 @@ logical :: qUnique
 
 
 
-integer(kind=ip), allocatable :: ac_ar(:,:), ff_ar(:,:), ee_ar(:,:), &
-                                 ft_ar(:,:)
+  integer(kind=ip), allocatable :: ac_ar(:,:), ff_ar(:,:), ee_ar(:,:), &
+                                   ft_ar(:,:)
 
 
-integer(kind=ip) :: iParaBas   ! Basis for parallelism - options:
+  integer(kind=ip) :: iParaBas   ! Basis for parallelism - options below:
 
-integer(kind=ip), parameter :: iElectronBased=1, &
-                               iFieldBased = 2, &
-                               iFFTW_based = 3
+  logical :: qStart_new
 
 
+contains
 
-logical :: qStart_new
+  procedure :: getLocalFieldIndices
+
+end type
+
+! Options for parallelism
+
+  integer(kind=ip), parameter :: iElectronBased=1, &
+                                 iFieldBased = 2, &
+                                 iFFTW_based = 3
+
+
 
 contains
 
@@ -595,175 +610,6 @@ contains
 
      tmp_A = 0_wp
 
-
-
-
-
-! !    So for compression case
-! !
-
-!   if (end - start + 1 < 2*nprocs) ! if nnodes in active region is smaller
-!                                   ! than nprocs
-
-! then
-
-!     qUnique = .false.
-!     locstart = globalstart for all processes
-!     locend = globalend for all processes
-!     bz2 = locend
-
-! else
-
-!     do normal thing
-
-! end if
-
-
-! ! then when updating dadz (summing them up)
-
-! if (qunique) then
-
-!    do normal
-
-! else
-
-!     call mpi_reduce(field, mpi_sum)
-
-! end if
-
-
-
-
-! ! and when redisting field, ac_ar should be defined...
-
-! if qunique then
-
-! do normal
-
-! else
-
-! ac_ar(1,1) = mainlen
-! ac_ar(1,2) = local vals
-! ac_ar(1,3) = local vals
-! ac_ar(2:nprocs-1,:) = 0
-
-! !  then call redist2fields, then can call usual routine to
-! !  define bounds again...
-
-! end if
-
-
-! !  and when updating field
-
-
-! if (qunique) then
-
-!    do normal
-
-! else
-
-! !   In fact, may not need to do anything,
-! !   if the full dadz is on each process...
-
-!     call MPI_Bcast(field, mpi_sum)
-
-! end if
-
-
-
-
-! !  Then when data writing, do
-
-
-! if (qUnique) then
-! loop writing as normal
-! else
-! only root process writes
-! end if
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-! For 2 beam separated, can reduce to problem of
-! no electrons on process...
-!
-! so if nmps = 0, then don't do a lot of the operations
-!
-
-
-
-
-
-! for random gen'd particles...
-! can project onto random pos's onto gaussian
-! by using error function.
-!
-! Plot error function on fine mesh in 1D
-! Then linearly interpolate (for now) between
-! values of error function to reverse it...if
-! you see what I mean...???
-
-
-
-
-
-
-
-
-
-!  For integrated data writing:-
-
-! allocate 1D array
-
-! do front and assign to 1D power(1: globalend)
-
-!  if (qUnique) then
-
-! do middle and assign to 1D power in same way
-! as front to (globalstart:globaland)
-
-
-! else
-
-! only root process does it and assign to power(frglob:endglob)
-
-! end if
-
-
-! do back and assign to 1D power(stglob:endglob)
-
-
-! end if
-
-
-
-
-
-! ! For fixing diffraction -
-
-! call this function, and if qDiffraction layout, then
-
-! fz2 and bz2 assigned according to fftw
-! DONT redist electrons
-! then after diffraction, call this again
-! again then do it normally
-! KAPOW easy peasy
-
-
-
-!  1000 continue
-
-
 !      print*, tProcInfo_G%rank, ' set up with bounds of ', fz2, ez2, bz2! , &
 
       qPArrOK_G = .true.
@@ -773,182 +619,27 @@ contains
     end subroutine getLocalFieldIndices
 
 
-!  ###################################################
 
-
-    subroutine UpdateGlobalField(sA)
-
-      real(kind=wp), intent(inout) :: sA(:)
-
-      real(kind=wp), allocatable :: A_local(:)
-
-      integer(kind=ip) :: gath_v
-
-      integer error
-
-
-
-
-
-
-
-
-
-
-
-      if (ffe_GGG > 0) then
-
-        if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-          gath_v = tlflen*ntrnds_G  !-1
-        else
-          gath_v = tlflen*ntrnds_G
-        end if
-
-
-
-
-        allocate(A_local(gath_v))
-
-        A_local = 0_wp
-
-        A_local(1:gath_v) = fr_rfield(1:gath_v)
-        !A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
-
-        call gather1A(A_local, sA((ffs_GGG-1)*ntrnds_G + 1:ffe_GGG*ntrnds_G), &
-                gath_v, (ffe_GGG - ffs_GGG + 1) * ntrnds_G, &
-                  recvs_ff, displs_ff)
-
-
-
-        A_local(1:gath_v) = fr_ifield(1:gath_v)
-
-        call gather1A(A_local, sA((ffs_GGG-1)*ntrnds_G + 1 + NZ2_G*ntrnds_G: &
-                                    ffe_GGG*ntrnds_G + NZ2_G*ntrnds_G), &
-                gath_v, (ffe_GGG - ffs_GGG + 1) * ntrnds_G, &
-                 recvs_ff, displs_ff)
-
-
-
-
-
-        deallocate(A_local)
-
-      end if
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-      	gath_v = mainlen * ntrnds_G !-1
-      else
-        gath_v = mainlen * ntrnds_G
-      end if
-
-
-
-
-      allocate(A_local(gath_v))
-
-      A_local = 0_wp
-
-      A_local(1:gath_v) = ac_rfield(1:gath_v)
-!      A_local(gath_v+1:gath_v*2) = ac_ifield(1:gath_v)
-
-      call gather1A(A_local, sA((fz2_GGG-1)*ntrnds_G + 1:ez2_GGG*ntrnds_G), &
-                       gath_v, (fz2_GGG - ez2_GGG + 1) * ntrnds_G, &
-                       recvs_pf, displs_pf)
-
-      A_local(1:gath_v) = ac_ifield(1:gath_v)
-
-      call gather1A(A_local, sA((fz2_GGG-1)*ntrnds_G + 1 + NZ2_G*ntrnds_G: &
-                                 ez2_GGG*ntrnds_G + NZ2_G*ntrnds_G), &
-                       gath_v, (ez2_GGG - fz2_GGG + 1) * ntrnds_G, &
-                       recvs_pf, displs_pf)
-
-
-
-      deallocate(A_local)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      if (eee_GGG < nz2_G) then
-
-        if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-          gath_v = tlelen * ntrnds_G !-1
-        else
-          gath_v = tlelen * ntrnds_G
-        end if
-
-
-
-
-        allocate(A_local(gath_v))
-
-          A_local = 0_wp
-
-          A_local(1:gath_v) = fr_rfield(1:gath_v)
-          !A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
-
-        call gather1A(A_local, sA((ees_GGG - 1)*ntrnds_G + 1:eee_GGG*ntrnds_G), &
-                       gath_v, (eee_GGG - ees_GGG + 1), recvs_ef, displs_ef)
-
-
-        A_local(1:gath_v) = fr_ifield(1:gath_v)
-
-        call gather1A(A_local, sA((ees_GGG - 1)*ntrnds_G + 1 + NZ2_G*ntrnds_G: &
-                       eee_GGG*ntrnds_G + nz2_G*ntrnds_G), &
-                       gath_v, (eee_GGG - ees_GGG + 1), recvs_ef, displs_ef)
-
-
-
-        deallocate(A_local)
-
-      end if
-
-
-
-
-
-
-
-    end subroutine UpdateGlobalField
-
-
-
-
-
-
-
-
-    subroutine UpdateGlobalPow(fpow, apow, bpow, gpow)
-
-      real(kind=wp), intent(inout) :: fpow(:), apow(:), bpow(:), gpow(:)
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Sync the Power calculated from each process to one array. Each process
+!> will have calc'd its own back, front, and active arrays.
+!> @param[in] tProcInfo Custom type to hold MPI info.
+!> @param[in] fpow Power in the local processes front mesh section
+!> @param[in] apow Power in the local processes active mesh section
+!> @param[in] bpow Power in the local processes back mesh section
+!> @param[inout] gpow Power gathered to one array here, on the root process.
+!> @param[out] qOK Error flag for Puffin.
+
+    subroutine UpdateGlobalPow(self, tProcInfo, fpow, apow, bpow, gpow)
+
+      class(pMesh), intent(in) :: self
+      real(kind=wp), intent(in) :: fpow(:), apow(:), bpow(:)
+      real(kind=wp), intent(inout) :: gpow(:)
+      type(fMPIComm), intent(out)	   :: tProcInfo
 
       integer(kind=ip) :: gath_v
 
@@ -956,23 +647,18 @@ contains
 
       integer error
 
-
-
-
-
-
-
+!          Sync power from front field
 
       gpow=0.0_wp
 
 
 
-      if (ffe_GGG > 0) then
+      if (self%ffe_GGG > 0) then
 
-        if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-          gath_v = tlflen  !-1
+        if (tProcInfo%rank /= tProcInfo%size-1) then
+          gath_v = self%tlflen  !-1
         else
-          gath_v = tlflen
+          gath_v = self%tlflen
         end if
 
 
@@ -985,10 +671,9 @@ contains
         A_local(1:gath_v) = fpow(1:gath_v)
         !A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
 
-        call gather1A(A_local, gpow(ffs_GGG:ffe_GGG), &
-                gath_v, ffe_GGG - ffs_GGG + 1, &
-                  recvs_fpf, displs_fpf)
-
+        call gather1A(A_local, gpow(self%ffs_GGG:self%ffe_GGG), &
+                gath_v, self%ffe_GGG - self%ffs_GGG + 1, &
+                  self%recvs_fpf, self%displs_fpf)
 
         deallocate(A_local)
 
@@ -996,110 +681,71 @@ contains
 
 
 
+!          Sync power from active field
 
-
-!    call mpi_barrier(tProcInfo_G%comm, error)
-!    print*, 'got glob powwww  almosst 1'
-
-
-
-
-      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-        gath_v = mainlen !-1
+      if (tProcInfo%rank /= tProcInfo%size-1) then
+        gath_v = self%mainlen !-1
       else
-        gath_v = mainlen
+        gath_v = self%mainlen
       end if
 
-
-
-
       allocate(A_local(gath_v))
-      allocate(powi(ez2_GGG - fz2_GGG + 1))
+      allocate(powi(self%ez2_GGG - self%fz2_GGG + 1_ip))
 
       A_local = 0_wp
       powi = 0_wp
 
       A_local(1:gath_v) = apow(1:gath_v)
-!      A_local(gath_v+1:gath_v*2) = ac_ifield(1:gath_v)
 
-      if (qUnique) call gather1A(A_local, powi, &
-                       gath_v, fz2_GGG - ez2_GGG + 1, &
-                       recvs_ppf, displs_ppf)
+      if (self%qUnique) then 
+        
+        call gather1A(A_local, powi, &
+                      gath_v, self%fz2_GGG - self%ez2_GGG + 1_ip, &
+                      self%recvs_ppf, self%displs_ppf)
 
+        gpow(fz2_GGG:ez2_GGG) = powi(:)
 
-      gpow(fz2_GGG:ez2_GGG) = powi(:)
+      else
+        
+        gpow(self%fz2_GGG:self%ez2_GGG) = apow(1:gath_v)
+        
+      end if
+        
       deallocate(A_local)
       deallocate(powi)
 
-    !if (tProcInfo_G%qRoot) print*, gpow
 
 
+!          Sync power from back field
 
-!    call mpi_barrier(tProcInfo_G%comm, error)
-!    print*, 'got glob powwww  almosst 2'
+      if (eee_GGG < nz2_G+1_ip) then
 
-
-
-      if (eee_GGG < nz2_G+1) then
-
-        if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-          gath_v = tlelen !-1
+        if (tProcInfo%rank /= tProcInfo%size-1_ip) then
+          gath_v = self%tlelen !-1
         else
-          gath_v = tlelen
+          gath_v = self%tlelen
         end if
 
-
-
-
         allocate(A_local(gath_v))
-        allocate(powi(eee_GGG - ees_GGG + 1))
+        allocate(powi(self%eee_GGG - self%ees_GGG + 1_ip))
 
+        A_local = 0_wp
+        powi = 0_wp
 
-          A_local = 0_wp
-          powi = 0_wp
+        A_local(1:gath_v) = bpow(1:gath_v)
 
-          A_local(1:gath_v) = bpow(1:gath_v)
-          !A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
+        call gather1A(A_local, powi, &
+                      gath_v, self%eee_GGG - self%ees_GGG + 1_ip, &
+                      self%recvs_epf, self%displs_epf)
 
-          call gather1A(A_local, powi, &
-                         gath_v, eee_GGG - ees_GGG + 1, recvs_epf, displs_epf)
+        gpow(self%ees_GGG:self%eee_GGG) = powi(:)
 
-
-          gpow(ees_GGG:eee_GGG) = powi(:)
-
-          deallocate(A_local)
-          deallocate(powi)
+        deallocate(A_local)
+        deallocate(powi)
 
       end if
 
-
-
-
-
-!    call mpi_barrier(tProcInfo_G%comm, error)
-!    print*, 'got glob powwww  almosst 3'
-
-
-
     end subroutine UpdateGlobalPow
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1902,61 +1548,6 @@ contains
 
       end if
 
-
-!   -----     OLD
-
-!      if (tProcInfo_G%rank /= 0) then
-!
-!!        send to rank-1
-!
-!        call mpi_issend(ac_rl(1:fbuffLenM), fbuffLenM, mpi_double_precision, &
-!                           tProcInfo_G%rank-1, 0, tProcInfo_G%comm, req, error)
-!
-!      end if
-!
-!
-!
-!      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-!
-!!       rec from rank+1
-!
-!        CALL mpi_recv( ac_rl((ez2+1)-(fz2-1):bz2-(fz2-1)), fbuffLen, mpi_double_precision, &
-!                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, statr, error )
-!
-!      end if
-!
-!
-!
-!
-!
-!      if (tProcInfo_G%rank /= 0) call mpi_wait( req,sendstat,error )
-!
-!
-!
-!      if (tProcInfo_G%rank /= 0) then
-!
-!!        send to rank-1
-!
-!        call mpi_issend(ac_il(1:fbuffLenM), fbuffLenM, mpi_double_precision, &
-!                tProcInfo_G%rank-1, 0, tProcInfo_G%comm, req, error)
-!
-!      end if
-!
-!      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-!
-!!       rec from rank+1
-!
-!        CALL mpi_recv( ac_il((ez2+1)-(fz2-1):bz2-(fz2-1)), fbuffLen, mpi_double_precision, &
-!               tProcInfo_G%rank+1, 0, tProcInfo_G%comm, statr, error )
-!
-!      end if
-!
-!      if (tProcInfo_G%rank /= 0) call mpi_wait( req,sendstat,error )
-!
-!   -----     OLD
-
-
-
     end subroutine upd8a
 
 
@@ -1965,7 +1556,6 @@ contains
 
 
   subroutine inner2Outer(inner_ra, inner_ia)
-
 
     implicit none
 
