@@ -18,17 +18,12 @@ module typempicomm
   implicit none
 
   type fMPIComm
+    
  	  integer           :: comm = 0_IP
 	  integer           :: rank = 0_IP
 	  integer           :: size = 0_IP
 	  logical           :: qroot = .false.
+
   end type fMPIComm
-
-! Define Global variables
-!
-! tProcInfo_G - Parallel processing information
-
-  type(fMPIComm) :: tProcInfo_G
-  save tProcInfo_G
 
 end module typempicomm

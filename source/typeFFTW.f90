@@ -11,14 +11,14 @@
 !> This module contains the type definition to hold the info calculated by FFTW
 !> for the parallel fourier transforms used in Puffin.
 
-module TransformInfoType
+module typeFFTW
 
-      use paratype
+  use paratype
 
-      use, intrinsic :: iso_c_binding
-      implicit none
+  use, intrinsic :: iso_c_binding
+  implicit none
 
-      include 'fftw3-mpi.f03'
+  include 'fftw3-mpi.f03'
 
 !-----------------------------------------------------------------
 ! Author - Lawrence Campbell
@@ -43,20 +43,17 @@ module TransformInfoType
 !                    allocated to it.
 !--------------------------------------------------------------------
 
-      type cTransformInfoType
+  type fTransInfo
 
-         type(C_PTR)          :: fplan
-         type(C_PTR)          :: bplan
-         integer(kind=ip)     :: loc_nz2
-         integer(kind=ip)     :: loc_z2_start
-         integer(kind=ip)     :: loc_nz2_aft_trans
-         integer(kind=ip)     :: loc_z2_start_aft_trans
-         integer(kind=ip)     :: total_local_size
-         logical              :: qOneD
+    type(C_PTR)          :: fplan
+    type(C_PTR)          :: bplan
+    integer(kind=ip)     :: loc_nz2
+    integer(kind=ip)     :: loc_z2_start
+    integer(kind=ip)     :: loc_nz2_aft_trans
+    integer(kind=ip)     :: loc_z2_start_aft_trans
+    integer(kind=ip)     :: total_local_size
+    logical              :: qOneD
 
-      end type cTransformInfoType
+  end type fTransInfo
 
-      type(cTransformInfoType) :: tTransInfo_G
-      save tTransInfo_G
-
-end module TransformInfoType
+end module typeFFTW
