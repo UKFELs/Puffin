@@ -14,18 +14,25 @@
 module typeChicane
 
   use paratype
+  use typeLattElm
 
   implicit none
 
-  type fChicane
+  private
+
+  type, extends(lelm), public :: fChicane
 
 !     These describe the physical element:
 
 ! all electrons recieve same drift! Need to use non-zero disp to create 'real' chicane
 
-    real(kind=wp) :: zbar  ! Physical length of chicane
+!    real(kind=wp) :: zbar  ! Physical length of chicane
     real(kind=wp) :: slip  ! Total delay in chicane
     real(kind=wp) :: disp  ! Dispersion in chicane (if = zero then isochronous)
+
+  contains
+    
+    procedure :: prop => disperse
 
   end type fChicane
 
@@ -45,18 +52,18 @@ module typeChicane
 !> @param[inout] saperp Scaled field
 !> @param[inout] sZ Scaled distance through the machine
 
-  subroutine disperse(tChicane, sz2, sgam, saperp,  tFMesh, sZ)
+  subroutine disperse(self, sX, sY, sZ2, sPr, sPi, sGam, sAperp, tFMesh, &
+                          tScale, sZ)
 
     use typeFMesh
-    use pDiff
+    use typeScale
 
-    implicit none
-
-    type(fchicane), intent(in) :: tChicane
+    class(fChicane), intent(in) :: self
     type(fFMesh), intent(in) :: tFMesh
-    real(kind=wp), contiguous, intent(inout) :: sz2(:)
-    real(kind=wp), contiguous, intent(in) :: sgam(:)
-    real(kind=wp), contiguous, intent(inout) :: saperp(:)
+    type(fScale), intent(in) :: tScale
+    real(kind=wp), contiguous, intent(inout) :: sX(:), sY(:), sZ2(:)
+    real(kind=wp), contiguous, intent(inout) :: sPr(:), sPi(:), sGam(:)
+    real(kind=wp), contiguous, intent(inout) :: sAperp(:)
     real(kind=wp), intent(inout) :: sZ
 
     real(kind=wp) :: szbar4d
@@ -64,13 +71,13 @@ module typeChicane
 
     logical :: qOKL
 
-    szbar4d = tChicane%zbar
+    szbar4d = self%zbar
 
 !     Propagate through chicane
 
-    sz2 = sz2 - 2.0_WP * tChicane%disp *  &
+    sz2 = sz2 - 2.0_WP * self%disp *  &
                  (sgam - 1_wp) &
-                 + tChicane%slip
+                 + self%slip
 
     if (tFMesh%qDiff) then
 
