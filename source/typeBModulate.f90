@@ -14,15 +14,22 @@
 module typeBModulate
 
   use paratype
+  use typeLattElm
 
   implicit none
 
-  type fBModulate
+  private
+
+  type, extends(lelm), public :: fBModulate
 
 !     These describe the physical element:
 
     real(kind=wp) :: wavenum = 1.0_wp  ! Scaled focusing factors for x and y
     real(kind=wp) :: mag = 0.0_wp
+
+  contains
+    
+    procedure :: prop => bModulation
 
   end type fBModulate
 
@@ -40,14 +47,22 @@ module typeBModulate
 !> @param[in] sz2 Electron z2 coordinates
 !> @param[inout] sgam Electron scaled energy coordinates
 
-  subroutine bModulation(tBMod, sZ2, sGam)
+  subroutine bModulation(self, sX, sY, sZ2, sPr, sPi, sGam, sAperp, tFMesh, &
+                          tScale, sZ)
 
-    type(fBModulate), intent(in) :: tBMod
-    real(kind=wp), contiguous, intent(in) :: sZ2(:)
-    real(kind=wp), contiguous, intent(inout) :: sGam(:)
+    use typeFMesh
+    use typeScale
 
-    sGam = sGam + ( tBMod%mag &
-               * cos(tBMod%wavenum * sZ2) )
+    class(fBModulate), intent(in) :: self
+    type(fFMesh), intent(in) :: tFMesh
+    type(fScale), intent(in) :: tScale
+    real(kind=wp), contiguous, intent(inout) :: sX(:), sY(:), sZ2(:)
+    real(kind=wp), contiguous, intent(inout) :: sPr(:), sPi(:), sGam(:)
+    real(kind=wp), contiguous, intent(inout) :: sAperp(:)
+    real(kind=wp), intent(inout) :: sZ
+
+    sGam = sGam + ( self%mag &
+               * cos(self%wavenum * sZ2) )
 
   end subroutine bModulation
 
