@@ -201,6 +201,10 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
     sLengthOfElmY_G  = sElmLen(iY_CG)
     sLengthOfElmZ2_G = sElmLen(iZ2_CG)
 
+    print*, 'dz2 = ', sLengthOfElmZ2_G
+    print*, 'lez2 = ', real(nz2_g-1_ip, kind=wp) * sLengthOfElmZ2_G
+    print*, 'lambda_rz2 = ', 4.0_wp * pi * rho
+
     delta_G = sLengthOfElmX_G*sLengthOfElmY_G*sLengthOfElmZ2_G
 
 !     Filter fraction to frequency in Fourier space
@@ -800,9 +804,9 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
                        sLenEPulse, iNumElectrons)
 
 
-  real(kind=wp), intent(inout) :: sFieldModelLength(:)
+  real(kind=wp), intent(inout) :: sFieldModelLength(:), sLenEPulse(:,:)
 
-  real(kind=wp), intent(in) :: sGamFrac(:), sLenEPulse(:,:)
+  real(kind=wp), intent(in) :: sGamFrac(:)
 
   integer(kind=ip), intent(in) :: nperiods, nodesperlambda, &
                                   stepsPerPeriod
@@ -885,7 +889,7 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
 
   slamr = 4.0_WP * pi * srho_G
-  minESample = 15_ip   ! minimum MP's per wavelength
+  minESample = 4_ip !15_ip   ! minimum MP's per wavelength
   !dztemp = slamr / minESample
 
   if (iInputType_G == iGenHom_G) then
@@ -901,7 +905,7 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
       if (tProcInfo_G%qRoot) print*, 'WARNING - e-beam macroparticles sampling &
                                       & in z2 not fine enough - fixing...'
 
-      iNumElectrons(1,3) = minENum
+!      iNumElectrons(1,3) = minENum
 
       if (tProcInfo_G%qRoot) print*, 'num MPs in z2 now = ', &
                                   iNumElectrons(1,iZ2_CG)
@@ -927,7 +931,7 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
       if (tProcInfo_G%qRoot) print*, 'WARNING - field mesh may not be large &
                                      &enough in z2 - fixing....'
 
-      sFieldModelLength(iZ2_CG) = fmlenTmp + 10.0_wp  ! Add buffer 10 long for
+!      sFieldModelLength(iZ2_CG) = fmlenTmp + 10.0_wp  ! Add buffer 10 long for
                                                       ! extra security...
 
       if (tProcInfo_G%qRoot) print*, 'Field mesh length in z2 now = ', &
@@ -940,9 +944,18 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
   end if
 
+!!!!!! TO FIX EXACTLY AN INTEGER NUMBER OF PERIODS FOR PERIODIC BOUNDARY 
+!!!!!! IMPLEMENTATION:
+
   dz2 = 4.0_WP * pi * sRho_G / real(nodesperlambda-1_IP,kind=wp)
 
   iNumNodes(iZ2_CG) = ceiling(sFieldModelLength(iZ2_CG) / dz2) + 1_IP
+  sLengthOfElm(iZ2_CG) = dz2
+  sFieldModelLength(iZ2_CG) = real(iNumNodes(iZ2_CG) - 1_ip, kind=wp) * dz2
+
+  sLenEPulse(1,iZ2_CG) = sFieldModelLength(iZ2_CG)
+
+  print*, 'dz2 HERE = ', dz2
 
   if (tProcInfo_G%qRoot) print*, '******************************'
   if (tProcInfo_G%qRoot) print*, ''
@@ -1111,6 +1124,8 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
 !     macroparticle number. The array then cycles through each
 !     process in ascending order.
 
+    if (tProcInfo_G%size > 1_ip) then
+
     DO j=2,tProcInfo_G%size
        CALL MPI_ISSEND( sendbuff,1,MPI_INT_HIGH,rrank,&
             0,tProcInfo_G%comm,req,error )
@@ -1121,7 +1136,10 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
        sendbuff=recvbuff
     END DO
 
-!    print*, 'procelectrons = ', procelectrons_G
+    end if
+ 
+!!    print*, 'procelectrons = ', procelectrons_G
+!    call mpi_finalize(error)
 !    stop
     IF (iNumberElectrons_G==0) qEmpty=.TRUE.
 

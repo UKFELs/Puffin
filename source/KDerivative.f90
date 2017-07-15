@@ -87,8 +87,11 @@ contains
 
 !    update fields in buffers
 
+!      print*, 'need to upd8da!!!'
+
       call upd8da(sdAr, sdAi)
 
+!      print*, 'upd8d da!!!'
 
 
 !     Check to see if parallel field setup OK...
@@ -135,6 +138,8 @@ contains
         end if
       end if
 
+
+!      where sz2 = sz2
 
 !    scatter dadz to local MPI process (split amongst processors)
 

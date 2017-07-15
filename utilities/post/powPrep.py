@@ -12,6 +12,10 @@ import numpy,tables,glob,os,sys
 qScale = 0
 print "scaling is qscale", str(qScale)
 
+iTemporal = 0
+iPeriodic = 1
+iMesh = iPeriodic
+
 
 
 def getTimeSlices(baseName):
@@ -77,6 +81,16 @@ def getNumSpatialPoints(filelist,datasetname):
   print "length: "+str(length)
   return length,min,max
 
+def getMeshType(filelist,datasetname):
+  """ getNumSpatialPoints(filelist) get num spatial points
+
+  What it says on the tin. Same as extent of data.
+  """
+  h5in=tables.open_file(filelist[0],'r')
+  meshType = h5in.root.runInfo._v_attrs.fieldMesh
+  h5in.close()
+  return meshType
+
 print "passed "+str(len(sys.argv))+" arguments"
 print "File basename specified as: " +sys.argv[1]
 
@@ -106,9 +120,12 @@ h5=tables.open_file(outfilename,'w')
 filelist=getTimeSlices(baseName)
 numTimes,minZT,maxZT,minZZ,maxZZ=getTimeSliceInfo(filelist,datasetname)
 numSpatialPoints, minS,maxS=getNumSpatialPoints(filelist,datasetname)
+lenz2 = maxS - minS
 deltaz2 = (maxS - minS) / numSpatialPoints
+iMesh = getMeshType(filelist,datasetname):
 sumData=numpy.zeros(numTimes)
 peakData=numpy.zeros(numTimes)
+powAv = numpy.zeros(numTimes)
 
 print "files in order:"
 print filelist
@@ -152,7 +169,8 @@ fieldCount=0
 for slice in filelist:
   h5in=tables.open_file(slice,'r')
   fieldData[:,fieldCount]=h5in.root._f_get_child(datasetname).read()
-  sumData[fieldCount]=numpy.trapz(h5in.root._f_get_child(datasetname).read(), None, deltaz2)
+  sumData[fieldCount]=numpy.trapz(h5in.root._f_get_child(datasetname).read(), None, deltaz2) 
+  powAv[fieldCount] = sumData[fieldCount] / lenz2
   peakData[fieldCount]=numpy.max(h5in.root._f_get_child(datasetname).read())
   if peakData[fieldCount] != 0:
     fieldNormData[:,fieldCount]=h5in.root._f_get_child(datasetname).read()/peakData[fieldCount]
@@ -260,6 +278,16 @@ else:
 
 
 
+
+# Scaled averaged peak power (for periodic mesh)
+if iMesh == iPeriodic:
+  h5.create_array('/','Power',powAv)
+  h5.root.Power._v_attrs.vsMesh='zSeries'
+  h5.root.Power._v_attrs.vsType='variable'
+  if (qScale==0):
+    h5.root.Power._v_attrs.vsAxisLabels='z (m), Pow (W)'
+  else:
+    h5.root.Power._v_attrs.vsAxisLabels='zbar, Power (scaled)'
 
 # 2D meshes of z2 vs z (scaled) and (ct-z) vs z (unscaled)
 

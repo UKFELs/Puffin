@@ -66,15 +66,21 @@ def FilterField(field,crfr,distfr,nZ2,sLengthOfElmZ2, rho, q1d):
 #%%%%%    3D    %%%%%%%
 
       ftfield = np.fft.fft(field)
-    
-      ftfield[:,:,0:(nn-nns)] = 0
-      ftfield[:,:,(nn+nns-1):ceil(nZ2/2)] = 0
-    
-      ftfield[:,:,ceil(nZ2/2) + 1 - 1:nZ2-(nn+nns)+2] = 0
-      ftfield[:,:,(nZ2 - (nn-nns) + 2 -1 ) : nZ2] = 0
-    
+
+      sn = 1
+      ftfield[:,:,0:sn] = 0
+      ftfield[:,:,sn+1:np.ceil(nZ2/2)] = 0
+
+      ftfield[:,:,np.ceil(nZ2/2) + 1 - 1:-sn] = 0
+
+#      ftfield[:,:,0:(nn-nns)] = 0
+#      ftfield[:,:,(nn+nns-1):np.ceil(nZ2/2)] = 0
+#
+#      ftfield[:,:,np.ceil(nZ2/2) + 1 - 1:nZ2-(nn+nns)+2] = 0
+#      ftfield[:,:,(nZ2 - (nn-nns) + 2 -1 ) : nZ2] = 0
+
       field = np.fft.ifft(ftfield)
-    
+
       xfield = np.real(field)
 
     return xfield
@@ -210,27 +216,36 @@ def plotFiltPow(h5fname):
 
 #    ...otherwise take full field
 
+    nx = h5f.root.runInfo._v_attrs.nX
+    ny = h5f.root.runInfo._v_attrs.nY
+    dx = h5f.root.runInfo._v_attrs.sLengthOfElmX
+    dy = h5f.root.runInfo._v_attrs.sLengthOfElmY
+
     lenz2 = (nz2-1) * dz2
     z2axis = (np.arange(0,nz2)) * dz2
 
-    xf = h5f.root.aperp[:,0]
+    xf = h5f.root.aperp[:,:,:,0]
     # xfs = xf[z2si:z2ei]   # for selecting slice...
 
-    yf = h5f.root.aperp[:,1]
+    yf = h5f.root.aperp[:,:,:,1]
 
 
     cfr = 1.0
     dfr = 0.4
 
-    xf = FilterField(xf, cfr, dfr, nz2, dz2, rho, 1)
-    yf = FilterField(yf, cfr, dfr, nz2, dz2, rho, 1)
+    xf2 = FilterField(xf, cfr, dfr, nz2, dz2, rho, 0)
+    yf2 = FilterField(yf, cfr, dfr, nz2, dz2, rho, 0)
 
     intens = np.square(xf) + np.square(yf)
 
+    xf = xf[np.rint(nx/2.), np.rint(ny/2.), :]
+    yf = yf[np.rint(nx/2.), np.rint(ny/2.), :]
 
+    xf2 = xf2[np.rint(nx/2.), np.rint(ny/2.), :]
+    yf2 = yf2[np.rint(nx/2.), np.rint(ny/2.), :]
 
-    mgx, phx = getMagPhase(xf,nz2,rho,lenz2)
-    mgy, phy = getMagPhase(yf,nz2,rho,lenz2)
+    mgx, phx = getMagPhase(xf2,nz2,rho,lenz2)
+    mgy, phy = getMagPhase(yf2,nz2,rho,lenz2)
 
 #    xff = np.fft.fft(xf)
 #    yff = np.fft.fft(yf)
@@ -242,8 +257,8 @@ def plotFiltPow(h5fname):
 
     ax1 = plt.subplot(411)
     
-    plt.plot(z2axis, xf, label='xfield')
-    plt.plot(z2axis, yf, label='yfield')
+    plt.plot(z2axis, xf2, label='xfield')
+    plt.plot(z2axis, yf2, label='yfield')
     plt.legend()
     ax1.set_title('Filtered fields')
     plt.legend()
@@ -263,7 +278,9 @@ def plotFiltPow(h5fname):
     plt.plot(z2axis, phy, label='y phase')
     plt.legend()
 
-#    plt.savefig("ExEy-SpecPower3.png")
+    outname = "ph-mag-" + str(270) + ".png"
+
+    plt.savefig(outname)
     plt.show()
 
 

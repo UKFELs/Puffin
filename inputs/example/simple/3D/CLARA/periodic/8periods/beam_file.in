@@ -1,0 +1,56 @@
+! PUFFIN BEAM FILE
+!
+!Describes electron beams for input into puffin. Multiple beams with
+!different parameters can be used. Please refer to POP-REF for an
+!explanation of the scaled variables used, such as z2 and p2.
+!
+! BEAM PARAMETERS - namelist NBLIST
+!
+! nbeams - number of electron beams
+! dtype  - Input type - simple, distribution, or macroparticle 
+!
+! BEAM PARAMETERS - namelist BLIST
+!========================================================================
+! sSigmaE - gaussian std dev in each dimension - x, y, z2, px, py, gamma, then for additional beams
+! sLenE   - Total length of beam modelled in each dimension - x, y, z2, px, py, gamma...
+! bcenter - Center of beam in z2
+! iNumElectrons  -  Number of macroparticles in each dimension used to model the beam 
+! sEmit_n - Scaled transverse beam emittance
+! sQe - Beam charge 
+! gammaf - Ratio of average beam energy to reference beam energy gamma / gamma_r 
+! chirp  - Energy chirp in z2 i.e. dgamma/dz2
+! mag    - magnitude of energy oscillation on beam
+! fr     - frequency in z2 of beam energy oscillation
+! qRndEj_G - Round edge of flat top?
+! sSigEj_G - Gaussian sigma of tail-off if used
+! qMatched_A - Automatically match beam to focusing channel??
+! TrLdMeth - Beam loading method in 5D transverse and energy planes:
+!                TrLdMeth = 1 for random sequences (default)
+!                TrLdMeth = 2 for Halton sequences
+!========================================================================
+
+&NBLIST
+nbeams = 1
+dtype = 'simple'
+/
+
+&BLIST
+sSigmaE =7.213715e-5, 2.4323e-5, 1E8, 1.0, 1.0, 0.0001
+sLenE = 1E-6, 1E-6, 2.6638254564162512E-15, 1E-6, 1E-6, 0.0006
+iNumElectrons = 20, 20, 32, 7, 7, 7
+sQe = 1.0655301825665005e-12 ! 1.3319127282081256e-13 ! 1.0655301825665005e-12 !2.5E-10
+bcenter = 0.0
+gammaf = 1.0
+chirp = 0.0
+mag = 0.0
+fr = 1.0
+emitx = 1.0955302366345312e-09
+emity = 1.0955302366345312e-09
+alphax = -0.146
+alphay = 0.0
+qRndEj_G = .false.
+sSigEj_G = 0.4
+qMatched_A = .false.
+TrLdMeth = 2
+nseqparts = 1000
+/

@@ -203,7 +203,7 @@ end if
 
   call allact_rk4_arrs()
 
-
+  print*, 'allocatedd arrs maybe why not....'
   igoes = 0_ip
 
   qDWrDone = .false.
@@ -228,6 +228,7 @@ end if
 
       igoes = 1_ip
       do
+!        print*, 'hhhh'
         call rk4par(sZl,sStepSize,qDiffrctd)
         if (igoes>3_ip) exit
         if (.not. qPArrOK_G) then

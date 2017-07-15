@@ -78,6 +78,8 @@ contains
     CHARACTER(LEN=4), PARAMETER :: timegrpname = "time"  ! Group name
     CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  ! Group name
     REAL(kind=WP), ALLOCATABLE :: limdata (:)  ! Data to write
+    real(kind=wp), allocatable :: sz2_temp(:)
+    real(kind=wp) :: ebound
     ! Local vars
     !integer(kind=ip) :: iep
     integer :: error ! Error flag
@@ -118,9 +120,11 @@ contains
 
 ! Prepare filename
 
-    filename = ( trim(adjustl(zFilename_G)) // '_electrons_' // &
-                 trim(adjustl(IntegerToString(iCSteps))) // '.h5' )
+!    filename = ( trim(adjustl(zFilename_G)) // '_electrons_' // &
+!                 trim(adjustl(IntegerToString(iCSteps))) // '.h5' )
 
+    filename = ( trim(adjustl(zFilename_G)) // '_electrons_' // &
+                 trim(adjustl(IntegerToString(igwr))) // '.h5' )
 
     CALL h5open_f(error)
     CALL h5pcreate_f(H5P_FILE_ACCESS_F, plist_id, error)
@@ -150,6 +154,7 @@ contains
 !      if (procelectrons_G(1).GT.0) then
 ! for the corresponding space on disk
         CALL h5screate_simple_f(rank, dsize, dspace_id, error)
+!        print*,'HELLO MCFLY WHIT?', procelectrons_G
         if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(dspace_id, error)
 
 !        Print*,'hdf5_puff:outputH5BeamFilesSD(memory dataspace allocated)'
@@ -238,13 +243,25 @@ contains
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
 !    end if
 
+    allocate(sz2_temp(procelectrons_G(1)))
+    sz2_temp = sElZ2_G
+    ebound = 4.0_wp * pi * sRho_G
+    where (sz2_temp > ebound) sz2_temp = sz2_temp - &
+                    (real(floor(sElZ2_G / ebound), kind=wp) * ebound )
+
+! APPLY BOUNDS
+!    lenz2 = sLengthOfElmZ2_G * real((nz2_G - 1_ip), kind=wp )
+!    sElZ2_G = sElZ2_G - (real(floor(sElZ2_G / lenz2), kind=wp) * lenz2 )
+
     CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, &
-       sElZ2_G, dsize, error, &
+       sz2_temp, dsize, error, &
        xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
 !      Print*,'hdf5_puff:outputH5BeamSD(z2 space closed) rank: ' // &
 !         trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
 ! was       dspace_id, filespace)
     CALL h5sclose_f(filespace, error)
+
+    deallocate(sz2_temp)
 
 ! repeat for some next px dataset
     doffset=(/3,startOffset/)
@@ -519,24 +536,32 @@ contains
     CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
 !    Print*,'hdf5_puff:outputH5BeamFiles(lower bounds attribute created)'
+
     ALLOCATE ( limdata(numSpatialDims))
-    limdata(1)=-0.5*NX_G*sLengthOfElmX_G
+
+    limdata(1)=0.0
+
 ! Particles inhabit a 3D physical space even for 1D simulations.
-!    if (numSpatialDims .GT. 1) then
+    if (numSpatialDims .GT. 1) then
+      limdata(1)=-0.5*NX_G*sLengthOfElmX_G
       limdata(2)=-0.5*NY_G*sLengthOfElmY_G
       limdata(3)=0.0
-!    end if
+    end if
+
     CALL h5awrite_f(attr_id, atype_id, limdata, adims, error)
     CALL h5aclose_f(attr_id, error)
     aname="vsUpperBounds"
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
 !    Print*,'hdf5_puff:outputH5BeamFiles(upper bounds attribute created)'
-    limdata(1)=0.5*NX_G*sLengthOfElmX_G
+
+
+    limdata(1)=real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G
 ! Particles inhabit a 3D physical space even for 1D simulations.
-!    if (numSpatialDims .GT. 1) then
+    if (numSpatialDims .GT. 1) then
+      limdata(1)=0.5*NX_G*sLengthOfElmX_G
       limdata(2)=0.5*NY_G*sLengthOfElmY_G
       limdata(3)=real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G
-!    end if
+    end if
     CALL h5awrite_f(attr_id, atype_id, limdata, adims, error)
 ! Close the attribute should be done above.
     CALL h5aclose_f(attr_id, error)
@@ -718,7 +743,7 @@ contains
 
 !    Print*,('Spatialdims: ' // trim(IntegerToString(numSpatialDims)))
       filename = (trim(adjustl(zFilename_G)) // '_' // trim(adjustl(dsetname)) &
-          // '_' // trim(adjustl(IntegerToString(iCSteps))) // '.h5' )
+          // '_' // trim(adjustl(IntegerToString(igwr))) // '.h5' )
       CALL h5open_f(error)
       CALL h5pcreate_f(H5P_FILE_ACCESS_F, plist_id, error)
 !      Print*,'hdf5_puff:outputH5FieldSD(property created)'
@@ -1365,7 +1390,7 @@ contains
     integer(kind=ip) :: error !< Local Error flag
     if (tProcInfo_G%qRoot) then
       filename = ( trim(adjustl(zFilename_G)) // '_integrated_' &
-        //trim(adjustl(IntegerToString(iCSteps))) &
+        //trim(adjustl(IntegerToString(igwr))) &
         // '.h5' )
       CALL h5open_f(error)
       CALL h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error)
@@ -1375,14 +1400,31 @@ contains
 !      CALL h5gcreate_f(file_id, limgrpname, group_id, error)
       CALL write1DlimGrp(file_id,limgrpname,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G)
       CALL write1DlimGrp(file_id,limgrpnameSI,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g)
+      
       CALL write1DuniformMesh(file_id,"intFieldMeshSc",0._wp, &
         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G,NZ2_G,"z2,scaled parameter")
+        
       CALL write1DuniformMesh(file_id,"intPtclMeshSc",0._wp, &
         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G,nslices,"z2,scaled parameter")
+        
+        
+        
+        CALL write1DuniformMesh(file_id,"intCurrMeshSc",0._wp, &
+          real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G,npts_I_G,"z2,scaled parameter")
+
+!      print*, '!!!!ahv just written nz2 = ', nz2_g
+!      print*, '!!!!ahv just written dz2 = ', slengthofelmz2_g
+!      print*, '!!!!nslices = ', nslices
+!      print*, '!!!!nptsi = ', npts_i_g
+!      print*, '!!!!Ilen = ', real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G
+      
       CALL write1DuniformMesh(file_id,"intFieldMeshSI",0._wp, &
         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g,NZ2_g,"z [m], SI parameter")
       CALL write1DuniformMesh(file_id,"intPtclMeshSI",0._wp, &
         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g,nslices,"z [m], SI parameter")
+        CALL write1DuniformMesh(file_id,"intCurrMeshSI",0._wp, &
+          real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g,npts_I_G,"z [m], SI parameter")
+
 !
 ! Close the file.
 !
@@ -1439,7 +1481,7 @@ contains
     if (tProcInfo_G%qRoot) then
       dims = size(writeData) ! Dataset dimensions
       filename = ( trim(adjustl(zFilename_G)) // '_integrated_' &
-        //trim(adjustl(IntegerToString(iCSteps))) &
+        //trim(adjustl(IntegerToString(igwr))) &
         // '.h5' )
       CALL h5open_f(error)
       CALL h5fopen_f(filename, H5F_ACC_RDWR_F, file_id, error)

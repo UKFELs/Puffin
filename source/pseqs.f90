@@ -107,11 +107,11 @@ end subroutine genGSeq
 !> @param[in] sigE 6 element array of requested gaussian r.m.s. width 
 !> in the Puffin order (x,y,z2,px,py,gamma).
 
-subroutine getSeqs(xcom, ycom, pxcom, pycom, gcom, sigE, iTrLoad)
+subroutine getSeqs(xcom, ycom, pxcom, pycom, gcom, zcom, sigE, iTrLoad)
 
   real(kind=wp), contiguous, intent(inout) :: xcom(:), ycom(:), &
                                 pxcom(:), pycom(:), &
-                                gcom(:)
+                                gcom(:), zcom(:)
 
   real(kind=wp), intent(in) :: sigE(:)
   integer(kind=ip), intent(in) :: iTrLoad
@@ -144,8 +144,9 @@ subroutine getSeqs(xcom, ycom, pxcom, pycom, gcom, sigE, iTrLoad)
       call genHSeq(xcom, nseqparts_G, 2_ip, sigE(iX_CG))
       call genHSeq(ycom, nseqparts_G, 3_ip, sigE(iY_CG))
       call genHSeq(pxcom, nseqparts_G, 5_ip, sigE(iPX_CG))
-      call genHSeq(pycom, nseqparts_G, 7_ip, sigE(iPY_CG))
-      call genHSeq(gcom, nseqparts_G, 11_ip, sigE(iGam_CG))
+      call genHSeq(pycom, nseqparts_G, 11_ip, sigE(iPY_CG))
+      call genHSeq(gcom, nseqparts_G, 7_ip, sigE(iGam_CG))
+      call genHSeqFLAT(zcom, nseqparts_G, 13_ip, sigE(iGam_CG))
 
 !      print*, xcom
 
@@ -168,6 +169,9 @@ subroutine getSeqs(xcom, ycom, pxcom, pycom, gcom, sigE, iTrLoad)
                tProcInfo_G%comm, error )
 
   call mpi_bcast(gcom, nseqparts_G, mpi_double_precision, 0, &
+               tProcInfo_G%comm, error )
+
+  call mpi_bcast(zcom, nseqparts_G, mpi_double_precision, 0, &
                tProcInfo_G%comm, error )
 
   
@@ -196,14 +200,43 @@ subroutine genHSeq(seq, nparts, basis, sig)
   integer(kind=ip) :: ic
 
   do ic = 1, nparts
-    seq(ic) = halton(ic, basis) ! sequence value between -1 and 1
+    seq(ic) = halton(ic, basis) ! sequence value between 0 and 1
   end do
 
   call projectRSeq(seq)  ! Project sequence to Gaussian of variance = 1
 
-  call modVar(seq, sig)
+  call modVar(seq, sig)  ! Alter unit variance to required variance
 
 end subroutine genHSeq
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Subroutine to generate a Halton sequence of length size nparts
+!> but not projected.
+!> @param[inout] seq Array to output sequence
+!> @param[in] nparts Length of sequence
+!> @param[in] basis Base of sequence
+!> @param[in] sig r.m.s. sigma of desired Gaussian distribution
+
+subroutine genHSeqFLAT(seq, nparts, basis, sig)
+
+  real(kind=wp), contiguous, intent(inout) :: seq(:)
+  integer(kind=ip), intent(in) :: nparts
+  integer(kind=ip), intent(in) :: basis
+  real(kind=wp), intent(in) :: sig
+
+  integer(kind=ip) :: ic
+
+  do ic = 1, nparts
+    seq(ic) = halton(ic, basis) ! sequence value between 0 and 1
+  end do
+
+end subroutine genHSeqFLAT
+
+
 
 !> @author
 !> Lawrence Campbell,

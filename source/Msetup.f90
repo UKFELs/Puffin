@@ -92,6 +92,7 @@ MODULE Setup
 
   zFileName_G = zFile
 
+  igwr = -1_ip
 !     Initialise Error log for this run
 
   tErrorLog_G%zFileName = TRIM(ADJUSTL(zFile))//"_Error.log"
@@ -255,6 +256,7 @@ MODULE Setup
   call setupMods(lattFile, taper, sRho, nSteps, sStepSize, fx, fy, &
                   sKBetaXSF_G, sKBetaYSF_G)
 
+
 !     Pass local vars to global vars
 
   CALL passToGlobals(srho,saw,sgammar,lambda_w,iNodes, &
@@ -401,7 +403,7 @@ MODULE Setup
 
   ffact = real(iNodes(iX_CG), kind=wp) * &
           real(iNodes(iY_CG), kind=wp) * &
-          real(iNodes(iZ2_CG), kind=wp)
+          real(iNodes(iZ2_CG)-1_ip, kind=wp)
 
 
 

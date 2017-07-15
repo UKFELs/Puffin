@@ -135,7 +135,7 @@ subroutine multiplyexp(h,qOK)
 
   posI=CMPLX(0.0,1.0,KIND=WP)
   delz2=sLengthOfElmZ2_G
-  cutoff=2.0_WP*pi*sfilt/(REAL(NZ2_G,KIND=WP)*delz2)
+  cutoff= 0.0_wp !2.0_WP*pi*sfilt/(REAL(NZ2_G,KIND=WP)*delz2)
   loc_nz2 = tTransInfo_G%loc_nz2
 
 !      Main loop, multiply FT field by exp factor
@@ -146,8 +146,8 @@ subroutine multiplyexp(h,qOK)
 
            !ind=x_inc+y_inc*NX_G+z2_inc*NX_G*NY_G
 
-           if ((kz2_loc_G(z2_inc)>cutoff) .or. &
-                (kz2_loc_G(z2_inc)<-cutoff)) then
+!           if ((kz2_loc_G(z2_inc)>cutoff) .or. &
+!                (kz2_loc_G(z2_inc)<-cutoff)) then
 
               if (kz2_loc_G(z2_inc)/=0.0_WP) then
 
@@ -157,14 +157,19 @@ subroutine multiplyexp(h,qOK)
                                 (2.0_WP*kz2_loc_G(z2_inc))) * &
                            Afftw(x_inc+1,y_inc+1,z2_inc+1)
 
+              else
+
+                Afftw(x_inc+1,y_inc+1,z2_inc+1) = &
+                           CMPLX(0.0, 0.0, C_DOUBLE_COMPLEX)
+
               end if
 
-           else
+!           else
 
-              if (qFilter) Afftw(x_inc+1,y_inc+1,z2_inc+1) = &
-                         CMPLX(0.0, 0.0, C_DOUBLE_COMPLEX)
+!              if (qFilter) Afftw(x_inc+1,y_inc+1,z2_inc+1) = &
+!                         CMPLX(0.0, 0.0, C_DOUBLE_COMPLEX)
 
-           end if
+!           end if
 
         end do
      end do
@@ -443,6 +448,8 @@ SUBROUTINE AbsorptionStep(sAl,h,ffact)
     mask_z2 = getZ2Mask(sLengthOfElmZ2_G, nZ2_G, tTransInfo_G%loc_nz2,   &
                          nBZ2_G, tTransInfo_G%loc_z2_start)
 
+    mask_z2 = 0.0_wp
+
 !!!!!      sAl is local      !!!!!
 !!!!!      goes from 0,total_local_size     !!!!!!!
 
@@ -490,6 +497,10 @@ SUBROUTINE AbsorptionStep(sAl,h,ffact)
                           sAl(x_inc+1,y_inc+1,z2_inc+1)
 
 !          sAl(ind) = exp(-h*sBeta_G) * sAl(ind)
+
+!        else
+
+!          sAl(x_inc+1,y_inc+1,z2_inc+1) = CMPLX(0.0, 0.0, C_DOUBLE_COMPLEX)
 
         end if
 
