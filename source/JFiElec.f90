@@ -79,15 +79,24 @@ real(kind=wp) :: locx, locy, locz2, &
         qPArrOK_G = .false.
       end if
 
-      if (z2node >= NZ2_G) then
-        print*, 'Z2 coord is too large!! with node:', z2node, &
-                ' and pos ', sz2(i)
-        STOP
-      end if
+!      if (z2node >= NZ2_G) then
+!        print*, 'Z2 coord is too large!! with node:', z2node, &
+!                ' and pos ', sz2(i)
+!        STOP
+!      end if
 
       if (z2node >= bz2) then
+!         print*, 'Z2 coord is too large!! with node:', z2node, &
+!                  ' and pos ', sz2(i)
+!         print*, 'bounds are ez2, bz2, bz2PB = ', ez2, bz2, bz2PB
+!         print*, 'and I am process, ', tProcInfo_G%rank
+      
         qPArrOK_G = .false.
       end if
+
+!      if (z2node >= bz2) then
+!        qPArrOK_G = .false.
+!      end if
 
 !                  Get weights for interpolant
 

@@ -519,24 +519,32 @@ contains
     CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
 !    Print*,'hdf5_puff:outputH5BeamFiles(lower bounds attribute created)'
+
     ALLOCATE ( limdata(numSpatialDims))
-    limdata(1)=-0.5*NX_G*sLengthOfElmX_G
+
+    limdata(1)=0.0
+
 ! Particles inhabit a 3D physical space even for 1D simulations.
-!    if (numSpatialDims .GT. 1) then
+    if (numSpatialDims .GT. 1) then
+      limdata(1)=-0.5*NX_G*sLengthOfElmX_G
       limdata(2)=-0.5*NY_G*sLengthOfElmY_G
       limdata(3)=0.0
-!    end if
+    end if
+
     CALL h5awrite_f(attr_id, atype_id, limdata, adims, error)
     CALL h5aclose_f(attr_id, error)
     aname="vsUpperBounds"
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
 !    Print*,'hdf5_puff:outputH5BeamFiles(upper bounds attribute created)'
-    limdata(1)=0.5*NX_G*sLengthOfElmX_G
+
+
+    limdata(1)=real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G
 ! Particles inhabit a 3D physical space even for 1D simulations.
-!    if (numSpatialDims .GT. 1) then
+    if (numSpatialDims .GT. 1) then
+      limdata(1)=0.5*NX_G*sLengthOfElmX_G
       limdata(2)=0.5*NY_G*sLengthOfElmY_G
       limdata(3)=real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G
-!    end if
+    end if
     CALL h5awrite_f(attr_id, atype_id, limdata, adims, error)
 ! Close the attribute should be done above.
     CALL h5aclose_f(attr_id, error)
@@ -1375,14 +1383,31 @@ contains
 !      CALL h5gcreate_f(file_id, limgrpname, group_id, error)
       CALL write1DlimGrp(file_id,limgrpname,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G)
       CALL write1DlimGrp(file_id,limgrpnameSI,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g)
+      
       CALL write1DuniformMesh(file_id,"intFieldMeshSc",0._wp, &
         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G,NZ2_G,"z2,scaled parameter")
+        
       CALL write1DuniformMesh(file_id,"intPtclMeshSc",0._wp, &
         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G,nslices,"z2,scaled parameter")
+        
+        
+        
+        CALL write1DuniformMesh(file_id,"intCurrMeshSc",0._wp, &
+          real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G,npts_I_G,"z2,scaled parameter")
+
+      print*, '!!!!ahv just written nz2 = ', nz2_g
+      print*, '!!!!ahv just written dz2 = ', slengthofelmz2_g
+      print*, '!!!!nslices = ', nslices
+      print*, '!!!!nptsi = ', npts_i_g
+      print*, '!!!!Ilen = ', real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G
+      
       CALL write1DuniformMesh(file_id,"intFieldMeshSI",0._wp, &
         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g,NZ2_g,"z [m], SI parameter")
       CALL write1DuniformMesh(file_id,"intPtclMeshSI",0._wp, &
         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g,nslices,"z [m], SI parameter")
+        CALL write1DuniformMesh(file_id,"intCurrMeshSI",0._wp, &
+          real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g,npts_I_G,"z [m], SI parameter")
+
 !
 ! Close the file.
 !

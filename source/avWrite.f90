@@ -445,7 +445,10 @@ contains
     integer(kind=ip), intent(out) :: npts
 
     npts = ceiling(sLengthOfElmZ2_G*(NZ2_G-1)/sam_len)  + 1_ip ! round up over length of system
-
+    print*, 'npts = ', npts
+    print*, 'sam_len = ', sam_len
+    print*, 'looks like len is', (npts-1) * sam_len
+    
   end subroutine getCurrNpts
 
 
@@ -460,10 +463,11 @@ contains
     real(kind=wp), intent(in) :: sam_len !< length of bins in z2
     real(kind=wp), intent(inout) :: Iarray(:) !< data containing the current info
 
-    integer(kind=ip) :: ij, inl, inu !<electron indices over which to integrate
+    integer(kind=ip) :: ij, inl, inu, inlpb, inupb !<electron indices over which to integrate
     real(kind=wp) :: li1, li2, locz2 !<interpolation fractions
 
     Iarray = 0.0_wp   ! initialize
+    print*, 'SIZE OF ARRRRR', size(Iarray)
 
     do ij = 1, size(sElX_G)
 
@@ -471,13 +475,28 @@ contains
       inl = ceiling(sElZ2_G(ij)/sam_len)
       inu = inl + 1
 
-      if ((inu > npts_I_G) .or. (inl<=0)) then
-        print*, 'NODES OUTSIDE BOUNDS'
-        STOP
+      if (inu >= npts_I_G) then
+        inuPB = inu - floor(real(inu,kind=wp)/ real(npts_I_G, kind=wp)) * npts_I_G + 1
+      else
+        inuPB = inu
       end if
 
+      if (inl >= npts_I_G) then
+        inlPB = inl - floor(real(inl,kind=wp)/real(npts_I_G,kind=wp)) * npts_I_G + 1
+      else
+        inlPB = inl
+      end if
+
+!      if ((inu > npts_I_G) .or. (inl<=0)) then
+      if (inl<=0) then
+        print*, 'NODES OUTSIDE BOUNDS'
+        stop
+      end if
+
+!      if (inlPB == 1) print*, 'weel IM DOING IT'
+
       ! Interpolation fractions
-      locz2 = sElZ2_G(ij) - real((inl-1_ip),kind=wp) * sam_len
+      locz2 = sElZ2_G(ij) - (real((inl-1_ip),kind=wp) * sam_len)
       li2 = locz2 / sam_len
       li1 = 1_wp - li2
 
@@ -492,8 +511,8 @@ contains
       end if
 
       ! interpolate onto current mesh
-      Iarray(inl) = li1 * s_chi_bar_G(ij) + Iarray(inl)
-      Iarray(inu) = li2 * s_chi_bar_G(ij) + Iarray(inu)
+      Iarray(inlPB) = li1 * s_chi_bar_G(ij) + Iarray(inlPB)
+      Iarray(inuPB) = li2 * s_chi_bar_G(ij) + Iarray(inuPB)
 
     end do
 
@@ -607,7 +626,13 @@ contains
     if (iNumberElectrons_G > 0_ipl) then
     do ipc = 1, iNumberElectrons_G
       is = ceiling(sElZ2_G(ipc)/sliceSizeZ2)
-      if ((is>nslices) .or. (is <1)) then
+      
+      if (is>=nslices) then
+        is = is - (floor(real(is, kind=wp) / real(nslices, kind=wp)) * nslices)+1
+      end if
+      
+!      if ((is>nslices) .or. (is <1)) then
+      if (is <1) then
          print*,"slice index, is, out of bounds in slice computation"
          goto 1000
       end if

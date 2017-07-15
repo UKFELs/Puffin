@@ -927,7 +927,7 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
       if (tProcInfo_G%qRoot) print*, 'WARNING - field mesh may not be large &
                                      &enough in z2 - fixing....'
 
-      sFieldModelLength(iZ2_CG) = fmlenTmp + 10.0_wp  ! Add buffer 10 long for
+!      sFieldModelLength(iZ2_CG) = fmlenTmp + 10.0_wp  ! Add buffer 10 long for
                                                       ! extra security...
 
       if (tProcInfo_G%qRoot) print*, 'Field mesh length in z2 now = ', &
