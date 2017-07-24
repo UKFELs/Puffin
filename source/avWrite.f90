@@ -671,17 +671,17 @@ contains
       meanGamGam(is)=meanGamGam(is)+s_chi_bar_G(ipc)*sElgam_G(ipc)*sElgam_G(ipc)
 
 
-      b1r(is) = b1r(is) + s_chi_bar_G(ipc)*cos(sElz2_G(ipc)/(2*sRho_G)) &
-                          * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+      b1r(is) = b1r(is) + s_chi_bar_G(ipc)*cos(sElz2_G(ipc)/(2*sRho_G)) !&
+!                          * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-      b1r(is+1) = b1r(is+1) + s_chi_bar_G(ipc)*cos(sElz2_G(ipc)/(2*sRho_G)) &
-                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+!      b1r(is+1) = b1r(is+1) + s_chi_bar_G(ipc)*cos(sElz2_G(ipc)/(2*sRho_G)) &
+!                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-      b1i(is) = b1i(is) + s_chi_bar_G(ipc)*sin(sElz2_G(ipc)/(2*sRho_G)) &
-                          * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+      b1i(is) = b1i(is) + s_chi_bar_G(ipc)*sin(sElz2_G(ipc)/(2*sRho_G)) !&
+!                          * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-      b1i(is+1) = b1i(is+1) + s_chi_bar_G(ipc)*sin(sElz2_G(ipc)/(2*sRho_G)) &
-                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+!      b1i(is+1) = b1i(is+1) + s_chi_bar_G(ipc)*sin(sElz2_G(ipc)/(2*sRho_G)) &
+!                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
 
 !      b1r(is)=b1r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(2*sRho_G))
@@ -694,62 +694,62 @@ contains
 !      b2i(is)=b2i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(4*sRho_G))
 
 
-      b2r(is) = b2r(is) + s_chi_bar_G(ipc)*cos(2.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
-                          * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+      b2r(is) = b2r(is) + s_chi_bar_G(ipc)*cos(2.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) !&
+!                          * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-      b2r(is+1) = b2r(is+1) + s_chi_bar_G(ipc)*cos(2.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
-                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+!      b2r(is+1) = b2r(is+1) + s_chi_bar_G(ipc)*cos(2.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+!                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-      b2i(is) = b2i(is) + s_chi_bar_G(ipc)*sin(2.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
-                          * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+      b2i(is) = b2i(is) + s_chi_bar_G(ipc)*sin(2.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) !&
+!                          * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-      b2i(is+1) = b2i(is+1) + s_chi_bar_G(ipc)*sin(2.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
-                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
-
-
-
-      b3r(is) = b3r(is) + s_chi_bar_G(ipc)*cos(3.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
-                          * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
-
-      b3r(is+1) = b3r(is+1) + s_chi_bar_G(ipc)*cos(3.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
-                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
-
-      b3i(is) = b3i(is) + s_chi_bar_G(ipc)*sin(3.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
-                          * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
-
-      b3i(is+1) = b3i(is+1) + s_chi_bar_G(ipc)*sin(3.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
-                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+!      b2i(is+1) = b2i(is+1) + s_chi_bar_G(ipc)*sin(2.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+!                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
 
 
+      b3r(is) = b3r(is) + s_chi_bar_G(ipc)*cos(3.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) !&
+!                          * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
+!      b3r(is+1) = b3r(is+1) + s_chi_bar_G(ipc)*cos(3.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+!                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-      b4r(is) = b4r(is) + s_chi_bar_G(ipc)*cos(4.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
-                          * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+      b3i(is) = b3i(is) + s_chi_bar_G(ipc)*sin(3.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) !&
+!                          * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-      b4r(is+1) = b4r(is+1) + s_chi_bar_G(ipc)*cos(4.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
-                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
-
-      b4i(is) = b4i(is) + s_chi_bar_G(ipc)*sin(4.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
-                          * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
-
-      b4i(is+1) = b4i(is+1) + s_chi_bar_G(ipc)*sin(4.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
-                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+!      b3i(is+1) = b3i(is+1) + s_chi_bar_G(ipc)*sin(3.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+!                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
 
 
 
-      b5r(is) = b5r(is) + s_chi_bar_G(ipc)*cos(5.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
-                          * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-      b5r(is+1) = b5r(is+1) + s_chi_bar_G(ipc)*cos(5.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
-                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+      b4r(is) = b4r(is) + s_chi_bar_G(ipc)*cos(4.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) !&
+!                          * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-      b5i(is) = b5i(is) + s_chi_bar_G(ipc)*sin(5.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
-                          * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+!      b4r(is+1) = b4r(is+1) + s_chi_bar_G(ipc)*cos(4.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+!                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-      b5i(is+1) = b5i(is+1) + s_chi_bar_G(ipc)*sin(5.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
-                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+      b4i(is) = b4i(is) + s_chi_bar_G(ipc)*sin(4.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) !&
+!                          * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+
+!      b4i(is+1) = b4i(is+1) + s_chi_bar_G(ipc)*sin(4.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+!                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+
+
+
+
+      b5r(is) = b5r(is) + s_chi_bar_G(ipc)*cos(5.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) !&
+!                          * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+
+!      b5r(is+1) = b5r(is+1) + s_chi_bar_G(ipc)*cos(5.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+!                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+
+      b5i(is) = b5i(is) + s_chi_bar_G(ipc)*sin(5.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) !&
+!                          * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+
+!      b5i(is+1) = b5i(is+1) + s_chi_bar_G(ipc)*sin(5.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+!                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
 
 

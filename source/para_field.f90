@@ -593,6 +593,8 @@ contains
     sendbuff = iNumberElectrons_G
     recvbuff = iNumberElectrons_G
 
+    if (tProcInfo_G%size > 1_ip) then
+
     DO ij=2,tProcInfo_G%size
        CALL MPI_ISSEND( sendbuff,1,MPI_INT_HIGH,rrank,&
             0,tProcInfo_G%comm,req,error )
@@ -603,6 +605,7 @@ contains
        sendbuff=recvbuff
     END DO
 
+    end if
 
 
 
@@ -3918,8 +3921,12 @@ contains
 
   subroutine redistbackFFT()
 
-
     implicit none
+    
+    integer :: req, error
+    integer(kind=ip) :: ij, si, sst, sse
+    integer statr(MPI_STATUS_SIZE)
+    integer sendstat(MPI_STATUS_SIZE)
 
     call redist2new2(ft_ar, ff_ar, tre_fft, fr_rfield)
     call redist2new2(ft_ar, ff_ar, tim_fft, fr_ifield)
@@ -3938,6 +3945,65 @@ contains
     deallocate(ft_ar)
 
 
+!print*,'why6', tProcInfo_G%rank
+   
+    si = (nx_g * ny_g) * (bz2PB + 1_ip)
+    sst = ((tllen - (bz2PB+1_ip) ) * (nx_g * ny_g)) + 1_ip
+    sse = tllen * (nx_g * ny_g)
+
+   if (tProcInfo_G%rank == 0_ip) then
+
+     call mpi_issend(ac_rfield(1:si), &
+                     si, &
+                     mpi_double_precision, &
+                     tProcInfo_G%size-1_ip, 0, &
+                     tProcInfo_G%comm, req, error)
+
+   end if
+
+!print*,'why7', tProcInfo_G%rank
+
+   if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
+   
+     call mpi_recv( ac_rfield(sst:sse), &
+              si, mpi_double_precision, &
+              0, 0, tProcInfo_G%comm, &
+              statr, error )
+   
+   end if
+
+!print*,'why8', tProcInfo_G%rank
+
+   if (tProcInfo_G%rank == 0_ip) then
+   
+     call mpi_wait( req,sendstat,error )
+     call mpi_issend(ac_ifield(1:si), &
+                     si, &
+                     mpi_double_precision, &
+                     tProcInfo_G%size-1_ip, 0, &
+                     tProcInfo_G%comm, req, error)
+   
+   end if
+
+
+!print*,'why9', tProcInfo_G%rank
+   
+   if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
+   
+     call mpi_recv( ac_ifield(sst:sse), &
+              si, mpi_double_precision, &
+              0, 0, tProcInfo_G%comm, &
+              statr, error )
+   
+   end if
+   
+!print*,'why10', tProcInfo_G%rank
+   
+   if (tProcInfo_G%rank == 0_ip) then
+   
+     call mpi_wait( req,sendstat,error )
+   
+   end if
 
   end subroutine redistbackFFT
 

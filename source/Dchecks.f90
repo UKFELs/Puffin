@@ -384,31 +384,31 @@ SUBROUTINE chkESampleLens(sLenEPulse,iNumElectrons,rho,qOneD,qOK)
  
 !     Check sampling
 
-  IF (spcing > maxspcing) THEN
-    CALL Error_log('Macroparticle spacing in z2 > 1/8th of resonant wavelength',tErrorLog_G)
-    GOTO 1000
-  END IF 
+!  IF (spcing > maxspcing) THEN
+!    CALL Error_log('Macroparticle spacing in z2 > 1/8th of resonant wavelength',tErrorLog_G)
+!    GOTO 1000
+!  END IF 
     
-  DO i= 1, SIZE(sLenEPulse)
-
-    IF (sLenEPulse(i) <=0.0_WP .AND. iNumElectrons(i) > 1_IP) THEN
-      CALL Error_log('Negative or zero electron pulse length',tErrorLog_G)
-      GOTO 1000
-    END IF
-
-    IF (iNumElectrons(i) < 1_IP) THEN
-      CALL Error_log('Number of electrons is less than 1 in one or more dimensions.',tErrorLog_G)
-      GOTO 1000
-    END IF
-
-!     Check length of electron pulse is valid
-
-    IF (iNumElectrons(i) == 1_IP) THEN
-      sLenEPulse(i)=1.0_WP
-    END IF
-
-  END DO
-
+!  DO i= 1, SIZE(sLenEPulse)
+!
+!    IF (sLenEPulse(i) <=0.0_WP .AND. iNumElectrons(i) > 1_IP) THEN
+!      CALL Error_log('Negative or zero electron pulse length',tErrorLog_G)
+!      GOTO 1000
+!    END IF
+!
+!    IF (iNumElectrons(i) < 1_IP) THEN
+!      CALL Error_log('Number of electrons is less than 1 in one or more dimensions.',tErrorLog_G)
+!      GOTO 1000
+!    END IF
+!
+!!     Check length of electron pulse is valid
+!
+!    IF (iNumElectrons(i) == 1_IP) THEN
+!      sLenEPulse(i)=1.0_WP
+!    END IF
+!
+!  END DO
+!
 
 !     Set error flag and exit
 

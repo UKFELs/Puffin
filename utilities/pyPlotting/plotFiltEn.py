@@ -43,7 +43,7 @@ def FilterField(field,crfr,distfr,nZ2,sLengthOfElmZ2, rho, q1d):
 
     nn = np.round(sLengthOfElmZ2 * nZ2 * crfr / (4*pi*rho))
     nns = np.round(sLengthOfElmZ2 * nZ2 * distfr / (4*pi*rho))
-
+    #print str(nn) + str(nns)
     if (q1d == 1):
 
 #%%%%%    1D    %%%%%%%
@@ -52,28 +52,38 @@ def FilterField(field,crfr,distfr,nZ2,sLengthOfElmZ2, rho, q1d):
 
         ftfield[0:np.int(nn-nns)] = 0
         ftfield[np.int(nn+nns-1):np.int(np.ceil(nZ2/2))] = 0
-      
+
         ftfield[np.int(np.ceil(nZ2/2) + 1 - 1):np.int(nZ2-(nn+nns)+2)] = 0
         ftfield[np.int(nZ2 - (nn-nns) + 2 - 1 ) : np.int(nZ2)] = 0
-      
+
         field = np.fft.ifft(ftfield)
-      
+
         xfield = np.real(field)
 
     else:
-  
+
 #%%%%%    3D    %%%%%%%
 
       ftfield = np.fft.fft(field)
-    
-      ftfield[:,:,0:(nn-nns)] = 0
-      ftfield[:,:,(nn+nns-1):ceil(nZ2/2)] = 0
-    
-      ftfield[:,:,ceil(nZ2/2) + 1 - 1:nZ2-(nn+nns)+2] = 0
-      ftfield[:,:,(nZ2 - (nn-nns) + 2 -1 ) : nZ2] = 0
-    
+
+
+      #ftfield[:,:,0:(nn-nns)] = 0
+      #ftfield[:,:,(nn+nns-1):np.ceil(nZ2/2)] = 0
+      sn = 3
+      ftfield[:,:,0:sn] = 0
+      ftfield[:,:,sn+1:np.ceil(nZ2/2)] = 0
+
+      ftfield[:,:,np.ceil(nZ2/2) + 1 - 1:-sn] = 0
+      ftfield[:,:,-sn+1:] = 0
+
+#      ftfield[:,:,0:(nn-nns)] = 0
+#      ftfield[:,:,(nn+nns-1):np.ceil(nZ2/2)] = 0
+#    
+#      ftfield[:,:,np.ceil(nZ2/2) + 1 - 1:nZ2-(nn+nns)+2] = 0
+#      ftfield[:,:,(nZ2 - (nn-nns) + 2 -1 ) : nZ2] = 0
+
       field = np.fft.ifft(ftfield)
-    
+
       xfield = np.real(field)
 
     return xfield
@@ -230,17 +240,17 @@ def getFiltPow(h5fname):
     lenz2 = (nz2-1) * dz2
     z2axis = (np.arange(0,nz2)) * dz2
 
-    xf = h5f.root.aperp[:,0]
+    xf = h5f.root.aperp[:,:,:,0]
     # xfs = xf[z2si:z2ei]   # for selecting slice...
 
-    yf = h5f.root.aperp[:,1]
+    yf = h5f.root.aperp[:,:,:,1]
 
 
     cfr = 1.0
-    dfr = 0.4
+    dfr = 1.0
 
-    xf = FilterField(xf, cfr, dfr, nz2, dz2, rho, 1)
-    yf = FilterField(yf, cfr, dfr, nz2, dz2, rho, 1)
+    xf = FilterField(xf, cfr, dfr, nz2, dz2, rho, 0)
+    yf = FilterField(yf, cfr, dfr, nz2, dz2, rho, 0)
 
     intens = np.square(xf) + np.square(yf)
     h5f.close()
@@ -266,6 +276,11 @@ def plotFiltEn(basename):
     dz2 = h5f.root.runInfo._v_attrs.sLengthOfElmZ2
     nz2 = h5f.root.runInfo._v_attrs.nZ2
     rho = h5f.root.runInfo._v_attrs.rho
+    
+    nx = h5f.root.runInfo._v_attrs.nX
+    ny = h5f.root.runInfo._v_attrs.nY
+    dx = h5f.root.runInfo._v_attrs.sLengthOfElmX
+    dy = h5f.root.runInfo._v_attrs.sLengthOfElmY
 
     sampleFreq = 1.0 / dz2
 
@@ -284,6 +299,8 @@ def plotFiltEn(basename):
 
     lenz2 = (nz2-1) * dz2
     z2axis = (np.arange(0,nz2)) * dz2
+    xaxis = (np.arange(0,nx)) * dx
+    yaxis = (np.arange(0,ny)) * dy
 
     h5f.close()
 
@@ -295,7 +312,11 @@ def plotFiltEn(basename):
     
     for ij in filelist:
         tintens = getFiltPow(ij)
-        ens[fcount] = np.trapz(tintens, x=z2axis)
+        #print "first", np.shape(xaxis), np.shape(tintens)
+        tintensx = np.trapz(tintens, x=xaxis, axis=0)
+        #print "second", np.shape(xaxis), np.shape(tintensx)
+        tintensxy = np.trapz(tintensx, x=yaxis, axis=0)
+        ens[fcount] = np.trapz(tintensxy, x=z2axis) / lenz2
         zData[fcount] = getZData(ij)
         fcount += 1
 
@@ -305,12 +326,15 @@ def plotFiltEn(basename):
     c_0 = 2.99792458e8 # Speed of light in vacuum
 
     ax1 = plt.subplot(111)
-    plt.plot(zData, ens, label='Scaled Energy')
-    ax1.set_title('Filtered Energy')
+    plt.semilogy(zData, ens, label='Scaled Power')
+    ax1.set_title('Filtered Power')
+    ax1.set_ylim([1e-10,1e-2])
     #plt.legend()
 
-#    plt.savefig("ExEy-SpecPower3.png")
-    plt.show()
+    outname = "Power_" + basename + "3"
+
+    plt.savefig(outname)
+#    plt.show()
 
 
 #    plt.show(block=False)

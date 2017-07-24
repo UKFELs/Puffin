@@ -885,7 +885,7 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
 
   slamr = 4.0_WP * pi * srho_G
-  minESample = 15_ip   ! minimum MP's per wavelength
+  minESample = 4_ip !15_ip   ! minimum MP's per wavelength
   !dztemp = slamr / minESample
 
   if (iInputType_G == iGenHom_G) then
@@ -901,7 +901,7 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
       if (tProcInfo_G%qRoot) print*, 'WARNING - e-beam macroparticles sampling &
                                       & in z2 not fine enough - fixing...'
 
-      iNumElectrons(1,3) = minENum
+!      iNumElectrons(1,3) = minENum
 
       if (tProcInfo_G%qRoot) print*, 'num MPs in z2 now = ', &
                                   iNumElectrons(1,iZ2_CG)
@@ -1111,6 +1111,8 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
 !     macroparticle number. The array then cycles through each
 !     process in ascending order.
 
+    if (tProcInfo_G%size > 1_ip) then
+
     DO j=2,tProcInfo_G%size
        CALL MPI_ISSEND( sendbuff,1,MPI_INT_HIGH,rrank,&
             0,tProcInfo_G%comm,req,error )
@@ -1121,7 +1123,10 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
        sendbuff=recvbuff
     END DO
 
-!    print*, 'procelectrons = ', procelectrons_G
+    end if
+ 
+!!    print*, 'procelectrons = ', procelectrons_G
+!    call mpi_finalize(error)
 !    stop
     IF (iNumberElectrons_G==0) qEmpty=.TRUE.
 
