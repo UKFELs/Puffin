@@ -401,7 +401,7 @@ MODULE Setup
 
   ffact = real(iNodes(iX_CG), kind=wp) * &
           real(iNodes(iY_CG), kind=wp) * &
-          real(iNodes(iZ2_CG), kind=wp)
+          real(iNodes(iZ2_CG)-1_ip, kind=wp)
 
 
 
