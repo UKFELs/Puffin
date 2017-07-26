@@ -2619,11 +2619,11 @@ contains
       if (tProcInfo_G%rank == tProcInfo_G%size-1) then
 
         !mainlen = tllen
-        print*, 'mainlen', mainlen
-        print*, 'tllen', tllen
-        print*, 'nz2_g', nz2_g
-        print*, 'bz2PB', bz2PB
-        print*, 'bz2', bz2
+!        print*, 'mainlen', mainlen
+!        print*, 'tllen', tllen
+!        print*, 'nz2_g', nz2_g
+!        print*, 'bz2PB', bz2PB
+!        print*, 'bz2', bz2
         tllen = mainlen + bz2PB
         fbuffLen = bz2PB
         ez2 = nz2_g !bz2

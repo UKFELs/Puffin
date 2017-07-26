@@ -92,6 +92,7 @@ MODULE Setup
 
   zFileName_G = zFile
 
+  igwr = -1_ip
 !     Initialise Error log for this run
 
   tErrorLog_G%zFileName = TRIM(ADJUSTL(zFile))//"_Error.log"
@@ -254,6 +255,7 @@ MODULE Setup
 
   call setupMods(lattFile, taper, sRho, nSteps, sStepSize, fx, fy, &
                   sKBetaXSF_G, sKBetaYSF_G)
+
 
 !     Pass local vars to global vars
 

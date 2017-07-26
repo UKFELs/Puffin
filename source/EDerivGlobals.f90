@@ -56,7 +56,7 @@ real(kind=wp)  :: sfilt   ! Frequency cutoff for high pass filter, in units
 
 real(kind=wp) :: delta_G  ! Volume of field element (dx * dy * dz2)
 
-
+integer(kind=ip) :: igwr
 
 real(kind=wp) :: sMNum_G
 

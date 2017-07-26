@@ -57,6 +57,7 @@ contains
 
     !    nslices = int( (sLengthOfElmZ2_G*NZ2_G)/(4*pi*srho_g))
 
+    igwr = igwr + 1_ip
     time = sZ
 
     if (qWriteFull) then

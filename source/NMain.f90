@@ -112,6 +112,11 @@ do iL = iLst, modNum
 
     call driftSection(iL, sZ)
 
+    szl = 0.0_wp
+    call wr_cho(sZ, szl, &
+                zDataFileName, 0_ip, iCsteps, modNum, iWriteNthSteps, &
+                iIntWriteNthSteps, 0_ip, .true., .true., qOKL)
+
   else if (iElmType(iL) == iModulation) then
 
     call BModulation(iL)

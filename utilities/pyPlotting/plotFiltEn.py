@@ -69,12 +69,12 @@ def FilterField(field,crfr,distfr,nZ2,sLengthOfElmZ2, rho, q1d):
 
       #ftfield[:,:,0:(nn-nns)] = 0
       #ftfield[:,:,(nn+nns-1):np.ceil(nZ2/2)] = 0
-      sn = 3
+      sn = 1
       ftfield[:,:,0:sn] = 0
       ftfield[:,:,sn+1:np.ceil(nZ2/2)] = 0
 
       ftfield[:,:,np.ceil(nZ2/2) + 1 - 1:-sn] = 0
-      ftfield[:,:,-sn+1:] = 0
+#      ftfield[:,:,-sn+1:] = 0
 
 #      ftfield[:,:,0:(nn-nns)] = 0
 #      ftfield[:,:,(nn+nns-1):np.ceil(nZ2/2)] = 0
@@ -328,13 +328,13 @@ def plotFiltEn(basename):
     ax1 = plt.subplot(111)
     plt.semilogy(zData, ens, label='Scaled Power')
     ax1.set_title('Filtered Power')
-    ax1.set_ylim([1e-10,1e-2])
+    ax1.set_ylim([1e-10,1e-1])
     #plt.legend()
 
-    outname = "Power_" + basename + "3"
+    outname = "Power_" + basename + "1"
 
     plt.savefig(outname)
-#    plt.show()
+    plt.show()
 
 
 #    plt.show(block=False)
