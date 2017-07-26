@@ -201,6 +201,10 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
     sLengthOfElmY_G  = sElmLen(iY_CG)
     sLengthOfElmZ2_G = sElmLen(iZ2_CG)
 
+    print*, 'dz2 = ', sLengthOfElmZ2_G
+    print*, 'lez2 = ', real(nz2_g-1_ip, kind=wp) * sLengthOfElmZ2_G
+    print*, 'lambda_rz2 = ', 4.0_wp * pi * rho
+
     delta_G = sLengthOfElmX_G*sLengthOfElmY_G*sLengthOfElmZ2_G
 
 !     Filter fraction to frequency in Fourier space
@@ -800,9 +804,9 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
                        sLenEPulse, iNumElectrons)
 
 
-  real(kind=wp), intent(inout) :: sFieldModelLength(:)
+  real(kind=wp), intent(inout) :: sFieldModelLength(:), sLenEPulse(:,:)
 
-  real(kind=wp), intent(in) :: sGamFrac(:), sLenEPulse(:,:)
+  real(kind=wp), intent(in) :: sGamFrac(:)
 
   integer(kind=ip), intent(in) :: nperiods, nodesperlambda, &
                                   stepsPerPeriod
@@ -940,9 +944,18 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
   end if
 
+!!!!!! TO FIX EXACTLY AN INTEGER NUMBER OF PERIODS FOR PERIODIC BOUNDARY 
+!!!!!! IMPLEMENTATION:
+
   dz2 = 4.0_WP * pi * sRho_G / real(nodesperlambda-1_IP,kind=wp)
 
   iNumNodes(iZ2_CG) = ceiling(sFieldModelLength(iZ2_CG) / dz2) + 1_IP
+  sLengthOfElm(iZ2_CG) = dz2
+  sFieldModelLength(iZ2_CG) = real(iNumNodes(iZ2_CG) - 1_ip, kind=wp) * dz2
+
+  sLenEPulse(1,iZ2_CG) = sFieldModelLength(iZ2_CG)
+
+  print*, 'dz2 HERE = ', dz2
 
   if (tProcInfo_G%qRoot) print*, '******************************'
   if (tProcInfo_G%qRoot) print*, ''
