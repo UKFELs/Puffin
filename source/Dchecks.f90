@@ -308,7 +308,7 @@ SUBROUTINE stpFSampleLens(iNodes,sWigglerLength,sLengthOfElm,qOneD,qOK)
 
   END IF
 
-  sLengthOfElm(iZ2_CG) = sWigglerLength(iZ2_CG) / (iNodes(iZ2_CG) - 1_IP)
+  sLengthOfElm(iZ2_CG) = sWigglerLength(iZ2_CG) / real(iNodes(iZ2_CG) - 1_IP, kind=wp)
 
 
 !     Set error flag and exit
