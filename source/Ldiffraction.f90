@@ -146,8 +146,8 @@ subroutine multiplyexp(h,qOK)
 
            !ind=x_inc+y_inc*NX_G+z2_inc*NX_G*NY_G
 
-           if ((kz2_loc_G(z2_inc)>cutoff) .or. &
-                (kz2_loc_G(z2_inc)<-cutoff)) then
+!           if ((kz2_loc_G(z2_inc)>cutoff) .or. &
+!                (kz2_loc_G(z2_inc)<-cutoff)) then
 
               if (kz2_loc_G(z2_inc)/=0.0_WP) then
 
@@ -157,14 +157,19 @@ subroutine multiplyexp(h,qOK)
                                 (2.0_WP*kz2_loc_G(z2_inc))) * &
                            Afftw(x_inc+1,y_inc+1,z2_inc+1)
 
+              else
+
+                Afftw(x_inc+1,y_inc+1,z2_inc+1) = &
+                           CMPLX(0.0, 0.0, C_DOUBLE_COMPLEX)
+
               end if
 
-           else
+!           else
 
-              if (qFilter) Afftw(x_inc+1,y_inc+1,z2_inc+1) = &
-                         CMPLX(0.0, 0.0, C_DOUBLE_COMPLEX)
+!              if (qFilter) Afftw(x_inc+1,y_inc+1,z2_inc+1) = &
+!                         CMPLX(0.0, 0.0, C_DOUBLE_COMPLEX)
 
-           end if
+!           end if
 
         end do
      end do
@@ -490,6 +495,10 @@ SUBROUTINE AbsorptionStep(sAl,h,ffact)
                           sAl(x_inc+1,y_inc+1,z2_inc+1)
 
 !          sAl(ind) = exp(-h*sBeta_G) * sAl(ind)
+
+!        else
+
+!          sAl(x_inc+1,y_inc+1,z2_inc+1) = CMPLX(0.0, 0.0, C_DOUBLE_COMPLEX)
 
         end if
 

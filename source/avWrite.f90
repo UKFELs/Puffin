@@ -467,7 +467,7 @@ contains
     real(kind=wp) :: li1, li2, locz2 !<interpolation fractions
 
     Iarray = 0.0_wp   ! initialize
-    print*, 'SIZE OF ARRRRR', size(Iarray)
+!    print*, 'SIZE OF ARRRRR', size(Iarray)
 
     do ij = 1, size(sElX_G)
 
