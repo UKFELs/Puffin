@@ -487,7 +487,7 @@ subroutine GetKValues(recvs,displs,qOK)
 
   slengthX  =  real((NX_G),KIND=WP) * sLengthOfElmX_G
   slengthY  =  real((NY_G),KIND=WP) * sLengthOfElmY_G
-  slengthZ2 =  real((NZ2_G-1),KIND=WP) * sLengthOfElmZ2_G
+  slengthZ2 =  real((NZ2_G-1_ip),KIND=WP) * sLengthOfElmZ2_G
 
 ! Calculate maximum x, y and z2 values for the n arrays
 ! Arrays go from (0:N/2-1) then (-N/2:-1)
@@ -546,7 +546,7 @@ subroutine GetKValues(recvs,displs,qOK)
       end if
     end do
 
-    kz2_loc_G=2.0_WP*pi*real(nz2-1_ip, kind=wp) / sLengthZ2
+    kz2_loc_G=2.0_WP*pi*real(nz2, kind=wp) / sLengthZ2
 
     deallocate(nz2)
   end if
