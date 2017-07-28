@@ -84,8 +84,10 @@ type, public :: pMesh
 
 contains
 
-  procedure :: getLocalFieldIndices
-  procedure :: UpdateGlobalPow
+  procedure, public :: getLocalFieldIndices
+  procedure, public :: UpdateGlobalPow
+  procedure, private :: getFStEnd, calcBuff
+  procedure, private :: rearrElecs, getFrBk
 
 end type
 
@@ -100,7 +102,25 @@ end type
 contains
 
 
-	subroutine getLocalFieldIndices(sdz)
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Sets up the paralle field mesh, distributed over MPI processes.
+!> If already initialized, this subroutine will then redistribute
+!> the field mesh according to the current state of the system.
+!> @param[in] tScale Custom Fortran type describing coordinate scaling.
+!> @param[in] tMPI Custom Fortran type to hold MPI info.
+!> @param[in] sdz Estimate the additional mesh size needed for propagating
+!> the beam a distance of sdz * lambda_w. The mesh layout calculated by this
+!> will then be valid for that propagation distance. (sdz expressed in units
+!> of a 'base' undulator period)
+
+	subroutine getLocalFieldIndices(self, tScale, tMPI, sdz)
+
+    use typempicomm
+    use typeScale
 
     implicit none
 
@@ -117,6 +137,9 @@ contains
 !         2) Can define bounds as averages between processes,
 !            or start to share electrons between processes.
 
+    class(pMesh), intent(inout) :: self
+    type(fScale), intent(in) :: tScale
+    type(fMPIComm), intent(in) :: tMPI
     real(kind=wp), intent(in) :: sdz
 
     real(kind=wp), allocatable :: sp2(:), fr_rfield_old(:), &
@@ -160,17 +183,17 @@ contains
 !!!!!!&&*(&*(&CD*(S)))  INITIALIZING ONLY FOR TESTING!!!! WILL ONLY
 !                       WORK WITH TEST CASE!!!!!
 
-    if (qStart_new) then
+    if (self%qStart_new) then
 
-      iParaBas = iFieldBased
+      self%iParaBas = iFieldBased
 
-      call getFStEnd()
+      call self%getFStEnd(tMPI)
 
 !      tnjdlz2 = 400
 
 !      fz2 = (tProcInfo_G%rank * tnjdlz2) + 1
 !      ez2 = (tProcInfo_G%rank * tnjdlz2) + tnjdlz2
-      bz2 = ez2
+      self%bz2 = self%ez2
 
 !      if (tProcInfo_G%rank == 1) then
 
@@ -183,92 +206,92 @@ contains
 
 !      mainlen = tnjdlz2
 
-      tlflen_glob = 0
-      tlflen = 0
-      tlflen4arr = 1
-      ffs = 0
-      ffe = 0
+      self%tlflen_glob = 0
+      self%tlflen = 0
+      self%tlflen4arr = 1
+      self%ffs = 0
+      self%ffe = 0
 
 
-      tlelen_glob = 0
-      tlelen = 0
-      tlelen4arr = 1
-      ees = 0
-      eee = 0
+      self%tlelen_glob = 0
+      self%tlelen = 0
+      self%tlelen4arr = 1
+      self%ees = 0
+      self%eee = 0
 
-      allocate(ee_ar(tProcInfo_G%size, 3))
-      allocate(ff_ar(tProcInfo_G%size, 3))
-      allocate(ac_ar(tProcInfo_G%size, 3))
+      allocate(self%ee_ar(tMPI%size, 3))
+      allocate(self%ff_ar(tMPI%size, 3))
+      allocate(self%ac_ar(tMPI%size, 3))
 
 
-      call setupLayoutArrs(mainlen, fz2, ez2, ac_ar)
-      call setupLayoutArrs(tlflen, ffs, ffe, ff_ar)
-      call setupLayoutArrs(tlelen, ees, eee, ee_ar)
+      call setupLayoutArrs(self%mainlen, self%fz2, self%ez2, self%ac_ar)
+      call setupLayoutArrs(self%tlflen, self%ffs, self%ffe, self%ff_ar)
+      call setupLayoutArrs(self%tlelen, self%ees, self%eee, self%ee_ar)
 
 !      print*, mainlen, fz2, ez2, ac_ar
 
 
-      allocate(fr_rfield(tlflen4arr*ntrnds_G), &
-                 fr_ifield(tlflen4arr*ntrnds_G))
-      allocate(bk_rfield(tlelen4arr*ntrnds_G), &
-               bk_ifield(tlelen4arr*ntrnds_G))
+      allocate(self%fr_rfield(self%tlflen4arr*ntrnds_G), &
+                 self%fr_ifield(self%tlflen4arr*ntrnds_G))
+      allocate(self%bk_rfield(self%tlelen4arr*ntrnds_G), &
+               self%bk_ifield(self%tlelen4arr*ntrnds_G))
 
-      allocate(ac_rfield(mainlen*ntrnds_G), &
-               ac_ifield(mainlen*ntrnds_G))
+      allocate(self%ac_rfield(self%mainlen*ntrnds_G), &
+               self%ac_ifield(self%mainlen*ntrnds_G))
 
 !      ac_rfield = sA((fz2-1)*ntrnds_G + 1:bz2*ntrnds_G)
 !      ac_ifield = sA((fz2 + NZ2_G-1)*ntrnds_G + 1: &
 !                      (bz2 + NZ2_G)*ntrnds_G)
 
 
-      ac_rfield = 0_wp
-      ac_ifield = 0_wp
+      self%ac_rfield = 0_wp
+      self%ac_ifield = 0_wp
 
-      fr_rfield = 0_wp
-      fr_ifield = 0_wp
-      bk_rfield = 0_wp
-      bk_ifield = 0_wp
+      self%fr_rfield = 0_wp
+      self%fr_ifield = 0_wp
+      self%bk_rfield = 0_wp
+      self%bk_ifield = 0_wp
 
-      qStart_new = .false.
+      self%qStart_new = .false.
 
-      iParaBas = iElectronBased
-      qUnique = .true.
+      self%iParaBas = iElectronBased
+      self%qUnique = .true.
 
 !      goto 1000
 
     else
 
-      deallocate(recvs_pf, displs_pf, tmp_A)
-      deallocate(recvs_ff, displs_ff, recvs_ef, displs_ef)
-      deallocate(lrank_v, lrfromwhere)
-      deallocate(rrank_v)
+      deallocate(self%recvs_pf, self%displs_pf, self%tmp_A)
+      deallocate(self%recvs_ff, self%displs_ff, self%recvs_ef, self%displs_ef)
+      deallocate(self%lrank_v, self%lrfromwhere)
+      deallocate(self%rrank_v)
 
-      deallocate(recvs_ppf, displs_ppf)
-      deallocate(recvs_fpf, displs_fpf, recvs_epf, displs_epf)
+      deallocate(self%recvs_ppf, self%displs_ppf)
+      deallocate(self%recvs_fpf, self%displs_fpf, self%recvs_epf, self%displs_epf)
 
     end if
 
 
 
-  allocate(ee_ar_old(tProcInfo_G%size, 3))
-  allocate(ff_ar_old(tProcInfo_G%size, 3))
-  allocate(ac_ar_old(tProcInfo_G%size, 3))
+  allocate(ee_ar_old(tMPI%size, 3))
+  allocate(ff_ar_old(tMPI%size, 3))
+  allocate(ac_ar_old(tMPI%size, 3))
 
-  ee_ar_old = ee_ar
-  ff_ar_old = ff_ar
-  ac_ar_old = ac_ar
-
-
-
-  call getFStEnd()    ! Define new 'active' region
+  ee_ar_old = self%ee_ar
+  ff_ar_old = self%ff_ar
+  ac_ar_old = self%ac_ar
 
 
+
+  call self%getFStEnd(tMPI)    ! Define new 'active' region
 
 
 
 
 
-  call setupLayoutArrs(mainlen, fz2, ez2, ac_ar)
+
+
+  call setupLayoutArrs(self%mainlen, self%fz2, self%ez2, self%ac_ar)
 
 
 
@@ -276,11 +299,11 @@ contains
 
   !if (iParaBas /= iFFTW_based) then
 
-  if (qUnique) call rearrElecs()   ! Rearrange electrons
+  if (self%qUnique) call self%rearrElecs(tMPI)   ! Rearrange electrons
 
 
 
-  call calcBuff(4 * pi * sRho_G * sdz)  ! Calculate buffers
+  call self%calcBuff(tMPI, 4.0_wp * pi * tScale%rho * sdz)  ! Calculate buffers
 !  call calcBuff(4.0_wp)  ! Calculate buffers
 
  ! else
@@ -292,19 +315,19 @@ contains
 
 
 
-  call getFrBk()  ! Get surrounding nodes
+  call self%getFrBk(tMPI)  ! Get surrounding nodes
 
 
-  call setupLayoutArrs(tlflen, ffs, ffe, ff_ar)
-  call setupLayoutArrs(tlelen, ees, eee, ee_ar)
+  call setupLayoutArrs(self%tlflen, self%ffs, self%ffe, self%ff_ar)
+  call setupLayoutArrs(self%tlelen, self%ees, self%eee, self%ee_ar)
 
 
-  if (.not. qUnique) then
+  if (.not. self%qUnique) then
 
-    ac_ar(1,1) = mainlen
-    ac_ar(1,2) = fz2
-    ac_ar(1,3) = ez2
-    ac_ar(2:tProcInfo_G%size,:) = 0
+    self%ac_ar(1,1) = self%mainlen
+    self%ac_ar(1,2) = self%fz2
+    self%ac_ar(1,3) = self%ez2
+    self%ac_ar(2:tMPI%size,:) = 0
 
   end if
 
@@ -321,55 +344,55 @@ contains
   allocate(bk_rfield_old(size(bk_rfield)), bk_ifield_old(size(bk_ifield)))
   allocate(ac_rfield_old(size(ac_rfield)), ac_ifield_old(size(ac_ifield)))
 
-  fr_rfield_old = fr_rfield
-  fr_ifield_old = fr_ifield
-  bk_rfield_old = bk_rfield
-  bk_ifield_old = bk_ifield
-  ac_rfield_old = ac_rfield
-  ac_ifield_old = ac_ifield
+  fr_rfield_old = self%fr_rfield
+  fr_ifield_old = self%fr_ifield
+  bk_rfield_old = self%bk_rfield
+  bk_ifield_old = self%bk_ifield
+  ac_rfield_old = self%ac_rfield
+  ac_ifield_old = self%ac_ifield
 
-  deallocate(ac_rfield, ac_ifield)
-  deallocate(fr_rfield, fr_ifield)
-  deallocate(bk_rfield, bk_ifield)
+  deallocate(self%ac_rfield, self%ac_ifield)
+  deallocate(self%fr_rfield, self%fr_ifield)
+  deallocate(self%bk_rfield, self%bk_ifield)
 
-  allocate(fr_rfield(tlflen4arr*ntrnds_G), &
-           fr_ifield(tlflen4arr*ntrnds_G))
-  allocate(bk_rfield(tlelen4arr*ntrnds_G), &
-           bk_ifield(tlelen4arr*ntrnds_G))
-  allocate(ac_rfield(tllen*ntrnds_G), &
-           ac_ifield(tllen*ntrnds_G))
+  allocate(self%fr_rfield(self%tlflen4arr*ntrnds_G), &
+           self%fr_ifield(self%tlflen4arr*ntrnds_G))
+  allocate(self%bk_rfield(self%tlelen4arr*ntrnds_G), &
+           self%bk_ifield(self%tlelen4arr*ntrnds_G))
+  allocate(self%ac_rfield(self%tllen*ntrnds_G), &
+           self%ac_ifield(self%tllen*ntrnds_G))
 
-  ac_rfield = 0_wp
-  ac_ifield = 0_wp
+  self%ac_rfield = 0_wp
+  self%ac_ifield = 0_wp
 
-  bk_rfield = 0_wp
-  bk_ifield = 0_wp
-  fr_rfield = 0_wp
-  fr_ifield = 0_wp
-
-
-  call redist2new2(ff_ar_old, ff_ar, fr_rfield_old, fr_rfield)
-  call redist2new2(ff_ar_old, ff_ar, fr_ifield_old, fr_ifield)
-
-  call redist2new2(ee_ar_old, ff_ar, bk_rfield_old, fr_rfield)
-  call redist2new2(ee_ar_old, ff_ar, bk_ifield_old, fr_ifield)
-
-  call redist2new2(ac_ar_old, ff_ar, ac_rfield_old, fr_rfield)
-  call redist2new2(ac_ar_old, ff_ar, ac_ifield_old, fr_ifield)
+  self%bk_rfield = 0_wp
+  self%bk_ifield = 0_wp
+  self%fr_rfield = 0_wp
+  self%fr_ifield = 0_wp
 
 
+  call redist2new2(ff_ar_old, self%ff_ar, fr_rfield_old, self%fr_rfield)
+  call redist2new2(ff_ar_old, self%ff_ar, fr_ifield_old, self%fr_ifield)
+
+  call redist2new2(ee_ar_old, self%ff_ar, bk_rfield_old, self%fr_rfield)
+  call redist2new2(ee_ar_old, self%ff_ar, bk_ifield_old, self%fr_ifield)
+
+  call redist2new2(ac_ar_old, self%ff_ar, ac_rfield_old, self%fr_rfield)
+  call redist2new2(ac_ar_old, self%ff_ar, ac_ifield_old, self%fr_ifield)
 
 
 
-  call redist2new2(ff_ar_old, ee_ar, fr_rfield_old, bk_rfield)
-  call redist2new2(ff_ar_old, ee_ar, fr_ifield_old, bk_ifield)
-
-  call redist2new2(ee_ar_old, ee_ar, bk_rfield_old, bk_rfield)
-  call redist2new2(ee_ar_old, ee_ar, bk_ifield_old, bk_ifield)
 
 
-  call redist2new2(ac_ar_old, ee_ar, ac_rfield_old, bk_rfield)
-  call redist2new2(ac_ar_old, ee_ar, ac_ifield_old, bk_ifield)
+  call redist2new2(ff_ar_old, self%ee_ar, fr_rfield_old, self%bk_rfield)
+  call redist2new2(ff_ar_old, self%ee_ar, fr_ifield_old, self%bk_ifield)
+
+  call redist2new2(ee_ar_old, self%ee_ar, bk_rfield_old, self%bk_rfield)
+  call redist2new2(ee_ar_old, self%ee_ar, bk_ifield_old, self%bk_ifield)
+
+
+  call redist2new2(ac_ar_old, self%ee_ar, ac_rfield_old, self%bk_rfield)
+  call redist2new2(ac_ar_old, self%ee_ar, ac_ifield_old, self%bk_ifield)
 
 !  call mpi_finalize(error)
 !  stop
@@ -378,14 +401,14 @@ contains
 
 
 
-  call redist2new2(ff_ar_old, ac_ar, fr_rfield_old, ac_rfield)
-  call redist2new2(ff_ar_old, ac_ar, fr_ifield_old, ac_ifield)
+  call redist2new2(ff_ar_old, self%ac_ar, fr_rfield_old, self%ac_rfield)
+  call redist2new2(ff_ar_old, self%ac_ar, fr_ifield_old, self%ac_ifield)
 
-  call redist2new2(ee_ar_old, ac_ar, bk_rfield_old, ac_rfield)
-  call redist2new2(ee_ar_old, ac_ar, bk_ifield_old, ac_ifield)
+  call redist2new2(ee_ar_old, self%ac_ar, bk_rfield_old, self%ac_rfield)
+  call redist2new2(ee_ar_old, self%ac_ar, bk_ifield_old, self%ac_ifield)
 
-  call redist2new2(ac_ar_old, ac_ar, ac_rfield_old, ac_rfield)
-  call redist2new2(ac_ar_old, ac_ar, ac_ifield_old, ac_ifield)
+  call redist2new2(ac_ar_old, self%ac_ar, ac_rfield_old, self%ac_rfield)
+  call redist2new2(ac_ar_old, self%ac_ar, ac_ifield_old, self%ac_ifield)
 
 
 
@@ -400,15 +423,15 @@ contains
   deallocate(bk_rfield_old, bk_ifield_old)
 
 
-  if (.not. qUnique) then
+  if (.not. self%qUnique) then
 
-    call MPI_Bcast(ac_rfield, tllen*ntrnds_G, &
+    call MPI_Bcast(self%ac_rfield, self%tllen*ntrnds_G, &
                    mpi_double_precision, 0, &
-                   tProcInfo_G%comm, error)
+                   tMPI%comm, error)
 
-    call MPI_Bcast(ac_ifield, tllen*ntrnds_G, &
+    call MPI_Bcast(self%ac_ifield, self%tllen*ntrnds_G, &
                    mpi_double_precision, 0, &
-                   tProcInfo_G%comm, error)
+                   tMPI%comm, error)
   end if
 
 
@@ -430,39 +453,39 @@ contains
 
 
 
-      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-        gath_v = tlflen*ntrnds_G !-1
+      if (tMPI%rank /= tMPI%size-1) then
+        gath_v = self%tlflen*ntrnds_G !-1
       else
-        gath_v = tlflen*ntrnds_G
+        gath_v = self%tlflen*ntrnds_G
       end if
 
 
-      allocate(recvs_ff(tProcInfo_G%size), displs_ff(tProcInfo_G%size))
-      call getGathArrs(gath_v, recvs_ff, displs_ff)
+      allocate(self%recvs_ff(tMPI%size), self%displs_ff(tMPI%size))
+      call getGathArrs(gath_v, self%recvs_ff, self%displs_ff)
 
 
 
 
 
-      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-        gath_v = mainlen*ntrnds_G ! -1
+      if (tMPI%rank /= tMPI%size-1) then
+        gath_v = self%mainlen*ntrnds_G ! -1
       else
-        gath_v = mainlen*ntrnds_G
+        gath_v = self%mainlen*ntrnds_G
       end if
 
-      allocate(recvs_pf(tProcInfo_G%size), displs_pf(tProcInfo_G%size))
-      call getGathArrs(gath_v, recvs_pf, displs_pf)
+      allocate(self%recvs_pf(tMPI%size), self%displs_pf(tMPI%size))
+      call getGathArrs(gath_v, self%recvs_pf, self%displs_pf)
 
 
 
-      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-        gath_v = tlelen*ntrnds_G !-1
+      if (tMPI%rank /= tMPI%size-1) then
+        gath_v = self%tlelen*ntrnds_G !-1
       else
-        gath_v = tlelen*ntrnds_G
+        gath_v = self%tlelen*ntrnds_G
       end if
 
-      allocate(recvs_ef(tProcInfo_G%size), displs_ef(tProcInfo_G%size))
-      call getGathArrs(gath_v, recvs_ef, displs_ef)
+      allocate(self%recvs_ef(tMPI%size), self%displs_ef(tMPI%size))
+      call getGathArrs(gath_v, self%recvs_ef, self%displs_ef)
 
 
 
@@ -478,45 +501,45 @@ contains
 
 
 
-      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-        gath_v = tlflen !-1
+      if (tMPI%rank /= tMPI%size-1) then
+        gath_v = self%tlflen !-1
       else
-        gath_v = tlflen
+        gath_v = self%tlflen
       end if
 
 
-      allocate(recvs_fpf(tProcInfo_G%size), displs_fpf(tProcInfo_G%size))
-      recvs_fpf = 0
-      displs_fpf = 0
-      call getGathArrs(gath_v, recvs_fpf, displs_fpf)
+      allocate(self%recvs_fpf(tMPI%size), self%displs_fpf(tMPI%size))
+      self%recvs_fpf = 0
+      self%displs_fpf = 0
+      call getGathArrs(gath_v, self%recvs_fpf, self%displs_fpf)
 
 
 
 
 
-      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-        gath_v = mainlen ! -1
+      if (tMPI%rank /= tMPI%size-1) then
+        gath_v = self%mainlen ! -1
       else
-        gath_v = mainlen
+        gath_v = self%mainlen
       end if
 
-      allocate(recvs_ppf(tProcInfo_G%size), displs_ppf(tProcInfo_G%size))
-      recvs_ppf = 0
-      displs_ppf = 0
-      call getGathArrs(gath_v, recvs_ppf, displs_ppf)
+      allocate(self%recvs_ppf(tMPI%size), self%displs_ppf(tMPI%size))
+      self%recvs_ppf = 0
+      self%displs_ppf = 0
+      call getGathArrs(gath_v, self%recvs_ppf, self%displs_ppf)
 
 
 
-      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-        gath_v = tlelen !-1
+      if (tMPI%rank /= tMPI%size-1) then
+        gath_v = self%tlelen !-1
       else
-        gath_v = tlelen
+        gath_v = self%tlelen
       end if
 
-      allocate(recvs_epf(tProcInfo_G%size), displs_epf(tProcInfo_G%size))
-      recvs_epf = 0
-      displs_epf = 0
-      call getGathArrs(gath_v, recvs_epf, displs_epf)
+      allocate(self%recvs_epf(tMPI%size), self%displs_epf(tMPI%size))
+      self%recvs_epf = 0
+      self%displs_epf = 0
+      call getGathArrs(gath_v, self%recvs_epf, self%displs_epf)
 
 
 
@@ -545,7 +568,7 @@ contains
 !              ' FOR PROCESSOR ', tProcInfo_G%rank
 
 
-  call mpi_barrier(tProcInfo_G%comm, error)
+  call mpi_barrier(tMPI%comm, error)
 
 !  print*, tProcInfo_G%rank, ' made it here, with active nodes redefined between ', &
 !                              fz2, ez2, 'corresponding to z2 = ', (fz2-1)*sLengthOfElmZ2_G, &
@@ -567,16 +590,20 @@ contains
   !stop
 
 
+!!!!!!          Update number of macroparticles on each process after
+!!!!!!                rearranging everything in the subroutine:
 
-    IF (tProcInfo_G%rank == tProcInfo_G%size-1) THEN
+
+
+    IF (tMPI%rank == tMPI%size-1) THEN
        rrank = 0
-       lrank = tProcInfo_G%rank-1
-    ELSE IF (tProcInfo_G%rank==0) THEN
-       rrank = tProcInfo_G%rank+1
-       lrank = tProcInfo_G%size-1
+       lrank = tMPI%rank-1
+    ELSE IF (tMPI%rank==0) THEN
+       rrank = tMPI%rank+1
+       lrank = tMPI%size-1
     ELSE
-       rrank = tProcInfo_G%rank+1
-       lrank = tProcInfo_G%rank-1
+       rrank = tMPI%rank+1
+       lrank = tMPI%rank-1
     END IF
 
 
@@ -585,11 +612,11 @@ contains
     sendbuff = iNumberElectrons_G
     recvbuff = iNumberElectrons_G
 
-    DO ij=2,tProcInfo_G%size
+    DO ij=2,tMPI%size
        CALL MPI_ISSEND( sendbuff,1,MPI_INT_HIGH,rrank,&
-            0,tProcInfo_G%comm,req,error )
+            0,tMPI%comm,req,error )
        CALL MPI_RECV( recvbuff,1,MPI_INT_HIGH,lrank,&
-            0,tProcInfo_G%comm,recvstat,error )
+            0,tMPI%comm,recvstat,error )
        CALL MPI_WAIT( req,sendstat,error )
        procelectrons_G(ij) = recvbuff
        sendbuff=recvbuff
@@ -598,12 +625,12 @@ contains
 
 
 
-    if (qUnique) then
+    if (self%qUnique) then
 
-      allocate(tmp_A(maxval(lrank_v)*ntrndsi_G))
+      allocate(self%tmp_A(maxval(self%lrank_v)*ntrndsi_G))
 
     else
-      allocate(tmp_A(tllen*ntrndsi_G))
+      allocate(self%tmp_A(self%tllen*ntrndsi_G))
     end if
 
 
@@ -1409,25 +1436,26 @@ contains
 
 
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Subroutine to setup the 'buffer' region at the end of the parallel field section
+!> on this process. This is calculated by estimating how much will be needed by 
+!> the electrons currently on the process. By calculating p2, one may estimate 
+!> the size of the domain required in z2 to hold the electron macroparticles over 
+!> a distance dz through the undulator.
+!> @param[in] tMPI Custom Fortran type to hold MPI info.
+!> @param[in] dz Distance in zbar the mesh distribution is desired to be valid for.
 
+  subroutine calcBuff(this, tMPI, dz)
 
-
-  subroutine calcBuff(dz)
-
-! Subroutine to setup the 'buffer' region
-! at the end of the parallel field section
-! on this process.
-!
-! This is calculated by estimating how much
-! will be needed by the electrons currently on the
-! process. By calculating p2, one may estimate the
-! size of the domain required in z2 to hold
-! the electron macroparticles over a distance
-! dz through the undulator.
-
+    class(pMesh), intent(inout) :: this
+    type(fMPIComm), intent(in) :: tMPI
     real(kind=wp), intent(in) :: dz
-    real(kind=wp), allocatable :: sp2(:)
 
+    real(kind=wp), allocatable :: sp2(:)
     real(kind=wp) :: bz2_len
     integer(kind=ip) :: yip, ij, bz2_globm, ctrecvs, cpolap, dum_recvs
     integer(kind=ip), allocatable :: drecar(:)
@@ -1440,81 +1468,81 @@ contains
 
     if (iNumberElectrons_G > 0_ipl) then
 
-    allocate(sp2(iNumberElectrons_G))
+      allocate(sp2(iNumberElectrons_G))
 
-    call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, sEta_G, sGammaR_G, sAw_G)
+      call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, sEta_G, sGammaR_G, sAw_G)
 
-    bz2_len = dz  ! distance in zbar until next rearrangement
-    bz2_len = maxval(sElZ2_G + bz2_len * sp2)  ! predicted length in z2 needed needed in buffer for beam
+      bz2_len = dz  ! distance in zbar until next rearrangement
+      bz2_len = maxval(sElZ2_G + bz2_len * sp2)  ! predicted length in z2 needed needed in buffer for beam
 
 !    print*, 'bz2 length is...', bz2_len
 !    print*, 'max p2 is ', maxval(sp2)
 
-    deallocate(sp2)
+      deallocate(sp2)
 
     else
 
-      bz2_len = (ez2 + 2_ip) * sLengthOfElmZ2_G  ! Just have 2 node boundary for no macroparticles
+      bz2_len = (this%ez2 + 2_ip) * sLengthOfElmZ2_G  ! Just have 2 node boundary for no macroparticles
 
     end if
 
-!    print*, tProcInfo_G%rank, 'is inside calcBuff, with buffer length', bz2_len
+!    print*, tMPI%rank, 'is inside calcBuff, with buffer length', bz2_len
 
 !    bz2 = ez2 + nint(4 * 4 * pi * sRho_G / sLengthOfElmZ2_G)   ! Boundary only 4 lambda_r long - so can only go ~ 3 periods
 
-    bz2 = nint(bz2_len / sLengthOfElmZ2_G)  ! node index of final node in boundary
+    this%bz2 = nint(bz2_len / sLengthOfElmZ2_G)  ! node index of final node in boundary
 
-    if (bz2 > nz2_G) bz2 = nz2_G
+    if (this%bz2 > nz2_G) this%bz2 = nz2_G
 
 ! Find global bz2...
 
-    call mpi_allreduce(bz2, bz2_globm, 1, mpi_integer, mpi_max, &
-                    tProcInfo_G%comm, error)
+    call mpi_allreduce(this%bz2, bz2_globm, 1, mpi_integer, mpi_max, &
+                    tMPI%comm, error)
 
-    if (tProcInfo_G%rank == tProcInfo_G%size-1) then
+    if (tMPI%rank == tMPI%size-1) then
 
-      print*, bz2
-      bz2 = bz2_globm
+      print*, this%bz2
+      this%bz2 = bz2_globm
 
     else
 
-      if (bz2 <= ez2) bz2 = ez2 + 1  ! For sparse beam!!
+      if (this%bz2 <= this%ez2) this%bz2 = this%ez2 + 1  ! For sparse beam!!
 
     end if
 
-    if (.not. qUnique) then
+    if (.not. this%qUnique) then
 
-      bz2 = bz2_globm
-      ez2 = bz2
-      mainlen = ez2-fz2+1
-      fbufflen = 0
-      tllen = mainlen
+      this%bz2 = bz2_globm
+      this%ez2 = this%bz2
+      this%mainlen = this%ez2 - this%fz2 + 1_ip
+      this%fbufflen = 0
+      this%tllen = this%mainlen
 
-      allocate(lrank_v(1), rrank_v(1,1), lrfromwhere(1))
+      allocate(this%lrank_v(1), this%rrank_v(1,1), this%lrfromwhere(1))
 
     else
 
-      fbuffLen = bz2 - (ez2+1) + 1  ! Local buffer length, NOT including the ez2 node
-      tllen = bz2 - fz2 + 1     ! local total length, including buffer
+      this%fbuffLen = this%bz2 - (this%ez2 + 1_ip) + 1_ip  ! Local buffer length, NOT including the ez2 node
+      this%tllen = this%bz2 - this%fz2 + 1     ! local total length, including buffer
 
 
 
 
 
-      if (tProcInfo_G%rank == tProcInfo_G%size-1) then
+      if (tMPI%rank == tMPI%size-1_ip) then
 
-        mainlen = tllen
-        fbuffLen = 0
-        ez2 = bz2
+        this%mainlen = this%tllen
+        this%fbuffLen = 0
+        this%ez2 = this%bz2
 
       end if
 
 
 
-      call setupLayoutArrs(mainlen, fz2, ez2, ac_ar)  ! readjust ac_ar with new ez2 for last process
+      call setupLayoutArrs(this%mainlen, this%fz2, this%ez2, this%ac_ar)  ! readjust ac_ar with new ez2 for last process
 
 
-      ez2_GGG = ac_ar(tProcInfo_G%size, 3)
+      this%ez2_GGG = this%ac_ar(tMPI%size, 3)
 
 
       ! count overlap over how many processes....
@@ -1525,11 +1553,11 @@ contains
 
       cpolap = 0
 
-      do ij = 0,tProcInfo_G%size-1
+      do ij = 0,tMPI%size-1
 
-        if  ( (ij > tProcInfo_G%rank) .and. (bz2 >= ac_ar(ij+1, 2)) ) then
+        if  ( (ij > tMPI%rank) .and. (this%bz2 >= this%ac_ar(ij+1, 2)) ) then
 
-          cpolap = cpolap + 1
+          cpolap = cpolap + 1_ip
 
         end if
 
@@ -1537,17 +1565,17 @@ contains
 
 
 
-      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-        allocate(rrank_v(cpolap, 3))
-        !allocate(isnd2u(tProcInfo_G%size))
+      if (tMPI%rank /= tMPI%size-1) then
+        allocate(this%rrank_v(cpolap, 3))
+        !allocate(isnd2u(tMPI%size))
       else
-        allocate(rrank_v(1, 3))
-        rrank_v = 1
-        !allocate(isnd2u(tProcInfo_G%size))
+        allocate(this%rrank_v(1, 3))
+        this%rrank_v = 1
+        !allocate(isnd2u(tMPI%size))
       end if
 
       yip = 0
-      nsnds_bf = cpolap
+      this%nsnds_bf = cpolap
       !isnd2u = 0
 
 
@@ -1555,23 +1583,23 @@ contains
 
   !  Count how much I'm sending to each process I'm bounding over...
 
-      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+      if (tMPI%rank /= tMPI%size-1) then
 
-        do ij = 0,tProcInfo_G%size-1
+        do ij = 0, tMPI%size - 1
   !print*, ij
-          if  (   (ij > tProcInfo_G%rank) .and. (bz2 >= ac_ar(ij+1, 2)) ) then
+          if  (   (ij > tMPI%rank) .and. (this%bz2 >= this%ac_ar(ij+1, 2)) ) then
 
-            yip = yip + 1
+            yip = yip + 1_ip
 
-            rrank_v(yip,2) = ac_ar(ij+1, 2)
+            rrank_v(yip,2) = this%ac_ar(ij+1, 2)
 
-            if (bz2 > ac_ar(ij+1, 3)) then
-              rrank_v(yip,3) = ac_ar(ij+1, 3)
+            if (this%bz2 > this%ac_ar(ij+1, 3)) then
+              this%rrank_v(yip,3) = this%ac_ar(ij+1, 3)
             else
-              rrank_v(yip,3) = bz2
+              this%rrank_v(yip,3) = this%bz2
             end if
 
-            rrank_v(yip,1) = rrank_v(yip,3) - rrank_v(yip,2) + 1
+            this%rrank_v(yip,1) = this%rrank_v(yip,3) - this%rrank_v(yip,2) + 1_ip
 
           end if
 
@@ -1583,23 +1611,23 @@ contains
 
         yip = 0
 
-        do ij = tProcInfo_G%rank + 1, tProcInfo_G%size-1
+        do ij = tMPI%rank + 1, tMPI%size-1
 
           yip = yip + 1
 
-          if (ij - tProcInfo_G%rank <= cpolap) then
+          if (ij - tMPI%rank <= cpolap) then
 
-            !send rrank_v(yip, 1) to tProcInfo_G%rank + yip
+            !send rrank_v(yip, 1) to tMPI%rank + yip
 
-            call mpi_issend(rrank_v(yip, 1), 1, mpi_integer, &
-                     tProcInfo_G%rank + yip, 0, tProcInfo_G%comm, &
+            call mpi_issend(this%rrank_v(yip, 1), 1, mpi_integer, &
+                     tMPI%rank + yip, 0, tMPI%comm, &
                      req, error)
 
           else
 
-            !send 0 to tProcInfo_G%rank + yip
+            !send 0 to tMPI%rank + yip
             call mpi_issend(0, 1, mpi_integer, &
-                     tProcInfo_G%rank + yip, 0, tProcInfo_G%comm, &
+                     tMPI%rank + yip, 0, tMPI%comm, &
                      req, error)
 
           end if
@@ -1611,17 +1639,17 @@ contains
 
 
 
-      allocate(drecar(tProcInfo_G%rank))
+      allocate(drecar(tMPI%rank))
       ctrecvs = 0
 
-      if (tProcInfo_G%rank /= 0) then
+      if (tMPI%rank /= 0) then
 
-        do ij =  0, tProcInfo_G%rank - 1
+        do ij =  0, tMPI%rank - 1
 
           ! dum_recvs from ij
 
           call mpi_recv(dum_recvs, 1, mpi_integer, ij, &
-                  0, tProcInfo_G%comm, statr, error)
+                  0, tMPI%comm, statr, error)
 
           drecar(ij+1) = dum_recvs
 
@@ -1631,40 +1659,40 @@ contains
 
       end if
 
-      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+      if (tMPI%rank /= tMPI%size-1) then
         call mpi_wait(req, sendstat, error)
       end if
 
-      if (tProcInfo_G%rank /= 0) then
+      if (tMPI%rank /= 0) then
 
-        allocate(lrank_v(ctrecvs))
-        allocate(lrfromwhere(ctrecvs))
+        allocate(this%lrank_v(ctrecvs))
+        allocate(this%lrfromwhere(ctrecvs))
 
       else
 
-        allocate(lrank_v(1))
-        allocate(lrfromwhere(1))
-        lrank_v = 1
-        lrfromwhere = 1
+        allocate(this%lrank_v(1))
+        allocate(this%lrfromwhere(1))
+        this%lrank_v = 1
+        this%lrfromwhere = 1
 
       end if
 
-      nrecvs_bf = ctrecvs
+      this%nrecvs_bf = ctrecvs
 
-      if (tProcInfo_G%rank /= 0) then
+      if (tMPI%rank /= 0) then
 
         !nrecvs2me = count(drecar > 0)
 
         yip = 0
 
-        do ij = 0, tProcInfo_G%rank - 1
+        do ij = 0, tMPI%rank - 1
 
 
           if (drecar(ij+1) > 0) then
 
             yip = yip+1
-            lrank_v(yip) = drecar(ij+1)
-            lrfromwhere(yip) = ij  ! rank recieving info from
+            this%lrank_v(yip) = drecar(ij+1)
+            this%lrfromwhere(yip) = ij  ! rank recieving info from
 
           end if
 
@@ -1749,10 +1777,36 @@ contains
 
 
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Retrieves the global start and end of the current 'active' portion of the 
+!> field mesh, and the local start and end, excluding boundaries needed for
+!> propagation. The global node indices are numbered from 1 -> number of nodes 
+!> in z2. The transverse size of the mesh is not taken into account in this 
+!> subroutine - the parallel mesh distribution is determined by temporal/longitudinal 
+!> z2 coordinate only. This active portion of the mesh is determined either by 
+!> the electron beam (so the active mesh is defined to contain the electron
+!> beam), known as 'electron based', or it just defines the total field mesh as
+!>  'active' - this is 'field based'. In each case, the field mesh is evenly 
+!> divided across each process in the longitudinal/temporal z2 direction.
+!> Furthermore, if the electron based parallelism is used, then if the 'active'
+!> mesh is too small to be efficiently parallelised for the number of processes
+!> used, then the FULL active mesh will be kept on each process. Note that this
+!> subroutine does not actually physically send the field nodes to the MPI
+!> processes - it calculates the mesh indices which should belong to each process.
+!> It does not calculate the size or indices of the boundaries which will be 
+!> required on each MPI process to allow a beam to be propagated. Nor does
+!> this subroutine calculate the parallel distribution of the 'front'
+!> and 'back' sections of the field mesh which surround the 'active' section.
+!> @param[in] tMPI Custom Fortran type to hold MPI info.
 
+  subroutine getFStEnd(self, tMPI)
 
-  subroutine getFStEnd()
-
+    class(pMesh), intent(inout) :: self
+    type(fMPIComm), intent(in) :: tMPI
 
     real(kind=wp), allocatable :: sp2(:)
     integer(kind=ip) :: fz2_act, ez2_act
@@ -1768,35 +1822,35 @@ contains
 
 
 
-    if (iParaBas == iElectronBased) then
+    if (self%iParaBas == iElectronBased) then
 
       fz2_act = minval(ceiling(sElZ2_G / sLengthOfElmZ2_G))   ! front z2 node in 'active' region
 
-!      print*, tProcInfo_G%rank, 'and I have fz2_act = ', fz2_act
+!      print*, tMPI%rank, 'and I have fz2_act = ', fz2_act
 
       CALL mpi_allreduce(fz2_act, rbuff, 1, mpi_integer, &
-               mpi_min, tProcInfo_G%comm, error)
+               mpi_min, tMPI%comm, error)
 
-!      print*, tProcInfo_G%rank, 'and then my reduced fz2_act = ', rbuff
+!      print*, tMPI%rank, 'and then my reduced fz2_act = ', rbuff
 
 
 
       fz2_act = rbuff
-      fz2_GGG = fz2_act
+      self%fz2_GGG = fz2_act
 
-!print*, tProcInfo_G%rank, 'and so my fz2_act remains = ', fz2_act
+!print*, tMPI%rank, 'and so my fz2_act remains = ', fz2_act
 
 !print*, 'fz2_act = ', fz2_act
 
       ez2_act = maxval(ceiling(sElZ2_G / sLengthOfElmZ2_G) + 1)
 
-!      print*, tProcInfo_G%rank, 'and I have ez2_act = ', ez2_act
+!      print*, tMPI%rank, 'and I have ez2_act = ', ez2_act
 
       CALL mpi_allreduce(ez2_act, rbuff, 1, mpi_integer, &
-               mpi_max, tProcInfo_G%comm, error)
+               mpi_max, tMPI%comm, error)
 
       ez2_act = rbuff
-      ez2_GGG = ez2_act
+      self%ez2_GGG = ez2_act
 
 !print*, 'ez2_act = ', ez2_act
 
@@ -1804,8 +1858,8 @@ contains
 
       fz2_act = 1_ip
       ez2_act = NZ2_G
-      fz2_GGG = 1
-      ez2_GGG = 1
+      self%fz2_GGG = 1_ip
+      self%ez2_GGG = 1_ip
 
     else
 
@@ -1813,10 +1867,10 @@ contains
 
     end if
 
-    n_act_g = ez2_act - fz2_act + 1
+    n_act_g = ez2_act - fz2_act + 1_ip
 
 
-    !print*, tProcInfo_G%rank, 'and then my fz2_act is STILL = ', fz2_act
+    !print*, tMPI%rank, 'and then my fz2_act is STILL = ', fz2_act
 
 
 
@@ -1826,9 +1880,9 @@ contains
 ! (use divNodes)
 
 
-    if (n_act_g < 2*tProcInfo_G%size) then ! If too many nodes
+    if (n_act_g < 2*tMPI%size) then ! If too many nodes
 
-      qUnique = .false.
+      self%qUnique = .false.
 
       print*, 'So WHY AM I HERE, WITH nz2 = ', nz2_G
       print*, 'n_act_g = ', n_act_g
@@ -1836,49 +1890,47 @@ contains
       print*, 'ez2_act = ', ez2_act
 
 
-      fz2 = fz2_GGG
-      ez2 = ez2_GGG
+      self%fz2 = self%fz2_GGG
+      self%ez2 = self%ez2_GGG
 
-      mainlen = n_act_g
+      self%mainlen = n_act_g
 
     else
 
-      qUnique = .true.
+      self%qUnique = .true.
 
-      call divNodes(n_act_g, tProcInfo_G%size, tProcInfo_G%rank, &
-                    tllen, fz2, ez2)
+      call divNodes(n_act_g, tMPI%size, tMPI%rank, &
+                    self%tllen, self%fz2, self%ez2)
 
-      fz2 = fz2 + fz2_act - 1
-      ez2 = ez2 + fz2_act - 1
+      self%fz2 = self%fz2 + fz2_act - 1_ip
+      self%ez2 = self%ez2 + fz2_act - 1_ip
 
-      mainlen = ez2 - fz2 + 1     ! local length, NOT including buffer
+      self%mainlen = self%ez2 - self%fz2 + 1_ip     ! local length, NOT including buffer
 
     end if
-
-!    print*, 'n_act_g was ', n_act_g
-!    print*, 'local now ', tllen, fz2, ez2, fz2_act
-
-
-
-
 
   end subroutine getFStEnd
 
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Get array indices of front and back nodes depending on active region nodes.
+!> @param[in] tMPI Custom Fortran type to hold MPI info.
 
-  subroutine getFrBk()
+  subroutine getFrBk(self, tMPI)
 
-! Get array indices of front and back nodes
-! depending on active region nodes
-
-
+    class(pMesh), intent(inout) :: self
+    type(fMPIComm), intent(in) :: tMPI
     integer(kind=ip) :: efz2_MG, ebz2_MG
     integer :: error
 
-      if (tProcInfo_G%qRoot) efz2_MG = fz2 - 1
+      if (tMPI%qRoot) efz2_MG = self%fz2 - 1_ip
 
-      call MPI_BCAST(efz2_MG,1, mpi_integer, 0, &
-                      tProcInfo_G%comm,error)
+      call MPI_BCAST(efz2_MG, 1, mpi_integer, 0, &
+                      tMPI%comm,error)
 
 
 
@@ -1886,43 +1938,43 @@ contains
 
 !     then there is no front section of the field...
 
-        tlflen_glob = 0
-        tlflen = 0
-        tlflen4arr = 1
-        ffs = 0
-        ffe = 0
-        ffs_GGG = 0
-        ffe_GGG = 0
+        self%tlflen_glob = 0
+        self%tlflen = 0
+        self%tlflen4arr = 1
+        self%ffs = 0
+        self%ffe = 0
+        self%ffs_GGG = 0
+        self%ffe_GGG = 0
 
 
       else if (efz2_MG > 0) then
 
-        tlflen_glob = efz2_MG
+        self%tlflen_glob = efz2_MG
 
-        call divNodes(efz2_MG,tProcInfo_G%size, &
-                      tProcInfo_G%rank, &
-                      tlflen, ffs, ffe)
+        call divNodes(efz2_MG,tMPI%size, &
+                      tMPI%rank, &
+                      self%tlflen, self%ffs, self%ffe)
 
-        tlflen4arr = tlflen
+        self%tlflen4arr = self%tlflen
 
-        ffs_GGG = 1
-        ffe_GGG = efz2_MG
+        self%ffs_GGG = 1
+        self%ffe_GGG = self%efz2_MG
 
 
       end if
 
 
-      CALL MPI_ALLGATHER(tlflen, 1, MPI_INTEGER, &
-              ff_ar(:,1), 1, MPI_INTEGER, &
-              tProcInfo_G%comm, error)
+      CALL MPI_ALLGATHER(self%tlflen, 1, MPI_INTEGER, &
+              self%ff_ar(:,1), 1, MPI_INTEGER, &
+              tMPI%comm, error)
 
-      CALL MPI_ALLGATHER(ffs, 1, MPI_INTEGER, &
-              ff_ar(:,2), 1, MPI_INTEGER, &
-              tProcInfo_G%comm, error)
+      CALL MPI_ALLGATHER(self%ffs, 1, MPI_INTEGER, &
+              self%ff_ar(:,2), 1, MPI_INTEGER, &
+              tMPI%comm, error)
 
-      CALL MPI_ALLGATHER(ffe, 1, MPI_INTEGER, &
+      CALL MPI_ALLGATHER(self%ffe, 1, MPI_INTEGER, &
               ff_ar(:,3), 1, MPI_INTEGER, &
-              tProcInfo_G%comm, error)
+              tMPI%comm, error)
 
 
 
@@ -1935,11 +1987,11 @@ contains
       ! get rightmost bz2 ...(last process)
       ! ebz2_MG - extreme back z2 node of active region plus 1
 
-      if (tProcInfo_G%rank == tProcInfo_G%size-1) ebz2_MG = bz2 + 1
+      if (tMPI%rank == tMPI%size-1) ebz2_MG = self%bz2 + 1
 
 
-      call MPI_BCAST(ebz2_MG,1, mpi_integer, tProcInfo_G%size-1, &
-                      tProcInfo_G%comm,error)
+      call MPI_BCAST(ebz2_MG,1, mpi_integer, tMPI%size-1, &
+                      tMPI%comm, error)
 
 
 
@@ -1947,11 +1999,11 @@ contains
 
 !     then there is no back section of the field...
 
-        tlelen_glob = 0
-        tlelen = 0
-        tlelen4arr = 1
-        ees = 0
-        eee = 0
+        self%tlelen_glob = 0
+        self%tlelen = 0
+        self%tlelen4arr = 1
+        self%ees = 0
+        self%eee = 0
 
       else if (ebz2_MG < nz2_G + 1) then
 
@@ -1959,33 +2011,33 @@ contains
 
 !        print*, 'I get the tlelen_glob to be ', tlelen_glob
 
-        call divNodes(tlelen_glob,tProcInfo_G%size, &
-                      tProcInfo_G%rank, &
-                      tlelen, ees, eee)
+        call divNodes(tlelen_glob, tMPI%size, &
+                      tMPI%rank, &
+                      self%tlelen, self%ees, self%eee)
 
-        ees = ees + ebz2_MG - 1
-        eee = eee + ebz2_MG - 1
+        self%ees = self%ees + ebz2_MG - 1
+        self%eee = self%eee + ebz2_MG - 1
 
-        ees_GGG = ebz2_MG
-        eee_GGG = NZ2_G
+        self%ees_GGG = ebz2_MG
+        self%eee_GGG = NZ2_G
 
-        tlelen4arr = tlelen
+        self%tlelen4arr = self%tlelen
 
 !        print*, '...and the start nd end of the back to be', ees, eee
 
       end if
 
-      CALL MPI_ALLGATHER(tlelen, 1, MPI_INTEGER, &
-              ee_ar(:,1), 1, MPI_INTEGER, &
-              tProcInfo_G%comm, error)
+      CALL MPI_ALLGATHER(self%tlelen, 1, MPI_INTEGER, &
+              self%ee_ar(:,1), 1, MPI_INTEGER, &
+              tMPI%comm, error)
 
-      CALL MPI_ALLGATHER(ees, 1, MPI_INTEGER, &
-              ee_ar(:,2), 1, MPI_INTEGER, &
-              tProcInfo_G%comm, error)
+      CALL MPI_ALLGATHER(self%ees, 1, MPI_INTEGER, &
+              self%ee_ar(:,2), 1, MPI_INTEGER, &
+              tMPI%comm, error)
 
-      CALL MPI_ALLGATHER(eee, 1, MPI_INTEGER, &
-              ee_ar(:,3), 1, MPI_INTEGER, &
-              tProcInfo_G%comm, error)
+      CALL MPI_ALLGATHER(self%eee, 1, MPI_INTEGER, &
+              self%ee_ar(:,3), 1, MPI_INTEGER, &
+              tMPI%comm, error)
 
 !        print*, '...so back array = ', ee_ar
 
@@ -1994,15 +2046,23 @@ contains
   end subroutine getFrBk
 
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Alternative subroutine to redistribute the field values in field_old
+!> to field_new. The layout of the field in field_old is
+!> described in old_dist, and the layout of the new field
+!> is described in new_dist. This subroutine uses mpi_alltoallv, in
+!> contrast to redist2new which uses mpi the sends and recvs
+!> @param[in] tMPI Custom Fortran type to hold MPI info.
+
   subroutine redist2new2(old_dist, new_dist, field_old, field_new)
 
   implicit none
 
-! Alternative subroutine to redistribute the field values in field_old
-! to field_new. The layout of the field in field_old is
-! described in old_dist, and the layout of the new field
-! is described in new_dist. This subroutine uses mpi_alltoallv, in
-! contrast to redist2new which uses mpi the sends and recvs
+
 
 ! inputs
 
@@ -2319,9 +2379,25 @@ contains
 
 
 
-  subroutine rearrElecs()
+
+
+
+
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Rearranges electron macroparticles according to radiation mesh paralle layout.
+!> @param[in] tMPI Custom Fortran type to hold MPI info.
+
+  subroutine rearrElecs(self, tMPI)
 
   implicit none
+
+  class(pMesh), intent(inout) :: self
+  type(fMPIComm), intent(in) :: tMPI
 
   integer :: error
   integer(kind=ip) :: iproc, iproc_r, iproc_s
@@ -2362,8 +2438,8 @@ contains
 ! OR
     do iproc = 0, tProcInfo_G%size-1
 
-      icds = count(sElZ2_G > (sLengthOfElmZ2_G * (ac_ar(iproc+1, 2)-1)) .and. &
-                    (sElZ2_G <= (sLengthOfElmZ2_G * ac_ar(iproc+1, 3))) )
+      icds = count(sElZ2_G > (sLengthOfElmZ2_G * (self%ac_ar(iproc+1, 2)-1)) .and. &
+                    (sElZ2_G <= (sLengthOfElmZ2_G * self%ac_ar(iproc+1, 3))) )
 
       cnt2proc(iproc+1) = icds   ! amount I'm sending to iproc
 
@@ -2497,8 +2573,8 @@ contains
 
               call getinds(inds4sending(1:cnt2proc(iproc_r+1)), &
                     sElZ2_OLD, &
-                    (sLengthOfElmZ2_G * (ac_ar(iproc_r+1,2)-1)), &
-                    (sLengthOfElmZ2_G * ac_ar(iproc_r+1,3)) )
+                    (sLengthOfElmZ2_G * (self%ac_ar(iproc_r+1,2)-1)), &
+                    (sLengthOfElmZ2_G * self%ac_ar(iproc_r+1,3)) )
 
               !print*, inds4sending(1:cnt2proc(iproc_r+1))
               !print*, 'cnt2proc again:', cnt2proc(iproc_r+1)
@@ -2519,8 +2595,8 @@ contains
 
               call getinds(inds4sending(1:cnt2proc(iproc_r+1)), &
                     sElZ2_OLD, &
-                    (sLengthOfElmZ2_G * (ac_ar(iproc_r+1,2)-1) ), &
-                    (sLengthOfElmZ2_G * ac_ar(iproc_r+1,3)) )
+                    (sLengthOfElmZ2_G * (self%ac_ar(iproc_r+1,2)-1) ), &
+                    (sLengthOfElmZ2_G * self%ac_ar(iproc_r+1,3)) )
 
 !              tmp4sending(1:cnt2proc(iproc_r+1)) = sElZ2_OLD((1:cnt2proc(iproc_r+1)))
 
