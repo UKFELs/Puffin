@@ -57,6 +57,7 @@ module typeChicane
 
     use typeFMesh
     use typeScale
+!    use pDiff
 
     class(fChicane), intent(in) :: self
     type(fFMesh), intent(in) :: tFMesh
@@ -76,7 +77,7 @@ module typeChicane
 !     Propagate through chicane
 
     sz2 = sz2 - 2.0_WP * self%disp *  &
-                 (sgam - 1_wp) &
+                 (sgam - 1.0_wp) &
                  + self%slip
 
     if (tFMesh%qDiff) then

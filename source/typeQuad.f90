@@ -82,18 +82,19 @@ module typeQuad
     if (.not. tScale%qOneD) then
 
       sPr = sPr + sqrt(tScale%eta) / &
-                  (2 * tScale%rho * tScale%kappa) * sX &
+                  (2.0_wp * tScale%rho * tScale%kappa) * sX &
                    / self%qfx
 
       sPi = sPi - sqrt(tScale%eta) / &
-                  (2 * tScale%rho * tScale%kappa) * sY &
+                  (2.0_wp * tScale%rho * tScale%kappa) * sY &
                   / self%qfy
 
     end if
 
 
     deallocate(sp2)
-    
+
+    sZ = sZ + self%zbar
 
   end subroutine Quad
 
