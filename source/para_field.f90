@@ -676,12 +676,10 @@ contains
 !> Send dadz from buffer to MPI process on the right. Data is added to array in 
 !> next process, not written over.
 !> @param[in] tMPI Custom Fortran type to hold MPI info.
-!> @param[in] iso Start index of range of mesh on this process.
-!> @param[in] ieo End index of range of mesh on this process.
-!> @param[in] f_ar Description of current layout of mesh.
-!> @param[out] f_send Description of where to send the data.
+!> @param[in] dadz_r Real part of dadz
+!> @param[in] dadz_i Imaginary part of dadz
 
-    subroutine upd8da(dadz_r, dadz_i)
+    subroutine upd8da(tMPI, dadz_r, dadz_i)
 
       real(kind=wp), contiguous, intent(inout) :: dadz_r(:), dadz_i(:)
 
