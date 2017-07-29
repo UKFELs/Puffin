@@ -7,7 +7,8 @@
 !> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Module controlling the field mesh parallelism in Puffin
+!> Fortran Type description and subroutines controlling the field mesh
+!> parallelism in Puffin.
 
 module ParaField
 
@@ -47,8 +48,6 @@ type, public :: pMesh
   integer(kind=ip) :: ffs, ffe, tlflen, ees, eee, tlelen, tlflen_glob, tlelen_glob, &
                       tlflen4arr, tlelen4arr, ffs_GGG, ffe_GGG, ees_GGG, eee_GGG
 
-
-
 !!!   For parallel algorithm to deal with over-compression...
 
   integer(kind=ip), allocatable :: lrank_v(:), rrank_v(:,:), &
@@ -57,21 +56,6 @@ type, public :: pMesh
   integer(kind=ip) :: nsnds_bf, nrecvs_bf
 
   logical :: qUnique
-
-
-
-! if fz2 to ez2 overlaps, give warning - but not fail...
-! No, fz2 to ez2 will only overlap if less nodes than procs...
-! in which case, we share ALL nodes...but do this later...
-! and can use MPI_ALLGATHER or whatever as before (but on
-! ac_rfield and ac_ifield rather than sA)
-
-! if boundary overlaps next process, then process will send
-! buffer to more than one process...so loop around lrank_v
-! and rrank_v etc
-
-
-
 
   integer(kind=ip), allocatable :: ac_ar(:,:), ff_ar(:,:), ee_ar(:,:), &
                                    ft_ar(:,:)
@@ -107,7 +91,7 @@ contains
 !> University of Strathclyde, 
 !> Glasgow, UK
 !> @brief
-!> Sets up the paralle field mesh, distributed over MPI processes.
+!> Sets up the parallel field mesh, distributed over MPI processes.
 !> If already initialized, this subroutine will then redistribute
 !> the field mesh according to the current state of the system.
 !> @param[in] tScale Custom Fortran type describing coordinate scaling.
@@ -123,19 +107,6 @@ contains
     use typeScale
 
     implicit none
-
-!     Setup local field pointers. These describe how the field is
-!     parallelized. For now, only set up constant field barriers to
-!     test a short 1D run. Field boundaries are decided by the
-!     positions of electrons on adjecent processes, to ensure no
-!     overlap (except at the 'boundaries').
-!
-!     Then can get more sophisticated...
-!         1) Call more often to rearrange the grid and
-!            provide a 'moving frame' for the electrons.
-!
-!         2) Can define bounds as averages between processes,
-!            or start to share electrons between processes.
 
     class(pMesh), intent(inout) :: self
     type(fScale), intent(in) :: tScale
@@ -172,16 +143,8 @@ contains
     integer(kind=ip) :: tnjdlz2
 
 
-    INTEGER(KIND=IPL) :: sendbuff, recvbuff
-    INTEGER recvstat(MPI_STATUS_SIZE)
-
-
-!    print*, 'INSIDE GETLOCALFIELDINDICES, SIZE OF SA IS ', size(sA)
-
-
-
-!!!!!!&&*(&*(&CD*(S)))  INITIALIZING ONLY FOR TESTING!!!! WILL ONLY
-!                       WORK WITH TEST CASE!!!!!
+    integer(kind=ipl) :: sendbuff, recvbuff
+    integer recvstat(MPI_STATUS_SIZE)
 
     if (self%qStart_new) then
 
@@ -189,22 +152,7 @@ contains
 
       call self%getFStEnd(tMPI)
 
-!      tnjdlz2 = 400
-
-!      fz2 = (tProcInfo_G%rank * tnjdlz2) + 1
-!      ez2 = (tProcInfo_G%rank * tnjdlz2) + tnjdlz2
       self%bz2 = self%ez2
-
-!      if (tProcInfo_G%rank == 1) then
-
-!        ez2 = NZ2_G
-!        tnjdlz2 = NZ2_G - tnjdlz2
-
-!      end if
-
-!      if (tProcInfo_G%rank == 1) bz2 = ez2
-
-!      mainlen = tnjdlz2
 
       self%tlflen_glob = 0
       self%tlflen = 0
@@ -224,12 +172,9 @@ contains
       allocate(self%ac_ar(tMPI%size, 3))
 
 
-      call setupLayoutArrs(self%mainlen, self%fz2, self%ez2, self%ac_ar)
-      call setupLayoutArrs(self%tlflen, self%ffs, self%ffe, self%ff_ar)
-      call setupLayoutArrs(self%tlelen, self%ees, self%eee, self%ee_ar)
-
-!      print*, mainlen, fz2, ez2, ac_ar
-
+      call setupLayoutArrs(tMPI, self%mainlen, self%fz2, self%ez2, self%ac_ar)
+      call setupLayoutArrs(tMPI, self%tlflen, self%ffs, self%ffe, self%ff_ar)
+      call setupLayoutArrs(tMPI, self%tlelen, self%ees, self%eee, self%ee_ar)
 
       allocate(self%fr_rfield(self%tlflen4arr*ntrnds_G), &
                  self%fr_ifield(self%tlflen4arr*ntrnds_G))
@@ -238,10 +183,6 @@ contains
 
       allocate(self%ac_rfield(self%mainlen*ntrnds_G), &
                self%ac_ifield(self%mainlen*ntrnds_G))
-
-!      ac_rfield = sA((fz2-1)*ntrnds_G + 1:bz2*ntrnds_G)
-!      ac_ifield = sA((fz2 + NZ2_G-1)*ntrnds_G + 1: &
-!                      (bz2 + NZ2_G)*ntrnds_G)
 
 
       self%ac_rfield = 0_wp
@@ -256,8 +197,6 @@ contains
 
       self%iParaBas = iElectronBased
       self%qUnique = .true.
-
-!      goto 1000
 
     else
 
@@ -291,7 +230,7 @@ contains
 
 
 
-  call setupLayoutArrs(self%mainlen, self%fz2, self%ez2, self%ac_ar)
+  call setupLayoutArrs(tMPI, self%mainlen, self%fz2, self%ez2, self%ac_ar)
 
 
 
@@ -318,8 +257,8 @@ contains
   call self%getFrBk(tMPI)  ! Get surrounding nodes
 
 
-  call setupLayoutArrs(self%tlflen, self%ffs, self%ffe, self%ff_ar)
-  call setupLayoutArrs(self%tlelen, self%ees, self%eee, self%ee_ar)
+  call setupLayoutArrs(tMPI, self%tlflen, self%ffs, self%ffe, self%ff_ar)
+  call setupLayoutArrs(tMPI, self%tlelen, self%ees, self%eee, self%ee_ar)
 
 
   if (.not. self%qUnique) then
@@ -371,28 +310,28 @@ contains
   self%fr_ifield = 0_wp
 
 
-  call redist2new2(ff_ar_old, self%ff_ar, fr_rfield_old, self%fr_rfield)
-  call redist2new2(ff_ar_old, self%ff_ar, fr_ifield_old, self%fr_ifield)
+  call redist2new2(tMPI, ff_ar_old, self%ff_ar, fr_rfield_old, self%fr_rfield)
+  call redist2new2(tMPI, ff_ar_old, self%ff_ar, fr_ifield_old, self%fr_ifield)
 
-  call redist2new2(ee_ar_old, self%ff_ar, bk_rfield_old, self%fr_rfield)
-  call redist2new2(ee_ar_old, self%ff_ar, bk_ifield_old, self%fr_ifield)
+  call redist2new2(tMPI, ee_ar_old, self%ff_ar, bk_rfield_old, self%fr_rfield)
+  call redist2new2(tMPI, ee_ar_old, self%ff_ar, bk_ifield_old, self%fr_ifield)
 
-  call redist2new2(ac_ar_old, self%ff_ar, ac_rfield_old, self%fr_rfield)
-  call redist2new2(ac_ar_old, self%ff_ar, ac_ifield_old, self%fr_ifield)
-
-
+  call redist2new2(tMPI, ac_ar_old, self%ff_ar, ac_rfield_old, self%fr_rfield)
+  call redist2new2(tMPI, ac_ar_old, self%ff_ar, ac_ifield_old, self%fr_ifield)
 
 
 
-  call redist2new2(ff_ar_old, self%ee_ar, fr_rfield_old, self%bk_rfield)
-  call redist2new2(ff_ar_old, self%ee_ar, fr_ifield_old, self%bk_ifield)
-
-  call redist2new2(ee_ar_old, self%ee_ar, bk_rfield_old, self%bk_rfield)
-  call redist2new2(ee_ar_old, self%ee_ar, bk_ifield_old, self%bk_ifield)
 
 
-  call redist2new2(ac_ar_old, self%ee_ar, ac_rfield_old, self%bk_rfield)
-  call redist2new2(ac_ar_old, self%ee_ar, ac_ifield_old, self%bk_ifield)
+  call redist2new2(tMPI, ff_ar_old, self%ee_ar, fr_rfield_old, self%bk_rfield)
+  call redist2new2(tMPI, ff_ar_old, self%ee_ar, fr_ifield_old, self%bk_ifield)
+
+  call redist2new2(tMPI, ee_ar_old, self%ee_ar, bk_rfield_old, self%bk_rfield)
+  call redist2new2(tMPI, ee_ar_old, self%ee_ar, bk_ifield_old, self%bk_ifield)
+
+
+  call redist2new2(tMPI, ac_ar_old, self%ee_ar, ac_rfield_old, self%bk_rfield)
+  call redist2new2(tMPI, ac_ar_old, self%ee_ar, ac_ifield_old, self%bk_ifield)
 
 !  call mpi_finalize(error)
 !  stop
@@ -401,14 +340,14 @@ contains
 
 
 
-  call redist2new2(ff_ar_old, self%ac_ar, fr_rfield_old, self%ac_rfield)
-  call redist2new2(ff_ar_old, self%ac_ar, fr_ifield_old, self%ac_ifield)
+  call redist2new2(tMPI, ff_ar_old, self%ac_ar, fr_rfield_old, self%ac_rfield)
+  call redist2new2(tMPI, ff_ar_old, self%ac_ar, fr_ifield_old, self%ac_ifield)
 
-  call redist2new2(ee_ar_old, self%ac_ar, bk_rfield_old, self%ac_rfield)
-  call redist2new2(ee_ar_old, self%ac_ar, bk_ifield_old, self%ac_ifield)
+  call redist2new2(tMPI, ee_ar_old, self%ac_ar, bk_rfield_old, self%ac_rfield)
+  call redist2new2(tMPI, ee_ar_old, self%ac_ar, bk_ifield_old, self%ac_ifield)
 
-  call redist2new2(ac_ar_old, self%ac_ar, ac_rfield_old, self%ac_rfield)
-  call redist2new2(ac_ar_old, self%ac_ar, ac_ifield_old, self%ac_ifield)
+  call redist2new2(tMPI, ac_ar_old, self%ac_ar, ac_rfield_old, self%ac_rfield)
+  call redist2new2(tMPI, ac_ar_old, self%ac_ar, ac_ifield_old, self%ac_ifield)
 
 
 
@@ -541,59 +480,12 @@ contains
       self%displs_epf = 0
       call getGathArrs(gath_v, self%recvs_epf, self%displs_epf)
 
-
-
-
 !  #######################################################################
-
-
-
-
-
-
-
-      ! Allocate back, front and active fields....commented out!
-      ! ONLY USING ACTIVE FIELD FOR NOW TO CHECK SCALING...TO SEE
-      ! IF IT'S WORTH PERSUING THIS METHOD
-!      allocate(fr_rfield(tlflen), bk_rfield(tlelen), &
-!               fr_ifield(tlflen), bk_ifield(tlelen))
-
-!      allocate(ac_rfield(tllen), &
-!               ac_ifield(tllen))
-
-!      ac_rfield = sA(fz2:bz2)
-!      ac_ifield = sA(fz2 + NZ2_G:bz2 + NZ2_G)
-
-!      print*, 'INSIDE GETLOCALFIELDINDICES, SIZE OF SA AT 5 IS ', size(sA), &
-!              ' FOR PROCESSOR ', tProcInfo_G%rank
-
 
   call mpi_barrier(tMPI%comm, error)
 
-!  print*, tProcInfo_G%rank, ' made it here, with active nodes redefined between ', &
-!                              fz2, ez2, 'corresponding to z2 = ', (fz2-1)*sLengthOfElmZ2_G, &
-!                              ' to ', (ez2-1)*sLengthOfElmZ2_G
-
-!  print*, 'and sizes of elecs = ', iNumberElectrons_G
-
-!  print*, 'and rank = ', ' had buffer at global node ', bz2
-
-!  print*, tProcInfo_G%rank, ': len of buffM = ', fbuffLen, fbuffLenM
-
-!  print*, tProcInfo_G%rank, '...now front and back has ...', ffs, ffe, ees, eee
-
-!  if (tProcInfo_G%rank == 0) print*, fr_rfield
-
-!if (tProcInfo_G%rank == 1) print*, size(sElZ2_G), sElZ2_G
-
-  !call mpi_finalize(error)
-  !stop
-
-
 !!!!!!          Update number of macroparticles on each process after
 !!!!!!                rearranging everything in the subroutine:
-
-
 
     IF (tMPI%rank == tMPI%size-1) THEN
        rrank = 0
@@ -776,25 +668,20 @@ contains
     end subroutine UpdateGlobalPow
 
 
-!  ###################################################
-
-
-    subroutine alloc_paraf_inds()
-
-      allocate(ac_ar(tProcInfo_G%size, 3))
-      allocate(ff_ar(tProcInfo_G%size, 3))
-      allocate(ee_ar(tProcInfo_G%size, 3))
-
-    end subroutine alloc_paraf_inds
-
-
-
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Send dadz from buffer to MPI process on the right. Data is added to array in 
+!> next process, not written over.
+!> @param[in] tMPI Custom Fortran type to hold MPI info.
+!> @param[in] iso Start index of range of mesh on this process.
+!> @param[in] ieo End index of range of mesh on this process.
+!> @param[in] f_ar Description of current layout of mesh.
+!> @param[out] f_send Description of where to send the data.
 
     subroutine upd8da(dadz_r, dadz_i)
-
-    ! Send dadz from buffer to MPI process on the right
-    ! Data is added to array in next process, not
-    ! written over.
 
       real(kind=wp), contiguous, intent(inout) :: dadz_r(:), dadz_i(:)
 
@@ -1346,29 +1233,29 @@ contains
 
   end subroutine divNodes
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Calculate the overlaps of data in the parallel mesh during the redistribution
+!> stage, so that the algorithm knows where to send and/or recieve data to/from.
+!> So e.g. f_send(1,1:3) will hold number of nodes to send from local front 
+!> array to front array of rank=0, and the local start and end positions of what
+!> is being sent from the local start array, respectively.
+!> @param[in] tMPI Custom Fortran type to hold MPI info.
+!> @param[in] iso Start index of range of mesh on this process.
+!> @param[in] ieo End index of range of mesh on this process.
+!> @param[in] f_ar Description of current layout of mesh.
+!> @param[out] f_send Description of where to send the data.
 
+  subroutine golaps(tMPI, iso, ieo, f_ar, f_send)
 
-
-
-
-
-
-
-
-
-
-
-
-
-  subroutine golaps(iso, ieo, f_ar, f_send)
-
-!     Calculate so e.g. f_send(1,1:3) holds number of nodes to c
-!     send from local front array to front array of rank=0, and
-!     the local start and end positions of what is being sent
-!     from the local start array, respectively
+    use typempicomm
 
 ! inputs
 
+    type(fMPIComm), intent(in) :: tMPI
     integer(kind=ip), intent(in)  :: iso, ieo
     integer(kind=ip), intent(in)  :: f_ar(:,:)
     integer(kind=ip), intent(out) :: f_send(:,:)
@@ -1380,7 +1267,7 @@ contains
 
 !    print*, iso, ieo, size(f_send)
 
-    do iproc = 0,tProcInfo_G%size-1
+    do iproc = 0, tMPI%size-1
 
       f_send(iproc+1,1) = 0
       f_send(iproc+1,2) = 0
@@ -1422,18 +1309,6 @@ contains
 
 
   end subroutine golaps
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 !> @author
@@ -1539,7 +1414,7 @@ contains
 
 
 
-      call setupLayoutArrs(this%mainlen, this%fz2, this%ez2, this%ac_ar)  ! readjust ac_ar with new ez2 for last process
+      call setupLayoutArrs(tMPI, this%mainlen, this%fz2, this%ez2, this%ac_ar)  ! readjust ac_ar with new ez2 for last process
 
 
       this%ez2_GGG = this%ac_ar(tMPI%size, 3)
@@ -1702,80 +1577,7 @@ contains
 
     end if
 
-
-!    call mpi_barrier(tProcInfo_G%comm, error)
-!    print*, 'SENT AND RECVD BOSS!!!'
-!    print*, tProcInfo_G%rank, 'has lrank_v = ', lrank_v!, size(lrank_v), ctrecvs
-!    print*, tProcInfo_G%rank, 'has rrank_v = ', rrank_v
-!    print*, tProcInfo_G%rank, 'has lrfromwhere = ', lrfromwhere
-!    print*, tProcInfo_G%rank, 'has nrecvs_bf = ', nrecvs_bf
-!    print*, tProcInfo_G%rank, 'has nsnds_bf = ', nsnds_bf
-
-
-!    call mpi_finalize(error)
-!    stop
-
-!!  !!!!!!! !!!!!  AND NOW EZ2 OF LAST PROCESS SHOULD EQUAL *GLOBAL* BZ2!!!
-!!
-!!
-!!
-!!  !!!!!!! !!!!!  SO EQUALS GLOBAL MAXIMUM SO NO ACCIDENTAL OVERLAP INTO BANDIT TERRITORY!!!
-!!
-!!
-!!
-!!  !!!!!!! !!!!!  THIS SHOULD PROBABLY BE SET BEFORE THE SEND AND RECV ARRAYS ARE SET UP!!!!
-
-
-
-!  ----      OLD
-!     Send buffer length to process on the right - as the right process
-!     will be updating out local 'buffer' region
-
-!    fbuffLenM = 1
-!
-!    if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-!
-!!        send to rank+1
-!
-!      call mpi_issend(fbuffLen, 1, mpi_integer, tProcInfo_G%rank+1, 4, &
-!             tProcInfo_G%comm, req, error)
-!
-!    end if
-!
-!    if (tProcInfo_G%rank /= 0) then
-!
-!!       rec from rank-1
-!
-!      CALL mpi_recv( fbuffLenM,1,MPI_INTEGER,tProcInfo_G%rank-1,4, &
-!             tProcInfo_G%comm,statr,error )
-!
-!!      call mpi_wait( statr,sendstat,error )
-!
-!    end if
-!
-!    if (tProcInfo_G%rank /= tProcInfo_G%size-1) call mpi_wait( req,sendstat,error )
-!
-!
-!
-!
-!    call mpi_barrier(tProcInfo_G%comm, error)
-!
-!    print* , tProcInfo_G%rank, 'is inside calcBuff, with fz2, ez2, bz2 of = ', fz2, ez2, bz2, &
-!    'and lens of ', mainlen, tllen, fbuffLen, fbuffLenM
-!    -----    OLD
-
-!    call mpi_finalize(error)
-!    stop
-
-
   end subroutine calcBuff
-
-
-
-
-
-
-
 
 !> @author
 !> Lawrence Campbell,
@@ -1805,6 +1607,8 @@ contains
 
   subroutine getFStEnd(self, tMPI)
 
+    use typempicomm
+
     class(pMesh), intent(inout) :: self
     type(fMPIComm), intent(in) :: tMPI
 
@@ -1817,30 +1621,17 @@ contains
 
 ! get global start and end nodes for the active region
 
-
 ! (find min and max electron z2's)
-
-
 
     if (self%iParaBas == iElectronBased) then
 
       fz2_act = minval(ceiling(sElZ2_G / sLengthOfElmZ2_G))   ! front z2 node in 'active' region
 
-!      print*, tMPI%rank, 'and I have fz2_act = ', fz2_act
-
       CALL mpi_allreduce(fz2_act, rbuff, 1, mpi_integer, &
                mpi_min, tMPI%comm, error)
 
-!      print*, tMPI%rank, 'and then my reduced fz2_act = ', rbuff
-
-
-
       fz2_act = rbuff
       self%fz2_GGG = fz2_act
-
-!print*, tMPI%rank, 'and so my fz2_act remains = ', fz2_act
-
-!print*, 'fz2_act = ', fz2_act
 
       ez2_act = maxval(ceiling(sElZ2_G / sLengthOfElmZ2_G) + 1)
 
@@ -1868,12 +1659,6 @@ contains
     end if
 
     n_act_g = ez2_act - fz2_act + 1_ip
-
-
-    !print*, tMPI%rank, 'and then my fz2_act is STILL = ', fz2_act
-
-
-
 
 ! get local start and end nodes for the active region
 
@@ -2039,10 +1824,6 @@ contains
               self%ee_ar(:,3), 1, MPI_INTEGER, &
               tMPI%comm, error)
 
-!        print*, '...so back array = ', ee_ar
-
-
-
   end subroutine getFrBk
 
 
@@ -2051,21 +1832,26 @@ contains
 !> University of Strathclyde, 
 !> Glasgow, UK
 !> @brief
-!> Alternative subroutine to redistribute the field values in field_old
-!> to field_new. The layout of the field in field_old is
-!> described in old_dist, and the layout of the new field
-!> is described in new_dist. This subroutine uses mpi_alltoallv, in
-!> contrast to redist2new which uses mpi the sends and recvs
+!> Alternative subroutine to redistribute the field values in field_old to
+!> field_new. The layout of the field in field_old is described in old_dist,
+!> and the layout of the new field is described in new_dist. This subroutine
+!> uses mpi_alltoallv, in contrast to redist2new, which uses mpi the sends and 
+!> recvs. This routine is usually faster.
 !> @param[in] tMPI Custom Fortran type to hold MPI info.
+!> @param[in] old_dist Description of distribution of data of field_old across
+!> MPI processes.
+!> @param[in] old_dist Description of distribution of data of field_new across
+!> MPI processes.
+!> @param[in] field_old Field values are to be sent from this array
+!> @param[in] field _new Field values are to be sent to this array
 
-  subroutine redist2new2(old_dist, new_dist, field_old, field_new)
+  subroutine redist2new2(tMPI, old_dist, new_dist, field_old, field_new)
 
-  implicit none
-
-
+    use typempicomm
 
 ! inputs
 
+    type(fMPIComm), intent(in) :: tMPI
     integer(kind=ip), intent(in) :: old_dist(:,:), new_dist(:,:)
     real(kind=wp), intent(inout) :: field_old(:), field_new(:)
 
@@ -2087,20 +1873,20 @@ contains
 
 
 
-    allocate(send_ptrs(tProcInfo_G%size, 3))
-    allocate(recv_ptrs(tProcInfo_G%size, 3))
+    allocate(send_ptrs(tMPI%size, 3))
+    allocate(recv_ptrs(tMPI%size, 3))
 
-    allocate(sdispls(tProcInfo_G%size))
-    allocate(rdispls(tProcInfo_G%size))
+    allocate(sdispls(tMPI%size))
+    allocate(rdispls(tMPI%size))
 
-    allocate(nsends(tProcInfo_G%size), nrecvs(tProcInfo_G%size))
+    allocate(nsends(tMPI%size), nrecvs(tMPI%size))
 
-    call golaps(old_dist(tProcInfo_G%rank+1,2), &
-                old_dist(tProcInfo_G%rank+1,3), &
+    call golaps(tMPI, old_dist(tMPI%rank+1,2), &
+                old_dist(tMPI%rank+1,3), &
                 new_dist, send_ptrs)
 
-    call golaps(new_dist(tProcInfo_G%rank+1,2), &
-                new_dist(tProcInfo_G%rank+1,3), &
+    call golaps(tMPI, new_dist(tMPI%rank+1,2), &
+                new_dist(tMPI%rank+1,3), &
                 old_dist, recv_ptrs)
 
 
@@ -2108,33 +1894,12 @@ contains
     nsends = send_ptrs(:,1) * ntrnds_G
     nrecvs = recv_ptrs(:,1) * ntrnds_G
 
-!            nbase = new_dist(iproc_r+1, 2) - 1
 
-!            st_ind_new = send_ptrs(iproc_r+1, 2) - nbase
-!            st_ind_new = (st_ind_new - 1)* ntrnds_G + 1
+    sdispls = ( (send_ptrs(:,2) - (old_dist(tMPI%rank+1, 2) - 1) ) - 1_ip) * ntrnds_G
 
+    rdispls = ( (recv_ptrs(:,2) - (new_dist(tMPI%rank+1, 2) - 1) ) - 1_ip) * ntrnds_G
 
-
-!    send_ptrs(iproc_r+1, 2) - nbase
-
-
-
-    sdispls = ( (send_ptrs(:,2) - (old_dist(tProcInfo_G%rank+1, 2) - 1) ) - 1_ip) * ntrnds_G
-
-
-!    do ij = 1, tProcInfo_G%size
-
-!      if ((ij == 1) .and. () )
-
-!      sdispls(ij) = ( (send_ptrs(ij,2) - (new_dist(ij, 2) - 1) ) - 1_ip) * ntrnds_G
-
-!    end do
-
-
-
-    rdispls = ( (recv_ptrs(:,2) - (new_dist(tProcInfo_G%rank+1, 2) - 1) ) - 1_ip) * ntrnds_G
-
-    do ij = 1, tProcInfo_G%size
+    do ij = 1, tMPI%size
 
       if (send_ptrs(ij,1) == 0) then
 
@@ -2153,7 +1918,7 @@ contains
     end do
 
 
-    do ij = 1, tProcInfo_G%size
+    do ij = 1, tMPI%size
 
       if (recv_ptrs(ij,1) == 0) then
 
@@ -2171,52 +1936,40 @@ contains
 
     end do
 
-
-!    print*, tProcInfo_G%rank, 'nrecvs = ', nrecvs
-!    print*, tProcInfo_G%rank, 'rdispls = ', rdispls
-!    print*, tProcInfo_G%rank, 'recv_ptrs(:,2) = ', recv_ptrs(:,2)
-!    print*, tProcInfo_G%rank, 'nsends = ', nsends
-!    print*, tProcInfo_G%rank, 'sdispls = ', sdispls
-!    print*, tProcInfo_G%rank, 'send_ptrs(:,2) = ', send_ptrs(:,2)
-
-!    call mpi_barrier(tProcInfo_G%comm, error)
-
     call mpi_alltoallv(field_old, nsends, sdispls, mpi_double_precision, &
                        field_new, nrecvs, rdispls, mpi_double_precision, &
-                       tProcInfo_G%comm, error)
+                       tMPI%comm, error)
 
 
     deallocate(nsends, nrecvs)
     deallocate(send_ptrs, recv_ptrs)
     deallocate(sdispls, rdispls)
 
-!    print*, 'called me NOW'
-
-!    call mpi_barrier(tProcInfo_G%comm, error)
-!    call mpi_finalize(error)
-!    stop
-
   end subroutine redist2new2
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Subroutine to redistribute the field values in field_old to field_new. The 
+!> layout of the field in field_old is described in old_dist, and the layout of 
+!> the new field is described in new_dist.
+!> @param[in] tMPI Custom Fortran type to hold MPI info.
+!> @param[in] old_dist Description of distribution of data of field_old across
+!> MPI processes.
+!> @param[in] old_dist Description of distribution of data of field_new across
+!> MPI processes.
+!> @param[in] field_old Field values are to be sent from this array
+!> @param[in] field _new Field values are to be sent to this array
 
+  subroutine redist2new(tMPI, old_dist, new_dist, field_old, field_new)
 
-
-
-
-
-
-
-
-  subroutine redist2new(old_dist, new_dist, field_old, field_new)
-
-
-! Subroutine to redistribute the field values in field_old
-! to field_new. The layout of the field in field_old is
-! described in old_dist, and the layout of the new field
-! is described in new_dist.
+    use typempicomm
 
     ! inputs
 
+    type(fMPIComm), intent(in) :: tMPI
     integer(kind=ip), intent(in) :: old_dist(:,:), new_dist(:,:)
     real(kind=wp), intent(inout) :: field_old(:), field_new(:)
 
@@ -2226,15 +1979,14 @@ contains
     integer(kind=ip) :: st_ind_new, ed_ind_new, &
                         st_ind_old, ed_ind_old, &
                         nbase, obase
+
     integer(kind=ip), allocatable :: send_ptrs(:,:)
 
     integer :: error, req
     integer statr(MPI_STATUS_SIZE)
     integer sendstat(MPI_STATUS_SIZE)
 
-
-
-    allocate(send_ptrs(tProcInfo_G%size, 3))
+    allocate(send_ptrs(tMPI%size, 3))
 
     ! calc overlaps from MPI process 'iproc_s',
     ! then loop round, if size_olap>0 then if
@@ -2243,23 +1995,23 @@ contains
     ! direct assignment
 
 
-!    if (tProcInfo_G%qroot) print*, 'NOW, for new dist described by ', new_dist,'....', &
+!    if (tMPI%qroot) print*, 'NOW, for new dist described by ', new_dist,'....', &
 !                               ' and old dist of ', old_dist
 
-    do iproc_s = 0, tProcInfo_G%size-1   !  maybe do iproc_s = rank, rank-1 (looped round....)
+    do iproc_s = 0, tMPI%size-1   !  maybe do iproc_s = rank, rank-1 (looped round....)
 
-      call golaps(old_dist(iproc_s+1,2), old_dist(iproc_s+1,3), new_dist, send_ptrs)
+      call golaps(tMPI, old_dist(iproc_s+1,2), old_dist(iproc_s+1,3), new_dist, send_ptrs)
 
-!      if (tProcInfo_G%qroot) print*, 'olaps are ', send_ptrs, 'for old nodes ', old_dist(iproc_s+1,2), &
+!      if (tMPI%qroot) print*, 'olaps are ', send_ptrs, 'for old nodes ', old_dist(iproc_s+1,2), &
 !          'to', old_dist(iproc_s+1,3)
 
-!      call mpi_barrier(tProcInfo_G%comm, error)
+!      call mpi_barrier(tMPI%comm, error)
 
-      do iproc_r = 0, tProcInfo_G%size-1
+      do iproc_r = 0, tMPI%size-1
 
         if (send_ptrs(iproc_r+1,1) > 0 ) then
 
-          if ((tProcInfo_G%rank == iproc_r) .and. (iproc_r == iproc_s) ) then
+          if ((tMPI%rank == iproc_r) .and. (iproc_r == iproc_s) ) then
 
             ! assign directly
 
@@ -2302,32 +2054,32 @@ contains
             ed_ind_old = ed_ind_old * ntrnds_G
 
 
-            if (tProcInfo_G%rank == iproc_s) then
+            if (tMPI%rank == iproc_s) then
 
 !              print*, 'SD st_ind_old = ', st_ind_old, ed_ind_old, size(field_old), &
 !              send_ptrs(iproc_r+1,1)
 
               call mpi_issend(field_old(st_ind_old:ed_ind_old), &
                           send_ptrs(iproc_r+1,1)*ntrnds_G, &
-                          mpi_double_precision, iproc_r, 0, tProcInfo_G%comm, req, error)
+                          mpi_double_precision, iproc_r, 0, tMPI%comm, req, error)
 
 !              print*, 'SENDING', field_old(st_ind_old:ed_ind_old)
 
-            else if (tProcInfo_G%rank == iproc_r) then
+            else if (tMPI%rank == iproc_r) then
 
 !              print*, 'SD st_ind_new = ', st_ind_new, ed_ind_new, size(field_new), &
 !                           send_ptrs(iproc_r+1,1)
 
               call mpi_recv(field_new(st_ind_new:ed_ind_new), &
                             send_ptrs(iproc_r+1,1)*ntrnds_G, &
-                            mpi_double_precision, iproc_s, 0, tProcInfo_G%comm, statr, error)
+                            mpi_double_precision, iproc_s, 0, tMPI%comm, statr, error)
 
 !              print*, 'RECIEVED', field_new(st_ind_new:ed_ind_new)
 
             end if
 
-            !if (tProcInfo_G%rank == iproc_s) call mpi_wait( req,sendstat,error )
-  !          call mpi_barrier(tProcInfo_G%comm, error)
+            !if (tMPI%rank == iproc_s) call mpi_wait( req,sendstat,error )
+  !          call mpi_barrier(tMPI%comm, error)
 
    !         call mpi_finalize(error)
    !         stop
@@ -2339,26 +2091,36 @@ contains
 
       end do
 
-!    if (tProcInfo_G%rank == iproc_s) call mpi_wait( req,sendstat,error )
+!    if (tMPI%rank == iproc_s) call mpi_wait( req,sendstat,error )
 
     end do
 
     deallocate(send_ptrs)
 
-    call mpi_barrier(tProcInfo_G%comm, error)
+    call mpi_barrier(tMPI%comm, error)
 
    end subroutine redist2new
 
 
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Subroutine to setup the arrays storing the size, start and end pointers of 
+!> the local field arrays.
+!> @param[in] tMPI Custom Fortran type to hold MPI info.
+!> @param[inout] len Length of the local portion of the mesh.
+!> @param[inout] st_ind Starting index (global) of the mesh on THIS MPI process.
+!> @param[inout] ed_ind Ending index (global) of the mesh on THIS MPI process.
+!> @param[inout] arr Array to describe the structure of the parallel layout.
 
-  subroutine setupLayoutArrs(len, st_ind, ed_ind, arr)
+  subroutine setupLayoutArrs(tMPI, len, st_ind, ed_ind, arr)
 
-!
-! Subroutine to setup the arrays storing the size, start and
-! end pointers of the local field arrays.
-!
+    use typempicomm
 
+    type(fMPIComm), intent(in) :: tMPI
     integer(kind=ip), intent(inout) :: len, st_ind, ed_ind, arr(:,:)
     integer :: error
 
@@ -2377,13 +2139,6 @@ contains
 
   end subroutine setupLayoutArrs
 
-
-
-
-
-
-
-
 !> @author
 !> Lawrence Campbell,
 !> University of Strathclyde, 
@@ -2394,7 +2149,7 @@ contains
 
   subroutine rearrElecs(self, tMPI)
 
-  implicit none
+  use typempicomm
 
   class(pMesh), intent(inout) :: self
   type(fMPIComm), intent(in) :: tMPI
@@ -2631,10 +2386,6 @@ contains
                                cnt2proc(iproc_r+1), &
                                tmp4sending, iproc_r)
 
-                !       call mpi_issend(fz2, 1, mpi_integer, tProcInfo_G%rank-1, 0, &
-!            tProcInfo_G%comm, req, error)
-
-
             end if
 
           end if
@@ -2678,24 +2429,16 @@ contains
 
     end do
 
+! count send_to_each_process
 
+! loop over processes
 
-    ! count send_to_each_process
+! call mpi_scatter(root=iproc, send_to_each_process, to recv_buff)
 
-    ! loop over processes
+! if recv_buff>0 call mpi_recv(from iproc)
 
-      ! call mpi_scatter(root=iproc, send_to_each_process, to recv_buff)
-
-      ! if recv_buff>0 call mpi_recv(from iproc)
-
-      ! loop lor_proc over processes
-        ! if send_to_each_process(lor_proc) > 0  call mpi_send(to lor_proc)
-
-
-
-
-
-
+! loop lor_proc over processes
+! if send_to_each_process(lor_proc) > 0  call mpi_send(to lor_proc)
 
     deallocate(cnt2proc)
     deallocate(tmp4sending)
@@ -2716,18 +2459,20 @@ contains
 
 
 
-
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Subroutine to return the indices of elements in the array
+!> which lie between the upper and lower bounds specified.
+!> @param[out] inds Indices of 'array' which contains values which lie within
+!> the specified range.
+!> @param[in] array The array of values to be queried.
+!> @param[in] lower The lower bound (non-inclusive) of the range.
+!> @param[in] lower The upper bound (inclusive) of the range.
 
   subroutine getinds(inds, array, lower, upper)
-
-  ! getInds
-  !
-  ! Subroutine to return the indices of elements in the array
-  ! which lie between the upper and lower bounds.
-  !
-  !
-  !
-  !
 
     integer(kind=ip), intent(out) :: inds(:)
     real(kind=wp), intent(in) :: array(:)
@@ -2750,22 +2495,21 @@ contains
   end subroutine getinds
 
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Subroutine to send part of an array specified by the indices in 'inds', from
+!> this MPI process to destination MPI process iproc.
+!> @param[in] array The array to be sent.
+!> @param[in] inds The indices of 'array' to be sent.
+!> @param[in] cnt Total number of indices to be sent from 'array'
+!> @param[in] tmparray Temp/scratch array to hold the selected indices from 
+!> 'array' in during sending. Should be at least of size 'cnt'
+!> @param[inout] iproc MPI process to send data to
 
   subroutine sendArrPart(array, inds, cnt, tmparray, iproc)
-
-!
-! Subroutine to send part of an array specified by
-! the indices in 'inds'.
-!
-! cnt - count of the number of elements to be sent
-! inds - integer array of the indices of array to be sent
-! array - real number array of values, of which only part will be
-!         sent as specified in inds
-! tmparray - An array used to temporarily store the values of
-!            'array' to be sent - should be AT LEAST of size
-!            cnt, but may be larger.
-!
-
 
     real(kind=wp), intent(in) :: array(:)
     real(kind=wp), intent(inout) :: tmparray(:)
@@ -2785,13 +2529,22 @@ contains
 
   end subroutine sendArrPart
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Subroutine to recieve an array of reals (double precision) from another MPI
+!> process, to a contiguous location specified by 'st_ind' and 'ed_ind' in a 
+!> possibly larger array.
+!> this MPI process to destination MPI process iproc.
+!> @param[inout] array The array which the recieved information will be placed.
+!> @param[inout] cnt The size of the array being recieved.
+!> @param[inout] iproc MPI process the info is coming from.
+!> @param[in] st_ind Starting index of 'array' into which the info is placed
+!> @param[in] ed_ind Last index of 'array' into which info is placed
 
   subroutine recvArrPart(array, cnt, st_ind, ed_ind, iproc)
-
-! Recv section of array, specified by start and end
-! indices st_ind and ed_ind.
-!
-!
 
     real(kind=wp), intent(inout) :: array(:)
     integer(kind=ip), intent(inout) :: cnt, iproc
