@@ -540,480 +540,6 @@ contains
 
 
 
-!> @author
-!> Lawrence Campbell,
-!> University of Strathclyde, 
-!> Glasgow, UK
-!> @brief
-!> Sync the Power calculated from each process to one array. Each process
-!> will have calc'd its own back, front, and active arrays.
-!> @param[in] tProcInfo Custom type to hold MPI info.
-!> @param[in] fpow Power in the local processes front mesh section
-!> @param[in] apow Power in the local processes active mesh section
-!> @param[in] bpow Power in the local processes back mesh section
-!> @param[inout] gpow Power gathered to one array here, on the root process.
-!> @param[out] qOK Error flag for Puffin.
-
-    subroutine UpdateGlobalPow(self, tProcInfo, fpow, apow, bpow, gpow)
-
-      class(pMesh), intent(in) :: self
-      real(kind=wp), intent(in) :: fpow(:), apow(:), bpow(:)
-      real(kind=wp), intent(inout) :: gpow(:)
-      type(fMPIComm), intent(out)	   :: tProcInfo
-
-      integer(kind=ip) :: gath_v
-
-      real(kind=wp), allocatable :: A_local(:), powi(:)
-
-      integer error
-
-!          Sync power from front field
-
-      gpow=0.0_wp
-
-
-
-      if (self%ffe_GGG > 0) then
-
-        if (tProcInfo%rank /= tProcInfo%size-1) then
-          gath_v = self%tlflen  !-1
-        else
-          gath_v = self%tlflen
-        end if
-
-
-
-
-        allocate(A_local(gath_v))
-
-        A_local = 0_wp
-
-        A_local(1:gath_v) = fpow(1:gath_v)
-        !A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
-
-        call gather1A(A_local, gpow(self%ffs_GGG:self%ffe_GGG), &
-                gath_v, self%ffe_GGG - self%ffs_GGG + 1, &
-                  self%recvs_fpf, self%displs_fpf)
-
-        deallocate(A_local)
-
-      end if
-
-
-
-!          Sync power from active field
-
-      if (tProcInfo%rank /= tProcInfo%size-1) then
-        gath_v = self%mainlen !-1
-      else
-        gath_v = self%mainlen
-      end if
-
-      allocate(A_local(gath_v))
-      allocate(powi(self%ez2_GGG - self%fz2_GGG + 1_ip))
-
-      A_local = 0_wp
-      powi = 0_wp
-
-      A_local(1:gath_v) = apow(1:gath_v)
-
-      if (self%qUnique) then 
-        
-        call gather1A(A_local, powi, &
-                      gath_v, self%fz2_GGG - self%ez2_GGG + 1_ip, &
-                      self%recvs_ppf, self%displs_ppf)
-
-        gpow(fz2_GGG:ez2_GGG) = powi(:)
-
-      else
-        
-        gpow(self%fz2_GGG:self%ez2_GGG) = apow(1:gath_v)
-        
-      end if
-        
-      deallocate(A_local)
-      deallocate(powi)
-
-
-
-!          Sync power from back field
-
-      if (eee_GGG < nz2_G+1_ip) then
-
-        if (tProcInfo%rank /= tProcInfo%size-1_ip) then
-          gath_v = self%tlelen !-1
-        else
-          gath_v = self%tlelen
-        end if
-
-        allocate(A_local(gath_v))
-        allocate(powi(self%eee_GGG - self%ees_GGG + 1_ip))
-
-        A_local = 0_wp
-        powi = 0_wp
-
-        A_local(1:gath_v) = bpow(1:gath_v)
-
-        call gather1A(A_local, powi, &
-                      gath_v, self%eee_GGG - self%ees_GGG + 1_ip, &
-                      self%recvs_epf, self%displs_epf)
-
-        gpow(self%ees_GGG:self%eee_GGG) = powi(:)
-
-        deallocate(A_local)
-        deallocate(powi)
-
-      end if
-
-    end subroutine UpdateGlobalPow
-
-
-!> @author
-!> Lawrence Campbell,
-!> University of Strathclyde, 
-!> Glasgow, UK
-!> @brief
-!> Send dadz from buffer to MPI process on the right. Data is added to array in 
-!> next process, not written over.
-!> @param[in] tMPI Custom Fortran type to hold MPI info.
-!> @param[in] dadz_r Real part of dadz
-!> @param[in] dadz_i Imaginary part of dadz
-
-    subroutine upd8da(tMPI, dadz_r, dadz_i)
-
-      real(kind=wp), contiguous, intent(inout) :: dadz_r(:), dadz_i(:)
-
-      integer :: req, error
-      integer(kind=ip) :: ij, si, sst, sse
-      integer statr(MPI_STATUS_SIZE)
-      integer sendstat(MPI_STATUS_SIZE)
-
-
-      if (qUnique) then
-
-
-
-        tmp_A = 0_wp
-        !snd_A = 0_wp
-
-
-   !           si = rrank_v(1, 1)
-   !         sst = rrank_v(1, 2)
-   !         sse = rrank_v(1, 3)
-   !         call mpi_barrier(tProcInfo_G%comm, error)
-   !         print*, tProcInfo_G%rank, 'here, sending nodes :', (sst - (fz2-1)-1)*ntrnds_G + 1, &
-   !                       'to', (sse-(fz2-1))*ntrnds_G , 'to rank', tProcInfo_G%rank+1
-
-        if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-
-  !        send to rank+1
-
-          !do ij = tProcInfo_G%rank + 1, tProcInfo_G%size-1
-           do ij = 1, nsnds_bf
-
-            si = rrank_v(ij, 1)
-            sst = rrank_v(ij, 2)
-            sse = rrank_v(ij, 3)
-
-
-  !          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
-  !                    mpi_double_precision, &
-  !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
-
-
-!            print*, tProcInfo_G%rank, 'here, sending nodes :', (sst - (fz2-1)-1)*ntrnds_G + 1, &
-!                          'to', (sse-(fz2-1))*ntrnds_G , 'to rank', tProcInfo_G%rank+ij, &
-!                          ' and size dadz_r = ', size(dadz_r), ' and si =  ', si
-
-            sst = (sst - (fz2-1)-1)*ntrndsi_G + 1
-            sse = (sse-(fz2-1))*ntrndsi_G
-            si = si*ntrndsi_G
-
-
-            call mpi_issend(dadz_r(sst:sse), &
-                      si, &
-                      mpi_double_precision, &
-                      tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, req, error)
-
-
-          end do
-
-
-        end if
-
-    !          call mpi_barrier(tProcInfo_G%comm, error)
-     !         print*, tProcInfo_G%rank, 'here, recving nodes :', 1, &
-      !                    'to', lrank_v(1)*ntrndsi_G , 'from rank', lrfromwhere(1)
-
-
-        if (tProcInfo_G%rank /= 0) then
-
-  !       rec from rank-1
-
-          do ij = 1, nrecvs_bf
-
-
-!              print*, tProcInfo_G%rank, 'here, recving nodes :', 1, &
-!                          'to', lrank_v(ij)*ntrndsi_G , 'from rank', lrfromwhere(ij), &
-!                          ' and size dadz_r = ', size(dadz_r)
-
-            CALL mpi_recv( tmp_A(1:lrank_v(ij)*ntrndsi_G), &
-                   lrank_v(ij)*ntrndsi_G, &
-                   mpi_double_precision, &
-            	     lrfromwhere(ij), 0, tProcInfo_G%comm, statr, error )
-
-            dadz_r(1:lrank_v(ij)*ntrndsi_G) = dadz_r(1:lrank_v(ij)*ntrndsi_G) &
-                                           + tmp_A(1:lrank_v(ij)*ntrndsi_G)
-
-          end do
-
-        end if
-
-        if (tProcInfo_G%rank /= tProcInfo_G%size-1) call mpi_wait( req,sendstat,error )
-
-
-
-
-
-
-
-        tmp_A = 0_wp
-
-        if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-
-  !        send to rank+1
-
-          ! do ij = tProcInfo_G%rank + 1, tProcInfo_G%size-1
-          do ij = 1, nsnds_bf
-
-            si = rrank_v(ij, 1)
-            sst = rrank_v(ij, 2)
-            sse = rrank_v(ij, 3)
-
-
-            sst = (sst - (fz2-1)-1)*ntrndsi_G + 1
-            sse = (sse-(fz2-1))*ntrndsi_G
-            si = si*ntrndsi_G
-
-  !          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
-  !                    mpi_double_precision, &
-  !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
-
-            call mpi_issend(dadz_i(sst:sse), &
-                      si, &
-                      mpi_double_precision, &
-                      tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, req, error)
-
-
-          end do
-
-        end if
-
-
-
-        if (tProcInfo_G%rank /= 0) then
-
-  !       rec from rank-1
-
-          do ij = 1, nrecvs_bf
-
-            CALL mpi_recv( tmp_A(1:lrank_v(ij)*ntrndsi_G), &
-                   lrank_v(ij)*ntrndsi_G, &
-                   mpi_double_precision, &
-                   lrfromwhere(ij), 0, tProcInfo_G%comm, statr, error )
-
-            dadz_i(1:lrank_v(ij)*ntrndsi_G) = dadz_i(1:lrank_v(ij)*ntrndsi_G) &
-                                           + tmp_A(1:lrank_v(ij)*ntrndsi_G)
-
-          end do
-
-        end if
-
-
-        if (tProcInfo_G%rank /= tProcInfo_G%size-1) call mpi_wait( req,sendstat,error )
-
-        !dadz_i(1:fbuffLenM) = dadz_i(1:fbuffLenM) + tmp_A
-
-
-      else
-
-
-        call mpi_reduce(dadz_r, tmp_A, mainlen*ntrndsi_G, &
-                        mpi_double_precision, &
-                        mpi_sum, 0, tProcInfo_G%comm, &
-                        error)
-
-        dadz_r = tmp_A
-
-
-        call mpi_reduce(dadz_i, tmp_A, mainlen*ntrndsi_G, &
-                        mpi_double_precision, &
-                        mpi_sum, 0, tProcInfo_G%comm, &
-                        error)
-
-        dadz_i = tmp_A
-
-      end if
-
-    end subroutine upd8da
-
-
-
-
-
-!  ###################################################
-
-
-
-
-
-    subroutine upd8a(ac_rl, ac_il)
-
-      implicit none
-
-    ! Send sA from buffer to process on the left
-    ! Data in 'buffer' on the left is overwritten.
-
-      real(kind=wp), contiguous, intent(inout) :: ac_rl(:), ac_il(:)
-
-      integer(kind=ip) :: req, error, ij, si, sst, sse
-      integer statr(MPI_STATUS_SIZE)
-      integer sendstat(MPI_STATUS_SIZE)
-
-!      real(kind=wp), allocatable :: tstf(:), tstf2(:)
-
-
-
-      if (qUnique) then
-
-
-        if (tProcInfo_G%rank /= 0) then
-
-  !       rec from rank-1
-
-          do ij = 1, nrecvs_bf
-
-            CALL mpi_issend( ac_rl(1:lrank_v(ij)*ntrndsi_G), &
-                   lrank_v(ij)*ntrndsi_G, &
-                   mpi_double_precision, &
-                   lrfromwhere(ij), 0, tProcInfo_G%comm, req, error )
-
-          end do
-
-        end if
-
-
-
-
-
-
-
-        if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-
-  !        send to rank+1
-
-          !do ij = tProcInfo_G%rank + 1, tProcInfo_G%size-1
-           do ij = 1, nsnds_bf
-
-            si = rrank_v(ij, 1)
-            sst = rrank_v(ij, 2)
-            sse = rrank_v(ij, 3)
-
-            sst = (sst - (fz2-1)-1)*ntrndsi_G + 1
-            sse = (sse-(fz2-1))*ntrndsi_G
-            si = si*ntrndsi_G
-
-  !          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
-  !                    mpi_double_precision, &
-  !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
-
-            call mpi_recv(ac_rl(sst:sse), &
-                      si, &
-                      mpi_double_precision, &
-                      tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, statr, error)
-
-
-          end do
-
-
-        end if
-
-
-
-
-        if (tProcInfo_G%rank /= 0) then
-
-  !       rec from rank-1
-
-          do ij = 1, nrecvs_bf
-
-            CALL mpi_issend( ac_il(1:lrank_v(ij)*ntrndsi_G), &
-                   lrank_v(ij)*ntrndsi_G, &
-                   mpi_double_precision, &
-                   lrfromwhere(ij), 0, tProcInfo_G%comm, req, error )
-
-          end do
-
-        end if
-
-
-
-
-
-
-
-        if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-
-  !        send to rank+1
-
-          !do ij = tProcInfo_G%rank + 1, tProcInfo_G%size-1
-           do ij = 1, nsnds_bf
-
-            si = rrank_v(ij, 1)
-            sst = rrank_v(ij, 2)
-            sse = rrank_v(ij, 3)
-
-            sst = (sst - (fz2-1)-1)*ntrndsi_G + 1
-            sse = (sse-(fz2-1))*ntrndsi_G
-            si = si*ntrndsi_G
-
-  !          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
-  !                    mpi_double_precision, &
-  !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
-
-            call mpi_recv(ac_il( sst:sse ), &
-                      si, &
-                      mpi_double_precision, &
-                      tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, statr, error)
-
-
-          end do
-
-
-        end if
-
-
-        if (tProcInfo_G%rank /= 0) call mpi_wait( req,sendstat,error )
-
-
-
-      else
-
-
-        call MPI_Bcast(ac_rl, tllen*ntrndsi_G, &
-                       mpi_double_precision, 0, &
-                       tProcInfo_G%comm, error)
-
-        call MPI_Bcast(ac_il, tllen*ntrndsi_G, &
-                       mpi_double_precision, 0, &
-                       tProcInfo_G%comm, error)
-
-
-      end if
-
-    end subroutine upd8a
-
-
 
 
 
@@ -2645,6 +2171,480 @@ contains
 
 
   end subroutine redistbackFFT
+
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Sync the Power calculated from each process to one array. Each process
+!> will have calc'd its own back, front, and active arrays.
+!> @param[in] tProcInfo Custom type to hold MPI info.
+!> @param[in] fpow Power in the local processes front mesh section
+!> @param[in] apow Power in the local processes active mesh section
+!> @param[in] bpow Power in the local processes back mesh section
+!> @param[inout] gpow Power gathered to one array here, on the root process.
+!> @param[out] qOK Error flag for Puffin.
+
+    subroutine UpdateGlobalPow(self, tProcInfo, fpow, apow, bpow, gpow)
+
+      class(pMesh), intent(in) :: self
+      real(kind=wp), intent(in) :: fpow(:), apow(:), bpow(:)
+      real(kind=wp), intent(inout) :: gpow(:)
+      type(fMPIComm), intent(out)	   :: tProcInfo
+
+      integer(kind=ip) :: gath_v
+
+      real(kind=wp), allocatable :: A_local(:), powi(:)
+
+      integer error
+
+!          Sync power from front field
+
+      gpow=0.0_wp
+
+
+
+      if (self%ffe_GGG > 0) then
+
+        if (tProcInfo%rank /= tProcInfo%size-1) then
+          gath_v = self%tlflen  !-1
+        else
+          gath_v = self%tlflen
+        end if
+
+
+
+
+        allocate(A_local(gath_v))
+
+        A_local = 0_wp
+
+        A_local(1:gath_v) = fpow(1:gath_v)
+        !A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
+
+        call gather1A(A_local, gpow(self%ffs_GGG:self%ffe_GGG), &
+                gath_v, self%ffe_GGG - self%ffs_GGG + 1, &
+                  self%recvs_fpf, self%displs_fpf)
+
+        deallocate(A_local)
+
+      end if
+
+
+
+!          Sync power from active field
+
+      if (tProcInfo%rank /= tProcInfo%size-1) then
+        gath_v = self%mainlen !-1
+      else
+        gath_v = self%mainlen
+      end if
+
+      allocate(A_local(gath_v))
+      allocate(powi(self%ez2_GGG - self%fz2_GGG + 1_ip))
+
+      A_local = 0_wp
+      powi = 0_wp
+
+      A_local(1:gath_v) = apow(1:gath_v)
+
+      if (self%qUnique) then 
+        
+        call gather1A(A_local, powi, &
+                      gath_v, self%fz2_GGG - self%ez2_GGG + 1_ip, &
+                      self%recvs_ppf, self%displs_ppf)
+
+        gpow(fz2_GGG:ez2_GGG) = powi(:)
+
+      else
+        
+        gpow(self%fz2_GGG:self%ez2_GGG) = apow(1:gath_v)
+        
+      end if
+        
+      deallocate(A_local)
+      deallocate(powi)
+
+
+
+!          Sync power from back field
+
+      if (eee_GGG < nz2_G+1_ip) then
+
+        if (tProcInfo%rank /= tProcInfo%size-1_ip) then
+          gath_v = self%tlelen !-1
+        else
+          gath_v = self%tlelen
+        end if
+
+        allocate(A_local(gath_v))
+        allocate(powi(self%eee_GGG - self%ees_GGG + 1_ip))
+
+        A_local = 0_wp
+        powi = 0_wp
+
+        A_local(1:gath_v) = bpow(1:gath_v)
+
+        call gather1A(A_local, powi, &
+                      gath_v, self%eee_GGG - self%ees_GGG + 1_ip, &
+                      self%recvs_epf, self%displs_epf)
+
+        gpow(self%ees_GGG:self%eee_GGG) = powi(:)
+
+        deallocate(A_local)
+        deallocate(powi)
+
+      end if
+
+    end subroutine UpdateGlobalPow
+
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Send dadz from buffer to MPI process on the right. Data is added to array in 
+!> next process, not written over.
+!> @param[in] tMPI Custom Fortran type to hold MPI info.
+!> @param[in] dadz_r Real part of dadz
+!> @param[in] dadz_i Imaginary part of dadz
+
+    subroutine upd8da(tMPI, dadz_r, dadz_i)
+
+      real(kind=wp), contiguous, intent(inout) :: dadz_r(:), dadz_i(:)
+
+      integer :: req, error
+      integer(kind=ip) :: ij, si, sst, sse
+      integer statr(MPI_STATUS_SIZE)
+      integer sendstat(MPI_STATUS_SIZE)
+
+
+      if (qUnique) then
+
+
+
+        tmp_A = 0_wp
+        !snd_A = 0_wp
+
+
+   !           si = rrank_v(1, 1)
+   !         sst = rrank_v(1, 2)
+   !         sse = rrank_v(1, 3)
+   !         call mpi_barrier(tProcInfo_G%comm, error)
+   !         print*, tProcInfo_G%rank, 'here, sending nodes :', (sst - (fz2-1)-1)*ntrnds_G + 1, &
+   !                       'to', (sse-(fz2-1))*ntrnds_G , 'to rank', tProcInfo_G%rank+1
+
+        if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+
+  !        send to rank+1
+
+          !do ij = tProcInfo_G%rank + 1, tProcInfo_G%size-1
+           do ij = 1, nsnds_bf
+
+            si = rrank_v(ij, 1)
+            sst = rrank_v(ij, 2)
+            sse = rrank_v(ij, 3)
+
+
+  !          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
+  !                    mpi_double_precision, &
+  !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
+
+
+!            print*, tProcInfo_G%rank, 'here, sending nodes :', (sst - (fz2-1)-1)*ntrnds_G + 1, &
+!                          'to', (sse-(fz2-1))*ntrnds_G , 'to rank', tProcInfo_G%rank+ij, &
+!                          ' and size dadz_r = ', size(dadz_r), ' and si =  ', si
+
+            sst = (sst - (fz2-1)-1)*ntrndsi_G + 1
+            sse = (sse-(fz2-1))*ntrndsi_G
+            si = si*ntrndsi_G
+
+
+            call mpi_issend(dadz_r(sst:sse), &
+                      si, &
+                      mpi_double_precision, &
+                      tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, req, error)
+
+
+          end do
+
+
+        end if
+
+    !          call mpi_barrier(tProcInfo_G%comm, error)
+     !         print*, tProcInfo_G%rank, 'here, recving nodes :', 1, &
+      !                    'to', lrank_v(1)*ntrndsi_G , 'from rank', lrfromwhere(1)
+
+
+        if (tProcInfo_G%rank /= 0) then
+
+  !       rec from rank-1
+
+          do ij = 1, nrecvs_bf
+
+
+!              print*, tProcInfo_G%rank, 'here, recving nodes :', 1, &
+!                          'to', lrank_v(ij)*ntrndsi_G , 'from rank', lrfromwhere(ij), &
+!                          ' and size dadz_r = ', size(dadz_r)
+
+            CALL mpi_recv( tmp_A(1:lrank_v(ij)*ntrndsi_G), &
+                   lrank_v(ij)*ntrndsi_G, &
+                   mpi_double_precision, &
+            	     lrfromwhere(ij), 0, tProcInfo_G%comm, statr, error )
+
+            dadz_r(1:lrank_v(ij)*ntrndsi_G) = dadz_r(1:lrank_v(ij)*ntrndsi_G) &
+                                           + tmp_A(1:lrank_v(ij)*ntrndsi_G)
+
+          end do
+
+        end if
+
+        if (tProcInfo_G%rank /= tProcInfo_G%size-1) call mpi_wait( req,sendstat,error )
+
+
+
+
+
+
+
+        tmp_A = 0_wp
+
+        if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+
+  !        send to rank+1
+
+          ! do ij = tProcInfo_G%rank + 1, tProcInfo_G%size-1
+          do ij = 1, nsnds_bf
+
+            si = rrank_v(ij, 1)
+            sst = rrank_v(ij, 2)
+            sse = rrank_v(ij, 3)
+
+
+            sst = (sst - (fz2-1)-1)*ntrndsi_G + 1
+            sse = (sse-(fz2-1))*ntrndsi_G
+            si = si*ntrndsi_G
+
+  !          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
+  !                    mpi_double_precision, &
+  !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
+
+            call mpi_issend(dadz_i(sst:sse), &
+                      si, &
+                      mpi_double_precision, &
+                      tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, req, error)
+
+
+          end do
+
+        end if
+
+
+
+        if (tProcInfo_G%rank /= 0) then
+
+  !       rec from rank-1
+
+          do ij = 1, nrecvs_bf
+
+            CALL mpi_recv( tmp_A(1:lrank_v(ij)*ntrndsi_G), &
+                   lrank_v(ij)*ntrndsi_G, &
+                   mpi_double_precision, &
+                   lrfromwhere(ij), 0, tProcInfo_G%comm, statr, error )
+
+            dadz_i(1:lrank_v(ij)*ntrndsi_G) = dadz_i(1:lrank_v(ij)*ntrndsi_G) &
+                                           + tmp_A(1:lrank_v(ij)*ntrndsi_G)
+
+          end do
+
+        end if
+
+
+        if (tProcInfo_G%rank /= tProcInfo_G%size-1) call mpi_wait( req,sendstat,error )
+
+        !dadz_i(1:fbuffLenM) = dadz_i(1:fbuffLenM) + tmp_A
+
+
+      else
+
+
+        call mpi_reduce(dadz_r, tmp_A, mainlen*ntrndsi_G, &
+                        mpi_double_precision, &
+                        mpi_sum, 0, tProcInfo_G%comm, &
+                        error)
+
+        dadz_r = tmp_A
+
+
+        call mpi_reduce(dadz_i, tmp_A, mainlen*ntrndsi_G, &
+                        mpi_double_precision, &
+                        mpi_sum, 0, tProcInfo_G%comm, &
+                        error)
+
+        dadz_i = tmp_A
+
+      end if
+
+    end subroutine upd8da
+
+
+
+
+
+!  ###################################################
+
+
+
+
+
+    subroutine upd8a(ac_rl, ac_il)
+
+      implicit none
+
+    ! Send sA from buffer to process on the left
+    ! Data in 'buffer' on the left is overwritten.
+
+      real(kind=wp), contiguous, intent(inout) :: ac_rl(:), ac_il(:)
+
+      integer(kind=ip) :: req, error, ij, si, sst, sse
+      integer statr(MPI_STATUS_SIZE)
+      integer sendstat(MPI_STATUS_SIZE)
+
+!      real(kind=wp), allocatable :: tstf(:), tstf2(:)
+
+
+
+      if (qUnique) then
+
+
+        if (tProcInfo_G%rank /= 0) then
+
+  !       rec from rank-1
+
+          do ij = 1, nrecvs_bf
+
+            CALL mpi_issend( ac_rl(1:lrank_v(ij)*ntrndsi_G), &
+                   lrank_v(ij)*ntrndsi_G, &
+                   mpi_double_precision, &
+                   lrfromwhere(ij), 0, tProcInfo_G%comm, req, error )
+
+          end do
+
+        end if
+
+
+
+
+
+
+
+        if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+
+  !        send to rank+1
+
+          !do ij = tProcInfo_G%rank + 1, tProcInfo_G%size-1
+           do ij = 1, nsnds_bf
+
+            si = rrank_v(ij, 1)
+            sst = rrank_v(ij, 2)
+            sse = rrank_v(ij, 3)
+
+            sst = (sst - (fz2-1)-1)*ntrndsi_G + 1
+            sse = (sse-(fz2-1))*ntrndsi_G
+            si = si*ntrndsi_G
+
+  !          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
+  !                    mpi_double_precision, &
+  !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
+
+            call mpi_recv(ac_rl(sst:sse), &
+                      si, &
+                      mpi_double_precision, &
+                      tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, statr, error)
+
+
+          end do
+
+
+        end if
+
+
+
+
+        if (tProcInfo_G%rank /= 0) then
+
+  !       rec from rank-1
+
+          do ij = 1, nrecvs_bf
+
+            CALL mpi_issend( ac_il(1:lrank_v(ij)*ntrndsi_G), &
+                   lrank_v(ij)*ntrndsi_G, &
+                   mpi_double_precision, &
+                   lrfromwhere(ij), 0, tProcInfo_G%comm, req, error )
+
+          end do
+
+        end if
+
+
+
+
+
+
+
+        if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+
+  !        send to rank+1
+
+          !do ij = tProcInfo_G%rank + 1, tProcInfo_G%size-1
+           do ij = 1, nsnds_bf
+
+            si = rrank_v(ij, 1)
+            sst = rrank_v(ij, 2)
+            sse = rrank_v(ij, 3)
+
+            sst = (sst - (fz2-1)-1)*ntrndsi_G + 1
+            sse = (sse-(fz2-1))*ntrndsi_G
+            si = si*ntrndsi_G
+
+  !          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
+  !                    mpi_double_precision, &
+  !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
+
+            call mpi_recv(ac_il( sst:sse ), &
+                      si, &
+                      mpi_double_precision, &
+                      tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, statr, error)
+
+
+          end do
+
+
+        end if
+
+
+        if (tProcInfo_G%rank /= 0) call mpi_wait( req,sendstat,error )
+
+
+
+      else
+
+
+        call MPI_Bcast(ac_rl, tllen*ntrndsi_G, &
+                       mpi_double_precision, 0, &
+                       tProcInfo_G%comm, error)
+
+        call MPI_Bcast(ac_il, tllen*ntrndsi_G, &
+                       mpi_double_precision, 0, &
+                       tProcInfo_G%comm, error)
+
+
+      end if
+
+    end subroutine upd8a
 
 
 
