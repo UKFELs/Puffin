@@ -703,15 +703,25 @@ contains
 
 
 
-
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Get local number of nodes and start and global indices of start and end 
+!> points.
+!> @param[in] ndpts Total number of nodes in mesh.
+!> @param[in] numproc Total number of MPI processes.
+!> @param[in] rank Rank of local MPI process.
+!> @param[out] locN Local number of nodes of the global mesh which will be 
+!> stored on this process.
+!> @param[out] local_start Global starting index of the mesh stored on this
+!> process.
+!> @param[out] local_start Global ending index of the mesh stored on this
+!> process.
 
   subroutine divNodes(ndpts, numproc, rank, &
                       locN, local_start, local_end)
-
-! Get local number of nodes and start and global
-! indices of start and end points.
-!
-!           ARGUMENTS
 
     integer(kind=ip), intent(in) :: ndpts, numproc, rank
 
@@ -724,35 +734,35 @@ contains
     integer(kind=ip) :: lowern, highern, remainder
 
 
-    frac = REAL(ndpts)/REAL(numproc)
+    frac = real(ndpts)/real(numproc)
     lowern = FLOOR(frac)
     highern = CEILING(frac)
     remainder = MOD(ndpts,numproc)
 
-    IF (remainder==0) THEN
+    if (remainder==0) then
        locN = lowern
-    ELSE
-       IF (rank < remainder) THEN
+    else
+       if (rank < remainder) then
           locN = highern
-       ELSE
+       else
           locN = lowern
-       ENDIF
-    ENDIF
+       end if
+    end if
 
 
 !     Calculate local start and end values.
 
-    IF (rank >= remainder) THEN
+    if (rank >= remainder) then
 
       local_start = (remainder*highern) + ((rank-remainder) * lowern) + 1
       local_end = local_start + locN - 1
 
-    ELSE
+    else
 
       local_start = rank*locN + 1
       local_end = local_start + locN - 1
 
-    ENDIF
+    end if
 
 
   end subroutine divNodes
