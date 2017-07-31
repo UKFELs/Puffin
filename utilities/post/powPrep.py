@@ -106,9 +106,11 @@ h5=tables.open_file(outfilename,'w')
 filelist=getTimeSlices(baseName)
 numTimes,minZT,maxZT,minZZ,maxZZ=getTimeSliceInfo(filelist,datasetname)
 numSpatialPoints, minS,maxS=getNumSpatialPoints(filelist,datasetname)
+lenz2 = maxS - minS
 deltaz2 = (maxS - minS) / numSpatialPoints
 sumData=numpy.zeros(numTimes)
 peakData=numpy.zeros(numTimes)
+powAv = numpy.zeros(numTimes)
 
 print "files in order:"
 print filelist
@@ -152,7 +154,8 @@ fieldCount=0
 for slice in filelist:
   h5in=tables.open_file(slice,'r')
   fieldData[:,fieldCount]=h5in.root._f_get_child(datasetname).read()
-  sumData[fieldCount]=numpy.trapz(h5in.root._f_get_child(datasetname).read(), None, deltaz2)
+  sumData[fieldCount]=numpy.trapz(h5in.root._f_get_child(datasetname).read(), None, deltaz2) 
+  powAv[fieldCount] = sumData[fieldCount] / lenz2
   peakData[fieldCount]=numpy.max(h5in.root._f_get_child(datasetname).read())
   if peakData[fieldCount] != 0:
     fieldNormData[:,fieldCount]=h5in.root._f_get_child(datasetname).read()/peakData[fieldCount]
@@ -260,6 +263,15 @@ else:
 
 
 
+
+# Scaled peak power
+h5.create_array('/','Power',powAv)
+h5.root.Power._v_attrs.vsMesh='zSeries'
+h5.root.Power._v_attrs.vsType='variable'
+if (qScale==0):
+  h5.root.Power._v_attrs.vsAxisLabels='z (m), Pk Pow (W)'
+else:
+  h5.root.Power._v_attrs.vsAxisLabels='zbar, Pk Pow (scaled)'
 
 # 2D meshes of z2 vs z (scaled) and (ct-z) vs z (unscaled)
 
