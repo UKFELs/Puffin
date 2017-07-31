@@ -448,6 +448,8 @@ SUBROUTINE AbsorptionStep(sAl,h,ffact)
     mask_z2 = getZ2Mask(sLengthOfElmZ2_G, nZ2_G, tTransInfo_G%loc_nz2,   &
                          nBZ2_G, tTransInfo_G%loc_z2_start)
 
+    mask_z2 = 0.0_wp
+
 !!!!!      sAl is local      !!!!!
 !!!!!      goes from 0,total_local_size     !!!!!!!
 
