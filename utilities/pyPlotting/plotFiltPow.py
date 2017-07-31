@@ -278,7 +278,9 @@ def plotFiltPow(h5fname):
     plt.plot(z2axis, phy, label='y phase')
     plt.legend()
 
-#    plt.savefig("ExEy-SpecPower3.png")
+    outname = "ph-mag-" + str(270) + ".png"
+
+    plt.savefig(outname)
     plt.show()
 
 
