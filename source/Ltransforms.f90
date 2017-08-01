@@ -27,8 +27,9 @@ implicit none
 !INCLUDE 'fftw3-mpi.f03'
 
 real(kind=wp) :: tr_time_s, tr_time_e
-type(C_PTR) :: cdata
-complex(C_DOUBLE_COMPLEX), pointer :: Afftw(:,:,:)
+type(C_PTR) :: cdata, cdataLR, cdataUD
+complex(C_DOUBLE_COMPLEX), pointer :: Afftw(:,:,:), &
+                                      AfftwLR(:,:,:), AfftwUD(:,:,:)
 
 
 !INCLUDE 'mpif.h'
@@ -75,8 +76,22 @@ subroutine getTransformPlans4FEL(nnodes,qmeasure,qOK)
      !CALL getTransformPlans_OneD(nnodes(iZ2_CG),qOKL)
      qOKL = .true.
   else
+
      tTransInfo_G%qOneD = .false.
-     call getTransformPlans_MultiD(nnodes,3,qmeasure,qOKL)
+
+     call getTransformPlans_MultiD(tTransInfo_G, cdata, Afftw, &
+                                   nnodes,3,qmeasure,qOKL)
+     nbx_G = 24_ip
+     nby_G = 24_ip
+
+     call getTransformPlans_MultiD(tTransInfoLR_G, cdataLR, AfftwLR, &
+                                   [NBX_G, nnodes(2), nnodes(3)], &
+                                   3,qmeasure,qOKL)
+
+     call getTransformPlans_MultiD(tTransInfoUD_G, cdataUD, AfftwUD, &
+                                   [nnodes(1) - (2_ip*nbx_g), NBY_G, nnodes(3)], &
+                                   3,qmeasure,qOKL)
+
   end if
 
   if (.not. qOKL) goto 1000
@@ -110,7 +125,8 @@ end subroutine getTransformPlans4FEL
 !> @param[out] qOK Logical error flag, == .true.
 !> for successful completion of subroutine.
 
-subroutine getTransformPlans_MultiD(sizes,nDims,qMeasure,qOK)
+subroutine getTransformPlans_MultiD(tTransInfo, cdataT, AfftwT, &
+                                    sizes,nDims,qMeasure,qOK)
 
   implicit none
 
@@ -122,6 +138,9 @@ subroutine getTransformPlans_MultiD(sizes,nDims,qMeasure,qOK)
 !                  and z2 respectively
 ! qOK         OUT  Error flag
 
+  type(cTransformInfoType), intent(inout) :: tTransInfo
+  type(C_PTR) :: cdataT
+  complex(C_DOUBLE_COMPLEX), pointer :: AfftwT(:,:,:)
   integer, intent(in) :: sizes(3)
   integer, intent(in) :: nDims
   logical, intent(in) :: qMeasure
@@ -153,22 +172,22 @@ subroutine getTransformPlans_MultiD(sizes,nDims,qMeasure,qOK)
                                     local_N, local_j_offset)
 
 
-  tTransInfo_G%loc_nz2 = int(local_N, kind=ip)
+  tTransInfo%loc_nz2 = int(local_N, kind=ip)
 
-  tTransInfo_G%loc_z2_start = &
+  tTransInfo%loc_z2_start = &
                    int(local_j_offset, kind=ip)
 
-  tTransInfo_G%total_local_size = &
+  tTransInfo%total_local_size = &
                    int(alloc_local, kind=ip)
 
 
 !     Allocate data
 
-  cdata = fftw_alloc_complex(alloc_local)
+  cdataT = fftw_alloc_complex(alloc_local)
 
 !     Assign to fortran pointer
 
-  call c_f_pointer(cdata, Afftw, [L,M,local_N])
+  call c_f_pointer(cdataT, AfftwT, [L,M,local_N])
 
 
 
@@ -179,24 +198,24 @@ subroutine getTransformPlans_MultiD(sizes,nDims,qMeasure,qOK)
   if (qDiffraction_G) then
     if (qMeasure) then
 
-      tTransInfo_G%fplan = fftw_mpi_plan_dft_3d(N, M, L, &
-                            Afftw, Afftw, tProcInfo_G%comm, &
+      tTransInfo%fplan = fftw_mpi_plan_dft_3d(N, M, L, &
+                            AfftwT, AfftwT, tProcInfo_G%comm, &
                             FFTW_FORWARD, FFTW_MEASURE)
 
 
-      tTransInfo_G%bplan = fftw_mpi_plan_dft_3d(N, M, L, &
-                            Afftw, Afftw, tProcInfo_G%comm, &
+      tTransInfo%bplan = fftw_mpi_plan_dft_3d(N, M, L, &
+                            AfftwT, AfftwT, tProcInfo_G%comm, &
                             FFTW_BACKWARD, FFTW_MEASURE)
 
     else
       
-      tTransInfo_G%fplan = fftw_mpi_plan_dft_3d(N, M, L, &
-                            Afftw, Afftw, tProcInfo_G%comm, &
+      tTransInfo%fplan = fftw_mpi_plan_dft_3d(N, M, L, &
+                            AfftwT, AfftwT, tProcInfo_G%comm, &
                             FFTW_FORWARD, FFTW_ESTIMATE)
 
 
-      tTransInfo_G%bplan = fftw_mpi_plan_dft_3d(N, M, L, &
-                            Afftw, Afftw, tProcInfo_G%comm, &
+      tTransInfo%bplan = fftw_mpi_plan_dft_3d(N, M, L, &
+                            AfftwT, AfftwT, tProcInfo_G%comm, &
                             FFTW_BACKWARD, FFTW_ESTIMATE)      
 
 
@@ -459,10 +478,15 @@ end subroutine Transform_MultiD
 !> @param[out] qOK Logical error flag, == .true.
 !> for successful completion of subroutine.
 
-subroutine GetKValues(recvs,displs,qOK)
+subroutine GetKValues(tTransInfo, kx, ky, kz2_loc, nxl, nyl, nz2l, sLengthOfElmX, &
+                      sLengthOfElmY, sLengthOfElmZ2, recvs,displs,qOK)
 
   implicit none
 
+  type(cTransformInfoType), intent(inout) :: tTransInfo
+  real(kind=wp), allocatable, intent(out) :: kx(:), ky(:), kz2_loc(:)
+  integer(kind=ip), intent(in) :: nxl, nyl, nz2l
+  real(kind=wp), intent(in) :: sLengthOfElmX, sLengthOfElmY, sLengthOfElmZ2
   integer(kind=ip),intent(inout) :: recvs(:),displs(:)
   logical, intent(out) :: qOK
 
@@ -472,9 +496,8 @@ subroutine GetKValues(recvs,displs,qOK)
   integer(kind=ip), dimension(:), allocatable  :: nx
   integer(kind=ip), dimension(:), allocatable  :: ny
   integer(kind=ip), dimension(:), allocatable  :: nz2
-  real(KIND=WP), dimension(:), allocatable :: kz2_loc
-  real(KIND=WP)  :: slengthX, sLengthY,sLengthZ2, pi
-  integer(kind=ip) :: loc_z2_start,loc_nz2
+  real(KIND=WP)  :: slengthX, slengthY,slengthZ2, pi
+  integer(kind=ip) :: loc_z2_start, loc_nz2
   integer(kind=ip) :: error, trans
 
 !                      Begin
@@ -485,16 +508,16 @@ subroutine GetKValues(recvs,displs,qOK)
 
 !         Calculate the Full length along x,y,z2
 
-  slengthX  =  real((NX_G),KIND=WP) * sLengthOfElmX_G
-  slengthY  =  real((NY_G),KIND=WP) * sLengthOfElmY_G
-  slengthZ2 =  real((NZ2_G-1_ip),KIND=WP) * sLengthOfElmZ2_G
+  slengthX  =  real((nxl),KIND=WP) * sLengthOfElmX
+  slengthY  =  real((nyl),KIND=WP) * sLengthOfElmY
+  slengthZ2 =  real((nz2l-1_ip),KIND=WP) * sLengthOfElmZ2
 
 ! Calculate maximum x, y and z2 values for the n arrays
 ! Arrays go from (0:N/2-1) then (-N/2:-1)
 
-  maxx = ceiling(real(NX_G, kind=wp) / 2.0_wp)
-  maxy = ceiling(real(NY_G, kind=wp) / 2.0_wp)
-  maxz2 = ceiling(real(NZ2_G-1_ip, kind=wp) / 2.0_wp)
+  maxx = ceiling(real(nxl, kind=wp) / 2.0_wp)
+  maxy = ceiling(real(nyl, kind=wp) / 2.0_wp)
+  maxz2 = ceiling(real(nz2l-1_ip, kind=wp) / 2.0_wp)
 
 !         Calculate nx, ny and nz2 values...
 !         nx and ny are calculated in full by all
@@ -502,35 +525,41 @@ subroutine GetKValues(recvs,displs,qOK)
 !         nz2 is calculated locally in segments
 
 !              If 1D  use transpose order.
-  if ( tTransInfo_G%qOneD) then
-    loc_z2_start = tTransInfo_G%loc_z2_start_aft_trans
-    loc_nz2 = tTransInfo_G%loc_nz2_aft_trans
+  if ( tTransInfo%qOneD) then
+    loc_z2_start = tTransInfo%loc_z2_start_aft_trans
+    loc_nz2 = tTransInfo%loc_nz2_aft_trans
   else
 !       If not use normal order tranforms and get kx and ky
-    loc_z2_start = tTransInfo_G%loc_z2_start
-    loc_nz2 = tTransInfo_G%loc_nz2
+    loc_z2_start = tTransInfo%loc_z2_start
+    loc_nz2 = tTransInfo%loc_nz2
 
-    allocate(nx(0:NX_G-1))
-    allocate(ny(0:NY_G-1))
+    allocate(kx(0:nxl-1))
+    allocate(ky(0:nyl-1))
+    if (tTransInfo%loc_nz2/=0) then
+      allocate(kz2_loc(0:loc_nz2-1))
+    end if
 
-    do i = 0,NX_G-1
+    allocate(nx(0:nxl-1))
+    allocate(ny(0:nyl-1))
+
+    do i = 0,nxl-1
       if ( i >= maxx ) then
-        nx(i) = i - NX_G
+        nx(i) = i - nxl
       else
         nx(i) = i
       end if
     end do
 
-    do i = 0,NY_G-1
+    do i = 0,nyl-1
       if (i >= maxy ) then
-        ny(i) = i - NY_G
+        ny(i) = i - nyl
       else
         ny(i) = i
       end if
     end do
 
-    kx_G=2.0_WP * pi * real(nx, kind=wp) / sLengthX
-    ky_G=2.0_WP * pi * real(ny, kind=wp) / sLengthY
+    kx = 2.0_WP * pi * real(nx, kind=wp) / slengthX
+    ky = 2.0_WP * pi * real(ny, kind=wp) / slengthY
     deallocate(nx,ny)
   end if
 
@@ -540,21 +569,21 @@ subroutine GetKValues(recvs,displs,qOK)
     allocate(nz2(0:loc_nz2-1))
     do i = 0,loc_nz2-1
       if ( loc_z2_start + i >= maxz2) then
-        nz2(i) = loc_z2_start + i - (NZ2_G-1_ip)
+        nz2(i) = loc_z2_start + i - (nz2l-1_ip)
       else
         nz2(i) = loc_z2_start + i
       end if
     end do
 
-    kz2_loc_G=2.0_WP*pi*real(nz2, kind=wp) / sLengthZ2
+    kz2_loc = 2.0_WP*pi*real(nz2, kind=wp) / slengthZ2
 
     deallocate(nz2)
   end if
 
 !        Get gathering arrays for global all_to_all operations
 
-  trans = NX_G*NY_G
-  call getGathArrs(trans*tTransInfo_G%loc_nz2,recvs,displs)
+  trans = nxl*nyl
+  call getGathArrs(trans*tTransInfo%loc_nz2,recvs,displs)
 
 !              Set error flag and exit
 

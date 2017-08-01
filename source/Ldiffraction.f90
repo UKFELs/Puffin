@@ -454,7 +454,6 @@ SUBROUTINE AbsorptionStep(sAl,h,ffact)
 !!!!!      goes from 0,total_local_size     !!!!!!!
 
 
-
     do iz2 = 1_IP, loc_nz2
       do iy = 1_ip, ny_g
         do ix = 1_ip, nx_g
@@ -477,48 +476,66 @@ SUBROUTINE AbsorptionStep(sAl,h,ffact)
 
 !     FFT sAb
 
-  CALL Transform(tTransInfo_G%fplan, sAl, qOKL)
+!  then FFT and multiply and inverse FFT then
 
-!     Apply filter, by decreasing fourier coefficients
+  AfftwLR = sAl(1:NBX_G, :, :)
 
-  do z2_inc=0,loc_nz2-1_IP
-    do y_inc=0,NY_G-1_IP
-      do x_inc=0,NX_G-1_IP
+  call aBConds(tTransInfoLR_G, AfftwLR, h, kxLR_G, kyLR_G, kz2LR_G, &
+               nBX_G, nY_G, nZ2_G-1_ip )
 
-        if (kz2_loc_G(z2_inc)/=0.0_WP) then
+  sAl(1:NBX_G, :, :) = AfftwLR
 
-              !  sAl(ind)=exp(-posI*h*(kx_G(x_inc)**2 + &
-              !             ky_G(y_inc)**2) / &
-              !             (2.0_WP*kz2_loc_G(z2_inc)))*sAl(ind)
+!  then
 
-           sAl(x_inc+1,y_inc+1,z2_inc+1) = exp(-h*sBeta_G*(abs(kx_G(x_inc)) + &
-                          abs(ky_G(y_inc))) / &
-                          (sqrt(abs(2.0_WP * kz2_loc_G(z2_inc))))) * &
-                          sAl(x_inc+1,y_inc+1,z2_inc+1)
+  AfftwLR = sAl(nx_g - NBX_G + 1_ip:nx_g,:,:)
+!  then FFT and multiply and inverse FFT then
 
-!          sAl(ind) = exp(-h*sBeta_G) * sAl(ind)
+  call aBConds(tTransInfoLR_G, AfftwLR, h, kxLR_G, kyLR_G, kz2LR_G, &
+               nBX_G, nY_G, nZ2_G-1_ip )
 
-!        else
+  sAl(nx_g - NBX_G + 1_ip:nx_g,:,:) = AfftwLR
+  
+! etc...
 
-!          sAl(x_inc+1,y_inc+1,z2_inc+1) = CMPLX(0.0, 0.0, C_DOUBLE_COMPLEX)
+  AfftwUD = sAl(NBX_G+1_ip:nx_g-NBX_G,1:nBY_G,:)
+!  then FFT and multiply and inverse FFT then
 
-        end if
+  call aBConds(tTransInfoUD_G, AfftwUD, h, kxUD_G, kyUD_G, kz2UD_G, &
+               nx_g - (2_IP*nBX_G), nby_G, &
+                         nZ2_G-1_ip )
 
-      end do
-    end do
-  end do
+  sAl(NBX_G+1_ip:nx_g-NBX_G,1:nBY_G,:) = AfftwUD
+
+! fft and back etc
+
+  AfftwUD = sAl(NBX_G+1_ip:nx_g-NBX_G, ny_g - nBY_G + 1_ip:ny_g,:)
+!  then FFT and multiply and inverse FFT then
+
+  call aBConds(tTransInfoUD_G, AfftwUD, h, kxUD_G, kyUD_G, kz2UD_G, &
+               nx_g - (2_IP*nBX_G), nby_G, &
+                         nZ2_G-1_ip )
+
+  sAl(NBX_G+1_ip:nx_g-NBX_G,ny_g - nBY_G + 1_ip:ny_g,:) = AfftwUD
+
+
+!
+!  new bounds
+!  new diff
+!  type
+!
+
+
+
 
 !     Inverse FFT
 
-  call transform(tTransInfo_G%bplan, sAl, qOKL)
+
 
 !CALL MPI_BARRIER(tProcInfo_G%comm,error)
 
 !  IF (.NOT. qOKL) GOTO 1000
 
-!     Scale the field data to normalize transforms
 
-  sAl = sAl / ffact
 
 !     Recombine masked field around boundary with remainder
 
@@ -528,8 +545,63 @@ SUBROUTINE AbsorptionStep(sAl,h,ffact)
   deallocate(mask, mask_z2)
   deallocate(sAnb)
 
-END SUBROUTINE AbsorptionStep
+end subroutine AbsorptionStep
 
+
+  subroutine aBConds(tTransInfo, sAl, h, kx, ky, kz2, nmx, nmy, nmz2)
+
+    type(cTransformInfoType), intent(inout) :: tTransInfo
+    complex(C_DOUBLE_COMPLEX), pointer, intent(inout) :: sAl(:,:,:)
+    real(kind=wp), intent(in) :: h
+    integer(kind=ip), intent(in) :: nmx, nmy, nmz2
+    real(kind=wp), intent(in) :: kx(0:nmx-1), ky(0:nmy-1), &
+                                 kz2(0:tTransInfo%loc_nz2-1)
+    real(kind=wp) :: ffact2
+    integer(kind=ip) :: iz2, x_inc, y_inc, z2_inc, ind, ix, iy
+    logical :: qOKL
+    
+    ffact2 = real(nmx, kind=wp) * real(nmy, kind=wp) * real(nz2_g-1_ip,kind=wp)
+
+    call Transform(tTransInfo%fplan, sAl, qOKL)
+
+!     Apply filter, by decreasing fourier coefficients
+
+    do z2_inc=0,tTransInfo%loc_nz2-1_IP
+      do y_inc=0,size(ky)-1_IP
+        do x_inc=0,size(kx)-1_IP
+
+          if (kz2(z2_inc)/=0.0_WP) then
+
+              !  sAl(ind)=exp(-posI*h*(kx_G(x_inc)**2 + &
+              !             ky_G(y_inc)**2) / &
+              !             (2.0_WP*kz2_loc_G(z2_inc)))*sAl(ind)
+
+             sAl(x_inc+1,y_inc+1,z2_inc+1) = exp(-h*sBeta_G*(abs(kx(x_inc)) + &
+                           abs(ky(y_inc))) / &
+                            (sqrt(abs(2.0_WP * kz2(z2_inc))))) * &
+                            sAl(x_inc+1,y_inc+1,z2_inc+1)
+
+!          sAl(ind) = exp(-h*sBeta_G) * sAl(ind)
+
+!        else
+
+!          sAl(x_inc+1,y_inc+1,z2_inc+1) = CMPLX(0.0, 0.0, C_DOUBLE_COMPLEX)
+
+          end if
+
+        end do
+      end do
+    end do
+
+    call transform(tTransInfo%bplan, sAl, qOKL)
+
+!     Scale the field data to normalize transforms
+
+    sAl = sAl / ffact2
+
+  end subroutine aBConds
+  
+  
 
 ! PUT IN ANOTHER FILE
 !**************************************************

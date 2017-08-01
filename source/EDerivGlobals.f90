@@ -49,6 +49,14 @@ real(kind=wp), allocatable :: kx_G(:)
 real(kind=wp), allocatable :: ky_G(:)
 real(kind=wp), allocatable :: kz2_loc_G(:)
 
+real(kind=wp), allocatable :: kxLR_G(:)
+real(kind=wp), allocatable :: kyLR_G(:)
+real(kind=wp), allocatable :: kz2LR_G(:)
+
+real(kind=wp), allocatable :: kxUD_G(:)
+real(kind=wp), allocatable :: kyUD_G(:)
+real(kind=wp), allocatable :: kz2UD_G(:)
+
 real(kind=wp) :: sBeta_G    ! Absorption coefficient
 
 real(kind=wp)  :: sfilt   ! Frequency cutoff for high pass filter, in units 

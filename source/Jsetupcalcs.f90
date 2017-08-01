@@ -246,8 +246,8 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
     diffstep = dStepFrac * 4.0_WP * pi * rho
     sBeta_G = sBeta
 
-    NBX_G = 16_IP   ! Nodes used in boundaries
-    NBY_G = 16_IP
+    NBX_G = 24_IP   ! Nodes used in boundaries
+    NBY_G = 24_IP
 
     NBZ2_G = 37_IP
 

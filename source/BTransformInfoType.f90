@@ -59,4 +59,10 @@ MODULE TransformInfoType
       TYPE(cTransformInfoType) :: tTransInfo_G
       SAVE tTransInfo_G
 
+      TYPE(cTransformInfoType) :: tTransInfoLR_G
+      SAVE tTransInfoLR_G
+
+      TYPE(cTransformInfoType) :: tTransInfoUD_G
+      SAVE tTransInfoUD_G
+
 END MODULE TransformInfoType

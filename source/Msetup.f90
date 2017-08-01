@@ -430,21 +430,36 @@ MODULE Setup
       END IF
 
     ELSE
-      ALLOCATE(kx_G(0:iNodes(iX_CG)-1))
-      ALLOCATE(ky_G(0:iNodes(iY_CG)-1))
+      !ALLOCATE(kx_G(0:iNodes(iX_CG)-1))
+      !ALLOCATE(ky_G(0:iNodes(iY_CG)-1))
 
-      IF (tTransInfo_G%loc_nz2/=0) THEN
-         ALLOCATE(kz2_loc_G(0:tTransInfo_G%loc_nz2-1))
-      END IF
+      !IF (tTransInfo_G%loc_nz2/=0) THEN
+      !   ALLOCATE(kz2_loc_G(0:tTransInfo_G%loc_nz2-1))
+      !   allocate(kxUD_G, kyUD_G, kz2UD_G)
+      !   allocate(kxLR_G, kyLR_G, kz2LR_G)
+      !END IF
 
     END IF
 
-    ALLOCATE(frecvs(tProcInfo_G%size),fdispls(tProcInfo_G%size))
+    allocate(frecvs(tProcInfo_G%size),fdispls(tProcInfo_G%size))
 
-    CALL MPI_BARRIER(tProcInfo_G%comm,error)
+    call MPI_BARRIER(tProcInfo_G%comm,error)
 
-    CALL GetKValues(frecvs,fdispls,qOKL)
+    call GetKValues(tTransInfo_G, kx_G, ky_G, kz2_loc_G, &
+                    nx_g, ny_G, nz2_G, sLengthOfElmX_G, &
+                    sLengthOfElmY_G, sLengthOfElmZ2_G,frecvs,fdispls,qOKL)
+
+    call GetKValues(tTransInfoLR_G, kxLR_G, kyLR_G, kz2LR_G, &
+                    nBX_G, ny_G, nZ2_G, sLengthOfElmX_G, &
+                    sLengthOfElmY_G, sLengthOfElmZ2_G,frecvs,fdispls,qOKL)
+
+    call GetKValues(tTransInfoUD_G, kxUD_G, kyUD_G, kz2UD_G, &
+                    nx_g - (2_IP*nBX_G), nby_G, nZ2_G, sLengthOfElmX_G, &
+                    sLengthOfElmY_G, sLengthOfElmZ2_G,frecvs,fdispls,qOKL)
+                    
     IF (.NOT. qOKL) GOTO 1000
+    
+    
 
   END IF
 
