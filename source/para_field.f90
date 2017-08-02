@@ -38,7 +38,7 @@ integer(kind=ip), allocatable :: recvs_ppf(:), displs_ppf(:), recvs_fpf(:), &
                                  displs_fpf(:), recvs_epf(:), displs_epf(:)
 
 integer(kind=ip) :: fz2, ez2, lTr, bz2, fbuffLen, fbuffLenM, tllen, mainlen, &
-                    fz2_GGG, ez2_GGG
+                    fz2_GGG, ez2_GGG, bz2PB
 
 integer(kind=ip) :: ffs, ffe, tlflen, ees, eee, tlelen, tlflen_glob, tlelen_glob, &
                     tlflen4arr, tlelen4arr, ffs_GGG, ffe_GGG, ees_GGG, eee_GGG
@@ -136,6 +136,7 @@ contains
     INTEGER(KIND=IPL) :: sendbuff, recvbuff
     INTEGER recvstat(MPI_STATUS_SIZE)
 
+    real(kind=wp) :: lenz2
 
 !    print*, 'INSIDE GETLOCALFIELDINDICES, SIZE OF SA IS ', size(sA)
 
@@ -215,7 +216,7 @@ contains
 
       qStart_new = .false.
 
-      iParaBas = iElectronBased
+      if (fieldMesh == iTemporal) iParaBas = iElectronBased
       qUnique = .true.
 
 !      goto 1000
@@ -231,6 +232,27 @@ contains
       deallocate(recvs_fpf, displs_fpf, recvs_epf, displs_epf)
 
     end if
+
+
+!!!   APPLY BOUNDS - PROBABLY A BETTER PLACE FOR THIS....
+
+
+    lenz2 = sLengthOfElmZ2_G * real((nz2_G - 1_ip), kind=wp )
+    sElZ2_G = sElZ2_G - (real(floor(sElZ2_G / lenz2), kind=wp) * lenz2 )
+
+
+!  where (sElZ2_G > sLengthOfElmZ2_G * real((nz2_G - 1_ip), kind=wp ))
+!
+!    sElZ2_G = sElZ2_G - sLengthOfElmZ2_G * real((nz2_G - 1_ip), kind=wp )
+!
+!  end where
+
+!  do idd = 1, size(sElZ2_G)
+!    if (sElZ2_G(idd) > sLengthOfElmZ2_G * real((nz2_G - 1_ip), kind=wp )) then
+!      print*, 'REBOUNDING!!!'
+!      sElZ2_G(idd) = sElZ2_G(idd) - 
+!    end if
+!  end do
 
 
 
@@ -569,16 +591,19 @@ contains
     sendbuff = iNumberElectrons_G
     recvbuff = iNumberElectrons_G
 
-    DO ij=2,tProcInfo_G%size
-       CALL MPI_ISSEND( sendbuff,1,MPI_INT_HIGH,rrank,&
-            0,tProcInfo_G%comm,req,error )
-       CALL MPI_RECV( recvbuff,1,MPI_INT_HIGH,lrank,&
-            0,tProcInfo_G%comm,recvstat,error )
-       CALL MPI_WAIT( req,sendstat,error )
-       procelectrons_G(ij) = recvbuff
-       sendbuff=recvbuff
-    END DO
+    if (tProcInfo_G%size > 1_ip) then
 
+      do ij=2,tProcInfo_G%size
+         call MPI_ISSEND( sendbuff,1,MPI_INT_HIGH,rrank,&
+              0,tProcInfo_G%comm,req,error )
+         call MPI_RECV( recvbuff,1,MPI_INT_HIGH,lrank,&
+              0,tProcInfo_G%comm,recvstat,error )
+         call MPI_WAIT( req,sendstat,error )
+         procelectrons_G(ij) = recvbuff
+         sendbuff=recvbuff
+      end do
+
+    end if
 
 
 
@@ -967,7 +992,8 @@ contains
 
 
 
-      if (ffe_GGG > 0) then
+!      if (ffe_GGG > 0) then
+      if ((ffe_GGG - ffs_GGG) > 0) then
 
         if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
           gath_v = tlflen  !-1
@@ -1040,7 +1066,8 @@ contains
 
 
 
-      if (eee_GGG < nz2_G+1) then
+!      if (eee_GGG < nz2_G+1) then
+      if ( (eee_GGG - ees_GGG) > 0) then
 
         if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
           gath_v = tlelen !-1
@@ -1579,6 +1606,7 @@ contains
       integer statr(MPI_STATUS_SIZE)
       integer sendstat(MPI_STATUS_SIZE)
 
+      real(kind=wp), allocatable :: Abounds(:)
 
       if (qUnique) then
 
@@ -1745,6 +1773,137 @@ contains
         dadz_i = tmp_A
 
       end if
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  PERIODIC BOUNDS - EXPERIMENTAL
+
+
+
+      if (FieldMesh == iPeriodic) then
+
+        si = ntrndsi_G * (bz2PB + 1_ip)
+        sst = ((tllen - (bz2PB+1_ip) ) * ntrndsi_G) + 1_ip
+        sse = tllen * ntrndsi_G
+
+!print*,'why0.1', tProcInfo_G%rank
+
+        if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
+
+            call mpi_issend(si, 1, mpi_integer, 0_ip, 0, &
+                            tProcInfo_G%comm, req, error)
+
+        end if
+
+        if (tProcInfo_G%rank == 0) then
+
+            call mpi_recv( si, 1, mpi_integer, tProcInfo_G%size-1_ip, 0, &
+                           tProcInfo_G%comm, statr, error )
+
+        end if
+
+        if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
+
+          call mpi_issend(dadz_r(sst:sse), &
+                          si, &
+                          mpi_double_precision, &
+                          0_ip, 0, &
+                          tProcInfo_G%comm, req, error)
+
+        end if
+
+
+        if (tProcInfo_G%rank == 0) then
+
+          allocate(Abounds(si))
+
+          call mpi_recv( Abounds, si, mpi_double_precision, &
+                   tProcInfo_G%size-1_ip, 0, tProcInfo_G%comm, &
+                   statr, error )
+
+          dadz_r(1:si) = dadz_r(1:si) + Abounds
+
+        end if
+
+       
+        if (tProcInfo_G%rank == tProcInfo_G%size-1) then
+       
+          call mpi_wait( req,sendstat,error )
+          call mpi_issend(dadz_i(sst:sse), si, mpi_double_precision, &
+                          0_ip, 0, tProcInfo_G%comm, req, error)
+       
+        end if
+     
+        if (tProcInfo_G%rank == 0) then
+       
+          call mpi_recv( Abounds, si, mpi_double_precision, &
+                    tProcInfo_G%size-1_ip, 0, tProcInfo_G%comm, &
+                    statr, error )
+       
+          dadz_i(1:si) = dadz_i(1:si) + Abounds
+
+          deallocate(Abounds) 
+
+        end if
+
+
+        if (tProcInfo_G%rank == tProcInfo_G%size-1) then
+
+          call mpi_wait( req,sendstat,error )
+
+        end if
+
+
+
+       
+        if (tProcInfo_G%rank == 0_ip) then
+       
+          call mpi_issend(dadz_r(1:si), si, mpi_double_precision, &
+                          tProcInfo_G%size-1_ip, 0, &
+                          tProcInfo_G%comm, req, error)
+
+        end if
+
+
+
+        if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
+
+          call mpi_recv( dadz_r(sst:sse), si, mpi_double_precision, &
+                   0, 0, tProcInfo_G%comm, statr, error )
+       
+        end if
+
+
+        if (tProcInfo_G%rank == 0_ip) then
+
+          call mpi_wait( req,sendstat,error )
+          call mpi_issend(dadz_i(1:si), si, mpi_double_precision, &
+                          tProcInfo_G%size-1_ip, 0, &
+                          tProcInfo_G%comm, req, error)
+
+        end if
+
+
+        if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
+
+          call mpi_recv( dadz_i(sst:sse), si, mpi_double_precision, &
+                   0, 0, tProcInfo_G%comm, statr, error )
+
+        end if
+
+
+        if (tProcInfo_G%rank == 0_ip) then
+
+          call mpi_wait( req,sendstat,error )
+
+        end if
+
+      end if  ! End synch'ing for periodic mesh...
 
     end subroutine upd8da
 
@@ -2299,17 +2458,17 @@ contains
 
     if (iNumberElectrons_G > 0_ipl) then
 
-    allocate(sp2(iNumberElectrons_G))
+      allocate(sp2(iNumberElectrons_G))
 
-    call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, sEta_G, sGammaR_G, sAw_G)
+      call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, sEta_G, sGammaR_G, sAw_G)
 
-    bz2_len = dz  ! distance in zbar until next rearrangement
-    bz2_len = maxval(sElZ2_G + bz2_len * sp2)  ! predicted length in z2 needed needed in buffer for beam
+      bz2_len = dz  ! distance in zbar until next rearrangement
+      bz2_len = maxval(sElZ2_G + bz2_len * sp2)  ! predicted length in z2 needed needed in buffer for beam
 
 !    print*, 'bz2 length is...', bz2_len
 !    print*, 'max p2 is ', maxval(sp2)
 
-    deallocate(sp2)
+      deallocate(sp2)
 
     else
 
@@ -2323,7 +2482,24 @@ contains
 
     bz2 = nint(bz2_len / sLengthOfElmZ2_G)  ! node index of final node in boundary
 
-    if (bz2 > nz2_G) bz2 = nz2_G
+    if (fieldMesh == iPeriodic) then
+
+      bz2PB = 0_ip
+
+      if (bz2 > nz2_G) then
+
+        bz2PB = bz2 - nz2_G
+!        if (bz2PB >= fz2) qUnique = .false.
+        !bz2 = nz2_G
+
+      end if
+
+    else
+
+      if (bz2 > nz2_G) bz2 = nz2_G
+
+    end if
+
 
 ! Find global bz2...
 
@@ -2332,7 +2508,7 @@ contains
 
     if (tProcInfo_G%rank == tProcInfo_G%size-1) then
 
-      print*, bz2
+!      print*, bz2, bz2PB
       bz2 = bz2_globm
 
     else
@@ -2361,10 +2537,26 @@ contains
 
 
       if (tProcInfo_G%rank == tProcInfo_G%size-1) then
+        
+        if (fieldMesh == iPeriodic) then
 
-        mainlen = tllen
-        fbuffLen = 0
-        ez2 = bz2
+          !mainlen = tllen
+!          print*, 'mainlen', mainlen
+!          print*, 'tllen', tllen
+!          print*, 'nz2_g', nz2_g
+!          print*, 'bz2PB', bz2PB
+!          print*, 'bz2', bz2
+          tllen = mainlen + bz2PB
+          fbuffLen = bz2PB
+          ez2 = nz2_g !bz2
+
+        else
+
+          mainlen = tllen
+          fbuffLen = 0
+          ez2 = bz2
+
+        end if
 
       end if
 
@@ -2741,9 +2933,7 @@ contains
 
 
 
-      if (efz2_MG < 1) then
-
-!     then there is no front section of the field...
+      if (fieldMesh == iPeriodic) then
 
         tlflen_glob = 0
         tlflen = 0
@@ -2753,23 +2943,37 @@ contains
         ffs_GGG = 0
         ffe_GGG = 0
 
+      else
 
-      else if (efz2_MG > 0) then
+        if (efz2_MG < 1) then
 
-        tlflen_glob = efz2_MG
+!     then there is no front section of the field...
 
-        call divNodes(efz2_MG,tProcInfo_G%size, &
-                      tProcInfo_G%rank, &
-                      tlflen, ffs, ffe)
+          tlflen_glob = 0
+          tlflen = 0
+          tlflen4arr = 1
+          ffs = 0
+          ffe = 0
+          ffs_GGG = 0
+          ffe_GGG = 0
 
-        tlflen4arr = tlflen
+        else if (efz2_MG > 0) then
 
-        ffs_GGG = 1
-        ffe_GGG = efz2_MG
+          tlflen_glob = efz2_MG
 
+          call divNodes(efz2_MG,tProcInfo_G%size, &
+                        tProcInfo_G%rank, &
+                        tlflen, ffs, ffe)
+
+          tlflen4arr = tlflen
+
+          ffs_GGG = 1
+          ffe_GGG = efz2_MG
+
+
+        end if
 
       end if
-
 
       CALL MPI_ALLGATHER(tlflen, 1, MPI_INTEGER, &
               ff_ar(:,1), 1, MPI_INTEGER, &
@@ -2802,35 +3006,49 @@ contains
 
 
 
-      if (ebz2_MG > NZ2_G) then
-
-!     then there is no back section of the field...
+      if (fieldMesh == iPeriodic) then
 
         tlelen_glob = 0
         tlelen = 0
         tlelen4arr = 1
         ees = 0
         eee = 0
+        ees_GGG = 0
+        eee_GGG = 0
 
-      else if (ebz2_MG < nz2_G + 1) then
+      else
 
-        tlelen_glob = nz2_G - ebz2_MG + 1
+        if (ebz2_MG > NZ2_G) then
+
+!     then there is no back section of the field...
+
+          tlelen_glob = 0
+          tlelen = 0
+          tlelen4arr = 1
+          ees = 0
+          eee = 0
+
+        else if (ebz2_MG < nz2_G + 1) then
+
+          tlelen_glob = nz2_G - ebz2_MG + 1
 
 !        print*, 'I get the tlelen_glob to be ', tlelen_glob
 
-        call divNodes(tlelen_glob,tProcInfo_G%size, &
-                      tProcInfo_G%rank, &
-                      tlelen, ees, eee)
+          call divNodes(tlelen_glob,tProcInfo_G%size, &
+                        tProcInfo_G%rank, &
+                        tlelen, ees, eee)
 
-        ees = ees + ebz2_MG - 1
-        eee = eee + ebz2_MG - 1
+          ees = ees + ebz2_MG - 1
+          eee = eee + ebz2_MG - 1
 
-        ees_GGG = ebz2_MG
-        eee_GGG = NZ2_G
+          ees_GGG = ebz2_MG
+          eee_GGG = NZ2_G
 
-        tlelen4arr = tlelen
+          tlelen4arr = tlelen
 
 !        print*, '...and the start nd end of the back to be', ees, eee
+
+        end if
 
       end if
 
@@ -3655,8 +3873,12 @@ contains
 
   subroutine redistbackFFT()
 
-
     implicit none
+    
+    integer :: req, error
+    integer(kind=ip) :: ij, si, sst, sse
+    integer statr(MPI_STATUS_SIZE)
+    integer sendstat(MPI_STATUS_SIZE)
 
     call redist2new2(ft_ar, ff_ar, tre_fft, fr_rfield)
     call redist2new2(ft_ar, ff_ar, tim_fft, fr_ifield)
@@ -3675,6 +3897,66 @@ contains
     deallocate(ft_ar)
 
 
+    if (fieldMesh == iPeriodic) then
+
+      si = (nx_g * ny_g) * (bz2PB + 1_ip)
+      sst = ((tllen - (bz2PB+1_ip) ) * (nx_g * ny_g)) + 1_ip
+      sse = tllen * (nx_g * ny_g)
+
+      if (tProcInfo_G%rank == 0_ip) then
+
+        call mpi_issend(ac_rfield(1:si), &
+                        si, &
+                        mpi_double_precision, &
+                        tProcInfo_G%size-1_ip, 0, &
+                        tProcInfo_G%comm, req, error)
+
+      end if
+
+
+
+      if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
+   
+        call mpi_recv( ac_rfield(sst:sse), &
+                 si, mpi_double_precision, &
+                 0, 0, tProcInfo_G%comm, &
+                 statr, error )
+
+      end if
+
+
+      if (tProcInfo_G%rank == 0_ip) then
+
+        call mpi_wait( req,sendstat,error )
+        call mpi_issend(ac_ifield(1:si), &
+                        si, &
+                        mpi_double_precision, &
+                        tProcInfo_G%size-1_ip, 0, &
+                        tProcInfo_G%comm, req, error)
+   
+      end if
+
+
+
+   
+      if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
+
+        call mpi_recv( ac_ifield(sst:sse), &
+                 si, mpi_double_precision, &
+                 0, 0, tProcInfo_G%comm, &
+                 statr, error )
+   
+      end if
+   
+
+   
+      if (tProcInfo_G%rank == 0_ip) then
+
+        call mpi_wait( req,sendstat,error )
+   
+      end if
+
+    end if
 
   end subroutine redistbackFFT
 

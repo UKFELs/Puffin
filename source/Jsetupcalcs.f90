@@ -800,9 +800,9 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
                        sLenEPulse, iNumElectrons)
 
 
-  real(kind=wp), intent(inout) :: sFieldModelLength(:)
+  real(kind=wp), intent(inout) :: sFieldModelLength(:), sLenEPulse(:,:)
 
-  real(kind=wp), intent(in) :: sGamFrac(:), sLenEPulse(:,:)
+  real(kind=wp), intent(in) :: sGamFrac(:)
 
   integer(kind=ip), intent(in) :: nperiods, nodesperlambda, &
                                   stepsPerPeriod
@@ -885,7 +885,7 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
 
   slamr = 4.0_WP * pi * srho_G
-  minESample = 15_ip   ! minimum MP's per wavelength
+  minESample = 4_ip   ! minimum MP's per wavelength
   !dztemp = slamr / minESample
 
   if (iInputType_G == iGenHom_G) then
@@ -919,31 +919,45 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
     fmlensTmp = sLenEPulse(:,iZ2_CG) + (smeanp2(:) * szbar)
     fmlenTmp = maxval(fmlensTmp)
 
-    if (sFieldModelLength(iZ2_CG) <= fmlenTmp + 1.0_wp) then
+    if (fieldMesh == itemporal) then
+
+      if (sFieldModelLength(iZ2_CG) <= fmlenTmp + 1.0_wp) then
 
 
-      if (tProcInfo_G%qRoot) print*, '******************************'
-      if (tProcInfo_G%qRoot) print*, ''
-      if (tProcInfo_G%qRoot) print*, 'WARNING - field mesh may not be large &
-                                     &enough in z2 - fixing....'
+        if (tProcInfo_G%qRoot) print*, '******************************'
+        if (tProcInfo_G%qRoot) print*, ''
+        if (tProcInfo_G%qRoot) print*, 'WARNING - field mesh may not be large &
+                                       &enough in z2 - fixing....'
 
-      sFieldModelLength(iZ2_CG) = fmlenTmp + 10.0_wp  ! Add buffer 10 long for
-                                                      ! extra security...
+        sFieldModelLength(iZ2_CG) = fmlenTmp + 10.0_wp  ! Add buffer 10 long for
+                                                        ! extra security...
 
-      if (tProcInfo_G%qRoot) print*, 'Field mesh length in z2 now = ', &
-                                  sFieldModelLength(iZ2_CG)
-      if (tProcInfo_G%qRoot) print*, ''
+        if (tProcInfo_G%qRoot) print*, 'Field mesh length in z2 now = ', &
+                                    sFieldModelLength(iZ2_CG)
+        if (tProcInfo_G%qRoot) print*, ''
+
+      end if
 
     end if
 
-    deallocate(smeanp2, fmlensTmp)
-
   end if
+
+  deallocate(smeanp2, fmlensTmp)
 
   dz2 = 4.0_WP * pi * sRho_G / real(nodesperlambda-1_IP,kind=wp)
 
   iNumNodes(iZ2_CG) = ceiling(sFieldModelLength(iZ2_CG) / dz2) + 1_IP
 
+  if (fieldMesh == iPeriodic) then
+  
+    sLengthOfElm(iZ2_CG) = dz2
+    sFieldModelLength(iZ2_CG) = real(iNumNodes(iZ2_CG) - 1_ip, kind=wp) * dz2
+
+    sLenEPulse(1,iZ2_CG) = sFieldModelLength(iZ2_CG)
+
+  end if
+ 
+ 
   if (tProcInfo_G%qRoot) print*, '******************************'
   if (tProcInfo_G%qRoot) print*, ''
   if (tProcInfo_G%qRoot) print*, 'number of nodes in z2 --- ', iNumNodes(iZ2_CG)
@@ -1111,15 +1125,19 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
 !     macroparticle number. The array then cycles through each
 !     process in ascending order.
 
-    DO j=2,tProcInfo_G%size
-       CALL MPI_ISSEND( sendbuff,1,MPI_INT_HIGH,rrank,&
-            0,tProcInfo_G%comm,req,error )
-       CALL MPI_RECV( recvbuff,1,MPI_INT_HIGH,lrank,&
-            0,tProcInfo_G%comm,recvstat,error )
-       CALL MPI_WAIT( req,sendstat,error )
-       procelectrons_G(j) = recvbuff
-       sendbuff=recvbuff
-    END DO
+    if (tProcInfo_G%size > 1_ip) then
+
+      DO j=2,tProcInfo_G%size
+         CALL MPI_ISSEND( sendbuff,1,MPI_INT_HIGH,rrank,&
+              0,tProcInfo_G%comm,req,error )
+         CALL MPI_RECV( recvbuff,1,MPI_INT_HIGH,lrank,&
+              0,tProcInfo_G%comm,recvstat,error )
+         CALL MPI_WAIT( req,sendstat,error )
+         procelectrons_G(j) = recvbuff
+         sendbuff=recvbuff
+      END DO
+
+    end if
 
 !    print*, 'procelectrons = ', procelectrons_G
 !    stop

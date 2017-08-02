@@ -92,6 +92,8 @@ MODULE Setup
 
   zFileName_G = zFile
 
+  igwr = -1_ip
+
 !     Initialise Error log for this run
 
   tErrorLog_G%zFileName = TRIM(ADJUSTL(zFile))//"_Error.log"
@@ -399,10 +401,19 @@ MODULE Setup
 !    Define the rescaling parameter "ffact" for rescaling
 !    backwards transform data.
 
-  ffact = real(iNodes(iX_CG), kind=wp) * &
-          real(iNodes(iY_CG), kind=wp) * &
-          real(iNodes(iZ2_CG), kind=wp)
+  if (fieldMesh == iPeriodic) then
 
+    ffact = real(iNodes(iX_CG), kind=wp) * &
+            real(iNodes(iY_CG), kind=wp) * &
+            real(iNodes(iZ2_CG)-1_ip, kind=wp)
+
+  else
+
+    ffact = real(iNodes(iX_CG), kind=wp) * &
+            real(iNodes(iY_CG), kind=wp) * &
+            real(iNodes(iZ2_CG), kind=wp)
+
+  end if
 
 
 !  IF (qResume) THEN

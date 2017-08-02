@@ -57,6 +57,7 @@ contains
 
     !    nslices = int( (sLengthOfElmZ2_G*NZ2_G)/(4*pi*srho_g))
 
+    igwr = igwr + 1_ip
     time = sZ
 
     if (qWriteFull) then
@@ -226,10 +227,10 @@ contains
 
         end if
 
-        call addH5Field1DFloat(Iarray, 'beamCurrent',  "intPtclMeshSc", &
+        call addH5Field1DFloat(Iarray, 'beamCurrent',  "intCurrMeshSc", &
                                "z2, Current (A)", time, sz_loc, iL, error)
 
-        call addH5Field1DFloat(Iarray, 'beamCurrentSI',  "intPtclMeshSI", &
+        call addH5Field1DFloat(Iarray, 'beamCurrentSI',  "intCurrMeshSI", &
                                "ct-z, Current (A)", time, sz_loc, iL, error)
 
 

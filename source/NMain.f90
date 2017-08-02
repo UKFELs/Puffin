@@ -111,6 +111,11 @@ do iL = iLst, modNum
   else if (iElmType(iL) == iDrift) then
 
     call driftSection(iL, sZ)
+!     FOR WRITING AFTER EACH DRIFT
+!    szl = 0.0_wp
+!    call wr_cho(sZ, szl, &
+!                zDataFileName, 0_ip, iCsteps, modNum, iWriteNthSteps, &
+!                iIntWriteNthSteps, 0_ip, .true., .true., qOKL)
 
   else if (iElmType(iL) == iModulation) then
 

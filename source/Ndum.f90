@@ -120,8 +120,12 @@ subroutine wr_cho(sZ, sZl, &
   end if
 
   if (qhdf5_G) then
-    
-     nslices=ceiling( (sLengthOfElmZ2_G*NZ2_G)/(4*pi*srho_g))
+
+    if (fieldMesh == iTemporal) then
+      nslices=ceiling( (sLengthOfElmZ2_G*NZ2_G)/(4*pi*srho_g))
+    else
+      nslices=ceiling( (sLengthOfElmZ2_G * real((NZ2_G-1_ip),kind=wp) )/(4*pi*srho_g)) ! + 30_ip
+    end if
 
     call wr_h5(sZ, szl, tArrayA, tArrayE, tArrayZ, iL, &
                iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &

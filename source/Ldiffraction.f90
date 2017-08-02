@@ -136,6 +136,7 @@ subroutine multiplyexp(h,qOK)
   posI=CMPLX(0.0,1.0,KIND=WP)
   delz2=sLengthOfElmZ2_G
   cutoff=2.0_WP*pi*sfilt/(REAL(NZ2_G,KIND=WP)*delz2)
+  if (fieldMesh == iPeriodic) cutoff = 0.0_wp
   loc_nz2 = tTransInfo_G%loc_nz2
 
 !      Main loop, multiply FT field by exp factor
@@ -442,6 +443,8 @@ SUBROUTINE AbsorptionStep(sAl,h,ffact)
 
     mask_z2 = getZ2Mask(sLengthOfElmZ2_G, nZ2_G, tTransInfo_G%loc_nz2,   &
                          nBZ2_G, tTransInfo_G%loc_z2_start)
+
+    if (fieldMesh == iPeriodic) mask_z2 = 0.0_wp
 
 !!!!!      sAl is local      !!!!!
 !!!!!      goes from 0,total_local_size     !!!!!!!

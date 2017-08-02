@@ -79,10 +79,12 @@ real(kind=wp) :: locx, locy, locz2, &
         qPArrOK_G = .false.
       end if
 
-      if (z2node >= NZ2_G) then
-        print*, 'Z2 coord is too large!! with node:', z2node, &
-                ' and pos ', sz2(i)
-        STOP
+      if (fieldMesh == itemporal) then
+        if (z2node >= NZ2_G) then
+          print*, 'Z2 coord is too large!! with node:', z2node, &
+                  ' and pos ', sz2(i)
+          STOP
+        end if
       end if
 
       if (z2node >= bz2) then

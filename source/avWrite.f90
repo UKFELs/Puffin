@@ -460,43 +460,94 @@ contains
     real(kind=wp), intent(in) :: sam_len !< length of bins in z2
     real(kind=wp), intent(inout) :: Iarray(:) !< data containing the current info
 
-    integer(kind=ip) :: ij, inl, inu !<electron indices over which to integrate
+    integer(kind=ip) :: ij, inl, inu, inlpb, inupb !<electron indices over which to integrate
     real(kind=wp) :: li1, li2, locz2 !<interpolation fractions
 
     Iarray = 0.0_wp   ! initialize
 
-    do ij = 1, size(sElX_G)
+    if (fieldMesh == iPeriodic) then
 
-      !   Array indices
-      inl = ceiling(sElZ2_G(ij)/sam_len)
-      inu = inl + 1
+      do ij = 1, size(sElX_G)
 
-      if ((inu > npts_I_G) .or. (inl<=0)) then
-        print*, 'NODES OUTSIDE BOUNDS'
-        STOP
-      end if
+        !   Array indices
+        inl = ceiling(sElZ2_G(ij)/sam_len)
+        inu = inl + 1_ip
 
-      ! Interpolation fractions
-      locz2 = sElZ2_G(ij) - real((inl-1_ip),kind=wp) * sam_len
-      li2 = locz2 / sam_len
-      li1 = 1_wp - li2
+        if (inu >= npts_I_G) then
+          inuPB = inu - floor(real(inu,kind=wp)/ real(npts_I_G, kind=wp)) * npts_I_G + 1
+        else
+          inuPB = inu
+        end if
+  
+        if (inl >= npts_I_G) then
+          inlPB = inl - floor(real(inl,kind=wp)/real(npts_I_G,kind=wp)) * npts_I_G + 1
+        else
+          inlPB = inl
+        end if
 
-      if ((li2 < 0.0_wp) .or. (li1<0.0_wp)) then
-        print*, 'Unable to calculate correct interpolation fraction'
-        print*, 'Particle coords'
-        print*, sElX_G(ij)
-        print*, sElY_G(ij)
-        print*, sElZ2_G(ij)
-        print*, 'Interps are negative!'
-        STOP
-      end if
+!      if ((inu > npts_I_G) .or. (inl<=0)) then
+        if (inl<=0) then
+           print*, 'NODES OUTSIDE BOUNDS'
+           stop
+        end if
+       
+       
+        ! Interpolation fractions
+        locz2 = sElZ2_G(ij) - real((inl-1_ip),kind=wp) * sam_len
+        li2 = locz2 / sam_len
+        li1 = 1_wp - li2
 
-      ! interpolate onto current mesh
-      Iarray(inl) = li1 * s_chi_bar_G(ij) + Iarray(inl)
-      Iarray(inu) = li2 * s_chi_bar_G(ij) + Iarray(inu)
+        if ((li2 < 0.0_wp) .or. (li1<0.0_wp)) then
+          print*, 'Unable to calculate correct interpolation fraction'
+          print*, 'Particle coords'
+          print*, sElX_G(ij)
+          print*, sElY_G(ij)
+          print*, sElZ2_G(ij)
+          print*, 'Interps are negative!'
+          STOP
+        end if
 
-    end do
+        ! interpolate onto current mesh
+        Iarray(inlPB) = li1 * s_chi_bar_G(ij) + Iarray(inlPB)
+        Iarray(inuPB) = li2 * s_chi_bar_G(ij) + Iarray(inuPB)
 
+      end do
+
+    else
+
+      do ij = 1, size(sElX_G)
+
+        !   Array indices
+        inl = ceiling(sElZ2_G(ij)/sam_len)
+        inu = inl + 1
+
+        if ((inu > npts_I_G) .or. (inl<=0)) then
+          print*, 'NODES OUTSIDE BOUNDS'
+          STOP
+        end if
+
+        ! Interpolation fractions
+        locz2 = sElZ2_G(ij) - real((inl-1_ip),kind=wp) * sam_len
+        li2 = locz2 / sam_len
+        li1 = 1_wp - li2
+
+        if ((li2 < 0.0_wp) .or. (li1<0.0_wp)) then
+          print*, 'Unable to calculate correct interpolation fraction'
+          print*, 'Particle coords'
+          print*, sElX_G(ij)
+          print*, sElY_G(ij)
+          print*, sElZ2_G(ij)
+          print*, 'Interps are negative!'
+          STOP
+        end if
+
+        ! interpolate onto current mesh
+        Iarray(inl) = li1 * s_chi_bar_G(ij) + Iarray(inl)
+        Iarray(inu) = li2 * s_chi_bar_G(ij) + Iarray(inu)
+
+      end do
+
+    end if
 
     call sum2RootArr(Iarray, size(Iarray), 0)
 
@@ -605,12 +656,32 @@ contains
     sliceSizeZ2=4*pi*srho_g
 !    print *,"evaluating slices of size",4*pi*srho_g,sliceSizeZ2,slicetrim
     if (iNumberElectrons_G > 0_ipl) then
+
+
     do ipc = 1, iNumberElectrons_G
+
       is = ceiling(sElZ2_G(ipc)/sliceSizeZ2)
-      if ((is>nslices) .or. (is <1)) then
-         print*,"slice index, is, out of bounds in slice computation"
-         goto 1000
+
+      if (fieldMesh == iPeriodic) then
+
+        if (is>=nslices) then
+          is = is - (floor(real(is, kind=wp) / real(nslices, kind=wp)) * nslices)+1
+        end if
+
+        if (is <1) then
+          print*,"slice index, is, out of bounds in slice computation"
+          goto 1000
+        end if
+      
+      else
+
+        if ((is>nslices) .or. (is <1)) then
+          print*,"slice index, is, out of bounds in slice computation"
+          goto 1000
+        end if
+
       end if
+
 !      if (mod(ip,10000) .eq. 0) then
 !        print*,"at particle ",ip
 !      end if
@@ -649,13 +720,15 @@ contains
       b1r(is) = b1r(is) + s_chi_bar_G(ipc)*cos(sElz2_G(ipc)/(2*sRho_G)) &
                           * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-      b1r(is+1) = b1r(is+1) + s_chi_bar_G(ipc)*cos(sElz2_G(ipc)/(2*sRho_G)) &
+      if (fieldMesh /= iPeriodic) b1r(is+1) = b1r(is+1) + &
+                    s_chi_bar_G(ipc)*cos(sElz2_G(ipc)/(2*sRho_G)) &
                           * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
       b1i(is) = b1i(is) + s_chi_bar_G(ipc)*sin(sElz2_G(ipc)/(2*sRho_G)) &
                           * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-      b1i(is+1) = b1i(is+1) + s_chi_bar_G(ipc)*sin(sElz2_G(ipc)/(2*sRho_G)) &
+      if (fieldMesh /= iPeriodic) b1i(is+1) = b1i(is+1) + &
+                             s_chi_bar_G(ipc)*sin(sElz2_G(ipc)/(2*sRho_G)) &
                           * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
 
@@ -672,13 +745,15 @@ contains
       b2r(is) = b2r(is) + s_chi_bar_G(ipc)*cos(2.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
                           * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-      b2r(is+1) = b2r(is+1) + s_chi_bar_G(ipc)*cos(2.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+      if (fieldMesh /= iPeriodic) b2r(is+1) = b2r(is+1) + &
+                          s_chi_bar_G(ipc)*cos(2.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
                           * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
       b2i(is) = b2i(is) + s_chi_bar_G(ipc)*sin(2.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
                           * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-      b2i(is+1) = b2i(is+1) + s_chi_bar_G(ipc)*sin(2.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+      if (fieldMesh /= iPeriodic) b2i(is+1) = b2i(is+1) + &
+                       s_chi_bar_G(ipc)*sin(2.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
                           * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
 
@@ -686,13 +761,15 @@ contains
       b3r(is) = b3r(is) + s_chi_bar_G(ipc)*cos(3.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
                           * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-      b3r(is+1) = b3r(is+1) + s_chi_bar_G(ipc)*cos(3.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+      if (fieldMesh /= iPeriodic) b3r(is+1) = b3r(is+1) + &
+                         s_chi_bar_G(ipc)*cos(3.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
                           * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
       b3i(is) = b3i(is) + s_chi_bar_G(ipc)*sin(3.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
                           * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-      b3i(is+1) = b3i(is+1) + s_chi_bar_G(ipc)*sin(3.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+      if (fieldMesh /= iPeriodic) b3i(is+1) = b3i(is+1) + &
+                s_chi_bar_G(ipc)*sin(3.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
                           * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
 
@@ -702,13 +779,15 @@ contains
       b4r(is) = b4r(is) + s_chi_bar_G(ipc)*cos(4.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
                           * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-      b4r(is+1) = b4r(is+1) + s_chi_bar_G(ipc)*cos(4.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+      if (fieldMesh /= iPeriodic) b4r(is+1) = b4r(is+1) + &
+                     s_chi_bar_G(ipc)*cos(4.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
                           * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
       b4i(is) = b4i(is) + s_chi_bar_G(ipc)*sin(4.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
                           * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-      b4i(is+1) = b4i(is+1) + s_chi_bar_G(ipc)*sin(4.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+      if (fieldMesh /= iPeriodic) b4i(is+1) = b4i(is+1) + &
+                   s_chi_bar_G(ipc)*sin(4.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
                           * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
 
@@ -717,13 +796,15 @@ contains
       b5r(is) = b5r(is) + s_chi_bar_G(ipc)*cos(5.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
                           * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-      b5r(is+1) = b5r(is+1) + s_chi_bar_G(ipc)*cos(5.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+      if (fieldMesh /= iPeriodic) b5r(is+1) = b5r(is+1) + &
+                      s_chi_bar_G(ipc)*cos(5.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
                           * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
       b5i(is) = b5i(is) + s_chi_bar_G(ipc)*sin(5.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
                           * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-      b5i(is+1) = b5i(is+1) + s_chi_bar_G(ipc)*sin(5.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+      if (fieldMesh /= iPeriodic) b5i(is+1) = b5i(is+1) + &
+                      s_chi_bar_G(ipc)*sin(5.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
                           * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
 

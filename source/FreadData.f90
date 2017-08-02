@@ -258,6 +258,7 @@ subroutine read_in(zfilename, &
 
   real(kind=wp) :: sRedistLen
   integer(kind=ip) :: iRedistStp
+  integer(kind=ip) :: meshType
 
 
 
@@ -289,7 +290,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  iWriteIntNthSteps, &
                  qFMesh_G, sKBetaXSF, sKBetaYSF, sRedistLen, &
                  iRedistStp, qscaled, nspinDX, nspinDY, qInitWrLat, qDumpEnd, &
-                 wr_file, qMeasure, DFact, iDumpNthSteps, speout
+                 wr_file, qMeasure, DFact, iDumpNthSteps, speout, meshType
 
 
 ! Begin subroutine:
@@ -366,6 +367,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   zDataFileName          = 'DataFile.dat'
   iWriteNthSteps         = 30
   iWriteIntNthSteps      = 30
+  meshType = 0_ip
   sKBetaXSF = -0.1_wp
   sKBetaYSF = -0.1_wp
 
@@ -464,6 +466,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   zBFile_G = beam_file
   zSFile_G = seed_file
 
+  fieldMesh = meshType
 
 
   if (DFact /= -1000.0_wp) then
