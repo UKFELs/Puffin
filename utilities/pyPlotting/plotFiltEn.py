@@ -14,6 +14,9 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import specgram
 import tables
 
+iTemporal = 0
+iPeriodic = 1
+#iMesh = iPeriodic
 
 #t = np.linspace(-1, 1, 200, endpoint=False)
 
@@ -33,7 +36,7 @@ import tables
 
 
 
-def FilterField(field,crfr,distfr,nZ2,sLengthOfElmZ2, rho, q1d):
+def FilterField(field,crfr,distfr,nZ2,sLengthOfElmZ2, rho, q1d, iMesh):
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #% filter - HARD FILTER
@@ -48,17 +51,28 @@ def FilterField(field,crfr,distfr,nZ2,sLengthOfElmZ2, rho, q1d):
 
 #%%%%%    1D    %%%%%%%
 
-        ftfield = np.fft.fft(field)
+        if (iMesh == iPeriodic):
+            
+            sn = 1
+            ftfield[0:sn] = 0
+            ftfield[sn+1:np.ceil(nZ2/2)] = 0
 
-        ftfield[0:np.int(nn-nns)] = 0
-        ftfield[np.int(nn+nns-1):np.int(np.ceil(nZ2/2))] = 0
+            ftfield[np.ceil(nZ2/2) + 1 - 1:-sn] = 0
+
+
+        else:
+
+            ftfield = np.fft.fft(field)
+
+            ftfield[0:np.int(nn-nns)] = 0
+            ftfield[np.int(nn+nns-1):np.int(np.ceil(nZ2/2))] = 0
       
-        ftfield[np.int(np.ceil(nZ2/2) + 1 - 1):np.int(nZ2-(nn+nns)+2)] = 0
-        ftfield[np.int(nZ2 - (nn-nns) + 2 - 1 ) : np.int(nZ2)] = 0
+            ftfield[np.int(np.ceil(nZ2/2) + 1 - 1):np.int(nZ2-(nn+nns)+2)] = 0
+            ftfield[np.int(nZ2 - (nn-nns) + 2 - 1 ) : np.int(nZ2)] = 0
       
         field = np.fft.ifft(ftfield)
       
-        xfield = np.real(field)
+        nfield = np.real(field)
 
     else:
   
@@ -66,17 +80,26 @@ def FilterField(field,crfr,distfr,nZ2,sLengthOfElmZ2, rho, q1d):
 
       ftfield = np.fft.fft(field)
     
-      ftfield[:,:,0:(nn-nns)] = 0
-      ftfield[:,:,(nn+nns-1):ceil(nZ2/2)] = 0
-    
-      ftfield[:,:,ceil(nZ2/2) + 1 - 1:nZ2-(nn+nns)+2] = 0
-      ftfield[:,:,(nZ2 - (nn-nns) + 2 -1 ) : nZ2] = 0
+      if (iMesh == iPeriodic):
+
+        sn = 1
+        ftfield[:,:,0:sn] = 0
+        ftfield[:,:,sn+1:np.ceil(nZ2/2)] = 0
+
+        ftfield[:,:,np.ceil(nZ2/2) + 1 - 1:-sn] = 0
+
+      else:
+        ftfield[:,:,0:(nn-nns)] = 0
+        ftfield[:,:,(nn+nns-1):np.ceil(nZ2/2)] = 0
+
+        ftfield[:,:,np.ceil(nZ2/2) + 1 - 1:nZ2-(nn+nns)+2] = 0
+        ftfield[:,:,(nZ2 - (nn-nns) + 2 -1 ) : nZ2] = 0
     
       field = np.fft.ifft(ftfield)
     
-      xfield = np.real(field)
+      nfield = np.real(field)
 
-    return xfield
+    return nfield
 
 #%%%%%%%%%%%%%%%%%%%%%%
 
@@ -205,12 +228,13 @@ def getFileSlices(baseName):
 
 
 def getFiltPow(h5fname):
-    
+
     h5f = tables.open_file(h5fname, mode='r')
 
     dz2 = h5f.root.runInfo._v_attrs.sLengthOfElmZ2
     nz2 = h5f.root.runInfo._v_attrs.nZ2
     rho = h5f.root.runInfo._v_attrs.rho
+    iMesh = h5f.root.runInfo._v_attrs.fieldMesh
 
     sampleFreq = 1.0 / dz2
 
@@ -227,20 +251,40 @@ def getFiltPow(h5fname):
 
 #    ...otherwise take full field
 
+    nx = h5f.root.runInfo._v_attrs.nX
+    ny = h5f.root.runInfo._v_attrs.nY
+    dx = h5f.root.runInfo._v_attrs.sLengthOfElmX
+    dy = h5f.root.runInfo._v_attrs.sLengthOfElmY
+
     lenz2 = (nz2-1) * dz2
     z2axis = (np.arange(0,nz2)) * dz2
 
-    xf = h5f.root.aperp[:,0]
+    xaxis = (np.arange(0,nx)) * dx
+    yaxis = (np.arange(0,ny)) * dy
+
+    q1d = 0
+
+    if (nx==1):
+        if (ny==1):
+          q1d = 1
+
+
+    if (q1d == 1):
+      xf = h5f.root.aperp[:,0]
+    else:
+      xf = h5f.root.aperp[:,:,:,0]
     # xfs = xf[z2si:z2ei]   # for selecting slice...
 
-    yf = h5f.root.aperp[:,1]
-
+    if (q1d == 1):
+        yf = h5f.root.aperp[:,1]
+    else:
+        yf = h5f.root.aperp[:,:,:,1]
 
     cfr = 1.0
     dfr = 0.4
 
-    xf = FilterField(xf, cfr, dfr, nz2, dz2, rho, 1)
-    yf = FilterField(yf, cfr, dfr, nz2, dz2, rho, 1)
+    xf = FilterField(xf, cfr, dfr, nz2, dz2, rho, q1d, iMesh)
+    yf = FilterField(yf, cfr, dfr, nz2, dz2, rho, q1d, iMesh)
 
     intens = np.square(xf) + np.square(yf)
     h5f.close()
@@ -266,6 +310,24 @@ def plotFiltEn(basename):
     dz2 = h5f.root.runInfo._v_attrs.sLengthOfElmZ2
     nz2 = h5f.root.runInfo._v_attrs.nZ2
     rho = h5f.root.runInfo._v_attrs.rho
+    lg = h5f.root.runInfo._v_attrs.Lg
+    lc = h5f.root.runInfo._v_attrs.Lc
+    gamma0 = h5f.root.runInfo._v_attrs.gamma_r
+    kappa = h5f.root.runInfo._v_attrs.kappa
+    iMesh = h5f.root.runInfo._v_attrs.fieldMesh
+    c0 = 2.99792458e8
+    qe = 1.60217653e-19
+    eps0 = 8.854187817e-12
+    me = 9.1093826e-31
+
+
+    powScale = lg * lc * c0 * eps0 * np.square((gamma0 * me * np.square(c0) ) / (qe * kappa * lg ))
+
+    nx = h5f.root.runInfo._v_attrs.nX
+    ny = h5f.root.runInfo._v_attrs.nY
+    dx = h5f.root.runInfo._v_attrs.sLengthOfElmX
+    dy = h5f.root.runInfo._v_attrs.sLengthOfElmY
+
 
     sampleFreq = 1.0 / dz2
 
@@ -284,7 +346,15 @@ def plotFiltEn(basename):
 
     lenz2 = (nz2-1) * dz2
     z2axis = (np.arange(0,nz2)) * dz2
+    
+    xaxis = (np.arange(0,nx)) * dx
+    yaxis = (np.arange(0,ny)) * dy
 
+    q1d = 0
+
+    if (nx==1):
+        if (ny==1):
+          q1d = 1
     h5f.close()
 
     fcount = 0
@@ -293,24 +363,53 @@ def plotFiltEn(basename):
     zData = np.zeros(len(filelist))
 #    zData[fieldCount] = h5in.root._f_get_child("power")._v_attrs.zTotal 
     
-    for ij in filelist:
-        tintens = getFiltPow(ij)
-        ens[fcount] = np.trapz(tintens, x=z2axis)
-        zData[fcount] = getZData(ij)
-        fcount += 1
+    if (q1d==1):
+    
+        for ij in filelist:
+            tintens = getFiltPow(ij)
+            ens[fcount] = np.trapz(tintens, x=z2axis)
+            zData[fcount] = getZData(ij)
+            fcount += 1
+
+    else:
+
+        for ij in filelist:
+            tintens = getFiltPow(ij)
+            #ens[fcount] = np.trapz(tintens, x=z2axis)
+            #print "first", np.shape(xaxis), np.shape(tintens)
+            tintensx = np.trapz(tintens, x=xaxis, axis=0)
+            #print "second", np.shape(xaxis), np.shape(tintensx)
+            tintensxy = np.trapz(tintensx, x=yaxis, axis=0)
+            ens[fcount] = np.trapz(tintensxy, x=z2axis)
+            if (iMesh==iPeriodic):
+                ens[fcount] = ens[fcount] / lenz2
+            zData[fcount] = getZData(ij)
+            fcount += 1
 
 
     h = 6.626e-34 # Planck constant
     q_e = 1.60217646e-19 # Charge on electron
     c_0 = 2.99792458e8 # Speed of light in vacuum
 
+    if (iMesh==iPeriodic):
+        plotLab = 'SI Power'
+        axLab = 'Power (W)'
+        ens = ens * powScale # * lc / c0
+    else:
+        plotLab = 'Scaled Energy'
+        axLab = 'Filtered Energy'
+        
+
     ax1 = plt.subplot(111)
-    plt.plot(zData, ens, label='Scaled Energy')
-    ax1.set_title('Filtered Energy')
+    plt.semilogy(zData, ens, label=plotLab)
+    #ax1.set_title(axLab)
+    plt.xlabel('z (m)')
+    plt.ylabel(axLab)
+
     #plt.legend()
 
-#    plt.savefig("ExEy-SpecPower3.png")
-    plt.show()
+    plt.savefig(basename + "-power.png")
+#    plt.show()
 
 
 #    plt.show(block=False)
