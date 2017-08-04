@@ -18,6 +18,115 @@ iTemporal = 0
 iPeriodic = 1
 #iMesh = iPeriodic
 
+
+
+
+class puffData:
+    
+    c0 = 2.99792458e8
+    qe = 1.60217653e-19
+    eps0 = 8.854187817e-12
+    me = 9.1093826e-31
+    h = 6.626e-34
+
+    def __init__(self):
+        self.rho = 0.001
+        self.gamma0 = 800.
+        self.au = 1.
+        self.lw = 0.04
+        self.lr = 1.0e-7
+        self.eta = 1.0e-5
+        self.kappa = 1.0
+        self.lg = 1.
+        self.lc = 1.e-6
+        self.npkbar = 1.0e9
+        
+        self.qscale = 1
+        self.iMesh = 1
+        self.q1d = 1
+        
+        self.dxbar = 1.0
+        self.dybar = 1.0
+        self.dz2 = 1.0
+        self.nx = 1
+        self.ny = 1
+        self.nz2 = 1
+        
+        self.dx = 1.
+        self.dy = 1.
+
+        self.dzbar = 1.0e-3
+        self.zbar = 0.
+        self.zbarloc = 0.
+        self.z = 0.
+        self.zloc = 0.
+        
+        self.powScale = self.lg * self.lc * self.c0 * self.eps0 * \
+                          np.square((self.gamma0 * self.me * np.square(self.c0) ) \
+                          / (self.qe * self.kappa * self.lg ))
+
+
+    def unscale(self):
+        self.dx = self.dxbar * np.sqrt(self.lg * self.lc) # ...etc
+        
+
+
+
+
+class fdata:
+    def __init__(self, fname):
+        self.h5fname = fname
+        
+        h5f = tables.open_file(fname, mode='r')
+        self.vars = puffData()        
+        
+        self.vars.rho = h5f.root.runInfo._v_attrs.rho
+        self.vars.gamma0 = h5f.root.runInfo._v_attrs.gamma_r
+        self.vars.au = h5f.root.runInfo._v_attrs.aw
+        self.vars.lw = h5f.root.runInfo._v_attrs.lambda_w
+        self.vars.lr = h5f.root.runInfo._v_attrs.lambda_r
+        self.vars.eta = h5f.root.runInfo._v_attrs.eta
+        self.vars.kappa = h5f.root.runInfo._v_attrs.kappa
+        self.vars.lg = h5f.root.runInfo._v_attrs.Lg
+        self.vars.lc = h5f.root.runInfo._v_attrs.Lc
+        self.vars.npkbar = h5f.root.runInfo._v_attrs.npk_bar
+
+        self.vars.qscale = h5f.root.runInfo._v_attrs.fieldMesh
+        self.vars.iMesh = h5f.root.runInfo._v_attrs.iScale
+
+
+        self.vars.dxbar = h5f.root.runInfo._v_attrs.sLengthOfElmX
+        self.vars.dybar = h5f.root.runInfo._v_attrs.sLengthOfElmY
+        self.vars.dz2 = h5f.root.runInfo._v_attrs.sLengthOfElmZ2
+        self.vars.nx = h5f.root.runInfo._v_attrs.nX
+        self.vars.ny = h5f.root.runInfo._v_attrs.nY
+        self.vars.nz2 = h5f.root.runInfo._v_attrs.nZ2
+
+        self.vars.dx = self.vars.dxbar * np.sqrt(self.vars.lg * self.vars.lc)
+        self.vars.dy = self.vars.dybar * np.sqrt(self.vars.lg * self.vars.lc)
+
+        self.vars.dzbar = h5f.root.runInfo._v_attrs.sStepSize
+        self.vars.zbar = h5f.root.runInfo._v_attrs.zbarTotal
+        self.vars.zbarloc = h5f.root.runInfo._v_attrs.zbarLocal
+        self.vars.z = h5f.root.runInfo._v_attrs.zTotal
+        self.vars.zloc = h5f.root.runInfo._v_attrs.zLocal
+        
+        self.vars.q1d = 0
+
+        if (self.vars.nx==1):
+            if (self.vars.ny==1):
+              self.vars.q1d = 1
+        
+        self.vars.powScale = self.vars.lg * self.vars.lc * self.vars.c0 * self.vars.eps0 \
+                              * np.square((self.vars.gamma0 * self.vars.me * \
+                              np.square(self.vars.c0) ) / (self.vars.qe * \
+                              self.vars.kappa * self.vars.lg ))
+        
+        h5f.close()
+
+
+
+
 #t = np.linspace(-1, 1, 200, endpoint=False)
 
 #sig  = np.cos(2 * np.pi * 7 * t) + \
@@ -36,7 +145,7 @@ iPeriodic = 1
 
 
 
-def FilterField(field,crfr,distfr,nZ2,sLengthOfElmZ2, rho, q1d, iMesh):
+def FilterField(field,crfr,distfr, pvars): #nZ2,sLengthOfElmZ2, rho, q1d, iMesh):
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #% filter - HARD FILTER
@@ -44,20 +153,20 @@ def FilterField(field,crfr,distfr,nZ2,sLengthOfElmZ2, rho, q1d, iMesh):
 #%crfr=1.4167;
 #%distfr=0.2;
 
-    nn = np.round(sLengthOfElmZ2 * nZ2 * crfr / (4*pi*rho))
-    nns = np.round(sLengthOfElmZ2 * nZ2 * distfr / (4*pi*rho))
+    nn = np.round(pvars.dz2 * pvars.nz2 * crfr / (4*pi*pvars.rho))
+    nns = np.round(pvars.dz2 * pvars.nz2 * distfr / (4*pi*pvars.rho))
 
-    if (q1d == 1):
+    if (pvars.q1d == 1):
 
 #%%%%%    1D    %%%%%%%
 
-        if (iMesh == iPeriodic):
+        if (pvars.iMesh == iPeriodic):
             
             sn = 1
             ftfield[0:sn] = 0
-            ftfield[sn+1:np.ceil(nZ2/2)] = 0
+            ftfield[sn+1:np.ceil(pvars.nz2/2)] = 0
 
-            ftfield[np.ceil(nZ2/2) + 1 - 1:-sn] = 0
+            ftfield[np.ceil(pvars.nz2/2) + 1 - 1:-sn] = 0
 
 
         else:
@@ -65,10 +174,10 @@ def FilterField(field,crfr,distfr,nZ2,sLengthOfElmZ2, rho, q1d, iMesh):
             ftfield = np.fft.fft(field)
 
             ftfield[0:np.int(nn-nns)] = 0
-            ftfield[np.int(nn+nns-1):np.int(np.ceil(nZ2/2))] = 0
+            ftfield[np.int(nn+nns-1):np.int(np.ceil(pvars.nz2/2))] = 0
       
-            ftfield[np.int(np.ceil(nZ2/2) + 1 - 1):np.int(nZ2-(nn+nns)+2)] = 0
-            ftfield[np.int(nZ2 - (nn-nns) + 2 - 1 ) : np.int(nZ2)] = 0
+            ftfield[np.int(np.ceil(pvars.nz2/2) + 1 - 1):np.int(pvars.nz2-(nn+nns)+2)] = 0
+            ftfield[np.int(pvars.nz2 - (nn-nns) + 2 - 1 ) : np.int(pvars.nz2)] = 0
       
         field = np.fft.ifft(ftfield)
       
@@ -80,20 +189,20 @@ def FilterField(field,crfr,distfr,nZ2,sLengthOfElmZ2, rho, q1d, iMesh):
 
       ftfield = np.fft.fft(field)
     
-      if (iMesh == iPeriodic):
+      if (pvars.iMesh == iPeriodic):
 
         sn = 1
         ftfield[:,:,0:sn] = 0
-        ftfield[:,:,sn+1:np.ceil(nZ2/2)] = 0
+        ftfield[:,:,sn+1:np.ceil(pvars.nz2/2)] = 0
 
-        ftfield[:,:,np.ceil(nZ2/2) + 1 - 1:-sn] = 0
+        ftfield[:,:,np.ceil(pvars.nz2/2) + 1 - 1:-sn] = 0
 
       else:
         ftfield[:,:,0:(nn-nns)] = 0
-        ftfield[:,:,(nn+nns-1):np.ceil(nZ2/2)] = 0
+        ftfield[:,:,(nn+nns-1):np.ceil(pvars.nz2/2)] = 0
 
-        ftfield[:,:,np.ceil(nZ2/2) + 1 - 1:nZ2-(nn+nns)+2] = 0
-        ftfield[:,:,(nZ2 - (nn-nns) + 2 -1 ) : nZ2] = 0
+        ftfield[:,:,np.ceil(pvars.nz2/2) + 1 - 1:pvars.nz2-(nn+nns)+2] = 0
+        ftfield[:,:,(pvars.nz2 - (nn-nns) + 2 -1 ) : pvars.nz2] = 0
     
       field = np.fft.ifft(ftfield)
     
@@ -229,14 +338,14 @@ def getFileSlices(baseName):
 
 def getFiltPow(h5fname):
 
-    h5f = tables.open_file(h5fname, mode='r')
-
-    dz2 = h5f.root.runInfo._v_attrs.sLengthOfElmZ2
-    nz2 = h5f.root.runInfo._v_attrs.nZ2
-    rho = h5f.root.runInfo._v_attrs.rho
-    iMesh = h5f.root.runInfo._v_attrs.fieldMesh
-
-    sampleFreq = 1.0 / dz2
+#    h5f = tables.open_file(h5fname, mode='r')
+#
+#    dz2 = h5f.root.runInfo._v_attrs.sLengthOfElmZ2
+#    nz2 = h5f.root.runInfo._v_attrs.nZ2
+#    rho = h5f.root.runInfo._v_attrs.rho
+#    iMesh = h5f.root.runInfo._v_attrs.fieldMesh
+#
+#    sampleFreq = 1.0 / dz2
 
 #   To select temporal slice of field....
     
@@ -251,43 +360,47 @@ def getFiltPow(h5fname):
 
 #    ...otherwise take full field
 
-    nx = h5f.root.runInfo._v_attrs.nX
-    ny = h5f.root.runInfo._v_attrs.nY
-    dx = h5f.root.runInfo._v_attrs.sLengthOfElmX
-    dy = h5f.root.runInfo._v_attrs.sLengthOfElmY
+#    nx = h5f.root.runInfo._v_attrs.nX
+#    ny = h5f.root.runInfo._v_attrs.nY
+#    dx = h5f.root.runInfo._v_attrs.sLengthOfElmX
+#    dy = h5f.root.runInfo._v_attrs.sLengthOfElmY
 
-    lenz2 = (nz2-1) * dz2
-    z2axis = (np.arange(0,nz2)) * dz2
+    mdata = fdata(h5fname)
 
-    xaxis = (np.arange(0,nx)) * dx
-    yaxis = (np.arange(0,ny)) * dy
+#    lenz2 = (nz2-1) * dz2
+#    z2axis = (np.arange(0,nz2)) * dz2
+#
+#    xaxis = (np.arange(0,nx)) * dx
+#    yaxis = (np.arange(0,ny)) * dy
 
-    q1d = 0
+    lenz2 = (mdata.vars.nz2-1) * mdata.vars.dz2
+    z2axis = (np.arange(0,mdata.vars.nz2)) * mdata.vars.dz2
+    
+    xaxis = (np.arange(0,mdata.vars.nx)) * mdata.vars.dxbar
+    yaxis = (np.arange(0,mdata.vars.ny)) * mdata.vars.dybar
 
-    if (nx==1):
-        if (ny==1):
-          q1d = 1
+    h5f = tables.open_file(h5fname, mode='r')
 
-
-    if (q1d == 1):
+    if (mdata.vars.q1d == 1):
       xf = h5f.root.aperp[:,0]
     else:
       xf = h5f.root.aperp[:,:,:,0]
     # xfs = xf[z2si:z2ei]   # for selecting slice...
 
-    if (q1d == 1):
+    if (mdata.vars.q1d == 1):
         yf = h5f.root.aperp[:,1]
     else:
         yf = h5f.root.aperp[:,:,:,1]
 
+    h5f.close()
+
     cfr = 1.0
     dfr = 0.4
 
-    xf = FilterField(xf, cfr, dfr, nz2, dz2, rho, q1d, iMesh)
-    yf = FilterField(yf, cfr, dfr, nz2, dz2, rho, q1d, iMesh)
+    xf = FilterField(xf, cfr, dfr, mdata.vars)
+    yf = FilterField(yf, cfr, dfr, mdata.vars)
 
     intens = np.square(xf) + np.square(yf)
-    h5f.close()
 
     return intens
 
@@ -300,36 +413,62 @@ def getZData(fname):
 
 
 
+
+
+#def getRunAttrs(fname):
+#    
+#    self.dz2 = h5f.root.runInfo._v_attrs.sLengthOfElmZ2
+#    self.nz2 = h5f.root.runInfo._v_attrs.nZ2
+#    self.rho = h5f.root.runInfo._v_attrs.rho
+#    self.lg = h5f.root.runInfo._v_attrs.Lg
+#    self.lc = h5f.root.runInfo._v_attrs.Lc
+#    self.gamma0 = h5f.root.runInfo._v_attrs.gamma_r
+#    self.kappa = h5f.root.runInfo._v_attrs.kappa
+#    self.iMesh = h5f.root.runInfo._v_attrs.fieldMesh
+#    c0 = 2.99792458e8
+#    qe = 1.60217653e-19
+#    eps0 = 8.854187817e-12
+#    me = 9.1093826e-31
+#
+#    nx = h5f.root.runInfo._v_attrs.nX
+#    ny = h5f.root.runInfo._v_attrs.nY
+#    dx = h5f.root.runInfo._v_attrs.sLengthOfElmX
+#    dy = h5f.root.runInfo._v_attrs.sLengthOfElmY
+    
+
+
 def plotFiltEn(basename):
 
 
     filelist = getFileSlices(basename)
     print filelist
-    h5f = tables.open_file(filelist[0], mode='r')
-
-    dz2 = h5f.root.runInfo._v_attrs.sLengthOfElmZ2
-    nz2 = h5f.root.runInfo._v_attrs.nZ2
-    rho = h5f.root.runInfo._v_attrs.rho
-    lg = h5f.root.runInfo._v_attrs.Lg
-    lc = h5f.root.runInfo._v_attrs.Lc
-    gamma0 = h5f.root.runInfo._v_attrs.gamma_r
-    kappa = h5f.root.runInfo._v_attrs.kappa
-    iMesh = h5f.root.runInfo._v_attrs.fieldMesh
-    c0 = 2.99792458e8
-    qe = 1.60217653e-19
-    eps0 = 8.854187817e-12
-    me = 9.1093826e-31
-
-
-    powScale = lg * lc * c0 * eps0 * np.square((gamma0 * me * np.square(c0) ) / (qe * kappa * lg ))
-
-    nx = h5f.root.runInfo._v_attrs.nX
-    ny = h5f.root.runInfo._v_attrs.nY
-    dx = h5f.root.runInfo._v_attrs.sLengthOfElmX
-    dy = h5f.root.runInfo._v_attrs.sLengthOfElmY
+#    h5f = tables.open_file(filelist[0], mode='r')
+#
+#    dz2 = h5f.root.runInfo._v_attrs.sLengthOfElmZ2
+#    nz2 = h5f.root.runInfo._v_attrs.nZ2
+#    rho = h5f.root.runInfo._v_attrs.rho
+#    lg = h5f.root.runInfo._v_attrs.Lg
+#    lc = h5f.root.runInfo._v_attrs.Lc
+#    gamma0 = h5f.root.runInfo._v_attrs.gamma_r
+#    kappa = h5f.root.runInfo._v_attrs.kappa
+#    iMesh = h5f.root.runInfo._v_attrs.fieldMesh
+#    c0 = 2.99792458e8
+#    qe = 1.60217653e-19
+#    eps0 = 8.854187817e-12
+#    me = 9.1093826e-31
 
 
-    sampleFreq = 1.0 / dz2
+#    powScale = lg * lc * c0 * eps0 * np.square((gamma0 * me * np.square(c0) ) / (qe * kappa * lg ))
+#
+#    nx = h5f.root.runInfo._v_attrs.nX
+#    ny = h5f.root.runInfo._v_attrs.nY
+#    dx = h5f.root.runInfo._v_attrs.sLengthOfElmX
+#    dy = h5f.root.runInfo._v_attrs.sLengthOfElmY
+
+
+    mdata = fdata(filelist[0])
+
+    sampleFreq = 1.0 / mdata.vars.dz2
 
 #   To select temporal slice of field....
     
@@ -344,18 +483,18 @@ def plotFiltEn(basename):
 
 #    ...otherwise take full field
 
-    lenz2 = (nz2-1) * dz2
-    z2axis = (np.arange(0,nz2)) * dz2
+    lenz2 = (mdata.vars.nz2-1) * mdata.vars.dz2
+    z2axis = (np.arange(0,mdata.vars.nz2)) * mdata.vars.dz2
     
-    xaxis = (np.arange(0,nx)) * dx
-    yaxis = (np.arange(0,ny)) * dy
+    xaxis = (np.arange(0,mdata.vars.nx)) * mdata.vars.dxbar
+    yaxis = (np.arange(0,mdata.vars.ny)) * mdata.vars.dybar
 
-    q1d = 0
+#    q1d = 0
 
-    if (nx==1):
-        if (ny==1):
-          q1d = 1
-    h5f.close()
+#    if (nx==1):
+#        if (ny==1):
+#          q1d = 1
+#    h5f.close()
 
     fcount = 0
     
@@ -363,7 +502,7 @@ def plotFiltEn(basename):
     zData = np.zeros(len(filelist))
 #    zData[fieldCount] = h5in.root._f_get_child("power")._v_attrs.zTotal 
     
-    if (q1d==1):
+    if (mdata.vars.q1d==1):
     
         for ij in filelist:
             tintens = getFiltPow(ij)
@@ -381,7 +520,7 @@ def plotFiltEn(basename):
             #print "second", np.shape(xaxis), np.shape(tintensx)
             tintensxy = np.trapz(tintensx, x=yaxis, axis=0)
             ens[fcount] = np.trapz(tintensxy, x=z2axis)
-            if (iMesh==iPeriodic):
+            if (mdata.vars.iMesh==iPeriodic):
                 ens[fcount] = ens[fcount] / lenz2
             zData[fcount] = getZData(ij)
             fcount += 1
@@ -391,10 +530,10 @@ def plotFiltEn(basename):
     q_e = 1.60217646e-19 # Charge on electron
     c_0 = 2.99792458e8 # Speed of light in vacuum
 
-    if (iMesh==iPeriodic):
+    if (mdata.vars.iMesh==iPeriodic):
         plotLab = 'SI Power'
         axLab = 'Power (W)'
-        ens = ens * powScale # * lc / c0
+        ens = ens * mdata.vars.powScale # * mdata.vars.lc / mdata.vars.c0
     else:
         plotLab = 'Scaled Energy'
         axLab = 'Filtered Energy'
@@ -413,7 +552,7 @@ def plotFiltEn(basename):
 
 
 #    plt.show(block=False)
-    h5f.close()
+#    h5f.close()
 
 
 if __name__ == '__main__':
