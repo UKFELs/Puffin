@@ -49,7 +49,12 @@ def plotPowVsZ2(h5fname):
     plt.xlabel('s (m)')
     plt.ylabel(axLab)
 
-    plt.savefig("Clara-powvsz2.png")
+    nameparts = h5fname.split('_')
+    basename = nameparts[0]
+
+    z = mdata.vars.z
+
+    plt.savefig(basename + "_powvsz2_z_" + str(z) + ".png")
 
 
 
