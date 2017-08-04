@@ -12,6 +12,7 @@ from numpy import pi
 from numpy import arange
 import matplotlib.pyplot as plt
 import tables
+import readField
 from fdataClass import fdata
 from puffDataClass import puffData
 
@@ -120,32 +121,7 @@ def getFiltPow(h5fname, cfr, dfr):
     xaxis = (np.arange(0, mdata.vars.nx)) * mdata.vars.dxbar
     yaxis = (np.arange(0, mdata.vars.ny)) * mdata.vars.dybar
 
-    h5f = tables.open_file(h5fname, mode='r')
-
-#   To select temporal slice of field....
-    
-    #z2s = 50
-    #z2e = 80
-
-    #z2si = int(np.floor(z2s / dz2))
-    #z2ei = int(np.floor(z2e / dz2))
-
-    #z2axis = (np.arange(z2si,z2ei) - z2si) * dz2
-
-#    ...otherwise take full field
-
-    if (mdata.vars.q1d == 1):
-      xf = h5f.root.aperp[:,0]
-    else:
-      xf = h5f.root.aperp[:,:,:,0]
-    # xfs = xf[z2si:z2ei]   # for selecting slice...
-
-    if (mdata.vars.q1d == 1):
-        yf = h5f.root.aperp[:,1]
-    else:
-        yf = h5f.root.aperp[:,:,:,1]
-
-    h5f.close()
+    xf, yf = readField.readField(h5fname)
 
     xf = FilterField(xf, cfr, dfr, mdata.vars)
     yf = FilterField(yf, cfr, dfr, mdata.vars)

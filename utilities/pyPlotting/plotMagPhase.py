@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import specgram
 import tables
 import getMagPhase
+import readField
 from fdataClass import fdata
 from puffDataClass import puffData
 
@@ -47,8 +48,6 @@ from puffDataClass import puffData
 
 def plotMagPhase(h5fname):
 
-    h5f = tables.open_file(h5fname, mode='r')
-
     mdata = fdata(h5fname)
 
     lenz2 = (mdata.vars.nz2-1) * mdata.vars.dz2
@@ -62,10 +61,7 @@ def plotMagPhase(h5fname):
     lenz2 = (mdata.vars.nz2-1) * mdata.vars.dz2
     z2axis = (np.arange(0,mdata.vars.nz2)) * mdata.vars.dz2
 
-    xf = h5f.root.aperp[41,41,:,0]
-    yf = h5f.root.aperp[41,41,:,1]
-
-    h5f.close()
+    xf, yf = readField.readField(h5fname, f1D = 1)
 
     intens = np.square(xf) + np.square(yf)
 
