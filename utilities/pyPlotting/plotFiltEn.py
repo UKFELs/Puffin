@@ -111,9 +111,12 @@ def getFileSlices(baseName):
 
 
 
-def getFiltPow(h5fname, cfr, dfr):
+def getFiltPow(h5fname, cfr, dfr, qAv = 0, qScale = None):
 
     mdata = fdata(h5fname)
+
+    if (qScale==None):
+        qScale = mdata.vars.qscale
 
     lenz2 = (mdata.vars.nz2-1) * mdata.vars.dz2
     z2axis = (np.arange(0, mdata.vars.nz2)) * mdata.vars.dz2
@@ -127,8 +130,32 @@ def getFiltPow(h5fname, cfr, dfr):
     yf = FilterField(yf, cfr, dfr, mdata.vars)
 
     intens = np.square(xf) + np.square(yf)
+    
+    #tintens = getFiltPow(ij, dfr, cfr)
+    #ens[fcount] = np.trapz(tintens, x=z2axis)
 
-    return intens
+    if (mdata.vars.q1d==1):
+
+        if (qAv == 1):
+            power = np.trapz(intens, x=z2axis) / lenz2  # * transverse area???
+        else:
+            power = intens  # * transverse area???
+
+    else:
+        
+        tintensx = np.trapz(intens, x=xaxis, axis=0)
+        tintensxy = np.trapz(tintensx, x=yaxis, axis=0)
+
+        if (qAv == 1):
+            power = np.trapz(tintensxy, x=z2axis) / lenz2
+        else:
+            power = tintensxy
+
+
+    if (qScale == 0):
+        power = power * mdata.vars.powScale # * mdata.vars.lc / mdata.vars.c0
+
+    return power
 
 
 def getZData(fname):
@@ -162,34 +189,28 @@ def plotFiltEn(basename, cfr, dfr):
     if (mdata.vars.q1d==1):
     
         for ij in filelist:
-            tintens = getFiltPow(ij, cfr, dfr)
-            ens[fcount] = np.trapz(tintens, x=z2axis)
+            power = getFiltPow(ij, cfr, dfr, qAv = 1)
+            ens[fcount] = np.trapz(power, x=z2axis)
             zData[fcount] = getZData(ij)
             fcount += 1
 
     else:
 
         for ij in filelist:
-            tintens = getFiltPow(ij, dfr, cfr)
-            #ens[fcount] = np.trapz(tintens, x=z2axis)
-            #print "first", np.shape(xaxis), np.shape(tintens)
-            tintensx = np.trapz(tintens, x=xaxis, axis=0)
-            #print "second", np.shape(xaxis), np.shape(tintensx)
-            tintensxy = np.trapz(tintensx, x=yaxis, axis=0)
-            ens[fcount] = np.trapz(tintensxy, x=z2axis)
             if (mdata.vars.iMesh==iPeriodic):
-                ens[fcount] = ens[fcount] / lenz2
+                ens[fcount] = getFiltPow(ij, dfr, cfr, qAv = 1, qScale = 0)
             zData[fcount] = getZData(ij)
             fcount += 1
 
+    plotLab = 'SI Power'
+    axLab = 'Power (W)'
 
-    if (mdata.vars.iMesh==iPeriodic):
-        plotLab = 'SI Power'
-        axLab = 'Power (W)'
-        ens = ens * mdata.vars.powScale # * mdata.vars.lc / mdata.vars.c0
-    else:
-        plotLab = 'Scaled Energy'
-        axLab = 'Filtered Energy'
+#    if (mdata.vars.iMesh == iPeriodic):
+#        plotLab = 'SI Power'
+#        axLab = 'Power (W)'
+#    else:
+#        plotLab = 'Scaled Energy'
+#        axLab = 'Filtered Energy'
         
 
     ax1 = plt.subplot(111)
