@@ -12,8 +12,6 @@ import numpy as np
 from numpy import pi
 from numpy import arange
 import matplotlib.pyplot as plt
-from matplotlib.pyplot import specgram
-import tables
 import getMagPhase
 import readField
 from fdataClass import fdata
@@ -52,6 +50,7 @@ def plotMagPhase(h5fname):
 
     lenz2 = (mdata.vars.nz2-1) * mdata.vars.dz2
     z2axis = (np.arange(0,mdata.vars.nz2)) * mdata.vars.dz2
+    saxis = z2axis * mdata.vars.lc
     
     xaxis = (np.arange(0,mdata.vars.nx)) * mdata.vars.dxbar
     yaxis = (np.arange(0,mdata.vars.ny)) * mdata.vars.dybar
@@ -90,11 +89,12 @@ def plotMagPhase(h5fname):
     plt.ylabel('Phase')
     axes.set_ylim([0, 2. * pi])
 
-    basename = "clara"
+    nameparts = h5fname.split('_')
+    basename = nameparts[0]
 
-    plt.savefig(basename + "-magPhase.png")
-#    plt.show()
-#    plt.show(block=False)
+    z = mdata.vars.z
+
+    plt.savefig(basename + "_magPhase_z_" + str(z) + ".png")
 
 
 if __name__ == '__main__':

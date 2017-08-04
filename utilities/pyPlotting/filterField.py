@@ -19,8 +19,17 @@ def filterField(field,crfr,distfr, pvars):
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #% filter - HARD FILTER
 
-    nn = np.round(pvars.dz2 * pvars.nz2 * crfr / (4*pi*pvars.rho))
-    nns = np.round(pvars.dz2 * pvars.nz2 * distfr / (4*pi*pvars.rho))
+    nn = np.int(np.round(pvars.dz2 * pvars.nz2 * crfr / (4*pi*pvars.rho)))
+    nns = np.int(np.floor(pvars.dz2 * pvars.nz2 * distfr / (4*pi*pvars.rho)))
+    #print str(nn), str(nns)
+    #print str(0), str(np.int(nn-nns))
+    #print str(nn+nns+1), str(np.ceil(pvars.nz2/2))
+    #print str(np.ceil(pvars.nz2/2) + 1 - 1), str(pvars.nz2-(nn+nns)+2)
+    #print str(pvars.nz2 - (nn-nns) + 2 -1 ), str(pvars.nz2)
+
+
+#    if ((nn-nns) <= 0):
+#        nns = 
 
     if (pvars.q1d == 1):
 
