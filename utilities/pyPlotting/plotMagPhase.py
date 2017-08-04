@@ -65,6 +65,8 @@ def plotMagPhase(h5fname):
     xf = h5f.root.aperp[41,41,:,0]
     yf = h5f.root.aperp[41,41,:,1]
 
+    h5f.close()
+
     intens = np.square(xf) + np.square(yf)
 
     mgx, phx = getMagPhase.getMagPhase(xf, mdata.vars.nz2, mdata.vars.rho, lenz2)
@@ -95,11 +97,8 @@ def plotMagPhase(h5fname):
     basename = "clara"
 
     plt.savefig(basename + "-magPhase.png")
-    plt.show()
-
-
+#    plt.show()
 #    plt.show(block=False)
-    h5f.close()
 
 
 if __name__ == '__main__':
