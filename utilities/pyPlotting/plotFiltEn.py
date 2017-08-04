@@ -115,10 +115,10 @@ def getFiltPow(h5fname, cfr, dfr):
     mdata = fdata(h5fname)
 
     lenz2 = (mdata.vars.nz2-1) * mdata.vars.dz2
-    z2axis = (np.arange(0,mdata.vars.nz2)) * mdata.vars.dz2
+    z2axis = (np.arange(0, mdata.vars.nz2)) * mdata.vars.dz2
     
-    xaxis = (np.arange(0,mdata.vars.nx)) * mdata.vars.dxbar
-    yaxis = (np.arange(0,mdata.vars.ny)) * mdata.vars.dybar
+    xaxis = (np.arange(0, mdata.vars.nx)) * mdata.vars.dxbar
+    yaxis = (np.arange(0, mdata.vars.ny)) * mdata.vars.dybar
 
     h5f = tables.open_file(h5fname, mode='r')
 
