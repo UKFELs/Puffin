@@ -118,7 +118,6 @@ if __name__ == '__main__':
     if len(sys.argv) == 4:
         cfr = float(sys.argv[2])
         dfr = float(sys.argv[3])
-        print 'hhhhaaa'
     else:
         cfr=None
         dfr=None
