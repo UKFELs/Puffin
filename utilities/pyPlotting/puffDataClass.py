@@ -1,3 +1,7 @@
+# Copyright (c) 2012-2017, University of Strathclyde
+# Authors: Lawrence T. Campbell
+# License: BSD-3-Clause
+
 import sys, glob, os
 import numpy as np
 from numpy import pi
