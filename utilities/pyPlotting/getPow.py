@@ -15,7 +15,7 @@ from fdataClass import fdata
 from puffDataClass import puffData
 
 
-def getFiltPow(h5fname, cfr, dfr, qAv = 0, qScale = None):
+def getPow(h5fname, cfr=None, dfr=None, qAv = 0, qScale = None):
 
     mdata = fdata(h5fname)
 
@@ -30,8 +30,10 @@ def getFiltPow(h5fname, cfr, dfr, qAv = 0, qScale = None):
 
     xf, yf = readField.readField(h5fname)
 
-    xf = filterField.filterField(xf, cfr, dfr, mdata.vars)
-    yf = filterField.filterField(yf, cfr, dfr, mdata.vars)
+    if ((cfr != None) and (dfr != None)):
+
+        xf = filterField.filterField(xf, cfr, dfr, mdata.vars)
+        yf = filterField.filterField(yf, cfr, dfr, mdata.vars)
 
     intens = np.square(xf) + np.square(yf)
     
