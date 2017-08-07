@@ -80,13 +80,19 @@ def filterField(field,crfr,distfr, pvars):
 
       ftfield = np.fft.fft(field)
     
-      if (pvars.iMesh == iTemporal):
+      if (pvars.iMesh == iPeriodic):
 
-        sn = 1
-        ftfield[:,:,0:sn] = 0
-        ftfield[:,:,sn+1:np.ceil(pvars.nz2/2)] = 0
+        #sn = 1
+        #ftfield[:,:,0:sn] = 0
+        #ftfield[:,:,sn+1:np.ceil(pvars.nz2/2)] = 0
 
-        ftfield[:,:,np.ceil(pvars.nz2/2) + 1 - 1:-sn] = 0
+        #ftfield[:,:,np.ceil(pvars.nz2/2) + 1 - 1:-sn] = 0
+
+        ftfield[:,:,f0:f1] = 0
+        ftfield[:,:,f2:f3] = 0
+
+        ftfield[:,:,f4:f5] = 0
+        ftfield[:,:,f6:f7] = 0
 
       else:
         ftfield[:,:,f0:f1] = 0
