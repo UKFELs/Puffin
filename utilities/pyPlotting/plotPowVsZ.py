@@ -80,7 +80,7 @@ def plotPowVsZ(basename, cfr=None, dfr=None):
     else:
 
         for ij in filelist:
-            pows[fcount] = getPow.getPow(ij, dfr, cfr, qAv = 1, qScale = 0)
+            pows[fcount] = getPow.getPow(ij, cfr, dfr, qAv = 1, qScale = 0)
             zData[fcount] = getZData(ij)
             fcount += 1
 
@@ -103,7 +103,7 @@ def plotPowVsZ(basename, cfr=None, dfr=None):
 
     #plt.legend()
 
-    plt.savefig(basename + "-power.png")
+    plt.savefig(basename + "-filt-" + str(cfr) + "-" + str(dfr) + "-power.png")
 #    plt.show()
 
 
