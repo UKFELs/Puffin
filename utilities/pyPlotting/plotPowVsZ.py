@@ -3,7 +3,8 @@
 # License: BSD-3-Clause
 
 """
-This is an examplar script to produce a plot of the filtered energy.
+This produces a plot of the power, averaged over the temporal mesh, from Puffin,
+against distance through the undulator z.
 """
 
 import sys, glob, os

@@ -3,7 +3,9 @@
 # License: BSD-3-Clause
 
 """
-This is an examplar script to produce a plot of the filtered energy.
+Given the values of the field on the Puffin mesh, this function applies a simple
+bandpass filter to the field as specified by the cfr and dfr inputs (which are the
+centre and half-width of the filter, respectively). 
 """
 
 import sys, glob, os
