@@ -1149,7 +1149,7 @@ contains
 
   !    Print*,('Spatialdims: ' // trim(IntegerToString(numSpatialDims)))
         filename = (trim(adjustl(zFilename_G)) // '_' // trim(adjustl(dsetname)) &
-                 // '_' // trim(adjustl(IntegerToString(iCSteps))) // '.h5' )
+                 // '_' // trim(adjustl(IntegerToString(igwr))) // '.h5' )
 
         call h5open_f(error)
 
