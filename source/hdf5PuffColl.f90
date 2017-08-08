@@ -244,7 +244,7 @@ contains
 
       allocate(sz2_temp(procelectrons_G(1)))
       sz2_temp = sElZ2_G
-      ebound = 4.0_wp * pi * sRho_G
+      ebound = 4.0_wp * pi * sRho_G * sperwaves_G
       where (sz2_temp > ebound) sz2_temp = sz2_temp - &
                       (real(floor(sElZ2_G / ebound), kind=wp) * ebound )
 

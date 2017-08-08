@@ -952,6 +952,7 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
   
     sLengthOfElm(iZ2_CG) = dz2
     sFieldModelLength(iZ2_CG) = real(iNumNodes(iZ2_CG) - 1_ip, kind=wp) * dz2
+    sperwaves_G = sFieldModelLength(iZ2_CG) / (4.0_WP * pi * sRho_G)
 
     sLenEPulse(1,iZ2_CG) = sFieldModelLength(iZ2_CG)
 

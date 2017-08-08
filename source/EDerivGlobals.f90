@@ -58,6 +58,7 @@ integer(kind=ip) :: igwr
 integer(kind=ip) :: fieldMesh
 integer(kind=ip), parameter :: iTemporal = 0_ip
 integer(kind=ip), parameter :: iPeriodic = 1_ip
+real(kind=wp) :: sperwaves_G
 
 real(kind=wp) :: delta_G  ! Volume of field element (dx * dy * dz2)
 
