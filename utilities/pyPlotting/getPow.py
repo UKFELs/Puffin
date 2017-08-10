@@ -40,12 +40,14 @@ def getPow(h5fname, cfr=None, dfr=None, qAv = 0, qScale = None):
     #tintens = getFiltPow(ij, dfr, cfr)
     #ens[fcount] = np.trapz(tintens, x=z2axis)
 
+    trar = 2. * np.pi * np.square(35.e-6) / mdata.vars.lg / mdata.vars.lc
+
     if (mdata.vars.q1d==1):
 
         if (qAv == 1):
-            power = np.trapz(intens, x=z2axis) / lenz2  # * transverse area???
+            power = np.trapz(intens, x=z2axis) / lenz2 * trar # * transverse area???
         else:
-            power = intens  # * transverse area???
+            power = intens * trar # * transverse area???
 
     else:
         

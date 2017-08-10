@@ -54,24 +54,26 @@ def filterField(field,crfr,distfr, pvars):
 #%%%%%    1D    %%%%%%%
 
         if (pvars.iMesh == iPeriodic):
-            
-            sn = 1
-            ftfield[0:sn] = 0
-            ftfield[sn+1:np.ceil(pvars.nz2/2)] = 0
 
-            ftfield[np.ceil(pvars.nz2/2) + 1 - 1:-sn] = 0
+            ftfield = np.fft.fft(field)
+            
+            ftfield[f0:f1] = 0
+            ftfield[f2:f3] = 0
+
+            ftfield[f4:f5] = 0
+            ftfield[f6:f7] = 0
 
 
         else:
 
             ftfield = np.fft.fft(field)
 
-            ftfield[0:np.int(nn-nns)] = 0
-            ftfield[np.int(nn+nns-1):np.int(np.ceil(pvars.nz2/2))] = 0
-      
-            ftfield[np.int(np.ceil(pvars.nz2/2) + 1 - 1):np.int(pvars.nz2-(nn+nns)+2)] = 0
-            ftfield[np.int(pvars.nz2 - (nn-nns) + 2 - 1 ) : np.int(pvars.nz2)] = 0
-      
+            ftfield[f0:f1] = 0
+            ftfield[f2:f3] = 0
+
+            ftfield[f4:f5] = 0
+            ftfield[f6:f7] = 0
+                  
         field = np.fft.ifft(ftfield)
       
         nfield = np.real(field)
