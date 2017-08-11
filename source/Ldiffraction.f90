@@ -135,8 +135,8 @@ subroutine multiplyexp(h,qOK)
 
   posI=CMPLX(0.0,1.0,KIND=WP)
   delz2=sLengthOfElmZ2_G
-  cutoff=2.0_WP*pi*sfilt/(REAL(NZ2_G,KIND=WP)*delz2)
-  if (fieldMesh == iPeriodic) cutoff = 0.0_wp
+  cutoff=2.0_WP*pi*sfilt/(real(nz2_G, kind = wp) * delz2)
+  if ((fieldMesh == iPeriodic) .and. (sperwaves_G <= 1.1_wp) ) cutoff = 0.0_wp
   loc_nz2 = tTransInfo_G%loc_nz2
 
 !      Main loop, multiply FT field by exp factor
