@@ -242,7 +242,7 @@ contains
 
 
 
-  call self%calcBuff(tMPI, 4.0_wp * pi * tScale%rho * sdz)  ! Calculate buffers
+  call self%calcBuff(tScale, tMPI, 4.0_wp * pi * tScale%rho * sdz)  ! Calculate buffers
 !  call calcBuff(4.0_wp)  ! Calculate buffers
 
  ! else
@@ -858,9 +858,10 @@ contains
 !> @param[in] tMPI Custom Fortran type to hold MPI info.
 !> @param[in] dz Distance in zbar the mesh distribution is desired to be valid for.
 
-  subroutine calcBuff(this, tMPI, dz)
+  subroutine calcBuff(this, tScale, tMPI, dz)
 
     class(pMesh), intent(inout) :: this
+    type(fScale), intent(in) :: tScale
     type(fMPIComm), intent(in) :: tMPI
     real(kind=wp), intent(in) :: dz
 
@@ -879,7 +880,7 @@ contains
 
       allocate(sp2(iNumberElectrons_G))
 
-      call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, sEta_G, sGammaR_G, sAw_G)
+      call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, tScale%eta, tScale%gamma0, tScale%aw)
 
       bz2_len = dz  ! distance in zbar until next rearrangement
       bz2_len = maxval(sElZ2_G + bz2_len * sp2)  ! predicted length in z2 needed needed in buffer for beam
