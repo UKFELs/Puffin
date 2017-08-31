@@ -12,6 +12,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import specgram
 import tables
+from fdataClass import fdata
+from puffDataClass import puffData
+import readField
 
 
 #t = np.linspace(-1, 1, 200, endpoint=False)
@@ -37,13 +40,7 @@ import tables
 
 def plotSpecPow(h5fname):
 
-    h5f = tables.open_file(h5fname, mode='r')
-
-    dz2 = h5f.root.runInfo._v_attrs.sLengthOfElmZ2
-    nz2 = h5f.root.runInfo._v_attrs.nZ2
-    rho = h5f.root.runInfo._v_attrs.rho
-
-    sampleFreq = 1.0 / dz2
+    mdata = fdata(h5fname)
 
 #   To select temporal slice of field....
     
@@ -58,32 +55,43 @@ def plotSpecPow(h5fname):
 
 #    ...otherwise take full field
 
-    lenz2 = (nz2-1) * dz2
-    z2axis = (np.arange(0,nz2)) * dz2
+    lenz2 = (mdata.vars.nz2-1) * mdata.vars.dz2
+    z2axis = (np.arange(0, mdata.vars.nz2)) * mdata.vars.dz2
 
+    xaxis = (np.arange(0, mdata.vars.nx)) * mdata.vars.dxbar
+    yaxis = (np.arange(0, mdata.vars.ny)) * mdata.vars.dybar
 
-    xf = h5f.root.aperp[:,0]
-    # xfs = xf[z2si:z2ei]   # for selecting slice...
+    xf, yf = readField.readField(h5fname, f1D=1)
 
-    yf = h5f.root.aperp[:,1]
+    #xf = np.concatenate((xf, xf))
+    #xf = np.concatenate((xf, xf))
+    #xf = np.concatenate((xf, xf))
+    #xf = np.concatenate((xf, xf))
+    #xf[mdata.vars.nz2:] = 0.
+    #yf = np.concatenate((yf, yf)) # [yf, yf, yf, yf]
+    #yf = np.concatenate((yf, yf))
+    #yf = np.concatenate((yf, yf))
+    #yf = np.concatenate((yf, yf))
+    #yf[mdata.vars.nz2:] = 0.
 
     intens = np.square(xf) + np.square(yf)
 
-    xff = np.fft.fft(xf)
-    yff = np.fft.fft(yf)
+    #npads = np.int(np.round(mdata.vars.nz2 / 2))
+    npads = mdata.vars.nz2
 
-    h = 6.626e-34 # Planck constant
-    q_e = 1.60217646e-19 # Charge on electron
-    c_0 = 2.99792458e8 # Speed of light in vacuum
 
-    NumUniquePts = np.int_(np.ceil((nz2+1)/2))
-    fs = (nz2)/lenz2 #sampling frequency
+    xff = np.fft.fft(xf, n=npads)
+    yff = np.fft.fft(yf, n=npads)
 
+    NumUniquePts = np.int_(np.ceil((npads+1)/2))
+    fs = (mdata.vars.nz2)/lenz2 #sampling frequency
+
+    ftfieldtemp = np.zeros(NumUniquePts+1)
     ftfieldtemp = xff[0:NumUniquePts]
 
     ftxpower = np.square(np.absolute(ftfieldtemp))
 
-    if np.remainder(nz2,2) == 1:
+    if np.remainder(npads,2) == 1:
         ftxpower[1:] = ftxpower[1:]*2
     else:
         ftxpower[1:-1] = ftxpower[1:-1]*2
@@ -94,36 +102,55 @@ def plotSpecPow(h5fname):
 
     ftypower = np.square(np.absolute(ftfieldtemp))
 
-    if np.remainder(nz2,2) == 1:
+    if np.remainder(npads, 2) == 1:
         ftypower[1:] = ftypower[1:]*2
     else:
         ftypower[1:-1] = ftypower[1:-1]*2
        
        
-
-    ftxaxis = (np.arange(0,NumUniquePts)*(fs/nz2))*(4*np.pi*rho)
-    sp_x_axis='$$\omega / \omega_r$$'
+    #print str(mdata.vars.lr)
+    #ftxaxis = (np.arange(0,NumUniquePts)*(fs/(npads)))*(4.*np.pi*mdata.vars.rho)
+    #ftxaxis[1:] = 1 / ftxaxis[1:]
+    #ftxaxis[0] = ftxaxis[-1] + 1
+    ftxaxis = mdata.vars.lr / ((np.arange(0,NumUniquePts)*(fs/(npads)))*(4.*np.pi*mdata.vars.rho))
+    sp_x_axis=r'$\lambda (m)$' 
+    
+    #ftxaxis = (np.arange(0,NumUniquePts)*(fs/(npads)))*(4.*np.pi*mdata.vars.rho)
+    #sp_x_axis='$$\omega / \omega_r$$'
     sp_title='Intensity Spectrum'
+
+#    z2axis = [z2axis,z2axis,z2axis,z2axis]
 
     ax1 = plt.subplot(211)
     plt.plot(z2axis, xf, label='x field')
     plt.plot(z2axis, yf, label='y field')
+    plt.xlabel(r'$\bar{z}_2$')
+    plt.ylabel('Fields')
     plt.legend()
 
 # example for adding subplot
-    plt.subplot(212)
+    axes = plt.subplot(212)
+    plt.xlabel(sp_x_axis, fontsize=16)
+    plt.ylabel('Power')
+    #print np.len(ftxaxis), np.len(ftxpower)
     plt.plot(ftxaxis, ftxpower, label='x power')
     plt.plot(ftxaxis, ftypower, label='y power')
     plt.plot(ftxaxis, ftxpower + ftypower, label='combined')
+    axes.set_xlim([5.8e-10, 7.2e-10])
 
     plt.legend()
-    plt.savefig("ExEy-SpecPower3.png")
+
+    nameparts = h5fname.split('_')
+    basename = nameparts[0]
+    z = mdata.vars.z
+    
+    plt.savefig(basename + "-spec-power-z-" + str(z) + ".png")
 
     plt.show()
 
 
 #    plt.show(block=False)
-    h5f.close()
+#    h5f.close()
 
 
 if __name__ == '__main__':
