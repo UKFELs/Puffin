@@ -1022,9 +1022,13 @@ contains
       A_local(1:gath_v) = apow(1:gath_v)
 !      A_local(gath_v+1:gath_v*2) = ac_ifield(1:gath_v)
 
-      if (qUnique) call gather1A(A_local, powi, &
+      if (qUnique) then
+        call gather1A(A_local, powi, &
                        gath_v, fz2_GGG - ez2_GGG + 1, &
                        recvs_ppf, displs_ppf)
+      else
+        powi = A_local
+      end if
 
 
       gpow(fz2_GGG:ez2_GGG) = powi(:)
