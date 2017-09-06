@@ -1788,126 +1788,146 @@ contains
 !  PERIODIC BOUNDS - EXPERIMENTAL
 
 
-
       if (FieldMesh == iPeriodic) then
 
-        si = ntrndsi_G * (bz2PB + 1_ip)
-        sst = ((tllen - (bz2PB+1_ip) ) * ntrndsi_G) + 1_ip
-        sse = tllen * ntrndsi_G
+        if (.not. qUnique) then
+
+!!!! IF PERIODIC
+
+          si = ntrndsi_G * (bz2PB + 1_ip)
+          sst = ((tllen - (bz2PB+1_ip) ) * ntrndsi_G) + 1_ip
+          sse = tllen * ntrndsi_G
+          print*, size(dadz_r), tllen, mainlen
+
+          print*, 'IM NOT UNIQUE'
+
+          dadz_r(1:si) = dadz_r(1:si) + dadz_r(sst:sse)
+          dadz_i(1:si) = dadz_i(1:si) + dadz_i(sst:sse)
+
+
+        else
+
+
+
+          si = ntrndsi_G * (bz2PB + 1_ip)
+          sst = ((tllen - (bz2PB + 1_ip) ) * ntrndsi_G) + 1_ip
+          sse = tllen * ntrndsi_G
 
 !print*,'why0.1', tProcInfo_G%rank
 
-        if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
+          if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
 
-            call mpi_issend(si, 1, mpi_integer, 0_ip, 0, &
+              call mpi_issend(si, 1, mpi_integer, 0_ip, 0, &
+                              tProcInfo_G%comm, req, error)
+
+          end if
+
+          if (tProcInfo_G%rank == 0) then
+
+              call mpi_recv( si, 1, mpi_integer, tProcInfo_G%size-1_ip, 0, &
+                             tProcInfo_G%comm, statr, error )
+
+          end if
+
+          if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
+
+            call mpi_issend(dadz_r(sst:sse), &
+                            si, &
+                            mpi_double_precision, &
+                            0_ip, 0, &
                             tProcInfo_G%comm, req, error)
 
-        end if
-
-        if (tProcInfo_G%rank == 0) then
-
-            call mpi_recv( si, 1, mpi_integer, tProcInfo_G%size-1_ip, 0, &
-                           tProcInfo_G%comm, statr, error )
-
-        end if
-
-        if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
-
-          call mpi_issend(dadz_r(sst:sse), &
-                          si, &
-                          mpi_double_precision, &
-                          0_ip, 0, &
-                          tProcInfo_G%comm, req, error)
-
-        end if
+          end if
 
 
-        if (tProcInfo_G%rank == 0) then
+          if (tProcInfo_G%rank == 0) then
 
-          allocate(Abounds(si))
+            allocate(Abounds(si))
 
-          call mpi_recv( Abounds, si, mpi_double_precision, &
-                   tProcInfo_G%size-1_ip, 0, tProcInfo_G%comm, &
-                   statr, error )
+            call mpi_recv( Abounds, si, mpi_double_precision, &
+                     tProcInfo_G%size-1_ip, 0, tProcInfo_G%comm, &
+                     statr, error )
 
-          dadz_r(1:si) = dadz_r(1:si) + Abounds
+            dadz_r(1:si) = dadz_r(1:si) + Abounds
 
-        end if
-
-       
-        if (tProcInfo_G%rank == tProcInfo_G%size-1) then
-       
-          call mpi_wait( req,sendstat,error )
-          call mpi_issend(dadz_i(sst:sse), si, mpi_double_precision, &
-                          0_ip, 0, tProcInfo_G%comm, req, error)
-       
-        end if
-     
-        if (tProcInfo_G%rank == 0) then
-       
-          call mpi_recv( Abounds, si, mpi_double_precision, &
-                    tProcInfo_G%size-1_ip, 0, tProcInfo_G%comm, &
-                    statr, error )
-       
-          dadz_i(1:si) = dadz_i(1:si) + Abounds
-
-          deallocate(Abounds) 
-
-        end if
+          end if
 
 
-        if (tProcInfo_G%rank == tProcInfo_G%size-1) then
+          if (tProcInfo_G%rank == tProcInfo_G%size-1) then
 
-          call mpi_wait( req,sendstat,error )
+            call mpi_wait( req,sendstat,error )
+            call mpi_issend(dadz_i(sst:sse), si, mpi_double_precision, &
+                            0_ip, 0, tProcInfo_G%comm, req, error)
 
-        end if
+          end if
+
+          if (tProcInfo_G%rank == 0) then
+
+            call mpi_recv( Abounds, si, mpi_double_precision, &
+                      tProcInfo_G%size-1_ip, 0, tProcInfo_G%comm, &
+                      statr, error )
+
+            dadz_i(1:si) = dadz_i(1:si) + Abounds
+
+            deallocate(Abounds) 
+
+          end if
+
+
+          if (tProcInfo_G%rank == tProcInfo_G%size-1) then
+
+            call mpi_wait( req,sendstat,error )
+
+          end if
 
 
 
        
-        if (tProcInfo_G%rank == 0_ip) then
+          if (tProcInfo_G%rank == 0_ip) then
        
-          call mpi_issend(dadz_r(1:si), si, mpi_double_precision, &
-                          tProcInfo_G%size-1_ip, 0, &
-                          tProcInfo_G%comm, req, error)
+            call mpi_issend(dadz_r(1:si), si, mpi_double_precision, &
+                            tProcInfo_G%size-1_ip, 0, &
+                            tProcInfo_G%comm, req, error)
 
-        end if
+          end if
 
 
 
-        if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
+          if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
 
-          call mpi_recv( dadz_r(sst:sse), si, mpi_double_precision, &
-                   0, 0, tProcInfo_G%comm, statr, error )
+            call mpi_recv( dadz_r(sst:sse), si, mpi_double_precision, &
+                     0, 0, tProcInfo_G%comm, statr, error )
        
-        end if
+          end if
 
 
-        if (tProcInfo_G%rank == 0_ip) then
+          if (tProcInfo_G%rank == 0_ip) then
 
-          call mpi_wait( req,sendstat,error )
-          call mpi_issend(dadz_i(1:si), si, mpi_double_precision, &
-                          tProcInfo_G%size-1_ip, 0, &
-                          tProcInfo_G%comm, req, error)
+            call mpi_wait( req,sendstat,error )
+            call mpi_issend(dadz_i(1:si), si, mpi_double_precision, &
+                            tProcInfo_G%size-1_ip, 0, &
+                            tProcInfo_G%comm, req, error)
 
-        end if
-
-
-        if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
-
-          call mpi_recv( dadz_i(sst:sse), si, mpi_double_precision, &
-                   0, 0, tProcInfo_G%comm, statr, error )
-
-        end if
+          end if
 
 
-        if (tProcInfo_G%rank == 0_ip) then
+          if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
 
-          call mpi_wait( req,sendstat,error )
+            call mpi_recv( dadz_i(sst:sse), si, mpi_double_precision, &
+                     0, 0, tProcInfo_G%comm, statr, error )
 
-        end if
+          end if
 
-      end if  ! End synch'ing for periodic mesh...
+
+          if (tProcInfo_G%rank == 0_ip) then
+
+            call mpi_wait( req,sendstat,error )
+
+          end if
+
+        end if  ! end periodic mesh for qUnique
+
+      end if   ! End synch'ing for periodic mesh...
 
     end subroutine upd8da
 
@@ -2451,7 +2471,8 @@ contains
     real(kind=wp), allocatable :: sp2(:)
 
     real(kind=wp) :: bz2_len
-    integer(kind=ip) :: yip, ij, bz2_globm, ctrecvs, cpolap, dum_recvs
+    integer(kind=ip) :: yip, ij, bz2_globm, ctrecvs, cpolap, dum_recvs, &
+                        maxbz2PB, bz2last
     integer(kind=ip), allocatable :: drecar(:)
     integer :: error, req
 
@@ -2501,6 +2522,7 @@ contains
     else
 
       if (bz2 > nz2_G) bz2 = nz2_G
+      bz2PB = 0_ip
 
     end if
 
@@ -2520,6 +2542,59 @@ contains
       if (bz2 <= ez2) bz2 = ez2 + 1  ! For sparse beam!!
 
     end if
+
+
+    if (fieldMesh == iPeriodic) then
+
+      print*, '1', bz2
+
+      if (bz2_globm > nz2_G) then
+        bz2PB = bz2_globm - nz2_G
+      else
+        bz2PB = 3_ip
+      end if
+
+! tell last process what the max periodic boundary is...
+      
+!      maxbz2PB = 1_ip
+      
+      if (tProcInfo_G%qRoot) maxbz2PB = mainlen - 1_ip
+
+      print*, 'bz2PB', bz2PB
+
+      call mpi_bcast(maxbz2PB, 1, mpi_integer, 0, tProcInfo_G%comm, error)
+
+!      maxbz2PB = 10
+
+      if (bz2PB > maxbz2PB) then
+
+        bz2PB = maxbz2PB
+
+      end if
+
+! if, for any other process, bz2 goes bigger than bz2 on the last process, 
+! then it will have to reduce its own bz2 to be OK
+
+      if (tProcInfo_G%rank == tProcInfo_G%size-1) bz2 = ez2 + bz2PB
+
+      print*, 'bz2 = ', bz2
+      print*, 'bz2PB = ', bz2PB
+      print*, 'ez2 = ', ez2
+
+      bz2last = bz2
+
+      call mpi_bcast(bz2last, 1, mpi_integer, tProcInfo_G%size-1, tProcInfo_G%comm, error)
+
+      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+        if (bz2 > nz2_g) then
+          bz2 = nz2_g
+        end if
+      end if
+
+      bz2_globm = bz2last
+
+    end if
+
 
     if (.not. qUnique) then
 
@@ -2620,10 +2695,18 @@ contains
 
             rrank_v(yip,2) = ac_ar(ij+1, 2)
 
-            if (bz2 > ac_ar(ij+1, 3)) then
-              rrank_v(yip,3) = ac_ar(ij+1, 3)
-            else
+            if ((fieldMesh == iPeriodic) .and.  (ij == tProcInfo_G%size-1_ip)) then
+
               rrank_v(yip,3) = bz2
+              
+            else
+
+              if (bz2 > ac_ar(ij+1, 3)) then
+                rrank_v(yip,3) = ac_ar(ij+1, 3)
+              else
+                rrank_v(yip,3) = bz2
+              end if
+
             end if
 
             rrank_v(yip,1) = rrank_v(yip,3) - rrank_v(yip,2) + 1
@@ -2663,6 +2746,9 @@ contains
 
       end if
 
+    print*, 'rrank', rrank_v
+    print*, 'ac_ar', ac_ar
+    print*, 'bz2PB', bz2PB, bz2
 
 
 
