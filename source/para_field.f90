@@ -2546,7 +2546,7 @@ contains
 
     if (fieldMesh == iPeriodic) then
 
-      print*, '1', bz2
+!      print*, '1', bz2
 
       if (bz2_globm > nz2_G) then
         bz2PB = bz2_globm - nz2_G
@@ -2560,7 +2560,7 @@ contains
       
       if (tProcInfo_G%qRoot) maxbz2PB = mainlen - 1_ip
 
-      print*, 'bz2PB', bz2PB
+!      print*, 'bz2PB', bz2PB
 
       call mpi_bcast(maxbz2PB, 1, mpi_integer, 0, tProcInfo_G%comm, error)
 
@@ -2577,9 +2577,9 @@ contains
 
       if (tProcInfo_G%rank == tProcInfo_G%size-1) bz2 = ez2 + bz2PB
 
-      print*, 'bz2 = ', bz2
-      print*, 'bz2PB = ', bz2PB
-      print*, 'ez2 = ', ez2
+!      print*, 'bz2 = ', bz2
+!      print*, 'bz2PB = ', bz2PB
+!      print*, 'ez2 = ', ez2
 
       bz2last = bz2
 
@@ -2745,12 +2745,6 @@ contains
         end do
 
       end if
-
-    print*, 'rrank', rrank_v
-    print*, 'ac_ar', ac_ar
-    print*, 'bz2PB', bz2PB, bz2
-
-
 
       allocate(drecar(tProcInfo_G%rank))
       ctrecvs = 0
