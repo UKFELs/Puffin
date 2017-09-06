@@ -38,7 +38,7 @@ import readField
 #
 ##
 
-def plotSpecPow(h5fname):
+def plotSpecPow(h5fname, ftplottype=None):
 
     mdata = fdata(h5fname)
 
@@ -112,11 +112,15 @@ def plotSpecPow(h5fname):
     #ftxaxis = (np.arange(0,NumUniquePts)*(fs/(npads)))*(4.*np.pi*mdata.vars.rho)
     #ftxaxis[1:] = 1 / ftxaxis[1:]
     #ftxaxis[0] = ftxaxis[-1] + 1
-    ftxaxis = mdata.vars.lr / ((np.arange(0,NumUniquePts)*(fs/(npads)))*(4.*np.pi*mdata.vars.rho))
-    sp_x_axis=r'$\lambda (m)$' 
-    
-    #ftxaxis = (np.arange(0,NumUniquePts)*(fs/(npads)))*(4.*np.pi*mdata.vars.rho)
-    #sp_x_axis='$$\omega / \omega_r$$'
+
+    if (ftplottype == 1):
+        ftxaxis = mdata.vars.lr / ((np.arange(0,NumUniquePts)*(fs/(npads)))*(4.*np.pi*mdata.vars.rho))
+        sp_x_axis=r'$\lambda (m)$' 
+
+    else:
+        ftxaxis = (np.arange(0,NumUniquePts)*(fs/(npads)))*(4.*np.pi*mdata.vars.rho)
+        sp_x_axis=r'$\omega / \omega_r$'
+
     sp_title='Intensity Spectrum'
 
 #    z2axis = [z2axis,z2axis,z2axis,z2axis]
@@ -133,10 +137,18 @@ def plotSpecPow(h5fname):
     plt.xlabel(sp_x_axis, fontsize=16)
     plt.ylabel('Power')
     #print np.len(ftxaxis), np.len(ftxpower)
-    plt.plot(ftxaxis, ftxpower, label='x power')
-    plt.plot(ftxaxis, ftypower, label='y power')
-    plt.plot(ftxaxis, ftxpower + ftypower, label='combined')
-    axes.set_xlim([5.8e-10, 7.2e-10])
+
+    if ftplottype==1:
+        plt.loglog(ftxaxis, ftxpower, label='x power')
+        plt.plot(ftxaxis, ftypower, label='y power')
+        plt.plot(ftxaxis, ftxpower + ftypower, label='combined')
+#        axes.set_xlim([5.8e-10, 7.2e-10])
+
+    else:
+        plt.semilogy(ftxaxis, ftxpower, label='x power')
+        plt.plot(ftxaxis, ftypower, label='y power')
+        plt.plot(ftxaxis, ftxpower + ftypower, label='combined')
+#        axes.set_xlim([5.8e-10, 7.2e-10])
 
     plt.legend()
 
@@ -155,7 +167,12 @@ def plotSpecPow(h5fname):
 
 if __name__ == '__main__':
     h5fname=sys.argv[1]
-    plotSpecPow(h5fname)
+    if len(sys.argv) == 3:
+        ftplottype = float(sys.argv[2])
+    else:
+        ftplottype=None
+
+    plotSpecPow(h5fname, ftplottype)
     
 
 

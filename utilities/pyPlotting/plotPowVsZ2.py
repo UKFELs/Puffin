@@ -17,11 +17,11 @@ from fdataClass import fdata
 from puffDataClass import puffData
 import getPow
 
+# can maybe use argparse for more complex plotting options...
 
 
 
-
-def plotPowVsZ2(h5fname):
+def plotPowVsZ2(h5fname, cfr=None, dfr=None):
 
     mdata = fdata(h5fname)
 
@@ -68,7 +68,7 @@ if __name__ == '__main__':
         cfr=None
         dfr=None
     
-    plotPowVsZ2(h5fname)
+    plotPowVsZ2(h5fname, cfr, dfr)
     
     
 
