@@ -552,6 +552,7 @@ contains
     call sum2RootArr(Iarray, size(Iarray), 0)
 
     Iarray = Iarray * npk_bar_G    ! N_e at each node
+    if (qOneD_G) Iarray = Iarray * ata_G
     Iarray = Iarray * q_e / sam_len    ! dQ / dz2
     Iarray = Iarray * c / lc_G         ! dQ / dt
 

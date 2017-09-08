@@ -1083,6 +1083,8 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
     else
       totNk_loc = 0._WP
     end if
+    
+    if (qOneD_G) totNk_loc = totNk_loc * ata_g
 !    print *,"Rank ", tProcInfo_G%Rank, " sum ",totNk_loc
     CALL MPI_ALLREDUCE(totNk_loc, totNk_glob, 1, MPI_DOUBLE_PRECISION, &
                        MPI_SUM, MPI_COMM_WORLD, error)
