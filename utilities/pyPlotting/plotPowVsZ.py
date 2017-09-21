@@ -104,7 +104,12 @@ def plotPowVsZ(basename, cfr=None, dfr=None):
 
     #plt.legend()
 
-    plt.savefig(basename + "-filt-" + str(cfr) + "-" + str(dfr) + "-power.png")
+    if ((cfr == None) or (dfr == None)):
+        opname = basename + "-unfiltered-power.png"
+    else:
+        opname = basename + "-filt-" + str(cfr) + "-" + str(dfr) + "-power.png"
+
+    plt.savefig(opname)
 #    plt.show()
 
 
