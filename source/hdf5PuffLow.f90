@@ -509,6 +509,8 @@ contains
     call addH5FloatAttribute(dset_id, 'lambda_r', lam_r_G, aspace_id)
     call addH5IntegerAttribute(dset_id, 'fieldMesh', fieldMesh, aspace_id)
     call addH5IntegerAttribute(dset_id, 'iScale', 1, aspace_id)
+    call addH5FloatAttribute(dset_id, 'transArea', ata_G, aspace_id)
+    call addH5FloatAttribute(dset_id, 'transAreaSI', ata_G * lg_G * lc_G, aspace_id)
     !call addH5IntegerAttribute(dset_id, 'qOneD', qOneD_G, aspace_id)  
     !call addH5IntegerAttribute(dset_id, 'iL', iL, aspace_id)  
     !call addH5IntegerAttribute(dset_id, 'iL', iL, aspace_id)  

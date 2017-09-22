@@ -21,7 +21,7 @@ import getPow
 
 
 
-def plotPowVsZ2(h5fname, cfr=None, dfr=None):
+def plotPowVsZ2(h5fname, cfr=None, dfr=None, gav = 3):
 
     mdata = fdata(h5fname)
 
@@ -35,9 +35,9 @@ def plotPowVsZ2(h5fname, cfr=None, dfr=None):
     yaxis = (np.arange(0,mdata.vars.ny)) * mdata.vars.dybar
 
     fcount = 0
-    
-    pows = getPow.getPow(h5fname, cfr, dfr, qAv = 0, qScale = 0)
-    
+
+    pows = getPow.getPow(h5fname, cfr, dfr, irtype = gav, qScale = 0)
+
 
     plotLab = 'SI Power'
     axLab = 'Power (W)'
@@ -68,7 +68,7 @@ if __name__ == '__main__':
         cfr=None
         dfr=None
     
-    plotPowVsZ2(h5fname, cfr, dfr)
+    plotPowVsZ2(h5fname, cfr=cfr, dfr=dfr)
     
     
 

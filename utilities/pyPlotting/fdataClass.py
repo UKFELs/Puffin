@@ -28,8 +28,8 @@ class fdata:
         self.vars.lc = h5f.root.runInfo._v_attrs.Lc
         self.vars.npkbar = h5f.root.runInfo._v_attrs.npk_bar
 
-        self.vars.qscale = h5f.root.runInfo._v_attrs.fieldMesh
-        self.vars.iMesh = h5f.root.runInfo._v_attrs.iScale
+        self.vars.qscale = h5f.root.runInfo._v_attrs.iScale
+        self.vars.iMesh = h5f.root.runInfo._v_attrs.fieldMesh
 
 
         self.vars.dxbar = h5f.root.runInfo._v_attrs.sLengthOfElmX
@@ -47,6 +47,8 @@ class fdata:
         self.vars.zbarloc = h5f.root.runInfo._v_attrs.zbarLocal
         self.vars.z = h5f.root.runInfo._v_attrs.zTotal
         self.vars.zloc = h5f.root.runInfo._v_attrs.zLocal
+        self.vars.transArea = h5f.root.runInfo._v_attrs.transArea
+        self.vars.transAreaSI = h5f.root.runInfo._v_attrs.transAreaSI
         
         self.vars.q1d = 0
 

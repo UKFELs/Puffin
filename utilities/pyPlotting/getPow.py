@@ -3,7 +3,15 @@
 # License: BSD-3-Clause
 
 """
-This is an examplar script to produce a plot of the filtered energy.
+This is returns the power from the field mesh files. It can return the 
+'instantaneous' temporal power (which is just the square of the fields) with 
+irtype = 0, the cycle averaged power (which is the usual definition of power!)
+with irtype = 3, the power averaged over the whole temporal domain of the field 
+mesh with irtype = 1, and the peak power with irtype = 2.
+
+You can also specify a band pass filter with cfr and dfr, where cfr is the
+center frequency and dfr is the half width of the filter. Units are scaled to
+the reference frequency - so the fundamental is usually at cfr = 1.
 """
 
 import sys, glob, os
@@ -11,11 +19,16 @@ import numpy as np
 from numpy import arange
 import readField
 import filterField
+import getMagPhase
 from fdataClass import fdata
 from puffDataClass import puffData
 
+itemp = 0
+iav = 1
+ipeak = 2
+icycav = 3
 
-def getPow(h5fname, cfr=None, dfr=None, qAv = 0, qScale = None):
+def getPow(h5fname, cfr=None, dfr=None, irtype = 0, qScale = None):
 
     mdata = fdata(h5fname)
 
@@ -35,27 +48,37 @@ def getPow(h5fname, cfr=None, dfr=None, qAv = 0, qScale = None):
         xf = filterField.filterField(xf, cfr, dfr, mdata.vars)
         yf = filterField.filterField(yf, cfr, dfr, mdata.vars)
 
+    if ((irtype == ipeak) or (irtype == icycav)):
+        xf, phx = getMagPhase.getMagPhase(xf, mdata.vars.nz2, mdata.vars.rho, lenz2)
+        yf, phy = getMagPhase.getMagPhase(yf, mdata.vars.nz2, mdata.vars.rho, lenz2)
+    
+
     intens = np.square(xf) + np.square(yf)
     
     #tintens = getFiltPow(ij, dfr, cfr)
     #ens[fcount] = np.trapz(tintens, x=z2axis)
 
-    trar = 2. * np.pi * np.square(35.e-6) / mdata.vars.lg / mdata.vars.lc
+#    trar = 2. * np.pi * np.square(35.e-6) / mdata.vars.lg / mdata.vars.lc
+    transArea = mdata.vars.transArea
 
     if (mdata.vars.q1d==1):
 
-        if (qAv == 1):
-            power = np.trapz(intens, x=z2axis) / lenz2 * trar # * transverse area???
+        if (irtype == iav):
+            power = np.trapz(intens, x=z2axis) / lenz2 * transArea # average
+        elif (irtype == ipeak):
+            power = np.max(intens * transArea) # peak
         else:
-            power = intens * trar # * transverse area???
+            power = intens * transArea # temporal
 
     else:
         
         tintensx = np.trapz(intens, x=xaxis, axis=0)
         tintensxy = np.trapz(tintensx, x=yaxis, axis=0)
 
-        if (qAv == 1):
+        if (irtype == iav):
             power = np.trapz(tintensxy, x=z2axis) / lenz2
+        elif (irtype == ipeak):
+            power = np.max(intens * transArea) # * transverse area???
         else:
             power = tintensxy
 

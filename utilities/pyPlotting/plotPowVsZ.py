@@ -3,8 +3,14 @@
 # License: BSD-3-Clause
 
 """
-This produces a plot of the power, averaged over the temporal mesh, from Puffin,
-against distance through the undulator z.
+This produces a plot of the power from Puffin datafiles, against distance 
+through the undulator z. 
+
+If the Puffin mesh type was periodic, then the power will be averaged over the 
+temporal mesh.
+
+If the mesh type was temporal, then the power plotted will be the PEAK power in
+the mesh.
 """
 
 import sys, glob, os
@@ -70,30 +76,29 @@ def plotPowVsZ(basename, cfr=None, dfr=None):
     
     pows = np.zeros(len(filelist))
     zData = np.zeros(len(filelist))
-    
-    if (mdata.vars.q1d==1):
-    
-        for ij in filelist:
-            pows[fcount] = getPow.getPow(ij, cfr, dfr, qAv = 1, qScale = 0)
-            zData[fcount] = getZData(ij)
-            fcount += 1
 
+    if (mdata.vars.iMesh == iPeriodic):
+        print 'what am i now?'
+        gAv = 1  #  for average...
     else:
+        print 'i should be averaged'
+        gAv = 2  #  for peak...
+    
+    for ij in filelist:
+        pows[fcount] = getPow.getPow(ij, cfr, dfr, irtype = gAv, qScale = 0)
+        zData[fcount] = getZData(ij)
+        fcount += 1
 
-        for ij in filelist:
-            pows[fcount] = getPow.getPow(ij, cfr, dfr, qAv = 1, qScale = 0)
-            zData[fcount] = getZData(ij)
-            fcount += 1
 
-    plotLab = 'SI Power'
-    axLab = 'Power (W)'
+#    plotLab = 'SI Power'
+#    axLab = 'Power (W)'
 
-#    if (mdata.vars.iMesh == iPeriodic):
-#        plotLab = 'SI Power'
-#        axLab = 'Power (W)'
-#    else:
-#        plotLab = 'Scaled Energy'
-#        axLab = 'Filtered Energy'
+    if (mdata.vars.iMesh == iPeriodic):
+        plotLab = 'SI Power'
+        axLab = 'Power (W)'
+    else:
+        plotLab = 'SI Peak Power'
+        axLab = 'Power (W)'
         
 
     ax1 = plt.subplot(111)
