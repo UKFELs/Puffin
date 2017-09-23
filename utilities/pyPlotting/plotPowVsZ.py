@@ -78,10 +78,8 @@ def plotPowVsZ(basename, cfr=None, dfr=None):
     zData = np.zeros(len(filelist))
 
     if (mdata.vars.iMesh == iPeriodic):
-        print 'what am i now?'
         gAv = 1  #  for average...
     else:
-        print 'i should be averaged'
         gAv = 2  #  for peak...
     
     for ij in filelist:
