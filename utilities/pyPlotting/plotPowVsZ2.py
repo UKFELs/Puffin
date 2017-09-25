@@ -54,7 +54,7 @@ def plotPowVsZ2(h5fname, cfr=None, dfr=None, gav = 3):
 
     z = mdata.vars.z
 
-    plt.savefig(basename + "_powvsz2_z_" + str(z) + ".png")
+    plt.savefig(basename + "-powvsz2-z-" + str(z) + ".png")
 
 
 

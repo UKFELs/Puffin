@@ -29,13 +29,14 @@ def getIntData(h5fname, dataName, irtype = 0):
 
     h5in=tables.open_file(h5fname,'r')
     npts=h5in.root._f_get_child(dataName).shape[0]
+    meshName = h5in.root._f_get_child(dataName)._v_attrs.vsMesh
 
-    mmin=h5in.root.intPtclMeshSI._v_attrs.vsLowerBounds
-    mmax=h5in.root.intPtclMeshSI._v_attrs.vsUpperBounds
+    mmin=h5in.root._f_get_child(meshName)._v_attrs.vsLowerBounds
+    mmax=h5in.root._f_get_child(meshName)._v_attrs.vsUpperBounds
 
     lenz2 = mmax - mmin
     dz2 = lenz2 / (npts-1)
-    z2axis = (np.arange(0, mdata.vars.nz2)) * dz2
+    z2axis = (np.arange(0, npts)) * dz2
 
     dataT = h5in.root._f_get_child(dataName).read()
 

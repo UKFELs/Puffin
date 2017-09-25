@@ -3,14 +3,8 @@
 # License: BSD-3-Clause
 
 """
-This produces a plot of the power from Puffin datafiles, against distance 
-through the undulator z. 
-
-If the Puffin mesh type was periodic, then the power will be averaged over the 
-temporal mesh.
-
-If the mesh type was temporal, then the power plotted will be the PEAK power in
-the mesh.
+This produces a plot of the average rms standard deviation of the electron beam from 
+the Puffin datafiles, against distance through the undulator z. 
 """
 
 import sys, glob, os
@@ -86,6 +80,7 @@ def plotBeamRVsZ(basename):
         rady[fcount] = getIntData.getIntData(ij, 'sigmaYSI', irtype = gAv)
         zData[fcount] = getZData(ij)
         fcount += 1
+
 
 
 #    plotLab = 'SI Power'
