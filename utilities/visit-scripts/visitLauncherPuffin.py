@@ -115,7 +115,7 @@ pBaseName=sys.argv[1]
 #   return eDB1, iDB1, localPowerAllDB1
 
 
-eDB, iDB, localPowerAllDB = getDBNames.getDBNames(pBaseName)
+eDB, fDB, iDB, localPowerAllDB = getDBNames.getDBNames(pBaseName)
 
 # Get upper and lower limits for energy plots
 h5in=tables.open_file(localPowerAllDB,'r')
