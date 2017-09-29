@@ -43,6 +43,10 @@ of the backwards wave from the e-beam.
 
 ## Release Notes
 
+1.9.0
+  - Added periodic mesh mode
+  - 1D runs now read in the transverse beam radii to give proper SI power
+
 1.8.0
   - Can now input with the Puffin HDF5 output format
   - More metadata in the output files
