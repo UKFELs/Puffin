@@ -125,7 +125,7 @@
  sFModelLengthY         = 0.003335537906783215
  sFModelLengthZ2        = 3.329781820520314e-16 ! 2.6638254564162512E-15 !2.838E-12
  meshType = 1
- sperwaves = 2.0
+ sperwaves = 1.0
  iRedNodesX             = 21
  iRedNodesY             = 21
  sFiltFrac              = 0.3
