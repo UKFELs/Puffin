@@ -3,14 +3,8 @@
 # License: BSD-3-Clause
 
 """
-This produces a plot of the power from Puffin datafiles, against distance 
-through the undulator z. 
-
-If the Puffin mesh type was periodic, then the power will be averaged over the 
-temporal mesh.
-
-If the mesh type was temporal, then the power plotted will be the PEAK power in
-the mesh.
+This produces a plot of the average rms standard deviation of the electron beam from 
+the Puffin datafiles, against distance through the undulator z. 
 """
 
 import sys, glob, os
@@ -18,6 +12,7 @@ import numpy as np
 from numpy import arange
 import matplotlib.pyplot as plt
 import tables
+import getIntData
 from fdataClass import fdata
 from puffDataClass import puffData
 import getPow
@@ -36,7 +31,7 @@ def getFileSlices(baseName):
 
   That will be used down the line...
   """
-  filelist=glob.glob(os.getcwd()+os.sep+baseName+'_aperp_C_*.h5')
+  filelist=glob.glob(os.getcwd()+os.sep+baseName+'_integrated_*.h5')
   
   dumpStepNos=[]
   for thisFile in filelist:
@@ -44,23 +39,23 @@ def getFileSlices(baseName):
     dumpStepNos.append(thisDump)
 
   for i in range(len(dumpStepNos)):
-    filelist[i]=baseName+'_aperp_C_'+str(sorted(dumpStepNos)[i])+'.h5'
+    filelist[i]=baseName+'_integrated_'+str(sorted(dumpStepNos)[i])+'.h5'
   return filelist
 
 
 
 def getZData(fname):
     h5f = tables.open_file(fname, mode='r')
-    zD = h5f.root.aperp._v_attrs.zTotal
+    zD = h5f.root.runInfo._v_attrs.zTotal
     h5f.close()
     return zD
 
 
-def plotPowVsZ(basename, cfr=None, dfr=None):
+def plotBeamRVsZ(basename):
 
 
     filelist = getFileSlices(basename)
-    print filelist
+    #print filelist
 
     mdata = fdata(filelist[0])
 
@@ -74,43 +69,38 @@ def plotPowVsZ(basename, cfr=None, dfr=None):
 
     fcount = 0
     
-    pows = np.zeros(len(filelist))
+    radx = np.zeros(len(filelist))
+    rady = np.zeros(len(filelist))
     zData = np.zeros(len(filelist))
 
-    if (mdata.vars.iMesh == iPeriodic):
-        gAv = 1  #  for average...
-    else:
-        gAv = 2  #  for peak...
-    
+    gAv = 1
+
     for ij in filelist:
-        pows[fcount] = getPow.getPow(ij, cfr, dfr, irtype = gAv, qScale = 0)
+        radx[fcount] = getIntData.getIntData(ij, 'sigmaXSI', irtype = gAv)
+        rady[fcount] = getIntData.getIntData(ij, 'sigmaYSI', irtype = gAv)
         zData[fcount] = getZData(ij)
         fcount += 1
+
 
 
 #    plotLab = 'SI Power'
 #    axLab = 'Power (W)'
 
-    if (mdata.vars.iMesh == iPeriodic):
-        plotLab = 'SI Power'
-        axLab = 'Power (W)'
-    else:
-        plotLab = 'SI Peak Power'
-        axLab = 'Power (W)'
-        
+    plotLab = r'$\sigma_x$'
+    axLab = r'$\sigma_x, \sigma_y (m)$'
 
     ax1 = plt.subplot(111)
-    plt.semilogy(zData, pows, label=plotLab)
+    plt.plot(zData, radx, label=r'$\sigma_x$')
+    plt.plot(zData, rady, label=r'$\sigma_y$')
     #ax1.set_title(axLab)
     plt.xlabel('z (m)')
     plt.ylabel(axLab)
 
-    #plt.legend()
+    plt.legend()
 
-    if ((cfr == None) or (dfr == None)):
-        opname = basename + "-unfiltered-power.png"
-    else:
-        opname = basename + "-filt-" + str(cfr) + "-" + str(dfr) + "-power.png"
+    plt.tight_layout()
+
+    opname = basename + "-beamRadiusVsZ.png"
 
     plt.savefig(opname)
 #    plt.show()
@@ -123,13 +113,4 @@ def plotPowVsZ(basename, cfr=None, dfr=None):
 if __name__ == '__main__':
 
     basename = sys.argv[1]
-
-    if len(sys.argv) == 4:
-        cfr = float(sys.argv[2])
-        dfr = float(sys.argv[3])
-    else:
-        cfr=None
-        dfr=None
-
-    plotPowVsZ(basename, cfr, dfr)
-    
+    plotBeamRVsZ(basename)

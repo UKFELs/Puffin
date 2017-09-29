@@ -48,7 +48,7 @@ def getPow(h5fname, cfr=None, dfr=None, irtype = 0, qScale = None):
         xf = filterField.filterField(xf, cfr, dfr, mdata.vars)
         yf = filterField.filterField(yf, cfr, dfr, mdata.vars)
 
-    if ((irtype == ipeak) or (irtype == icycav)):
+    if (((irtype == ipeak) or (irtype == icycav)) and (mdata.vars.q1d==1)):
         xf, phx = getMagPhase.getMagPhase(xf, mdata.vars.nz2, mdata.vars.rho, lenz2)
         yf, phy = getMagPhase.getMagPhase(yf, mdata.vars.nz2, mdata.vars.rho, lenz2)
     
