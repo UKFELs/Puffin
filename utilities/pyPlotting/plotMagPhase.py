@@ -14,8 +14,8 @@ from numpy import arange
 import matplotlib.pyplot as plt
 import getMagPhase
 import readField
-from fdataClass import fdata
-from puffDataClass import puffData
+from puffdata import fdata
+from puffdata import puffData
 
 
 #t = np.linspace(-1, 1, 200, endpoint=False)

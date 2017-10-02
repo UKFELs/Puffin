@@ -2,6 +2,13 @@
 # Authors: Lawrence T. Campbell
 # License: BSD-3-Clause
 
+"""
+This file is part of the example post-processing tools for Puffin, a 
+multi-frequency FEL code absent of the averaging / SVEA approximations. It
+contains the object definition of the puffData class, used for holding the
+scaling and mesh data about the simulation.
+"""
+
 import sys, glob, os
 import numpy as np
 from numpy import pi

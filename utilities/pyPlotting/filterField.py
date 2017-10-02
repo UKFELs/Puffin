@@ -11,7 +11,7 @@ centre and half-width of the filter, respectively).
 import sys, glob, os
 import numpy as np
 from numpy import pi
-from puffDataClass import puffData
+from puffdata import puffData
 
 iTemporal = 0
 iPeriodic = 1

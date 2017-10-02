@@ -2,12 +2,19 @@
 # Authors: Lawrence T. Campbell
 # License: BSD-3-Clause
 
+"""
+This file is part of the example post-processing tools for Puffin, a 
+multi-frequency FEL code absent of the averaging / SVEA approximations.  It 
+contains the object definition for opensing and retreiving the metadata
+from the Puffin output data files.
+"""
+
 import sys, glob, os
 import numpy as np
 from numpy import pi
 from numpy import arange
 import tables
-from puffDataClass import puffData
+from .puffDataClass import puffData
 
 
 class fdata:

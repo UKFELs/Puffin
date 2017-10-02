@@ -13,8 +13,8 @@ from numpy import arange
 import matplotlib.pyplot as plt
 import tables
 import getIntData
-from fdataClass import fdata
-from puffDataClass import puffData
+from puffdata import fdata
+from puffdata import puffData
 import getPow
 
 iTemporal = 0

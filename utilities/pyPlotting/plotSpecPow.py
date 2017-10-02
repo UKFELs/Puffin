@@ -12,8 +12,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import specgram
 import tables
-from fdataClass import fdata
-from puffDataClass import puffData
+from puffdata import fdata
+from puffdata import puffData
 import readField
 
 

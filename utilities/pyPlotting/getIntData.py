@@ -15,8 +15,8 @@ import readField
 import filterField
 import getMagPhase
 import tables
-from fdataClass import fdata
-from puffDataClass import puffData
+from puffdata import fdata
+from puffdata import puffData
 
 itemp = 0
 iav = 1

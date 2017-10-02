@@ -13,8 +13,8 @@ from numpy import pi
 from numpy import arange
 import matplotlib.pyplot as plt
 import tables
-from fdataClass import fdata
-from puffDataClass import puffData
+from puffdata import fdata
+from puffdata import puffData
 import getPow
 
 # can maybe use argparse for more complex plotting options...
@@ -30,7 +30,7 @@ def plotPowVsZ2(h5fname, cfr=None, dfr=None, gav = 3):
     lenz2 = (mdata.vars.nz2-1) * mdata.vars.dz2
     z2axis = (np.arange(0,mdata.vars.nz2)) * mdata.vars.dz2
     saxis = z2axis * mdata.vars.lc
-    
+
     xaxis = (np.arange(0,mdata.vars.nx)) * mdata.vars.dxbar
     yaxis = (np.arange(0,mdata.vars.ny)) * mdata.vars.dybar
 

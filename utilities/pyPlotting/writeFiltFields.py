@@ -12,8 +12,8 @@ import tables
 from numpy import arange
 import readField
 import filterField
-from fdataClass import fdata
-from puffDataClass import puffData
+from puffdata import fdata
+from puffdata import puffData
 
 
 def getFilteredFields(h5fname, cfr=None, dfr=None, qAv = 0, qScale = None):
