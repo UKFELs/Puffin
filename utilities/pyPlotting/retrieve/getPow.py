@@ -17,8 +17,8 @@ the reference frequency - so the fundamental is usually at cfr = 1.
 import sys, glob, os
 import numpy as np
 from numpy import arange
-import readField
-import filterField
+from rawpuffin import readField
+from process import filterField
 import getMagPhase
 from puffdata import fdata
 from puffdata import puffData
@@ -41,12 +41,12 @@ def getPow(h5fname, cfr=None, dfr=None, irtype = 0, qScale = None):
     xaxis = (np.arange(0, mdata.vars.nx)) * mdata.vars.dxbar
     yaxis = (np.arange(0, mdata.vars.ny)) * mdata.vars.dybar
 
-    xf, yf = readField.readField(h5fname)
+    xf, yf = readField(h5fname)
 
     if ((cfr != None) and (dfr != None)):
 
-        xf = filterField.filterField(xf, cfr, dfr, mdata.vars)
-        yf = filterField.filterField(yf, cfr, dfr, mdata.vars)
+        xf = filterField(xf, cfr, dfr, mdata.vars)
+        yf = filterField(yf, cfr, dfr, mdata.vars)
 
     if (((irtype == ipeak) or (irtype == icycav)) and (mdata.vars.q1d==1)):
         xf, phx = getMagPhase.getMagPhase(xf, mdata.vars.nz2, mdata.vars.rho, lenz2)

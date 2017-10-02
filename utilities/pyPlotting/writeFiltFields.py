@@ -10,8 +10,8 @@ import sys, glob, os
 import numpy as np
 import tables
 from numpy import arange
-import readField
-import filterField
+from retrieve import readField
+from retrieve import filterField
 from puffdata import fdata
 from puffdata import puffData
 
@@ -29,12 +29,12 @@ def getFilteredFields(h5fname, cfr=None, dfr=None, qAv = 0, qScale = None):
     xaxis = (np.arange(0, mdata.vars.nx)) * mdata.vars.dxbar
     yaxis = (np.arange(0, mdata.vars.ny)) * mdata.vars.dybar
 
-    xf, yf = readField.readField(h5fname)
+    xf, yf = readField(h5fname)
 
     if ((cfr != None) and (dfr != None)):
 
-        xf = filterField.filterField(xf, cfr, dfr, mdata.vars)
-        yf = filterField.filterField(yf, cfr, dfr, mdata.vars)
+        xf = filterField(xf, cfr, dfr, mdata.vars)
+        yf = filterField(yf, cfr, dfr, mdata.vars)
 
 
     return xf, yf

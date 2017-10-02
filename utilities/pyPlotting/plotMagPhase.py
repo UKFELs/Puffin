@@ -12,8 +12,8 @@ import numpy as np
 from numpy import pi
 from numpy import arange
 import matplotlib.pyplot as plt
-import getMagPhase
-import readField
+from retrieve import getMagPhase
+from retrieve import readField
 from puffdata import fdata
 from puffdata import puffData
 
@@ -60,12 +60,12 @@ def plotMagPhase(h5fname):
     lenz2 = (mdata.vars.nz2-1) * mdata.vars.dz2
     z2axis = (np.arange(0,mdata.vars.nz2)) * mdata.vars.dz2
 
-    xf, yf = readField.readField(h5fname, f1D = 1)
+    xf, yf = readField(h5fname, f1D = 1)
 
     intens = np.square(xf) + np.square(yf)
 
-    mgx, phx = getMagPhase.getMagPhase(xf, mdata.vars.nz2, mdata.vars.rho, lenz2)
-    mgy, phy = getMagPhase.getMagPhase(yf, mdata.vars.nz2, mdata.vars.rho, lenz2)
+    mgx, phx = getMagPhase(xf, mdata.vars.nz2, mdata.vars.rho, lenz2)
+    mgy, phy = getMagPhase(yf, mdata.vars.nz2, mdata.vars.rho, lenz2)
 
     ax1 = plt.subplot(311)
     plt.plot(z2axis, xf, label='x-field')

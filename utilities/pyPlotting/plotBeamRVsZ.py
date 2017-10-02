@@ -4,7 +4,7 @@
 
 """
 This produces a plot of the average rms standard deviation of the electron beam from 
-the Puffin datafiles, against distance through the undulator z. 
+the Puffin integrated datafiles, against distance through the undulator z. 
 """
 
 import sys, glob, os
@@ -12,10 +12,9 @@ import numpy as np
 from numpy import arange
 import matplotlib.pyplot as plt
 import tables
-import getIntData
+from retrieve import getIntData
 from puffdata import fdata
 from puffdata import puffData
-import getPow
 
 iTemporal = 0
 iPeriodic = 1
@@ -76,8 +75,8 @@ def plotBeamRVsZ(basename):
     gAv = 1
 
     for ij in filelist:
-        radx[fcount] = getIntData.getIntData(ij, 'sigmaXSI', irtype = gAv)
-        rady[fcount] = getIntData.getIntData(ij, 'sigmaYSI', irtype = gAv)
+        radx[fcount] = getIntData(ij, 'sigmaXSI', irtype = gAv)
+        rady[fcount] = getIntData(ij, 'sigmaYSI', irtype = gAv)
         zData[fcount] = getZData(ij)
         fcount += 1
 

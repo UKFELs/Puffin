@@ -12,8 +12,9 @@ import tables
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import specgram
-
-
+from puffdata import fdata
+from puffdata import puffData
+from retrieve import readField
 
 #t = np.linspace(-1, 1, 200, endpoint=False)
 
@@ -36,43 +37,64 @@ from matplotlib.pyplot import specgram
 #
 ##
 
-def spectroT(h5fname):
+def spectroT(h5fname, z2s=None, z2e=None):
 
-    h5f = tables.open_file(h5fname, mode='r')
+    mdata = fdata(h5fname)
 
-    dz2 = h5f.root.runInfo._v_attrs.sLengthOfElmZ2
-    nz2 = h5f.root.runInfo._v_attrs.nZ2
 
-    sampleFreq = 1.0 / dz2
+    lenz2 = (mdata.vars.nz2-1) * mdata.vars.dz2
+
+    xf, yf = readField(h5fname, f1D=1)
+
+
+
+#    dz2 = h5f.root.runInfo._v_attrs.sLengthOfElmZ2
+#    nz2 = h5f.root.runInfo._v_attrs.nZ2
+
+    sampleFreq = 1.0 / mdata.vars.dz2
+
+#    z2s = 0.00
+#    z2e = 0.06
+
     
-    z2s = 50
-    z2e = 80
+    if ((z2s==None) or (z2e==None)):
+        z2si = 0
+        z2ei = mdata.vars.nz2
+    else:
+        z2si = int(np.floor(z2s / mdata.vars.dz2))
+        z2ei = int(np.floor(z2e / mdata.vars.dz2))
 
-    z2si = int(np.floor(z2s / dz2))
-    z2ei = int(np.floor(z2e / dz2))
-
-    z2axis = (np.arange(z2si,z2ei) - z2si) * dz2
-
-    xf = h5f.root.aperp[0,:]
     xfs = xf[z2si:z2ei]
+    yfs = yf[z2si:z2ei]
+
+    xaxis = (np.arange(0, mdata.vars.nx)) * mdata.vars.dxbar
+    yaxis = (np.arange(0, mdata.vars.ny)) * mdata.vars.dybar
+    z2axis = (np.arange(z2si,z2ei) - z2si) * mdata.vars.dz2
 
     ax1 = plt.subplot(211)
     plt.plot(z2axis, xfs)
-
+    plt.xlabel(r'$\bar{z}_2$')
+    plt.ylabel('x-field (scaled)')
 
     plt.subplot(212, sharex=ax1)
     specP, freqs, time, image = specgram(xfs, \
     	NFFT=50, Fs=sampleFreq, noverlap=0)#, cmap=plt.cm.gist_heat)
 
+    plt.xlabel(r'$\bar{z}_2$')
+    plt.ylabel(r'$\bar{f}$')
+    
     # then either:
     #plt.imshow(specP,cmap='PRGn')
     #plt.show()
 
     # -or- just
 
+    nameparts = h5fname.split('_')
+    basename = nameparts[0]
+    z = mdata.vars.z
+    
+    plt.savefig(basename + "-spectrogram-z-" + str(z) + ".png")
     plt.show()
-
-    h5f.close()
 
 # see here for above - http://matplotlib.org/examples/pylab_examples/specgram_demo.html
 

@@ -11,9 +11,6 @@ with irtype = 2, and as a function of the temporal coordinate z2 (or ct-z) with 
 import sys, glob, os
 import numpy as np
 from numpy import arange
-import readField
-import filterField
-import getMagPhase
 import tables
 from puffdata import fdata
 from puffdata import puffData

@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import tables
 from puffdata import fdata
 from puffdata import puffData
-import getPow
+from retrieve import getPow
 
 # can maybe use argparse for more complex plotting options...
 
@@ -36,7 +36,7 @@ def plotPowVsZ2(h5fname, cfr=None, dfr=None, gav = 3):
 
     fcount = 0
 
-    pows = getPow.getPow(h5fname, cfr, dfr, irtype = gav, qScale = 0)
+    pows = getPow(h5fname, cfr, dfr, irtype = gav, qScale = 0)
 
 
     plotLab = 'SI Power'

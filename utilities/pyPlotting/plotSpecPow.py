@@ -14,7 +14,7 @@ from matplotlib.pyplot import specgram
 import tables
 from puffdata import fdata
 from puffdata import puffData
-import readField
+from retrieve import readField
 
 
 #t = np.linspace(-1, 1, 200, endpoint=False)
@@ -61,7 +61,7 @@ def plotSpecPow(h5fname, ftplottype=None):
     xaxis = (np.arange(0, mdata.vars.nx)) * mdata.vars.dxbar
     yaxis = (np.arange(0, mdata.vars.ny)) * mdata.vars.dybar
 
-    xf, yf = readField.readField(h5fname, f1D=1)
+    xf, yf = readField(h5fname, f1D=1)
 
     #xf = np.concatenate((xf, xf))
     #xf = np.concatenate((xf, xf))

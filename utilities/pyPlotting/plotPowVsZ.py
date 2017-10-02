@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 import tables
 from puffdata import fdata
 from puffdata import puffData
-import getPow
+from retrieve import getPow
 
 iTemporal = 0
 iPeriodic = 1
@@ -83,7 +83,7 @@ def plotPowVsZ(basename, cfr=None, dfr=None):
         gAv = 2  #  for peak...
     
     for ij in filelist:
-        pows[fcount] = getPow.getPow(ij, cfr, dfr, irtype = gAv, qScale = 0)
+        pows[fcount] = getPow(ij, cfr, dfr, irtype = gAv, qScale = 0)
         zData[fcount] = getZData(ij)
         fcount += 1
 
