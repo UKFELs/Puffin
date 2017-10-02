@@ -46,7 +46,7 @@ def plotPowVsZ2(h5fname, cfr=None, dfr=None, gav = 3):
     ax1 = plt.subplot(111)
     
     plt.plot(saxis, pows)
-    plt.xlabel('s (m)')
+    plt.xlabel('ct-z (m)')
     plt.ylabel(axLab)
 
     nameparts = h5fname.split('_')

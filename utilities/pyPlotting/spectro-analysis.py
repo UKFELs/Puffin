@@ -11,7 +11,8 @@ import sys
 import tables
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.pyplot import specgram
+#from matplotlib.pyplot import specgram
+from scipy import signal
 from puffdata import fdata
 from puffdata import puffData
 from retrieve import readField
@@ -37,10 +38,12 @@ from retrieve import readField
 #
 ##
 
-def spectroT(h5fname, z2s=None, z2e=None):
+def spectroT(h5fname, z2s=None, z2e=None, qScale = None):
 
     mdata = fdata(h5fname)
 
+    if (qScale==None):
+        qScale = mdata.vars.qscale
 
     lenz2 = (mdata.vars.nz2-1) * mdata.vars.dz2
 
@@ -71,18 +74,43 @@ def spectroT(h5fname, z2s=None, z2e=None):
     yaxis = (np.arange(0, mdata.vars.ny)) * mdata.vars.dybar
     z2axis = (np.arange(z2si,z2ei) - z2si) * mdata.vars.dz2
 
+    if (qScale == 0):
+        z2axis =  z2axis * mdata.vars.lc
+        freqScale = mdata.vars.lr
+        xfs = xfs * mdata.vars.fieldScale # * mdata.vars.lc / mdata.vars.c0
+        sampleFreq = sampleFreq / mdata.vars.lc
+        xaxisl = r'$ct-z (m)$'
+        faxisl = r'x-field $(Vm^{-1})$'
+        saxisl = r'$\omega / \omega_0$'
+    else:
+        freqScale = 4. * np.pi * mdata.vars.rho
+        xaxisl = r'$\bar{z}_2$'
+        faxisl = 'x-field (Scaled)'
+        saxisl = r'$\bar{f}$'
+
+
     ax1 = plt.subplot(211)
     plt.plot(z2axis, xfs)
-    plt.xlabel(r'$\bar{z}_2$')
-    plt.ylabel('x-field (scaled)')
+    plt.xlabel(xaxisl, fontsize=16)
+    plt.ylabel(faxisl, fontsize=16)
 
     plt.subplot(212, sharex=ax1)
-    specP, freqs, time, image = specgram(xfs, \
-    	NFFT=50, Fs=sampleFreq, noverlap=0)#, cmap=plt.cm.gist_heat)
+    freqs, time, Sxx = signal.spectrogram(xfs, sampleFreq)
+    freqs = freqs * freqScale
+    plt.pcolormesh(time, freqs, Sxx)
 
-    plt.xlabel(r'$\bar{z}_2$')
-    plt.ylabel(r'$\bar{f}$')
+#    specP, freqs, time, image = specgram(xfs, \
+#    	NFFT=50, Fs=sampleFreq, noverlap=0)#, cmap=plt.cm.gist_heat)
+
+#    freqs = freqs * 3e8
+
+#    plt.pcolor(time,freqs,specP)
     
+
+    plt.xlabel(xaxisl, fontsize=16)
+    plt.ylabel(saxisl, fontsize=16)
+    
+    plt.tight_layout()
     # then either:
     #plt.imshow(specP,cmap='PRGn')
     #plt.show()
@@ -104,7 +132,7 @@ def spectroT(h5fname, z2s=None, z2e=None):
 
 if __name__ == '__main__':
     h5fname=sys.argv[1]
-    spectroT(h5fname)
+    spectroT(h5fname, z2s=None, z2e=None, qScale=0)
     
 
 

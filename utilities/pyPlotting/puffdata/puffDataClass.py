@@ -59,6 +59,15 @@ class puffData:
                           np.square((self.gamma0 * self.me * np.square(self.c0) ) \
                           / (self.qe * self.kappa * self.lg ))
 
+        self.intensScale = self.c0 * self.eps0 * \
+                          np.square((self.gamma0 * self.me * np.square(self.c0) ) \
+                          / (self.qe * self.kappa * self.lg ))
+
+
+        self.fieldScale = np.square((self.gamma0 * self.me * np.square(self.c0) ) \
+                          / (self.qe * self.kappa * self.lg ))
+
+
 
     def unscale(self):
         self.dx = self.dxbar * np.sqrt(self.lg * self.lc) # ...etc
