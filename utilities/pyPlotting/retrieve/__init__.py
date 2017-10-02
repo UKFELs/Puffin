@@ -4,8 +4,8 @@
 
 """
 This file is part of Puffin, a multi-frequency FEL code absent of the 
-averaging / SVEA approximations. This file allows the Puffin data and data
-file classes to be used as a package.
+averaging / SVEA approximations. This file defines the package for retrieving
+data from the Puffin output files.
 """
 
 from .process import filterField
