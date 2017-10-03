@@ -128,14 +128,14 @@ def plotSpecPow(h5fname, ftplottype=None):
     ax1 = plt.subplot(211)
     plt.plot(z2axis, xf, label='x field')
     plt.plot(z2axis, yf, label='y field')
-    plt.xlabel(r'$\bar{z}_2$')
-    plt.ylabel('Fields')
+    plt.xlabel(r'$\bar{z}_2$', fontsize=16)
+    plt.ylabel('Fields', fontsize=16)
     plt.legend()
 
 # example for adding subplot
     axes = plt.subplot(212)
     plt.xlabel(sp_x_axis, fontsize=16)
-    plt.ylabel('Power')
+    plt.ylabel('Power', fontsize=16)
     #print np.len(ftxaxis), np.len(ftxpower)
 
     if ftplottype==1:
@@ -155,6 +155,8 @@ def plotSpecPow(h5fname, ftplottype=None):
     nameparts = h5fname.split('_')
     basename = nameparts[0]
     z = mdata.vars.z
+    
+    plt.tight_layout()
     
     plt.savefig(basename + "-spec-power-z-" + str(z) + ".png")
 

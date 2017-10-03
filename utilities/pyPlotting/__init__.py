@@ -13,8 +13,9 @@ from .plotMagPhase import plotMagPhase
 from .plotPowVsZ import plotPowVsZ
 from .plotPowVsZ2 import plotPowVsZ2
 from .plotSpecPow import plotSpecPow
-from .spectro-analysis import spectroT
+from .spectroAnalysis import spectroT
 from .writeFiltFields import writeFiltFields
+
 
 #import readField
 #import filterField
