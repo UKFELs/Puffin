@@ -22,7 +22,6 @@ MODULE Setup
   USE sddsPuffin
   USE lattice
   USE Globals
-  USE resume
   USE electronInit
   USE Read_data
   USE checks
