@@ -36,9 +36,9 @@ subroutine readPartDists(fname, z2m, gam_m, xm, ym, pxm, pym, &
 
 !              Local args
 
-  real(kind=wp) :: npk, dz2
+  real(kind=wp) :: dz2, sgx1D, sgy1D
 
-  real(kind=wp) :: eta, rho
+  real(kind=wp) :: rho
   integer(kind=ip) :: ios, fid, k
 
 !  px0 = pxoffset
@@ -57,7 +57,7 @@ subroutine readPartDists(fname, z2m, gam_m, xm, ym, pxm, pym, &
 
 !     Read in header
 
-  call readDistHeader(fid, eta, rho, npk, dZ2, nZ2)
+  call readDistHeader(fid, rho, dZ2, nZ2, sgx1D, sgy1D)
 
   call readBlanks(fid, 4)  
 
@@ -79,13 +79,13 @@ end subroutine readPartDists
 !!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-subroutine readDistHeader(fid, eta, rho, npk, dz2, nZ2)
+subroutine readDistHeader(fid, rho, dz2, nZ2, sgx1D, sgy1D)
 
 ! Reads the header of the dist files
 
   implicit none
 
-  real(kind=wp), intent(out) :: eta, rho, npk, dz2
+  real(kind=wp), intent(out) :: rho, dz2, sgx1D, sgy1D
   real(kind=wp) :: aw, lw, lr, Ipk 
 
   integer(kind=ip), intent(inout) :: nZ2
@@ -98,16 +98,16 @@ subroutine readDistHeader(fid, eta, rho, npk, dz2, nZ2)
   read(UNIT=fid, FMT=*) dum1, dum2, nZ2, dum3, dum4, dz2, dum5, dum6, aw, &
                         dum7, dum8, lw, dum9, dum10, lr
 
-  read(UNIT=fid, FMT=*) dum1, dum2, dum3, Ipk, dum4, dum5, eta, dum6, dum7, rho, dum8, dum9, npk
+  read(UNIT=fid, FMT=*) dum1, dum2, rho, dum3, dum4, sgx1D, dum5, dum6, sgy1D
 
 end subroutine readDistHeader
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!
 
-subroutine getHeaders(fnames, npk, dz2, nZ2)
+subroutine getHeaders(fnames, dz2, nZ2, sgx1D, sgy1D)
 
   character(*), intent(in) :: fnames(:)
-  real(kind=wp), intent(out) :: npk, dz2(:)
+  real(kind=wp), intent(out) :: dz2(:), sgx1D, sgy1D
   integer(kind=ip), intent(inout) :: nZ2(:)
 
   real(kind=wp) :: rho, eta   ! dummy for now
@@ -125,7 +125,7 @@ subroutine getHeaders(fnames, npk, dz2, nZ2)
 
     call readBlanks(fid, 2)
 
-    call readDistHeader(fid, eta, rho, npk, dz2(ib),nZ2(ib))
+    call readDistHeader(fid, rho, dz2(ib), nZ2(ib), sgx1D, sgy1D)
 
     close(unit=fid, status="KEEP")
     if ( ios /= 0_IP ) stop "Error closing file unit 169"

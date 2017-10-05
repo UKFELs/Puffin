@@ -190,7 +190,7 @@ MODULE Setup
   call calcSamples(sFieldModelLength, iNodes, sLengthofElm, &
                    sStepSize, stepsPerPeriod, nSteps, &
                    nperiods, nodesperlambda, gamma_d, sLenEPulse, &
-                   iNumElectrons)
+                   iNumElectrons, qSimple)
 
 
 

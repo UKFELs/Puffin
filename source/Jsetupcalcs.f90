@@ -805,7 +805,7 @@ end subroutine calcScaling
 subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
                        sStepSize, stepsPerPeriod, nSteps, &
                        nperiods, nodesperlambda, sGamFrac, &
-                       sLenEPulse, iNumElectrons)
+                       sLenEPulse, iNumElectrons, qsimple)
 
 
   real(kind=wp), intent(inout) :: sFieldModelLength(:), sLenEPulse(:,:)
@@ -821,6 +821,7 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
   integer(kind=ip), intent(inout) :: iNumNodes(:), iNumElectrons(:,:)
   integer(kind=ip), intent(out) :: nSteps
+  logical, intent(in) :: qsimple
 
   real(kind=wp), allocatable :: smeanp2(:), fmlensTmp(:)
   real(kind=wp) :: dz2, szbar, fmlenTmp, slamr
@@ -921,6 +922,8 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
 !   MAX P2 -
 
+    if (qsimple) then
+
     allocate(smeanp2(size(sGamFrac)), fmlensTmp(size(sGamFrac)))
     smeanp2 = 1.0_wp / sGamFrac**2.0_wp  ! Estimate of p2...
 
@@ -951,6 +954,8 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
   end if
 
   deallocate(smeanp2, fmlensTmp)
+
+  end if
 
   dz2 = 4.0_WP * pi * sRho_G / real(nodesperlambda-1_IP,kind=wp)
 
