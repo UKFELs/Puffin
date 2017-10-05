@@ -200,7 +200,7 @@ contains
           call addH5Field1DFloat(power, 'Intensity', "intFieldMeshSc", &
                                 "z2, Intensity (Scaled)", time, sz_loc, iL, error)
 
-          wrFArray = power * powScale / lg_G * lc_G
+          wrFArray = power * powScale / lg_G / lc_G
 
           call addH5Field1DFloat(wrFArray, 'IntensitySI', "intFieldMeshSI", &
                                 "ct-z (m), Intensity (Wm-2)", time, sz_loc, iL, error)
