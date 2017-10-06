@@ -604,6 +604,8 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
     call getChi(Nk, Vk, npk_bar_G, chi_b, chi)
 
     ata_G = 2.0_wp * pi * sgx1D * sgy1D
+    fillFact_G = 1.0_wp
+    !print*, 'YYYOOO', ata_G
     chi_b = chi_b / ata_G * fillFact_G
 
 
