@@ -29,7 +29,7 @@ def plotPowVsZ2(h5fname, cfr=None, dfr=None, gav = 3):
 
     lenz2 = (mdata.vars.nz2-1) * mdata.vars.dz2
     z2axis = (np.arange(0,mdata.vars.nz2)) * mdata.vars.dz2
-    saxis = z2axis * mdata.vars.lc
+    saxis = z2axis * mdata.vars.lc * 1e6
 
     xaxis = (np.arange(0,mdata.vars.nx)) * mdata.vars.dxbar
     yaxis = (np.arange(0,mdata.vars.ny)) * mdata.vars.dybar
@@ -46,8 +46,9 @@ def plotPowVsZ2(h5fname, cfr=None, dfr=None, gav = 3):
     ax1 = plt.subplot(111)
     
     plt.plot(saxis, pows)
-    plt.xlabel('ct-z (m)')
+    plt.xlabel(r'$ct-z (\mu m)$')
     plt.ylabel(axLab)
+    plt.xlim(200,  210);
 
     nameparts = h5fname.split('_')
     basename = nameparts[0]
