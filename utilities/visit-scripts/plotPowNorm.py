@@ -1,7 +1,18 @@
+# Copyright (c) 2012-2017, University of Strathclyde
+# Authors: Lawrence T. Campbell & Jonathan Smith (Tech-X UK Ltd)
+# License: BSD-3-Clause
+
+"""
+Plots the radiated temporal power profile evolving as a function of distance through 
+the undulator.
+"""
+
 import sys
 import getDBNames
-localVisItDir = "/home/tml/bin/visit/visit2_10_3.linux-x86_64"
-localPythonPackageDir = "/home/tml/bin/visit/visit2_10_3.linux-x86_64/2.10.3/linux-x86_64/lib/site-packages" 
+import visitLoc
+
+localVisItDir, localPythonPackageDir = visitLoc.visitLoc()
+
 sys.path.insert(0,localPythonPackageDir)
 
 import visit
@@ -37,7 +48,7 @@ def plotPowNorm(localPowerAllDB):
   
 if __name__ == '__main__':
     pBaseName=sys.argv[1]
-    eDB, iDB, localPowerAllDB = getDBNames.getDBNames(pBaseName)
+    eDB, fDB, iDB, localPowerAllDB = getDBNames.getDBNames(pBaseName)
     visit.Launch(vdir=localVisItDir)
     plotPowNorm(localPowerAllDB)
     visit.OpenGUI()

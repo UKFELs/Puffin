@@ -1,8 +1,6 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
 
 !> @author
 !> Lawrence Campbell,
@@ -55,6 +53,12 @@ real(kind=wp) :: sBeta_G    ! Absorption coefficient
 
 real(kind=wp)  :: sfilt   ! Frequency cutoff for high pass filter, in units 
                           ! of f_z2 = Lenz2 * ffrac / lamda_rz2
+integer(kind=ip) :: igwr
+
+integer(kind=ip) :: fieldMesh
+integer(kind=ip), parameter :: iTemporal = 0_ip
+integer(kind=ip), parameter :: iPeriodic = 1_ip
+real(kind=wp) :: sperwaves_G
 
 real(kind=wp) :: delta_G  ! Volume of field element (dx * dy * dz2)
 
@@ -99,6 +103,8 @@ real(kind=wp) :: npk_bar_G  ! peak electron number density
                             ! in the scaled xbar, ybar and z2bar
                             ! dimensions
 
+real(kind=wp) :: fillFact_G, ata_G
+
 !   ---   For rounded edge beam   ---   !
 
 logical, allocatable :: qRndEj_G(:)
@@ -126,6 +132,8 @@ real(kind=wp), allocatable     :: sElPX_G(:)
 real(kind=wp), allocatable     :: sElPY_G(:)
 real(kind=wp), allocatable     :: sElGam_G(:)
 
+
+integer(kind=ip) :: TrLdMeth_G
 
 
 
@@ -199,10 +207,6 @@ real(kind=wp) :: kx_und_G, ky_und_G    ! kx and ky for 3D undulator B-field vari
 real(kind=wp) :: sKBetaX_G, sKBetaY_G
 
 real(kind=wp) :: sKBetaXSF_G, sKBetaYSF_G
-
-real(kind=wp)       :: Dfact  ! Dispersion strength factor for chicane
-                              ! (=1 for 'normal' dispersion, =0 for 
-                              ! isochronous chicanes)
 
 
 
@@ -352,7 +356,7 @@ TYPE(cFileType), save :: tPowF   ! Type array describing the power file
 
 
 
-integer(kind=ip) :: iWriteNthSteps, iDumpNthSteps, iIntWriteNthSteps
+integer(kind=ip) :: iWriteNthSteps, iIntWriteNthSteps
 
 
 character(132_ip) :: cmd_call_G

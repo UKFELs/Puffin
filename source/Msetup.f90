@@ -1,8 +1,16 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! ###############################################
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
+! ###############################################
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> A module which contains top-level subroutines to allocate and initialize, 
+!> or destroy, the data used in Puffin.
 
 MODULE Setup
 
@@ -14,16 +22,12 @@ MODULE Setup
   USE sddsPuffin
   USE lattice
   USE Globals
-  USE resume
   USE electronInit
   USE Read_data
   USE checks
   use dumpFiles
   use ParaField
   use dummyf
-
-! A module which allocates and initializes - or
-! destroys - the data used in Puffin.
 
   IMPLICIT NONE
 
@@ -87,6 +91,8 @@ MODULE Setup
 
   zFileName_G = zFile
 
+  igwr = -1_ip
+
 !     Initialise Error log for this run
 
   tErrorLog_G%zFileName = TRIM(ADJUSTL(zFile))//"_Error.log"
@@ -142,18 +148,15 @@ MODULE Setup
        alphax, alphay, emitx, emity, &
        fx,                &
        fy,                &
-       Dfact,             &
-       sFocusfactor,      &
        taper,             &
        zUndType,          &
        sSeedSigma,        &
        freqf, SmeanZ2,    &
        ph_sh, &
        qFlatTopS, nseeds, &
-       sPEOut,            &
-       iDumpNthSteps,     &
        qSwitches,         &
        qMatched_A,        &
+       qmeasure, &
        qOKL)
 
   IF (.NOT. qOKL) GOTO 1000
@@ -164,7 +167,7 @@ MODULE Setup
 
 
   call calcScaling(srho, saw, sgammar, lambda_w, &
-    sFocusFactor, zUndType, fx, fy)
+                   zUndType, fx, fy)
 
 
   if (.not. qscaled_G) then
@@ -187,7 +190,7 @@ MODULE Setup
   call calcSamples(sFieldModelLength, iNodes, sLengthofElm, &
                    sStepSize, stepsPerPeriod, nSteps, &
                    nperiods, nodesperlambda, gamma_d, sLenEPulse, &
-                   iNumElectrons)
+                   iNumElectrons, qSimple)
 
 
 
@@ -195,7 +198,7 @@ MODULE Setup
 
   CALL CheckParameters(sLenEPulse,iNumElectrons,nbeams,sLengthofElm,iNodes,&
                        sFieldModelLength,sStepSize,nSteps,srho,saw,sgammar, &
-                       sFocusfactor, mag, sEleSig,fx,fy, &
+                       mag, sEleSig,fx,fy, &
                        qSwitches,qSimple, sSeedSigma, freqf, &
                        SmeanZ2, qFlatTopS, nseeds, qOKL)
 
@@ -206,7 +209,7 @@ MODULE Setup
 
 !    Setup FFTW plans for the forward and backwards transforms.
 
-  CALL getTransformPlans4FEL(iNodes,qOKL)
+  CALL getTransformPlans4FEL(iNodes,qmeasure,qOKL)
 
   IF (.NOT. qOKL) GOTO 1000
 
@@ -257,7 +260,7 @@ MODULE Setup
 
   CALL passToGlobals(srho,saw,sgammar,lambda_w,iNodes, &
                      sLengthOfElm, qSimple, iNumElectrons, &
-                     fx,fy,sFocusFactor,taper, &
+                     fx,fy,taper, sEleSig(1,iX_CG), sEleSig(1,iY_CG), &
                      sFiltFrac,sDiffFrac,sBeta, &
                      zUndType,qFormattedFiles, qSwitches,qOK)
 
@@ -397,10 +400,19 @@ MODULE Setup
 !    Define the rescaling parameter "ffact" for rescaling
 !    backwards transform data.
 
-  ffact = real(iNodes(iX_CG), kind=wp) * &
-          real(iNodes(iY_CG), kind=wp) * &
-          real(iNodes(iZ2_CG), kind=wp)
+  if (fieldMesh == iPeriodic) then
 
+    ffact = real(iNodes(iX_CG), kind=wp) * &
+            real(iNodes(iY_CG), kind=wp) * &
+            real(iNodes(iZ2_CG)-1_ip, kind=wp)
+
+  else
+
+    ffact = real(iNodes(iX_CG), kind=wp) * &
+            real(iNodes(iY_CG), kind=wp) * &
+            real(iNodes(iZ2_CG), kind=wp)
+
+  end if
 
 
 !  IF (qResume) THEN
@@ -479,7 +491,6 @@ MODULE Setup
                              sEta_G,&
                              sGammaR_G,&
                              sKBeta_G, &
-                             sFocusfactor_G, &
                              lam_w_G, lam_r_G, &
                              lg_G, lc_G, &
                              npk_bar_G, &

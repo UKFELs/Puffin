@@ -1,13 +1,14 @@
 function hp = wanls2(fname)
 
 
-%%%%%%%%
-%% Example script, which performs a wavelet analysis 
-%% on the x-polarized field in Puffin.
 
 
 
-%       Read in system attributes
+
+
+%parr = {'nX','nY','nZ2','sLengthOfElmX','sLengthOfElmY', ...
+%'sLengthOfElmZ2','rho','eta','aw','gamma_r',...
+%'iIntWriteNthSteps','sStepSize'};
 
 rho = hdf5read(fname,'/runInfo','rho');
 nZ2 = hdf5read(fname,'/runInfo','nZ2');
@@ -19,12 +20,7 @@ zbar = hdf5read(fname,'/aperp','zbarInter');
 nZ2 = double(nZ2);
 lenZ2 = sLengthOfElmZ2 * (nZ2-1);
 
-Z2axis = linspace(0,lenZ2,nZ2);  % z2 axis
-
-
-
-
-%           Physical constants
+Z2axis = linspace(0,lenZ2,nZ2);
 
 h = 6.626e-34; % Planck constant
 q_e = 1.60217646e-19; % Charge on electron
@@ -52,8 +48,8 @@ yf = -apcz2(:,2);
 
 % z2 limits
 
-z2st = 70;
-z2ed = 90;
+z2st = 30;
+z2ed = 40;
 
 %z2st = 200;
 %z2ed = 220;
@@ -133,9 +129,11 @@ nZ2 = max(size(xf));
 
 
 Fs = 1/(lenZ2/nZ2);
-%figure;
+
+figure;
 subplot(3,1,1);
-hf = plot(Z2axis, abs(xf).^2);
+%hf = plot(Z2axis, abs(xf).^2);
+hf = plot(Z2axis, magx.^2);
 xlim([z2st   z2ed]);
 title(strcat('zbar = ', num2str(zbar)));
 % ylim([0   3]);
@@ -143,18 +141,22 @@ title(strcat('zbar = ', num2str(zbar)));
 subplot(3,1,2);
 hf = plot(Z2axis, phasex);
 xlim([z2st   z2ed]);
-
+ylim([0   2*pi]);
 
 subplot(3,1,3);
-[sst,f] = wsst(xf,Fs,'bump');  % wavelet analysis
-f = ((f * 4 * pi * rho) - 1)/2/rho;
-contour(Z2axis,f,abs(sst));
+[sst,f] = wsst(xf,Fs,'bump');
+f = f*4*pi*rho;
+%f = ((f * 4 * pi * rho) - 1)/2/rho;
+%contour(Z2axis,f,abs(sst));
 %figure; 
 %hp = pcolor(Z2axis,f,log10(abs(sst)));
-%hp = pcolor(Z2axis,f,abs(sst));
+hp = pcolor(Z2axis,f,abs(sst));
 hp.EdgeColor = 'none';
-title('Wavelet Synchrosqueezed Transform');
-xlabel('Time'); ylabel('Hz');
+shading interp;
+%title('Wavelet Synchrosqueezed Transform');
+xlabel('$$\bar{z}_2$$','interpreter','latex');
+ylabel('$$\omega / \omega_r$$','interpreter','latex');
 %ylim([15  20]);
 %ylim([15*4*pi*rho  20*4*pi*rho]);
-ylim( (( [15  20]*4*pi*rho) - 1)/2/rho );
+ylim([0.85  1.15]);
+

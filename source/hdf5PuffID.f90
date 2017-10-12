@@ -1,13 +1,9 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013-2017, Lawrence Campbell and Brian McNeil.    **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Jonathan Smith (Tech-X UK Ltd) & Lawrence T. Campbell
+! License: BSD-3-Clause
 
 !> @author
-!> Lawrence Campbell,
-!> University of Strathclyde,
-!> Glasgow, UK
+!> Jonathan Smith (Tech-X UK Ltd)
 !> @brief
 !> This module contains the routines for writing the dumps and integrated data
 !> individually from each process in hdf5 format - so multiple files are written
@@ -322,7 +318,7 @@ contains
     CALL writeH5TimeGroup(file_id, timegrpname, time, 'outputH5Beam', error)
 
 ! Write run info
-    CALL writeH5RunInfo(file_id, 'outputH5Beam', error)
+    CALL writeH5RunInfo(file_id, time, sz_loc, iL, 'outputH5Beam', error)
 
 ! We make the limits
     CALL h5gcreate_f(file_id, limgrpname, group_id, error)
@@ -574,7 +570,7 @@ contains
 ! Time Group 
       CALL writeH5TimeGroup(file_id, timegrpname, time, &
 	     'outH5Field3D', error)
-      CALL writeH5RunInfo(file_id, 'outH5Field3D', error)
+      CALL writeH5RunInfo(file_id, time, sz_loc, iL, 'outH5Field3D', error)
       lb(1)=-0.5*NX_G*sLengthOfElmX_G
       lb(2)=-0.5*NY_G*sLengthOfElmY_G
       lb(3)=(nlo-1)*sLengthOfElmZ2_G

@@ -130,21 +130,14 @@
  sBeta                  = 1.0
  seed_file              = 'seed_file.in'
  srho                   = 0.005
- sux                    = 1.0
- suy                    = 1.0
  saw                    = 1.0121809
  sgamma_r               = 456.40
  lambda_w               = 0.0275
- Dfact                  = 0.0
  zundType               = 'planepole'
- taper                  = 0.0
- lattFile               = 'clara2.latt'
+ lattFile               = 'clara.latt'
  stepsPerPeriod         = 30
  nPeriods               = 5
  sZ0                    = 0.0
- zDataFileName          = 'DataFile.dat'
  iWriteNthSteps         = 6000
  iWriteIntNthSteps      = 30
- iDumpNthSteps          = 3000
- sPEOut                 = 100.0
  /

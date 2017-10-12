@@ -1,8 +1,6 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
 
 !> @author
 !> Lawrence Campbell,
@@ -113,6 +111,11 @@ do iL = iLst, modNum
   else if (iElmType(iL) == iDrift) then
 
     call driftSection(iL, sZ)
+!     FOR WRITING AFTER EACH DRIFT
+!    szl = 0.0_wp
+!    call wr_cho(sZ, szl, &
+!                zDataFileName, 0_ip, iCsteps, modNum, iWriteNthSteps, &
+!                iIntWriteNthSteps, 0_ip, .true., .true., qOKL)
 
   else if (iElmType(iL) == iModulation) then
 

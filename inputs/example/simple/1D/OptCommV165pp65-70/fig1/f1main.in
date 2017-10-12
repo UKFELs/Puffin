@@ -8,7 +8,7 @@
 ! NAME                       DESCRIPTION
 !--------------------------------------------------------------------------------------------------!
 !
-!                      FLAGS
+!                               FLAGS
 !
 !
 ! qOneD                      If TRUE, model 1D FEL, with only 1 field node and 1 macroparticle in transverse dimensions
@@ -20,8 +20,9 @@
 ! qDiffraction               if modelling diffraction
 ! qFilter                    TRUE to filter, if FALSE the low frequencies will just be ignored during diffraction
 ! q_noise                    Shot noise in initial electron beam distribution
-! qDump                      Do you wish to dump data so the run can be resumed if anything goes wrong? .TRUE. for yes.
 ! qResume                    If resuming from dump files left from a previous run
+!
+!                         (For SDDS writing only:)
 ! qSeparateFiles             Write data to separate SDDS files at each step
 ! qFormattedFiles            Write data as formatted text(TRUE) or binary(FALSE)
 ! qWriteZ                    Write out Z data
@@ -32,7 +33,7 @@
 ! qWriteX                    Write out X data
 ! qWriteY                    Write out Y data
 ! 
-!               ELECTRON MACROPARTICLE SAMPLING
+!                      ELECTRON MACROPARTICLE SAMPLING
 ! 
 ! 
 ! beam_file                  Name of the beam file
@@ -40,7 +41,7 @@
 ! 
 ! 
 ! 
-!                   FIELD NODE SAMPLING
+!                          FIELD NODE SAMPLING
 ! 
 ! 
 ! iNumNodesX               Number of nodes to sample radiation field in x direction
@@ -64,8 +65,7 @@
 ! 
 ! 
 ! srho                        Pierce or FEL parameter, describing the strength of the interaction (or efficiency)
-! sux                         Normalised magnitude of wiggler magnetic field x-vector: H=1 is helical, H=0 is planar
-! suy                         Normalised magnitude of wiggler magnetic field y-vector: H=1 is helical, H=0 is planar
+! sux, suy                    Normalised magnitude of wiggler magnetic field x and y-vectors: either sux or suy must = 1 (unless you know what you're doing!)!!! 
 ! saw                         peak undulator parameter
 ! sgamma_r                    Resonant, or reference, beam energy
 ! lambda_w                   Undulator period
@@ -89,64 +89,30 @@
 ! zDataFileName      Data file name
 ! iWriteNthSteps     Steps to write data at
 ! iWriteIntNthSteps  Steps to write integrated data at
-! iDumpNthSteps      Steps to dump data at (0 for no dumping)
-! sPEOut             Percentage of macroparticles to write out
 !
 !
 ! Begin input:-
 
 &MDATA
  qOneD                  = .true.   
- qFieldEvolve           = .true. 
- qElectronsEvolve       = .true. 
- qElectronFieldCoupling = .false.  
- qFocussing             = .false. 
- qDiffraction           = .false.   
- qFilter                = .true.   
- q_noise                = .true.   
- qDump                  = .true.   
- qResume                = .false.   
- qSeparateFiles         = .true.   
- qFormattedFiles        = .false.   
- qWriteZ                = .true.   
- qWriteA                = .true.   
- qWritePperp            = .true.   
- qWriteP2               = .true.   
- qWriteZ2               = .true.   
- qWriteX                = .true.   
- qWriteY                = .true.   
- beam_file              = 'beam_file.in'     
- sElectronThreshold     = 0.05
- iNumNodesX             = 125      
- iNumNodesY             = 125 
- nodesPerLambdar        = 17
- sFModelLengthX         = 10.0
- sFModelLengthY         = 10.0
- sFModelLengthZ2        = 4.0
- iRedNodesX             = 21
- iRedNodesY             = 21
- sFiltFrac              = 0.3
- sDiffFrac              = 1.0
- sBeta                  = 1.0
+ qsdds = .false.
+ qhdf5 = .true.    
+ beam_file              = 'beam_file.in'
  seed_file              = 'seed_file.in'
+ sElectronThreshold     = 0.05
+ nodesPerLambdar        = 17
+ sFModelLengthZ2        = 4.0
  srho                   = 0.01
  sux                    = 1.0
  suy                    = 1.0
  saw                    = 1.0
  sgamma_r               = 100.0
  lambda_w               = 0.04
- Dfact                  = 0.0
- zundType               = 'helical'
  taper                  = 0.0
  lattFile               = ''
  stepsPerPeriod         = 30
  nPeriods               = 8
- sZ0                    = 0.0
- zDataFileName          = 'DataFile.dat'
  iWriteNthSteps         = 30
  iWriteIntNthSteps      = 30
- iDumpNthSteps          = 3000
- sPEOut                 = 100.0
  /
-
 

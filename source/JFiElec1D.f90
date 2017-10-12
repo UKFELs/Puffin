@@ -1,8 +1,6 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
 
 !> @author
 !> Lawrence Campbell,
@@ -46,12 +44,15 @@ real(kind=wp) :: locz2
 
       z2node = floor(sz2(i)  / dz2)  + 1_IP
       locz2 = sz2(i) - REAL(z2node  - 1_IP, kind=wp) * dz2
-  
-      if (z2node >= NZ2_G) then
-        print*, 'Z2 coord is too large!! with node:', z2node, &
-                ' and pos ', sz2(i)
-        STOP
+      
+      if (fieldMesh == itemporal) then
+        if (z2node >= NZ2_G) then
+          print*, 'Z2 coord is too large!! with node:', z2node, &
+                  ' and pos ', sz2(i)
+          STOP
+        end if
       end if
+
 
       if (z2node >= bz2) then
         qPArrOK_G = .false.

@@ -1,3 +1,7 @@
+# Copyright (c) 2012-2017, University of Strathclyde
+# Authors: Jonathan Smith (Tech-X UK Ltd)
+# License: BSD-3-Clause
+
 """ @ reduce_particles.py Gives a reduced particle dataset
 
 A reduced dataset is beneficial for elegant, and for plotting. 

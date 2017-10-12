@@ -104,17 +104,6 @@
  qDiffraction           = .false.   
  qFilter                = .true.   
  q_noise                = .true.   
- qDump                  = .false.   
- qResume                = .false.   
- qSeparateFiles         = .false.   
- qFormattedFiles        = .false.   
- qWriteZ                = .true.   
- qWriteA                = .true.   
- qWritePperp            = .true.   
- qWriteP2               = .true.   
- qWriteZ2               = .true.   
- qWriteX                = .true.   
- qWriteY                = .true.   
  qsdds = .false.
  qhdf5=.true.
  qUndEnds = .true.
@@ -141,13 +130,12 @@
  Dfact                  = 0.0
  zundType               = 'planepole'
  taper                  = 0.0
- lattFile               = 'clara2.latt'
+ lattFile               = 'clara.latt'
  stepsPerPeriod         = 30
  nPeriods               = 60
  sZ0                    = 0.0
  zDataFileName          = 'DataFile.dat'
  iWriteNthSteps         = 600
  iWriteIntNthSteps      = 30
- iDumpNthSteps          = 3000
  sPEOut                 = 100.0
  /

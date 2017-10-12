@@ -11,8 +11,11 @@ LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
 
 The code has undergone many improvements and extended its functionality
 since then. It no longer uses an external linear solver package, and the
-only external packages now required are FFTW (version 3.3 onwards), and 
-parallel HDF5 libraries.
+only external packages now required are FFTW (version 3.3 onwards), and
+parallel HDF5 libraries. 
+
+Please note Puffin is currently under active development. An 'official'
+release will be tagged soon.
 
 ## Features
 
@@ -22,8 +25,8 @@ approximations. It does not utilize a 'slicing' model of the beam phase space
 and radiation field, and instead utilizes an algorithm which is much more
 similar to a Particle-In-Cell (PIC) code methodology.
 
-In addition, some accelerator components are included for simulation of the 
-'realistic' undulator line, and together with the lack of restrictions, 
+In addition, some accelerator components are included for simulation of the
+'realistic' undulator line, and together with the lack of restrictions,
 means it may model:
   - The full, broad bandwidth frequency spectrum, limited only by the Niquist frequency of the mesh
   - Full electron beam transport
@@ -40,6 +43,10 @@ of the backwards wave from the e-beam.
 
 ## Release Notes
 
+1.9.0
+  - Added periodic mesh mode
+  - 1D runs now read in the transverse beam radii to give proper SI power
+
 1.8.0
   - Can now input with the Puffin HDF5 output format
   - More metadata in the output files
@@ -52,6 +59,8 @@ of the backwards wave from the e-beam.
   - Better point transforms for quads, now including energy dependence
   - Fixed bug of extra half-period diffraction per undulator module
   - HDF5 output is now the default data output format
+  - Can now specify specific writing steps for data dumps using a 'write file'
+  - Can now choose to use estimated or measured FFTW plans from input file
 
 1.6.0:
   - Revamped the form of the lattice file, both to include more components, and to

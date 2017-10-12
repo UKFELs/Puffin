@@ -1,8 +1,8 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! ###############################################
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
+! ###############################################
 
 !> @author
 !> Lawrence Campbell,
@@ -24,8 +24,12 @@ use cwrites
 
 contains
 
-
-!> read_in Read in the namelist data files for Puffin.
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Read in the namelist data files for Puffin.
 !> @param[in] zfilename Name of the main input file passed to Puffin
 !> at runtime.
 !> @param[out] zDataFileName Base name of the sdds output files.
@@ -91,7 +95,27 @@ contains
 !> @param[out] lambda_w Undulator period
 !> @param[out] sEmit_n Array of length nbeams. Scaled RMS Beam emittance in 
 !> simple beam case.
-
+!> @param[out] sux Relative magnitude of undulator magnetic field in 
+!> x-direction. Either sux OR suy should = 1. For Puffin undulator type
+!> only.
+!> @param[out] suy Relative magnitude of undulator magnetic field in 
+!> y-direction.
+!> @param[out] taper Taper of magnetic undulator field as function of z, only
+!> used in simple wiggler case (no lattice). In units of 
+!> \f$ \frac{d \alpha}{d \bar{z}} \f$.
+!> @param[out] zUndType Undulator type to be use in simple wiggler case.
+!> @param[out] sSigmaF Standard deviation of radiation seed field magnitude in 
+!> each dimension.
+!> @param[out] freqf Frequency of seed field, scaled to the reference resonant 
+!> frequency.
+!> @param[out] SmeanZ2 Mean position of seed in z2.
+!> @param[out] ph_sh Phase shift of seed
+!> @param[out] qFlatTopS If using flat top seed profile
+!> @param[out] nseeds Number of radiation seeds 
+!> @param[out] qSwitches Various simulation control flags
+!> @param[out] qMatched_A If matching transverse area of beam to wiggler. Simple
+!> beam case only.
+!> @param[out] qOK Error flag
 
 subroutine read_in(zfilename, &
        zDataFileName, &
@@ -137,73 +161,19 @@ subroutine read_in(zfilename, &
        alphax, alphay, emitx, emity, &
        sux, &
        suy, &
-       Dfact, &
-       sFocusfactor, &
        taper,    &
        zUndType, &
        sSigmaF, &
        freqf, SmeanZ2, &
        ph_sh, &
        qFlatTopS, nseeds, &
-       sPEOut, &
-       iDumpNthSteps, &
        qSwitches, &
        qMatched_A, &
+       qMeasure, &
        qOK)
 
        IMPLICIT NONE
 
-!******************************************************
-! Read input data from the main Puffin input file
-! 
-! zFileName          - FileName containing input data
-! nRowProcessors     - Number of row processors
-! nColProcessors     - Number of column processors
-!
-! zDataFileName      - Data file name
-! qSeparateStepFiles - if to write data to separate step
-!                      files or all steps in one file
-! qFormattedFiles    - if output data files to be
-!                      formatted or binary
-! sStepSize          - Step size for integration
-! nSteps             - Number of steps
-! sZ                 - IN: Starting z position
-!                    - OUT: Final z position
-! iWriteNthSteps     - Steps to write data at (optional)
-!                       (eg every 4th step)
-! tArrayZ            - Write out Z data
-! tArrayVariables    - Write out A,p,Q,Z2 data
-!
-! sLenEPulse(3)      - Length of electron Pulse in
-!                      x,y,z2 direction
-! iNumNodes(3) 	     - Total number of nodes
-! sWigglerLength(3)  - Length of wiggler in x,y,z2
-!                      direction
-! i_RealE            - Number of real electrons
-! q_noise            - Noise in initial electron
-!                      distribution
-!
-! iNumElectrons(3)   - Number of electrons in
-!                      x,y,z2 direction
-! sSigmaGaussian     - Sigma spread of electron
-!                      gaussian distribution
-! sElectronThreshold - Beyond this threshold level,
-!                      electrons are ignored/removed
-!
-! sA0_Re,            - Initial field value (real)
-! sA0_Im,            - Initial field value (imaginary)
-!
-! sEmit_n            - Normalised beam emittance
-! srho               - Pierce parameter
-! saw                - Wiggler parameter
-! sgamma_r           - Mean electron velocity at
-!                      resonance
-! sWiggleWaveLength  - Wiggler wave length
-! sSeedSigma         - Seed field sigma spread for
-!                      gaussian seed field
-! qSwitches          - if allowing different scenarios
-! qOK                - Error flag
-!********************************************************
   CHARACTER(*),INTENT(IN) :: zfilename
 
   CHARACTER(1024_IP),  INTENT(OUT)  :: zDataFileName
@@ -255,19 +225,17 @@ subroutine read_in(zfilename, &
   REAL(KIND=WP),     INTENT(OUT)  :: sgamma_r, lambda_w
   REAL(KIND=WP),     INTENT(OUT)  :: sux
   REAL(KIND=WP),     INTENT(OUT)  :: suy
-  REAL(KIND=WP),     INTENT(OUT)  :: Dfact
-  REAL(KIND=WP),     INTENT(OUT)  :: sFocusfactor, taper
+  REAL(KIND=WP),     INTENT(OUT)  :: taper
   character(32_IP),  intent(out)  :: zUndType
-  REAL(KIND=WP),     INTENT(OUT)  :: sPEOut
-  INTEGER(KIND=IP),  INTENT(OUT)  :: iDumpNthSteps
   LOGICAL,           INTENT(OUT)  :: qSwitches(:)
   LOGICAL, ALLOCATABLE, INTENT(OUT)  :: qMatched_A(:)
+  logical, intent(out) :: qMeasure
   LOGICAL,           INTENT(OUT)  :: qOK
 
 ! Define local variables
 
   integer(kind=ip), intent(out) :: stepsPerPeriod, nodesperlambda, nperiods ! Steps per lambda_w, nodes per lambda_r
-  real(kind=wp) :: dz2, zbar
+  real(kind=wp) :: dz2, zbar, sPerWaves
   integer(kind=ip) :: nwaves, iRedNodesX, iRedNodesY
 
   INTEGER::ios
@@ -290,6 +258,17 @@ subroutine read_in(zfilename, &
 
   real(kind=wp) :: sRedistLen
   integer(kind=ip) :: iRedistStp
+  integer(kind=ip) :: meshType
+
+
+
+!   redundant data!!! For compatibility only....
+
+  real(kind=wp) :: Dfact, speout
+  integer(kind=ip) :: iDumpNthSteps
+
+
+
 
 namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  qElectronFieldCoupling, qFocussing, &
@@ -304,14 +283,15 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  sFModelLengthY, sFModelLengthZ2, &
                  iRedNodesX, iRedNodesY, sFiltFrac, &
                  sDiffFrac, sBeta, seed_file, srho, &
-                 sux, suy, saw, sgamma_r, sFocusfactor, &
-                 lambda_w, Dfact, zundType, taper, &
+                 sux, suy, saw, sgamma_r, &
+                 lambda_w, zundType, taper, &
                  LattFile, stepsPerPeriod, nPeriods, &
                  sZ0, zDataFileName, iWriteNthSteps, &
-                 iWriteIntNthSteps, iDumpNthSteps, sPEOut, &
+                 iWriteIntNthSteps, &
                  qFMesh_G, sKBetaXSF, sKBetaYSF, sRedistLen, &
                  iRedistStp, qscaled, nspinDX, nspinDY, qInitWrLat, qDumpEnd, &
-                 wr_file, t_mag_G, t_fr_G, qFMod_G
+                 wr_file, qMeasure, DFact, iDumpNthSteps, speout, meshType, &
+                 sPerWaves, t_mag_G, t_fr_G, qFMod_G
 
 
 ! Begin subroutine:
@@ -350,6 +330,10 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qscaled = .true.
   qInitWrLat = .false.
   qDumpEnd = .true.
+  qMeasure = .true.
+  Dfact = -1000.0_wp
+  iDumpNthSteps = -1000_ip
+  speout = -1000.0_wp
 !  qplain = .false.
   qFMod_G = .false.
   t_mag_G = 0.0
@@ -363,6 +347,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   sFModelLengthX         = 1.0
   sFModelLengthY         = 1.0
   sFModelLengthZ2        = 4.0
+  sPerWaves              = -1.0_wp
   iRedNodesX             = -1
   iRedNodesY             = -1
   nspinDX                = -1
@@ -377,9 +362,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   suy                    = 1.0
   saw                    = 1.0
   sgamma_r               = 100.0
-  sFocusfactor           = 1.41213562373095
   lambda_w               = 0.04
-  Dfact                  = 0.0
   zundType               = ''
   taper                  = 0.0
   lattFile               = ''
@@ -389,8 +372,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   zDataFileName          = 'DataFile.dat'
   iWriteNthSteps         = 30
   iWriteIntNthSteps      = 30
-  iDumpNthSteps          = 3000
-  sPEOut                 = 100.0
+  meshType = 0_ip
   sKBetaXSF = -0.1_wp
   sKBetaYSF = -0.1_wp
 
@@ -484,8 +466,46 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
 
   zBFile_G = beam_file
   zSFile_G = seed_file
+  
+  sPerWaves_G = sPerWaves
+
+  fieldMesh = meshType
 
 
+  if (DFact /= -1000.0_wp) then
+    if (tProcInfo_G%qRoot) then
+
+      print*, ''
+      print*, 'WARNING: Use of Dfact deprecated. It is kept only so your'
+      print*, 'old input files will not break!! It will do nothing. To specify'
+      print*, 'chicane strengths, please use the lattice file.'
+      print*, ''
+
+    end if
+  end if
+
+
+  if (iDumpNthSteps /= -1000_ip) then
+    if (tProcInfo_G%qRoot) then
+
+      print*, ''
+      print*, 'WARNING: Use of iDumpNthSteps deprecated. It is kept only so your'
+      print*, 'old input files will not break!! It will do nothing.'
+      print*, ''
+
+    end if
+  end if
+
+  if (speout /= -1000.0_wp) then
+    if (tProcInfo_G%qRoot) then
+
+      print*, ''
+      print*, 'WARNING: Use of speout deprecated. It is kept only so your'
+      print*, 'old input files will not break!! It will do nothing.'
+      print*, ''
+
+    end if
+  end if
 
 
 
@@ -556,10 +576,11 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   logical, intent(inout), allocatable :: qMatched_A(:)
   logical :: qEquiXY
   integer(kind=ip) :: nseqparts
+  real(kind=wp) :: fillFact
 
 !                     LOCAL ARGS
 
-  INTEGER(KIND=IP) :: b_ind
+  INTEGER(KIND=IP) :: b_ind, TrLdMeth
   logical :: qFixCharge, qAMatch
   INTEGER::ios
   CHARACTER(96) :: dtype
@@ -573,7 +594,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
                    sEmit_n, sQe, bcenter,  gammaf, &
                    chirp, mag, fr, qRndEj_G, sSigEj_G, &
                    qMatched_A, qEquiXY, nseqparts, qFixCharge, &
-                   alphax, alphay, emitx, emity
+                   alphax, alphay, emitx, emity, TrLdMeth, fillFact
 
 
   namelist /bdlist/ dist_f, nMPs4MASP_G
@@ -663,6 +684,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   alphay = 0.0_wp
   emitx = -1.0_wp
   emity = -1.0_wp
+  TrLdMeth = 1_ip
+  fillFact = 1_wp
 
 ! &&&&&&&&&&&&&&&&&&&&&
 
@@ -758,6 +781,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   qEquiXY_G = qEquiXY
   nseqparts_G = nseqparts
   qFixCharge_G = qFixCharge
+  TrLdMeth_G = TrLdMeth
+  fillFact_G = fillFact
 
   do b_ind = 1, nbeams
 

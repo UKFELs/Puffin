@@ -1,9 +1,6 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
-
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
 
 !> @author
 !> Lawrence Campbell,
@@ -318,11 +315,21 @@ CONTAINS
     DEALLOCATE(iNumLocalElectrons)
 
 
+    !   1D limit:--
+
+    if (qOneD_G) then
+      
+      s_chi_bar_G = s_chi_bar_G / ata_G * fillFact_G
+      
+    end if
+      
+
 !!!!!!! TEMP
 !!!!!!! COVERT DX/DZ AND DY/DZ -> SCALED PX, PY AND ADD OFFSET
 !!!!!!! BECAUSE PXBAR OFFSET IS NOT DEPENDENT ON GAMMA, BUT SIGMA_PXBAR 
 !!!!!!! IS - AND DXDZ OFFSET *IS* DEPENDANT ON GAMMA, BUT SIGMA_DXDZ
 !!!!!!! IS NOT
+
 
     ALLOCATE(tconv(size(sElPX_G)))
     
@@ -425,7 +432,7 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
   integer :: error
   integer(kind=ip) :: nseqparts
   real(kind=wp), allocatable :: xseq(:), yseq(:), pxseq(:), &
-                                pyseq(:), gamseq(:)
+                                pyseq(:), gamseq(:), z2seq(:)
 
   real(kind=wp), allocatable :: nktemp(:), z2base(:), vkt(:)
 
@@ -605,9 +612,9 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
 
       allocate(xseq(nseqparts), yseq(nseqparts), &
                pxseq(nseqparts), pyseq(nseqparts), &
-               gamseq(nseqparts))  ! to store 'constant' sequences which will be replicated for each z2 slice
+               gamseq(nseqparts), z2seq(nseqparts))  ! to store 'constant' sequences which will be replicated for each z2 slice
 
-      call getSeqs(xseq, yseq, pxseq, pyseq, gamseq, sigE)
+      call getSeqs(xseq, yseq, pxseq, pyseq, gamseq, z2seq, sigE, TrLdMeth_G)
 
 !   ...then, each particle in this 1D beam (which has perfectly equispaced particles)
 !   is split into many particles with the same temporal/longitudinal coordinate
@@ -615,7 +622,7 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
 
       gamseq = gamseq + offsets(iGam_CG)
 
-
+      z2seq = (z2seq - 0.5_wp) * (z2base(2) - z2base(1))
       
 !   Rotate phase space to Twiss params...
 
@@ -640,7 +647,7 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
         s_tmp_macro((ij-1)*nseqparts+1:(ij*nseqparts)) &
                          = nktemp(ij) / nseqparts   ! split charge evenly across MPs
 
-        z2_tmpcoord((ij-1)*nseqparts+1:(ij*nseqparts)) = z2base(ij)
+        z2_tmpcoord((ij-1)*nseqparts+1:(ij*nseqparts)) = z2base(ij) + z2seq
         x_tmpcoord((ij-1)*nseqparts+1:(ij*nseqparts)) = xseq(:)
         y_tmpcoord((ij-1)*nseqparts+1:(ij*nseqparts)) = yseq(:)
         px_tmpvector((ij-1)*nseqparts+1:(ij*nseqparts)) = pxseq(:)

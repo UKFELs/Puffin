@@ -1,3 +1,17 @@
+! ###############################################
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
+! ###############################################
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This module contains top-level subroutines to write data in SDDS or HDF5
+!> format.
+
 module dummyf
 
 !USE FFTW_Constants
@@ -7,7 +21,6 @@ USE lattice
 USE RK4int
 use dumpFiles
 use hdf5_puff
-use pln_puff
 use ParaField
 use cwrites
 
@@ -107,8 +120,12 @@ subroutine wr_cho(sZ, sZl, &
   end if
 
   if (qhdf5_G) then
-    
-     nslices=ceiling( (sLengthOfElmZ2_G*NZ2_G)/(4*pi*srho_g))
+
+    if (fieldMesh == iTemporal) then
+      nslices=ceiling( (sLengthOfElmZ2_G*NZ2_G)/(4*pi*srho_g))
+    else
+      nslices=ceiling( (sLengthOfElmZ2_G * real((NZ2_G-1_ip),kind=wp) )/(4*pi*srho_g)) ! + 30_ip
+    end if
 
     call wr_h5(sZ, szl, tArrayA, tArrayE, tArrayZ, iL, &
                iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
@@ -172,7 +189,7 @@ end subroutine wr_cho
       end if
 
 
-      if ((mod(iCsteps,iWr)==0) .or. (iCsteps == nSteps) .or. (iCsteps == 0) ) then
+      if ((mod(iCsteps,iWr)==0) .or. (iCsteps == 0) ) then
 
         qWriteFull = .true.
 

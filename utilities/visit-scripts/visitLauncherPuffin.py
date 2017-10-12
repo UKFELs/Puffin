@@ -1,3 +1,11 @@
+# Copyright (c) 2012-2017, University of Strathclyde
+# Authors: Lawrence T. Campbell & Jonathan Smith (Tech-X UK Ltd)
+# License: BSD-3-Clause
+
+"""
+Produces a number of plots in visit from Puffin data output.
+"""
+
 import os
 import sys
 import tables
@@ -6,14 +14,16 @@ import plotPowNorm
 import binPhase
 import plotEnergyLinear
 import plotEnergy
+import visitLoc
 
 # Set local visit and visit's python package locations
 # laptop:-
 #localVisItDir = "/home/tml/tmp/visit/visit2_10_3.linux-x86_64"
 #localPythonPackageDir = "/home/tml/tmp/visit/visit2_10_3.linux-x86_64/2.10.3/linux-x86_64/lib/site-packages" 
 # desktop:-
-localVisItDir = "/home/tml/bin/visit/visit2_10_3.linux-x86_64"
-localPythonPackageDir = "/home/tml/bin/visit/visit2_10_3.linux-x86_64/2.10.3/linux-x86_64/lib/site-packages" 
+
+localVisItDir, localPythonPackageDir = visitLoc.visitLoc()
+
 sys.path.insert(0,localPythonPackageDir)
 import visit
 
@@ -105,7 +115,7 @@ pBaseName=sys.argv[1]
 #   return eDB1, iDB1, localPowerAllDB1
 
 
-eDB, iDB, localPowerAllDB = getDBNames.getDBNames(pBaseName)
+eDB, fDB, iDB, localPowerAllDB = getDBNames.getDBNames(pBaseName)
 
 # Get upper and lower limits for energy plots
 h5in=tables.open_file(localPowerAllDB,'r')

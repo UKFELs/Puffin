@@ -1,8 +1,6 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
 
 !> @author
 !> Lawrence Campbell,
@@ -81,10 +79,12 @@ real(kind=wp) :: locx, locy, locz2, &
         qPArrOK_G = .false.
       end if
 
-      if (z2node >= NZ2_G) then
-        print*, 'Z2 coord is too large!! with node:', z2node, &
-                ' and pos ', sz2(i)
-        STOP
+      if (fieldMesh == itemporal) then
+        if (z2node >= NZ2_G) then
+          print*, 'Z2 coord is too large!! with node:', z2node, &
+                  ' and pos ', sz2(i)
+          STOP
+        end if
       end if
 
       if (z2node >= bz2) then
@@ -124,13 +124,13 @@ subroutine getFFelecs_3D(sAr, sAi)
 
 use rhs_vars
 
-real(kind=wp), intent(in) :: sAr(:), sAi(:)
+real(kind=wp), contiguous, intent(in) :: sAr(:), sAi(:)
 integer(kind=ip) :: i
 
 !$OMP DO
-  do i = 1, maxEl
+  do i = 1, procelectrons_G(1)
   
-    if (i<=procelectrons_G(1)) then
+!    if (i<=procelectrons_G(1)) then
 
       sField4ElecReal(i) = lis_GR(1,i) * sAr(p_nodes(i)) + sField4ElecReal(i)
       sField4ElecReal(i) = lis_GR(2,i) * sAr(p_nodes(i) + 1_ip) + sField4ElecReal(i)
@@ -150,7 +150,7 @@ integer(kind=ip) :: i
       sField4ElecImag(i) = lis_GR(7,i) * sAi(p_nodes(i)  + ntrndsi_G + nspinDX) + sField4ElecImag(i)
       sField4ElecImag(i) = lis_GR(8,i) * sAi(p_nodes(i)  + ntrndsi_G + nspinDX + 1) + sField4ElecImag(i)
 
-    end if
+!    end if
   
   end do 
 !$OMP END DO

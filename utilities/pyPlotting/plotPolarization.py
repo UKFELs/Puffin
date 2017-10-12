@@ -1,3 +1,7 @@
+# Copyright (c) 2012-2017, University of Strathclyde
+# Authors: Jonathan Smith (Tech-X UK Ltd)
+# License: BSD-3-Clause
+
 import numpy,tables,matplotlib,os,sys
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec

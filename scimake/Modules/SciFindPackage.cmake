@@ -868,7 +868,7 @@ macro(SciFindPackage)
         SciFindPkgFiles(${scipkgreg} "${${srchfilesvar}}"
           "${scipath}" "${scifilesubdirs}"
           ${scitype} ${scitypeplural} ${scipkgreg}_${scitypeplural}_FOUND
-          ${TFP_ALLOW_LIBRARY_DUPLICATES}
+          FALSE    # formerly ${TFP_ALLOW_LIBRARY_DUPLICATES} - Lawrence
         )
 # Okay not to find dlls
         if (NOT ${scipkgreg}_${scitypeplural}_FOUND)

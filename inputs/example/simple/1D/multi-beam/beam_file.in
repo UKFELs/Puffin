@@ -7,17 +7,17 @@
 ! BEAM PARAMETERS - namelist NBLIST
 !
 ! nbeams - number of electron beams
-! dtype  - Input type - simple, distribution, or macroparticle 
+! dtype  - Input type - simple, distribution, or macroparticle
 !
 ! BEAM PARAMETERS - namelist BLIST
 !========================================================================
 ! sSigmaE - gaussian std dev in each dimension - x, y, z2, px, py, gamma, then for additional beams
 ! sLenE   - Total length of beam modelled in each dimension - x, y, z2, px, py, gamma...
 ! bcenter - Center of beam in z2
-! iNumElectrons  -  Number of macroparticles in each dimension used to model the beam 
+! iNumElectrons  -  Number of macroparticles in each dimension used to model the beam
 ! sEmit_n - Scaled transverse beam emittance
-! sQe - Beam charge 
-! gammaf - Ratio of average beam energy to reference beam energy gamma / gamma_r 
+! sQe - Beam charge
+! gammaf - Ratio of average beam energy to reference beam energy gamma / gamma_r
 ! chirp  - Energy chirp in z2 i.e. dgamma/dz2
 ! mag    - magnitude of energy oscillation on beam
 ! freq   - frequency in z2 of beam energy oscillation
@@ -32,13 +32,14 @@ dtype = 'simple'
 /
 
 &BLIST
-sSigmaE(1,:) = 1.0, 1.0, 1E8, 1.0, 1.0, 1.0
-sSigmaE(2,:) = 1.0, 1.0, 1E8, 1.0, 1.0, 1.0
+sSigmaE(1,:) = 0.1, 0.1, 1E8, 1.0, 1.0, 1.0
+sSigmaE(2,:) = 0.1, 0.1, 1E8, 1.0, 1.0, 1.0
 sLenE(1,:) = 1E-6, 1E-6, 3.0, 1E-6, 1E-6, 1E-6
 sLenE(2,:) = 1E-6, 1E-6, 3.0, 1E-6, 1E-6, 1E-6
-iNumElectrons(1,:) = 1, 1, 2500, 1, 1, 1 
+iNumElectrons(1,:) = 1, 1, 2500, 1, 1, 1
 iNumElectrons(2,:) = 1, 1, 2500, 1, 1, 1
-sEmit_n = 1.0, 1.0
+emitx = 1.0, 1.0
+emity = 1.0, 1.0
 sQe = 1.0E-9, 4.0E-9
 bcenter = 0.0, 0.0
 gammaf = 1.0, 1.1
@@ -49,5 +50,3 @@ qRndEj_G = .false.
 sSigEj_G = 0.02
 qMatched_A = .false.
 /
-
-

@@ -1,8 +1,6 @@
-#************* THIS HEADER MUST NOT BE REMOVED *******************
-#* Copyright (c) 2013-2016, Lawrence Campbell and Brian McNeil. **
-#** This program must not be copied, distributed or altered in  **
-#** any way without the prior permission of the above authors.  **
-#*****************************************************************
+# Copyright (c) 2012-2017, University of Strathclyde
+# Authors: Jonathan Smith (Tech-X UK Ltd) & Lawrence T. Campbell
+# License: BSD-3-Clause
 
 """
 @powPrep.py  Aggregate Power Output from integrated data files
@@ -14,6 +12,10 @@ import numpy,tables,glob,os,sys
 qScale = 0
 print "scaling is qscale", str(qScale)
 
+iTemporal = 0
+iPeriodic = 1
+iMesh = iPeriodic
+
 
 
 def getTimeSlices(baseName):
@@ -21,14 +23,15 @@ def getTimeSlices(baseName):
 
   That will be used down the line...
   """
-  filelist=glob.glob(os.getcwd()+os.sep+baseName+'_*.h5')
+  filelist=glob.glob(os.getcwd()+os.sep+baseName+'_integrated_*.h5')
+  
   dumpStepNos=[]
   for thisFile in filelist:
     thisDump=int(thisFile.split(os.sep)[-1].split('.')[0].split('_')[-1])
     dumpStepNos.append(thisDump)
 
   for i in range(len(dumpStepNos)):
-    filelist[i]=baseName+'_'+str(sorted(dumpStepNos)[i])+'.h5'
+    filelist[i]=baseName+'_integrated_'+str(sorted(dumpStepNos)[i])+'.h5'
   return filelist
 
 
@@ -43,7 +46,7 @@ def getTimeSliceInfo(filelist,datasetname):
   print "Checking "+filelist[0]
   mint=h5in.root.time._v_attrs.vsTime
   try:
-    minz=h5in.root._f_getChild(datasetname)._v_attrs.zbarTotal
+    minz=h5in.root._f_get_child(datasetname)._v_attrs.zbarTotal
   except:
     print "no min z data present"
     minz=None
@@ -52,7 +55,7 @@ def getTimeSliceInfo(filelist,datasetname):
   print "Checking "+filelist[-1]
   maxt=h5in.root.time._v_attrs.vsTime
   try:
-    maxz=h5in.root._f_getChild(datasetname)._v_attrs.zbarTotal
+    maxz=h5in.root._f_get_child(datasetname)._v_attrs.zbarTotal
   except:
     print "no max z data present"
     maxz=None
@@ -67,7 +70,7 @@ def getNumSpatialPoints(filelist,datasetname):
   What it says on the tin. Same as extent of data.
   """
   h5in=tables.open_file(filelist[0],'r')
-  length=h5in.root._f_getChild(datasetname).shape[0]
+  length=h5in.root._f_get_child(datasetname).shape[0]
   if qScale == 0:
     min=h5in.root.globalLimitsSI._v_attrs.vsLowerBounds
     max=h5in.root.globalLimitsSI._v_attrs.vsUpperBounds
@@ -77,6 +80,16 @@ def getNumSpatialPoints(filelist,datasetname):
   h5in.close()
   print "length: "+str(length)
   return length,min,max
+
+def getMeshType(filelist,datasetname):
+  """ getNumSpatialPoints(filelist) get num spatial points
+
+  What it says on the tin. Same as extent of data.
+  """
+  h5in=tables.open_file(filelist[0],'r')
+  meshType = h5in.root.runInfo._v_attrs.fieldMesh
+  h5in.close()
+  return meshType
 
 print "passed "+str(len(sys.argv))+" arguments"
 print "File basename specified as: " +sys.argv[1]
@@ -88,7 +101,7 @@ if len(sys.argv) > 2:
   outfilename = sys.argv[2]
   print "Output file specified as: " + sys.argv[2]
 else:
-  outfilename = baseName + '_all.vsh5'
+  outfilename = baseName + '_integrated_all.vsh5'
   print "No output file specified - will be written to: " + outfilename
 
 
@@ -107,9 +120,12 @@ h5=tables.open_file(outfilename,'w')
 filelist=getTimeSlices(baseName)
 numTimes,minZT,maxZT,minZZ,maxZZ=getTimeSliceInfo(filelist,datasetname)
 numSpatialPoints, minS,maxS=getNumSpatialPoints(filelist,datasetname)
+lenz2 = maxS - minS
 deltaz2 = (maxS - minS) / numSpatialPoints
+iMesh = getMeshType(filelist,datasetname)
 sumData=numpy.zeros(numTimes)
 peakData=numpy.zeros(numTimes)
+powAv = numpy.zeros(numTimes)
 
 print "files in order:"
 print filelist
@@ -152,20 +168,21 @@ fieldCount=0
 
 for slice in filelist:
   h5in=tables.open_file(slice,'r')
-  fieldData[:,fieldCount]=h5in.root._f_getChild(datasetname).read()
-  sumData[fieldCount]=numpy.trapz(h5in.root._f_getChild(datasetname).read(), None, deltaz2)
-  peakData[fieldCount]=numpy.max(h5in.root._f_getChild(datasetname).read())
+  fieldData[:,fieldCount]=h5in.root._f_get_child(datasetname).read()
+  sumData[fieldCount]=numpy.trapz(h5in.root._f_get_child(datasetname).read(), None, deltaz2) 
+  powAv[fieldCount] = sumData[fieldCount] / lenz2
+  peakData[fieldCount]=numpy.max(h5in.root._f_get_child(datasetname).read())
   if peakData[fieldCount] != 0:
-    fieldNormData[:,fieldCount]=h5in.root._f_getChild(datasetname).read()/peakData[fieldCount]
+    fieldNormData[:,fieldCount]=h5in.root._f_get_child(datasetname).read()/peakData[fieldCount]
   else:
-    fieldNormData[:,fieldCount]=h5in.root._f_getChild(datasetname).read()
+    fieldNormData[:,fieldCount]=h5in.root._f_get_child(datasetname).read()
   # for including drifts
   if qScale == 0:
-    zData[fieldCount] = h5in.root._f_getChild("power")._v_attrs.zTotal 
+    zData[fieldCount] = h5in.root._f_get_child("power")._v_attrs.zTotal 
   else:
-    zData[fieldCount] = h5in.root._f_getChild("power")._v_attrs.zbarTotal 
+    zData[fieldCount] = h5in.root._f_get_child("power")._v_attrs.zbarTotal 
   # for no drifts
-  # zData[fieldCount] = h5in.root._f_getChild("power")._v_attrs.zInter
+  # zData[fieldCount] = h5in.root._f_get_child("power")._v_attrs.zInter
   h5in.close()
   fieldCount+=1
 
@@ -261,6 +278,16 @@ else:
 
 
 
+
+# Scaled averaged peak power (for periodic mesh)
+if iMesh == iPeriodic:
+  h5.create_array('/','Power',powAv)
+  h5.root.Power._v_attrs.vsMesh='zSeries'
+  h5.root.Power._v_attrs.vsType='variable'
+  if (qScale==0):
+    h5.root.Power._v_attrs.vsAxisLabels='z (m), Pow (W)'
+  else:
+    h5.root.Power._v_attrs.vsAxisLabels='zbar, Power (scaled)'
 
 # 2D meshes of z2 vs z (scaled) and (ct-z) vs z (unscaled)
 

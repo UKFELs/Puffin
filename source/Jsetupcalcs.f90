@@ -1,8 +1,6 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
 
 !> @author
 !> Lawrence Campbell,
@@ -30,65 +28,56 @@ use h5in
 use parafield
 use scale
 
-!****************************************************
-! Module containing miscellaneous routines for setup
-! and initialization of variables in Puffin.
-!
-! Lawrence Campbell
-! lawrence.campbell@strath.ac.uk
-! University of Strathclyde
-! June 2016
-!
-
 IMPLICIT NONE
 
 CONTAINS
 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Subroutine to pass all the temporary variables to global
+!> vars used in the integration loop.
+!> @param[in] rho FEL or Pierce parameter
+!> @param[in] aw Undulator parameter (peak, not rms)
+!> @param[in] gamr Relativistic factor for reference beam energy
+!> @param[in] lam_w Undulator period
+!> @param[in] iNN Number of nodes in field mesh in x, y and z2
+!> @param[in] iNMPs Number of macroparticles use to sample beam in each dimension
+!> @param[in] fx Polarization parameter for the Puffin elliptical wiggler (see docs)
+!> @param[in] fy Polarization parameter for the Puffin elliptical wiggler (see docs)
+!> @param[in] taper Undulator taper d alpha / d zbar
+!> @param[in] sFiltFrac Cutoff for high pass filter in diffraction stage, in units
+!> of the resonant frequency specified by the reference parameters.
+!> @param[in] dStepFrac Diffraction step size in units of undulator period
+!> @param[in] sBeta Absorption constant for boundaries
+!> @param[in] zUndType Undulator type (helical, planar, elliptical, etc)
+!> @param[in] qFormatted Whether writing formatted data or not (only for SDDS files)
+!> @param[in] qSwitch Array of switches for different simulation options
+!> @param[inout] qOK Error flag.
 
 SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
                          sElmLen, qSimple, iNMPs, fx, fy, &
-                         sFocusFactor, taper, sFiltFrac, &
+                         taper, sFSigX, sFSigY, sFiltFrac, &
                          dStepFrac, sBeta, zUndType, &
                          qFormatted, qSwitch, qOK)
 
     IMPLICIT NONE
 
-!***********************************************************
-! Subroutine to pass all the temporary variables to global
-! vars used in the integration loop.
-!
-! Some setup is also performed.
-!
-!
-!                    ARGUMENTS
-!
-! rho                Pierce/FEL parameter
-! eta                scaled average z-velocity
-! kbeta              scaled betatron wavenumber
-! iNN                number of nodes in each dimension (x,y,z2)
-! sElmLen            Length of ONE element in each dimension (x,y,z2)
-! fx, fy             specifies undulator polarization
-! qSwitch            If letting electrons evolve, field evolve,
-!                    diffraction and gaussian field
-! qOK                Error flag
-
     REAL(KIND=WP),     INTENT(IN)    :: rho,aw,gamr, lam_w
     INTEGER(KIND=IP),  INTENT(IN)    :: iNN(:), iNMPs(:,:)
-    REAL(KIND=WP),     INTENT(IN)    :: sElmLen(:)
-    REAL(KIND=WP),     INTENT(IN)    :: fx,fy,sFocusFactor, taper
+
+    REAL(KIND=WP),     INTENT(IN)    :: sElmLen(:), sFSigX, sFSigY
+    REAL(KIND=WP),     INTENT(IN)    :: fx,fy, taper
+
     REAL(KIND=WP),     INTENT(IN)    :: sFiltFrac, dStepFrac, sBeta
     LOGICAL,           INTENT(IN)    :: qSwitch(nSwitches_CG), qFormatted, &
                                         qSimple
     character(32_ip),  intent(in)    :: zUndType
     LOGICAL,           INTENT(OUT)   :: qOK
 
-!                    LOCAL ARGS
-!
-! lam_r_bar          Resonant wavelength in scaled units
-! qOKL               Local error flag
 
     REAL(KIND=WP) :: lam_r_bar, LenZ2, modfact1, sbetaz, aw_rms
     LOGICAL :: qOKL
@@ -102,6 +91,8 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
     NZ2_G = iNN(iZ2_CG)
 
     ntrnds_G = NX_G * NY_G
+
+    ata_G = 2.0_wp * pi * sFSigX * sFSigY
 
 !    nspinDX = 31_ip
 !    nspinDY = 31_ip
@@ -396,89 +387,131 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
 END SUBROUTINE passToGlobals
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! ***************************************************************
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Subroutine to recalculate the beam charge to match the value of rho
+!> supplied.
+!> @param[out] sQb Beam charge
+!> @param[in] sSigz2 Beam standard deviation in z2
+!> @param[in] sLenz2 Beam total length in z2
+!> @param[in] sSigTails Standard deviation used in z2 for the current profile
+!> tail-off, if used
+!> @param[in] qTails If tapering off the current profile with gaussian tails.
+!> @param[in] sSigX Standard deviation of beam current density profile in xbar
+!> @param[in] sSigY Standard deviation of beam current density profile in ybar
 
 subroutine fixCharge(sQb, sSigz2, sLenz2, sSigTails, qTails, &
                     sSigX, sSigY)
 
-! Only 1D for now
+  real(kind=wp), intent(out) :: sQb
+  real(kind=wp), intent(in) :: sSigz2, sLenz2, sSigTails, &
+                                 sSigX, sSigY
 
-real(kind=wp), intent(out) :: sQb
-real(kind=wp), intent(in) :: sSigz2, sLenz2, sSigTails, &
-                               sSigX, sSigY
-logical, intent(in) :: qTails
+  logical, intent(in) :: qTails
 
-real(kind=wp) :: sLArea, sTArea
-logical :: qOneD
+  real(kind=wp) :: sLArea, sTArea
+  logical :: qOneD
 
-qOneD = qOneD_G
+  qOneD = qOneD_G
 
-sTArea = sqrt(2.0_wp*pi) * sSigX &
-          * sqrt(2.0_wp*pi) * sSigY
+  sTArea = sqrt(2.0_wp*pi) * sSigX &
+            * sqrt(2.0_wp*pi) * sSigY
 
-call getLBArea(sLArea, sSigz2, sLenz2, sSigTails, qTails)
+  call getLBArea(sLArea, sSigz2, sLenz2, sSigTails, qTails)
 
-call getQFmNpk(sQb, sTarea, sLarea, qOneD)
+  call getQFmNpk(sQb, sTarea, sLarea, qOneD)
 
-if (tProcInfo_G%qroot) print*, 'FIXING CHARGE '
-if (tProcInfo_G%qroot) print*, 'Q =  ', sQb
+  if (tProcInfo_G%qroot) print*, 'FIXING CHARGE '
+  if (tProcInfo_G%qroot) print*, 'Q =  ', sQb
 
 end subroutine fixCharge
 
+! ***************************************************************
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Calculates the area under the current profile in z2.
+!> @param[out] sLArea Area under the curve of the current distribution.
+!> @param[in] sSigz2 Beam standard deviation in z2
+!> @param[in] sLenz2 Beam total length in z2
+!> @param[in] sSigTails Standard deviation used in z2 for the current profile
+!> tail-off, if used
+!> @param[in] qTails If tapering off the current profile with gaussian tails.
+
 subroutine getLBArea(sLArea, sSigz2, sLenz2, sSigTails, qTails)
 
-real(kind=wp), intent(out) :: sLArea
-real(kind=wp), intent(in) :: sSigz2, sLenz2, sSigTails
-logical, intent(in) :: qTails
+  real(kind=wp), intent(out) :: sLArea
+  real(kind=wp), intent(in) :: sSigz2, sLenz2, sSigTails
+  logical, intent(in) :: qTails
 
-real(kind=wp) :: sEndsLen, sMainLen
-logical :: qFlatTop
+  real(kind=wp) :: sEndsLen, sMainLen
+  logical :: qFlatTop
 
-if (sSigZ2 >= 1e6) qFlatTop = .true.
+  qFlatTop = .false.
 
-sEndsLen = 0.0_wp
+  if (sSigZ2 >= 1e6) qFlatTop = .true.
 
-if (qFlatTop) then
-  if (qTails) then
-    sEndsLen = gExtEj_G * sSigTails
-    sMainLen = sLenz2 - sEndsLen
-    sLArea = sMainLen + sqrt(2*pi)*sSigTails
+  sEndsLen = 0.0_wp
+
+  if (qFlatTop) then
+    if (qTails) then
+      sEndsLen = gExtEj_G * sSigTails
+      sMainLen = sLenz2 - sEndsLen
+      sLArea = sMainLen + sqrt(2*pi)*sSigTails
+    else
+      sLArea = sLenz2
+    end if
   else
-    sLArea = sLenz2
+    sLArea = sqrt(2*pi) * sSigz2
   end if
-else
-  sLArea = sqrt(2*pi) * sSigz2
-end if
 
 end subroutine getLBArea
 
+! ***************************************************************
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Calculates the area under the current profile in z2.
+!> @param[out] sLArea Area under the curve of the current distribution.
+!> @param[in] sSigz2 Beam standard deviation in z2
+!> @param[in] sLenz2 Beam total length in z2
+!> @param[in] sSigTails Standard deviation used in z2 for the current profile
+!> tail-off, if used
+!> @param[in] qTails If tapering off the current profile with gaussian tails.
 
 subroutine getQFmNpk(sQb, sTarea, sLarea, qOneD)
 
-real(kind=wp), intent(out) :: sQb
-real(kind=wp), intent(in) :: sTArea, sLArea
-logical, intent(in) :: qOneD
+  real(kind=wp), intent(out) :: sQb
+  real(kind=wp), intent(in) :: sTArea, sLArea
+  logical, intent(in) :: qOneD
 
-real(kind=wp) :: sVol, sNe
+  real(kind=wp) :: sVol, sNe
 
 
 !  Set phase space volume
 
-  if (qOneD) then
-    sVol = sLArea
-  else
-    sVol = sLArea * sTArea
-  end if
-
+    if (qOneD) then
+      sVol = sLArea * ata_G
+      if (tProcInfo_G%qRoot) print*, 'TRANS AREA = ', ata_G
+    else
+      sVol = sLArea * sTArea
+    end if
 
 ! Number of electrons
 
-
-  sNe = npk_bar_G * sVol
-  sQb = q_e * sNe
-
-
+    sNe = npk_bar_G * sVol
+    sQb = q_e * sNe
 
 end subroutine getQFmNpk
 
@@ -538,7 +571,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, sFiltFrac, &
 !     Set error flag to false
 
     qOK = .FALSE.
-    
+
     sZi_G = 0.0_wp
     sZlSt_G = 0.0_wp
 
@@ -560,7 +593,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, sFiltFrac, &
 !   print*,'It is seedy, but what type...'
 !   print*,iFieldSeedType_G
 
-    
+
 
     call getPaSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,&
                     freqf,ph_sh,nseeds,sLengthOfElm)
@@ -681,11 +714,13 @@ end subroutine scaleParams
 
 
 
-subroutine calcScaling(srho, saw, sgamr, slam_w, sFocusFactor, &
+
+subroutine calcScaling(srho, saw, sgamr, slam_w, &
                        zUndType, sfx, sfy)
 
-  real(kind=wp), intent(in) :: srho, saw, sgamr, slam_w, &
-                               sFocusFactor, sfx, sfy
+  real(kind=wp), intent(in) :: srho, saw, sgamr, slam_w
+  
+  real(kind=wp), intent(inout) :: sfx, sfy
 
   CHARACTER(32_IP), intent(in) :: zUndType
 
@@ -718,17 +753,24 @@ subroutine calcScaling(srho, saw, sgamr, slam_w, sFocusFactor, &
     fx_G = 0   ! Temp fix for initialization bug
     fy_G = 1
 
+    sfx = 0.0_wp
+    sfy = 1.0_wp
+
   else if (zUndType == 'planepole') then
 
     saw_rms =  saw / sqrt(2.0_wp)
-    fx_G = 0   ! Temp fix for initialization bug
-    fy_G = 1
+    fx_G = 0.0_wp   ! Temp fix for initialization bug
+    fy_G = 1.0_wp
+    sfx = 0.0_wp
+    sfy = 1.0_wp
 
   else if (zUndType == 'helical') then
 
     saw_rms = saw
     fx_G = 1   ! Temp fix for initialization bug
     fy_G = 1
+    sfx = 0.0_wp
+    sfy = 1.0_wp
 
   else
 
@@ -743,10 +785,6 @@ subroutine calcScaling(srho, saw, sgamr, slam_w, sFocusFactor, &
   sEta_G = (1.0_WP - sbetaz) / sbetaz
   sKappa_G = saw / 2.0_WP / srho / sgamr
   sKBeta_G = sKappa_G ! aw_rms / 2.0_WP / sFocusFactor / srho / sgamr
-
-
-  sFocusFactor_G = sFocusFactor
-
 
   sAw_G = saw
 
@@ -767,12 +805,12 @@ end subroutine calcScaling
 subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
                        sStepSize, stepsPerPeriod, nSteps, &
                        nperiods, nodesperlambda, sGamFrac, &
-                       sLenEPulse, iNumElectrons)
+                       sLenEPulse, iNumElectrons, qsimple)
 
 
-  real(kind=wp), intent(inout) :: sFieldModelLength(:)
+  real(kind=wp), intent(inout) :: sFieldModelLength(:), sLenEPulse(:,:)
 
-  real(kind=wp), intent(in) :: sGamFrac(:), sLenEPulse(:,:)
+  real(kind=wp), intent(in) :: sGamFrac(:)
 
   integer(kind=ip), intent(in) :: nperiods, nodesperlambda, &
                                   stepsPerPeriod
@@ -783,6 +821,7 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
   integer(kind=ip), intent(inout) :: iNumNodes(:), iNumElectrons(:,:)
   integer(kind=ip), intent(out) :: nSteps
+  logical, intent(in) :: qsimple
 
   real(kind=wp), allocatable :: smeanp2(:), fmlensTmp(:)
   real(kind=wp) :: dz2, szbar, fmlenTmp, slamr
@@ -855,7 +894,7 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
 
   slamr = 4.0_WP * pi * srho_G
-  minESample = 15_ip   ! minimum MP's per wavelength
+  minESample = 4_ip   ! minimum MP's per wavelength
   !dztemp = slamr / minESample
 
   if (iInputType_G == iGenHom_G) then
@@ -883,30 +922,38 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
 !   MAX P2 -
 
+    if (qsimple) then
+
     allocate(smeanp2(size(sGamFrac)), fmlensTmp(size(sGamFrac)))
     smeanp2 = 1.0_wp / sGamFrac**2.0_wp  ! Estimate of p2...
 
     fmlensTmp = sLenEPulse(:,iZ2_CG) + (smeanp2(:) * szbar)
     fmlenTmp = maxval(fmlensTmp)
 
-    if (sFieldModelLength(iZ2_CG) <= fmlenTmp + 1.0_wp) then
+    if (fieldMesh == itemporal) then
+
+      if (sFieldModelLength(iZ2_CG) <= fmlenTmp + 1.0_wp) then
 
 
-      if (tProcInfo_G%qRoot) print*, '******************************'
-      if (tProcInfo_G%qRoot) print*, ''
-      if (tProcInfo_G%qRoot) print*, 'WARNING - field mesh may not be large &
-                                     &enough in z2 - fixing....'
+        if (tProcInfo_G%qRoot) print*, '******************************'
+        if (tProcInfo_G%qRoot) print*, ''
+        if (tProcInfo_G%qRoot) print*, 'WARNING - field mesh may not be large &
+                                       &enough in z2 - fixing....'
 
-      sFieldModelLength(iZ2_CG) = fmlenTmp + 10.0_wp  ! Add buffer 10 long for
-                                                      ! extra security...
+        sFieldModelLength(iZ2_CG) = fmlenTmp + 10.0_wp  ! Add buffer 10 long for
+                                                        ! extra security...
 
-      if (tProcInfo_G%qRoot) print*, 'Field mesh length in z2 now = ', &
-                                  sFieldModelLength(iZ2_CG)
-      if (tProcInfo_G%qRoot) print*, ''
+        if (tProcInfo_G%qRoot) print*, 'Field mesh length in z2 now = ', &
+                                    sFieldModelLength(iZ2_CG)
+        if (tProcInfo_G%qRoot) print*, ''
+
+      end if
 
     end if
 
-    deallocate(smeanp2, fmlensTmp)
+  end if
+
+  deallocate(smeanp2, fmlensTmp)
 
   end if
 
@@ -914,6 +961,37 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
   iNumNodes(iZ2_CG) = ceiling(sFieldModelLength(iZ2_CG) / dz2) + 1_IP
 
+  if (fieldMesh == iPeriodic) then
+  
+    if (sPerWaves_G < 0.0_wp) then
+
+      sLengthOfElm(iZ2_CG) = dz2
+      sFieldModelLength(iZ2_CG) = real(iNumNodes(iZ2_CG) - 1_ip, kind=wp) * dz2
+      sperwaves_G = sFieldModelLength(iZ2_CG) / (4.0_WP * pi * sRho_G)
+
+      sLenEPulse(1,iZ2_CG) = sFieldModelLength(iZ2_CG)
+
+    else
+
+!           Field mesh length is then number of waves times scaled wavelength
+
+      sFieldModelLength(iZ2_CG) = sperwaves_G * (4.0_WP * pi * sRho_G)
+      sLengthOfElm(iZ2_CG) = dz2
+
+!            For now, keeping dz2 to give an integer number of nodes per 
+!           scaled wavelength, and rounding total mesh length to nearest
+!                           integer number of nodes
+
+      iNumNodes(iZ2_CG) = nint((sFieldModelLength(iZ2_CG) / dz2), kind=ip) + 1_IP
+      sFieldModelLength(iZ2_CG) = real(iNumNodes(iZ2_CG) - 1_ip, kind=wp) * dz2
+      
+      sLenEPulse(1,iZ2_CG) = sFieldModelLength(iZ2_CG)
+
+    end if
+
+  end if
+ 
+ 
   if (tProcInfo_G%qRoot) print*, '******************************'
   if (tProcInfo_G%qRoot) print*, ''
   if (tProcInfo_G%qRoot) print*, 'number of nodes in z2 --- ', iNumNodes(iZ2_CG)
@@ -1030,6 +1108,8 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
     else
       totNk_loc = 0._WP
     end if
+    
+    if (qOneD_G) totNk_loc = totNk_loc * ata_g
 !    print *,"Rank ", tProcInfo_G%Rank, " sum ",totNk_loc
     CALL MPI_ALLREDUCE(totNk_loc, totNk_glob, 1, MPI_DOUBLE_PRECISION, &
                        MPI_SUM, MPI_COMM_WORLD, error)
@@ -1081,15 +1161,19 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
 !     macroparticle number. The array then cycles through each
 !     process in ascending order.
 
-    DO j=2,tProcInfo_G%size
-       CALL MPI_ISSEND( sendbuff,1,MPI_INT_HIGH,rrank,&
-            0,tProcInfo_G%comm,req,error )
-       CALL MPI_RECV( recvbuff,1,MPI_INT_HIGH,lrank,&
-            0,tProcInfo_G%comm,recvstat,error )
-       CALL MPI_WAIT( req,sendstat,error )
-       procelectrons_G(j) = recvbuff
-       sendbuff=recvbuff
-    END DO
+    if (tProcInfo_G%size > 1_ip) then
+
+      DO j=2,tProcInfo_G%size
+         CALL MPI_ISSEND( sendbuff,1,MPI_INT_HIGH,rrank,&
+              0,tProcInfo_G%comm,req,error )
+         CALL MPI_RECV( recvbuff,1,MPI_INT_HIGH,lrank,&
+              0,tProcInfo_G%comm,recvstat,error )
+         CALL MPI_WAIT( req,sendstat,error )
+         procelectrons_G(j) = recvbuff
+         sendbuff=recvbuff
+      END DO
+
+    end if
 
 !    print*, 'procelectrons = ', procelectrons_G
 !    stop

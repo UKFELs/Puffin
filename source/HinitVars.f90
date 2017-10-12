@@ -1,8 +1,6 @@
-!************* THIS HEADER MUST NOT BE REMOVED *******************!
-!** Copyright 2013, Lawrence Campbell and Brian McNeil.         **!
-!** This program must not be copied, distributed or altered in  **!
-!** any way without the prior permission of the above authors.  **!
-!*****************************************************************!
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
 
 MODULE InitVars
 
@@ -115,11 +113,11 @@ REAL(KIND=WP)    :: sFieldModelLength(nSpaceDimensions_CG)
 
 LOGICAL          :: q_noise
 
+logical :: qMeasure
 
 
 REAL(KIND=WP)    :: sElectronThreshold, sDiffFrac, sBeta
 
-REAL(KIND=WP)    :: sPEOut
 REAL(KIND=WP)    :: srho, saw, sgammar, lambda_w
 REAL(KIND=WP)    :: fx, fy
 REAL(KIND=WP)    :: sFocusfactor

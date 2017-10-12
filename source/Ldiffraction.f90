@@ -1,15 +1,25 @@
+! ###############################################
+! Copyright 2012-2017, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
+! ###############################################
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This module contains subroutines for calculating the radiation diffraction 
+!> step.
+
 module PDiff
-
-
 
 use paratype
 use parallelinfotype
 use transforminfotype
 use transforms
 use masks
-!USE FFTW_Constants
-
-USE Globals
+use Globals
 use IO
 use parafield
 
@@ -21,17 +31,20 @@ implicit none
 
 contains
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Setup parallel data structures for diffraction step, call diffraction 
+!> routine, then return data to nominal parallel distribution for RK4 
+!> integration.
+!> @param[in] sStep Diffraction step size - distance to propagate field over.
+!> @param[out] qDiffrctd Whether field has been diffracted.
+!> @param[out] qOK Error flag.
+
 subroutine diffractIM(sStep, &
                       qDiffrctd, qOK)
-
-
-! Subroutine which diffracts the field, after making the preparations
-! necessary when Puffin is within an undulator module.
-!
-! Lawrence Campbell
-! University of Strathclyde
-! Jan 2015
-
 
   implicit none
 
@@ -82,61 +95,62 @@ end subroutine diffractIM
 
 !     ######################################################
 
-SUBROUTINE multiplyexp(h,qOK)
 
-  IMPLICIT NONE
-!
-! Subroutine to calculate the RHS of the diffraction
-! solution in Fourier space.
-!
-!                    ARGUMENTS
-!
-! h          IN                Integration step size
-! Field     INOUT    local portion of Fourier transformed field
-! qOK       OUT       Error flag; if .false. error has occured
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Multiplies Fourier Transformed field by complex exponential to diffract the
+!> field. To diffract field, do \f$ A_\bot(\bar{z}+\Delta \bar{z}) = 
+!> A_\bot(\bar{z}) \exp(\frac{i \Delta \bar{z} (k_x^2 + k_y^2) }{2 k_{z2}}) \f$ :
+!> see LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
+!> @param[in] h Diffraction step size \f$ \Delta \bar{z} \f$
+!> @param[out] qOK Error flag.
 
-  REAL(KIND=WP), INTENT(IN) :: h
+subroutine multiplyexp(h,qOK)
 
-!  COMPLEX(C_DOUBLE_COMPLEX), pointer, &
-!                INTENT(INOUT) :: field(:)
+  implicit none
 
-  LOGICAL, INTENT(OUT) :: qOK
+  real(kind=wp), intent(in) :: h
 
-!                    LOCAL ARGS
-!
-! posI                        Imaginary unit
-!                             (square root of -1)
-! ind,x_inc,y_inc,z2_inc      Indices for loop
-! loc_nz2                     Number of FT field nodes
-!                             on the local process
+  logical, intent(out) :: qOK
 
-  COMPLEX(KIND=WP) :: posI
-  INTEGER(KIND=IP) :: ind,x_inc,y_inc,z2_inc
-  INTEGER(KIND=IP) :: loc_nz2
-  REAL(KIND=WP) :: cutoff,delz2
+  complex(kind=wp) :: posI            !< Imaginary unit
+  
+  integer(kind=IP) :: ind,   &        !< index 
+                      x_inc, &        !< loop index for nodes in x
+                      y_inc, &        !< loop index for nodes in y
+                      z2_inc          !< loop index for nodes in z2
+                      
+  integer(kind=IP) :: loc_nz2         !< Local number of z2 nodes
+  
+  real(kind=wp) :: cutoff, &          !< Frequency cutoff for high pass filter
+                   delz2              !< Mesh spacing in z2
 
 !------------------------------------------------------
 !                      Begin
 
-  qOK = .FALSE.
+  qOK = .false.
 
   posI=CMPLX(0.0,1.0,KIND=WP)
   delz2=sLengthOfElmZ2_G
-  cutoff=2.0_WP*pi*sfilt/(REAL(NZ2_G,KIND=WP)*delz2)
+  cutoff=2.0_WP*pi*sfilt/(real(nz2_G, kind = wp) * delz2)
+  if ((fieldMesh == iPeriodic) .and. (sperwaves_G <= 1.1_wp) ) cutoff = 0.0_wp
   loc_nz2 = tTransInfo_G%loc_nz2
 
 !      Main loop, multiply FT field by exp factor
 
-  DO z2_inc=0,loc_nz2-1_IP
-     DO y_inc=0,NY_G-1_IP
-        DO x_inc=0,NX_G-1_IP
+  do z2_inc=0,loc_nz2-1_IP
+     do y_inc=0,NY_G-1_IP
+        do x_inc=0,NX_G-1_IP
 
            !ind=x_inc+y_inc*NX_G+z2_inc*NX_G*NY_G
 
-           IF ((kz2_loc_G(z2_inc)>cutoff) .OR. &
-                (kz2_loc_G(z2_inc)<-cutoff)) THEN
+           if ((kz2_loc_G(z2_inc)>cutoff) .or. &
+                (kz2_loc_G(z2_inc)<-cutoff)) then
 
-              IF (kz2_loc_G(z2_inc)/=0.0_WP) THEN
+              if (kz2_loc_G(z2_inc)/=0.0_WP) then
 
                 Afftw(x_inc+1,y_inc+1,z2_inc+1) = &
                            exp(posI*h*(kx_G(x_inc)**2 + &
@@ -144,32 +158,53 @@ SUBROUTINE multiplyexp(h,qOK)
                                 (2.0_WP*kz2_loc_G(z2_inc))) * &
                            Afftw(x_inc+1,y_inc+1,z2_inc+1)
 
-              END IF
+              end if
 
-           ELSE
+           else
 
-              IF (qFilter) Afftw(x_inc+1,y_inc+1,z2_inc+1) = &
+              if (qFilter) Afftw(x_inc+1,y_inc+1,z2_inc+1) = &
                          CMPLX(0.0, 0.0, C_DOUBLE_COMPLEX)
 
-           END IF
+           end if
 
-        END DO
-     END DO
-  END DO
+        end do
+     end do
+  end do
 
 !              Set error flag and exit
 
-  qOK = .TRUE.
+  qOK = .true.
 
   GOTO 2000
 
-1000  CALL Error_log('Error in transforms:RearrangeExp',tErrorLog_G)
+1000  call Error_log('Error in transforms:RearrangeExp',tErrorLog_G)
 
-2000 CONTINUE
+2000 continue
 
-END SUBROUTINE multiplyexp
+end subroutine multiplyexp
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Subroutine to perform free space radiation field diffraction
+!> in the dimensionless scaled notation.
+!> Diffraction step algorithm described in
+!> LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
+!> @param[in] h Diffraction step size \f$ \Delta \bar{z} \f$
+!> @param[inout] sAr Real part of \f$ A_\bot \f$
+!> @param[inout] sAi Imaginary part of \f$ A_\bot \f$
+!> @param[out] qOK Error flag.
+!> @param ntrh Number of nodes in transverse mesh = nx * ny
+!> @param ix Counter for mesh nodes in x
+!> @param iy Counter for mesh nodes in y
+!> @param iz Counter for mesh nodes in z2
+!> @param qOKL local error flag
+!> @param error Error integer for MPI calls
 
 SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 
@@ -179,44 +214,18 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 ! in the dimensionless scaled notation.
 ! Diffraction step algorithm described in
 ! LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
-!
-!                       ARGUMENTS
-!
-! h            IN         step size forward in units of
-!                         zbar
-! recvs and
-! displs       IN         Arrays for MPI communication.
-!                         They describe the layout of data
-!                         across processes. See MPI docs.
-! sV           IN         Electron macroparticle array,
-!                         containing coordinates in each
-!                         of the 6 scaled dimensions of this
-!                         process's local macroparticles.
-! sA           INOUT      Input as global field array at
-!                         zbar. Output as global field array
-!                         at zbar + h.
-! qOK          OUT        Error flag; if .false. error has occured
 
-  REAL(KIND=WP), INTENT(IN)      ::   h
-  REAL(KIND=WP), DIMENSION(:), INTENT(INOUT)  :: sAr, sAi
-  LOGICAL, INTENT(OUT)  ::  qOK
+  real(kind=wp), intent(in)      ::   h
+  real(kind=wp), dimension(:), intent(inout)  :: sAr, sAi
+  logical, intent(out)  ::  qOK
 
-!                       LOCAL ARGS
-!
-! work          'work' array used to speed up parallel
-!               transforms in FFTW
-! sA_local      The local Fourier transformed field array
-! qOKL          Local error flag
-
-!  COMPLEX(KIND=WP), DIMENSION(:), ALLOCATABLE :: &
-!       work,sA_local
   integer(kind=ip) :: ntrh, ix, iy, iz
-  LOGICAL :: qOKL
+  logical :: qOKL
   integer :: error
 
 !                      Begin
 
-  qOK = .FALSE.
+  qOK = .false.
 
 !     Allocate arrays and get distributed FT of field.
 !     Transforming from A(x,y,z2,zbar) to A(kx,ky,kz2,zbar)
@@ -260,35 +269,20 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
     print*,' assigning data took... ', tr_time_e-tr_time_s
   end if
 
-!  CALL setupParallelFourierField(sA_local, work, qOKL)
-
-  CALL Transform(tTransInfo_G%fplan, &
+  call Transform(tTransInfo_G%fplan, &
        Afftw, &
        qOKL)
 
 
-!  call mpi_barrier(tProcInfo_G%comm, error)
-!  print*, size(sA_local), size(sAr), size(sAi), tTransInfo_G%loc_nz2
-
-!  CALL fftwnd_f77_mpi(tTransInfo_G%fplan,1,sA_local,&
-!                      work,USE_WORK,&
-!                      FFTW_NORMAL_ORDER)
-
-
-  call Get_time(tr_time_e)
+  call Get_time(tr_time_e)  ! ...timing info
 
   if (tProcInfo_G%QROOT ) then
     print*,' forward transform took... ', tr_time_e-tr_time_s
   end if
 
-
-!  call mpi_barrier(tProcInfo_G%comm, error)
-!  print*, 'made it here!!!!'
-
-
 !    Multiply field by the exp factor to obtain A(kx,ky,kz2,zbar+h)
 
-  CALL MultiplyExp(h,qOKL)
+  call MultiplyExp(h,qOKL)
 
 
   call Get_time(tr_time_e)
@@ -298,34 +292,18 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
   end if
 
 
-!   Perform the backward fourier transform to obtain A(x,y,z2,zbar+h)
+!   Perform the backward Fourier transform to obtain A(x,y,z2,zbar+h)
 
-  CALL Transform(tTransInfo_G%bplan, &
+  call Transform(tTransInfo_G%bplan, &
        Afftw, &
        qOKL)
 
-
-
-!  CALL fftwnd_f77_mpi(tTransInfo_G%bplan,1,sA_local,&
-!                      work,USE_WORK,&
-!                      FFTW_NORMAL_ORDER)
 
   call Get_time(tr_time_e)
 
   if (tProcInfo_G%QROOT ) then
     print*,' back transform took... ', tr_time_e-tr_time_s
   end if
-
-
-
-!  call mpi_barrier(tProcInfo_G%comm, error)
-!  print*, 'made it here  2!!!!'
-
-
-
-
-
- ! IF (.NOT. qOKL) GOTO 1000
 
 !      Scale the field data to normalize transforms
 
@@ -343,22 +321,8 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
   end if
 
 
-!  DEALLOCATE(work)
-
-!   Collect data back onto global field var sA on every process
-
-!  CALL gather2Acomtoreal(sA_local,sA, &
-!       (NX_G*NY_G*tTransInfo_G%loc_nz2), &
-!       NX_G*NY_G*NZ2_G, &
-!       tTransInfo_G%TOTAL_LOCAL_SIZE, &
-!       recvs,displs)
-
-
-
-! assign data back to real and imag parts for integration
-! through undulator
-
-
+!      assign data back to real and imag parts for integration
+!                        through undulator
 
   do iz = 1, tTransInfo_G%loc_nz2
     do iy = 1, NY_G
@@ -370,28 +334,6 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
       end do
     end do
   end do
-
-
-
-!  sAr(1:tTransInfo_G%loc_nz2 * ntrh) = &
-!          real(Afftw(0:(tTransInfo_G%loc_nz2 * ntrh) - 1), &
-!                            kind=wp)
-
-
-!  sAi(1:tTransInfo_G%loc_nz2 * ntrh) = &
-!          aimag(Afftw(0:(tTransInfo_G%loc_nz2 * ntrh) - 1))
-
-!call mpi_barrier(tProcInfo_G%comm, error)
-!  call mpi_finalize(error)
-!  stop
-
-
-!  DEALLOCATE(sA_local)
-
-
-!        Clear up field emerging outside e-beam
-
-!  CALL clearA(sA, qOKL)
 
 !              Set error flag and exit
 
@@ -406,6 +348,21 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 END SUBROUTINE DiffractionStep
 
 !***********************************************************
+
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This subroutine implements a boundary region
+!> in the x, y and z2 directions.The boundary 
+!> layer absorbs the outgoing radiation to 
+!> minimize the reflections of the diffracted
+!> radiation.
+!> @param[inout] sAl Complex field \f$ A_\bot \f$
+!> @param[in] h Diffraction step size \f$ \Delta \bar{z} \f$
+!> @param[in] ffact Absorption coefficient
 
 SUBROUTINE AbsorptionStep(sAl,h,ffact)
 
@@ -486,6 +443,8 @@ SUBROUTINE AbsorptionStep(sAl,h,ffact)
 
     mask_z2 = getZ2Mask(sLengthOfElmZ2_G, nZ2_G, tTransInfo_G%loc_nz2,   &
                          nBZ2_G, tTransInfo_G%loc_z2_start)
+
+    if (fieldMesh == iPeriodic) mask_z2 = 0.0_wp
 
 !!!!!      sAl is local      !!!!!
 !!!!!      goes from 0,total_local_size     !!!!!!!
@@ -571,6 +530,16 @@ END SUBROUTINE AbsorptionStep
 !**************************************************
 
 !**************************************************
+
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Sets field to zero behind electron beam.
+!> @param[inout] sA Complex field \f$ A_\bot \f$
+!> @param[in] ffact Absorption coefficient
 
 SUBROUTINE clearA(sA, qOK)
 
