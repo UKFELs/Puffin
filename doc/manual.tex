@@ -10,8 +10,56 @@
 
 \usepackage{graphicx}
 \usepackage{listings}
+\usepackage{color}
 \usepackage{amssymb,amsmath,pdfpages}
 \usepackage{bm}
+
+ 
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyleh5}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=none,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+ 
+\lstset{style=mystyleh5}
+
 \linespread{1.3}
 
 %\usepackage[a4paper,%total={145mm,220mm},
@@ -117,7 +165,7 @@ Although the Puffin algorithm uses scaled variables, the beam and radiation fiel
 
 The main algorithm in Puffin utilizes the scaled variables above to make the numbers `nicer' to work with. The system saturates with scaled intensity $\sim 1$, the scaled perpindicular momentum of the beam in the wiggler oscillates between $-1$ and $1$, and so forth. The distance through the wiggler is given in units of a (1D) gain length, and the beam coordinate in the radiation frame is in units of the cooperation length, so that a reference electron slips $1l_c$ through the radiation field in $1$ gain  length. The scaling defines a frame of reference which normalises the quantities not only to numerically more manageable numbers, but to \textit{characteristic} variables.
 
-The two dominant variables for the scaling are $\rho$ and $\eta$. $\eta$ is a function of the wiggler parameters $a_u$ and $\lambda_u$, and reference beam energy $\gamma_r$, and is calculated in Puffin from the input. It defines the velocity of the `reference' electron in the scaled radiation frame. The $\bar{z}_2$ coordinate is in the scaled frame travelling with the field (at velocity $c$) - $\eta$ determines how quickly the electrons slip back through this frame, such that an electron with energy $\gamma_r$, travelling in a wiggler with parameters $a_u$ and $\lambda_u$, slips back with scaled velocity $p_2 \equiv \dfrac{d \bar{z}_2}{d\bar{z}} = 1$.
+The two dominant variables for the scaling are $\rho$ and $\eta$. $\eta$ is a function of the wiggler parameters $a_u$ and $\lambda_u$, and reference beam energy $\gamma_r$, and is calculated in Puffin from the input values of these 3 variables. It defines the velocity of the `reference' electron in the scaled radiation frame. The $\bar{z}_2$ coordinate is in the scaled frame travelling with the field (at velocity $c$) - $\eta$ determines how quickly the electrons slip back through this frame, such that an electron with energy $\gamma_r$, travelling in a wiggler with parameters $a_u$ and $\lambda_u$, slips back with scaled velocity $p_2 \equiv \dfrac{d \bar{z}_2}{d\bar{z}} = 1$.
 
 The $\rho$ parameter is dependent on the peak electron beam number density, amongst other things, and as far as the discussion of the scaling parameters in Puffin goes, defines a reference for the amplification characteristics. A beam, or indeed, sections of an electron beam with peak number density giving a smaller `localised' $\rho$ will amplify the beam more slowly with respect to the reference beam specified by $\rho$.
 
@@ -460,7 +508,7 @@ Two files for each step written out - one for the field mesh, and one for the ma
 
 Named {\bf \textit{basename}\_aperp\_\textit{stepnum}.h5}, where {\bf stepnum} is the integration step number the data was written out at. The file has internal hdf5 structure:
 
-\begin{lstlisting}[language=python]
+\begin{lstlisting}[language=python, caption=Structure of HDF5 field output file produced by Puffin]
 / (RootGroup) 
 /aperp (Array(2, nz2, ny, nx)) 
 /globalLimits (Group) 
@@ -881,6 +929,11 @@ Below is an exhaustive list of parameters, for each input file type. Some option
 
 \subsection{Main Input File}
 
+%\begin{lstlisting}[language=fortran]
+%sRho
+%\end{lstlisting}
+
+
 {\bf sRho}
 
 $\rho$, the FEL parameter. This specifies the scaling of the system. It does {\bf not} have to be strictly correct - it only descibes the scaling. The simulation can be performed, and the system may be scaled back to SI units, and the result should be correct. If the supplied $\rho$ is correct, however (meaning, it has been calculated from the beam and undulator parameters input), then the scaled notation becomes physically relevant. For an ideal, 1D system, the system should saturate at intensity $|A|^2 \approx 1$, and the system should be firmly in the high or exponential gain regime at $\bar{z} \approx 2-3$. This allows one to quickly see how efficiently the system is lasing w.r.t its ideal case. [$0.01$]
@@ -1058,6 +1111,116 @@ Parallel tuning parameters, controlling the buffer length needed by each MPI pro
 \subsection{Beam Input File}
 
 As noted in section \ref{beamfls}, the electron beam file can take 3 different forms.
+
+\newpage
+
+\subsection{Radiation Seed Input File}
+
+The seed file can be in 2 forms - one describing a homogeneous seed of Gaussian or flat top profiles in each of the 3 spatial directions, or a list of hdf5 files containing the values of the $x$ and $y$ fields at the nodes of the radiation mesh.
+
+As with the beam file, the seed file contains 2 namelists - one specifying which of the 2 input methods is being used and the number of seeds, and the other containing the specification for the selected method.
+
+
+\newpage
+
+\subsection{Lattice File}
+
+The main input file allows one to descibe a single undulator. The lattice file instead allows one to construct a more sophisticated layout for the FEL beam line, incuding multiple undulator modules, focussing quadrupoles, drift sections, simple beam modulator sections and chicanes. If the lattice file is given, the single undulator in the main input file is ignored.
+
+An example of a lattice file is given below. Each lattice element is described by a single line of the lattice file. For a line to be read as a lattice element, it must begin with a two letter (all caps) identifier corresponding to a lattice element. Any line not beginning with a legal identifier is ignored. 
+
+\lstset{style=mystyle}
+\begin{lstlisting}[language=fortran, caption=Example lattice file.]
+!Module file for Puffin
+!CLARA lattice v3 - reduced for example
+!This is for using undulator ends to give
+!25 'active' undulator periods.
+!The drift is calculated to give a strict 1.25m
+!distance between quads
+!A small (currently dispersionless) phase shifter is used to knock the beam
+!back to the correct phase after the drift.
+
+QU -4.78 4.78
+
+UN  'planepole'  29   1.0   0.0   30   1.0   1.0   0.0    0.0
+DR 16.4545455
+CH  0.0  0.966  0.0 
+QU 2.39 -2.39
+
+UN  'planepole'  29   1.0   0.0   30   1.0   1.0   0.0    0.0
+DR 16.4545455
+CH  0.0  0.966  0.0 
+QU -2.39 2.39
+
+UN  'planepole'  29   1.0   0.0   30   1.0   1.0   0.0    0.0
+DR 16.4545455
+CH  0.0  0.966  0.0 
+QU 2.39 -2.39
+
+UN  'planepole'  29   1.0   0.0   30   1.0   1.0   0.0    0.0
+DR 16.4545455
+CH  0.0  0.966  0.0 
+QU -2.39 2.39
+
+UN  'planepole'  29   1.0   0.0   30   1.0   1.0   0.0    0.0
+DR 16.4545455
+CH  0.0  0.966  0.0 
+QU 2.39 -2.39
+
+\end{lstlisting}
+
+Each identifier is then followed by a series of parameters to specify the element's variables. For the undulator element:
+
+\begin{lstlisting}[language=fortran, caption=Undulator identifier and specification]
+UN  'planepole'  29   1.0   0.0   30   1.0   1.0   0.0    0.0
+! The parameters following the identifier are: 
+zundtype, nw, mf, taper, nperlam, ux_arr, uy_arr, kbnx_arr, kbny_arr
+!
+! zundtype is a string describing the undulator type. Choose from 'helical', 'planepole', 'curved', or '' (blank string)
+!
+! nw is an integer giving the number of periods in this undulator
+!
+! alpha is a float giving the initial undulator tuning for this module aw/aw0, 
+!
+! taper is the undulator magnetic field taper d/dz of alpha (float)
+!
+! nperlam is an integer specifying the number of integration steps per undulator period to be used in this undulator
+!
+! ux and uy - relative magnetic field strengths in x and y, respectively (float)
+!
+! kbnx_arr and kbny_arr - betatron wavenumber (k_beta = 2pi / lambda_beta) 
+! of constant 'strong' focusing channel applied over undulator (float)
+\end{lstlisting}
+
+Focusing quads are modelled as a simple point transform, see section \ref{latt-file}. 
+
+\begin{lstlisting}[language=fortran, caption=Quadrupole identifier and specification]
+QU 2.39 -2.39
+! Parameters being \bar{F}_x and \bar{F}_y, which are F_x / lg and Fy / lg, respectively. (F_x being -1/R21 of
+! the quad transport matrix, and F_y being -1/R43).
+
+\end{lstlisting}
+
+
+
+%! zundtype_arr, nw, mf, tapers, nperlam, ux_arr, uy_arr, kbnx_arr, kbny_arr
+%!
+%! ...being...
+%!
+%! undulator type, number of periods (integer), initial tuning alpha = aw/aw0, 
+%! taper d/dz alpha, number of integration steps per undulator period (integer), 
+%! ux and uy - relative magnetic field strengths in x and y, respectively
+%! kbnx_arr and kbny_arr - betatron wavenumber (k_beta = 2pi / lambda_beta) 
+%! of constant 'strong' focusing channel applied over undulator
+
+\newpage
+
+\subsection{Write File}
+
+The seed file can be in 2 forms - one describing a homogeneous seed of Gaussian or flat top profiles in each of the 3 spatial directions, or a list of hdf5 files containing the values of the $x$ and $y$ fields at the nodes of the radiation mesh.
+
+As with the beam file, the seed file contains 2 namelists - one specifying which of the 2 input methods is being used and the number of seeds, and the other containing the specification for the selected method.
+
 
 
 \newpage
