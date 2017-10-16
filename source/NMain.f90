@@ -1,17 +1,23 @@
+! ###############################################
 ! Copyright 2012-2017, University of Strathclyde
 ! Authors: Lawrence T. Campbell
 ! License: BSD-3-Clause
+! ###############################################
+
+!!!!!!!!!!!!!!!!!!! Puffin Version 1.9.0 !!!!!!!!!!!!!!!!!!!
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Main top-level Puffin program.
+!> Main top-level Puffin program. Calls setup routines, then loops around
+!> undulator lattice elements, propagating the field and electron beam through
+!> each.
+!> @param sZ Propagation distance in z through the undulator.
+!> @param qOKL Error flag
 
 program main
-
-!use FFTW_Constants
 
 use transforms
 use sddsPuffin
@@ -21,44 +27,8 @@ use undulator
 use initDataType
 use Globals
 
-!!!!!!!!!!!!!!!!!!! Puffin Version 1.6.0 !!!!!!!!!!!!!!!!!!!
-!
-! A program for solving an unaveraged 3D FEL system. This
-! parallel MPI code requires the MPI transforms in FFTW v2.5.1.
-! The system of equations and numerical solution is presented
-! in:
-!
-! LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
-!
-! Written by Lawrence Campbell, Cynthia Nam, and Dr. Pamela Johnston.
-! University of Strathclyde, Glasgow
-!
-! Contact: lawrence.campbell@strath.ac.uk
-!
-!                       ARGUMENTS
-!
-!
-!   sA                    Array containing the values of the
-!                         real and imaginary parts of the
-!                         scaled radiation field at the
-!                         radiation field nodes. The radiation
-!                         field nodes are arranged in a 3D grid
-!                         in x, y and z2. The field values at
-!                         each node are assigned to this 1D
-!                         array in order of x, y and z2 (see
-!                         documentation). For Nn nodes, sA(1:Nn)
-!                         contains the real radiation field
-!                         values and sA(Nn+1:2*Nn) contains
-!                         the imaginary field values.
-!
-!   sZ                    Propagation distance in z through
-!                         the undulator.
-!
-!   qOKL                  Error flag.
-
 implicit none
 
-!real(kind=wp), allocatable  :: sA(:)
 real(kind=wp)    :: sZ, szl
 integer(kind=ip) :: iL, iLst
 
