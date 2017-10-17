@@ -791,6 +791,8 @@ contains
 
 !      print*, tProcInfo_G%rank, ' set up with bounds of ', fz2, ez2, bz2! , &
 
+      call pupd8(ac_rfield, ac_ifield)
+
       qPArrOK_G = .true.
 !      'with a buffer length of ', fbuffLen, 'and a total length of ', tllen
       !print*, tProcInfo_G%rank, ' and size of sA (over 2) is ', size(sA) / 2
@@ -1932,8 +1934,79 @@ contains
     end subroutine upd8da
 
 
+!  ###################################################
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Update the periodic boundary buffer for the periodic case
+
+    subroutine pupd8(ar, ai)
+      
+      real(kind=wp), intent(inout) :: ar(:), ai(:)
+
+      integer :: req, error
+      integer(kind=ip) :: si, sst, sse
+      integer statr(MPI_STATUS_SIZE)
+      integer sendstat(MPI_STATUS_SIZE)
+
+      if (FieldMesh == iPeriodic) then
+
+        if (qUnique) then
+
+          si = ntrndsi_G * (bz2PB + 1_ip)
+          sst = ((tllen - (bz2PB + 1_ip) ) * ntrndsi_G) + 1_ip
+          sse = tllen * ntrndsi_G
+          
+          if (tProcInfo_G%rank == 0_ip) then
+       
+            call mpi_issend(ar(1:si), si, mpi_double_precision, &
+                            tProcInfo_G%size-1_ip, 0, &
+                            tProcInfo_G%comm, req, error)
+
+          end if
 
 
+
+          if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
+
+            call mpi_recv( ar(sst:sse), si, mpi_double_precision, &
+                     0, 0, tProcInfo_G%comm, statr, error )
+       
+          end if
+
+
+          if (tProcInfo_G%rank == 0_ip) then
+
+            call mpi_wait( req,sendstat,error )
+            call mpi_issend(ai(1:si), si, mpi_double_precision, &
+                            tProcInfo_G%size-1_ip, 0, &
+                            tProcInfo_G%comm, req, error)
+
+          end if
+
+
+          if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
+
+            call mpi_recv( ai(sst:sse), si, mpi_double_precision, &
+                     0, 0, tProcInfo_G%comm, statr, error )
+
+          end if
+
+
+          if (tProcInfo_G%rank == 0_ip) then
+
+            call mpi_wait( req,sendstat,error )
+
+          end if
+          
+        end if
+        
+      end if
+  
+    end subroutine pupd8
 
 !  ###################################################
 

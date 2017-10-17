@@ -371,6 +371,10 @@ MODULE Setup
                             sA0_Im,&
                             qOKL)
 
+!  send init'd seed field to periodic buffer
+
+    call pupd8(ac_rfield, ac_ifield)
+
   else if (iFieldSeedType_G==iReadH5Field_G) then
 
     call readH5FieldfileSingleDump(field_file(1), sFiltFrac)
