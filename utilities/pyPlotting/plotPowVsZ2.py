@@ -48,7 +48,7 @@ def plotPowVsZ2(h5fname, cfr=None, dfr=None, gav = 3):
     plt.plot(saxis, pows)
     plt.xlabel(r'$ct-z (\mu m)$')
     plt.ylabel(axLab)
-    plt.xlim(200,  210);
+#    plt.xlim(200,  210);
 
     nameparts = h5fname.split('_')
     basename = nameparts[0]
@@ -78,5 +78,3 @@ if __name__ == '__main__':
 # hold on;
 # plot(xaxis,phasex,'r');
 # hold off;
-
-
