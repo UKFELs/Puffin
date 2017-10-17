@@ -933,6 +933,8 @@ Below is an exhaustive list of parameters, for each input file type. Some option
 %sRho
 %\end{lstlisting}
 
+All parameters in the main input file are in a single namelist, called {\bf mdata}. They are grouped together below for organisational purposes only.
+
 \subsubsection{Scaling Parameters}
 
 These parameters define the scaling frame used by the Puffin algorithm. The reference wavelength and energies referred to in other parameter descriptions are defined by or derived from these parameters.
@@ -963,6 +965,14 @@ $u_x$ and $u_y$ - the relative peak magnetic field of the undulator in each tran
 
 
 \subsubsection{Radiation Mesh}
+
+{\bf meshType}
+
+Integer, selecting the mesh type to be used. $= 0$ for fully temporal mesh, $=1$ for periodic mode. [0]
+
+{\bf sperwaves}
+
+Length of the periodic mesh, expressed as the number of reference resonant wavelengths. If {\bf meshType} $=1$ (periodic), and this is defined, then it will be used rather than the more direct {\bf sFModelLengthZ2}. If {\bf meshType} $=1$ then this is ignored. [- (not used by default)] 
 
 {\bf nodesPerLambdar}
 
@@ -1036,8 +1046,11 @@ Steps at which to write the integrated data at. This sets the periodicity of the
 
 {\bf qInitWrLat}
 
-Logical. If true, there will be a full particle and field mesh dump at the end of each undulator module in the lattice. [.false.]
+Logical. If true, there will be a full particle and field mesh dump at the end of each undulator module in the lattice, and the writing counter will be reset. [.false.]
 
+{\bf qDumpEnd}
+
+Logical. If true, write a full data dump at the end of the simulation, even if it does not occur at an integer number of {\bf iWriteNthSteps}. [.true.]
 
 
 
@@ -1074,7 +1087,7 @@ Switches modelling of diffraction of the radiation field on or off. If ={\bf .tr
 
 {\bf qFMesh\_G}
 
-Whether fixing the field mesh in the transverse plane to contain the beam within the inner {\bf iRedNodesX} $\times$ {\bf iRedNodesY} nodes. [.true.]
+Whether fixing the field mesh in the transverse plane to contain the beam within the inner {\bf iRedNodesX} $\times$ {\bf iRedNodesY} nodes. Valid when using a `simple' beam only - otherwise it is ignored. [.true.]
 
 {\bf qUndEnds}
 
@@ -1132,7 +1145,43 @@ Parallel tuning parameters, controlling the buffer length needed by each MPI pro
 
 \subsection{Beam Input File}
 
-As noted in section \ref{beamfls}, the electron beam file can take 3 different forms.
+As noted in section \ref{beamfls}, the electron beam can be specified in 3 different forms - either a `simple', `dist' or `particle'.
+
+The beam file must contain $2$ namelists. One to choose the method, and the other to choose the options particular to that method. To choose which method to use, the beam file first of all contains a namelist titled {\bf nblist} with the following parameters.
+
+\subsubsection{Namelist: nblist}
+
+{\bf dtype}
+
+String, specifying type of beam input. Can be either {\it simple}, {\it dist} or {\it h5} (for particle input type)
+
+{\bf nbeams}
+
+Integer. The number of electron beams to set up. For a simple beam, multiple beam can be setup. For the dist type input, multiple electron beam dist files can be used. For the particle input, this parameter is ignored.
+
+If {\bf dtype} $=$ {\it simple}, then a namelist called {\bf blist} must be used, if {\bf dtype} $=$ {\it dist} the namelist {\bf bdlist} must be entered, and if {\bf dtype} $=$ {\it h5} the namelist {\bf bh5list} must be entered.
+
+\subsubsection{Namelist: blist}
+
+For the simple beam file, one can set up a homogeneous beam in every dimension. Some additional manipulation can be made to this simple beam with the supplied options - Twiss parameters can be used, or a simple beam energy modulation. The beam is assumed to have either a Gaussian or flat-top distribution profile in each dimension. The beam is therefore specified by giving the widths and so forth of the beam.
+
+{\bf sSigmaE}
+
+
+
+
+
+% simple params:
+%
+%sSigmaE, sLenE, iNumElectrons, &
+%                   sEmit_n, sQe, bcenter,  gammaf, &
+%                   chirp, mag, fr, qRndEj_G, sSigEj_G, &
+%                   qMatched_A, qEquiXY, nseqparts, qFixCharge, &
+%                   alphax, alphay, emitx, emity, TrLdMeth, fillFact
+
+
+
+
 
 \newpage
 
