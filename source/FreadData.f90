@@ -235,7 +235,7 @@ subroutine read_in(zfilename, &
 ! Define local variables
 
   integer(kind=ip), intent(out) :: stepsPerPeriod, nodesperlambda, nperiods ! Steps per lambda_w, nodes per lambda_r
-  real(kind=wp) :: dz2, zbar
+  real(kind=wp) :: dz2, zbar, sPerWaves
   integer(kind=ip) :: nwaves, iRedNodesX, iRedNodesY
 
   INTEGER::ios
@@ -258,6 +258,7 @@ subroutine read_in(zfilename, &
 
   real(kind=wp) :: sRedistLen
   integer(kind=ip) :: iRedistStp
+  integer(kind=ip) :: meshType
 
 
 
@@ -289,7 +290,8 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  iWriteIntNthSteps, &
                  qFMesh_G, sKBetaXSF, sKBetaYSF, sRedistLen, &
                  iRedistStp, qscaled, nspinDX, nspinDY, qInitWrLat, qDumpEnd, &
-                 wr_file, qMeasure, DFact, iDumpNthSteps, speout
+                 wr_file, qMeasure, DFact, iDumpNthSteps, speout, meshType, &
+                 sPerWaves
 
 
 ! Begin subroutine:
@@ -342,6 +344,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   sFModelLengthX         = 1.0
   sFModelLengthY         = 1.0
   sFModelLengthZ2        = 4.0
+  sPerWaves              = -1.0_wp
   iRedNodesX             = -1
   iRedNodesY             = -1
   nspinDX                = -1
@@ -366,6 +369,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   zDataFileName          = 'DataFile.dat'
   iWriteNthSteps         = 30
   iWriteIntNthSteps      = 30
+  meshType = 0_ip
   sKBetaXSF = -0.1_wp
   sKBetaYSF = -0.1_wp
 
@@ -463,7 +467,10 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
 
   zBFile_G = beam_file
   zSFile_G = seed_file
+  
+  sPerWaves_G = sPerWaves
 
+  fieldMesh = meshType
 
 
   if (DFact /= -1000.0_wp) then

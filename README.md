@@ -28,7 +28,7 @@ similar to a Particle-In-Cell (PIC) code methodology.
 In addition, some accelerator components are included for simulation of the
 'realistic' undulator line, and together with the lack of restrictions,
 means it may model:
-  - The full, broad bandwidth frequency spectrum, limited only by the Niquist frequency of the mesh
+  - The full, broad bandwidth frequency spectrum, limited only by the Nyquist frequency of the mesh
   - Full electron beam transport
   - Transport of large energy spread beams through the undulator, and the radiation emitted from these beams
   - Tapered undulators
@@ -42,6 +42,10 @@ of the backwards wave from the e-beam.
 
 
 ## Release Notes
+
+1.9.0
+  - Added periodic mesh mode
+  - 1D runs now read in the transverse beam radii to give proper SI power
 
 1.8.0
   - Can now input with the Puffin HDF5 output format

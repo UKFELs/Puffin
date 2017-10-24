@@ -22,7 +22,6 @@ MODULE Setup
 !  USE sddsPuffin
   USE lattice
   USE Globals
-!  USE resume
   USE electronInit
   USE Read_data
   USE checks
@@ -91,6 +90,8 @@ MODULE Setup
   IF (.NOT. qOKL) GOTO 1000
 
   zFileName_G = zFile
+
+  igwr = -1_ip
 
 !     Initialise Error log for this run
 
@@ -189,7 +190,7 @@ MODULE Setup
   call calcSamples(sFieldModelLength, iNodes, sLengthofElm, &
                    sStepSize, stepsPerPeriod, nSteps, &
                    nperiods, nodesperlambda, gamma_d, sLenEPulse, &
-                   iNumElectrons)
+                   iNumElectrons, qSimple)
 
 
 
@@ -370,6 +371,10 @@ MODULE Setup
                             sA0_Im,&
                             qOKL)
 
+!  send init'd seed field to periodic buffer
+
+    call pupd8(ac_rfield, ac_ifield)
+
   else if (iFieldSeedType_G==iReadH5Field_G) then
 
     call readH5FieldfileSingleDump(field_file(1), sFiltFrac)
@@ -399,10 +404,19 @@ MODULE Setup
 !    Define the rescaling parameter "ffact" for rescaling
 !    backwards transform data.
 
-  ffact = real(iNodes(iX_CG), kind=wp) * &
-          real(iNodes(iY_CG), kind=wp) * &
-          real(iNodes(iZ2_CG), kind=wp)
+  if (fieldMesh == iPeriodic) then
 
+    ffact = real(iNodes(iX_CG), kind=wp) * &
+            real(iNodes(iY_CG), kind=wp) * &
+            real(iNodes(iZ2_CG)-1_ip, kind=wp)
+
+  else
+
+    ffact = real(iNodes(iX_CG), kind=wp) * &
+            real(iNodes(iY_CG), kind=wp) * &
+            real(iNodes(iZ2_CG), kind=wp)
+
+  end if
 
 
 !  IF (qResume) THEN
