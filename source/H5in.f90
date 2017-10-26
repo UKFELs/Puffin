@@ -29,7 +29,7 @@ contains
     INTEGER(HID_T) :: dset_id       !< Dataset identifier
     INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
     INTEGER(HID_T) :: dtype         !< So we can check we're reading in doubles
-    INTEGER(HID_T) :: dclass         !< So we can check we're reading in doubles
+    INTEGER(kind=ip) :: dclass         !< So we can check we're reading in doubles
     INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
     INTEGER(HID_T) :: memspace     !< Dataspace identifier in file
     INTEGER(HID_T) :: attr_id       !< Attribute identifier
@@ -293,7 +293,7 @@ print*,"Now, you tell me if we had electrons"
     INTEGER(HID_T) :: dset_id       !< Dataset identifier
     INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
     INTEGER(HID_T) :: dtype         !< So we can check we're reading in doubles
-    INTEGER(HID_T) :: dclass         !< So we can check we're reading in doubles
+    INTEGER(kind=ip) :: dclass         !< So we can check we're reading in doubles
     INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
     INTEGER(HID_T) :: memspace     !< Dataspace identifier in file
     INTEGER(HID_T) :: attr_id       !< Attribute identifier
@@ -602,7 +602,7 @@ print*,"Now, you tell me if we had electrons"
     INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
     INTEGER(HID_T) :: plist_id      !< (parallel) Property list identifier
     INTEGER(HID_T) :: dtype         !< So we can check we're reading in doubles
-    INTEGER(HID_T) :: dclass         !< So we can check we're reading in doubles
+    INTEGER(kind=ip) :: dclass         !< So we can check we're reading in doubles
     INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
     INTEGER(HID_T) :: memspace     !< Dataspace identifier in file
     INTEGER(kind=ip) ::  rank       !< Field file Dataset rank
