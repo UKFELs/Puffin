@@ -93,11 +93,19 @@ def spectroT(h5fname, z2s=None, z2e=None, qScale = None):
     plt.plot(z2axis, xfs)
     plt.xlabel(xaxisl, fontsize=16)
     plt.ylabel(faxisl, fontsize=16)
+    plt.xlim(200e-6,  210e-6);
 
     plt.subplot(212, sharex=ax1)
-    freqs, time, Sxx = signal.spectrogram(xfs, sampleFreq)
-    freqs = freqs * freqScale
-    plt.pcolormesh(time, freqs, Sxx)
+#    specf = signal.get_window(('tukey',2.0),128)
+#    freqs, time, Sxx = signal.spectrogram(xfs, sampleFreq, nperseg=128, nfft=2048, \
+#     window=specf)
+    Sxx = signal.cwt(xfs, signal.ricker, np.arange(1,31))
+#    freqs = freqs * freqScale
+#    plt.pcolormesh(time, freqs, Sxx)
+    plt.pcolormesh(z2axis, np.arange(1,31), Sxx)
+    plt.xlim(0.0025,  0.0026);
+#    plt.ylim(0.8,  1.2);
+    cb = plt.colorbar()
 
 #    specP, freqs, time, image = specgram(xfs, \
 #    	NFFT=50, Fs=sampleFreq, noverlap=0)#, cmap=plt.cm.gist_heat)
@@ -113,7 +121,7 @@ def spectroT(h5fname, z2s=None, z2e=None, qScale = None):
     plt.tight_layout()
     # then either:
     #plt.imshow(specP,cmap='PRGn')
-    #plt.show()
+#    plt.show()
 
     # -or- just
 
@@ -122,7 +130,7 @@ def spectroT(h5fname, z2s=None, z2e=None, qScale = None):
     z = mdata.vars.z
     
     plt.savefig(basename + "-spectrogram-z-" + str(z) + ".png")
-    plt.show()
+#    plt.show()
 
 # see here for above - http://matplotlib.org/examples/pylab_examples/specgram_demo.html
 

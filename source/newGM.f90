@@ -414,9 +414,9 @@ CONTAINS
     END DO
   END DO
 
-    IF (icount==0) THEN
-       IF (tProcInfo_G%qROOT)  STOP "Error in GenMacros.f90, no macroparticles exist\!"
-    ENDIF
+!    IF (icount==0) THEN
+!       IF (tProcInfo_G%qROOT)  STOP "Error in GenMacros.f90, no macroparticles exist\!"
+!    ENDIF
 
 ! Calculate the scaled weighting (chi_bar) and weighting(chichi) of all macro particles
 
