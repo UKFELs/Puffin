@@ -580,7 +580,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
 !                     LOCAL ARGS
 
-  INTEGER(KIND=IP) :: b_ind, TrLdMeth
+  INTEGER(KIND=IP) :: b_ind, TrLdMeth, inmpsGam
   logical :: qFixCharge, qAMatch
   INTEGER::ios
   CHARACTER(96) :: dtype
@@ -597,10 +597,10 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
                    alphax, alphay, emitx, emity, TrLdMeth, fillFact
 
 
-  namelist /bdlist/ dist_f, nMPs4MASP_G
+  namelist /bdlist/ dist_f, nMPs4MASP_G, nseqparts, inmpsGam
   namelist /bh5list/ dist_f
 
-  qOK = .FALSE.
+  qOK = .false.
 
   qAMatch = .false.
 
@@ -756,10 +756,13 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
     iInputType_G = iReadMASP_G
     nMPs4MASP_G = 3455789_ip  ! default?
+    inmpsGam = 1_ip
 
     read(161,nml=bdlist)
 
     close(UNIT=161,STATUS='KEEP')
+
+    inmpsGam_G = inmpsGam
 
   else if (dtype == 'h5') then
     if (nbeams /= 1) then 

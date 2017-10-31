@@ -99,6 +99,8 @@ integer(kind=ipl), allocatable  :: procelectrons_G(:)
 integer(kind=ipl) :: iNumberElectrons_G
 integer(kind=ipl) :: iGloNumElectrons_G
 
+integer(kind=ip) :: inmpsGam_G
+
 real(kind=wp) :: npk_bar_G  ! peak electron number density
                             ! in the scaled xbar, ybar and z2bar
                             ! dimensions
