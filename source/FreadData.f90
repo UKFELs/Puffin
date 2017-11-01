@@ -718,6 +718,10 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 !
     allocate(dist_f(nbeams))
 
+    nseqparts = 1000_ip
+    inmpsGam = 1_ip
+
+
 
     read(161,nml=bdlist)
 
@@ -726,6 +730,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
     iNumElectrons = 1
     sLenE = 1
     sSigmaE = 1
+
+    inmpsGam_G = inmpsGam
 
 !    !!!!!!!!!!!!!!!!
 !    !!!!!!!!!!!!!!!!
