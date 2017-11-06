@@ -31,8 +31,8 @@ use paratype
 
 !    Shortcuts
 
-  real(kind=wp) :: kbeta, nc, nd, nb, ZOver2rho, &
-                   salphaSq, sInv2rho, fkb, econst, un
+  real(kind=wp) :: nc, nb, ZOver2rho, &
+                   salphaSq, sInv2rho, econst, un
   real(kind=wp), allocatable :: lis_GR(:,:)
   real(kind=wp) :: dV3, dx, dy, dz2
 

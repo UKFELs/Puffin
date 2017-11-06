@@ -375,7 +375,6 @@ real(kind=wp), intent(in) :: sz
   ZOver2rho   = sz * sInv2rho
   salphaSq    = (2.0_WP * sGammaR_G * sRho_G / sAw_G)**2
 
-  kbeta = sAw_G / (2.0_WP * sFocusFactor_G * sRho_G * sGammaR_G)
   un = sqrt(fx_G**2.0_WP + fy_G**2.0_WP)
 
 
@@ -387,15 +386,9 @@ real(kind=wp), intent(in) :: sz
 
   retim = nspinDX*nspinDY*nZ2_G
 
-
-  fkb= sFocusfactor_G * kbeta
-
   econst = sAw_G/(sRho_G*sqrt(2.0_WP*(fx_G**2.0_WP+fy_G**2.0_WP)))
 
   nc = 2.0_WP*saw_G**2/(fx_G**2.0_WP + fy_G**2.0_WP)
-
-  nd = sqrt((fx_G**2.0_WP+fy_G**2.0_WP)*(sEta_G))/(2.0_WP*sqrt(2.0_WP)* &
-                             fkb*sRho_G)
 
   nb = 2.0_WP * sRho_G / ((fx_G**2.0_WP+fy_G**2.0_WP)*sEta_G)
 
