@@ -74,7 +74,8 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
 
   call getHeaders(fname, dz2, nZ2G, sgx1D, sgy1D)
 
-  nGam = 29_IP  !!!  TEMP, SHOULD BE READ IN
+  nGam = inmpsGam_G
+
   if (qOneD_G) then
     nX = 1
     nY = 1
@@ -424,46 +425,70 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
   npk_num = 0
   ndens_num = 0
 
+  call init_random_seed()
+
   do k = 1, NMZ2
 
     !    arrbs = linspace( (k-1) * iNMPG + 1,  k * (iNMPG-1) + 1, iNMPG )    !  calarrayboundsfrom k, nx, ny, npx, npy, ngamma 
-
-    arrbs = (/ ( (k-1) * iNMPG + 1 + i,    i=0, (iNMPG-1) ) /)
 
     z2grid = (/ z2m(k) - ( dz2 / 2.0_WP) , z2m(k) + ( dz2 / 2.0_WP) /)
 
 ! what should the length of the grid in gamma be?
 ! since we have a different sigGam for each?.....
 
-    call genGrid(1_ip, intTypeG, iLinear_CG, gm(k), &         
-                 gsig(k), 6.0_WP*gsig(k), iNMPG, iNMPG, &
-                 ggrid, gint, .FALSE., &
-                 qOKL)
-
-
-
     if (qOneD_G) then
 
-      istart = iend + 1
-      iend = iStart + iNMPG - 1
+      if (iNMPG == 1_ip) then
 
-      call genMacrosNew(i_total_electrons  =   Ne(k), &
-                        q_noise            =   qnoise,  & 
-                        x_1_grid           =   z2grid,  &
-                        x_1_integral       =   z2int, & 
-                        p_3_grid           =   ggrid,  &
-                        p_3_integral       =   gint,  &
-                        s_number_macro     =   Nk(istart:iend),  &
-                        s_vol_element      =   Vk(istart:iend),  &
-                        max_av             =   ndens_num,   &
-                        x_1_coord          =   z2(istart:iend),  &
-                        p_3_vector         =   gamma(istart:iend) )
+        istart = iend + 1
+        iend = iStart
+
+        call genMacrosNew(i_total_electrons  =   Ne(k), &
+                          q_noise            =   qnoise,  & 
+                          x_1_grid           =   z2grid,  &
+                          x_1_integral       =   z2int, & 
+                          s_number_macro     =   Nk(istart:iend),  &
+                          s_vol_element      =   Vk(istart:iend),  &
+                          max_av             =   ndens_num,   &
+                          x_1_coord          =   z2(istart:iend))
+
+        gamma(k) = gm(k)
+        px(istart:iend) = 0    !  In 1D giving no deviation in px
+        py(istart:iend) = 0    !  or py
+        x(istart:iend)  = 0    ! ??    x = getXR(xm,xr)
+        y(istart:iend)  = 0  
+
+      else
+
+        istart = iend + 1
+        iend = iStart + iNMPG - 1
+
+        arrbs = (/ ( (k-1) * iNMPG + 1 + i,    i=0, (iNMPG-1) ) /)
+
+        call genGrid(1_ip, intTypeG, iLinear_CG, gm(k), &         
+                     gsig(k), 6.0_WP*gsig(k), iNMPG, iNMPG, &
+                     ggrid, gint, .FALSE., &
+                     qOKL) 
+
+        call genMacrosNew(i_total_electrons  =   Ne(k), &
+                          q_noise            =   qnoise,  & 
+                          x_1_grid           =   z2grid,  &
+                          x_1_integral       =   z2int, & 
+                          p_3_grid           =   ggrid,  &
+                          p_3_integral       =   gint,  &
+                          s_number_macro     =   Nk(istart:iend),  &
+                          s_vol_element      =   Vk(istart:iend),  &
+                          max_av             =   ndens_num,   &
+                          x_1_coord          =   z2(istart:iend),  &
+                          p_3_vector         =   gamma(istart:iend) )
 
 
-      px(istart:iend) = 0    !  In 1D giving no deviation in px
-      py(istart:iend) = 0    !  or py
-      x(istart:iend)  = 0    ! ??    x = getXR(xm,xr)
-      y(istart:iend)  = 0  
+        px(istart:iend) = 0    !  In 1D giving no deviation in px
+        py(istart:iend) = 0    !  or py
+        x(istart:iend)  = 0    ! ??    x = getXR(xm,xr)
+        y(istart:iend)  = 0  
+
+      end if
 
 !      Vk(iStart:iEnd) = dz2
 
