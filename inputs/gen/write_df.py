@@ -109,7 +109,7 @@ steps_per_per = 30        # should be roughly 4-5* elms_per_wave
 # Undulator and beam parameters
 # Below similar to CLARA parameters
 
-Er = 250e6            # Beam energy (reference)
+Er = 240e6            # Beam energy (reference)
 gamma = Er / ( (m_e * pow(c,2) / q_e) ) # Rel. factor
 aw = 1.01               # PEAK wiggler parameter
 lambda_w = 0.0275        # Undulator period
@@ -314,7 +314,7 @@ chirpz2 = Lc * chirp;    # Energy chirp in z2
 
 #beam = [bm() for ib in range(nbeams)] # list of electron beams
 
-seeds = [sd() for ic in range(nseeds)] # list of seeds
+#seeds = [sd() for ic in range(nseeds)] # list of seeds
 
 # Assign electron pulse data to beams
 
@@ -603,7 +603,8 @@ f.write(' qDiffraction           = ' + torf(qDiffraction) + '\n')
 f.write(' qUndEnds               = ' + torf(qUndEnds) + '\n')
 f.write(' qFMesh_G               = ' + torf(qFMesh) + '\n')
 f.write(' beam_file              = ' +  '\'' + beamfile + '\'' + '\n')
-#f.write(' seed_file              = ' + '\'' + seedfile + '\'' + '\n')
+if (seedfile != ''):
+  f.write(' seed_file              = ' + '\'' + seedfile + '\'' + '\n')
 #f.write(' lattFile               = ' + '\'' + lattFile + '\'' + '\n')
 f.write(' wr_file                = ' + '\'' + wrFile + '\'' + '\n')
 
@@ -670,29 +671,20 @@ print 'Beam file written to: ' + beamfile
 #
 # seed file
 
-# f = open(seedfile, 'w')
-# 
-# 
-# f.write('PUFFIN SEED FILE\n')
-# f.write('\n')
-# f.write('Describes seed fields for input into puffin. Multiple seeds with\n')
-# f.write('different frequencies, profiles and positions can be used. Please \n')
-# f.write('refer to POP-REF for an explanation of the scaled variables used, \n')
-# f.write('such as z2.\n')
-# f.write('\n')
-# f.write('{:d}'.format(int(nseeds)) + '         # of beams\n')
-# f.write('\n')
-# f.write('READ IN SEED CHARACTERISTICS\n')
-# 
-# # Write seed data
-# 
-# for ic in range(nseeds):
-#     seeds[ic].wrseed(f,ic+1)
+if (seedfile != ''):
+
+  seed = sd()
+  f = open(seedfile, 'w')
+
+# Write seed data
+
+  for ic in range(nseeds):
+      seed.wrseed(f,ic+1)
 
 
-# f.close()
+  f.close()
 
-# print 'Radiation seed file written to: ' + seedfile
+  print 'Radiation seed file written to: ' + seedfile
 
 
 

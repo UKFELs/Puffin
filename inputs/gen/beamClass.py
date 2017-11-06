@@ -7,7 +7,8 @@ import numpy as np
 import fBoolean
 
 class bm:
-    """This class defines the electron beam beam data."""
+    """This class defines the electron beam data input file
+    creation for Puffin."""
     nbeams = 1
     bftype = 'simple'
     sig = np.array([1., 1., 1., 1., 1., 1.])
@@ -48,7 +49,7 @@ class bm:
         f.write('!\n')
         f.write('! namelist BLIST - SIMPLE BEAM PARAMETERS\n')
         f.write('!========================================================================\n')
-        f.write('! sSigmaE - gaussian std dev in each dimension - x, y, z2, px, py, gamma, then for additional beams\n')
+        f.write('! sSigmaE - gaussian std dev in each dimension - x, y, z2, px, py, gamma.\n')
         f.write('! sLenE   - Total length of beam modelled in each dimension - x, y, z2, px, py, gamma...\n')
         f.write('! bcenter - Center of beam in z2\n')
         f.write('! iNumElectrons  -  Number of macroparticles in each dimension used to model the beam \n')
