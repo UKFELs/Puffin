@@ -2,7 +2,7 @@
 # Authors: Lawrence T. Campbell
 # License: BSD-3-Clause
 #
-# Python script containing the code to write the 3 input files for 
+# Python script containing the code to write the input files for 
 # Puffin.
 #
 # The three files are:
@@ -22,33 +22,12 @@
 #
 # In addition, for more fun, a lattice file may be constructed to 
 # describe a series of undulator modules seperated by chicane/slippage 
-# sections. The name of this lattice file should be entered in the 
-# 'lattfile' variable in the input file. Each line of the lattice file 
-# contains 4 numbers describing a complete undulator-chicane pair, 
-# in the following format:
+# sections and/or quads. The name of this lattice file should be entered
+# in the 'lattfile' variable in the input file. 
 #
-# Nw   Nc  aw_fact   stepsize
 #
-# where 
+#     DESCRIBE UNDULATOR LATTICE FILE
 #
-# Nw            is the number of undulator periods
-#
-# Nc            is the length of the chicane slippage section
-#               expressed as the number of resonant wavelengths
-#
-# aw_f          is the undulator parameter expressed as a fraction
-#               of the aw in the input file. So if aw_0 is the aw
-#               given in the input file, then the undulator 
-#               parameter for this module is aw = aw_f * aw_0.
-#
-# stepsize      is the stepsize used for the numerical integration
-#               of this undulator section. The mesh describing the
-#               radiation field does not alter as the undulator
-#               tuning changes, but a larger aw wil cause the beam
-#               to propagate more quickly in the radiation frame
-#               i.e. the beam slips more quickly behind the radiation
-#               field. This option will be necessary to stop the beam
-#               skipping over nodes, see e.g. the Courant number.
 #
 # Also note that if aw is decreased in an undulator module you should
 # ensure the radiation mesh is fine enough to model the higher frequency
@@ -67,6 +46,19 @@
 # - Lawrence Campbell
 #   University of Strathclyde
 #   July 2013
+
+
+# simple setup
+  # define beam and undulator - frame is assumed the same as the beam and undulator
+  # scale parameters
+
+# - OR - 
+
+# advanced setup
+  # define frame
+  # define beam in frame
+    # use same beam as reference beam?
+  # scale parameters
 
 import math
 import beamClass
@@ -109,7 +101,7 @@ steps_per_per = 30        # should be roughly 4-5* elms_per_wave
 # Undulator and beam parameters
 # Below similar to CLARA parameters
 
-Er = 240e6            # Beam energy (reference)
+Er = 240e6            # Beam energy (reference particle)
 gamma = Er / ( (m_e * pow(c,2) / q_e) ) # Rel. factor
 aw = 1.01               # PEAK wiggler parameter
 lambda_w = 0.0275        # Undulator period
