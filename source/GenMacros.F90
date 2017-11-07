@@ -6,16 +6,9 @@ MODULE MacrosGen
 
 USE paratype
 USE ParallelInfoType
-!USE sddsPuffin
 USE randomGauss
 USE ParallelSetUp
 USE Globals
-!USE error_fn
-!USE Functions
-!USE particleFunctions
-!USE typesAndConstants
-!USE FileType
-!USE IO
 
 IMPLICIT NONE
 
@@ -436,8 +429,12 @@ py_shift = 0
 
 !     Sum to global to get max across all processes
 
+#ifdef USEMPI
   CALL MPI_ALLREDUCE(local_max_av, max_av, 1, MPI_DOUBLE_PRECISION, &
        MPI_MAX, MPI_COMM_WORLD, error)
+#else
+  max_av = local_max_av
+#endif
 
     DEALLOCATE(s_mean_number_macro,s_spatial_macro)
     DEALLOCATE(x_1_position,x_1_del,x_1_random)
@@ -514,8 +511,10 @@ END SUBROUTINE getChi
 
   integer :: error
 
+#ifdef USEMPI
   CALL MPI_ALLREDUCE(npk_numl, npk_num, 1, MPI_DOUBLE_PRECISION, &
        MPI_MAX, MPI_COMM_WORLD, error)
+#endif
 
   end subroutine getGlobalnpk
 

@@ -405,7 +405,9 @@ module Setup
 
     ALLOCATE(frecvs(tProcInfo_G%size),fdispls(tProcInfo_G%size))
 
+#ifdef USEMPI
     CALL MPI_BARRIER(tProcInfo_G%comm,error)
+#endif
 
     CALL GetKValues(frecvs,fdispls,qOKL)
     IF (.NOT. qOKL) GOTO 1000
@@ -422,8 +424,9 @@ module Setup
 !    If not using separate files for each step then open
 !    file - In EArrayFunctions.f90 line 449
 
+#ifdef USEMPI
   CALL MPI_BARRIER(tProcInfo_G%comm,error)
-
+#endif
 
 !  call writeIM(sA, Ar_local, sZ, &
 !               zDataFileName, iStep, iWriteNthSteps, &
@@ -473,9 +476,11 @@ module Setup
 !       iStep,sZ,sA,sV,.TRUE.,qFormattedFiles,qOKL)
 !   IF (.NOT. qOKL) GOTO 1000
 
+#ifdef USEMPI
   CALL MPI_BARRIER(tProcInfo_G%comm,error)
+#endif
 
-  If(tProcInfo_G%qROOT) PRINT *, 'Initial data written'
+  If(tProcInfo_G%qROOT) print *, 'Initial data written'
 
 
 !  if (qSwitches(iDump_CG)) call DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
