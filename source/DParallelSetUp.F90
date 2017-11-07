@@ -15,258 +15,267 @@
 
 Module ParallelSetUp
 
-use paratype
-use ParallelInfoType
-use IO
+  use paratype
+  use ParallelInfoType
+  use IO
 ! use mpi
 
 
-IMPLICIT NONE
+implicit none
 
-INCLUDE 'mpif.h'
+#ifdef USEMPI
+  include 'mpif.h'
+#endif
 
-INTEGER :: MPI_INT_HIGH
+  integer :: MPI_INT_HIGH
 
-CONTAINS
+  contains
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Initialize and retrieve info on the MPI processes
+!> @param[in] tProcInfo Fortran type to hold MPI info
+!> @param[out] qOK Error flag
 
-SUBROUTINE  InitializeProcessors(tProcInfo, &
+  subroutine  InitializeProcessors(tProcInfo, &
 				       qOk)
 
-  IMPLICIT NONE
+    implicit none
 
-! Initialize and retrieve info on the MPI processes
-!
-!               ARGUMENTS
-!
-! tProcInfo    OUTPUT    Custom type to hold MPI info
-! q0k          OUTPUT    Error flag for Puffin
+    type(cParallelInfoType), intent(out)	   :: tProcInfo
+    logical,                 intent(out)         :: qOk
 
-  TYPE(cParallelInfoType), INTENT(OUT)	   :: tProcInfo
-  LOGICAL,                 INTENT(OUT)         :: qOk
+    integer(kind=ip) :: error, provided
 
-!              Local Vars
-!
-! error - error flag for MPI
+!                 Begin
 
-  INTEGER(KIND=IP)    :: error, provided
+    qOK = .false.
 
-
-!     Begin
-
-  qOK = .FALSE.
+#ifdef USEMPI
 
 !     Initialize MPI
 
-  CALL MPI_INIT_THREAD(MPI_THREAD_FUNNELED, provided, error)
+    call MPI_INIT_THREAD(MPI_THREAD_FUNNELED, provided, error)
 
 !     Define comm as the global communicator.
 
-  tProcInfo%comm = MPI_COMM_WORLD
+    tProcInfo%comm = MPI_COMM_WORLD
 
 !     Get local data on processor numbers. Rank is local number in the
 !     global communicator, size is the total number of processors
 
-  CALL MPI_COMM_RANK(tProcInfo%comm, tProcInfo%rank, error)
+    call MPI_COMM_RANK(tProcInfo%comm, tProcInfo%rank, error)
 
-  CALL MPI_COMM_SIZE(tProcInfo%comm, tProcInfo%size, error)
+    call MPI_COMM_SIZE(tProcInfo%comm, tProcInfo%size, error)
 
 !     Define root processor as rank 0.
 
-  IF (tProcInfo%rank==0) THEN
-    tProcInfo%qRoot = .TRUE.
-  END IF
+    if (tProcInfo%rank==0) then
+      tProcInfo%qRoot = .true.
+    end if
 
 !     Define MPI type for high precision integers
 
 !  CALL MPI_TYPE_CREATE_F90_INTEGER(14,MPI_INT_HIGH,error)
-  MPI_INT_HIGH = MPI_INTEGER
+    MPI_INT_HIGH = MPI_INTEGER
 
+#else
+
+! setup dummy MPI info
+
+    tProcInfo%qRoot = .true.
+    tProcInfo%size = 1_ip
+    tProcInfo%rank = 0_ip
+
+#endif
 
 !     Set error flag and exit
 
-  qOK = .TRUE.
-  GoTo 2000
+    qOK = .true.
+    goto 2000
 
 ! Error Handler
 
-1000 CALL Error_log('Error in ParallelSetUp:DefineParallelLibrary', &
+1000 call Error_log('Error in ParallelSetUp:DefineParallelLibrary', &
                     tErrorLog_G)
 
-  PRINT*,'Error in ParallelSetUp:DefineParallelLibrary'
+    print*,'Error in ParallelSetUp:DefineParallelLibrary'
 
-2000 CONTINUE
+2000 continue
 
-END SUBROUTINE InitializeProcessors
+  end subroutine InitializeProcessors
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Retrieve time from MPI or serial command
+!> @param[inout] in_time System time
 
-SUBROUTINE Get_time(in_time)
+  subroutine Get_time(in_time)
 
-  IMPLICIT NONE
+    implicit none
 
-  REAL(KIND=WP)	::	in_time
+    real(kind=wp)	::	in_time
 
-  INTEGER(KIND=IP)	::	error
+    integer(KIND=IP)	::	error
 
-  in_time = MPI_Wtime()
+#ifdef USEMPI
 
-END SUBROUTINE Get_time
+    in_time = MPI_Wtime()
 
-!------------------------------------------------
+#else
 
-      SUBROUTINE  UnDefineParallelLibrary(qOK)
-!
-!********************************************************************
-! Define the parallel library grid
-! Set up parallel processors
-!********************************************************************
-!
-! qOK                     - OUTPUT   - Error flag
-!
-!********************************************************************
-!
-      IMPLICIT NONE
-!
-      LOGICAL,                 INTENT(OUT)         :: qOK
+    call cpu_time(in_time)
 
+#endif
 
+  end subroutine Get_time
 
-      INTEGER(KIND=IP)		:: error
-!
-!--------------------------------------------------------------------------------
-! Set error flag to false
-!--------------------------------------------------------------------------------
-!
-      qOK = .FALSE.
-!
-!--------------------------------------------------------------------------------
-! UnInitialise library
-!--------------------------------------------------------------------------------
-!
-      call MPI_FINALIZE(error)
-!
-!--------------------------------------------------------------------------------
-!  Set error flag and exit
-!--------------------------------------------------------------------------------
-!
-      qOK = .TRUE.
-      GoTo 2000
-!
-!--------------------------------------------------------------------------------
-! Error Handler
-!--------------------------------------------------------------------------------
-!
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Close all MPI communicators
+!> @param[out] qOK Error flag
+
+  subroutine UnDefineParallelLibrary(qOK)
+
+    implicit none
+
+    logical, intent(out)         :: qOK
+
+    integer(kind=ip)		:: error
+
+    qOK = .false.
+
+#ifdef USEMPI
+
+    call MPI_FINALIZE(error)
+    if (error /= MPI_SUCCESS) then
+			call Error_log('Error in call to MPI_FINALIZE',tErrorLog_G)
+			print*, 'Error in call to MPI_FINALIZE'
+			print*, 'Error code = ', error 
+			goto 1000
+		end if
+
+    qOK = .true.
+    goto 2000
+
 1000 call Error_log('Error in ParallelSetUp:UnDefineParallelLibrary',tErrorLog_G)
-       Print*,'Error in ParallelSetUp:UnDefineParallelLibrary'
-2000 CONTINUE
+    print*,'Error in ParallelSetUp:UnDefineParallelLibrary'
+2000 continue
 
-      END SUBROUTINE UnDefineParallelLibrary
+#else
+    qOK = .true.
+#endif
 
+  end subroutine UnDefineParallelLibrary
 
-!--------------------------------------------------------------------------------
-!--------------------------------------------------------------------------------
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Stop code running and close down active MPI communicators.
+!> @param[out] qOK Error flag
 
-      SUBROUTINE  StopCode(qOK)
-!
-!********************************************************************
-! Stop code runing
-!********************************************************************
-! qOK                     - OUTPUT   - Error flag
-!
-!********************************************************************
-!
-      IMPLICIT NONE
-!
-      LOGICAL,                 INTENT(OUT)         :: qOK
-!
-!====================================================================
-! Define local variables
-!
-! qOKL  - Error flag
-!=====================================================================
-!
-    	LOGICAL           :: qOKL
-        INTEGER(KIND=IP)		:: error
-!
-!--------------------------------------------------------------------------------
-! Set error flag to false
-!--------------------------------------------------------------------------------
-!
-      qOK = .FALSE.
-!
-!--------------------------------------------------------------------------------
-! UnInitialise library
-!--------------------------------------------------------------------------------
-!
-      call UnDefineParallelLibrary(qOKL)
-      If (.NOT. qOKL) Goto 1000
-!
-!--------------------------------------------------------------------------------
-! Stop
-!--------------------------------------------------------------------------------
-!
-      Stop
-!
-!--------------------------------------------------------------------------------
-!  Set error flag and exit
-!--------------------------------------------------------------------------------
-!
-      qOK = .TRUE.
-      GoTo 2000
-!
-!--------------------------------------------------------------------------------
-! Error Handler
-!--------------------------------------------------------------------------------
-!
+  subroutine  StopCode(qOK)
+
+    implicit none
+
+    logical, intent(out) :: qOK
+
+  	logical :: qOKL
+    integer(kind=ip)		:: error
+
+    qOK = .false.
+
+    call UnDefineParallelLibrary(qOKL)
+    if (.not. qOKL) goto 1000
+
+    stop
+
+    qOK = .true.
+    goto 2000
+
 1000 call Error_log('Error in ParallelSetUp:StopCode',tErrorLog_G)
       Print*,'Error in ParallelSetUp:StopCode'
-2000 CONTINUE
+2000 continue
 
-      END SUBROUTINE StopCode
+  end subroutine StopCode
 
-!======================================================================
+#ifdef USEMPI
 
-SUBROUTINE gather2A(A_local,sA,nA_loc,nA,recvs,displs)
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Gather from local field mesh A_local to global field mesh A,
+!> assuming complex valued field, and first half of mesh is
+!> real and second half is imaginary.
+!> @param[in] A_local Local field mesh values
+!> @param[out] sA Global mesh values
+!> @param[in] nA_loc Number of local field nodes
+!> @param[in] nA Number of global field nodes
+!> @param[in] recvs Describes parallel layout
+!> @param[in] displs Describes parallel layout
 
-! Gather from A_local to A
+  subroutine gather2A(A_local,sA,nA_loc,nA,recvs,displs)
 
-REAL(KIND=WP),INTENT(IN)  ::  A_local(:)
-INTEGER,INTENT(IN)  ::  nA_loc,nA
-INTEGER,INTENT(IN)  ::  recvs(:),displs(:)
-REAL(KIND=WP),INTENT(OUT) ::  sA(:)
+    real(kind=wp),intent(in)  ::  A_local(:)
+    integer,intent(in)  ::  nA_loc,nA
+    integer,intent(in)  ::  recvs(:),displs(:)
+    real(kind=wp),intent(out) ::  sA(:)
 
-INTEGER(KIND=IP)  ::  error
+    integer(kind=ip)  ::  error
 
- CALL MPI_ALLGATHERV( A_local(1:nA_loc),nA_loc,MPI_DOUBLE_PRECISION, &
-	                  sA(1:nA), recvs,displs, MPI_DOUBLE_PRECISION, &
-			  		  tProcInfo_G%comm, error)
+    call MPI_ALLGATHERV( A_local(1:nA_loc),nA_loc,MPI_DOUBLE_PRECISION, &
+	                      sA(1:nA), recvs,displs, MPI_DOUBLE_PRECISION, &
+                        tProcInfo_G%comm, error)
 
- CALL MPI_ALLGATHERV( A_local(nA_loc+1:2*nA_loc),nA_loc,MPI_DOUBLE_PRECISION, &
+    call MPI_ALLGATHERV( A_local(nA_loc+1:2*nA_loc),nA_loc,MPI_DOUBLE_PRECISION, &
 	                  sA(nA+1:2*nA), recvs,displs, MPI_DOUBLE_PRECISION, &
 			  		  tProcInfo_G%comm, error)
 
+  end subroutine gather2A
 
-END SUBROUTINE gather2A
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Gather from local field mesh A_local to global field mesh A,
+!> assuming real valued field.
+!> @param[in] A_local Local field mesh values
+!> @param[out] sA Global mesh values
+!> @param[in] nA_loc Number of local field nodes
+!> @param[in] nA Number of global field nodes
+!> @param[in] recvs Describes parallel layout
+!> @param[in] displs Describes parallel layout
 
-!======================================================================
-
-SUBROUTINE gather1A(A_local,sA,nA_loc,nA,recvs,displs)
+  subroutine gather1A(A_local,sA,nA_loc,nA,recvs,displs)
 
 ! Gather from A_local to A
 
-REAL(KIND=WP),INTENT(IN)  ::  A_local(:)
-INTEGER(kind=ip),INTENT(IN)  ::  nA_loc,nA
-INTEGER(kind=ip),INTENT(IN)  ::  recvs(:),displs(:)
-REAL(KIND=WP),INTENT(OUT) ::  sA(:)
+    real(kind=wp),intent(in)  ::  A_local(:)
+    integer(kind=ip),intent(in)  ::  nA_loc,nA
+    integer(kind=ip),intent(in)  ::  recvs(:),displs(:)
+    real(kind=wp),intent(OUT) ::  sA(:)
 
-INTEGER(KIND=IP)  ::  error
+    integer(kind=ip)  ::  error
 
- CALL MPI_ALLGATHERV( A_local(1:nA_loc),nA_loc,MPI_DOUBLE_PRECISION, &
-                    sA(1:nA), recvs,displs, MPI_DOUBLE_PRECISION, &
-              tProcInfo_G%comm, error)
+    call MPI_ALLGATHERV( A_local(1:nA_loc),nA_loc,MPI_DOUBLE_PRECISION, &
+                         sA(1:nA), recvs,displs, MPI_DOUBLE_PRECISION, &
+                         tProcInfo_G%comm, error)
 
-END SUBROUTINE gather1A
+    end subroutine gather1A
 
 !======================================================================
 
@@ -527,5 +536,7 @@ END SUBROUTINE shareFileType
     o1 = sum(trecv)
 
   END SUBROUTINE sum_mpi_real
+
+#endif
 
 END MODULE ParallelSetUp

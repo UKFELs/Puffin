@@ -31,22 +31,23 @@ module Setup
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Subroutine to perform the initialization of
+!> the data for Puffin, and to write out initial
+!> values.
+!> @param[out] sZ Initial value of zbar
+!> @param[out] qOK Error flag
+
   subroutine init(sZ, qOK)
 
   use InitVars
 
   implicit none
-
-! Subroutine to perform the initialization of
-! the data for Puffin, and to write out initial
-! values.
-!
-!                     ARGUMENTS
-!
-! sZ             Electron propagation distance in z
-!                through undulator.
-!
-! qOK            Error flag; .false. if no error
 
   real(kind=wp), intent(out) :: sZ
   logical, intent(out) :: qOK
@@ -55,7 +56,7 @@ module Setup
 
   qOK = .false.
 
-!     Initialize the processors for MPI
+!     Initialize the processors for MPI if needed
 
   call InitializeProcessors(tProcInfo_G,qOKL)
   if (.not. qOKL) goto 1000
@@ -258,8 +259,6 @@ module Setup
     end if
 
   end if
-
-  if (qsdds_G) call initPFile(tPowF, qFormattedFiles) ! initialize power file type
 
   if (.not. qResume_G) call initPowerCalc()
 

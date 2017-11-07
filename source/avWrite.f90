@@ -16,8 +16,6 @@ use paratype
 use arrayfunctions
 use globals
 use functions
-!use sddsROutput
-!use createSDDS
 use ParallelSetUp
 use parafield
 
@@ -167,37 +165,6 @@ contains
     end if
 
   end subroutine writePower
-
-
-
-
-
-!> initPFile This subroutine initializes the SDDS power file, and must be
-!> called before any writing to the sdds power file takes place.
-
-  subroutine initPFile(powFType, qForm)
-
-    implicit none
-
-    type(cFileType), intent(inout) :: powFType !< Input/output Power filetype, describing power file.
-    logical, intent(in) :: qForm !< Input Whether sdds output is to be formatted or not.
-
-    character(1024_IP) :: fname, & !< Filename (unused)
-                        vname    !< SDDS Variable name
-    logical :: qOKL  !< Local error flag
-    powFType%qformatted = qForm
-    powFType%zFileName = 'power.sdds' !  filename
-    vname = 'power' !  SDDS variable name
-
-
-    if (tProcInfo_G%qRoot) then
-
-!      call CreateSDDSFile(powFType%zFileName, &
-!                          vname, powFType, qOKL)
-
-    end if
-
-  end subroutine initPFile
 
 !> initPowerCalc This subroutine stes up array structures to be 
 !> use in the power calculation.

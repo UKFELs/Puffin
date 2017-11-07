@@ -1004,7 +1004,7 @@ end subroutine calcSamples
 
 
 
-SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
+subroutine PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
                              sigma, alphax, alphay, emitx, emity, &
                              beamCenZ2, gamma_d, eThresh, &
                              chirp, mag, fr, nbeams, qOK)
@@ -1013,68 +1013,68 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
 
     logical, intent(in) :: qSimple
     character(*), intent(in) :: fname(:)
-    REAL(KIND=WP),     INTENT(IN)    :: sQe(:), gamma_d(:)
-    REAL(KIND=WP),     INTENT(INOUT)    ::  chirp(:)
-    REAL(KIND=WP),     INTENT(INOUT)    :: mag(:), fr(:)
-    INTEGER(KIND=IP),  INTENT(IN)    :: NE(:,:),nbeams
-    LOGICAL,           INTENT(IN)    :: noise
-    REAL(KIND=WP),     INTENT(IN)    :: Z
-    REAL(KIND=WP),     INTENT(INOUT) :: LenEPulse(:,:)
-    REAL(KIND=WP),     INTENT(INOUT) :: sigma(:,:)
+    real(kind=wp),     intent(in)    :: sQe(:), gamma_d(:)
+    real(kind=wp),     intent(inout)    ::  chirp(:)
+    real(kind=wp),     intent(inout)    :: mag(:), fr(:)
+    integer(kind=ip),  intent(in)    :: NE(:,:),nbeams
+    logical,           intent(in)    :: noise
+    real(kind=wp),     intent(in)    :: Z
+    real(kind=wp),     intent(inout) :: LenEPulse(:,:)
+    real(kind=wp),     intent(inout) :: sigma(:,:)
     real(kind=wp),     intent(in)    :: alphax(:), alphay(:), emitx(:), emity(:)
-    REAL(KIND=WP),     INTENT(INOUT) :: beamCenZ2(:)
-    REAL(KIND=WP),     INTENT(IN)    :: eThresh
-    LOGICAL,           INTENT(OUT)   :: qOK
+    real(kind=wp),     intent(inout) :: beamCenZ2(:)
+    real(kind=wp),     intent(in)    :: eThresh
+    logical,           intent(OUT)   :: qOK
 
 !                   LOCAL ARGS
 
-    INTEGER(KIND=IPL) :: NMacroE
-    REAL(KIND=WP)     :: sQOneE, totNk_glob, totNk_loc
-    REAL(KIND=WP), ALLOCATABLE  :: RealE(:)
-    INTEGER(KIND=IP) :: j,error, req, lrank, rrank
-    INTEGER(KIND=IPL) :: sendbuff, recvbuff
-    INTEGER sendstat(MPI_STATUS_SIZE)
-    INTEGER recvstat(MPI_STATUS_SIZE)
+    integer(kind=ipl) :: NMacroE
+    real(kind=wp)     :: sQOneE, totNk_glob, totNk_loc
+    real(kind=wp), ALLOCATABLE  :: RealE(:)
+    integer(kind=ip) :: j,error, req, lrank, rrank
+    integer(kind=ipl) :: sendbuff, recvbuff
+    integer sendstat(MPI_STATUS_SIZE)
+    integer recvstat(MPI_STATUS_SIZE)
     character(1024) :: fname_temp
-    LOGICAL :: qOKL
+    logical :: qOKL
 
     sQOneE = 1.60217656535E-19
 
-    qOK = .FALSE.
+    qOK = .false.
 
-    IF (qSimple) ALLOCATE(RealE(nbeams))
+    if (qSimple) allocate(RealE(nbeams))
 
 !     Print a reminder to check whether shot-noise is
 !     being modelled or not
 
-    IF (tProcInfo_G%qROOT) THEN
-       IF (noise) THEN
-          PRINT *, 'SHOT-NOISE TURNED ON'
-       ELSE
-          PRINT *, 'SHOT-NOISE TURNED OFF'
-       ENDIF
-    ENDIF
+    if (tProcInfo_G%qROOT) then
+       if (noise) then
+          print *, 'SHOT-NOISE TURNED ON'
+       else
+          print *, 'SHOT-NOISE TURNED OFF'
+       endif
+    endif
 
 !     Number of real electrons
 
-    IF (qSimple) RealE = sQe / sQOneE
+    if (qSimple) RealE = sQe / sQOneE
 
 
 !     Change sig_gamma / gamma to sig_gamma
 
-    IF (qSimple) LenEPulse(:,iGam_CG) = gamma_d(:) * sGammaR_G * LenEPulse(:,iGam_CG)
-    IF (qSimple) sigma(:,iGam_CG) = gamma_d(:) * sGammaR_G * sigma(:,iGam_CG)
+    if (qSimple) LenEPulse(:,iGam_CG) = gamma_d(:) * sGammaR_G * LenEPulse(:,iGam_CG)
+    if (qSimple) sigma(:,iGam_CG) = gamma_d(:) * sGammaR_G * sigma(:,iGam_CG)
 
 !     Setup electrons
 
     if (iInputType_G == iGenHom_G) then
 
-      CALL electron_grid(RealE,NE,noise, &
+      call electron_grid(RealE,NE,noise, &
                          Z,nbeams, LenEPulse,sigma, alphax, alphay, &
                          emitx, emity, beamCenZ2, gamma_d, &
                          eThresh,tTransInfo_G%qOneD, &
                          chirp,mag,fr,qOKL)
-      IF (.NOT. qOKL) GOTO 1000
+      if (.not. qOKL) GOTO 1000
 
     else if (iInputType_G == iReadDist_G) then
 
