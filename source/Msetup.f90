@@ -29,9 +29,6 @@ module Setup
 
   contains
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
 !> @author
 !> Lawrence Campbell,
 !> University of Strathclyde,

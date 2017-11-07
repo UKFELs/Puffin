@@ -1047,7 +1047,7 @@ subroutine PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
 !     Print a reminder to check whether shot-noise is
 !     being modelled or not
 
-    if (tProcInfo_G%qROOT) then
+    if (tProcInfo_G%qroot) then
        if (noise) then
           print *, 'SHOT-NOISE TURNED ON'
        else
@@ -1098,21 +1098,25 @@ subroutine PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
 
     end if
 
-    IF(iGloNumElectrons_G <= 0_IPL) THEN
-       CALL Error_log('iGloNumElectrons_G <=0.',tErrorLog_G)
-       GOTO 1000
-    END IF
+    if (iGloNumElectrons_G <= 0_IPL) then
+       call Error_log('iGloNumElectrons_G <=0.',tErrorLog_G)
+       goto 1000
+    end if
 
-    if (iNumberElectrons_G>0_IPL) then
+    if (iNumberElectrons_G > 0_IPL) then
       totNk_loc = sum(s_chi_bar_G) * npk_bar_G
     else
       totNk_loc = 0._WP
     end if
     
     if (qOneD_G) totNk_loc = totNk_loc * ata_g
-!    print *,"Rank ", tProcInfo_G%Rank, " sum ",totNk_loc
-    CALL MPI_ALLREDUCE(totNk_loc, totNk_glob, 1, MPI_DOUBLE_PRECISION, &
-                       MPI_SUM, MPI_COMM_WORLD, error)
+
+#ifdef USEMPI
+    call MPI_ALLREDUCE(totNk_loc, totNk_glob, 1, MPI_DOUBLE_PRECISION, &
+                       MPI_SUM, tProcInfo_G%comm, error)
+#else
+    totNk_glob = totNk_loc
+#endif
 
 
     if (tProcInfo_G%qRoot) then
@@ -1132,6 +1136,8 @@ subroutine PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
 
 
     end if
+
+#ifdef USEMPI
 
 !    Set up the array describing the number of electrons
 !    on each processor
@@ -1175,11 +1181,14 @@ subroutine PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
 
     end if
 
-!    print*, 'procelectrons = ', procelectrons_G
-!    stop
-    IF (iNumberElectrons_G==0) qEmpty=.TRUE.
+#else
+    allocate(procelectrons_G(tProcInfo_G%size))
+    procelectrons_G(1) = iNumberElectrons_G
+#endif
 
-    if (qSimple) DEALLOCATE(RealE)
+    if (iNumberElectrons_G==0) qEmpty=.true.
+
+    if (qSimple) deallocate(RealE)
 
 
     if ( (nspinDX<0) .or. (nspinDY<0) ) then
@@ -1196,24 +1205,17 @@ subroutine PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
       if (tProcInfo_G%qRoot) print*, 'inner ntransnodes = ', ntrndsi_G
     end if
 
-
-
-
-
-
-
-
 !    Set error flag and exit
 
-    qOK = .TRUE.
+    qOK = .true.
 
-    GOTO 2000
+    goto 2000
 
-1000 CALL Error_log('Error in SetupCalcs:PopMacroElectrons',tErrorLog_G)
+1000 call Error_log('Error in SetupCalcs:PopMacroElectrons',tErrorLog_G)
 
-2000 CONTINUE
+2000 continue
 
-END SUBROUTINE PopMacroElectrons
+end subroutine PopMacroElectrons
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1237,7 +1239,7 @@ subroutine getPaSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
 
 !  1st gen front seed if present
 
-
+#ifdef USEMPI
 
   if ((ffe_GGG > 0) .and. (ffe-ffs+1 > 0) ) then
 
@@ -1273,7 +1275,13 @@ subroutine getPaSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
 
   end if
 
+#else
 
+  call getSeeds(NN, sigs, cens, magxs, magys, qFTs, rho,&
+                frs, ph_sh, nSeeds, dels, 1, nz2_g, &
+                ac_rfield, ac_ifield)
+
+#endif
 
 end subroutine getPaSeeds
 
