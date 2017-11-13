@@ -363,7 +363,7 @@ integer(kind=ip) :: iWriteNthSteps, iIntWriteNthSteps
 
 character(132_ip) :: cmd_call_G
 character(1024_ip) :: zFileName_G, zBFile_G, zSFile_G
-
+integer(kind=ip) :: ioutInfo_G
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Parallel Vars

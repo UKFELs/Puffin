@@ -73,10 +73,12 @@ contains
     call fixMesh(sLengthOfElmY_G, sSigE(1, iY_CG), sLenE(1, iY_CG), &
                  iNMPs(1, iY_CG), iRedNodesY_G)
 
-    if (tProcInfo_G%qRoot) print*, 'FIXING MESH - dx = ', &
+    if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1) ) then
+      print*, 'FIXING MESH - dx = ', &
               sLengthOfElmX_G, ','
 
-    if (tProcInfo_G%qRoot) print*, 'and dy = ', sLengthOfElmY_G
+      print*, 'and dy = ', sLengthOfElmY_G
+    end if
 
   end subroutine fixXYMesh
 
@@ -261,15 +263,17 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
       call matchTransBeam(sSigE(ic,:), sLenE(ic,:), &
                       emitx(ic), emity(ic), sGamFrac(ic))
 
-      if (tProcInfo_G%qRoot) print*, &
+      if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1) ) then 
+        print*, &
              'New Gaussian sigma of electron beam in x is ',sSigE(ic, iX_CG)
-      if (tProcInfo_G%qRoot) print*, &
+        print*, &
             '...so total sampled length of beam in x is ', sLenE(ic, iX_CG)
-      if (tProcInfo_G%qRoot) print*,''
-      if (tProcInfo_G%qRoot) print*, &
+        print*,''
+        print*, &
             'New Gaussian sigma of e-beam in px is ', sSigE(ic, iPX_CG)
-      if (tProcInfo_G%qRoot) print*, &
+        print*, &
             'New Gaussian sigma of e-beam in py is ', sSigE(ic, iPY_CG)
+      end if
 
     end if
 
@@ -289,12 +293,17 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 
     call getKBetas(kbx, kby, sEnfrac)
 
-    if (tProcInfo_G%qRoot) print*, &
-    'Scaled betatron wavenumber in undulator in x (in units of 1 / gain length) = ', kbx
+    if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1) ) then
+       print*, &
+      'Scaled betatron wavenumber in undulator in x (in units of 1 / gain length) = ', kbx
+    end if
 
     call getKBetas(kbx, kby, sEnfrac)
-    if (tProcInfo_G%qRoot) print*, &
+
+    if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1) ) then
+      print*, &
     'Scaled betatron wavenumber in undulator in y (in units of 1 / gain length) = ', kby
+    end if
 
     call matchxPx(sSigE(iX_CG), sSigE(iPX_CG), emitx, &
                   kbx, sEnFrac)
@@ -826,11 +835,13 @@ SUBROUTINE CheckSourceDiff(sDelZ,iSteps,srho,sSigE,sLenF,sDelF,iNNF,qOK)
     
 !    sDelF(iX_CG) = sLenF(iX_CG) / REAL(iNNF(iX_CG)-1_IP,KIND=WP)
           
-    IF(tProcInfo_G%QROOT)PRINT *, &
+    if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 1) ) then
+      print *, &
       'WARNING: INITIAL E BEAM SIGMA IS TOO SMALL', &
-      'THERE MAY BE TOO MUCH DIFFRACTION IN X'
-  
-  ENDIF
+      'THERE MAY BE TOO MUCH DIFFRACTION IN X'  
+    end if
+    
+  end if
 
 ! Y:-
 
@@ -847,11 +858,13 @@ SUBROUTINE CheckSourceDiff(sDelZ,iSteps,srho,sSigE,sLenF,sDelF,iNNF,qOK)
     
 !    sDelF(iY_CG) = sLenF(iY_CG) / REAL(iNNF(iY_CG)-1_IP,KIND=WP)
       
-    IF(tProcInfo_G%QROOT)PRINT *, &
-      'WARNING: INITIAL E BEAM SIGMA IS TOO SMALL', &
-      'THERE MAY BE TOO MUCH DIFFRACTION IN Y'
+    if ((tProcInfo_G%QROOT) .and. (ioutInfo_G > 1) ) then
+       print *, &
+        'WARNING: INITIAL E BEAM SIGMA IS TOO SMALL', &
+        'THERE MAY BE TOO MUCH DIFFRACTION IN Y'
+    end if
       
-  ENDIF
+  end if
 
 !     Set error flag and exit
 
