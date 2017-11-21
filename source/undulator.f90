@@ -96,7 +96,7 @@ contains
 
     start_step = 0_ip  ! ...TEMP...
 
-    if (.not. qUndEnds_G) call matchIn(sZ)
+    if (.not. qUndEnds_G) call matchIn(szl)
 
   end if
 
