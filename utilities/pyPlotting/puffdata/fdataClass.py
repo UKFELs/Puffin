@@ -54,6 +54,9 @@ class fdata:
         self.vars.zbarloc = h5f.root.runInfo._v_attrs.zbarLocal
         self.vars.z = h5f.root.runInfo._v_attrs.zTotal
         self.vars.zloc = h5f.root.runInfo._v_attrs.zLocal
+        self.vars.step = h5f.root.runInfo._v_attrs.iCsteps
+
+
         self.vars.transArea = h5f.root.runInfo._v_attrs.transArea
         self.vars.transAreaSI = h5f.root.runInfo._v_attrs.transAreaSI
         

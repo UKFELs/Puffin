@@ -231,7 +231,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 !     Transforming from A(x,y,z2,zbar) to A(kx,ky,kz2,zbar)
 
 
-  if (tProcInfo_G%QROOT ) then
+  if ((tProcInfo_G%qroot ) .and. (ioutInfo_G > 2) ) then
     print*,' inside diffraction... ',iCsteps, end_time-start_time
   end if
 
@@ -244,7 +244,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 
   call Get_time(tr_time_e)
 
-  if (tProcInfo_G%QROOT ) then
+  if ((tProcInfo_G%qroot ) .and. (ioutInfo_G > 2)) then
     print*,' allocating arrays took... ', tr_time_e-tr_time_s
   end if
 
@@ -265,7 +265,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 
   call Get_time(tr_time_e)
 
-  if (tProcInfo_G%QROOT ) then
+  if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 2)) then
     print*,' assigning data took... ', tr_time_e-tr_time_s
   end if
 
@@ -276,7 +276,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 
   call Get_time(tr_time_e)  ! ...timing info
 
-  if (tProcInfo_G%QROOT ) then
+  if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 2)) then
     print*,' forward transform took... ', tr_time_e-tr_time_s
   end if
 
@@ -287,7 +287,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 
   call Get_time(tr_time_e)
 
-  if (tProcInfo_G%QROOT ) then
+  if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 2)) then
     print*,' multiply exp took... ', tr_time_e-tr_time_s
   end if
 
@@ -301,7 +301,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 
   call Get_time(tr_time_e)
 
-  if (tProcInfo_G%QROOT ) then
+  if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 2)) then
     print*,' back transform took... ', tr_time_e-tr_time_s
   end if
 
@@ -316,7 +316,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 
   call Get_time(tr_time_e)
 
-  if (tProcInfo_G%QROOT ) then
+  if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 2)) then
     print*,' absorption step took... ', tr_time_e-tr_time_s
   end if
 

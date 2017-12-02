@@ -148,7 +148,7 @@ def plotSpecPow(h5fname, ftplottype=None):
         plt.semilogy(ftxaxis, ftxpower, label='x power')
         plt.plot(ftxaxis, ftypower, label='y power')
         plt.plot(ftxaxis, ftxpower + ftypower, label='combined')
-#        axes.set_xlim([5.8e-10, 7.2e-10])
+        axes.set_xlim([0.8, 1.2])
 
     plt.legend()
 

@@ -314,14 +314,18 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
         sKBetaX_G = sKBetaXSF_G
       else
         sKBetaXSF_G = 0.0_wp
-        if (tProcInfo_G%qRoot) print*, 'No strong focusing in x'
+        if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+          print*, 'No strong focusing in x'
+        end if
       end if
 
       if (sKBetaYSF_G > 0) then
         sKBetaY_G = sKBetaYSF_G
       else
         sKBetaYSF_G = 0.0_wp
-        if (tProcInfo_G%qRoot) print*, 'No strong focusing in y'
+        if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+          print*, 'No strong focusing in y'
+        end if
       end if
 
     end if
@@ -426,8 +430,8 @@ subroutine fixCharge(sQb, sSigz2, sLenz2, sSigTails, qTails, &
 
   call getQFmNpk(sQb, sTarea, sLarea, qOneD)
 
-  if (tProcInfo_G%qroot) print*, 'FIXING CHARGE '
-  if (tProcInfo_G%qroot) print*, 'Q =  ', sQb
+  if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 0)) print*, 'FIXING CHARGE '
+  if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 0)) print*, 'Q =  ', sQb
 
 end subroutine fixCharge
 
@@ -503,7 +507,7 @@ subroutine getQFmNpk(sQb, sTarea, sLarea, qOneD)
 
     if (qOneD) then
       sVol = sLArea * ata_G
-      if (tProcInfo_G%qRoot) print*, 'TRANS AREA = ', ata_G
+      if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) print*, 'TRANS AREA = ', ata_G
     else
       sVol = sLArea * sTArea
     end if
@@ -769,7 +773,7 @@ subroutine calcScaling(srho, saw, sgamr, slam_w, &
     saw_rms = saw
     fx_G = 1   ! Temp fix for initialization bug
     fy_G = 1
-    sfx = 0.0_wp
+    sfx = 1.0_wp
     sfy = 1.0_wp
 
   else
@@ -877,11 +881,13 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
   else
 
-    print*, 'less than one step per period!!'
+    if (ioutInfo_G > 0) print*, 'less than one step per period!!'
 
   end if
 
-  if (tProcInfo_G%qRoot) print*, 'step size is --- ', sStepSize
+  if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1)) then
+    print*, 'step size is --- ', sStepSize
+  end if
 
 
 
@@ -905,15 +911,19 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
     if ((iNumElectrons(1,iZ2_CG) < 0) .or. (iNumElectrons(1,iZ2_CG) < minENum) ) then
 
-      if (tProcInfo_G%qRoot) print*, '******************************'
-      if (tProcInfo_G%qRoot) print*, ''
-      if (tProcInfo_G%qRoot) print*, 'WARNING - e-beam macroparticles sampling &
-                                      & in z2 not fine enough - fixing...'
+      if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+        print*, '******************************'
+        print*, ''
+        print*, 'WARNING - e-beam macroparticles sampling &
+                                        & in z2 not fine enough - fixing...'
+      end if
 
       iNumElectrons(1,3) = minENum
 
-      if (tProcInfo_G%qRoot) print*, 'num MPs in z2 now = ', &
-                                  iNumElectrons(1,iZ2_CG)
+      if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+        print*, 'num MPs in z2 now = ', &
+                          iNumElectrons(1,iZ2_CG)
+      end if
 
     end if
 
@@ -935,17 +945,21 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
       if (sFieldModelLength(iZ2_CG) <= fmlenTmp + 1.0_wp) then
 
 
-        if (tProcInfo_G%qRoot) print*, '******************************'
-        if (tProcInfo_G%qRoot) print*, ''
-        if (tProcInfo_G%qRoot) print*, 'WARNING - field mesh may not be large &
-                                       &enough in z2 - fixing....'
+        if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+          print*, '******************************'
+          print*, ''
+          print*, 'WARNING - field mesh may not be large &
+                                   &enough in z2 - fixing....'
+        end if
 
         sFieldModelLength(iZ2_CG) = fmlenTmp + 10.0_wp  ! Add buffer 10 long for
                                                         ! extra security...
 
-        if (tProcInfo_G%qRoot) print*, 'Field mesh length in z2 now = ', &
-                                    sFieldModelLength(iZ2_CG)
-        if (tProcInfo_G%qRoot) print*, ''
+        if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+          print*, 'Field mesh length in z2 now = ', &
+                                sFieldModelLength(iZ2_CG)
+          print*, ''
+        end if
 
       end if
 
@@ -992,9 +1006,11 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
   end if
  
  
-  if (tProcInfo_G%qRoot) print*, '******************************'
-  if (tProcInfo_G%qRoot) print*, ''
-  if (tProcInfo_G%qRoot) print*, 'number of nodes in z2 --- ', iNumNodes(iZ2_CG)
+  if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1)) then
+    print*, '******************************'
+    print*, ''
+    print*, 'number of nodes in z2 --- ', iNumNodes(iZ2_CG)
+  end if
 
 
 
@@ -1047,7 +1063,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
 !     Print a reminder to check whether shot-noise is
 !     being modelled or not
 
-    IF (tProcInfo_G%qROOT) THEN
+    IF ((tProcInfo_G%qROOT) .and. (ioutInfo_G > 1)) then
        IF (noise) THEN
           PRINT *, 'SHOT-NOISE TURNED ON'
        ELSE
@@ -1091,17 +1107,19 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
 !    print *,"Rank ", tProcInfo_G%Rank
     else
 
-      if (tProcInfo_G%qRoot) print*, 'No beam input type specified....'
-      if (tProcInfo_G%qRoot) print*, 'Exiting...'
+      if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+        print*, 'No beam input type specified....'
+        print*, 'Exiting...'
+      end if
       call UnDefineParallelLibrary(qOKL)
       stop
 
     end if
 
-    IF(iGloNumElectrons_G <= 0_IPL) THEN
-       CALL Error_log('iGloNumElectrons_G <=0.',tErrorLog_G)
-       GOTO 1000
-    END IF
+    if (iGloNumElectrons_G <= 0_IPL) then
+       call Error_log('iGloNumElectrons_G <=0.',tErrorLog_G)
+       goto 1000
+    end if
 
     if (iNumberElectrons_G>0_IPL) then
       totNk_loc = sum(s_chi_bar_G) * npk_bar_G
@@ -1115,20 +1133,23 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
                        MPI_SUM, MPI_COMM_WORLD, error)
 
 
-    if (tProcInfo_G%qRoot) then
+    if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
 
 
       print*, ''
 
       print*, '-----------------------------------------'
+      print*, 'Generated beam....'
 
-      print*, 'Total number of macroparticles = ', iGloNumElectrons_G
+      if (ioutInfo_G > 1) then
+        print*, 'Total number of macroparticles = ', iGloNumElectrons_G
 
-      print*, 'Avg num of real electrons per macroparticle Nk = ', &
+        print*, 'Avg num of real electrons per macroparticle Nk = ', &
                                     totNk_glob / iGloNumElectrons_G
 
-      print*, 'Total number of real electrons modelled = ', &
+        print*, 'Total number of real electrons modelled = ', &
                         totNk_glob
+      end if
 
 
     end if
@@ -1183,17 +1204,21 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
 
 
     if ( (nspinDX<0) .or. (nspinDY<0) ) then
-      if (tProcInfo_G%qRoot) print*, ''
-      if (tProcInfo_G%qRoot) print*, ''
-      if (tProcInfo_G%qRoot) print*, '----------------'
-      if (tProcInfo_G%qRoot) print*, 'Getting inner node set for MPI communication'
+      if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1)) then
+        print*, ''
+        print*, ''
+        print*, '----------------'
+        print*, 'Getting inner node set for MPI communication'
+      end if
 
       call getInNode()
 
-      if (tProcInfo_G%qRoot) print*, '...'
-      if (tProcInfo_G%qRoot) print*, 'inner nx = ', nspinDX
-      if (tProcInfo_G%qRoot) print*, 'inner ny = ', nspinDY
-      if (tProcInfo_G%qRoot) print*, 'inner ntransnodes = ', ntrndsi_G
+      if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1)) then
+        print*, '...'
+        print*, 'inner nx = ', nspinDX
+        print*, 'inner ny = ', nspinDY
+        print*, 'inner ntransnodes = ', ntrndsi_G
+      end if
     end if
 
 

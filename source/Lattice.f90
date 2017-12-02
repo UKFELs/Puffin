@@ -94,10 +94,12 @@ contains
 
     if (lattFile=='') then
       qMod_G = .false.
-      if(tProcInfo_G%qRoot) print*, 'There are no dispersive sections'
+      if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1) ) print*, &
+          'There is no lattice file - using single undulator in main input file'
     else
       qMod_G = .true.
-      if(tProcInfo_G%qRoot) print*, 'There are dispersive sections'
+      if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1) ) print*, &
+          'Lattice being setup from lattice file'
     end if
 
 
@@ -254,7 +256,7 @@ contains
 
     if (ios < 0) then  ! if reached end of file:-
 
-      if (tProcInfo_G%qroot) print*, "Reached end of file!! (for the second time)"
+      if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 2)) print*, "Reached end of file!! (for the second time)"
       !print*, "Turns out you had ", cnt, "lines in the file!!"
       !print*, "Turns out you had ", cntq, "quads in the file!! in lines ", lineq
       !print*, "Turns out you had ", cntu, "undulators in the file!!"
@@ -263,7 +265,7 @@ contains
 
     else if (ios > 0) then
 
-      print*, 'THIS LINE HAS NOTHING FOR ME', ios
+      if (ioutInfo_G > 0) print*, 'THIS LINE HAS NOTHING FOR ME', ios
       exit
       cnt = cnt + 1
 
@@ -936,21 +938,21 @@ contains
 
     if (ios < 0) then  ! if reached end of file:-
 
-      if (tProcInfo_G%qroot)  print*, "Reached end of file!!"
+      if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 2)) print*, "Reached end of file!!"
       !if (tProcInfo_G%qroot)  print*, "Turns out you had ", cnt, "lines in the file!!"
-      if (tProcInfo_G%qroot)  print*, "Turns out you had ", cntq, "quads in the file!!"
-      if (tProcInfo_G%qroot)  print*, "Turns out you had ", cntu, "undulators in the file!!"
-      if (tProcInfo_G%qroot)  print*, "Turns out you had ", cntc, "chicanes in the file!!"
-      if (tProcInfo_G%qroot)  print*, "Turns out you had ", cntd, "drifts in the file!!"
-      if (tProcInfo_G%qroot)  print*, "Turns out you had ", cntd, "drifts in the file!!"
-      if (tProcInfo_G%qroot)  print*, "Turns out you had ", cntm, "modulation sections in the file!!"
-
+      if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 1)) then
+          print*, "Simulating ", cntu, "undulators"
+          print*, cntq, "quads,"
+          print*, cntc, "chicanes,"
+          print*, cntd, "drifts"
+          print*, "and ", cntm, "modulation sections"
+      end if
 
       exit
 
     else if (ios > 0) then
 
-      print*, 'THIS LINE HAS NOTHING FOR ME'
+      if (ioutInfo_G > 2) print*, 'THIS LINE HAS NOTHING FOR ME'
       cnt = cnt + 1
       stop
 

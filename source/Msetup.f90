@@ -173,10 +173,12 @@ MODULE Setup
   if (.not. qscaled_G) then
 
 
-    if (tProcInfo_G%qRoot) print*, '*******************'
-    if (tProcInfo_G%qRoot) print*, ''
-    if (tProcInfo_G%qRoot) print*, 'Scaling params....'
-    if (tProcInfo_G%qRoot) print*, ''
+    if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1)) then
+      print*, '*******************'
+      print*, ''
+      print*, 'Scaling params....'
+      print*, ''
+    end if
 
     call scaleParams(sEleSig, sLenEPulse, sSigEj_G, &
                      beamCenZ2, chirp, sEmit_n, emitx, emity, gamma_d, &
@@ -255,6 +257,8 @@ MODULE Setup
 
   call setupMods(lattFile, taper, sRho, nSteps, sStepSize, fx, fy, &
                   sKBetaXSF_G, sKBetaYSF_G)
+
+  if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 0)) print*, 'setup lattice'
 
 !     Pass local vars to global vars
 
@@ -570,7 +574,7 @@ MODULE Setup
 
   CALL MPI_BARRIER(tProcInfo_G%comm,error)
 
-  If(tProcInfo_G%qROOT) PRINT *, 'Initial data written'
+  if ((tProcInfo_G%qROOT) .and. (ioutInfo_G > 0)) print*, 'Initial data written'
 
 
 !  if (qSwitches(iDump_CG)) call DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)

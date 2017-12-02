@@ -121,9 +121,11 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
 
 
-  if (tProcInfo_G%qRoot) print '(I5,1X,A17,1X,F8.4)',nsteps,&
-       'Step(s) and z-bar=',nsteps*sStepSize
-  
+  if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1)) then
+      print '(I5,1X,A17,1X,F8.4)',nsteps,&
+      'Step(s) and z-bar=',nsteps*sStepSize
+  end if
+
 !     Set error flag and exit
 
   qOK = .true.
