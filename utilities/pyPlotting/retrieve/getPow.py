@@ -53,7 +53,8 @@ def getPow(h5fname, cfr=None, dfr=None, irtype = 0, qScale = None):
         yf, phy = getMagPhase.getMagPhase(yf, mdata.vars.nz2, mdata.vars.rho, lenz2)
     
 
-    intens = np.square(xf) + np.square(yf)
+    #intens = np.square(xf) + np.square(yf)
+    intens = np.square(yf)
     
     #tintens = getFiltPow(ij, dfr, cfr)
     #ens[fcount] = np.trapz(tintens, x=z2axis)
