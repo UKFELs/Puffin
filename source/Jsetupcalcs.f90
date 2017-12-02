@@ -773,7 +773,7 @@ subroutine calcScaling(srho, saw, sgamr, slam_w, &
     saw_rms = saw
     fx_G = 1   ! Temp fix for initialization bug
     fy_G = 1
-    sfx = 0.0_wp
+    sfx = 1.0_wp
     sfy = 1.0_wp
 
   else
