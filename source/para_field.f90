@@ -25,11 +25,11 @@ use sddsSetup
 
 implicit none
 
-real(kind=wp), allocatable :: fr_rfield(:), bk_rfield(:), ac_rfield(:), &
-                              fr_ifield(:), bk_ifield(:), ac_ifield(:), &
-                              tre_fft(:), tim_fft(:)
+real(kind=wp), allocatable :: fr_rfield(:,:,:), bk_rfield(:,:,:), ac_rfield(:,:,:), &
+                              fr_ifield(:,:,:), bk_ifield(:,:,:), ac_ifield(:,:,:), &
+                              tre_fft(:,:,:), tim_fft(:,:,:)
 
-real(kind=wp), allocatable :: tmp_A(:)
+real(kind=wp), allocatable :: tmp_A(:,:,:)
 
 integer(kind=ip), allocatable :: recvs_pf(:), displs_pf(:), recvs_ff(:), &
                                  displs_ff(:), recvs_ef(:), displs_ef(:)
@@ -103,12 +103,12 @@ contains
 
     real(kind=wp), intent(in) :: sdz
 
-    real(kind=wp), allocatable :: sp2(:), fr_rfield_old(:), &
-                                  fr_ifield_old(:), &
-                                  bk_rfield_old(:), &
-                                  bk_ifield_old(:), &
-                                  ac_rfield_old(:), &
-                                  ac_ifield_old(:)
+    real(kind=wp), allocatable :: sp2(:), fr_rfield_old(:,:,:), &
+                                  fr_ifield_old(:,:,:), &
+                                  bk_rfield_old(:,:,:), &
+                                  bk_ifield_old(:,:,:), &
+                                  ac_rfield_old(:,:,:), &
+                                  ac_ifield_old(:,:,:)
 
     integer(kind=ip) :: locN, ij
     integer(kind=ip) :: fz2_r, gath_v
@@ -193,13 +193,13 @@ contains
 !      print*, mainlen, fz2, ez2, ac_ar
 
 
-      allocate(fr_rfield(tlflen4arr*ntrnds_G), &
-                 fr_ifield(tlflen4arr*ntrnds_G))
-      allocate(bk_rfield(tlelen4arr*ntrnds_G), &
-               bk_ifield(tlelen4arr*ntrnds_G))
+      allocate(fr_rfield(nx_g, ny_g, tlflen4arr), &
+                 fr_ifield(nx_g, ny_g, tlflen4arr))
+      allocate(bk_rfield(nx_g, ny_g, tlelen4arr), &
+               bk_ifield(nx_g, ny_g, tlelen4arr))
 
-      allocate(ac_rfield(mainlen*ntrnds_G), &
-               ac_ifield(mainlen*ntrnds_G))
+      allocate(ac_rfield(nx_g, ny_g, mainlen), &
+               ac_ifield(nx_g, ny_g, mainlen))
 
 !      ac_rfield = sA((fz2-1)*ntrnds_G + 1:bz2*ntrnds_G)
 !      ac_ifield = sA((fz2 + NZ2_G-1)*ntrnds_G + 1: &
@@ -338,12 +338,12 @@ contains
   deallocate(fr_rfield, fr_ifield)
   deallocate(bk_rfield, bk_ifield)
 
-  allocate(fr_rfield(tlflen4arr*ntrnds_G), &
-           fr_ifield(tlflen4arr*ntrnds_G))
-  allocate(bk_rfield(tlelen4arr*ntrnds_G), &
-           bk_ifield(tlelen4arr*ntrnds_G))
-  allocate(ac_rfield(tllen*ntrnds_G), &
-           ac_ifield(tllen*ntrnds_G))
+  allocate(fr_rfield(nx_g, ny_g, tlflen4arr), &
+           fr_ifield(nx_g, ny_g, tlflen4arr))
+  allocate(bk_rfield(nx_g, ny_g, tlelen4arr), &
+           bk_ifield(nx_g, ny_g, tlelen4arr))
+  allocate(ac_rfield(nx_g, ny_g, tllen), &
+           ac_ifield(nx_g, ny_g, tllen))
 
   ac_rfield = 0_wp
   ac_ifield = 0_wp
@@ -609,10 +609,10 @@ contains
 
     if (qUnique) then
 
-      allocate(tmp_A(maxval(lrank_v)*ntrndsi_G))
+      allocate(nx_g, ny_g, tmp_A(maxval(lrank_v)))
 
     else
-      allocate(tmp_A(tllen*ntrndsi_G))
+      allocate(tmp_A(nx_g, ny_g, tllen))
     end if
 
 
