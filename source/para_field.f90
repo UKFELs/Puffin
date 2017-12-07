@@ -264,6 +264,12 @@ contains
   ff_ar_old = ff_ar
   ac_ar_old = ac_ar
 
+  allocate(fr_rfield_old(nx_g, ny_g, tlflen4arr), &
+           fr_ifield_old(nx_g, ny_g, tlflen4arr))
+  allocate(bk_rfield_old(nx_g, ny_g, tlelen4arr), &
+           bk_ifield_old(nx_g, ny_g, tlelen4arr))
+  allocate(ac_rfield_old(nx_g, ny_g, tllen), &
+           ac_ifield_old(nx_g, ny_g, tllen))
 
 
   call getFStEnd()    ! Define new 'active' region
@@ -323,9 +329,12 @@ contains
 ! for each front, active and back (9 calls??)
 
 
-  allocate(fr_rfield_old(size(fr_rfield)), fr_ifield_old(size(fr_ifield)))
-  allocate(bk_rfield_old(size(bk_rfield)), bk_ifield_old(size(bk_ifield)))
-  allocate(ac_rfield_old(size(ac_rfield)), ac_ifield_old(size(ac_ifield)))
+!  allocate(fr_rfield_old, mold = fr_rfield)
+!  allocate(fr_ifield_old, source = fr_ifield)
+!  allocate(bk_rfield_old, source = bk_rfield)
+!  allocate(bk_ifield_old, source = bk_ifield)
+!  allocate(ac_rfield_old, source = ac_rfield)
+!  allocate(ac_ifield_old, source = ac_ifield)
 
   fr_rfield_old = fr_rfield
   fr_ifield_old = fr_ifield
@@ -609,10 +618,10 @@ contains
 
     if (qUnique) then
 
-      allocate(nx_g, ny_g, tmp_A(maxval(lrank_v)))
+      allocate(tmp_A(nspindx, nspindy, maxval(lrank_v)))
 
     else
-      allocate(tmp_A(nx_g, ny_g, tllen))
+      allocate(tmp_A(nspindx, nspindy, tllen))
     end if
 
 
@@ -805,9 +814,9 @@ contains
 
     subroutine UpdateGlobalField(sA)
 
-      real(kind=wp), intent(inout) :: sA(:)
+      real(kind=wp), intent(inout) :: sA(:,:,:)
 
-      real(kind=wp), allocatable :: A_local(:)
+      real(kind=wp), allocatable :: A_local(:,:,:)
 
       integer(kind=ip) :: gath_v
 
@@ -834,24 +843,24 @@ contains
 
 
 
-        allocate(A_local(gath_v))
+        allocate(A_local(nx_g, ny_g, tlflen))
 
         A_local = 0_wp
 
-        A_local(1:gath_v) = fr_rfield(1:gath_v)
+        A_local(:, :, 1:tlflen) = fr_rfield(:, :, 1:tlflen)
         !A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
 
-        call gather1A(A_local, sA((ffs_GGG-1)*ntrnds_G + 1:ffe_GGG*ntrnds_G), &
-                gath_v, (ffe_GGG - ffs_GGG + 1) * ntrnds_G, &
+        call gather3A(A_local, sA(:,:,ffs_GGG:ffe_GGG), &
+                tlflen, ntrnds_G, (ffe_GGG - ffs_GGG + 1), &! * ntrnds_G, &
                   recvs_ff, displs_ff)
 
 
 
-        A_local(1:gath_v) = fr_ifield(1:gath_v)
+        A_local(:, :, 1:tlflen) = fr_ifield(:, :, 1:tlflen)
 
-        call gather1A(A_local, sA((ffs_GGG-1)*ntrnds_G + 1 + NZ2_G*ntrnds_G: &
-                                    ffe_GGG*ntrnds_G + NZ2_G*ntrnds_G), &
-                gath_v, (ffe_GGG - ffs_GGG + 1) * ntrnds_G, &
+        call gather3A(A_local, sA(:,:,ffs_GGG + NZ2_G: &
+                                    ffe_GGG + NZ2_G), &
+                tlflen, ntrnds_G, (ffe_GGG - ffs_GGG + 1), & ! * ntrnds_G, &
                  recvs_ff, displs_ff)
 
 
@@ -885,22 +894,22 @@ contains
 
 
 
-      allocate(A_local(gath_v))
+      allocate(A_local(nx_g, ny_g, mainlen))
 
       A_local = 0_wp
 
-      A_local(1:gath_v) = ac_rfield(1:gath_v)
+      A_local(:,:,1:mainlen) = ac_rfield(:,:,1:mainlen)
 !      A_local(gath_v+1:gath_v*2) = ac_ifield(1:gath_v)
 
-      call gather1A(A_local, sA((fz2_GGG-1)*ntrnds_G + 1:ez2_GGG*ntrnds_G), &
-                       gath_v, (fz2_GGG - ez2_GGG + 1) * ntrnds_G, &
+      call gather3A(A_local, sA(:,:,fz2_GGG:ez2_GGG), &
+                       mainlen, ntrnds_G, (fz2_GGG - ez2_GGG + 1), & ! * ntrnds_G, &
                        recvs_pf, displs_pf)
 
-      A_local(1:gath_v) = ac_ifield(1:gath_v)
+      A_local(:,:,1:mainlen) = ac_ifield(:,:,1:mainlen)
 
-      call gather1A(A_local, sA((fz2_GGG-1)*ntrnds_G + 1 + NZ2_G*ntrnds_G: &
-                                 ez2_GGG*ntrnds_G + NZ2_G*ntrnds_G), &
-                       gath_v, (ez2_GGG - fz2_GGG + 1) * ntrnds_G, &
+      call gather3A(A_local, sA(:,:,fz2_GGG + NZ2_G: &
+                                 ez2_GGG + NZ2_G), &
+                       mainlen, ntrnds_G, (ez2_GGG - fz2_GGG + 1), & ! * ntrnds_G, &
                        recvs_pf, displs_pf)
 
 
@@ -935,22 +944,24 @@ contains
 
 
 
-        allocate(A_local(gath_v))
+        allocate(A_local(nx_g, ny_g, tlelen))
 
           A_local = 0_wp
 
-          A_local(1:gath_v) = fr_rfield(1:gath_v)
+          A_local(:,:,1:tlelen) = fr_rfield(:,:,1:tlelen)
           !A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
 
-        call gather1A(A_local, sA((ees_GGG - 1)*ntrnds_G + 1:eee_GGG*ntrnds_G), &
-                       gath_v, (eee_GGG - ees_GGG + 1), recvs_ef, displs_ef)
+        call gather3A(A_local, sA(:,:,ees_GGG:eee_GGG), &
+                       tlelen, ntrnds_G, (eee_GGG - ees_GGG + 1), & !*ntrnds_G, 
+                       recvs_ef, displs_ef)
 
 
-        A_local(1:gath_v) = fr_ifield(1:gath_v)
+        A_local(:,:,1:tlelen) = fr_ifield(:,:,1:tlelen)
 
-        call gather1A(A_local, sA((ees_GGG - 1)*ntrnds_G + 1 + NZ2_G*ntrnds_G: &
-                       eee_GGG*ntrnds_G + nz2_G*ntrnds_G), &
-                       gath_v, (eee_GGG - ees_GGG + 1), recvs_ef, displs_ef)
+        call gather3A(A_local, sA(:,:,ees_GGG + NZ2_G: &
+                       eee_GGG + nz2_G), &
+                       tlelen, ntrnds_G, (eee_GGG - ees_GGG + 1), & !*ntrnds_G, 
+                       recvs_ef, displs_ef)
 
 
 
@@ -1192,7 +1203,7 @@ contains
             call OpenFileForAppend(tFileTyper%zFileName, &
                                    tFileTyper, qOKL)
 
-            call Write1DRealArray(fr_rfield,tFileTyper,qOKL)
+!            call Write1DRealArray(fr_rfield,tFileTyper,qOKL)
             if (.not. qOKL) Goto 1000
 
             call CloseFile(tFileTyper, qOKL)
@@ -1222,7 +1233,7 @@ contains
           call OpenFileForAppend(tFileTyper%zFileName, &
                                  tFileTyper, qOKL)
 
-          call Write1DRealArray(ac_rfield(1:mainlen*ntrnds_G),tFileTyper,qOKL)
+!          call Write1DRealArray(ac_rfield(1:mainlen*ntrnds_G),tFileTyper,qOKL)
           if (.not. qOKL) Goto 1000
 
           call CloseFile(tFileTyper, qOKL)
@@ -1244,7 +1255,7 @@ contains
           call OpenFileForAppend(tFileTyper%zFileName, &
                                  tFileTyper, qOKL)
 
-          call Write1DRealArray(ac_rfield(1:mainlen*ntrnds_G),tFileTyper,qOKL)
+!          call Write1DRealArray(ac_rfield(1:mainlen*ntrnds_G),tFileTyper,qOKL)
           if (.not. qOKL) Goto 1000
 
           call CloseFile(tFileTyper, qOKL)
@@ -1268,7 +1279,7 @@ contains
             call OpenFileForAppend(tFileTyper%zFileName, &
                                    tFileTyper, qOKL)
 
-            call Write1DRealArray(bk_rfield,tFileTyper,qOKL)
+!            call Write1DRealArray(bk_rfield,tFileTyper,qOKL)
             if (.not. qOKL) Goto 1000
 
             call CloseFile(tFileTyper, qOKL)
@@ -1341,7 +1352,7 @@ contains
             call OpenFileForAppend(tFileTypei%zFileName, &
                                    tFileTypei, qOKL)
 
-            call Write1DRealArray(fr_ifield,tFileTypei,qOKL)
+!            call Write1DRealArray(fr_ifield,tFileTypei,qOKL)
             if (.not. qOKL) Goto 1000
 
             call CloseFile(tFileTypei, qOKL)
@@ -1371,7 +1382,7 @@ contains
           call OpenFileForAppend(tFileTypei%zFileName, &
                                  tFileTypei, qOKL)
 
-          call Write1DRealArray(ac_ifield(1:mainlen*ntrnds_G),tFileTypei,qOKL)
+!          call Write1DRealArray(ac_ifield(1:mainlen*ntrnds_G),tFileTypei,qOKL)
           if (.not. qOKL) Goto 1000
 
           call CloseFile(tFileTypei, qOKL)
@@ -1393,7 +1404,7 @@ contains
           call OpenFileForAppend(tFileTypei%zFileName, &
                                  tFileTypei, qOKL)
 
-          call Write1DRealArray(ac_ifield(1:mainlen*ntrnds_G),tFileTypei,qOKL)
+!          call Write1DRealArray(ac_ifield(1:mainlen*ntrnds_G),tFileTypei,qOKL)
           if (.not. qOKL) Goto 1000
 
           call CloseFile(tFileTypei, qOKL)
@@ -1416,7 +1427,7 @@ contains
             call OpenFileForAppend(tFileTypei%zFileName, &
                                    tFileTypei, qOKL)
 
-            call Write1DRealArray(bk_ifield,tFileTypei,qOKL)
+!            call Write1DRealArray(bk_ifield,tFileTypei,qOKL)
             if (.not. qOKL) Goto 1000
 
             call CloseFile(tFileTypei, qOKL)
@@ -1605,14 +1616,14 @@ contains
     ! Data is added to array in next process, not
     ! written over.
 
-      real(kind=wp), contiguous, intent(inout) :: dadz_r(:), dadz_i(:)
+      real(kind=wp), contiguous, intent(inout) :: dadz_r(:,:,:), dadz_i(:,:,:)
 
       integer :: req, error
       integer(kind=ip) :: ij, si, sst, sse
       integer statr(MPI_STATUS_SIZE)
       integer sendstat(MPI_STATUS_SIZE)
 
-      real(kind=wp), allocatable :: Abounds(:)
+      real(kind=wp), allocatable :: Abounds(:,:,:)
 
       if (qUnique) then
 
@@ -1634,7 +1645,7 @@ contains
   !        send to rank+1
 
           !do ij = tProcInfo_G%rank + 1, tProcInfo_G%size-1
-           do ij = 1, nsnds_bf
+          do ij = 1, nsnds_bf
 
             si = rrank_v(ij, 1)
             sst = rrank_v(ij, 2)
@@ -1650,12 +1661,16 @@ contains
 !                          'to', (sse-(fz2-1))*ntrnds_G , 'to rank', tProcInfo_G%rank+ij, &
 !                          ' and size dadz_r = ', size(dadz_r), ' and si =  ', si
 
-            sst = (sst - (fz2-1)-1)*ntrndsi_G + 1
-            sse = (sse-(fz2-1))*ntrndsi_G
+!            sst = (sst - (fz2-1)-1)*ntrndsi_G + 1
+!            sse = (sse-(fz2-1))*ntrndsi_G
+!            si = si*ntrndsi_G
+
+            sst = sst - (fz2-1)
+            sse = sse - (fz2-1)
             si = si*ntrndsi_G
 
 
-            call mpi_issend(dadz_r(sst:sse), &
+            call mpi_issend(dadz_r(:,:,sst:sse), &
                       si, &
                       mpi_double_precision, &
                       tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, req, error)
@@ -1682,13 +1697,13 @@ contains
 !                          'to', lrank_v(ij)*ntrndsi_G , 'from rank', lrfromwhere(ij), &
 !                          ' and size dadz_r = ', size(dadz_r)
 
-            CALL mpi_recv( tmp_A(1:lrank_v(ij)*ntrndsi_G), &
+            CALL mpi_recv( tmp_A(:,:,1:lrank_v(ij)), &
                    lrank_v(ij)*ntrndsi_G, &
                    mpi_double_precision, &
             	     lrfromwhere(ij), 0, tProcInfo_G%comm, statr, error )
 
-            dadz_r(1:lrank_v(ij)*ntrndsi_G) = dadz_r(1:lrank_v(ij)*ntrndsi_G) &
-                                           + tmp_A(1:lrank_v(ij)*ntrndsi_G)
+            dadz_r(:,:,1:lrank_v(ij)) = dadz_r(:,:,1:lrank_v(ij)) &
+                                           + tmp_A(:,:,1:lrank_v(ij))
 
           end do
 
@@ -1716,15 +1731,15 @@ contains
             sse = rrank_v(ij, 3)
 
 
-            sst = (sst - (fz2-1)-1)*ntrndsi_G + 1
-            sse = (sse-(fz2-1))*ntrndsi_G
+            sst = sst - (fz2-1)
+            sse = sse - (fz2-1)
             si = si*ntrndsi_G
 
   !          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
   !                    mpi_double_precision, &
   !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
 
-            call mpi_issend(dadz_i(sst:sse), &
+            call mpi_issend(dadz_i(:,:,sst:sse), &
                       si, &
                       mpi_double_precision, &
                       tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, req, error)
@@ -1742,13 +1757,13 @@ contains
 
           do ij = 1, nrecvs_bf
 
-            CALL mpi_recv( tmp_A(1:lrank_v(ij)*ntrndsi_G), &
+            CALL mpi_recv( tmp_A(:,:,1:lrank_v(ij)), &
                    lrank_v(ij)*ntrndsi_G, &
                    mpi_double_precision, &
                    lrfromwhere(ij), 0, tProcInfo_G%comm, statr, error )
 
-            dadz_i(1:lrank_v(ij)*ntrndsi_G) = dadz_i(1:lrank_v(ij)*ntrndsi_G) &
-                                           + tmp_A(1:lrank_v(ij)*ntrndsi_G)
+            dadz_i(:,:,1:lrank_v(ij)) = dadz_i(:,:,1:lrank_v(ij)) &
+                                           + tmp_A(:,:,1:lrank_v(ij))
 
           end do
 
@@ -1796,24 +1811,26 @@ contains
 
 !!!! IF PERIODIC
 
-          si = ntrndsi_G * (bz2PB + 1_ip)
-          sst = ((tllen - (bz2PB+1_ip) ) * ntrndsi_G) + 1_ip
-          sse = tllen * ntrndsi_G
+          si = (bz2PB + 1_ip) * ntrndsi_G
+          sst = tllen - bz2PB
+          sse = tllen
           if (ioutInfo_G > 0) print*, size(dadz_r), tllen, mainlen
 
           if (ioutInfo_G > 0) print*, 'IM NOT UNIQUE'
 
-          dadz_r(1:si) = dadz_r(1:si) + dadz_r(sst:sse)
-          dadz_i(1:si) = dadz_i(1:si) + dadz_i(sst:sse)
+          dadz_r(:,:,1:bz2PB + 1_ip) = dadz_r(:,:,1:bz2PB + 1_ip) + &
+                                                    dadz_r(:,:,sst:sse)
+          dadz_i(:,:,1:bz2PB + 1_ip) = dadz_i(:,:,1:bz2PB + 1_ip) + &
+                                                    dadz_i(:,:,sst:sse)
 
 
         else
 
 
 
-          si = ntrndsi_G * (bz2PB + 1_ip)
-          sst = ((tllen - (bz2PB + 1_ip) ) * ntrndsi_G) + 1_ip
-          sse = tllen * ntrndsi_G
+          si = (bz2PB + 1_ip) * ntrndsi_G
+          sst = tllen - bz2PB
+          sse = tllen
 
           if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
 
@@ -1831,7 +1848,7 @@ contains
 
           if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
 
-            call mpi_issend(dadz_r(sst:sse), &
+            call mpi_issend(dadz_r(:,:,sst:sse), &
                             si, &
                             mpi_double_precision, &
                             0_ip, 0, &
@@ -1842,13 +1859,13 @@ contains
 
           if (tProcInfo_G%rank == 0) then
 
-            allocate(Abounds(si))
+            allocate(Abounds(nspindx, nspindy, (bz2PB + 1_ip)))
 
             call mpi_recv( Abounds, si, mpi_double_precision, &
                      tProcInfo_G%size-1_ip, 0, tProcInfo_G%comm, &
                      statr, error )
 
-            dadz_r(1:si) = dadz_r(1:si) + Abounds
+            dadz_r(:,:,1:(bz2PB + 1_ip)) = dadz_r(:,:,1:(bz2PB + 1_ip)) + Abounds
 
           end if
 
@@ -1856,7 +1873,7 @@ contains
           if (tProcInfo_G%rank == tProcInfo_G%size-1) then
 
             call mpi_wait( req,sendstat,error )
-            call mpi_issend(dadz_i(sst:sse), si, mpi_double_precision, &
+            call mpi_issend(dadz_i(:,:,sst:sse), si, mpi_double_precision, &
                             0_ip, 0, tProcInfo_G%comm, req, error)
 
           end if
@@ -1867,7 +1884,7 @@ contains
                       tProcInfo_G%size-1_ip, 0, tProcInfo_G%comm, &
                       statr, error )
 
-            dadz_i(1:si) = dadz_i(1:si) + Abounds
+            dadz_i(:,:,1:(bz2PB + 1_ip)) = dadz_i(:,:,1:(bz2PB + 1_ip)) + Abounds
 
             deallocate(Abounds) 
 
@@ -1885,7 +1902,7 @@ contains
        
           if (tProcInfo_G%rank == 0_ip) then
        
-            call mpi_issend(dadz_r(1:si), si, mpi_double_precision, &
+            call mpi_issend(dadz_r(:,:,1:(bz2PB + 1_ip)), si, mpi_double_precision, &
                             tProcInfo_G%size-1_ip, 0, &
                             tProcInfo_G%comm, req, error)
 
@@ -1895,7 +1912,7 @@ contains
 
           if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
 
-            call mpi_recv( dadz_r(sst:sse), si, mpi_double_precision, &
+            call mpi_recv( dadz_r(:,:,sst:sse), si, mpi_double_precision, &
                      0, 0, tProcInfo_G%comm, statr, error )
        
           end if
@@ -1904,7 +1921,7 @@ contains
           if (tProcInfo_G%rank == 0_ip) then
 
             call mpi_wait( req,sendstat,error )
-            call mpi_issend(dadz_i(1:si), si, mpi_double_precision, &
+            call mpi_issend(dadz_i(:,:,1:(bz2PB + 1_ip)), si, mpi_double_precision, &
                             tProcInfo_G%size-1_ip, 0, &
                             tProcInfo_G%comm, req, error)
 
@@ -1913,7 +1930,7 @@ contains
 
           if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
 
-            call mpi_recv( dadz_i(sst:sse), si, mpi_double_precision, &
+            call mpi_recv( dadz_i(:,:,sst:sse), si, mpi_double_precision, &
                      0, 0, tProcInfo_G%comm, statr, error )
 
           end if
@@ -1943,7 +1960,7 @@ contains
 
     subroutine pupd8(ar, ai)
       
-      real(kind=wp), intent(inout) :: ar(:), ai(:)
+      real(kind=wp), intent(inout) :: ar(:,:,:), ai(:,:,:)
 
       integer :: req, error
       integer(kind=ip) :: si, sst, sse
@@ -1955,12 +1972,12 @@ contains
         if (qUnique) then
 
           si = ntrnds_G * (bz2PB + 1_ip)
-          sst = ((tllen - (bz2PB + 1_ip) ) * ntrnds_G) + 1_ip
-          sse = tllen * ntrnds_G
+          sst = tllen - bz2PB
+          sse = tllen
           
           if (tProcInfo_G%rank == 0_ip) then
        
-            call mpi_issend(ar(1:si), si, mpi_double_precision, &
+            call mpi_issend(ar(:,:,1:(bz2PB + 1_ip)), si, mpi_double_precision, &
                             tProcInfo_G%size-1_ip, 0, &
                             tProcInfo_G%comm, req, error)
 
@@ -1970,7 +1987,7 @@ contains
 
           if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
 
-            call mpi_recv( ar(sst:sse), si, mpi_double_precision, &
+            call mpi_recv( ar(:,:,sst:sse), si, mpi_double_precision, &
                      0, 0, tProcInfo_G%comm, statr, error )
        
           end if
@@ -1979,7 +1996,7 @@ contains
           if (tProcInfo_G%rank == 0_ip) then
 
             call mpi_wait( req,sendstat,error )
-            call mpi_issend(ai(1:si), si, mpi_double_precision, &
+            call mpi_issend(ai(:,:,1:(bz2PB + 1_ip)), si, mpi_double_precision, &
                             tProcInfo_G%size-1_ip, 0, &
                             tProcInfo_G%comm, req, error)
 
@@ -1988,7 +2005,7 @@ contains
 
           if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
 
-            call mpi_recv( ai(sst:sse), si, mpi_double_precision, &
+            call mpi_recv( ai(:,:,sst:sse), si, mpi_double_precision, &
                      0, 0, tProcInfo_G%comm, statr, error )
 
           end if
@@ -2019,7 +2036,7 @@ contains
     ! Send sA from buffer to process on the left
     ! Data in 'buffer' on the left is overwritten.
 
-      real(kind=wp), contiguous, intent(inout) :: ac_rl(:), ac_il(:)
+      real(kind=wp), contiguous, intent(inout) :: ac_rl(:,:,:), ac_il(:,:,:)
 
       integer(kind=ip) :: req, error, ij, si, sst, sse
       integer statr(MPI_STATUS_SIZE)
@@ -2038,7 +2055,7 @@ contains
 
           do ij = 1, nrecvs_bf
 
-            CALL mpi_issend( ac_rl(1:lrank_v(ij)*ntrndsi_G), &
+            CALL mpi_issend( ac_rl(:,:,1:lrank_v(ij)), &
                    lrank_v(ij)*ntrndsi_G, &
                    mpi_double_precision, &
                    lrfromwhere(ij), 0, tProcInfo_G%comm, req, error )
@@ -2064,15 +2081,15 @@ contains
             sst = rrank_v(ij, 2)
             sse = rrank_v(ij, 3)
 
-            sst = (sst - (fz2-1)-1)*ntrndsi_G + 1
-            sse = (sse-(fz2-1))*ntrndsi_G
+            sst = sst - (fz2-1)
+            sse = sse - (fz2-1)
             si = si*ntrndsi_G
 
   !          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
   !                    mpi_double_precision, &
   !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
 
-            call mpi_recv(ac_rl(sst:sse), &
+            call mpi_recv(ac_rl(:,:,sst:sse), &
                       si, &
                       mpi_double_precision, &
                       tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, statr, error)
@@ -2092,7 +2109,7 @@ contains
 
           do ij = 1, nrecvs_bf
 
-            CALL mpi_issend( ac_il(1:lrank_v(ij)*ntrndsi_G), &
+            CALL mpi_issend( ac_il(:,:,1:lrank_v(ij)), &
                    lrank_v(ij)*ntrndsi_G, &
                    mpi_double_precision, &
                    lrfromwhere(ij), 0, tProcInfo_G%comm, req, error )
@@ -2118,15 +2135,15 @@ contains
             sst = rrank_v(ij, 2)
             sse = rrank_v(ij, 3)
 
-            sst = (sst - (fz2-1)-1)*ntrndsi_G + 1
-            sse = (sse-(fz2-1))*ntrndsi_G
+            sst = sst - (fz2-1)
+            sse = sse - (fz2-1)
             si = si*ntrndsi_G
 
   !          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
   !                    mpi_double_precision, &
   !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
 
-            call mpi_recv(ac_il( sst:sse ), &
+            call mpi_recv(ac_il(:,:,sst:sse), &
                       si, &
                       mpi_double_precision, &
                       tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, statr, error)
@@ -2223,7 +2240,7 @@ contains
 
     implicit none
 
-    real(kind=wp), contiguous, intent(in) :: inner_ra(:), inner_ia(:)
+    real(kind=wp), contiguous, intent(in) :: inner_ra(:,:,:), inner_ia(:,:,:)
 
     integer(kind=ip) :: iz, ssti, ssei, iy, sst, sse
     integer(kind=ip) :: nxout, nyout ! should be made global and calculated
@@ -2232,27 +2249,33 @@ contains
     nyout = (ny_g - nspindy)/2
 
 
-    do iz = fz2, bz2
+!    do iz = fz2, bz2
+!
+!      do iy = 1, nspinDY
+!
+!        sst = (iz - (fz2-1)-1)*ntrnds_G + &
+!                         nx_G*(nyout+(iy-1)) + &
+!                         nxout + 1
+!
+!        sse = sst + nspinDX - 1
+!
+!        ssti = (iz - (fz2-1)-1)*ntrndsi_G + &
+!                         nspinDX*(iy-1) + 1
+!        ssei = ssti + nspinDX - 1
+!
+!        ac_rfield(nxout+1:nx_g-nxout, nyout+1:ny_g-nyout, 1:tllen) = &
+!                         inner_ra(:,:,1:tllen)
+!        ac_ifield(sst:sse) = inner_ia(ssti:ssei)
+!
+!      end do
+!
+!    end do
 
-      do iy = 1, nspinDY
+    ac_rfield(nxout+1:nx_g-nxout, nyout+1:ny_g-nyout, 1:tllen) = &
+                      inner_ra(:,:,1:tllen)
 
-        sst = (iz - (fz2-1)-1)*ntrnds_G + &
-                         nx_G*(nyout+(iy-1)) + &
-                         nxout + 1
-
-        sse = sst + nspinDX - 1
-
-        ssti = (iz - (fz2-1)-1)*ntrndsi_G + &
-                         nspinDX*(iy-1) + 1
-        ssei = ssti + nspinDX - 1
-
-        ac_rfield(sst:sse) = inner_ra(ssti:ssei)
-        ac_ifield(sst:sse) = inner_ia(ssti:ssei)
-
-      end do
-
-    end do
-
+    ac_ifield(nxout+1:nx_g-nxout, nyout+1:ny_g-nyout, 1:tllen) = &
+                      inner_ia(:,:,1:tllen)
 
   end subroutine inner2Outer
 
@@ -2265,7 +2288,7 @@ contains
 
     implicit none
 
-    real(kind=wp), contiguous, intent(out) :: inner_ra(:), inner_ia(:)
+    real(kind=wp), contiguous, intent(out) :: inner_ra(:,:,:), inner_ia(:,:,:)
 
     integer(kind=ip) :: iz, sst, sse, ssti, ssei
     integer(kind=ip) :: nxout, nyout, iy ! should be made global and calculated
@@ -2273,27 +2296,32 @@ contains
     nxout = (nx_g - nspindx)/2
     nyout = (ny_g - nspindy)/2
 
-    do iz = fz2, bz2
+!    do iz = fz2, bz2
+!
+!      do iy = 1, nspinDY
+!
+!        sst = (iz - (fz2-1)-1)*ntrnds_G + &
+!                         nx_G*(nyout+(iy-1)) + &
+!                         nxout + 1
+!
+!        sse = sst + nspinDX - 1
+!
+!        ssti = (iz - (fz2-1)-1)*ntrndsi_G + &
+!                         nspinDX*(iy-1) + 1
+!        ssei = ssti + nspinDX - 1
+!
+!        inner_ra(ssti:ssei) = ac_rfield(sst:sse)
+!        inner_ia(ssti:ssei) = ac_ifield(sst:sse)
+!
+!      end do
+!
+!    end do
 
-      do iy = 1, nspinDY
+    inner_ra(:,:,1:tllen) = &
+          ac_rfield(nxout+1:nx_g-nxout, nyout+1:ny_g-nyout, 1:tllen)
 
-        sst = (iz - (fz2-1)-1)*ntrnds_G + &
-                         nx_G*(nyout+(iy-1)) + &
-                         nxout + 1
-
-        sse = sst + nspinDX - 1
-
-        ssti = (iz - (fz2-1)-1)*ntrndsi_G + &
-                         nspinDX*(iy-1) + 1
-        ssei = ssti + nspinDX - 1
-
-        inner_ra(ssti:ssei) = ac_rfield(sst:sse)
-        inner_ia(ssti:ssei) = ac_ifield(sst:sse)
-
-      end do
-
-    end do
-
+    inner_ia(:,:,1:tllen) = &
+          ac_ifield(nxout+1:nx_g-nxout, nyout+1:ny_g-nyout, 1:tllen)
 
   end subroutine outer2Inner
 
@@ -3241,7 +3269,7 @@ contains
 ! inputs
 
     integer(kind=ip), intent(in) :: old_dist(:,:), new_dist(:,:)
-    real(kind=wp), intent(inout) :: field_old(:), field_new(:)
+    real(kind=wp), intent(inout) :: field_old(:,:,:), field_new(:,:,:)
 
 ! local
 
@@ -3392,7 +3420,7 @@ contains
     ! inputs
 
     integer(kind=ip), intent(in) :: old_dist(:,:), new_dist(:,:)
-    real(kind=wp), intent(inout) :: field_old(:), field_new(:)
+    real(kind=wp), intent(inout) :: field_old(:,:,:), field_new(:,:,:)
 
     ! local
 
@@ -3441,22 +3469,22 @@ contains
             nbase = new_dist(iproc_r+1, 2) - 1
 
             st_ind_new = send_ptrs(iproc_r+1, 2) - nbase
-            st_ind_new = (st_ind_new - 1)* ntrnds_G + 1
+            !st_ind_new = (st_ind_new - 1)* ntrnds_G + 1
 
             ed_ind_new = send_ptrs(iproc_r+1, 3) - nbase
-            ed_ind_new = ed_ind_new * ntrnds_G
+            !ed_ind_new = ed_ind_new * ntrnds_G
 
             st_ind_old = send_ptrs(iproc_r+1, 2) - obase
-            st_ind_old = (st_ind_old - 1) * ntrnds_G + 1
+            !st_ind_old = (st_ind_old - 1) * ntrnds_G + 1
 
             ed_ind_old = send_ptrs(iproc_r+1, 3) - obase
-            ed_ind_old = ed_ind_old * ntrnds_G
+            !ed_ind_old = ed_ind_old * ntrnds_G
 
 
 !            print*, 'AD st_ind_old = ', st_ind_old, ed_ind_old
 !            print*, 'AD st_ind_new = ', st_ind_new, ed_ind_new
 
-            field_new(st_ind_new:ed_ind_new) = field_old(st_ind_old:ed_ind_old)
+            field_new(:,:,st_ind_new:ed_ind_new) = field_old(:,:,st_ind_old:ed_ind_old)
 
           else
 
@@ -3464,16 +3492,16 @@ contains
             nbase = new_dist(iproc_r+1, 2) - 1
 
             st_ind_new = send_ptrs(iproc_r+1, 2) - nbase
-            st_ind_new = (st_ind_new - 1)* ntrnds_G + 1
+            !st_ind_new = (st_ind_new - 1)* ntrnds_G + 1
 
             ed_ind_new = send_ptrs(iproc_r+1, 3) - nbase
-            ed_ind_new = ed_ind_new * ntrnds_G
+            !ed_ind_new = ed_ind_new * ntrnds_G
 
             st_ind_old = send_ptrs(iproc_r+1, 2) - obase
-            st_ind_old = (st_ind_old - 1) * ntrnds_G + 1
+            !st_ind_old = (st_ind_old - 1) * ntrnds_G + 1
 
             ed_ind_old = send_ptrs(iproc_r+1, 3) - obase
-            ed_ind_old = ed_ind_old * ntrnds_G
+            !ed_ind_old = ed_ind_old * ntrnds_G
 
 
             if (tProcInfo_G%rank == iproc_s) then
@@ -3481,7 +3509,7 @@ contains
 !              print*, 'SD st_ind_old = ', st_ind_old, ed_ind_old, size(field_old), &
 !              send_ptrs(iproc_r+1,1)
 
-              call mpi_issend(field_old(st_ind_old:ed_ind_old), &
+              call mpi_issend(field_old(:,:,st_ind_old:ed_ind_old), &
                           send_ptrs(iproc_r+1,1)*ntrnds_G, &
                           mpi_double_precision, iproc_r, 0, tProcInfo_G%comm, req, error)
 
@@ -3492,7 +3520,7 @@ contains
 !              print*, 'SD st_ind_new = ', st_ind_new, ed_ind_new, size(field_new), &
 !                           send_ptrs(iproc_r+1,1)
 
-              call mpi_recv(field_new(st_ind_new:ed_ind_new), &
+              call mpi_recv(field_new(:,:,st_ind_new:ed_ind_new), &
                             send_ptrs(iproc_r+1,1)*ntrnds_G, &
                             mpi_double_precision, iproc_s, 0, tProcInfo_G%comm, statr, error)
 
@@ -3994,8 +4022,8 @@ contains
     tmpez2_act = nz2_G
 
 
-    allocate(tre_fft(tmpmainlen*ntrnds_G), &
-             tim_fft(tmpmainlen*ntrnds_G))
+    allocate(tre_fft(nx_g, ny_g, tmpmainlen), &
+             tim_fft(nx_g, ny_g, tmpmainlen))
 
 
     tre_fft = 0_wp
@@ -4057,12 +4085,12 @@ contains
     if (fieldMesh == iPeriodic) then
 
       si = (nx_g * ny_g) * (bz2PB + 1_ip)
-      sst = ((tllen - (bz2PB+1_ip) ) * (nx_g * ny_g)) + 1_ip
-      sse = tllen * (nx_g * ny_g)
+      sst = tllen - bz2PB
+      sse = tllen !* (nx_g * ny_g)
 
       if (tProcInfo_G%rank == 0_ip) then
 
-        call mpi_issend(ac_rfield(1:si), &
+        call mpi_issend(ac_rfield(:,:,1:bz2PB + 1_ip), &
                         si, &
                         mpi_double_precision, &
                         tProcInfo_G%size-1_ip, 0, &
@@ -4074,7 +4102,7 @@ contains
 
       if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
    
-        call mpi_recv( ac_rfield(sst:sse), &
+        call mpi_recv( ac_rfield(:,:,sst:sse), &
                  si, mpi_double_precision, &
                  0, 0, tProcInfo_G%comm, &
                  statr, error )
@@ -4085,7 +4113,7 @@ contains
       if (tProcInfo_G%rank == 0_ip) then
 
         call mpi_wait( req,sendstat,error )
-        call mpi_issend(ac_ifield(1:si), &
+        call mpi_issend(ac_ifield(:,:,1:bz2PB + 1_ip), &
                         si, &
                         mpi_double_precision, &
                         tProcInfo_G%size-1_ip, 0, &
@@ -4098,7 +4126,7 @@ contains
    
       if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
 
-        call mpi_recv( ac_ifield(sst:sse), &
+        call mpi_recv( ac_ifield(:,:,sst:sse), &
                  si, mpi_double_precision, &
                  0, 0, tProcInfo_G%comm, &
                  statr, error )

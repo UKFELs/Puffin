@@ -452,7 +452,7 @@ contains
 !! This version dumps on each rank separately.
   subroutine outputH5Field3DID(time, sz_loc, iL, error, nlonglength, dsetname, rawdata, nlo, nhi, chkactiveflag)
     implicit none
-    REAL(kind=WP), intent(in) :: time, sz_loc, rawdata(:) !< The data to write
+    REAL(kind=WP), intent(in) :: time, sz_loc, rawdata(:,:,:) !< The data to write
     integer(kind=ip), intent(in) :: iL
     CHARACTER(*), intent(in) :: dsetname !< Dataset name
     INTEGER(kind=IP), intent(in) :: nlonglength !<number of cells in z in this section

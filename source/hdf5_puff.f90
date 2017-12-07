@@ -93,12 +93,12 @@ contains
 !      print *,'2 component 1D field output not currently supported'
 !        print *, "But trying anyway - Dumping all fields together"
         call cpu_time(stime)
-        call outputH5Field1D2CompSD(time, sz_loc, iL, error, tlflen, fr_rfield,  ffs, ffe, 0, 1, .false.)
-        call outputH5Field1D2CompSD(time, sz_loc, iL, error, tlflen, fr_ifield,  ffs, ffe, 1, 2, .false.)
-        call outputH5Field1D2CompSD(time, sz_loc, iL, error, mainlen, ac_rfield, fz2, ez2, 0, 2, .true.)
-        call outputH5Field1D2CompSD(time, sz_loc, iL, error, mainlen, ac_ifield, fz2, ez2, 1, 2, .true.)
-        call outputH5Field1D2CompSD(time, sz_loc, iL, error, tlelen, bk_rfield,  ees, eee, 0, 2, .false.)
-        call outputH5Field1D2CompSD(time, sz_loc, iL, error, tlelen, bk_ifield,  ees, eee, 1, 2, .false.)
+!        call outputH5Field1D2CompSD(time, sz_loc, iL, error, tlflen, fr_rfield,  ffs, ffe, 0, 1, .false.)
+!        call outputH5Field1D2CompSD(time, sz_loc, iL, error, tlflen, fr_ifield,  ffs, ffe, 1, 2, .false.)
+!        call outputH5Field1D2CompSD(time, sz_loc, iL, error, mainlen, ac_rfield, fz2, ez2, 0, 2, .true.)
+!        call outputH5Field1D2CompSD(time, sz_loc, iL, error, mainlen, ac_ifield, fz2, ez2, 1, 2, .true.)
+!        call outputH5Field1D2CompSD(time, sz_loc, iL, error, tlelen, bk_rfield,  ees, eee, 0, 2, .false.)
+!        call outputH5Field1D2CompSD(time, sz_loc, iL, error, tlelen, bk_ifield,  ees, eee, 1, 2, .false.)
         call cpu_time(ftime)
 
 !        print '("Dumped fields together. Took time = ",f6.3," secs on rank ",i5)' &

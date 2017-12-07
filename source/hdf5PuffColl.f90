@@ -670,7 +670,7 @@ contains
 !! This version dumps one single file, but writes individually rather than collectively
   subroutine outputH5Field3DSD(time, sz_loc, iL, error, nlonglength, rawdata, nlo, nhi, component, createNewFlag, chkactiveflag)
     implicit none
-    REAL(kind=WP), intent(in) :: time, sz_loc, rawdata(:) !< The data to write
+    REAL(kind=WP), intent(in) :: time, sz_loc, rawdata(:,:,:) !< The data to write
     integer(kind=ip), intent(in) :: iL
     INTEGER(kind=IP), intent(in) :: nlonglength !<number of cells in z in this section
     INTEGER(kind=IP), intent(in) :: nlo,nhi !< cell range in z in this raw data selection

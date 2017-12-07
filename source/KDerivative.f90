@@ -47,14 +47,14 @@ contains
 ! sdydz   OUTPUT    Derivative of z and y
 
     real(kind=wp), intent(in)  :: sz
-    real(kind=wp), contiguous, intent(in)  :: sAr(:), sAi(:)
+    real(kind=wp), contiguous, intent(in)  :: sAr(:,:,:), sAi(:,:,:)
     real(kind=wp), contiguous, intent(in)  :: sx(:), sy(:), sz2(:), &
                                   spr(:), spi(:), sp2(:)
 
     real(kind=wp), contiguous, intent(inout)  :: sdx(:), sdy(:), sdz2(:), &
                                   sdpr(:), sdpi(:), sdp2(:)
 
-    real(kind=wp), contiguous, intent(inout) :: sdAr(:), sdAi(:)
+    real(kind=wp), contiguous, intent(inout) :: sdAr(:,:,:), sdAi(:,:,:)
 
 !                 LOCAL ARGS
 !

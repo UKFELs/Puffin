@@ -270,6 +270,27 @@ END SUBROUTINE gather1A
 
 !======================================================================
 
+SUBROUTINE gather3A(A_local, sA, nA_loc, ntrns, nA, recvs, displs)
+
+! Gather from A_local to A
+
+REAL(KIND=WP),INTENT(IN)  ::  A_local(:,:,:)
+INTEGER(kind=ip),INTENT(IN)  ::  nA_loc,nA, ntrns
+INTEGER(kind=ip),INTENT(IN)  ::  recvs(:),displs(:)
+REAL(KIND=WP),INTENT(OUT) ::  sA(:,:,:)
+
+INTEGER(KIND=IP)  ::  error, natot
+
+  natot = nA_loc * ntrns
+
+  CALL MPI_ALLGATHERV(A_local(:,:,1:nA_loc), natot, MPI_DOUBLE_PRECISION, &
+                      sA(:,:,1:nA), recvs, displs, MPI_DOUBLE_PRECISION, &
+                      tProcInfo_G%comm, error)
+
+END SUBROUTINE gather3A
+
+!======================================================================
+
 SUBROUTINE scatter2Loc(A_local,sA,nA_loc,nA,recvs,displs,root)
 ! Scatter from A on root to A_local on all processes
 REAL(KIND=WP),INTENT(INOUT)  ::  A_local(:)

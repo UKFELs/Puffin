@@ -216,7 +216,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 ! LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
 
   real(kind=wp), intent(in)      ::   h
-  real(kind=wp), dimension(:), intent(inout)  :: sAr, sAi
+  real(kind=wp), intent(inout)  :: sAr(:,:,:), sAi(:,:,:)
   logical, intent(out)  ::  qOK
 
   integer(kind=ip) :: ntrh, ix, iy, iz
@@ -252,16 +252,18 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 !  sA_local = 0.0_wp
   ntrh = NX_G * NY_G
 
-  do iz = 1, tTransInfo_G%loc_nz2
-    do iy = 1, NY_G
-      do ix = 1, NX_G
+!  do iz = 1, tTransInfo_G%loc_nz2
+!    do iy = 1, NY_G
+!      do ix = 1, NX_G
+!
+!        Afftw(ix,iy,iz) = CMPLX(sAr(ix + nx_g*(iy-1) + ntrh*(iz-1)), &
+!                     sAi(ix + nx_g*(iy-1) + ntrh*(iz-1)), C_DOUBLE_COMPLEX)
+!
+!      end do
+!    end do
+!  end do
 
-        Afftw(ix,iy,iz) = CMPLX(sAr(ix + nx_g*(iy-1) + ntrh*(iz-1)), &
-                     sAi(ix + nx_g*(iy-1) + ntrh*(iz-1)), C_DOUBLE_COMPLEX)
-
-      end do
-    end do
-  end do
+  Afftw(:,:,:) = CMPLX(sAr(:,:,:), sAi(:,:,:))
 
   call Get_time(tr_time_e)
 
@@ -324,16 +326,19 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 !      assign data back to real and imag parts for integration
 !                        through undulator
 
-  do iz = 1, tTransInfo_G%loc_nz2
-    do iy = 1, NY_G
-      do ix = 1, NX_G
+!  do iz = 1, tTransInfo_G%loc_nz2
+!    do iy = 1, NY_G
+!      do ix = 1, NX_G
+!
+!        sAr(ix + nx_g*(iy-1) + ntrh*(iz-1)) = real(Afftw(ix,iy,iz), kind=wp)
+!        sAi(ix + nx_g*(iy-1) + ntrh*(iz-1)) = aimag(Afftw(ix,iy,iz))
+!
+!      end do
+!    end do
+!  end do
 
-        sAr(ix + nx_g*(iy-1) + ntrh*(iz-1)) = real(Afftw(ix,iy,iz), kind=wp)
-        sAi(ix + nx_g*(iy-1) + ntrh*(iz-1)) = aimag(Afftw(ix,iy,iz))
-
-      end do
-    end do
-  end do
+  sAr = real(Afftw, kind=wp)
+  sAi = aimag(Afftw)
 
 !              Set error flag and exit
 

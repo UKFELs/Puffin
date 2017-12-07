@@ -84,7 +84,7 @@ contains
 
 !    if (count(abs(ac_rfield) > 0.0_wp) <= 0) print*, 'HELP IM RUBBUSH POW'
 
-    call gPower(ac_rfield(1:mainlen*ntrnds_G), ac_ifield(1:mainlen*ntrnds_G), ac_power)
+    call gPower(ac_rfield(:,:,1:mainlen), ac_ifield(:,:,1:mainlen), ac_power)
 
 !if (count(abs(ac_power) > 0.0_wp) <= 0) print*, 'HELP IM RUBBUSH'
 
@@ -242,8 +242,8 @@ contains
 !
 !       ARGUMENTS
 
-    real(kind=wp), intent(in) :: rfield(:), &  !< Input real part of A_perp
-                                 ifield(:)     !< Input imaginary part of A_perp
+    real(kind=wp), intent(in) :: rfield(:,:,:), &  !< Input real part of A_perp
+                                 ifield(:,:,:)     !< Input imaginary part of A_perp
 
     real(kind=wp), intent(out) :: power(:)   !< Output Power cal'd from rfield and ifield
 
@@ -267,10 +267,10 @@ contains
 
   subroutine fPower_1D(rfield, ifield, power)
 
-    real(kind=wp), intent(in) :: rfield(:), ifield(:)
+    real(kind=wp), intent(in) :: rfield(:,:,:), ifield(:,:,:)
     real(kind=wp), intent(out) :: power(:)
 
-    power = abs(rfield)**2.0_WP + abs(ifield)**2.0_WP
+    power = abs(rfield(1,1,:))**2.0_WP + abs(ifield(1,1,:))**2.0_WP
    ! print*, power
 
   end subroutine fPower_1D
@@ -286,12 +286,12 @@ contains
 !
 !       ARGUMENTS
 
-    real(kind=wp), intent(in) :: rfield(:), ifield(:), &
+    real(kind=wp), intent(in) :: rfield(:,:,:), ifield(:,:,:), &
                                  xaxis(:), yaxis(:)
 
     real(kind=wp), intent(out) :: power(:)
 
-    real(kind=wp), allocatable :: intens(:), intens2(:,:)
+    real(kind=wp), allocatable :: intens(:,:), intens2(:,:)
     integer(kind=ip) :: i, bt, et, ntr, nx, ny, nz2, nno
 
     integer :: error
@@ -303,7 +303,7 @@ contains
 
     nz2 = size(power)
 
-    allocate(intens(nx*ny), intens2(nx,ny))
+    allocate(intens(nx,ny))
 
     !print*, 'starting loop round trans slices'
 
@@ -315,19 +315,19 @@ contains
       !call mpi_barrier(tProcInfo_G%comm, error)
      ! print*, bt, et, i, nZ2, size(rfield)
 
-      intens = abs(rfield(bt:et))**2.0_WP + abs(ifield(bt:et))**2.0_WP
+      intens = abs(rfield(:,:,i))**2.0_WP + abs(ifield(:,:,i))**2.0_WP
 
       !call mpi_barrier(tProcInfo_G%comm, error)
       !print*, 'got intensity', i, intens(1:20)
 
 
 
-      intens2 = reshape(intens, (/nx,ny/))
+!      intens2 = reshape(intens, (/nx,ny/))
       !call mpi_barrier(tProcInfo_G%comm, error)
       !print*, 'reshaped', i
 
 
-      power(i) = m_trapz2D(xaxis, yaxis, intens2)
+      power(i) = m_trapz2D(xaxis, yaxis, intens)
       !call mpi_barrier(tProcInfo_G%comm, error)
       !print*, 'integrated', i
 
@@ -345,7 +345,7 @@ contains
 
     !print*, 'end of fPower_3D'
 
-    deallocate(intens,intens2)
+    deallocate(intens)
 
   end subroutine fPower_3D
 

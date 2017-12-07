@@ -1319,14 +1319,16 @@ SUBROUTINE getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
                                ph_sh(:), magxs(:), magys(:), dels(:)
   LOGICAL, INTENT(IN) :: qFTs(:)
   INTEGER(KIND=IP), INTENT(IN) :: nSeeds
-  REAL(KIND=WP), INTENT(OUT) :: xfieldt(:), yfieldt(:)
+  REAL(KIND=WP), INTENT(OUT) :: xfieldt(:,:,:), yfieldt(:,:,:)
 
 !            LOCAL ARGS
 
-  INTEGER(KIND=IP) :: ind, fsz
-  REAL(KIND=WP), allocatable :: xfield(:), yfield(:)
+  INTEGER(KIND=IP) :: ind, fsx, fsy, fsz
+  REAL(KIND=WP), allocatable :: xfield(:,:,:), yfield(:,:,:)
 
-  fsz = size(xfieldt)
+  fsx = size(xfieldt, 1)
+  fsy = size(xfieldt, 2)
+  fsz = size(xfieldt, 3)
 
   !  if (fsz .ne. size(yfieldt)) then
 
@@ -1334,7 +1336,7 @@ SUBROUTINE getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
 
   !  end if
 
-  allocate(xfield(fsz), yfield(fsz))
+  allocate(xfield(fsx, fsy, fsz), yfield(fsx, fsy, fsz))
 
 
   xfieldt = 0.0_WP
@@ -1369,7 +1371,7 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
   REAL(KIND=WP), INTENT(IN) :: sig(:), cen, sSigR, rho, fr, ph_sh,&
                                magx, magy, dels(:)
   LOGICAL, INTENT(IN) :: qFT, qRnd
-  REAL(KIND=WP), INTENT(OUT) :: xfield(:), yfield(:)
+  REAL(KIND=WP), INTENT(OUT) :: xfield(:,:,:), yfield(:,:,:)
 
 !             LOCAL ARGS
 
@@ -1484,22 +1486,25 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
       do ind3 = 1,NN(iX_CG)
 
         gind = ind3 + NN(iX_CG)*(ind2-1) + NN(iX_CG)*NN(iY_CG)*(ind1-1)
-        xfield(gind) = magx * xenv(ind3) * yenv(ind2) * oscx(ind1)
-        yfield(gind) = magy * xenv(ind3) * yenv(ind2) * oscy(ind1)
+        xfield(ind3, ind2, ind1) = magx * xenv(ind3) * yenv(ind2) * oscx(ind1)
+        yfield(ind3, ind2, ind1) = magy * xenv(ind3) * yenv(ind2) * oscy(ind1)
 
       end do
     end do
   end do
 
-
-deallocate(xnds, ynds, &
-           z2nds, &
-           xenv, yenv, &
-           z2env, oscx, &
-           oscy)
+!  xfield(gind) = magx * xenv(ind3) * yenv(ind2) * oscx(ind1)
+!  yfield(gind) = magy * xenv(ind3) * yenv(ind2) * oscy(ind1)
 
 
-END SUBROUTINE getSeed
+  deallocate(xnds, ynds, &
+             z2nds, &
+             xenv, yenv, &
+             z2env, oscx, &
+             oscy)
+
+
+end subroutine getSeed
 
 
 

@@ -15,16 +15,16 @@ use ParaField
 
 implicit none
 
-  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dadz_r0, dadz_i0
-  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dadz_r1, dadz_i1
-  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dadz_r2, dadz_i2
+  REAL(KIND=WP), DIMENSION(:,:,:),ALLOCATABLE :: dadz_r0, dadz_i0
+  REAL(KIND=WP), DIMENSION(:,:,:),ALLOCATABLE :: dadz_r1, dadz_i1
+  REAL(KIND=WP), DIMENSION(:,:,:),ALLOCATABLE :: dadz_r2, dadz_i2
 
-  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localtr0, A_localti0
-  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localtr1, A_localti1
-  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localtr2, A_localti2
-  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localtr3, A_localti3
+  REAL(KIND=WP), DIMENSION(:,:,:),ALLOCATABLE :: A_localtr0, A_localti0
+  REAL(KIND=WP), DIMENSION(:,:,:),ALLOCATABLE :: A_localtr1, A_localti1
+  REAL(KIND=WP), DIMENSION(:,:,:),ALLOCATABLE :: A_localtr2, A_localti2
+  REAL(KIND=WP), DIMENSION(:,:,:),ALLOCATABLE :: A_localtr3, A_localti3
 
-  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: ac_rfield_in, ac_ifield_in
+  REAL(KIND=WP), DIMENSION(:,:,:),ALLOCATABLE :: ac_rfield_in, ac_ifield_in
 
   REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dxdx, dydx, dz2dx, dpxdx, dpydx, dpz2dx
 
@@ -79,8 +79,8 @@ subroutine rk4par(sZ,h,qD)
 
 
 
-  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dAdx
-  REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localt 
+  REAL(KIND=WP), DIMENSION(:,:,:),ALLOCATABLE :: dAdx
+  REAL(KIND=WP), DIMENSION(:,:,:),ALLOCATABLE :: A_localt 
   INTEGER(KIND=IP) :: error, trans
 
 !    Transverse nodes
@@ -388,16 +388,16 @@ subroutine allact_rk4_arrs()
   allocate(Dpz2Dx(iNumberElectrons_G))    
 
 
-  allocate(dadz_r0(tllen43D), dadz_i0(tllen43D))
-  allocate(dadz_r1(tllen43D), dadz_i1(tllen43D))
-  allocate(dadz_r2(tllen43D), dadz_i2(tllen43D))
+  allocate(dadz_r0(nspindx, nspindy, tllen), dadz_i0(nspindx, nspindy, tllen))
+  allocate(dadz_r1(nspindx, nspindy, tllen), dadz_i1(nspindx, nspindy, tllen))
+  allocate(dadz_r2(nspindx, nspindy, tllen), dadz_i2(nspindx, nspindy, tllen))
 
-  allocate(A_localtr0(tllen43D), A_localti0(tllen43D))
-  allocate(A_localtr1(tllen43D), A_localti1(tllen43D))
-  allocate(A_localtr2(tllen43D), A_localti2(tllen43D))
-  allocate(A_localtr3(tllen43D), A_localti3(tllen43D))
+  allocate(A_localtr0(nspindx, nspindy, tllen), A_localti0(nspindx, nspindy, tllen))
+  allocate(A_localtr1(nspindx, nspindy, tllen), A_localti1(nspindx, nspindy, tllen))
+  allocate(A_localtr2(nspindx, nspindy, tllen), A_localti2(nspindx, nspindy, tllen))
+  allocate(A_localtr3(nspindx, nspindy, tllen), A_localti3(nspindx, nspindy, tllen))
 
-  allocate(ac_rfield_in(tllen43D), ac_ifield_in(tllen43D))
+  allocate(ac_rfield_in(nspindx, nspindy, tllen), ac_ifield_in(nspindx, nspindy, tllen))
 
   allocate(dxm(iNumberElectrons_G), &
     dxt(iNumberElectrons_G), xt(iNumberElectrons_G))

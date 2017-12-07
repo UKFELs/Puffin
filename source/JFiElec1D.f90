@@ -84,7 +84,7 @@ subroutine getFFelecs_1D(sAr, sAi)
 
 use rhs_vars
 
-real(kind=wp), intent(in) :: sAr(:), sAi(:)
+real(kind=wp), intent(in) :: sAr(:,:,:), sAi(:,:,:)
 integer(kind=ip) :: i
 integer error
 
@@ -95,8 +95,8 @@ integer error
   
     !if (i<=procelectrons_G(1)) then
 
-      sField4ElecReal(i) = lis_GR(1,i) * sAr(p_nodes(i)) + sField4ElecReal(i)
-      sField4ElecReal(i) = lis_GR(2,i) * sAr(p_nodes(i) + 1_ip) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(1,i) * sAr(1,1,p_nodes(i)) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(2,i) * sAr(1,1,p_nodes(i) + 1_ip) + sField4ElecReal(i)
   
   end do
 !$OMP END DO
@@ -105,8 +105,8 @@ integer error
   do i = 1, procelectrons_G(1)
 
 
-      sField4ElecImag(i) = lis_GR(1,i) * sAi(p_nodes(i)) + sField4ElecImag(i)
-      sField4ElecImag(i) = lis_GR(2,i) * sAi(p_nodes(i) + 1_ip) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(1,i) * sAi(1,1,p_nodes(i)) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(2,i) * sAi(1,1,p_nodes(i) + 1_ip) + sField4ElecImag(i)
 
 !if (tProcInfo_G%rank == 0) print*, i, sField4ElecImag(i), sAi(p_nodes(i)), sAi(p_nodes(i)+1), &
 !                                  p_nodes(i), lis_GR(1,i), lis_GR(2,i)
@@ -131,7 +131,7 @@ subroutine getSource_1D(sDADzr, sDADzi, spr, spi, sgam, seta)
 
 use rhs_vars
 
-real(kind=wp), intent(inout) :: sDADzr(:), sDADzi(:)
+real(kind=wp), intent(inout) :: sDADzr(:,:,:), sDADzi(:,:,:)
 real(kind=wp), intent(in) :: spr(:), spi(:)
 real(kind=wp), intent(in) :: sgam(:)
 real(kind=wp), intent(in) :: seta
@@ -169,12 +169,12 @@ dadz_w = (s_chi_bar_G/dV3) * (1 + seta * sp2 ) &
       dadzRInst = dadz_w(i) * spr(i)
 
       !$OMP ATOMIC
-      sDADzr(p_nodes(i)) =                         &
-        lis_GR(1,i) * dadzRInst + sDADzr(p_nodes(i))
+      sDADzr(1,1,p_nodes(i)) =                         &
+        lis_GR(1,i) * dadzRInst + sDADzr(1,1,p_nodes(i))
       
       !$OMP ATOMIC
-      sDADzr(p_nodes(i) + 1_ip) =                  &
-        lis_GR(2,i) * dadzRInst + sDADzr(p_nodes(i) + 1_ip)
+      sDADzr(1,1,p_nodes(i) + 1_ip) =                  &
+        lis_GR(2,i) * dadzRInst + sDADzr(1,1,p_nodes(i) + 1_ip)
 
 
 !                   Imaginary part
@@ -187,12 +187,12 @@ dadz_w = (s_chi_bar_G/dV3) * (1 + seta * sp2 ) &
 
 
       !$OMP ATOMIC
-      sDADzi(p_nodes(i)) =                             & 
-        lis_GR(1,i) * dadzIInst + sDADzi(p_nodes(i))                        
+      sDADzi(1,1,p_nodes(i)) =                             & 
+        lis_GR(1,i) * dadzIInst + sDADzi(1,1,p_nodes(i))                        
 
       !$OMP ATOMIC
-      sDADzi(p_nodes(i) + 1_ip) =                      & 
-        lis_GR(2,i) * dadzIInst + sDADzi(p_nodes(i) + 1_ip)
+      sDADzi(1,1,p_nodes(i) + 1_ip) =                      & 
+        lis_GR(2,i) * dadzIInst + sDADzi(1,1,p_nodes(i) + 1_ip)
 
 
 

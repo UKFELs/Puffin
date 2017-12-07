@@ -20,7 +20,7 @@ use paratype
 !    For index referencing
 
   integer(kind=ip) :: retim, ntrans
-  integer(kind=ip), allocatable :: p_nodes(:)
+  integer(kind=ip), allocatable :: p_nodes(:), pnx(:), pny(:), pnz(:)
 
 
 !     For interpolation

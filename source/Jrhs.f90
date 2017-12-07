@@ -81,7 +81,7 @@ contains
 ! sDADz - RHS of field source term
 
   real(kind=wp), intent(in) :: sz
-  real(kind=wp), contiguous, intent(in) :: sAr(:), sAi(:)
+  real(kind=wp), contiguous, intent(in) :: sAr(:,:,:), sAi(:,:,:)
   real(kind=wp), contiguous, intent(in)  :: sx(:), sy(:), sz2(:), &
                                             spr(:), spi(:), sgam(:)
 
@@ -89,7 +89,7 @@ contains
   real(kind=wp), contiguous, intent(inout)  :: sdx(:), sdy(:), sdz2(:), &
                                    sdpr(:), sdpi(:), sdgam(:)
 
-  real(kind=wp), contiguous,  intent(inout) :: sDADzr(:), sDADzi(:) !!!!!!!
+  real(kind=wp), contiguous,  intent(inout) :: sDADzr(:,:,:), sDADzi(:,:,:) !!!!!!!
   logical, intent(inout) :: qOK
 
   integer(kind=ipl) :: i, z2node
@@ -105,7 +105,9 @@ contains
 !     ALLOCATE THE ARRAYS
 
 !  allocate(Lj(iNumberElectrons_G))
-  allocate(p_nodes(iNumberElectrons_G))
+  !allocate(p_nodes(iNumberElectrons_G))
+  allocate(pnx(iNumberElectrons_G), pny(iNumberElectrons_G), &
+           pnz(iNumberElectrons_G))
 !  allocate(p_nodes2(ispt))
 !  allocate(tmp1(500000))
 !  allocate(tmp2(ispt))
@@ -175,11 +177,16 @@ contains
 !                              floor(sz2  / dz2) ) - &
 !                              (fz2-1)*ntrnds_G  ! transverse slices before primary node
 
-    p_nodes = (int( (sx+halfx)  / dx, kind=ip)  + 1_IP) + &
-              (int( (sy+halfy)  / dy, kind=ip) * nspinDX )  + &   !  y 'slices' before primary node
-              (nspinDX * nspinDY * &
-                              int(sz2  / dz2, kind=ip) ) - &
-                              (fz2-1)*ntrndsi_G  ! transverse slices before primary node
+
+!    p_nodes = (int( (sx+halfx)  / dx, kind=ip)  + 1_IP) + &
+!              (int( (sy+halfy)  / dy, kind=ip) * nspinDX )  + &   !  y 'slices' before primary node
+!              (nspinDX * nspinDY * &
+!                              int(sz2  / dz2, kind=ip) ) - &
+!                              (fz2-1)*ntrndsi_G  ! transverse slices before primary node
+
+    pnx = (int( (sx+halfx)  / dx, kind=ip)  + 1_IP)
+    pny = (int( (sy+halfy)  / dx, kind=ip)  + 1_IP)
+    pnz = int(sz2 / dz2, kind=ip) + 1_IP - (fz2-1)
 
 !$OMP END WORKSHARE
 
@@ -320,7 +327,8 @@ contains
 !    deallocate(sField4ElecReal,sField4ElecImag,Lj,dp2f)
     !deallocate(Lj)
     deallocate(lis_GR)
-    deallocate(p_nodes)
+!    deallocate(p_nodes)
+    deallocate(pnx, pny, pnz)
     call dalct_e_srtcts()
 
 
