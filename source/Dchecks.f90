@@ -308,8 +308,7 @@ SUBROUTINE stpFSampleLens(iNodes,sWigglerLength,sLengthOfElm,qOneD,qOK)
 
   END IF
 
-  sLengthOfElm(iZ2_CG) = sWigglerLength(iZ2_CG) / (iNodes(iZ2_CG) - 1_IP)
-
+  sLengthOfElm(iZ2_CG) = sWigglerLength(iZ2_CG) / real(iNodes(iZ2_CG) - 1_IP, kind=wp)
 
 !     Set error flag and exit
 
@@ -378,7 +377,7 @@ SUBROUTINE chkESampleLens(sLenEPulse,iNumElectrons,rho,qOneD,qOK)
   end if
 
   wlen = 4.0_WP * pi * rho
-  maxspcing = wlen / 8.0_WP
+  maxspcing = wlen / 1.0_WP
 
   spcing = sLenEPulse(iZ2_CG) / iNumElectrons(iZ2_CG)
  

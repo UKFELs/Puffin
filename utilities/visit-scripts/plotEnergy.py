@@ -71,7 +71,7 @@ def plotEnergy(localPowerAllDB):
 
 if __name__ == '__main__':
     pBaseName=sys.argv[1]
-    eDB, iDB, localPowerAllDB = getDBNames.getDBNames(pBaseName)
+    eDB, fDB, iDB, localPowerAllDB = getDBNames.getDBNames(pBaseName)
     visit.Launch(vdir=localVisItDir)
     plotEnergy(localPowerAllDB)
     visit.OpenGUI()

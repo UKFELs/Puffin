@@ -53,6 +53,12 @@ real(kind=wp) :: sBeta_G    ! Absorption coefficient
 
 real(kind=wp)  :: sfilt   ! Frequency cutoff for high pass filter, in units 
                           ! of f_z2 = Lenz2 * ffrac / lamda_rz2
+integer(kind=ip) :: igwr
+
+integer(kind=ip) :: fieldMesh
+integer(kind=ip), parameter :: iTemporal = 0_ip
+integer(kind=ip), parameter :: iPeriodic = 1_ip
+real(kind=wp) :: sperwaves_G
 
 real(kind=wp) :: delta_G  ! Volume of field element (dx * dy * dz2)
 
@@ -92,6 +98,8 @@ integer(kind=ipl), allocatable  :: procelectrons_G(:)
 
 integer(kind=ipl) :: iNumberElectrons_G
 integer(kind=ipl) :: iGloNumElectrons_G
+
+integer(kind=ip) :: inmpsGam_G
 
 real(kind=wp) :: npk_bar_G  ! peak electron number density
                             ! in the scaled xbar, ybar and z2bar

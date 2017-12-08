@@ -143,7 +143,12 @@ subroutine getTransformPlans_MultiD(sizes,nDims,qMeasure,qOK)
 
   L = int(sizes(iX_CG), C_INTPTR_T)
   M = int(sizes(iY_CG), C_INTPTR_T)
-  N = int(sizes(iZ2_CG), C_INTPTR_T)
+  if (fieldMesh == iPeriodic) then
+    N = int(sizes(iZ2_CG)-1_ip, C_INTPTR_T)
+  else 
+    N = int(sizes(iZ2_CG), C_INTPTR_T)
+  end if
+
 
 !      Get the local sizes for the distribution of the transform data.
 
@@ -474,7 +479,7 @@ subroutine GetKValues(recvs,displs,qOK)
   integer(kind=ip), dimension(:), allocatable  :: nz2
   real(KIND=WP), dimension(:), allocatable :: kz2_loc
   real(KIND=WP)  :: slengthX, sLengthY,sLengthZ2, pi
-  integer(kind=ip) :: loc_z2_start,loc_nz2
+  integer(kind=ip) :: loc_z2_start, loc_nz2, nz2LOR
   integer(kind=ip) :: error, trans
 
 !                      Begin
@@ -487,14 +492,22 @@ subroutine GetKValues(recvs,displs,qOK)
 
   slengthX  =  real((NX_G),KIND=WP) * sLengthOfElmX_G
   slengthY  =  real((NY_G),KIND=WP) * sLengthOfElmY_G
-  slengthZ2 =  real((NZ2_G),KIND=WP) * sLengthOfElmZ2_G
+  if (fieldMesh == iPeriodic) then
+    slengthZ2 =  real((NZ2_G-1_ip),KIND=WP) * sLengthOfElmZ2_G
+  else
+    slengthZ2 =  real((NZ2_G),KIND=WP) * sLengthOfElmZ2_G
+  end if
 
 ! Calculate maximum x, y and z2 values for the n arrays
 ! Arrays go from (0:N/2-1) then (-N/2:-1)
 
   maxx = ceiling(real(NX_G, kind=wp) / 2.0_wp)
   maxy = ceiling(real(NY_G, kind=wp) / 2.0_wp)
-  maxz2 = ceiling(real(NZ2_G, kind=wp) / 2.0_wp)
+  if (fieldMesh == iPeriodic) then
+    maxz2 = ceiling(real(NZ2_G-1_ip, kind=wp) / 2.0_wp)
+  else
+    maxz2 = ceiling(real(NZ2_G, kind=wp) / 2.0_wp)
+  end if
 
 !         Calculate nx, ny and nz2 values...
 !         nx and ny are calculated in full by all
@@ -536,11 +549,14 @@ subroutine GetKValues(recvs,displs,qOK)
 
 !     Kz2 vals calculated in parallel according to FFTW distribution
 
+  nz2LOR = nZ2_G
+  if (fieldMesh == iPeriodic) nz2LOR = nZ2_G-1_ip
+
   if (loc_nz2/=0) then
     allocate(nz2(0:loc_nz2-1))
     do i = 0,loc_nz2-1
       if ( loc_z2_start + i >= maxz2) then
-        nz2(i) = loc_z2_start + i - NZ2_G
+        nz2(i) = loc_z2_start + i - nz2LOR
       else
         nz2(i) = loc_z2_start + i
       end if

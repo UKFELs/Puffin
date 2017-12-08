@@ -25,6 +25,7 @@ def getDBNames(pBaseName):
   pFileSffx = "_integrated_all.vsh5"
   eFileSffx = "_electrons_* database"
   iFileSffx = "_integrated_* database"
+  fFileSffx = "_aperp_C_* database"
 
 
 # Full database paths
@@ -32,10 +33,12 @@ def getDBNames(pBaseName):
   if os.name == 'nt':  # If OS is windows...
     eDB1 = "localhost:" + currDir + "\\" + pBaseName + eFileSffx
     iDB1 = "localhost:" + currDir + "\\" + pBaseName + iFileSffx
+    fDB1 = "localhost:" + currDir + "\\" + pBaseName + fFileSffx
     localPowerAllDB1 = currDir + "\\" + pBaseName + pFileSffx
   else:   # else assuming linux!!
     eDB1 = "localhost:" + currDir + "/" + pBaseName + eFileSffx
     iDB1 = "localhost:" + currDir + "/" + pBaseName + iFileSffx
+    fDB1 = "localhost:" + currDir + "/" + pBaseName + fFileSffx
     localPowerAllDB1 = currDir + "/" + pBaseName + pFileSffx
 
-  return eDB1, iDB1, localPowerAllDB1
+  return eDB1, fDB1, iDB1, localPowerAllDB1

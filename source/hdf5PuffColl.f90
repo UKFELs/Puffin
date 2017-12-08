@@ -78,6 +78,8 @@ contains
     CHARACTER(LEN=4), PARAMETER :: timegrpname = "time"  ! Group name
     CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  ! Group name
     REAL(kind=WP), ALLOCATABLE :: limdata (:)  ! Data to write
+    real(kind=wp), allocatable :: sz2_temp(:)
+    real(kind=wp) :: ebound
     ! Local vars
     !integer(kind=ip) :: iep
     integer :: error ! Error flag
@@ -119,7 +121,7 @@ contains
 ! Prepare filename
 
     filename = ( trim(adjustl(zFilename_G)) // '_electrons_' // &
-                 trim(adjustl(IntegerToString(iCSteps))) // '.h5' )
+                 trim(adjustl(IntegerToString(igwr))) // '.h5' )
 
 
     CALL h5open_f(error)
@@ -238,9 +240,29 @@ contains
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
 !    end if
 
-    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, &
-       sElZ2_G, dsize, error, &
-       xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
+    if (fieldMesh == iPeriodic) then
+
+      allocate(sz2_temp(procelectrons_G(1)))
+      sz2_temp = sElZ2_G
+      ebound = 4.0_wp * pi * sRho_G * sperwaves_G
+      where (sz2_temp > ebound) sz2_temp = sz2_temp - &
+                      (real(floor(sElZ2_G / ebound), kind=wp) * ebound )
+
+      call h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, &
+         sz2_temp, dsize, error, &
+         xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
+         
+      deallocate(sz2_temp)
+
+    else
+
+      call h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, &
+         sElZ2_G, dsize, error, &
+         xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
+
+    end if
+
+
 !      Print*,'hdf5_puff:outputH5BeamSD(z2 space closed) rank: ' // &
 !         trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
 ! was       dspace_id, filespace)
@@ -520,23 +542,40 @@ contains
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
 !    Print*,'hdf5_puff:outputH5BeamFiles(lower bounds attribute created)'
     ALLOCATE ( limdata(numSpatialDims))
-    limdata(1)=-0.5*NX_G*sLengthOfElmX_G
-! Particles inhabit a 3D physical space even for 1D simulations.
-!    if (numSpatialDims .GT. 1) then
-      limdata(2)=-0.5*NY_G*sLengthOfElmY_G
-      limdata(3)=0.0
+
+    
+    if (numSpatialDims == 3) then
+
+        limdata(1)=-0.5_wp*NX_G*sLengthOfElmX_G
+        limdata(2)=-0.5_wp*NY_G*sLengthOfElmY_G
+        limdata(3)=0.0_wp
+
+    else
+
+        limdata(1)=0.0_wp
+
+    end if
+      
 !    end if
+
     CALL h5awrite_f(attr_id, atype_id, limdata, adims, error)
     CALL h5aclose_f(attr_id, error)
     aname="vsUpperBounds"
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
+
 !    Print*,'hdf5_puff:outputH5BeamFiles(upper bounds attribute created)'
-    limdata(1)=0.5*NX_G*sLengthOfElmX_G
-! Particles inhabit a 3D physical space even for 1D simulations.
-!    if (numSpatialDims .GT. 1) then
-      limdata(2)=0.5*NY_G*sLengthOfElmY_G
-      limdata(3)=real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G
-!    end if
+    if (numSpatialDims == 3) then
+
+        limdata(1)=0.5*NX_G*sLengthOfElmX_G
+        limdata(2)=0.5*NY_G*sLengthOfElmY_G
+        limdata(3) = real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G
+
+    else
+
+        limdata(1) = real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G
+
+    end if
+
     CALL h5awrite_f(attr_id, atype_id, limdata, adims, error)
 ! Close the attribute should be done above.
     CALL h5aclose_f(attr_id, error)
@@ -718,7 +757,7 @@ contains
 
 !    Print*,('Spatialdims: ' // trim(IntegerToString(numSpatialDims)))
       filename = (trim(adjustl(zFilename_G)) // '_' // trim(adjustl(dsetname)) &
-          // '_' // trim(adjustl(IntegerToString(iCSteps))) // '.h5' )
+          // '_' // trim(adjustl(IntegerToString(igwr))) // '.h5' )
       CALL h5open_f(error)
       CALL h5pcreate_f(H5P_FILE_ACCESS_F, plist_id, error)
 !      Print*,'hdf5_puff:outputH5FieldSD(property created)'
@@ -1092,73 +1131,75 @@ contains
   ! final argument  checks for all active field on single root node ...
   ! should say if qUnique or rank=0...
 
+
+
       mpiinfo=MPI_INFO_NULL
 
-      if (qUnique .OR. (tProcInfo_G%qRoot)) then
+      if (qONED_G) then
 
-        if (qONED_G) then
+        numSpatialDims=1
+        dims = (/nlonglength,1/) ! Dataset dimensions (portion of single comp.)
+        fdims = (/NZ2_G,2/)      ! File Dataset dimensions
+        doffset = (/(nlo-1),component/)
+        dsize = (/nhi-nlo+1,1/)
 
-          numSpatialDims=1
-          dims = (/nlonglength,1/) ! Dataset dimensions (portion of single comp.)
-          fdims = (/NZ2_G,2/)      ! File Dataset dimensions
-          doffset = (/(nlo-1),component/)
-          dsize = (/nhi-nlo+1,1/)
-
-        else   ! if not 1D (WE SHOULD NOT BE HERE)
+      else   ! if not 1D (WE SHOULD NOT BE HERE)
   !        numSpatialDims=3
-          print *,"***Routine is set up for 1D data, but you do not have 1D data"
+        print *,"***Routine is set up for 1D data, but you do not have 1D data"
   !        dims = (/nx_g,ny_g,nlonglength,1/) ! Dataset dimensions
   !        fdims = (/nx_g,ny_g,NZ2_G,2/) ! Dataset dimensions
   !        doffset = (/0,0,(nlo-1),component/)
   !        dsize = (/nx_g,ny_g,nhi-nlo+1,1/)
   !        dsize = (/nx_g,ny_g,nlonglength,1/)
 
-        end if
+      end if
 
   !    Print*,('Spatialdims: ' // trim(IntegerToString(numSpatialDims)))
-        filename = (trim(adjustl(zFilename_G)) // '_' // trim(adjustl(dsetname)) &
-                 // '_' // trim(adjustl(IntegerToString(iCSteps))) // '.h5' )
 
-        call h5open_f(error)
+        filename = (trim(adjustl(zFilename_G)) // '_' // trim(adjustl(dsetname)) &
+                 // '_' // trim(adjustl(IntegerToString(igwr))) // '.h5' )
+
+      call h5open_f(error)
 
   !          Create property
 
-        call h5pcreate_f(H5P_FILE_ACCESS_F, plist_id, error)
+      call h5pcreate_f(H5P_FILE_ACCESS_F, plist_id, error)
 
   !          Set property
+      call h5pset_fapl_mpio_f(plist_id, tProcInfo_G%comm, mpiinfo, error)
 
-        call h5pset_fapl_mpio_f(plist_id, tProcInfo_G%comm, mpiinfo, error)
-
-        if (createNewFlag == 1) then
+      if (createNewFlag == 1) then
 
   !                  Create file
 
-          call h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error, access_prp = plist_id)
+        call h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error, access_prp = plist_id)
 
-          call h5pclose_f(plist_id, error)  ! Close property
+        call h5pclose_f(plist_id, error)  ! Close property
 
-          call h5screate_simple_f(rank, fdims, filespace, error)  ! Create filespace
+        call h5screate_simple_f(rank, fdims, filespace, error)  ! Create filespace
 
-          call h5dcreate_f(file_id, dsetname, H5T_NATIVE_DOUBLE, filespace, &
-                           dset_id, error)  ! Create dataset
+        call h5dcreate_f(file_id, dsetname, H5T_NATIVE_DOUBLE, filespace, &
+                         dset_id, error)  ! Create dataset
 
-          call h5sclose_f(filespace, error) ! Close filespace
+        call h5sclose_f(filespace, error) ! Close filespace
 
-        else     ! not creating a new file, just adding data to an existing one.
+      else     ! not creating a new file, just adding data to an existing one.
 
-          call h5pset_fapl_mpio_f(plist_id, tProcInfo_G%comm, mpiinfo, error)
+        call h5pset_fapl_mpio_f(plist_id, tProcInfo_G%comm, mpiinfo, error)
 
   !             re-open file in parallel
 
-          call h5fopen_f(filename, H5F_ACC_RDWR_F, file_id, error, access_prp = plist_id)
+        call h5fopen_f(filename, H5F_ACC_RDWR_F, file_id, error, access_prp = plist_id)
 
   !             re-open dataset in parallel
 
-          call h5dopen_f (file_id, dsetname, dset_id, error)
+        call h5dopen_f (file_id, dsetname, dset_id, error)
 
-          call h5pclose_f(plist_id, error)
+        call h5pclose_f(plist_id, error)
 
-        end if
+      end if
+
+      if ((qUnique) .or. (.not. chkactiveflag)) then
 
         call h5screate_simple_f(rank, dims, dspace_id, error)
 
@@ -1170,11 +1211,11 @@ contains
 
   ! for the corresponding space on disk
 
-          call h5dget_space_f(dset_id, filespace, error)
+        call h5dget_space_f(dset_id, filespace, error)
 
   !         Selecting slab on rank
 
-          call h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, doffset, &
+        call h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, doffset, &
                                       dims, error)
 
         !else
@@ -1184,7 +1225,7 @@ contains
 
   !          Selecting empty slab on rank
 
-          if (nlonglength <= 0) call h5sselect_none_f(filespace,error)
+        if (nlonglength <= 0) call h5sselect_none_f(filespace,error)
 
   !      end if
 
@@ -1221,52 +1262,127 @@ contains
 
         call h5fclose_f(file_id, error)
 
+      else ! if not unique
+
+        CALL h5screate_simple_f(rank, dims, dspace_id, error)
+
+        if (tProcInfo_G%rank /= 0) CALL h5sselect_none_f(dspace_id,error)
+ ! For the space in memory
+      !if (nlonglength.GT.0) then
+! for the corresponding space on disk
+        CALL h5dget_space_f(dset_id, filespace, error)
+        CALL h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, doffset, dims, error)
+!        Print*,trim(adjustl(IntegerToString(error))) // " selecting slab on rank" &
+!          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
+      !else
+! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
+        if (tProcInfo_G%rank /= 0) CALL h5sselect_none_f(filespace,error)
+!        Print*,trim(adjustl(IntegerToString(error))) // " selecting empty slab on rank" &
+!          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
+!        CALL h5sselect_none_f(dspace_id,error)
+      !end if
+
+
+        CALL h5pcreate_f(H5P_DATASET_XFER_F, plist_id, error)
+        CALL h5pset_dxpl_mpio_f(plist_id, H5FD_MPIO_INDEPENDENT_F, error)
+        CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, rawdata, dims, error, &
+              xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
+!      Print*,'hdf5_puff:outputH5FieldSD(write done)'
+!      Print*,error
+
+      ! ABORTIVE ATTEMPT TO WRITE NODAL DATA, when really it's nodal in z2 but 1D (so
+      !shouldn't matter if zonal or nodal) in x,y.
+!        if (qONED_G) then
+!      if (nlonglength.GT.0) then
+!      doffset = (/0,1,(nlo-1),component/)
+!        CALL h5dget_space_f(dset_id, filespace, error)
+!       CALL h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, doffset, dims, error)
+!      CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, rawdata, dims, error, &
+!         xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
+!      doffset = (/1,0,(nlo-1),component/)
+!        CALL h5dget_space_f(dset_id, filespace, error)
+!        CALL h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, doffset, dims, error)
+!     CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, rawdata, dims, error, &
+!         xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
+!      doffset = (/1,1,(nlo-1),component/)
+!        CALL h5dget_space_f(dset_id, filespace, error)
+!        CALL h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, doffset, dims, error)
+!      CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, rawdata, dims, error, &
+!         xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
+!     else
+!        CALL h5sselect_none_f(filespace,error)
+!      CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, rawdata, dims, error, &
+!         xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
+!        CALL h5sselect_none_f(filespace,error)
+!      CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, rawdata, dims, error, &
+!         xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
+!        CALL h5sselect_none_f(filespace,error)
+!      CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, rawdata, dims, error, &
+!         xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
+!     end if
+!     end if
+        CALL h5sclose_f(filespace, error)
+!      Print*,'hdf5_puff:outputH5FieldSD(file space closed)'
+!      Print*,error
+        CALL h5sclose_f(dspace_id, error)
+!      Print*,'hdf5_puff:outputH5FieldSD(hyperslab space closed)'
+!      Print*,error
+        CALL h5pclose_f(plist_id, error)
+!      Print*,'hdf5_puff:outputH5FieldSD(propertylist closed)'
+!      Print*,error
+        CALL h5dclose_f(dset_id, error)
+!      Print*,'hdf5_puff:outputH5FieldSD(dataset closed)'
+!      Print*,error
+        CALL h5fclose_f(file_id, error)
+
+      end if
+
   !      end of parallel write stuff
 
   !        add stuff just on rank 0
 
-        if (createNewFlag .EQ. 1) then
+      if (createNewFlag .EQ. 1) then
 
-          if (tProcInfo_G%qRoot) then
+        if (tProcInfo_G%qRoot) then
 
   !             Re-opening file in serial
 
-            call h5fopen_f(filename, H5F_ACC_RDWR_F, file_id, error)
+          call h5fopen_f(filename, H5F_ACC_RDWR_F, file_id, error)
 
   !             Re-opening dataset in serial
 
-            call h5dopen_f (file_id, dsetname, dset_id, error)
+          call h5dopen_f (file_id, dsetname, dset_id, error)
 
   !            Creating scalar space
 
-            call h5screate_f(H5S_SCALAR_F, aspace_id, error)
+          call h5screate_f(H5S_SCALAR_F, aspace_id, error)
 
-            call h5tcopy_f(H5T_NATIVE_INTEGER, atype_id, error)
+          call h5tcopy_f(H5T_NATIVE_INTEGER, atype_id, error)
 
   ! Create dataset integer attributes.
   ! Always ndim=3 even if 1D as 1 cell in both transverse dims but same
   ! postprocessing should work, and make possible to display vs particles
 
-            aname = "vsNumSpatialDims"
+          aname = "vsNumSpatialDims"
 
-            call h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+          call h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
 
   !              Write the attribute data.
-            call h5awrite_f(attr_id, atype_id, 1, adims, error) !
+          call h5awrite_f(attr_id, atype_id, 1, adims, error) !
 
   !                Close the attribute.
-            call h5aclose_f(attr_id, error)
+          call h5aclose_f(attr_id, error)
 
   !              next attribute
-            aname="numSpatialDims"
-            call h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
-            call h5awrite_f(attr_id, atype_id, 1, adims, error)
-            call h5aclose_f(attr_id, error)
-            call h5tclose_f(atype_id, error)
+          aname="numSpatialDims"
+          call h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
+          call h5awrite_f(attr_id, atype_id, 1, adims, error)
+          call h5aclose_f(attr_id, error)
+          call h5tclose_f(atype_id, error)
 
   !     Create dataset floating point attributes.
 
-            call writeCommonAtts(dset_id, time, sz_loc, iL, aspace_id)
+          call writeCommonAtts(dset_id, time, sz_loc, iL, aspace_id)
 
   !          call addH5FloatAttribute(dset_id, "time", time,aspace_id)
   !          call addH5FloatAttribute(dset_id, "zBarInter", time, aspace_id)
@@ -1280,52 +1396,52 @@ contains
   !          call addH5IntegerAttribute(dset_id, 'iL', iL, aspace_id)
 
 
-            call addH5StringAttribute(dset_id,"vsLabels","aperp_real, aperp_imaginary",aspace_id)
-            call addH5StringAttribute(dset_id,"vsType","variable",aspace_id)
-            call addH5StringAttribute(dset_id,"vsCentering","nodal",aspace_id)
+          call addH5StringAttribute(dset_id,"vsLabels","aperp_real, aperp_imaginary",aspace_id)
+          call addH5StringAttribute(dset_id,"vsType","variable",aspace_id)
+          call addH5StringAttribute(dset_id,"vsCentering","nodal",aspace_id)
 
-            if (qoned_g) then
+          if (qoned_g) then
 
-              call addH5StringAttribute(dset_id,"vsIndexOrder","compMajorC",aspace_id)
+            call addH5StringAttribute(dset_id,"vsIndexOrder","compMajorC",aspace_id)
 
-            else
+          else
 
-              call addH5StringAttribute(dset_id,"vsIndexOrder","compMajorF",aspace_id)
+            call addH5StringAttribute(dset_id,"vsIndexOrder","compMajorF",aspace_id)
 
-            end if
+          end if
 
-            call addH5StringAttribute(dset_id,"vsTimeGroup",timegrpname,aspace_id)
-            call addH5StringAttribute(dset_id,"vsLimits",limgrpname,aspace_id)
-            call addH5StringAttribute(dset_id,"vsMesh",meshScaledGrpname,aspace_id)
-            call addH5StringAttribute(dset_id,"vsAxisLabels","z2",aspace_id)
-            call h5dclose_f(dset_id, error)
+          call addH5StringAttribute(dset_id,"vsTimeGroup",timegrpname,aspace_id)
+          call addH5StringAttribute(dset_id,"vsLimits",limgrpname,aspace_id)
+          call addH5StringAttribute(dset_id,"vsMesh",meshScaledGrpname,aspace_id)
+          call addH5StringAttribute(dset_id,"vsAxisLabels","z2",aspace_id)
+          call h5dclose_f(dset_id, error)
 
   !                       Time Group
 
-            call writeH5TimeGroup(file_id, timegrpname, time, &
-                                  'radH5Field1D', error)
+          call writeH5TimeGroup(file_id, timegrpname, time, &
+                                'radH5Field1D', error)
 
-            call writeH5RunInfo(file_id,  time, sz_loc, iL, 'radH5Field1D', error)
+          call writeH5RunInfo(file_id,  time, sz_loc, iL, 'radH5Field1D', error)
 
-            lb=0.0_WP*sLengthOfElmZ2_G  ! Lower and upper bounds...
-            ub=NZ2_G*sLengthOfElmZ2_G
+          lb=0.0_WP*sLengthOfElmZ2_G  ! Lower and upper bounds...
+          ub=NZ2_G*sLengthOfElmZ2_G
 
-            call write1DlimGrp(file_id,limgrpname,lb,ub)
-            call write1DuniformMesh(file_id,meshScaledGrpname,lb,ub,(NZ2_G-1),"z2,A_perp radiation field")
+          call write1DlimGrp(file_id,limgrpname,lb,ub)
+          call write1DuniformMesh(file_id,meshScaledGrpname,lb,ub,(NZ2_G-1),"z2,A_perp radiation field")
 
-            aname="intensityScaled"
-            attr_data_string="sqr(aperp_real)+sqr(aperp_imaginary)"
-            attr_string_len=len(trim(adjustl(attr_data_string)))
+          aname="intensityScaled"
+          attr_data_string="sqr(aperp_real)+sqr(aperp_imaginary)"
+          attr_string_len=len(trim(adjustl(attr_data_string)))
 
-            call addH5derivedVariable(file_id,aname,attr_data_string,error)
+          call addH5derivedVariable(file_id,aname,attr_data_string,error)
 
-            call h5fclose_f(file_id, error)
-
-          end if
+          call h5fclose_f(file_id, error)
 
         end if
 
       end if
+
+
 
     end subroutine outputH5Field1D2CompSD
 
@@ -1365,7 +1481,7 @@ contains
     integer(kind=ip) :: error !< Local Error flag
     if (tProcInfo_G%qRoot) then
       filename = ( trim(adjustl(zFilename_G)) // '_integrated_' &
-        //trim(adjustl(IntegerToString(iCSteps))) &
+        //trim(adjustl(IntegerToString(igwr))) &
         // '.h5' )
       CALL h5open_f(error)
       CALL h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error)
@@ -1375,19 +1491,31 @@ contains
 !      CALL h5gcreate_f(file_id, limgrpname, group_id, error)
       CALL write1DlimGrp(file_id,limgrpname,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G)
       CALL write1DlimGrp(file_id,limgrpnameSI,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g)
+
       CALL write1DuniformMesh(file_id,"intFieldMeshSc",0._wp, &
         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G,NZ2_G,"z2,scaled parameter")
+
       CALL write1DuniformMesh(file_id,"intPtclMeshSc",0._wp, &
         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G,nslices,"z2,scaled parameter")
+
+
+      CALL write1DuniformMesh(file_id,"intCurrMeshSc",0._wp, &
+        real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G,npts_I_G,"z2,scaled parameter")
+
       CALL write1DuniformMesh(file_id,"intFieldMeshSI",0._wp, &
         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g,NZ2_g,"z [m], SI parameter")
+
       CALL write1DuniformMesh(file_id,"intPtclMeshSI",0._wp, &
         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g,nslices,"z [m], SI parameter")
-!
+
+      CALL write1DuniformMesh(file_id,"intCurrMeshSI",0._wp, &
+         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g,npts_I_G,"z [m], SI parameter")
+
 ! Close the file.
-!
+
       CALL h5fclose_f(file_id, error)
       CALL h5close_f(error)
+
     end if
   end subroutine   CreateIntegrated1DFloat
 
@@ -1439,7 +1567,7 @@ contains
     if (tProcInfo_G%qRoot) then
       dims = size(writeData) ! Dataset dimensions
       filename = ( trim(adjustl(zFilename_G)) // '_integrated_' &
-        //trim(adjustl(IntegerToString(iCSteps))) &
+        //trim(adjustl(IntegerToString(igwr))) &
         // '.h5' )
       CALL h5open_f(error)
       CALL h5fopen_f(filename, H5F_ACC_RDWR_F, file_id, error)

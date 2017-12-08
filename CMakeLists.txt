@@ -10,7 +10,7 @@ enable_language (Fortran)
 
 # The version number.
 set (Puffin_VERSION_MAJOR 1)
-set (Puffin_VERSION_MINOR 8)
+set (Puffin_VERSION_MINOR 9)
 set (Puffin_VERSION_PATCH 0)
 include(${CMAKE_SOURCE_DIR}/scimake/SciInit.cmake)
 
@@ -36,6 +36,12 @@ endif()
 
 find_package(SciHdf5)
 find_package(OpenMP)
+find_package(SciDoxygen)
+
+if (DOXYGEN_FOUND)
+    message(STATUS "Doxygen FOUND!!")
+    message(STATUS "DOXYGEN IS : ${DOXYGEN_PROGRAM}")
+endif()
 
 if (OPENMP_FOUND)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
@@ -126,6 +132,19 @@ add_subdirectory(source)
 if (ENABLE_TESTING)
   add_subdirectory(test)
 endif (ENABLE_TESTING)
+
+
+if (DOXYGEN_FOUND)
+    add_custom_target(doc
+        ${DOXYGEN_EXECUTABLE} ${PROJECT_BINARY_DIR}/doc/fortran.dxg
+        WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/doc
+        COMMENT "Generating API documentation with Doxygen" VERBATIM
+        )
+    #add_custom_command(COMMAND ${DOXYGEN_PROGRAM} ${PROJECT_BINARY_DIR}/doc/fortran.dxg
+    #      COMMENT "Generating doxygen dev docs"
+    #      VERBATIM
+    #    )
+endif()
 
 install (DIRECTORY utilities/post DESTINATION bin)
 install (DIRECTORY utilities/pyPlotting DESTINATION bin)

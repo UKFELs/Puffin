@@ -57,6 +57,7 @@ contains
 
     !    nslices = int( (sLengthOfElmZ2_G*NZ2_G)/(4*pi*srho_g))
 
+    igwr = igwr + 1_ip
     time = sZ
 
     if (qWriteFull) then
@@ -199,7 +200,7 @@ contains
           call addH5Field1DFloat(power, 'Intensity', "intFieldMeshSc", &
                                 "z2, Intensity (Scaled)", time, sz_loc, iL, error)
 
-          wrFArray = power * powScale / lg_G * lc_G
+          wrFArray = power * powScale / lg_G / lc_G
 
           call addH5Field1DFloat(wrFArray, 'IntensitySI', "intFieldMeshSI", &
                                 "ct-z (m), Intensity (Wm-2)", time, sz_loc, iL, error)
@@ -226,10 +227,10 @@ contains
 
         end if
 
-        call addH5Field1DFloat(Iarray, 'beamCurrent',  "intPtclMeshSc", &
+        call addH5Field1DFloat(Iarray, 'beamCurrent',  "intCurrMeshSc", &
                                "z2, Current (A)", time, sz_loc, iL, error)
 
-        call addH5Field1DFloat(Iarray, 'beamCurrentSI',  "intPtclMeshSI", &
+        call addH5Field1DFloat(Iarray, 'beamCurrentSI',  "intCurrMeshSI", &
                                "ct-z, Current (A)", time, sz_loc, iL, error)
 
 

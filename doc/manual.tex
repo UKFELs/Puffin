@@ -10,8 +10,56 @@
 
 \usepackage{graphicx}
 \usepackage{listings}
+\usepackage{color}
 \usepackage{amssymb,amsmath,pdfpages}
 \usepackage{bm}
+
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyleh5}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=none,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2
+}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2
+}
+
+\lstset{style=mystyleh5}
+
 \linespread{1.3}
 
 %\usepackage[a4paper,%total={145mm,220mm},
@@ -82,7 +130,7 @@ It presently does not include the effects of space charge, and ignores emission 
 
 \section{Overview}
 
-Puffin, being an unaveraged FEL code, is quite distinct from other FEL codes in it's lack of restrictions on the radiation and electron bandwidth being modelled. Due to the nature of the code, and the likely use cases for such a code, we have attempted to create a resource which is a flexible tool for numerical scientific research into some more esoteric FEL physics and regimes, while still containing enough `realistic'  components to enable modelling of a current or future facility. 
+Puffin, being an unaveraged FEL code, is quite distinct from other FEL codes in it's lack of restrictions on the radiation and electron bandwidth being modelled. Due to the nature of the code, and the likely use cases for such a code, we have attempted to create a resource which is a flexible tool for numerical scientific research into some more esoteric FEL physics and regimes, while still containing enough `realistic'  components to enable modelling of a current or future facility.
 
 The main Puffin algorithm solves the FEL system in a scaled reference frame - see section \ref{puff-eqns} for a description. Data I/O may be in either SI or the Puffin scaled variables.
 
@@ -117,7 +165,7 @@ Although the Puffin algorithm uses scaled variables, the beam and radiation fiel
 
 The main algorithm in Puffin utilizes the scaled variables above to make the numbers `nicer' to work with. The system saturates with scaled intensity $\sim 1$, the scaled perpindicular momentum of the beam in the wiggler oscillates between $-1$ and $1$, and so forth. The distance through the wiggler is given in units of a (1D) gain length, and the beam coordinate in the radiation frame is in units of the cooperation length, so that a reference electron slips $1l_c$ through the radiation field in $1$ gain  length. The scaling defines a frame of reference which normalises the quantities not only to numerically more manageable numbers, but to \textit{characteristic} variables.
 
-The two dominant variables for the scaling are $\rho$ and $\eta$. $\eta$ is a function of the wiggler parameters $a_u$ and $\lambda_u$, and reference beam energy $\gamma_r$, and is calculated in Puffin from the input. It defines the velocity of the `reference' electron in the scaled radiation frame. The $\bar{z}_2$ coordinate is in the scaled frame travelling with the field (at velocity $c$) - $\eta$ determines how quickly the electrons slip back through this frame, such that an electron with energy $\gamma_r$, travelling in a wiggler with parameters $a_u$ and $\lambda_u$, slips back with scaled velocity $p_2 \equiv \dfrac{d \bar{z}_2}{d\bar{z}} = 1$.
+The two dominant variables for the scaling are $\rho$ and $\eta$. $\eta$ is a function of the wiggler parameters $a_u$ and $\lambda_u$, and reference beam energy $\gamma_r$, and is calculated in Puffin from the input values of these 3 variables. It defines the velocity of the `reference' electron in the scaled radiation frame. The $\bar{z}_2$ coordinate is in the scaled frame travelling with the field (at velocity $c$) - $\eta$ determines how quickly the electrons slip back through this frame, such that an electron with energy $\gamma_r$, travelling in a wiggler with parameters $a_u$ and $\lambda_u$, slips back with scaled velocity $p_2 \equiv \dfrac{d \bar{z}_2}{d\bar{z}} = 1$.
 
 The $\rho$ parameter is dependent on the peak electron beam number density, amongst other things, and as far as the discussion of the scaling parameters in Puffin goes, defines a reference for the amplification characteristics. A beam, or indeed, sections of an electron beam with peak number density giving a smaller `localised' $\rho$ will amplify the beam more slowly with respect to the reference beam specified by $\rho$.
 
@@ -158,7 +206,7 @@ $t$ & seconds (s) & $\bar{z}_2$ \\
 
 \subsubsection{Main Undulator Models}
 
-The undulator is modelled analytically, and the model must include the fast wiggle motion. Puffin may be modified in the future to allow a map of the undulator field to be input. For now, there are a few generic undulator models employed. The undulator magnetic fields are chosen with the {\bf zundType} string in the main input file. 
+The undulator is modelled analytically, and the model must include the fast wiggle motion. Puffin may be modified in the future to allow a map of the undulator field to be input. For now, there are a few generic undulator models employed. The undulator magnetic fields are chosen with the {\bf zundType} string in the main input file.
 
 Available options for use in Puffin are `helical', `planepole' - corresponding to a planar wiggler with flat pole faces with natural focusing only in one direction, `curved' - correspnding to a planar undulator with curved, or canted, pole faces providing natural focusing in both transverse directions equally, and the default Puffin undulator, chosen with a blank string (`'), where the transverse polarization is chosen with the {\bf sux, suy} inputs, controlling the relative magnitudes of the peak magnetic fields in $x$ and $y$, respectively. These may vary between $0$ and $1$, allowing a general elliptic field to be described.
 
@@ -442,7 +490,7 @@ Type can be integrated, aperp, or electrons, corresponding to reduced or integra
 
 One may simply choose which steps to write out through use of the {\bf iWriteNthSteps} and {\bf iWriteIntNthSteps} parameters in the main input file. The former controls the frequency of the full dumps, and the latter specifies the frequency of the integrated data writes.
 
-In addition, one may activate the {\bf qDumpEnd} flag to write a full dump at the end of the simulation - this is {\bf .true.} by defualt, but may be switched off. 
+In addition, one may activate the {\bf qDumpEnd} flag to write a full dump at the end of the simulation - this is {\bf .true.} by defualt, but may be switched off.
 
 More useful is the write file. This allows one to specify the exact step numbers at which to write out the full dumps. This will be done in addition to the regular write intervals specified above. The file is pointed to from the main input file by the string {\bf wr\_file}. In this plain text file, specify each step to write at with a line beginning with {\bf WR}, followed by a space (or multiple spaces) and then the step number. Any line not beginning with {\bf WR} will be ignored.
 
@@ -460,14 +508,14 @@ Two files for each step written out - one for the field mesh, and one for the ma
 
 Named {\bf \textit{basename}\_aperp\_\textit{stepnum}.h5}, where {\bf stepnum} is the integration step number the data was written out at. The file has internal hdf5 structure:
 
-\begin{lstlisting}[language=python]
-/ (RootGroup) 
-/aperp (Array(2, nz2, ny, nx)) 
-/globalLimits (Group) 
-/intensityScaled (Group) 
-/meshScaled (Group) 
-/runInfo (Group) 
-/time (Group) 
+\begin{lstlisting}[language=python, caption=Structure of HDF5 field output file produced by Puffin]
+/ (RootGroup)
+/aperp (Array(2, nz2, ny, nx))
+/globalLimits (Group)
+/intensityScaled (Group)
+/meshScaled (Group)
+/runInfo (Group)
+/time (Group)
 \end{lstlisting}
 
 The {\bf aperp} dataset contains the values of the field at each field node. {\bf nz2}, {\bf ny} and {\bf nx} are the number of nodes in the equispaced field mesh in $\bar{z}_2$, $\bar{y}$, and $\bar{x}$, respectively. The data {\bf aperp(1,:,:,:)} contains the values of the x-polarized field, and {\bf aperp(2,:,:,:)} is the \textit{negative} y-polarized field.  It also contains some data about the run itself (some of this data is also in the runInfo group in the file). An example of the data is:-
@@ -504,7 +552,7 @@ The integers ending in `cr' are counters for the lattice elements which may be p
 
 {\bf istep} is the number of completed integration steps through the current undulator module. It is local to the module being integrated through when the data was written.
 
-{\bf iCsteps} is the number of \textit{total} (cumulative) integration steps completed through the entire undulator line, including all previous undulators. 
+{\bf iCsteps} is the number of \textit{total} (cumulative) integration steps completed through the entire undulator line, including all previous undulators.
 
 The {\bf zInter, zLocal} and {\bf zTotal} values are distances through the machine, in metres. {\bf Inter} indicates the \textit{interaction} distance through the machine - that is, the distance of undulators only, discounting the drifts, chicanes, etc. {\bf Local} is the distance through the local undulator module. {\bf Total} is the total distance through the machine when the data was written.
 
@@ -513,7 +561,7 @@ The {\bf zInter, zLocal} and {\bf zTotal} values are distances through the machi
 
 The {\bf intensityScaled} group is a VizSchema derived variable, which tells Visit how to calculate the intensity from the scaled field data.
 
-The {\bf meshScaled}, {\bf globalLimits} and {\bf time} groups are VizSchema metadata for \textit{e.g.} Visit. 
+The {\bf meshScaled}, {\bf globalLimits} and {\bf time} groups are VizSchema metadata for \textit{e.g.} Visit.
 
 {\bf runInfo} is a group containing data about the run the data is from. It includes data about the physical parameters, the scaling and the mesh sizes, amongst other things. A listing of the metadata in this group is here:
 
@@ -570,21 +618,21 @@ The {\bf meshScaled}, {\bf globalLimits} and {\bf time} groups are VizSchema met
 The electron beam files are named {\bf \textit{basename}\_electrons\_\textit{stepnum}.h5}. The structure of the file is
 
 \begin{lstlisting}[language=python]
-/ (RootGroup) 
-/electrons (Array(numMacroParticles, 7)) 
-/electrons_chargeSI (Group) 
-/electrons_gammaSI (Group) 
-/electrons_numPhysicalParticles (Group) 
-/electrons_pxSI (Group) 
-/electrons_pySI (Group) 
-/electrons_xSI (Group) 
-/electrons_ySI (Group) 
-/electrons_zSI (Group) 
-/globalLimits (Group) 
-/phi_lamda (Group) 
-/runInfo (Group) 
-/slice_nom_lamda (Group) 
-/time (Group) 
+/ (RootGroup)
+/electrons (Array(numMacroParticles, 7))
+/electrons_chargeSI (Group)
+/electrons_gammaSI (Group)
+/electrons_numPhysicalParticles (Group)
+/electrons_pxSI (Group)
+/electrons_pySI (Group)
+/electrons_xSI (Group)
+/electrons_ySI (Group)
+/electrons_zSI (Group)
+/globalLimits (Group)
+/phi_lamda (Group)
+/runInfo (Group)
+/slice_nom_lamda (Group)
+/time (Group)
 \end{lstlisting}
 
 The main data is the {\bf electrons} dataset, where the each column corresponds to the macroparticle $\bar{x}$, $\bar{y}$, $\bar{z}_2$, $\bar{p}_x$, $-\bar{p}_y$, and $\Gamma$ coordinates, and the macroparticle weight, respectively (note the negative sign in the $\bar{p}_y$ data). The weight $= N_e / \bar{n}_p$, where $N_e$ is the number of real electrons the macroparticle represents, and $\bar{n}_p$ is the peak number density of the electron beam required to get the input value of $\rho$. $\bar{n}_p$ is in the {\bf runInfo} group in the file.
@@ -655,11 +703,11 @@ Data with an appended {\bf SI} indicate the measurement is in SI units. Otherwis
 
 The powPrep.py script will process the power data in the integrated data files to produce a file named basename-integrated-all.vsh5, which contains the power data normalised and formatted for use as a surface plot in Visit, to show the evolution of the temporal power profile as a function of distance through the undulator, see figure. It also contains the energy and peak power data for plotting.
 
-Before viewing in VisIt, if desired (see below), the field dumps need to be processed by the `ReorderColMajorFtoColMinorC.py' script, since there is currently a bug in VisIt which prevents the data being opened in the native fortran ordering. The field files can easily be 10's to 100's of GB's (or even larger) - so you may wish to process them anyway before attempting to view them. 
+Before viewing in VisIt, if desired (see below), the field dumps need to be processed by the `ReorderColMajorFtoColMinorC.py' script, since there is currently a bug in VisIt which prevents the data being opened in the native fortran ordering. The field files can easily be 10's to 100's of GB's (or even larger) - so you may wish to process them anyway before attempting to view them.
 
 \subsection{Viewing the Data}
 
-Users are free to choose their favourite visualisation method, and none is `officially' supported by Puffin. Nevertheless, the data output itself has vizSchema metadata to tell \textit{e.g.} Visit how to display the data. VisIt allows the ability to plot the data in client-server mode while the data is on a cluster, which is useful when doing large runs. 
+Users are free to choose their favourite visualisation method, and none is `officially' supported by Puffin. Nevertheless, the data output itself has vizSchema metadata to tell \textit{e.g.} Visit how to display the data. VisIt allows the ability to plot the data in client-server mode while the data is on a cluster, which is useful when doing large runs.
 
 There are example Python scripts to subselect portions of the field mesh. For example, you may wish to select only a central portion of the field mesh in the transverse or temporal directions, or you may wish to select portions at a a time to average over, etc.
 
@@ -881,10 +929,19 @@ Below is an exhaustive list of parameters, for each input file type. Some option
 
 \subsection{Main Input File}
 
+%\begin{lstlisting}[language=fortran]
+%sRho
+%\end{lstlisting}
+
+All parameters in the main input file are in a single namelist, called {\bf mdata}. They are grouped together below for organisational purposes only.
+
+\subsubsection{Scaling Parameters}
+
+These parameters define the scaling frame used by the Puffin algorithm. The reference wavelength and energies referred to in other parameter descriptions are defined by or derived from these parameters.
+
 {\bf sRho}
 
 $\rho$, the FEL parameter. This specifies the scaling of the system. It does {\bf not} have to be strictly correct - it only descibes the scaling. The simulation can be performed, and the system may be scaled back to SI units, and the result should be correct. If the supplied $\rho$ is correct, however (meaning, it has been calculated from the beam and undulator parameters input), then the scaled notation becomes physically relevant. For an ideal, 1D system, the system should saturate at intensity $|A|^2 \approx 1$, and the system should be firmly in the high or exponential gain regime at $\bar{z} \approx 2-3$. This allows one to quickly see how efficiently the system is lasing w.r.t its ideal case. [$0.01$]
-
 
 {\bf saw}
 
@@ -906,9 +963,78 @@ Allows one to select from a choice of undulators. Choices are `curved', `planepo
 
 $u_x$ and $u_y$ - the relative peak magnetic field of the undulator in each transverse polarization. Usually, at least one should be $=1$, and the other between $0$ (planar) and $1$ (helical). If they are not defined, the default is helical, $u_x=u_y=1$. Ignored if the undulator type is specified as either `helical', `planepole' or `curvedpole'. [($u_x = u_y = 1.0$)]
 
+
+\subsubsection{Radiation Mesh}
+
+{\bf meshType}
+
+Integer, selecting the mesh type to be used. $= 0$ for fully temporal mesh, $=1$ for periodic mode. [0]
+
+{\bf sperwaves}
+
+Length of the periodic mesh, expressed as the number of reference resonant wavelengths. If {\bf meshType} $=1$ (periodic), and this is defined, then it will be used rather than the more direct {\bf sFModelLengthZ2}. If {\bf meshType} $=1$ then this is ignored. [- (not used by default)] 
+
+{\bf nodesPerLambdar}
+
+Number of nodes in the field mesh to use in the longitudinal dimension per reference resonant wavelength. The reference resonant wavelength is defined from the reference energy {\bf sgamma\_r}, the undulator period {\bf lambda\_w} and the base or reference undulator parameter {\bf saw} in the usual way. [17]
+
+{\bf sFModelLengthZ2}
+
+The full length of the field mesh in the longitudinal or temporal dimension. This must be long enough to contain the entire beam as it propagates through the undulator. It is auto-checked at the start of the simulation for the simple beam case only, and the check is only an estimate. [4.0]
+
+{\bf sFModelLengthX}, {\bf sFModelLengthY}
+
+The full length of the field mesh in the x and y (transverse) dimensions. This must be long enough to contain the entire beam as it propagates through the undulator. It is auto-checked at the start of the simulation for the simple beam case only, and the check is only an estimate. [1.0, 1.0]
+
+{\bf iNumNodesX, iNumNodesY}
+
+Number of nodes in the field mesh in the $x$ and $y$ transverse dimensions, respectively. [129,129]
+
+{\bf iRedNodesX, iRedNodesY}
+
+If {\bf qFixMesh} $=$ {\bf .true.}, then the mesh size in $x$ and $y$ will be altered in the initialization stage so that the inner {\bf iRedNodesX} $\times$ {\bf iRedNodesY} nodes in the transverse plane contain the beam. Only works for the simple beam input type. [20,20 (won't be fixed)]
+
+{\bf nspinDX, nspinDY}
+
+Inner set of transverse nodes to be used in the MPI process updates, which should contain the full transverse beam - auto-calculated in Puffin if wrong. [20,20]
+
+{\bf seed\_file}
+
+String - name of the radiation seed input file. [`' (blank string)]
+
+\subsubsection{Electron Beam}
+
+
+{\bf beam\_file}
+
+String - name of the electron beam input file. [`beam\_file.in']
+
+{\bf sElectronThreshold}
+
+When using the simple beam generation, any macroparticles generated with weight below the threshold will be removed. The threshold is defined using this variable, which expresses the threshold as a percentage of the mean particle weight. [0.05]
+
+
+\subsubsection{Undulator Lattice}
+
+{\bf lattFile}
+
+The name of the lattice file, if required. If not required, supply a blank string (enter {\bf `'}). [`' (blank string)]
+
+{\bf nPeriods}
+
+Number of undulator periods in the single (non-lattice) undulator case. If a lattice file is suppiled, then this is ignored. [8]
+
 {\bf taper}
 
 Taper in the single, simple undulator case, $\dfrac{d\alpha}{d \bar{z}}$. Ignored if a lattice file is supplied. [$0.0$]
+
+{\bf sKBetaXSF, sKBetaYSF}
+
+Betatron wavenumber for energy $\gamma_r$ of the applied strong focussing channel over the wiggler. Ignored if {\bf qFocussing} is {\bf .false.}. Both $=0$ if not specified. Remember this will be applied on top of wiggler field, which has it's own natural focussing. [0.0, 0.0]
+
+\subsubsection{Data Writing Options}
+
+These options control the frequency of the writing of the output data files.
 
 {\bf iWriteNthSteps}
 
@@ -918,17 +1044,18 @@ Steps at which to write the full data dumps at. This sets the periodicity of the
 
 Steps at which to write the integrated data at. This sets the periodicity of the writes, in integration steps. [$30$]
 
-{\bf sFiltFrac}
+{\bf qInitWrLat}
 
-During the field diffraction step, the lower frequencies are filtered out. This sets the cutoff for the high-pass filter, in units of the reference resonant frequency - (so should usually be $\leq 0.3$). [0.3]
+Logical. If true, there will be a full particle and field mesh dump at the end of each undulator module in the lattice, and the writing counter will be reset. [.false.]
 
-{\bf sDiffFrac}
+{\bf qDumpEnd}
 
-Length of the diffraction step, in units of the undulator period. Usually $=1$. [1.0]
+Logical. If true, write a full data dump at the end of the simulation, even if it does not occur at an integer number of {\bf iWriteNthSteps}. [.true.]
 
-{\bf sBeta}
 
-Absorption coefficient for the absorbing boundaries on the transverse grid. [1.0]
+
+
+\subsubsection{Options}
 
 {\bf qOneD}
 
@@ -960,66 +1087,15 @@ Switches modelling of diffraction of the radiation field on or off. If ={\bf .tr
 
 {\bf qFMesh\_G}
 
-Whether fixing the field mesh in the transverse plane to contain the beam within the inner {\bf iRedNodesX} $\times$ {\bf iRedNodesY} nodes. [.true.]
+Whether fixing the field mesh in the transverse plane to contain the beam within the inner {\bf iRedNodesX} $\times$ {\bf iRedNodesY} nodes. Valid when using a `simple' beam only - otherwise it is ignored. [.true.]
 
+{\bf qUndEnds}
 
-{\bf sKBetaXSF, sKBetaYSF}
+Switch on/off proper modelling of the wiggler module ends. If true, then the first and last 2 periods of the wiggler will be tapered up/down with a $\sin^2$ function. [.false.]
 
-Betatron wavenumber for energy $\gamma_r$ of the applied strong focussing channel over the wiggler. Ignored if {\bf qFocussing} is {\bf .false.}. Both $=0$ if not specified. Remember this will be applied on top of wiggler field, which has it's own natural focussing. [0.0, 0.0]
+{\bf q\_Noise}
 
-{\bf nodesPerLambdar}
-
-Number of nodes in the field mesh to use in the longitudinal dimension per reference resonant wavelength. The reference resonant wavelength is defined from the reference energy {\bf sgamma\_r}, the undulator period {\bf lambda\_w} and the base or reference undulator parameter {\bf saw} in the usual way. [17]
-
-{\bf sFModelLengthZ2}
-
-The full length of the field mesh in the longitudinal or temporal dimension. This must be long enough to contain the entire beam as it propagates through the undulator. It is auto-checked at the start of the simulation for the simple beam case only, and the check is only an estimate. [4.0]
-
-{\bf sFModelLengthX}, {\bf sFModelLengthY}
-
-The full length of the field mesh in the x and y (transverse) dimensions. This must be long enough to contain the entire beam as it propagates through the undulator. It is auto-checked at the start of the simulation for the simple beam case only, and the check is only an estimate. [1.0, 1.0]
-
-{\bf sElectronThreshold}
-
-When using the simple beam generation, any macroparticles generated with weight below the threshold will be removed. The threshold is defined using this variable, which expresses the threshold as a percentage of the mean particle weight. [0.05]
-
-{\bf lattFile}
-
-The name of the lattice file, if required. If not required, supply a blank string (enter {\bf `'}). [`' (blank string)]
-
-{\bf nPeriods}
-
-Number of undulator periods in the single (non-lattice) undulator case. If a lattice file is suppiled, then this is ignored. [8]
-
-{\bf stepsPerPeriod}
-
-Number of integration steps for the electron beam and field source term per undulator period. Should usually be $\gtrsim$ {\bf nodesPerLambdar} for a beam with energy and wiggler parameter close to the reference parameters. [30]
-
-{\bf qWriteA, qWriteZ2, qWritePperp, qWriteP2, qWriteX, qWriteY, qWriteZ}
-
-Logicals to switch on/off the writing of field, electron phase space coordinates ($\bar{z}_2$, $\bar{p}_\bot$, $\Gamma$, $\bar{x}$, $\bar{y}$), and propagation distance, respectively, in the sdds full data dumps. (Only used when {\bf qsdds = .true.})
-
-{\bf beam\_file}
-
-String - name of the electron beam input file. [`beam\_file.in']
-
-{\bf seed\_file}
-
-String - name of the radiation seed input file. [`' (blank string)]
-
-{\bf iNumNodesX, iNumNodesY}
-
-Number of nodes in the field mesh in the $x$ and $y$ transverse dimensions, respectively. [129,129]
-
-{\bf iRedNodesX, iRedNodesY}
-
-If {\bf qFixMesh} $=$ {\bf .true.}, then the mesh size in $x$ and $y$ will be altered in the initialization stage so that the inner {\bf iRedNodesX} $\times$ {\bf iRedNodesY} nodes in the transverse plane contain the beam. Only works for the simple beam input type. [20,20 (won't be fixed)]
-
-
-
-{\bf nspinDX, nspinDY}
-
-Inner set of transverse nodes to be used in the MPI process updates, which should contain the full transverse beam - auto-calculated in Puffin if wrong. [20,20]
+If adding the statistical shot-noise to the beam in the simple beam case. [.true.]
 
 {\bf qsdds}
 
@@ -1037,17 +1113,29 @@ Logical turning on/off the input of scaled units into Puffin. If {\bf .true.}, i
 
 Logical turning on/off the filtering of low frequency content during the siffraction step. The high-pass filter cut-off is defined by {\bf sFiltFrac}. If true, the low frequency content is set $=0$. If false, the low frequency content is not manipulated/diffracted. [.true.]
 
-{\bf qInitWrLat}
+{\bf qWriteA, qWriteZ2, qWritePperp, qWriteP2, qWriteX, qWriteY, qWriteZ}
 
-Logical. If true, there will be a full particle and field mesh dump at the end of each undulator module in the lattice. [.false.]
+Logicals to switch on/off the writing of field, electron phase space coordinates ($\bar{z}_2$, $\bar{p}_\bot$, $\Gamma$, $\bar{x}$, $\bar{y}$), and propagation distance, respectively, in the sdds full data dumps. (Deprecated) (Only used when {\bf qsdds = .true.})
 
-{\bf qUndEnds}
+\subsubsection{Numerical Integration}
 
-Switch on/off proper modelling of the wiggler module ends. If true, then the first and last 2 periods of the wiggler will be tapered up/down with a $\sin^2$ function. [.false.]
+These parameters control the numerical integration methods.
 
-{\bf q\_Noise}
+{\bf stepsPerPeriod}
 
-If adding the statistical shot-noise to the beam in the simple beam case. [.true.]
+Number of integration steps for the electron beam and field source term per undulator period. Should usually be $\gtrsim$ {\bf nodesPerLambdar} for a beam with energy and wiggler parameter close to the reference parameters. [30]
+
+{\bf sDiffFrac}
+
+Length of the diffraction step, in units of the undulator period. Usually $=1$. [1.0]
+
+{\bf sFiltFrac}
+
+During the field diffraction step, the lower frequencies are filtered out. This sets the cutoff for the high-pass filter, in units of the reference resonant frequency - (so should usually be $\leq 0.3$). [0.3]
+
+{\bf sBeta}
+
+Absorption coefficient for the absorbing boundaries on the transverse grid. [1.0]
 
 {\bf sRedistLen, iRedistStp}
 
@@ -1057,7 +1145,153 @@ Parallel tuning parameters, controlling the buffer length needed by each MPI pro
 
 \subsection{Beam Input File}
 
-As noted in section \ref{beamfls}, the electron beam file can take 3 different forms.
+As noted in section \ref{beamfls}, the electron beam can be specified in 3 different forms - either a `simple', `dist' or `particle'.
+
+The beam file must contain $2$ namelists. One to choose the method, and the other to choose the options particular to that method. To choose which method to use, the beam file first of all contains a namelist titled {\bf nblist} with the following parameters.
+
+\subsubsection{Namelist: nblist}
+
+{\bf dtype}
+
+String, specifying type of beam input. Can be either {\it simple}, {\it dist} or {\it h5} (for particle input type)
+
+{\bf nbeams}
+
+Integer. The number of electron beams to set up. For a simple beam, multiple beam can be setup. For the dist type input, multiple electron beam dist files can be used. For the particle input, this parameter is ignored.
+
+If {\bf dtype} $=$ {\it simple}, then a namelist called {\bf blist} must be used, if {\bf dtype} $=$ {\it dist} the namelist {\bf bdlist} must be entered, and if {\bf dtype} $=$ {\it h5} the namelist {\bf bh5list} must be entered.
+
+\subsubsection{Namelist: blist}
+
+For the simple beam file, one can set up a homogeneous beam in every dimension. Some additional manipulation can be made to this simple beam with the supplied options - Twiss parameters can be used, or a simple beam energy modulation. The beam is assumed to have either a Gaussian or flat-top distribution profile in each dimension. The beam is therefore specified by giving the widths and so forth of the beam.
+
+{\bf sSigmaE}
+
+
+
+
+
+% simple params:
+%
+%sSigmaE, sLenE, iNumElectrons, &
+%                   sEmit_n, sQe, bcenter,  gammaf, &
+%                   chirp, mag, fr, qRndEj_G, sSigEj_G, &
+%                   qMatched_A, qEquiXY, nseqparts, qFixCharge, &
+%                   alphax, alphay, emitx, emity, TrLdMeth, fillFact
+
+
+
+
+
+\newpage
+
+\subsection{Radiation Seed Input File}
+
+The seed file can be in 2 forms - one describing a homogeneous seed of Gaussian or flat top profiles in each of the 3 spatial directions, or a list of hdf5 files containing the values of the $x$ and $y$ fields at the nodes of the radiation mesh.
+
+As with the beam file, the seed file contains 2 namelists - one specifying which of the 2 input methods is being used and the number of seeds, and the other containing the specification for the selected method.
+
+
+\newpage
+
+\subsection{Lattice File}
+
+The main input file allows one to descibe a single undulator. The lattice file instead allows one to construct a more sophisticated layout for the FEL beam line, incuding multiple undulator modules, focussing quadrupoles, drift sections, simple beam modulator sections and chicanes. If the lattice file is given, the single undulator in the main input file is ignored.
+
+An example of a lattice file is given below. Each lattice element is described by a single line of the lattice file. For a line to be read as a lattice element, it must begin with a two letter (all caps) identifier corresponding to a lattice element. Any line not beginning with a legal identifier is ignored.
+
+\lstset{style=mystyle}
+\begin{lstlisting}[language=fortran, caption=Example lattice file.]
+!Module file for Puffin
+!CLARA lattice v3 - reduced for example
+!This is for using undulator ends to give
+!25 'active' undulator periods.
+!The drift is calculated to give a strict 1.25m
+!distance between quads
+!A small (currently dispersionless) phase shifter is used to knock the beam
+!back to the correct phase after the drift.
+
+QU -4.78 4.78
+
+UN  'planepole'  29   1.0   0.0   30   1.0   1.0   0.0    0.0
+DR 16.4545455
+CH  0.0  0.966  0.0
+QU 2.39 -2.39
+
+UN  'planepole'  29   1.0   0.0   30   1.0   1.0   0.0    0.0
+DR 16.4545455
+CH  0.0  0.966  0.0
+QU -2.39 2.39
+
+UN  'planepole'  29   1.0   0.0   30   1.0   1.0   0.0    0.0
+DR 16.4545455
+CH  0.0  0.966  0.0
+QU 2.39 -2.39
+
+UN  'planepole'  29   1.0   0.0   30   1.0   1.0   0.0    0.0
+DR 16.4545455
+CH  0.0  0.966  0.0
+QU -2.39 2.39
+
+UN  'planepole'  29   1.0   0.0   30   1.0   1.0   0.0    0.0
+DR 16.4545455
+CH  0.0  0.966  0.0
+QU 2.39 -2.39
+
+\end{lstlisting}
+
+Each identifier is then followed by a series of parameters to specify the element's variables. For the undulator element:
+
+\begin{lstlisting}[language=fortran, caption=Undulator identifier and specification]
+UN  'planepole'  29   1.0   0.0   30   1.0   1.0   0.0    0.0
+! The parameters following the identifier are:
+zundtype, nw, mf, taper, nperlam, ux_arr, uy_arr, kbnx_arr, kbny_arr
+!
+! zundtype is a string describing the undulator type. Choose from 'helical', 'planepole', 'curved', or '' (blank string)
+!
+! nw is an integer giving the number of periods in this undulator
+!
+! alpha is a float giving the initial undulator tuning for this module aw/aw0,
+!
+! taper is the undulator magnetic field taper d/dz of alpha (float)
+!
+! nperlam is an integer specifying the number of integration steps per undulator period to be used in this undulator
+!
+! ux and uy - relative magnetic field strengths in x and y, respectively (float)
+!
+! kbnx_arr and kbny_arr - betatron wavenumber (k_beta = 2pi / lambda_beta)
+! of constant 'strong' focusing channel applied over undulator (float)
+\end{lstlisting}
+
+Focusing quads are modelled as a simple point transform, see section \ref{latt-file}.
+
+\begin{lstlisting}[language=fortran, caption=Quadrupole identifier and specification]
+QU 2.39 -2.39
+! Parameters being \bar{F}_x and \bar{F}_y, which are F_x / lg and Fy / lg, respectively. (F_x being -1/R21 of
+! the quad transport matrix, and F_y being -1/R43).
+
+\end{lstlisting}
+
+
+
+%! zundtype_arr, nw, mf, tapers, nperlam, ux_arr, uy_arr, kbnx_arr, kbny_arr
+%!
+%! ...being...
+%!
+%! undulator type, number of periods (integer), initial tuning alpha = aw/aw0,
+%! taper d/dz alpha, number of integration steps per undulator period (integer),
+%! ux and uy - relative magnetic field strengths in x and y, respectively
+%! kbnx_arr and kbny_arr - betatron wavenumber (k_beta = 2pi / lambda_beta)
+%! of constant 'strong' focusing channel applied over undulator
+
+\newpage
+
+\subsection{Write File}
+
+The seed file can be in 2 forms - one describing a homogeneous seed of Gaussian or flat top profiles in each of the 3 spatial directions, or a list of hdf5 files containing the values of the $x$ and $y$ fields at the nodes of the radiation mesh.
+
+As with the beam file, the seed file contains 2 namelists - one specifying which of the 2 input methods is being used and the number of seeds, and the other containing the specification for the selected method.
+
 
 
 \newpage

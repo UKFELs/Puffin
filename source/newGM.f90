@@ -190,7 +190,7 @@ CONTAINS
 !     x_1_random set to 0.5.
 
     IF (q_noise) THEN
-       CALL init_random_seed()
+!       CALL init_random_seed()
        DO i=1,i_total_number_macro
           x_1_random(i)=RandomNoGenerator(u)
           IF(PRESENT(x_2_grid)) x_2_random(i)=RandomNoGenerator(u)
@@ -414,9 +414,9 @@ CONTAINS
     END DO
   END DO
 
-    IF (icount==0) THEN
-       IF (tProcInfo_G%qROOT)  STOP "Error in GenMacros.f90, no macroparticles exist\!"
-    ENDIF
+!    IF (icount==0) THEN
+!       IF (tProcInfo_G%qROOT)  STOP "Error in GenMacros.f90, no macroparticles exist\!"
+!    ENDIF
 
 ! Calculate the scaled weighting (chi_bar) and weighting(chichi) of all macro particles
 
