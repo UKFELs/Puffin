@@ -185,7 +185,7 @@ contains
 !                              (fz2-1)*ntrndsi_G  ! transverse slices before primary node
 
     pnx = (int( (sx+halfx)  / dx, kind=ip)  + 1_IP)
-    pny = (int( (sy+halfy)  / dx, kind=ip)  + 1_IP)
+    pny = (int( (sy+halfy)  / dy, kind=ip)  + 1_IP)
     pnz = int(sz2 / dz2, kind=ip) + 1_IP - (fz2-1)
 
 !$OMP END WORKSHARE
