@@ -38,21 +38,41 @@ def readField(h5fname, f1D = 0, xn = None, yn = None):
 
 
     if (mdata.vars.q1d == 1):
-        xf = h5f.root.aperp[:, 0]
+        if (h5f.root.aperp._v_attrs.vsIndexOrder == "compMinorC"):
+            xf = h5f.root.aperp[:, 0]
+            xf = xf.T
+        else:
+            xf = h5f.root.aperp[0, :]
     else:
         if (f1D == 0):
-            xf = h5f.root.aperp[:, :, :, 0]
+            if (h5f.root.aperp._v_attrs.vsIndexOrder == "compMinorC"):
+                xf = h5f.root.aperp[:, :, :, 0]
+            else:
+                xf = h5f.root.aperp[0, :, :, :]
         else:
-            xf = h5f.root.aperp[xn, yn, :, 0]
+            if (h5f.root.aperp._v_attrs.vsIndexOrder == "compMinorC"):
+                xf = h5f.root.aperp[xn, yn, :, 0]
+            else:
+                xf = h5f.root.aperp[0, :, yn, xn]
     # xfs = xf[z2si:z2ei]   # for selecting slice...
 
     if (mdata.vars.q1d == 1):
-        yf = h5f.root.aperp[:,1]
+        if (h5f.root.aperp._v_attrs.vsIndexOrder == "compMinorC"):
+            yf = h5f.root.aperp[:,1]
+            yf = hf.T
+        else:
+            yf = h5f.root.aperp[0, :]
     else:
         if (f1D == 0):
-            yf = h5f.root.aperp[:, :, :, 1]
+            if (h5f.root.aperp._v_attrs.vsIndexOrder == "compMinorC"):
+                yf = h5f.root.aperp[:, :, :, 1]
+            else:
+                yf = h5f.root.aperp[1, :, :, :]
         else:
-            yf = h5f.root.aperp[xn, yn, :, 1]
+            if (h5f.root.aperp._v_attrs.vsIndexOrder == "compMinorC"):
+                yf = h5f.root.aperp[xn, yn, :, 1]
+            else:
+                yf = h5f.root.aperp[1, :, yn, xn]
 
     h5f.close()
 

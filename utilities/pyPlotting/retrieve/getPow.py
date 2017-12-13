@@ -73,8 +73,8 @@ def getPow(h5fname, cfr=None, dfr=None, irtype = 0, qScale = None):
 
     else:
         
-        tintensx = np.trapz(intens, x=xaxis, axis=0)
-        tintensxy = np.trapz(tintensx, x=yaxis, axis=0)
+        tintensx = np.trapz(intens, x=xaxis, axis=2)
+        tintensxy = np.trapz(tintensx, x=yaxis, axis=1)
 
         if (irtype == iav):
             power = np.trapz(tintensxy, x=z2axis) / lenz2

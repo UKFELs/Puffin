@@ -17,7 +17,7 @@ def getFileSlices(baseName):
 
   That will be used down the line...
   """
-  filelist=glob.glob(os.getcwd()+os.sep+baseName+'_aperp_C_*.h5')
+  filelist=glob.glob(os.getcwd()+os.sep+baseName+'_aperp_*.h5')
   
   dumpStepNos=[]
   for thisFile in filelist:
@@ -25,7 +25,7 @@ def getFileSlices(baseName):
     dumpStepNos.append(thisDump)
 
   for i in range(len(dumpStepNos)):
-    filelist[i]=baseName+'_aperp_C_'+str(sorted(dumpStepNos)[i])+'.h5'
+    filelist[i]=baseName+'_aperp_'+str(sorted(dumpStepNos)[i])+'.h5'
   return filelist
 
 

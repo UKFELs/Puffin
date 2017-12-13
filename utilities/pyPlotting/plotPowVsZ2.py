@@ -60,7 +60,7 @@ def plotPowVsZ2(h5fname, cfr=None, dfr=None, gav = 3):
     #plt.show()
 
     plt.savefig(basename + "-powvsz2-step-" + str(mdata.vars.step) + "-filt-" \
-          + str(cfr) + '-' + str(dfr) + "-yfield.png")
+          + str(cfr) + '-' + str(dfr) + ".png")
 
 
 
