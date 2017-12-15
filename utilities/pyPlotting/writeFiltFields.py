@@ -56,9 +56,9 @@ def writeFiltFields(fname, oname):
 
 
 
-    tfield = np.zeros([nx,ny,nz2,2])
-    tfield[:,:,:,0] = xf
-    tfield[:,:,:,1] = yf
+    tfield = np.zeros([2,nz2,ny,nx])
+    tfield[0,:,:,:] = xf
+    tfield[1,:,:,:] = yf
 
 #    xnr = xno+1:nx-xno+1
 #    ynr = yno+1:ny-yno+1
