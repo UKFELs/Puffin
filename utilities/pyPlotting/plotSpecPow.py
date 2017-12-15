@@ -135,18 +135,18 @@ def plotSpecPow(h5fname, ftplottype=None):
 # example for adding subplot
     axes = plt.subplot(212)
     plt.xlabel(sp_x_axis, fontsize=16)
-    plt.ylabel('Power', fontsize=16)
+    plt.ylabel('Intensity', fontsize=16)
     #print np.len(ftxaxis), np.len(ftxpower)
 
     if ftplottype==1:
-        plt.loglog(ftxaxis, ftxpower, label='x power')
-        plt.plot(ftxaxis, ftypower, label='y power')
+        plt.loglog(ftxaxis, ftxpower, label='x intensity')
+        plt.plot(ftxaxis, ftypower, label='y intensity')
         plt.plot(ftxaxis, ftxpower + ftypower, label='combined')
 #        axes.set_xlim([5.8e-10, 7.2e-10])
 
     else:
-        plt.semilogy(ftxaxis, ftxpower, label='x power')
-        plt.plot(ftxaxis, ftypower, label='y power')
+        plt.semilogy(ftxaxis, ftxpower, label='x intensity')
+        plt.plot(ftxaxis, ftypower, label='y intensity')
         plt.plot(ftxaxis, ftxpower + ftypower, label='combined')
         axes.set_xlim([0.8, 1.2])
 
@@ -158,9 +158,9 @@ def plotSpecPow(h5fname, ftplottype=None):
     
     plt.tight_layout()
     
-    plt.savefig(basename + "-spec-power-z-" + str(z) + ".png")
+    plt.savefig(basename + "-spec-intensity-z-" + str(z) + ".png")
 
-    plt.show()
+#    plt.show()
 
 
 #    plt.show(block=False)
