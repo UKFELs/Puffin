@@ -54,7 +54,7 @@ contains
     integer(kind=ip) :: iPer, iS ! Loop index - period counter
     integer(kind=ip) :: nW
     integer(kind=ip) :: iSteps4Diff, igoes
-    real(kind=wp) :: delz_D, nextDiff, szl
+    real(kind=wp) :: delz_D, nextDiff, szl, locTimeSt
     logical :: qFirst, qLast, qDiffrctd
     logical :: qWPF
     logical :: qWIF
@@ -69,7 +69,7 @@ contains
 !    iUndType_G = iDetail(iM)
 
 
-
+  call Get_time(locTimeSt)
 
 !    nW = nPeriods(iM)
 !    nSPP = nStepsPerPeriod(iM)
@@ -437,6 +437,10 @@ end if
 
   iUnd_cr = iUnd_cr + 1_ip
   qResume_G = .false.
+
+  if ((tProcInfo_G%QROOT ) .and. (ioutInfo_G > 0)) then
+    print*,' Finished undulator module in ', end_time-locTimeSt, 'seconds'
+  end if
 
 end subroutine UndSection
 
