@@ -296,7 +296,7 @@ MODULE Setup
 
     if (qSwitches(iDiffraction_CG)) then
 
-      call CheckSourceDiff(sStepSize,nSteps,srho, &
+      call CheckSourceDiff(srho, &
                            sEleSig, &
                            sFieldModelLength,&
                            sLengthofElm,iNodes,qOKL)
