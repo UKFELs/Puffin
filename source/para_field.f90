@@ -22,13 +22,15 @@ use filetype
 use createSDDS
 use sddsROutput
 use sddsSetup
-
+use typeFMesh
 
 implicit none
 
 private
 
 type, public :: pMesh
+
+  type(fFmesh) :: bmesh
 
   real(kind=wp), allocatable :: fr_rfield(:,:,:), bk_rfield(:,:,:), ac_rfield(:,:,:), &
                                 fr_ifield(:,:,:), bk_ifield(:,:,:), ac_ifield(:,:,:), &
@@ -47,6 +49,8 @@ type, public :: pMesh
 
   integer(kind=ip) :: ffs, ffe, tlflen, ees, eee, tlelen, tlflen_glob, tlelen_glob, &
                       tlflen4arr, tlelen4arr, ffs_GGG, ffe_GGG, ees_GGG, eee_GGG
+
+  integer(kind=ip) :: nspindx, nspindy, ntrndsi
 
 !!!   For parallel algorithm to deal with over-compression...
 
@@ -72,6 +76,8 @@ contains
   procedure, public :: UpdateGlobalPow
   procedure, private :: getFStEnd, calcBuff
   procedure, private :: rearrElecs, getFrBk
+  
+  procedure, private :: inner2Outer
 
 end type
 
@@ -519,10 +525,10 @@ contains
 
     if (self%qUnique) then
 
-      allocate(self%tmp_A(maxval(self%lrank_v)*ntrndsi_G))
+      allocate(self%tmp_A(maxval(self%lrank_v)*self%ntrndsi))
 
     else
-      allocate(self%tmp_A(self%tllen*ntrndsi_G))
+      allocate(self%tmp_A(self%tllen*self%ntrndsi))
     end if
 
 
@@ -542,34 +548,36 @@ contains
 
 
 
+!!   N O T E
+! This should probably only be used internally...?? Somehow...
 
-
-  subroutine inner2Outer(inner_ra, inner_ia)
+  subroutine inner2Outer(this, inner_ra, inner_ia)
 
     implicit none
 
+    class(pMesh), intent(inout) :: this
     real(kind=wp), contiguous, intent(in) :: inner_ra(:), inner_ia(:)
 
     integer(kind=ip) :: iz, ssti, ssei, iy, sst, sse
     integer(kind=ip) :: nxout, nyout ! should be made global and calculated
 
-    nxout = (nx_g - nspindx)/2
-    nyout = (ny_g - nspindy)/2
+    nxout = (this%bmesh%nx - this%nspindx)/2
+    nyout = (this%bmesh%ny - this%nspindy)/2
 
 
-    do iz = fz2, bz2
+    do iz = this%fz2, this%bz2
 
-      do iy = 1, nspinDY
+      do iy = 1, this%nspinDY
 
-        sst = (iz - (fz2-1)-1)*ntrnds_G + &
-                         nx_G*(nyout+(iy-1)) + &
+        sst = (iz - (this%fz2-1)-1)*this%bmesh%ntrnds + &
+                         this%bmesh%nx * (nyout+(iy-1)) + &
                          nxout + 1
 
-        sse = sst + nspinDX - 1
+        sse = sst + this%nspinDX - 1
 
-        ssti = (iz - (fz2-1)-1)*ntrndsi_G + &
-                         nspinDX*(iy-1) + 1
-        ssei = ssti + nspinDX - 1
+        ssti = (iz - (this%fz2-1)-1)*this%ntrndsi + &
+                         this%nspinDX*(iy-1) + 1
+        ssei = ssti + this%nspinDX - 1
 
         ac_rfield(sst:sse) = inner_ra(ssti:ssei)
         ac_ifield(sst:sse) = inner_ia(ssti:ssei)
@@ -585,32 +593,33 @@ contains
 
 
 
-  subroutine outer2Inner(inner_ra, inner_ia)
+  subroutine outer2Inner(this, inner_ra, inner_ia)
 
 
     implicit none
 
+    class(pMesh), intent(inout) :: this
     real(kind=wp), contiguous, intent(out) :: inner_ra(:), inner_ia(:)
 
     integer(kind=ip) :: iz, sst, sse, ssti, ssei
     integer(kind=ip) :: nxout, nyout, iy ! should be made global and calculated
 
-    nxout = (nx_g - nspindx)/2
-    nyout = (ny_g - nspindy)/2
+    nxout = (this%bmesh%nx - this%nspindx)/2
+    nyout = (this%bmesh%ny - this%nspindy)/2
 
-    do iz = fz2, bz2
+    do iz = this%fz2, this%bz2
 
-      do iy = 1, nspinDY
+      do iy = 1, this%nspinDY
 
-        sst = (iz - (fz2-1)-1)*ntrnds_G + &
-                         nx_G*(nyout+(iy-1)) + &
+        sst = (iz - (this%fz2-1)-1)*this%bmesh%ntrnds + &
+                         this%bmesh%nx*(nyout+(iy-1)) + &
                          nxout + 1
 
-        sse = sst + nspinDX - 1
+        sse = sst + this%nspinDX - 1
 
-        ssti = (iz - (fz2-1)-1)*ntrndsi_G + &
-                         nspinDX*(iy-1) + 1
-        ssei = ssti + nspinDX - 1
+        ssti = (iz - (fz2-1)-1)*this%ntrndsi + &
+                         this%nspinDX*(iy-1) + 1
+        ssei = ssti + this%nspinDX - 1
 
         inner_ra(ssti:ssei) = ac_rfield(sst:sse)
         inner_ia(ssti:ssei) = ac_ifield(sst:sse)
@@ -623,81 +632,84 @@ contains
   end subroutine outer2Inner
 
 
-  subroutine getInNode()
+  subroutine getInNode(this)
 
-  real(kind=wp) :: sminx, smaxx, sminy, smaxy
-  integer(kind=ip) :: iminx, imaxx, iminy, imaxy, &
-                      inBuf
+    implicit none
 
-  integer :: error
-  logical :: qOKL
+    class(pMesh), intent(inout) :: this
+    real(kind=wp) :: sminx, smaxx, sminy, smaxy
+    integer(kind=ip) :: iminx, imaxx, iminy, imaxy, &
+                        inBuf
 
-  inBuf = 3_ip
+    integer :: error
+    logical :: qOKL
 
-  if (iNumberElectrons_G > 0_ipl) then
+    inBuf = 3_ip
 
-    smaxx = abs(maxval(sElX_G))
-    sminx = abs(minval(sElX_G))
+    if (iNumberElectrons_G > 0_ipl) then
 
-    smaxy = abs(maxval(sElY_G))
-    sminy = abs(minval(sElY_G))
+      smaxx = abs(maxval(sElX_G))
+      sminx = abs(minval(sElX_G))
 
-    imaxx = ceiling(smaxx / sLengthOfElmX_G)
-    iminx = floor(sminx / sLengthOfElmX_G)
+      smaxy = abs(maxval(sElY_G))
+      sminy = abs(minval(sElY_G))
 
-    imaxy = ceiling(smaxy / sLengthOfElmY_G)
-    iminy = floor(sminy / sLengthOfElmY_G)
+      imaxx = ceiling(smaxx / this%bmesh%dx)
+      iminx = floor(sminx / this%bmesh%dx)
 
-    nspinDX = maxval((/imaxx,iminx/)) + inBuf
-    nspinDY = maxval((/imaxy,iminy/)) + inBuf
+      imaxy = ceiling(smaxy / this%bmesh%dy)
+      iminy = floor(sminy / this%bmesh%dy)
 
-    nspinDX = nspinDX * 2
-    nspinDY = nspinDY * 2
+      this%nspinDX = maxval((/imaxx,iminx/)) + inBuf
+      this%nspinDY = maxval((/imaxy,iminy/)) + inBuf
 
-  else   ! arbitrary minimum in case of zero MPs...
+      nspinDX = this%nspinDX * 2
+      nspinDY = this%nspinDY * 2
 
-    nspinDX = 2_ipl
-    nspinDY = 2_ipl
+    else   ! arbitrary minimum in case of zero MPs...
 
-  end if
+      this%nspinDX = 2_ipl
+      this%nspinDY = 2_ipl
 
-  if (mod(nx_g, 2) .ne. mod(nspinDX, 2) ) then
+    end if
 
-    nspinDX =  nspinDX + 1
+    if (mod(this%bmesh%nx, 2) .ne. mod(this%nspinDX, 2) ) then
 
-  end if
+      this%nspinDX =  this%nspinDX + 1
 
-  if (mod(ny_g, 2) .ne. mod(nspinDY, 2) ) then
+    end if
 
-    nspinDY =  nspinDY + 1
+    if (mod(this%bmesh%ny, 2) .ne. mod(this%nspinDY, 2) ) then
 
-  end if
+      this%nspinDY =  this%nspinDY + 1
 
-
-
-  call mpi_allreduce(MPI_IN_PLACE, nspinDX, 1, mpi_integer, &
-                   mpi_max, tProcInfo_G%comm, error)
-
-  call mpi_allreduce(MPI_IN_PLACE, nspinDY, 1, mpi_integer, &
-                   mpi_max, tProcInfo_G%comm, error)
-
-  if (nspinDX > nx_g) then
-    print*, 'ERROR, x grid not large enough'
-    print*, 'nspinDX = ', nspinDX
-    call StopCode(qOKL)
-  end if
+    end if
 
 
-  if (nspinDY > ny_g) then
-    print*, 'ERROR, y grid not large enough'
-    print*, 'nspinDY = ', nspinDY
-    call StopCode(qOKL)
-  end if
+
+    call mpi_allreduce(MPI_IN_PLACE, this%nspinDX, 1, mpi_integer, &
+                     mpi_max, tProcInfo_G%comm, error)
+
+    call mpi_allreduce(MPI_IN_PLACE, nspinDY, 1, mpi_integer, &
+                     mpi_max, tProcInfo_G%comm, error)
+
+    if (this%nspinDX > this%bmesh%nx) then
+      print*, 'ERROR, x grid not large enough'
+      print*, 'nspinDX = ', this%nspinDX
+      call StopCode(qOKL)
+    end if
 
 
-  ntrndsi_G = nspinDX * nspinDY
+    if (this%nspinDY > this%bmesh%ny) then
+      print*, 'ERROR, y grid not large enough'
+      print*, 'nspinDY = ', this%nspinDY
+      call StopCode(qOKL)
+    end if
 
-  qInnerXYOK_G = .true.
+
+    this%ntrndsi = this%nspinDX * this%nspinDY
+
+    qInnerXYOK_G = .true.
 
   end subroutine getInNode
 

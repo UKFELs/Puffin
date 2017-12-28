@@ -33,10 +33,7 @@ module typeFMesh
     integer(kind=ip) :: nby
     integer(kind=ip) :: nbz2
 
-    integer(kind=ip) :: ntrnds  !_G
-    integer(kind=ip) :: ntrndsi  !_G
-    integer(kind=ip) :: nspinDX
-    integer(kind=ip) :: nspinDY
+    integer(kind=ip) :: ntrnds
 
     integer(kind=ip) :: v3d  ! formerly 'delta_g'
     
