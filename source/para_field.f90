@@ -18,10 +18,6 @@ use ParallelSetUp
 use TransformInfoType
 use gtop2
 use filetype
-!use createSDDS
-!use sddsROutput
-!use sddsSetup
-
 
 implicit none
 
@@ -1118,9 +1114,9 @@ contains
           si = ntrndsi_G * (bz2PB + 1_ip)
           sst = ((tllen - (bz2PB+1_ip) ) * ntrndsi_G) + 1_ip
           sse = tllen * ntrndsi_G
-          print*, size(dadz_r), tllen, mainlen
+          if (ioutInfo_G > 0) print*, size(dadz_r), tllen, mainlen
 
-          print*, 'IM NOT UNIQUE'
+          if (ioutInfo_G > 0) print*, 'IM NOT UNIQUE'
 
           dadz_r(1:si) = dadz_r(1:si) + dadz_r(sst:sse)
           dadz_i(1:si) = dadz_i(1:si) + dadz_i(sst:sse)
@@ -1133,8 +1129,6 @@ contains
           si = ntrndsi_G * (bz2PB + 1_ip)
           sst = ((tllen - (bz2PB + 1_ip) ) * ntrndsi_G) + 1_ip
           sse = tllen * ntrndsi_G
-
-!print*,'why0.1', tProcInfo_G%rank
 
           if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
 
@@ -1275,9 +1269,9 @@ contains
 
         if (qUnique) then
 
-          si = ntrndsi_G * (bz2PB + 1_ip)
-          sst = ((tllen - (bz2PB + 1_ip) ) * ntrndsi_G) + 1_ip
-          sse = tllen * ntrndsi_G
+          si = ntrnds_G * (bz2PB + 1_ip)
+          sst = ((tllen - (bz2PB + 1_ip) ) * ntrnds_G) + 1_ip
+          sse = tllen * ntrnds_G
           
           if (tProcInfo_G%rank == 0_ip) then
        
@@ -2357,10 +2351,12 @@ contains
 
       qUnique = .false.
 
-      print*, 'So WHY AM I HERE, WITH nz2 = ', nz2_G
-      print*, 'n_act_g = ', n_act_g
-      print*, 'fz2_act = ', fz2_act
-      print*, 'ez2_act = ', ez2_act
+      if (ioutInfo_G > 0) then
+        print*, 'So WHY AM I HERE, WITH nz2 = ', nz2_G
+        print*, 'n_act_g = ', n_act_g
+        print*, 'fz2_act = ', fz2_act
+        print*, 'ez2_act = ', ez2_act
+      end if
 
 
       fz2 = fz2_GGG

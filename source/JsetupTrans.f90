@@ -73,10 +73,12 @@ contains
     call fixMesh(sLengthOfElmY_G, sSigE(1, iY_CG), sLenE(1, iY_CG), &
                  iNMPs(1, iY_CG), iRedNodesY_G)
 
-    if (tProcInfo_G%qRoot) print*, 'FIXING MESH - dx = ', &
+    if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1) ) then
+      print*, 'FIXING MESH - dx = ', &
               sLengthOfElmX_G, ','
 
-    if (tProcInfo_G%qRoot) print*, 'and dy = ', sLengthOfElmY_G
+      print*, 'and dy = ', sLengthOfElmY_G
+    end if
 
   end subroutine fixXYMesh
 
@@ -261,15 +263,17 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
       call matchTransBeam(sSigE(ic,:), sLenE(ic,:), &
                       emitx(ic), emity(ic), sGamFrac(ic))
 
-      if (tProcInfo_G%qRoot) print*, &
+      if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1) ) then 
+        print*, &
              'New Gaussian sigma of electron beam in x is ',sSigE(ic, iX_CG)
-      if (tProcInfo_G%qRoot) print*, &
+        print*, &
             '...so total sampled length of beam in x is ', sLenE(ic, iX_CG)
-      if (tProcInfo_G%qRoot) print*,''
-      if (tProcInfo_G%qRoot) print*, &
+        print*,''
+        print*, &
             'New Gaussian sigma of e-beam in px is ', sSigE(ic, iPX_CG)
-      if (tProcInfo_G%qRoot) print*, &
+        print*, &
             'New Gaussian sigma of e-beam in py is ', sSigE(ic, iPY_CG)
+      end if
 
     end if
 
@@ -289,12 +293,17 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 
     call getKBetas(kbx, kby, sEnfrac)
 
-    if (tProcInfo_G%qRoot) print*, &
-    'Scaled betatron wavenumber in undulator in x (in units of 1 / gain length) = ', kbx
+    if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1) ) then
+       print*, &
+      'Scaled betatron wavenumber in undulator in x (in units of 1 / gain length) = ', kbx
+    end if
 
     call getKBetas(kbx, kby, sEnfrac)
-    if (tProcInfo_G%qRoot) print*, &
+
+    if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1) ) then
+      print*, &
     'Scaled betatron wavenumber in undulator in y (in units of 1 / gain length) = ', kby
+    end if
 
     call matchxPx(sSigE(iX_CG), sSigE(iPX_CG), emitx, &
                   kbx, sEnFrac)
@@ -780,7 +789,7 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE CheckSourceDiff(sDelZ,iSteps,srho,sSigE,sLenF,sDelF,iNNF,qOK)
+SUBROUTINE CheckSourceDiff(srho,sSigE,sLenF,sDelF,iNNF,qOK)
 
 ! Subroutine which checks the radiation field in x and y is sampled 
 ! to a large enough length to model diffraction of the resonant
@@ -790,9 +799,9 @@ SUBROUTINE CheckSourceDiff(sDelZ,iSteps,srho,sSigE,sLenF,sDelF,iNNF,qOK)
 !
 ! 
 !
-  REAL(KIND=WP), INTENT(IN) :: sDelZ,sSigE(:,:),srho
+  REAL(KIND=WP), INTENT(IN) :: sSigE(:,:),srho
   
-  INTEGER(KIND=IP), INTENT(IN) :: iSteps,iNNF(:)
+  INTEGER(KIND=IP), INTENT(IN) :: iNNF(:)
   
   REAL(KIND=WP), INTENT(INOUT) :: sDelF(:),sLenF(:)
   
@@ -813,7 +822,7 @@ SUBROUTINE CheckSourceDiff(sDelZ,iSteps,srho,sSigE,sLenF,sDelF,iNNF,qOK)
 ! diffraction based on the initial parameters
 ! X:-
 
-  CALL Check4Diff(sDelZ*REAL(iSteps,KIND=WP),&
+  CALL Check4Diff(totUndLineLength,&
             RaleighLength(srho,sSigE(1,iX_CG)),&
             sSigE(1,iX_CG),&
             sLenF(iX_CG),& 
@@ -825,16 +834,26 @@ SUBROUTINE CheckSourceDiff(sDelZ,iSteps,srho,sSigE,sLenF,sDelF,iNNF,qOK)
   IF (qUpdate) THEN
     
 !    sDelF(iX_CG) = sLenF(iX_CG) / REAL(iNNF(iX_CG)-1_IP,KIND=WP)
-          
-    IF(tProcInfo_G%QROOT)PRINT *, &
-      'WARNING: INITIAL E BEAM SIGMA IS TOO SMALL', &
-      'THERE MAY BE TOO MUCH DIFFRACTION IN X'
-  
-  ENDIF
+
+    if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 1) ) then
+      print*, ''
+      print*, '*************************************'
+      print*, 'WARNING: There may be too much diffraction in the x direction'
+      print*, 'Rayleigh length (based on initial conditions) means that'
+      print*, 'the undulator line will cause the transverse radiation profile to'
+      print*, 'become significantly larger than the transverse mesh size...' 
+      print*, '(when neglecting FEL guiding effects)'
+      print*, ''
+      print*, 'Puffin has absorbing boundaries in the transverse mesh, but be'
+      print*, 'aware that unphysical reflections from the boundaries, however'
+      print*, 'minimized, may be present...'
+    end if
+    
+  end if
 
 ! Y:-
 
-  CALL Check4Diff(sDelZ*REAL(iSteps,KIND=WP),&
+  CALL Check4Diff(totUndLineLength,&
             RaleighLength(srho,sSigE(1,iY_CG)),&
             sSigE(1,iY_CG),&
             sLenF(iY_CG),& 
@@ -844,14 +863,24 @@ SUBROUTINE CheckSourceDiff(sDelZ,iSteps,srho,sSigE,sLenF,sDelF,iNNF,qOK)
   IF (.NOT. qOKL)  GOTO 1000
 
   IF (qUpdate) THEN 
-    
+
 !    sDelF(iY_CG) = sLenF(iY_CG) / REAL(iNNF(iY_CG)-1_IP,KIND=WP)
-      
-    IF(tProcInfo_G%QROOT)PRINT *, &
-      'WARNING: INITIAL E BEAM SIGMA IS TOO SMALL', &
-      'THERE MAY BE TOO MUCH DIFFRACTION IN Y'
-      
-  ENDIF
+
+    if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 1) ) then
+      print*, ''
+      print*, '*************************************'
+      print*, 'WARNING: There may be too much diffraction in the y direction'
+      print*, 'Rayleigh length (based on initial conditions) means that'
+      print*, 'the undulator line will cause the transverse radiation profile to'
+      print*, 'become significantly larger than the transverse mesh size...' 
+      print*, '(when neglecting FEL guiding effects)'
+      print*, ''
+      print*, 'Puffin has absorbing boundaries in the transverse mesh, but be'
+      print*, 'aware that unphysical reflections from the boundaries, however'
+      print*, 'minimized, may be present...'
+    end if
+
+  end if
 
 !     Set error flag and exit
 

@@ -42,20 +42,25 @@ def plotPowVsZ2(h5fname, cfr=None, dfr=None, gav = 3):
     plotLab = 'SI Power'
     axLab = 'Power (W)'
 
+    z = mdata.vars.z
+
 
     ax1 = plt.subplot(111)
     
     plt.plot(saxis, pows)
     plt.xlabel(r'$ct-z (\mu m)$')
     plt.ylabel(axLab)
+    ax1.set_title('z = ' + str(z) + 'm')
 #    plt.xlim(200,  210);
 
     nameparts = h5fname.split('_')
     basename = nameparts[0]
 
-    z = mdata.vars.z
 
-    plt.savefig(basename + "-powvsz2-z-" + str(z) + ".png")
+    #plt.show()
+
+    plt.savefig(basename + "-powvsz2-step-" + str(mdata.vars.step) + "-filt-" \
+          + str(cfr) + '-' + str(dfr) + "-yfield.png")
 
 
 

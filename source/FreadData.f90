@@ -259,6 +259,7 @@ subroutine read_in(zfilename, &
   real(kind=wp) :: sRedistLen
   integer(kind=ip) :: iRedistStp
   integer(kind=ip) :: meshType
+  integer(kind=ip) :: ioutInfo
 
 
 
@@ -280,7 +281,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  beam_file, sElectronThreshold, &
                  iNumNodesY, iNumNodesX, &
                  nodesPerLambdar, sFModelLengthX, &
-                 sFModelLengthY, sFModelLengthZ2, &
+               sFModelLengthY, sFModelLengthZ2, &
                  iRedNodesX, iRedNodesY, sFiltFrac, &
                  sDiffFrac, sBeta, seed_file, srho, &
                  sux, suy, saw, sgamma_r, &
@@ -291,7 +292,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  qFMesh_G, sKBetaXSF, sKBetaYSF, sRedistLen, &
                  iRedistStp, qscaled, nspinDX, nspinDY, qInitWrLat, qDumpEnd, &
                  wr_file, qMeasure, DFact, iDumpNthSteps, speout, meshType, &
-                 sPerWaves
+                 sPerWaves, ioutInfo
 
 
 ! Begin subroutine:
@@ -334,6 +335,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   Dfact = -1000.0_wp
   iDumpNthSteps = -1000_ip
   speout = -1000.0_wp
+  ioutInfo = 1_ip
 !  qplain = .false.
 
   beam_file = 'beam_file.in'
@@ -471,10 +473,12 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   sPerWaves_G = sPerWaves
 
   fieldMesh = meshType
+  
+  ioutInfo_G = ioutInfo
 
 
   if (DFact /= -1000.0_wp) then
-    if (tProcInfo_G%qRoot) then
+    if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
 
       print*, ''
       print*, 'WARNING: Use of Dfact deprecated. It is kept only so your'
@@ -487,7 +491,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
 
 
   if (iDumpNthSteps /= -1000_ip) then
-    if (tProcInfo_G%qRoot) then
+    if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
 
       print*, ''
       print*, 'WARNING: Use of iDumpNthSteps deprecated. It is kept only so your'
@@ -498,7 +502,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   end if
 
   if (speout /= -1000.0_wp) then
-    if (tProcInfo_G%qRoot) then
+    if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
 
       print*, ''
       print*, 'WARNING: Use of speout deprecated. It is kept only so your'
@@ -527,6 +531,10 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   end if
 
   if (qOneD) qEquiXY_G = .true.
+
+! ---- Fixing hdf5 always on - sdds removed!
+
+  qhdf5_G = .true.
 
 
   IF  (.NOT. qOKL) GOTO 1000
@@ -753,9 +761,11 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
     if (nbeams /= 1) then
 
-      if (tProcInfo_G%qRoot) print*, 'WARNING - currently only 1 file', &
+      if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+         print*, 'WARNING - currently only 1 file', &
                                       'is supported for the particle beam type'
-      if (tProcInfo_G%qRoot) print*, 'Only the 1st file will be read in....'
+         print*, 'Only the 1st file will be read in....'
+      end if
 
     end if
 
@@ -774,9 +784,11 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   else if (dtype == 'h5') then
     if (nbeams /= 1) then 
       
-      if (tProcInfo_G%qRoot) print*, 'WARNING - currently only 1 file', &
+      if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+        print*, 'WARNING - currently only 1 file', &
                                       'is supported for the h5 beam type'
-      if (tProcInfo_G%qRoot) print*, 'Only the 1st file will be read in....'
+        print*, 'Only the 1st file will be read in....'
+      end if
 
     end if
     allocate(dist_f(nbeams))
@@ -797,11 +809,13 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   do b_ind = 1, nbeams
 
     if (sEmit_n(b_ind) > 0.0_wp) then
-      if (tProcInfo_G%qRoot) print*, ''
-      if (tProcInfo_G%qRoot) print*, '************************************************'
-      if (tProcInfo_G%qRoot) print*, 'WARNING - use of sEmit_n deprecated - use emitx and emity instead'
-      if (tProcInfo_G%qRoot) print*, 'For now, emitx and emity will = sEmit_n where not specified'
-    
+      if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+        print*, ''
+        print*, '************************************************'
+        print*, 'WARNING - use of sEmit_n deprecated - use emitx and emity instead'
+        print*, 'For now, emitx and emity will = sEmit_n where not specified'
+      end if
+
       if (emitx(b_ind) <= 0.0_wp) emitx(b_ind) = sEmit_n(b_ind)
       if (emity(b_ind) <= 0.0_wp) emity(b_ind) = sEmit_n(b_ind)
     
@@ -831,14 +845,17 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
 
   if (qAMatch) then
-    if (tProcInfo_G%qRoot) print*, ''
-    if (tProcInfo_G%qRoot) print*, '************************************************'
-    if (tProcInfo_G%qRoot) print*, 'You have chosen to match at least one beam'
-    if (tProcInfo_G%qRoot) print*, 'Please recall that the matching is only done', &
+    
+    if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+      print*, ''
+      print*, '************************************************'
+      print*, 'You have chosen to match at least one beam'
+      print*, 'Please recall that the matching is only done', &
                                   'for the in-undulator weak or strong focusing ', &
                                   'of the first module, and not for any FODO lattice!!! '
-    if (tProcInfo_G%qRoot) print*, 'alphax and alphay will then be ignored....'
-    if (tProcInfo_G%qRoot) print*, '(if this is 1D then you wont care about this!)'
+      print*, 'alphax and alphay will then be ignored....'
+      print*, '(if this is 1D then you wont care about this!)'
+    end if
       
   end if
 

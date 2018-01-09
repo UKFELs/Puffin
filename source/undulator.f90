@@ -54,7 +54,7 @@ contains
     integer(kind=ip) :: iPer, iS ! Loop index - period counter
     integer(kind=ip) :: nW
     integer(kind=ip) :: iSteps4Diff, igoes
-    real(kind=wp) :: delz_D, nextDiff, szl
+    real(kind=wp) :: delz_D, nextDiff, szl, locTimeSt
     logical :: qFirst, qLast, qDiffrctd
     logical :: qWPF
     logical :: qWIF
@@ -69,20 +69,20 @@ contains
 !    iUndType_G = iDetail(iM)
 
 
-
+  call Get_time(locTimeSt)
 
 !    nW = nPeriods(iM)
 !    nSPP = nStepsPerPeriod(iM)
 
 !     Need to match into undulator
 
-  call mpi_barrier(tProcInfo_G%comm, error)
-  if (tProcInfo_G%qRoot) print*, 'init undulator...'
+!  call mpi_barrier(tProcInfo_G%comm, error)
+!  if (tProcInfo_G%qRoot) print*, 'init undulator...'
 
   call initUndulator(iUnd_cr, sZ, szl)
 
-  call mpi_barrier(tProcInfo_G%comm, error)
-  if (tProcInfo_G%qRoot) print*, 'init beam...'
+!  call mpi_barrier(tProcInfo_G%comm, error)
+!  if (tProcInfo_G%qRoot) print*, 'init beam...'
 
   if (qResume_G) then
 
@@ -96,7 +96,7 @@ contains
 
     start_step = 0_ip  ! ...TEMP...
 
-    if (.not. qUndEnds_G) call matchIn(sZ)
+    if (.not. qUndEnds_G) call matchIn(szl)
 
   end if
 
@@ -113,8 +113,8 @@ contains
   end if
 
 
-  call mpi_barrier(tProcInfo_G%comm, error)
-  if (tProcInfo_G%qRoot) print*, 'redisting field...'
+!  call mpi_barrier(tProcInfo_G%comm, error)
+!  if (tProcInfo_G%qRoot) print*, 'redisting field...'
 
   call getLocalFieldIndices(sRedistLen_G*2.0_wp)
 
@@ -199,7 +199,7 @@ end if
 
 
   call mpi_barrier(tProcInfo_G%comm, error)
-  if (tProcInfo_G%qRoot) print*, 'alloc arrs...'
+!  if (tProcInfo_G%qRoot) print*, 'alloc arrs...'
 
   call allact_rk4_arrs()
 
@@ -231,8 +231,8 @@ end if
         call rk4par(sZl,sStepSize,qDiffrctd)
         if (igoes>3_ip) exit
         if (.not. qPArrOK_G) then
-          if (tProcInfo_G%qRoot) print*, 'Layout not working'
-          if (tProcInfo_G%qRoot) print*, 'Rearranging...'
+!          if (tProcInfo_G%qRoot) print*, 'Layout not working'
+!          if (tProcInfo_G%qRoot) print*, 'Rearranging...'
           call deallact_rk4_arrs()
           if (.not. qInnerXYOK_G) then
             call getInNode()
@@ -399,7 +399,7 @@ end if
 !
   call Get_time(end_time)
 
-  if (tProcInfo_G%QROOT ) then
+  if ((tProcInfo_G%QROOT ) .and. (ioutInfo_G > 1)) then
     print*,' finished step ',iCsteps, istep, end_time-start_time
     WRITE(137,*) ' finished step ',iCsteps, istep, end_time-start_time
   end if
@@ -437,6 +437,10 @@ end if
 
   iUnd_cr = iUnd_cr + 1_ip
   qResume_G = .false.
+
+  if ((tProcInfo_G%QROOT ) .and. (ioutInfo_G > 0)) then
+    print*,' Finished undulator module in ', end_time-locTimeSt, 'seconds'
+  end if
 
 end subroutine UndSection
 

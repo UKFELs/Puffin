@@ -207,6 +207,14 @@ contains
     real(kind=wp) :: lx, &  !< Length of field mesh in x
                      ly     !< Length of field mesh in x
 
+    if (allocated(x_ax_G)) then
+      deallocate(x_ax_G)
+    end if
+
+    if (allocated(y_ax_G)) then
+      deallocate(y_ax_G)
+    end if
+
     allocate(x_ax_G(NX_G), y_ax_G(NY_G))
 
     if ( .not. ((NX_G == 1_IP) .and. (NY_G == 1_IP)) ) then
