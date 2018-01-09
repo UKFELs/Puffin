@@ -151,8 +151,8 @@ install (DIRECTORY utilities/pyPlotting DESTINATION bin)
 install (DIRECTORY utilities/setup DESTINATION bin)
 install (DIRECTORY utilities/visit-scripts DESTINATION bin)
 
-install (DIRECTORY inputs/example/ DESTINATION examples)
-install (DIRECTORY inputs/gen/ DESTINATION python)
+install (DIRECTORY inputs/ DESTINATION examples)
+# install (DIRECTORY inputs/gen/ DESTINATION python)
 
 install (DIRECTORY scripts/ DESTINATION examples/job-submission-scripts)
 
