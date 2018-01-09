@@ -18,10 +18,6 @@ use ParallelSetUp
 use TransformInfoType
 use gtop2
 use filetype
-!use createSDDS
-!use sddsROutput
-!use sddsSetup
-
 
 implicit none
 

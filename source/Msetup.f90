@@ -14,32 +14,28 @@
 
 MODULE Setup
 
-  USE SETUPTRANS
-!  USE FFTW_Constants
-
-  USE setupcalcs
-  USE transforms
-!  USE sddsPuffin
-  USE lattice
-  USE Globals
-  USE electronInit
-  USE Read_data
-  USE checks
-!  use dumpFiles
+  use setuptrans
+  use setupcalcs
+  use transforms
+  use lattice
+  use Globals
+  use electronInit
+  use Read_data
+  use checks
   use ParaField
   use dummyf
 
-  IMPLICIT NONE
+  implicit none
 
-  CONTAINS
+  contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  SUBROUTINE init(sZ, qOK)
+  subroutine init(sZ, qOK)
 
-  USE InitVars
+  use InitVars
 
-  IMPLICIT NONE
+  implicit none
 
 ! Subroutine to perform the initialization of
 ! the data for Puffin, and to write out initial
