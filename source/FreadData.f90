@@ -532,6 +532,10 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
 
   if (qOneD) qEquiXY_G = .true.
 
+! ---- Fixing hdf5 always on - sdds removed!
+
+  qhdf5_G = .true.
+
 
   IF  (.NOT. qOKL) GOTO 1000
 
