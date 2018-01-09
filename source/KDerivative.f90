@@ -105,7 +105,7 @@ contains
 
       if (iArEr > 0_ip) then
         qPArrOK_G = .false.
-        if (tProcInfo_G%qRoot) then
+        if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 2)) then
           print*, 'electron outside parallel bounds!'
           print*, 'Emergency redistribute!!!'
           print*, 'If this happens often, then &
@@ -129,7 +129,7 @@ contains
 
       if (iArEr > 0_ip) then
         qInnerXYOK_G = .false.
-        if (tProcInfo_G%qRoot) then
+        if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 2) ) then
           print*, 'electron outside transverse bounds!'
           print*, 'Emergency redistribute!!!'
         end if

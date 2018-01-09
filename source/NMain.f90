@@ -48,7 +48,7 @@ call Get_time(start_time)
 
 
 
-if (tProcInfo_G%qRoot) print*,' starting..... '
+if ((tProcInfo_G%qRoot) .and. (ioutInfo_G>0)) print*,' starting simulation... '
 
 if (tProcInfo_G%qRoot) OPEN(UNIT=137,FILE='rec.out',STATUS='REPLACE',FORM='FORMATTED')
 if (tProcInfo_G%qRoot) WRITE(137,*) ' starting..... '
@@ -67,6 +67,10 @@ do iL = iLst, modNum
 
 
   if (iElmType(iL) == iUnd) then
+
+    if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+      print*, 'Simulating undulator module', iUnd_cr
+    end if
 
     call UndSection(iL, sZ)
 

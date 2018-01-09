@@ -337,6 +337,8 @@ real(kind=wp)   :: time1, time2 !!!FOR DEBUGGING!!!
 real(kind=wp) :: sRedistLen_G
 integer(kind=ip) :: iRedistStp_G
 
+real(kind=wp) :: totUndLineLength
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Data writing
 
@@ -363,7 +365,7 @@ integer(kind=ip) :: iWriteNthSteps, iIntWriteNthSteps
 
 character(132_ip) :: cmd_call_G
 character(1024_ip) :: zFileName_G, zBFile_G, zSFile_G
-
+integer(kind=ip) :: ioutInfo_G
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Parallel Vars

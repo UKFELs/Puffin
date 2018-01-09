@@ -179,7 +179,9 @@ subroutine getTransformPlans_MultiD(sizes,nDims,qMeasure,qOK)
 
 !     Create plans
 
-  if (tProcInfo_G%qroot) print*, 'Creating FFTW3 plans'
+  if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 1)) then
+    print*, 'Creating FFTW3 plans'
+  end if
 
   if (qDiffraction_G) then
     if (qMeasure) then
@@ -208,9 +210,11 @@ subroutine getTransformPlans_MultiD(sizes,nDims,qMeasure,qOK)
     end if
   end if
 
-  if (tProcInfo_G%qroot) print*, 'Created FFTW3 plans'
-  if (tProcInfo_G%qroot) print*,  ''
-  if (tProcInfo_G%qroot) print*, '***********************'
+  if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 1)) then 
+    print*, 'Created FFTW3 plans'
+    print*,  ''
+    print*, '***********************'
+  end if
 
   qOK = .true.
   goto 2000
