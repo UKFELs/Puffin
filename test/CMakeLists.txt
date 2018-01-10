@@ -96,11 +96,11 @@ foreach(F_SOURCE_PATH ${F_SOURCES})
 endforeach(F_SOURCE_PATH)
 
 ### AND AIO, which is a PITA ###
-add_custom_command(OUTPUT "AIO.c.o"
-  COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/../source/CMakeFiles/AIO.dir/AIO.c.o .
-  COMMENT "Copying libAIO over"
-  VERBATIM
-  )
+# add_custom_command(OUTPUT "AIO.c.o"
+#   COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/../source/CMakeFiles/AIO.dir/AIO.c.o .
+#   COMMENT "Copying libAIO over"
+#   VERBATIM
+#   )
 
 message(STATUS "F_SOURCE_MODS : ${F_SOURCE_MODS}")
 
@@ -120,7 +120,8 @@ message(STATUS "include directories: ${PFUNIT} and ${CMAKE_CURRENT_SOURCE_DIR}")
 message(STATUS "PFUNIT MODULES: ${PFUNIT_MODULES}")
 
 
-add_executable(testexe ${PFUNIT}/include/driver.F90 ${PFTEST_FORTRAN_FILES} "AIO.c.o" ${F_SOURCE_MODS})
+# add_executable(testexe ${PFUNIT}/include/driver.F90 ${PFTEST_FORTRAN_FILES} "AIO.c.o" ${F_SOURCE_MODS})
+add_executable(testexe ${PFUNIT}/include/driver.F90 ${PFTEST_FORTRAN_FILES} ${F_SOURCE_MODS})
 #link_directories(${PFUNIT}/mod/ ${PFUNIT}/include ${CMAKE_CURRENT_SOURCE_DIR}/../source ${CMAKE_CURRENT_BINARY_DIR}/../source ${Fftw3_LIBRARY_DIRS} ${Hdf5_LIBRARY_DIRS} ${MPI_Fortran_LIBRARIES})
 link_directories(${PFUNIT}/bin/ ${PFUNIT}/include ${CMAKE_CURRENT_SOURCE_DIR}/../source ${CMAKE_CURRENT_BINARY_DIR}/../source  ${MPI_Fortran_LIBRARIES})
 

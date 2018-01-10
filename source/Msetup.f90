@@ -12,34 +12,30 @@
 !> A module which contains top-level subroutines to allocate and initialize,
 !> or destroy, the data used in Puffin.
 
-MODULE Setup
+module Setup
 
-  USE SETUPTRANS
-!  USE FFTW_Constants
-
-  USE setupcalcs
-  USE transforms
-!  USE sddsPuffin
-  USE lattice
-  USE Globals
-  USE electronInit
-  USE Read_data
-  USE checks
-!  use dumpFiles
+  use setuptrans
+  use setupcalcs
+  use transforms
+  use lattice
+  use Globals
+  use electronInit
+  use Read_data
+  use checks
   use ParaField
   use dummyf
 
-  IMPLICIT NONE
+  implicit none
 
-  CONTAINS
+  contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  SUBROUTINE init(sZ, qOK)
+  subroutine init(sZ, qOK)
 
-  USE InitVars
+  use InitVars
 
-  IMPLICIT NONE
+  implicit none
 
 ! Subroutine to perform the initialization of
 ! the data for Puffin, and to write out initial
@@ -47,47 +43,43 @@ MODULE Setup
 !
 !                     ARGUMENTS
 !
-!
-! sA             Radiation field.
-!
 ! sZ             Electron propagation distance in z
 !                through undulator.
 !
 ! qOK            Error flag; .false. if no error
 
-!  REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sA(:)
-  REAL(KIND=WP), INTENT(OUT) :: sZ
-  LOGICAL, INTENT(OUT)   ::  qOK
+  real(kind=wp), intent(out) :: sZ
+  logical, intent(out) :: qOK
 
 !     Set error flag
 
-  qOK = .FALSE.
+  qOK = .false.
 
 !     Initialize the processors for MPI
 
-  CALL InitializeProcessors(tProcInfo_G,qOKL)
-  IF (.NOT. qOKL) GOTO 1000
+  call InitializeProcessors(tProcInfo_G,qOKL)
+  if (.not. qOKL) goto 1000
 
 !     Optional parameters
 
-  qResume = .FALSE.
-  qWrite = .TRUE.
+  qResume = .false.
+  qWrite = .true.
 
 !     Read in input file name
 !     (input on command line as variable at runtime)
 
-  CALL getarg(1,infile)
+  call getarg(1,infile)
   zFileName = infile
 
-  IF (infile == emptstring) THEN
+  if (infile == emptstring) then
 
-    PRINT *, 'ERROR, no input filename specified'
-    STOP
+    print *, 'ERROR, no input filename specified'
+    stop
 
-  END IF
+  end if
 
-  CALL FileNameNoExtension(zFileName, zFile, qOKL)
-  IF (.NOT. qOKL) GOTO 1000
+  call FileNameNoExtension(zFileName, zFile, qOKL)
+  if (.not. qOKL) goto 1000
 
   zFileName_G = zFile
 
@@ -96,15 +88,15 @@ MODULE Setup
 !     Initialise Error log for this run
 
   tErrorLog_G%zFileName = TRIM(ADJUSTL(zFile))//"_Error.log"
-  tErrorLog_G%qFormatted = .TRUE.
+  tErrorLog_G%qFormatted = .true.
 
-  CALL Error_log('',tErrorLog_G)
+  call Error_log('',tErrorLog_G)
 
 !     Read input file
 
 
 
-  CALL read_in(zFileName, &
+  call read_in(zFileName, &
        zDataFileName,     &
        qSeparateStepFiles,&
        qFormattedFiles,   &
@@ -159,7 +151,7 @@ MODULE Setup
        qmeasure, &
        qOKL)
 
-  IF (.NOT. qOKL) GOTO 1000
+  if (.not. qOKL) goto 1000
 
 !    Check all the inputs e.g. wiggler and electron lengths etc
 !    to avoid errors.
@@ -198,60 +190,24 @@ MODULE Setup
 
 !  if (qscaled_G) then
 
-  CALL CheckParameters(sLenEPulse,iNumElectrons,nbeams,sLengthofElm,iNodes,&
+  call CheckParameters(sLenEPulse,iNumElectrons,nbeams,sLengthofElm,iNodes,&
                        sFieldModelLength,sStepSize,nSteps,srho,saw,sgammar, &
                        mag, sEleSig,fx,fy, &
                        qSwitches,qSimple, sSeedSigma, freqf, &
                        SmeanZ2, qFlatTopS, nseeds, qOKL)
 
-  IF (.NOT. qOKL) GOTO 1000
+  if (.not. qOKL) goto 1000
 
 !  end if
 
 
 !    Setup FFTW plans for the forward and backwards transforms.
 
-  CALL getTransformPlans4FEL(iNodes,qmeasure,qOKL)
+  call getTransformPlans4FEL(iNodes,qmeasure,qOKL)
 
-  IF (.NOT. qOKL) GOTO 1000
+  if (.not. qOKL) goto 1000
 
 !    Calculate parameters for matched beam
-
-
-
-
-
-
-
-
-
-
-!  IF (qMatched_A(1)) THEN
-!
-!    if (qSimple) CALL MatchBeams(srho,sEmit_n,saw,sFocusfactor,&
-!                    sgammar,gamma_d,iNumElectrons,sLenEPulse,&
-!                    sEleSig,sSeedSigma,iNodes,sFieldModelLength,&
-!                    sLengthofElm,zUndType,iRedNodesX,iRedNodesY,fx,fy,qOKL)
-!
-!    IF (.NOT. qOKL) GOTO 1000
-!
-!  END IF
-!
-!
-!
-!!     Check transverse sampled length of field is long enough to model
-!!     diffraction of the resonant frequency.
-!
-!  IF (qSwitches(iDiffraction_CG)) THEN
-!
-!    if (qSimple)  CALL CheckSourceDiff(sStepSize,nSteps,srho, &
-!                                       sEleSig, &
-!                                       sFieldModelLength,&
-!                                       sLengthofElm,iNodes,qOKL)
-!
-!    IF (.NOT. qOKL) GOTO 1000
-!
-!  END IF
 
 
 
@@ -262,13 +218,13 @@ MODULE Setup
 
 !     Pass local vars to global vars
 
-  CALL passToGlobals(srho,saw,sgammar,lambda_w,iNodes, &
+  call passToGlobals(srho,saw,sgammar,lambda_w,iNodes, &
                      sLengthOfElm, qSimple, iNumElectrons, &
                      fx,fy,taper, sEleSig(1,iX_CG), sEleSig(1,iY_CG), &
                      sFiltFrac,sDiffFrac,sBeta, &
                      zUndType,qFormattedFiles, qSwitches,qOK)
 
-  IF (.NOT. qOKL) GOTO 1000
+  if (.not. qOKL) goto 1000
 
 
 
@@ -296,7 +252,7 @@ MODULE Setup
 
     if (qSwitches(iDiffraction_CG)) then
 
-      call CheckSourceDiff(sStepSize,nSteps,srho, &
+      call CheckSourceDiff(srho, &
                            sEleSig, &
                            sFieldModelLength,&
                            sLengthofElm,iNodes,qOKL)
