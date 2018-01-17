@@ -672,7 +672,8 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
       call scaleT(sSigEdge(ib), lc_G)
       call scaleT(beamCenZ2(ib), lc_G)
       !call scaleG(chirp(ib), gamFrac(ib)*sGammaR_G)
-      call scaleT(chirp(ib), lc_G)
+      chirp(ib) = chirp(ib) * sGammaR_G * lc_g
+      !call scaleT(chirp(ib), lc_G)
 
       call scaleEmit(sEmit(ib), lam_r_G)
       call scaleEmit(emitx(ib), lam_r_G)
