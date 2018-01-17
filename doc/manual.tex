@@ -1163,12 +1163,28 @@ If {\bf dtype} $=$ {\it simple}, then a namelist called {\bf blist} must be used
 
 \subsubsection{Namelist: blist}
 
-For the simple beam file, one can set up a homogeneous beam in every dimension. Some additional manipulation can be made to this simple beam with the supplied options - Twiss parameters can be used, or a simple beam energy modulation. The beam is assumed to have either a Gaussian or flat-top distribution profile in each dimension. The beam is therefore specified by giving the widths and so forth of the beam.
+For the simple beam file, one can set up a beam with a simple homogeneous distribution in every dimension. Some additional manipulation can be made to this simple beam with the supplied options - Twiss parameters can be used, or a simple beam energy modulation or chirp. The beam is assumed to have either a Gaussian or flat-top distribution profile in each dimension. The beam is therefore specified by giving the widths and so forth of the beam.
 
 {\bf sSigmaE}
 
+The \textit{r.m.s.} Gaussian $\sigma$ in each dimension, in order $\bar{x}, \bar{y}, \bar{z}_2, \bar{p}_x, \bar{p}_y, \Gamma$, or alternatively, in unscaled, S.I. units, $x,y,t,\frac{dx}{dz}, \frac{dy}{dz}, \Gamma$. When multiple beams are used, put all the consecutive $x$ values together, followed by all of the $y$ values, and so forth, \textit{e.g.} $\sigma_{x1}, \sigma_{x2}, \sigma_{y1}, \sigma_{y2}$ ... \textit{etc.} A flat-top distribution is specified by using a value of 1E8 here.
+
+{\bf sLenE}
+
+The total length used to model the beam in each dimension.
+
+{\bf iNumMPs}
+
+The number of macroparticles used to model the beam in each dimension. 
+
+{\bf bcenter}
+
+Center of the beam, in the frame of the mesh, in $\bar{z}_2$, or $t$. Defaults to 0. If 
 
 
+{\bf chirp}
+
+The gradient of a linear energy chirp in the beam. In scaled units this should be specified as $\frac{d\gamma}{d\bar{z}_2}$, in unscaled units, $\frac{1}{\gamma_r c} \frac{d\gamma}{dt}$. [0.0]
 
 
 % simple params:
