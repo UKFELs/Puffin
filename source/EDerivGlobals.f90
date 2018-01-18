@@ -337,6 +337,8 @@ real(kind=wp)   :: time1, time2 !!!FOR DEBUGGING!!!
 real(kind=wp) :: sRedistLen_G
 integer(kind=ip) :: iRedistStp_G
 
+real(kind=wp) :: totUndLineLength
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Data writing
 

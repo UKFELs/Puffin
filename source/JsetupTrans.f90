@@ -789,7 +789,7 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE CheckSourceDiff(sDelZ,iSteps,srho,sSigE,sLenF,sDelF,iNNF,qOK)
+SUBROUTINE CheckSourceDiff(srho,sSigE,sLenF,sDelF,iNNF,qOK)
 
 ! Subroutine which checks the radiation field in x and y is sampled 
 ! to a large enough length to model diffraction of the resonant
@@ -799,9 +799,9 @@ SUBROUTINE CheckSourceDiff(sDelZ,iSteps,srho,sSigE,sLenF,sDelF,iNNF,qOK)
 !
 ! 
 !
-  REAL(KIND=WP), INTENT(IN) :: sDelZ,sSigE(:,:),srho
+  REAL(KIND=WP), INTENT(IN) :: sSigE(:,:),srho
   
-  INTEGER(KIND=IP), INTENT(IN) :: iSteps,iNNF(:)
+  INTEGER(KIND=IP), INTENT(IN) :: iNNF(:)
   
   REAL(KIND=WP), INTENT(INOUT) :: sDelF(:),sLenF(:)
   
@@ -822,7 +822,7 @@ SUBROUTINE CheckSourceDiff(sDelZ,iSteps,srho,sSigE,sLenF,sDelF,iNNF,qOK)
 ! diffraction based on the initial parameters
 ! X:-
 
-  CALL Check4Diff(sDelZ*REAL(iSteps,KIND=WP),&
+  CALL Check4Diff(totUndLineLength,&
             RaleighLength(srho,sSigE(1,iX_CG)),&
             sSigE(1,iX_CG),&
             sLenF(iX_CG),& 
@@ -834,18 +834,26 @@ SUBROUTINE CheckSourceDiff(sDelZ,iSteps,srho,sSigE,sLenF,sDelF,iNNF,qOK)
   IF (qUpdate) THEN
     
 !    sDelF(iX_CG) = sLenF(iX_CG) / REAL(iNNF(iX_CG)-1_IP,KIND=WP)
-          
+
     if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 1) ) then
-      print *, &
-      'WARNING: INITIAL E BEAM SIGMA IS TOO SMALL', &
-      'THERE MAY BE TOO MUCH DIFFRACTION IN X'  
+      print*, ''
+      print*, '*************************************'
+      print*, 'WARNING: There may be too much diffraction in the x direction'
+      print*, 'Rayleigh length (based on initial conditions) means that'
+      print*, 'the undulator line will cause the transverse radiation profile to'
+      print*, 'become significantly larger than the transverse mesh size...' 
+      print*, '(when neglecting FEL guiding effects)'
+      print*, ''
+      print*, 'Puffin has absorbing boundaries in the transverse mesh, but be'
+      print*, 'aware that unphysical reflections from the boundaries, however'
+      print*, 'minimized, may be present...'
     end if
     
   end if
 
 ! Y:-
 
-  CALL Check4Diff(sDelZ*REAL(iSteps,KIND=WP),&
+  CALL Check4Diff(totUndLineLength,&
             RaleighLength(srho,sSigE(1,iY_CG)),&
             sSigE(1,iY_CG),&
             sLenF(iY_CG),& 
@@ -855,15 +863,23 @@ SUBROUTINE CheckSourceDiff(sDelZ,iSteps,srho,sSigE,sLenF,sDelF,iNNF,qOK)
   IF (.NOT. qOKL)  GOTO 1000
 
   IF (qUpdate) THEN 
-    
+
 !    sDelF(iY_CG) = sLenF(iY_CG) / REAL(iNNF(iY_CG)-1_IP,KIND=WP)
-      
-    if ((tProcInfo_G%QROOT) .and. (ioutInfo_G > 1) ) then
-       print *, &
-        'WARNING: INITIAL E BEAM SIGMA IS TOO SMALL', &
-        'THERE MAY BE TOO MUCH DIFFRACTION IN Y'
+
+    if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 1) ) then
+      print*, ''
+      print*, '*************************************'
+      print*, 'WARNING: There may be too much diffraction in the y direction'
+      print*, 'Rayleigh length (based on initial conditions) means that'
+      print*, 'the undulator line will cause the transverse radiation profile to'
+      print*, 'become significantly larger than the transverse mesh size...' 
+      print*, '(when neglecting FEL guiding effects)'
+      print*, ''
+      print*, 'Puffin has absorbing boundaries in the transverse mesh, but be'
+      print*, 'aware that unphysical reflections from the boundaries, however'
+      print*, 'minimized, may be present...'
     end if
-      
+
   end if
 
 !     Set error flag and exit

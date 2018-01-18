@@ -194,6 +194,26 @@ contains
 
     iCsteps = 1_ip
 
+    totUndLineLength = sum(real(nsteps_arr,kind=wp)*delmz) + sum(drift_zbar) + sum(chic_zbar)
+
+    if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1)) then
+        print*, ''
+        print*, ' ************************************* '
+        print*, ''
+        print*, 'In total, there will be ', sum(nSteps_arr), 'integration steps'
+        print*, 'Total interaction distance in (1D) gain lengths is z-bar =', &
+                sum(nsteps_arr*delmz)
+        print*, 'Total length of FEL undulator line in meters is z =', &
+             (sum(nsteps_arr*delmz) + sum(drift_zbar) + sum(chic_zbar)) / lg_G
+        print*, ''
+        print*, 'initial step size (in zbar, or 1D gain lengths) will be ', delmz(1)
+        print*, ''
+        print*, ' ************************************* '
+        print*, ''
+
+    end if
+
+
   end subroutine setupMods
 
 

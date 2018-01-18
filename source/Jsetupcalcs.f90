@@ -315,7 +315,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
       else
         sKBetaXSF_G = 0.0_wp
         if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-          print*, 'No strong focusing in x'
+          print*, 'No in-undulator strong focusing in x'
         end if
       end if
 
@@ -324,7 +324,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
       else
         sKBetaYSF_G = 0.0_wp
         if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-          print*, 'No strong focusing in y'
+          print*, 'No in-undulator strong focusing in y'
         end if
       end if
 
@@ -672,7 +672,8 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
       call scaleT(sSigEdge(ib), lc_G)
       call scaleT(beamCenZ2(ib), lc_G)
       !call scaleG(chirp(ib), gamFrac(ib)*sGammaR_G)
-      call scaleT(chirp(ib), lc_G)
+      chirp(ib) = chirp(ib) * sGammaR_G * lc_g
+      !call scaleT(chirp(ib), lc_G)
 
       call scaleEmit(sEmit(ib), lam_r_G)
       call scaleEmit(emitx(ib), lam_r_G)
@@ -885,9 +886,9 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
   end if
 
-  if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1)) then
-    print*, 'step size is --- ', sStepSize
-  end if
+!  if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1)) then
+!    print*, 'step size is --- ', sStepSize
+!  end if
 
 
 
