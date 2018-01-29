@@ -119,6 +119,32 @@ def convertFile(filename):
   h5.rename_node('/aperpN','aperp')
   h5.root._v_children['aperp']._v_attrs.vsIndexOrder="compMinorC"
   h5.root._v_children['meshScaled']._v_attrs.vsIndexOrder="compMinorC"
+  h5.root._v_children['meshScaled']._v_attrs.vsAxisLabels="x,y,z2"
+  
+  tlb = h5.root._v_children['meshScaled']._v_attrs.vsLowerBounds
+
+  def swapXYZ(tb):
+    
+    bx = tb[2]
+    by = tb[1]
+    bz2 = tb[0]
+    tbn = [bx,by,bz2]
+    return tbn
+
+  nlb = swapXYZ(tlb)
+  h5.root._v_children['meshScaled']._v_attrs.vsLowerBounds=numpy.array(nlb)
+  
+  tub = h5.root._v_children['meshScaled']._v_attrs.vsUpperBounds
+  nub = swapXYZ(tub)
+  h5.root._v_children['meshScaled']._v_attrs.vsUpperBounds = numpy.array(nub)
+  
+  tnc = h5.root._v_children['meshScaled']._v_attrs.vsNumCells
+  nnc = swapXYZ(tnc)
+  h5.root._v_children['meshScaled']._v_attrs.vsNumCells = numpy.array(nnc)
+
+  h5.root._v_children['globalLimits']._v_attrs.vsLowerBounds = numpy.array(nlb)
+  h5.root._v_children['globalLimits']._v_attrs.vsUpperBounds = numpy.array(nub)
+
   h5.close()
 
 
