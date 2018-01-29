@@ -368,8 +368,10 @@ contains
     call addH5StringAttribute(group_id,"vsCentering","nodal",aspace_id)
 
     call addH5StringAttribute(group_id,"vsIndexOrder","compMajorF",aspace_id)
+    
+    call addH5StringAttribute(group_id,"vsAxisLabels","z2,yb,xb",aspace_id)
 
-    call h5sclose_f(aspace_id, error)    
+    call h5sclose_f(aspace_id, error)
 
     call write3DfloatAttribute(group_id, "vsLowerBounds", lb)
 
