@@ -1,4 +1,4 @@
-! Copyright 2012-2017, University of Strathclyde
+! Copyright 2012-2018, University of Strathclyde
 ! Authors: Jonathan Smith (Tech-X UK Ltd) & Lawrence T. Campbell
 ! License: BSD-3-Clause
 
