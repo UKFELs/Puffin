@@ -8,7 +8,7 @@
 !> Glasgow, UK
 !> @brief
 !> This module contains routines for calculating the reduced or integrated data
-!> for Puffin output. This module also writes this data, in the SDDS case. 
+!> for Puffin output. This module also writes this data, in the SDDS case.
 
 module avwrite
 
@@ -16,8 +16,6 @@ use paratype
 use arrayfunctions
 use globals
 use functions
-!use sddsROutput
-!use createSDDS
 use ParallelSetUp
 use parafield
 
@@ -26,29 +24,16 @@ implicit none
 
 contains
 
-
-
-!> writeIntData Top level routine for writing reduced/integrated data
-!! Outputs integrated data e.g. power, current
-!! bunching, etc in sdds format. Only writes power (in sdds format) at present.
-
-
-  subroutine writeIntData()
-
-    implicit none
-
-    call oPower()
-
-  end subroutine writeIntData
-
-
-
-
-!> gPowerP Subroutine to calculate the radiation power. The power
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Subroutine to calculate the radiation power. The power
 !> is calculated from the global distributed radiation field arrays.
-!> @params power, output array containing the calculated power
+!> @params[out] power Array containing the calculated power
 !> as a function of z2. The power is calculated on an equispaced
-!> 1D mesh at nodes equal to the nodes in z2 of the radiation field.
+!> 1D mesh at nodes equal to the nodes in z2 of the radiation field mesh.
 !> So e.g. the power node separation is sLengthOfElmZ2_G.
 
   subroutine gPowerP(power)
@@ -66,30 +51,13 @@ contains
 
     allocate(ac_power(mainlen), fr_power(tlflen4arr), bk_power(tlelen4arr))
 
-!    allocate(wfield(nx,ny,nz2))
-
-!    wfield = complex(reshape(sA(1:nnodes),(/nx,ny,nz2/)), &
-!                reshape(sA(nnodes+1:2*nnodes),(/nx,ny,nz2/)))
-
-
     if ((ffe_GGG > 0) .and. (tlflen > 0) ) then
 
       call gPower(fr_rfield, fr_ifield, fr_power)
 
     end if
 
-!    call mpi_barrier(tProcInfo_G%comm, error)
-!    print*, 'got FRONT powsss'
-
-
-!    if (count(abs(ac_rfield) > 0.0_wp) <= 0) print*, 'HELP IM RUBBUSH POW'
-
     call gPower(ac_rfield(1:mainlen*ntrnds_G), ac_ifield(1:mainlen*ntrnds_G), ac_power)
-
-!if (count(abs(ac_power) > 0.0_wp) <= 0) print*, 'HELP IM RUBBUSH'
-
-!    call mpi_barrier(tProcInfo_G%comm, error)
-    !print*, 'got ACC powsss'
 
     if ((ees_GGG < nz2_G) .and. (tlelen > 0) ) then
 
@@ -97,52 +65,26 @@ contains
 
     end if
 
-
-
-!    call mpi_barrier(tProcInfo_G%comm, error)
-!    print*, 'got powsss'
-
-
     call UpdateGlobalPow(fr_power, ac_power, bk_power, power)
-
-!    call mpi_barrier(tProcInfo_G%comm, error)
-!    print*, 'got glob powwww'
-
 
     deallocate(fr_power, ac_power, bk_power)
 
   end subroutine gPowerP
 
-
-!> oPower This subroutine retrieves the power in z2 (using gPowerP)
-!> @params nz2_G Number of nodes in z2.
-
-  subroutine oPower()
-
-    implicit none
-
-    real(kind=wp), allocatable :: power(:)  !< Radiation field power
-    integer :: error  !< Error code for MPI routines
-
-
-    allocate(power(nz2_g))
-
-    call gPowerP(power)
-
-!    call mpi_barrier(tProcInfo_G%comm, error)
-!    print*, 'written'
-
-    deallocate(power)
-
-  end subroutine oPower
-
-!> initPowerCalc This subroutine stes up array structures to be 
-!> use in the power calculation.
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This subroutine sets up array structures to be used in the calculation of
+!> the power.
+!> @params lx Length of field mesh in x
+!> @params ly Length of field mesh in y
 
   subroutine initPowerCalc()
 
-    real(kind=wp) :: lx, &  !< Length of field mesh in x
-                     ly     !< Length of field mesh in x
+    real(kind=wp) :: lx, &
+                     ly
 
     if (allocated(x_ax_G)) then
       deallocate(x_ax_G)
