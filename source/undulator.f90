@@ -64,25 +64,11 @@ contains
     logical :: qDWrDone
     integer error
 
-!    stepsize = delmz(iM)
-
-!    iUndType_G = iDetail(iM)
-
-
   call Get_time(locTimeSt)
-
-!    nW = nPeriods(iM)
-!    nSPP = nStepsPerPeriod(iM)
 
 !     Need to match into undulator
 
-!  call mpi_barrier(tProcInfo_G%comm, error)
-!  if (tProcInfo_G%qRoot) print*, 'init undulator...'
-
   call initUndulator(iUnd_cr, sZ, szl)
-
-!  call mpi_barrier(tProcInfo_G%comm, error)
-!  if (tProcInfo_G%qRoot) print*, 'init beam...'
 
   if (qResume_G) then
 
@@ -113,27 +99,13 @@ contains
   end if
 
 
-!  call mpi_barrier(tProcInfo_G%comm, error)
-!  if (tProcInfo_G%qRoot) print*, 'redisting field...'
-
   call getLocalFieldIndices(sRedistLen_G*2.0_wp)
 
-
-!  if (start_step == 1) then
-!    sStep = diffStep*0.5_WP ! Integration step size for first diffraction step
-!    nextDiff = 0.0_WP
-!  else
-!    sStep = diffStep
-!    nextDiff = ceiling(sZ/diffStep) * diffStep
-!  end if
 
   iSteps4Diff = nint(diffStep / sStepSize)
 
 !     #####
 !     Begin integration through undulator
-
-
-
 
 ! if resuming, work out where we are on the diffraction part...
 ! will need to do first half step since writes are done on COMPLETED
@@ -194,12 +166,7 @@ end if
 
 !   First step of split-step method:- field diffraction only
 
-
-
-
-
   call mpi_barrier(tProcInfo_G%comm, error)
-!  if (tProcInfo_G%qRoot) print*, 'alloc arrs...'
 
   call allact_rk4_arrs()
 
@@ -231,8 +198,6 @@ end if
         call rk4par(sZl,sStepSize,qDiffrctd)
         if (igoes>3_ip) exit
         if (.not. qPArrOK_G) then
-!          if (tProcInfo_G%qRoot) print*, 'Layout not working'
-!          if (tProcInfo_G%qRoot) print*, 'Rearranging...'
           call deallact_rk4_arrs()
           if (.not. qInnerXYOK_G) then
             call getInNode()
@@ -322,26 +287,6 @@ end if
       end if
     end if  ! end diffraction step
 
-!        if ((iStep == nSteps) .or. &
-!             qWriteq(iStep, iCsteps, iWriteNthSteps, iIntWriteNthSteps, nSteps) ) then
-!
-!          call diffractIM(diffStep * 0.5_wp, &
-!                          qDiffrctd, qOKL)
-!
-!        else
-!
-!          call diffractIM(diffStep, &
-!                          qDiffrctd, qOKL)
-!
-!        end if
-
-!        call outer2Inner(ac_rfield_in, ac_ifield_in)
-
-!        nextDiff = nextDiff + diffStep
-
-!      end if
-
-!    end if
 !                   Write result to file
 
   iCount = iCount + 1_IP
@@ -367,36 +312,6 @@ end if
     end if
 
 
-!
-!  if ( qWriteq(iStep, iCsteps, iWriteNthSteps, iIntWriteNthSteps, nSteps) ) then
-!
-!    call inner2Outer(ac_rfield_in, ac_ifield_in)
-!
-!    call writeIM(sZ, sZl, &
-!                 iStep, iCsteps, iM, iWriteNthSteps, &
-!                 iIntWriteNthSteps, nSteps, qOKL)
-!
-!
-!    if (qDiffraction_G) then
-!
-! !             If field diffraction occurred this step, need to complete it....
-! !             ...the diffraction only diffracts a half step if data is going
-! !             to be written (to match up the split-step data)
-!
-!      if (iStep /= nSteps) then   ! If not last step
-!
-!        if (qDiffrctd) call diffractIM(diffStep * 0.5_wp, &
-!                         qDiffrctd, qOKL)
-!
-!      end if
-!
-!    end if
-!
-!    call outer2Inner(ac_rfield_in, ac_ifield_in)
-!
-!  end if
-!
-!
   call Get_time(end_time)
 
   if ((tProcInfo_G%QROOT ) .and. (ioutInfo_G > 1)) then
@@ -414,10 +329,7 @@ end if
 
   end if
 
-!    if (modCount > ModNum) EXIT
-
-
-  end do   ! End of integration loop
+  end do
 
   call deallact_rk4_arrs()
 
