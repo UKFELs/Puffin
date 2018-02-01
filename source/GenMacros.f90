@@ -2,27 +2,20 @@
 ! Authors: Lawrence T. Campbell
 ! License: BSD-3-Clause
 
-MODULE MacrosGen
+module MacrosGen
 
-USE paratype
-USE ParallelInfoType
-!USE sddsPuffin
-USE randomGauss
-USE ParallelSetUp
-USE Globals
-!USE error_fn
-!USE Functions
-!USE particleFunctions
-!USE typesAndConstants
-!USE FileType
-!USE IO
+use paratype
+use ParallelInfoType
+use randomGauss
+use ParallelSetUp
+use Globals
 
-IMPLICIT NONE
+implicit none
 
-CONTAINS
+contains
 
 
-  SUBROUTINE genMacros(i_total_electrons, &
+  subroutine genMacros(i_total_electrons, &
        q_noise, & 
        x_1_grid, x_1_integral, &
        x_2_grid, x_2_integral, &
