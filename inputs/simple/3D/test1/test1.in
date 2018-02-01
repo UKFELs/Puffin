@@ -22,7 +22,6 @@
 ! q_noise                    Shot noise in initial electron beam distribution
 ! qDump                      Do you wish to dump data so the run can be resumed if anything goes wrong? .TRUE. for yes.
 ! qResume                    If resuming from dump files left from a previous run
-! qSeparateFiles             Each MPI process dumps its own local data, rather than doing a collective write.
 ! 
 !               ELECTRON MACROPARTICLE SAMPLING
 ! 
@@ -95,8 +94,7 @@
  qFilter                = .true.   
  q_noise                = .true.   
  qDump                  = .false.   
- qResume                = .false.   
- qSeparateFiles         = .false.
+ qResume                = .false.
  qUndEnds = .true.
  beam_file              = 'beam_file.in'     
  sElectronThreshold     = 0.05

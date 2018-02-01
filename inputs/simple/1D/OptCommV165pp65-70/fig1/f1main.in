@@ -21,7 +21,6 @@
 ! qFilter                    TRUE to filter, if FALSE the low frequencies will just be ignored during diffraction
 ! q_noise                    Shot noise in initial electron beam distribution
 ! qResume                    If resuming from dump files left from a previous run
-! qSeparateFiles             Each MPI process dumps its own local data, rather than doing a collective write.
 ! 
 !                      ELECTRON MACROPARTICLE SAMPLING
 ! 
