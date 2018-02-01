@@ -16,7 +16,6 @@ IMPLICIT NONE
 ! are assigned.
 !-------------------------------------------------------------------- 
 !
-! zDataFileName      - Data file name
 ! sStepSize          - Step size for integration
 ! nSteps             - Number of steps 
 ! sZ                 - z position

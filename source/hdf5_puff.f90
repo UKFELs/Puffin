@@ -26,7 +26,7 @@ contains
 !! @ Todo remove unused vars - filename parameters are not required.
 
   subroutine wr_h5(sZ, sZ_loc, tArrayA, tArrayE, tArrayZ, iL, &
-                   iIntWr, iWr, qSep, zDFname, qWriteFull, &
+                   iIntWr, iWr, qSep, qWriteFull, &
                    qWriteInt, nslices, qOK)
 
     implicit none
@@ -42,7 +42,6 @@ contains
     real(kind=wp), dimension(nslices) :: bun1,bun2,bun3,bun4,bun5,sq, wrEArray, avGam4Unsc
 
     integer(kind=ip), intent(in) :: iIntWr, iWr !<Aren't these global?
-    character(1024_IP), intent(in) :: zDFName 
     logical, intent(in) :: qSep !< Probably not used here, whether to write separate files
     logical, intent(inout) :: qOK  !< Flag set if any probs happen
     integer :: error, numSpatialDims

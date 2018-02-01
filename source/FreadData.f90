@@ -118,7 +118,6 @@ contains
 !> @param[out] qOK Error flag
 
 subroutine read_in(zfilename, &
-       zDataFileName, &
        qSeparateFiles, &
        qFormattedFiles, &
        qResume, &
@@ -176,7 +175,6 @@ subroutine read_in(zfilename, &
 
   CHARACTER(*),INTENT(IN) :: zfilename
 
-  CHARACTER(1024_IP),  INTENT(OUT)  :: zDataFileName
   LOGICAL,           INTENT(OUT)  :: qSeparateFiles
   LOGICAL,           INTENT(OUT)  :: qFormattedFiles
   LOGICAL,           INTENT(OUT)  :: qResume
@@ -240,6 +238,7 @@ subroutine read_in(zfilename, &
 
   INTEGER::ios
   CHARACTER(1024_IP) :: beam_file, seed_file, wr_file
+  character(1024_IP) :: zDataFileName
   LOGICAL :: qOKL, qMatched !   TEMP VAR FOR NOW, SHOULD MAKE FOR EACH BEAM
 
   logical :: qWriteZ, qWriteA, &
@@ -368,7 +367,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   stepsPerPeriod         = 30
   nPeriods               = 8
   sZ0                    = 0.0
-  zDataFileName          = 'DataFile.dat'
+  zDataFileName          = ''
   iWriteNthSteps         = 30
   iWriteIntNthSteps      = 30
   meshType = 0_ip
@@ -512,6 +511,16 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
     end if
   end if
 
+  if (zDataFileName /= '') then
+    if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+
+      print*, ''
+      print*, 'WARNING: Use of zDataFileName deprecated. It is kept only so your'
+      print*, 'old input files will not break!! It will do nothing.'
+      print*, ''
+
+    end if
+  end if
 
 
   CALL read_beamfile(qSimple, dist_f, beam_file,sEmit_n,sSigmaGaussian,sLenEPulse, &

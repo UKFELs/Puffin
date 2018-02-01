@@ -344,9 +344,6 @@ real(kind=wp) :: totUndLineLength
 
 
 
-character(1024_IP) :: zDataFileName ! filename extension for 
-                                  ! data files
-
 ! Type arrays describing electron, field and z output files,
 ! respectively
 

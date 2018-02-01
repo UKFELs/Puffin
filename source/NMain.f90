@@ -88,7 +88,7 @@ do iL = iLst, modNum
 !     FOR WRITING AFTER EACH DRIFT
 !    szl = 0.0_wp
 !    call wr_cho(sZ, szl, &
-!                zDataFileName, 0_ip, iCsteps, modNum, iWriteNthSteps, &
+!                0_ip, iCsteps, modNum, iWriteNthSteps, &
 !                iIntWriteNthSteps, 0_ip, .true., .true., qOKL)
 
   else if (iElmType(iL) == iModulation) then
@@ -108,7 +108,7 @@ if (qDumpEnd_G) then
 
   szl = 0.0_wp
   call wr_cho(sZ, szl, &
-              zDataFileName, 0_ip, iCsteps, modNum, iWriteNthSteps, &
+              0_ip, iCsteps, modNum, iWriteNthSteps, &
               iIntWriteNthSteps, 0_ip, .true., .true., qOKL)
 
 end if

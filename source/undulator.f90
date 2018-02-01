@@ -312,7 +312,7 @@ end if
 
           call diffractIM(dzdF, qDiffrctd, qOKL)  ! Finish diffraction step
           call writeIM(sZ, sZl, &
-                       zDataFileName, iStep, iCsteps, iM, iWriteNthSteps, &
+                       iStep, iCsteps, iM, iWriteNthSteps, &
                        iIntWriteNthSteps, nSteps, qOKL)   ! Write data
           if (dzdS > 0.0_wp) call diffractIM(dzdS, qDiffrctd, qOKL)  ! Start new diffraction step
           call outer2Inner(ac_rfield_in, ac_ifield_in)
@@ -355,7 +355,7 @@ end if
         call inner2Outer(ac_rfield_in, ac_ifield_in)
 
         call writeIM(sZ, sZl, &
-                     zDataFileName, iStep, iCsteps, iM, iWriteNthSteps, &
+                     iStep, iCsteps, iM, iWriteNthSteps, &
                      iIntWriteNthSteps, nSteps, qOKL)
 
       else
@@ -373,7 +373,7 @@ end if
 !    call inner2Outer(ac_rfield_in, ac_ifield_in)
 !
 !    call writeIM(sZ, sZl, &
-!                 zDataFileName, iStep, iCsteps, iM, iWriteNthSteps, &
+!                 iStep, iCsteps, iM, iWriteNthSteps, &
 !                 iIntWriteNthSteps, nSteps, qOKL)
 !
 !

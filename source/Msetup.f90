@@ -97,7 +97,6 @@ module Setup
 
 
   call read_in(zFileName, &
-       zDataFileName,     &
        qSeparateStepFiles,&
        qFormattedFiles,   &
        qResume,           &
@@ -299,24 +298,6 @@ module Setup
   end if
 
 
-!    IF qresume is .TRUE. then we are reading in data from the
-!    dump files from a previous run....
-
-!  IF (qResume) THEN
-
-    !CALL InitFD(sA,sZ,qOKL)
-
-    !IF (.NOT. qOKL) GOTO 1000
-
-
-!  ELSE
-
-!    ...or if qResume is .FALSE. then we are setting up the data
-!    ourselves....
-
-!    ALLOCATE(sA(nFieldEquations_CG*iNumberNodes_G))
-
-
   if (iFieldSeedType_G==iSimpleSeed_G) then
 
     qStart_new = .true.
@@ -349,16 +330,7 @@ module Setup
 
   end if
 
-!  CALL MPI_BARRIER(tProcInfo_G%comm,error)
-!  call mpi_finalize(error)
-!  stop
-
   start_step = 1_IP
-
-!  END IF
-
-
-
 
 
 !    Define the rescaling parameter "ffact" for rescaling
@@ -377,16 +349,6 @@ module Setup
             real(iNodes(iZ2_CG), kind=wp)
 
   end if
-
-
-!  IF (qResume) THEN
-!    CALL READINCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
-  !ELSE
-  !  CALL DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
-!  ENDIF
-
-
-
 
 
 !    Calculate K-values for diffraction. In Ltransforms.f90
@@ -432,63 +394,22 @@ module Setup
 
   CALL MPI_BARRIER(tProcInfo_G%comm,error)
 
-
-!  call writeIM(sA, Ar_local, sZ, &
-!               zDataFileName, iStep, iWriteNthSteps, &
-!               lrecvs, ldispls, &
-!               iIntWriteNthSteps, nSteps, qWDisp, qOKL)
-
-!  if (qWrite)  call wr_sdds(sZ, 0, tArrayA, tArrayE, tArrayZ, &
-!                 iIntWriteNthSteps, iWriteNthSteps, .true., &
-!                 zDataFileName, .true., .true., qOK)
-
   iCSteps = 0_ip
 
   if (.not. qResume_G) then
 
     call writeIM(sZ, sZlSt_G, &
-                 zDataFileName, 0_ip, 0_ip, 0_ip, iWriteNthSteps, &
+                 0_ip, 0_ip, 0_ip, iWriteNthSteps, &
                  iIntWriteNthSteps, nSteps, qOKL)
 
   end if
 
-!  iCsteps = 1_ip
-
-!  if (qWrite) call wdfs(sA, sZ, 0, tArrayA, tArrayE, tArrayZ, &
-!                        iIntWriteNthSteps, iWriteNthSteps, &
-!                        qSeparateStepFiles, zDataFileName, .false., qOKL)
-
   if (.not. qOKL) goto 1000
 
-!   IF (qWrite.AND.(.NOT.(qSeparateStepFiles))) THEN
-!     IF(tProcInfo_G%qROOT) PRINT *,&
-!          'Writing field and electron values to a single file'
-!     CALL SetUpDataFiles(zDataFileName, &
-!          qFormattedFiles, &
-!          tArrayZ, &
-!          tArrayA, &
-!          tArrayE, &
-!          qOKL)
-!     IF (.NOT. qOKL) GOTO 1000
-
-!   END IF
-
-! !    Write initial result to file - see line 374 for
-! !    "WriteIntegrationData" routine
-
-!   CALL WriteData(qSeparateStepFiles,&
-!       zDataFileName,tArrayZ,tArrayA,tArrayE,&
-!       iStep,sZ,sA,sV,.TRUE.,qFormattedFiles,qOKL)
-!   IF (.NOT. qOKL) GOTO 1000
 
   CALL MPI_BARRIER(tProcInfo_G%comm,error)
 
   if ((tProcInfo_G%qROOT) .and. (ioutInfo_G > 0)) print*, 'Initial data written'
-
-
-!  if (qSwitches(iDump_CG)) call DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
-!  if (qSwitches(iDump_CG)) call DUMPDATA(sA,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
-!                             iNumberElectrons_G,sZ,istep,tArrayA(1)%tFileType%iPage)
 
   DEALLOCATE(s_Normalised_chi_G)
 
