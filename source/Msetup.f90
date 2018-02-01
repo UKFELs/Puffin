@@ -262,8 +262,6 @@ module Setup
 
   end if
 
-  if (qsdds_G) call initPFile(tPowF, qFormattedFiles) ! initialize power file type
-
   if (.not. qResume_G) call initPowerCalc()
 
 !     Generate macroelectrons

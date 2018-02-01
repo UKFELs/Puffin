@@ -396,7 +396,6 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qSwitches(iDump_CG) = qDump
 
   qUndEnds_G = qUndEnds
-  qsdds_G  = qsdds
   qhdf5_G = qhdf5
   qscaled_G = qscaled
   qInitWrLat_G = qInitWrLat

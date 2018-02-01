@@ -351,12 +351,6 @@ TYPE(cArraySegment), save :: tArrayE(nElectronEquations_CG)
 TYPE(cArraySegment), save :: tArrayA(nFieldEquations_CG)
 TYPE(cArraySegment), save :: tArrayZ
 
-
-TYPE(cFileType), save :: tPowF   ! Type array describing the power file
-	                       ! output
-
-
-
 integer(kind=ip) :: iWriteNthSteps, iIntWriteNthSteps
 
 

@@ -114,10 +114,8 @@ contains
   end subroutine gPowerP
 
 
-!> oPower This subroutine retrieves the power in z2 (using gPowerP) and
-!> outputs it to a file (by calling writePower).
+!> oPower This subroutine retrieves the power in z2 (using gPowerP)
 !> @params nz2_G Number of nodes in z2.
-!> @params tPowF Global type for storing sdds file data about the power file.
 
   subroutine oPower()
 
@@ -131,73 +129,12 @@ contains
 
     call gPowerP(power)
 
-    call writePower(power,tPowF)
-
 !    call mpi_barrier(tProcInfo_G%comm, error)
 !    print*, 'written'
 
     deallocate(power)
 
   end subroutine oPower
-
-
-
-
-
-!> writePower This subroutine appends the power at the current
-!> step to the SDDS power file.
-
-  subroutine writePower(power,powFType)
-
-    implicit none
-
-    real(kind=wp), intent(in) :: power(:)  !< Input radiation power
-    type(cFileType), intent(inout) :: powFType  !< Input/ouput type describing the power output file
-
-    integer(kind=ip) :: nnz2 !< number of power sampling nodes in z2
-    logical :: qOKL  !< Error flag
-
-    nnz2 = size(power)
-
-    if (tProcInfo_G%qRoot) then
-
-!      call OutputIntegrationData(powFType,&
-!              power,nnz2,qOKL)
-
-    end if
-
-  end subroutine writePower
-
-
-
-
-
-!> initPFile This subroutine initializes the SDDS power file, and must be
-!> called before any writing to the sdds power file takes place.
-
-  subroutine initPFile(powFType, qForm)
-
-    implicit none
-
-    type(cFileType), intent(inout) :: powFType !< Input/output Power filetype, describing power file.
-    logical, intent(in) :: qForm !< Input Whether sdds output is to be formatted or not.
-
-    character(1024_IP) :: fname, & !< Filename (unused)
-                        vname    !< SDDS Variable name
-    logical :: qOKL  !< Local error flag
-    powFType%qformatted = qForm
-    powFType%zFileName = 'power.sdds' !  filename
-    vname = 'power' !  SDDS variable name
-
-
-    if (tProcInfo_G%qRoot) then
-
-!      call CreateSDDSFile(powFType%zFileName, &
-!                          vname, powFType, qOKL)
-
-    end if
-
-  end subroutine initPFile
 
 !> initPowerCalc This subroutine stes up array structures to be 
 !> use in the power calculation.
