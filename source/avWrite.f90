@@ -269,9 +269,9 @@ contains
 
     implicit none
 
-    real(kind=wp), dimension(:) :: x,y !<transverse dims
-    integer(kind=ip), optional :: lower, upper !< extents
-    integer(kind=ip) :: l, u, i !< indices 
+    real(kind=wp), dimension(:) :: x,y
+    integer(kind=ip), optional :: lower, upper
+    integer(kind=ip) :: l, u, i
 
     if (present(lower)) then
       l = lower
