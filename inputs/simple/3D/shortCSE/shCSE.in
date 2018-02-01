@@ -22,15 +22,7 @@
 ! q_noise                    Shot noise in initial electron beam distribution
 ! qDump                      Do you wish to dump data so the run can be resumed if anything goes wrong? .TRUE. for yes.
 ! qResume                    If resuming from dump files left from a previous run
-! qSeparateFiles             Write data to separate SDDS files at each step
-! qFormattedFiles            Write data as formatted text(TRUE) or binary(FALSE)
-! qWriteZ                    Write out Z data
-! qWriteA                    Write out A data
-! qWritePperp                Write out Pperp data
-! qWriteP2                    Write out P2 data
-! qWriteZ2                   Write out Z2 data
-! qWriteX                    Write out X data
-! qWriteY                    Write out Y data
+! qSeparateFiles             Each MPI process dumps its own local data, rather than doing a collective write.
 ! 
 !               ELECTRON MACROPARTICLE SAMPLING
 ! 

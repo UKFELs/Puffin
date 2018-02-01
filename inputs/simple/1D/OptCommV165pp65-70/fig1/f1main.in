@@ -21,17 +21,7 @@
 ! qFilter                    TRUE to filter, if FALSE the low frequencies will just be ignored during diffraction
 ! q_noise                    Shot noise in initial electron beam distribution
 ! qResume                    If resuming from dump files left from a previous run
-!
-!                         (For SDDS writing only:)
-! qSeparateFiles             Write data to separate SDDS files at each step
-! qFormattedFiles            Write data as formatted text(TRUE) or binary(FALSE)
-! qWriteZ                    Write out Z data
-! qWriteA                    Write out A data
-! qWritePperp                Write out Pperp data
-! qWriteP2                    Write out P2 data
-! qWriteZ2                   Write out Z2 data
-! qWriteX                    Write out X data
-! qWriteY                    Write out Y data
+! qSeparateFiles             Each MPI process dumps its own local data, rather than doing a collective write.
 ! 
 !                      ELECTRON MACROPARTICLE SAMPLING
 ! 
@@ -86,7 +76,6 @@
 ! stepsPerPeriod     Number of steps per wiggler period
 ! nPeriods           Number of wiggler periods
 ! sZ0                Starting zbar position
-! zDataFileName      Data file name
 ! iWriteNthSteps     Steps to write data at
 ! iWriteIntNthSteps  Steps to write integrated data at
 !
@@ -94,9 +83,7 @@
 ! Begin input:-
 
 &MDATA
- qOneD                  = .true.   
- qsdds = .false.
- qhdf5 = .true.    
+ qOneD                  = .true.
  beam_file              = 'beam_file.in'
  seed_file              = 'seed_file.in'
  sElectronThreshold     = 0.05
