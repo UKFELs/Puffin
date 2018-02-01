@@ -111,28 +111,26 @@ contains
 
 
 
-
-
-
-
-
-
-!> gPower Get radiation field power in z2 from input field.
-
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This subroutine fetches the temporal Power
+!> from the 3D or 1D field mesh. It chooses the appropriate
+!> 1D or 3D power calculation based on the mesh.
+!> @params[in] rfield Real component of A_perp
+!> @params[in] ifield Imag component of A_perp
+!> @params[out] power Temporal power
 
   subroutine gPower(rfield, ifield, power)
 
     implicit none
 
-! This subroutine fetches the temporal Power
-! from the 3D field
-!
-!       ARGUMENTS
+    real(kind=wp), intent(in) :: rfield(:), &
+                                 ifield(:)
 
-    real(kind=wp), intent(in) :: rfield(:), &  !< Input real part of A_perp
-                                 ifield(:)     !< Input imaginary part of A_perp
-
-    real(kind=wp), intent(out) :: power(:)   !< Output Power cal'd from rfield and ifield
+    real(kind=wp), intent(out) :: power(:)
 
     power = 0.0_wp     ! init
 
@@ -148,9 +146,16 @@ contains
 
   end subroutine gPower
 
-
-
-
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This subroutine fetches the temporal Power
+!> from the 1D field
+!> @params[in] rfield Real component of A_perp
+!> @params[in] ifield Imag component of A_perp
+!> @params[out] power Temporal power
 
   subroutine fPower_1D(rfield, ifield, power)
 
@@ -158,20 +163,25 @@ contains
     real(kind=wp), intent(out) :: power(:)
 
     power = abs(rfield)**2.0_WP + abs(ifield)**2.0_WP
-   ! print*, power
 
   end subroutine fPower_1D
 
 
-
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This subroutine fetches the temporal Power
+!> from the 3D field
+!> @params[in] rfield Real component of A_perp
+!> @params[in] ifield Imag component of A_perp
+!> @params[in] xaxis Coordinates of mesh points in x
+!> @params[in] yaxis Coordinates of mesh points in y
+!> @params[out] power Temporal power
 
 
   subroutine fPower_3D(rfield,ifield,xaxis,yaxis, power)
-
-! This subroutine fetches the temporal Power
-! from the 3D field
-!
-!       ARGUMENTS
 
     real(kind=wp), intent(in) :: rfield(:), ifield(:), &
                                  xaxis(:), yaxis(:)
@@ -192,45 +202,18 @@ contains
 
     allocate(intens(nx*ny), intens2(nx,ny))
 
-    !print*, 'starting loop round trans slices'
-
     do i = 1, nZ2
 
       bt = (i-1) * ntr + 1_IP
       et = i * ntr
 
-      !call mpi_barrier(tProcInfo_G%comm, error)
-     ! print*, bt, et, i, nZ2, size(rfield)
-
       intens = abs(rfield(bt:et))**2.0_WP + abs(ifield(bt:et))**2.0_WP
 
-      !call mpi_barrier(tProcInfo_G%comm, error)
-      !print*, 'got intensity', i, intens(1:20)
-
-
-
       intens2 = reshape(intens, (/nx,ny/))
-      !call mpi_barrier(tProcInfo_G%comm, error)
-      !print*, 'reshaped', i
-
 
       power(i) = m_trapz2D(xaxis, yaxis, intens2)
-      !call mpi_barrier(tProcInfo_G%comm, error)
-      !print*, 'integrated', i
-
-
-
-      !call mpi_barrier(tProcInfo_G%comm, error)
-      !print*, 'power', i, power(i)
-
-
 
     end do
-
-     ! call mpi_finalize(error)
-     ! stop
-
-    !print*, 'end of fPower_3D'
 
     deallocate(intens,intens2)
 
@@ -238,36 +221,25 @@ contains
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-!> Integration over x and then y, using trapezoidal rule
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Simple 2D (x-y) integration over equispaced 2D mesh using
+!> trapezoidal rule.
+!> @params[in] x Coordinates of mesh nodes in x
+!> @params[in] y Coordinates of mesh nodes in y
+!> @params[in] fxy 2D function to integrate (values on the mesh)
 
   real function m_trapz2D(x, y, fxy)
 
     implicit none
 
-    real(kind=wp), dimension(:) :: x,y !<tranverse dims over which to integrate
-    real(kind=wp), dimension(:,:) :: fxy !<the function of x and y to integrate
-    integer(kind=ip) :: xe, ye, i, j !<element extents and element indices
-    real(kind=wp), allocatable :: cul(:) !<cumulative sum.
+    real(kind=wp), dimension(:) :: x,y
+    real(kind=wp), dimension(:,:) :: fxy
+    integer(kind=ip) :: xe, ye, i, j
+    real(kind=wp), allocatable :: cul(:)
 
     allocate(cul(size(y)))
 
@@ -283,19 +255,19 @@ contains
 
   end function m_trapz2D
 
-
-
-
-
-
-
-
-!> Integration of y(x) by trapezoidal rule
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Simple 1D integration over function, using
+!> trapezoidal rule.
+!> @params[in] x Coordinates of mesh nodes in x
+!> @params[in] y Function y(x) at mesh points
 
   real function m_trapz(x, y, lower, upper)
 
     implicit none
-
 
     real(kind=wp), dimension(:) :: x,y !<transverse dims
     integer(kind=ip), optional :: lower, upper !< extents
