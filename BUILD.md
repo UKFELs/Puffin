@@ -45,11 +45,10 @@ you need to manually add them so that CMake can find them:
 
 `export PATH=/usr/include/hdf5/openmpi:$PATH`
 
-Grab Puffin from Github:
+Grab Puffin from Github (`path/to/Puffin` in the below command is the location
+you want the files placed.):
 
 `git clone git@github.com:UKFELs/Puffin.git path/to/Puffin`
-
-`path/to/Puffin` in the above cammand is the location you want the files placed.
 
 Then, run CMake to find the libraries and create the Makefile (note that
 `path/to/desired/puffin/install` is the location you want the Puffin build 
