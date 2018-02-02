@@ -61,6 +61,7 @@ that you downloaded Puffin to, same as in the `git clone` command above):
 Then build:
 
 `make`
+
 `make install`
 
 You'll find the Puffin executable in the subdirectory `bin` in the directory you
