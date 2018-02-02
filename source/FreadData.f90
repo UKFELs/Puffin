@@ -1,5 +1,5 @@
 ! ###############################################
-! Copyright 2012-2017, University of Strathclyde
+! Copyright 2012-2018, University of Strathclyde
 ! Authors: Lawrence T. Campbell
 ! License: BSD-3-Clause
 ! ###############################################
@@ -118,7 +118,6 @@ contains
 !> @param[out] qOK Error flag
 
 subroutine read_in(zfilename, &
-       zDataFileName, &
        qSeparateFiles, &
        qFormattedFiles, &
        qResume, &
@@ -176,7 +175,6 @@ subroutine read_in(zfilename, &
 
   CHARACTER(*),INTENT(IN) :: zfilename
 
-  CHARACTER(1024_IP),  INTENT(OUT)  :: zDataFileName
   LOGICAL,           INTENT(OUT)  :: qSeparateFiles
   LOGICAL,           INTENT(OUT)  :: qFormattedFiles
   LOGICAL,           INTENT(OUT)  :: qResume
@@ -240,6 +238,7 @@ subroutine read_in(zfilename, &
 
   INTEGER::ios
   CHARACTER(1024_IP) :: beam_file, seed_file, wr_file
+  character(1024_IP) :: zDataFileName
   LOGICAL :: qOKL, qMatched !   TEMP VAR FOR NOW, SHOULD MAKE FOR EACH BEAM
 
   logical :: qWriteZ, qWriteA, &
@@ -371,7 +370,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   stepsPerPeriod         = 30
   nPeriods               = 8
   sZ0                    = 0.0
-  zDataFileName          = 'DataFile.dat'
+  zDataFileName          = ''
   iWriteNthSteps         = 30
   iWriteIntNthSteps      = 30
   meshType = 0_ip
@@ -400,7 +399,6 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qSwitches(iDump_CG) = qDump
 
   qUndEnds_G = qUndEnds
-  qsdds_G  = qsdds
   qhdf5_G = qhdf5
   qscaled_G = qscaled
   qInitWrLat_G = qInitWrLat
@@ -511,6 +509,16 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
     end if
   end if
 
+  if (zDataFileName /= '') then
+    if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+
+      print*, ''
+      print*, 'WARNING: Use of zDataFileName deprecated. It is kept only so your'
+      print*, 'old input files will not break!! It will do nothing.'
+      print*, ''
+
+    end if
+  end if
 
 
   CALL read_beamfile(qSimple, dist_f, beam_file,sEmit_n,sSigmaGaussian,sLenEPulse, &
@@ -529,7 +537,15 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
     call FileNameNoExtension(seed_file, zSFile_G, qOKL)
   end if
 
-  if (qOneD) qEquiXY_G = .true.
+! For 'proper' 1D beam i.e. no energy spread
+
+  if ((qOneD) .and. (iNumElectrons(1,6) == 1)) then 
+    qEquiXY_G = .true.
+  end if
+
+! ---- Fixing hdf5 always on - sdds removed!
+
+  qhdf5_G = .true.
 
 
   IF  (.NOT. qOKL) GOTO 1000
@@ -585,6 +601,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 !                     LOCAL ARGS
 
   INTEGER(KIND=IP) :: b_ind, TrLdMeth, inmpsGam
+  integer(kind=ip), allocatable :: iNumMPs(:,:)
   logical :: qFixCharge, qAMatch
   INTEGER::ios
   CHARACTER(96) :: dtype
@@ -594,7 +611,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 ! Declare namelists
 
   namelist /nblist/ nbeams, dtype
-  namelist /blist/ sSigmaE, sLenE, iNumElectrons, &
+  namelist /blist/ sSigmaE, sLenE, iNumElectrons, iNumMPs, &
                    sEmit_n, sQe, bcenter,  gammaf, &
                    chirp, mag, fr, qRndEj_G, sSigEj_G, &
                    qMatched_A, qEquiXY, nseqparts, qFixCharge, &
@@ -644,7 +661,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
   allocate(sSigmaE(nbeams,6))
   allocate(sLenE(nbeams,6))
-  allocate(iNumElectrons(nbeams,6))
+  allocate(iNumElectrons(nbeams,6), iNumMPs(nbeams,6))
   allocate(sEmit_n(nbeams),sQe(nbeams),bcenter(nbeams),gammaf(nbeams))
   allocate(chirp(nbeams), qMatched_A(nbeams))
   allocate(mag(nbeams), fr(nbeams))
@@ -669,6 +686,11 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   iNumElectrons(1,3) = -1
   iNumElectrons(1,4:5) = 1
   iNumElectrons(1,6) = 19
+
+  iNumMPs(1,1:2) = 1
+  iNumMPs(1,3) = -1
+  iNumMPs(1,4:5) = 1
+  iNumMPs(1,6) = 19
 
   sEmit_n = -1.0_wp
   sQe = 1E-9
@@ -703,6 +725,28 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
     read(161,nml=blist)
 
     close(UNIT=161,STATUS='KEEP')
+
+    if (iNumElectrons(1,3) /= -1) then
+
+      if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+        print*,''
+        print*, 'Warning: use of iNumElectrons in beam file is deprecated.'
+        print*, 'It will be removed in a future release.'
+        print*, 'In the future, use iNumMPs instead.'
+        print*,''
+      end if
+
+      iNumMPs = iNumElectrons
+    else
+      iNumElectrons = iNumMPs
+      if (iNumMPs(1,3) == -1_ip) then
+        if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+          print*, ''
+          print*, 'Warning: Numbers of Macroparticles to use have not been specified.'
+          print*,''
+        end if
+      end if      
+    end if
 
   else if (dtype == 'dist') then
 

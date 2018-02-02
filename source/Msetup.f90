@@ -1,45 +1,41 @@
 ! ###############################################
-! Copyright 2012-2017, University of Strathclyde
+! Copyright 2012-2018, University of Strathclyde
 ! Authors: Lawrence T. Campbell
 ! License: BSD-3-Clause
 ! ###############################################
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> A module which contains top-level subroutines to allocate and initialize, 
+!> A module which contains top-level subroutines to allocate and initialize,
 !> or destroy, the data used in Puffin.
 
-MODULE Setup
+module Setup
 
-  USE SETUPTRANS
-!  USE FFTW_Constants
-
-  USE setupcalcs
-  USE transforms
-  USE sddsPuffin
-  USE lattice
-  USE Globals
-  USE electronInit
-  USE Read_data
-  USE checks
-  use dumpFiles
+  use setuptrans
+  use setupcalcs
+  use transforms
+  use lattice
+  use Globals
+  use electronInit
+  use Read_data
+  use checks
   use ParaField
   use dummyf
 
-  IMPLICIT NONE
+  implicit none
 
-  CONTAINS
+  contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  SUBROUTINE init(sZ, qOK)
+  subroutine init(sZ, qOK)
 
-  USE InitVars
+  use InitVars
 
-  IMPLICIT NONE
+  implicit none
 
 ! Subroutine to perform the initialization of
 ! the data for Puffin, and to write out initial
@@ -47,47 +43,43 @@ MODULE Setup
 !
 !                     ARGUMENTS
 !
-!
-! sA             Radiation field.
-!
 ! sZ             Electron propagation distance in z
 !                through undulator.
 !
 ! qOK            Error flag; .false. if no error
 
-!  REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sA(:)
-  REAL(KIND=WP), INTENT(OUT) :: sZ
-  LOGICAL, INTENT(OUT)   ::  qOK
+  real(kind=wp), intent(out) :: sZ
+  logical, intent(out) :: qOK
 
 !     Set error flag
 
-  qOK = .FALSE.
+  qOK = .false.
 
 !     Initialize the processors for MPI
 
-  CALL InitializeProcessors(tProcInfo_G,qOKL)
-  IF (.NOT. qOKL) GOTO 1000
+  call InitializeProcessors(tProcInfo_G,qOKL)
+  if (.not. qOKL) goto 1000
 
 !     Optional parameters
 
-  qResume = .FALSE.
-  qWrite = .TRUE.
+  qResume = .false.
+  qWrite = .true.
 
 !     Read in input file name
 !     (input on command line as variable at runtime)
 
-  CALL getarg(1,infile)
+  call getarg(1,infile)
   zFileName = infile
 
-  IF (infile == emptstring) THEN
+  if (infile == emptstring) then
 
-    PRINT *, 'ERROR, no input filename specified'
-    STOP
+    print *, 'ERROR, no input filename specified'
+    stop
 
-  END IF
+  end if
 
-  CALL FileNameNoExtension(zFileName, zFile, qOKL)
-  IF (.NOT. qOKL) GOTO 1000
+  call FileNameNoExtension(zFileName, zFile, qOKL)
+  if (.not. qOKL) goto 1000
 
   zFileName_G = zFile
 
@@ -96,16 +88,15 @@ MODULE Setup
 !     Initialise Error log for this run
 
   tErrorLog_G%zFileName = TRIM(ADJUSTL(zFile))//"_Error.log"
-  tErrorLog_G%qFormatted = .TRUE.
+  tErrorLog_G%qFormatted = .true.
 
-  CALL Error_log('',tErrorLog_G)
+  call Error_log('',tErrorLog_G)
 
 !     Read input file
 
 
 
-  CALL read_in(zFileName, &
-       zDataFileName,     &
+  call read_in(zFileName, &
        qSeparateStepFiles,&
        qFormattedFiles,   &
        qResume,           &
@@ -159,7 +150,7 @@ MODULE Setup
        qmeasure, &
        qOKL)
 
-  IF (.NOT. qOKL) GOTO 1000
+  if (.not. qOKL) goto 1000
 
 !    Check all the inputs e.g. wiggler and electron lengths etc
 !    to avoid errors.
@@ -198,60 +189,24 @@ MODULE Setup
 
 !  if (qscaled_G) then
 
-  CALL CheckParameters(sLenEPulse,iNumElectrons,nbeams,sLengthofElm,iNodes,&
+  call CheckParameters(sLenEPulse,iNumElectrons,nbeams,sLengthofElm,iNodes,&
                        sFieldModelLength,sStepSize,nSteps,srho,saw,sgammar, &
                        mag, sEleSig,fx,fy, &
                        qSwitches,qSimple, sSeedSigma, freqf, &
                        SmeanZ2, qFlatTopS, nseeds, qOKL)
 
-  IF (.NOT. qOKL) GOTO 1000
+  if (.not. qOKL) goto 1000
 
 !  end if
 
 
 !    Setup FFTW plans for the forward and backwards transforms.
 
-  CALL getTransformPlans4FEL(iNodes,qmeasure,qOKL)
+  call getTransformPlans4FEL(iNodes,qmeasure,qOKL)
 
-  IF (.NOT. qOKL) GOTO 1000
+  if (.not. qOKL) goto 1000
 
 !    Calculate parameters for matched beam
-
-
-
-
-
-
-
-
-
-
-!  IF (qMatched_A(1)) THEN
-!
-!    if (qSimple) CALL MatchBeams(srho,sEmit_n,saw,sFocusfactor,&
-!                    sgammar,gamma_d,iNumElectrons,sLenEPulse,&
-!                    sEleSig,sSeedSigma,iNodes,sFieldModelLength,&
-!                    sLengthofElm,zUndType,iRedNodesX,iRedNodesY,fx,fy,qOKL)
-!
-!    IF (.NOT. qOKL) GOTO 1000
-!
-!  END IF
-!
-!
-!
-!!     Check transverse sampled length of field is long enough to model
-!!     diffraction of the resonant frequency.
-!
-!  IF (qSwitches(iDiffraction_CG)) THEN
-!
-!    if (qSimple)  CALL CheckSourceDiff(sStepSize,nSteps,srho, &
-!                                       sEleSig, &
-!                                       sFieldModelLength,&
-!                                       sLengthofElm,iNodes,qOKL)
-!
-!    IF (.NOT. qOKL) GOTO 1000
-!
-!  END IF
 
 
 
@@ -262,13 +217,13 @@ MODULE Setup
 
 !     Pass local vars to global vars
 
-  CALL passToGlobals(srho,saw,sgammar,lambda_w,iNodes, &
+  call passToGlobals(srho,saw,sgammar,lambda_w,iNodes, &
                      sLengthOfElm, qSimple, iNumElectrons, &
                      fx,fy,taper, sEleSig(1,iX_CG), sEleSig(1,iY_CG), &
                      sFiltFrac,sDiffFrac,sBeta, &
                      zUndType,qFormattedFiles, qSwitches,qOK)
 
-  IF (.NOT. qOKL) GOTO 1000
+  if (.not. qOKL) goto 1000
 
 
 
@@ -307,8 +262,6 @@ MODULE Setup
 
   end if
 
-  if (qsdds_G) call initPFile(tPowF, qFormattedFiles) ! initialize power file type
-
   if (.not. qResume_G) call initPowerCalc()
 
 !     Generate macroelectrons
@@ -343,24 +296,6 @@ MODULE Setup
   end if
 
 
-!    IF qresume is .TRUE. then we are reading in data from the
-!    dump files from a previous run....
-
-!  IF (qResume) THEN
-
-    !CALL InitFD(sA,sZ,qOKL)
-
-    !IF (.NOT. qOKL) GOTO 1000
-
-
-!  ELSE
-
-!    ...or if qResume is .FALSE. then we are setting up the data
-!    ourselves....
-
-!    ALLOCATE(sA(nFieldEquations_CG*iNumberNodes_G))
-
-
   if (iFieldSeedType_G==iSimpleSeed_G) then
 
     qStart_new = .true.
@@ -393,16 +328,7 @@ MODULE Setup
 
   end if
 
-!  CALL MPI_BARRIER(tProcInfo_G%comm,error)
-!  call mpi_finalize(error)
-!  stop
-
   start_step = 1_IP
-
-!  END IF
-
-
-
 
 
 !    Define the rescaling parameter "ffact" for rescaling
@@ -421,16 +347,6 @@ MODULE Setup
             real(iNodes(iZ2_CG), kind=wp)
 
   end if
-
-
-!  IF (qResume) THEN
-!    CALL READINCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
-  !ELSE
-  !  CALL DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
-!  ENDIF
-
-
-
 
 
 !    Calculate K-values for diffraction. In Ltransforms.f90
@@ -468,54 +384,7 @@ MODULE Setup
 
 !    Write the various parameter data to file.
 
-  if (qsdds_G) then
 
-    if (tProcInfo_G%qROOT) print*, 'Writing parameter data to file'
-
-    qSeparateStepFiles_G = qSeparateStepFiles
-
-    call WriteEleData(zDataFileName,'Chi','s_chi_bar',qFormattedFiles, &
-         iGlonumElectrons_G,s_chi_bar_G,qOKL)
-    if (.not. qOKL) goto 1000
-
-    call WriteEleData(zDataFileName,'NormChi','s_Normalised_chi',qFormattedFiles, &
-                      iGlonumElectrons_G,s_Normalised_chi_G,qOKL)
-    if (.not. qOKL) goto 1000
-
-    if (tProcInfo_G%qRoot) then
-      call WriteParameterData(zDataFileName,&
-                             iNodes,&
-                             iNumElectrons(1,:),&
-                             sLengthOfElm, &
-                             sStepSize,    &
-                             nSteps,&
-                             sLenEPulse(1,:),&
-                             sFieldModelLength,&
-                             sEleSig(1,:),&
-                             sA0_Re(1),&
-                             sA0_Im(1),&
-                             srho,&
-                             saw_G,&
-                             sEta_G,&
-                             sGammaR_G,&
-                             sKBeta_G, &
-                             lam_w_G, lam_r_G, &
-                             lg_G, lc_G, &
-                             npk_bar_G, &
-                             iGloNumElectrons_G,&
-                             nFieldEquations_CG,&
-                             nElectronEquations_CG,&
-                             sZ,&
-                             iWriteNthSteps, &
-                             iIntWriteNthSteps, &
-                             sSeedSigma(1,:),&
-                             qSwitches,&
-                             fx,fy,&
-                             qOKL)
-      if (.not. qOKL) goto 1000
-
-    end if
-  end if
 
 !    Write out initial values of electron and field data.
 !    If not using separate files for each step then open
@@ -523,63 +392,22 @@ MODULE Setup
 
   CALL MPI_BARRIER(tProcInfo_G%comm,error)
 
-
-!  call writeIM(sA, Ar_local, sZ, &
-!               zDataFileName, iStep, iWriteNthSteps, &
-!               lrecvs, ldispls, &
-!               iIntWriteNthSteps, nSteps, qWDisp, qOKL)
-
-!  if (qWrite)  call wr_sdds(sZ, 0, tArrayA, tArrayE, tArrayZ, &
-!                 iIntWriteNthSteps, iWriteNthSteps, .true., &
-!                 zDataFileName, .true., .true., qOK)
-
   iCSteps = 0_ip
 
   if (.not. qResume_G) then
 
     call writeIM(sZ, sZlSt_G, &
-                 zDataFileName, 0_ip, 0_ip, 0_ip, iWriteNthSteps, &
+                 0_ip, 0_ip, 0_ip, iWriteNthSteps, &
                  iIntWriteNthSteps, nSteps, qOKL)
 
   end if
 
-!  iCsteps = 1_ip
-
-!  if (qWrite) call wdfs(sA, sZ, 0, tArrayA, tArrayE, tArrayZ, &
-!                        iIntWriteNthSteps, iWriteNthSteps, &
-!                        qSeparateStepFiles, zDataFileName, .false., qOKL)
-
   if (.not. qOKL) goto 1000
 
-!   IF (qWrite.AND.(.NOT.(qSeparateStepFiles))) THEN
-!     IF(tProcInfo_G%qROOT) PRINT *,&
-!          'Writing field and electron values to a single file'
-!     CALL SetUpDataFiles(zDataFileName, &
-!          qFormattedFiles, &
-!          tArrayZ, &
-!          tArrayA, &
-!          tArrayE, &
-!          qOKL)
-!     IF (.NOT. qOKL) GOTO 1000
-
-!   END IF
-
-! !    Write initial result to file - see line 374 for
-! !    "WriteIntegrationData" routine
-
-!   CALL WriteData(qSeparateStepFiles,&
-!       zDataFileName,tArrayZ,tArrayA,tArrayE,&
-!       iStep,sZ,sA,sV,.TRUE.,qFormattedFiles,qOKL)
-!   IF (.NOT. qOKL) GOTO 1000
 
   CALL MPI_BARRIER(tProcInfo_G%comm,error)
 
   if ((tProcInfo_G%qROOT) .and. (ioutInfo_G > 0)) print*, 'Initial data written'
-
-
-!  if (qSwitches(iDump_CG)) call DUMPCHIDATA(s_chi_bar_G,s_Normalised_chi_G,tProcInfo_G%rank)
-!  if (qSwitches(iDump_CG)) call DUMPDATA(sA,tProcInfo_G%rank,NX_G*NY_G*NZ2_G,&
-!                             iNumberElectrons_G,sZ,istep,tArrayA(1)%tFileType%iPage)
 
   DEALLOCATE(s_Normalised_chi_G)
 

@@ -1,4 +1,4 @@
-! Copyright 2012-2017, University of Strathclyde
+! Copyright 2012-2018, University of Strathclyde
 ! Authors: Lawrence T. Campbell
 ! License: BSD-3-Clause
 
@@ -10,8 +10,8 @@ MODULE IO
       USE paratype
       USE ParallelInfoType
       USE FileType
-      USE SddsWriter
-      USE CIOWrapper
+!      USE SddsWriter
+!      USE CIOWrapper
 
       IMPLICIT NONE
 
@@ -147,7 +147,7 @@ MODULE IO
            WRITE (tFileType%iUnit,'(I9)') (iInt)
          END IF
       ELSE
-         call C_WriteInteger(tFileType%zFileName, iInt, qOKL)
+      !   call C_WriteInteger(tFileType%zFileName, iInt, qOKL)
 	 If (.NOT. qOKL) Goto 1000
       END IF 
 !
@@ -214,7 +214,7 @@ END SUBROUTINE WriteINTEGER
            WRITE (tFileType%iUnit,'(I14)') (iInt)
          END IF
       ELSE
-         call C_WriteIntegerL(tFileType%zFileName, iInt, qOKL)
+        ! call C_WriteIntegerL(tFileType%zFileName, iInt, qOKL)
 	 If (.NOT. qOKL) Goto 1000
       END IF 
 !
@@ -277,7 +277,7 @@ IF (tFileType%qFormatted) THEN
      WRITE (tFileType%iUnit,'(I14)') (iInt)
    END IF
 ELSE
-   call C_WriteIntegerL64(tFileType%zFileName, iInt, qOKL)
+  ! call C_WriteIntegerL64(tFileType%zFileName, iInt, qOKL)
 If (.NOT. qOKL) Goto 1000
 END IF 
 !
@@ -347,7 +347,7 @@ END SUBROUTINE WriteINTEGERL64
            WRITE (tFileType%iUnit,'(E22.14E3)') (sReal)
          END IF
       ELSE
-         call C_WriteReal(tFileType%zFileName, sReal, qOKL)
+    !     call C_WriteReal(tFileType%zFileName, sReal, qOKL)
 	 If (.NOT. qOKL) Goto 1000
       END IF 
 !
@@ -413,7 +413,7 @@ END SUBROUTINE WriteINTEGERL64
            WRITE (tFileType%iUnit,'(E22.14E3)') (sReal)
          END IF
       ELSE
-         Call C_WriteRealArray(tFileType%zFilename, sReal, qOKL)
+    !     Call C_WriteRealArray(tFileType%zFilename, sReal, qOKL)
 	 If (.NOT. qOKL) Goto 1000
       END IF 
 !
@@ -480,7 +480,7 @@ END SUBROUTINE WriteINTEGERL64
            WRITE (tFileType%iUnit,'(E22.14E3)') (sReal)
          END IF
       ELSE
-         call C_WriteRealArray(tFileType%zFileName, sReal, qOKL)
+      !   call C_WriteRealArray(tFileType%zFileName, sReal, qOKL)
 	 If (.NOT. qOKL) Goto 1000
       END IF 
 !
@@ -546,7 +546,7 @@ END SUBROUTINE WriteINTEGERL64
            WRITE (tFileType%iUnit,'(E22.14E3)') (sReal)
          END IF
       ELSE
-         call C_WriteRealArray(tFileType%zFileName, sReal, qOKL)
+      !   call C_WriteRealArray(tFileType%zFileName, sReal, qOKL)
 	 If (.NOT. qOKL) Goto 1000	
       END IF 
 !
@@ -678,7 +678,7 @@ END SUBROUTINE WriteINTEGERL64
 !--------------------------------------------------------------------------------	
 !
       ELSE
-         Call C_OpenFileForOutput(zFileName, qOKL)
+      !   Call C_OpenFileForOutput(zFileName, qOKL)
 	 If (.NOT. qOKL) Goto 1000  
       END IF
 !

@@ -1,4 +1,4 @@
-# Copyright (c) 2012-2017, University of Strathclyde
+# Copyright (c) 2012-2018, University of Strathclyde
 # Authors: Lawrence T. Campbell
 # License: BSD-3-Clause
 
@@ -59,7 +59,7 @@ def plotPowZZ2(basename, cfr=None, dfr=None):
             powsN[-1-fcount,:] = 0.
         zData[fcount] = getZData(ij)
         fcount += 1
-        print fcount
+#        print fcount
 
 #    plotLab = 'SI Power'
 #    axLab = 'Power (W)'

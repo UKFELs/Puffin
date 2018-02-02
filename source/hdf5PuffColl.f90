@@ -1,4 +1,4 @@
-! Copyright 2012-2017, University of Strathclyde
+! Copyright 2012-2018, University of Strathclyde
 ! Authors: Jonathan Smith (Tech-X UK Ltd) & Lawrence T. Campbell
 ! License: BSD-3-Clause
 
@@ -739,6 +739,15 @@ contains
         doffset = (/0,0,(nlo-1),component/)
 !      dsize = (/nx_g,ny_g,nhi-nlo+1,1/)
         dsize = (/nx_g,ny_g,nlonglength,1/)
+        
+!        numSpatialDims=3
+!        dims = (/nlonglength,ny_g,nx_g,1/) ! Dataset dimensions
+!        fdims = (/NZ2_G,ny_g,nx_g,2/) ! Dataset dimensions
+!        doffset = (/(nlo-1),0,0,component/)
+!!      dsize = (/nx_g,ny_g,nhi-nlo+1,1/)
+!        dsize = (/nlonglength,ny_g,nx_g,1/)
+        
+        
       end if
 !    print *,IntegerToString(size(rawdata)) // " vs " // &
 !      trim(adjustl(IntegerToString(Nx_g*ny_g*nlonglength))) // &
@@ -1006,7 +1015,7 @@ contains
           if (qoned_g) then
             CALL addH5StringAttribute(dset_id,"vsIndexOrder","compMinorF",aspace_id)
           else
-            CALL addH5StringAttribute(dset_id,"vsIndexOrder","compMajorF",aspace_id)
+            CALL addH5StringAttribute(dset_id,"vsIndexOrder","compMajorC",aspace_id)  ! WAS compMajorF
           end if
 
           CALL addH5StringAttribute(dset_id,"vsTimeGroup",timegrpname,aspace_id)
@@ -1018,18 +1027,35 @@ contains
           CALL writeH5TimeGroup(file_id, timegrpname, time, &
 	               'outH5Field3D', error)
           CALL writeH5RunInfo(file_id,  time, sz_loc, iL, 'outH5Field3D', error)
-          lb(1)=-0.5*NX_G*sLengthOfElmX_G
-          lb(2)=-0.5*NY_G*sLengthOfElmY_G
-          lb(3)=0.0_WP*sLengthOfElmZ2_G
-          ub(1)=0.5*NX_G*sLengthOfElmX_G
-          ub(2)=0.5*NY_G*sLengthOfElmY_G
-          ub(3)=NZ2_G*sLengthOfElmZ2_G
+
+          if (qOneD_G) then
+
+              lb(1)=-0.5*NX_G*sLengthOfElmX_G
+              lb(2)=-0.5*NY_G*sLengthOfElmY_G
+              lb(3)=0.0_WP*sLengthOfElmZ2_G
+
+              ub(1)=0.5*NX_G*sLengthOfElmX_G
+              ub(2)=0.5*NY_G*sLengthOfElmY_G
+              ub(3)=NZ2_G*sLengthOfElmZ2_G
+
+          else
+
+              lb(1)=0.0_WP*sLengthOfElmZ2_G
+              lb(2)=-0.5*NY_G*sLengthOfElmY_G
+              lb(3)=-0.5*NX_G*sLengthOfElmX_G
+          
+              ub(1)=NZ2_G*sLengthOfElmZ2_G
+              ub(2)=0.5*NY_G*sLengthOfElmY_G
+              ub(3)=0.5*NX_G*sLengthOfElmX_G
+
+          end if
+          
           CALL write3DlimGrp(file_id,limgrpname,lb,ub)
 
           if (qONED_G) then
             CALL write3DuniformMesh(file_id,meshScaledGrpname,lb,ub,(/1,1,NZ2_G-1/))
           else
-            CALL write3DuniformMesh(file_id,meshScaledGrpname,lb,ub,(/nx_g-1,ny_g-1,NZ2_G-1/))
+            CALL write3DuniformMesh(file_id,meshScaledGrpname,lb,ub,(/NZ2_G-1,ny_g-1,nx_g-1/))
           end if
 
           aname="intensityScaled"

@@ -1,4 +1,4 @@
-! Copyright 2012-2017, University of Strathclyde
+! Copyright 2012-2018, University of Strathclyde
 ! Authors: Lawrence T. Campbell
 ! License: BSD-3-Clause
 
@@ -834,6 +834,41 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
 
 
+  dz2 = 4.0_WP * pi * sRho_G / real(nodesperlambda-1_IP,kind=wp)
+
+  iNumNodes(iZ2_CG) = ceiling(sFieldModelLength(iZ2_CG) / dz2) + 1_IP
+
+  if (fieldMesh == iPeriodic) then
+  
+    if (sPerWaves_G < 0.0_wp) then
+
+      sLengthOfElm(iZ2_CG) = dz2
+      sFieldModelLength(iZ2_CG) = real(iNumNodes(iZ2_CG) - 1_ip, kind=wp) * dz2
+      sperwaves_G = sFieldModelLength(iZ2_CG) / (4.0_WP * pi * sRho_G)
+
+      sLenEPulse(1,iZ2_CG) = sFieldModelLength(iZ2_CG)
+
+    else
+
+!           Field mesh length is then number of waves times scaled wavelength
+
+      sFieldModelLength(iZ2_CG) = sperwaves_G * (4.0_WP * pi * sRho_G)
+      sLengthOfElm(iZ2_CG) = dz2
+
+!            For now, keeping dz2 to give an integer number of nodes per 
+!           scaled wavelength, and rounding total mesh length to nearest
+!                           integer number of nodes
+
+      iNumNodes(iZ2_CG) = nint((sFieldModelLength(iZ2_CG) / dz2), kind=ip) + 1_IP
+      sFieldModelLength(iZ2_CG) = real(iNumNodes(iZ2_CG) - 1_ip, kind=wp) * dz2
+      
+      sLenEPulse(1,iZ2_CG) = sFieldModelLength(iZ2_CG)
+
+    end if
+
+  end if
+  
+
   if (iNumNodes(iX_CG) <= 1_ip) then
 
     sLengthOfElm(iX_CG) = 1_wp
@@ -976,35 +1011,35 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
   iNumNodes(iZ2_CG) = ceiling(sFieldModelLength(iZ2_CG) / dz2) + 1_IP
 
-  if (fieldMesh == iPeriodic) then
-  
-    if (sPerWaves_G < 0.0_wp) then
-
-      sLengthOfElm(iZ2_CG) = dz2
-      sFieldModelLength(iZ2_CG) = real(iNumNodes(iZ2_CG) - 1_ip, kind=wp) * dz2
-      sperwaves_G = sFieldModelLength(iZ2_CG) / (4.0_WP * pi * sRho_G)
-
-      sLenEPulse(1,iZ2_CG) = sFieldModelLength(iZ2_CG)
-
-    else
-
-!           Field mesh length is then number of waves times scaled wavelength
-
-      sFieldModelLength(iZ2_CG) = sperwaves_G * (4.0_WP * pi * sRho_G)
-      sLengthOfElm(iZ2_CG) = dz2
-
-!            For now, keeping dz2 to give an integer number of nodes per 
-!           scaled wavelength, and rounding total mesh length to nearest
-!                           integer number of nodes
-
-      iNumNodes(iZ2_CG) = nint((sFieldModelLength(iZ2_CG) / dz2), kind=ip) + 1_IP
-      sFieldModelLength(iZ2_CG) = real(iNumNodes(iZ2_CG) - 1_ip, kind=wp) * dz2
-      
-      sLenEPulse(1,iZ2_CG) = sFieldModelLength(iZ2_CG)
-
-    end if
-
-  end if
+!   if (fieldMesh == iPeriodic) then
+!   
+!     if (sPerWaves_G < 0.0_wp) then
+! 
+!       sLengthOfElm(iZ2_CG) = dz2
+!       sFieldModelLength(iZ2_CG) = real(iNumNodes(iZ2_CG) - 1_ip, kind=wp) * dz2
+!       sperwaves_G = sFieldModelLength(iZ2_CG) / (4.0_WP * pi * sRho_G)
+! 
+!       sLenEPulse(1,iZ2_CG) = sFieldModelLength(iZ2_CG)
+! 
+!     else
+! 
+! !           Field mesh length is then number of waves times scaled wavelength
+! 
+!       sFieldModelLength(iZ2_CG) = sperwaves_G * (4.0_WP * pi * sRho_G)
+!       sLengthOfElm(iZ2_CG) = dz2
+! 
+! !            For now, keeping dz2 to give an integer number of nodes per 
+! !           scaled wavelength, and rounding total mesh length to nearest
+! !                           integer number of nodes
+! 
+!       iNumNodes(iZ2_CG) = nint((sFieldModelLength(iZ2_CG) / dz2), kind=ip) + 1_IP
+!       sFieldModelLength(iZ2_CG) = real(iNumNodes(iZ2_CG) - 1_ip, kind=wp) * dz2
+!       
+!       sLenEPulse(1,iZ2_CG) = sFieldModelLength(iZ2_CG)
+! 
+!     end if
+! 
+!   end if
  
  
   if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1)) then

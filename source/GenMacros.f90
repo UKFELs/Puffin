@@ -1,28 +1,21 @@
-! Copyright 2012-2017, University of Strathclyde
+! Copyright 2012-2018, University of Strathclyde
 ! Authors: Lawrence T. Campbell
 ! License: BSD-3-Clause
 
-MODULE MacrosGen
+module MacrosGen
 
-USE paratype
-USE ParallelInfoType
-!USE sddsPuffin
-USE randomGauss
-USE ParallelSetUp
-USE Globals
-!USE error_fn
-!USE Functions
-!USE particleFunctions
-!USE typesAndConstants
-!USE FileType
-!USE IO
+use paratype
+use ParallelInfoType
+use randomGauss
+use ParallelSetUp
+use Globals
 
-IMPLICIT NONE
+implicit none
 
-CONTAINS
+contains
 
 
-  SUBROUTINE genMacros(i_total_electrons, &
+  subroutine genMacros(i_total_electrons, &
        q_noise, & 
        x_1_grid, x_1_integral, &
        x_2_grid, x_2_integral, &
@@ -101,7 +94,6 @@ CONTAINS
 ! s_spatial_macro             - Array for all s_spatial_mean
 ! s_vol_element               - Volume of each marco particle contains in
 ! qOKL                        - Local error flag
-! zDataFileName               - Data file name
 !******************************************************************
 ! Electrons co-ordinates locally in all 6 directions
 !******************************************************************
@@ -141,8 +133,7 @@ CONTAINS
     INTEGER(KIND=IP) :: np3full(3)
     !REAL(KIND=WP) ::  radius,sLOne,sLTwo
     INTEGER(KIND=IP) :: error,nprocs,proc
-    LOGICAL :: qOKL  	
-    CHARACTER(1024_IP) :: zDataFileName
+    LOGICAL :: qOKL
 
 !     Determine the number of macroparticles in each dimension
 !     If the dimension is not present, then the number of macroparticles

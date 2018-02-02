@@ -1,5 +1,5 @@
 #************* THIS HEADER MUST NOT BE REMOVED *******************
-#* Copyright (c) 2013-2016, Lawrence Campbell and Brian McNeil. **
+#* Copyright (c) 2013-2018, Lawrence Campbell and Brian McNeil. **
 #** This program must not be copied, distributed or altered in  **
 #** any way without the prior permission of the above authors.  **
 #*****************************************************************

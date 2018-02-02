@@ -1,4 +1,4 @@
-! Copyright 2012-2017, University of Strathclyde
+! Copyright 2012-2018, University of Strathclyde
 ! Authors: Lawrence T. Campbell
 ! License: BSD-3-Clause
 
@@ -344,21 +344,12 @@ real(kind=wp) :: totUndLineLength
 
 
 
-character(1024_IP) :: zDataFileName ! filename extension for 
-                                  ! data files
-
 ! Type arrays describing electron, field and z output files,
 ! respectively
 
 TYPE(cArraySegment), save :: tArrayE(nElectronEquations_CG)
 TYPE(cArraySegment), save :: tArrayA(nFieldEquations_CG)
 TYPE(cArraySegment), save :: tArrayZ
-
-
-TYPE(cFileType), save :: tPowF   ! Type array describing the power file
-	                       ! output
-
-
 
 integer(kind=ip) :: iWriteNthSteps, iIntWriteNthSteps
 

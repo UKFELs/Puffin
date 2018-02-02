@@ -1,5 +1,5 @@
 ###
-# Copyright (c) 2012-2017, University of Strathclyde
+# Copyright (c) 2012-2018, University of Strathclyde
 # License: BSD-3-Clause
 # 25.6.2015 Jonathan Smith - CMake lists for PUFFIN Project
 ###
@@ -151,8 +151,8 @@ install (DIRECTORY utilities/pyPlotting DESTINATION bin)
 install (DIRECTORY utilities/setup DESTINATION bin)
 install (DIRECTORY utilities/visit-scripts DESTINATION bin)
 
-install (DIRECTORY inputs/example/ DESTINATION examples)
-install (DIRECTORY inputs/gen/ DESTINATION python)
+install (DIRECTORY inputs/ DESTINATION examples)
+# install (DIRECTORY inputs/gen/ DESTINATION python)
 
 install (DIRECTORY scripts/ DESTINATION examples/job-submission-scripts)
 

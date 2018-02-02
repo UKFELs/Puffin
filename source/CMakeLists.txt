@@ -1,11 +1,11 @@
 ###
-# Copyright (c) 2012-2017, University of Strathclyde
+# Copyright (c) 2012-2018, University of Strathclyde
 # Authors: Jonathan Smith
 # License: BSD-3-Clause
 ###
 
 enable_language(Fortran)
-set (C_SOURCES "AIO.c")
+#set (C_SOURCES "AIO.c")
 FILE(GLOB F_SOURCES *.f90 ${PROJECT_BINARY_DIR}/source/puffProvenance.f90)
 
 #
@@ -42,14 +42,14 @@ endif ()
 
 
 if (USE_MKL)
-add_definitions(${MPI_C_COMPILE_FLAGS} ${OpenMP_C_FLAGS})
+  add_definitions(${MPI_C_COMPILE_FLAGS} ${OpenMP_C_FLAGS})
 else()
-add_definitions(${MPI_C_COMPILE_FLAGS} ${OpenMP_C_FLAGS})
+  add_definitions(${MPI_C_COMPILE_FLAGS} ${OpenMP_C_FLAGS})
 endif()
 
 #  add_definitions(${MPI_C_COMPILE_FLAGS} "-DMKL_ILP64")
 
-add_library(AIO ${C_SOURCES})
+#add_library(AIO ${C_SOURCES})
 
 #C definitions are not needed for Fortran apps.
 #remove_definitions(${MPI_C_COMPILE_FLAGS} ${OpenMP_C_FLAGS})
@@ -62,12 +62,14 @@ else()
 endif()
 
 add_executable(puffin ${F_SOURCES})
-add_dependencies(puffin AIO)
+#add_dependencies(puffin AIO)
 
 if (USE_MKL)
-  target_link_libraries(puffin AIO ${MKL_LIBS} ${MPI_Fortran_LIBRARIES} ${BASE_LINK_LIBS})
+#  target_link_libraries(puffin AIO ${MKL_LIBS} ${MPI_Fortran_LIBRARIES} ${BASE_LINK_LIBS})
+  target_link_libraries(puffin ${MKL_LIBS} ${MPI_Fortran_LIBRARIES} ${BASE_LINK_LIBS})
 else()
-  target_link_libraries(puffin AIO ${FFTW_LIBS} ${Hdf5_LIBRARIES} ${MPI_Fortran_LIBRARIES} ${BASE_LINK_LIBS})
+#  target_link_libraries(puffin AIO ${FFTW_LIBS} ${Hdf5_LIBRARIES} ${MPI_Fortran_LIBRARIES} ${BASE_LINK_LIBS})
+  target_link_libraries(puffin ${FFTW_LIBS} ${Hdf5_LIBRARIES} ${MPI_Fortran_LIBRARIES} ${BASE_LINK_LIBS})
 endif()
 
 install (TARGETS puffin DESTINATION bin)

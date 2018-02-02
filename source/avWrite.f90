@@ -1,4 +1,4 @@
-! Copyright 2012-2017, University of Strathclyde
+! Copyright 2012-2018, University of Strathclyde
 ! Authors: Lawrence T. Campbell & Jonathan Smith (Tech-X UK Ltd)
 ! License: BSD-3-Clause
 
@@ -8,7 +8,7 @@
 !> Glasgow, UK
 !> @brief
 !> This module contains routines for calculating the reduced or integrated data
-!> for Puffin output. This module also writes this data, in the SDDS case. 
+!> for Puffin output. This module also writes this data, in the SDDS case.
 
 module avwrite
 
@@ -16,8 +16,6 @@ use paratype
 use arrayfunctions
 use globals
 use functions
-use sddsROutput
-use createSDDS
 use ParallelSetUp
 use parafield
 
@@ -26,30 +24,17 @@ implicit none
 
 contains
 
-
-
-!> writeIntData Top level routine for writing reduced/integrated data
-!! Outputs integrated data e.g. power, current
-!! bunching, etc in sdds format. Only writes power (in sdds format) at present.
-
-
-  subroutine writeIntData()
-
-    implicit none
-
-    call oPower()
-
-  end subroutine writeIntData
-
-
-
-
-!> gPowerP Subroutine to calculate the radiation power. The power
-!! is calculated from the global distributed radiation field arrays.
-!! @params power, output array containing the calculated power
-!! as a function of z2. The power is calculated on an equispaced
-!! 1D mesh at nodes equal to the nodes in z2 of the radiation field.
-!! So e.g. the power node separation is sLengthOfElmZ2_G.
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Subroutine to calculate the radiation power. The power
+!> is calculated from the global distributed radiation field arrays.
+!> @params[out] power Array containing the calculated power
+!> as a function of z2. The power is calculated on an equispaced
+!> 1D mesh at nodes equal to the nodes in z2 of the radiation field mesh.
+!> So e.g. the power node separation is sLengthOfElmZ2_G.
 
   subroutine gPowerP(power)
 
@@ -66,30 +51,13 @@ contains
 
     allocate(ac_power(mainlen), fr_power(tlflen4arr), bk_power(tlelen4arr))
 
-!    allocate(wfield(nx,ny,nz2))
-
-!    wfield = complex(reshape(sA(1:nnodes),(/nx,ny,nz2/)), &
-!                reshape(sA(nnodes+1:2*nnodes),(/nx,ny,nz2/)))
-
-
     if ((ffe_GGG > 0) .and. (tlflen > 0) ) then
 
       call gPower(fr_rfield, fr_ifield, fr_power)
 
     end if
 
-!    call mpi_barrier(tProcInfo_G%comm, error)
-!    print*, 'got FRONT powsss'
-
-
-!    if (count(abs(ac_rfield) > 0.0_wp) <= 0) print*, 'HELP IM RUBBUSH POW'
-
     call gPower(ac_rfield(1:mainlen*ntrnds_G), ac_ifield(1:mainlen*ntrnds_G), ac_power)
-
-!if (count(abs(ac_power) > 0.0_wp) <= 0) print*, 'HELP IM RUBBUSH'
-
-!    call mpi_barrier(tProcInfo_G%comm, error)
-    !print*, 'got ACC powsss'
 
     if ((ees_GGG < nz2_G) .and. (tlelen > 0) ) then
 
@@ -97,115 +65,26 @@ contains
 
     end if
 
-
-
-!    call mpi_barrier(tProcInfo_G%comm, error)
-!    print*, 'got powsss'
-
-
     call UpdateGlobalPow(fr_power, ac_power, bk_power, power)
-
-!    call mpi_barrier(tProcInfo_G%comm, error)
-!    print*, 'got glob powwww'
-
 
     deallocate(fr_power, ac_power, bk_power)
 
   end subroutine gPowerP
 
-
-!> oPower This subroutine retrieves the power in z2 (using gPowerP) and
-!! outputs it to a file (by calling writePower).
-!! @params nz2_G Number of nodes in z2.
-!! @params tPowF Global type for storing sdds file data about the power file.
-
-  subroutine oPower()
-
-    implicit none
-
-    real(kind=wp), allocatable :: power(:)  !< Radiation field power
-    integer :: error  !< Error code for MPI routines
-
-
-    allocate(power(nz2_g))
-
-    call gPowerP(power)
-
-    call writePower(power,tPowF)
-
-!    call mpi_barrier(tProcInfo_G%comm, error)
-!    print*, 'written'
-
-    deallocate(power)
-
-  end subroutine oPower
-
-
-
-
-
-!> writePower This subroutine appends the power at the current
-!! step to the SDDS power file.
-
-  subroutine writePower(power,powFType)
-
-    implicit none
-
-    real(kind=wp), intent(in) :: power(:)  !< Input radiation power
-    type(cFileType), intent(inout) :: powFType  !< Input/ouput type describing the power output file
-
-    integer(kind=ip) :: nnz2 !< number of power sampling nodes in z2
-    logical :: qOKL  !< Error flag
-
-    nnz2 = size(power)
-
-    if (tProcInfo_G%qRoot) then
-
-      call OutputIntegrationData(powFType,&
-              power,nnz2,qOKL)
-
-    end if
-
-  end subroutine writePower
-
-
-
-
-
-!> initPFile This subroutine initializes the SDDS power file, and must be
-!> called before any writing to the sdds power file takes place.
-
-  subroutine initPFile(powFType, qForm)
-
-    implicit none
-
-    type(cFileType), intent(inout) :: powFType !< Input/output Power filetype, describing power file.
-    logical, intent(in) :: qForm !< Input Whether sdds output is to be formatted or not.
-
-    character(1024_IP) :: fname, & !< Filename (unused)
-                        vname    !< SDDS Variable name
-    logical :: qOKL  !< Local error flag
-    powFType%qformatted = qForm
-    powFType%zFileName = 'power.sdds' !  filename
-    vname = 'power' !  SDDS variable name
-
-
-    if (tProcInfo_G%qRoot) then
-
-      call CreateSDDSFile(powFType%zFileName, &
-                          vname, powFType, qOKL)
-
-    end if
-
-  end subroutine initPFile
-
-!> initPowerCalc This subroutine stes up array structures to be 
-!> use in the power calculation.
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This subroutine sets up array structures to be used in the calculation of
+!> the power.
+!> @params lx Length of field mesh in x
+!> @params ly Length of field mesh in y
 
   subroutine initPowerCalc()
 
-    real(kind=wp) :: lx, &  !< Length of field mesh in x
-                     ly     !< Length of field mesh in x
+    real(kind=wp) :: lx, &
+                     ly
 
     if (allocated(x_ax_G)) then
       deallocate(x_ax_G)
@@ -232,28 +111,26 @@ contains
 
 
 
-
-
-
-
-
-
-!> gPower Get radiation field power in z2 from input field.
-
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This subroutine fetches the temporal Power
+!> from the 3D or 1D field mesh. It chooses the appropriate
+!> 1D or 3D power calculation based on the mesh.
+!> @params[in] rfield Real component of A_perp
+!> @params[in] ifield Imag component of A_perp
+!> @params[out] power Temporal power
 
   subroutine gPower(rfield, ifield, power)
 
     implicit none
 
-! This subroutine fetches the temporal Power
-! from the 3D field
-!
-!       ARGUMENTS
+    real(kind=wp), intent(in) :: rfield(:), &
+                                 ifield(:)
 
-    real(kind=wp), intent(in) :: rfield(:), &  !< Input real part of A_perp
-                                 ifield(:)     !< Input imaginary part of A_perp
-
-    real(kind=wp), intent(out) :: power(:)   !< Output Power cal'd from rfield and ifield
+    real(kind=wp), intent(out) :: power(:)
 
     power = 0.0_wp     ! init
 
@@ -269,9 +146,16 @@ contains
 
   end subroutine gPower
 
-
-
-
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This subroutine fetches the temporal Power
+!> from the 1D field
+!> @params[in] rfield Real component of A_perp
+!> @params[in] ifield Imag component of A_perp
+!> @params[out] power Temporal power
 
   subroutine fPower_1D(rfield, ifield, power)
 
@@ -279,20 +163,25 @@ contains
     real(kind=wp), intent(out) :: power(:)
 
     power = abs(rfield)**2.0_WP + abs(ifield)**2.0_WP
-   ! print*, power
 
   end subroutine fPower_1D
 
 
-
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> This subroutine fetches the temporal Power
+!> from the 3D field
+!> @params[in] rfield Real component of A_perp
+!> @params[in] ifield Imag component of A_perp
+!> @params[in] xaxis Coordinates of mesh points in x
+!> @params[in] yaxis Coordinates of mesh points in y
+!> @params[out] power Temporal power
 
 
   subroutine fPower_3D(rfield,ifield,xaxis,yaxis, power)
-
-! This subroutine fetches the temporal Power
-! from the 3D field
-!
-!       ARGUMENTS
 
     real(kind=wp), intent(in) :: rfield(:), ifield(:), &
                                  xaxis(:), yaxis(:)
@@ -313,45 +202,18 @@ contains
 
     allocate(intens(nx*ny), intens2(nx,ny))
 
-    !print*, 'starting loop round trans slices'
-
     do i = 1, nZ2
 
       bt = (i-1) * ntr + 1_IP
       et = i * ntr
 
-      !call mpi_barrier(tProcInfo_G%comm, error)
-     ! print*, bt, et, i, nZ2, size(rfield)
-
       intens = abs(rfield(bt:et))**2.0_WP + abs(ifield(bt:et))**2.0_WP
 
-      !call mpi_barrier(tProcInfo_G%comm, error)
-      !print*, 'got intensity', i, intens(1:20)
-
-
-
       intens2 = reshape(intens, (/nx,ny/))
-      !call mpi_barrier(tProcInfo_G%comm, error)
-      !print*, 'reshaped', i
-
 
       power(i) = m_trapz2D(xaxis, yaxis, intens2)
-      !call mpi_barrier(tProcInfo_G%comm, error)
-      !print*, 'integrated', i
-
-
-
-      !call mpi_barrier(tProcInfo_G%comm, error)
-      !print*, 'power', i, power(i)
-
-
 
     end do
-
-     ! call mpi_finalize(error)
-     ! stop
-
-    !print*, 'end of fPower_3D'
 
     deallocate(intens,intens2)
 
@@ -359,36 +221,25 @@ contains
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-!> Integration over x and then y, using trapezoidal rule
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Simple 2D (x-y) integration over equispaced 2D mesh using
+!> trapezoidal rule.
+!> @params[in] x Coordinates of mesh nodes in x
+!> @params[in] y Coordinates of mesh nodes in y
+!> @params[in] fxy 2D function to integrate (values on the mesh)
 
   real function m_trapz2D(x, y, fxy)
 
     implicit none
 
-    real(kind=wp), dimension(:) :: x,y !<tranverse dims over which to integrate
-    real(kind=wp), dimension(:,:) :: fxy !<the function of x and y to integrate
-    integer(kind=ip) :: xe, ye, i, j !<element extents and element indices
-    real(kind=wp), allocatable :: cul(:) !<cumulative sum.
+    real(kind=wp), dimension(:) :: x,y
+    real(kind=wp), dimension(:,:) :: fxy
+    integer(kind=ip) :: xe, ye, i, j
+    real(kind=wp), allocatable :: cul(:)
 
     allocate(cul(size(y)))
 
@@ -404,23 +255,23 @@ contains
 
   end function m_trapz2D
 
-
-
-
-
-
-
-
-!> Integration of y(x) by trapezoidal rule
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Simple 1D integration over function, using
+!> trapezoidal rule.
+!> @params[in] x Coordinates of mesh nodes in x
+!> @params[in] y Function y(x) at mesh points
 
   real function m_trapz(x, y, lower, upper)
 
     implicit none
 
-
-    real(kind=wp), dimension(:) :: x,y !<transverse dims
-    integer(kind=ip), optional :: lower, upper !< extents
-    integer(kind=ip) :: l, u, i !< indices 
+    real(kind=wp), dimension(:) :: x,y
+    integer(kind=ip), optional :: lower, upper
+    integer(kind=ip) :: l, u, i
 
     if (present(lower)) then
       l = lower

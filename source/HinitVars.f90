@@ -1,4 +1,4 @@
-! Copyright 2012-2017, University of Strathclyde
+! Copyright 2012-2018, University of Strathclyde
 ! Authors: Lawrence T. Campbell
 ! License: BSD-3-Clause
 
@@ -16,7 +16,6 @@ IMPLICIT NONE
 ! are assigned.
 !-------------------------------------------------------------------- 
 !
-! zDataFileName      - Data file name
 ! sStepSize          - Step size for integration
 ! nSteps             - Number of steps 
 ! sZ                 - z position
