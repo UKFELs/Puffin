@@ -1,12 +1,13 @@
 # Build Instructions
 
-Puffin is written mainly in modern fortran and one C file, and the 
-post-processing scripts are in Python, using pytables and numpy. Puffin 
-can be built using CMake, and uses SciMake (bundled with Puffin) to find
-and link the external libraries.
+Puffin is written in modern fortran, and the post-processing scripts are in
+Python, using pytables and numpy. Puffin can be built using CMake, and uses 
+SciMake (bundled with Puffin) to find and link the external libraries.
 
 The below guide is for use on linux using the bash terminal. Installation 
-on Windows or OS X is not currently supported.
+on native Windows or OS X is not currently supported. (Installation on OS X with 
+MacPorts using the below general instructions has been achieved, however,
+and similarly with Cygwin on Windows 7.)
 
 ## To build Puffin
 
