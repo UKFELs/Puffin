@@ -32,14 +32,50 @@ where `/path/to/Puffin` is where you want the top level of the Puffin source to 
 
 4. Do `make && make install`. You should get a puffin binary in /path/to/puffin-install
 
-## Building hdf5 and fftw3 (and more) using bilder
+## Building on Ubuntu 16.04
+
+To build on Ubuntu, first install gfortran, openmpi, cmake, Git, and the parallel
+hdf5 and fftw libraries from the repositories.
+
+`sudo apt install gfortran libhdf5-mpi-dev libhdf5-openmpi-10 libhdf5-dev \
+libfftw3-dev libfftw3-mpi-dev cmake libopenmpi-dev git`
+
+For some reason, the hdf5 headers aren't automatically added to your path, so 
+you need to manually add them so that CMake can find them:
+
+`export PATH=/usr/include/hdf5/openmpi:$PATH`
+
+Grab Puffin from Github:
+
+`git clone git@github.com:UKFELs/Puffin.git path/to/Puffin`
+
+`path/to/Puffin` in the above cammand is the location you want the files placed.
+
+Then, run CMake to find the libraries and create the Makefile (note that
+`path/to/desired/puffin/install` is the location you want the Puffin build 
+installed to, and `path/to/puffin/` is the location of the directory
+that you downloaded Puffin to, same as in the `git clone` command above):
+
+`cmake -DCMAKE_INSTALL_PREFIX:PATH=path/to/desired/puffin/install -DENABLE_PARALLEL:BOOL=TRUE -DHdf5_MODULE_DIRS='/usr/include/hdf5/openmpi' -DHdf5_LIBRARY_DIRS='/usr/lib/x86_64-linux-gnu/hdf5/openmpi;/usr/lib/x86_64-linux-gnu/' -DHdf5_INCLUDE_DIRS='/usr/include/hdf5/openmpi' -DHdf5_LIBRARY_NAMES='hdf5_openmpi_fortran;hdf5_openmpi' -DHdf5_LIBRARIES='/usr/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.so;/usr/lib/x86_64-linux-gnu/libhdf5_openmpi.so' -DHdf5_STLIBS='/usr/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.a;/usr/lib/x86_64-linux-gnu/libhdf5_openmpi.a'  path/to/puffin/`
+
+Then build:
+
+`make`
+`make install`
+
+You'll find the Puffin executable in the subdirectory `bin` in the directory you
+told CMake to install Puffin to (i.e. after the above cmake command the location
+would be `path/to/desired/puffin/install/bin`).
+
+## Building hdf5 and fftw3 (and more) using Bilder
 
 Hdf5 and fftw3 parallel libraries may be cumbersome to build individually. The most 
 popular linux distros have them in the official repositories. They can also be obtained 
 and built by using bilder, which provides a stable base for building Puffin. This is
-usually what is used for Puffin development. Bilder also allows one to build other
-packages needed for building and post-processing, like CMake and Python packages,
-and so on. In the below, we build fftw3, hdf5, and numpy and tables for Python.
+usually what is used for Puffin running and development on HPC clusters. Bilder
+also allows one to build other packages needed for building and post-processing,
+like CMake and Python packages, and so on. In the below, we build fftw3, hdf5,
+and numpy and tables for Python.
 
 First, check out bilder from the repository.
 
@@ -51,7 +87,10 @@ Then go into the created bilder-visit directory, and to build the desired libara
 
 Note we are specifying a specific version of CMake here. The default version of
 CMake installed using Bilder has a few known issues with SciMake, so until these
-are fixed, we use the older version here. We are also grabbing a specific HDF5 build, since unfortunately Bilder does not build the later versions correctly. This can be fixed manually (see issues section below), but for now we recommend just using the earlier version with Bilder if you can do that.
+are fixed, we use the older version here. We are also grabbing a specific HDF5 build,
+since unfortunately Bilder does not build the later versions correctly. This can
+be fixed manually (see issues section below), but for now we recommend just 
+using the earlier version with Bilder if you can do that.
 
 The requested libraries will be in ../contrib, along with a bash script
 to add them to your path. So do 
@@ -88,21 +127,17 @@ the `fftw3-par` and `hdf5-par` libs built, and not the serial versions.
     which may be more recent.
 
 
-  - Ubuntu 16.04
+  - Ubuntu 16.04 and Bilder
 
-    Ubuntu now uses a version of CMake which SciMake currently has some problems with, 
-    so an older version must be used. See the section on building with Bilder above - 
-    we recommend doing this if you are using Ubuntu 16.04 onwards for now.
-
-    Another issue with Ubuntu is that Bilder does not currently recognise the 
-    machine hostname on Ubuntu. This may cause problems with the install process.
-    We recommend doing
+    An issue with building with Bilder on Ubuntu is that Bilder does not 
+    currently recognise the machine hostname on Ubuntu. This may cause problems
+    with the install process. We recommend doing
 
     `export FQHOSTNAME=$HOSTNAME`
 
     to make Bilder recognise the machine hostname.
 
-    Yet another issue is with the OpenMPI/Fortran compilers compatibility with Bilder.
+    Another issue is with the OpenMPI/Fortran compilers compatibility with Bilder.
     The HDF5 libs built by Bilder do not work with the particular configuration on 
     Ubuntu 16.04. So we recommend using the HDF5 libs supplied in the Ubuntu
     repositories. They are called `libhdf5-openmpi-dev` - e.g. do 
@@ -114,6 +149,3 @@ the `fftw3-par` and `hdf5-par` libs built, and not the serial versions.
     Then the CMake command to configure the Puffin Makefile becomes:
 
     `cmake -DCMAKE_INSTALL_PREFIX:PATH=/path/to/puffin-install -DCMAKE_BUILD_TYPE:STRING=Release -DCMAKE_COLOR_MAKEFILE:BOOL=TRUE -DCMAKE_VERBOSE_MAKEFILE:BOOL=TRUE -DENABLE_PARALLEL:BOOL=ON -DDEBUG_CMAKE:BOOL=TRUE -DFftw3_ROOT_DIR='/path/to/fftw3-par' -DHdf5_ROOT_DIR='/usr' -DHdf5_MODULE_DIRS='/usr/include/hdf5/openmpi' -DHdf5_LIBRARY_DIRS='/usr/lib/x86_64-linux-gnu/hdf5/openmpi;/usr/lib/x86_64-linux-gnu' -DHdf5_INCLUDE_DIRS='/usr/include/hdf5/openmpi' -DHdf5_LIBRARY_NAMES='hdf5_openmpi_fortran;hdf5_openmpi' -DHdf5_LIBRARIES='/usr/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.so;/usr/lib/x86_64-linux-gnu/libhdf5_openmpi.so' -DHdf5_STLIBS='/usr/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.a;/usr/lib/x86_64-linux-gnu/libhdf5_openmpi.a' /path/to/Puffin`
-
-
-
