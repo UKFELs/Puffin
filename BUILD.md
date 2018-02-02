@@ -38,8 +38,7 @@ where `/path/to/Puffin` is where you want the top level of the Puffin source to 
 To build on Ubuntu, first install gfortran, openmpi, cmake, Git, and the parallel
 hdf5 and fftw libraries from the repositories.
 
-`sudo apt install gfortran libhdf5-mpi-dev libhdf5-openmpi-10 libhdf5-dev \
-libfftw3-dev libfftw3-mpi-dev cmake libopenmpi-dev git`
+`sudo apt install gfortran libhdf5-mpi-dev libhdf5-openmpi-10 libhdf5-dev libfftw3-dev libfftw3-mpi-dev cmake libopenmpi-dev git`
 
 For some reason, the hdf5 headers aren't automatically added to your path, so 
 you need to manually add them so that CMake can find them:
