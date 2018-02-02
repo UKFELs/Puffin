@@ -598,6 +598,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 !                     LOCAL ARGS
 
   INTEGER(KIND=IP) :: b_ind, TrLdMeth, inmpsGam
+  integer(kind=ip), allocatable :: iNumMPs(:,:)
   logical :: qFixCharge, qAMatch
   INTEGER::ios
   CHARACTER(96) :: dtype
@@ -607,7 +608,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 ! Declare namelists
 
   namelist /nblist/ nbeams, dtype
-  namelist /blist/ sSigmaE, sLenE, iNumElectrons, &
+  namelist /blist/ sSigmaE, sLenE, iNumElectrons, iNumMPs, &
                    sEmit_n, sQe, bcenter,  gammaf, &
                    chirp, mag, fr, qRndEj_G, sSigEj_G, &
                    qMatched_A, qEquiXY, nseqparts, qFixCharge, &
@@ -657,7 +658,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
   allocate(sSigmaE(nbeams,6))
   allocate(sLenE(nbeams,6))
-  allocate(iNumElectrons(nbeams,6))
+  allocate(iNumElectrons(nbeams,6), iNumMPs(nbeams,6))
   allocate(sEmit_n(nbeams),sQe(nbeams),bcenter(nbeams),gammaf(nbeams))
   allocate(chirp(nbeams), qMatched_A(nbeams))
   allocate(mag(nbeams), fr(nbeams))
@@ -682,6 +683,11 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   iNumElectrons(1,3) = -1
   iNumElectrons(1,4:5) = 1
   iNumElectrons(1,6) = 19
+
+  iNumMPs(1,1:2) = 1
+  iNumMPs(1,3) = -1
+  iNumMPs(1,4:5) = 1
+  iNumMPs(1,6) = 19
 
   sEmit_n = -1.0_wp
   sQe = 1E-9
@@ -716,6 +722,27 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
     read(161,nml=blist)
 
     close(UNIT=161,STATUS='KEEP')
+
+    if (iNumElectrons(1,3) /= -1) then
+
+      if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+        print*,''
+        print*, 'Warning: use of iNumElectrons in beam file is deprecated.'
+        print*, 'It will be removed in a future release.'
+        print*,''
+      end if
+
+      iNumMPs = iNumElectrons
+    else
+      iNumElectrons = iNumMPs
+      if (iNumMPs(1,3) == -1_ip) then
+        if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+          print*, ''
+          print*, 'Warning: Numbers of Macroparticles to use have not been specified.'
+          print*,''
+        end if
+      end if      
+    end if
 
   else if (dtype == 'dist') then
 
