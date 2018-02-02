@@ -538,7 +538,11 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
     call FileNameNoExtension(seed_file, zSFile_G, qOKL)
   end if
 
-  if (qOneD) qEquiXY_G = .true.
+! For 'proper' 1D beam i.e. no energy spread
+
+  if ((qOneD) .and. (iNumElectrons(1,6) == 1)) then 
+    qEquiXY_G = .true.
+  end if
 
 ! ---- Fixing hdf5 always on - sdds removed!
 
@@ -729,6 +733,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
         print*,''
         print*, 'Warning: use of iNumElectrons in beam file is deprecated.'
         print*, 'It will be removed in a future release.'
+        print*, 'In the future, use iNumMPs instead.'
         print*,''
       end if
 

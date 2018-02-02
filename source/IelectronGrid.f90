@@ -492,47 +492,49 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
 !
 
 
-  IF (qOneD) THEN ! If 1D, only need z2 and p2 to generate macroparticles
-  
-    IF (iNMP(iGam_CG) == 1_IP) THEN ! Cold beam case (important for noise)
-  
-      CALL genMacros(i_total_electrons=i_RealE, &
-           q_noise=q_noise,                & 
-           x_1_grid=sz2_grid,               &
-           x_1_integral=sZ2_integral,       &
-           s_number_macro=s_tmp_macro,     & 
-           s_vol_element=s_tmp_Vk,          &
-           max_av=s_tmp_max_av,             &
-           x_1_coord=z2_tmpcoord)
-  
-      pz2_tmpvector = offsets(iGam_CG)
-  
-    ELSE
-  
-      CALL genMacros(i_total_electrons=i_RealE, &
-                     q_noise=q_noise,                & 
-                     x_1_grid=sz2_grid,               &
-                     x_1_integral=sZ2_integral,       & 
-                     p_3_grid=spz2_grid,              &
-                     p_3_integral=sPZ2_integral,      &
-                     s_number_macro=s_tmp_macro,     &
-                     s_vol_element=s_tmp_Vk,         &
-                     max_av=s_tmp_max_av,            & 
-                     x_1_coord=z2_tmpcoord,           &
-                     p_3_vector=pz2_tmpvector)
-  
-    END IF
-  
-    x_tmpcoord  = offsets(iX_CG) 
-    y_tmpcoord  = offsets(iY_CG)
-    px_tmpvector = offsets(iPX_CG)
-    py_tmpvector = offsets(iPY_CG)    
-  
-  ELSE ! 6D beam
+  if (qEquiXY_G) then
 
-    if (qEquiXY_G) then
+    if (qOneD) then ! If 1D, only need z2 and p2 to generate macroparticles
 
-      CALL genMacros(i_total_electrons=i_RealE, &
+      if (iNMP(iGam_CG) == 1_IP) then ! Cold beam case (important for noise)
+
+        call genMacros(i_total_electrons=i_RealE, &
+                       q_noise=q_noise,                & 
+                       x_1_grid=sz2_grid,               &
+                       x_1_integral=sZ2_integral,       &
+                       s_number_macro=s_tmp_macro,     & 
+                       s_vol_element=s_tmp_Vk,          &
+                       max_av=s_tmp_max_av,             &
+                       x_1_coord=z2_tmpcoord)
+
+        pz2_tmpvector = offsets(iGam_CG)
+
+      else
+
+        call genMacros(i_total_electrons=i_RealE, &
+                       q_noise=q_noise,                & 
+                       x_1_grid=sz2_grid,               &
+                       x_1_integral=sZ2_integral,       & 
+                       p_3_grid=spz2_grid,              &
+                       p_3_integral=sPZ2_integral,      &
+                       s_number_macro=s_tmp_macro,     &
+                       s_vol_element=s_tmp_Vk,         &
+                       max_av=s_tmp_max_av,            & 
+                       x_1_coord=z2_tmpcoord,           &
+                       p_3_vector=pz2_tmpvector)
+  
+      end if
+  
+      x_tmpcoord  = offsets(iX_CG) 
+      y_tmpcoord  = offsets(iY_CG)
+      px_tmpvector = offsets(iPX_CG)
+      py_tmpvector = offsets(iPY_CG)    
+  
+    else ! 6D beam
+
+    !if (qEquiXY_G) then
+
+      call genMacros(i_total_electrons=i_RealE, &
                      q_noise=q_noise,                     & 
                      x_1_grid=sx_grid,               &
                      x_1_integral=sX_integral,       &
@@ -556,13 +558,10 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
                      p_2_vector=py_tmpvector,        &
                      p_3_vector=pz2_tmpvector)
     
-
-    else    ! using sequences in transverse plane
-
-
-
-
-
+    end if  ! exhausted 1D and 3D options of equispaced phase space filling...
+  
+  else   ! if using random or quasi-random sequences to fill phase space 
+         ! (in every dimension except z2)
 
 ! #####################################################################
 !
@@ -667,9 +666,9 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
 
       if (q_noise) call applyNoise(z2_tmpcoord, sz2_grid(2) - sz2_grid(1), s_tmp_macro)  ! add noise in z2
 
-    end if 
+  end if 
 
-  end if
+!  end if
 
 
 

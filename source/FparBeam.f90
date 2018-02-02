@@ -123,9 +123,9 @@ SUBROUTINE splitBeams(iNMP,samLenE,nBeams,numproc,rank,&
 
     end if
 
-  END DO
+  end do
 
-END SUBROUTINE splitBeams
+end subroutine splitBeams
 
 
 
