@@ -5,7 +5,7 @@
 """
 This file is part of the example post-processing tools for Puffin, a 
 multi-frequency FEL code absent of the averaging / SVEA approximations.  It 
-contains the object definition for opensing and retreiving the metadata
+contains the object definition for opening and retreiving the metadata
 from the Puffin output data files.
 """
 
