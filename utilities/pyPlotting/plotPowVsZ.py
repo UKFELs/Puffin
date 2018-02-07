@@ -3,8 +3,8 @@
 # License: BSD-3-Clause
 
 """
-This produces a plot of the power from Puffin datafiles, against distance 
-through the undulator z. 
+This produces a plot of the power from Puffin field datafiles, as a function of
+distance through the undulator z. 
 
 If the Puffin mesh type was periodic, then the power will be averaged over the 
 temporal mesh.
@@ -72,10 +72,10 @@ def plotPowVsZ(basename, cfr=None, dfr=None):
 #    axLab = 'Power (W)'
 
     if (mdata.vars.iMesh == iPeriodic):
-        plotLab = 'SI Power'
+        plotLab = 'Power'
         axLab = 'Power (W)'
     else:
-        plotLab = 'SI Peak Power'
+        plotLab = 'Peak Power'
         axLab = 'Power (W)'
         
 
