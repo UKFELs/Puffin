@@ -73,7 +73,9 @@ class puffData:
 
 
     def unscale(self):
-        self.dx = self.dxbar * np.sqrt(self.lg * self.lc) # ...etc
+        self.dx = self.dxbar * np.sqrt(self.lg * self.lc)
+        self.dy = self.dybar * np.sqrt(self.lg * self.lc) 
+        self.dct = self.dz2 * self.lc # ...etc
         
     def genParams(self):
         
@@ -109,6 +111,7 @@ class puffData:
                           np.square((self.gamma0 * self.me * np.square(self.c0) ) \
                           / (self.qe * self.kappa * self.lg ))
 
-
         self.fieldScale = np.square((self.gamma0 * self.me * np.square(self.c0) ) \
                           / (self.qe * self.kappa * self.lg ))
+
+        self.lrbar = 4. * np.pi * self.rho
