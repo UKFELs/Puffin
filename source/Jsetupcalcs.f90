@@ -1515,8 +1515,8 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
 
 !     x and y polarized fields in z2
 
-  oscx = z2env * sin(fr * z2nds / (2.0_WP * rho) - ph_sh)! + 4.0_wp*(cos(10_wp * z2nds)))
-  oscy = z2env * cos(fr * z2nds / (2.0_WP * rho) - ph_sh)!+ 4.0_wp*(cos(10_wp * z2nds)))
+  oscx = z2env * sin(fr * z2nds / (2.0_WP * rho) - ph_sh + 4.0_wp*(cos(10_wp * z2nds)))
+  oscy = z2env * cos(fr * z2nds / (2.0_WP * rho) - ph_sh + 4.0_wp*(cos(10_wp * z2nds)))
 
 !     Full 3D field
 
