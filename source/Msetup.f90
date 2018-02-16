@@ -174,7 +174,7 @@ module Setup
     call scaleParams(sEleSig, sLenEPulse, sSigEj_G, &
                      beamCenZ2, chirp, sEmit_n, emitx, emity, gamma_d, &
                      sFieldModelLength, sLengthofElm, &
-                     sSeedSigma, sA0_Re, sA0_Im)
+                     sSeedSigma, sA0_Re, sA0_Im, SmeanZ2)
   end if
 
 

@@ -628,7 +628,7 @@ END SUBROUTINE SetUpInitialValues
 subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
                        beamCenZ2, chirp, sEmit, emitx, emity, gamFrac, &
                        sFieldModelLength, sLengthofElm, &
-                       sSeedSigma, sAx, sAy)
+                       sSeedSigma, sAx, sAy, scr)
 
     real(kind=wp), intent(inout) :: sEleSig(:,:), sLenEPulse(:,:), &
                                     sSigEdge(:), beamCenZ2(:), &
@@ -637,7 +637,7 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
                                     sLengthofElm(:), &
                                     sSeedSigma(:,:), &
                                     emitx(:), emity(:), &
-                                    sAx(:), sAy(:)
+                                    sAx(:), sAy(:), scr(:)
 
     real(kind=wp), intent(in) :: gamFrac(:)
 
@@ -702,6 +702,8 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
       call scaleT(sSeedSigma(is,iZ2_CG), lc_G)
       call scaleIntensity(sAx(is), lg_G, lc_G, sGammaR_G, sKappa_G)
       call scaleIntensity(sAy(is), lg_G, lc_G, sGammaR_G, sKappa_G)
+      call scaleT(scr(is), lc_G)
+      call scaleT(sSigFj_G(is), lc_G)
 
     end do
 
