@@ -34,6 +34,7 @@ module typeScale
     real(kind=wp) :: lc, lg
     real(kind=wp) :: ux, uy
     real(kind=wp) :: kappa
+    real(kind=wp) :: intScale
     logical :: qOneD
 
   contains
@@ -51,6 +52,8 @@ module typeScale
     generic :: unscalePx => unscalePX_single, unscalePX_array
     generic :: scaleT => scaleT_single, scaleT_array
     generic :: unscaleT => unscaleT_single, unscaleT_array
+    generic :: scaleIntensity => scaleIntensity_single, scaleIntensity_array
+    generic :: unscaleIntensity => unscaleIntensity_single, unscaleIntensity_array
 
     procedure :: scaleG_single, scaleG_array
     procedure :: unScaleG_single, unscaleG_array
@@ -60,6 +63,8 @@ module typeScale
     procedure :: unscalePX_single, unscalePX_array
     procedure :: scaleT_single, scaleT_array
     procedure :: unscaleT_single, unscaleT_array
+    procedure :: scaleIntensity_single, scaleIntensity_array
+    procedure :: unscaleIntensity_single, unscaleIntensity_array
 
   end type fScale
 
@@ -135,6 +140,9 @@ module typeScale
 
       this%lg = this%lambda_w / 4.0_WP / pi / srho
       this%lc = this%lambda_r / 4.0_WP / pi / srho
+
+      this%intScale = c * e_0 * ((this%gamma0 * m_e * c**2.0_wp ) / &
+                   (q_e * this%kappa * this%lg ))**2.0_wp
 
     end subroutine initScaling
 
@@ -700,5 +708,97 @@ module typeScale
 !$OMP WORKSHARE
   
   end subroutine getGamma
+
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! Scaling of Intensity -> |A|^2
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Convert Intensity in S.I. units \f$ Wm^{-2} \f$ -> scaled dimensionless
+!> intensity \f$ \left|{A}\right|^2 \f$.
+!> @param[in] this Custom Fortran type describing scaling.
+!> @param[inout] intensity S.I. intensity in \f$ Wm^{-2} \f$ on input,
+!> Puffin scaled intensity \f$ \left|{A}\right|^2 \f$ on output.
+
+  subroutine scaleIntensity_single(this, intensity)
+
+    class(fScale), intent(in) :: this
+    real(kind=wp), intent(inout) :: intensity
+
+    intensity = intensity / this%intScale
+
+  end subroutine scaleIntensity_single
+
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Convert Puffin scaled dimensionless intensity \f$ \left|{A}\right|^2 \f$ ->
+!> intensity in S.I. units \f$ Wm^{-2} \f$.
+!> @param[in] this Custom Fortran type describing scaling.
+!> @param[inout] Puffin scaled intensity \f$ \left|{A}\right|^2 \f$ on input, 
+!> intensity S.I. intensity in \f$ Wm^{-2} \f$ on output.
+
+  subroutine unscaleIntensity_single(this, intensity)
+
+    class(fScale), intent(in) :: this
+    real(kind=wp), intent(inout) :: intensity
+
+    intensity = intensity * this%intScale
+
+  end subroutine unscaleIntensity_single
+
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Convert Intensity in S.I. units \f$ Wm^{-2} \f$ -> scaled dimensionless
+!> intensity \f$ \left|{A}\right|^2 \f$.
+!> @param[in] this Custom Fortran type describing scaling.
+!> @param[inout] intensity S.I. intensity in \f$ Wm^{-2} \f$ on input,
+!> Puffin scaled intensity \f$ \left|{A}\right|^2 \f$ on output.
+
+  subroutine scaleIntensity_array(this, intensity)
+
+    class(fScale), intent(in) :: this
+    real(kind=wp), intent(inout) :: intensity(:)
+
+    intensity = intensity / this%intScale
+
+  end subroutine scaleIntensity_array
+
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Convert Puffin scaled dimensionless intensity \f$ \left|{A}\right|^2 \f$ ->
+!> intensity in S.I. units \f$ Wm^{-2} \f$.
+!> @param[in] this Custom Fortran type describing scaling.
+!> @param[inout] Puffin scaled intensity \f$ \left|{A}\right|^2 \f$ on input, 
+!> intensity S.I. intensity in \f$ Wm^{-2} \f$ on output.
+
+  subroutine unscaleIntensity_array(this, intensity)
+
+    class(fScale), intent(in) :: this
+    real(kind=wp), intent(inout) :: intensity(:)
+
+    intensity = intensity * this%intScale
+
+  end subroutine unscaleIntensity_array
+
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 end module typeScale

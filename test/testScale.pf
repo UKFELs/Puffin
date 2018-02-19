@@ -395,6 +395,118 @@ end subroutine testUnscaleGammaA
 
 
 
+@test
+subroutine testScaleInt( )
+
+  use pFUnit_mod
+  use typeScale
+  use paratype
+
+  implicit none
+
+  type(fScale) :: tScaling
+  real(kind=wp) :: sInt, sIntPuff_exact, tol
+
+  tol = 0.0000001_WP
+
+  sInt = 1.0e18
+  tScaling%intScale = 1.0e18
+
+  sIntPuff_exact = 1.0_wp
+
+  call tScaling%scaleIntensity(sInt)
+
+  @AssertEqual( sInt, sIntPuff_exact, tol )
+
+end subroutine testScaleInt
+
+
+@test
+subroutine testUnscaleInt( )
+
+  use pFUnit_mod
+  use typeScale
+  use paratype
+
+  implicit none
+
+  type(fScale) :: tScaling
+  real(kind=wp) :: sInt, sIntSI_exact, tol
+
+  tol = 0.0000001_WP
+
+  sInt = 1.0
+  tScaling%intScale = 1.0e18
+
+  sIntSI_exact = 1.0e18
+
+  call tScaling%unscaleIntensity(sInt)
+
+  @AssertEqual( sInt, sIntSI_exact, tol )
+
+end subroutine testUnscaleInt
+
+
+
+@test
+subroutine testScaleIntA( )
+
+  use pFUnit_mod
+  use typeScale
+  use paratype
+
+  implicit none
+
+  type(fScale) :: tScaling
+  real(kind=wp) :: sInt(5), sIntPuff_exact(5), tol
+
+  tol = 0.0000001_WP
+
+  sInt(:) = 1.0e18
+  tScaling%intScale = 1.0e18
+
+  sIntPuff_exact(:) = 1.0_wp
+
+  call tScaling%scaleIntensity(sInt)
+
+  @AssertEqual( sInt, sIntPuff_exact, tol )
+
+end subroutine testScaleIntA
+
+
+@test
+subroutine testUnscaleIntA( )
+
+  use pFUnit_mod
+  use typeScale
+  use paratype
+
+  implicit none
+
+  type(fScale) :: tScaling
+  real(kind=wp) :: sInt(5), sIntSI_exact(5), tol
+
+  tol = 0.0000001_WP
+
+  sInt(:) = 1.0
+  tScaling%intScale = 1.0e18
+
+  sIntSI_exact(:) = 1.0e18
+
+  call tScaling%unscaleIntensity(sInt)
+
+  @AssertEqual( sInt, sIntSI_exact, tol )
+
+end subroutine testUnscaleIntA
+
+
+
+
+
+
+
+
+
 
 
 
