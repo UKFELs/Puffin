@@ -1,0 +1,525 @@
+
+!                      Full test:
+
+@test
+subroutine fullScaleTest( )
+
+  use pfunit_mod
+  use paratype
+  use typeScale
+
+  implicit none
+
+  real(kind=wp) :: gamma0, rho, aw, ux, uy, lamw
+
+  real(kind=wp) :: emit, emit_save, emit_scaled
+  real(kind=wp) :: xrad, xradSave, xradScaled
+  real(kind=wp) :: zlen, zlenSave, zlenScaled
+  real(kind=wp) :: gamma_s, gamma_save, gamma_scaled
+  real(kind=wp) :: dxrad, dxradSave, dxradScaled
+  real(kind=wp) :: tlen, tlenSave, tlenScaled
+  real(kind=wp) :: dxrada(3), dxradaSave(3), dxradaScaled(3)
+  real(kind=wp) :: gamma_a(3), gamma_asave(3), gamma_ascaled(3)
+  real(kind=wp) :: xrada(3), xradasave(3), xradascaled(3)
+  real(kind=wp) :: tlena(3), tlenaSave(3), tlenaScaled(3)
+  real(kind=wp) :: p2_a(3), p2_a_corr(3), gamfp2(3), &
+                   pxfp2(3), pyfp2(3)
+  real(kind=wp) :: tol
+  type(fScale) :: gg
+  character(32_ip) :: und
+
+!   for setting up the frame
+
+  rho = 0.001_wp
+  aw = 1.0_wp
+  gamma0 = 1000.0_wp
+  lamw = 0.04_wp
+  ux = 1.0_wp
+  uy = 1.0_wp
+  und = ''
+
+!    for testing the frame
+
+  emit = 1e-6_wp / gamma0
+  emit_scaled = 0.31415880287430503_wp
+  emit_save = emit
+  
+  zlen = 70.0_wp  ! 70m long undulator line
+  zlenSave = zlen
+  zlenScaled = 21.991149187088013_wp
+
+
+  tlen = 1e-12_wp
+  tlenSave = tlen
+  tlenScaled = 94.182436574437347_wp
+
+  tlenA = [1e-12_wp, 1e-13_wp, 1e-14_wp]
+  tlenASave = tlenA
+  tlenAScaled = [94.182436574437347_wp, 9.4182436574437354_wp, &
+        0.94182436574437345_wp]
+  
+
+!   energy scaling test vals:
+
+  gamma_s = 510.0_wp
+  gamma_save = gamma_s
+  gamma_scaled = 0.5100000000000000_wp
+
+!   energy array scaling test vals:
+
+  gamma_a = [510.0_wp, 200.0_wp, 500.0_wp]
+  gamma_asave = gamma_a
+  gamma_ascaled = [0.51_wp, 0.2_wp, 0.5_wp]
+
+
+!   radius single value
+
+  xrad = 1e-5_wp
+  xradSave = xrad
+  xradScaled = 3.1415903848769286E-003_wp
+
+!   radius array tests
+
+  xradA = [1e-5_wp, 1e-4_wp, 5e-5_wp]
+  xradAsave = xradA
+  xradAScaled = [3.1415903848769286E-003_wp, 3.1415903848769286E-002_wp, &
+                       1.5707951924384643E-002_wp]
+
+
+  dxrad = 1e-3_wp
+  dxradsave = dxrad
+  dxradScaled = 0.51_wp
+
+
+  dxrada = [1e-3_wp, 1e-2_wp, 5e-3_wp]
+  dxradasave = dxrada
+  dxradaScaled = [0.51_wp, 2.0_wp, 2.5_wp]
+
+
+  p2_a_corr = [1.0000000000869005_wp, 0.69444412617348883_wp, 2.0408195128891902_wp]
+  gamfp2 = [1.0_wp, 1.2_wp, 0.7_wp]
+  pxfp2 = [1.0_wp, 1.0_wp, 1.0_wp]
+  pyfp2 = [0.0_wp, 0.0_wp, 0.0_wp]
+
+  call gg%init(rho, aw, gamma0, lamw, und, ux, uy)
+
+  call gg%scaleEmit(emit)
+  tol = 1e-12
+  @AssertEqual( emit, emit_scaled, tol )
+
+  call gg%unscaleEmit(emit)
+  tol = 1e-17
+  @AssertEqual( emit, emit_save, tol )
+
+
+
+
+  tol = 1e-12
+
+  call gg%scaleG(gamma_s)
+  @AssertEqual( gamma_s, gamma_scaled, tol )
+
+  call gg%unscaleG(gamma_s)
+  @AssertEqual( gamma_s, gamma_save, tol )
+
+
+
+
+
+  call gg%scaleG(gamma_a)
+  @AssertEqual( gamma_a, gamma_ascaled, tol )
+
+  call gg%unscaleG(gamma_a)
+  @AssertEqual( gamma_a, gamma_asave, tol )
+
+
+
+
+
+
+  call gg%scaleX(xrad)
+  @AssertEqual( xrad, xradScaled, tol )
+
+  call gg%unscaleX(xrad)
+  @AssertEqual( xrad, xradSave, tol )
+
+
+
+
+
+  call gg%scaleX(xradA)
+  @AssertEqual( xradA, xradAScaled, tol )
+
+  call gg%unscaleX(xradA)
+  @AssertEqual( xradA, xradASave, tol )
+
+
+
+  call gg%scalePX(gamma_s, dxrad)
+  @AssertEqual( dxrad, dxradScaled, tol )
+
+  call gg%unscalePX(gamma_s, dxrad)
+  @AssertEqual( dxrad, dxradSave, tol )
+
+
+
+
+  call gg%scalePX(gamma_a, dxrada)
+  @AssertEqual( dxrada, dxradaScaled, tol )
+
+  call gg%unscalePX(gamma_a, dxrada)
+  @AssertEqual( dxrada, dxradaSave, tol )
+  
+
+
+
+  call gg%scaleT(tlen)
+  @AssertEqual( tlen, tlenScaled, tol )
+
+  call gg%unscaleT(tlen)
+  @AssertEqual( tlen, tlenSave, tol )
+
+
+
+  call gg%scaleT(tlenA)
+  @AssertEqual( tlenA, tlenAScaled, tol )
+
+
+  tol = 1.0e-18_wp
+  call gg%unscaleT(tlenA)
+  @AssertEqual( tlenA, tlenASave, tol )
+
+
+
+  tol = 1e-10_wp
+  call gg%scaleZ(zlen)
+  @AssertEqual( zlen, zlenScaled, tol )
+
+  call gg%unscaleZ(zlen)
+  @AssertEqual( zlen, zlenSave, tol )
+
+
+
+  tol = 1e-10_wp
+  call gg%getP2(p2_a, gamfp2, pxfp2, pyfp2)
+  @AssertEqual( p2_a, p2_a_corr, tol )
+
+  call gg%getGamma(gamma_a, p2_a, pxfp2, pyfp2)
+  @AssertEqual( gamma_a, gamfp2, tol )
+
+
+end subroutine fullScaleTest
+
+
+
+
+
+
+
+
+
+!  individual tests...
+
+
+@test
+subroutine testScaleEmit( )
+
+  use pFUnit_mod
+  use typeScale
+  use typesAndConstants
+  use paratype
+
+  implicit none
+
+  real(kind=wp) :: sEmit
+  type(fScale) :: tScaling
+  real(kind=wp) :: sEmit_exact, tol
+
+  tol = 1e-9_wp
+  sEmit_exact =   4.0_wp * pi
+
+  sEmit = 1.0e-9_wp
+  tScaling%lambda_r = 1.0e-9_wp
+
+  call tScaling%scaleEmit(sEmit)  
+  @AssertEqual( sEmit, sEmit_exact, tol )
+
+end subroutine testScaleEmit
+
+
+
+@test
+subroutine testUnscaleEmit( )
+
+  use pFUnit_mod
+  use typeScale
+  use paratype
+  use typesAndConstants
+
+  implicit none
+
+  real(kind=wp) :: sEmit
+  type(fScale) :: tScaling
+  real(kind=wp) :: sEmit_exact, tol
+
+  tol = 1e-9
+  sEmit_exact = 10.0_wp * 1e-9 / 4.0_wp / pi ! 7.95774715459477e-10
+
+  sEmit = 10.0_wp
+  tScaling%lambda_r = 1e-9
+
+  call tScaling%unscaleEmit(sEmit)
+
+  @AssertEqual( sEmit, sEmit_exact, tol )
+
+end subroutine testUnscaleEmit
+
+
+@test
+subroutine testScaleGammaS( )
+
+  use pFUnit_mod
+  use typeScale
+  use paratype
+
+  implicit none
+
+  real(kind=wp) :: sGam
+  type(fScale) :: tScaling
+  real(kind=wp) :: sGamSc_exact, tol
+
+  tol = 0.0000001_WP
+  sGamSc_exact = 1.0_wp
+
+  sGam = 1200.0_wp
+  tScaling%gamma0 = 1200.0_wp
+
+  call tScaling%scaleG(sGam)
+
+  @AssertEqual( sGam, sGamSc_exact, tol )
+
+end subroutine testScaleGammaS
+
+
+
+
+@test
+subroutine testScaleGammaA( )
+
+  use pFUnit_mod
+  use typeScale
+  use paratype
+
+  implicit none
+
+  real(kind=wp) :: sGam(5)
+  type(fScale) :: tScaling
+  real(kind=wp) :: sGamSc_exact(5), tol
+
+  tol = 0.0000001_WP
+
+  sGam = [1200.0_wp, 1300.0_wp, 1100.0_wp, 500.0_wp, 1200.0_wp]
+  tScaling%gamma0 = 1200.0_wp
+
+  sGamSc_exact = sGam / 1200.0_wp
+
+  call tScaling%scaleG(sGam)
+
+  @AssertEqual( sGam, sGamSc_exact, tol )
+
+end subroutine testScaleGammaA
+
+
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Test driver for testScaleGamma
+
+@test
+subroutine testUnscaleGammaS( )
+
+  use pFUnit_mod
+  use typeScale
+  use paratype
+
+  implicit none
+
+  real(kind=wp) :: sGam
+  type(fScale) :: tScaling
+  real(kind=wp) :: sGamSc_exact, tol
+
+  tol = 0.0000001_WP
+  sGamSc_exact = 1200.0_wp
+
+  sGam = 1.0_wp
+  tScaling%gamma0 = 1200.0_wp
+
+  call tScaling%unscaleG(sGam)
+
+  @AssertEqual( sGam, sGamSc_exact, tol )
+
+end subroutine testUnscaleGammaS
+
+
+
+
+@test
+subroutine testUnscaleGammaA( )
+
+  use pFUnit_mod
+  use typeScale
+  use paratype
+
+  implicit none
+
+  real(kind=wp) :: sGam(5)
+  type(fScale) :: tScaling
+  real(kind=wp) :: sGamUnsc_exact(5), tol
+
+  tol = 0.0000001_WP
+
+  sGam = [1.2_wp, 7.0_wp, 0.1_wp, 5.0_wp, 3.2_wp]
+  tScaling%gamma0 = 1200.0_wp
+
+  sGamUnsc_exact = sGam * 1200.0_wp
+
+  call tScaling%unscaleG(sGam)
+
+  @AssertEqual( sGam, sGamUnsc_exact, tol )
+
+end subroutine testUnscaleGammaA
+
+
+
+
+@test
+subroutine testScaleInt( )
+
+  use pFUnit_mod
+  use typeScale
+  use paratype
+
+  implicit none
+
+  type(fScale) :: tScaling
+  real(kind=wp) :: sInt, sIntPuff_exact, tol
+
+  tol = 0.0000001_WP
+
+  sInt = 1.0e18
+  tScaling%intScale = 1.0e18
+
+  sIntPuff_exact = 1.0_wp
+
+  call tScaling%scaleIntensity(sInt)
+
+  @AssertEqual( sInt, sIntPuff_exact, tol )
+
+end subroutine testScaleInt
+
+
+@test
+subroutine testUnscaleInt( )
+
+  use pFUnit_mod
+  use typeScale
+  use paratype
+
+  implicit none
+
+  type(fScale) :: tScaling
+  real(kind=wp) :: sInt, sIntSI_exact, tol
+
+  tol = 0.0000001_WP
+
+  sInt = 1.0
+  tScaling%intScale = 1.0e18
+
+  sIntSI_exact = 1.0e18
+
+  call tScaling%unscaleIntensity(sInt)
+
+  @AssertEqual( sInt, sIntSI_exact, tol )
+
+end subroutine testUnscaleInt
+
+
+
+@test
+subroutine testScaleIntA( )
+
+  use pFUnit_mod
+  use typeScale
+  use paratype
+
+  implicit none
+
+  type(fScale) :: tScaling
+  real(kind=wp) :: sInt(5), sIntPuff_exact(5), tol
+
+  tol = 0.0000001_WP
+
+  sInt(:) = 1.0e18
+  tScaling%intScale = 1.0e18
+
+  sIntPuff_exact(:) = 1.0_wp
+
+  call tScaling%scaleIntensity(sInt)
+
+  @AssertEqual( sInt, sIntPuff_exact, tol )
+
+end subroutine testScaleIntA
+
+
+@test
+subroutine testUnscaleIntA( )
+
+  use pFUnit_mod
+  use typeScale
+  use paratype
+
+  implicit none
+
+  type(fScale) :: tScaling
+  real(kind=wp) :: sInt(5), sIntSI_exact(5), tol
+  real(kind=wp) :: rho, aw, gamma0, lamw, ux, uy
+  character(32_ip) :: und
+
+  rho = 0.001_wp
+  aw = 1.0_wp
+  gamma0 = 1000.0_wp
+  lamw = 0.04_wp
+  ux = 1.0_wp
+  uy = 1.0_wp
+  und = ''
+
+  call tScaling%init(rho, aw, gamma0, lamw, und, ux, uy)
+
+  tol = 0.0000001_WP
+
+  sInt(:) = 1.0
+  tScaling%intScale = 1.0e18
+
+  sIntSI_exact(:) = 1.0e18
+
+  call tScaling%unscaleIntensity(sInt)
+
+  @AssertEqual( sInt, sIntSI_exact, tol )
+
+end subroutine testUnscaleIntA
+
+
+
+
+
+
+
+
+
+
+
+
+

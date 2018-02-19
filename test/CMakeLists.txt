@@ -2,7 +2,7 @@
 enable_language (Fortran)
 ##set (PFUNIT /home/jonny/contrib-gcc540/pFUnit-3.2.8-ser)
 # set (PFUNIT /home/tml/src/pFUnit)
-set (PFUNIT /home/tml/bin/pfunit-parallel)
+set (PFUNIT /home/mightylorenzo/bin/pfunit)
 set (CMAKE_VERBOSE_MAKEFILE "On")
 find_library(PFUNITLIB NAMES pfunit
   PATHS ${PFUNIT} ${PFUNIT}/lib
@@ -26,12 +26,12 @@ message(STATUS "PFUNIT ${PFUNIT}")
 # Define tests do build:
 
 #set (PFTESTS testTests testFFunctions testHdf5Puff)
-set (PFTESTS testTests testFFunctions)
+set (PFTESTS testTests testFFunctions testScale)
 
 
 # 
 
-#FILE(GLOB PFUNIT_MODULES ${PFUNIT}/mod/*.mod)
+FILE(GLOB PFUNIT_MODULES ${PFUNIT}/mod/*.mod)
 FILE(GLOB F_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../source/*f90)
 FILE(GLOB C_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../source/*.c)
 set(F_SOURCES ${F_SOURCES} "${CMAKE_CURRENT_SOURCE_DIR}/../source/hdf5_puff.f90")
@@ -107,7 +107,7 @@ message(STATUS "F_SOURCE_MODS : ${F_SOURCE_MODS}")
 # PFUnit must be built! :
 
 add_custom_command(OUTPUT libpfunit.a
-  COMMAND cp ${PFUNIT}/source/libpfunit.a .
+  COMMAND cp ${PFUNIT}/lib/libpfunit.a .
   COMMENT "Looking to copy of libpfunit.a"
   VERBATIM
   )
@@ -115,7 +115,7 @@ add_custom_command(OUTPUT libpfunit.a
 add_custom_target(fortran_test_files DEPENDS ${PFTEST_FORTRAN_FILES})
 add_custom_target(fortran_source_modules DEPENDS ${F_SOURCE_MODS})
 
-message(STATUS "fortran test files: " ${PFTEST_FORTRAN_FILES})
+message(STATUS "fortran test files: ${PFTEST_FORTRAN_FILES}")
 message(STATUS "include directories: ${PFUNIT} and ${CMAKE_CURRENT_SOURCE_DIR}")
 message(STATUS "PFUNIT MODULES: ${PFUNIT_MODULES}")
 
