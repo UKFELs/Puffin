@@ -628,7 +628,7 @@ END SUBROUTINE SetUpInitialValues
 subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
                        beamCenZ2, chirp, sEmit, emitx, emity, gamFrac, &
                        sFieldModelLength, sLengthofElm, &
-                       sSeedSigma)
+                       sSeedSigma, sAx, sAy, scr)
 
     real(kind=wp), intent(inout) :: sEleSig(:,:), sLenEPulse(:,:), &
                                     sSigEdge(:), beamCenZ2(:), &
@@ -636,7 +636,8 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
                                     sFieldModelLength(:), &
                                     sLengthofElm(:), &
                                     sSeedSigma(:,:), &
-                                    emitx(:), emity(:)
+                                    emitx(:), emity(:), &
+                                    sAx(:), sAy(:), scr(:)
 
     real(kind=wp), intent(in) :: gamFrac(:)
 
@@ -699,6 +700,10 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
       call scaleX(sSeedSigma(is,iX_CG), lg_G, lc_G)
       call scaleX(sSeedSigma(is,iY_CG), lg_G, lc_G)
       call scaleT(sSeedSigma(is,iZ2_CG), lc_G)
+      call scaleIntensity(sAx(is), lg_G, lc_G, sGammaR_G, sKappa_G)
+      call scaleIntensity(sAy(is), lg_G, lc_G, sGammaR_G, sKappa_G)
+      call scaleT(scr(is), lc_G)
+      call scaleT(sSigFj_G(is), lc_G)
 
     end do
 
@@ -1510,8 +1515,8 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
 
 !     x and y polarized fields in z2
 
-  oscx = -z2env * cos(fr * z2nds / (2.0_WP * rho) - ph_sh)
-  oscy = z2env * sin(fr * z2nds / (2.0_WP * rho) - ph_sh)
+  oscx = z2env * sin(fr * z2nds / (2.0_WP * rho) - ph_sh)! + 4.0_wp*(cos(10_wp * z2nds)))
+  oscy = z2env * cos(fr * z2nds / (2.0_WP * rho) - ph_sh)!+ 4.0_wp*(cos(10_wp * z2nds)))
 
 !     Full 3D field
 

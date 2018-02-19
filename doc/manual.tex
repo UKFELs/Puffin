@@ -1303,7 +1303,73 @@ Array of strings, of size {\bf nbeams}. Contains the name of the particle files 
 
 The seed file can be in 2 forms - one describing a homogeneous seed of Gaussian or flat top profiles in each of the 3 spatial directions, or a list of hdf5 files containing the values of the $x$ and $y$ fields at the nodes of the radiation mesh.
 
-As with the beam file, the seed file contains 2 namelists - one specifying which of the 2 input methods is being used and the number of seeds, and the other containing the specification for the selected method.
+As with the beam file, the seed file contains 2 namelists - one specifying which of the 2 input methods is being used and the number of seeds, and the other containing the specification for the selected method. The namelist {\bf nslist} tells Puffin which of these options to expect.
+
+Please note that the mesh is only imported as is. It is unfortunately not processed or interpolated onto the Puffin mesh. It is read as-is.
+
+
+\subsubsection{Namelist: nslist}
+
+{\bf dtype}
+
+String, specifying type of radiation input. Can be either {\it simple} or {\it h5} (for importing a full mesh)
+
+{\bf nseeds}
+
+Integer. The number of electron beams to set up. For a simple beam, multiple seeds can be setup. For the mesh/h5 input, this parameter is ignored.
+
+If {\bf dtype} $=$ {\it simple}, then a namelist called {\bf slist} must be used, and if {\bf dtype} $=$ {\it h5} the namelist {\bf sh5list} must be entered.
+
+\subsubsection{Namelist: slist}
+
+For the simple seed file, one can set up a seed with a simple homogeneous distribution in every dimension. The radiation seed is assumed to have either a Gaussian or flat-top distribution profile in each dimension. The beam is therefore specified by giving the widths and so forth of the beam. Multiple radiation seeds can be defined, so each parameter is an array, with the $i^{th}$ element describing the $i^{th}$ radiation seed.
+
+
+{\bf freqf}
+
+The frequency of each seed, as a fraction of the reference resonant frequency calculated in the scaled frame parameters in the main input file.
+
+{\bf ph\_sh}
+
+The phase of each seed ($0-2\pi$).
+
+{\bf sA0\_X}
+
+The peak intensity of the $x$-polarized field vector. In dimensionless scaled units of $|A|^2$ ($\sim 1$ for FEL steady-state saturation for an electron beam with properties determined by the scaled frame), and in $Wm^{-2}$ for unscaled (SI) units.
+
+{\bf sA0\_Y}
+
+The peak intensity of the $y$-polarized field vector. In dimensionless scaled units of $|A|^2$ ($\sim 1$ for FEL steady-state saturation for an electron beam with properties determined by the scaled frame), and in $Wm^{-2}$ for unscaled (SI) units.
+
+{\bf sSigmaF}
+
+The standard deviation $\sigma$ of the intensity profile of the seed in each dimension, in the order $x, y, z2$. For multiple seeds, specify all of the $x$ values first, then all the $y$ values, then all the $\bar{z}_2$ values. If a flat top distribution is specified (see {\bf qFlatTop} below), then this is the radius \textit{i.e.} half the total length of the radiation seed in $\bar{z}_2$. The profile in the transverse $x$ and $y$ directions is always Gaussian. In scaled $\bar{x}, \bar{y}, \bar{z}_2$ (dimensionless) units for {\bf qScaled $=$ .true.} in the main input file, if {\bf .false.} then must be specified in meters for $x$ and $y$, and in seconds for the third $t$ dimension.
+
+
+{\bf qFlatTop}
+
+Array of logicals of size {\bf nseeds}, describing whether the intensity/power distribution in the longditudinal/temporal direction is flat-top ($=${\bf .true.}) or Gaussian ($=${\bf .false.}).
+
+
+{\bf meanZ2}
+
+The mean of the seed power profile in the temporal dimension. If outside the left edge of the mesh ($\bar{z}_2 = 0$), then the front edge of the seed is shifted to the front edge of the mesh. So if {\bf meanZ2} is undefined or $=0$, then the seed mean will be recalculated so that the front of the seed is aligned with the front of the mesh.
+
+
+
+{\bf qRndFj\_G}
+
+If {\bf qFlatTop} $=$ {\bf .true.}, then this controls whether the flat top profile is rounded off smoothly at the edges with a Gaussian. See {\bf sSigFj\_G} below to control the width of the gaussian tails. If {\bf qFlatTop} $=$ {\bf .false.}, then this is ignored.
+
+
+{\bf sSigFj\_G}
+
+RMS width of the Gaussian tails, in the case of a flat top radiation seed pulse.
+
+{\bf qMatchS\_G}
+
+If {\bf .true.}, then the value for the \textit{rms} $\sigma$ of the transverse field distributions above will be ignored, and instead the field distribution in the transverse plane will be matched to the electron beam transverse charge distribution.
+
 
 
 \newpage
