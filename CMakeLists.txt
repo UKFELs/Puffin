@@ -136,7 +136,7 @@ endif (ENABLE_TESTING)
 
 if (DOXYGEN_FOUND)
     add_custom_target(doc
-        ${DOXYGEN_EXECUTABLE} ${PROJECT_BINARY_DIR}/doc/fortran.dxg
+        ${DOXYGEN_PROGRAM} ${PROJECT_BINARY_DIR}/doc/fortran.dxg
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/doc
         COMMENT "Generating API documentation with Doxygen" VERBATIM
         )
