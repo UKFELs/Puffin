@@ -26,6 +26,7 @@ subroutine fullScaleTest( )
                    pxfp2(3), pyfp2(3)
   real(kind=wp) :: tol
   type(fScale) :: gg
+  logical :: q1d
   character(32_ip) :: und
 
 !   for setting up the frame
@@ -37,6 +38,7 @@ subroutine fullScaleTest( )
   ux = 1.0_wp
   uy = 1.0_wp
   und = ''
+  q1d = .true.
 
 !    for testing the frame
 
@@ -101,7 +103,7 @@ subroutine fullScaleTest( )
   pxfp2 = [1.0_wp, 1.0_wp, 1.0_wp]
   pyfp2 = [0.0_wp, 0.0_wp, 0.0_wp]
 
-  call gg%init(rho, aw, gamma0, lamw, und, ux, uy)
+  call gg%init(rho, aw, gamma0, lamw, und, ux, uy, q1d)
 
   call gg%scaleEmit(emit)
   tol = 1e-12
@@ -155,19 +157,19 @@ subroutine fullScaleTest( )
 
 
 
-  call gg%scalePX(gamma_s, dxrad)
+  call gg%scalePX(gamma_s/gamma0, dxrad)
   @AssertEqual( dxrad, dxradScaled, tol )
 
-  call gg%unscalePX(gamma_s, dxrad)
+  call gg%unscalePX(gamma_s/gamma0, dxrad)
   @AssertEqual( dxrad, dxradSave, tol )
 
 
 
 
-  call gg%scalePX(gamma_a, dxrada)
+  call gg%scalePX(gamma_a/gamma0, dxrada)
   @AssertEqual( dxrada, dxradaScaled, tol )
 
-  call gg%unscalePX(gamma_a, dxrada)
+  call gg%unscalePX(gamma_a/gamma0, dxrada)
   @AssertEqual( dxrada, dxradaSave, tol )
   
 
@@ -487,6 +489,7 @@ subroutine testUnscaleIntA( )
   real(kind=wp) :: sInt(5), sIntSI_exact(5), tol
   real(kind=wp) :: rho, aw, gamma0, lamw, ux, uy
   character(32_ip) :: und
+  logical :: q1d
 
   rho = 0.001_wp
   aw = 1.0_wp
@@ -495,8 +498,9 @@ subroutine testUnscaleIntA( )
   ux = 1.0_wp
   uy = 1.0_wp
   und = ''
+  q1d = .true.
 
-  call tScaling%init(rho, aw, gamma0, lamw, und, ux, uy)
+  call tScaling%init(rho, aw, gamma0, lamw, und, ux, uy, q1d)
 
   tol = 0.0000001_WP
 

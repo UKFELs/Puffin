@@ -9,9 +9,7 @@
 !> @brief
 !> Various routines to setup and scale the constants in the simulation.
 
-
-
-MODULE setupcalcs
+module setupcalcs
 
 USE Paratype
 USE ParallelInfoType
@@ -28,10 +26,9 @@ use h5in
 use parafield
 use scale
 
-IMPLICIT NONE
+implicit none
 
-CONTAINS
-
+contains
 
 !> @author
 !> Lawrence Campbell,
@@ -40,49 +37,43 @@ CONTAINS
 !> @brief
 !> Subroutine to pass all the temporary variables to global
 !> vars used in the integration loop.
-!> @param[in] rho FEL or Pierce parameter
-!> @param[in] aw Undulator parameter (peak, not rms)
-!> @param[in] gamr Relativistic factor for reference beam energy
-!> @param[in] lam_w Undulator period
 !> @param[in] iNN Number of nodes in field mesh in x, y and z2
 !> @param[in] iNMPs Number of macroparticles use to sample beam in each dimension
 !> @param[in] fx Polarization parameter for the Puffin elliptical wiggler (see docs)
 !> @param[in] fy Polarization parameter for the Puffin elliptical wiggler (see docs)
 !> @param[in] taper Undulator taper d alpha / d zbar
-!> @param[in] sFiltFrac Cutoff for high pass filter in diffraction stage, in units
+!> @param[in] sFiltFrac Cutoff for high pass filter in diffraction stage, in un`its
 !> of the resonant frequency specified by the reference parameters.
 !> @param[in] dStepFrac Diffraction step size in units of undulator period
 !> @param[in] sBeta Absorption constant for boundaries
-!> @param[in] zUndType Undulator type (helical, planar, elliptical, etc)
 !> @param[in] qFormatted Whether writing formatted data or not (only for SDDS files)
 !> @param[in] qSwitch Array of switches for different simulation options
 !> @param[inout] qOK Error flag.
 
-SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
-                         sElmLen, qSimple, iNMPs, fx, fy, &
+SUBROUTINE passToGlobals(tScale, iNN, sElmLen, qSimple, iNMPs, &
                          taper, sFSigX, sFSigY, sFiltFrac, &
-                         dStepFrac, sBeta, zUndType, &
+                         dStepFrac, sBeta, &
                          qFormatted, qSwitch, qOK)
 
-    IMPLICIT NONE
+    use typeScale
+    implicit none
 
-    REAL(KIND=WP),     INTENT(IN)    :: rho,aw,gamr, lam_w
-    INTEGER(KIND=IP),  INTENT(IN)    :: iNN(:), iNMPs(:,:)
+    type(fScale), intent(in) :: tScale
+    integer(kind=ip),  intent(in)    :: iNN(:), iNMPs(:,:)
 
-    REAL(KIND=WP),     INTENT(IN)    :: sElmLen(:), sFSigX, sFSigY
-    REAL(KIND=WP),     INTENT(IN)    :: fx,fy, taper
+    real(kind=wp),     intent(in)    :: sElmLen(:), sFSigX, sFSigY
+    real(kind=wp),     intent(in)    :: taper
 
-    REAL(KIND=WP),     INTENT(IN)    :: sFiltFrac, dStepFrac, sBeta
-    LOGICAL,           INTENT(IN)    :: qSwitch(nSwitches_CG), qFormatted, &
+    real(kind=wp),     intent(in)    :: sFiltFrac, dStepFrac, sBeta
+    logical,           intent(in)    :: qSwitch(nSwitches_CG), qFormatted, &
                                         qSimple
-    character(32_ip),  intent(in)    :: zUndType
-    LOGICAL,           INTENT(OUT)   :: qOK
+    logical,           intent(out)   :: qOK
 
 
-    REAL(KIND=WP) :: lam_r_bar, LenZ2, modfact1, sbetaz, aw_rms
-    LOGICAL :: qOKL
+    real(kind=wp) :: LenZ2, modfact1, sbetaz, aw_rms
+    logical :: qOKL
 
-    qOK = .FALSE.
+    qOK = .false.
 
 !                  Pass to globals
 
@@ -206,8 +197,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 !     Filter fraction to frequency in Fourier space
 
     Lenz2 = sLengthOfElmZ2_G * NZ2_G
-    lam_r_bar = 4*pi*rho
-    sFilt = Lenz2 / lam_r_bar * sFiltFrac
+    sFilt = Lenz2 / tScale%lrbar * sFiltFrac
 
 !     Set up parameters
     if (qMod_G) then
@@ -236,10 +226,10 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
 
 
-    cf1_G = sEta_G / sKappa_G**2
+    cf1_G = tScale%eta / tScale%kappa**2
 
 
-    diffstep = dStepFrac * 4.0_WP * pi * rho
+    diffstep = dStepFrac * tScale%lrbar
     sBeta_G = sBeta
 
     NBX_G = 16_IP   ! Nodes used in boundaries
@@ -251,7 +241,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 !    if (qSwitch(iOneD_CG)) then
 !      zUndType_G = ''
 !    else
-      zUndType_G = zUndType
+      zUndType_G = tScale%undType
 !    end if
 
 
@@ -260,31 +250,31 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
 !  Get focusing for 'reference' beam energy
 
-    if (zUndType_G == 'curved') then
+    if (tScale%undType == 'curved') then
 
-      kx_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2)) ! Giving equal focusing for now....
-      ky_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+      kx_und_G = SQRT(tScale%eta/(8.0_WP*tScale%rho**2)) ! Giving equal focusing for now....
+      ky_und_G = SQRT(tScale%eta/(8.0_WP*tScale%rho**2))
 
-      sKBetaX_G = aw / sqrt(2.0_wp * sEta_G) / sGammaR_G * kx_und_G
-      sKBetaY_G = aw / sqrt(2.0_wp * sEta_G) / sGammaR_G * ky_und_G
+      sKBetaX_G = tScale%aw / sqrt(2.0_wp * tScale%eta) / tScale%gamma0 * kx_und_G
+      sKBetaY_G = tScale%aw / sqrt(2.0_wp * tScale%eta) / tScale%gamma0 * ky_und_G
 
-    else if (zUndType_G == 'planepole') then
+    else if (tScale%undType == 'planepole') then
 
       kx_und_G = 0.0_wp
       ky_und_G = 0.0_wp
 
       sKBetaX_G = 0.0_wp
-      sKBetaY_G = aw / 2 / sqrt(2.0_wp) / sRho_G / sGammaR_G
+      sKBetaY_G = tScale%aw / 2.0_wp / sqrt(2.0_wp) / tScale%rho / tScale%gamma0
 
-    else if (zUndType_G == 'helical') then
+    else if (tScale%undType == 'helical') then
 
-      sKBetaX_G = aw / 2 / sqrt(2.0_wp) / sRho_G / sGammaR_G
-      sKBetaY_G = aw / 2 / sqrt(2.0_wp) / sRho_G / sGammaR_G
+      sKBetaX_G = tScale%aw / 2.0_wp / sqrt(2.0_wp) / tScale%rho / tScale%gamma0
+      sKBetaY_G = tScale%aw / 2.0_wp / sqrt(2.0_wp) / tScale%rho / tScale%gamma0
 
     else
 
-      sKBetaX_G = aw / 2 / sqrt(2.0_wp) / sRho_G / sGammaR_G
-      sKBetaY_G = aw / 2 / sqrt(2.0_wp) / sRho_G / sGammaR_G
+      sKBetaX_G = tScale%aw / 2.0_wp / sqrt(2.0_wp) / tScale%rho / tScale%gamma0
+      sKBetaY_G = tScale%aw / 2.0_wp / sqrt(2.0_wp) / tScale%rho / tScale%gamma0
 
     end if
 
@@ -352,13 +342,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
 !     Get n_pk_bar
 
-    npk_bar_G = lg_G * lc_G**2.0_wp * e_0 * m_e / q_e**2.0_wp * &
-                sGammaR_G**3.0_wp * sRho_G**3.0_wp * (4.0_wp * &
-                c * 2.0_wp * pi / lam_w_G / saw_G  )**2.0_wp
-
-
-
-
+    npk_bar_G = tScale%npkbar
 
     IF(iNumberNodes_G <= 0_IPN) THEN
        CALL Error_log('iNumberNodes_G <= 0.',tErrorLog_G)
@@ -366,7 +350,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
     END IF
 
 
-    dz2_I_G = 4.0_wp * pi * sRho_G
+    dz2_I_G = tScale%lrbar
     call getCurrNpts(dz2_I_G, npts_I_G)
 
 
@@ -374,6 +358,16 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
     tArrayA(:)%tFileType%qFormatted = qFormatted
     tArrayZ%tFileType%qFormatted = qFormatted
 
+
+    sRho_G = tScale%rho
+    saw_G = tScale%aw
+    sEta_G = tScale%eta
+    sKappa_G = tScale%kappa
+    sGammaR_G = tScale%gamma0
+    lc_g = tScale%lc
+    lg_g = tScale%lg
+    lam_w_g = tScale%lambda_w
+    lam_r_g = tScale%lambda_r
 
 !    qEquiXY_G = .false.
 !    nseqparts_G = 1000_ip
@@ -624,15 +618,66 @@ END SUBROUTINE SetUpInitialValues
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde,
+!> Glasgow, UK
+!> @brief
+!> Scale the variables from the simple beam input file, the seed input file,
+!> and the radiation mesh. Accepts the data in S.I. units, and converts them
+!> in-place to the Puffin scaled data equivalents (see the Puffin user manual
+!> for more info on scaled variables)
+!> @param[in] tScale Custom Fortran type describing scaling (see typeScale.f90).
+!> @param[inout] sEleSig 2D real array of size (nbeams, 6), containing the rms
+!> standard deviation of electron beam in each of the 6 spatial and momenta
+!> dimensions. The first \f$ i \f$ dimension indicates the values of the
+!> \f$ i^{th} \f$ beam, the second dimension is in order of
+!> \f$(x, y, t, \frac{dx}{dz}, \frac{dy}{dz}, \Gamma)\f$. On output, the values
+!> are in scaled dimensionless units
+!> \f$(\bar{x}, \bar{y}, \bar{z}_2, \bar{p}_x, \bar{p}_y, \Gamma)\f$.
+!> @param[inout] sLenEPulse Total sampled length of the beam in each dimension,
+!> for each beam. Layout order and units same as sEleSig.
+!> @param[inout] sSigEdge Standard deviation of Gaussian tails in the temporal
+!> dimension if using a flat-top beam in that dimension. In \f$ s \f$ on input,
+!> in \f$ \bar{z}_2 \f$ on output.
+!> @param[inout] beamCenZ2 Mean position of beam in \f$ t \f$ in seconds on
+!> input, and in scaled dimensionless units of \f$ \bar{z}_2 \f$ on output.
+!> @param[inout] chirp Energy chirp of beam, in units of
+!> \f$ \frac{1}{gamma c}\frac{d\gamma}{dt} \f$ on input, and units of
+!> \f$ \frac{d\gamma}{d\bar{z}_2} \f$ on output
+!> @param[inout] emitx Emittance of beam in x. Geometric emittance on input,
+!> scaled \f$ \bar{\epsilon}_x \f$ on output.
+!> @param[inout] emity Emittance of beam in y. Geometric emittance on input,
+!> scaled \f$ \bar{\epsilon}_y \f$ on output.
+!> @param[inout] gamFrac Energy of beam as a fraction of reference energy
+!> @param[inout] sFieldModelLength Total length of field mesh in each dimension,
+!> in order x, y, z, in \f$ x, y, t \f$ in meters, meters, and seconds on input, 
+!> converted to dimensionless \f$ \bar{x}, \bar{y}, \bar{z}_2\f$ on output
+!> @param[inout] sLengthofElm Size of each element in the mesh in each dimension,
+!> in order x, y, z, in \f$ x, y, t \f$ in meters, meters, and seconds on input, 
+!> converted to dimensionless \f$ \bar{x}, \bar{y}, \bar{z}_2\f$ on output
+!> @param[inout] sSeedSigma Standard deviation of each seed, in each dimension.
+!> @param[inout] sAx Intensity of x-polarized field. In units of \f$ Wm^{-2} \f$
+!> on input, in scaled $\|A_x\|^2$ on output.
+!> @param[inout] sAy Intensity of y-polarized field. In units of \f$ Wm^{-2} \f$
+!> on input, in scaled $\|A_y\|^2$ on output.
+!> @param[inout] scr Mean value of radiation seed in \f$ t \f$ in seconds on
+!> input, and in dimensionless \f$ \bar{z}_2 \f$ on output.
 
-subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
-                       beamCenZ2, chirp, sEmit, emitx, emity, gamFrac, &
+subroutine scaleParams(tScale, sEleSig, sLenEPulse, sSigEdge, &
+                       beamCenZ2, chirp, emitx, emity, gamFrac, &
                        sFieldModelLength, sLengthofElm, &
                        sSeedSigma, sAx, sAy, scr)
 
+    use typeScale
+    
+    implicit none
+
+    type(fScale), intent(in) :: tScale
+
     real(kind=wp), intent(inout) :: sEleSig(:,:), sLenEPulse(:,:), &
                                     sSigEdge(:), beamCenZ2(:), &
-                                    chirp(:), sEmit(:), &
+                                    chirp(:), &
                                     sFieldModelLength(:), &
                                     sLengthofElm(:), &
                                     sSeedSigma(:,:), &
@@ -648,75 +693,46 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
 
     do ib = 1, nbeams
 
-      call scaleX(sEleSig(ib,iX_CG), lg_G, lc_G)
-      call scaleX(sEleSig(ib,iY_CG), lg_G, lc_G)
+      call tScale%scaleX(sEleSig(ib,iX_CG))
+      call tScale%scaleX(sEleSig(ib,iY_CG))
+      call tScale%scalePx(gamFrac(ib), sEleSig(ib,iPX_CG))
+      call tScale%scalePx(gamFrac(ib), sEleSig(ib,iPY_CG))
+      call tScale%scaleT(sEleSig(ib,iZ2_CG))
 
-      call scalePx(sEleSig(ib,iPX_CG), gamFrac(ib), saw_G)
-      call scalePx(sEleSig(ib,iPY_CG), gamFrac(ib), saw_G)
+      call tScale%scaleX(sLenEPulse(ib,iX_CG))
+      call tScale%scaleX(sLenEPulse(ib,iY_CG))
+      call tScale%scalePx(gamFrac(ib), sLenEPulse(ib,iPX_CG))
+      call tScale%scalePx(gamFrac(ib), sLenEPulse(ib,iPY_CG))
+      call tScale%scaleT(sLenEPulse(ib,iZ2_CG))
 
-      call scaleT(sEleSig(ib,iZ2_CG), lc_G)
-
-
-
-
-      call scaleX(sLenEPulse(ib,iX_CG), lg_G, lc_G)
-      call scaleX(sLenEPulse(ib,iY_CG), lg_G, lc_G)
-
-      call scalePx(sLenEPulse(ib,iPX_CG), gamFrac(ib), saw_G)
-      call scalePx(sLenEPulse(ib,iPY_CG), gamFrac(ib), saw_G)
-
-      call scaleT(sLenEPulse(ib,iZ2_CG), lc_G)
-
-
-
-
-      call scaleT(sSigEdge(ib), lc_G)
-      call scaleT(beamCenZ2(ib), lc_G)
-      !call scaleG(chirp(ib), gamFrac(ib)*sGammaR_G)
-      chirp(ib) = chirp(ib) * sGammaR_G * lc_g
-      !call scaleT(chirp(ib), lc_G)
-
-      call scaleEmit(sEmit(ib), lam_r_G)
-      call scaleEmit(emitx(ib), lam_r_G)
-      call scaleEmit(emity(ib), lam_r_G)
+      call tScale%scaleT(sSigEdge(ib))
+      call tScale%scaleT(beamCenZ2(ib))
+      chirp(ib) = chirp(ib) * tScale%gamma0 * tScale%lc
+      call tScale%scaleEmit(emitx(ib))
+      call tScale%scaleEmit(emity(ib))
 
     end do
 
-
-
-    call scaleX(sFieldModelLength(iX_CG), lg_G, lc_G)
-    call scaleX(sFieldModelLength(iY_CG), lg_G, lc_G)
-    call scaleT(sFieldModelLength(iZ2_CG), lc_G)
-
-    call scaleX(sLengthofElm(iX_CG), lg_G, lc_G)
-    call scaleX(sLengthofElm(iY_CG), lg_G, lc_G)
-    call scaleT(sLengthofElm(iZ2_CG), lc_G)
-
+    call tScale%scaleX(sFieldModelLength(iX_CG))
+    call tScale%scaleX(sFieldModelLength(iY_CG))
+    call tScale%scaleT(sFieldModelLength(iZ2_CG))
+    call tScale%scaleX(sLengthofElm(iX_CG))
+    call tScale%scaleX(sLengthofElm(iY_CG))
+    call tScale%scaleT(sLengthofElm(iZ2_CG))
 
     nseeds = size(sSeedSigma(:,1))
 
     do is = 1, nseeds
 
-      call scaleX(sSeedSigma(is,iX_CG), lg_G, lc_G)
-      call scaleX(sSeedSigma(is,iY_CG), lg_G, lc_G)
-      call scaleT(sSeedSigma(is,iZ2_CG), lc_G)
-      call scaleIntensity(sAx(is), lg_G, lc_G, sGammaR_G, sKappa_G)
-      call scaleIntensity(sAy(is), lg_G, lc_G, sGammaR_G, sKappa_G)
-      call scaleT(scr(is), lc_G)
-      call scaleT(sSigFj_G(is), lc_G)
+      call tScale%scaleX(sSeedSigma(is,iX_CG))
+      call tScale%scaleX(sSeedSigma(is,iY_CG))
+      call tScale%scaleT(sSeedSigma(is,iZ2_CG))
+      call tScale%scaleIntensity(sAx(is))
+      call tScale%scaleIntensity(sAy(is))
+      call tScale%scaleT(scr(is))
+      call tScale%scaleT(sSigFj_G(is))
 
     end do
-
-
-!    If not-scaled / in SI units, then
-!
-!    beam params in x, y, t, dx/dz, dy/dz, and gamma / gamma_r
-!    chirp in dgamma/dt
-!
-!    field params in x, y, and t
-!
-
-
 
 end subroutine scaleParams
 
@@ -725,86 +741,49 @@ end subroutine scaleParams
 
 
 
-subroutine calcScaling(srho, saw, sgamr, slam_w, &
-                       zUndType, sfx, sfy)
+subroutine calcScaling(tScale, srho, saw, sgamr, slam_w, &
+                       zUndType, sfx, sfy, qOneD)
+
+  use typeScale
+  implicit none
+
+  type(fScale), intent(inout) :: tScale
 
   real(kind=wp), intent(in) :: srho, saw, sgamr, slam_w
   
   real(kind=wp), intent(inout) :: sfx, sfy
 
-  CHARACTER(32_IP), intent(in) :: zUndType
+  character(32_IP), intent(in) :: zUndType
+
+  logical, intent(in) :: qOneD
 
   real(kind=wp) :: saw_rms, sBetaz
 
-  sRho_G = srho
-
-
-  fx_G = sfx
-  fy_G = sfy
-
-
-
-
-  sGammaR_G = sgamr
-
-
+  call tScale%init(srho, saw, sgamr, slam_w, &
+                   zUndType, sfx, sfy, qOneD)
 
   if (zUndType == 'curved') then
 
-    saw_rms =  saw / sqrt(2.0_wp)
+    kx_und_G = SQRT(tScale%eta/(8.0_WP*tScale%rho**2)) ! Giving equal focusing for now....
+    ky_und_G = SQRT(tScale%eta/(8.0_WP*tScale%rho**2))
 
-    kx_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2)) ! Giving equal focusing for now....
-    ky_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2))
-
-    sKBetaX_G = saw / sqrt(2.0_wp * sEta_G) / sGammaR_G * kx_und_G
-    sKBetaY_G = saw / sqrt(2.0_wp * sEta_G) / sGammaR_G * ky_und_G
-
-
-    fx_G = 0   ! Temp fix for initialization bug
-    fy_G = 1
+    sKBetaX_G = saw / sqrt(2.0_wp * tScale%eta) / tScale%gamma0 * kx_und_G
+    sKBetaY_G = saw / sqrt(2.0_wp * tScale%eta) / tScale%gamma0 * ky_und_G
 
     sfx = 0.0_wp
     sfy = 1.0_wp
 
   else if (zUndType == 'planepole') then
 
-    saw_rms =  saw / sqrt(2.0_wp)
-    fx_G = 0.0_wp   ! Temp fix for initialization bug
-    fy_G = 1.0_wp
     sfx = 0.0_wp
     sfy = 1.0_wp
 
   else if (zUndType == 'helical') then
 
-    saw_rms = saw
-    fx_G = 1   ! Temp fix for initialization bug
-    fy_G = 1
     sfx = 1.0_wp
     sfy = 1.0_wp
 
-  else
-
-    saw_rms = saw * SQRT(sfx**2 + sfy**2) / sqrt(2.0_wp)
-
   end if
-
-
-  sbetaz = SQRT(sgamr**2.0_WP - 1.0_WP - (saw_rms)**2.0_WP) / &
-           sgamr
-
-  sEta_G = (1.0_WP - sbetaz) / sbetaz
-  sKappa_G = saw / 2.0_WP / srho / sgamr
-  sKBeta_G = sKappa_G ! aw_rms / 2.0_WP / sFocusFactor / srho / sgamr
-
-  sAw_G = saw
-
-
-  lam_w_G = slam_w
-  lam_r_G = slam_w * sEta_G
-
-  lg_G = lam_w_G / 4.0_WP / pi / srho
-  lc_G = lam_r_G / 4.0_WP / pi / srho
-
 
 end subroutine calcScaling
 
@@ -812,12 +791,16 @@ end subroutine calcScaling
 
 
 
-subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
+subroutine calcSamples(tScale, sFieldModelLength, iNumNodes, sLengthOfElm, &
                        sStepSize, stepsPerPeriod, nSteps, &
                        nperiods, nodesperlambda, sGamFrac, &
                        sLenEPulse, iNumElectrons, qsimple)
 
+  use typeScale
 
+  implicit none
+
+  type(fScale), intent(in) :: tScale
   real(kind=wp), intent(inout) :: sFieldModelLength(:), sLenEPulse(:,:)
 
   real(kind=wp), intent(in) :: sGamFrac(:)
@@ -834,12 +817,12 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
   logical, intent(in) :: qsimple
 
   real(kind=wp), allocatable :: smeanp2(:), fmlensTmp(:)
-  real(kind=wp) :: dz2, szbar, fmlenTmp, slamr
+  real(kind=wp) :: dz2, szbar, fmlenTmp
   integer(kind=ip) :: minENum, minESample
 
 
 
-  dz2 = 4.0_WP * pi * sRho_G / real(nodesperlambda-1_IP,kind=wp)
+  dz2 = tScale%lrbar / real(nodesperlambda-1_IP,kind=wp)
 
   iNumNodes(iZ2_CG) = ceiling(sFieldModelLength(iZ2_CG) / dz2) + 1_IP
 
@@ -849,15 +832,14 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
       sLengthOfElm(iZ2_CG) = dz2
       sFieldModelLength(iZ2_CG) = real(iNumNodes(iZ2_CG) - 1_ip, kind=wp) * dz2
-      sperwaves_G = sFieldModelLength(iZ2_CG) / (4.0_WP * pi * sRho_G)
-
+      sperwaves_G = sFieldModelLength(iZ2_CG) / tScale%lrbar
       sLenEPulse(1,iZ2_CG) = sFieldModelLength(iZ2_CG)
 
     else
 
 !           Field mesh length is then number of waves times scaled wavelength
 
-      sFieldModelLength(iZ2_CG) = sperwaves_G * (4.0_WP * pi * sRho_G)
+      sFieldModelLength(iZ2_CG) = sperwaves_G * tScale%lrbar
       sLengthOfElm(iZ2_CG) = dz2
 
 !            For now, keeping dz2 to give an integer number of nodes per 
@@ -917,7 +899,7 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
   if (stepsPerPeriod >= 1) then
 
 
-    sStepSize = 4.0_WP * pi * srho_G / real(stepsPerPeriod,kind=wp)
+    sStepSize = tScale%lrbar / real(stepsPerPeriod,kind=wp)
     nSteps = nperiods * stepsPerPeriod
 
   else
@@ -934,20 +916,17 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
 
 
-  szbar = nperiods * 4.0_WP * pi * srho_G
+  szbar = nperiods * tScale%lrbar
 
 
 
-
-
-  slamr = 4.0_WP * pi * srho_G
   minESample = 4_ip   ! minimum MP's per wavelength
   !dztemp = slamr / minESample
 
   if (iInputType_G == iGenHom_G) then
 
 
-    minENum = ceiling(sLenEPulse(1,iZ2_CG) / (slamr / real(minESample, kind=wp)) )
+    minENum = ceiling(sLenEPulse(1,iZ2_CG) / (tScale%lrbar / real(minESample, kind=wp)) )
 
 
     if ((iNumElectrons(1,iZ2_CG) < 0) .or. (iNumElectrons(1,iZ2_CG) < minENum) ) then
@@ -1012,7 +991,7 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
   end if
 
-  dz2 = 4.0_WP * pi * sRho_G / real(nodesperlambda-1_IP,kind=wp)
+  dz2 = tScale%lrbar / real(nodesperlambda-1_IP,kind=wp)
 
   iNumNodes(iZ2_CG) = ceiling(sFieldModelLength(iZ2_CG) / dz2) + 1_IP
 

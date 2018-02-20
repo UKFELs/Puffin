@@ -156,7 +156,6 @@ subroutine read_in(zfilename, &
        saw, &
        sgamma_r, &
        lambda_w, &
-       sEmit_n, &
        alphax, alphay, emitx, emity, &
        sux, &
        suy, &
@@ -199,7 +198,7 @@ subroutine read_in(zfilename, &
 
   REAL(KIND=WP),     INTENT(OUT)  :: sElectronThreshold
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: bcenter(:), gamma_d(:), &
-                                              chirp(:), sEmit_n(:), &
+                                              chirp(:), &
                                               mag(:), fr(:), &
                                               alphax(:), alphay(:), emitx(:), &
                                               emity(:)
@@ -522,7 +521,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   end if
 
 
-  CALL read_beamfile(qSimple, dist_f, beam_file,sEmit_n,sSigmaGaussian,sLenEPulse, &
+  CALL read_beamfile(qSimple, dist_f, beam_file,sSigmaGaussian,sLenEPulse, &
                      alphax, alphay, emitx, emity, &
                      iNumElectrons,sQe,chirp,bcenter, mag, fr, gamma_d,nbeams, &
                      qMatched_A,qOKL)
@@ -569,7 +568,7 @@ END SUBROUTINE read_in
 !********************************************************
 
 
-SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
+SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sSigmaE,sLenE, &
                          alphax, alphay, emitx, emity, &
                          iNumElectrons,sQe,chirp, bcenter, mag, fr,gammaf,nbeams,&
                          qMatched_A,qOK)
@@ -585,7 +584,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   LOGICAL, INTENT(OUT) :: qSimple
   CHARACTER(*), INTENT(INOUT) :: be_f     ! beam file name
   CHARACTER(1024_ip), INTENT(INOUT), ALLOCATABLE :: dist_f(:)     ! dist file names
-  REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sEmit_n(:),chirp(:), mag(:), fr(:)
+  REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: chirp(:), mag(:), fr(:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sSigmaE(:,:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sLenE(:,:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: alphax(:), alphay(:), emitx(:), &
@@ -603,6 +602,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
   INTEGER(KIND=IP) :: b_ind, TrLdMeth, inmpsGam
   integer(kind=ip), allocatable :: iNumMPs(:,:)
+  real(kind=wp), allocatable :: sEmit_n(:)
   logical :: qFixCharge, qAMatch
   INTEGER::ios
   CHARACTER(96) :: dtype

@@ -80,15 +80,16 @@ contains
 !> in the first undulator module. Input as the kbetay_SF specified in the main 
 !> input file. Updated if a lattice file is supplied.
 
-  subroutine setupMods(lattFile, taper, sRho, nSteps_f, dz_f, &
-                       ux_f, uy_f, kbnx_f, kbny_f)
+  subroutine setupMods(tScale, lattFile, taper, nSteps_f, dz_f, &
+                       kbnx_f, kbny_f)
 
+    use typeScale
     implicit none
 
+    type(fScale), intent(in) :: tScale
     character(1024_ip), intent(in) :: LattFile 
     real(kind=wp), intent(inout) :: taper
-    real(kind=wp), intent(in) :: sRho
-    real(kind=wp), intent(inout) :: dz_f, ux_f, uy_f, kbnx_f, kbny_f
+    real(kind=wp), intent(inout) :: dz_f, kbnx_f, kbny_f
     integer(kind=ip), intent(inout) :: nSteps_f
 
 
@@ -132,7 +133,7 @@ contains
 
       allocate(iElmType(modNum))   !  For now, using old lattice file format...
 
-      call readLatt(lattFile, sRho)
+      call readLatt(lattFile, tScale%rho)
 
       ModCount = 1
 
@@ -178,10 +179,10 @@ contains
       delmz(1) = dz_f
       mf(1) = 1_wp
       tapers(1) = taper
-      ux_arr(1) = ux_f
-      uy_arr(1) = uy_f
-      kbnx_arr(1) = kbnx_f 
-      kbny_arr(1) = kbny_f 
+      ux_arr(1) = tScale%ux
+      uy_arr(1) = tScale%uy
+      kbnx_arr(1) = kbnx_f
+      kbny_arr(1) = kbny_f
 
     end if
 

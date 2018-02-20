@@ -25,11 +25,13 @@ implicit none
 
 contains
 
-subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
-       sLengthofElm,iNodes,sWigglerLength,sStepSize,&
-       nSteps,srho,saw,sgammar,mag,sSigE,f_x, f_y, &
-       qSwitches,qSimple,sSigF, &
+subroutine CheckParameters(tScale, sLenEPulse, iNumElectrons, nbeams,&
+       sLengthofElm, iNodes, sWigglerLength, sStepSize,&
+       nSteps, mag, sSigE, &
+       qSwitches, qSimple, sSigF, &
        freqf, SmeanZ2, qFlatTopS, nseeds, qOK)
+
+  use typeScale
 
   implicit none
 
@@ -45,6 +47,7 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 !
 !                ARGUMENTS
 
+  type(fScale), intent(in) :: tScale
   REAL(KIND=WP),INTENT(INOUT) :: sLenEPulse(:,:)
   INTEGER(KIND=IP),INTENT(INOUT) :: iNumElectrons(:,:)
   INTEGER(KIND=IP), INTENT(IN) :: nbeams, nseeds
@@ -53,31 +56,29 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
   REAL(KIND=WP), INTENT(INOUT) :: sWigglerLength(:)
   REAL(KIND=WP), INTENT(INOUT) :: sStepSize
   INTEGER(KIND=IP), INTENT(INOUT) :: nSteps
-  REAL(KIND=WP), INTENT(IN) :: srho,saw,sgammar
   real(kind=wp), intent(in) :: mag(:)
   REAL(KIND=WP), INTENT(INOUT) :: sSigE(:,:), sSigF(:,:), &
                                   freqf(:), SmeanZ2(:)
-  REAL(KIND=WP), INTENT(INOUT) :: f_x, f_y
   LOGICAL, INTENT(INOUT) :: qSwitches(:)
   logical, intent(in) :: qSimple, qFlatTopS(:)
   LOGICAL, INTENT(OUT)  :: qOK
 
 !           Local vars
 
-  INTEGER(KIND=IP) :: i,nninner, error
-  REAL(KIND=WP) :: sEE,dx,lwx,lexm,maxr
+  INTEGER(KIND=IP) :: i
   LOGICAL :: qOKL  
 
   qOK = .FALSE.
 
-  if (qSimple) call check1D(qSwitches(iOneD_CG), qSwitches(iDiffraction_CG), qSwitches(iFocussing_CG), &
-  	                        iNodes)
+  if (qSimple) call check1D(qSwitches(iOneD_CG), qSwitches(iDiffraction_CG), &
+                            qSwitches(iFocussing_CG), iNodes)
 
   do i = 1,nbeams
 
     if (qSimple) then
 
-      call chkESampleLens(sLenEPulse(i,:),iNumElectrons(i,:), srho,qSwitches(iOneD_CG),qOKL)
+      call chkESampleLens(tScale, sLenEPulse(i,:),iNumElectrons(i,:), &
+                          qSwitches(iOneD_CG),qOKL)
       if (.NOT. qOKL) goto 1000
 
     end if  
@@ -88,16 +89,16 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
   if (qSimple) then
 
-    call chkFSampleLens(iNodes,sWigglerLength,sLengthOfElm,srho,qOKL)
+    call chkFSampleLens(tScale, iNodes,sWigglerLength,sLengthOfElm,qOKL)
     if (.NOT. qOKL) goto 1000
 
     call checkIntSampling(sStepSize,nSteps,sLengthOfElm,qSwitches,qOKL)
     if (.NOT. qOKL) goto 1000
 
-    call checkFreeParams(srho,saw,sgammar,f_x,f_y,qOKL)
+    call checkFreeParams(tScale, qOKL)
     if (.NOT. qOKL) goto 1000
 
-    call checkOscMag(sgammar, mag, nbeams)
+    call checkOscMag(tScale, mag, nbeams)
 
     call checkRndEjLens(iNumElectrons, sLenEPulse, sSigE, nbeams)
 
@@ -328,16 +329,20 @@ END SUBROUTINE stpFSampleLens
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-subroutine checkOscMag(sgammar, mag, nbeams)
+subroutine checkOscMag(tScale, mag, nbeams)
 
-  real(kind=wp), intent(in) :: sgammar, mag(:)
+  use typeScale
+  implicit none
+
+  type(fScale), intent(in) :: tScale
+  real(kind=wp), intent(in) :: mag(:)
   integer(kind=ip), intent(in) :: nbeams
 
   integer(kind=ip) :: ii, error
 
   do ii = 1, nbeams
 
-    if (sgammar <= mag(ii)) then
+    if (tScale%gamma0 <= mag(ii)) then
 
       PRINT*, 'ERROR: Magnitude of beam oscillation is too large in beam number ', ii
       print*, 'ERROR: Ensure magnitude of beam energy modulation is < gamma_r'
@@ -354,12 +359,16 @@ end subroutine checkOscMag
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE chkESampleLens(sLenEPulse,iNumElectrons,rho,qOneD,qOK)
+SUBROUTINE chkESampleLens(tScale, sLenEPulse,iNumElectrons,qOneD,qOK)
+
+  use typeScale
+
+  implicit none
 
 !                 ARGUMENTS
 
+  type(fScale), intent(in) :: tScale
   REAL(KIND=WP), INTENT(INOUT) :: sLenEPulse(:)
-  REAL(KIND=WP), INTENT(IN) ::  rho
   INTEGER(KIND=IP), INTENT(OUT) :: iNumElectrons(:)
   LOGICAL, INTENT(IN) :: qOneD
   LOGICAL, INTENT(INOUT) :: qOK
@@ -367,7 +376,7 @@ SUBROUTINE chkESampleLens(sLenEPulse,iNumElectrons,rho,qOneD,qOK)
 !                 LOCAL ARGS
 
   INTEGER(KIND=IP) :: i
-  REAL(KIND=WP) :: wlen, maxspcing, spcing
+  REAL(KIND=WP) :: maxspcing, spcing
   
   qOK = .FALSE.
 
@@ -378,8 +387,7 @@ SUBROUTINE chkESampleLens(sLenEPulse,iNumElectrons,rho,qOneD,qOK)
     iNumElectrons(iPY_CG) = 1_IP
   end if
 
-  wlen = 4.0_WP * pi * rho
-  maxspcing = wlen / 1.0_WP
+  maxspcing = tScale%lrbar / 1.0_WP
 
   spcing = sLenEPulse(iZ2_CG) / iNumElectrons(iZ2_CG)
  
@@ -472,12 +480,16 @@ end subroutine checkRndEjLens
 
 
 
-SUBROUTINE chkFSampleLens(iNodes,sWigglerLength,sLengthOfElm,rho,qOK)
+SUBROUTINE chkFSampleLens(tScale,iNodes,sWigglerLength,sLengthOfElm,qOK)
+
+  use typeScale
+  implicit none
 
 !                  ARGUMENTS
 
+  type(fScale), intent(in) :: tScale
   INTEGER(KIND=IP), INTENT(IN) :: iNodes(:)
-  REAL(KIND=WP), INTENT(IN) :: sWigglerLength(:), sLengthOfElm(:),rho
+  REAL(KIND=WP), INTENT(IN) :: sWigglerLength(:), sLengthOfElm(:)
   LOGICAL, INTENT(OUT) :: qOK
 
 !                  LOCAL ARGS
@@ -487,8 +499,7 @@ SUBROUTINE chkFSampleLens(iNodes,sWigglerLength,sLengthOfElm,rho,qOK)
 
   qOK = .FALSE.
 
-  wlen = 4.0_WP * pi * rho
-  maxspcing = wlen / 8.0_WP
+  maxspcing = tScale%lrbar / 8.0_WP
 
 !     Check got nodes set in every direction
   
@@ -614,36 +625,38 @@ END SUBROUTINE getElmLengths
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE checkFreeParams(srho,saw,sgammar,f_x,f_y,qOK)
+SUBROUTINE checkFreeParams(tScale, qOK)
 
-  REAL(KIND=WP), INTENT(IN) :: srho,saw,sgammar,f_x,f_y
+  use typeScale
+
+  type(fScale), intent(in) :: tScale
   LOGICAL, INTENT(OUT) :: qOK
 
   qOK = .FALSE.
 
 !     Check got valid value for rho
 
-  IF (srho <= 0.0_WP) THEN
+  IF (tScale%rho <= 0.0_WP) THEN
     CALL Error_log('Parameter rho <=0.',tErrorLog_G)
     GOTO 1000    
   END IF
 
 !     Check got valid value for aw and gamma
   
-  IF (saw <= 0.0_WP) THEN
+  IF (tScale%aw <= 0.0_WP) THEN
     CALL Error_log('Parameter saw <=0.',tErrorLog_G)
     GOTO 1000    
   END IF
   
-  IF (sgammar <= 0.0_WP) THEN
+  IF (tScale%gamma0 <= 0.0_WP) THEN
     CALL Error_log('Parameter gamma_r <= 0.',tErrorLog_G)
     GOTO 1000    
   END IF
     
 !     Check got valid value for fx or fy
 
-  IF (.NOT. (f_x==1.0_WP .OR. f_y==1.0_WP)) THEN
-    CALL Error_log('Either fx OR fy must be 1.',tErrorLog_G)
+  IF (.NOT. (tScale%ux==1.0_WP .OR. tScale%uy==1.0_WP)) THEN
+    CALL Error_log('Either ux OR uy must be 1.',tErrorLog_G)
     GOTO 1000
   END IF
 

@@ -30,9 +30,9 @@ implicit none
 contains
 
 
-  subroutine UndSection(iM, sZ)
+  subroutine UndSection(tScale, iM, sZ)
 
-
+    use typeScale
     implicit none
 
 ! nPeriods        -      Number of periods in the module
@@ -44,6 +44,7 @@ contains
 ! sA              -      Field array
 ! sZ              -      zbar
 
+    type(fScale), intent(in) :: tScale
     integer(kind=ip), intent(in) :: iM
     real(kind=wp), intent(inout) :: sZ ! , sA(:)
 
@@ -195,7 +196,7 @@ end if
 
       igoes = 1_ip
       do
-        call rk4par(sZl,sStepSize,qDiffrctd)
+        call rk4par(tScale,sZl,sStepSize,qDiffrctd)
         if (igoes>3_ip) exit
         if (.not. qPArrOK_G) then
           call deallact_rk4_arrs()

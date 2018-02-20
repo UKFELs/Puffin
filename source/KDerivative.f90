@@ -33,9 +33,10 @@ contains
 !> @param sx electron macroparticles' x position
 
 
-  subroutine derivs(sz, sAr, sAi, sx, sy, sz2, spr, spi, sp2, &
+  subroutine derivs(tScale, sz, sAr, sAi, sx, sy, sz2, spr, spi, sp2, &
                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, sdAr, sdAi)
 
+  use typeScale
   implicit none
 
 ! External subroutine returning dydz at z for use with RK4
@@ -46,6 +47,7 @@ contains
 ! sy      INPUT     Value of y at this z
 ! sdydz   OUTPUT    Derivative of z and y
 
+    type(fScale), intent(in) :: tScale
     real(kind=wp), intent(in)  :: sz
     real(kind=wp), contiguous, intent(in)  :: sAr(:), sAi(:)
     real(kind=wp), contiguous, intent(in)  :: sx(:), sy(:), sz2(:), &
@@ -73,7 +75,7 @@ contains
 
 !     Get RHS of field eqn and d/dz of electron variables
 
-    CALL getrhs(sz, &
+    CALL getrhs(tScale, sz, &
                 sAr, sAi, &
                 sx, sy, sz2, &
                 spr, spi, sp2, &

@@ -31,9 +31,10 @@ module Setup
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine init(sZ, qOK)
+  subroutine init(tScale, sZ, qOK)
 
   use InitVars
+  use typeScale
 
   implicit none
 
@@ -46,9 +47,12 @@ module Setup
 ! sZ             Electron propagation distance in z
 !                through undulator.
 !
+! tScale         Custom Puffin type describing the scaling frame
+!
 ! qOK            Error flag; .false. if no error
 
   real(kind=wp), intent(out) :: sZ
+  type(fScale), intent(inout) :: tScale
   logical, intent(out) :: qOK
 
 !     Set error flag
@@ -135,7 +139,6 @@ module Setup
        saw,               &
        sgammar,           &
        lambda_w,          &
-       sEmit_n,           &
        alphax, alphay, emitx, emity, &
        fx,                &
        fy,                &
@@ -157,8 +160,10 @@ module Setup
 
 
 
-  call calcScaling(srho, saw, sgammar, lambda_w, &
-                   zUndType, fx, fy)
+! Initialize the Puffin custom type describing the scaled frame
+
+  call calcScaling(tScale, srho, saw, sgammar, lambda_w, &
+                   zUndType, fx, fy, qSwitches(iOneD_CG))
 
 
   if (.not. qscaled_G) then
@@ -171,8 +176,8 @@ module Setup
       print*, ''
     end if
 
-    call scaleParams(sEleSig, sLenEPulse, sSigEj_G, &
-                     beamCenZ2, chirp, sEmit_n, emitx, emity, gamma_d, &
+    call scaleParams(tScale, sEleSig, sLenEPulse, sSigEj_G, &
+                     beamCenZ2, chirp, emitx, emity, gamma_d, &
                      sFieldModelLength, sLengthofElm, &
                      sSeedSigma, sA0_Re, sA0_Im, SmeanZ2)
   end if
@@ -182,7 +187,7 @@ module Setup
   sA0_Im = sqrt(2.0_wp*sA0_Im)  ! Convert intensity to peak field magnitude
 
 
-  call calcSamples(sFieldModelLength, iNodes, sLengthofElm, &
+  call calcSamples(tScale, sFieldModelLength, iNodes, sLengthofElm, &
                    sStepSize, stepsPerPeriod, nSteps, &
                    nperiods, nodesperlambda, gamma_d, sLenEPulse, &
                    iNumElectrons, qSimple)
@@ -191,10 +196,10 @@ module Setup
 
 !  if (qscaled_G) then
 
-  call CheckParameters(sLenEPulse,iNumElectrons,nbeams,sLengthofElm,iNodes,&
-                       sFieldModelLength,sStepSize,nSteps,srho,saw,sgammar, &
-                       mag, sEleSig,fx,fy, &
-                       qSwitches,qSimple, sSeedSigma, freqf, &
+  call CheckParameters(tScale, sLenEPulse,iNumElectrons,nbeams,sLengthofElm,iNodes,&
+                       sFieldModelLength,sStepSize,nSteps, &
+                       mag, sEleSig, &
+                       qSwitches, qSimple, sSeedSigma, freqf, &
                        SmeanZ2, qFlatTopS, nseeds, qOKL)
 
   if (.not. qOKL) goto 1000
@@ -212,27 +217,22 @@ module Setup
 
 
 
-  call setupMods(lattFile, taper, sRho, nSteps, sStepSize, fx, fy, &
+  call setupMods(tScale, lattFile, taper, nSteps, sStepSize, &
                   sKBetaXSF_G, sKBetaYSF_G)
 
   if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 0)) print*, 'setup lattice'
 
 !     Pass local vars to global vars
 
-  call passToGlobals(srho,saw,sgammar,lambda_w,iNodes, &
+  call passToGlobals(tScale, iNodes, &
                      sLengthOfElm, qSimple, iNumElectrons, &
-                     fx,fy,taper, sEleSig(1,iX_CG), sEleSig(1,iY_CG), &
+                     taper, sEleSig(1,iX_CG), sEleSig(1,iY_CG), &
                      sFiltFrac,sDiffFrac,sBeta, &
-                     zUndType,qFormattedFiles, qSwitches,qOK)
+                     qFormattedFiles, qSwitches,qOK)
 
   if (.not. qOKL) goto 1000
 
-
-
-
-
-
-  if (.not. qOneD_G) then
+  if (.not. tScale%q1d) then
 
     if (qSimple) then
 

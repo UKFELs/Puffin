@@ -38,8 +38,9 @@ implicit none
 
 contains
 
-subroutine rk4par(sZ,h,qD)
+subroutine rk4par(tScale,sZ,h,qD)
 
+  use typeScale
   implicit none
 !
 ! Perform 4th order Runge-Kutta integration, tailored
@@ -57,6 +58,7 @@ subroutine rk4par(sZ,h,qD)
 ! h       INPUT          Step size in zbar
       
 !  REAL(KIND=WP),  DIMENSION(:), INTENT(INOUT) :: sA, A_local
+  type(fScale), intent(in) :: tScale
   REAL(KIND=WP),  INTENT(IN)                  :: sZ
   REAL(KIND=WP),                INTENT(IN)  :: h
   LOGICAL, INTENT(INOUT) :: qD
@@ -174,7 +176,7 @@ subroutine rk4par(sZ,h,qD)
   
 !    Get derivatives
 
-  call derivs(sZ, A_localtr0, A_localti0, &
+  call derivs(tScale, sZ, A_localtr0, A_localti0, &
               sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, &
               dxdx, dydx, dz2dx, dpxdx, dpydx, dpz2dx, &
               dadz_r0, dadz_i0)
@@ -214,7 +216,7 @@ subroutine rk4par(sZ,h,qD)
 !    Get derivatives
 
   if (qPArrOK_G) &
-    call derivs(szh, A_localtr1, A_localti1, &
+    call derivs(tScale, szh, A_localtr1, A_localti1, &
        xt, yt, z2t, pxt, pyt, pz2t, &
        dxt, dyt, dz2t, dpxt, dpyt, dpz2t, &
        dadz_r1, dadz_i1)
@@ -250,7 +252,7 @@ subroutine rk4par(sZ,h,qD)
 
 
   if (qPArrOK_G) &
-    call derivs(szh, A_localtr2, A_localti2, &
+    call derivs(tScale, szh, A_localtr2, A_localti2, &
        xt, yt, z2t, pxt, pyt, pz2t, &
        dxm, dym, dz2m, dpxm, dpym, dpz2m, &
        dadz_r2, dadz_i2)
@@ -297,7 +299,7 @@ subroutine rk4par(sZ,h,qD)
 !    Get derivatives
 
   if (qPArrOK_G) & 
-      call derivs(szh, A_localtr3, A_localti3, &
+      call derivs(tScale, szh, A_localtr3, A_localti3, &
        xt, yt, z2t, pxt, pyt, pz2t, &
        dxt, dyt, dz2t, dpxt, dpyt, dpz2t, &
        dadz_r1, dadz_i1)  

@@ -57,7 +57,7 @@ contains
 !> @param[out] sDADzi d/dz of real (-y) component of A_perp
 !> @param[out] qOK Error flag
 
-  subroutine getrhs(sz, &
+  subroutine getrhs(tScale, sz, &
                     sAr, sAi, &
                     sx, sy, sz2, &
                     spr, spi, sgam, &
@@ -67,6 +67,7 @@ contains
                     qOK)
 
   use rhs_vars
+  use typeScale
 
   implicit none
 
@@ -80,6 +81,7 @@ contains
 ! sb  - d/dz of electron phase space positions
 ! sDADz - RHS of field source term
 
+  type(fScale), intent(in) :: tScale
   real(kind=wp), intent(in) :: sz
   real(kind=wp), contiguous, intent(in) :: sAr(:), sAi(:)
   real(kind=wp), contiguous, intent(in)  :: sx(:), sy(:), sz2(:), &
@@ -140,7 +142,7 @@ contains
 !     end do
 ! !$OMP END SIMD
 
-  call getP2(sp2, sgam, spr, spi, sEta_G, sGammaR_G, saw_G)
+  call tScale%getP2(sp2, sgam, spr, spi)
 
 
 
@@ -237,33 +239,33 @@ contains
 
 !     X
 
-        call dxdz_f(sx, sy, sz2, spr, spi, sgam, &
+        call dxdz_f(tScale, sx, sy, sz2, spr, spi, sgam, &
                     sdx, qOKL)
         !if (.not. qOKL) goto 1000
 
 !     Y
 
-        call dydz_f(sx, sy, sz2, spr, spi, sgam, &
+        call dydz_f(tScale, sx, sy, sz2, spr, spi, sgam, &
                     sdy, qOKL)
         !if (.not. qOKL) goto 1000
 
 
 !     PX (Real pperp)
 
-        call dppdz_r_f(sx, sy, sz2, spr, spi, sgam, sZ, &
+        call dppdz_r_f(tScale, sx, sy, sz2, spr, spi, sgam, sZ, &
                        sdpr, qOKL)
         !if (.not. qOKL) goto 1000
 
 
 !     -PY (Imaginary pperp)
 
-        call dppdz_i_f(sx, sy, sz2, spr, spi, sgam, sz, &
+        call dppdz_i_f(tScale, sx, sy, sz2, spr, spi, sgam, sz, &
                        sdpi, qOKL)
         !if (.not. qOKL) goto 1000
 
 !     P2
 
-        call dgamdz_f(sx, sy, sz2, spr, spi, sgam, &
+        call dgamdz_f(tScale, sx, sy, sz2, spr, spi, sgam, &
                      sdgam, qOKL)
         !if (.not. qOKL) goto 1000
 

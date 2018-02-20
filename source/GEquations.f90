@@ -28,14 +28,16 @@ implicit none
 
 contains
 
-  subroutine dppdz_r_f(sx, sy, sz2, spr, spi, sgam, &
+  subroutine dppdz_r_f(tScale, sx, sy, sz2, spr, spi, sgam, &
                        sZ, sdpr, qOK)
 
-  	implicit none
 
+    use typeScale
+  	implicit none
 
     real(kind=wp), contiguous, intent(in) :: sx(:), sy(:), sz2(:), spr(:), &
                                              spi(:), sgam(:)
+    type(fScale), intent(in) :: tScale
     real(kind=wp), intent(in) :: sZ
     real(kind=wp), contiguous, intent(out) :: sdpr(:)
 
@@ -50,9 +52,9 @@ contains
 
 !$OMP WORKSHARE
     sdpr = sInv2rho * ( n2col * byu  & 
-                        - sEta_G * sp2 / sKappa_G**2 *    &
+                        - tScale%eta * sp2 / tScale%kappa**2 *    &
                         sField4ElecReal ) & 
-           + sKappa_G * spi / sgam * (1 + sEta_G * sp2) &
+           + tScale%kappa * spi / sgam * (1 + tScale%eta * sp2) &
                * n2col * bzu
 !$OMP END WORKSHARE
 
@@ -78,14 +80,15 @@ contains
 
 
 
-  subroutine dppdz_i_f(sx, sy, sz2, spr, spi, sgam, sZ, &
+  subroutine dppdz_i_f(tScale, sx, sy, sz2, spr, spi, sgam, sZ, &
                        sdpi, qOK)
 
+    use typeScale
     implicit none
-
 
     real(kind=wp), contiguous, intent(in) :: sx(:), sy(:), sz2(:), spr(:), &
                                              spi(:), sgam(:) 
+    type(fScale), intent(in) :: tScale
     real(kind=wp), intent(in) :: sZ
     real(kind=wp), contiguous, intent(out) :: sdpi(:)
 
@@ -100,9 +103,9 @@ contains
 
 !$OMP WORKSHARE
     sdpi = sInv2rho * (  n2col * bxu  & 
-           - sEta_G * sp2 / sKappa_G**2 * &
+           - tScale%eta * sp2 / tScale%kappa**2 * &
                         sField4ElecImag ) & 
-           - sKappa_G * spr / sgam * (1 + sEta_G * sp2) &
+           - tScale%kappa * spr / sgam * (1 + tScale%eta * sp2) &
                * n2col * bzu
 !$OMP END WORKSHARE
 
@@ -129,12 +132,13 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine dgamdz_f(sx, sy, sz2, spr, spi, sgam, &
+  subroutine dgamdz_f(tScale, sx, sy, sz2, spr, spi, sgam, &
                       sdgam, qOK)
 
+    use typeScale
     implicit none
 
-
+    type(fScale), intent(in) :: tScale
     real(kind=wp), contiguous, intent(in) :: sx(:), sy(:), sz2(:), spr(:), &
                                              spi(:), sgam(:)
 
@@ -149,7 +153,7 @@ contains
 
 !$OMP WORKSHARE
 
-    sdgam = -sRho_G * ( 1 + sEta_G * sp2 ) / sgam * 2_wp *   &
+    sdgam = -tScale%rho * ( 1 + tScale%eta * sp2 ) / sgam * 2_wp *   &
            ( spr * sField4ElecReal + spi * sField4ElecImag ) 
 
 !$OMP END WORKSHARE
@@ -175,16 +179,17 @@ contains
 
 
 
-  subroutine dxdz_f(sx, sy, sz2, spr, spi, sgam, &
+  subroutine dxdz_f(tScale, sx, sy, sz2, spr, spi, sgam, &
                     sdx, qOK)
 
+    use typeScale
     implicit none
 
 !   Calculate dx/dz
 !
 !              Arguments:
 
-
+    type(fScale), intent(in) :: tScale
     real(kind=wp), contiguous,  intent(in) :: sx(:), sy(:), sz2(:), spr(:), &
                                               spi(:), sgam(:)
     real(kind=wp), contiguous, intent(out) :: sdx(:)
@@ -204,8 +209,8 @@ contains
 
 !$OMP WORKSHARE
 
-    sdx = 2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
-          (1 + sEta_G * sp2) / sgam *  &
+    sdx = 2 * tScale%rho * tScale%kappa / sqrt(tScale%eta) * &
+          (1 + tScale%eta * sp2) / sgam *  &
           spr
 
 !$OMP END WORKSHARE
@@ -228,16 +233,17 @@ contains
 
 
 
-  subroutine dydz_f(sx, sy, sz2, spr, spi, sgam, &
+  subroutine dydz_f(tScale, sx, sy, sz2, spr, spi, sgam, &
                     sdy, qOK)
 
+    use typeScale
     implicit none
 
 !   Calculate dy/dz
 !
 !              Arguments:
 
-
+    type(fScale), intent(in) :: tScale
     real(kind=wp), contiguous, intent(in) :: sx(:), sy(:), sz2(:), spr(:), &
                                              spi(:), sgam(:)
     
@@ -255,8 +261,8 @@ contains
 
 !$OMP WORKSHARE
 
-    sdy = - 2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
-          (1 + sEta_G * sp2) / sgam *  &
+    sdy = - 2.0_wp * tScale%rho * tScale%kappa / sqrt(tScale%eta) * &
+          (1.0_wp + tScale%eta * sp2) / sgam *  &
           spi
 
 !$OMP END WORKSHARE

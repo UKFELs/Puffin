@@ -26,9 +26,11 @@ use Setup
 use undulator
 use initDataType
 use Globals
+use typeScale
 
 implicit none
 
+type(fScale) :: tScale
 real(kind=wp)    :: sZ, szl
 integer(kind=ip) :: iL, iLst
 
@@ -36,7 +38,7 @@ logical          :: qOKL
 
 !           Read in data file and initialize system
 
-call init(sZ,qOKL)
+call init(tScale, sZ, qOKL)
 
 
 
@@ -72,7 +74,7 @@ do iL = iLst, modNum
       print*, 'Simulating undulator module', iUnd_cr
     end if
 
-    call UndSection(iL, sZ)
+    call UndSection(tScale, iL, sZ)
 
   else if (iElmType(iL) == iQuad) then
 

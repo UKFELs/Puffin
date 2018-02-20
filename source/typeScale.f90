@@ -35,7 +35,10 @@ module typeScale
     real(kind=wp) :: ux, uy
     real(kind=wp) :: kappa
     real(kind=wp) :: intScale
-    logical :: qOneD
+    real(kind=wp) :: lrbar
+    real(kind=wp) :: npkbar
+    character(32_ip) :: undType
+    logical :: q1D
 
   contains
 
@@ -80,21 +83,24 @@ module typeScale
 !> @param[in] srho FEL parameter \f$ \rho \f$.
 !> @param[in] saw Peak undulator parameter \f$ a_w \f$ (or \f$ K \f$).
 !> @param[in] sgamr Lorentz factor \f$ \gamma0 \f$ of reference beam.
-!> @param[in] sgamr Undulator period \f$ \lambda_w \f$ (meters).
+!> @param[in] slam_w Undulator period \f$ \lambda_w \f$ (meters).
 !> @param[in] zUndType String - undulator type. See manual for legal options.
 !> @param[in] sfx Undulator x-polarization \f$ u_x \f$. Ignored for non-empty
 !> zUndType.
-!> @param[in] sfx Undulator y-polarization \f$ u_y \f$. Ignored for non-empty
+!> @param[in] sfy Undulator y-polarization \f$ u_y \f$. Ignored for non-empty
 !> zUndType.
 
     subroutine initScaling(this, srho, saw, sgamr, slam_w, &
-                           zUndType, sfx, sfy)
+                           zUndType, sfx, sfy, qOneD)
+
+      implicit none
 
       class(fScale), intent(inout) :: this
       real(kind=wp), intent(in) :: srho, saw, sgamr, slam_w, &
                                    sfx, sfy
 
       character(32_IP), intent(in) :: zUndType
+      logical, intent(in) :: qOneD
 
       real(kind=wp) :: saw_rms, sBetaz
 
@@ -104,6 +110,8 @@ module typeScale
       this%gamma0 = sgamr
       this%aw = saw
       this%lambda_w = slam_w
+      this%undType = zUndType
+      this%q1D = qOneD
 
 
       if (zUndType == 'curved') then
@@ -142,7 +150,13 @@ module typeScale
       this%lc = this%lambda_r / 4.0_WP / pi / srho
 
       this%intScale = c * e_0 * ((this%gamma0 * m_e * c**2.0_wp ) / &
-                   (q_e * this%kappa * this%lg ))**2.0_wp
+                      (q_e * this%kappa * this%lg ))**2.0_wp
+
+      this%lrbar = 4.0_wp * pi * this%rho
+
+      this%npkbar = this%lg * this%lc**2.0_wp * e_0 * m_e / q_e**2.0_wp * &
+                this%gamma0**3.0_wp * this%rho**3.0_wp * (4.0_wp * &
+                c * 2.0_wp * pi / this%lambda_w / this%aw  )**2.0_wp
 
     end subroutine initScaling
 
@@ -378,17 +392,18 @@ module typeScale
 !> Convert transverse \f$ \frac{dx}{dz} \f$ or \f$ \frac{dy}{dz} \f$ -> Puffin scaled transverse
 !> momenta \f$ \bar{p}_x \f$ or \f$ \bar{p}_y \f$.
 !> @param[in] this Custom Fortran type describing scaling.
-!> @param[in] sgamma Lorentz factor \f$ \gamma \f$ of particle.
+!> @param[in] sgf Electron energy as a fraction of the reference Lorentz factor 
+!> \f$ \gamma_0 \f$.
 !> @param[inout] sPx Transverse \f$ dx/dz \f$ on input, scaled \f$ \bar{p}_x \f$
 !> on output.
 
-    subroutine scalePx_single(this, sgamma, sPx)
+    subroutine scalePx_single(this, sgf, sPx)
 
       class(fScale), intent(in) :: this
-      real(kind=wp), intent(in) :: sgamma
+      real(kind=wp), intent(in) :: sgf
       real(kind=wp), intent(inout) :: sPx
 
-      sPx = sPx * sgamma / this%aw
+      sPx = sPx * sgf * this%gamma0 / this%aw
 
     end subroutine scalePx_single
 
@@ -400,17 +415,18 @@ module typeScale
 !> Convert Puffin scaled transverse momenta \f$ \bar{p}_x \f$ or \f$ \bar{p}_y \f$
 !> -> transverse \f$ \frac{dx}{dz} \f$ or \f$ \frac{dy}{dz} \f$.
 !> @param[in] this Custom Fortran type describing scaling.
-!> @param[in] sgamma Lorentz factor \f$ \gamma \f$ of particle.
+!> @param[in] sgf Electron energy as a fraction of the reference Lorentz factor 
+!> \f$ \gamma_0 \f$.
 !> @param[inout] sPx Scaled \f$ \bar{p}_x \f$ on input, transverse \f$ dx/dz \f$
 !> on output.
 
-    subroutine unscalePx_single(this, sgamma, sPx)
+    subroutine unscalePx_single(this, sgf, sPx)
 
       class(fScale), intent(in) :: this
-      real(kind=wp), intent(in) :: sgamma
+      real(kind=wp), intent(in) :: sgf
       real(kind=wp), intent(inout) :: sPx
 
-      sPx = sPx * this%aw / sgamma
+      sPx = sPx * this%aw / (sgf * this%gamma0)
 
     end subroutine unscalePx_single
 
@@ -422,17 +438,18 @@ module typeScale
 !> Convert transverse \f$ \frac{dx}{dz} \f$ or \f$ \frac{dy}{dz} \f$ -> Puffin scaled transverse
 !> momenta \f$ \bar{p}_x \f$ or \f$ \bar{p}_y \f$.
 !> @param[in] this Custom Fortran type describing scaling.
-!> @param[in] sgamma Lorentz factor \f$ \gamma \f$ of particle.
+!> @param[in] sgf Electron energy as a fraction of the reference Lorentz factor 
+!> \f$ \gamma_0 \f$.
 !> @param[inout] sPx Transverse \f$ dx/dz \f$ on input, scaled \f$ \bar{p}_x \f$
 !> on output.
 
-    subroutine scalePx_array(this, sgamma, sPx)
+    subroutine scalePx_array(this, sgf, sPx)
 
       class(fScale), intent(in) :: this
-      real(kind=wp), intent(in) :: sgamma(:)
+      real(kind=wp), intent(in) :: sgf(:)
       real(kind=wp), intent(inout) :: sPx(:)
 
-      sPx = sPx * sgamma / this%aw
+      sPx = sPx * sgf * this%gamma0 / this%aw
 
     end subroutine scalePx_array
 
@@ -444,17 +461,18 @@ module typeScale
 !> Convert Puffin scaled transverse momenta \f$ \bar{p}_x \f$ or \f$ \bar{p}_y \f$
 !> -> transverse \f$ \frac{dx}{dz} \f$ or \f$ \frac{dy}{dz} \f$.
 !> @param[in] this Custom Fortran type describing scaling.
-!> @param[in] sgamma Lorentz factor \f$ \gamma \f$ of particle.
+!> @param[in] sgf Electron energy as a fraction of the reference Lorentz factor 
+!> \f$ \gamma_0 \f$.
 !> @param[inout] sPx Scaled \f$ \bar{p}_x \f$ on input, transverse \f$ dx/dz \f$
 !> on output.
 
-    subroutine unscalePx_array(this, sgamma, sPx)
+    subroutine unscalePx_array(this, sgf, sPx)
 
       class(fScale), intent(in) :: this
       real(kind=wp), intent(inout) :: sPx(:)
-      real(kind=wp), intent(in) :: sgamma(:)
+      real(kind=wp), intent(in) :: sgf(:)
 
-      sPx = sPx * this%aw / sgamma
+      sPx = sPx * this%aw / (sgf * this%gamma0)
 
     end subroutine unscalePx_array
 
