@@ -2,8 +2,9 @@
 enable_language (Fortran)
 ##set (PFUNIT /home/jonny/contrib-gcc540/pFUnit-3.2.8-ser)
 # set (PFUNIT /home/tml/src/pFUnit)
-set (PFUNIT /home/mightylorenzo/bin/pfunit)
+set (PFUNIT ${PFUNIT_INSTALL})
 set (CMAKE_VERBOSE_MAKEFILE "On")
+
 find_library(PFUNITLIB NAMES pfunit
   PATHS ${PFUNIT} ${PFUNIT}/lib
   )
@@ -21,13 +22,13 @@ include_directories(
 #  Status message:
 
 message(STATUS "PFUNIT ${PFUNIT}")
+message(STATUS "PFUNITLIB ${PFUNITLIB}")
 
 
 # Define tests do build:
 
 #set (PFTESTS testTests testFFunctions testHdf5Puff)
 set (PFTESTS testTests testFFunctions testScale)
-
 
 # 
 
