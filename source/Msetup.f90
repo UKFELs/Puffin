@@ -155,26 +155,22 @@ module Setup
 
   if (.not. qOKL) goto 1000
 
-!    Check all the inputs e.g. wiggler and electron lengths etc
-!    to avoid errors.
-
-
-
 ! Initialize the Puffin custom type describing the scaled frame
 
   call calcScaling(tScale, srho, saw, sgammar, lambda_w, &
                    zUndType, fx, fy, qSwitches(iOneD_CG))
 
-
   if (.not. qscaled_G) then
-
 
     if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1)) then
       print*, '*******************'
       print*, ''
-      print*, 'Scaling params....'
+      print*, 'Scaling input params....'
       print*, ''
     end if
+
+! Scale the input parameters for the simple, homogeneous beam and/or seed inputs,
+! and the radiation mesh extents.
 
     call scaleParams(tScale, sEleSig, sLenEPulse, sSigEj_G, &
                      beamCenZ2, chirp, emitx, emity, gamma_d, &
@@ -193,9 +189,6 @@ module Setup
                    iNumElectrons, qSimple)
 
 
-
-!  if (qscaled_G) then
-
   call CheckParameters(tScale, sLenEPulse,iNumElectrons,nbeams,sLengthofElm,iNodes,&
                        sFieldModelLength,sStepSize,nSteps, &
                        mag, sEleSig, &
@@ -203,9 +196,6 @@ module Setup
                        SmeanZ2, qFlatTopS, nseeds, qOKL)
 
   if (.not. qOKL) goto 1000
-
-!  end if
-
 
 !    Setup FFTW plans for the forward and backwards transforms.
 
