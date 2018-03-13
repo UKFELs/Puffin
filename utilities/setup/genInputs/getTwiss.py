@@ -58,6 +58,9 @@ puffVars.undtype = 'planepole'
 puffVars.ux = 0.
 puffVars.uy = 1.
 
+emitxn = 1.022e-9
+emityn = 1.022e-9
+
 # Generate the rest of the Puffin scaling from the above
 
 puffVars.genParams()  # generate rest of scaled params
@@ -137,9 +140,8 @@ betay, alphay = getMatchTwiss(fullMaty)
 
 
 
-emitxn = 1.022e-9
 sigx = np.sqrt(betax * emitxn)
-emityn = 1.022e-9
+
 sigy = np.sqrt(betay * emityn)
 
 
