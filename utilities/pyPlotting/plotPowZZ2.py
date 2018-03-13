@@ -4,7 +4,9 @@
 
 """
 This is an examplar script to produce a surf plot of the temporal cycle-averaged
-magnitude evolving through the undulator.
+power evolving as a function of distance through the undulator z. That is to say,
+th enormalised power is plaotted as a function of both temporal coordinate and
+propagation distance.
 """
 
 import sys

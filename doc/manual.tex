@@ -371,7 +371,7 @@ One may use the variables {\bf iRedNodesX, iRedNodesY} to fix the mesh around th
 \begin{figure*}
 \centering
 \includegraphics[width=150mm]{long_mesh.png}
-\caption{Showing the longitudinal setup of the radiation mesh. The beam is indicated in red. The scaled $\bar{z}_2$ coordinate is defined so that the front of the radiation and beam is to the left. This is the constant radiatioon frame, so the beam slips backwards through the field from left to right. In the lab frame, the beam and radiation propagates from right to left. The full length of the mesh must be large enough to contain the beam through propagation.}
+\caption{Showing the longitudinal setup of the radiation mesh. The beam is indicated in red. The scaled $\bar{z}_2$ coordinate is defined so that the front of the radiation and beam is to the left. This is the constant radiation frame, so the beam slips backwards through the field from left to right. In the lab frame, the beam and radiation propagates from right to left. The full length of the mesh must be large enough to contain the beam through propagation.}
 \label{lgmsh}
 \end{figure*}
 
@@ -500,7 +500,7 @@ The data output is usually in the HDF5 file format, or optionally in the SDDS fo
 
 The HDF5 file naming convention in Puffin is: $<$basename$>\_<$type$>\_<$step$>$.h5, where basename is the input file basename (i.e.the input file name without the postfix `.in')
 
-Type can be integrated, aperp, or electrons, corresponding to reduced or integrated data, a full dump of the field mesh (x and y polarised fields), and a full dump of the electron macroparticle coordinates $+$ charge weight. These are described individually in more detail below. Due to the possible extremely large size of the full dumps, one should be careful how often the data is being written.
+The output type can be integrated, aperp, or electrons, corresponding to reduced (or integrated) data, a full dump of the field mesh (x and y polarised fields), and a full dump of the electron macroparticle coordinates $+$ charge weight, respectively. These are described individually in more detail below. Due to the possible extremely large size of the full dumps, one should be careful how often the data is being written.
 
 One may simply choose which steps to write out through use of the {\bf iWriteNthSteps} and {\bf iWriteIntNthSteps} parameters in the main input file. The former controls the frequency of the full dumps, and the latter specifies the frequency of the integrated data writes.
 
@@ -1087,10 +1087,6 @@ Logical. If = {\bf .false.}, then the electron equations are not solved in the i
 
 Logical. If = {\bf .false.}, then the radiation field feedback onto the electrons is switched off by setting the field terms in the electron evolution equations = 0, and so switches off the amplification of the radiation from the electrons. This is unphysical, but is used more often than when qFieldEvolve and qElectronsEvolve ={\bf .false.} . It can often be used to check for gain in the FEL in low gain situations, or to check whether amplification has occurred rather than coherent emission (CSE) effects due to \textit{e.g.} fine structure in the beam. When ={\bf .false.}, this will give the purely spontaneous emission (coherent or incoherent) from the electrons in the wiggler. If there is no appreciable difference between the qElectronFieldCoupling=true and false cases, then there has been negligible FEL amplification. [.true.]
 
-{\bf qSeparateFiles}
-
-If each rank is writing its own file for the hdf5 files. If = true, then the files will need to be gathered together in post for analysis. Depending on the file system, this may be faster or slower for you. There are some post-processing python scripts to show how you might stitch the files together in post. [.false.]
-
 {\bf qFocussing}
 
 Allows one to switch the strong focussing channel on or off. If ={bf .true.}, the strong focusing is switched on with calues specified by sKBetaXSF and sKBetaYSF. If qFocussing={\bf .true.}, yet no focussing strength is specified (sKBetaXSF or sKBetaYSF), then strong focusing is effectively switched off in that dimension. Default = {\bf .false.}. [.false.]
@@ -1127,9 +1123,20 @@ Logical turning on/off the input of scaled units into Puffin. If {\bf .true.}, i
 
 Logical turning on/off the filtering of low frequency content during the siffraction step. The high-pass filter cut-off is defined by {\bf sFiltFrac}. If true, the low frequency content is set $=0$. If false, the low frequency content is not manipulated/diffracted. [.true.]
 
+{\bf ioutinfo}
+
+Integer. Controls the verbosity of information on the simulation progress written to stdout, from levels $0$ to $3$. $=0$ results in no information being written to standard out, and $3$ gives updates after every single integration step, and some more additional info helful for debugging.
+
 {\bf qWriteA, qWriteZ2, qWritePperp, qWriteP2, qWriteX, qWriteY, qWriteZ}
 
 Logicals to switch on/off the writing of field, electron phase space coordinates ($\bar{z}_2$, $\bar{p}_\bot$, $\Gamma$, $\bar{x}$, $\bar{y}$), and propagation distance, respectively, in the sdds full data dumps. (Deprecated) (Only used when {\bf qsdds = .true.})
+
+{\bf qSeparateFiles}
+
+(Now no longer used, does nothing - only there for compatibility issues. Will be removed completely soon.)
+
+If each rank is writing its own file for the hdf5 files. If = true, then the files will need to be gathered together in post for analysis. Depending on the file system, this may be faster or slower for you. There are some post-processing python scripts to show how you might stitch the files together in post. (Deprecated) [.false.]
+
 
 \subsubsection{Numerical Integration}
 
@@ -1189,18 +1196,81 @@ The total length used to model the beam in each dimension, in order, similarly t
 
 {\bf iNumMPs}
 
-The number of macroparticles used to model the beam in each dimension, in order $\bar{x}, \bar{y}, \bar{z}_2, \bar{p}_x, \bar{p}_y, \Gamma$. For multiple beams, specify the $x$ values for each consecutive beam, then the consecutive $y$ values, and so on. In 1D, only the $\bar{z}_2$ and $\Gamma$ values are used, no matter what beam loading method is used, and the rest are ignored, although they must be present. In 3D, all values are used only if the variable {\bf qEquiXY = .true.} (see page ??). Otherwise, the random sequences will be used.
-
-
+Array of integers of size {\bf nbeams} $\times$ {\bf 6}. Specifies the number of macroparticles used to model the beam in each dimension, in order $\bar{x}, \bar{y}, \bar{z}_2, \bar{p}_x, \bar{p}_y, \Gamma$. For multiple beams, specify the $x$ values for each consecutive beam, then the consecutive $y$ values, and so on. In 1D, only the $\bar{z}_2$ and $\Gamma$ values are used, no matter what beam loading method is used, and the rest are ignored, although they must be present. In 3D, all values are used only if the variable {\bf qEquiXY = .true.} (see page ??). Otherwise, the random sequences will be used.
 
 {\bf bcenter}
 
-Center of the beam, in the frame of the mesh, in $\bar{z}_2$, or $t$. Defaults to 0. If 
+Array of reals of size {\bf nbeams}, specifying the center of the $i^{th}$ beam, in the frame of the mesh, in $\bar{z}_2$ (scaled), or $t$ (SI). Defaults to 0. If between $0$ and {\bf sLenE($i$,3)} $/ 2$, then the beam will be initialized with the head of the beam aligned with the head of the mesh, at $\bar{z}_2 = 0$. Otherwise, {\bf bcenter} will behave as expected.
 
 
 {\bf chirp}
 
-The gradient of a linear energy chirp in the beam. In scaled units this should be specified as $\frac{d\gamma}{d\bar{z}_2}$, in unscaled units, $\frac{1}{\gamma_r c} \frac{d\gamma}{dt}$. [0.0]
+Array of reals of size {\bf nbeams}, containing the gradient of a linear energy chirp in the $i^{th}$ beam. In scaled units this should be specified as $\frac{d\gamma}{d\bar{z}_2}$, in unscaled units, $\frac{1}{\gamma_r c} \frac{d\gamma}{dt}$. [0.0]
+
+
+{\bf gammaf}
+
+Array of reals of size {\bf nbeams}. Describes the mean energy of the beam a fraction of the central energy {\bf sgamma\_r} in the main input file. (So you are inputting the mean $\gamma / \gamma_r$ of the beam.) [$1.0$]
+
+
+{\bf mag}
+
+Real array of size {\bf nbeams}. Magnitude of a sinusoidal oscillation on the beam energy, in units of $\gamma / \gamma_r$. [$0.0$]
+
+{\bf fr}
+
+Real array of size {\bf nbeams}. Wavenumber of the beam oscillation in $\bar{z}_2$. [$1.0$]
+
+
+{\bf qRndEj\_G}
+
+Array of logicals of size {\bf nbeams}. If $=$ {\bf .true.}, and if a flat-top current distribution is specified in {\bf sSigmaE}, then the hard edges will be rolled off with Gaussian tails to avoid Coherent Spontaneous Emission (CSE). [{\bf .true.}]
+
+{\bf sSigEj\_G}
+
+Array of reals of size {\bf nbeams}. Specifies the $r.m.s.$ width of the Gaussian tails used when {\bf qRndEj\_G} $=$ {\bf .true.} and a flat-top current distribution is specified in {\bf sSigmaE}. Ignored otherwise. [$0.02$]
+
+
+{\bf qMatched\_A}
+
+Array of logicals of size {\bf nbeams}. If $=$ {\bf .true.}, then the radius of the $i^{th}$ beam will be matched to either the `natural' focusing channel of the undulator, or the `strong' intra-undulator focusing if specified. (Please note, this does not match to a focusing lattice as specified in the lattice file! This, unfortunately, must be done manually and the matched parameters used in {\bf alphax, alphay, emitx, emity} below) [{\bf .false.}]
+
+{\bf qEquiXY}
+
+Array of logicals of size {\bf nbeams}. If {\bf .true.}, then the beam macroparticles will be loaded into an equispaced, $6$-D hypercube, as a `crystal' beam, with the number of macroparticles in each dimension given in {\bf iNumMPs} above. Initialization and shot-noise are as described in \cite{noise1}, giving the correct shot-noise in every dimension (at the start of the simulation). If {\bf .false.}, then the beam will be initialized as equispaced only in the temporal coordinate $\bar{z}_2$, and random or Halton sequences will be used to fill the other $5$ dimensions ({\bf TrLdMeth} $= 1$ or $2$, respectively, see below), giving the correct noise in the temporal coordinate only, but with less macroparticles needed to fill the phase space, the simulation is much faster. [{\bf \.false.}]
+
+{\bf TrLdMeth}
+
+Array of reals of size {\bf nbeams}. If {\bf qEquiXY} $=$ {\bf .false.}, this chooses either random ($=1$) or Halton ($=2$) sequences to fill the $5$-D, non-temporal phase space. Ignored if {\bf qEquiXY} $=$ {\bf .true.}. [$1$]
+
+
+{\bf nseqparts}
+
+Array of integers of size {\bf nbeams}. If {\bf qEquiXY} $=$ {\bf .false.}, this specifies the length of the $5$ pseudo/semi-random sequences, and thus the number of macroparticles, to use for each equispaced temporal coordinate (in $\bar{z}_2$). [$1000$]
+
+
+
+
+{\bf qFixCharge}
+
+Array of logicals of size {\bf nbeams}. If $=$ {\bf .true.}, the charge as input will be ignored, and recalculated from the scaling parameters $\rho, a_u, \lambda_u$ and $\gamma_r$ specified in the main input file, so that the beam (if it has zero energy spread, and ignoring diffraction and emittance effects on the gain) will lase with the usual $1$D gain length $L_g = \lambda_u / 4 / \pi / \rho$.
+
+{\bf alphax}
+
+Array of reals of size {\bf nbeams}. Twiss parameter $\alpha_x$ of the $i^{th}$ beam.
+
+{\bf alphay}
+
+Array of reals of size {\bf nbeams}. Twiss parameter $\alpha_y$ of the $i^{th}$ beam.
+
+{\bf emitx}
+
+Array of reals of size {\bf nbeams}. Emittance (in $x$) of the $i^{th}$ beam. If {\bf qscaled = .true.}, then this is the scaled emittance. Otherwise it is the geometric (unnormalised) emittance (in $m rad$).
+
+{\bf emity}
+
+Array of reals of size {\bf nbeams}. Emittance (in $y$) of the $i^{th}$ beam. If {\bf qscaled = .true.}, then this is the scaled emittance. Otherwise it is the geometric (unnormalised) emittance (in $m rad$).
+
 
 
 % simple params:
@@ -1214,6 +1284,32 @@ The gradient of a linear energy chirp in the beam. In scaled units this should b
 
 
 
+\subsubsection{Namelist: bdlist}
+
+If {\bf dtype} $=$ {\it dist} the namelist {\bf bdlist} must be present in the beam file, which contains one or a number of Puffin distribution files.
+
+{\bf dist\_f}
+
+Array of strings, of size {\bf nbeams}. Contains the name of the dist files to be read in and loaded in Puffin.
+
+{\bf nseqparts}
+
+Array of integers of size {\bf nbeams}. This specifies the length of the $5$ pseudo/semi-random sequences, and thus the number of macroparticles, to use for each equispaced temporal coordinate (in $\bar{z}_2$). [$1000$]
+
+{\bf inmpsGam}
+
+Number of macroparticles to use in the energy dimension, for the `crystal' beam case, in $1$D mode only.
+
+
+\subsubsection{Namelist: bh5list}
+
+If {\bf dtype} $=$ {\it particle} the namelist {\bf bh5list} must be present in the beam file, which contains one or a number of Puffin particle files.
+
+{\bf dist\_f}
+
+Array of strings, of size {\bf nbeams}. Contains the name of the particle files to be read in by Puffin.
+
+
 
 \newpage
 
@@ -1221,7 +1317,73 @@ The gradient of a linear energy chirp in the beam. In scaled units this should b
 
 The seed file can be in 2 forms - one describing a homogeneous seed of Gaussian or flat top profiles in each of the 3 spatial directions, or a list of hdf5 files containing the values of the $x$ and $y$ fields at the nodes of the radiation mesh.
 
-As with the beam file, the seed file contains 2 namelists - one specifying which of the 2 input methods is being used and the number of seeds, and the other containing the specification for the selected method.
+As with the beam file, the seed file contains 2 namelists - one specifying which of the 2 input methods is being used and the number of seeds, and the other containing the specification for the selected method. The namelist {\bf nslist} tells Puffin which of these options to expect.
+
+Please note that the mesh is only imported as is. It is unfortunately not processed or interpolated onto the Puffin mesh. It is read as-is.
+
+
+\subsubsection{Namelist: nslist}
+
+{\bf dtype}
+
+String, specifying type of radiation input. Can be either {\it simple} or {\it h5} (for importing a full mesh)
+
+{\bf nseeds}
+
+Integer. The number of electron beams to set up. For a simple beam, multiple seeds can be setup. For the mesh/h5 input, this parameter is ignored.
+
+If {\bf dtype} $=$ {\it simple}, then a namelist called {\bf slist} must be used, and if {\bf dtype} $=$ {\it h5} the namelist {\bf sh5list} must be entered.
+
+\subsubsection{Namelist: slist}
+
+For the simple seed file, one can set up a seed with a simple homogeneous distribution in every dimension. The radiation seed is assumed to have either a Gaussian or flat-top distribution profile in each dimension. The beam is therefore specified by giving the widths and so forth of the beam. Multiple radiation seeds can be defined, so each parameter is an array, with the $i^{th}$ element describing the $i^{th}$ radiation seed.
+
+
+{\bf freqf}
+
+The frequency of each seed, as a fraction of the reference resonant frequency calculated in the scaled frame parameters in the main input file.
+
+{\bf ph\_sh}
+
+The phase of each seed ($0-2\pi$).
+
+{\bf sA0\_X}
+
+The peak intensity of the $x$-polarized field vector. In dimensionless scaled units of $|A|^2$ ($\sim 1$ for FEL steady-state saturation for an electron beam with properties determined by the scaled frame), and in $Wm^{-2}$ for unscaled (SI) units.
+
+{\bf sA0\_Y}
+
+The peak intensity of the $y$-polarized field vector. In dimensionless scaled units of $|A|^2$ ($\sim 1$ for FEL steady-state saturation for an electron beam with properties determined by the scaled frame), and in $Wm^{-2}$ for unscaled (SI) units.
+
+{\bf sSigmaF}
+
+The standard deviation $\sigma$ of the intensity profile of the seed in each dimension, in the order $x, y, z2$. For multiple seeds, specify all of the $x$ values first, then all the $y$ values, then all the $\bar{z}_2$ values. If a flat top distribution is specified (see {\bf qFlatTop} below), then this is the radius \textit{i.e.} half the total length of the radiation seed in $\bar{z}_2$. The profile in the transverse $x$ and $y$ directions is always Gaussian. In scaled $\bar{x}, \bar{y}, \bar{z}_2$ (dimensionless) units for {\bf qScaled $=$ .true.} in the main input file, if {\bf .false.} then must be specified in meters for $x$ and $y$, and in seconds for the third $t$ dimension.
+
+
+{\bf qFlatTop}
+
+Array of logicals of size {\bf nseeds}, describing whether the intensity/power distribution in the longditudinal/temporal direction is flat-top ($=${\bf .true.}) or Gaussian ($=${\bf .false.}).
+
+
+{\bf meanZ2}
+
+The mean of the seed power profile in the temporal dimension. If outside the left edge of the mesh ($\bar{z}_2 = 0$), then the front edge of the seed is shifted to the front edge of the mesh. So if {\bf meanZ2} is undefined or $=0$, then the seed mean will be recalculated so that the front of the seed is aligned with the front of the mesh.
+
+
+
+{\bf qRndFj\_G}
+
+If {\bf qFlatTop} $=$ {\bf .true.}, then this controls whether the flat top profile is rounded off smoothly at the edges with a Gaussian. See {\bf sSigFj\_G} below to control the width of the gaussian tails. If {\bf qFlatTop} $=$ {\bf .false.}, then this is ignored.
+
+
+{\bf sSigFj\_G}
+
+RMS width of the Gaussian tails, in the case of a flat top radiation seed pulse.
+
+{\bf qMatchS\_G}
+
+If {\bf .true.}, then the value for the \textit{rms} $\sigma$ of the transverse field distributions above will be ignored, and instead the field distribution in the transverse plane will be matched to the electron beam transverse charge distribution.
+
 
 
 \newpage
@@ -1333,7 +1495,7 @@ As with the beam file, the seed file contains 2 namelists - one specifying which
 \bibitem{puffin}
 L.T. Campbell and B.W.J. McNeil, Physics of Plasmas {\bf 19}, 093119 (2012)
 \bibitem{2col}
-L T Campbell, B.W.J. McNeil and S. Reiche, New J. Phys. {\bf 16} (2014) 103019
+L T Campbell, B.W.J. McNeil and S. Reiche, New J. Phys. {\bf 16} 103019 (2014)
 \bibitem{scharlemann1}
 E.T. Scharlemann, in High Gain, High Power FELs (edited by R. Bonifacio \textit{et al} ) (1989)
 \bibitem{noise1}

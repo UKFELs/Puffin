@@ -129,8 +129,16 @@ configure_file(doc/fortran.dxg.in doc/fortran.dxg)
 
 add_subdirectory(source)
 
+set(PFUNIT_INSTALL $ENV{PFUNIT_INSTALL})
 if (ENABLE_TESTING)
-  add_subdirectory(test)
+  if(DEFINED PFUNIT_INSTALL)
+    message(STATUS "PFUNIT_INSTALL: ${PFUNIT_INSTALL}")
+    set(PFUNIT_DIR ${PFUNIT_INSTALL})
+    add_subdirectory(test)
+  else()
+    message(STATUS "Tests requested, but need PFUNIT_INSTALL specified...")
+    message(STATUS "...so skipping tests. Define top level PFUNIT_INSTALL.")
+  endif (DEFINED PFUNIT_INSTALL)
 endif (ENABLE_TESTING)
 
 

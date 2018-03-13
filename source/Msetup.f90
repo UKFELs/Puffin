@@ -174,10 +174,12 @@ module Setup
     call scaleParams(sEleSig, sLenEPulse, sSigEj_G, &
                      beamCenZ2, chirp, sEmit_n, emitx, emity, gamma_d, &
                      sFieldModelLength, sLengthofElm, &
-                     sSeedSigma)
+                     sSeedSigma, sA0_Re, sA0_Im, SmeanZ2)
   end if
 
 
+  sA0_Re = sqrt(2.0_wp*sA0_Re)
+  sA0_Im = sqrt(2.0_wp*sA0_Im)  ! Convert intensity to peak field magnitude
 
 
   call calcSamples(sFieldModelLength, iNodes, sLengthofElm, &

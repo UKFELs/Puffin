@@ -280,7 +280,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  beam_file, sElectronThreshold, &
                  iNumNodesY, iNumNodesX, &
                  nodesPerLambdar, sFModelLengthX, &
-               sFModelLengthY, sFModelLengthZ2, &
+                 sFModelLengthY, sFModelLengthZ2, &
                  iRedNodesX, iRedNodesY, sFiltFrac, &
                  sDiffFrac, sBeta, seed_file, srho, &
                  sux, suy, saw, sgamma_r, &
@@ -528,7 +528,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                      qMatched_A,qOKL)
 
   CALL read_seedfile(seed_file,nseeds,sSigmaF,sA0_Re,sA0_Im,freqf,&
-                     ph_sh, qFlatTopS,SmeanZ2,field_file,qOKL)
+                     ph_sh, qFlatTopS,SmeanZ2,field_file,qscaled,qOKL)
 
   call FileNameNoExtension(beam_file, zBFile_G, qOKL)
   
@@ -919,7 +919,7 @@ END SUBROUTINE read_beamfile
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
-                         qFlatTop, meanZ2,field_file,qOK)
+                         qFlatTop, meanZ2,field_file,qsc, qOK)
 
   IMPLICIT NONE
 
@@ -934,6 +934,7 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
   INTEGER(KIND=IP), INTENT(INOUT) :: nseeds
 
   LOGICAL, ALLOCATABLE, INTENT(OUT) :: qFlatTop(:)
+  logical, intent(in) :: qsc
   LOGICAL, INTENT(OUT) :: qOK
 
 !                     LOCAL ARGS
@@ -972,7 +973,15 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
 
 !  Default value
 
-  sSigmaF = 1.0_wp
+  if (qsc) then
+    sSigmaF(:,1) = 0.1
+    sSigmaF(:,2) = 0.1
+    sSigmaF(:,3) = 1.0
+  else
+    sSigmaF(:,1) = 50.0e-6
+    sSigmaF(:,1) = 50.0e-6
+    sSigmaF(:,1) = 1.0e-12
+  end if
   freqf = 1.0_wp
   ph_sh = 0.0_wp
   sA0_X = 0.0_wp
@@ -980,7 +989,7 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
   qFlatTop = .false.
   meanZ2 = 0.0_wp
   qRndFj_G = .false.
-  sSigFj_G = 0.01_wp
+  sSigFj_G = sSigmaF(:,3) / 100.0_wp
   qMatchS_G = .true.
   if (dtype == 'simple') then 
     if (se_f .ne. '') then
