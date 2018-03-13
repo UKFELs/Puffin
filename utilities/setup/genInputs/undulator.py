@@ -100,7 +100,7 @@ class undulator:
             matx[0][1] = 1. /kbx * np.sin(kbx*self.undlen)
             matx[1][0] = -kbx * np.sin(kbx*self.undlen)
             matx[1][1] = np.cos(kbx*self.undlen)
-        else:
+        else:   # just a free space drift
             matx[0][0] = 1.
             matx[0][1] = self.undlen
             matx[1][0] = 0.
@@ -113,7 +113,7 @@ class undulator:
             maty[0][1] = 1. /kby * np.sin(kby*self.undlen)
             maty[1][0] = -kby * np.sin(kby*self.undlen)
             maty[1][1] = np.cos(kby*self.undlen)
-        else:
+        else:   # just a free space drift
             maty[0][0] = 1.
             maty[0][1] = self.undlen
             maty[1][0] = 0.
