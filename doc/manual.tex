@@ -79,12 +79,6 @@
 
 \section{Introduction}
 
-%The code Puffin\cite{puffin} is an FEL simulation code  - it is a so-called `unaveraged' FEL code, which has an enhanced resolution over that of more conventional averaged codes. It can model fast changes in both the electron beam and radiation temporal structure, and can model any frequency (limited by the Niquist condition) and electron energy.  The code has undergone many improvements and extended its functionality since the initial publication in \cite{puffin}. It no longer uses an external linear solver package, and some of the scaling has changed - see below. Before, only the electron beam was distributed in memory across MPI nodes - now both the field and the beam are stored and solved in parallel, enabling the modelling of extremely large systems.
-
-%Puffin can now output data in hdf5 format, with VizSchema metadata added to allow visualization with \textit{e.g.} Visit on a cluster. Some visualization examples are shown below in figures \ref{bbd1} and \ref{bbd2}.
-
-
-
 Puffin (Parallel Unaveraged Fel INtegrator) simulates a Free Electron Laser (FEL). Puffin is a massively parallel numerical solver for an unaveraged, 3D FEL system of equations, and is written mostly in Fortran 90, using MPI and OpenMP.
 
 The initial publication describing the first version of the code is in \cite{puffin}. The code has undergone many improvements and extended its functionality since then. It no longer uses an external linear solver package, and the only external package now required is FFTW v3.3.x onwards.
@@ -130,9 +124,27 @@ It presently does not include the effects of space charge, and ignores emission 
 
 \section{Overview}
 
-Puffin, being an unaveraged FEL code, is quite distinct from other FEL codes in it's lack of restrictions on the radiation and electron bandwidth being modelled. Due to the nature of the code, and the likely use cases for such a code, we have attempted to create a resource which is a flexible tool for numerical scientific research into some more esoteric FEL physics and regimes, while still containing enough `realistic'  components to enable modelling of a current or future facility.
+A Free Electron Laser (FEL) is a device in which an ultra-fast electron beam, travelling close to the speed of light, is made to wiggle from side to side by passing it through a magnetic device known as an undulator, which enables it to amplify a co-propagating radiation field by many orders of magnitude. The FEL is the world's premier source of coherent X-Rays, with national facilites in the U.S., Germany, Japan, Switzerland and more fully booked by physicists and chemists trying to understand matter on the ultra-fast, ultra-small scale.
+
+The `usual' way of doing FEL theory and numerical codes involves a number of approximations, including:
+
+\begin{itemize}
+\item Averaging out the fast wiggle motion of the electrons
+\item Assuming the radiation field varies slowly over one radiation wavelength (Slowly Varying Envelope Approximation, or SVEA)
+\item Confining the electrons within self-contained slices (usually a radiation wavelength long) with periodic boundary conditions
+\end{itemize}
+
+The above approximations are usually perfectly valid, but there are some regimes in which they may not be applied, or, at least, the application of them is questionable. Puffin, being a so-called `unaveraged' FEL code, has been written to allow investigation into these somewhat esoteric modes of operation, and to test concepts that other FEL codes cannot. Lack of the above restrictions results in the capability of modelling the full radiation and electron bandwidth, with the drawback of increased computation time, necessitating a need for parallel computation on large HPC clusters for fully temporal 3D runs. Puffin is not free of all assumptions, however: we still neglect the backwards propagating wave in the system, we make the paraxial approximation, and neglect space-charge and wakefields.
+
+Due to the nature of the code, and the likely use cases for such a code, we have attempted to create a resource which is a flexible tool for numerical scientific research, while still containing enough `realistic'  components to enable reasonable modelling of a current or future facility.
+
+
+
 
 The main Puffin algorithm solves the FEL system in a scaled reference frame - see section \ref{puff-eqns} for a description. Data I/O may be in either SI or the Puffin scaled variables.
+
+
+
 
 \subsection{Input Files}
 
@@ -423,7 +435,9 @@ Each entry must be followed by the options specifying that lattice element, on t
 
 For the undulator,  one must specify the undulator type, the number of wiggler periods $N_w$, the undulator parameter relative to the base undulator parameter in the main input file $\alpha$, the linear taper $\dfrac{d \alpha}{d \bar{z}}$, the polarization $u_x$ and $u_y$ (ignored for the non-variable polarized undulator types), a logical specifying if undulator ends are being used for this module, another logical spcifying if a strong focusing channel is being used in the undulator, and the strong focusing strengths $\bar{k}_{\beta x}$ and $\bar{k}_{\beta y}$, and the number of integration steps per period to be used in this module.
 
+
 {\bf QU} - Quadrupole
+
 
 For the quad, we must specify $\bar{F}_x$ and $\bar{F}_y$. These are scaled transverse components of the transform matrix for the quad. The quad is only a point transform, currently, and does not have a length, so the length must be included in a drift section. The transforms for the quad, in S.I. units, are defined as
 \begin{align}
