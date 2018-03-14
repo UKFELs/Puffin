@@ -95,6 +95,10 @@ do iL = iLst, modNum
 
     call BModulation(iL)
 
+  else if (iElmType(iL) == iRotation) then
+
+    call bRotation(iL)
+
   end if
 
 

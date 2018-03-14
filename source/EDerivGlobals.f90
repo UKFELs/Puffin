@@ -4,7 +4,7 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Module defining shared (global) variables used in Puffin
@@ -29,8 +29,8 @@ integer(kind=ip) :: ntrnds_G, ntrndsi_G
 
 integer(kind=ip) :: nspinDX, nspinDY
 
-real(kind=wp)    :: sLengthOfElmX_G 
-real(kind=wp)    :: sLengthOfElmY_G 
+real(kind=wp)    :: sLengthOfElmX_G
+real(kind=wp)    :: sLengthOfElmY_G
 real(kind=wp)    :: sLengthOfElmZ2_G
 
 
@@ -51,7 +51,7 @@ real(kind=wp), allocatable :: kz2_loc_G(:)
 
 real(kind=wp) :: sBeta_G    ! Absorption coefficient
 
-real(kind=wp)  :: sfilt   ! Frequency cutoff for high pass filter, in units 
+real(kind=wp)  :: sfilt   ! Frequency cutoff for high pass filter, in units
                           ! of f_z2 = Lenz2 * ffrac / lamda_rz2
 integer(kind=ip) :: igwr
 
@@ -110,7 +110,7 @@ real(kind=wp) :: fillFact_G, ata_G
 !   ---   For rounded edge beam   ---   !
 
 logical, allocatable :: qRndEj_G(:)
-real(kind=wp), allocatable :: sSigEj_G(:) 
+real(kind=wp), allocatable :: sSigEj_G(:)
 real(kind=wp), parameter :: gExtEj_G = 7.5_wp
 
 !  --- Read particle set algorithms ---
@@ -125,7 +125,7 @@ integer(kind=ip) :: iFieldSeedType_G
 integer(kind=ip), parameter :: iSimpleSeed_G = 1_ip
 integer(kind=ip), parameter :: iReadH5Field_G = 2_ip
 
-! Electron macroparticle phase space coordinates 
+! Electron macroparticle phase space coordinates
 
 real(kind=wp), allocatable     :: sElX_G(:)
 real(kind=wp), allocatable     :: sElY_G(:)
@@ -158,23 +158,23 @@ type(cInitData) :: tInitData_G
 ! Temporary intermediate arrays for RK4
 
 ! *t is 'temp', for intermediate stages of RK4
-! d*t and d*m are temp intermediate d/dz of each variable 
+! d*t and d*m are temp intermediate d/dz of each variable
 
 
 ! allocate with size iNumberElectrons_G
 
 
 
-!real(kind=wp), allocatable :: dxm(:), dxt(:), xt(:)    
+!real(kind=wp), allocatable :: dxm(:), dxt(:), xt(:)
 !real(kind=wp), allocatable :: dym(:), dyt(:), yt(:)
 !real(kind=wp), allocatable :: dpxm(:), dpxt(:), pxt(:)
 !real(kind=wp), allocatable :: dpym(:), dpyt(:), pyt(:)
 !real(kind=wp), allocatable :: dz2m(:), dz2t(:), z2t(:)
-!real(kind=wp), allocatable :: dpz2m(:), dpz2t(:), pz2t(:) 
+!real(kind=wp), allocatable :: dpz2m(:), dpz2t(:), pz2t(:)
 
 
 
-!real(kind=wp), allocatable :: dAm(:), dAt(:), A_localt(:) 
+!real(kind=wp), allocatable :: dAm(:), dAt(:), A_localt(:)
 
 
 
@@ -219,9 +219,9 @@ real(kind=wp) :: sKBetaXSF_G, sKBetaYSF_G
 
 real(kind=wp), allocatable    :: zMod(:), mf(:), delmz(:), tapers(:), &
                                  ux_arr(:), uy_arr(:), &
-                                 kbnx_arr(:), kbny_arr(:) 
+                                 kbnx_arr(:), kbny_arr(:)
 
-                                 
+
 character(32_ip), allocatable :: zundtype_arr(:)
 
 integer(kind=ip), allocatable :: nSteps_arr(:)
@@ -241,7 +241,7 @@ real(kind=wp), allocatable    :: chic_zbar(:), chic_slip(:), &
 !     For lattice element type 'drift'
 
 
-real(kind=wp), allocatable    :: drift_zbar(:) 
+real(kind=wp), allocatable    :: drift_zbar(:)
 
 
 
@@ -259,18 +259,22 @@ real(kind=wp), allocatable    :: enmod_wavenum(:), enmod_mag(:)
 !     For lattice element type 'quadrupole'
 
 
-real(kind=wp), allocatable    :: quad_fx(:), quad_fy(:) 
+real(kind=wp), allocatable    :: quad_fx(:), quad_fy(:)
+
+
+! ****************************************************
+!      For lattice element type 'Rotation'
+
+real(kind=wp), allocatable    :: theta_rotation(:)
 
 
 !     End module specific array definitions
 ! ****************************************************
-! ****************************************************
 
 
 
 
-
-integer(kind=ip) :: numOfUnds, numOfChics, numOfDrifts, numOfModulations, numOfQuads
+integer(kind=ip) :: numOfUnds, numOfChics, numOfDrifts, numOfModulations, numOfQuads, numOfRotations
 
 
 
@@ -281,12 +285,12 @@ integer(kind=ip)    :: ModNum, ModCount   !  Number of modules and module counte
 
 
 
-real(kind=wp) :: n2col ! alpha, fractional change in aw (see 
-	                     ! LT Campbell, BWJ McNeil and S Reiche, 
+real(kind=wp) :: n2col ! alpha, fractional change in aw (see
+	                     ! LT Campbell, BWJ McNeil and S Reiche,
 	                     ! New Journal of Physics 16 (2014) 103019)
 
 ! The following are used for linear magnetic field tapering
-! where n2col = n2col0 + (undgrad * (sz-sz0)) 
+! where n2col = n2col0 + (undgrad * (sz-sz0))
 
 real(kind=wp) :: sz0     ! zbar used for beginning of taper i.e.
                          ! (usually, the start of the current undulator module)
@@ -296,7 +300,7 @@ real(kind=wp) :: undgrad ! d/dzbar of alpha (n2col)
 real(kind=wp) :: n2col0  ! Initial alpha in the current undulator module
 
 real(kind=wp) :: m2col   ! Fractional change in eta due to change in aw
-                         ! (redundant) 
+                         ! (redundant)
 
 logical :: qUndEnds_G     ! If modelling undulator ends
 
@@ -312,7 +316,7 @@ integer(kind=ip), parameter :: iUndStart_G = 1_ip, &
                                iUndEnd_G = 2_ip, &
                                iUndMain_G = 0_ip
 
-real(kind=wp)  :: diffStep ! Stepsize in zbar used for diffraction 
+real(kind=wp)  :: diffStep ! Stepsize in zbar used for diffraction
 
 real(kind=wp)  :: ffact    ! Scaling factor for fourier transforms
                            ! (= nnodesX * nnodesY * nnodesz2)
@@ -361,7 +365,7 @@ integer(kind=ip) :: ioutInfo_G
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Parallel Vars
 
-! These describe the displacement of data across MPI processes (see 
+! These describe the displacement of data across MPI processes (see
 ! MPI dcumentation, e.g. inputs of MPI_ALLGATHERV)...
 
 
@@ -395,7 +399,7 @@ logical   ::  qDump_G            ! Dump data in case of crash?
 
 logical   ::  qResume_G          ! Reading from previously crashed runs dump files? (REDUNDANT)
 
-logical   ::  qSeparateStepFiles_G  ! Make seperate sdds files for each phase space coordinate? 
+logical   ::  qSeparateStepFiles_G  ! Make seperate sdds files for each phase space coordinate?
 
 
 logical   ::  qMod_G  ! Using undulator modules and chicanes?

@@ -4,11 +4,11 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> This module contains subroutines to read in the lattice file and setup the
-!> elements in the undulator line. It also contains the subroutines/functions 
+!> elements in the undulator line. It also contains the subroutines/functions
 !> for all the non-undulator segements, and the initialization of the undulator
 !> segments.
 
@@ -29,11 +29,12 @@ integer(kind=ip), parameter :: iUnd = 1_ip, &
                                iChic = 2_ip, &
                                iDrift = 3_ip, &
                                iQuad = 4_ip, &
-                               iModulation = 5_ip
+                               iModulation = 5_ip, &
+                               iRotation = 6_ip
 
 integer(kind=ip), allocatable :: iElmType(:)
 
-integer(kind=ip) :: iUnd_cr, iChic_cr, iDrift_cr, iQuad_cr, iModulation_cr    ! Counters for each element type
+integer(kind=ip) :: iUnd_cr, iChic_cr, iDrift_cr, iQuad_cr, iModulation_cr, iRotation_cr    ! Counters for each element type
 
 !integer(kind=ip) :: inum_latt_elms
 
@@ -45,39 +46,39 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Top-level subroutine for setting up the elements in the undulator line, 
+!> Top-level subroutine for setting up the elements in the undulator line,
 !> either from a supplied lattice file, or as the single undulator specified
-!> in the main input file. It takes as inputs the simple/single undulator 
-!> parameters as specified in the main input file. If a lattice file is 
+!> in the main input file. It takes as inputs the simple/single undulator
+!> parameters as specified in the main input file. If a lattice file is
 !> supplied, these values are updated. If no lattice file is supplied, then
 !> the undulator line is set up as one undulator with these parameters. Note:
-!> the lattice filename is not an optional parameter! If wishing to not 
+!> the lattice filename is not an optional parameter! If wishing to not
 !> specify a lattice file, the filename should be input as a blank string ('')
 !> @param[in] lattFile String: The lattice file name
-!> @param[inout] taper The taper of the initial undulator module. Input as 
-!> the taper specified in the main input file. Updated if a lattice file is 
+!> @param[inout] taper The taper of the initial undulator module. Input as
+!> the taper specified in the main input file. Updated if a lattice file is
 !> supplied.
 !> @param[in] sRho The FEL, or Pierce, parameter
 !> @param[inout] nSteps_f Number of steps in the first undulator module. Input
-!> as the number of steps calculated from the main input file. Updated if a  
+!> as the number of steps calculated from the main input file. Updated if a
 !> lattice file is supplied.
 !> @param[inout] dz_f Integration step size in the first undulator module. Input
-!> as the step size specified in the main input file. Updated if a lattice file 
+!> as the step size specified in the main input file. Updated if a lattice file
 !> is supplied.
 !> @param[inout] ux_f ux (see manual) in the first undulator module. Input
-!> as the ux specified in the main input file. Updated if a lattice file 
+!> as the ux specified in the main input file. Updated if a lattice file
 !> is supplied.
 !> @param[inout] uy_f uy (see manual) in the first undulator module. Input
-!> as the uy specified in the main input file. Updated if a lattice file 
+!> as the uy specified in the main input file. Updated if a lattice file
 !> is supplied.
-!> @param[inout] kbnx_f Strong (scaled) in-undulator wavenumber in x (see manual) 
-!> in the first undulator module. Input as the kbetax_SF specified in the main 
+!> @param[inout] kbnx_f Strong (scaled) in-undulator wavenumber in x (see manual)
+!> in the first undulator module. Input as the kbetax_SF specified in the main
 !> input file. Updated if a lattice file is supplied.
-!> @param[inout] kbny_f Strong (scaled) in-undulator wavenumber in y (see manual) 
-!> in the first undulator module. Input as the kbetay_SF specified in the main 
+!> @param[inout] kbny_f Strong (scaled) in-undulator wavenumber in y (see manual)
+!> in the first undulator module. Input as the kbetay_SF specified in the main
 !> input file. Updated if a lattice file is supplied.
 
   subroutine setupMods(lattFile, taper, sRho, nSteps_f, dz_f, &
@@ -85,7 +86,7 @@ contains
 
     implicit none
 
-    character(1024_ip), intent(in) :: LattFile 
+    character(1024_ip), intent(in) :: LattFile
     real(kind=wp), intent(inout) :: taper
     real(kind=wp), intent(in) :: sRho
     real(kind=wp), intent(inout) :: dz_f, ux_f, uy_f, kbnx_f, kbny_f
@@ -121,9 +122,11 @@ contains
       allocate(drift_zbar(numOfDrifts))
 
       allocate(enmod_wavenum(numOfModulations), &
-                 enmod_mag(numOfModulations)) 
+                 enmod_mag(numOfModulations))
 
       allocate(quad_fx(numOfQuads), quad_fy(numOfQuads))
+
+      allocate(theta_rotation(numOfRotations))
 
 
 !    Latt file name, number of wigg periods converted to z-bar,
@@ -148,6 +151,7 @@ contains
       numOfDrifts = 0
       numOfQuads = 0
       numOfModulations = 0
+      numOfRotations = 0
 
       allocate(iElmType(1))
 
@@ -164,9 +168,11 @@ contains
       allocate(drift_zbar(numOfDrifts))
 
       allocate(enmod_wavenum(numOfModulations), &
-                 enmod_mag(numOfModulations)) 
+                 enmod_mag(numOfModulations))
 
       allocate(quad_fx(numOfQuads), quad_fy(numOfQuads))
+
+      allocate(theta_rotation(numOfRotations))
 
       iElmType(1) = iUnd
       mf(1) = 1_wp
@@ -180,8 +186,8 @@ contains
       tapers(1) = taper
       ux_arr(1) = ux_f
       uy_arr(1) = uy_f
-      kbnx_arr(1) = kbnx_f 
-      kbny_arr(1) = kbny_f 
+      kbnx_arr(1) = kbnx_f
+      kbny_arr(1) = kbny_f
 
     end if
 
@@ -190,6 +196,7 @@ contains
     iDrift_cr=1_ip
     iQuad_cr=1_ip
     iModulation_cr = 1_ip
+    iRotation_cr=1_ip
 
     iCsteps = 1_ip
 
@@ -222,10 +229,10 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Subroutine for reading in the lattice file and setting up the lattice 
+!> Subroutine for reading in the lattice file and setting up the lattice
 !> element arrays. The element arrays are globally defined in this module.
 !> @param[in] lattFile String: The lattice file name
 !> @param[in] rho The FEL, or Pierce, parameter
@@ -245,7 +252,7 @@ contains
 
   integer(kind=ip) :: nperlam
 
-  integer(kind=ip) :: cnt, cntq, cntu, cntc, cntd, cntm, cntt
+  integer(kind=ip) :: cnt, cntq, cntu, cntc, cntd, cntm, cntr, cntt
   character(40) :: ztest
 
 !   pi = 4.0_WP*ATAN(1.0_WP)
@@ -258,6 +265,7 @@ contains
   cntd = 0
   cntc = 0
   cntm = 0
+  cntr = 0
 
 
 
@@ -269,7 +277,7 @@ contains
   end if
 
 
-  do 
+  do
 
     read (168,*, IOSTAT=ios) ztest  ! probe the line
 
@@ -307,10 +315,10 @@ contains
 
         cntu = cntu + 1
 
-!       reading ... element ID, undulator type, num of periods, alpha (aw / aw0), 
-!       taper (d alpha / dz), integration steps per period, ux and uy (polarization 
-!       control), and kbnx and kbny, betatron wavenumbers for in-undulator strong 
-!       focusing (applied in the wiggler!!! NOT from quads. Remember the natural 
+!       reading ... element ID, undulator type, num of periods, alpha (aw / aw0),
+!       taper (d alpha / dz), integration steps per period, ux and uy (polarization
+!       control), and kbnx and kbny, betatron wavenumbers for in-undulator strong
+!       focusing (applied in the wiggler!!! NOT from quads. Remember the natural
 !       undulator focusing is also included IN ADDITION to this...)
 
         read (168,*, IOSTAT=ios) ztest, zundtype_arr(cntu), nw, mf(cntu), tapers(cntu), &
@@ -325,7 +333,7 @@ contains
 
         slamw = 4.0_WP * pi * rho
         delmz(cntu) = slamw / real(nperlam, kind=wp)
-  
+
         if (zundtype_arr(cntu) == 'curved') then
 
           ux_arr(cntu) = 0   ! Temp fix for initialization bug
@@ -382,6 +390,15 @@ contains
         cntt = cntt + 1
         iElmType(cntt) = iModulation
 
+      else if (ztest(1:2) == 'RO') then
+
+        backspace(168)
+        cntr = cntr + 1
+        read (168,*, IOSTAT=ios) ztest, theta_rotation(cntr) ! read vars
+
+        cntt = cntt + 1
+        iElmType(cntt) = iRotation
+
 
       end if
 
@@ -390,7 +407,7 @@ contains
 
     end if
 
-  end do    
+  end do
 
   close(168, STATUS='KEEP')
 
@@ -400,7 +417,7 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Subroutine for modelling the chicane element in Puffin. This is achieved
@@ -451,7 +468,7 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Subroutine to model the electron drift between other lattice elements.
@@ -478,7 +495,7 @@ contains
     sElZ2_G = sElZ2_G + del_dr_z * sp2
 
     if (.not. qOneD_G) then
-    
+
       ! drift in x and y...
 
       sElX_G = sElX_G + (2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
@@ -504,10 +521,10 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Subroutine to model the quad element in Puffin. This is implemented as a 
+!> Subroutine to model the quad element in Puffin. This is implemented as a
 !> simple point transform.
 !> @param[in] iL The element number in the lattice
 
@@ -549,13 +566,13 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Apply a simple energy modulation to the beam in Puffin.
 !> @param[in] iL The element number in the lattice
 
-  subroutine bModulation(iL)
+  subroutine bModulation (iL)
 
     integer(kind=ip), intent(in) :: iL
 
@@ -567,6 +584,25 @@ contains
 
   end subroutine bModulation
 
+! ###############################################
+!>
+!> Appy a rotation to the beam
+
+  subroutine bRotation(iL)
+
+    integer(kind=ip), intent(in) :: iL
+
+    if (.not. qOneD_G) then
+
+      sElX_G = (cos(theta_rotation(iRotation_cr) * pi) + sin(theta_rotation(iRotation_cr) * pi)) * sElX_G
+
+      sElY_G = (-sin(theta_rotation(iRotation_cr) * pi) + cos(theta_rotation(iRotation_cr) * pi)) * sElY_G
+
+    end if
+
+    iRotation_cr = iRotation_cr + 1
+
+  end subroutine bRotation
 
 
 
@@ -575,7 +611,7 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Apply a virtual 'magnet corrector' at the end of the wiggler
@@ -610,7 +646,7 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> When not using undulator ends, this subroutine re-centres the beam after
@@ -715,12 +751,12 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> When not using undulator ends, this subroutine initializes the transverse beam
-!> coordinates to satisfy the initial offset conditions in the undulator. 
-!> the undulator exit. 
+!> coordinates to satisfy the initial offset conditions in the undulator.
+!> the undulator exit.
 !> @param[in] sZ zbar position
 
   subroutine matchIn(sZ)
@@ -818,12 +854,12 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> When not using undulator ends, this subroutine initializes the transverse beam
-!> coordinates to satisfy the initial offset conditions in the undulator. 
-!> the undulator exit. 
+!> coordinates to satisfy the initial offset conditions in the undulator.
+!> the undulator exit.
 !> @param[in] iM Undulator number
 !> @param[in] sZ zbar position in the machine
 !> @param[inout] sZ zbar position local to undulator (initialized to = 0) here
@@ -883,10 +919,10 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Function to count the number of lines on a file 
+!> Function to count the number of lines on a file
 !> @param[in] fname Filename
 
   FUNCTION lineCount(fname)
@@ -918,7 +954,7 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Function to count the number of each type of element in the lattice file
@@ -934,7 +970,7 @@ contains
 !                LOCAL ARGS
 
   integer :: ios
-  integer(kind=ip) :: cnt, cntq, cntu, cntc, cntd, cntm
+  integer(kind=ip) :: cnt, cntq, cntu, cntc, cntd, cntm, cntr
   character(40) :: ztest
 
   ztest = ''
@@ -944,6 +980,7 @@ contains
   cntc = 0
   cntd = 0
   cntm = 0
+  cntr = 0
 
   open(168,FILE=fname, IOSTAT=ios, STATUS='OLD', ACTION='READ', POSITION ='REWIND')
   if (ios /= 0) then
@@ -951,7 +988,7 @@ contains
     stop "OPEN(input file) not performed correctly, IOSTAT /= 0"
   end if
 
-  do 
+  do
 
     read (168,*, IOSTAT=ios) ztest  ! probe the line
 
@@ -964,7 +1001,8 @@ contains
           print*, cntq, "quads,"
           print*, cntc, "chicanes,"
           print*, cntd, "drifts"
-          print*, "and ", cntm, "modulation sections"
+          print*, cntm, "modulation sections"
+          print*, "and", cntr, "rotation sections"
       end if
 
       exit
@@ -1006,6 +1044,11 @@ contains
         cntm = cntm + 1
 
 
+      else if (ztest(1:2) == 'RO') then
+
+        cntr = cntr + 1
+
+
       end if
 
       cnt = cnt + 1
@@ -1018,7 +1061,7 @@ contains
   close(168, STATUS='KEEP')
 
 
-  numOfMods = cntq + cntu + cntc + cntd + cntm
+  numOfMods = cntq + cntu + cntc + cntd + cntm + cntr
 
   numOfUnds = cntu
 
@@ -1029,6 +1072,8 @@ contains
   numOfModulations = cntm
 
   numOfQuads = cntq
+
+  numOfRotations = cntr
 
 
   end function numOfMods
