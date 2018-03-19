@@ -135,6 +135,9 @@ real(kind=wp), allocatable     :: sElPY_G(:)
 real(kind=wp), allocatable     :: sElGam_G(:)
 
 
+real(kind=wp), allocatable     :: sElX_Gnew(:)
+real(kind=wp), allocatable     :: sElY_Gnew(:)
+
 integer(kind=ip) :: TrLdMeth_G
 
 

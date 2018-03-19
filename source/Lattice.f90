@@ -594,11 +594,14 @@ contains
 
     if (.not. qOneD_G) then
 
-      sElX_G = (cos(theta_rotation(iRotation_cr) * pi) + sin(theta_rotation(iRotation_cr) * pi)) * sElX_G
+      sElX_Gnew = cos(theta_rotation(iRotation_cr) * pi) * sElX_G - sin(theta_rotation(iRotation_cr) * pi) * sElY_G
 
-      sElY_G = (-sin(theta_rotation(iRotation_cr) * pi) + cos(theta_rotation(iRotation_cr) * pi)) * sElY_G
+      sElY_Gnew = sin(theta_rotation(iRotation_cr) * pi) * sElX_G + cos(theta_rotation(iRotation_cr) * pi) * sElY_G
 
     end if
+
+    sElX_G=sElX_Gnew
+    sElY_G=sElY_Gnew
 
     iRotation_cr = iRotation_cr + 1
 
