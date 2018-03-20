@@ -1,6 +1,6 @@
 
 import numpy as np
-import testMT as TMT
+import SUMatch as TMT
 from puffDataClass import puffData
 from undulator import undulator
 
