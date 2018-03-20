@@ -46,14 +46,14 @@ you need to manually add them so that CMake can find them:
 `export PATH=/usr/include/hdf5/openmpi:$PATH`
 
 Grab Puffin from Github (`path/to/Puffin` in the below command is the location
-you want the files placed.):
+you want the source files placed.):
 
 `git clone git@github.com:UKFELs/Puffin.git path/to/Puffin`
 
 Then, run CMake to find the libraries and create the Makefile (note that
 `path/to/desired/puffin/install` is the location you want the Puffin build 
 installed to, and `path/to/puffin/` is the location of the directory
-that you downloaded Puffin to, same as in the `git clone` command above):
+that you downloaded the Puffin source to, same as in the `git clone` command above):
 
 `cmake -DCMAKE_INSTALL_PREFIX:PATH=path/to/desired/puffin/install -DENABLE_PARALLEL:BOOL=TRUE -DHdf5_MODULE_DIRS='/usr/include/hdf5/openmpi' -DHdf5_LIBRARY_DIRS='/usr/lib/x86_64-linux-gnu/hdf5/openmpi;/usr/lib/x86_64-linux-gnu/' -DHdf5_INCLUDE_DIRS='/usr/include/hdf5/openmpi' -DHdf5_LIBRARY_NAMES='hdf5_openmpi_fortran;hdf5_openmpi' -DHdf5_LIBRARIES='/usr/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.so;/usr/lib/x86_64-linux-gnu/libhdf5_openmpi.so' -DHdf5_STLIBS='/usr/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.a;/usr/lib/x86_64-linux-gnu/libhdf5_openmpi.a'  path/to/puffin/`
 
