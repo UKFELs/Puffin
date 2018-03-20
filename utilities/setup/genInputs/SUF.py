@@ -1,18 +1,30 @@
 import tables
-# import physConst
 
 def readSUF(fname):
     f=tables.open_file(fname,'r')
-    Electrons=f.root.Particles.read()
-    
-# Assign the data to arrays
+    MPs=f.root.Particles.read()
+    f.close()
+    return MPs
 
-    x = Electrons[:,0]
-    px = Electrons[:,1]
-    y = Electrons[:,2]
-    py = Electrons[:,3]
-    z = Electrons[:,4]
-    pz = Electrons[:,5]
-    wt = Electrons[:,6]
+def writeSUF(fname, MPs):
+
+    output_file=tables.open_file(fname ,'w')
+
+# Particle data:
+
+    ParticleGroup=output_file.create_array('/','Particles', MPs)
+
+# VizSchema metadata    
     
-    return x, px, y, py, z, pz, wt
+    boundsGroup=output_file.create_group('/','globalGridGlobalLimits','')
+    boundsGroup._v_attrs.vsType='limits'
+    boundsGroup._v_attrs.vsKind='Cartesian'
+    timeGroup=output_file.create_group('/','time','time')
+    timeGroup._v_attrs.vsType='time'
+    ParticleGroup._v_attrs.vsType='variableWithMesh'
+    ParticleGroup._v_attrs.vsTimeGroup='time'
+    ParticleGroup._v_attrs.vsNumSpatialDims = 3
+    ParticleGroup._v_attrs.vsLimits='globalGridGlobalLimits'
+    ParticleGroup._v_attrs.vsLabels='x,px,y,py,z,pz,NE'
+    output_file.close()
+    

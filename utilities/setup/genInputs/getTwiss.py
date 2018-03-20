@@ -152,8 +152,8 @@ def getFODOTwiss(puffVars, undmod, f, DL, emitx, emity):
     betax, alphax = getMatchTwiss(fullMatx)
     betay, alphay = getMatchTwiss(fullMaty)
 
-    sigx = np.sqrt(betax * emitx)
-    sigy = np.sqrt(betay * emity)
+#    sigx = np.sqrt(betax * emitx)
+#    sigy = np.sqrt(betay * emity)
 
 #    print 'sigx = ', sigx
 #    print 'betax = ', betax
@@ -163,8 +163,8 @@ def getFODOTwiss(puffVars, undmod, f, DL, emitx, emity):
 #    print 'betay = ', betay
 #    print 'alphay = ', alphay
 
-    twissx = [sigx, betax, alphax]
-    twissy = [sigy, betay, alphay]
+    twissx = [emitx, betax, alphax]
+    twissy = [emitx, betay, alphay]
     return twissx, twissy
 
 #print fullMaty

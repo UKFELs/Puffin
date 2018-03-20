@@ -37,7 +37,6 @@ def MM(x, px, M):
     """
 
     ap = np.array([x, px])
-    print 'SHAPE = ', ap.shape
     apn = np.matmul(M, ap)
     xn = apn[0,:]
     pxn = apn[1,:]
@@ -55,8 +54,6 @@ def matchT1(x, px, b1, a1, b2, a2):
     """
 
     M = getMat(b1, a1, b2, a2)
-    print 'MAT = ', M
-#    print 'MAT = ', M
     x2, px2 = MM(x, px, M)
 
     return x2, px2
