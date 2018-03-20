@@ -23,6 +23,11 @@ from undulator import undulator
 
 
 def getMatchTwiss(fullMat):
+    """
+    Assuming the matrix describes a periodic lattice, this function will output
+    the Twiss parameters for matching.
+    """
+
 
     C = fullMat[0][0]
     S = fullMat[0][1]
@@ -42,55 +47,64 @@ def getMatchTwiss(fullMat):
 
     return beta, alpha
 
+def getFODOTwiss(puffVars, undmod, f, DL, emitx, emity):
+    """
+    This function gets the transport matrix for a simple FODO lattice with
+    quads of strength f (focus factor), and undulator modules described by 
+    undmod, with drift lengths between undulator modules of DL (in metres).
+    
+    Returns arrays twissx, twissy, which are 3 element lists containing the
+    rms sigma, beta, and alpha of x and y, respectively.
+    """
 
 
 # Puffin Python data class, holds scaling parameters and physical constants
 
-puffVars = puffData()
+#    puffVars = puffData()
 
 # Initialize CLARA base parameters
 
-puffVars.aw = 0.8745*np.sqrt(2.)   # The PEAK!!!
-puffVars.gamma0 = 489.237
-puffVars.lw = 0.025
-puffVars.rho = 0.005
-puffVars.undtype = 'planepole'
-puffVars.ux = 0.
-puffVars.uy = 1.
+#    puffVars.aw = 0.8745*np.sqrt(2.)   # The PEAK!!!
+#    puffVars.gamma0 = 489.237
+#    puffVars.lw = 0.025
+#    puffVars.rho = 0.005
+#    puffVars.undtype = 'planepole'
+#    puffVars.ux = 0.
+#    puffVars.uy = 1.
 
-emitxn = 1.022e-9
-emityn = 1.022e-9
+#    emitx = 1.022e-9
+#    emity = 1.022e-9
 
 # Generate the rest of the Puffin scaling from the above
 
-puffVars.genParams()  # generate rest of scaled params
+#    puffVars.genParams()  # generate rest of scaled params
 
 
-undmod = undulator(puffVars, undtype = 'planepole', Nw = 26)
+#    undmod = undulator(puffVars, undtype = 'planepole', Nw = 26)
 
 
 
 
 # Matrix representation of undulators in x and y
 
-mx, my = undmod.getMatrix(puffVars)
+    mx, my = undmod.getMatrix(puffVars)
 
 
 # Drift length between undulators
 
-DL = 24. * puffVars.lw # Drift lengths
+    DL = 24. * puffVars.lw # Drift lengths
 
 # Matrix representation of drift section between quad and undulator
 # (so of length 0.5 of DL)
 
-dr = [[1.,DL/2.],[0,1.]]
+    dr = [[1.,DL/2.],[0,1.]]
 
 
 # Focusing factor of quads, given by F = (rho B) / (g L), where (rho B)
 # is the magnetic rigidity, g is the gradient of the quad field (i.e. dBy/dx)
 # and L is the length of the quad. (thin quad approximation)
 
-f = 3.22 * puffVars.lg
+#    f = 3.22 * puffVars.lg
 
 
 
@@ -98,18 +112,18 @@ f = 3.22 * puffVars.lg
 
 # Matrices for quads of strength f in x direction
 
-Q1 = [[1., 0.], [-1./(2.*f), 1.]]  # focusing, half strength
-Q2 = [[1., 0.], [1./f, 1.]]        # defocusing, full strength
-Q3 = Q1                            # focusing, half strength
+    Q1 = [[1., 0.], [-1./(2.*f), 1.]]  # focusing, half strength
+    Q2 = [[1., 0.], [1./f, 1.]]        # defocusing, full strength
+    Q3 = Q1                            # focusing, half strength
 
-fullMatx = np.matmul(Q1, dr)
-fullMatx = np.matmul(fullMatx, mx)
-fullMatx = np.matmul(fullMatx, dr)
-fullMatx = np.matmul(fullMatx, Q2)
-fullMatx = np.matmul(fullMatx, dr)
-fullMatx = np.matmul(fullMatx, mx)
-fullMatx = np.matmul(fullMatx, dr)
-fullMatx = np.matmul(fullMatx, Q3)
+    fullMatx = np.matmul(Q1, dr)
+    fullMatx = np.matmul(fullMatx, mx)
+    fullMatx = np.matmul(fullMatx, dr)
+    fullMatx = np.matmul(fullMatx, Q2)
+    fullMatx = np.matmul(fullMatx, dr)
+    fullMatx = np.matmul(fullMatx, mx)
+    fullMatx = np.matmul(fullMatx, dr)
+    fullMatx = np.matmul(fullMatx, Q3)
 
 
 
@@ -119,41 +133,39 @@ fullMatx = np.matmul(fullMatx, Q3)
 
 # Matrices for quads of strength f in y direction
 
-Q1 = [[1., 0.], [1./(2.*f), 1.]]  # defocusing, half strength
-Q2 = [[1., 0.], [-1./f, 1.]]      # focusing, full strength
-Q3 = Q1                           # defocusing, half strength
+    Q1 = [[1., 0.], [1./(2.*f), 1.]]  # defocusing, half strength
+    Q2 = [[1., 0.], [-1./f, 1.]]      # focusing, full strength
+    Q3 = Q1                           # defocusing, half strength
 
-fullMaty = np.matmul(Q1, dr)
-fullMaty = np.matmul(fullMaty, my)
-fullMaty = np.matmul(fullMaty, dr)
-fullMaty = np.matmul(fullMaty, Q2)
-fullMaty = np.matmul(fullMaty, dr)
-fullMaty = np.matmul(fullMaty, my)
-fullMaty = np.matmul(fullMaty, dr)
-fullMaty = np.matmul(fullMaty, Q3)
-
-
-
-betax, alphax = getMatchTwiss(fullMatx)
-betay, alphay = getMatchTwiss(fullMaty)
+    fullMaty = np.matmul(Q1, dr)
+    fullMaty = np.matmul(fullMaty, my)
+    fullMaty = np.matmul(fullMaty, dr)
+    fullMaty = np.matmul(fullMaty, Q2)
+    fullMaty = np.matmul(fullMaty, dr)
+    fullMaty = np.matmul(fullMaty, my)
+    fullMaty = np.matmul(fullMaty, dr)
+    fullMaty = np.matmul(fullMaty, Q3)
 
 
 
 
-sigx = np.sqrt(betax * emitxn)
+    betax, alphax = getMatchTwiss(fullMatx)
+    betay, alphay = getMatchTwiss(fullMaty)
 
-sigy = np.sqrt(betay * emityn)
+    sigx = np.sqrt(betax * emitx)
+    sigy = np.sqrt(betay * emity)
 
+#    print 'sigx = ', sigx
+#    print 'betax = ', betax
+#    print 'alphax = ', alphax
 
-print 'sigx = ', sigx
-print 'betax = ', betax
-print 'alphax = ', alphax
+#    print 'sigy = ', sigy
+#    print 'betay = ', betay
+#    print 'alphay = ', alphay
 
-print 'sigy = ', sigy
-print 'betay = ', betay
-print 'alphay = ', alphay
-
-    
+    twissx = [sigx, betax, alphax]
+    twissy = [sigy, betay, alphay]
+    return twissx, twissy
 
 #print fullMaty
 # C = fullMatx[0][0]
@@ -180,3 +192,30 @@ print 'alphay = ', alphay
 
 
 
+# Puffin Python data class, holds scaling parameters and physical constants
+
+puffVars = puffData()
+
+# Initialize CLARA base parameters
+
+puffVars.aw = 0.8745*np.sqrt(2.)   # The PEAK!!!
+puffVars.gamma0 = 489.237
+puffVars.lw = 0.025
+puffVars.rho = 0.005
+puffVars.undtype = 'planepole'
+puffVars.ux = 0.
+puffVars.uy = 1.
+
+emitx = 1.022e-9
+emity = 1.022e-9
+
+# Generate the rest of the Puffin scaling from the above
+
+puffVars.genParams()  # generate rest of scaled params
+
+f = 3.22 * puffVars.lg
+DL = 24. * puffVars.lw # Drift lengths
+
+undmod = undulator(puffVars, undtype = 'planepole', Nw = 26)
+
+twx, twy = getFODOTwiss(puffVars, undmod, f, DL, emitx, emity)
