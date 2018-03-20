@@ -138,6 +138,7 @@ subroutine getSeqs(xcom, ycom, pxcom, pycom, gcom, zcom, sigE, iTrLoad)
       call genGSeq(pxcom, nseqparts_G, sigE(iPX_CG))
       call genGSeq(pycom, nseqparts_G, sigE(iPY_CG))
       call genGSeq(gcom, nseqparts_G, sigE(iGam_CG))
+      zcom = 0.5_wp  ! Should probably be changed to random sequence at some point...
 
     else if (iTrLoad == iHaltonSeq) then
 
