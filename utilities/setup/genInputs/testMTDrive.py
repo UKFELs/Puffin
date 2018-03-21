@@ -1,6 +1,6 @@
 import sys
 import numpy as np
-import testMT as TMT
+import SUMatch as TMT
 from puffDataClass import puffData
 from undulator import undulator
 
@@ -32,6 +32,8 @@ def MTdriver(fnamein):
     DL = 24. * puffVars.lw # Drift lengths
 
     #fnamein = 'short_CLARA_001_A2SU.h5'
+
+    #twx = 
 
     TMT.SU2Matched(fnamein, puffVars, undmod, qf, DL)
 
