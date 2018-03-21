@@ -53,6 +53,9 @@ class undulator:
                 print 'You must enter a valid uy'
             else:
                 self.uy = uy
+            
+            self.kbxn = self.ux * scale.aw / 2. / np.sqrt(2) / scale.rho / scale.gamma0
+            self.kbyn = self.uy * scale.aw / 2. / np.sqrt(2) / scale.rho / scale.gamma0
 
 
 
