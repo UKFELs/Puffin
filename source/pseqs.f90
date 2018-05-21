@@ -162,6 +162,7 @@ subroutine getSeqs(xcom, ycom, pxcom, pycom, gcom, zcom, sigE, iTrLoad)
       call genGSeq(pycom, nseqparts_G, sigE(iPY_CG))
       call genGSeq(gcom, nseqparts_G, sigE(iGam_CG))
       call genSeqFlat(zcom, nseqparts_G)
+      !zcom = 0.5_wp  ! For 'flat' slices
 
     else if (iTrLoad == iHaltonSeq) then
 

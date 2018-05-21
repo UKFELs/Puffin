@@ -15,7 +15,8 @@ only external packages now required are FFTW (version 3.3 onwards), and
 parallel HDF5 libraries. 
 
 Please note Puffin is currently under active development. An 'official'
-release will be tagged soon.
+release will be tagged soon. Documentation is being developed 
+[here](https://ukfels.github.io/puffinDocs/).
 
 ## Features
 
