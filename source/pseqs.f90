@@ -97,6 +97,29 @@ end subroutine genGSeq
 !> University of Strathclyde, 
 !> Glasgow, UK
 !> @brief
+!> Generate random sequence distributed evenly between zero and one
+!> @param[inout] com Array to output sequence
+!> @param[in] nparts Length of sequence
+
+subroutine genSeqFlat(com, nparts)
+
+  real(kind=wp), contiguous, intent(inout) :: com(:)
+  integer(kind=ip), intent(in) :: nparts
+  
+  integer(kind=ip) :: ij
+
+  do ij = 1, nparts
+    call random_number(com(ij))
+  end do
+
+end subroutine genSeqFlat
+
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
 !> Generate sequences for 5-D phase space for Puffin. The 5 dimensions
 !> are 4 transverse (x,y,px,py) and energy. 
 !> @param[inout] xcom Sequence in x dimension
@@ -138,6 +161,7 @@ subroutine getSeqs(xcom, ycom, pxcom, pycom, gcom, zcom, sigE, iTrLoad)
       call genGSeq(pxcom, nseqparts_G, sigE(iPX_CG))
       call genGSeq(pycom, nseqparts_G, sigE(iPY_CG))
       call genGSeq(gcom, nseqparts_G, sigE(iGam_CG))
+      call genSeqFlat(zcom, nseqparts_G)
 
     else if (iTrLoad == iHaltonSeq) then
 

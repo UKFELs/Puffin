@@ -377,6 +377,8 @@ CONTAINS
 
     end do
 
+!  print*, 'max z2 after mp init is', maxval(sElZ2_G)
+!  print*, 'min z2 after mp init is', minval(sElZ2_G)
 
 
 !     Set error flag and exit         
@@ -640,6 +642,13 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
       pxseq = pxseq + gamseq * gxpx * sqrt(lg_G * lc_G) * xseq / saw_G
       pyseq = pyseq + gamseq * gypy * sqrt(lg_G * lc_G) * yseq / saw_G
 
+
+      if (qOneD) then
+        xseq(:) = offsets(iX_CG)
+        yseq(:) = offsets(iY_CG) 
+        pxseq(:) = offsets(iPX_CG) 
+        pyseq(:) = offsets(iPY_CG) 
+      end if
 
       do ij = 1, iNMP_loc(iZ2_CG)
 
