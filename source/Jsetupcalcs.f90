@@ -1157,6 +1157,8 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
 
     end if
 
+    call shuntBeam(sElZ2_G, sLengthOfElmZ2_G)
+
     if (iGloNumElectrons_G <= 0_IPL) then
        call Error_log('iGloNumElectrons_G <=0.',tErrorLog_G)
        goto 1000

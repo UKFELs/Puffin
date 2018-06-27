@@ -377,9 +377,9 @@ CONTAINS
 
     end do
 
-!  print*, 'max z2 after mp init is', maxval(sElZ2_G)
-!  print*, 'min z2 after mp init is', minval(sElZ2_G)
-
+!    print*, 'max z2 b4 mp init is', maxval(sElZ2_G)
+!    print*, 'min z2 b4 mp init is', minval(sElZ2_G)
+    
 
 !     Set error flag and exit         
 
@@ -728,5 +728,25 @@ SUBROUTINE beamReport(s_tmp_macro,sElectronThreshold,beam_no)
     ENDIF
 
 END SUBROUTINE beamReport
+
+subroutine shuntBeam(sz2, dz2)
+  
+  real(kind=wp), intent(inout) :: sz2(:)
+  real(kind=wp), intent(in) :: dz2
+  real(kind=wp) :: lminz2, gminz2
+  integer :: error
+
+  lminz2 = minval(sz2)
+  
+  call mpi_allreduce(lminz2, gminz2, 1, mpi_double_precision, &
+                     mpi_min, tProcInfo_G%comm, error)
+
+  if (gminz2 <= 0) then
+
+    sz2(:) = sz2(:) - gminz2 + (dz2/10.0_wp)
+    
+  end if
+
+end subroutine shuntBeam
 
 END MODULE ElectronInit
