@@ -230,11 +230,12 @@ contains
     end if
 
 
-!!!   APPLY BOUNDS - PROBABLY A BETTER PLACE FOR THIS....
+!!!   APPLY PERIODIC BOUNDS - PROBABLY A BETTER PLACE FOR THIS....
 
-
-    lenz2 = sLengthOfElmZ2_G * real((nz2_G - 1_ip), kind=wp )
-    sElZ2_G = sElZ2_G - (real(floor(sElZ2_G / lenz2), kind=wp) * lenz2 )
+    if (FieldMesh == iPeriodic) then
+      lenz2 = sLengthOfElmZ2_G * real((nz2_G - 1_ip), kind=wp )
+      sElZ2_G = sElZ2_G - (real(floor(sElZ2_G / lenz2), kind=wp) * lenz2 )
+    end if
 
 
 !  where (sElZ2_G > sLengthOfElmZ2_G * real((nz2_G - 1_ip), kind=wp ))

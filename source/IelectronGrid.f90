@@ -244,6 +244,8 @@ CONTAINS
         sigE(b_ind,iPX_CG) = gamma_d(b_ind) * sGammaR_G * sqrt(lg_G*lc_G) * &
                                     sigE(b_ind,iX_CG) / betax(b_ind) / saw_G
 
+        samLenE(b_ind,iPX_CG) = 6.0_wp * sigE(b_ind,iPX_CG)
+
       else 
         betax(b_ind) = -1.0_wp
       end if
@@ -254,6 +256,8 @@ CONTAINS
 
         sigE(b_ind,iPY_CG) = gamma_d(b_ind) * sGammaR_G * sqrt(lg_G*lc_G) * &
                                     sigE(b_ind,iY_CG) / betay(b_ind) / saw_G
+
+        samLenE(b_ind,iPY_CG) = 6.0_wp * sigE(b_ind,iPY_CG)
 
       else 
         betay(b_ind) = -1.0_wp
@@ -559,7 +563,24 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
                      p_1_vector=px_tmpvector,        &
                      p_2_vector=py_tmpvector,        &
                      p_3_vector=pz2_tmpvector)
-    
+
+      !   Rotate phase space to Twiss params...
+
+      if (betax > 0.0_wp) then
+        gxpx = -alphax / betax
+      else 
+        gxpx = 0.0_wp
+      end if
+
+      if (betay > 0.0_wp) then
+        gypy = -alphay / betay
+      else
+        gypy = 0.0_wp
+      end if
+
+      px_tmpvector = px_tmpvector + pz2_tmpvector * gxpx * sqrt(lg_G * lc_G) * x_tmpcoord / saw_G
+      py_tmpvector = py_tmpvector + pz2_tmpvector * gypy * sqrt(lg_G * lc_G) * y_tmpcoord / saw_G
+
     end if  ! exhausted 1D and 3D options of equispaced phase space filling...
   
   else   ! if using random or quasi-random sequences to fill phase space 

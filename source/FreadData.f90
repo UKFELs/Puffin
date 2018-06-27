@@ -839,6 +839,20 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
   end if
 
+  if (qEquiXY) then
+    if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+      print*, ''
+      print*, '************************************************'
+      print*, 'WARNING - use of qEquiXY deprecated - use TrLdMeth instead'
+      print*, 'To recover qEquiXY=.true. behaviour, use TrLdMeth = 0'
+      print*, 'For now, TrLdMeth will be set to = 0 for you'
+    end if
+    TrLdMeth = 0_ip
+  end if
+
+  if (TrLdMeth == 0_ip) then
+    qEquiXY = .true.
+  end if
 
   qEquiXY_G = qEquiXY
   nseqparts_G = nseqparts

@@ -143,10 +143,9 @@ subroutine getSeqs(xcom, ycom, pxcom, pycom, gcom, zcom, sigE, iTrLoad)
 
   integer(kind=ip), parameter :: iRandSeq = 1_ip
   integer(kind=ip), parameter :: iHaltonSeq = 2_ip
+  integer(kind=ip), parameter :: iRandLineSeq = 3_ip
+  integer(kind=ip), parameter :: iHaltonLineSeq = 4_ip
   integer :: error
-
-
-!  iTrLoad = iHaltonSeq  ! ....for now
 
 !  gen sequences on root process only...
 
@@ -154,24 +153,32 @@ subroutine getSeqs(xcom, ycom, pxcom, pycom, gcom, zcom, sigE, iTrLoad)
 
   if (tProcInfo_G%qRoot) then
 
-    if (iTrLoad == iRandSeq) then
+    if ((iTrLoad == iRandSeq) .or. (iTrLoad == iRandLineSeq) ) then
 
       call genGSeq(xcom, nseqparts_G, sigE(iX_CG))
       call genGSeq(ycom, nseqparts_G, sigE(iY_CG))
       call genGSeq(pxcom, nseqparts_G, sigE(iPX_CG))
       call genGSeq(pycom, nseqparts_G, sigE(iPY_CG))
       call genGSeq(gcom, nseqparts_G, sigE(iGam_CG))
-      call genSeqFlat(zcom, nseqparts_G)
-      !zcom = 0.5_wp  ! For 'flat' slices
+      if (iTrLoad == iRandLineSeq) then
+        zcom = 0.5_wp  ! For 'flat' slices
+      else
+        call genSeqFlat(zcom, nseqparts_G)
+      end if
 
-    else if (iTrLoad == iHaltonSeq) then
+    else if ((iTrLoad == iHaltonSeq) .or. (iTrLoad == iHaltonLineSeq) ) then
 
       call genHSeq(xcom, nseqparts_G, 2_ip, sigE(iX_CG))
       call genHSeq(ycom, nseqparts_G, 3_ip, sigE(iY_CG))
       call genHSeq(pxcom, nseqparts_G, 5_ip, sigE(iPX_CG))
       call genHSeq(pycom, nseqparts_G, 11_ip, sigE(iPY_CG))
       call genHSeq(gcom, nseqparts_G, 7_ip, sigE(iGam_CG))
-      call genHSeqFLAT(zcom, nseqparts_G, 13_ip, sigE(iGam_CG))
+      if (iTrLoad == iHaltonLineSeq) then
+        zcom = 0.5_wp  ! For 'flat' slices
+      else
+        ! will give deviations from the mean z2
+        call genHSeqFLAT(zcom, nseqparts_G, 13_ip)
+      end if
 
 !      print*, xcom
 
@@ -244,14 +251,12 @@ end subroutine genHSeq
 !> @param[inout] seq Array to output sequence
 !> @param[in] nparts Length of sequence
 !> @param[in] basis Base of sequence
-!> @param[in] sig r.m.s. sigma of desired Gaussian distribution
 
-subroutine genHSeqFLAT(seq, nparts, basis, sig)
+subroutine genHSeqFLAT(seq, nparts, basis)
 
   real(kind=wp), contiguous, intent(inout) :: seq(:)
   integer(kind=ip), intent(in) :: nparts
   integer(kind=ip), intent(in) :: basis
-  real(kind=wp), intent(in) :: sig
 
   integer(kind=ip) :: ic
 
