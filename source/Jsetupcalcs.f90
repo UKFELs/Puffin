@@ -815,7 +815,7 @@ end subroutine calcScaling
 subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
                        sStepSize, stepsPerPeriod, nSteps, &
                        nperiods, nodesperlambda, sGamFrac, &
-                       sLenEPulse, iNumElectrons, qsimple)
+                       sLenEPulse, iNumElectrons, iMPsZ2PerWave, qsimple)
 
 
   real(kind=wp), intent(inout) :: sFieldModelLength(:), sLenEPulse(:,:)
@@ -830,13 +830,14 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
 
   integer(kind=ip), intent(inout) :: iNumNodes(:), iNumElectrons(:,:)
+  integer(kind=ip), intent(inout) :: iMPsZ2PerWave(:)
   integer(kind=ip), intent(out) :: nSteps
   logical, intent(in) :: qsimple
 
   real(kind=wp), allocatable :: smeanp2(:), fmlensTmp(:)
   real(kind=wp) :: dz2, szbar, fmlenTmp, slamr
-  integer(kind=ip) :: minENum, minESample
-
+  integer(kind=ip), allocatable :: minENum(:), minESample(:)
+  integer(kind=ip) :: ib
 
 
   dz2 = 4.0_WP * pi * sRho_G / real(nodesperlambda-1_IP,kind=wp)
@@ -939,76 +940,92 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
 
 
-
+  allocate(minENum(size(sGamFrac)), minESample(size(sGamFrac)))
   slamr = 4.0_WP * pi * srho_G
   minESample = 4_ip   ! minimum MP's per wavelength
   !dztemp = slamr / minESample
 
   if (iInputType_G == iGenHom_G) then
 
+    minENum = ceiling(sLenEPulse(:,iZ2_CG) / (slamr / real(iMPsZ2PerWave, kind=wp)) )
 
-    minENum = ceiling(sLenEPulse(1,iZ2_CG) / (slamr / real(minESample, kind=wp)) )
+    do ib = 1, size(sGamFrac)
+      
+      if (iMPsZ2PerWave(ib) > 0) then
+        if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0_ip)) then
+          print*,'The beam sampling has been specified through iMPsZ2PerWave'
+        end if
 
+        iNumElectrons(ib,iZ2_CG) = minENum(ib)
+        
+      end if
+    end do
 
-    if ((iNumElectrons(1,iZ2_CG) < 0) .or. (iNumElectrons(1,iZ2_CG) < minENum) ) then
+    minENum = ceiling(sLenEPulse(:,iZ2_CG) / (slamr / real(minESample, kind=wp)) )
 
-      if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-        print*, '******************************'
-        print*, ''
-        print*, 'WARNING - e-beam macroparticles sampling &
-                                        & in z2 not fine enough - fixing...'
+    do ib = 1, size(sGamFrac)
+
+      if ((iNumElectrons(ib,iZ2_CG) < 0) .or. (iNumElectrons(ib,iZ2_CG) < minENum(ib)) ) then
+
+        if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+          print*, '******************************'
+          print*, ''
+          print*, 'WARNING - e-beam macroparticles sampling &
+                                          & in z2 not fine enough - fixing...'
+        end if
+
+        iNumElectrons(ib,iZ2_CG) = minENum(ib)
+
+        if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+          print*, 'num MPs in z2 now = ', &
+                            iNumElectrons(ib,iZ2_CG)
+        end if
+
       end if
 
-      iNumElectrons(1,3) = minENum
+    end do
 
-      if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-        print*, 'num MPs in z2 now = ', &
-                          iNumElectrons(1,iZ2_CG)
-      end if
-
-    end if
-
-
+    deallocate(minENum, minESample)
 
 
 !   MAX P2 -
 
     if (qsimple) then
 
-    allocate(smeanp2(size(sGamFrac)), fmlensTmp(size(sGamFrac)))
-    smeanp2 = 1.0_wp / sGamFrac**2.0_wp  ! Estimate of p2...
+      allocate(smeanp2(size(sGamFrac)), fmlensTmp(size(sGamFrac)))
+      smeanp2 = 1.0_wp / sGamFrac**2.0_wp  ! Estimate of p2...
 
-    fmlensTmp = sLenEPulse(:,iZ2_CG) + (smeanp2(:) * szbar)
-    fmlenTmp = maxval(fmlensTmp)
+      fmlensTmp = sLenEPulse(:,iZ2_CG) + (smeanp2(:) * szbar)
+      fmlenTmp = maxval(fmlensTmp)
 
-    if (fieldMesh == itemporal) then
+      if (fieldMesh == itemporal) then
 
-      if (sFieldModelLength(iZ2_CG) <= fmlenTmp + 1.0_wp) then
+        if (sFieldModelLength(iZ2_CG) <= fmlenTmp + 1.0_wp) then
 
 
-        if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-          print*, '******************************'
-          print*, ''
-          print*, 'WARNING - field mesh may not be large &
-                                   &enough in z2 - fixing....'
-        end if
+          if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+            print*, '******************************'
+            print*, ''
+            print*, 'WARNING - field mesh may not be large &
+                                     &enough in z2 - fixing....'
+          end if
 
-        sFieldModelLength(iZ2_CG) = fmlenTmp + 10.0_wp  ! Add buffer 10 long for
-                                                        ! extra security...
+          sFieldModelLength(iZ2_CG) = fmlenTmp + 10.0_wp  ! Add buffer 10 long for
+                                                          ! extra security...
 
-        if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-          print*, 'Field mesh length in z2 now = ', &
+          if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+            print*, 'Field mesh length in z2 now = ', &
                                 sFieldModelLength(iZ2_CG)
-          print*, ''
+            print*, ''
+          end if
+
         end if
 
       end if
 
     end if
 
-  end if
-
-  deallocate(smeanp2, fmlensTmp)
+    deallocate(smeanp2, fmlensTmp)
 
   end if
 

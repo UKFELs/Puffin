@@ -144,6 +144,7 @@ module Setup
        sSeedSigma,        &
        freqf, SmeanZ2,    &
        ph_sh, &
+       iMPsZ2PerWave, &
        qFlatTopS, nseeds, &
        qSwitches,         &
        qMatched_A,        &
@@ -185,7 +186,7 @@ module Setup
   call calcSamples(sFieldModelLength, iNodes, sLengthofElm, &
                    sStepSize, stepsPerPeriod, nSteps, &
                    nperiods, nodesperlambda, gamma_d, sLenEPulse, &
-                   iNumElectrons, qSimple)
+                   iNumElectrons, iMPsZ2PerWave, qSimple)
 
 
 

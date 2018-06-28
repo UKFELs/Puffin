@@ -165,6 +165,7 @@ subroutine read_in(zfilename, &
        sSigmaF, &
        freqf, SmeanZ2, &
        ph_sh, &
+       iMPsZ2PerWave, &
        qFlatTopS, nseeds, &
        qSwitches, &
        qMatched_A, &
@@ -227,6 +228,7 @@ subroutine read_in(zfilename, &
   character(32_IP),  intent(out)  :: zUndType
   LOGICAL,           INTENT(OUT)  :: qSwitches(:)
   LOGICAL, ALLOCATABLE, INTENT(OUT)  :: qMatched_A(:)
+  integer(kind=ip), intent(inout), allocatable :: iMPsZ2PerWave(:)
   logical, intent(out) :: qMeasure
   LOGICAL,           INTENT(OUT)  :: qOK
 
@@ -525,7 +527,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   CALL read_beamfile(qSimple, dist_f, beam_file,sEmit_n,sSigmaGaussian,sLenEPulse, &
                      alphax, alphay, emitx, emity, &
                      iNumElectrons,sQe,chirp,bcenter, mag, fr, gamma_d,nbeams, &
-                     qMatched_A,qOKL)
+                     qMatched_A, iMPsZ2PerWave, qOneD, qOKL)
 
   CALL read_seedfile(seed_file,nseeds,sSigmaF,sA0_Re,sA0_Im,freqf,&
                      ph_sh, qFlatTopS,SmeanZ2,field_file,qscaled,qOKL)
@@ -572,7 +574,7 @@ END SUBROUTINE read_in
 SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
                          alphax, alphay, emitx, emity, &
                          iNumElectrons,sQe,chirp, bcenter, mag, fr,gammaf,nbeams,&
-                         qMatched_A,qOK)
+                         qMatched_A, iMPsZ2PerWave, qOneD, qOK)
 
   IMPLICIT NONE
 
@@ -595,7 +597,10 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   INTEGER(KIND=IP), INTENT(INOUT) :: nbeams
   LOGICAL, INTENT(OUT) :: qOK
   logical, intent(inout), allocatable :: qMatched_A(:)
+  integer(kind=ip), intent(inout), allocatable :: iMPsZ2PerWave(:)
+  logical, intent(in) :: qOneD
   logical :: qEquiXY
+  logical, allocatable :: qOneDCold(:)
   integer(kind=ip) :: nseqparts
   real(kind=wp) :: fillFact
 
@@ -603,6 +608,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
   INTEGER(KIND=IP) :: b_ind, TrLdMeth, inmpsGam
   integer(kind=ip), allocatable :: iNumMPs(:,:)
+  integer(kind=ip), allocatable :: inmps1DGam(:)
   logical :: qFixCharge, qAMatch
   INTEGER::ios
   CHARACTER(96) :: dtype
@@ -616,7 +622,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
                    sEmit_n, sQe, bcenter,  gammaf, &
                    chirp, mag, fr, qRndEj_G, sSigEj_G, &
                    qMatched_A, qEquiXY, nseqparts, qFixCharge, &
-                   alphax, alphay, emitx, emity, TrLdMeth, fillFact
+                   alphax, alphay, emitx, emity, TrLdMeth, fillFact, &
+                   iMPsZ2PerWave, inmps1DGam, qOneDCold
 
 
   namelist /bdlist/ dist_f, nMPs4MASP_G, nseqparts, inmpsGam
@@ -669,6 +676,9 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   allocate(qRndEj_G(nbeams), sSigEj_G(nbeams))
   allocate(alphax(nbeams), alphay(nbeams))
   allocate(emitx(nbeams), emity(nbeams))
+  allocate(iMPsZ2PerWave(nbeams))
+  allocate(qOneDCold(nbeams))
+  allocate(inmps1DGam(nbeams))
 
 
 ! &&&&&&&&&& Default vals
@@ -693,6 +703,22 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   iNumMPs(1,4:5) = 1
   iNumMPs(1,6) = 19
 
+  iMPsZ2PerWave(:) = -1
+  inmps1DGam = -1
+  qOneDCold(:) = .false.
+
+  if (qOneD) then
+    
+    nseqparts = 19_ip
+    TrLdMeth = 0_ip
+    
+  else
+    
+    nseqparts = 1000_ip
+    TrLdMeth = 1_ip
+
+  end if
+
   sEmit_n = -1.0_wp
   sQe = 1E-9
   bcenter = 0.0_wp
@@ -704,14 +730,12 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   qRndEj_G = .true.
   sSigEj_G = 0.02_wp
   qEquiXY = .false.
-  nseqparts = 1000_ip
   qSimple = .false.
   qFixCharge = .false.
   alphax = 0.0_wp
   alphay = 0.0_wp
   emitx = -1.0_wp
   emity = -1.0_wp
-  TrLdMeth = 1_ip
   fillFact = 1_wp
 
 ! &&&&&&&&&&&&&&&&&&&&&
@@ -740,13 +764,37 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
       iNumMPs = iNumElectrons
     else
       iNumElectrons = iNumMPs
-      if (iNumMPs(1,3) == -1_ip) then
+      if ((iNumMPs(1,3) == -1_ip) .and. (iMPsZ2PerWave(1) == -1_ip) ) then
         if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
           print*, ''
           print*, 'Warning: Numbers of Macroparticles to use have not been specified.'
           print*,''
         end if
       end if      
+    end if
+
+    if (qOneD) then
+
+      do b_ind = 1, nbeams
+
+        if (qOneDCold(b_ind)) then
+        
+          iNumMPs(b_ind,6) = 1_ip
+          iNumElectrons(b_ind,6) = 1_ip
+      
+        else
+          
+          if (inmps1DGam(b_ind) > 0_ip) then
+            
+            iNumMPs(b_ind,6) = inmps1DGam(b_ind)
+            iNumElectrons(b_ind,6) = inmps1DGam(b_ind)
+            
+          end if
+      
+        end if
+      
+      end do
+
     end if
 
   else if (dtype == 'dist') then
@@ -860,6 +908,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   TrLdMeth_G = TrLdMeth
   fillFact_G = fillFact
 
+
+
   do b_ind = 1, nbeams
 
     if (sEmit_n(b_ind) > 0.0_wp) then
@@ -912,6 +962,9 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
     end if
       
   end if
+
+  deallocate(qOneDCold)
+  deallocate(inmps1DGam)
 
 !  if (emitx(1) <= 0.0_wp) emitx(1) = 1.0_wp
 !  if (emity(1) <= 0.0_wp) emity(1) = 1.0_wp

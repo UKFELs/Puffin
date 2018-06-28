@@ -82,6 +82,7 @@ INTEGER(KIND=IP) :: nbeams
 logical, allocatable :: qMatched_A(:)
 
 real(kind=wp), allocatable :: alphax(:), alphay(:), emitx(:), emity(:)
+integer(kind=ip), allocatable :: iMPsZ2PerWave(:)
 
 !!!
 !!! END NEW
