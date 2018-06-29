@@ -594,7 +594,7 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
 !     positions
 
       Nk(istart:iend) = Ne(k) / real(nseqparts_G,kind=wp)
-      z2(istart:iend) = z2m(k) ! z2seq
+      z2(istart:iend) = z2seq !z2m(k) ! z2seq
       gamma(istart:iend) = gamseq
       x(iStart:iend) = xseq
       y(istart:iend) = yseq
