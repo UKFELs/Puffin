@@ -841,6 +841,24 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
       end if
     end if
 
+
+    if (TrLdMeth == 0_ip) then
+      if (qOneD) then
+        do b_ind = 1, nbeams
+          if (( iNumMPsD(b_ind, 5) < 0_ip ) .and. (inmps1DGam(b_ind) < 0_ip) .and. (.not. qOneDCold(b_ind)) ) then
+            if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+              print*, ''
+              print*, 'Warning: Numbers of Macroparticles (iNumMPsD or inmps1DGam) to use have not been specified.'
+              print*, '...in beam ', b_ind
+              print*,''
+            end if
+          end if    
+        end do
+      end if
+    end if
+
+
+
     if (qOneD) then
 
       do b_ind = 1, nbeams
