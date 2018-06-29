@@ -1152,7 +1152,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
 
     else if (iInputType_G == iReadDist_G) then
 
-      call getMPs(fname, nbeams, Z, noise, eThresh)
+      call getMPs(fname, nbeams, Z, noise, eThresh, NE)
 
     else if (iInputType_G == iReadMASP_G) then
 

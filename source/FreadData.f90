@@ -606,10 +606,11 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
 !                     LOCAL ARGS
 
-  INTEGER(KIND=IP) :: b_ind, TrLdMeth, inmpsGam
+  INTEGER(KIND=IP) :: b_ind, TrLdMeth
   integer(kind=ip), allocatable :: iNumMPs(:,:)
   integer(kind=ip), allocatable :: inmps1DGam(:)
   logical :: qFixCharge, qAMatch
+  integer(kind=ip), allocatable :: iNumMPsD(:,:)
   INTEGER::ios
   CHARACTER(96) :: dtype
 
@@ -626,7 +627,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
                    iMPsZ2PerWave, inmps1DGam, qOneDCold
 
 
-  namelist /bdlist/ dist_f, nMPs4MASP_G, nseqparts, inmpsGam
+  namelist /bdlist/ dist_f, nMPs4MASP_G, nseqparts, inmps1DGam, qOneDCold, TrLdMeth
   namelist /bh5list/ dist_f
 
   qOK = .false.
@@ -814,21 +815,62 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 !    READ(UNIT=161,FMT=*) nbeams
 !
     allocate(dist_f(nbeams))
+    allocate(iNumMPsD(nbeams,5_ip))
 
-    nseqparts = 1000_ip
-    inmpsGam = 1_ip
-
-
+    iNumMPsD = -1_ip
 
     read(161,nml=bdlist)
 
     close(UNIT=161,STATUS='KEEP')
 
-    iNumElectrons = 1
+    iNumElectrons(:,iX_CG) = iNumMPsD(:,1)
+    iNumElectrons(:,iY_CG) = iNumMPsD(:,2)
+    iNumElectrons(:,iPX_CG) = iNumMPsD(:,3)
+    iNumElectrons(:,iPY_CG) = iNumMPsD(:,4)
+    iNumElectrons(:,iGam_CG) = iNumMPsD(:,5)
+
+    if (TrLdMeth == 0_ip) then
+      if (.not. qOneD) then
+        if ( iNumMPsD(1,1) < 0_ip ) then
+          if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+            print*, ''
+            print*, 'Warning: Numbers of Macroparticles (iNumMPsD) to use have not been specified.'
+            print*,''
+          end if
+        end if    
+      end if
+    end if
+
+    if (qOneD) then
+
+      do b_ind = 1, nbeams
+
+        if (qOneDCold(b_ind)) then
+
+          iNumElectrons(b_ind, iGam_CG) = 1_ip
+
+        else
+          
+          if (inmps1DGam(b_ind) > 0_ip) then
+
+            iNumElectrons(b_ind, iGam_CG) = inmps1DGam(b_ind)
+
+          end if
+
+        end if
+
+      end do
+
+      iNumElectrons(:, iX_CG) = 1
+      iNumElectrons(:, iY_CG) = 1
+      iNumElectrons(:, iPX_CG) = 1
+      iNumElectrons(:, iPY_CG) = 1
+
+    end if
+
+
     sLenE = 1
     sSigmaE = 1
-
-    inmpsGam_G = inmpsGam
 
 !    !!!!!!!!!!!!!!!!
 !    !!!!!!!!!!!!!!!!
@@ -861,13 +903,10 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
     iInputType_G = iReadMASP_G
     nMPs4MASP_G = 3455789_ip  ! default?
-    inmpsGam = 1_ip
 
     read(161,nml=bdlist)
 
     close(UNIT=161,STATUS='KEEP')
-
-    inmpsGam_G = inmpsGam
 
   else if (dtype == 'h5') then
     if (nbeams /= 1) then 

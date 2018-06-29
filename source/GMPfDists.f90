@@ -24,7 +24,7 @@ implicit none
 contains
 
 
-subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
+subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh, nMPDims)
 
 
 ! This subroutine  loops around the beams, reading in each
@@ -40,6 +40,7 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
   integer(kind=ip), intent(in) :: nbeams
   real(kind=wp), intent(in) :: sZ, sEThresh
   logical, intent(in) :: qNoise
+  integer(kind=ip), intent(in) :: nMPDims(:,:)
 
 !           local args
 
@@ -56,8 +57,7 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
 
   real(kind=wp), allocatable :: dz2(:)
   integer(kind=ip), allocatable :: nZ2(:), nZ2G(:)
-  integer(kind=ip) :: nGam, ib
-  integer(kind=ip) :: nX, nY, nPX, nPY
+  integer(kind=ip) :: ib
   real(kind=wp) :: ls, le, npk, sgx1D, sgy1D
 
   integer(kind=ipl), allocatable :: totMPs_b(:), b_sts(:), b_ends(:)
@@ -74,19 +74,17 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
 
   call getHeaders(fname, dz2, nZ2G, sgx1D, sgy1D)
 
-  nGam = inmpsGam_G
-
-  if (qOneD_G) then
-    nX = 1
-    nY = 1
-    nPX = 1
-    nPY = 1
-  else
-    nX = 7
-    nY = 7
-    nPX = 7
-    nPY = 7
-  end if
+!  if (qOneD_G) then
+!    nMPDims(:, iX_CG) = 1
+!    nMPDims(:, iY_CG) = 1
+!    nMPDims(:, iPX_CG) = 1
+!    nMPDims(:, iPY_CG) = 1
+!  else
+!    nMPDims(:, iX_CG) = 7
+!    nMPDims(:, iY_CG) = 7
+!    nMPDims(:, iPX_CG) = 7
+!    nMPDims(:, iPY_CG) = 7
+!  end if
 
 
 
@@ -101,7 +99,7 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
 
   
 
-  tnms   = sum(int(nZ2(:),kind=ipl) * int((nGam),kind=ipl))
+  tnms   = sum(int(nZ2(:),kind=ipl) * int((nMPDims(:,iGam_CG)),kind=ipl))
 
 
 
@@ -117,9 +115,9 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
 
   if (qEquiXY_G) then
 
-    totMPs_b(:) = int(nZ2(:),kind=ipl) * int(nGam,kind=ipl) * &  ! no of mps in z2 times num in gamma
-                  int(nX,kind=ipl) * int(nPX,kind=ipl) * &
-                  int(nY,kind=ipl) * int(nPY,kind=ipl)
+    totMPs_b(:) = int(nZ2(:),kind=ipl) * int(nMPDims(:,iGam_CG),kind=ipl) * &  ! no of mps in z2 times num in gamma
+                  int(nMPDims(:,iX_CG),kind=ipl) * int(nMPDims(:,iPX_CG),kind=ipl) * &
+                  int(nMPDims(:,iY_CG),kind=ipl) * int(nMPDims(:,iPY_CG),kind=ipl)
 
   else
 
@@ -161,8 +159,8 @@ subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh)
                       qnoise, x(b_sts(ib):b_ends(ib)), y(b_sts(ib):b_ends(ib)), &
                       px(b_sts(ib):b_ends(ib)), py(b_sts(ib):b_ends(ib)), &
                       z2(b_sts(ib):b_ends(ib)), gamma(b_sts(ib):b_ends(ib)), &   ! ....BOUNDS.... !
-                      chi_b(b_sts(ib):b_ends(ib)), chi(b_sts(ib):b_ends(ib)),sZ,nGam, &
-                      nX, nY, nPX, nPY, sgx1D, sgy1D)
+                      chi_b(b_sts(ib):b_ends(ib)), chi(b_sts(ib):b_ends(ib)),sZ,nMPDims(ib,iGam_CG), &
+                      nMPDims(ib,iX_CG), nMPDims(ib,iY_CG), nMPDims(ib,iPX_CG), nMPDims(ib,iPY_CG), sgx1D, sgy1D)
 
     deallocate(z2m, gm, gsig, xm, ym, pxm, pym, Ne, pxsig, pysig, xsig, ysig)
 
@@ -393,8 +391,16 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
 
   z2int(:) = 1_WP
 
-  nMPs = int(NMZ2,kind=ipl) * int(iNMPG,kind=ipl) * int(iNMPX,kind=ipl) * &
-         int(iNMPY,kind=ipl) * int(iNMPPX,kind=ipl) * int(iNMPPY,kind=ipl)
+  if (qEquiXY_G) then
+
+    nMPs = int(NMZ2,kind=ipl) * int(iNMPG,kind=ipl) * int(iNMPX,kind=ipl) * &
+           int(iNMPY,kind=ipl) * int(iNMPPX,kind=ipl) * int(iNMPPY,kind=ipl)
+
+  else
+
+    nMPs = int(NMZ2,kind=ipl) * nseqparts_G
+    
+  end if
 
   allocate(arrbs(iNMPG))
   allocate(Nk(nMPs))
@@ -436,65 +442,65 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
 ! what should the length of the grid in gamma be?
 ! since we have a different sigGam for each?.....
 
-    if (qOneD_G) then
+    if (qEquiXY_G) then
 
-      if (iNMPG == 1_ip) then
+      if (qOneD_G) then
 
-        istart = iend + 1
-        iend = iStart
+        if (iNMPG == 1_ip) then
 
-        call genMacrosNew(i_total_electrons  =   Ne(k), &
-                          q_noise            =   qnoise,  & 
-                          x_1_grid           =   z2grid,  &
-                          x_1_integral       =   z2int, & 
-                          s_number_macro     =   Nk(istart:iend),  &
-                          s_vol_element      =   Vk(istart:iend),  &
-                          max_av             =   ndens_num,   &
-                          x_1_coord          =   z2(istart:iend))
+          istart = iend + 1
+          iend = iStart
 
-        gamma(k) = gm(k)
-        px(istart:iend) = 0    !  In 1D giving no deviation in px
-        py(istart:iend) = 0    !  or py
-        x(istart:iend)  = 0    ! ??    x = getXR(xm,xr)
-        y(istart:iend)  = 0  
+          call genMacrosNew(i_total_electrons  =   Ne(k), &
+                            q_noise            =   qnoise,  & 
+                            x_1_grid           =   z2grid,  &
+                            x_1_integral       =   z2int, & 
+                            s_number_macro     =   Nk(istart:iend),  &
+                            s_vol_element      =   Vk(istart:iend),  &
+                            max_av             =   ndens_num,   &
+                            x_1_coord          =   z2(istart:iend))
 
-      else
+          gamma(k) = gm(k)
+          px(istart:iend) = 0    !  In 1D giving no deviation in px
+          py(istart:iend) = 0    !  or py
+          x(istart:iend)  = 0    ! ??    x = getXR(xm,xr)
+          y(istart:iend)  = 0  
 
-        istart = iend + 1
-        iend = iStart + iNMPG - 1
+        else
 
-        arrbs = (/ ( (k-1) * iNMPG + 1 + i,    i=0, (iNMPG-1) ) /)
+          istart = iend + 1
+          iend = iStart + iNMPG - 1
 
-        call genGrid(1_ip, intTypeG, iLinear_CG, gm(k), &         
-                     gsig(k), 6.0_WP*gsig(k), iNMPG, iNMPG, &
-                     ggrid, gint, .FALSE., &
-                     qOKL) 
+          arrbs = (/ ( (k-1) * iNMPG + 1 + i,    i=0, (iNMPG-1) ) /)
 
-        call genMacrosNew(i_total_electrons  =   Ne(k), &
-                          q_noise            =   qnoise,  & 
-                          x_1_grid           =   z2grid,  &
-                          x_1_integral       =   z2int, & 
-                          p_3_grid           =   ggrid,  &
-                          p_3_integral       =   gint,  &
-                          s_number_macro     =   Nk(istart:iend),  &
-                          s_vol_element      =   Vk(istart:iend),  &
-                          max_av             =   ndens_num,   &
-                          x_1_coord          =   z2(istart:iend),  &
-                          p_3_vector         =   gamma(istart:iend) )
+          call genGrid(1_ip, intTypeG, iLinear_CG, gm(k), &         
+                       gsig(k), 6.0_WP*gsig(k), iNMPG, iNMPG, &
+                       ggrid, gint, .FALSE., &
+                       qOKL) 
+
+          call genMacrosNew(i_total_electrons  =   Ne(k), &
+                            q_noise            =   qnoise,  & 
+                            x_1_grid           =   z2grid,  &
+                            x_1_integral       =   z2int, & 
+                            p_3_grid           =   ggrid,  &
+                            p_3_integral       =   gint,  &
+                            s_number_macro     =   Nk(istart:iend),  &
+                            s_vol_element      =   Vk(istart:iend),  &
+                            max_av             =   ndens_num,   &
+                            x_1_coord          =   z2(istart:iend),  &
+                            p_3_vector         =   gamma(istart:iend) )
 
 
-        px(istart:iend) = 0    !  In 1D giving no deviation in px
-        py(istart:iend) = 0    !  or py
-        x(istart:iend)  = 0    ! ??    x = getXR(xm,xr)
-        y(istart:iend)  = 0  
+          px(istart:iend) = 0    !  In 1D giving no deviation in px
+          py(istart:iend) = 0    !  or py
+          x(istart:iend)  = 0    ! ??    x = getXR(xm,xr)
+          y(istart:iend)  = 0  
 
-      end if
+        end if
 
 !      Vk(iStart:iEnd) = dz2
 
-    else
-
-      if (qEquiXY_G) then
+      else
 
         istart = iend + 1
         iend = iStart + iNMPG * iNMPX * iNMPY * iNMPPX * iNMPPY - 1
@@ -548,29 +554,29 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
  
         if (ndens_num > npk_num) npk_numl = ndens_num
 
-      else
+      end if
 
 
 !   Gen'ing particle by random sequences in otehr 5 dimensions
+    else
 
+      istart = iend + 1
+      iend = iStart + nseqparts_G - 1
 
-        istart = iend + 1
-        iend = iStart + nseqparts_G - 1
-
-        !sigxpr = 1.0_wp
-        !sigpxpr = 1.0_wp
-        !sigypr = 1.0_wp
-        !sigpypr = 1.0_wp
-        !siggampr = 1.0_wp
+      !sigxpr = 1.0_wp
+      !sigpxpr = 1.0_wp
+      !sigypr = 1.0_wp
+      !sigpypr = 1.0_wp
+      !siggampr = 1.0_wp
 
 !     Modify random sequences to new rms sigma and mean
 
-        xseq = xseqb * xsig(k) + xm(k)
-        yseq = yseqb * ysig(k) + ym(k)
-        pxseq = pxseqb * pxsig(k) + pxm(k)
-        pyseq = pyseqb * pysig(k) + pym(k)
-        gamseq = gamseqb * gsig(k) + gm(k)
-        z2seq = z2seqb + z2m(k)
+      xseq = xseqb * xsig(k) + xm(k)
+      yseq = yseqb * ysig(k) + ym(k)
+      pxseq = pxseqb * pxsig(k) + pxm(k)
+      pyseq = pyseqb * pysig(k) + pym(k)
+      gamseq = gamseqb * gsig(k) + gm(k)
+      z2seq = z2seqb + z2m(k)
 
 
 
@@ -587,16 +593,13 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
 !     Distribute charge equally amongst processes, and set
 !     positions
 
-        Nk(istart:iend) = Ne(k) / real(nseqparts_G,kind=wp)
-        z2(istart:iend) = z2m(k) ! z2seq
-        gamma(istart:iend) = gamseq
-        x(iStart:iend) = xseq
-        y(istart:iend) = yseq
-        px(istart:iend) = pxseq
-        py(istart:iend) = pyseq
-
-
-      end if
+      Nk(istart:iend) = Ne(k) / real(nseqparts_G,kind=wp)
+      z2(istart:iend) = z2m(k) ! z2seq
+      gamma(istart:iend) = gamseq
+      x(iStart:iend) = xseq
+      y(istart:iend) = yseq
+      px(istart:iend) = pxseq
+      py(istart:iend) = pyseq
 
 
     end if
@@ -621,39 +624,40 @@ subroutine getMPsFDists(z2m,gm,gsig,xm,xsig,ym,ysig,pxm,pxsig,pym,pysig, &
 
 
 
+  if (qEquiXY_G) then
 
+    if (qOneD_G) then
 
-  if (qOneD_G) then
+      !call getChi(Nk, Vk, npk, chi_b, chi)
+      call getChi(Nk, Vk, npk_bar_G, chi_b, chi)
 
-    !call getChi(Nk, Vk, npk, chi_b, chi)
-    call getChi(Nk, Vk, npk_bar_G, chi_b, chi)
+      ata_G = 2.0_wp * pi * sgx1D * sgy1D
+      fillFact_G = 1.0_wp
+      !print*, 'YYYOOO', ata_G
+      chi_b = chi_b / ata_G * fillFact_G
 
-    ata_G = 2.0_wp * pi * sgx1D * sgy1D
-    fillFact_G = 1.0_wp
-    !print*, 'YYYOOO', ata_G
-    chi_b = chi_b / ata_G * fillFact_G
-
-
-  else 
-
-    if (qEquiXY_G) then
+    else 
 
 
       !call getGlobalnpk(npk_num, npk_numl)
 
       call getChi(Nk, Vk, npk_bar_G, chi_b, chi)
 
-    else
+    end if
 
+  else
 
-      chi_b = Nk / npk_bar_G
-      chi = 1.0_wp
-      Vk = 1.0_wp
-
+    chi_b = Nk / npk_bar_G
+    chi = 1.0_wp
+    Vk = 1.0_wp
+    
+    if (qOneD_G) then
+      ata_G = 2.0_wp * pi * sgx1D * sgy1D
+      fillFact_G = 1.0_wp
+      chi_b = chi_b / ata_G * fillFact_G
     end if
 
   end if
-
 
   deallocate(Nk, Vk)
 
