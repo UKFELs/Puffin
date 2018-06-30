@@ -4,17 +4,25 @@
 !different parameters can be used. Please refer to POP-REF for an
 !explanation of the scaled variables used, such as z2 and p2.
 !
+!========================================================================
+! 
 ! BEAM PARAMETERS - namelist NBLIST
 !
 ! nbeams - number of electron beams
 ! dtype  - Input type - simple, distribution, or macroparticle 
 !
-! BEAM PARAMETERS - namelist BLIST
 !========================================================================
+!
+! BEAM PARAMETERS - namelist BLIST
+!
 ! sSigmaE - gaussian std dev in each dimension - x, y, z2, px, py, gamma, then for additional beams
 ! sLenE   - Total length of beam modelled in each dimension - x, y, z2, px, py, gamma...
 ! bcenter - Center of beam in z2
 ! iNumMPs  -  Number of macroparticles in each dimension used to model the beam 
+! iMPsZ2PerWave - Number of macroparticles per reference wavelength in z2
+!                 This overwrites the values given in iNumMPs, if present
+! qOneDCold - When in 1D mode, this decides if the beam is completely cold 
+!             (zero energy spread when = .true.)
 ! emitx, emity - Scaled transverse beam emittance
 ! sQe - Beam charge 
 ! gammaf - Ratio of average beam energy to reference beam energy gamma / gamma_r 
@@ -32,17 +40,14 @@ dtype = 'simple'
 /
 
 &BLIST
-sSigmaE =1.0, 1.0, 1E8, 1.0, 1.0, 1.0
+sSigmaE = 0.1, 0.1, 1E8, 1.0, 1.0, 1.0
 sLenE = 1E-6, 1E-6, 2.0, 1E-6, 1E-6, 1E-6
-iNumMPs = 1, 1, 800, 1, 1, 1
+qOneDCold = .true.
+iMPsZ2PerWave = 20
 emitx = 1.0
 emity = 1.0
-sQe = 1.0E-9
 bcenter = 0.0
 gammaf = 1.0
-chirp = 0.0
-mag = 0.0
-fr = 1.0
 qRndEj_G = .false.
 sSigEj_G = 0.02
 qMatched_A = .false.
