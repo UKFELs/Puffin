@@ -33,6 +33,16 @@ where `/path/to/Puffin` is where you want the top level of the Puffin source to 
 
 4. Do `make && make install`. You should get a puffin binary in /path/to/puffin-install
 
+### Common issues
+
+Sometimes CMake/SciMake does not pick up the environment variables which set which compilers to use. These can be explicitly set by doing:
+
+```
+cmake -DMPI_C_COMPILER=$MPICC -DMPI_CXX_COMPILER=$MPICXX -DMPI_FORTRAN_COMPILER=$MPIFC -DENABLE_PARALLEL:BOOL=TRUE -DCMAKE_INSTALL_PREFIX:PATH=/path/to/puffin-install -DFftw3_ROOT_DIR='/path/to/fftw3' -DHdf5_ROOT_DIR='/path/to/hdf5' /path/to/Puffin
+```
+where `$MPICC` *etc* should be pointing to your MPI C/Fortran compilers.
+
+
 ## Building on Ubuntu 16.04
 
 To build on Ubuntu, first install gfortran, openmpi, cmake, Git, and the parallel
