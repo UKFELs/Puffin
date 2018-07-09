@@ -34,7 +34,7 @@ mkdir /path/to/puffin-install; cd /path/to/puffin-install
 3. Run cmake, e.g.
 
 ```
-cmake -DENABLE_PARALLEL:BOOL=TRUE -DCMAKE_INSTALL_PREFIX:PATH=/path/to/puffin-install -DFftw3_ROOT_DIR='/path/to/fftw3' -DHdf5_ROOT_DIR='/path/to/hdf5' /path/to/Puffin
+cmake -DENABLE_PARALLEL:BOOL=TRUE -DCMAKE_INSTALL_PREFIX:PATH=/path/to/puffin-install -DFftw3_ROOT_DIR='/path/to/built/fftw3' -DHdf5_ROOT_DIR='/path/to/built/hdf5' /path/to/Puffin
 ```
 
 4. Do `make && make install`. You should get a puffin binary in /path/to/puffin-install
