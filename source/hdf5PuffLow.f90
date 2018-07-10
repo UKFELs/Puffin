@@ -455,7 +455,8 @@ contains
     call addH5IntegerAttribute(dset_id, "iDrift_cr", iDrift_cr, aspace_id)
     call addH5IntegerAttribute(dset_id, "iQuad_cr", iQuad_cr, aspace_id)
     call addH5IntegerAttribute(dset_id, "iModulation_cr", iModulation_cr, aspace_id)
-    call addH5IntegerAttribute(dset_id, 'iL', iL, aspace_id)  
+    call addH5IntegerAttribute(dset_id, 'iL', iL, aspace_id)
+    call addH5IntegerAttribute(dset_id, 'iWrite_cr', igwr, aspace_id)
 
   end subroutine writeCommonAtts
 
@@ -488,7 +489,8 @@ contains
     call addH5IntegerAttribute(dset_id, "iDrift_cr", iDrift_cr, aspace_id)
     call addH5IntegerAttribute(dset_id, "iQuad_cr", iQuad_cr, aspace_id)
     call addH5IntegerAttribute(dset_id, "iModulation_cr", iModulation_cr, aspace_id)
-    call addH5IntegerAttribute(dset_id, 'iL', iL, aspace_id)  
+    call addH5IntegerAttribute(dset_id, 'iL', iL, aspace_id)
+    call addH5IntegerAttribute(dset_id, 'iWrite_cr', igwr, aspace_id)
     
     call addH5IntegerAttribute(dset_id, 'nX', nX_G, aspace_id)  
     call addH5IntegerAttribute(dset_id, 'nY', nY_G, aspace_id)  

@@ -21,6 +21,7 @@ MODULE InitDataType
     integer(kind=ip) :: iQuad_cr
     integer(kind=ip) :: iModulation_cr
     integer(kind=ip) :: iL
+    integer(kind=ip) :: igwr
 
   end type cInitData
 

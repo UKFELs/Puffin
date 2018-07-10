@@ -295,6 +295,7 @@ module Setup
     iDrift_cr = tInitData_G%iDrift_cr
     iQuad_cr = tInitData_G%iQuad_cr
     iModulation_cr = tInitData_G%iModulation_cr
+    igwr = tInitData_G%igwr
 
   end if
 
