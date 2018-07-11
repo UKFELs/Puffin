@@ -75,7 +75,7 @@
 !   B.W.J. McNeil, G.R.M. Robb and D.A. Jaroszynski, Opt. Comm. Vol 165, pp 65-70
 !
 !   The example models an electron beam with a 'flat-top', rectangular current
-!   distribution radiates strong Coherent Spontaneous Emission from its sharp
+!   distribution radiating strong Coherent Spontaneous Emission (CSE) from its sharp
 !   edges in an undulator. This is shown in 1D mode.
 
 
@@ -90,7 +90,8 @@ dtype = 'simple'
 !
 !   Using a sSigmaE of 1E8 in the temporal dimension (the 3rd element) results
 !   in a flat-top distribution, with length given by sLenE (again, the 3rd 
-!   element).
+!   element). Here, this is in scaled units, which are units of lc, the FEL
+!   cooperation length.
 !
 !   For this example, note that qFixCharge = .true. - this is common when using
 !   scaled variables, and adjusts the charge so that the beam has the same 
