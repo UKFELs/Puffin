@@ -1,19 +1,48 @@
-! PUFFIN BEAM FILE
+! PUFFIN EXAMPLE BEAM FILE
 !
-!Describes electron beams for input into puffin. Multiple beams with
-!different parameters can be used. Please refer to POP-REF for an
-!explanation of the scaled variables used, such as z2 and p2.
+! Describes electron beams for input into puffin. Multiple beams with
+! different parameters can be used. Either scaled or S.I. notation
+! is used - whether you are using scaled or SI is specified in the 
+! 'main' input file. This beam file must contain 2 namelists, one of which
+! must be NBLIST.
 !
-!========================================================================
+! Please refer to [1] for an explanation of the scaled variables 
+! used, such as z2 and p2.
+!
+! [1] - L.T. Campbell and B.W.J. McNeil, Physics of Plasmas 19, 093119 (2012)
+!
+!                 ***********************************
 ! 
-! BEAM PARAMETERS - namelist NBLIST
+! BEAM TYPE - namelist NBLIST
 !
-! nbeams - number of electron beams
-! dtype  - Input type - simple, distribution, or macroparticle 
+! This namelist chooses which type of beam input is being used. Which type
+! is chosen determines what the other namelist in this file should be.
 !
-!========================================================================
 !
-! BEAM PARAMETERS - namelist BLIST
+! Namelist parameters:
+!
+! dtype - String. Specifies the input type. Options are 'simple' (corresponding
+!         to a simple, homogeneous beam with some linear chirp or modulation 
+!         added), 'dist' (where many equispaced 'slices' in the temporal/longitudinal 
+!         direction are described by homogeneous distribution parameters in every other 
+!         direction), or 'h5' (which is an hdf5 file with 6D electron macroparticle 
+!         coordinates and charge weights). If 'simple', this file must include the BLIST
+!         namelist. if 'dist', this file must include the BDLIST namelist. If 'h5',
+!         this file must include the BH5LIST namelist.
+! 
+! nbeams - Integer. For flexibility, Puffin can create a number of electron beams at once.
+!          Use this to tell Puffin how many beams to create if using either the 'simple'
+!          or 'dist' input types.
+!
+!                 ***********************************
+!
+! SIMPLE BEAM PARAMETERS - namelist BLIST
+!
+! This namelist is used to generate a simple Gaussian or Flat-Top beamn distribution
+! in Puffin.
+!
+!
+! Namelist Parameters:
 !
 ! sSigmaE - gaussian std dev in each dimension - x, y, z2, px, py, gamma, then for additional beams
 ! sLenE   - Total length of beam modelled in each dimension - x, y, z2, px, py, gamma...
@@ -32,12 +61,34 @@
 ! qRndEj_G - Round edge of flat top?
 ! sSigEj_G - Gaussian sigma of tail-off if used
 ! qMatched_A - Automatically match beam to focusing channel??
-!========================================================================
+!                 ***********************************
+!
+!   This example input file re-creates the results of figure 1 in the following
+!   publication:
+!
+!   B.W.J. McNeil, G.R.M. Robb and D.A. Jaroszynski, Opt. Comm. Vol 165, pp 65-70
+!
+!   The example models an electron beam with a 'flat-top', rectangular current
+!   distribution radiates strong Coherent Spontaneous Emission from its sharp
+!   edges in an undulator. This is shown in 1D mode.
+
+
+!   We choose a single, simple beam distribution.
 
 &NBLIST
 nbeams = 1
 dtype = 'simple'
 /
+
+!   We then specify the simple beam distribution:
+!
+!   Using a sSigmaE of 1E8 in the temporal dimension (the 3rd element) results
+!   in a flat-top distribution, with length given by sLenE (again, the 3rd 
+!   element).
+!
+!   For this example, note that qFixCharge = .true. - this is common when using
+!   scaled variables, and adjusts the charge so that the beam has the same 
+!   FEL parameter 'rho' as in the main input file.
 
 &BLIST
 sSigmaE = 0.1, 0.1, 1E8, 1.0, 1.0, 1.0
