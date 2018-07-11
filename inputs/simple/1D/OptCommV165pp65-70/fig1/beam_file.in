@@ -53,6 +53,7 @@
 ! qOneDCold - When in 1D mode, this decides if the beam is completely cold 
 !             (zero energy spread when = .true.)
 ! emitx, emity - Scaled transverse beam emittance
+! alphax, alphay - Twiss parameters \alpha_x,y in x and y, respectively
 ! sQe - Beam charge 
 ! gammaf - Ratio of average beam energy to reference beam energy gamma / gamma_r 
 ! chirp  - Energy chirp in z2 (or t) i.e. dgamma/dz2 (or dgamma/dt)
