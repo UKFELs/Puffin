@@ -61,6 +61,7 @@
 ! qRndEj_G - Round edge of flat top?
 ! sSigEj_G - Gaussian sigma of tail-off if used
 ! qMatched_A - Automatically match beam to focusing channel??
+!
 !                 ***********************************
 !
 !   This example input file re-creates the results of figure 1 in the following
