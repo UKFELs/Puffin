@@ -55,12 +55,16 @@
 ! emitx, emity - Scaled transverse beam emittance
 ! sQe - Beam charge 
 ! gammaf - Ratio of average beam energy to reference beam energy gamma / gamma_r 
-! chirp  - Energy chirp in z2 i.e. dgamma/dz2
-! mag    - magnitude of energy oscillation on beam
-! freq   - frequency in z2 of beam energy oscillation
-! qRndEj_G - Round edge of flat top?
+! chirp  - Energy chirp in z2 (or t) i.e. dgamma/dz2 (or dgamma/dt)
+! mag    - magnitude of beam energy oscillation on beam (default = 0)
+! freq   - Wavenumber 2 pi / lambda in z2 (or t) of beam energy oscillation
+! qRndEj_G - Round edge of flat top? (ignored if not flat-top distribution in
+!           the temporal dimension)
 ! sSigEj_G - Gaussian sigma of tail-off if used
-! qMatched_A - Automatically match beam to focusing channel??
+! qMatched_A - Automatically match beam to focusing channel?? The matching is 
+!              done to only the 'natural' or strong, constant focusing channel.
+!              It is NOT matched to an undulator-quad lattice.
+!
 !
 !                 ***********************************
 !
