@@ -147,7 +147,7 @@ contains
   subroutine WriteINTEGERL(iInt, tFileType, qOK, zFormat)
 
     implicit none
-    integer(KIND=IPL),intent(in)             :: iInt
+    integer(kind=ipl),intent(in)             :: iInt
     type(cFileType), intent(inout)          :: tFileType
     character(*),    intent(in),  optional  :: zFormat 
     logical,         intent(out)	      :: qOK      
@@ -831,7 +831,6 @@ END SUBROUTINE Error_log
 2000 CONTINUE
 			  
       END SUBROUTINE FileNameNoExtension
-!--------------------------------------------------------------------------------
 
 !> @author
 !> Cynthia Nam
@@ -840,66 +839,53 @@ END SUBROUTINE Error_log
 !> @brief
 !> Return filename extension ie '.*' section
 !> @param[in] zFileName FileName
-!> @param[out] zFile File extension
+!> @param[out] zFile File extension (must be deferred shape)
 !> @param[out] qOK Error flag
 
-      subroutine FileNameExtension(zFileName, zFile, qOK)
+  subroutine FileNameExtension(zFileName, zFile, qOK)
   
-      implicit none
+    implicit none
  
-      character(*),   intent(in)  :: zFileName
-      character(:), allocatable,  intent(out) :: zFile
-      logical,        intent(out)  :: qOK      
+    character(*),   intent(in)  :: zFileName
+    character(:), allocatable,  intent(out) :: zFile
+    logical,        intent(out)  :: qOK
 
-! Local Scalars         
+    integer(kind=ip)      :: iExtension
 
-      integer(kind=ip)      :: iExtension
+    qOK = .false.
 
-! Set error flag to false
+!     Find last position of '.' in filename
 
-      qOK = .FALSE.
+    iExtension = index(zfilename,'.',.true.)
 
-! Find last position of '.' in filename
+!     Return filename
 
-      iExtension = INDEX(zfilename,'.',.TRUE.)
+    select case (iExtension)
+      case (0)
+        zFile = zFileName
+      case (1)
+        zFile = zFileName(iExtension:len(zFileName))
+      case (2:)
+        zFile = zFileName(iExtension:len(zFileName))
+      case default
+        zFile = zFileName
+    end select
 
-! Return filename
+!     Remove leading and trailing blanks
 
-      Select Case (iExtension)
-          Case (0)
-            zFile = zFileName
-          Case (1)
-            zFile = zFileName(iExtension:len(zFileName))
-          Case (2:)
-            zFile = zFileName(iExtension:len(zFileName))
-          Case Default
-            zFile = zFileName
-      End Select
+    zFile = trim(adjustl(zFile))
 
-! Remove leading and trailing blanks
+!     Set error flag and exit         
 
-      zFile = TRIM(ADJUSTL(zFile))
-!
-!--------------------------------------------------------------------------------	
-!  Set error flag and exit         
-!--------------------------------------------------------------------------------	
-!
-      qOK = .TRUE.				    
-      GoTo 2000     
-!
-!--------------------------------------------------------------------------------
+    qOK = .true.				    
+    goto 2000     
+
 ! Error Handler
-!--------------------------------------------------------------------------------
-!            
+
 1000 call Error_log('Error in DIO: OpenFileForAppend',tErrorLog_G)
-   Print*,'Error in DIO: OpenFileForAppend'
-2000 CONTINUE
-        
-      END SUBROUTINE FileNameExtension
-!--------------------------------------------------------------------------------
+    print*,'Error in DIO: OpenFileForAppend'
+2000 continue
 
+  end subroutine FileNameExtension
 
-
-
-
-END MODULE IO
+end module IO
