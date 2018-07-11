@@ -88,6 +88,17 @@ nbeams = 1
 dtype = 'simple'
 /
 
+!   We then specify the simple beam distribution:
+!
+!   Using a sSigmaE of 1E8 in the temporal dimension (the 3rd element) results
+!   in a flat-top distribution, with length given by sLenE (again, the 3rd 
+!   element). Here, this is in scaled units, which are units of lc, the FEL
+!   cooperation length.
+!
+!   For this example, note that qFixCharge = .true. - this adjusts the charge 
+!   so that the beam has the same FEL parameter 'rho' as in the main input file.
+
+
 &BLIST
 sSigmaE = 0.1, 0.1, 1E8, 1.0, 1.0, 1.0
 sLenE = 1E-6, 1E-6, 10.0, 1E-6, 1E-6, 1E-6
