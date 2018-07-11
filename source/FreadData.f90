@@ -614,6 +614,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   INTEGER::ios
   CHARACTER(96) :: dtype
 
+  character(:), allocatable :: fext
+  logical :: qdirect ! if filename is h5, directly read in
 
 
 ! Declare namelists
@@ -633,6 +635,11 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   qOK = .false.
 
   qAMatch = .false.
+
+  call FileNameExtension(be_f, fext, qOK)
+
+  qdirect = .false.
+  if (fext == '.h5') qdirect = .true.
 
 ! Open the file
 !  OPEN(UNIT=168,FILE=be_f,IOSTAT=ios,&
@@ -661,12 +668,15 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
 ! Read first namelist - number of beams only
 
-  open(161,file=be_f, status='OLD', recl=80, delim='APOSTROPHE')
-  read(161,nml=nblist)
+  if (.not. qdirect) then
+    open(161,file=be_f, status='OLD', recl=80, delim='APOSTROPHE')
+    read(161,nml=nblist)
+  else
+    dtype = 'h5'
+  end if
 
 
 ! Allocate arrays
-
 
   allocate(sSigmaE(nbeams,6))
   allocate(sLenE(nbeams,6))
@@ -938,9 +948,13 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
     end if
     allocate(dist_f(nbeams))
     iInputType_G = iReadH5_G
-    read(161,nml=bh5list)
 
-    close(UNIT=161,STATUS='KEEP')
+    if (.not. qdirect) then
+      read(161,nml=bh5list)
+      close(UNIT=161,STATUS='KEEP')
+    else
+      dist_f = be_f
+    end if
 
   end if
 
@@ -1067,6 +1081,8 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
   INTEGER::ios
   CHARACTER(len=1024) :: dtype
 
+  character(:), allocatable :: fext
+  logical :: qdirect ! if filename is h5, directly read in
 
   namelist /nslist/ nseeds,dtype
   namelist /slist/ freqf, ph_sh, sA0_X, sA0_Y, sSigmaF, &
@@ -1075,6 +1091,12 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
   namelist /sh5list/ field_file
 
   qOK = .FALSE.
+
+  call FileNameExtension(se_f, fext, qOK)
+
+  qdirect = .false.
+
+  if (fext == '.h5') qdirect = .true.
 
 
 ! Default vals
@@ -1086,12 +1108,17 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
 
 !   Open the file
   if (se_f .ne. '') then
-    open(161,file=se_f, status='OLD', recl=80, delim='APOSTROPHE')
-    read(161,nml=nslist)
+    if (.not. qdirect) then
+      open(161,file=se_f, status='OLD', recl=80, delim='APOSTROPHE')
+      read(161,nml=nslist)
+    else
+      dtype = 'h5'
+    end if
   end if
-  ALLOCATE(sSigmaF(nseeds,3))
-  ALLOCATE(sA0_X(nseeds), sA0_Y(nseeds), ph_sh(nseeds))
-  ALLOCATE(freqf(nseeds),qFlatTop(nseeds),meanZ2(nseeds))
+
+  allocate(sSigmaF(nseeds,3))
+  allocate(sA0_X(nseeds), sA0_Y(nseeds), ph_sh(nseeds))
+  allocate(freqf(nseeds),qFlatTop(nseeds),meanZ2(nseeds))
   allocate(qRndFj_G(nseeds), sSigFj_G(nseeds))
   allocate(qMatchS_G(nseeds))
 
@@ -1134,8 +1161,12 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
     iFieldSeedType_G=iReadH5Field_G
 
     if (se_f .ne. '') then
-      read(161,nml=sh5list)
-      close(UNIT=161,STATUS='KEEP')
+      if (.not. qdirect) then
+        read(161,nml=sh5list)
+        close(UNIT=161,STATUS='KEEP')
+      else
+        field_file = se_f
+      end if
     end if
 
     qOK = .TRUE.

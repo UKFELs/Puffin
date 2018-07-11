@@ -909,66 +909,49 @@ END SUBROUTINE Error_log
 !--------------------------------------------------------------------------------
 !-------------------------------------------------------------------------------- 
 
-      SUBROUTINE FileNameNoExtension(zFileName, &
-      				   zFile, &
-			           qOK)
-!
-!********************************************************************
+      subroutine FileNameNoExtension(zFileName, zFile, qOK)
+
 ! Return filename with extension removed ie '.*' removed 
-!********************************************************************
 !
 ! zFileName     - INPUT    - FileName
 ! zFile         - OUTPUT   - File no extension
 ! qOK           - OUTPUT   - Error flag
 !
-!====================================================================
 ! Define local variables
-!
-!=====================================================================
-!	
-      IMPLICIT NONE
+	
+      implicit none
  
-      CHARACTER(*),   INTENT(IN)            :: zFileName
-      CHARACTER(*),   INTENT(OUT)           :: zFile
-      LOGICAL,        INTENT(OUT)	    :: qOK      
-!
-!--------------------------------------------------------------------------------	
+      character(*),   intent(in)  :: zFileName
+      character(*),   intent(out) :: zFile
+      logical,        intent(out)  :: qOK      
+
 ! Local Scalars         
-!--------------------------------------------------------------------------------	
-!
-      INTEGER(KIND=IP)      :: iExtension
-!
-!--------------------------------------------------------------------------------	
-! Set error flag to false         
-!--------------------------------------------------------------------------------	
-!
+
+      integer(kind=ip)      :: iExtension
+
+! Set error flag to false
+
       qOK = .FALSE.
-!
-!--------------------------------------------------------------------------------	
-! Find last position of '.' in filename  
-!--------------------------------------------------------------------------------	
-!
+
+! Find last position of '.' in filename
+
       iExtension = INDEX(zfilename,'.',.TRUE.)
-!
-!--------------------------------------------------------------------------------	
+
 ! Return filename
-!--------------------------------------------------------------------------------	
-!
+
       Select Case (iExtension)
-         Case (0)
+          Case (0)
             zFile = zFileName
-         Case (1)
-	    zFile = ''
-	 Case (2:)
-	    zFile = zFileName(1:iExtension-1)
-	 Case Default
+          Case (1)
+  	        zFile = ''
+  	      Case (2:)
+  	        zFile = zFileName(1:iExtension-1)
+          Case Default
             zFile = zFileName
       End Select
-!
-!--------------------------------------------------------------------------------	
+
 ! Remove leading and trailing blanks
-!--------------------------------------------------------------------------------	
-!
+
       zFile = TRIM(ADJUSTL(zFile))
 !
 !--------------------------------------------------------------------------------	
@@ -988,5 +971,74 @@ END SUBROUTINE Error_log
 			  
       END SUBROUTINE FileNameNoExtension
 !--------------------------------------------------------------------------------
+
+!> @author
+!> Cynthia Nam
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Return filename extension ie '.*' section
+!> @param[in] zFileName FileName
+!> @param[out] zFile File extension
+!> @param[out] qOK Error flag
+
+      subroutine FileNameExtension(zFileName, zFile, qOK)
+  
+      implicit none
+ 
+      character(*),   intent(in)  :: zFileName
+      character(:), allocatable,  intent(out) :: zFile
+      logical,        intent(out)  :: qOK      
+
+! Local Scalars         
+
+      integer(kind=ip)      :: iExtension
+
+! Set error flag to false
+
+      qOK = .FALSE.
+
+! Find last position of '.' in filename
+
+      iExtension = INDEX(zfilename,'.',.TRUE.)
+
+! Return filename
+
+      Select Case (iExtension)
+          Case (0)
+            zFile = zFileName
+          Case (1)
+            zFile = zFileName(iExtension:len(zFileName))
+          Case (2:)
+            zFile = zFileName(iExtension:len(zFileName))
+          Case Default
+            zFile = zFileName
+      End Select
+
+! Remove leading and trailing blanks
+
+      zFile = TRIM(ADJUSTL(zFile))
+!
+!--------------------------------------------------------------------------------	
+!  Set error flag and exit         
+!--------------------------------------------------------------------------------	
+!
+      qOK = .TRUE.				    
+      GoTo 2000     
+!
+!--------------------------------------------------------------------------------
+! Error Handler
+!--------------------------------------------------------------------------------
+!            
+1000 call Error_log('Error in DIO: OpenFileForAppend',tErrorLog_G)
+   Print*,'Error in DIO: OpenFileForAppend'
+2000 CONTINUE
+        
+      END SUBROUTINE FileNameExtension
+!--------------------------------------------------------------------------------
+
+
+
+
 
 END MODULE IO
