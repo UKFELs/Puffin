@@ -1,573 +1,433 @@
 ! Copyright 2012-2018, University of Strathclyde
-! Authors: Lawrence T. Campbell
+! Authors: Cynthia Nam, Pamela Aitken, and Lawrence T. Campbell
 ! License: BSD-3-Clause
 
-MODULE IO
+!> @author
+!> Cynthia Nam, Pamela Aitken, and Lawrence Campbell
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Module to deal with writing out to file.
+!> @param mvar_iFreeFile holds last free file number
+!> @param tErrorLog_G Custom errorlog type for error tracking
 
-! Module to deal with writing out to file
-!--------------------------------------------------------------------------------
+module IO
 
-      USE paratype
-      USE ParallelInfoType
-      USE FileType
-!      USE SddsWriter
-!      USE CIOWrapper
+use paratype
+use FileType
 
-      IMPLICIT NONE
-
-! Define local module variables
-! mvar_iFreeFile   - holds last free file number
-!--------------------------------------------------------------------------------
+implicit none
  
-      INTEGER(KIND=IP)                :: mvar_iFreeFile = 0_IP
-!Save ensures that the errorlog type preserves its value
-      TYPE(cFileType),SAVE         :: tErrorLog_G
+integer(kind=ip) :: mvar_iFreeFile = 0_IP
+type(cFileType), save :: tErrorLog_G
 
-      CONTAINS
-!--------------------------------------------------------------------------------
-!--------------------------------------------------------------------------------
+contains
 
-      SUBROUTINE WriteLOGICINTEGER(qLogic,        &
-			      tFileType,    &
-			      qOK,          &
-			      zFormat)
-!
-!********************************************************************
-! Write Logical data as INTEGER(KIND=IP) data to file
-!********************************************************************
-!
-! qLogic    - INPUT    - Logic data (TRUE = 1, FALSE = 0)
-! tFileType - INPUT    - Properties of output file
-! qOK       - OUTPUT   - Error flag
-! zFormat   - OPTIONAL - Format for data write
-!
-!====================================================================
-! Define local variables
-! iInt  - Logic as integer
-! qOKL  - Local Error flag
-!
-!=====================================================================
-!	
-      IMPLICIT NONE
-      LOGICAL,         INTENT(IN)             :: qLOGIC
-      TYPE(cFileType), INTENT(INOUT)          :: tFileType
-      CHARACTER(*),    INTENT(IN),  OPTIONAL  :: zFormat 
-      LOGICAL,         INTENT(OUT)	      :: qOK     
-      
-      INTEGER(KIND=IP)  :: iInt 
-      LOGICAL           :: qOKL
-!
-!--------------------------------------------------------------------------------	
-! Set error flag to false         
-!--------------------------------------------------------------------------------	
-!
-      qOK = .FALSE.
-!
-!--------------------------------------------------------------------------------	
-! Get logic variable as integer     
-!--------------------------------------------------------------------------------	
-!
-      If (qLogic) Then
-         iInt = 1
-      Else
-         iInt = 0
-      End If
-!
-!--------------------------------------------------------------------------------	
-! Write data       
-!--------------------------------------------------------------------------------	
-!      
-      IF (PRESENT(zFormat) ) THEN
-      	 call WriteINTEGER(iInt,tFileType,qOKL,zFormat)
-         If (.NOT. qOKL) Goto 1000
-      ELSE
-         call WriteINTEGER(iInt,tFileType,qOKL)
-         If (.NOT. qOKL) Goto 1000
-      END IF
-!
-!--------------------------------------------------------------------------------	
+!> @author
+!> Cynthia Nam and Pamela Aitken
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Write Logical data to file as an integer (TRUE = 1, FALSE = 0)
+!> @param[in] qLogic Logic data to be written
+!> @param[in] tFileType Custom type describing the output file
+!> @param[out] qOK Error flag
+!> @param[in] zFormat (Optional) Format for data write
+!> @param iInt Logic converted to integer (TRUE = 1, FALSE = 0)
+!> @param qOKL Local error flag
+
+  subroutine WriteLOGICINTEGER(qLogic, tFileType, qOK, zFormat)
+
+    implicit none
+
+    logical,         intent(in)            :: qLOGIC
+    type(cFileType), intent(inout)         :: tFileType
+    character(*),    intent(in), optional  :: zFormat
+    logical,         intent(out)	         :: qOK
+
+    integer(kind=ip)  :: iInt
+    logical           :: qOKL
+
+    qOK = .FALSE.
+
+!     Convert logic -> integer
+
+    if (qLogic) then
+       iInt = 1
+    else
+       iInt = 0
+    end if
+
+!    Write coverted data:
+
+    if (PRESENT(zFormat) ) then
+    	 call WriteINTEGER(iInt,tFileType,qOKL,zFormat)
+       if (.not. qOKL) goto 1000
+    else
+       call WriteINTEGER(iInt,tFileType,qOKL)
+       if (.not. qOKL) goto 1000
+    end if
+
 !  Set error flag and exit         
-!--------------------------------------------------------------------------------	
-!
-      qOK = .TRUE.				    
-      GoTo 2000     
-!
-!--------------------------------------------------------------------------------
+
+    qOK = .true.				    
+    goto 2000     
+
 ! Error Handler
-!--------------------------------------------------------------------------------
-!            
+
 1000 call Error_log('Error in DIO:WriteLOGICINTEGER',tErrorLog_G)
-   Print*,'Error in DIO:WriteLOGICINTEGER'
-2000 CONTINUE
-!	      
-      END SUBROUTINE WriteLOGICINTEGER
-!--------------------------------------------------------------------------------
+    print*,'Error in DIO:WriteLOGICINTEGER'
+2000 continue
 
-      SUBROUTINE WriteINTEGER(iInt,        &
-			      tFileType,    &
-			      qOK,          &
-			      zFormat)
-!
-!********************************************************************
-! Write INTEGER(KIND=IP) data to file
-!********************************************************************
-!
-! iInt      - INPUT    - Inetger data    
-! tFileType - INPUT    - Properties of output file
-! qOK       - OUTPUT   - Error flag
-! zFormat   - OPTIONAL - Format for data write
-!
-!====================================================================
-! Define local variables
-!!
-!=====================================================================
-!	
-      IMPLICIT NONE
-      INTEGER(KIND=IP),INTENT(IN)             :: iInt
-      TYPE(cFileType), INTENT(INOUT)          :: tFileType
-      CHARACTER(*),    INTENT(IN),  OPTIONAL  :: zFormat 
-      LOGICAL,         INTENT(OUT)	      :: qOK      
-!
-      LOGICAL           :: qOKL
-!
-!--------------------------------------------------------------------------------	
-! Set error flag to false         
-!--------------------------------------------------------------------------------	
-!
-      qOK = .FALSE.
-!
-!--------------------------------------------------------------------------------	
-! Write data       
-!--------------------------------------------------------------------------------	
-!      
-      IF (tFileType%qFormatted) THEN 
-         IF (PRESENT(zFormat) ) THEN
-      	    WRITE (tFileType%iUnit,zFormat) (iInt)
-         ELSE
-           WRITE (tFileType%iUnit,'(I9)') (iInt)
-         END IF
-      ELSE
-      !   call C_WriteInteger(tFileType%zFileName, iInt, qOKL)
-	 If (.NOT. qOKL) Goto 1000
-      END IF 
-!
-!--------------------------------------------------------------------------------	
-!  Set error flag and exit         
-!--------------------------------------------------------------------------------	
-!
-      qOK = .TRUE.				    
-      GoTo 2000     
-!
-!--------------------------------------------------------------------------------
-! Error Handler
-!--------------------------------------------------------------------------------
-!            
+  end subroutine WriteLOGICINTEGER
+
+!> @author
+!> Cynthia Nam and Pamela Aitken
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Write integer data to file
+!> @param[in] iInt Integer data to be written
+!> @param[in] tFileType Custom type for properties of output file
+!> @param[out] qOK Error flag
+!> @param[in] zFormat (Optional) Format for data write
+!> @param qOKL Local error flag
+
+  subroutine WriteINTEGER(iInt, tFileType, qOK, zFormat)
+
+    implicit none
+
+    integer(kind=ip),intent(in)             :: iInt
+    type(cFileType), intent(inout)          :: tFileType
+    character(*),    intent(in),  optional  :: zFormat 
+    logical,         intent(out)	      :: qOK      
+
+    logical           :: qOKL
+
+    qOK = .false.
+
+!     Write data       
+
+    if (tFileType%qFormatted) then 
+      if (present(zFormat) ) then
+        write (tFileType%iUnit,zFormat) (iInt)
+      else
+        write (tFileType%iUnit,'(I9)') (iInt)
+      end if
+    else
+!   call C_WriteInteger(tFileType%zFileName, iInt, qOKL)
+!      if (.not. qOKL) goto 1000
+    end if 
+
+!      Set error flag and exit
+
+    qOK = .TRUE.				    
+    goto 2000     
+
+!          Error Handler
+
 1000 call Error_log('Error in DIO:WriteINTEGER',tErrorLog_G)
-   Print*,'Error in DIO:WriteINTEGER'
-2000 CONTINUE      
-END SUBROUTINE WriteINTEGER
+    print*,'Error in DIO:WriteINTEGER'
+2000 continue      
 
-!--------------------------------------------------------------------------------
+  end subroutine WriteINTEGER
 
+!> @author
+!> Cynthia Nam and Pamela Aitken
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Write integer (kind=ipl) data to file
+!> @param[in] iInt Integer data to be written
+!> @param[in] tFileType Custom type for properties of output file
+!> @param[out] qOK Error flag
+!> @param[in] zFormat (Optional) Format for data write
+!> @param qOKL Local error flag
 
-      SUBROUTINE WriteINTEGERL(iInt,        &
-			      tFileType,    &
-			      qOK,          &
-			      zFormat)
-!
-!********************************************************************
-! Write INTEGER(KIND=IP) data to file
-!********************************************************************
-!
-! iInt      - INPUT    - Inetger data    
-! tFileType - INPUT    - Properties of output file
-! qOK       - OUTPUT   - Error flag
-! zFormat   - OPTIONAL - Format for data write
-!
-!====================================================================
-! Define local variables
-!!
-!=====================================================================
-!	
-      IMPLICIT NONE
-      INTEGER(KIND=IPL),INTENT(IN)             :: iInt
-      TYPE(cFileType), INTENT(INOUT)          :: tFileType
-      CHARACTER(*),    INTENT(IN),  OPTIONAL  :: zFormat 
-      LOGICAL,         INTENT(OUT)	      :: qOK      
-!
-      LOGICAL           :: qOKL
-!
-!--------------------------------------------------------------------------------	
-! Set error flag to false         
-!--------------------------------------------------------------------------------	
-!
-      qOK = .FALSE.
-!
-!--------------------------------------------------------------------------------	
-! Write data       
-!--------------------------------------------------------------------------------	
-!      
-      IF (tFileType%qFormatted) THEN 
-         IF (PRESENT(zFormat) ) THEN
-      	    WRITE (tFileType%iUnit,zFormat) (iInt)
-         ELSE
-           WRITE (tFileType%iUnit,'(I14)') (iInt)
-         END IF
-      ELSE
-        ! call C_WriteIntegerL(tFileType%zFileName, iInt, qOKL)
-	 If (.NOT. qOKL) Goto 1000
-      END IF 
-!
-!--------------------------------------------------------------------------------	
-!  Set error flag and exit         
-!--------------------------------------------------------------------------------	
-!
-      qOK = .TRUE.				    
-      GoTo 2000     
-!
-!--------------------------------------------------------------------------------
-! Error Handler
-!--------------------------------------------------------------------------------
-!            
-1000 call Error_log('Error in DIO:WriteINTEGER',tErrorLog_G)
-   Print*,'Error in DIO:WriteINTEGER'
-2000 CONTINUE      
-END SUBROUTINE WriteINTEGERL
+  subroutine WriteINTEGERL(iInt, tFileType, qOK, zFormat)
 
+    implicit none
+    integer(KIND=IPL),intent(in)             :: iInt
+    type(cFileType), intent(inout)          :: tFileType
+    character(*),    intent(in),  optional  :: zFormat 
+    logical,         intent(out)	      :: qOK      
 
-SUBROUTINE WriteINTEGERL64(iInt,        &
-      tFileType,    &
-      qOK,          &
-      zFormat)
-!
-!********************************************************************
-! Write INTEGER(KIND=IP) data to file
-!********************************************************************
-!
-! iInt      - INPUT    - Inetger data    
-! tFileType - INPUT    - Properties of output file
-! qOK       - OUTPUT   - Error flag
-! zFormat   - OPTIONAL - Format for data write
-!
-!====================================================================
-! Define local variables
-!!
-!=====================================================================
-!	
-IMPLICIT NONE
+    logical           :: qOKL
 
-INTEGER(KIND=IPN),INTENT(IN)             :: iInt
-TYPE(cFileType), INTENT(INOUT)          :: tFileType
-CHARACTER(*),    INTENT(IN),  OPTIONAL  :: zFormat 
-LOGICAL,         INTENT(OUT)	      :: qOK      
+    qOK = .false.
 
-LOGICAL           :: qOKL
+    if (tFileType%qFormatted) then 
+      if (present(zFormat) ) then
+        write (tFileType%iUnit,zFormat) (iInt)
+      else
+        write (tFileType%iUnit,'(I14)') (iInt)
+      end if
+    else
+!      call C_WriteIntegerL(tFileType%zFileName, iInt, qOKL)
+      if (.not. qOKL) goto 1000
+    end if 
 
+!      Set error flag and exit    
+
+    qOK = .true.				    
+    goto 2000     
+
+!      Error Handler
+
+1000 call Error_log('Error in DIO:WriteINTEGERL',tErrorLog_G)
+    print*,'Error in DIO:WriteINTEGERL'
+2000 continue      
+
+  end subroutine WriteINTEGERL
+
+!> @author
+!> Cynthia Nam and Pamela Aitken
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Write integer (kind=ipn) data to file
+!> @param[in] iInt Integer data to be written
+!> @param[in] tFileType Custom type for properties of output file
+!> @param[out] qOK Error flag
+!> @param[in] zFormat (Optional) Format for data write
+!> @param qOKL Local error flag
+
+  subroutine WriteINTEGERL64(iInt, tFileType, qOK, zFormat)
+
+    implicit none
+
+    integer(kind=ipn),intent(in)            :: iInt
+    type(cFileType), intent(inout)          :: tFileType
+    character(*),    intent(in),  optional  :: zFormat 
+    logical,         intent(out)	  :: qOK      
+
+    logical           :: qOKL
 
 !     Set error flag to false
 
-qOK = .FALSE.
+    qOK = .false.
 
 !          Write data       
 
-IF (tFileType%qFormatted) THEN 
-   IF (PRESENT(zFormat) ) THEN
-      WRITE (tFileType%iUnit,zFormat) (iInt)
-   ELSE
-     WRITE (tFileType%iUnit,'(I14)') (iInt)
-   END IF
-ELSE
-  ! call C_WriteIntegerL64(tFileType%zFileName, iInt, qOKL)
-If (.NOT. qOKL) Goto 1000
-END IF 
-!
-!--------------------------------------------------------------------------------	
-!  Set error flag and exit         
-!--------------------------------------------------------------------------------	
-!
-qOK = .TRUE.				    
-GoTo 2000     
-!
-!--------------------------------------------------------------------------------
+    if (tFileType%qFormatted) then 
+      if (present(zFormat) ) then
+        write (tFileType%iUnit,zFormat) (iInt)
+      else
+        write (tFileType%iUnit,'(I14)') (iInt)
+      end if
+    else
+!      call C_WriteIntegerL64(tFileType%zFileName, iInt, qOKL)
+      if (.not. qOKL) Goto 1000
+    end if 
+
+!      Set error flag and exit
+
+    qOK = .true.				    
+    goto 2000     
+
 ! Error Handler
-!--------------------------------------------------------------------------------
-!            
-1000 call Error_log('Error in DIO:WriteINTEGER',tErrorLog_G)
-Print*,'Error in DIO:WriteINTEGER'
-2000 CONTINUE      
 
-END SUBROUTINE WriteINTEGERL64
+1000 call Error_log('Error in DIO:WriteINTEGERL64', tErrorLog_G)
+    print*,'Error in DIO:WriteINTEGERL64'
+2000 continue
 
+  end subroutine WriteINTEGERL64
 
 
-!--------------------------------------------------------------------------------
-!--------------------------------------------------------------------------------
+!> @author
+!> Cynthia Nam and Pamela Aitken
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Write real (kind=wp) data to file
+!> @param[in] sReal Real data to be written
+!> @param[in] tFileType Custom type for properties of output file
+!> @param[out] qOK Error flag
+!> @param[in] zFormat (Optional) Format for data write
+!> @param qOKL Local error flag
 
-      SUBROUTINE WriteRealNumber(sReal,        &
-			       tFileType,    &
-			       qOK,          &
-			       zFormat)
-!
-!********************************************************************
-! Write real data to file
-!********************************************************************
-!
-! sReal     - INPUT -    Real data    
-! tFileType - INPUT    - Properties of output file
-! qOK       - OUTPUT   - Error flag
-! zFormat   - OPTIONAL - Format for data write
-!
-!====================================================================
-! Define local variables
-!!
-!=====================================================================
-!	
-      IMPLICIT NONE
-      REAL(KIND=WP),  INTENT(IN)             :: sReal
-      TYPE(cFileType),INTENT(INOUT)          :: tFileType
-      CHARACTER(*),   INTENT(IN),  OPTIONAL  :: zFormat 
-      LOGICAL,        INTENT(OUT)	     :: qOK      
-!
-      LOGICAL           :: qOKL
-!
-!--------------------------------------------------------------------------------	
-! Set error flag to false         
-!--------------------------------------------------------------------------------	
-!
-      qOK = .FALSE.
-!
-!--------------------------------------------------------------------------------	
-! Write data       
-!--------------------------------------------------------------------------------	
-!      
-      IF (tFileType%qFormatted) Then 
-         IF (PRESENT(zFormat) ) THEN
-      	    WRITE (tFileType%iUnit,zFormat) (sReal)
-         ELSE
-           WRITE (tFileType%iUnit,'(E22.14E3)') (sReal)
-         END IF
-      ELSE
-    !     call C_WriteReal(tFileType%zFileName, sReal, qOKL)
-	 If (.NOT. qOKL) Goto 1000
-      END IF 
-!
-!--------------------------------------------------------------------------------	
-!  Set error flag and exit         
-!--------------------------------------------------------------------------------	
-!
-      qOK = .TRUE.				    
-      GoTo 2000     
-!
-!--------------------------------------------------------------------------------
+  subroutine WriteRealNumber(sReal, tFileType, qOK, zFormat)
+
+    implicit none
+
+    real(kind=wp),  intent(in)             :: sReal
+    type(cFileType),intent(inout)          :: tFileType
+    character(*),   intent(in),  optional  :: zFormat 
+    logical,        intent(out)	     :: qOK      
+
+    logical           :: qOKL
+
+    qOK = .false.
+  
+    if (tFileType%qFormatted) then 
+      if (present(zFormat) ) then
+    	  write (tFileType%iUnit,zFormat) (sReal)
+      else
+        write (tFileType%iUnit,'(E22.14E3)') (sReal)
+      end IF
+    else
+!     call C_WriteReal(tFileType%zFileName, sReal, qOKL)
+      if (.not. qOKL) goto 1000
+    end if 
+
+!        Set error flag and exit         
+
+    qOK = .true.				    
+    goto 2000     
+
 ! Error Handler
-!--------------------------------------------------------------------------------
-!            
+
 1000 call Error_log('Error in DIO:WriteRealNumber',tErrorLog_G)
-   Print*,'Error in DIO:WriteRealNumber'
-2000 CONTINUE
-      END SUBROUTINE WriteRealNumber
-!--------------------------------------------------------------------------------
-!--------------------------------------------------------------------------------
+    print*,'Error in DIO:WriteRealNumber'
+2000 continue
 
-      SUBROUTINE Write1DRealArray(sReal,        &
-			          tFileType,    &
-			          qOK,          &
-				  zFormat)
-!
-!********************************************************************
-! Write one dimensional real data to file
-!********************************************************************
-!
-! sReal     - INPUT -    Real array data    
-! tFileType - INPUT    - Properties of output file
-! qOK       - OUTPUT   - Error flag
-! zFormat   - OPTIONAL - Format for data write
-!
-!====================================================================
-! Define local variables
-!!
-!=====================================================================
-!	
-      IMPLICIT NONE
-      REAL(KIND=WP),  INTENT(IN)             :: sReal(:)
-      TYPE(cFileType),INTENT(INOUT)          :: tFileType
-      CHARACTER(*),   INTENT(IN),  OPTIONAL  :: zFormat 
-      LOGICAL,        INTENT(OUT)	     :: qOK      
-!
-      LOGICAL           :: qOKL
-!
-!--------------------------------------------------------------------------------	
-! Set error flag to false         
-!--------------------------------------------------------------------------------	
-!
-      qOK = .FALSE.
-!
-!--------------------------------------------------------------------------------	
-! Write data       
-!--------------------------------------------------------------------------------	
-!      
-      IF (tFileType%qFormatted) Then 
-         IF (PRESENT(zFormat) ) THEN
-      	    WRITE (tFileType%iUnit,zFormat) (sReal)
-         ELSE
-           WRITE (tFileType%iUnit,'(E22.14E3)') (sReal)
-         END IF
-      ELSE
-    !     Call C_WriteRealArray(tFileType%zFilename, sReal, qOKL)
-	 If (.NOT. qOKL) Goto 1000
-      END IF 
-!
-!--------------------------------------------------------------------------------	
-!  Set error flag and exit         
-!--------------------------------------------------------------------------------	
-!
-      qOK = .TRUE.				    
-      GoTo 2000     
-!
-!--------------------------------------------------------------------------------
-! Error Handler
-!--------------------------------------------------------------------------------
-!            
+  end subroutine WriteRealNumber
+
+!> @author
+!> Cynthia Nam and Pamela Aitken
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Write real (kind=wp) 1D array data to file
+!> @param[in] sReal Real, 1D array to be written
+!> @param[in] tFileType Custom type for properties of output file
+!> @param[out] qOK Error flag
+!> @param[in] zFormat (Optional) Format for data write
+!> @param qOKL Local error flag
+
+  subroutine Write1DRealArray(sReal, tFileType, qOK, zFormat)
+
+    implicit none
+    real(kind=wp),  intent(in)             :: sReal(:)
+    type(cFileType),intent(inout)          :: tFileType
+    character(*),   intent(in),  optional  :: zFormat 
+    logical,        intent(out)	     :: qOK      
+
+    logical           :: qOKL
+
+    qOK = .false.
+
+    if (tFileType%qFormatted) then 
+      if (present(zFormat) ) then
+        write (tFileType%iUnit,zFormat) (sReal)
+      else
+        write (tFileType%iUnit,'(E22.14E3)') (sReal)
+      end if
+    else
+!        Call C_WriteRealArray(tFileType%zFilename, sReal, qOKL)
+      if (.not. qOKL) goto 1000
+    end if 
+
+!         Set error flag and exit
+
+      qOK = .true.				    
+      goto 2000     
+
+!     Error Handler
+
 1000 call Error_log('Error in DIO: Write1DRealArray',tErrorLog_G)
-   Print*,'Error in DIO: Write1DRealArray'
-2000 CONTINUE
-	      
-      END SUBROUTINE Write1DRealArray
-!--------------------------------------------------------------------------------
-!--------------------------------------------------------------------------------
+   print*,'Error in DIO: Write1DRealArray'
+2000 continue
 
-      SUBROUTINE Write2DRealArray(sReal,        &
-			          tFileType,    &
-			          qOK,          &
-				  zFormat)
-!
-!********************************************************************
-! Write two dimensional real data to file
-!********************************************************************
-!
-! sReal     - INPUT -    Real array data    
-! tFileType - INPUT    - Properties of output file
-! qOK       - OUTPUT   - Error flag
-! zFormat   - OPTIONAL - Format for data write
-!
-!====================================================================
-! Define local variables
-!!
-!=====================================================================
-!	
-      IMPLICIT NONE
-      REAL(KIND=WP),  INTENT(IN)             :: sReal(:,:)
-      TYPE(cFileType),INTENT(INOUT)          :: tFileType
-      CHARACTER(*),   INTENT(IN),  OPTIONAL  :: zFormat 
-      LOGICAL,        INTENT(OUT)	     :: qOK      
-!
-      LOGICAL           :: qOKL
-!
-!--------------------------------------------------------------------------------	
-! Set error flag to false         
-!--------------------------------------------------------------------------------	
-!
-      qOK = .FALSE.
-!
-!--------------------------------------------------------------------------------	
-! Write data       
-!--------------------------------------------------------------------------------	
-!      
-      IF (tFileType%qFormatted) Then 
-         IF (PRESENT(zFormat) ) THEN
-      	    WRITE (tFileType%iUnit,zFormat) (sReal)
-         ELSE
-           WRITE (tFileType%iUnit,'(E22.14E3)') (sReal)
-         END IF
-      ELSE
-      !   call C_WriteRealArray(tFileType%zFileName, sReal, qOKL)
-	 If (.NOT. qOKL) Goto 1000
-      END IF 
-!
-!--------------------------------------------------------------------------------	
-!  Set error flag and exit         
-!--------------------------------------------------------------------------------	
-!
-      qOK = .TRUE.				    
-      GoTo 2000     
-!
-!--------------------------------------------------------------------------------
-! Error Handler
-!--------------------------------------------------------------------------------
-!            
+  end subroutine Write1DRealArray
+
+!> @author
+!> Cynthia Nam and Pamela Aitken
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Write real (kind=wp) 2D array data to file
+!> @param[in] sReal Real, 2D array to be written
+!> @param[in] tFileType Custom type for properties of output file
+!> @param[out] qOK Error flag
+!> @param[in] zFormat (Optional) Format for data write
+!> @param qOKL Local error flag
+
+  subroutine Write2DRealArray(sReal, tFileType, qOK, zFormat)
+
+    implicit none
+    real(kind=wp),  intent(in)             :: sReal(:,:)
+    type(cFileType),intent(inout)          :: tFileType
+    character(*),   intent(in),  optional  :: zFormat 
+    logical,        intent(out)	     :: qOK      
+
+    logical           :: qOKL
+
+    qOK = .false.
+
+    if (tFileType%qFormatted) then 
+      if (present(zFormat) ) then
+        write (tFileType%iUnit,zFormat) (sReal)
+      else
+        write (tFileType%iUnit,'(E22.14E3)') (sReal)
+      end if
+    else
+!      call C_WriteRealArray(tFileType%zFileName, sReal, qOKL)
+      if (.not. qOKL) goto 1000
+    end if 
+
+!      Set error flag and exit         
+
+    qOK = .true.				    
+    goto 2000     
+
+!     Error Handler
+
 1000 call Error_log('Error in DIO: Write2DRealArray',tErrorLog_G)
-   Print*,'Error in DIO: Write2DRealArray'
-2000 CONTINUE
-      END SUBROUTINE Write2DRealArray
-!--------------------------------------------------------------------------------
-!--------------------------------------------------------------------------------
+    print*,'Error in DIO: Write2DRealArray'
+2000 continue
+  
+  end subroutine Write2DRealArray
 
-      SUBROUTINE Write3DRealArray(sReal,        &
-			          tFileType,    &
-			          qOK,          &
-				  zFormat)
-!
-!********************************************************************
-! Write three dimensional real data to file
-!********************************************************************
-!
-! sReal     - INPUT -    Real array data    
-! tFileType - INPUT    - Properties of output file
-! qOK       - OUTPUT   - Error flag
-! zFormat   - OPTIONAL - Format for data write
-!
-!====================================================================
-! Define local variables
-!!
-!=====================================================================
-!	
-      IMPLICIT NONE
-      REAL(KIND=WP),  INTENT(IN)             :: sReal(:,:,:)
-      TYPE(cFileType),INTENT(INOUT)          :: tFileType
-      CHARACTER(*),   INTENT(IN),  OPTIONAL  :: zFormat 
-      LOGICAL,        INTENT(OUT)	     :: qOK      
-!
-      LOGICAL           :: qOKL
-!
-!--------------------------------------------------------------------------------	
-! Set error flag to false         
-!--------------------------------------------------------------------------------	
-!
-      qOK = .FALSE.
-!
-!--------------------------------------------------------------------------------	
-! Write data       
-!--------------------------------------------------------------------------------	
-!     
-      IF (tFileType%qFormatted) Then 
-         IF (PRESENT(zFormat) ) THEN
-      	    WRITE (tFileType%iUnit,zFormat) (sReal)
-         ELSE
-           WRITE (tFileType%iUnit,'(E22.14E3)') (sReal)
-         END IF
-      ELSE
-      !   call C_WriteRealArray(tFileType%zFileName, sReal, qOKL)
-	 If (.NOT. qOKL) Goto 1000	
-      END IF 
-!
-!--------------------------------------------------------------------------------	
-!  Set error flag and exit         
-!--------------------------------------------------------------------------------	
-!
-      qOK = .TRUE.				    
-      GoTo 2000     
-!
-!--------------------------------------------------------------------------------
-! Error Handler
-!--------------------------------------------------------------------------------
-!            
+!> @author
+!> Cynthia Nam and Pamela Aitken
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Write real (kind=wp) 3D array data to file
+!> @param[in] sReal Real, 3D array to be written
+!> @param[in] tFileType Custom type for properties of output file
+!> @param[out] qOK Error flag
+!> @param[in] zFormat (Optional) Format for data write
+!> @param qOKL Local error flag
+
+  subroutine Write3DRealArray(sReal, tFileType, qOK, zFormat)
+
+    implicit none
+    real(kind=wp),  intent(in)             :: sReal(:,:,:)
+    type(cFileType),intent(inout)          :: tFileType
+    character(*),   intent(in),  optional  :: zFormat 
+    logical,        intent(out)	     :: qOK      
+
+    logical           :: qOKL
+
+    qOK = .false.
+
+    if (tFileType%qFormatted) then 
+      if (present(zFormat) ) then
+        write (tFileType%iUnit,zFormat) (sReal)
+      else
+        write (tFileType%iUnit,'(E22.14E3)') (sReal)
+      end if
+    else
+!      call C_WriteRealArray(tFileType%zFileName, sReal, qOKL)
+      if (.not. qOKL) goto 1000	
+    end if 
+
+!     Set error flag and exit         
+
+      qOK = .true.				    
+      goto 2000     
+
+!     Error Handler
+
 1000 call Error_log('Error in DIO: Write3DRealArray',tErrorLog_G)
-   Print*,'Error in DIO: Write3DRealArray'
-2000 CONTINUE
+    print*,'Error in DIO: Write3DRealArray'
+2000 continue
 
-      END SUBROUTINE Write3DRealArray
-!--------------------------------------------------------------------------------
-!--------------------------------------------------------------------------------
+  end subroutine Write3DRealArray
+
+
 
       FUNCTION FreeFile()
 !
@@ -757,6 +617,7 @@ End SubRoutine CloseFile
 ! ios - Input/ output status
 ! qOKL - Local error flag
 !
+      use ParallelInfoType
       IMPLICIT NONE
 !
       CHARACTER(*), INTENT(IN)       :: zError
