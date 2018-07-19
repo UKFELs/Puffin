@@ -255,9 +255,10 @@ subroutine clearTransformPlans(qOK)
 !     Identify 1D or 3D case and call appropriate subroutine
 
   if (tTransInfo_G%qOneD) then
-!     CALL clearTransformPlans_OneD(qOKL)
+!     call clearTransformPlans_OneD(qOKL)
+    qOKL = .true.
   else
-     call clearTransformPlans_ThreeD(qOKL)
+    call clearTransformPlans_ThreeD(qOKL)
   end if
 
   if (.not. qOKL) goto 1000
