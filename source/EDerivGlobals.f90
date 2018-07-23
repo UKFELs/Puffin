@@ -137,6 +137,8 @@ real(kind=wp), allocatable     :: sElGam_G(:)
 
 real(kind=wp), allocatable     :: sElX_Gnew(:)
 real(kind=wp), allocatable     :: sElY_Gnew(:)
+real(kind=wp), allocatable     :: sElPX_Gnew(:)
+real(kind=wp), allocatable     :: sElPY_Gnew(:)
 
 integer(kind=ip) :: TrLdMeth_G
 
@@ -273,11 +275,23 @@ real(kind=wp), allocatable    :: theta_rotation(:)
 
 !     End module specific array definitions
 ! ****************************************************
+! ****************************************************
+!     For lattice type 'Solenoid'
+
+real(kind=wp), allocatable    :: solenoid_strength(:), solenoid_length(:)
+
+!     End module specific array definitions
+! ****************************************************
+! ****************************************************
+!      For lattice element type 'MRotation'
+
+real(kind=wp), allocatable    :: theta_Mrotation(:)
 
 
 
+integer(kind=ip) :: numOfUnds, numOfChics, numOfDrifts, numOfModulations, numOfQuads, numOfRotations, numofSolenoids, &
+numOfMRotations
 
-integer(kind=ip) :: numOfUnds, numOfChics, numOfDrifts, numOfModulations, numOfQuads, numOfRotations
 
 
 

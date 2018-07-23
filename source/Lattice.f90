@@ -30,11 +30,13 @@ integer(kind=ip), parameter :: iUnd = 1_ip, &
                                iDrift = 3_ip, &
                                iQuad = 4_ip, &
                                iModulation = 5_ip, &
-                               iRotation = 6_ip
+                               iRotation = 6_ip, &
+                               iSolenoid = 7_ip, &
+                               iMRotation= 7_ip
 
 integer(kind=ip), allocatable :: iElmType(:)
 
-integer(kind=ip) :: iUnd_cr, iChic_cr, iDrift_cr, iQuad_cr, iModulation_cr, iRotation_cr    ! Counters for each element type
+integer(kind=ip) :: iUnd_cr, iChic_cr, iDrift_cr, iQuad_cr, iModulation_cr, iRotation_cr, iSolenoid_cr, iMRotation_cr    ! Counters for each element type
 
 !integer(kind=ip) :: inum_latt_elms
 
@@ -128,6 +130,10 @@ contains
 
       allocate(theta_rotation(numOfRotations))
 
+      allocate(solenoid_strength(numofSolenoids), solenoid_length(numofSolenoids))
+
+      allocate(theta_Mrotation(numOfMRotations))
+
 
 !    Latt file name, number of wigg periods converted to z-bar,
 !    slippage in chicane in z-bar, 2 dispersive constants,
@@ -152,6 +158,8 @@ contains
       numOfQuads = 0
       numOfModulations = 0
       numOfRotations = 0
+      numofSolenoids = 0
+      numOfMRotations = 0
 
       allocate(iElmType(1))
 
@@ -173,6 +181,10 @@ contains
       allocate(quad_fx(numOfQuads), quad_fy(numOfQuads))
 
       allocate(theta_rotation(numOfRotations))
+
+      allocate(solenoid_strength(numofSolenoids), solenoid_length(numofSolenoids))
+
+      allocate(theta_Mrotation(numOfMRotations))
 
       iElmType(1) = iUnd
       mf(1) = 1_wp
@@ -196,7 +208,9 @@ contains
     iDrift_cr=1_ip
     iQuad_cr=1_ip
     iModulation_cr = 1_ip
-    iRotation_cr=1_ip
+    iRotation_cr = 1_ip
+    iSolenoid_cr = 1_ip
+    iMRotation_cr = 1_ip
 
     iCsteps = 1_ip
 
@@ -252,7 +266,7 @@ contains
 
   integer(kind=ip) :: nperlam
 
-  integer(kind=ip) :: cnt, cntq, cntu, cntc, cntd, cntm, cntr, cntt
+  integer(kind=ip) :: cnt, cntq, cntu, cntc, cntd, cntm, cntr, cntt, cnts, cntmr
   character(40) :: ztest
 
 !   pi = 4.0_WP*ATAN(1.0_WP)
@@ -266,6 +280,8 @@ contains
   cntc = 0
   cntm = 0
   cntr = 0
+  cnts = 0
+  cntmr = 0
 
 
 
@@ -399,6 +415,23 @@ contains
         cntt = cntt + 1
         iElmType(cntt) = iRotation
 
+      else if (ztest(1:2) == 'SO') then
+
+        backspace(168)
+        cnts = cnts + 1
+        read (168,*, IOSTAT=ios) ztest, solenoid_strength(cnts), solenoid_length(cnts) !read vars
+
+        cntt = cntt + 1
+        iElmType(cntt) = iSolenoid
+
+      else if (ztest(1:2) =='MR') then
+
+        backspace(168)
+        cntmr = cntmr + 1
+        read (168,*, IOSTAT=ios) ztest, theta_Mrotation(cntmr)
+
+        cntt =cntt + 1
+        iElmType(cntt) = iMRotation
 
       end if
 
@@ -600,6 +633,8 @@ contains
 
     end if
 
+    print*, 'made IT'
+
     sElX_G=sElX_Gnew
     sElY_G=sElY_Gnew
 
@@ -607,8 +642,101 @@ contains
 
   end subroutine bRotation
 
+!################################################
+!>
+!> Model the effect of a solenoid on the beam
+
+  subroutine bSolenoid(iL, sZ)
+
+    integer(kind=ip), intent(in) :: iL
+    real(kind=wp), intent(out) :: sZ
+
+    real(kind=wp) :: del_dr_z
+
+    real(kind=wp), allocatable :: sp2(:)
+    logical :: qDummy, qOKL
 
 
+    del_dr_z = solenoid_length(iSolenoid_cr)* 4.0_wp * pi * sRho_G ! dummy until global
+
+    allocate(sp2(iNumberElectrons_G))
+
+    call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, sEta_G, sGammaR_G, saw_G)
+
+    sElZ2_G = sElZ2_G + del_dr_z * sp2
+
+    if (.not. qOneD_G) then
+
+      sElX_Gnew = (cos(solenoid_strength(iSolenoid_cr) * solenoid_length(iSolenoid_cr) * lam_w_G)**2) * sElX_G &
+                  + (0.5 * sin(2 * solenoid_strength(iSolenoid_cr) * solenoid_length(iSolenoid_cr) * lam_w_G) &
+                  / solenoid_strength(iSolenoid_cr)) * sElPX_G &
+                  + (0.5 * sin( 2 * solenoid_strength(iSolenoid_cr) * solenoid_length(iSolenoid_cr) * lam_w_G)) * sElY_G &
+                  - (sin(solenoid_strength(iSolenoid_cr) * solenoid_length(iSolenoid_cr) * lam_w_G)**2 &
+                  / solenoid_strength(iSolenoid_cr)) *sElPY_G
+
+      sElPX_Gnew = (-0.5 * solenoid_strength(iSolenoid_cr) * sin(2 * solenoid_strength(iSolenoid_cr) &
+                  * solenoid_length(iSolenoid_cr) * lam_w_G)) * sElX_G &
+                  + (cos(solenoid_strength(iSolenoid_cr) * solenoid_length(iSolenoid_cr) * lam_w_G)**2) * sElPX_G &
+                  - (solenoid_strength(iSolenoid_cr) * sin(solenoid_strength(iSolenoid_cr) &
+                  * solenoid_length(iSolenoid_cr) * lam_w_G)**2) * sElY_G &
+                  - (0.5 * sin(2 * solenoid_strength(iSolenoid_cr) * solenoid_length(iSolenoid_cr) * lam_w_G)) * sElPY_G
+
+      sElY_Gnew = (-0.5 * sin(2* solenoid_strength(iSolenoid_cr) * solenoid_length(iSolenoid_cr) * lam_w_G)) * sElX_G &
+                  - (sin(solenoid_strength(iSolenoid_cr) * solenoid_length(iSolenoid_cr) * lam_w_G)**2 &
+                  / solenoid_strength(iSolenoid_cr)) * sElPX_G &
+                  + (cos(solenoid_strength(iSolenoid_cr) * solenoid_length(iSolenoid_cr) * lam_w_G)**2 ) * sElY_G &
+                  - (0.5 * sin(2 * solenoid_strength(iSolenoid_cr) * solenoid_length(iSolenoid_cr) * lam_w_G) &
+                  / solenoid_strength(iSolenoid_cr)) *sElPY_G
+
+      sElPY_Gnew = (-solenoid_strength(iSolenoid_cr) * sin(solenoid_strength(iSolenoid_cr) &
+                    * solenoid_length(iSolenoid_cr) * lam_w_G)**2) * sElX_G &
+                    + (0.5 * sin(2 * solenoid_strength(iSolenoid_cr) * solenoid_length(iSolenoid_cr) * lam_w_G)) * sElPX_G &
+                    + (0.5 * solenoid_strength(iSolenoid_cr) * sin(2 * solenoid_strength(iSolenoid_cr) &
+                    * solenoid_length(iSolenoid_cr) * lam_w_G)) *sElY_G &
+                    + (cos(solenoid_strength(iSolenoid_cr) * solenoid_length(iSolenoid_cr) * lam_w_G)**2) * sElPY_G
+
+    end if
+
+    sElX_G=sElX_Gnew
+    sElPX_G=sElPX_Gnew
+    sElY_G=sElY_Gnew
+    sElPY_G=sElPY_Gnew
+
+    if (qDiffraction_G) call diffractIM(del_dr_z, qDummy, qOKL)
+
+    deallocate(sp2)
+
+    sZ = sZ + del_dr_z
+    iSolenoid_cr = iSolenoid_cr + 1
+
+  end subroutine bSolenoid
+
+  ! ###############################################
+  !>
+  !> Appy a rotation to the beams position and Momentum
+
+  subroutine bMRotation(iL)
+
+    integer(kind=ip), intent(in) :: iL
+
+    if (.not. qOneD_G) then
+
+      sElX_Gnew = cos(theta_Mrotation(iMRotation_cr) * pi) * sElX_G - sin(theta_Mrotation(iMRotation_cr) * pi) * sElY_G
+      sElPX_Gnew = cos(theta_Mrotation(iMRotation_cr) * pi) * sElPX_G + sin(theta_Mrotation(iMRotation_cr) * pi) * sElPY_G
+      sElY_Gnew = sin(theta_Mrotation(iMRotation_cr) * pi) * sElX_G + cos(theta_Mrotation(iMRotation_cr) * pi) * sElY_G
+      sElPX_Gnew = -sin(theta_Mrotation(iMRotation_cr) * pi) * sElPX_G - cos(theta_Mrotation(iMRotation_cr) * pi) * sElPY_G
+    end if
+
+    print*, 'made IT'
+
+    sElX_G=sElX_Gnew
+    sElY_G=sElY_Gnew
+    sElPX_G=sElPX_Gnew
+    sElPY_G=sElPY_Gnew
+
+    iMRotation_cr = iMRotation_cr + 1
+
+  end subroutine bMRotation
 
 ! ##############################################
 
@@ -973,7 +1101,7 @@ contains
 !                LOCAL ARGS
 
   integer :: ios
-  integer(kind=ip) :: cnt, cntq, cntu, cntc, cntd, cntm, cntr
+  integer(kind=ip) :: cnt, cntq, cntu, cntc, cntd, cntm, cntr, cnts, cntmr
   character(40) :: ztest
 
   ztest = ''
@@ -984,6 +1112,8 @@ contains
   cntd = 0
   cntm = 0
   cntr = 0
+  cnts = 0
+  cntmr = 0
 
   open(168,FILE=fname, IOSTAT=ios, STATUS='OLD', ACTION='READ', POSITION ='REWIND')
   if (ios /= 0) then
@@ -1005,7 +1135,9 @@ contains
           print*, cntc, "chicanes,"
           print*, cntd, "drifts"
           print*, cntm, "modulation sections"
-          print*, "and", cntr, "rotation sections"
+          print*, cntr, "rotation sections"
+          print*, cntmr, "Mrotation sections"
+          print*, "and", cnts, "solenoids"
       end if
 
       exit
@@ -1051,6 +1183,13 @@ contains
 
         cntr = cntr + 1
 
+      else if (ztest(1:2) == 'SO') then
+
+        cnts= cnts + 1
+
+      else if (ztest(1:2) == 'MR') then
+
+        cntmr = cntmr + 1
 
       end if
 
@@ -1064,7 +1203,7 @@ contains
   close(168, STATUS='KEEP')
 
 
-  numOfMods = cntq + cntu + cntc + cntd + cntm + cntr
+  numOfMods = cntq + cntu + cntc + cntd + cntm + cntr +cnts + cntmr
 
   numOfUnds = cntu
 
@@ -1077,6 +1216,10 @@ contains
   numOfQuads = cntq
 
   numOfRotations = cntr
+
+  numofSolenoids = cnts
+
+  numOfMRotations = cntmr
 
 
   end function numOfMods
