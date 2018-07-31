@@ -98,7 +98,7 @@
  nodesPerLambdar        = 32
  sFModelLengthZ2        = 20.0
  seed_file              = 'seed_file.in'
- srho                   = 1.703345370307283E-03
+ srho                   = 0.005
  sux                    = 1.0
  suy                    = 1.0
  saw                    = 2.0
@@ -109,6 +109,7 @@
  nPeriods               = 200
  iWriteNthSteps         = 400
  iWriteIntNthSteps      = 40
+ qUndEnds = .true.
  /
 
 
