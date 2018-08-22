@@ -6,6 +6,7 @@
 
 cmake_minimum_required (VERSION 2.8.10)
 project (puffin)
+cmake_policy(SET CMP0054 NEW)
 enable_language (Fortran)
 
 # The version number.
@@ -13,7 +14,7 @@ set (Puffin_VERSION_MAJOR 1)
 set (Puffin_VERSION_MINOR 9)
 set (Puffin_VERSION_PATCH 0)
 include(${CMAKE_SOURCE_DIR}/scimake/SciInit.cmake)
-cmake_policy(SET CMP0054 NEW)
+
 #option(ENABLE_PARALLEL "whether to build parallel PUFFIN" ON)
 
 
