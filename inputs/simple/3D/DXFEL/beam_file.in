@@ -7,23 +7,26 @@
 ! BEAM PARAMETERS - namelist NBLIST
 !
 ! nbeams - number of electron beams
-! dtype  - Input type - simple, distribution, or macroparticle
+! dtype  - Input type - simple, distribution, or macroparticle 
 !
 ! BEAM PARAMETERS - namelist BLIST
 !========================================================================
 ! sSigmaE - gaussian std dev in each dimension - x, y, z2, px, py, gamma, then for additional beams
 ! sLenE   - Total length of beam modelled in each dimension - x, y, z2, px, py, gamma...
 ! bcenter - Center of beam in z2
-! iNumMPs  -  Number of macroparticles in each dimension used to model the beam
-! emitx, emity - Scaled transverse beam emittance
-! sQe - Beam charge
-! gammaf - Ratio of average beam energy to reference beam energy gamma / gamma_r
+! iNumElectrons  -  Number of macroparticles in each dimension used to model the beam 
+! sEmit_n - Scaled transverse beam emittance
+! sQe - Beam charge 
+! gammaf - Ratio of average beam energy to reference beam energy gamma / gamma_r 
 ! chirp  - Energy chirp in z2 i.e. dgamma/dz2
 ! mag    - magnitude of energy oscillation on beam
-! freq   - frequency in z2 of beam energy oscillation
+! fr     - frequency in z2 of beam energy oscillation
 ! qRndEj_G - Round edge of flat top?
 ! sSigEj_G - Gaussian sigma of tail-off if used
 ! qMatched_A - Automatically match beam to focusing channel??
+! TrLdMeth - Beam loading method in 5D transverse and energy planes:
+!                TrLdMeth = 1 for random sequences (default)
+!                TrLdMeth = 2 for Halton sequences
 !========================================================================
 
 &NBLIST
@@ -32,19 +35,23 @@ dtype = 'simple'
 /
 
 &BLIST
-sSigmaE =0.1, 0.1, 1E8, 1.0, 1.0, 0.004
-sLenE = 1E-6, 1E-6, 6.0, 1E-6, 1E-6, 0.024
-iNumMPs = 1, 1, 2400, 1, 1, 9
-emitx = 1.0
-emity = 1.0
-sQe = 1.0E-9
+sSigmaE = 36.121e-6, 25.835e-6, 1E8, 1.0, 1.0, 0.00005
+sLenE = 1E-6, 1E-6, 2.08477559498845e-18, 1E-6, 1E-6, 0.0003
+iNumElectrons = 16, 16, 16, 16, 16, 16
+sQe = 12e-15  !  2.011198339342929e-15 ! 1.0655301825665005e-12 !2.5E-10
 bcenter = 0.0
 gammaf = 1.0
 chirp = 0.0
 mag = 0.0
 fr = 1.0
+emitx = 6.249999999999999e-11
+emity = 6.249999999999999e-11
+alphax = 2.857e-16
+alphay = 9.23e-17
 qRndEj_G = .false.
-sSigEj_G = 0.02
+sSigEj_G = 0.4
+qequixy = .false.
 qMatched_A = .false.
-qFixCharge = .true.
+TrLdMeth = 2
+nseqparts = 1000
 /

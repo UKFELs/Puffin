@@ -387,6 +387,7 @@ print*,"Now, you tell me if we had electrons"
         call readH5IntegerAttribute(dset_id, "iQuad_cr", tInitData_G%iQuad_cr)
         call readH5IntegerAttribute(dset_id, "iModulation_cr", tInitData_G%iModulation_cr)
         call readH5IntegerAttribute(dset_id, "iL", tInitData_G%iL)
+        call readH5IntegerAttribute(dset_id, "iWrite_cr", tInitData_G%igwr)
 
       end if
 

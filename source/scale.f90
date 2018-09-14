@@ -12,45 +12,52 @@ use typesAndConstants
 implicit none
 
 
-INTERFACE scaleG
-    MODULE PROCEDURE scaleG_single, scaleG_array
-END INTERFACE
+interface scaleG
+    module procedure scaleG_single, scaleG_array
+end interface
 
 
-INTERFACE unscaleG
-    MODULE PROCEDURE unscaleG_single, unscaleG_array
-END INTERFACE
+interface unscaleG
+    module procedure unscaleG_single, unscaleG_array
+end interface
 
 
-INTERFACE scaleX
-    MODULE PROCEDURE scaleX_single, scaleX_array
-END INTERFACE
+interface scaleX
+    module procedure scaleX_single, scaleX_array
+end interface
 
 
-INTERFACE unscaleX
-    MODULE PROCEDURE unscaleX_single, unscaleX_array
-END INTERFACE
+interface unscaleX
+    module procedure unscaleX_single, unscaleX_array
+end interface
 
 
-INTERFACE scalePx
-    MODULE PROCEDURE scalePx_single, scalePx_array
-END INTERFACE
+interface scalePx
+    module procedure scalePx_single, scalePx_array
+end interface
 
 
-INTERFACE unscalePx
-    MODULE PROCEDURE unscalePx_single, unscalePx_array
-END INTERFACE
+interface unscalePx
+    module procedure unscalePx_single, unscalePx_array
+end interface
 
 
-INTERFACE scaleT
-    MODULE PROCEDURE scaleT_single, scaleT_array
-END INTERFACE
+interface scaleT
+    module procedure scaleT_single, scaleT_array
+end interface
 
 
-INTERFACE unscaleT
-    MODULE PROCEDURE unscaleT_single, unscaleT_array
-END INTERFACE
+interface unscaleT
+    module procedure unscaleT_single, unscaleT_array
+end interface
 
+interface scaleIntensity
+    module procedure scaleIntensity_single, scaleIntensity_array
+end interface
+
+interface unscaleIntensity
+    module procedure unscaleIntensity_single, unscaleIntensity_array
+end interface
 
 contains
 
@@ -367,7 +374,7 @@ end subroutine unscaleT_array
 
 subroutine scaleZ(sZ, Lg)
 
-	real(kind=wp), intent(inout) :: sZ
+	  real(kind=wp), intent(inout) :: sZ
     real(kind=wp), intent(in) :: Lg
 
     sZ = sZ / Lg
@@ -386,6 +393,70 @@ end subroutine unscaleZ
 
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! Scaling of I -> |A|^2
+
+subroutine scaleIntensity_single(intensity, Lg, Lc, gammar, kappa)
+
+    real(kind=wp), intent(out) :: intensity
+    real(kind=wp), intent(in) :: Lg, Lc, gammar, kappa
+
+    real(kind=wp) :: intScale
+
+    intScale = c * e_0 * ((gammar * m_e * c**2.0_wp ) / &
+                 (q_e * kappa * Lg ))**2.0_wp
+
+	  intensity = intensity / intScale
+
+end subroutine scaleIntensity_single
+
+subroutine scaleIntensity_array(intensity, Lg, Lc, gammar, kappa)
+
+    real(kind=wp), intent(out) :: intensity(:)
+    real(kind=wp), intent(in) :: Lg, Lc, gammar, kappa
+
+    real(kind=wp) :: intScale
+
+    intScale = c * e_0 * ((gammar * m_e * c**2.0_wp ) / &
+                 (q_e * kappa * Lg ))**2.0_wp
+
+	  intensity = intensity / intScale
+
+end subroutine scaleIntensity_array
+
+subroutine unscaleIntensity_single(intensity, Lg, Lc, gammar, kappa)
+
+    real(kind=wp), intent(out) :: intensity
+    real(kind=wp), intent(in) :: Lg, Lc, gammar, kappa
+
+    real(kind=wp) :: intScale
+
+    intScale = c * e_0 * ((gammar * m_e * c**2.0_wp ) / &
+                 (q_e * kappa * Lg ))**2.0_wp
+
+	  intensity = intensity * intScale
+
+end subroutine unscaleIntensity_single
+
+subroutine unscaleIntensity_array(intensity, Lg, Lc, gammar, kappa)
+
+    real(kind=wp), intent(out) :: intensity(:)
+    real(kind=wp), intent(in) :: Lg, Lc, gammar, kappa
+
+    real(kind=wp) :: intScale
+
+    intScale = c * e_0 * ((gammar * m_e * c**2.0_wp ) / &
+                 (q_e * kappa * Lg ))**2.0_wp
+
+	  intensity = intensity * intScale
+
+end subroutine unscaleIntensity_array
+
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
 
 end module scale

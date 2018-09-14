@@ -735,10 +735,10 @@ contains
         end if
         
         ex(is) = sdx(is) * sdpx(is) - &
-                (meanxpx(is) / sdata(is) - (aveX(is)*avepX(is)) ) 
+                (meanxpx(is) / sdata(is) - (aveX(is)*avepX(is)) )**2.0_wp
 
         ey(is) = sdy(is) * sdpy(is) - &
-                (meanypy(is) / sdata(is) - (aveY(is)*avepY(is)) ) 
+                (meanypy(is) / sdata(is) - (aveY(is)*avepY(is)) )**2.0_wp
 
         b1(is)=sqrt(b1r(is)**2+b1i(is)**2)/sliceSizeZ2
         b2(is)=sqrt(b2r(is)**2+b2i(is)**2)/sliceSizeZ2

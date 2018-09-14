@@ -469,7 +469,8 @@ contains
   real(kind=wp), allocatable :: sp2(:)
   logical :: qDummy
 
-
+  real(kind=wp) :: lenz2
+  
 
   logical :: qOKL
 
@@ -492,6 +493,13 @@ contains
 
   sZ = sZ + szbar4d
   iChic_cr = iChic_cr + 1_ip
+
+  if (FieldMesh == iPeriodic) then
+
+    lenz2 = sLengthOfElmZ2_G * real((nz2_G - 1_ip), kind=wp )
+    sElZ2_G = sElZ2_G - (real(floor(sElZ2_G / lenz2), kind=wp) * lenz2 )
+  
+  end if
 
   end subroutine disperse
 

@@ -244,6 +244,8 @@ CONTAINS
         sigE(b_ind,iPX_CG) = gamma_d(b_ind) * sGammaR_G * sqrt(lg_G*lc_G) * &
                                     sigE(b_ind,iX_CG) / betax(b_ind) / saw_G
 
+        samLenE(b_ind,iPX_CG) = 6.0_wp * sigE(b_ind,iPX_CG)
+
       else 
         betax(b_ind) = -1.0_wp
       end if
@@ -254,6 +256,8 @@ CONTAINS
 
         sigE(b_ind,iPY_CG) = gamma_d(b_ind) * sGammaR_G * sqrt(lg_G*lc_G) * &
                                     sigE(b_ind,iY_CG) / betay(b_ind) / saw_G
+
+        samLenE(b_ind,iPY_CG) = 6.0_wp * sigE(b_ind,iPY_CG)
 
       else 
         betay(b_ind) = -1.0_wp
@@ -377,7 +381,9 @@ CONTAINS
 
     end do
 
-
+!    print*, 'max z2 b4 mp init is', maxval(sElZ2_G)
+!    print*, 'min z2 b4 mp init is', minval(sElZ2_G)
+    
 
 !     Set error flag and exit         
 
@@ -557,7 +563,24 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
                      p_1_vector=px_tmpvector,        &
                      p_2_vector=py_tmpvector,        &
                      p_3_vector=pz2_tmpvector)
-    
+
+      !   Rotate phase space to Twiss params...
+
+      if (betax > 0.0_wp) then
+        gxpx = -alphax / betax
+      else 
+        gxpx = 0.0_wp
+      end if
+
+      if (betay > 0.0_wp) then
+        gypy = -alphay / betay
+      else
+        gypy = 0.0_wp
+      end if
+
+      px_tmpvector = px_tmpvector + pz2_tmpvector * gxpx * sqrt(lg_G * lc_G) * x_tmpcoord / saw_G
+      py_tmpvector = py_tmpvector + pz2_tmpvector * gypy * sqrt(lg_G * lc_G) * y_tmpcoord / saw_G
+
     end if  ! exhausted 1D and 3D options of equispaced phase space filling...
   
   else   ! if using random or quasi-random sequences to fill phase space 
@@ -641,6 +664,13 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
       pyseq = pyseq + gamseq * gypy * sqrt(lg_G * lc_G) * yseq / saw_G
 
 
+      if (qOneD) then
+        xseq(:) = offsets(iX_CG)
+        yseq(:) = offsets(iY_CG) 
+        pxseq(:) = offsets(iPX_CG) 
+        pyseq(:) = offsets(iPY_CG) 
+      end if
+
       do ij = 1, iNMP_loc(iZ2_CG)
 
         s_tmp_macro((ij-1)*nseqparts+1:(ij*nseqparts)) &
@@ -719,5 +749,25 @@ SUBROUTINE beamReport(s_tmp_macro,sElectronThreshold,beam_no)
     ENDIF
 
 END SUBROUTINE beamReport
+
+subroutine shuntBeam(sz2, dz2)
+  
+  real(kind=wp), intent(inout) :: sz2(:)
+  real(kind=wp), intent(in) :: dz2
+  real(kind=wp) :: lminz2, gminz2
+  integer :: error
+
+  lminz2 = minval(sz2)
+  
+  call mpi_allreduce(lminz2, gminz2, 1, mpi_double_precision, &
+                     mpi_min, tProcInfo_G%comm, error)
+
+  if (gminz2 <= 0) then
+
+    sz2(:) = sz2(:) - gminz2 + (dz2/10.0_wp)
+    
+  end if
+
+end subroutine shuntBeam
 
 END MODULE ElectronInit

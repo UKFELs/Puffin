@@ -86,11 +86,11 @@ def plotBeamRVsZ(basename):
 #    axLab = 'Power (W)'
 
     plotLab = r'$\sigma_x$'
-    axLab = r'$\sigma_x, \sigma_y (m)$'
+    axLab = r'$\sigma_x, \sigma_y (\mu m)$'
 
     ax1 = plt.subplot(111)
-    plt.plot(zData, radx, label=r'$\sigma_x$')
-    plt.plot(zData, rady, label=r'$\sigma_y$')
+    plt.plot(zData, radx * 1.e6, label=r'$\sigma_x$')
+    plt.plot(zData, rady * 1.e6, label=r'$\sigma_y$')
     #ax1.set_title(axLab)
     plt.xlabel('z (m)')
     plt.ylabel(axLab)

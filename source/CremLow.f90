@@ -231,7 +231,7 @@ SUBROUTINE getKeepNum(s_tmp_macro,sElectronThreshold,TOTALMPS, &
 
   REAL(KIND=WP), INTENT(IN) :: s_tmp_macro(:)
   REAL(KIND=WP), INTENT(IN) :: sElectronThreshold
-  INTEGER(KIND=IPL), INTENT(IN) :: TOTALMPS
+  INTEGER(KIND=IPL), INTENT(IN) :: TOTALMPS  ! LOCAL total  number of macroparticles
   INTEGER(KIND=IPL), INTENT(INOUT) :: ikeepnumber, iendnumber
   REAL(KIND=WP), INTENT(INOUT) :: ilowerElectron
 
@@ -239,6 +239,8 @@ SUBROUTINE getKeepNum(s_tmp_macro,sElectronThreshold,TOTALMPS, &
 
   REAL(KIND=WP) :: total_local_real_electrons, &
                    n_real_electrons
+
+  integer(kind=ip) :: totalmpsG
                    
   INTEGER :: error
 
@@ -248,8 +250,12 @@ SUBROUTINE getKeepNum(s_tmp_macro,sElectronThreshold,TOTALMPS, &
        n_real_electrons, 1, MPI_DOUBLE_PRECISION, &
        MPI_SUM,tProcInfo_G%comm,error)
 
+  CALL MPI_ALLREDUCE(TOTALMPS,&
+       totalmpsG, 1, MPI_INTEGER, &
+       MPI_SUM,tProcInfo_G%comm,error)
+
   ilowerElectron=n_real_electrons/&
-       REAL(TOTALMPS,KIND=WP)*(sElectronThreshold/100.0_WP)
+       REAL(totalmpsG,KIND=WP)*(sElectronThreshold/100.0_WP)
 
   ikeepnumber=COUNT(s_tmp_macro>=ilowerElectron)
 

@@ -77,6 +77,7 @@ contains
     sz = tInitData_G%zbarTotal
     szl = tInitData_G%zbarlocal
     sZi_G = tInitData_G%Zbarinter
+    igwr = tInitData_G%igwr
 
   else
 

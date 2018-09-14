@@ -144,6 +144,7 @@ module Setup
        sSeedSigma,        &
        freqf, SmeanZ2,    &
        ph_sh, &
+       iMPsZ2PerWave, &
        qFlatTopS, nseeds, &
        qSwitches,         &
        qMatched_A,        &
@@ -174,16 +175,18 @@ module Setup
     call scaleParams(sEleSig, sLenEPulse, sSigEj_G, &
                      beamCenZ2, chirp, sEmit_n, emitx, emity, gamma_d, &
                      sFieldModelLength, sLengthofElm, &
-                     sSeedSigma)
+                     sSeedSigma, sA0_Re, sA0_Im, SmeanZ2)
   end if
 
 
+  sA0_Re = sqrt(2.0_wp*sA0_Re)
+  sA0_Im = sqrt(2.0_wp*sA0_Im)  ! Convert intensity to peak field magnitude
 
 
   call calcSamples(sFieldModelLength, iNodes, sLengthofElm, &
                    sStepSize, stepsPerPeriod, nSteps, &
                    nperiods, nodesperlambda, gamma_d, sLenEPulse, &
-                   iNumElectrons, qSimple)
+                   iNumElectrons, iMPsZ2PerWave, qSimple)
 
 
 
@@ -292,6 +295,7 @@ module Setup
     iDrift_cr = tInitData_G%iDrift_cr
     iQuad_cr = tInitData_G%iQuad_cr
     iModulation_cr = tInitData_G%iModulation_cr
+    igwr = tInitData_G%igwr
 
   end if
 

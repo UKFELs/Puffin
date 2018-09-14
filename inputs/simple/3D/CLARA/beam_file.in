@@ -14,8 +14,8 @@
 ! sSigmaE - gaussian std dev in each dimension - x, y, z2, px, py, gamma, then for additional beams
 ! sLenE   - Total length of beam modelled in each dimension - x, y, z2, px, py, gamma...
 ! bcenter - Center of beam in z2
-! iNumElectrons  -  Number of macroparticles in each dimension used to model the beam 
-! sEmit_n - Scaled transverse beam emittance
+! iNumMPs  -  Number of macroparticles in each dimension used to model the beam 
+! emitx, emity - Scaled transverse beam emittance
 ! sQe - Beam charge 
 ! gammaf - Ratio of average beam energy to reference beam energy gamma / gamma_r 
 ! chirp  - Energy chirp in z2 i.e. dgamma/dz2
@@ -37,7 +37,7 @@ dtype = 'simple'
 &BLIST
 sSigmaE =7.213715e-5, 2.4323e-5, 250E-15, 1.0, 1.0, 0.0001
 sLenE = 1E-6, 1E-6, 1.75E-12, 1E-6, 1E-6, 0.0006
-iNumElectrons = 20, 20, 105000, 7, 7, 7
+iNumMPs = 20, 20, 105000, 7, 7, 7
 sQe = 2.5E-10
 bcenter = 0.0
 gammaf = 1.0
