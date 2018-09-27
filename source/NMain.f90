@@ -108,6 +108,10 @@ do iL = iLst, modNum
 
     call bMRotation(iL)
 
+  else if (iElmType(iL) == iMRotation) then
+
+    call bMRotation(iL)
+
   end if
 
 
