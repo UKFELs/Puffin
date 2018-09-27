@@ -470,7 +470,7 @@ contains
   logical :: qDummy
 
   real(kind=wp) :: lenz2
-  
+
 
   logical :: qOKL
 
@@ -498,7 +498,7 @@ contains
 
     lenz2 = sLengthOfElmZ2_G * real((nz2_G - 1_ip), kind=wp )
     sElZ2_G = sElZ2_G - (real(floor(sElZ2_G / lenz2), kind=wp) * lenz2 )
-  
+
   end if
 
   end subroutine disperse
@@ -726,16 +726,37 @@ contains
   subroutine bMRotation(iL)
 
     integer(kind=ip), intent(in) :: iL
-
+    !print*, 'made IT'
     if (.not. qOneD_G) then
 
-      sElX_Gnew = cos(theta_Mrotation(iMRotation_cr) * pi) * sElX_G - sin(theta_Mrotation(iMRotation_cr) * pi) * sElY_G
-      sElPX_Gnew = cos(theta_Mrotation(iMRotation_cr) * pi) * sElPX_G + sin(theta_Mrotation(iMRotation_cr) * pi) * sElPY_G
-      sElY_Gnew = sin(theta_Mrotation(iMRotation_cr) * pi) * sElX_G + cos(theta_Mrotation(iMRotation_cr) * pi) * sElY_G
-      sElPX_Gnew = -sin(theta_Mrotation(iMRotation_cr) * pi) * sElPX_G - cos(theta_Mrotation(iMRotation_cr) * pi) * sElPY_G
+      !sElX_Gnew = ( (0.030445) * sElX_G + (0.040864) * 1 * sElPX_G + (1.016447) * sElY_G + (-3.02133) * (-1) * 1 *sElPY_G )
+      !sElPX_Gnew = ( (-0.54357) * sElX_G +  (-0.60046) * sElPX_G + (0.449429) * sElY_G +  (-0.35595) * (-1) *sElPY_G  )
+      !sElY_Gnew =  ((-0.95887) * sElX_G +  (-0.9935) * 1 * sElPX_G + (-0.04049) * sElY_G + 0.111562 * (-1) * 1 *sElPY_G)
+      !sElPY_Gnew =  (-(-0.31876)* sElX_G -  (-1.36906) * sElPX_G - (0.577021) * sElY_G + (-1.6897) * sElPY_G)
+
+
+  !    sElX_Gnew =theta_Mrotation(iMRotation_cr) * ( (0.0) * sElX_G +  &
+  !                * (1.38455) *  sElPX_G + (1.0) * sElY_G + (0.0) * (-1) * sElPY_G )
+  !    sElPX_Gnew = theta_Mrotation(iMRotation_cr) *( (0.0000) * sElX_G + &
+  !                 (0.0) * sElPX_G + (0.000000) * sElY_G +  (1.0) * (-1) *sElPY_G  )
+  !    sElY_Gnew =  theta_Mrotation(iMRotation_cr) *((1.0) * sElX_G + &
+  !                  (0.0) * sElPX_G + (0.0) * sElY_G + 0 * (1.318454) * (-1) *sElPY_G)
+  !    sElPY_Gnew = theta_Mrotation(iMRotation_cr) * (-(0.0)* sElX_G -  (1.0) &
+  !                 * sElPX_G - (0.0000) * sElY_G + (0.0) * sElPY_G)
+
+  !    sElY_G = (-1.0) * sElY_G
+
+      sElX_Gnew =theta_Mrotation(iMRotation_cr) * ( (0.0) * sElX_G + &
+                  (-0.00002) *  sElPX_G + (1.0) * sElY_G + (0.0) * (-1) * sElPY_G )
+      sElPX_Gnew = theta_Mrotation(iMRotation_cr) *( (0.000017) * sElX_G + &
+                   (0.0) * sElPX_G + (0.0000008) * sElY_G +  (1.0) * (-1) *sElPY_G  )
+      sElY_Gnew =  theta_Mrotation(iMRotation_cr) *((1.0) * sElX_G + &
+                   (0.0) * sElPX_G + (0.0) * sElY_G +  (-0.00002) * (-1) *sElPY_G)
+      sElPY_Gnew = theta_Mrotation(iMRotation_cr) * (-(0.0)* sElX_G -  (1.0) &
+                    * sElPX_G - (0.000017) * sElY_G + (0.0) * sElPY_G)
     end if
 
-    print*, 'made IT'
+
 
     sElX_G=sElX_Gnew
     sElY_G=sElY_Gnew
