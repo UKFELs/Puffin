@@ -98,6 +98,15 @@ do iL = iLst, modNum
   else if (iElmType(iL) == iRotation) then
 
     call bRotation(iL)
+  
+
+  else if (iElmType(iL) == iSolenoid) then
+
+    call bSolenoid(iL, sZ)
+
+  else if (iElmType(iL) == iMRotation) then
+
+    call bMRotation(iL)
 
   end if
 

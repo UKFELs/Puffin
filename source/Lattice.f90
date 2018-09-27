@@ -32,7 +32,7 @@ integer(kind=ip), parameter :: iUnd = 1_ip, &
                                iModulation = 5_ip, &
                                iRotation = 6_ip, &
                                iSolenoid = 7_ip, &
-                               iMRotation= 7_ip
+                               iMRotation= 8_ip
 
 integer(kind=ip), allocatable :: iElmType(:)
 
@@ -114,8 +114,9 @@ contains
       allocate(mf(numOfUnds),delmz(numOfUnds),tapers(numOfUnds))
       allocate(nSteps_arr(numOfUnds), zMod(numOfUnds))
       allocate(ux_arr(numOfUnds), uy_arr(numOfUnds), &
-               kbnx_arr(numOfUnds), kbny_arr(numOfUnds))
+               kbnx_arr(numOfUnds), kbny_arr(numOfUnds),unphi_arr(numOfUnds))
       allocate(zundtype_arr(numOfUnds))
+
 
 
       allocate(chic_disp(numOfChics), chic_slip(numOfChics), &
@@ -166,7 +167,7 @@ contains
       allocate(mf(numOfUnds),delmz(numOfUnds),tapers(numOfUnds))
       allocate(nSteps_arr(numOfUnds), zMod(numOfUnds))
       allocate(ux_arr(numOfUnds), uy_arr(numOfUnds), &
-               kbnx_arr(numOfUnds), kbny_arr(numOfUnds))
+               kbnx_arr(numOfUnds), kbny_arr(numOfUnds),unphi_arr(numOfUnds))
       allocate(zundtype_arr(numOfUnds))
 
 
@@ -326,10 +327,25 @@ contains
         iElmType(cntt) = iQuad
 
       else if (ztest(1:2) == 'UN') then
+        if (ztest(1:3)  == 'UNV') then
+          backspace(168)
 
-        backspace(168)
+          cntu = cntu + 1
 
-        cntu = cntu + 1
+  !       reading ... element ID, undulator type, num of periods, alpha (aw / aw0),
+  !       taper (d alpha / dz), integration steps per period, ux and uy (polarization
+  !       control), and kbnx and kbny, betatron wavenumbers for in-undulator strong
+  !       focusing (applied in the wiggler!!! NOT from quads. Remember the natural
+  !       undulator focusing is also included IN ADDITION to this...)
+
+          read (168,*, IOSTAT=ios) ztest, zundtype_arr(cntu), nw, mf(cntu), tapers(cntu), &
+                                   nperlam, ux_arr(cntu), uy_arr(cntu), kbnx_arr(cntu), &
+                                   kbny_arr(cntu),unphi_arr(cntu)  ! read vars
+
+        else
+          backspace(168)
+
+          cntu = cntu + 1
 
 !       reading ... element ID, undulator type, num of periods, alpha (aw / aw0),
 !       taper (d alpha / dz), integration steps per period, ux and uy (polarization
@@ -337,9 +353,11 @@ contains
 !       focusing (applied in the wiggler!!! NOT from quads. Remember the natural
 !       undulator focusing is also included IN ADDITION to this...)
 
-        read (168,*, IOSTAT=ios) ztest, zundtype_arr(cntu), nw, mf(cntu), tapers(cntu), &
+          read (168,*, IOSTAT=ios) ztest, zundtype_arr(cntu), nw, mf(cntu), tapers(cntu), &
                                  nperlam, ux_arr(cntu), uy_arr(cntu), kbnx_arr(cntu), &
                                  kbny_arr(cntu)  ! read vars
+          unphi_arr(cntu) = 0
+        end if
 
         cntt = cntt + 1
         iElmType(cntt) = iUnd
@@ -415,6 +433,7 @@ contains
         cntt = cntt + 1
         iElmType(cntt) = iRotation
 
+
       else if (ztest(1:2) == 'SO') then
 
         backspace(168)
@@ -424,7 +443,7 @@ contains
         cntt = cntt + 1
         iElmType(cntt) = iSolenoid
 
-      else if (ztest(1:2) =='MR') then
+      else if (ztest(1:2) == 'MR') then
 
         backspace(168)
         cntmr = cntmr + 1
@@ -432,6 +451,8 @@ contains
 
         cntt =cntt + 1
         iElmType(cntt) = iMRotation
+
+
 
       end if
 
@@ -641,7 +662,6 @@ contains
 
     end if
 
-    print*, 'made IT'
 
     sElX_G=sElX_Gnew
     sElY_G=sElY_Gnew
@@ -730,19 +750,27 @@ contains
     if (.not. qOneD_G) then
 
       sElX_Gnew = cos(theta_Mrotation(iMRotation_cr) * pi) * sElX_G - sin(theta_Mrotation(iMRotation_cr) * pi) * sElY_G
-      sElPX_Gnew = cos(theta_Mrotation(iMRotation_cr) * pi) * sElPX_G + sin(theta_Mrotation(iMRotation_cr) * pi) * sElPY_G
+
+      sElPX_Gnew = cos((theta_Mrotation(iMRotation_cr) * pi) / 5 ) * sElPX_G &
+                  + sin((theta_Mrotation(iMRotation_cr) * pi) / 5 )* sElPY_G
+
       sElY_Gnew = sin(theta_Mrotation(iMRotation_cr) * pi) * sElX_G + cos(theta_Mrotation(iMRotation_cr) * pi) * sElY_G
-      sElPX_Gnew = -sin(theta_Mrotation(iMRotation_cr) * pi) * sElPX_G - cos(theta_Mrotation(iMRotation_cr) * pi) * sElPY_G
+
+      sElPY_Gnew = (-1) * sin((theta_Mrotation(iMRotation_cr) * pi) / 5) * sElPX_G &
+                    + cos((theta_Mrotation(iMRotation_cr) * pi) / 5) * sElPY_G
+
     end if
 
-    print*, 'made IT'
 
     sElX_G=sElX_Gnew
     sElY_G=sElY_Gnew
+
     sElPX_G=sElPX_Gnew
     sElPY_G=sElPY_Gnew
 
     iMRotation_cr = iMRotation_cr + 1
+
+
 
   end subroutine bMRotation
 
@@ -825,7 +853,7 @@ contains
             -  0.5_WP * kY**2 * sElY_G**2
 
         spy0_offset = -1_wp *  &
-                      ( pyOffset(sZ, srho_G, fx_G) &
+                      ( pyOffset(sZ, srho_G, fx_G,unphi_G) &
                       - kx**2 *  sElX_G  * sElY_G)
 
 
@@ -840,7 +868,7 @@ contains
             - 0.5_WP * (sEta_G / (4 * sRho_G**2)) * sElX_G**2
 
         spy0_offset = -1_wp * &
-                      pyOffset(sZ, srho_G, fx_G)
+                      pyOffset(sZ, srho_G, fx_G, unphi_G)
 
 
     else
@@ -852,7 +880,7 @@ contains
         spx0_offset = pxOffset(sZ, srho_G, fy_G)
 
         spy0_offset = -1.0_wp * &
-                     pyOffset(sZ, srho_G, fx_G)
+                     pyOffset(sZ, srho_G, fx_G, unphi_G)
 
 
     end if
@@ -864,7 +892,7 @@ contains
 
     sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
                            sEta_G, sKappa_G, sFocusfactor_G, spx0_offset, spy0_offset, &
-                           fx_G, fy_G, sZ)
+                           fx_G, fy_G, sZ, unphi_G)
 
 
 !     Add on new offset to initialize beam for undulator module
@@ -930,7 +958,7 @@ contains
             -  0.5_WP * kY**2 * sElY_G**2
 
         spy0_offset = -1_wp *  &
-                      ( pyOffset(sZ, srho_G, fx_G) &
+                      ( pyOffset(sZ, srho_G, fx_G, unphi_G) &
                       - kx**2 *  sElX_G  * sElY_G)
 
 
@@ -945,7 +973,7 @@ contains
             - 0.5_WP * (sEta_G / (4 * sRho_G**2)) * sElX_G**2
 
         spy0_offset = -1_wp * &
-                      pyOffset(sZ, srho_G, fx_G)
+                      pyOffset(sZ, srho_G, fx_G,unphi_G)
 
 
     else
@@ -957,7 +985,7 @@ contains
         spx0_offset = pxOffset(sZ, srho_G, fy_G)
 
         spy0_offset = -1.0_wp * &
-                     pyOffset(sZ, srho_G, fx_G)
+                     pyOffset(sZ, srho_G, fx_G , unphi_G)
 
 
     end if
@@ -970,7 +998,7 @@ contains
 
     sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
                            sEta_G, sKappa_G, sFocusfactor_G, spx0_offset, -spy0_offset, &
-                           fx_G, fy_G, sZ)
+                           fx_G, fy_G, sZ, unphi_G)
 
 
 !     Add on new offset to initialize beam for undulator module
@@ -1028,6 +1056,8 @@ contains
     nSteps = nSteps_arr(iM)
 
     zUndType_G = zundtype_arr(iM)
+
+    unphi_G =unphi_arr(iM)
 
     fx_G = ux_arr(iM)
     fy_G = uy_arr(iM)

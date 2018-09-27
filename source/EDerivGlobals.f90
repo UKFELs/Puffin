@@ -213,6 +213,8 @@ real(kind=wp) :: sKBetaX_G, sKBetaY_G
 
 real(kind=wp) :: sKBetaXSF_G, sKBetaYSF_G
 
+real(kind=wp) :: unphi_G
+
 
 
 
@@ -222,7 +224,7 @@ real(kind=wp) :: sKBetaXSF_G, sKBetaYSF_G
 
 real(kind=wp), allocatable    :: zMod(:), mf(:), delmz(:), tapers(:), &
                                  ux_arr(:), uy_arr(:), &
-                                 kbnx_arr(:), kbny_arr(:)
+                                 kbnx_arr(:), kbny_arr(:), unphi_arr(:)
 
 
 character(32_ip), allocatable :: zundtype_arr(:)
