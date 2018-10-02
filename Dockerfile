@@ -17,22 +17,6 @@ RUN apt-get -yqq update && \
 
 # Create user for running Puffin
 
-#ARG USER=mpi
-#ENV USER ${USER}
-#RUN adduser -D ${USER} \
-#      && echo "${USER}   ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-
-#RUN adduser ${USER} \
-#      && echo "${USER}   ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-
-#ENV USER_HOME /home/${USER}
-#RUN chown -R ${USER}:${USER} ${USER_HOME}
-
-#### CREATE WORKING DIRECTORY FOR USER ####
-#ARG WORKDIR=/project
-#ENV WORKDIR ${WORKDIR}
-#RUN mkdir ${WORKDIR}
-#RUN chown -R ${USER}:${USER} ${WORKDIR}
 
 RUN useradd --create-home puffin_user
 RUN mkdir /home/puffin_user/tmp/
@@ -47,13 +31,8 @@ RUN chown -R puffin_user /home/puffin_user
 RUN echo 'puffin_user ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 
-# WORKDIR ${WORKDIR}
+# Switch to Puffin user to compile Puffin
 USER puffin_user
-
-
-
-
-
 WORKDIR /home/puffin_user/tmp/puffin-src
 
 # Can also use ADD, which accepts URL's, but COPY is currently recommended over ADD
@@ -67,7 +46,15 @@ ENV PATH="/usr/include/hdf5/openmpi:${PATH}"
 
 # Run CMake
 
-RUN cmake -DCMAKE_INSTALL_PREFIX:PATH=/home/puffin_user/built/puffin -DENABLE_PARALLEL:BOOL=TRUE -DHdf5_MODULE_DIRS='/usr/include/hdf5/openmpi' -DHdf5_LIBRARY_DIRS='/usr/lib/x86_64-linux-gnu/hdf5/openmpi;/usr/lib/x86_64-linux-gnu/' -DHdf5_INCLUDE_DIRS='/usr/include/hdf5/openmpi' -DHdf5_LIBRARY_NAMES='hdf5_openmpi_fortran;hdf5_openmpi' -DHdf5_LIBRARIES='/usr/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.so;/usr/lib/x86_64-linux-gnu/libhdf5_openmpi.so' -DHdf5_STLIBS='/usr/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.a;/usr/lib/x86_64-linux-gnu/libhdf5_openmpi.a' /home/puffin_user/tmp/puffin-src
+RUN cmake -DCMAKE_INSTALL_PREFIX:PATH=/home/puffin_user/built/puffin \
+          -DENABLE_PARALLEL:BOOL=TRUE \
+          -DHdf5_MODULE_DIRS='/usr/include/hdf5/openmpi' \
+          -DHdf5_LIBRARY_DIRS='/usr/lib/x86_64-linux-gnu/hdf5/openmpi;/usr/lib/x86_64-linux-gnu/' \
+          -DHdf5_INCLUDE_DIRS='/usr/include/hdf5/openmpi' \
+          -DHdf5_LIBRARY_NAMES='hdf5_openmpi_fortran;hdf5_openmpi' \
+          -DHdf5_LIBRARIES='/usr/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.so;/usr/lib/x86_64-linux-gnu/libhdf5_openmpi.so' \
+          -DHdf5_STLIBS='/usr/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.a;/usr/lib/x86_64-linux-gnu/libhdf5_openmpi.a' \
+          /home/puffin_user/tmp/puffin-src
 
 RUN make && make install
 
