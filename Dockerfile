@@ -15,7 +15,8 @@ RUN apt-get -yqq update && \
              doxygen \
              graphviz \
              texlive-latex-base \
-             ghostscript
+             ghostscript \
+             git
 
 # NOTE - 'WORKDIR' is essentially just 'cd'
 
@@ -27,8 +28,10 @@ RUN mkdir /home/puffin_user/tmp/
 RUN mkdir /home/puffin_user/tmp/puffin-src
 RUN mkdir /home/puffin_user/tmp/puffin-build
 RUN mkdir /home/puffin_user/tmp/puffin-test
+RUN mkdir /home/puffin_user/tmp/pFUnit
 RUN mkdir /home/puffin_user/built/
 RUN mkdir /home/puffin_user/built/puffin
+RUN mkdir /home/puffin_user/built/pfunit-parallel
 COPY . /home/puffin_user/tmp/puffin-src
 RUN chown -R puffin_user /home/puffin_user
 # Grant sudo access without password
@@ -37,6 +40,20 @@ RUN echo 'puffin_user ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 # Switch to Puffin user to compile Puffin
 USER puffin_user
+
+# Build pFUnit
+WORKDIR /home/puffin_user/tmp
+RUN git clone https://github.com/Goddard-Fortran-Ecosystem/pFUnit.git pFUnit
+WORKDIR /home/puffin_user/tmp/pFUnit
+ENV F90_VENDOR=GNU
+ENV F90=gfortran
+ENV MPIF90=mpif90
+RUN make tests MPI=YES
+RUN make install INSTALL_DIR=/home/puffin_user/built/pfunit-parallel
+
+
+
+
 #WORKDIR /home/puffin_user/tmp/puffin-src
 
 # Can also use ADD, which accepts URL's, but COPY is currently recommended over ADD
@@ -47,11 +64,12 @@ USER puffin_user
 WORKDIR /home/puffin_user/tmp/puffin-build
 
 ENV PATH="/usr/include/hdf5/openmpi:${PATH}"
-
+ENV PFUNIT_INSTALL=/home/puffin_user/built/pfunit-parallel
 # Run CMake
 
 RUN cmake -DCMAKE_INSTALL_PREFIX:PATH=/home/puffin_user/built/puffin \
           -DENABLE_PARALLEL:BOOL=TRUE \
+          -DENABLE_TESTING:BOOL=TRUE \
           -DHdf5_MODULE_DIRS='/usr/include/hdf5/openmpi' \
           -DHdf5_LIBRARY_DIRS='/usr/lib/x86_64-linux-gnu/hdf5/openmpi;/usr/lib/x86_64-linux-gnu/' \
           -DHdf5_INCLUDE_DIRS='/usr/include/hdf5/openmpi' \
