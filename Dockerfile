@@ -11,7 +11,11 @@ RUN apt-get -yqq update && \
              libfftw3-mpi-dev \
              cmake \
              libopenmpi-dev \
-             g++
+             g++ \
+             doxygen \
+             graphviz \
+             texlive-latex-base \
+             ghostscript
 
 # NOTE - 'WORKDIR' is essentially just 'cd'
 
@@ -33,7 +37,7 @@ RUN echo 'puffin_user ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 # Switch to Puffin user to compile Puffin
 USER puffin_user
-WORKDIR /home/puffin_user/tmp/puffin-src
+#WORKDIR /home/puffin_user/tmp/puffin-src
 
 # Can also use ADD, which accepts URL's, but COPY is currently recommended over ADD
 
@@ -56,7 +60,7 @@ RUN cmake -DCMAKE_INSTALL_PREFIX:PATH=/home/puffin_user/built/puffin \
           -DHdf5_STLIBS='/usr/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.a;/usr/lib/x86_64-linux-gnu/libhdf5_openmpi.a' \
           /home/puffin_user/tmp/puffin-src
 
-RUN make && make install
+RUN make && make doc && make install
 
 ENV OMP_NUM_THREADS=1
 
@@ -72,23 +76,3 @@ ENV OMP_NUM_THREADS=1
 
 # CMD mpirun -np 2 /opt/puffin/bin/puffin f1main.in
 
-
-
-#  RUN apt-get -yqq install python-pip python-dev
-#  RUN apt-get -yqq install nodejs npm
-#  RUN ln -s /usr/bin/nodejs /usr/bin/node
-#  
-#  # copy our application code
-#  ADD flask-app /opt/flask-app
-#  WORKDIR /opt/flask-app
-#  
-#  # fetch app specific deps
-#  RUN npm install
-#  RUN npm run build
-#  RUN pip install -r requirements.txt
-#  
-#  # expose port
-#  EXPOSE 5000
-#  
-#  # start app
-#  CMD [ "python", "./app.py" ]
