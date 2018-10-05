@@ -1,48 +1,111 @@
-! PUFFIN BEAM FILE
+! PUFFIN EXAMPLE BEAM FILE
 !
-!Describes electron beams for input into puffin. Multiple beams with
-!different parameters can be used. Please refer to POP-REF for an
-!explanation of the scaled variables used, such as z2 and p2.
+! Describes electron beams for input into puffin. Multiple beams with
+! different parameters can be used. Either scaled or S.I. notation
+! is used - whether you are using scaled or SI is specified in the 
+! 'main' input file. This beam file must contain 2 namelists, one of which
+! must be NBLIST.
 !
-! BEAM PARAMETERS - namelist NBLIST
+! Please refer to [1] for an explanation of the scaled variables 
+! used, such as z2 and p2.
 !
-! nbeams - number of electron beams
-! dtype  - Input type - simple, distribution, or macroparticle 
+! [1] - L.T. Campbell and B.W.J. McNeil, Physics of Plasmas 19, 093119 (2012)
 !
-! BEAM PARAMETERS - namelist BLIST
-!========================================================================
+!                 ***********************************
+! 
+! BEAM TYPE - namelist NBLIST
+!
+! This namelist chooses which type of beam input is being used. Which type
+! is chosen determines what the other namelist in this file should be.
+!
+!
+! Namelist parameters:
+!
+! dtype - String. Specifies the input type. Options are 'simple' (corresponding
+!         to a simple, homogeneous beam with some linear chirp or modulation 
+!         added), 'dist' (where many equispaced 'slices' in the temporal/longitudinal 
+!         direction are described by homogeneous distribution parameters in every other 
+!         direction), or 'h5' (which is an hdf5 file with 6D electron macroparticle 
+!         coordinates and charge weights). If 'simple', this file must include the BLIST
+!         namelist. if 'dist', this file must include the BDLIST namelist. If 'h5',
+!         this file must include the BH5LIST namelist.
+! 
+! nbeams - Integer. For flexibility, Puffin can create a number of electron beams at once.
+!          Use this to tell Puffin how many beams to create if using either the 'simple'
+!          or 'dist' input types.
+!
+!                 ***********************************
+!
+! SIMPLE BEAM PARAMETERS - namelist BLIST
+!
+! This namelist is used to generate a simple Gaussian or Flat-Top beamn distribution
+! in Puffin.
+!
+!
+! Namelist Parameters:
+!
 ! sSigmaE - gaussian std dev in each dimension - x, y, z2, px, py, gamma, then for additional beams
 ! sLenE   - Total length of beam modelled in each dimension - x, y, z2, px, py, gamma...
 ! bcenter - Center of beam in z2
 ! iNumMPs  -  Number of macroparticles in each dimension used to model the beam 
+! iMPsZ2PerWave - Number of macroparticles per reference wavelength in z2
+!                 This overwrites the values given in iNumMPs, if present
+! qOneDCold - When in 1D mode, this decides if the beam is completely cold 
+!             (zero energy spread when = .true.)
 ! emitx, emity - Scaled transverse beam emittance
+! alphax, alphay - Twiss parameters \alpha_x,y in x and y, respectively
 ! sQe - Beam charge 
 ! gammaf - Ratio of average beam energy to reference beam energy gamma / gamma_r 
-! chirp  - Energy chirp in z2 i.e. dgamma/dz2
-! mag    - magnitude of energy oscillation on beam
-! freq   - frequency in z2 of beam energy oscillation
-! qRndEj_G - Round edge of flat top?
+! chirp  - Energy chirp in z2 (or t) i.e. dgamma/dz2 (or dgamma/dt)
+! mag    - magnitude of beam energy oscillation on beam (default = 0)
+! freq   - Wavenumber 2 pi / lambda in z2 (or t) of beam energy oscillation
+! qRndEj_G - Round edge of flat top? (ignored if not flat-top distribution in
+!           the temporal dimension)
 ! sSigEj_G - Gaussian sigma of tail-off if used
-! qMatched_A - Automatically match beam to focusing channel??
-!========================================================================
+! qMatched_A - Automatically match beam to focusing channel?? The matching is 
+!              done to only the 'natural' or strong, constant focusing channel.
+!              It is NOT matched to an undulator-quad lattice.
+!
+!
+!                 ***********************************
+!
+!   This example input file re-creates the results of figure 1 in the following
+!   publication:
+!
+!   B.W.J. McNeil, G.R.M. Robb and D.A. Jaroszynski, Opt. Comm. Vol 165, pp 65-70
+!
+!   The example models an electron beam with a 'flat-top', rectangular current
+!   distribution radiating strong Coherent Spontaneous Emission (CSE) from its sharp
+!   edges in an undulator. This is shown in 1D mode.
+
+
+!   We choose a single, simple beam distribution.
 
 &NBLIST
 nbeams = 1
 dtype = 'simple'
 /
 
+!   We then specify the simple beam distribution:
+!
+!   Using a sSigmaE of 1E8 in the temporal dimension (the 3rd element) results
+!   in a flat-top distribution, with length given by sLenE (again, the 3rd 
+!   element). Here, this is in scaled units, which are units of lc, the FEL
+!   cooperation length.
+!
+!   For this example, note that qFixCharge = .true. - this is common when using
+!   scaled variables, and adjusts the charge so that the beam has the same 
+!   FEL parameter 'rho' as in the main input file.
+
 &BLIST
-sSigmaE =1.0, 1.0, 1E8, 1.0, 1.0, 1.0
+sSigmaE = 0.1, 0.1, 1E8, 1.0, 1.0, 1.0
 sLenE = 1E-6, 1E-6, 2.0, 1E-6, 1E-6, 1E-6
-iNumMPs = 1, 1, 800, 1, 1, 1
+qOneDCold = .true.
+iMPsZ2PerWave = 20
 emitx = 1.0
 emity = 1.0
-sQe = 1.0E-9
 bcenter = 0.0
 gammaf = 1.0
-chirp = 0.0
-mag = 0.0
-fr = 1.0
 qRndEj_G = .false.
 sSigEj_G = 0.02
 qMatched_A = .false.
