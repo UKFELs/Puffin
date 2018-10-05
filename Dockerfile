@@ -82,6 +82,7 @@ RUN make && make doc && make install
 
 ENV OMP_NUM_THREADS=1
 
+# By default, run tests when initing container:
 CMD mpirun -np 4 /home/puffin_user/tmp/puffin-build/test/testexe
 
 
