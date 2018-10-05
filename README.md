@@ -14,6 +14,13 @@ since then. It no longer uses an external linear solver package, and the
 only external packages now required are FFTW (version 3.3 onwards), and
 parallel HDF5 libraries. 
 
+Docker images can be fetched from [here](https://hub.docker.com/u/mightylorenzo/).
+There are currently 2 - a 'full' container intended for development purposes, 
+which has all tests built, along with the testing infrastructure (pFUnit) and
+developer and user documentation, etc. The other, the 'user' container, is
+run like an executable. You pass it the number of processors you want to use,
+and the name of the input file in the current directory to run.
+
 Please note Puffin is currently under active development. An 'official'
 release will be tagged soon. Documentation is being developed 
 [here](https://ukfels.github.io/puffinDocs/).
