@@ -1,6 +1,7 @@
 # Puffin
 
-[![Build Status](https://travis-ci.com/mightylorenzo/Puffin.svg?branch=dev)](https://travis-ci.com/mightylorenzo/Puffin)
+[![Build Status master](https://travis-ci.com/mightylorenzo/Puffin.svg?branch=master)](https://travis-ci.com/mightylorenzo/Puffin)
+[![Build Status dev](https://travis-ci.com/mightylorenzo/Puffin.svg?branch=dev)](https://travis-ci.com/mightylorenzo/Puffin)
 
 Puffin (Parallel Unaveraged Fel INtegrator) simulates a Free Electron
 Laser (FEL). Puffin is a massively parallel numerical solver for an
