@@ -1,7 +1,8 @@
 # Puffin
 
-[![Build Status master](https://travis-ci.com/mightylorenzo/Puffin.svg?branch=master)](https://travis-ci.com/mightylorenzo/Puffin)
-[![Build Status dev](https://travis-ci.com/mightylorenzo/Puffin.svg?branch=dev)](https://travis-ci.com/mightylorenzo/Puffin)
+
+[![Build Status master](https://img.shields.io/travis/com/mightylorenzo/Puffin/master.svg?label=master)](https://travis-ci.com/mightylorenzo/Puffin/branches)
+[![Build Status dev](https://img.shields.io/travis/com/mightylorenzo/Puffin/dev.svg?label=dev)](https://travis-ci.com/mightylorenzo/Puffin/branches)
 
 Puffin (Parallel Unaveraged Fel INtegrator) simulates a Free Electron
 Laser (FEL). Puffin is a massively parallel numerical solver for an
@@ -10,7 +11,7 @@ Fortran 90, using MPI and OpenMP.
 
 The initial publication describing the first version of the code is:-
 
-LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
+[LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)](http://aip.scitation.org/doi/10.1063/1.4752743)
 
 The code has undergone many improvements and extended its functionality
 since then. It no longer uses an external linear solver package, and the
