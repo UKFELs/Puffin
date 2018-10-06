@@ -15,7 +15,7 @@ only external packages now required are FFTW (version 3.3 onwards), and
 parallel HDF5 libraries. 
 
 Docker images can be fetched from [here](https://hub.docker.com/u/mightylorenzo/).
-There are currently 2 - a 'full' container intended for development purposes, 
+There are currently two - a 'full' container intended for development purposes, 
 which has all tests built, along with the testing infrastructure (pFUnit) and
 developer and user documentation, etc. The other, the 'user' container, is
 run like an executable. You pass it the number of processors you want to use,
