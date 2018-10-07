@@ -1,6 +1,8 @@
 # Puffin
 
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+[![Build Status master](https://img.shields.io/travis/com/mightylorenzo/Puffin/master.svg?label=master)](https://travis-ci.com/mightylorenzo/Puffin/branches)
+[![Build Status dev](https://img.shields.io/travis/com/mightylorenzo/Puffin/dev.svg?label=dev)](https://travis-ci.com/mightylorenzo/Puffin/branches)
 
 Puffin (Parallel Unaveraged Fel INtegrator) simulates a Free Electron
 Laser (FEL). Puffin is a massively parallel numerical solver for an
@@ -15,6 +17,8 @@ The code has undergone many improvements and extended its functionality
 since then. It no longer uses an external linear solver package, and the
 only external packages now required are FFTW (version 3.3 onwards), and
 parallel HDF5 libraries. 
+
+Documentation is being developed [here](https://ukfels.github.io/puffinDocs/).
 
 ----
 
@@ -38,14 +42,6 @@ then, for the user image,
 docker run -v $(pwd):/home/puffin_user/tmp/puffin-test mightylorenzo/puffin-user 2 main.in
 ```
 will run Puffin using 2 processes with the main input file in the current directory.
-
-----
-[![Build Status master](https://img.shields.io/travis/com/mightylorenzo/Puffin/master.svg?label=master)](https://travis-ci.com/mightylorenzo/Puffin/branches)
-[![Build Status dev](https://img.shields.io/travis/com/mightylorenzo/Puffin/dev.svg?label=dev)](https://travis-ci.com/mightylorenzo/Puffin/branches)
-
-Please note Puffin is currently under active development. An 'official'
-release will be tagged soon. Documentation is being developed 
-[here](https://ukfels.github.io/puffinDocs/).
 
 ## Features
 
