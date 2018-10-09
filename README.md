@@ -16,7 +16,7 @@ The initial publication describing the first version of the code is:-
 The code has undergone many improvements and extended its functionality
 since then. It no longer uses an external linear solver package, and the
 only external packages now required are FFTW (version 3.3 onwards), and
-parallel HDF5 libraries. 
+parallel HDF5 libraries. A more recent description can be found [here](http://ipac2018.vrws.de/papers/thpmk112.pdf).
 
 Documentation is being developed [here](https://ukfels.github.io/puffinDocs/).
 
