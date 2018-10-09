@@ -39,7 +39,7 @@ docker pull mightylorenzo/puffin-user
 ```
 then, for the user image,
 ```
-docker run -v $(pwd):/home/puffin_user/tmp/puffin-test mightylorenzo/puffin-user 2 main.in
+docker run -v $(pwd):/home/puffin_user/project mightylorenzo/puffin-user 2 main.in
 ```
 will run Puffin using 2 processes with the main input file in the current directory.
 
