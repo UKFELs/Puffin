@@ -203,7 +203,7 @@ contains
         print*, 'Total interaction distance in (1D) gain lengths is z-bar =', &
                 sum(nsteps_arr*delmz)
         print*, 'Total length of FEL undulator line in meters is z =', &
-             (sum(nsteps_arr*delmz) + sum(drift_zbar) + sum(chic_zbar)) / lg_G
+             (sum(nsteps_arr*delmz) + sum(drift_zbar) + sum(chic_zbar)) * lg_G
         print*, ''
         print*, 'initial step size (in zbar, or 1D gain lengths) will be ', delmz(1)
         print*, ''
