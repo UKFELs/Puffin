@@ -32,6 +32,7 @@ RUN mkdir /home/puffin_user/tmp/pFUnit
 RUN mkdir /home/puffin_user/built/
 RUN mkdir /home/puffin_user/built/puffin
 RUN mkdir /home/puffin_user/built/pfunit-parallel
+RUN mkdir /home/puffin_user/project # for running in Puffin
 COPY . /home/puffin_user/tmp/puffin-src
 RUN chown -R puffin_user /home/puffin_user
 # Grant sudo access without password
@@ -81,9 +82,10 @@ RUN cmake -DCMAKE_INSTALL_PREFIX:PATH=/home/puffin_user/built/puffin \
 RUN make && make doc && make install
 
 ENV OMP_NUM_THREADS=1
+RUN mpirun -np 4 /home/puffin_user/tmp/puffin-build/test/testexe
+WORKDIR /home/puffin_user/project
 
-
-
+CMD /bin/bash
 
 
 
