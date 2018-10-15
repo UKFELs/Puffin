@@ -1,22 +1,44 @@
 # Puffin
 
-Puffin (Parallel Unaveraged Fel INtegrator) simulates a Free Electron
-Laser (FEL). Puffin is a massively parallel numerical solver for an
-unaveraged, 3D FEL system of equations, and is written mostly in
-Fortran 90, using MPI and OpenMP.
+[![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+[![Build Status master](https://img.shields.io/travis/com/mightylorenzo/Puffin/master.svg?label=master)](https://travis-ci.com/mightylorenzo/Puffin/branches)
+[![Build Status dev](https://img.shields.io/travis/com/mightylorenzo/Puffin/dev.svg?label=dev)](https://travis-ci.com/mightylorenzo/Puffin/branches)
+
+Puffin (Parallel Unaveraged Fel INtegrator) simulates a Free Electron Laser (FEL). Puffin is a massively parallel numerical solver for an unaveraged, 3D FEL system of equations, and is written in Fortran 90, using MPI and OpenMP.
 
 The initial publication describing the first version of the code is:-
 
-LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
+[LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)](http://aip.scitation.org/doi/10.1063/1.4752743)
 
 The code has undergone many improvements and extended its functionality
 since then. It no longer uses an external linear solver package, and the
 only external packages now required are FFTW (version 3.3 onwards), and
-parallel HDF5 libraries. 
+parallel HDF5 libraries. A more recent description can be found [here](http://ipac2018.vrws.de/papers/thpmk112.pdf).
 
-Please note Puffin is currently under active development. An 'official'
-release will be tagged soon. Documentation is being developed 
-[here](https://ukfels.github.io/puffinDocs/).
+Documentation is being developed [here](https://ukfels.github.io/puffinDocs/).
+
+----
+
+[![Docker Hub](http://dockeri.co/image/mightylorenzo/puffin-user)](https://hub.docker.com/r/mightylorenzo/puffin-user)
+
+Docker images can be fetched from [here](https://hub.docker.com/u/mightylorenzo/).
+There are currently two - a 'full' container intended for development purposes, 
+which has all tests built, along with the testing infrastructure (pFUnit) and
+developer and user documentation, etc. The other, the 'user' container, is
+run like an executable. You pass it the number of processors you want to use,
+and the name of the input file in the current directory to run.
+
+The images are not configured for or intended for use on a cluster; rather, they allow you to get Puffin up and running quickly for smaller, 1D or few-slice runs on a local machine (e.g. your laptop or desktop).
+
+To grab an image, do e.g.
+```
+docker pull mightylorenzo/puffin-user
+```
+then, for the user image,
+```
+docker run -v $(pwd):/home/puffin_user/project mightylorenzo/puffin-user 2 main.in
+```
+will run Puffin using 2 processes with the main input file in the current directory.
 
 ## Features
 

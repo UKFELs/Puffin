@@ -1,0 +1,12 @@
+sudo: required
+
+language: sh
+
+services:
+  - docker
+
+before_install:
+  - export DOCKER_PUFFIN_IMAGE=mightylorenzo/puffin-test
+
+script:
+  - docker build -t $DOCKER_PUFFIN_IMAGE .
