@@ -35,7 +35,7 @@ CONTAINS
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Subroutine to pass all the temporary variables to global
@@ -395,7 +395,7 @@ END SUBROUTINE passToGlobals
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Subroutine to recalculate the beam charge to match the value of rho
@@ -439,7 +439,7 @@ end subroutine fixCharge
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Calculates the area under the current profile in z2.
@@ -483,7 +483,7 @@ end subroutine getLBArea
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Calculates the area under the current profile in z2.
@@ -729,7 +729,7 @@ subroutine calcScaling(srho, saw, sgamr, slam_w, &
                        zUndType, sfx, sfy)
 
   real(kind=wp), intent(in) :: srho, saw, sgamr, slam_w
-  
+
   real(kind=wp), intent(inout) :: sfx, sfy
 
   CHARACTER(32_IP), intent(in) :: zUndType
@@ -845,7 +845,7 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
   iNumNodes(iZ2_CG) = ceiling(sFieldModelLength(iZ2_CG) / dz2) + 1_IP
 
   if (fieldMesh == iPeriodic) then
-  
+
     if (sPerWaves_G < 0.0_wp) then
 
       sLengthOfElm(iZ2_CG) = dz2
@@ -861,19 +861,19 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
       sFieldModelLength(iZ2_CG) = sperwaves_G * (4.0_WP * pi * sRho_G)
       sLengthOfElm(iZ2_CG) = dz2
 
-!            For now, keeping dz2 to give an integer number of nodes per 
+!            For now, keeping dz2 to give an integer number of nodes per
 !           scaled wavelength, and rounding total mesh length to nearest
 !                           integer number of nodes
 
       iNumNodes(iZ2_CG) = nint((sFieldModelLength(iZ2_CG) / dz2), kind=ip) + 1_IP
       sFieldModelLength(iZ2_CG) = real(iNumNodes(iZ2_CG) - 1_ip, kind=wp) * dz2
-      
+
       sLenEPulse(1,iZ2_CG) = sFieldModelLength(iZ2_CG)
 
     end if
 
   end if
-  
+
 
   if (iNumNodes(iX_CG) <= 1_ip) then
 
@@ -950,40 +950,40 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
     minENum = ceiling(sLenEPulse(:,iZ2_CG) / (slamr / real(iMPsZ2PerWave, kind=wp)) )
 
     do ib = 1, size(sGamFrac)
-      
+
       if (iMPsZ2PerWave(ib) > 0) then
         if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0_ip)) then
           print*,'The beam sampling has been specified through iMPsZ2PerWave'
         end if
 
         iNumElectrons(ib,iZ2_CG) = minENum(ib)
-        
+
       end if
     end do
 
-    minENum = ceiling(sLenEPulse(:,iZ2_CG) / (slamr / real(minESample, kind=wp)) )
+    !minENum = ceiling(sLenEPulse(:,iZ2_CG) / (slamr / real(minESample, kind=wp)) )
 
-    do ib = 1, size(sGamFrac)
+    !do ib = 1, size(sGamFrac)
 
-      if ((iNumElectrons(ib,iZ2_CG) < 0) .or. (iNumElectrons(ib,iZ2_CG) < minENum(ib)) ) then
+      !if ((iNumElectrons(ib,iZ2_CG) < 0) .or. (iNumElectrons(ib,iZ2_CG) < minENum(ib)) ) then
 
-        if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-          print*, '******************************'
-          print*, ''
-          print*, 'WARNING - e-beam macroparticles sampling &
-                                          & in z2 not fine enough - fixing...'
-        end if
+      !  if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+      !    print*, '******************************'
+      !    print*, ''
+      !    print*, 'WARNING - e-beam macroparticles sampling &
+      !                                    & in z2 not fine enough - fixing...'
+      !  end if
 
-        iNumElectrons(ib,iZ2_CG) = minENum(ib)
+      !  iNumElectrons(ib,iZ2_CG) = minENum(ib)
 
-        if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-          print*, 'num MPs in z2 now = ', &
-                            iNumElectrons(ib,iZ2_CG)
-        end if
+      !  if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
+      !    print*, 'num MPs in z2 now = ', &
+      !                      iNumElectrons(ib,iZ2_CG)
+      !  end if
 
-      end if
+    !  end if
 
-    end do
+  !  end do
 
     deallocate(minENum, minESample)
 
@@ -1034,36 +1034,36 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
   iNumNodes(iZ2_CG) = ceiling(sFieldModelLength(iZ2_CG) / dz2) + 1_IP
 
 !   if (fieldMesh == iPeriodic) then
-!   
+!
 !     if (sPerWaves_G < 0.0_wp) then
-! 
+!
 !       sLengthOfElm(iZ2_CG) = dz2
 !       sFieldModelLength(iZ2_CG) = real(iNumNodes(iZ2_CG) - 1_ip, kind=wp) * dz2
 !       sperwaves_G = sFieldModelLength(iZ2_CG) / (4.0_WP * pi * sRho_G)
-! 
+!
 !       sLenEPulse(1,iZ2_CG) = sFieldModelLength(iZ2_CG)
-! 
+!
 !     else
-! 
+!
 ! !           Field mesh length is then number of waves times scaled wavelength
-! 
+!
 !       sFieldModelLength(iZ2_CG) = sperwaves_G * (4.0_WP * pi * sRho_G)
 !       sLengthOfElm(iZ2_CG) = dz2
-! 
-! !            For now, keeping dz2 to give an integer number of nodes per 
+!
+! !            For now, keeping dz2 to give an integer number of nodes per
 ! !           scaled wavelength, and rounding total mesh length to nearest
 ! !                           integer number of nodes
-! 
+!
 !       iNumNodes(iZ2_CG) = nint((sFieldModelLength(iZ2_CG) / dz2), kind=ip) + 1_IP
 !       sFieldModelLength(iZ2_CG) = real(iNumNodes(iZ2_CG) - 1_ip, kind=wp) * dz2
-!       
+!
 !       sLenEPulse(1,iZ2_CG) = sFieldModelLength(iZ2_CG)
-! 
+!
 !     end if
-! 
+!
 !   end if
- 
- 
+
+
   if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1)) then
     print*, '******************************'
     print*, ''
@@ -1186,7 +1186,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
     else
       totNk_loc = 0._WP
     end if
-    
+
     if (qOneD_G) totNk_loc = totNk_loc * ata_g
 !    print *,"Rank ", tProcInfo_G%Rank, " sum ",totNk_loc
     CALL MPI_ALLREDUCE(totNk_loc, totNk_glob, 1, MPI_DOUBLE_PRECISION, &

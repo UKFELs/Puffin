@@ -766,14 +766,22 @@ contains
 
   !    sElY_G = (-1.0) * sElY_G
 
-      sElX_Gnew =theta_Mrotation(iMRotation_cr) * ( (0.0) * sElX_G + &
-                  (-0.00002) *  sElPX_G + (1.0) * sElY_G + (0.0) * (-1) * sElPY_G )
-      sElPX_Gnew = theta_Mrotation(iMRotation_cr) *( (0.000017) * sElX_G + &
-                   (0.0) * sElPX_G + (0.0000008) * sElY_G +  (1.0) * (-1) *sElPY_G  )
-      sElY_Gnew =  theta_Mrotation(iMRotation_cr) *((1.0) * sElX_G + &
-                   (0.0) * sElPX_G + (0.0) * sElY_G +  (-0.00002) * (-1) *sElPY_G)
-      sElPY_Gnew = theta_Mrotation(iMRotation_cr) * (-(0.0)* sElX_G -  (1.0) &
-                    * sElPX_G - (0.000017) * sElY_G + (0.0) * sElPY_G)
+    !  sElX_Gnew =theta_Mrotation(iMRotation_cr) * ( (0.0) * sElX_G + &
+    !              (-0.00002) *  sElPX_G + (1.0) * sElY_G + (0.0) * (-1) * sElPY_G )
+    !  sElPX_Gnew = theta_Mrotation(iMRotation_cr) *( (0.000017) * sElX_G + &
+    !               (0.0) * sElPX_G + (0.0000008) * sElY_G +  (1.0) * (-1) *sElPY_G  )
+    !  sElY_Gnew =  theta_Mrotation(iMRotation_cr) *((1.0) * sElX_G + &
+    !               (0.0) * sElPX_G + (0.0) * sElY_G +  (-0.00002) * (-1) *sElPY_G)
+      !sElPY_Gnew = theta_Mrotation(iMRotation_cr) * (-(0.0)* sElX_G -  (1.0) &
+    !                * sElPX_G - (0.000017) * sElY_G + (0.0) * sElPY_G)
+
+
+      sElX_Gnew = cos(theta_Mrotation(iMRotation_cr) * pi) * sElX_G - sin(theta_Mrotation(iMRotation_cr) * pi) * sElY_G
+      sElPX_Gnew = cos(theta_Mrotation(iMRotation_cr) * pi) * sElPX_G + sin(theta_Mrotation(iMRotation_cr) * pi) * sElPY_G
+      sElY_Gnew = sin(theta_Mrotation(iMRotation_cr) * pi) * sElX_G + cos(theta_Mrotation(iMRotation_cr) * pi) * sElY_G
+      sElPY_Gnew = - sin(theta_Mrotation(iMRotation_cr) * pi) * sElPX_G + cos(theta_Mrotation(iMRotation_cr) * pi) * sElPY_G
+
+
     end if
 
 
@@ -783,6 +791,7 @@ contains
 
     sElPX_G=sElPX_Gnew
     sElPY_G=sElPY_Gnew
+
 
     iMRotation_cr = iMRotation_cr + 1
 
