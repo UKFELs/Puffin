@@ -628,7 +628,7 @@ END SUBROUTINE SetUpInitialValues
 subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
                        beamCenZ2, chirp, sEmit, emitx, emity, gamFrac, &
                        sFieldModelLength, sLengthofElm, &
-                       sSeedSigma, sAx, sAy, scr)
+                       sSeedSigma, sAx, sAy, scr, kbx, kby)
 
     real(kind=wp), intent(inout) :: sEleSig(:,:), sLenEPulse(:,:), &
                                     sSigEdge(:), beamCenZ2(:), &
@@ -637,7 +637,8 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
                                     sLengthofElm(:), &
                                     sSeedSigma(:,:), &
                                     emitx(:), emity(:), &
-                                    sAx(:), sAy(:), scr(:)
+                                    sAx(:), sAy(:), scr(:), &
+                                    kbx, kby
 
     real(kind=wp), intent(in) :: gamFrac(:)
 
@@ -707,6 +708,8 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
 
     end do
 
+    kbx = kbx * lg_G
+    kby = kby * lg_G
 
 !    If not-scaled / in SI units, then
 !

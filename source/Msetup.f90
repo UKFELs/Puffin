@@ -176,7 +176,7 @@ module Setup
     call scaleParams(sEleSig, sLenEPulse, sSigEj_G, &
                      beamCenZ2, chirp, sEmit_n, emitx, emity, gamma_d, &
                      sFieldModelLength, sLengthofElm, &
-                     sSeedSigma, sA0_Re, sA0_Im, SmeanZ2)
+                     sSeedSigma, sA0_Re, sA0_Im, SmeanZ2, sKBetaXSF_G, sKBetaYSF_G)
   end if
 
 
@@ -209,9 +209,6 @@ module Setup
   call getTransformPlans4FEL(iNodes,qmeasure,qOKL)
 
   if (.not. qOKL) goto 1000
-
-!    Calculate parameters for matched beam
-
 
 
   call setupMods(lattFile, taper, sRho, nSteps, sStepSize, fx, fy, &
