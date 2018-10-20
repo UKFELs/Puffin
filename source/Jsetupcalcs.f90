@@ -628,7 +628,7 @@ END SUBROUTINE SetUpInitialValues
 subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
                        beamCenZ2, chirp, sEmit, emitx, emity, gamFrac, &
                        sFieldModelLength, sLengthofElm, &
-                       sSeedSigma, sAx, sAy, scr, kbx, kby)
+                       sSeedSigma, sAx, sAy, scr, kbG, kbx, kby)
 
     real(kind=wp), intent(inout) :: sEleSig(:,:), sLenEPulse(:,:), &
                                     sSigEdge(:), beamCenZ2(:), &
@@ -637,7 +637,7 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
                                     sLengthofElm(:), &
                                     sSeedSigma(:,:), &
                                     emitx(:), emity(:), &
-                                    sAx(:), sAy(:), scr(:), &
+                                    sAx(:), sAy(:), scr(:), kbG(:), &
                                     kbx, kby
 
     real(kind=wp), intent(in) :: gamFrac(:)
@@ -657,20 +657,12 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
 
       call scaleT(sEleSig(ib,iZ2_CG), lc_G)
 
-
-
-
       call scaleX(sLenEPulse(ib,iX_CG), lg_G, lc_G)
       call scaleX(sLenEPulse(ib,iY_CG), lg_G, lc_G)
 
       call scalePx(sLenEPulse(ib,iPX_CG), gamFrac(ib), saw_G)
       call scalePx(sLenEPulse(ib,iPY_CG), gamFrac(ib), saw_G)
-
       call scaleT(sLenEPulse(ib,iZ2_CG), lc_G)
-
-
-
-
       call scaleT(sSigEdge(ib), lc_G)
       call scaleT(beamCenZ2(ib), lc_G)
       !call scaleG(chirp(ib), gamFrac(ib)*sGammaR_G)
@@ -680,6 +672,7 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
       call scaleEmit(sEmit(ib), lam_r_G)
       call scaleEmit(emitx(ib), lam_r_G)
       call scaleEmit(emity(ib), lam_r_G)
+      kbG = kbG * lc_G
 
     end do
 
