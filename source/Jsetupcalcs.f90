@@ -809,16 +809,40 @@ subroutine calcScaling(srho, saw, sgamr, slam_w, &
 end subroutine calcScaling
 
 
+subroutine calcCharge(sQe, Ipk, sSigz2, sLenz2, sSigTails, qTails)
 
+  implicit none
+  real(kind=wp), intent(inout) :: sQe(:), Ipk(:)
+  real(kind=wp), intent(in) :: sSigz2(:), sLenz2(:), sSigTails(:)
+  logical, intent(in) :: qTails(:)
+  real(kind=wp) :: sLArea
+  integer(kind=ip) :: b, nbeams
+  
+  nbeams = size(sQe)
+  if (size(Ipk) /= nbeams) then
+    print*, 'ERROR - size of current and charge arrays are incompatible...'
+    stop
+  end if
+
+  do b = 1, nbeams
+    if (Ipk(b) > 0.0_wp) then
+      call getLBArea(sLArea, sSigz2(b), sLenz2(b), sSigTails(b), qTails(b))
+      sQe(b) = Ipk(b) * sLArea * lc_G / c
+      if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 0)) print*, 'Charge specified from Ipk '
+      if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 0)) print*, 'Q =  ', sQe(b)
+    end if
+  end do
+
+end subroutine calcCharge
 
 
 subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
                        sStepSize, stepsPerPeriod, nSteps, &
                        nperiods, nodesperlambda, sGamFrac, &
-                       sLenEPulse, iNumElectrons, iMPsZ2PerWave, qsimple)
+                       sEleSig, sLenEPulse, iNumElectrons, iMPsZ2PerWave, qsimple)
 
 
-  real(kind=wp), intent(inout) :: sFieldModelLength(:), sLenEPulse(:,:)
+  real(kind=wp), intent(inout) :: sFieldModelLength(:), sLenEPulse(:,:), sEleSig(:,:)
 
   real(kind=wp), intent(in) :: sGamFrac(:)
 
@@ -852,7 +876,8 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
       sFieldModelLength(iZ2_CG) = real(iNumNodes(iZ2_CG) - 1_ip, kind=wp) * dz2
       sperwaves_G = sFieldModelLength(iZ2_CG) / (4.0_WP * pi * sRho_G)
 
-      sLenEPulse(1,iZ2_CG) = sFieldModelLength(iZ2_CG)
+      sLenEPulse(:,iZ2_CG) = sFieldModelLength(iZ2_CG)
+      sEleSig(:, iZ2_CG) = 1E8_wp
 
     else
 

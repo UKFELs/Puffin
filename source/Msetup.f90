@@ -114,6 +114,7 @@ module Setup
        stepsPerPeriod, &
        nperiods, &
        sQe,               &
+       Ipk, &
        q_noise,           &
        iNumElectrons,     &
        sEleSig,           &
@@ -185,10 +186,10 @@ module Setup
 
   call calcSamples(sFieldModelLength, iNodes, sLengthofElm, &
                    sStepSize, stepsPerPeriod, nSteps, &
-                   nperiods, nodesperlambda, gamma_d, sLenEPulse, &
+                   nperiods, nodesperlambda, gamma_d, sEleSig, sLenEPulse, &
                    iNumElectrons, iMPsZ2PerWave, qSimple)
 
-
+  call calcCharge(sQe, Ipk, sEleSig(:,iZ2_CG), sLenEPulse(:, iZ2_CG), sSigEj_G, qRndEj_G)
 
 !  if (qscaled_G) then
 
