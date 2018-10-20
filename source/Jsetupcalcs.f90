@@ -712,8 +712,6 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
 !    field params in x, y, and t
 !
 
-
-
 end subroutine scaleParams
 
 
