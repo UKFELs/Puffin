@@ -114,7 +114,6 @@ contains
                kbnx_arr(numOfUnds), kbny_arr(numOfUnds))
       allocate(zundtype_arr(numOfUnds))
 
-
       allocate(chic_disp(numOfChics), chic_slip(numOfChics), &
                chic_zbar(numOfChics))
 
@@ -139,6 +138,16 @@ contains
       dz_f =  delmz(1)
       nSteps_f = nSteps_arr(1)
       taper = tapers(1)
+
+      if (.not. qscaled_G) then
+        kbnx_arr = kbnx_arr * lg_G
+        kbny_arr = kbny_arr * lg_G
+        tapers = tapers * lg_G
+        quad_fx = quad_fx / lg_G
+        quad_fy = quad_fy / lg_G
+        chic_disp = chic_disp / 2.0_wp / lc_G
+        enmod_wavenum = enmod_wavenum * lc_G
+      end if
 
     else
 
