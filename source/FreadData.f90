@@ -729,7 +729,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   else
     
     nseqparts = 1000_ip
-    TrLdMeth = 1_ip
+    TrLdMeth = 2_ip
 
   end if
 

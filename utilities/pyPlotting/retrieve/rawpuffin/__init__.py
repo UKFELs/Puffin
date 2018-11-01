@@ -11,6 +11,7 @@ from the Puffin input files to be used as a single package.
 from .readField import readField
 from .getIntData import getIntData
 from .pfilelists import getFileSlices
+from .pfilelists import getIntFileSlices
 from .pfilelists import getZData
 
 #import readField
