@@ -297,7 +297,7 @@ If {\bf qFocussing} is true and the strong betatron wavenumber is given, then th
 
 \label{section-twiss}
 
-One can use Twiss parameters to provide a transverse phase-space `tilt' for the electron beam. In the simple beam case, the user can specify the \textit{r.m.s.} $\bar{\sigma}_x, \bar{\sigma}_{px}$ (or the S.I. equivalents $\sigma_x, \sigma_{x}'$) for the electron beam, along with the usual $\alpha_x$ for the slope of the $x-x'$ correlation. Using this method, the supplied \textit{r.m.s.} $\sigma_{x}'$ should be the standard deviation at $x=0$. If the emittance is supplied by using {\bf emitx}, then the input $\bar{\sigma}_{px}$ is ignored, and is instead calculated from $\sigma_x$, the emittance, and $\alpha_x$. Obviously, the intended method is to input the emittances, so that the transverse momenta parameters are over-written.
+One can use Twiss parameters to provide a transverse phase-space `tilt' for the electron beam. In the simple beam case, the user can specify the \textit{r.m.s.} $\bar{\sigma}_x, \bar{\sigma}_{px}$ (or the S.I. equivalents $\sigma_x, \sigma_{x}'$) for the electron beam, along with the usual $\alpha_x$ for the slope of the $x-x'$ correlation. Using this method, the supplied \textit{r.m.s.} $\sigma_{x}'$ should be the standard deviation at $x=0$. If the emittance is supplied by using {\bf emitx}, then the input $\bar{\sigma}_{px}$ is ignored, and is instead calculated from $\sigma_x$, the emittance, and $\alpha_x$. The intended method is to input the emittances, so that the transverse momenta parameters given by the user are over-written/ignored.
 
 % In general, giving the emittances over-writes the transverse momenta given in the beam file, whether using the
 
@@ -1194,10 +1194,6 @@ The \textit{r.m.s.} Gaussian $\sigma$ in each dimension, in order $\bar{x}, \bar
 
 The total length used to model the beam in each dimension, in order, similarly to {\bf sSigmaE}, $\bar{x}, \bar{y}, \bar{z}_2, \bar{p}_x, \bar{p}_y, \Gamma$, or alternatively, in unscaled, S.I. units, $x,y,t,\frac{dx}{dz}, \frac{dy}{dz}, \Gamma$. Again, for multiple beams, specify the $x$ values for each consecutive beam, then the consecutive $y$ values, and so on. This length should be large enough to ensure a smooth distribution out to the edges. If Gaussian, then usually a length of $\sim 8\sigma$ is enough to remove spurious effects from the very edge of the tails. If flat-top, then the charge will be equally distributed over this total length in a given dimension. Gaussian tails can be used on each end of a flat-top distribution to remove CSE from the unphysical sharp edges in charge density, using variables {\bf qRndEj\_G, sSigEj\_G}, see below.
 
-{\bf iNumMPs}
-
-Array of integers of size {\bf nbeams} $\times$ {\bf 6}. Specifies the number of macroparticles used to model the beam in each dimension, in order $\bar{x}, \bar{y}, \bar{z}_2, \bar{p}_x, \bar{p}_y, \Gamma$. For multiple beams, specify the $x$ values for each consecutive beam, then the consecutive $y$ values, and so on. In 1D, only the $\bar{z}_2$ and $\Gamma$ values are used, no matter what beam loading method is used, and the rest are ignored, although they must be present. In 3D, all values are used only if the variable {\bf qEquiXY = .true.} (see page ??). Otherwise, the random sequences will be used.
-
 {\bf bcenter}
 
 Array of reals of size {\bf nbeams}, specifying the center of the $i^{th}$ beam, in the frame of the mesh, in $\bar{z}_2$ (scaled), or $t$ (SI). Defaults to 0. If between $0$ and {\bf sLenE($i$,3)} $/ 2$, then the beam will be initialized with the head of the beam aligned with the head of the mesh, at $\bar{z}_2 = 0$. Otherwise, {\bf bcenter} will behave as expected.
@@ -1235,22 +1231,6 @@ Array of reals of size {\bf nbeams}. Specifies the $r.m.s.$ width of the Gaussia
 
 Array of logicals of size {\bf nbeams}. If $=$ {\bf .true.}, then the radius of the $i^{th}$ beam will be matched to either the `natural' focusing channel of the undulator, or the `strong' intra-undulator focusing if specified. (Please note, this does not match to a focusing lattice as specified in the lattice file! This, unfortunately, must be done manually and the matched parameters used in {\bf alphax, alphay, emitx, emity} below) [{\bf .false.}]
 
-{\bf qEquiXY}
-
-Array of logicals of size {\bf nbeams}. If {\bf .true.}, then the beam macroparticles will be loaded into an equispaced, $6$-D hypercube, as a `crystal' beam, with the number of macroparticles in each dimension given in {\bf iNumMPs} above. Initialization and shot-noise are as described in \cite{noise1}, giving the correct shot-noise in every dimension (at the start of the simulation). If {\bf .false.}, then the beam will be initialized as equispaced only in the temporal coordinate $\bar{z}_2$, and random or Halton sequences will be used to fill the other $5$ dimensions ({\bf TrLdMeth} $= 1$ or $2$, respectively, see below), giving the correct noise in the temporal coordinate only, but with less macroparticles needed to fill the phase space, the simulation is much faster. [{\bf \.false.}]
-
-{\bf TrLdMeth}
-
-Array of reals of size {\bf nbeams}. If {\bf qEquiXY} $=$ {\bf .false.}, this chooses either random ($=1$) or Halton ($=2$) sequences to fill the $5$-D, non-temporal phase space. Ignored if {\bf qEquiXY} $=$ {\bf .true.}. [$1$]
-
-
-{\bf nseqparts}
-
-Array of integers of size {\bf nbeams}. If {\bf qEquiXY} $=$ {\bf .false.}, this specifies the length of the $5$ pseudo/semi-random sequences, and thus the number of macroparticles, to use for each equispaced temporal coordinate (in $\bar{z}_2$). [$1000$]
-
-
-
-
 {\bf qFixCharge}
 
 Array of logicals of size {\bf nbeams}. If $=$ {\bf .true.}, the charge as input will be ignored, and recalculated from the scaling parameters $\rho, a_u, \lambda_u$ and $\gamma_r$ specified in the main input file, so that the beam (if it has zero energy spread, and ignoring diffraction and emittance effects on the gain) will lase with the usual $1$D gain length $L_g = \lambda_u / 4 / \pi / \rho$.
@@ -1270,6 +1250,33 @@ Array of reals of size {\bf nbeams}. Emittance (in $x$) of the $i^{th}$ beam. If
 {\bf emity}
 
 Array of reals of size {\bf nbeams}. Emittance (in $y$) of the $i^{th}$ beam. If {\bf qscaled = .true.}, then this is the scaled emittance. Otherwise it is the geometric (unnormalised) emittance (in $m rad$).
+
+
+
+{\bf TrLdMeth}
+
+Array of integers of size {\bf nbeams}. This chooses the beam loading algorithm. Choose from random ($=1$) or Halton ($=2$) sequences to fill the $5$-D, non-temporal phase space, and for the equal shifts in $\bar{z}_2$. Use $3$ for random sequences with visible, equidistant slices in $\bar{z}_2$ (so, without additional shifts in $\bar{z}_2$), and $4$ for Halton sequences with slices in $\bar{z}_2$. If $=0$, then the macroparticles will be generated on an equispaced grid in {\bf every} dimension. For options $1-4$, use the below described variables {\bf iMPsZ2PerWave} and {\bf nseqparts} to specify the macroparticle numbers, and for the $=0$ option, use {\bf iNumMPs}. [$1$]
+
+
+{\bf iMPsZ2PerWave}
+
+Array of integers of size {\bf nbeams}, describing the number of macroparticle `slices' per resonant wavelength to use for each beam. In the case of {\bf TrLdMeth} $= 0$ (equispaced loading method), the resultant total number of macroparticles will overwrite the value in the $\bar{z}_2$ segment of iNumMPs. [$4$]
+
+{\bf nseqparts}
+
+Array of integers of size {\bf nbeams}. If {\bf qEquiXY} $=$ {\bf .false.}, this specifies the length of the $5$ pseudo/semi-random sequences, and thus the number of macroparticles per `slice', to use for each equispaced temporal coordinate (in $\bar{z}_2$). [$1000$]
+
+{\bf iNumMPs}
+
+Array of integers of size {\bf nbeams} $\times$ {\bf 6}. Specifies the number of macroparticles used to model the beam in each dimension, in order $\bar{x}, \bar{y}, \bar{z}_2, \bar{p}_x, \bar{p}_y, \Gamma$. For multiple beams, specify the $x$ values for each consecutive beam, then the consecutive $y$ values, and so on. In 1D, only the $\bar{z}_2$ and $\Gamma$ values are used, no matter what beam loading method is used, and the rest are ignored, although they must be present. In 3D, all values are used only if the variable {\bf qEquiXY = .true.} (see page ??). Otherwise, the random sequences will be used.
+
+
+
+{\bf qEquiXY}
+
+{\bf DEPRECATED - USE TrLdMeth INSTEAD}. Array of logicals of size {\bf nbeams}. If {\bf .true.}, then the beam macroparticles will be loaded into an equispaced, $6$-D hypercube, as a `crystal' beam, with the number of macroparticles in each dimension given in {\bf iNumMPs} above. Initialization and shot-noise are as described in \cite{noise1}, giving the correct shot-noise in every dimension (at the start of the simulation). If {\bf .false.}, then the beam will be initialized as equispaced only in the temporal coordinate $\bar{z}_2$, and random or Halton sequences will be used to fill the other $5$ dimensions ({\bf TrLdMeth} $= 1$ or $2$, respectively, see below), giving the correct noise in the temporal coordinate only, but with less macroparticles needed to fill the phase space, the simulation is much faster. [{\bf \.false.}]
+
+
 
 
 

@@ -44,7 +44,11 @@ CONTAINS
     pi=4.0_WP*ATAN(1.0_WP)
     s_twopi_sigma=sqrt(2*pi)*sigma
 	
-    ngaussian=exp(-((x-xc)/sigma)**2/2.0_WP)
+    if (sigma > 0.0_wp) then
+      ngaussian=exp(-((x-xc)/sigma)**2/2.0_WP)
+    else
+      ngaussian = 0.0_wp
+    end if
 	
     gaussian=ngaussian
 

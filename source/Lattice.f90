@@ -117,8 +117,6 @@ contains
                kbnx_arr(numOfUnds), kbny_arr(numOfUnds),unphi_arr(numOfUnds))
       allocate(zundtype_arr(numOfUnds))
 
-
-
       allocate(chic_disp(numOfChics), chic_slip(numOfChics), &
                chic_zbar(numOfChics))
 
@@ -149,6 +147,16 @@ contains
       dz_f =  delmz(1)
       nSteps_f = nSteps_arr(1)
       taper = tapers(1)
+
+      if (.not. qscaled_G) then
+        kbnx_arr = kbnx_arr * lg_G
+        kbny_arr = kbny_arr * lg_G
+        tapers = tapers * lg_G
+        quad_fx = quad_fx / lg_G
+        quad_fy = quad_fy / lg_G
+        chic_disp = chic_disp / 2.0_wp / lc_G
+        enmod_wavenum = enmod_wavenum * lc_G
+      end if
 
     else
 
@@ -225,7 +233,7 @@ contains
         print*, 'Total interaction distance in (1D) gain lengths is z-bar =', &
                 sum(nsteps_arr*delmz)
         print*, 'Total length of FEL undulator line in meters is z =', &
-             (sum(nsteps_arr*delmz) + sum(drift_zbar) + sum(chic_zbar)) / lg_G
+             (sum(nsteps_arr*delmz) + sum(drift_zbar) + sum(chic_zbar)) * lg_G
         print*, ''
         print*, 'initial step size (in zbar, or 1D gain lengths) will be ', delmz(1)
         print*, ''

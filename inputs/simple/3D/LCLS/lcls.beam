@@ -14,8 +14,8 @@
 ! sSigmaE - gaussian std dev in each dimension - x, y, z2, px, py, gamma, then for additional beams
 ! sLenE   - Total length of beam modelled in each dimension - x, y, z2, px, py, gamma...
 ! bcenter - Center of beam in z2
-! iNumMPs  -  Number of macroparticles in each dimension used to model the beam 
-! emitx, emity - Scaled transverse beam emittance
+! iNumElectrons  -  Number of macroparticles in each dimension used to model the beam 
+! sEmit_n - Scaled transverse beam emittance
 ! sQe - Beam charge 
 ! gammaf - Ratio of average beam energy to reference beam energy gamma / gamma_r 
 ! chirp  - Energy chirp in z2 i.e. dgamma/dz2
@@ -35,22 +35,15 @@ dtype = 'simple'
 /
 
 &BLIST
-sSigmaE =7.213715e-5, 2.4323e-5, 1E8, 1.0, 1.0, 0.0001
-sLenE = 1E-6, 1E-6, 3.329781820520314e-16, 1E-6, 1E-6, 0.0006
-iNumMPs = 20, 20, 4, 7, 7, 7
-Ipk = 400
-bcenter = 0.0
-gammaf = 1.0
-chirp = 0.0
-mag = 0.0
-fr = 1.0
-emitx = 1.0955302366345312e-09
-emity = 1.0955302366345312e-09
-alphax = -0.146
-alphay = 0.0
+sSigmaE = 18.38e-6, 13.91e-6, 1E8, 0.02, 0.02, 0.0001
+iMPsZ2PerWave = 4
+nseqparts = 2000
+Ipk = 3e3   ! 3 kA
+emitx = 1.4981e-11  ! geometric emittances...
+emity = 1.4981e-11
 qRndEj_G = .false.
-sSigEj_G = 0.4
-qMatched_A = .false.
+alphax = 0.0    ! Twiss params...
+alphay = 0.0
 TrLdMeth = 2
-nseqparts = 1000
 /
+

@@ -135,6 +135,7 @@ subroutine read_in(zfilename, &
        stepsPerPeriod, &
        nperiods, &
        sQe, &
+       Ipk, &
        q_noise, &
        iNumElectrons, &
        sSigmaGaussian, &
@@ -204,7 +205,7 @@ subroutine read_in(zfilename, &
                                               mag(:), fr(:), &
                                               alphax(:), alphay(:), emitx(:), &
                                               emity(:)
-
+  real(kind=wp), allocatable, intent(inout) :: Ipk(:)
   INTEGER(KIND=IP), INTENT(INOUT) :: nbeams, nseeds
 
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sA0_Re(:)
@@ -526,7 +527,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
 
   CALL read_beamfile(qSimple, dist_f, beam_file,sEmit_n,sSigmaGaussian,sLenEPulse, &
                      alphax, alphay, emitx, emity, &
-                     iNumElectrons,sQe,chirp,bcenter, mag, fr, gamma_d,nbeams, &
+                     iNumElectrons,sQe, Ipk, chirp,bcenter, mag, fr, gamma_d,nbeams, &
                      qMatched_A, iMPsZ2PerWave, qOneD, qOKL)
 
   CALL read_seedfile(seed_file,nseeds,sSigmaF,sA0_Re,sA0_Im,freqf,&
@@ -573,7 +574,7 @@ END SUBROUTINE read_in
 
 SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
                          alphax, alphay, emitx, emity, &
-                         iNumElectrons,sQe,chirp, bcenter, mag, fr,gammaf,nbeams,&
+                         iNumElectrons,sQe, Ipk, chirp, bcenter, mag, fr,gammaf,nbeams,&
                          qMatched_A, iMPsZ2PerWave, qOneD, qOK)
 
   IMPLICIT NONE
@@ -592,6 +593,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sLenE(:,:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: alphax(:), alphay(:), emitx(:), &
                                              emity(:)
+  real(kind=wp), allocatable, intent(inout) :: Ipk(:)
   INTEGER(KIND=IP), ALLOCATABLE, INTENT(OUT) :: iNumElectrons(:,:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sQe(:),bcenter(:),gammaf(:)
   INTEGER(KIND=IP), INTENT(INOUT) :: nbeams
@@ -626,7 +628,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
                    chirp, mag, fr, qRndEj_G, sSigEj_G, &
                    qMatched_A, qEquiXY, nseqparts, qFixCharge, &
                    alphax, alphay, emitx, emity, TrLdMeth, fillFact, &
-                   iMPsZ2PerWave, inmps1DGam, qOneDCold
+                   iMPsZ2PerWave, inmps1DGam, qOneDCold, Ipk
 
 
   namelist /bdlist/ dist_f, nMPs4MASP_G, nseqparts, inmps1DGam, qOneDCold, TrLdMeth
@@ -682,6 +684,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   allocate(sLenE(nbeams,6))
   allocate(iNumElectrons(nbeams,6), iNumMPs(nbeams,6))
   allocate(sEmit_n(nbeams),sQe(nbeams),bcenter(nbeams),gammaf(nbeams))
+  allocate(Ipk(nbeams))
   allocate(chirp(nbeams), qMatched_A(nbeams))
   allocate(mag(nbeams), fr(nbeams))
   allocate(qRndEj_G(nbeams), sSigEj_G(nbeams))
@@ -726,12 +729,13 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   else
     
     nseqparts = 1000_ip
-    TrLdMeth = 1_ip
+    TrLdMeth = 2_ip
 
   end if
 
   sEmit_n = -1.0_wp
   sQe = 1E-9
+  Ipk = -1.0_wp
   bcenter = 0.0_wp
   gammaf = 1.0_wp
   chirp = 0.0_wp

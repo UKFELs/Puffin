@@ -45,12 +45,11 @@ class puffData:
         self.dxbar = 1.0
         self.dybar = 1.0
         self.dz2 = 1.0
+        self.dx = 1.
+        self.dy = 1.
         self.nx = 1
         self.ny = 1
         self.nz2 = 1
-        
-        self.dx = 1.
-        self.dy = 1.
 
         self.dzbar = 1.0e-3
         self.zbar = 0.
@@ -115,3 +114,10 @@ class puffData:
                           / (self.qe * self.kappa * self.lg ))
 
         self.lrbar = 4. * np.pi * self.rho
+
+
+    def getRho(self, npk):
+
+        wp=np.sqrt( (self.qe**2.0*npk) / (self.eps0*self.me) )   # plasma frequency
+        
+        self.rho = (1/self.gamma0)*(( (self.aw * wp) / (4.0*self.c0 * (2.0*np.pi/self.lw) ) )**(2.0/3.0))

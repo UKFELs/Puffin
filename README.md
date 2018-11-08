@@ -1,23 +1,23 @@
 # Puffin
 
-Puffin (Parallel Unaveraged Fel INtegrator) simulates a Free Electron
-Laser (FEL). Puffin is a massively parallel numerical solver for an
-unaveraged, 3D FEL system of equations, and is written mostly in
-Fortran 90, using MPI and OpenMP.
+[![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+[![Build Status master](https://img.shields.io/travis/com/UKFELs/Puffin/master.svg?label=master)](https://travis-ci.com/UKFELs/Puffin/branches)
+[![Build Status dev](https://img.shields.io/travis/com/UKFELs/Puffin/dev.svg?label=dev)](https://travis-ci.com/UKFELs/Puffin/branches)
+
+Puffin (Parallel Unaveraged Fel INtegrator) simulates a Free Electron Laser (FEL). Puffin is a massively parallel numerical solver for an unaveraged, 3D FEL system of equations, and is written in Fortran 90, using MPI and OpenMP.
 
 The initial publication describing the first version of the code is:-
 
-LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
+[LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)](http://aip.scitation.org/doi/10.1063/1.4752743)
 
 The code has undergone many improvements and extended its functionality
 since then. It no longer uses an external linear solver package, and the
 only external packages now required are FFTW (version 3.3 onwards), and
-parallel HDF5 libraries. 
+parallel HDF5 libraries. A more recent description can be found [here](http://ipac2018.vrws.de/papers/thpmk112.pdf).
 
-Please note Puffin is currently under active development. An 'official'
-release will be tagged soon. Documentation is being developed 
-[here](https://ukfels.github.io/puffinDocs/).
+Documentation is being developed [here](https://ukfels.github.io/puffinDocs/).
 
+----
 ## Features
 
 Puffin is a so-called 'unaveraged' FEL code - meaning it is absent of the
@@ -41,6 +41,74 @@ means it may model:
 It presently does not include the effects of space charge, and ignores emission
 of the backwards wave from the e-beam.
 
+----
+## Docker Images
+
+[![Docker Hub](http://dockeri.co/image/mightylorenzo/puffin-user)](https://hub.docker.com/r/mightylorenzo/puffin-user)
+
+Docker images can be fetched from [here](https://hub.docker.com/u/mightylorenzo/).
+There are currently two - a 'full' container intended for development purposes, 
+which has all tests built, along with the testing infrastructure (pFUnit) and
+developer and user documentation, etc. The other, the 'user' container, is
+run like an executable. You pass it the number of processors you want to use,
+and the name of the input file in the current directory to run.
+
+The images are not configured for or intended for use on a cluster; rather, they allow you to get Puffin up and running quickly for smaller, 1D or few-slice runs on a local machine (e.g. your laptop or desktop).
+
+To grab an image, do e.g.
+```
+docker pull mightylorenzo/puffin-user
+```
+then, for the user image,
+```
+docker run -v $(pwd):/home/puffin_user/project mightylorenzo/puffin-user 2 main.in
+```
+will run Puffin using 2 processes with the main input file in the current directory.
+
+[![Docker Hub](http://dockeri.co/image/mightylorenzo/puffin-test)](https://hub.docker.com/r/mightylorenzo/puffin-test)
+
+For the 'full' container, for using interactively, grab the `puffin-test` image, like so:
+```
+docker pull mightylorenzo/puffin-test
+```
+Start the container, whilst mounting the current directory to the project area in the container, with
+```
+docker run -it -v $(pwd):/home/puffin_user/project mightylorenzo/puffin-user
+```
+You'll find Puffin built in the `/home/puffin_user/built/puffin` directory, with the executable `/home/puffin_user/built/puffin/bin/puffin`. To run, do 
+
+```
+mpirun -np 2 /home/puffin_user/built/puffin/bin/puffin main.in
+```
+assuming the main input file `main.in` is in your current directory.
+
+----
+
+## How to run
+
+Puffin requires at least 2 input files to run. The 2 required files are:
+- Main input file: This contains info like the base FEL parameters (undulator parameter, mean beam energy, and so on) which sets up the scaled frame to be used in the simulation, the data writing frequency, and various simualtion options and switches. It also contains the names of the other input files, of which, the beam file **must** be specified.
+- Beam file: This describes the electron beam, and can take 3 different forms: a *simple* beam file, which describes a simple homogeneous beam; a *dist* format, which describes a more complex distribution which varies with the temporal coordinate, which is homogeneous in every dimension but the temporal; a *particle* format, which in hdf5 format, and is a direct description of the macroparticles in the Puffin output format.
+
+The other, optional input files are:
+ - Radiation seed file: This describes an externally injected radiation seed. This is described only as a simple homogeneous gaussian or flat top intensity distribution in each of the 3 spatial dimensions.
+ - Lattice file: The main input file can describe a simple, single, long undulator, with a linear taper if required. On the other hand, a lattice file can be supplied to model several undulator modules with variable tuning and tapering, with free-space drifts between them, along with a variety of beam optical elements such as chicanes or focusing quadrupoles.
+
+Several example input decks are included in the `inputs/simple` directory in this repo.
+
+To run Puffin, pass it the name of the main input file as an argument. In the `inputs/simple/3D/CLARA/single-slice` directory, you'll find an example deck which modes the UK test FEL CLARA in 'periodic' mode, which is relatively quick to run. Puffin is an MPI code, so when compiled, you'll need to run with `mpirun`, specifying the number of MPI processes with the `-np` flag. After Puffin is built, with all files in the current (working) directory, do
+```
+mpirun -np 2 puffin clara.in
+```
+to run the CLARA example on 2 MPI processes.
+
+Alternatively, if using the user Docker image, use the invocation described in the `Docker` section in this document *i.e.* after downloading the files in the CLARA deck to the working directory, do
+```
+docker run -v $(pwd):/home/puffin_user/project mightylorenzo/puffin-user 2 clara.in
+```
+to start the container, running Puffin on 2 MPI processes (it will download the `puffin-user` image if not already explicitly downloaded with `docker pull`). The `-v` flag mounts the working directory to the `project` area in the container. The output files will be left intact in the (hosts) working directory when the container finishes running Puffin.
+
+----
 
 ## Release Notes
 

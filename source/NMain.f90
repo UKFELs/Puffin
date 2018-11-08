@@ -95,25 +95,11 @@ do iL = iLst, modNum
 
     call BModulation(iL)
 
-  else if (iElmType(iL) == iRotation) then
-
-    call bRotation(iL)
-  
-
-  else if (iElmType(iL) == iSolenoid) then
-
-    call bSolenoid(iL, sZ)
-
-  else if (iElmType(iL) == iMRotation) then
-
-    call bMRotation(iL)
-
-  else if (iElmType(iL) == iMRotation) then
-
-    call bMRotation(iL)
-
   end if
-
+      szl = 0.0_wp
+      call wr_cho(sZ, szl, &
+                  0_ip, iCsteps, modNum, iWriteNthSteps, &
+                  iIntWriteNthSteps, 0_ip, .true., .true., qOKL)
 
 
 end do
