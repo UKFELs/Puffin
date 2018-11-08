@@ -96,10 +96,10 @@ do iL = iLst, modNum
     call BModulation(iL)
 
   end if
-      szl = 0.0_wp
-      call wr_cho(sZ, szl, &
-                  0_ip, iCsteps, modNum, iWriteNthSteps, &
-                  iIntWriteNthSteps, 0_ip, .true., .true., qOKL)
+      !szl = 0.0_wp
+      !call wr_cho(sZ, szl, &
+      !            0_ip, iCsteps, modNum, iWriteNthSteps, &
+      !            iIntWriteNthSteps, 0_ip, .true., .true., qOKL)
 
 
 end do
