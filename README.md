@@ -96,7 +96,7 @@ The other, optional input files are:
 
 Several example input decks are included in the `inputs/simple` directory in this repo.
 
-To run Puffin, pass it the name of the main input file as an argument. In the `inputs/simple/3D/CLARA/single-slice` directory, you'll find an example deck which modes the UK test FEL CLARA in 'periodic' mode, which is relatively quick to run. Puffin is an MPI code, so when compiled, you'll need to run with `mpirun`, specifying the number of MPI processes with the `-np` flag. After Puffin is built, with all files in the current (working) directory, do
+To run Puffin, pass it the name of the main input file as an argument. In the `inputs/simple/3D/CLARA/single-slice` directory, you'll find an example deck which models the UK test FEL CLARA in 'periodic' mode, which is relatively quick to run. Puffin is an MPI code, so when compiled, you'll need to run with `mpirun`, specifying the number of MPI processes with the `-np` flag. After Puffin is built, with all files in the current (working) directory, do
 ```
 mpirun -np 2 puffin clara.in
 ```
