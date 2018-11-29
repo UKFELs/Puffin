@@ -3,8 +3,8 @@
 # License: BSD-3-Clause
 
 """
-This is an examplar script to produce a plot of the instantaneous power
-spectrum in 1D (or the intensity spectrum)
+This is an examplar script to produce a plot of the (on-axis) intensity
+spectrum.
 """
 
 import sys
