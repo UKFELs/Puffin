@@ -17,7 +17,7 @@ use hdf5PuffLow
 use hdf5PuffColl
 
 !use MPI
-implicit none 
+implicit none
 
 contains
 
@@ -39,7 +39,7 @@ contains
     integer(kind=ip), intent(in)  :: nslices, iL
     real(kind=wp), dimension(nslices) :: aveX,aveY,avePX,avePY,aveGamma,aveDgamma
     real(kind=wp), dimension(nslices) :: sdX, sdY, sdpx, sdpy, eX, ey, aX, aY, bX, bY
-    real(kind=wp), dimension(nslices) :: bun1,bun2,bun3,bun4,bun5,sq, wrEArray, avGam4Unsc
+    real(kind=wp), dimension(nslices) :: bun1,bun2,bun3,bun4,bun5,bunneg1, bunplus1,sq, wrEArray, avGam4Unsc
 
     integer(kind=ip), intent(in) :: iIntWr, iWr !<Aren't these global?
     logical, intent(in) :: qSep !< Probably not used here, whether to write separate files
@@ -72,7 +72,7 @@ contains
 !        print '("Dumped particles separately. Took time = ",f6.3," secs on rank ",i5)'&
 !          ,ftime-stime,tProcInfo_G%rank
 
-      else 
+      else
 
 !        print *,'Dumping particles to single file...'
         call cpu_time(stime)
@@ -115,7 +115,7 @@ contains
 ! mainlen, 'aperp_active_imag', ac_ifield, [fz2,ez2], .true.
 ! tlelen, 'aperp_back_real', bk_rfield, [ees,eee], .false.
 ! tlelen, 'aperp_back_imag', bk_ifield, [ees,eee], .false.
-! final argument  checks for all active field on single root node ... 
+! final argument  checks for all active field on single root node ...
 ! should say if qUnique or rank=0...
 
 !!!
@@ -124,9 +124,9 @@ contains
 
 
       else
-      
+
         numSpatialDims=3
-      
+
         if (qSep) then
 
 !        print *, "Dumping separate fields"
@@ -177,7 +177,7 @@ contains
       call getCurr(dz2_I_G, Iarray)
       call getSliceTwiss(nslices,slicetrim,aveX,aveY,avePX,avePY, &
         sdX,sdY,sdpx,sdpy,eX,eY,ax,ay,bx,by,aveGamma,aveDgamma, &
-        bun1,bun2,bun3,bun4,bun5,sq)
+        bun1,bun2,bun3,bun4,bun5,bunneg1,bunplus1,sq)
 
 ! For starters, write on rank 0 only
 
@@ -240,7 +240,7 @@ contains
 
         call addH5Field1DFloat(wrEArray, 'meanXSI', "intPtclMeshSI", &
                                "ct-z (m), x (m)", time, sz_loc, iL, error)
-        
+
 
 
 
@@ -266,7 +266,7 @@ contains
 
         call addH5Field1DFloat(wrEArray, 'mean_dxdzSI', "intPtclMeshSI", &
                                "ct-z (m), dxdz", time, sz_loc, iL, error)
-                               
+
 
 
 
@@ -287,9 +287,9 @@ contains
         call addH5Field1DFloat(aveGamma, 'meanGamma', "intPtclMeshSc", &
                                "z2, gamma / gamma0", time, sz_loc, iL, error)
 
-        
+
         wrEArray = aveGamma * sGammaR_G * 0.511_wp
-        
+
         call addH5Field1DFloat(wrEArray, 'meanEnergySI', "intPtclMeshSI", &
                                "ct-z (m), E (MeV)", time, sz_loc, iL, error)
 
@@ -322,7 +322,7 @@ contains
 
         call addH5Field1DFloat(wrEArray, 'sigmaYSI', "intPtclMeshSI", &
                                "ct-z (m), sigma_y (m)", time, sz_loc, iL, error)
-                               
+
 
 
         call addH5Field1DFloat(sdpx, 'sigmaPxbar', "intPtclMeshSc", &
@@ -347,7 +347,7 @@ contains
 
 
         wrEArray = 2.0_wp * sKappa_G / sqrt(sEta_G) /  avGam4Unsc * ex
-        
+
         call addH5Field1DFloat(wrEArray, 'emittanceXbar', "intPtclMeshSc", &
                                "z2, scaled x emittance", time, sz_loc, iL, error)
 
@@ -360,7 +360,7 @@ contains
 
 
         wrEArray = 2.0_wp * sKappa_G / sqrt(sEta_G) /  avGam4Unsc * ey
-        
+
         call addH5Field1DFloat(wrEArray, 'emittanceYbar', "intPtclMeshSc", &
                                "z2, scaled y emittance", time, sz_loc, iL, error)
 
@@ -368,8 +368,8 @@ contains
 
         call addH5Field1DFloat(wrEArray, 'emittanceYSI', "intPtclMeshSI", &
                                "ct-z (m), emittance_y (unnormalised)", time, sz_loc, iL, error)
-                               
-                               
+
+
 
 
         call addH5Field1DFloat(bun1, 'bunchingFundamental', "intPtclMeshSc", &
@@ -408,7 +408,21 @@ contains
 
         call addH5Field1DFloat(bun5, 'bunching5thHarmonicSI', "intPtclMeshSI", &
                                "ct-z (m), 5th harmonic bunching", time, sz_loc, iL, error)
-                               
+
+
+        call addH5Field1DFloat(bunneg1, 'bunchingnegative1OAModes', "intPtclMeshSc", &
+                              "z2, neg1 OAMmode bunching", time, sz_loc, iL, error)
+
+        call addH5Field1DFloat(bunneg1, 'bunchingnegative1OAMModeSI', "intPtclMeshSI", &
+                               "ct-z (m), neg1 OAMmode bunching", time, sz_loc, iL, error)
+
+        call addH5Field1DFloat(bunplus1, 'bunchingpositive1OAModes', "intPtclMeshSc", &
+                               "z2, plus1 OAMmode bunching", time, sz_loc, iL, error)
+
+
+        call addH5Field1DFloat(bunplus1, 'bunchingPositive1OAMModeSI', "intPtclMeshSI", &
+                                "ct-z (m), pos1 OAMmode bunching", time, sz_loc, iL, error)
+
 
         call addH5Field1DFloat(sq, 'Slice Charge', "intPtclMeshSc", &
                                "z2, Charge", time, sz_loc, iL, error)
@@ -422,15 +436,15 @@ contains
 !     call outputH5SliceEmittance
 !       NOT YET IMPLEMENTED
 
-      end if  
+      end if
 
     end if
 
-!  Set error flag and exit         
+!  Set error flag and exit
 
-    error = 0            
+    error = 0
 
-    goto 2000     
+    goto 2000
 
 ! Error Handler - Error log Subroutine in CIO.f90 line 709
 
@@ -452,5 +466,5 @@ contains
 
 
 
-	
+
 end module hdf5_puff

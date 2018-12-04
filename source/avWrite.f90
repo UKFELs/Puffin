@@ -4,7 +4,7 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> This module contains routines for calculating the reduced or integrated data
@@ -26,7 +26,7 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Subroutine to calculate the radiation power. The power
@@ -73,7 +73,7 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> This subroutine sets up array structures to be used in the calculation of
@@ -113,7 +113,7 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> This subroutine fetches the temporal Power
@@ -148,7 +148,7 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> This subroutine fetches the temporal Power
@@ -169,7 +169,7 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> This subroutine fetches the temporal Power
@@ -223,7 +223,7 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Simple 2D (x-y) integration over equispaced 2D mesh using
@@ -257,7 +257,7 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Simple 1D integration over function, using
@@ -337,7 +337,7 @@ contains
         else
           inuPB = inu
         end if
-  
+
         if (inl >= npts_I_G) then
           inlPB = inl - floor(real(inl,kind=wp)/real(npts_I_G,kind=wp)) * npts_I_G + 1
         else
@@ -349,8 +349,8 @@ contains
            print*, 'NODES OUTSIDE BOUNDS'
            stop
         end if
-       
-       
+
+
         ! Interpolation fractions
         locz2 = sElZ2_G(ij) - real((inl-1_ip),kind=wp) * sam_len
         li2 = locz2 / sam_len
@@ -422,12 +422,12 @@ contains
 !! to get back to SI
   subroutine getSliceTwiss(nslices,slicetrim,aveX,aveY,avePX,avePY, &
      sdX,sdY,sdpx,sdpy,eX,eY,ax,ay,bx,by, &
-     aveGamma,aveDgamma,b1,b2,b3,b4,b5,sdata)
+     aveGamma,aveDgamma,b1,b2,b3,b4,b5,bneg1,bplus1,sdata)
     integer(kind=ip), intent(in) :: nslices
     real(kind=wp), intent(in) :: slicetrim
     real(kind=wp), intent(out), DIMENSION(nslices) :: aveX,aveY,avePX,avePY,aveGamma,aveDgamma
     real(kind=wp), intent(out), DIMENSION(nslices) :: sdX, sdY, sdpx, sdpy, eX, eY, ax, ay, bx, by
-    real(kind=wp), intent(out), DIMENSION(nslices) :: b1,b2,b3,b4,b5,sdata
+    real(kind=wp), intent(out), DIMENSION(nslices) :: b1,b2,b3,b4,b5,bneg1,bplus1,sdata
 !    real(kind=wp), intent(out) :: sdX(nslices)
 !    real(kind=wp), intent(out) :: sdY(nslices)
 !    real(kind=wp), intent(out) :: eX(:)
@@ -441,8 +441,8 @@ contains
     integer(kind=ip),parameter :: ncoord=6
     integer(kind=ip) :: ipc,ic1,ic2,is !< particle,coord,slice index
     real(kind=wp) :: sliceSizeZ2
-    real(kind=wp),DIMENSION(nslices) :: b1r,b2r,b3r,b4r,b5r
-    real(kind=wp),DIMENSION(nslices) :: b1i,b2i,b3i,b4i,b5i
+    real(kind=wp),DIMENSION(nslices) :: b1r,b2r,b3r,b4r,b5r,bneg1r,bplus1r
+    real(kind=wp),DIMENSION(nslices) :: b1i,b2i,b3i,b4i,b5i,bneg1i,bplus1i
 
     real(kind=wp) :: meanX(nslices), meanY(nslices), &
                      meanGam(nslices), meanPX(nslices), &
@@ -455,7 +455,7 @@ contains
                      meanYGam(nslices), &
                      meanPXPX(nslices), meanPYPY(nslices), &
                      meanGamGam(nslices)
-                     
+
     integer :: error
 
 
@@ -511,6 +511,11 @@ contains
     b3i = 0.0_wp   ! initialize
     b4i = 0.0_wp   ! initialize
     b5i = 0.0_wp   ! initialize
+
+    bneg1r=0.0_wp  ! initialize
+    bplus1r=0.0_wp ! initialize
+    bneg1i=0.0_wp  ! initialize
+    bplus1i=0.0_wp ! initialize
 !    sliceSizeZ2=(sLengthOfElmZ2_G*NBZ2)/(nslices-1)
 !    sliceSizeZ2=((sLengthOfElmZ2_G*NZ2_G)-slicetrim)/(nslices)
     sliceSizeZ2=4*pi*srho_g
@@ -522,17 +527,19 @@ contains
 
       is = ceiling(sElZ2_G(ipc)/sliceSizeZ2)
 
+
       if (fieldMesh == iPeriodic) then
 
-        if (is>=nslices) then
-          is = is - (floor(real(is, kind=wp) / real(nslices, kind=wp)) * nslices)+1
+        if (is>nslices) then
+           is = is - (floor(real(is, kind=wp) / real(nslices, kind=wp)) * nslices)+1
+
         end if
 
         if (is <1) then
           print*,"slice index, is, out of bounds in slice computation"
           goto 1000
         end if
-      
+
       else
 
         if ((is>nslices) .or. (is <1)) then
@@ -556,24 +563,24 @@ contains
       meanPX(is)=meanPX(is)+s_chi_bar_G(ipc)*sElpX_G(ipc)
       meanPY(is)=meanPY(is)-s_chi_bar_G(ipc)*sElpY_G(ipc)
       meanGam(is)=meanGam(is)+s_chi_bar_G(ipc)*sElGam_G(ipc)
-      
-      
-      
+
+
+
       meanXX(is)=meanXX(is)+s_chi_bar_G(ipc)*sElX_G(ipc)*sElX_G(ipc)
       meanXY(is)=meanXY(is)+s_chi_bar_G(ipc)*sElX_G(ipc)*sElY_G(ipc)
       meanXZ2(is)=meanXZ2(is)+s_chi_bar_G(ipc)*sElX_G(ipc)*sElz2_G(ipc)
       meanXPX(is)=meanXPX(is)+s_chi_bar_G(ipc)*sElX_G(ipc)*sElpX_G(ipc)
       meanXPY(is)=meanXPY(is)-s_chi_bar_G(ipc)*sElX_G(ipc)*sElpy_G(ipc)
       meanXGam(is)=meanXGam(is)+s_chi_bar_G(ipc)*sElX_G(ipc)*sElgam_G(ipc)
-      
+
       meanYY(is)=meanYY(is)+s_chi_bar_G(ipc)*sElY_G(ipc)*sElY_G(ipc)
       meanYZ2(is)=meanYZ2(is)+s_chi_bar_G(ipc)*sElY_G(ipc)*sElz2_G(ipc)
       meanYPX(is)=meanYPX(is)+s_chi_bar_G(ipc)*sElY_G(ipc)*sElpX_G(ipc)
       meanYPY(is)=meanYPY(is)-s_chi_bar_G(ipc)*sElY_G(ipc)*sElpy_G(ipc)
       meanYGam(is)=meanYGam(is)+s_chi_bar_G(ipc)*sElY_G(ipc)*sElgam_G(ipc)
-      
-      meanPXPX(is)=meanPXPX(is)+s_chi_bar_G(ipc)*sElpX_G(ipc)*sElpX_G(ipc)      
-      meanPYPY(is)=meanPYPY(is)+s_chi_bar_G(ipc)*sElpY_G(ipc)*sElpY_G(ipc)      
+
+      meanPXPX(is)=meanPXPX(is)+s_chi_bar_G(ipc)*sElpX_G(ipc)*sElpX_G(ipc)
+      meanPYPY(is)=meanPYPY(is)+s_chi_bar_G(ipc)*sElpY_G(ipc)*sElpY_G(ipc)
       meanGamGam(is)=meanGamGam(is)+s_chi_bar_G(ipc)*sElgam_G(ipc)*sElgam_G(ipc)
 
 
@@ -666,6 +673,37 @@ contains
       if (fieldMesh /= iPeriodic) b5i(is+1) = b5i(is+1) + &
                       s_chi_bar_G(ipc)*sin(5.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
                           * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      bneg1r(is) = bneg1r(is) + s_chi_bar_G(ipc)*cos(sElz2_G(ipc)/(2.0_wp*sRho_G)+atan2(sElY_G(ipc),sElX_G(ipc))) &
+                          * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+
+      if (fieldMesh /= iPeriodic) bneg1r(is+1) = bneg1r(is+1) + &
+                    s_chi_bar_G(ipc)*cos(sElz2_G(ipc)/(2.0_wp*sRho_G) + atan2(sElY_G(ipc),sElX_G(ipc))) &
+                      * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+
+      bneg1i(is) = bneg1i(is) + s_chi_bar_G(ipc)*sin(sElz2_G(ipc)/(2.0_wp*sRho_G) + atan2(sElY_G(ipc),sElX_G(ipc))) &
+                    * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+
+      if (fieldMesh /= iPeriodic) bneg1i(is+1) = bneg1i(is+1) + &
+                       s_chi_bar_G(ipc)*sin(sElz2_G(ipc)/(2.0_wp*sRho_G)+ atan2(sElY_G(ipc),sElX_G(ipc))) &
+                            * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+
+
+
+      bplus1r(is) = bplus1r(is) + s_chi_bar_G(ipc)*cos(sElz2_G(ipc)/(2.0_wp*sRho_G)+atan2(sElY_G(ipc),sElX_G(ipc))) &
+                        * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+
+      if (fieldMesh /= iPeriodic) bplus1r(is+1) = bplus1r(is+1) + &
+                    s_chi_bar_G(ipc)*cos(sElz2_G(ipc)/(2.0_wp*sRho_G) + atan2(sElY_G(ipc),sElX_G(ipc))) &
+                        * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+
+      bplus1i(is) = bplus1i(is) + s_chi_bar_G(ipc)*sin(sElz2_G(ipc)/(2.0_wp*sRho_G) - atan2(sElY_G(ipc),sElX_G(ipc))) &
+                        * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
+
+      if (fieldMesh /= iPeriodic) bplus1i(is+1) = bplus1i(is+1) + &
+                       s_chi_bar_G(ipc)*sin(sElz2_G(ipc)/(2.0_wp*sRho_G) - atan2(sElY_G(ipc),sElX_G(ipc))) &
+                          * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
 
 
@@ -708,6 +746,10 @@ contains
     call sum2RootArr(b4i, size(b4i), 0)
     call sum2RootArr(b5r, size(b5r), 0)
     call sum2RootArr(b5i, size(b5i), 0)
+    call sum2RootArr(bneg1r, size(bneg1r), 0)
+    call sum2RootArr(bneg1i, size(bneg1i), 0)
+    call sum2RootArr(bplus1r, size(bplus1r), 0)
+    call sum2RootArr(bplus1i, size(bplus1i), 0)
 
 !! All ranks calculate, but correct data is now only on rank0.
 
@@ -733,7 +775,7 @@ contains
 !          print*,cs2data(1,1,is)*cs2data(4,4,is)
 !          print*,cs2data(1,4,is)**2
         end if
-        
+
         ex(is) = sdx(is) * sdpx(is) - &
                 (meanxpx(is) / sdata(is) - (aveX(is)*avepX(is)) )**2.0_wp
 
@@ -745,8 +787,11 @@ contains
         b3(is)=sqrt(b3r(is)**2+b3i(is)**2)/sliceSizeZ2
         b4(is)=sqrt(b4r(is)**2+b4i(is)**2)/sliceSizeZ2
         b5(is)=sqrt(b5r(is)**2+b5i(is)**2)/sliceSizeZ2
-        
-        
+
+        bneg1(is)=sqrt(bneg1r(is)**2+bneg1i(is)**2)/sliceSizeZ2
+        bplus1(is)=sqrt(bplus1r(is)**2+bplus1i(is)**2)/sliceSizeZ2
+
+
       else
         aveX(is)=0._wp
         aveY(is)=0._wp
@@ -765,6 +810,9 @@ contains
         b3(is)=0._wp
         b4(is)=0._wp
         b5(is)=0._wp
+        bneg1(is)=0.0_wp
+        bplus1(is)=0.0_wp
+
       end if
     end do
 
@@ -775,7 +823,7 @@ contains
   where (avedgamma<0.0_wp) avedgamma = 0.0_wp
   where (ex<0.0_wp) ex = 0.0_wp
   where (ey<0.0_wp) ey = 0.0_wp
-  
+
   sdx = sqrt(sdx)
   sdy = sqrt(sdy)
   sdpx = sqrt(sdpx)
@@ -783,7 +831,7 @@ contains
   avedgamma = sqrt(avedgamma)
   ex = sqrt(ex)
   ey = sqrt(ey)
-  
+
   end if
 
   call mpi_barrier(tProcInfo_G%comm, error)
