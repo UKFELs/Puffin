@@ -68,6 +68,12 @@ contains
     endif
     !print *,RanNumRecoil_G
 
+
+  allocate(RanNumRecoil_G(iNumberElectrons_G))
+  CALL RANDOM_SEED()
+  CALL RANDOM_NUMBER(RanNumRecoil_G)
+  RanNumRecoil_G = (2.0_WP*RanNumRecoil_G)-1.0_WP
+
 !$OMP WORKSHARE
 
     spread_loss = &
@@ -78,11 +84,12 @@ contains
            ! Energy spread increase
            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
            + (RanNumRecoil_G*(1.0_WP/sGammaR_G)*DSQRT((TwoPi/lam_w_g)**3.0_WP*aw_mean**2.0_WP*(sgam*sGammaR_G)**4.0_WP &
-           * FK*1.015E-27*(lam_w_g))*(1.0_WP/iSteps4Diff)*DSQRT(3.0_WP)*EnSpPrm)
+           * FK*1.015E-27*(lam_w_g/iSteps4Diff))*DSQRT(3.0_WP)*EnSpPrm)
            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !$OMP END WORKSHARE
-
+!print *,spread_loss
+deallocate(RanNumRecoil_G)
 !print *,lg_G,sGammaR_G,lam_w_g,aw_mean
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !Diagnostic prints for avg and sig - genuine equations used - no scaling, just for test !

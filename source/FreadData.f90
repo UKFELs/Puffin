@@ -311,6 +311,11 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
 
 ! Default vals...
 
+  !!!! Energy spread and loss terms !!!!
+  qAvgLoss = .false.
+  qEnergySpread = .false.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   qOneD = .true.
   qFieldEvolve = .true.
   qElectronsEvolve = .true.
@@ -444,7 +449,10 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   sWigglerLength(iY_CG) = sFModelLengthY
   sWigglerLength(iZ2_CG) = sFModelLengthZ2
 
-
+  !!! Energy loss and energy spread !!!!!!!!!
+  qAvgLoss_G = qAvgLoss
+  qEnergySpread_G = qEnergySpread
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   if (wr_file /= '') then
     qWrArray_G = .true.

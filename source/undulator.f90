@@ -180,14 +180,14 @@ end if
   istep = start_step
   allocate(sigloss(iNumberElectrons_G))
 
-  if (.NOT.Allocated(RanNumRecoil_G)) then
-  allocate(RanNumRecoil_G(iNumberElectrons_G))
-  CALL RANDOM_SEED()
-  CALL RANDOM_NUMBER(RanNumRecoil_G)
-  !call genSeqFlat(RanNumRecoil_G, iNumberElectrons_G)
-  RanNumRecoil_G = (2.0_WP*RanNumRecoil_G)-1.0_WP
-  endif
-  
+  !if (.NOT.Allocated(RanNumRecoil_G)) then
+  !allocate(RanNumRecoil_G(iNumberElectrons_G))
+  !CALL RANDOM_SEED()
+  !CALL RANDOM_NUMBER(RanNumRecoil_G)
+  !!call genSeqFlat(RanNumRecoil_G, iNumberElectrons_G)
+  !RanNumRecoil_G = (2.0_WP*RanNumRecoil_G)-1.0_WP
+  !endif
+  !print *,RanNumRecoil_G
   do
 
 
@@ -206,6 +206,8 @@ end if
       igoes = 1_ip
       do
         call rk4par(sZl,sStepSize,qDiffrctd)
+        !CALL RANDOM_NUMBER(RanNumRecoil_G)
+        !RanNumRecoil_G = (2.0_WP*RanNumRecoil_G)-1.0_WP
         call sig_avgloss(sElGam_G,sigloss)
         sElGam_G = sElGam_G + sigloss
         !print *,sigloss
@@ -246,8 +248,8 @@ end if
 
       if ((mod(iStep,isteps4diff) == 0_ip) .or. (iStep == nSteps))  then
           !call genSeqFlat(RanNumRecoil_G, iNumberElectrons_G)
-          CALL RANDOM_NUMBER(RanNumRecoil_G)
-          RanNumRecoil_G = (2.0_WP*RanNumRecoil_G)-1.0_WP
+          !CALL RANDOM_NUMBER(RanNumRecoil_G)
+          !RanNumRecoil_G = (2.0_WP*RanNumRecoil_G)-1.0_WP
 
 !        call deallact_rk4_arrs()
 
