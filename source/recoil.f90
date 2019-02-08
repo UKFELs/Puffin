@@ -78,13 +78,13 @@ contains
 
     spread_loss = &
            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-           + ((lg_G/sGammaR_G)*(-2.0_WP/3.0_WP)*2.818E-15*(((sgam*sGammaR_G)*(TwoPi/lam_w_g)*aw_mean)**2.0_WP)) &
-           *AvLossPrm &
+           + ((lam_w_g/iSteps4Diff)*(1.0_WP/sGammaR_G)*(-2.0_WP/3.0_WP)*2.818E-15*(((sgam*sGammaR_G)*(TwoPi/lam_w_g)*aw_mean) &
+            **2.0_WP)) * AvLossPrm &
            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
            ! Energy spread increase
            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
            + (RanNumRecoil_G*(1.0_WP/sGammaR_G)*DSQRT((TwoPi/lam_w_g)**3.0_WP*aw_mean**2.0_WP*(sgam*sGammaR_G)**4.0_WP &
-           * FK*1.015E-27*(lam_w_g/iSteps4Diff))*DSQRT(3.0_WP)*EnSpPrm)
+           * FK*1.015E-27*(lam_w_g/iSteps4Diff))*DSQRT(3.0_WP) * EnSpPrm)
            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !$OMP END WORKSHARE
