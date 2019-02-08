@@ -414,4 +414,10 @@ logical   ::  qInitWrLat_G
 
 logical   ::  qDumpEnd_G
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Recoil variables, random numbers global definition 
+real(kind=wp), allocatable     :: RanNumRecoil_G(:)
+logical ::qAvgLoss_G, qEnergySpread_G
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 End Module Globals

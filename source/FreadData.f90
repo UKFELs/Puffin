@@ -263,7 +263,10 @@ subroutine read_in(zfilename, &
   integer(kind=ip) :: meshType
   integer(kind=ip) :: ioutInfo
 
-
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !! Definition of average energy loss and energy spread variables !!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  logical :: qAvgLoss, qEnergySpread  
 
 !   redundant data!!! For compatibility only....
 
@@ -294,7 +297,8 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  qFMesh_G, sKBetaXSF, sKBetaYSF, sRedistLen, &
                  iRedistStp, qscaled, nspinDX, nspinDY, qInitWrLat, qDumpEnd, &
                  wr_file, qMeasure, DFact, iDumpNthSteps, speout, meshType, &
-                 sPerWaves, ioutInfo
+                 sPerWaves, ioutInfo, &
+                 qAvgLoss, qEnergySpread
 
 
 ! Begin subroutine:

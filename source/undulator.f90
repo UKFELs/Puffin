@@ -22,7 +22,7 @@ use RK4int
 use dummyf
 use ParaField
 use InitDataType
-
+use Recoil
 
 implicit none
 
@@ -50,7 +50,7 @@ contains
 
 ! Local args
 
-    real(kind=wp), allocatable  :: sAr(:), Ar_local(:)
+    real(kind=wp), allocatable  :: sAr(:), Ar_local(:),sigloss(:)
     integer(kind=ip) :: iPer, iS ! Loop index - period counter
     integer(kind=ip) :: nW
     integer(kind=ip) :: iSteps4Diff, igoes
@@ -178,7 +178,16 @@ end if
 
 
   istep = start_step
+  allocate(sigloss(iNumberElectrons_G))
 
+  if (.NOT.Allocated(RanNumRecoil_G)) then
+  allocate(RanNumRecoil_G(iNumberElectrons_G))
+  CALL RANDOM_SEED()
+  CALL RANDOM_NUMBER(RanNumRecoil_G)
+  !call genSeqFlat(RanNumRecoil_G, iNumberElectrons_G)
+  RanNumRecoil_G = (2.0_WP*RanNumRecoil_G)-1.0_WP
+  endif
+  
   do
 
 
@@ -197,6 +206,13 @@ end if
       igoes = 1_ip
       do
         call rk4par(sZl,sStepSize,qDiffrctd)
+        call sig_avgloss(sElGam_G,sigloss)
+        sElGam_G = sElGam_G + sigloss
+        !print *,sigloss
+        !sElGam_G = sElGam_G + (((-2.0_WP/3.0_WP)*2.818E-15*((sElGam_G*sGammaR_G)*(6.283_WP/lam_w_g)*saw_G)**2.0_WP) &
+        !  /sGammaR_G)/iSteps4Diff
+        !print *,(((-2.0_WP/3.0_WP)*2.818E-15*((sElGam_G*sGammaR_G)*(6.283_WP/lam_w_g)*saw_G)**2.0_WP) &
+        !  /sGammaR_G)/iSteps4Diff
         if (igoes>3_ip) exit
         if (.not. qPArrOK_G) then
           call deallact_rk4_arrs()
@@ -229,6 +245,9 @@ end if
     if (qDiffraction_G) then
 
       if ((mod(iStep,isteps4diff) == 0_ip) .or. (iStep == nSteps))  then
+          !call genSeqFlat(RanNumRecoil_G, iNumberElectrons_G)
+          CALL RANDOM_NUMBER(RanNumRecoil_G)
+          RanNumRecoil_G = (2.0_WP*RanNumRecoil_G)-1.0_WP
 
 !        call deallact_rk4_arrs()
 
