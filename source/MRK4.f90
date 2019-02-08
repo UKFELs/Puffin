@@ -317,10 +317,13 @@ subroutine rk4par(sZ,h,qD)
     ac_rfield_in = ac_rfield_in + h6 * (dadz_r0 + dadz_r1 + 2.0_WP * dadz_r2)
     ac_ifield_in = ac_ifield_in + h6 * (dadz_i0 + dadz_i1 + 2.0_WP * dadz_i2)
 !$OMP END PARALLEL WORKSHARE
+
+    if (qAvgLoss_G.OR.qEnergySpread_G) then
     allocate(sigloss(iNumberElectrons_G))
     call sig_avgloss(sElGam_G,sigloss)
     sElGam_G = sElGam_G + sigloss
     deallocate(sigloss)
+    endif
 !  if (count(abs(dadz_r0) > 0.0_wp) <= 0) print*, 'HELP IM TOO RUBBUSH'
 
 !  if (count(abs(ac_rfield) > 0.0_wp) <= 0) print*, 'HELP IM RUBBUSH'
