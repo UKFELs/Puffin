@@ -50,7 +50,7 @@ contains
 
 ! Local args
 
-    real(kind=wp), allocatable  :: sAr(:), Ar_local(:),sigloss(:)
+    real(kind=wp), allocatable  :: sAr(:), Ar_local(:)!,sigloss(:)
     integer(kind=ip) :: iPer, iS ! Loop index - period counter
     integer(kind=ip) :: nW
     integer(kind=ip) :: iSteps4Diff, igoes
@@ -178,7 +178,7 @@ end if
 
 
   istep = start_step
-  allocate(sigloss(iNumberElectrons_G))
+  !allocate(sigloss(iNumberElectrons_G))
 
   !if (.NOT.Allocated(RanNumRecoil_G)) then
   !allocate(RanNumRecoil_G(iNumberElectrons_G))
@@ -208,8 +208,8 @@ end if
         call rk4par(sZl,sStepSize,qDiffrctd)
         !CALL RANDOM_NUMBER(RanNumRecoil_G)
         !RanNumRecoil_G = (2.0_WP*RanNumRecoil_G)-1.0_WP
-        call sig_avgloss(sElGam_G,sigloss)
-        sElGam_G = sElGam_G + sigloss
+        !call sig_avgloss(sElGam_G,sigloss)
+        !sElGam_G = sElGam_G + sigloss
         !print *,sigloss
         !sElGam_G = sElGam_G + (((-2.0_WP/3.0_WP)*2.818E-15*((sElGam_G*sGammaR_G)*(6.283_WP/lam_w_g)*saw_G)**2.0_WP) &
         !  /sGammaR_G)/iSteps4Diff
