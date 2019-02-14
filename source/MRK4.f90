@@ -318,10 +318,12 @@ subroutine rk4par(sZ,h,qD)
     ac_ifield_in = ac_ifield_in + h6 * (dadz_i0 + dadz_i1 + 2.0_WP * dadz_i2)
 !$OMP END PARALLEL WORKSHARE
 
-    if (qAvgLoss_G.OR.qEnergySpread_G) then
+    if ((qAvgLoss_G.OR.qEnergySpread_G).AND.qElectronsEvolve_G) then
     allocate(sigloss(iNumberElectrons_G))
     call sig_avgloss(sElGam_G,sigloss)
+!$OMP PARALLEL WORKSHARE 
     sElGam_G = sElGam_G + sigloss
+!$OMP END PARALLEL WORKSHARE
     deallocate(sigloss)
     endif
 !  if (count(abs(dadz_r0) > 0.0_wp) <= 0) print*, 'HELP IM TOO RUBBUSH'
