@@ -32,11 +32,12 @@ integer(kind=ip), parameter :: iUnd = 1_ip, &
                                iModulation = 5_ip, &
                                iRotation = 6_ip, &
                                iSolenoid = 7_ip, &
-                               iMRotation= 8_ip
+                               iMRotation= 8_ip, &
+                               iSkewQuad = 9_ip
 
 integer(kind=ip), allocatable :: iElmType(:)
 
-integer(kind=ip) :: iUnd_cr, iChic_cr, iDrift_cr, iQuad_cr, iModulation_cr, iRotation_cr, iSolenoid_cr, iMRotation_cr    ! Counters for each element type
+integer(kind=ip) :: iUnd_cr, iChic_cr, iDrift_cr, iQuad_cr, iModulation_cr, iRotation_cr, iSolenoid_cr, iMRotation_cr, iSkewQuad_cr    ! Counters for each element type
 
 !integer(kind=ip) :: inum_latt_elms
 
@@ -133,6 +134,8 @@ contains
 
       allocate(theta_Mrotation(numOfMRotations))
 
+      allocate(quad_skfx(numofSkewQuads),quad_skfy(numofSkewQuads), theta_quad(numofSkewQuads))
+
 
 !    Latt file name, number of wigg periods converted to z-bar,
 !    slippage in chicane in z-bar, 2 dispersive constants,
@@ -154,6 +157,8 @@ contains
         tapers = tapers * lg_G
         quad_fx = quad_fx / lg_G
         quad_fy = quad_fy / lg_G
+        quad_skfx = quad_skfx / lg_G
+        quad_skfy = quad_skfy /lg_G
         chic_disp = chic_disp / 2.0_wp / lc_G
         enmod_wavenum = enmod_wavenum * lc_G
       end if
@@ -169,6 +174,7 @@ contains
       numOfRotations = 0
       numofSolenoids = 0
       numOfMRotations = 0
+      numofSkewQuads =0
 
       allocate(iElmType(1))
 
@@ -195,6 +201,8 @@ contains
 
       allocate(theta_Mrotation(numOfMRotations))
 
+      allocate(quad_skfx(numofSkewQuads), quad_skfy(numofSkewQuads),theta_quad(numofSkewQuads))
+
       iElmType(1) = iUnd
       mf(1) = 1_wp
       delmz(1) = dz_f
@@ -220,6 +228,7 @@ contains
     iRotation_cr = 1_ip
     iSolenoid_cr = 1_ip
     iMRotation_cr = 1_ip
+    iSkewQuad_cr = 1_ip
 
     iCsteps = 1_ip
 
@@ -275,7 +284,7 @@ contains
 
   integer(kind=ip) :: nperlam
 
-  integer(kind=ip) :: cnt, cntq, cntu, cntc, cntd, cntm, cntr, cntt, cnts, cntmr
+  integer(kind=ip) :: cnt, cntq, cntu, cntc, cntd, cntm, cntr, cntt, cnts, cntmr, cntsq
   character(40) :: ztest
 
 !   pi = 4.0_WP*ATAN(1.0_WP)
@@ -291,6 +300,7 @@ contains
   cntr = 0
   cnts = 0
   cntmr = 0
+  cntsq = 0
 
 
 
@@ -333,6 +343,17 @@ contains
 
         cntt = cntt + 1
         iElmType(cntt) = iQuad
+
+      else if (ztest(1:2) == 'SQ') then
+
+        backspace(168)
+
+        cntsq =cntsq + 1
+
+        read (168,*, IOSTAT=ios) ztest, quad_skfx(cntsq), quad_skfy(cntsq), theta_quad(cntsq)
+
+        cntt =cntt + 1
+        iElmType(cntt) = iSkewQuad
 
       else if (ztest(1:2) == 'UN') then
         if (ztest(1:3)  == 'UNV') then
@@ -632,6 +653,69 @@ contains
 
 
 
+
+  ! ##############################################
+
+  !> @author
+  !> Lawrence Campbell,
+  !> University of Strathclyde,
+  !> Glasgow, UK
+  !> @brief
+  !> Subroutine to model the quad element in Puffin. This is implemented as a
+  !> simple point transform.
+  !> @param[in] iL The element number in the lattice
+
+    subroutine skewQuad(iL)
+
+      integer(kind=ip), intent(in) :: iL
+
+      real(kind=wp), allocatable :: sp2(:)
+
+      allocate(sp2(iNumberElectrons_G))
+
+      call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, sEta_G, sGammaR_G, saw_G)
+
+  !    Apply quad transform (point transform)
+
+
+      if (.not. qOneD_G) then
+
+        !sElPX_G = sElPX_G + sqrt(sEta_G) / &
+        !            (2 * sRho_G * sKappa_G) * sElX_G &
+        !             / quad_skfx(iSkewQuad_cr)
+
+        !sElPY_G = sElPY_G - sqrt(sEta_G) / &
+                    !(2 * sRho_G * sKappa_G) * sElY_G &
+                    !/ quad_skfy(iSkewQuad_cr)
+
+        sElPX_G = sElPX_G + sqrt(sEta_G) / &
+                  (2 * sRho_G * sKappa_G) * sElX_G *&
+                   ( cos(theta_quad(iSkewQuad_cr)*pi)*cos(theta_quad(iSkewQuad_cr) *pi) /quad_skfx(iSkewQuad_cr) &
+                   + sin(theta_quad(iSkewQuad_cr)*pi)*sin(theta_quad(iSkewQuad_cr) * pi)/quad_skfy(iSkewQuad_cr) )&
+                    + sqrt(sEta_G) / (2 * sRho_G * sKappa_G) *sElY_G * &
+                    (cos(theta_quad(iSkewQuad_cr)*pi)*sin(theta_quad(iSkewQuad_cr) * pi) / quad_skfx(iSkewQuad_cr)&
+                    -cos(theta_quad(iSkewQuad_cr) * pi)*sin(theta_quad(iSkewQuad_cr) * pi)/ quad_skfy(iSkewQuad_cr))
+
+        sElPY_G = sElPY_G - sqrt(sEta_G) / &
+                    (2 * sRho_G * sKappa_G) * sElY_G  *&
+                    (sin(theta_quad(iSkewQuad_cr) *pi)*sin(theta_quad(iSkewQuad_cr)* pi) /quad_skfx(iSkewQuad_cr) &
+                    + cos(theta_quad(iSkewQuad_cr) *pi)* cos(theta_quad(iSkewQuad_cr)* pi) /quad_skfy(iSkewQuad_cr) )&
+                    - sqrt(sEta_G) / (2 * sRho_G * sKappa_G) *sElX_G * &
+                    (cos(theta_quad(iSkewQuad_cr) * pi)*sin(theta_quad(iSkewQuad_cr) *pi) / quad_skfx(iSkewQuad_cr)&
+                    -cos(theta_quad(iSkewQuad_cr)* pi)*sin(theta_quad(iSkewQuad_cr) *pi)/ quad_skfy(iSkewQuad_cr))
+      !print*,  cos(theta_quad(iSkewQuad) *pi)*cos(theta_quad(iSkewQuad) *pi)
+      end if
+
+
+    deallocate(sp2)
+
+    iSkewQuad_cr = iSkewQuad_cr + 1_ip
+
+  end subroutine skewQuad
+
+
+
+
 ! ##############################################
 
 !> @author
@@ -783,12 +867,18 @@ contains
       !sElPY_Gnew = theta_Mrotation(iMRotation_cr) * (-(0.0)* sElX_G -  (1.0) &
     !                * sElPX_G - (0.000017) * sElY_G + (0.0) * sElPY_G)
 
-
+    !Rotation system
+    !Remeber Py is negative
       sElX_Gnew = cos(theta_Mrotation(iMRotation_cr) * pi) * sElX_G - sin(theta_Mrotation(iMRotation_cr) * pi) * sElY_G
       sElPX_Gnew = cos(theta_Mrotation(iMRotation_cr) * pi) * sElPX_G + sin(theta_Mrotation(iMRotation_cr) * pi) * sElPY_G
       sElY_Gnew = sin(theta_Mrotation(iMRotation_cr) * pi) * sElX_G + cos(theta_Mrotation(iMRotation_cr) * pi) * sElY_G
       sElPY_Gnew = - sin(theta_Mrotation(iMRotation_cr) * pi) * sElPX_G + cos(theta_Mrotation(iMRotation_cr) * pi) * sElPY_G
 
+    !Reflection system
+    !sElX_Gnew = sElY_G
+    !sElPX_Gnew = -sElPY_G
+    !sElY_Gnew = sElX_G
+    !sElPY_Gnew = -sElPX_G
 
     end if
 
@@ -1172,7 +1262,7 @@ contains
 !                LOCAL ARGS
 
   integer :: ios
-  integer(kind=ip) :: cnt, cntq, cntu, cntc, cntd, cntm, cntr, cnts, cntmr
+  integer(kind=ip) :: cnt, cntq, cntu, cntc, cntd, cntm, cntr, cnts, cntmr , cntsq
   character(40) :: ztest
 
   ztest = ''
@@ -1185,6 +1275,7 @@ contains
   cntr = 0
   cnts = 0
   cntmr = 0
+  cntsq = 0
 
   open(168,FILE=fname, IOSTAT=ios, STATUS='OLD', ACTION='READ', POSITION ='REWIND')
   if (ios /= 0) then
@@ -1203,6 +1294,7 @@ contains
       if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 1)) then
           print*, "Simulating ", cntu, "undulators"
           print*, cntq, "quads,"
+          print*, cntsq, "tited quads"
           print*, cntc, "chicanes,"
           print*, cntd, "drifts"
           print*, cntm, "modulation sections"
@@ -1225,6 +1317,10 @@ contains
 
         cntq = cntq + 1
 !        print*, 'quad number ', cntq, ' has params ', quad1, quad2
+
+      else if (ztest(1:2) == 'SQ') then
+
+        cntsq =cntsq +1
 
       else if (ztest(1:2) == 'UN') then
 
@@ -1274,7 +1370,7 @@ contains
   close(168, STATUS='KEEP')
 
 
-  numOfMods = cntq + cntu + cntc + cntd + cntm + cntr +cnts + cntmr
+  numOfMods = cntq + cntu + cntc + cntd + cntm + cntr +cnts + cntmr + cntsq
 
   numOfUnds = cntu
 
@@ -1285,6 +1381,8 @@ contains
   numOfModulations = cntm
 
   numOfQuads = cntq
+
+  numofSkewQuads= cntsq
 
   numOfRotations = cntr
 

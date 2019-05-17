@@ -78,6 +78,10 @@ do iL = iLst, modNum
 
     call Quad(iL)
 
+  else if (iElmType(iL) == iSkewQuad) then
+
+    call skewQuad(iL)
+
   else if (iElmType(iL) == iChic) then
 
     call disperse(iL, sZ)

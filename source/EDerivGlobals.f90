@@ -268,6 +268,14 @@ real(kind=wp), allocatable    :: quad_fx(:), quad_fy(:)
 
 
 ! ****************************************************
+! ****************************************************
+!     For lattice element type 'titled quadrupole'
+
+
+real(kind=wp), allocatable    :: quad_skfx(:), quad_skfy(:), theta_quad(:)
+
+
+! ****************************************************
 !      For lattice element type 'Rotation'
 
 real(kind=wp), allocatable    :: theta_rotation(:)
@@ -290,7 +298,7 @@ real(kind=wp), allocatable    :: theta_Mrotation(:)
 
 
 integer(kind=ip) :: numOfUnds, numOfChics, numOfDrifts, numOfModulations, numOfQuads, numOfRotations, numofSolenoids, &
-numOfMRotations
+numOfMRotations, numofSkewQuads
 
 
 

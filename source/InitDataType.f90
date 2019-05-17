@@ -5,9 +5,9 @@
 MODULE InitDataType
 
   USE paratype
-		
+
   IMPLICIT NONE
-      
+
   type cInitData
 
     real(kind=wp) :: zbarTotal
@@ -19,6 +19,7 @@ MODULE InitDataType
     integer(kind=ip) :: iChic_cr
     integer(kind=ip) :: iDrift_cr
     integer(kind=ip) :: iQuad_cr
+    integer(kind=ip) :: iSkewQuad_cr
     integer(kind=ip) :: iModulation_cr
     integer(kind=ip) :: iL
     integer(kind=ip) :: igwr
