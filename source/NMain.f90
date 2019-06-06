@@ -108,6 +108,10 @@ do iL = iLst, modNum
 
     call bMRotation(iL)
 
+  else if (iElmType(iL) == iReflection)  then
+
+    call bReflection(iL)
+
 
   end if
       !szl = 0.0_wp

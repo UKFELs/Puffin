@@ -33,11 +33,13 @@ integer(kind=ip), parameter :: iUnd = 1_ip, &
                                iRotation = 6_ip, &
                                iSolenoid = 7_ip, &
                                iMRotation= 8_ip, &
-                               iSkewQuad = 9_ip
+                               iSkewQuad = 9_ip, &
+                               iReflection = 10_ip
 
 integer(kind=ip), allocatable :: iElmType(:)
 
-integer(kind=ip) :: iUnd_cr, iChic_cr, iDrift_cr, iQuad_cr, iModulation_cr, iRotation_cr, iSolenoid_cr, iMRotation_cr, iSkewQuad_cr    ! Counters for each element type
+integer(kind=ip) :: iUnd_cr, iChic_cr, iDrift_cr, iQuad_cr, iModulation_cr, iRotation_cr, &
+iSolenoid_cr, iMRotation_cr, iSkewQuad_cr, iReflection_cr    ! Counters for each element type
 
 !integer(kind=ip) :: inum_latt_elms
 
@@ -137,6 +139,8 @@ contains
       allocate(quad_skfx(numofSkewQuads),quad_skfy(numofSkewQuads), theta_quad(numofSkewQuads))
 
 
+
+
 !    Latt file name, number of wigg periods converted to z-bar,
 !    slippage in chicane in z-bar, 2 dispersive constants,
 !    number of modules
@@ -175,6 +179,7 @@ contains
       numofSolenoids = 0
       numOfMRotations = 0
       numofSkewQuads =0
+      numofReflections =0
 
       allocate(iElmType(1))
 
@@ -229,6 +234,7 @@ contains
     iSolenoid_cr = 1_ip
     iMRotation_cr = 1_ip
     iSkewQuad_cr = 1_ip
+    iReflection_cr= 1_ip
 
     iCsteps = 1_ip
 
@@ -284,7 +290,7 @@ contains
 
   integer(kind=ip) :: nperlam
 
-  integer(kind=ip) :: cnt, cntq, cntu, cntc, cntd, cntm, cntr, cntt, cnts, cntmr, cntsq
+  integer(kind=ip) :: cnt, cntq, cntu, cntc, cntd, cntm, cntr, cntt, cnts, cntmr, cntsq, cntrf
   character(40) :: ztest
 
 !   pi = 4.0_WP*ATAN(1.0_WP)
@@ -301,6 +307,7 @@ contains
   cnts = 0
   cntmr = 0
   cntsq = 0
+  cntrf = 0
 
 
 
@@ -480,6 +487,15 @@ contains
 
         cntt =cntt + 1
         iElmType(cntt) = iMRotation
+
+      else if (ztest(1:2) == 'RF') then
+
+        backspace(168)
+        cntrf = cntrf + 1
+        read (168,*, IOSTAT=ios) ztest
+
+        cntt =cntt + 1
+        iElmType(cntt) = iReflection
 
 
 
@@ -897,6 +913,26 @@ contains
 
   end subroutine bMRotation
 
+  subroutine bReflection(iL)
+
+    integer(kind=ip), intent(in) :: iL
+
+    !Reflection system
+    sElX_Gnew = sElY_G
+    sElPX_Gnew = -sElPY_G
+    sElY_Gnew = sElX_G
+    sElPY_Gnew = -sElPX_G
+
+    sElX_G=sElX_Gnew
+    sElY_G=sElY_Gnew
+
+    sElPX_G=sElPX_Gnew
+    sElPY_G=sElPY_Gnew
+
+    iReflection_cr = iReflection_cr +1
+
+  end subroutine bReflection
+
 ! ##############################################
 
 !> @author
@@ -1262,7 +1298,7 @@ contains
 !                LOCAL ARGS
 
   integer :: ios
-  integer(kind=ip) :: cnt, cntq, cntu, cntc, cntd, cntm, cntr, cnts, cntmr , cntsq
+  integer(kind=ip) :: cnt, cntq, cntu, cntc, cntd, cntm, cntr, cnts, cntmr , cntsq, cntrf
   character(40) :: ztest
 
   ztest = ''
@@ -1276,6 +1312,7 @@ contains
   cnts = 0
   cntmr = 0
   cntsq = 0
+  cntrf = 0
 
   open(168,FILE=fname, IOSTAT=ios, STATUS='OLD', ACTION='READ', POSITION ='REWIND')
   if (ios /= 0) then
@@ -1300,7 +1337,8 @@ contains
           print*, cntm, "modulation sections"
           print*, cntr, "rotation sections"
           print*, cntmr, "Mrotation sections"
-          print*, "and", cnts, "solenoids"
+          print*, cnts, "solenoids"
+          print*, "and", cntrf, "reflection sections"
       end if
 
       exit
@@ -1358,6 +1396,10 @@ contains
 
         cntmr = cntmr + 1
 
+      else if (ztest(1:2) == 'RF') then
+
+        cntrf = cntrf + 1
+
       end if
 
       cnt = cnt + 1
@@ -1370,7 +1412,7 @@ contains
   close(168, STATUS='KEEP')
 
 
-  numOfMods = cntq + cntu + cntc + cntd + cntm + cntr +cnts + cntmr + cntsq
+  numOfMods = cntq + cntu + cntc + cntd + cntm + cntr +cnts + cntmr + cntsq + cntrf
 
   numOfUnds = cntu
 
@@ -1389,6 +1431,8 @@ contains
   numofSolenoids = cnts
 
   numOfMRotations = cntmr
+
+  numOfReflections = cntrf
 
 
   end function numOfMods

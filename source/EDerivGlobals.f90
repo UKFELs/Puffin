@@ -297,11 +297,8 @@ real(kind=wp), allocatable    :: theta_Mrotation(:)
 
 
 
-integer(kind=ip) :: numOfUnds, numOfChics, numOfDrifts, numOfModulations, numOfQuads, numOfRotations, numofSolenoids, &
-numOfMRotations, numofSkewQuads
-
-
-
+integer(kind=ip) :: numOfUnds, numOfChics, numOfDrifts, numOfModulations, numOfQuads, &
+ numOfRotations, numofSolenoids, numOfMRotations, numofSkewQuads, numOfReflections
 
 integer(kind=ip) :: iCsteps  ! Cumulative steps across all modules
 
