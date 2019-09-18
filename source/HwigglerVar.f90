@@ -42,7 +42,7 @@ subroutine getAlpha(sZ)
     !print *,n2col, n2col0, undgrad, sz - sZFS
     !print *,cos(1.0),cos(3.1415),cos(2*3.1415)
     print *,((sz - sZFS)*(lg_g)),diffStep*lg_g,((sz - sZFS)*(lg_g))/(diffStep*lg_g),&
-    (1.0_WP+COS(6.283_WP*((sz - sZFS)*(lg_g))/(diffStep*lg_g)))/2.0_WP
+    n2col0  + ((1/40.)+(COS(6.283_WP*((sz - sZFS)*(lg_g))/(diffStep*lg_g)))/40.0)
 
 
   else if (sZ > sZFE) then
