@@ -38,11 +38,12 @@ subroutine getAlpha(sZ)
 
   if ((sZ >= sZFS) .and. (sZ <= sZFE)) then
 
-    n2col = n2col0  + undgrad*(sz - sZFS)  ! linear taper
+    !n2col = n2col0  + undgrad*(sz - sZFS)  ! linear taper
     !print *,n2col, n2col0, undgrad, sz - sZFS
     !print *,cos(1.0),cos(3.1415),cos(2*3.1415)
-    print *,((sz - sZFS)*(lg_g)),diffStep*lg_g,((sz - sZFS)*(lg_g))/(diffStep*lg_g),&
-    n2col0  + ((1/40.)+(COS(6.283_WP*((sz - sZFS)*(lg_g))/(diffStep*lg_g)))/40.0)
+    !print *,((sz - sZFS)*(lg_g)),diffStep*lg_g,((sz - sZFS)*(lg_g))/(diffStep*lg_g),&
+    !n2col0  + ((1/40.)+(COS(6.283_WP*((sz - sZFS)*(lg_g))/(diffStep*lg_g)))/40.0)
+    n2col = n2col0  + ((1/40.)+(COS(6.283_WP*((sz - sZFS)*(lg_g))/(diffStep*lg_g)))/40.0) ! Oscillating taper
 
 
   else if (sZ > sZFE) then
