@@ -414,4 +414,10 @@ logical   ::  qInitWrLat_G
 
 logical   ::  qDumpEnd_G
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Oscillating undulator switches and variables
+real(kind=wp) :: qUndFreq_G, qUndAmpl_G
+logical :: qOscilUnd_G
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 End Module Globals

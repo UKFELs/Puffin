@@ -264,6 +264,11 @@ subroutine read_in(zfilename, &
   integer(kind=ip) :: ioutInfo
 
 
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !! Definition of oscillating undulator taper switches and variables !!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  real(kind=wp) :: qUndFreq, qUndAmpl
+  logical :: qOscilUnd
 
 !   redundant data!!! For compatibility only....
 

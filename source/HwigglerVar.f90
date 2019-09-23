@@ -43,7 +43,8 @@ subroutine getAlpha(sZ)
     !print *,cos(1.0),cos(3.1415),cos(2*3.1415)
     !print *,((sz - sZFS)*(lg_g)),diffStep*lg_g,((sz - sZFS)*(lg_g))/(diffStep*lg_g),&
     !n2col0  + ((1/40.)+(COS(6.283_WP*((sz - sZFS)*(lg_g))/(diffStep*lg_g)))/40.0)
-    n2col = n2col0  + ((SIN((6.283_WP/4.0_WP)*((sz - sZFS)*(lg_g))/(diffStep*lg_g)))/10.0) ! Oscillating taper
+    !n2col = n2col0  + ((SIN((6.283_WP/4.0_WP)*((sz - sZFS)*(lg_g))/(diffStep*lg_g)))/2.0_WP) ! Oscillating taper
+    n2col = n2col0  + ((SIN((6.283_WP/8.0_WP)*((sz - sZFS)*(lg_g))/(diffStep*lg_g)))/2.0_WP) ! Oscillating taper
     !print *,n2col
 
 
