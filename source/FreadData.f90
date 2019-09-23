@@ -299,7 +299,8 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  qFMesh_G, sKBetaXSF, sKBetaYSF, sRedistLen, &
                  iRedistStp, qscaled, nspinDX, nspinDY, qInitWrLat, qDumpEnd, &
                  wr_file, qMeasure, DFact, iDumpNthSteps, speout, meshType, &
-                 sPerWaves, ioutInfo
+                 sPerWaves, ioutInfo, &
+                 qUndFreq, qUndAmpl, qOscilUnd
 
 
 ! Begin subroutine:
@@ -311,6 +312,12 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qSwitches = .FALSE.
 
 ! Default vals...
+
+  !!!! Energy spread and loss terms !!!!
+  qOscilUnd = .false.
+  qUndFreq = 0.0_WP
+  qUndAmpl = 0.0_WP
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   qOneD = .true.
   qFieldEvolve = .true.
@@ -445,6 +452,13 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   sWigglerLength(iY_CG) = sFModelLengthY
   sWigglerLength(iZ2_CG) = sFModelLengthZ2
 
+
+  !!! Oscillating undulator taper !!!!!!!!!
+  qUndFreq_G = qUndFreq
+  qUndAmpl_G = qUndAmpl
+  qOscilUnd_G = qOscilUnd
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
   if (wr_file /= '') then
