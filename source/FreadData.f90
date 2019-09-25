@@ -314,7 +314,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
 
   !!!! Energy spread and loss terms !!!!
   qUndFreq = 0.0_WP
-  qUndAmpl = 0.0_WP
+  qUndAmpl = 100.0_WP
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   qOneD = .true.

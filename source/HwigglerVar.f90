@@ -36,9 +36,9 @@ subroutine getAlpha(sZ)
 !  else 
 
   if ((sZ >= sZFS) .and. (sZ <= sZFE)) then
-  	n2col_osc = ((SIN((6.283_WP*qUndFreq_G)*((sz - sZFS)*(lg_g))/(diffStep*lg_g)))/(100.0_WP/qUndAmpl_G)) ! Oscillating taper fraction
+  	n2col_osc = ((SIN(((2.0_WP*pi)*qUndFreq_G)*((sz - sZFS)*(lg_g))/(diffStep*lg_g)))/(100.0_WP/qUndAmpl_G)) ! Oscillating taper fraction
     n2col = n2col_osc + n2col0  + undgrad*(sz - sZFS)  ! linear taper + oscillating taper
-    !print *,n2col
+    !print *,n2col,pi,((sz - sZFS)*(lg_g))/(diffStep*lg_g)
 
 
   else if (sZ > sZFE) then
