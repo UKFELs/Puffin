@@ -19,7 +19,7 @@ subroutine getAlpha(sZ)
 ! global variable undGrad
 
   real(kind=wp), intent(in) :: sZ
-
+  real(kind=wp) :: n2col_osc
 ! Variables n2col, c2col0, undgrad and sz0 are
 ! global variables, and are defined elsewhere.
 
@@ -36,15 +36,9 @@ subroutine getAlpha(sZ)
 !  else 
 
   if ((sZ >= sZFS) .and. (sZ <= sZFE)) then
-  	if (qOscilUnd_G) then
-  		!print *,'Oscillating taper !!'
-  		n2col = n2col0  + ((SIN((6.283_WP*qUndFreq_G)*((sz - sZFS)*(lg_g))/(diffStep*lg_g)))/(100.0_WP/qUndAmpl_G)) ! Oscillating taper
-  		!print *,((6.283_WP*qUndFreq_G)*((sz - sZFS)*(lg_g))/(diffStep*lg_g)),(sz - sZFS)*(lg_g),&
-  		!((SIN((6.283_WP*qUndFreq_G)*((sz - sZFS)*(lg_g))/(diffStep*lg_g)))/(100.0_WP/qUndAmpl_G))
-  	else
-  		!print *,'Linear taper !!'
-    	n2col = n2col0  + undgrad*(sz - sZFS)  ! linear taper
-    endif
+  	n2col_osc = ((SIN((6.283_WP*qUndFreq_G)*((sz - sZFS)*(lg_g))/(diffStep*lg_g)))/(100.0_WP/qUndAmpl_G)) ! Oscillating taper fraction
+    n2col = n2col_osc + n2col0  + undgrad*(sz - sZFS)  ! linear taper + oscillating taper
+    !endif
     !print *,n2col, n2col0, undgrad, sz - sZFS
     !print *,cos(1.0),cos(3.1415),cos(2*3.1415)
     !print *,((sz - sZFS)*(lg_g)),diffStep*lg_g,((sz - sZFS)*(lg_g))/(diffStep*lg_g),&

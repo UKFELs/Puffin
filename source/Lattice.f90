@@ -106,7 +106,7 @@ contains
     IF (qMod_G) then
 
       modNum=numOfMods(lattFile)
-
+      allocate(UndFreqLT(numOfUnds),UndAmplLT(numOfUnds))
 
       allocate(mf(numOfUnds),delmz(numOfUnds),tapers(numOfUnds))
       allocate(nSteps_arr(numOfUnds), zMod(numOfUnds))
@@ -158,6 +158,7 @@ contains
       numOfQuads = 0
       numOfModulations = 0
 
+      allocate(UndFreqLT(numOfUnds),UndAmplLT(numOfUnds))
       allocate(iElmType(1))
 
       allocate(mf(numOfUnds),delmz(numOfUnds),tapers(numOfUnds))
@@ -191,6 +192,8 @@ contains
       uy_arr(1) = uy_f
       kbnx_arr(1) = kbnx_f 
       kbny_arr(1) = kbny_f 
+      UndFreqLT(1)=qUndFreq_G
+      UndAmplLT(1)=qUndAmpl_G
 
     end if
 
@@ -311,10 +314,19 @@ contains
         iElmType(cntt) = iQuad
 
       else if (ztest(1:2) == 'UN') then
+        if (ztest(1:4) == 'UNOS') then
+          backspace(168)
+          cntu = cntu +1
+          read (168,*, IOSTAT=ios) ztest, zundtype_arr(cntu), nw, mf(cntu), tapers(cntu), &
+                                 nperlam, ux_arr(cntu), uy_arr(cntu), kbnx_arr(cntu), &
+                                 kbny_arr(cntu),UndAmplLT(cntu),UndFreqLT(cntu)  ! read vars
+        else
 
-        backspace(168)
 
-        cntu = cntu + 1
+
+          backspace(168)
+
+          cntu = cntu + 1
 
 !       reading ... element ID, undulator type, num of periods, alpha (aw / aw0), 
 !       taper (d alpha / dz), integration steps per period, ux and uy (polarization 
@@ -322,10 +334,12 @@ contains
 !       focusing (applied in the wiggler!!! NOT from quads. Remember the natural 
 !       undulator focusing is also included IN ADDITION to this...)
 
-        read (168,*, IOSTAT=ios) ztest, zundtype_arr(cntu), nw, mf(cntu), tapers(cntu), &
+          read (168,*, IOSTAT=ios) ztest, zundtype_arr(cntu), nw, mf(cntu), tapers(cntu), &
                                  nperlam, ux_arr(cntu), uy_arr(cntu), kbnx_arr(cntu), &
                                  kbny_arr(cntu)  ! read vars
-
+        UndFreqLT(cntu) = 0.0_WP
+        UndAmplLT(cntu) = 100.0_WP
+        endif
         cntt = cntt + 1
         iElmType(cntt) = iUnd
 
@@ -854,7 +868,8 @@ contains
 ! Want to update using arrays describing each module...
 
 !     Update undulator parameter:
-
+    qUndFreq_G=UndFreqLT(iM)
+    qUndAmpl_G=UndAmplLT(iM)
     n2col0 = mf(iM)
     n2col = mf(iM)
     undgrad = tapers(iM)

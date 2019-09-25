@@ -265,10 +265,9 @@ subroutine read_in(zfilename, &
 
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !! Definition of oscillating undulator taper switches and variables !!
+  !! Definition of oscillating undulator taper variables !!
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   real(kind=wp) :: qUndFreq, qUndAmpl
-  logical :: qOscilUnd
 
 !   redundant data!!! For compatibility only....
 
@@ -300,7 +299,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  iRedistStp, qscaled, nspinDX, nspinDY, qInitWrLat, qDumpEnd, &
                  wr_file, qMeasure, DFact, iDumpNthSteps, speout, meshType, &
                  sPerWaves, ioutInfo, &
-                 qUndFreq, qUndAmpl, qOscilUnd
+                 qUndFreq, qUndAmpl
 
 
 ! Begin subroutine:
@@ -314,7 +313,6 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
 ! Default vals...
 
   !!!! Energy spread and loss terms !!!!
-  qOscilUnd = .false.
   qUndFreq = 0.0_WP
   qUndAmpl = 0.0_WP
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -456,8 +454,6 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   !!! Oscillating undulator taper !!!!!!!!!
   qUndFreq_G = qUndFreq
   qUndAmpl_G = qUndAmpl
-  qOscilUnd_G = qOscilUnd
-
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
