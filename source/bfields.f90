@@ -174,7 +174,7 @@ subroutine getBXfield(sx, sy, sz, bxj)
       bxj = (sZ - pi * sRho_G) / (6_wp * pi*sRho_G) * cos(szt)
 !$OMP END WORKSHARE
 
-      if (sZ < pi * sRho_G) then 
+      if (sZ < pi * sRho_G) then
 !$OMP WORKSHARE
         bxj = 0.0_wp
 !$OMP END WORKSHARE
@@ -199,7 +199,7 @@ subroutine getBXfield(sx, sy, sz, bxj)
                cos(szt / 2_wp / sRho_G)
 !$OMP END WORKSHARE
 
-      if (sZt < pi * sRho_G) then 
+      if (sZt < pi * sRho_G) then
 !$OMP WORKSHARE
         bxj = cos(szt / 2_wp / sRho_G)
 !$OMP END WORKSHARE
@@ -243,16 +243,16 @@ subroutine getBXfield(sx, sy, sz, bxj)
 !               cos(szt / 8_wp) * sin(szt) / 4_wp   &
 !             +  sin(szt/8_wp)**2_wp  * cos(szt)
 !$OMP WORKSHARE
-      bxj = fx_G * (sZ - pi * sRho_G) / (6_wp * pi*sRho_G) * cos(szt)
+      bxj = fx_G * (sZ - pi * sRho_G) / (6_wp * pi*sRho_G) * cos(szt + unphi_G * pi)
 !$OMP END WORKSHARE
 
-      if (sZ < pi * sRho_G) then 
+      if (sZ < pi * sRho_G) then
 !$OMP WORKSHARE
         bxj = 0.0_wp
 !$OMP END WORKSHARE
       else if (sZ > 7_wp * pi * sRho_G) then
 !$OMP WORKSHARE
-        bxj = fx_G * cos(szt)
+        bxj = fx_G * cos(szt + unphi_G * pi)
 !$OMP END WORKSHARE
       end if
 
@@ -263,24 +263,24 @@ subroutine getBXfield(sx, sy, sz, bxj)
 
 !$OMP WORKSHARE
       bxj =  -fx_G * (szt - 7.0_wp * pi * sRho_G) / (6_wp * pi * sRho_G) * &
-               cos(szt / 2_wp / sRho_G)
+               cos(szt / 2_wp / sRho_G + unphi_G * pi)
 !$OMP END WORKSHARE
 
-      if (sZt < pi * sRho_G) then 
+      if (sZt < pi * sRho_G) then
 !$OMP WORKSHARE
-        bxj = fx_G * cos(szt / 2_wp / sRho_G)
+        bxj = fx_G * cos(szt / 2_wp / sRho_G + unphi_G * pi)
 !$OMP END WORKSHARE
       else if (sZt > 7_wp * pi * sRho_G) then
 !$OMP WORKSHARE
         bxj = 0.0_wp
 !$OMP END WORKSHARE
       end if
-      
+
 
     else if (iUndPlace_G == iUndMain_G) then
 
 !$OMP WORKSHARE
-      bxj = fx_G*cos(szt)
+      bxj = fx_G*cos(szt + unphi_G * pi)
 !$OMP END WORKSHARE
 
     end if
@@ -380,14 +380,14 @@ subroutine getBXfield(sx, sy, sz, bxj)
     if (iUndPlace_G == iUndStart_G) then
 
 !$OMP WORKSHARE
-!      byj = cosh( sqrt(sEta_G) / 2_wp / sRho_G * sy) * &
-!            (  (- sin(szt / 8_wp) * &
-!               cos(szt / 8_wp) * cos(szt) / 4_wp   &
-!             +  sin(szt/8_wp)**2_wp  * sin(szt) )  )
+      byj = cosh( sqrt(sEta_G) / 2_wp / sRho_G * sy) * &
+            (  (- sin(szt / 8_wp) * &
+               cos(szt / 8_wp) * cos(szt) / 4_wp   &
+             +  sin(szt/8_wp)**2_wp  * sin(szt) )  )
 
 
       !byj = sin(szt/8_wp)**2_wp * sin(szt)
-      byj = szt / 4_wp / pi * sin(szt)
+!      byj = szt / 4_wp / pi * sin(szt)
 !$OMP END WORKSHARE
 
 !    print*, "hehehe"
@@ -398,20 +398,20 @@ subroutine getBXfield(sx, sy, sz, bxj)
       szt = szt / 2_wp / sRho_G
 
 !$OMP WORKSHARE
-!      byj = cosh( sqrt(sEta_G) / 2_wp / sRho_G * sy) * &
-!            (  cos(szt / 8_wp) * &
-!              sin(szt / 8_wp) * cos(szt)  / 4_wp  &
-!            +  cos(szt/8_wp)**2_wp  * sin(szt)  )
-            
-      byj = (-szt / 4_wp / pi + 1_wp) * sin(szt)
+      byj = cosh( sqrt(sEta_G) / 2_wp / sRho_G * sy) * &
+            (  cos(szt / 8_wp) * &
+              sin(szt / 8_wp) * cos(szt)  / 4_wp  &
+            +  cos(szt/8_wp)**2_wp  * sin(szt)  )
+
+!      byj = (-szt / 4_wp / pi + 1_wp) * sin(szt)
 !$OMP END WORKSHARE
 
     else if (iUndPlace_G == iUndMain_G) then
 
 !$OMP WORKSHARE
-!      byj = cosh( sqrt(sEta_G) / 2_wp / sRho_G * sy) &
-!            * sin(szt)
-      byj = sin(szt)
+      byj = cosh( sqrt(sEta_G) / 2_wp / sRho_G * sy) &
+            * sin(szt)
+!      byj = sin(szt)
 !$OMP END WORKSHARE
 
     end if
@@ -624,7 +624,7 @@ subroutine getBZfield(sx, sy, sz, bzj)
 
 !$OMP WORKSHARE
       bzj = sinh( sqrt(sEta_G) / 2_wp / sRho_G * sy) * &
-            (-szt / 4_wp / pi + 1_wp) * cos(szt) 
+            (-szt / 4_wp / pi + 1_wp) * cos(szt)
 !$OMP END WORKSHARE
 
     else if (iUndPlace_G == iUndMain_G) then
@@ -656,10 +656,10 @@ subroutine getBZfield(sx, sy, sz, bzj)
 
 !$OMP WORKSHARE
       bzj = - sqrt(sEta_G) / 2 / sRho_G * (sZ - pi * sRho_G) / (6_wp * pi*sRho_G) &
-            * sx * sin(szt)            
+            * sx * sin(szt)
 !$OMP END WORKSHARE
 
-      if (sZ < pi * sRho_G) then 
+      if (sZ < pi * sRho_G) then
 !$OMP WORKSHARE
         bzj = 0.0_wp
 !$OMP END WORKSHARE
@@ -668,7 +668,7 @@ subroutine getBZfield(sx, sy, sz, bzj)
         bzj = - sqrt(sEta_G) / 2 / sRho_G * sx * sin(szt)
 !$OMP END WORKSHARE
       end if
-      
+
 
 ! ...and from y-comp:
 
@@ -693,10 +693,10 @@ subroutine getBZfield(sx, sy, sz, bzj)
 
 !$OMP WORKSHARE
       bzj = - sqrt(sEta_G) / 2 / sRho_G * (szt - 7.0_wp * pi * sRho_G) / &
-              (6_wp * pi * sRho_G) * sx * sin(szt / 2_wp / sRho_G)            
+              (6_wp * pi * sRho_G) * sx * sin(szt / 2_wp / sRho_G)
 !$OMP END WORKSHARE
 
-      if (szt < pi * sRho_G) then 
+      if (szt < pi * sRho_G) then
 !$OMP WORKSHARE
         bzj = - sqrt(sEta_G) / 2 / sRho_G * sx * sin(szt / 2_wp / sRho_G)
 !$OMP END WORKSHARE
@@ -705,7 +705,7 @@ subroutine getBZfield(sx, sy, sz, bzj)
         bzj = 0.0_wp
 !$OMP END WORKSHARE
       end if
-      
+
 
 ! ...and from y-comp:
 
@@ -762,23 +762,24 @@ subroutine getBZfield(sx, sy, sz, bzj)
 
     if (iUndPlace_G == iUndStart_G) then
 
+
 ! ...from x-comp:
 
 !$OMP WORKSHARE
       bzj = - sqrt(sEta_G) / 2 / sRho_G * (sZ - pi * sRho_G) / (6_wp * pi*sRho_G) &
-            * fx_G * sx * sin(szt)            
+            * fx_G * sx * sin(szt + unphi_G * pi)
 !$OMP END WORKSHARE
 
-      if (sZ < pi * sRho_G) then 
+      if (sZ < pi * sRho_G) then
 !$OMP WORKSHARE
         bzj = 0.0_wp
 !$OMP END WORKSHARE
       else if (sZ > 7_wp * pi * sRho_G) then
 !$OMP WORKSHARE
-        bzj = - sqrt(sEta_G) / 2 / sRho_G * fx_G * sx * sin(szt)
+        bzj = - sqrt(sEta_G) / 2 / sRho_G * fx_G * sx * sin(szt + unphi_G * pi)
 !$OMP END WORKSHARE
       end if
-      
+
 
 ! ...and from y-comp:
 
@@ -816,19 +817,19 @@ subroutine getBZfield(sx, sy, sz, bzj)
 
 !$OMP WORKSHARE
       bzj = - sqrt(sEta_G) / 2 / sRho_G * (szt - 7.0_wp * pi * sRho_G) / &
-              (6_wp * pi * sRho_G) * fx_G * sx * sin(szt / 2_wp / sRho_G)            
+              (6_wp * pi * sRho_G) * fx_G * sx * sin(szt / 2_wp / sRho_G + unphi_G * pi)
 !$OMP END WORKSHARE
 
-      if (szt < pi * sRho_G) then 
+      if (szt < pi * sRho_G) then
 !$OMP WORKSHARE
-        bzj = - sqrt(sEta_G) / 2 / sRho_G * fx_G * sx * sin(szt / 2_wp / sRho_G)
-!$OMP END WORKSHARE
+        bzj = - sqrt(sEta_G) / 2 / sRho_G * fx_G * sx * sin(szt / 2_wp / sRho_G + unphi_G * pi)
+        !$OMP END WORKSHARE
       else if (szt > 7_wp * pi * sRho_G) then
 !$OMP WORKSHARE
         bzj = 0.0_wp
 !$OMP END WORKSHARE
       end if
-      
+
 
 ! ...and from y-comp:
 
@@ -863,7 +864,7 @@ subroutine getBZfield(sx, sy, sz, bzj)
 
 !$OMP WORKSHARE
       bzj = sqrt(sEta_G) / 2 / sRho_G * &
-            ( -fx_G*sx * sin(szt)  + fy_G*sy * cos(szt) )
+            ( -fx_G*sx * sin(szt + unphi_G * pi)  + fy_G*sy * cos(szt) )
 !$OMP END WORKSHARE
 
     end if
