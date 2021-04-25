@@ -147,22 +147,7 @@ contains
 
       call getFStEnd()
 
-!      tnjdlz2 = 400
-
-!      fz2 = (tProcInfo_G%rank * tnjdlz2) + 1
-!      ez2 = (tProcInfo_G%rank * tnjdlz2) + tnjdlz2
       bz2 = ez2
-
-!      if (tProcInfo_G%rank == 1) then
-
-!        ez2 = NZ2_G
-!        tnjdlz2 = NZ2_G - tnjdlz2
-
-!      end if
-
-!      if (tProcInfo_G%rank == 1) bz2 = ez2
-
-!      mainlen = tnjdlz2
 
       tlflen_glob = 0
       tlflen = 0
@@ -186,8 +171,6 @@ contains
       call setupLayoutArrs(tlflen, ffs, ffe, ff_ar)
       call setupLayoutArrs(tlelen, ees, eee, ee_ar)
 
-!      print*, mainlen, fz2, ez2, ac_ar
-
 
       allocate(fr_rfield(tlflen4arr*ntrnds_G), &
                  fr_ifield(tlflen4arr*ntrnds_G))
@@ -196,10 +179,6 @@ contains
 
       allocate(ac_rfield(mainlen*ntrnds_G), &
                ac_ifield(mainlen*ntrnds_G))
-
-!      ac_rfield = sA((fz2-1)*ntrnds_G + 1:bz2*ntrnds_G)
-!      ac_ifield = sA((fz2 + NZ2_G-1)*ntrnds_G + 1: &
-!                      (bz2 + NZ2_G)*ntrnds_G)
 
 
       ac_rfield = 0_wp
@@ -214,8 +193,6 @@ contains
 
       if (fieldMesh == iTemporal) iParaBas = iElectronBased
       qUnique = .true.
-
-!      goto 1000
 
     else
 
@@ -237,22 +214,6 @@ contains
       sElZ2_G = sElZ2_G - (real(floor(sElZ2_G / lenz2), kind=wp) * lenz2 )
     end if
 
-
-!  where (sElZ2_G > sLengthOfElmZ2_G * real((nz2_G - 1_ip), kind=wp ))
-!
-!    sElZ2_G = sElZ2_G - sLengthOfElmZ2_G * real((nz2_G - 1_ip), kind=wp )
-!
-!  end where
-
-!  do idd = 1, size(sElZ2_G)
-!    if (sElZ2_G(idd) > sLengthOfElmZ2_G * real((nz2_G - 1_ip), kind=wp )) then
-!      print*, 'REBOUNDING!!!'
-!      sElZ2_G(idd) = sElZ2_G(idd) - 
-!    end if
-!  end do
-
-
-
   allocate(ee_ar_old(tProcInfo_G%size, 3))
   allocate(ff_ar_old(tProcInfo_G%size, 3))
   allocate(ac_ar_old(tProcInfo_G%size, 3))
@@ -265,38 +226,13 @@ contains
 
   call getFStEnd()    ! Define new 'active' region
 
-
-
-
-
-
-
   call setupLayoutArrs(mainlen, fz2, ez2, ac_ar)
-
-
-
-
-
-  !if (iParaBas /= iFFTW_based) then
 
   if (qUnique) call rearrElecs()   ! Rearrange electrons
 
-
-
   call calcBuff(4 * pi * sRho_G * sdz)  ! Calculate buffers
-!  call calcBuff(4.0_wp)  ! Calculate buffers
-
- ! else
-
-!    bz2 = ez2
-
-  !end if
-
-
-
 
   call getFrBk()  ! Get surrounding nodes
-
 
   call setupLayoutArrs(tlflen, ffs, ffe, ff_ar)
   call setupLayoutArrs(tlelen, ees, eee, ee_ar)
@@ -311,13 +247,6 @@ contains
 
   end if
 
-
-!  print*, 'trying to get layout of main as', fz2, ez2, bz2
-
-!print*, 'AC_AR_OLD', ac_ar_old
-
-
-! for each front, active and back (9 calls??)
 
 
   allocate(fr_rfield_old(size(fr_rfield)), fr_ifield_old(size(fr_ifield)))
@@ -418,9 +347,6 @@ contains
 ! then deallocate old fields
 
 ! then redist electrons for new layout
-
-
-!$$$$$$$$$$$$$$$$$%%%^^^^^^^^^FFFFFFFFFFFFFFFFF
 
 
 
@@ -528,10 +454,6 @@ contains
 
 
 
-
-
-
-
       ! Allocate back, front and active fields....commented out!
       ! ONLY USING ACTIVE FIELD FOR NOW TO CHECK SCALING...TO SEE
       ! IF IT'S WORTH PERSUING THIS METHOD
@@ -549,27 +471,6 @@ contains
 
 
   call mpi_barrier(tProcInfo_G%comm, error)
-
-!  print*, tProcInfo_G%rank, ' made it here, with active nodes redefined between ', &
-!                              fz2, ez2, 'corresponding to z2 = ', (fz2-1)*sLengthOfElmZ2_G, &
-!                              ' to ', (ez2-1)*sLengthOfElmZ2_G
-
-!  print*, 'and sizes of elecs = ', iNumberElectrons_G
-
-!  print*, 'and rank = ', ' had buffer at global node ', bz2
-
-!  print*, tProcInfo_G%rank, ': len of buffM = ', fbuffLen, fbuffLenM
-
-!  print*, tProcInfo_G%rank, '...now front and back has ...', ffs, ffe, ees, eee
-
-!  if (tProcInfo_G%rank == 0) print*, fr_rfield
-
-!if (tProcInfo_G%rank == 1) print*, size(sElZ2_G), sElZ2_G
-
-  !call mpi_finalize(error)
-  !stop
-
-
 
     IF (tProcInfo_G%rank == tProcInfo_G%size-1) THEN
        rrank = 0
@@ -612,19 +513,12 @@ contains
       allocate(tmp_A(tllen*ntrndsi_G))
     end if
 
-
-      ! allocate(tmp_A(fbuffLenM))
-
      tmp_A = 0_wp
 
-
-!      print*, tProcInfo_G%rank, ' set up with bounds of ', fz2, ez2, bz2! , &
 
       call pupd8(ac_rfield, ac_ifield)
 
       qPArrOK_G = .true.
-!      'with a buffer length of ', fbuffLen, 'and a total length of ', tllen
-      !print*, tProcInfo_G%rank, ' and size of sA (over 2) is ', size(sA) / 2
 
     end subroutine getLocalFieldIndices
 
@@ -659,7 +553,6 @@ contains
         A_local = 0_wp
 
         A_local(1:gath_v) = fr_rfield(1:gath_v)
-        !A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
 
         call gather1A(A_local, sA((ffs_GGG-1)*ntrnds_G + 1:ffe_GGG*ntrnds_G), &
                 gath_v, (ffe_GGG - ffs_GGG + 1) * ntrnds_G, &
@@ -686,16 +579,6 @@ contains
 
 
 
-
-
-
-
-
-
-
-
-
-
       if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
       	gath_v = mainlen * ntrnds_G !-1
       else
@@ -710,7 +593,6 @@ contains
       A_local = 0_wp
 
       A_local(1:gath_v) = ac_rfield(1:gath_v)
-!      A_local(gath_v+1:gath_v*2) = ac_ifield(1:gath_v)
 
       call gather1A(A_local, sA((fz2_GGG-1)*ntrnds_G + 1:ez2_GGG*ntrnds_G), &
                        gath_v, (fz2_GGG - ez2_GGG + 1) * ntrnds_G, &
@@ -744,7 +626,6 @@ contains
           A_local = 0_wp
 
           A_local(1:gath_v) = fr_rfield(1:gath_v)
-          !A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
 
         call gather1A(A_local, sA((ees_GGG - 1)*ntrnds_G + 1:eee_GGG*ntrnds_G), &
                        gath_v, (eee_GGG - ees_GGG + 1), recvs_ef, displs_ef)
@@ -766,11 +647,6 @@ contains
 
 
 
-
-
-
-
-
     subroutine UpdateGlobalPow(fpow, apow, bpow, gpow)
 
       real(kind=wp), intent(inout) :: fpow(:), apow(:), bpow(:), gpow(:)
@@ -783,7 +659,6 @@ contains
 
       gpow=0.0_wp
 
-!      if (ffe_GGG > 0) then
       if ((ffe_GGG - ffs_GGG) > 0) then
 
         if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
@@ -800,7 +675,6 @@ contains
         A_local = 0_wp
 
         A_local(1:gath_v) = fpow(1:gath_v)
-        !A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
 
         call gather1A(A_local, gpow(ffs_GGG:ffe_GGG), &
                 gath_v, ffe_GGG - ffs_GGG + 1, &
@@ -810,14 +684,6 @@ contains
         deallocate(A_local)
 
       end if
-
-
-
-
-
-!    call mpi_barrier(tProcInfo_G%comm, error)
-!    print*, 'got glob powwww  almosst 1'
-
 
 
 
@@ -837,7 +703,6 @@ contains
       powi = 0_wp
 
       A_local(1:gath_v) = apow(1:gath_v)
-!      A_local(gath_v+1:gath_v*2) = ac_ifield(1:gath_v)
 
       if (qUnique) then
         call gather1A(A_local, powi, &
@@ -852,16 +717,7 @@ contains
       deallocate(A_local)
       deallocate(powi)
 
-    !if (tProcInfo_G%qRoot) print*, gpow
 
-
-
-!    call mpi_barrier(tProcInfo_G%comm, error)
-!    print*, 'got glob powwww  almosst 2'
-
-
-
-!      if (eee_GGG < nz2_G+1) then
       if ( (eee_GGG - ees_GGG) > 0) then
 
         if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
@@ -881,7 +737,6 @@ contains
           powi = 0_wp
 
           A_local(1:gath_v) = bpow(1:gath_v)
-          !A_local(gath_v+1:gath_v*2) = fr_ifield(1:gath_v)
 
           call gather1A(A_local, powi, &
                          gath_v, eee_GGG - ees_GGG + 1, recvs_epf, displs_epf)
@@ -893,10 +748,6 @@ contains
           deallocate(powi)
 
       end if
-
-!    call mpi_barrier(tProcInfo_G%comm, error)
-!    print*, 'got glob powwww  almosst 3'
-
 
 
     end subroutine UpdateGlobalPow
@@ -935,36 +786,16 @@ contains
 
 
         tmp_A = 0_wp
-        !snd_A = 0_wp
-
-
-   !           si = rrank_v(1, 1)
-   !         sst = rrank_v(1, 2)
-   !         sse = rrank_v(1, 3)
-   !         call mpi_barrier(tProcInfo_G%comm, error)
-   !         print*, tProcInfo_G%rank, 'here, sending nodes :', (sst - (fz2-1)-1)*ntrnds_G + 1, &
-   !                       'to', (sse-(fz2-1))*ntrnds_G , 'to rank', tProcInfo_G%rank+1
 
         if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
 
-  !        send to rank+1
+!        send to rank+1
 
-          !do ij = tProcInfo_G%rank + 1, tProcInfo_G%size-1
            do ij = 1, nsnds_bf
 
             si = rrank_v(ij, 1)
             sst = rrank_v(ij, 2)
             sse = rrank_v(ij, 3)
-
-
-  !          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
-  !                    mpi_double_precision, &
-  !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
-
-
-!            print*, tProcInfo_G%rank, 'here, sending nodes :', (sst - (fz2-1)-1)*ntrnds_G + 1, &
-!                          'to', (sse-(fz2-1))*ntrnds_G , 'to rank', tProcInfo_G%rank+ij, &
-!                          ' and size dadz_r = ', size(dadz_r), ' and si =  ', si
 
             sst = (sst - (fz2-1)-1)*ntrndsi_G + 1
             sse = (sse-(fz2-1))*ntrndsi_G
@@ -982,21 +813,12 @@ contains
 
         end if
 
-    !          call mpi_barrier(tProcInfo_G%comm, error)
-     !         print*, tProcInfo_G%rank, 'here, recving nodes :', 1, &
-      !                    'to', lrank_v(1)*ntrndsi_G , 'from rank', lrfromwhere(1)
-
 
         if (tProcInfo_G%rank /= 0) then
 
-  !       rec from rank-1
+!       rec from rank-1
 
           do ij = 1, nrecvs_bf
-
-
-!              print*, tProcInfo_G%rank, 'here, recving nodes :', 1, &
-!                          'to', lrank_v(ij)*ntrndsi_G , 'from rank', lrfromwhere(ij), &
-!                          ' and size dadz_r = ', size(dadz_r)
 
             CALL mpi_recv( tmp_A(1:lrank_v(ij)*ntrndsi_G), &
                    lrank_v(ij)*ntrndsi_G, &
@@ -1024,7 +846,6 @@ contains
 
   !        send to rank+1
 
-          ! do ij = tProcInfo_G%rank + 1, tProcInfo_G%size-1
           do ij = 1, nsnds_bf
 
             si = rrank_v(ij, 1)
@@ -1035,10 +856,6 @@ contains
             sst = (sst - (fz2-1)-1)*ntrndsi_G + 1
             sse = (sse-(fz2-1))*ntrndsi_G
             si = si*ntrndsi_G
-
-  !          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
-  !                    mpi_double_precision, &
-  !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
 
             call mpi_issend(dadz_i(sst:sse), &
                       si, &
@@ -1054,7 +871,7 @@ contains
 
         if (tProcInfo_G%rank /= 0) then
 
-  !       rec from rank-1
+!       rec from rank-1
 
           do ij = 1, nrecvs_bf
 
@@ -1072,8 +889,6 @@ contains
 
 
         if (tProcInfo_G%rank /= tProcInfo_G%size-1) call mpi_wait( req,sendstat,error )
-
-        !dadz_i(1:fbuffLenM) = dadz_i(1:fbuffLenM) + tmp_A
 
 
       else
@@ -3245,7 +3060,7 @@ contains
     real(kind=wp), intent(inout) :: tmparray(:)
     integer(kind=ip), intent(in) :: inds(:)
     integer(kind=ip), intent(in) :: cnt
-    integer(kind=ip), intent(inout) :: iproc
+    integer(kind=ip), intent(in) :: iproc
 
     integer :: req, error
     integer :: sendstat(MPI_STATUS_SIZE)
@@ -3268,7 +3083,8 @@ contains
 !
 
     real(kind=wp), intent(inout) :: array(:)
-    integer(kind=ip), intent(inout) :: cnt, iproc
+    integer(kind=ip), intent(inout) :: cnt 
+    integer(kind=ip), intent(in) :: iproc
     integer(kind=ip), intent(in) :: st_ind, ed_ind
 
     integer :: error
