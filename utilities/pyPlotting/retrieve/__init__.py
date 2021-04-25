@@ -12,6 +12,7 @@ from .process import filterField
 from .getPow import getPow
 from .getPowFromInt import getPowFromInt
 from .getMagPhase import getMagPhase
+from .getEnFromInt import getEnFromInt
 from .rawpuffin import getIntData
 from .rawpuffin import readField
 from .rawpuffin import getFileSlices

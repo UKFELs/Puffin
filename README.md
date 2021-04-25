@@ -1,8 +1,8 @@
 # Puffin
 
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-[![Build Status master](https://img.shields.io/travis/com/mightylorenzo/Puffin/master.svg?label=master)](https://travis-ci.com/mightylorenzo/Puffin/branches)
-[![Build Status dev](https://img.shields.io/travis/com/mightylorenzo/Puffin/dev.svg?label=dev)](https://travis-ci.com/mightylorenzo/Puffin/branches)
+[![Build Status master](https://img.shields.io/travis/com/UKFELs/Puffin/master.svg?label=master)](https://travis-ci.com/UKFELs/Puffin/branches)
+[![Build Status dev](https://img.shields.io/travis/com/UKFELs/Puffin/dev.svg?label=dev)](https://travis-ci.com/UKFELs/Puffin/branches)
 
 Puffin (Parallel Unaveraged Fel INtegrator) simulates a Free Electron Laser (FEL). Puffin is a massively parallel numerical solver for an unaveraged, 3D FEL system of equations, and is written in Fortran 90, using MPI and OpenMP.
 
@@ -44,9 +44,9 @@ of the backwards wave from the e-beam.
 ----
 ## Docker Images
 
-[![Docker Hub](http://dockeri.co/image/mightylorenzo/puffin-user)](https://hub.docker.com/r/mightylorenzo/puffin-user)
+[![Docker Hub](http://dockeri.co/image/ukfels/puffin-user)](https://hub.docker.com/r/ukfels/puffin-user)
 
-Docker images can be fetched from [here](https://hub.docker.com/u/mightylorenzo/).
+Docker images can be fetched from [here](https://hub.docker.com/u/ukfels/).
 There are currently two - a 'full' container intended for development purposes, 
 which has all tests built, along with the testing infrastructure (pFUnit) and
 developer and user documentation, etc. The other, the 'user' container, is
@@ -57,23 +57,23 @@ The images are not configured for or intended for use on a cluster; rather, they
 
 To grab an image, do e.g.
 ```
-docker pull mightylorenzo/puffin-user
+docker pull ukfels/puffin-user
 ```
 then, for the user image,
 ```
-docker run -v $(pwd):/home/puffin_user/project mightylorenzo/puffin-user 2 main.in
+docker run -v $(pwd):/home/puffin_user/project ukfels/puffin-user 2 main.in
 ```
 will run Puffin using 2 processes with the main input file in the current directory.
 
-[![Docker Hub](http://dockeri.co/image/mightylorenzo/puffin-test)](https://hub.docker.com/r/mightylorenzo/puffin-test)
+[![Docker Hub](http://dockeri.co/image/ukfels/puffin-dev)](https://hub.docker.com/r/ukfels/puffin-dev)
 
-For the 'full' container, for using interactively, grab the `puffin-test` image, like so:
+For the 'full' container, for using interactively, grab the `puffin-dev` image, like so:
 ```
-docker pull mightylorenzo/puffin-test
+docker pull ukfels/puffin-dev
 ```
 Start the container, whilst mounting the current directory to the project area in the container, with
 ```
-docker run -it -v $(pwd):/home/puffin_user/project mightylorenzo/puffin-user
+docker run -it -v $(pwd):/home/puffin_user/project dev/puffin-dev
 ```
 You'll find Puffin built in the `/home/puffin_user/built/puffin` directory, with the executable `/home/puffin_user/built/puffin/bin/puffin`. To run, do 
 
@@ -96,7 +96,7 @@ The other, optional input files are:
 
 Several example input decks are included in the `inputs/simple` directory in this repo.
 
-To run Puffin, pass it the name of the main input file as an argument. In the `inputs/simple/3D/CLARA/single-slice` directory, you'll find an example deck which modes the UK test FEL CLARA in 'periodic' mode, which is relatively quick to run. Puffin is an MPI code, so when compiled, you'll need to run with `mpirun`, specifying the number of MPI processes with the `-np` flag. After Puffin is built, with all files in the current (working) directory, do
+To run Puffin, pass it the name of the main input file as an argument. In the `inputs/simple/3D/CLARA/single-slice` directory, you'll find an example deck which models the UK test FEL CLARA in 'periodic' mode, which is relatively quick to run. Puffin is an MPI code, so when compiled, you'll need to run with `mpirun`, specifying the number of MPI processes with the `-np` flag. After Puffin is built, with all files in the current (working) directory, do
 ```
 mpirun -np 2 puffin clara.in
 ```

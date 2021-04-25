@@ -76,7 +76,7 @@ class fdata:
                           / (self.vars.qe * self.vars.kappa * self.vars.lg ))
 
 
-        self.vars.fieldScale = np.square((self.vars.gamma0 * self.vars.me * np.square(self.vars.c0) ) \
+        self.vars.fieldScale = ((self.vars.gamma0 * self.vars.me * np.square(self.vars.c0) ) \
                           / (self.vars.qe * self.vars.kappa * self.vars.lg ))
         
         h5f.close()
