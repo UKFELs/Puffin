@@ -44,7 +44,7 @@ USER puffin_user
 
 # Build pFUnit
 WORKDIR /home/puffin_user/tmp
-RUN git clone https://github.com/Goddard-Fortran-Ecosystem/pFUnit.git pFUnit
+RUN git clone git://git.code.sf.net/p/pfunit/code pFUnit
 WORKDIR /home/puffin_user/tmp/pFUnit
 ENV F90_VENDOR=GNU
 ENV F90=gfortran
