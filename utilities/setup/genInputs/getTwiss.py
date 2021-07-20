@@ -12,14 +12,9 @@ last quads are half strength.
 Hopefully the below can be easily extended to any general periodic lattice.
 """
 
-import sys, glob, os
 import numpy as np
-from numpy import pi
-from numpy import arange
-import tables
 from puffDataClass import puffData
 from undulator import undulator
-
 
 
 def getMatchTwiss(fullMat):
@@ -31,8 +26,8 @@ def getMatchTwiss(fullMat):
 
     C = fullMat[0][0]
     S = fullMat[0][1]
-    CP = fullMat[1][0];
-    SP = fullMat[1][1];
+    CP = fullMat[1][0]
+    SP = fullMat[1][1]
 
     if (C-SP>0):
         opt = 1.

@@ -10,7 +10,7 @@ This should write VizSchema file with aggregated power output
 import numpy,tables,glob,os,sys
 
 qScale = 0
-print "scaling is qscale", str(qScale)
+print("scaling is qscale", str(qScale))
 
 iTemporal = 0
 iPeriodic = 1
@@ -43,21 +43,21 @@ def getTimeSliceInfo(filelist,datasetname):
   z Should be present as a derived variable ultimately, but for now is not.
   """
   h5in=tables.open_file(filelist[0],'r')
-  print "Checking "+filelist[0]
+  print("Checking "+filelist[0])
   mint=h5in.root.time._v_attrs.vsTime
   try:
     minz=h5in.root._f_get_child(datasetname)._v_attrs.zbarTotal
   except:
-    print "no min z data present"
+    print("no min z data present")
     minz=None
   h5in.close()
   h5in=tables.open_file(filelist[-1],'r')
-  print "Checking "+filelist[-1]
+  print("Checking "+filelist[-1])
   maxt=h5in.root.time._v_attrs.vsTime
   try:
     maxz=h5in.root._f_get_child(datasetname)._v_attrs.zbarTotal
   except:
-    print "no max z data present"
+    print("no max z data present")
     maxz=None
   h5in.close()
    
@@ -78,7 +78,7 @@ def getNumSpatialPoints(filelist,datasetname):
     min=h5in.root.globalLimits._v_attrs.vsLowerBounds
     max=h5in.root.globalLimits._v_attrs.vsUpperBounds
   h5in.close()
-  print "length: "+str(length)
+  print("length: "+str(length))
   return length,min,max
 
 def getMeshType(filelist,datasetname):
@@ -91,18 +91,18 @@ def getMeshType(filelist,datasetname):
   h5in.close()
   return meshType
 
-print "passed "+str(len(sys.argv))+" arguments"
-print "File basename specified as: " +sys.argv[1]
+print("passed "+str(len(sys.argv))+" arguments")
+print("File basename specified as: " +sys.argv[1])
 
 baseName=sys.argv[1]
 
 
 if len(sys.argv) > 2:
   outfilename = sys.argv[2]
-  print "Output file specified as: " + sys.argv[2]
+  print("Output file specified as: " + sys.argv[2])
 else:
   outfilename = baseName + '_integrated_all.vsh5'
-  print "No output file specified - will be written to: " + outfilename
+  print("No output file specified - will be written to: " + outfilename)
 
 
 #baseName="Power_0"
@@ -127,8 +127,8 @@ sumData=numpy.zeros(numTimes)
 peakData=numpy.zeros(numTimes)
 powAv = numpy.zeros(numTimes)
 
-print "files in order:"
-print filelist
+print("files in order:")
+print(filelist)
 
 
 
@@ -191,7 +191,7 @@ c0 = 2.998E8
 if qScale == 0:
     sumData = sumData / c0   # power = integral over t, not z = ct!!
 
-# print str(zData)
+# print(str(zData))
 
 
 # Creating SI power and normalized power datasets...
@@ -367,8 +367,8 @@ else:
 # structured mesh with z as above for 2D power plot..
 z2Data = numpy.linspace(numpy.double(minS), numpy.double(maxS), numpy.int(numSpatialPoints))
 
-#print "length z2Data: "+str(numpy.shape(z2Data))
-#print "length zData: "+str(numpy.shape(zData))
+#print("length z2Data: "+str(numpy.shape(z2Data)))
+#print("length zData: "+str(numpy.shape(zData)))
 
 
 
@@ -376,8 +376,8 @@ XG, YG = numpy.meshgrid(z2Data, zData)
 comb = numpy.zeros((numpy.int(numSpatialPoints), numTimes, 2))
 
 
-#print "length XG: "+str(numpy.shape(XG))
-#print "length YG: "+str(numpy.shape(YG))
+#print("length XG: "+str(numpy.shape(XG)))
+#print("length YG: "+str(numpy.shape(YG)))
 
 comb[:,:,0] = XG.T
 comb[:,:,1] = YG.T

@@ -33,21 +33,21 @@ def getTimeSliceInfo(filelist,datasetname):
   z Should be present as a derived variable ultimately, but for now is not.
   """
   h5in=tables.open_file(filelist[0],'r')
-  print "Checking "+filelist[0]
+  print("Checking "+filelist[0])
   mint=h5in.root.time._v_attrs.vsTime
   try:
     minz=h5in.root._f_getChild(datasetname)._v_attrs.z
   except:
-    print "no min z data present"
+    print("no min z data present")
     minz=None
   h5in.close()
   h5in=tables.open_file(filelist[-1],'r')
-  print "Checking "+filelist[-1]
+  print("Checking "+filelist[-1])
   maxt=h5in.root.time._v_attrs.vsTime
   try:
     maxz=h5in.root._f_getChild(datasetname)._v_attrs.z
   except:
-    print "no max z data present"
+    print("no max z data present")
     maxz=None
   h5in.close()
    
@@ -64,11 +64,11 @@ def getNumSpatialPoints(filelist,datasetname):
   min=h5in.root.globalLimits._v_attrs.vsLowerBounds
   max=h5in.root.globalLimits._v_attrs.vsUpperBounds
   h5in.close()
-  print "length: "+str(length)
+  print("length: "+str(length))
   return length,min,max
 
-print "passed "+str(len(sys.argv))+" arguments"
-print "1: " +sys.argv[1]
+print("passed "+str(len(sys.argv))+" arguments")
+print("1: " +sys.argv[1])
 #baseName="Power_0"
 #baseName="fig7_Power_0"
 baseName=sys.argv[1]
@@ -82,8 +82,8 @@ deltaz2 = (maxS - minS) / numSpatialPoints
 sumData=numpy.zeros(numTimes)
 peakData=numpy.zeros(numTimes)
 
-print "files in order:"
-print filelist
+print("files in order:")
+print(filelist)
 
 
 

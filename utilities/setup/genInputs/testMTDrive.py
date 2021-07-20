@@ -48,8 +48,8 @@ if __name__ == '__main__':
 
     if len(sys.argv)==2:
         fname = sys.argv[1]
-        print 'Processing file:', fname
+        print('Processing file:', fname)
         MTdriver(fname)
     else:
-        print 'Usage: SU2Puffin <FileName> \n'
+        print('Usage: SU2Puffin <FileName> \n')
         sys.exit(1)

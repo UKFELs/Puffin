@@ -40,7 +40,7 @@ def plotPowVsZ(basename, cfr=None, dfr=None):
 
 
     filelist = getFileSlices(basename)
-    print filelist
+    print(filelist)
 
     mdata = fdata(filelist[0])
 

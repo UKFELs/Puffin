@@ -9,7 +9,6 @@ contains the object definition of the puffData class, used for holding the
 scaling and mesh data about the simulation.
 """
 
-import sys, glob, os
 import numpy as np
 from numpy import pi
 from numpy import arange
@@ -21,7 +20,7 @@ class undulator:
                  tuning = None, kbxSF = None, kbySF = None):
         
         if (undtype == None):
-            print 'please specify an undulator type'
+            print('please specify an undulator type')
         elif (undtype == 'helical'):
             self.undtype = 'helical'
             self.ux = 1.
@@ -45,12 +44,12 @@ class undulator:
             self.kbyn = scale.aw / np.sqrt(2.*scale.eta) / scale.gamma0 *kyu
         elif (undtype == ''):
             if (ux == None):
-                print 'You must enter a valid ux'
+                print('You must enter a valid ux')
             else:
                 self.ux = ux
 
             if (uy == None):
-                print 'You must enter a valid uy'
+                print('You must enter a valid uy')
             else:
                 self.uy = uy
             
@@ -77,7 +76,7 @@ class undulator:
             self.kbySF = kbySF
 
         if (Nw == None):
-            print 'You must specify Nw for this module!!'
+            print('You must specify Nw for this module!!')
         else:
             self.nw = Nw
 
