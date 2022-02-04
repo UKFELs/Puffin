@@ -41,8 +41,8 @@ def ish5suffix(filename):
 
 
 if len(sys.argv)!=2:
-  print "Usage ReorderColMajorFtoColMinorC.py filename"
-  print "Please provide full filename, or a basename without extension to match multiple files"
+  print("Usage ReorderColMajorFtoColMinorC.py filename")
+  print("Please provide full filename, or a basename without extension to match multiple files")
   exit()
 
 baseName = sys.argv[1]
@@ -52,11 +52,11 @@ filelist = getFiles(baseName)
 def convertFile(filename):
   # Need to handle a both cases where filename includes a _dumpstep.h5 and where it is a plain filename
   # if there are multiple matches,
-  print "Reorder rows and columns attempting to match against: "+filename
+  print("Reorder rows and columns attempting to match against: "+filename)
 
   if isvsh5suffix(filename):
     filenamepieces=filename.split('_')
-    print len(filenamepieces)
+    print(len(filenamepieces))
     
     if len(filenamepieces)==4:
       (simbase,dataset,rank,dumpnoAndExt)=filenamepieces
@@ -66,7 +66,7 @@ def convertFile(filename):
     #  outfilename = filename[:-5]+"C.vsh5"
 
     else:
-      print "unknown file format - don't know how to tell dumps, rank, dataset from filename"
+      print("unknown file format - don't know how to tell dumps, rank, dataset from filename")
       exit()
 
     tdsetname=dataset+"N"
@@ -74,20 +74,20 @@ def convertFile(filename):
 
   elif ish5suffix(filename):
     filenamepieces=filename.split('_')
-    print len(filenamepieces)
+    print(len(filenamepieces))
     if len(filenamepieces)==4:
       (simbase,dataset,rank,dumpnoAndExt)=filenamepieces
     elif len(filenamepieces)==3:
       (simbase,dataset,dumpnoAndExt)=filenamepieces
   #  outfilename = filename[:-5]+"C.vsh5"
     else:
-      print "unknown file format - don't know how to tell dumps, rank, dataset from filename"
+      print("unknown file format - don't know how to tell dumps, rank, dataset from filename")
       exit()
     tdsetname=dataset+"N"
     outfilename = simbase+"_"+dataset+"_C_"+dumpnoAndExt
   else:
-    print"need to figure out if we're here, as there will be multiple output files"
-  print outfilename
+    print("need to figure out if we're here, as there will be multiple output files")
+  print(outfilename)
 
   #tables.copy_file(filename,outfilename,overwrite=1)
   h5old=tables.open_file(filename, 'r')
@@ -99,17 +99,17 @@ def convertFile(filename):
   # While this works it may be better to just read using numpy.asfortranarray() 
   # ie fieldin=numpy.asfortranarray(h5.root.aperp.read()) or whatever actually works
   fieldin=h5old.root.aperp.read()
-  print "The input has "+str(len(fieldin.shape))+" dimensions"
-  print "fieldin shape "+str(fieldin.shape)
+  print("The input has "+str(len(fieldin.shape))+" dimensions")
+  print("fieldin shape "+str(fieldin.shape))
   testfield=numpy.asarray(fieldin, order='C')
-  print "testfield shape"+str(testfield.shape)
+  print("testfield shape"+str(testfield.shape))
   testfield=numpy.asfortranarray(fieldin)
-  print "testfield shape"+str(testfield.shape)
+  print("testfield shape"+str(testfield.shape))
   
   if len(fieldin.shape)==4:
     fieldout=numpy.zeros((fieldin.shape[3],fieldin.shape[2],fieldin.shape[1],fieldin.shape[0]))
-    print "fieldout shape"+str(fieldout.shape)
-    print "3d plus component"
+    print("fieldout shape"+str(fieldout.shape))
+    print("3d plus component")
 
     for i in range(fieldin.shape[0]):
       for j in range(fieldin.shape[2]):
@@ -118,9 +118,9 @@ def convertFile(filename):
   elif len(fieldin.shape)==2:
         fieldout=fieldin.T
   else:
-    print "Do not recognise structure of file "+filename+" setting the _C file as just a copy"
+    print("Do not recognise structure of file "+filename+" setting the _C file as just a copy")
 
-  print fieldout.shape
+  print(fieldout.shape)
 
   
   
@@ -187,5 +187,5 @@ for iname in filelist:
 
 end=time.time()
 
-print 'time', end-start
+print('time', end-start)
 

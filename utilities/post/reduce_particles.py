@@ -6,7 +6,7 @@
 
 A reduced dataset is beneficial for elegant, and for plotting. 
 """
-import numpy,tables,os,sys
+import numpy,tables,sys
 
 def writeChargeOutput3D(histdata,edgedata,ptcldata,dataname):
   h5out=tables.open_file('_'.join(outfilebase)+dataname+'_'+str(dumpno)+'.'+fileextname,'w')
@@ -75,9 +75,9 @@ def writeChargeOutput1D(histdata,edgedata,ptcldata,dataname):
   h5out.flush()
   h5out.close()
 
-print sys.argv
+print(sys.argv)
 if len(sys.argv)<2:
-  print "usage reduce_particles.py input_filename [num_required_particles]" 
+  print("usage reduce_particles.py input_filename [num_required_particles]" )
 input_filename=sys.argv[1]
 if len(sys.argv)==3:
   num_required_particles=numpy.int(sys.argv[2])
@@ -86,17 +86,17 @@ else:
 h5=tables.open_file(input_filename)
 elecs=h5.root.electrons.read()
 total_charge=numpy.sum(elecs[:,6])
-print "Total charge: "+str(total_charge)
-print "Total required particles: "+str(num_required_particles)
+print("Total charge: "+str(total_charge))
+print("Total required particles: "+str(num_required_particles))
 sum=numpy.double(0)
 charge_per_new_macro=total_charge/float(num_required_particles)
-print "Charge pre new macro: "+str(charge_per_new_macro)
+print("Charge pre new macro: "+str(charge_per_new_macro))
 num_old_elec_macroparticles=int(elecs.shape[0])
-print "Number of original particles: "+str(elecs.shape[0])
+print("Number of original particles: "+str(elecs.shape[0]))
 lb=h5.root.globalLimits._v_attrs.vsLowerBounds
-print lb
+print(lb)
 ub=h5.root.globalLimits._v_attrs.vsUpperBounds
-print ub
+print(ub)
 simtime=h5.root.electrons._v_attrs.time
 newelecs_count=0
 newparticles=numpy.zeros((num_required_particles,6))
@@ -131,23 +131,23 @@ h5out.close()
 ###
 # Can we write a charge density field?
 ##
-print "histogramming charge data"
+print("histogramming charge data")
 H,edges=numpy.histogramdd(elecs[:,0:3],bins=(numpy.linspace(lb[0],ub[0],32),numpy.linspace(lb[1],ub[1],32),numpy.linspace(lb[2],ub[2],228)),weights=elecs[:,6])
-print "histogramming reduced data"
+print("histogramming reduced data")
 H_reduced,edges_reduced=numpy.histogramdd(newparticles[:,0:3],bins=(32,32,228))
-#print edges[0]
-print numpy.max(H)
-print "writing charge data"
+#print(edges[0])
+print(numpy.max(H))
+print("writing charge data")
 writeChargeOutput3D(H,edges,elecs,'charge3D')
-print "and writing reduced charge data"
+print("and writing reduced charge data")
 writeChargeOutput3D(H_reduced,edges_reduced,newparticles,'charge3D_reduced')
-print "1D histogram"
+print("1D histogram")
 H1D,edges1D=numpy.histogram(elecs[:,2],bins=(numpy.linspace(lb[2],ub[2],570)),weights=elecs[:,6])
-print edges1D
+print(edges1D)
 writeChargeOutput1D(H1D,edges1D,elecs,'charge1D')
 Hreduced1D,edgesReduced1D=numpy.histogram(newparticles[:,2],bins=(numpy.linspace(lb[2],ub[2],570)))
-print edgesReduced1D
-print str(len(edgesReduced1D))
-print str(len(edgesReduced1D)-1)
+print(edgesReduced1D)
+print(str(len(edgesReduced1D)))
+print(str(len(edgesReduced1D)-1))
 writeChargeOutput1D(Hreduced1D,edgesReduced1D,newparticles,'charge1D_reduced')
 exit()

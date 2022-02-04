@@ -5,13 +5,6 @@ Created on Fri Apr 27 10:46:35 2018
 @author: ptracz
 """
 
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Mar 13 14:07:55 2018
-
-@author: ptracz
-"""
-
 import tables
 import numpy as np
 import matplotlib as mpl
@@ -51,8 +44,8 @@ def ish5suffix(filename):
 
 
 if len(sys.argv)!=2:
-  print "Usage ReorderColMajorFtoColMinorC.py filename"
-  print "Please provide full filename, or a basename without extension to match multiple files"
+  print("Usage ReorderColMajorFtoColMinorC.py filename")
+  print("Please provide full filename, or a basename without extension to match multiple files")
   exit()
 
 baseName = sys.argv[1]
@@ -148,5 +141,5 @@ def plot_intensity(file_name_in):
 
 
 for iname in filelist:
-    print iname
+    print(iname)
     plot_intensity(iname)

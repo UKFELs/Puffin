@@ -7,7 +7,7 @@
 import numpy,sys,tables,re
 c=2.998e8
 ifn=sys.argv[1]
-print "reading in "+str(ifn)
+print("reading in "+str(ifn))
 ifh=open(ifn,'r')
 inDataAsText=ifh.read()
 #numPtcls=inDataAsText.count('\n')
@@ -18,12 +18,12 @@ for ptclIndex in range(0,len(ptclStrings)):
   try:
     pdata[ptclIndex,:]=numpy.array((re.split("\s+",ptclStrings[ptclIndex])[0:6])).astype(numpy.float)    
   except:
-    print "Problem allocating data to array, expect due to lack of data in row"
+    print("Problem allocating data to array, expect due to lack of data in row")
     failIndices.append(ptclIndex)
   if ptclIndex%1000==0:
-    print ptclIndex
+    print(ptclIndex)
 # HACK! - get rid of just last index
-print "failing at indices: "+str(failIndices)
+print("failing at indices: "+str(failIndices))
 pdata=pdata[0:-1]
 #for fixed weight particles oriented in x
 sx=numpy.sum(pdata[:,0])
@@ -55,20 +55,20 @@ eps_n_x=numpy.sqrt(mx*mpx-mxpx*mxpx)/c
 eps_n_y=numpy.sqrt(my*mpy-mypy*mypy)/c
 eps_n_z=numpy.sqrt(mz*mpz-mzpz*mzpz)/c
 #now assume beam is in x, so just calc betay, betaz
-print "mpx:"+str(mpx) + "  sqrt(mpx): "+str(numpy.sqrt(mpx))
+print("mpx:"+str(mpx) + "  sqrt(mpx): "+str(numpy.sqrt(mpx)))
 #beta=<x^2>/epsilon(non-norm)=<x^2>*lorentzgamma*lorentzbeta/epsilon(norm)
 beta_y=my*spx/(c*n*eps_n_y)
 beta_z=mz*spx/(c*n*eps_n_z)
 #alpha=-<xx'>/eps(non-norm)=-<xx'>*lorentzgamma*lorentzbeta/epsilon(norm)
 alpha_y=mypy/(eps_n_y)
 alpha_z=mzpz/(eps_n_z)
-print "eps_n_x"+str(eps_n_x)
-print "eps_n_y"+str(eps_n_y)
-print "eps_n_z"+str(eps_n_z)
-print "beta_y"+str(beta_y)
-print "beta_z"+str(beta_z)
-print "alpha_y"+str(alpha_y)
-print "alpha_z"+str(alpha_z)
+print("eps_n_x"+str(eps_n_x))
+print("eps_n_y"+str(eps_n_y))
+print("eps_n_z"+str(eps_n_z))
+print("beta_y"+str(beta_y))
+print("beta_z"+str(beta_z))
+print("alpha_y"+str(alpha_y))
+print("alpha_z"+str(alpha_z))
 #Now try doing just with the primes
 yp=numpy.divide(pdata[:,4],pdata[:,3])
 zp=numpy.divide(pdata[:,5],pdata[:,3])
@@ -80,9 +80,9 @@ def oldEmittance2D(x,px,w):
   c12 = numpy.average(numpy.multiply(dx,dxp), weights=w)
   c22 = numpy.average(numpy.multiply(dxp,dxp),weights=w)
   if verbose:
-    print "c11:"+str(c11)
-    print "c12:"+str(c12)
-    print "c22:"+str(c22)
+    print("c11:"+str(c11))
+    print("c12:"+str(c12))
+    print("c22:"+str(c22))
   covMatrix = numpy.matrix([ [c11,c12], [c12,c22] ])
   sqEmittance = la.det(covMatrix)
   return numpy.sqrt(sqEmittance)

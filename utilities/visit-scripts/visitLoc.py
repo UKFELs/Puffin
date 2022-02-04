@@ -6,8 +6,8 @@
 Defines the location of local Visit install. Edit as appropriate!!
 """
 
-import os
 import sys
+
 
 def visitLoc():
     localVisItDir = "/home/tml/bin/visit/visit2_10_3.linux-x86_64"

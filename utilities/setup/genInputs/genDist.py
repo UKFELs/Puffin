@@ -11,11 +11,8 @@ of the slice, the Gaussian distribution properties in x, y, px, py and energy
 dimensions, and the charge in the slice.
 """
 
-import sys, glob, os
 import numpy as np
-from numpy import pi
 from numpy import arange
-import tables
 from puffDataClass import puffData
 
 

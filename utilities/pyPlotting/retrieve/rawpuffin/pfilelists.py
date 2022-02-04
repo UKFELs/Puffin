@@ -6,9 +6,7 @@
 This retrieves a list of the required Puffin files, given a basename.
 """
 
-import sys, glob, os
-import numpy as np
-from numpy import arange
+import glob, os
 import tables
 
 
@@ -46,8 +44,6 @@ def getIntFileSlices(baseName):
 
 
 def getZData(fname):
-# Every file should be in Puffin format with vizSchema annotations...
-# ...so the runInfo group should be there!!!
     h5f = tables.open_file(fname, mode='r')
     zD = h5f.root.runInfo._v_attrs.zTotal
     h5f.close()

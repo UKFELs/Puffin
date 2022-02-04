@@ -64,8 +64,8 @@ def SU2Matched(fnamein, puffVars, undmod, qf, DL, twx1=False, twy1=False):
     twxr2 = twx2
     twyr2 = twy2
 
-    print twxr2
-    print twyr2
+    print(twxr2)
+    print(twyr2)
 
 #   Match beam to given parameters
 

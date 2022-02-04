@@ -10,9 +10,6 @@ See the matchTwiss routine at the bottom of the file to do this.
 import numpy as np
 
 
-
-
-
 def getMat(b1, a1, b2, a2):
     """
     Calculate matrix necessary to transform a beam of given Twiss parameters
