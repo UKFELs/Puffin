@@ -10,9 +10,10 @@ project (puffin)
 enable_language (Fortran)
 
 # The version number.
-set (Puffin_VERSION_MAJOR 1)
-set (Puffin_VERSION_MINOR 9)
-set (Puffin_VERSION_PATCH 0)
+set (Puffin_VERSION_MAJOR 2)
+set (Puffin_VERSION_MINOR 1)
+set (Puffin_VERSION_PATCH 0a)
+include(${CMAKE_SOURCE_DIR}/scimake/SciInit.cmake)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules")
 
@@ -103,10 +104,10 @@ endif()
 
 configure_file(config-cmake.h.in config.h)
 
-configure_file(source/puffProvenance.f90.in source/puffProvenance.f90)
-configure_file(doc/fortran.dxg.in doc/fortran.dxg)
+configure_file(puffin/lib/common/puffProvenance.f90.in puffin/lib/common/puffProvenance.f90)
+# configure_file(doc/fortran.dxg.in doc/fortran.dxg)
 
-add_subdirectory(source)
+add_subdirectory(puffin)
 
 set(PFUNIT_INSTALL $ENV{PFUNIT_INSTALL})
 if (ENABLE_TESTING)
@@ -154,4 +155,4 @@ set (CPACK_RESOURCE_FILE_LICENSE
 set (CPACK_PACKAGE_VERSION_MAJOR "${Puffin_VERSION_MAJOR}")
 set (CPACK_PACKAGE_VERSION_MINOR "${Puffin_VERSION_MINOR}")
 set (CPACK_PACKAGE_VERSION_PATCH "${Puffin_VERSION_PATCH}")
-include (CPack)
+#include (CPack)

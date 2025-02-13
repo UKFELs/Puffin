@@ -1,0 +1,115 @@
+! ################################################
+! Copyright 2012-2018, University of Strathclyde
+! Authors: Lawrence T. Campbell
+! License: BSD-3-Clause
+! ################################################
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Module to describe the program metadata, much of which is configured at
+!> compile time through CMake.
+
+module typeMetadata
+
+  use mod_paratype, only: wp, ip
+  implicit none
+  private
+  public :: fMeta
+
+!> @author
+!> Lawrence Campbell,
+!> University of Strathclyde, 
+!> Glasgow, UK
+!> @brief
+!> Type to hold the metadata. Basic setter and getters are defined for the
+!> runtime info like input filenames, etc
+
+  type fMeta
+    character(len=120) :: baseName
+    character(len=120) :: bfile, mfile, sfile, lfile
+    character(len=120) :: runCommand
+    character(200) :: timeStamp = "@CONFIGURE_TIME_STAMP@", &
+                      gitBranch = '@GIT_BRANCH@ : @GIT_REVISION@', &
+                      puffVersion = '@Puffin_VERSION_MAJOR@.@Puffin_VERSION_MINOR@.@Puffin_VERSION_PATCH@', &
+                      fortCompiler = '@Fortran_COMPILER_NAME@', &
+                      fortVersion = '@Fortran_VERSION@', &
+                      fortFlags = "@CMAKE_Fortran_FLAGS@", &
+                      buildHost = '@UQHOSTNAME@', &
+                      hostType = '@CMAKE_HOST_SYSTEM@'  ! immutable - set at compile time
+  end type fMeta
+
+!contains
+
+  ! function getRunCommand(self) result(st)
+  !   implicit none
+  !   class(fMeta), intent(inout) :: self
+  !   character(*) :: st
+  !   st = trim(self%runCommand)
+  ! end function getRunCommand
+
+  ! subroutine setRunCommand(self)
+  !   implicit none
+  !   class(fMeta), intent(inout) :: self
+  !   call get_command(self%runCommand)
+  ! end subroutine setRunCommand
+
+  ! function getBeamFileName(self) result(st)
+  !   implicit none
+  !   class(fMeta), intent(inout) :: self
+  !   character(*) :: st
+  !   st = trim(self%bfile)
+  ! end function getBeamFileName
+
+  ! subroutine setBeamFileName(self, bfile)
+  !   implicit none
+  !   class(fMeta), intent(inout) :: self
+  !   character(*), intent(in) :: bfile
+  !   self%bfile = trim(bfile)
+  ! end subroutine setBeamFileName
+
+  ! function getSeedFileName(self) result(st)
+  !   implicit none
+  !   class(fMeta), intent(inout) :: self
+  !   character(*) :: st
+  !   st = trim(self%sfile)
+  ! end function getSeedFileName
+
+  ! subroutine setSeedFileName(self, sfile)
+  !   implicit none
+  !   class(fMeta), intent(inout) :: self
+  !   character(*), intent(in) :: sfile
+  !   self%sfile = trim(sfile)
+  ! end subroutine setSeedFileName
+
+  ! function getMainFileName(self) result(st)
+  !   implicit none
+  !   class(fMeta), intent(inout) :: self
+  !   character(*) :: st
+  !   st = trim(self%mfile)
+  ! end function getMainFileName
+
+  ! subroutine setMainFileName(self, mfile)
+  !   implicit none
+  !   class(fMeta), intent(inout) :: self
+  !   character(*), intent(in) :: mfile
+  !   self%mfile = trim(mfile)
+  ! end subroutine setMainFileName
+
+  ! function getLatticeFileName(self) result(st)
+  !   implicit none
+  !   class(fMeta), intent(inout) :: self
+  !   character(*) :: st
+  !   st = trim(self%lfile)
+  ! end function getLatticeFileName
+
+  ! subroutine setLatticeFileName(self, lfile)
+  !   implicit none
+  !   class(fMeta), intent(inout) :: self
+  !   character(*), intent(in) :: lfile
+  !   self%lfile = trim(lfile)
+  ! end subroutine setLatticeFileName
+
+end module typeMetadata
