@@ -85,8 +85,8 @@ contains
 !> @param[out] sA0_Im Magnitude of y-polarized injected seed field, if used.
 !> @param[out] sFiltFrac Cutoff frequency for high-pass filter in diffraction 
 !> step. Expressed as a fraction of the resonant reference frequency.
-!> @param[out] sDiffFrac Diffraction step size, expressed as fraction of 
-!> reference resonant frequency
+!> @param[out] sDiffFrac Length of the difraction step, in units of the undulator 
+!> period. Usually= 1.
 !> @param[out] sBeta Absorption coefficient for absorbing boundaries in the 
 !> field mesh in the transverse plane.
 !> @param[out] sRho FEL, or pierce, parameter
