@@ -4,7 +4,7 @@
 # 25.6.2015 Jonathan Smith - CMake lists for PUFFIN Project
 ###
 
-cmake_minimum_required (VERSION 2.8.10)
+cmake_minimum_required (VERSION 3.20)
 project (puffin)
 cmake_policy(SET CMP0054 NEW)
 enable_language (Fortran)

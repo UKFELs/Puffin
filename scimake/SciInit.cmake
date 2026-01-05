@@ -99,7 +99,6 @@ endif ()
 #
 ######################################################################
 
-cmake_policy(SET CMP0017 OLD) # Use our modules over theirs
 set(CMAKE_MODULE_PATH
   ${SCIMAKE_DIR}/Modules
 )
@@ -132,7 +131,7 @@ SciPrintString("SUPRA_SEARCH_PATH = ${SUPRA_SEARCH_PATH}")
 ######################################################################
 
 find_program(HOSTNAME_CMD NAMES hostname)
-exec_program(${HOSTNAME_CMD} ARGS OUTPUT_VARIABLE HOSTNAME)
+execute_process(COMMAND ${HOSTNAME_CMD} OUTPUT_VARIABLE HOSTNAME OUTPUT_STRIP_TRAILING_WHITESPACE)
 SciPrintString("scimake running on ${HOSTNAME}")
 # This not always accurate
 string(REGEX REPLACE "\\..*$" "" UQHOSTNAME "${HOSTNAME}")
@@ -142,7 +141,7 @@ SciPrintString("DOMAINNAME = ${DOMAINNAME}")
 
 find_program(UNAME NAMES uname)
 macro(getuname name flag)
-  exec_program("${UNAME}" ARGS "${flag}" OUTPUT_VARIABLE "${name}")
+  execute_process(COMMAND "${UNAME}" "${flag}" OUTPUT_VARIABLE "${name}" OUTPUT_STRIP_TRAILING_WHITESPACE)
 endmacro(getuname)
 
 if (UNAME)
@@ -336,4 +335,3 @@ endif ()
 ######################################################################
 
 include(${SCIMAKE_DIR}/SciUnitTestMacros.cmake)
-
