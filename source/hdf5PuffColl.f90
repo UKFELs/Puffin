@@ -503,6 +503,7 @@ contains
     CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
 ! then text attributes
     CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
+    if (attr_string_len .eq. 0) attr_string_len = 1
     CALL h5tset_size_f(atype_id, attr_string_len, error)
     CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
 !    Print*,'hdf5_puff:outputH5BeamFiles(string padding enabled)'
@@ -1613,6 +1614,7 @@ contains
       aname="vsLabels"
       attr_data_string=trim(adjustl(dsetname))
       attr_string_len=len(trim(adjustl(dsetname)))
+      if (attr_string_len .eq. 0) attr_string_len = 1
       CALL h5tset_size_f(atype_id, attr_string_len, error)
       CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
       CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)

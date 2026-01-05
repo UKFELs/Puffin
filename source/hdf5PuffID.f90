@@ -299,6 +299,7 @@ contains
 
 ! then text attributes
     CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
+    if (attr_string_len .eq. 0) attr_string_len = 1
     CALL h5tset_size_f(atype_id, attr_string_len, error)
     CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
 !    Print*,'hdf5_puff:outputH5BeamFiles(string padding enabled)'

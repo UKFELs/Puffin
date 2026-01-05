@@ -49,6 +49,7 @@ contains
     call h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
 
     attr_string_len=len(trim(adjustl(attrValue)))
+    if (attr_string_len .eq. 0) attr_string_len = 1
 
     call h5tset_size_f(atype_id, attr_string_len, error)
 
