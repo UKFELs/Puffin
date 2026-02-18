@@ -4,19 +4,21 @@
 # 25.6.2015 Jonathan Smith - CMake lists for PUFFIN Project
 ###
 
-cmake_minimum_required (VERSION 2.8.10)
+cmake_minimum_required (VERSION 3.20)
 project (puffin)
-cmake_policy(SET CMP0054 NEW)
+
 enable_language (Fortran)
 
 # The version number.
 set (Puffin_VERSION_MAJOR 1)
 set (Puffin_VERSION_MINOR 9)
 set (Puffin_VERSION_PATCH 0)
-include(${CMAKE_SOURCE_DIR}/scimake/SciInit.cmake)
 
-#option(ENABLE_PARALLEL "whether to build parallel PUFFIN" ON)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules")
 
+option(ENABLE_PARALLEL "whether to build parallel PUFFIN" ON)
+option(USE_MKL "Use Intel MKL" OFF)
+option(ENABLE_TESTING "Enable testing" OFF)
 
 ######################################################################
 #
@@ -25,81 +27,53 @@ include(${CMAKE_SOURCE_DIR}/scimake/SciInit.cmake)
 ######################################################################
 
 if(ENABLE_PARALLEL)
-  find_package(SciMpi REQUIRED)
+  find_package(MPI REQUIRED)
   set(USE_MPI 1 CACHE BOOL "setting USE_MPI to 1" FORCE)
 endif()
 
 if (USE_MKL)
-  find_package(SciMkl)
+  # User is expected to provide MKLROOT or MKL_LIBRARY_DIRS
+  if(NOT DEFINED MKL_LIBRARY_DIRS AND DEFINED ENV{MKLROOT})
+    set(MKL_LIBRARY_DIRS "$ENV{MKLROOT}/lib/intel64")
+    set(MKL_INCLUDE_DIRS "$ENV{MKLROOT}/include")
+  endif()
+  message(STATUS "Using MKL. MKL_LIBRARY_DIRS: ${MKL_LIBRARY_DIRS}")
 else()
-find_package(SciFftw3 REQUIRED)
+  find_package(FFTW3 REQUIRED)
 endif()
 
-find_package(SciHdf5)
-find_package(OpenMP)
-find_package(SciDoxygen)
+find_package(HDF5 COMPONENTS Fortran HL REQUIRED)
+find_package(OpenMP REQUIRED)
+find_package(Doxygen)
 
 if (DOXYGEN_FOUND)
     message(STATUS "Doxygen FOUND!!")
-    message(STATUS "DOXYGEN IS : ${DOXYGEN_PROGRAM}")
+    message(STATUS "DOXYGEN IS : ${DOXYGEN_EXECUTABLE}")
 endif()
 
-if (OPENMP_FOUND)
+if (OpenMP_FOUND)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
 endif()
 
-## FFLAGS depend on the compiler
-#get_filename_component (Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)#
-#
-#if (Fortran_COMPILER_NAME MATCHES "gfortran.*")
-#  # gfortran
-#  set (CMAKE_Fortran_FLAGS_RELEASE "-funroll-all-loops -fno-f2c -O3")
-#  set (CMAKE_Fortran_FLAGS_DEBUG   "-fno-f2c -O0 -g")
-#elseif (Fortran_COMPILER_NAME MATCHES "ifort.*")
-#  # ifort (untested)
-#  set (CMAKE_Fortran_FLAGS_RELEASE "-f77rtl -O3")
-#  set (CMAKE_Fortran_FLAGS_DEBUG   "-f77rtl -O0 -g")
-#elseif (Fortran_COMPILER_NAME MATCHES "g77")
-#  # g77
-#  set (CMAKE_Fortran_FLAGS_RELEASE "-funroll-all-loops -fno-f2c -O3 -m32")
-#  set (CMAKE_Fortran_FLAGS_DEBUG   "-fno-f2c -O0 -g -m32")
-#else (Fortran_COMPILER_NAME MATCHES "gfortran.*")
-#  message ("CMAKE_Fortran_COMPILER full path: " ${CMAKE_Fortran_COMPILER})
-#  message ("Fortran compiler: " ${Fortran_COMPILER_NAME})
-#  message ("No optimized Fortran compiler flags are known, we just try -O2...")
-#  set (CMAKE_Fortran_FLAGS_RELEASE "-O2")
-#  set (CMAKE_Fortran_FLAGS_DEBUG   "-O0 -g")
-#endif (Fortran_COMPILER_NAME MATCHES "gfortran.*")
-
-#message ("-- FFTW_LIB: " ${FFTW_LIB})
-#message ("-- FFTW_MPI_LIB: " ${FFTW_MPI_LIB})
-#message ("-- FFTW_LIB_DIR: " ${FFTW_LIB_DIR})
-#find_package(MPI REQUIRED)
-
-set(ENV{GIT_DIR} ${CMAKE_SOURCE_DIR}/.git)
-#set(GIT_GET_BRANCH "git rev-parse --abbrev-ref HEAD")
-
 execute_process(COMMAND git --work-tree=${CMAKE_SOURCE_DIR} rev-parse --abbrev-ref HEAD
   RESULT_VARIABLE GIT_RESULT
   OUTPUT_VARIABLE GIT_BRANCH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
   )
 
-if (GIT_BRANCH)
-  STRING(REPLACE "\n" "" GIT_BRANCH ${GIT_BRANCH})
-else()
+if (NOT GIT_BRANCH)
   set(GIT_BRANCH "unknown branch, not in git")
 endif()
 
 execute_process(COMMAND git --work-tree=${CMAKE_SOURCE_DIR} rev-parse HEAD
   RESULT_VARIABLE GIT_RESULT
   OUTPUT_VARIABLE GIT_REVISION
+  OUTPUT_STRIP_TRAILING_WHITESPACE
   )
 
-if (GIT_REVISION)
-  STRING(REPLACE "\n" "" GIT_REVISION ${GIT_REVISION})
-else()
+if (NOT GIT_REVISION)
   set(GIT_REVISION "unknown revision, not in git")
 endif()
 
@@ -116,7 +90,11 @@ set(CXX ${CMAKE_CXX_COMPILER})
 set(CFLAGS "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${CBT_UC}}")
 set(CXXFLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${CBT_UC}}")
 set(HAVE_CMAKE 1 CACHE STRING "Whether built with CMake")
-enable_testing()
+
+if(ENABLE_TESTING)
+  enable_testing()
+endif()
+
 ######################################################################
 #
 # Create the configure file
@@ -139,9 +117,8 @@ if (ENABLE_TESTING)
   else()
     message(STATUS "Tests requested, but need PFUNIT_INSTALL specified...")
     message(STATUS "...so skipping tests. Define top level PFUNIT_INSTALL.")
-  endif (DEFINED PFUNIT_INSTALL)
-endif (ENABLE_TESTING)
-
+  endif ()
+endif ()
 
 if (DOXYGEN_FOUND)
     add_custom_target(doc
@@ -149,10 +126,6 @@ if (DOXYGEN_FOUND)
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/doc
         COMMENT "Generating API documentation with Doxygen" VERBATIM
         )
-    #add_custom_command(COMMAND ${DOXYGEN_PROGRAM} ${PROJECT_BINARY_DIR}/doc/fortran.dxg
-    #      COMMENT "Generating doxygen dev docs"
-    #      VERBATIM
-    #    )
 endif()
 
 install (DIRECTORY utilities/post DESTINATION bin)
@@ -171,11 +144,7 @@ install (DIRECTORY scripts/ DESTINATION examples/job-submission-scripts)
 #
 ######################################################################
 
-set(COMMON_INSTALL TRUE)
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Puffin")
-set(CONFIG_FILES)  # Clear out
-include(${CMAKE_SOURCE_DIR}/scimake/SciFinalize.cmake)
-
 
 # build a CPack driven installer package
 

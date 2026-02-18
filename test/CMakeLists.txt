@@ -123,13 +123,13 @@ message(STATUS "PFUNIT MODULES: ${PFUNIT_MODULES}")
 
 # add_executable(testexe ${PFUNIT}/include/driver.F90 ${PFTEST_FORTRAN_FILES} "AIO.c.o" ${F_SOURCE_MODS})
 add_executable(testexe ${PFUNIT}/include/driver.F90 ${PFTEST_FORTRAN_FILES} ${F_SOURCE_MODS})
-#link_directories(${PFUNIT}/mod/ ${PFUNIT}/include ${CMAKE_CURRENT_SOURCE_DIR}/../source ${CMAKE_CURRENT_BINARY_DIR}/../source ${Fftw3_LIBRARY_DIRS} ${Hdf5_LIBRARY_DIRS} ${MPI_Fortran_LIBRARIES})
+#link_directories(${PFUNIT}/mod/ ${PFUNIT}/include ${CMAKE_CURRENT_SOURCE_DIR}/../source ${CMAKE_CURRENT_BINARY_DIR}/../source ${FFTW3_LIBRARY_DIRS} ${HDF5_LIBRARY_DIRS} ${MPI_Fortran_LIBRARIES})
 link_directories(${PFUNIT}/bin/ ${PFUNIT}/include ${CMAKE_CURRENT_SOURCE_DIR}/../source ${CMAKE_CURRENT_BINARY_DIR}/../source  ${MPI_Fortran_LIBRARIES})
 
 
 set_target_properties(testexe PROPERTIES
    COMPILE_FLAGS "-c -g -O0 -DGNU -DBUILD_ROBUST -fbacktrace -fbounds-check -fcheck=mem -I${PFUNIT}/include -I${PFUNIT}/include -I${CMAKE_CURRENT_BINARY_DIR}/../source"
-   LINK_FLAGS "-g -O0 -fbacktrace -fbounds-check -fcheck=mem -DGNU -DBUILD_ROBUST -I.  -I${PFUNIT}/include -I${CMAKE_CURRENT_BINARY_DIR}/../source  -I${Hdf5_INCLUDE_DIRS} -I${Fftw3_INCLUDE_DIRS}"
+   LINK_FLAGS "-g -O0 -fbacktrace -fbounds-check -fcheck=mem -DGNU -DBUILD_ROBUST -I.  -I${PFUNIT}/include -I${CMAKE_CURRENT_BINARY_DIR}/../source  -I${HDF5_INCLUDE_DIRS} -I${FFTW3_INCLUDE_DIRS}"
    )
 
  ###
@@ -138,7 +138,7 @@ set_target_properties(testexe PROPERTIES
  # including twice the FFTW_MPI lib before and after the other lib
  # (which this implicitly does) it is able to resolve its symbols correctly
  ###
-target_link_libraries(testexe ${PFUNITLIB} ${Hdf5_LIBRARIES} ${Fftw3_LIBRARIES} ${Fftw3_LIBRARIES} ${MPI_Fortran_LIBRARIES} dl m)
+target_link_libraries(testexe ${PFUNITLIB} ${HDF5_LIBRARIES} ${FFTW3_LIBRARIES} ${FFTW3_LIBRARIES} ${MPI_Fortran_LIBRARIES} dl m)
 add_dependencies(testexe puffin fortran_test_files fortran_source_modules)
 
 add_test(testall testexe)

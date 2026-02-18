@@ -20,24 +20,15 @@ if (USE_MKL)
   else()
     set (MKL_LIBS mkl_intel_lp64 mkl_core mkl_sequential )
   endif()
-#  set (MKL_LIBRARY_DIRS ${MKLROOT}/lib/intel64)
-  set (MKL_LIBRARY_DIRS ${Mkl_LIBRARY_DIRS})
-  set (MKL_INCLUDE_DIRS ${MKLROOT}/include)
 endif()
 
-# todo, make finding of FFTW depend on scimake, or before that be user-settable.
-
-# Don't need all the libraries, so just use this.
-set (FFTW_LIBS fftw3_mpi fftw3)
 set (BASE_LINK_LIBS dl m)
-#add_dependencies() seems not to be needed at this point
 
 if (USE_MKL)
   include_directories(${MKL_INCLUDE_DIRS} ${MPI_Fortran_INCLUDE_PATH})
-  link_directories(${MKL_LIBRARY_DIRS} ${MPI_Fortran_LIBRARIES})
+  link_directories(${MKL_LIBRARY_DIRS})
 else()
-  include_directories(${Fftw3_INCLUDE_DIRS} ${Hdf5_INCLUDE_DIRS} ${MPI_Fortran_INCLUDE_PATH})
-  link_directories(${Fftw3_LIBRARY_DIRS} ${Hdf5_INCLUDE_DIRS} ${MPI_Fortran_LIBRARIES})
+  include_directories(${FFTW3_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS} ${MPI_Fortran_INCLUDE_PATH})
 endif ()
 
 
@@ -68,8 +59,8 @@ if (USE_MKL)
 #  target_link_libraries(puffin AIO ${MKL_LIBS} ${MPI_Fortran_LIBRARIES} ${BASE_LINK_LIBS})
   target_link_libraries(puffin ${MKL_LIBS} ${MPI_Fortran_LIBRARIES} ${BASE_LINK_LIBS})
 else()
-#  target_link_libraries(puffin AIO ${FFTW_LIBS} ${Hdf5_LIBRARIES} ${MPI_Fortran_LIBRARIES} ${BASE_LINK_LIBS})
-  target_link_libraries(puffin ${FFTW_LIBS} ${Hdf5_LIBRARIES} ${MPI_Fortran_LIBRARIES} ${BASE_LINK_LIBS})
+#  target_link_libraries(puffin AIO ${FFTW3_LIBRARIES} ${HDF5_LIBRARIES} ${MPI_Fortran_LIBRARIES} ${BASE_LINK_LIBS})
+  target_link_libraries(puffin ${FFTW3_LIBRARIES} ${HDF5_LIBRARIES} ${MPI_Fortran_LIBRARIES} ${BASE_LINK_LIBS})
 endif()
 
 install (TARGETS puffin DESTINATION bin)
