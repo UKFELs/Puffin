@@ -1,6 +1,6 @@
 @test
 subroutine testTests()
-  use pfunit_mod
+  use pfunit
   implicit none
   @assertEqual("Hello World!","Hello World!")
 end subroutine testTests

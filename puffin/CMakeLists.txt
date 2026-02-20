@@ -48,13 +48,8 @@ else()
   add_definitions(${MPI_C_COMPILE_FLAGS} ${OpenMP_C_FLAGS})
 endif()
 
-#  add_definitions(${MPI_C_COMPILE_FLAGS} "-DMKL_ILP64")
-
-#add_library(AIO ${C_SOURCES})
-
 #C definitions are not needed for Fortran apps.
 #remove_definitions(${MPI_C_COMPILE_FLAGS} ${OpenMP_C_FLAGS})
-
 
 if (USE_MKL)
   add_definitions(${OpenMP_Fortran_FLAGS} ${MPI_Fortran_COMPILE_FLAGS})
@@ -75,4 +70,5 @@ else()
   target_link_libraries(puffin puffin_mpi)
 endif()
 
+#target_link_libraries(puffin puffin_mpi)
 install (TARGETS puffin DESTINATION bin)
