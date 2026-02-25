@@ -12,24 +12,10 @@ use rhs_vars
 
 implicit none
 
-
-
-!private real(kind=wp), allocatable :: dp2f(:), sField4ElecReal(:), &
-!                                      sField4ElecImag(:) !, &
-!                                      !Lj(:)
-
-
-
-!real(kind=wp), allocatable :: dp2f(:), sField4ElecReal(:), &
-!                              sField4ElecImag(:) !, &
-                              !Lj(:)
-
-
-
 contains
 
   subroutine dppdz_r_f(sx, sy, sz2, spr, spi, sgam, &
-                       sZ, sdpr, qOK)
+                       sZ, sdpr)
 
   	implicit none
 
@@ -41,13 +27,6 @@ contains
 
     real(kind=wp) :: szt
 
-    logical, intent(inout) :: qOK
-
-    
-    LOGICAL :: qOKL
-
-    qOK = .false.
-
 !$OMP WORKSHARE
     sdpr = sInv2rho * ( n2col * byu  & 
                         - sEta_G * sp2 / sKappa_G**2 *    &
@@ -55,18 +34,6 @@ contains
            + sKappa_G * spi / sgam * (1 + sEta_G * sp2) &
                * n2col * bzu
 !$OMP END WORKSHARE
-
-! Set the error flag and exit
-
-    qOK = .true.
-
-    !goto 2000 
-
-    !1000 call Error_log('Error in equations:dppdz_r',tErrorLog_G)
-    
-    !print*,'Error in equations:dppdz_r'
-
-    !2000 continue
 
   end subroutine dppdz_r_f
 
@@ -79,10 +46,9 @@ contains
 
 
   subroutine dppdz_i_f(sx, sy, sz2, spr, spi, sgam, sZ, &
-                       sdpi, qOK)
+                       sdpi)
 
     implicit none
-
 
     real(kind=wp), contiguous, intent(in) :: sx(:), sy(:), sz2(:), spr(:), &
                                              spi(:), sgam(:) 
@@ -90,13 +56,6 @@ contains
     real(kind=wp), contiguous, intent(out) :: sdpi(:)
 
     real(kind=wp) :: szt
-
-    logical, intent(inout) :: qOK
-
-    LOGICAL :: qOKL                   
-
-
-    qOK = .false.
 
 !$OMP WORKSHARE
     sdpi = sInv2rho * (  n2col * bxu  & 
@@ -106,31 +65,12 @@ contains
                * n2col * bzu
 !$OMP END WORKSHARE
 
-! Set the error flag and exit
-
-    qOK = .true.
-
-    !goto 2000 
-
-    !1000 call Error_log('Error in equations:dppdz_i',tErrorLog_G)
-    
-    !print*,'Error in equations:dppdz_i'
-    
-    !2000 continue
-
-
   end subroutine dppdz_i_f
-
-
-
-
-
-
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine dgamdz_f(sx, sy, sz2, spr, spi, sgam, &
-                      sdgam, qOK)
+                      sdgam)
 
     implicit none
 
@@ -140,12 +80,6 @@ contains
 
     real(kind=wp), contiguous, intent(out) :: sdgam(:)
 
-    logical, intent(inout) :: qOK
-
-    LOGICAL :: qOKL
-
-
-    qOK = .false.
 
 !$OMP WORKSHARE
 
@@ -153,19 +87,6 @@ contains
            ( spr * sField4ElecReal + spi * sField4ElecImag ) 
 
 !$OMP END WORKSHARE
-
-    ! Set the error flag and exit
-
-    qOK = .true.
-
-    !goto 2000 
-
-    !1000 call Error_log('Error in equations:dp2dz',tErrorLog_G)
-    
-    !print*,'Error in equations:dp2dz'
-
-    !2000 continue
-
 
   end subroutine dgamdz_f
 
@@ -176,7 +97,7 @@ contains
 
 
   subroutine dxdz_f(sx, sy, sz2, spr, spi, sgam, &
-                    sdx, qOK)
+                    sdx)
 
     implicit none
 
@@ -189,19 +110,6 @@ contains
                                               spi(:), sgam(:)
     real(kind=wp), contiguous, intent(out) :: sdx(:)
 
-
-!    real(kind=wp), intent(in) :: sy(:), Lj(:), nd
-!    real(kind=wp), intent(inout) :: sb(:)
-    logical, intent(inout) :: qOK
-
-!              Local vars
-
-    logical :: qOKL ! Local error flag
-
-
-    qOK = .false.
-
-
 !$OMP WORKSHARE
 
     sdx = 2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
@@ -210,18 +118,6 @@ contains
 
 !$OMP END WORKSHARE
 
-!    sdx = spr * Lj / nd
-    
-
-    qOK = .true.
-    
-    !goto 2000
-    
-    !1000 call Error_log('Error in equations:dxdz',tErrorLog_G)
-    
-    !2000 continue
-
-
   end subroutine dxdz_f
 
 
@@ -229,7 +125,7 @@ contains
 
 
   subroutine dydz_f(sx, sy, sz2, spr, spi, sgam, &
-                    sdy, qOK)
+                    sdy)
 
     implicit none
 
@@ -243,16 +139,6 @@ contains
     
     real(kind=wp), contiguous, intent(out) :: sdy(:)
 
-    logical, intent(inout) :: qOK
-
-!              Local vars
-
-    logical :: qOKL ! Local error flag
-
-
-    qOK = .false.
-
-
 !$OMP WORKSHARE
 
     sdy = - 2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
@@ -261,25 +147,13 @@ contains
 
 !$OMP END WORKSHARE
 
-!    sdy = - spi * Lj / nd
-
-
-    qOK = .true.
-    
-    !goto 2000
-    
-    !1000 call Error_log('Error in equations:dydz',tErrorLog_G)
-    
-    !2000 continue
-
-
   end subroutine dydz_f
 
 
 
 
   subroutine dz2dz_f(sx, sy, sz2, spr, spi, sgam, &
-                     sdz2, qOK)
+                     sdz2)
 
     implicit none
 
@@ -293,31 +167,11 @@ contains
 
     real(kind=wp), contiguous, intent(out) :: sdz2(:)
 
-
-!    real(kind=wp), intent(in) :: sy(:), Lj(:), nd
-!    real(kind=wp), intent(inout) :: sb(:)
-    logical, intent(inout) :: qOK
-
-!              Local vars
-
-    logical :: qOKL ! Local error flag
-
-
-    qOK = .false.
-
 !$OMP WORKSHARE
 
     sdz2 = sp2
 
 !$OMP END WORKSHARE
-
-    qOK = .true.
-    
-    !goto 2000
-    
-    !1000 call Error_log('Error in equations:dz2dz',tErrorLog_G)
-    
-    !2000 continue
 
   end subroutine dz2dz_f
   

@@ -21,12 +21,11 @@ implicit none
 contains
 
 
-subroutine getInterps_1D(sz2)!, li1,li2)
+subroutine getInterps_1D(sz2)
 
 use rhs_vars
 
 real(kind=wp), intent(in) :: sz2(:)
-!real(kind=wp), intent(out) :: li1, li2
 
 integer(kind=ip) :: z2node
 integer(kind=ipl) :: i
@@ -36,9 +35,6 @@ real(kind=wp) :: locz2
 
 !$OMP DO PRIVATE(z2node, locz2)
   do i = 1, procelectrons_G(1)
-  !do i = 1, maxEl
-!    if (i<=procelectrons_G(1)) then 
-
 
 !                  Get surrounding nodes 
 
@@ -62,7 +58,6 @@ real(kind=wp) :: locz2
       lis_GR(1,i) = (1.0_wp - locz2/dz2)
       lis_GR(2,i) = 1 - lis_GR(1,i)
 
-!    end if
   end do
 !$OMP END DO
 
@@ -91,9 +86,6 @@ integer error
 
 !$OMP DO
   do i = 1, procelectrons_G(1)
-!  do i = 1, maxEl
-  
-    !if (i<=procelectrons_G(1)) then
 
       sField4ElecReal(i) = lis_GR(1,i) * sAr(p_nodes(i)) + sField4ElecReal(i)
       sField4ElecReal(i) = lis_GR(2,i) * sAr(p_nodes(i) + 1_ip) + sField4ElecReal(i)
@@ -107,11 +99,6 @@ integer error
 
       sField4ElecImag(i) = lis_GR(1,i) * sAi(p_nodes(i)) + sField4ElecImag(i)
       sField4ElecImag(i) = lis_GR(2,i) * sAi(p_nodes(i) + 1_ip) + sField4ElecImag(i)
-
-!if (tProcInfo_G%rank == 0) print*, i, sField4ElecImag(i), sAi(p_nodes(i)), sAi(p_nodes(i)+1), &
-!                                  p_nodes(i), lis_GR(1,i), lis_GR(2,i)
-
-    !end if
   
   end do 
 !$OMP END DO
@@ -152,19 +139,10 @@ dadz_w = (s_chi_bar_G/dV3) * (1 + seta * sp2 ) &
 !$OMP DO PRIVATE(dadzRInst, dadzIInst)
   do i = 1, procelectrons_G(1)
 
-  ! do i = 1, maxEl
-  
-    !if (i<=procelectrons_G(1)) then
-
-
 !                  Get 'instantaneous' dAdz
-
-      
 
       !dadzRInst = ((s_chi_bar_G(i)/dV3) * (1 + seta * sp2(i) ) &
       !                  * spr(i) / sgam(i) )
-      
-      ! dadzCom = ((s_chi_bar_G(i)/dV3)
 
       dadzRInst = dadz_w(i) * spr(i)
 
@@ -193,10 +171,6 @@ dadz_w = (s_chi_bar_G/dV3) * (1 + seta * sp2 ) &
       !$OMP ATOMIC
       sDADzi(p_nodes(i) + 1_ip) =                      & 
         lis_GR(2,i) * dadzIInst + sDADzi(p_nodes(i) + 1_ip)
-
-
-
-    !end if
   
   end do 
 !$OMP END DO

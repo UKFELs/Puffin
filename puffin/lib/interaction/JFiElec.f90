@@ -57,18 +57,6 @@ real(kind=wp) :: locx, locy, locz2, &
       z2_in2 = locz2 / dz2
       z2_in1 = (1.0_wp - z2_in2)
 
-!      if (xnode > nspinDX) then
-!        print*, 'X coord is too large!! with node:', xnode, &
-!                ' and pos ', sx(i)
-!        STOP
-!      end if
-
-!      if (ynode > nspinDY) then
-!        print*, 'Y coord is too large!! with node:', ynode, &
-!                ' and pos ', sy(i)
-!        STOP
-!      end if
-
       if ((xnode >= nspinDX) .or. (xnode < 1)) then
         qInnerXYOK_G = .false.
         qPArrOK_G = .false.
@@ -129,8 +117,6 @@ integer(kind=ip) :: i
 
 !$OMP DO
   do i = 1, procelectrons_G(1)
-  
-!    if (i<=procelectrons_G(1)) then
 
       sField4ElecReal(i) = lis_GR(1,i) * sAr(p_nodes(i)) + sField4ElecReal(i)
       sField4ElecReal(i) = lis_GR(2,i) * sAr(p_nodes(i) + 1_ip) + sField4ElecReal(i)
@@ -149,8 +135,6 @@ integer(kind=ip) :: i
       sField4ElecImag(i) = lis_GR(6,i) * sAi(p_nodes(i)  + ntrndsi_G + 1_ip) + sField4ElecImag(i)
       sField4ElecImag(i) = lis_GR(7,i) * sAi(p_nodes(i)  + ntrndsi_G + nspinDX) + sField4ElecImag(i)
       sField4ElecImag(i) = lis_GR(8,i) * sAi(p_nodes(i)  + ntrndsi_G + nspinDX + 1) + sField4ElecImag(i)
-
-!    end if
   
   end do 
 !$OMP END DO
