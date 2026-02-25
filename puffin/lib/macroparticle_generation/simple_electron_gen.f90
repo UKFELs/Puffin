@@ -13,18 +13,23 @@
 
 MODULE simple_electron_gen
 
-use puffin_kinds
-use puffin_mpiInfo
-USE Globals
-USE MacrosGen
-use parBeam
-use filter_low_weights
-use grids
-use initConds
-use parallelSetup
-use gtop2
-use addNoise
-use puffin_macroparticle_sequences
+use puffin_kinds, only: WP, IP, IPL
+use puffin_mpiInfo, only: tProcInfo_G
+use MPI
+use Globals, only: saw_G, sRho_G, lg_G, lc_G, sGammaR_G, iX_CG, iY_CG, iZ2_CG, &
+                   iPX_CG, iPY_CG, iGam_CG, npk_bar_G, qOneD_G, ata_G, fillFact_G, &
+                   s_chi_bar_G, sElPX_G, sElPY_G, sElGam_G, sElZ2_G, iNumberElectrons_G, &
+                   iGloNumElectrons_G, qEquiXY_G, TrLdMeth_G, nseqparts_G, log_error
+use MacrosGen, only: genMacros, getChi
+use parBeam, only: splitBeams
+use filter_low_weights, only: removeLowNC, removeLow
+use grids, only: genGrids, getIntTypes, getStEnd
+use initConds, only: getOffsets
+use parallelSetup, only: sum_mpi_int14
+use addNoise, only: applyNoise
+use puffin_macroparticle_sequences, only: getSeqs
+use IO, only: tErrorLog_G
+use beam_conditioning, only: addChirp, addModulation
 
 
 IMPLICIT NONE

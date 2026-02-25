@@ -4,11 +4,11 @@
 
 module MacrosGenNew
 
-use puffin_kinds
-use puffin_mpiInfo
-use randomGauss
-use ParallelSetUp
+use puffin_kinds, only: WP, IP, IPL
+use randomGauss, only: random_Poisson
+use MPI
 use macrosGen, only: RandomNoGenerator
+use puffin_mpiInfo, only: tProcInfo_G
 
 implicit none
 

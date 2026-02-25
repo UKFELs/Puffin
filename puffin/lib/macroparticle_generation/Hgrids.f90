@@ -9,11 +9,15 @@ module grids
 ! dimension which define the positions of the 
 ! electron beam macroparticles.
 
-use puffin_kinds 
-use particleFunctions
-use parallelsetup
-use parBeam
-use globals
+use puffin_mpiInfo, only: tProcInfo_G
+use puffin_kinds, only: WP, IP, IPL
+use particleFunctions, only: PulseGrid, DistributionIntegralZ2, &
+                             DistributionIntegral, flattop2, &
+                             iTopHatDistribution_CG, iGaussianDistribution_CG, iLinear_CG
+use MPI
+use parBeam, only: splitBeam
+use globals, only: iX_CG, iY_CG, iZ2_CG, iPX_CG, iPY_CG, iGam_CG, tErrorLog_G, log_error, &
+                   qRndEj_G, sSigEj_G, gExtEj_G
 
 implicit none
 

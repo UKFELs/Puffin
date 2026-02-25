@@ -5,20 +5,22 @@
 module gMPsFromDists
 
    use puffin_kinds, only: wp, ip, ipl
-   use readDists
-   use MacrosGenNew
+   use readDists, only: getHeaders, readPartDists
+   use MacrosGenNew, only: genMacrosNew
    use MacrosGen, only: getChi
-   use puffin_mpiInfo
-   use Globals
-   use puffin_constants
+   use puffin_mpiInfo, only: tProcInfo_G
+   use ParallelSetUp, only: getGathArrs, scatterE2Loc
+   use Globals, only: qRndEj_G, npk_bar_G, qEquiXY_G, nseqparts_G, qOneD_G, &
+                      iGam_CG, iX_CG, iPX_CG, iY_CG, iPY_CG, &
+                      qscaled_G, Lc_G, Lg_G, sGammaR_G, saw_G, TrLdMeth_G, ata_G, fillFact_G
+   use puffin_constants, only: pi
    use parBeam, only: splitBeam
-   use grids
-   use gtop2
-   use initConds
+   use grids, only: genGrid, getStEnd
+   use particleFunctions, only: iGaussianDistribution_CG, iLinear_CG
    use filter_low_weights, only: removeLowNC
-   use addNoise
-   use puffin_macroparticle_sequences
-   use scale
+   use addNoise, only: applyNoise
+   use puffin_macroparticle_sequences, only: getSeqs, init_random_seed
+   use scale, only: scaleT, scaleX, scalePX
 
    implicit none
    private

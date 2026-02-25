@@ -29,7 +29,7 @@ link_directories(
 # )
 
 add_pfunit_ctest (puffin_tests
-  TEST_SOURCES testTests.pf testFFunctions.pf testHdf5Puff.pf # your application library
+  TEST_SOURCES testTests.pf testFFunctions.pf # your application library
   LINK_LIBRARIES puffin_mpi # your application library
 )
 

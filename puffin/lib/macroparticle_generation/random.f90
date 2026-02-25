@@ -18,7 +18,7 @@ MODULE randomGauss
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-use puffin_kinds
+use puffin_kinds, only: WP, IP
 use puffin_mpiInfo, only: tProcInfo_G
 ! A module for random number generation from the following distributions:
 !

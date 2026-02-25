@@ -4,15 +4,13 @@
 
 MODULE particleFunctions
 
-use puffin_kinds
-use puffin_mpiInfo
-USE error_fn
-USE Functions
-USE puffin_constants
-USE FileType
-USE IO
-use parallelsetup
-use globals
+use puffin_kinds, only: IP, WP
+use error_fn, only: erf
+USE Functions, only: linspace, GaussianGrid, GaussianDistribution, GaussianDistributionZ2
+USE puffin_constants, only: pi
+USE IO, only: log_error
+use globals, only: tErrorLog_G, tProcInfo_G, gExtEj_G
+use MPI
 
 IMPLICIT NONE
 

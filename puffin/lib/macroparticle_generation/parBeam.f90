@@ -7,9 +7,8 @@ module parBeam
 ! This module is used to determine how the electron beam
 ! macroparticles in Puffin are spread across MPI processes.
 
-use puffin_kinds
-use puffin_constants
-use globals
+use puffin_kinds, only: IP, WP, IPL
+use globals, only: iX_CG, iY_CG, iPX_CG, iPY_CG, iGam_CG, iZ2_CG, qEquiXY_G, nseqparts_G
 
 implicit none
 

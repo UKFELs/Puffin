@@ -4,11 +4,11 @@
 
 module MacrosGen
 
-   use puffin_kinds
-   use puffin_mpiInfo
-   use randomGauss
-   use ParallelSetUp
-   use Globals
+   use puffin_kinds, only: WP, IP, IPL
+   use randomGauss, only: init_random_seed, random_Poisson
+   use puffin_mpiInfo, only: tProcInfo_G
+   use MPI
+   use Globals, only: sEta_G, sRho_G
 
    implicit none
    private

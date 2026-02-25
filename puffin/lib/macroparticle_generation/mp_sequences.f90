@@ -14,10 +14,10 @@
 module puffin_macroparticle_sequences
 
 use puffin_kinds, only: WP, IP
-use puffin_mpiInfo
-use parallelsetup
-use globals
-use randomGauss
+use puffin_mpiInfo, only: tProcInfo_G
+use MPI
+use globals, only: nseqparts_G, iX_CG, iY_CG, iPX_CG, iPY_CG, iGam_CG
+use randomGauss, only: random_normal, init_random_seed
 
 implicit none
 

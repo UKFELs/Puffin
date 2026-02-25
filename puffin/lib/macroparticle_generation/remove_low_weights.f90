@@ -15,11 +15,11 @@
 module filter_low_weights
 
 
-use puffin_kinds
-use Globals
-use parallelSetup
-use gtop2
-use beam_conditioning
+use puffin_kinds, only: WP, IPL, IP
+use MPI
+use Globals, only: sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, &
+                   s_chi_bar_G, s_Normalised_chi_G, iNumberElectrons_G, &
+                   iGloNumElectrons_G, sGammaR_G, tProcInfo_G, sum_mpi_int14
 
 implicit none
 
