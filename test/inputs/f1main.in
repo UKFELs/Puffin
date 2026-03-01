@@ -1,0 +1,26 @@
+!
+! File used for testing. The usual Opt Comm fig 1 short flat-top;
+! with shorter wiggler for testing
+
+&MDATA
+ qOneD                  = .true.
+ beam_file              = 'inputs/beam_file.in'
+ seed_file = 'inputs/seed_file.in'
+ q_noise = .false.
+ sElectronThreshold     = 0.05
+ nodesPerLambdar        = 17
+ sFModelLengthZ2        = 4.0
+ srho                   = 0.01
+ sux                    = 1.0
+ suy                    = 1.0
+ saw                    = 1.0
+ sgamma_r               = 100.0
+ lambda_w               = 0.04
+ taper                  = 0.0
+ lattFile               = ''
+ stepsPerPeriod         = 30
+ nPeriods               = 1
+ iWriteNthSteps         = 100
+ iWriteIntNthSteps      = 100
+ /
+
