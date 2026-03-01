@@ -41,49 +41,6 @@ means it may model:
 It presently does not include the effects of space charge, and ignores emission
 of the backwards wave from the e-beam.
 
-----
-## Docker Images
-
-[![Docker Hub](http://dockeri.co/image/ukfels/puffin-user)](https://hub.docker.com/r/ukfels/puffin-user)
-
-Docker images can be fetched from [here](https://hub.docker.com/u/ukfels/).
-There are currently two - a 'full' container intended for development purposes, 
-which has all tests built, along with the testing infrastructure (pFUnit) and
-developer and user documentation, etc. The other, the 'user' container, is
-run like an executable. You pass it the number of processors you want to use,
-and the name of the input file in the current directory to run.
-
-The images are not configured for or intended for use on a cluster; rather, they allow you to get Puffin up and running quickly for smaller, 1D or few-slice runs on a local machine (e.g. your laptop or desktop).
-
-To grab an image, do e.g.
-```
-docker pull ukfels/puffin-user
-```
-then, for the user image,
-```
-docker run -v $(pwd):/home/puffin_user/project ukfels/puffin-user 2 main.in
-```
-will run Puffin using 2 processes with the main input file in the current directory.
-
-[![Docker Hub](http://dockeri.co/image/ukfels/puffin-dev)](https://hub.docker.com/r/ukfels/puffin-dev)
-
-For the 'full' container, for using interactively, grab the `puffin-dev` image, like so:
-```
-docker pull ukfels/puffin-dev
-```
-Start the container, whilst mounting the current directory to the project area in the container, with
-```
-docker run -it -v $(pwd):/home/puffin_user/project dev/puffin-dev
-```
-You'll find Puffin built in the `/home/puffin_user/built/puffin` directory, with the executable `/home/puffin_user/built/puffin/bin/puffin`. To run, do 
-
-```
-mpirun -np 2 /home/puffin_user/built/puffin/bin/puffin main.in
-```
-assuming the main input file `main.in` is in your current directory.
-
-----
-
 ## How to run
 
 Puffin requires at least 2 input files to run. The 2 required files are:
