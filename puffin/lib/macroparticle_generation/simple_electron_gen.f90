@@ -446,7 +446,7 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
   offsets(iPY_CG) = 0.0_WP
   
 !    sZ2_center = offsets(iZ2_CG)
-    
+
   CALL genGrids(b_num, sigE,offsets,samLenE,iLocalIntegralType,iNMP, iNMP_loc, &
                 sx_grid, sy_grid, sz2_grid, spx_grid, spy_grid, spz2_grid, &
                 sX_integral, sY_integral, sz2_integral, &

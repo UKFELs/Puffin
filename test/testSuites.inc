@@ -1,2 +1,3 @@
 ADD_TEST_SUITE(testTests_suite)
 ADD_TEST_SUITE(testFFunctions_suite)
+ADD_TEST_SUITE(testMPIIntegration_suite)

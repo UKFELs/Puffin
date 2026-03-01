@@ -18,23 +18,32 @@
 module puffin_mod
    implicit none
 contains
-   subroutine puffin_main()
+   subroutine puffin_main(input_file_name, qOK)
       use transforms
       use lattice
-      use Setup
+      use Setup, only: init, cleanup
       use undulator
       use initDataType
       use Globals
+      use IO, only: tErrorLog_G, log_error
 
       implicit none
 
+      character(1024_IP), intent(in) :: input_file_name
+      logical, intent(out) :: qOK
       real(kind=wp)    :: sZ, szl
       integer(kind=ip) :: iL, iLst
       logical          :: qOKL
 
+      qOK = .false.
 !           Read in data file and initialize system
 
-      call init(sZ,qOKL)
+      call init(input_file_name, sZ, qOKL)
+      if (.not. qOKL) then
+         call log_error('Error during initialization', tErrorLog_G)
+         print*, 'Error during initialization, check error log for details, ', tErrorLog_G%zFileName
+         goto 1000
+      end if
       call Get_time(start_time)
 
       if ((tProcInfo_G%qRoot) .and. (ioutInfo_G>0)) print*,' starting simulation... '
@@ -91,12 +100,12 @@ contains
 
       close(UNIT=137,STATUS='KEEP')
 
+      qOK = .true.
       goto 2000     !       Exit
 
 1000  call log_error('Error in Main',tErrorLog_G)
       print*,'Error in Main'
       print*, 'Check error log file for details, ',tErrorLog_G%zFileName
-      call UnDefineParallelLibrary(qOKL)
 
 2000  continue
 

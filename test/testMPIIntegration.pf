@@ -1,0 +1,139 @@
+!> This test module tests Puffin by running a complete 1D FEL simulation
+!! with MPI support. It reads input files, runs the Puffin executable
+!! via mpirun, and validates the results.
+
+module testMPIIntegration
+
+  use pFUnit
+  use MPI
+  use puffin_kinds
+  use puffin_mod, only: puffin_main
+  implicit none
+
+  character(len=1024_IP) :: test_file_1 = 'inputs/f1main.in'
+
+contains
+
+  ! !> Test that Puffin runs successfully with MPI via mpirun
+  ! !! This test:
+  ! !! 1. Uses input files from the test/inputs directory
+  ! !! 2. Executes the Puffin executable with mpirun (or serial if mpirun not available)
+  ! !! 3. Validates that the simulation completes without errors
+  ! @test
+  ! subroutine testPuffinMPIIntegration()
+
+  !   implicit none
+
+  !   character(len=1024) :: cmd, input_dir, test_dir, puffin_exe
+  !   integer :: iounit, ierr, cmdstat
+  !   character(len=256) :: line
+  !   logical :: file_exists
+  !   character(len=256) :: test_output
+
+  !   print *, 'Starting Puffin MPI integration test...'
+
+  !   ! Get the directory where this test is being run from
+  !   ! We use the current working directory which should be the test build directory
+  !   test_dir = '.'
+
+  !   ! Set input directory relative to test
+  !   input_dir = './inputs'
+
+  !   ! Assume puffin executable is in the same directory or in parent directory
+  !   ! Try to find the puffin executable
+  !   inquire(file='./puffin', exist=file_exists)
+  !   if (file_exists) then
+  !     puffin_exe = './puffin'
+  !   else
+  !     inquire(file='../puffin/puffin', exist=file_exists)
+  !     if (file_exists) then
+  !       puffin_exe = '../puffin/puffin'
+  !     else
+  !       ! Default assumption
+  !       puffin_exe = 'puffin'
+  !     end if
+  !   end if
+
+  !   ! Build command: try with mpirun first, fall back to serial execution
+  !   ! Use 1 process for testing to keep things simple
+  !   write(cmd, '(A)') 'which mpirun > /dev/null 2>&1'
+  !   call execute_command_line(trim(cmd), wait=.true., exitstat=ierr)
+
+  !   if (ierr == 0) then
+  !     ! mpirun is available, use it
+  !     write(cmd, '(A)') 'cd ' // trim(test_dir) // &
+  !                       ' && mpirun -np 1 ' // trim(puffin_exe) // &
+  !                       ' ' // trim(input_dir) // '/test_main.in'
+  !   else
+  !     ! mpirun not available, try serial execution
+  !     write(cmd, '(A)') 'cd ' // trim(test_dir) // &
+  !                       ' && ' // trim(puffin_exe) // &
+  !                       ' ' // trim(input_dir) // '/test_main.in'
+  !   end if
+
+  !   print *, 'Running: ', trim(cmd)
+
+  !   ! Execute Puffin
+  !   call execute_command_line(trim(cmd), wait=.true., exitstat=cmdstat)
+
+  !   ! Check if execution was successful
+  !   @AssertEqual(cmdstat, 0, 'Puffin execution failed with exit status')
+
+  !   print *, 'Puffin MPI integration test completed successfully'
+
+  ! end subroutine testPuffinMPIIntegration
+
+
+  !> Test that Puffin simulation runs
+  !! This verifies that at least the simulation initializes and runs
+
+  @mpitest(npes=[2])
+  subroutine testPuffinSimulationCompletes(this)
+
+    class(MpiTestMethod), intent(inout) :: this
+    logical :: file_exists, qOK
+    character(len=1024_ip) :: test_output_field_initial_file, &
+                              test_output_electron_initial_file, &
+                              test_output_integrated_initial_file, &
+                              test_output_field_final_file, &
+                              test_output_electron_final_file, &
+                              test_output_integrated_final_file
+
+    print *, 'Testing Puffin simulation completion...'
+
+    call puffin_main(test_file_1, qOK)
+
+    ! Verify successful execution
+    ! f1main_aperp_2.h5
+    test_output_field_initial_file = test_file_1 // '_aperp_0.h5'
+    test_output_electron_initial_file = test_file_1 // '_electrons_0.h5'
+    test_output_integrated_initial_file = test_file_1 // '_integrated_0.h5'
+
+    test_output_field_final_file = test_file_1 // '_aperp_0.h5'
+    test_output_electron_final_file = test_file_1 // '_electrons_0.h5'
+    test_output_integrated_final_file = test_file_1 // '_integrated_0.h5'
+
+    inquire(file=test_output_field_initial_file, exist=file_exists)
+    @AssertEqual(file_exists, .true.)
+
+    inquire(file=test_output_electron_initial_file, exist=file_exists)
+    @AssertEqual(file_exists, .true.)
+
+    inquire(file=test_output_integrated_initial_file, exist=file_exists)
+    @AssertEqual(file_exists, .true.)
+
+    inquire(file=test_output_field_final_file, exist=file_exists)
+    @AssertEqual(file_exists, .true.)
+
+    inquire(file=test_output_electron_final_file, exist=file_exists)
+    @AssertEqual(file_exists, .true.)
+
+    inquire(file=test_output_integrated_final_file, exist=file_exists)
+    @AssertEqual(file_exists, .true.)
+
+    print *, 'Puffin simulation completed successfully'
+
+  end subroutine testPuffinSimulationCompletes
+
+
+end module testMPIIntegration

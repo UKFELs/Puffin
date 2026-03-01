@@ -231,8 +231,6 @@ SUBROUTINE genGrid(b_num, inttype,gridtype,centre,sigma,length,&
                                   Grid, &
                                   centre, &
                                   sigma, &
-                                  MPI_DOUBLE_PRECISION, &
-                                  MPI_SUM, &
                                   Integral, &
                                   qOKL)
 

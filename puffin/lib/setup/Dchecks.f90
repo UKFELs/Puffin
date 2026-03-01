@@ -435,8 +435,6 @@ END SUBROUTINE chkESampleLens
     real(kind=wp) :: gausslen
     logical :: qOKL
 
-
-
     do ib = 1, nBeams
 
       call getIntTypes(iNMP(ib,:), eSamLen(ib,:), sigs(ib,:), inttypes)
@@ -450,7 +448,7 @@ END SUBROUTINE chkESampleLens
           if ((eSamLen(ib,iZ2_CG) - gausslen) <= 0) then
 
             print*, 'ERROR:- electron beam model not long enough in z2 to include the gaussian tails'
-            call UnDefineParallelLibrary(qOKL)
+            call StopCode()
             stop
 
           end if

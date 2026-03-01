@@ -167,8 +167,7 @@ CONTAINS
   END SUBROUTINE DistributionIntegral
 !********************************************************
   SUBROUTINE DistributionIntegralz2(iDistributionType,&
-     iLocNumMP,iNumMP,sGrid,sMean,sSigma,&
-     MPI_DOUBLE_PRECISION,MPI_SUM,sIntegral,qOK)
+     iLocNumMP,iNumMP,sGrid,sMean,sSigma,sIntegral,qOK)
 
     IMPLICIT NONE
 !
@@ -188,8 +187,6 @@ CONTAINS
 !
     INTEGER(KIND=IP),INTENT(IN)	:: iDistributionType,&
          iLocNumMP,iNumMP
-    INTEGER(KIND=IP),INTENT(IN)	:: MPI_DOUBLE_PRECISION,&
-         MPI_SUM
     REAL(KIND=WP),INTENT(IN)    :: sGrid(:),sMean,sSigma
     REAL(KIND=WP),INTENT(OUT)	:: sIntegral(:)
     LOGICAL,      INTENT(OUT)   :: qOK
@@ -208,8 +205,7 @@ CONTAINS
     CASE(iTopHatDistribution_CG)
        ALLOCATE(sFunc(iLocNumMP),sDel(iLocNumMP))
        CALL GaussianDistributionZ2(iLocNumMP,sGrid,&
-            sMean,sSigma,sFunc,&
-            MPI_DOUBLE_PRECISION,MPI_SUM)
+            sMean,sSigma,sFunc)
        DO i=1,ilocNumMP
           sDel(i)=sGrid(i+1)-sGrid(i)		
        ENDDO

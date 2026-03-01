@@ -1188,8 +1188,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
         print*, 'No beam input type specified....'
         print*, 'Exiting...'
       end if
-      call UnDefineParallelLibrary(qOKL)
-      stop
+      call StopCode()
 
     end if
 

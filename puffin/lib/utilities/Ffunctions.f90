@@ -15,6 +15,7 @@ use puffin_kinds
 use puffin_mpiInfo 
 USE error_fn
 USE puffin_constants
+USE MPI
 
 IMPLICIT NONE
 
@@ -300,16 +301,13 @@ CONTAINS
 
 
   SUBROUTINE GaussianDistributionz2(i_Macro,s_grid,&
-       s_MeanGuass,s_SigmaGuass,s_func,&
-       MPI_DOUBLE_PRECISION,MPI_SUM)
+       s_MeanGuass,s_SigmaGuass,s_func)
 
     IMPLICIT NONE
 !
 ! Input parameters
 !
     INTEGER(KIND=IP),INTENT(IN) :: i_Macro
-    INTEGER(KIND=IP),INTENT(IN)	:: MPI_DOUBLE_PRECISION,&
-         MPI_SUM
     REAL(KIND=WP),INTENT(IN) :: s_MeanGuass,s_SigmaGuass
     REAL(KIND=WP),INTENT(IN) :: s_grid(:)
 ! Output parameters

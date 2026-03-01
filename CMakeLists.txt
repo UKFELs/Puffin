@@ -13,7 +13,6 @@ enable_language (Fortran)
 set (Puffin_VERSION_MAJOR 2)
 set (Puffin_VERSION_MINOR 1)
 set (Puffin_VERSION_PATCH 0a)
-include(${CMAKE_SOURCE_DIR}/scimake/SciInit.cmake)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules")
 
@@ -109,17 +108,9 @@ configure_file(puffin/lib/common/puffProvenance.f90.in puffin/lib/common/puffPro
 
 add_subdirectory(puffin)
 
-set(PFUNIT_INSTALL $ENV{PFUNIT_INSTALL})
 if (ENABLE_TESTING)
-  if(DEFINED PFUNIT_INSTALL)
-    message(STATUS "PFUNIT_INSTALL: ${PFUNIT_INSTALL}")
-    set(PFUNIT_DIR ${PFUNIT_INSTALL})
-    add_subdirectory(test)
-  else()
-    message(STATUS "Tests requested, but need PFUNIT_INSTALL specified...")
-    message(STATUS "...so skipping tests. Define top level PFUNIT_INSTALL.")
-  endif ()
-endif ()
+  add_subdirectory(test)
+endif (ENABLE_TESTING)
 
 if (DOXYGEN_FOUND)
     add_custom_target(doc

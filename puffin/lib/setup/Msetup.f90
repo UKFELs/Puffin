@@ -31,7 +31,7 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   subroutine init(sZ, qOK)
+   subroutine init(infile, sZ, qOK)
       use InitVars
       implicit none
 
@@ -46,6 +46,7 @@ contains
 !
 ! qOK            Error flag; .false. if no error
 
+      character(1024_IP), intent(in) :: infile
       real(kind=wp), intent(out) :: sZ
       logical, intent(out) :: qOK
 
@@ -63,10 +64,6 @@ contains
       qResume = .false.
       qWrite = .true.
 
-!     Read in input file name
-!     (input on command line as variable at runtime)
-
-      call getarg(1,infile)
       zFileName = infile
 
       if (infile == emptstring) then
@@ -409,7 +406,7 @@ contains
 
       if ((tProcInfo_G%qROOT) .and. (ioutInfo_G > 0)) print*, 'Initial data written'
       deallocate(s_Normalised_chi_G)
-      qOK = .TRUE.
+      qOK = .true.
 
       goto 2000
 
@@ -478,8 +475,6 @@ contains
 !  END IF
 
 !    Finalize MPI to free processors and end code.
-
-      CALL UnDefineParallelLibrary(qOKL)
 
       GOTO 2000
 

@@ -1490,14 +1490,14 @@ contains
   if (nspinDX > nx_g) then
     print*, 'ERROR, x grid not large enough'
     print*, 'nspinDX = ', nspinDX
-    call StopCode(qOKL)
+    call StopCode()
   end if
 
 
   if (nspinDY > ny_g) then
     print*, 'ERROR, y grid not large enough'
     print*, 'nspinDY = ', nspinDY
-    call StopCode(qOKL)
+    call StopCode()
   end if
 
 

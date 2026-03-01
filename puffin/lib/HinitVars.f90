@@ -102,7 +102,7 @@ REAL(KIND=WP), ALLOCATABLE    :: sSeedSigma(:,:)
 !!!
 !!!!!!!!!!!!!!!!!!!!
 
-CHARACTER(1024_IP) :: infile, emptstring
+CHARACTER(1024_IP) :: emptstring
 
 CHARACTER(32_IP) :: zUndType
 
