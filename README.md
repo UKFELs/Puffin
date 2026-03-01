@@ -59,14 +59,6 @@ mpirun -np 2 puffin clara.in
 ```
 to run the CLARA example on 2 MPI processes.
 
-Alternatively, if using the user Docker image, use the invocation described in the `Docker` section in this document *i.e.* after downloading the files in the CLARA deck to the working directory, do
-```
-docker run -v $(pwd):/home/puffin_user/project mightylorenzo/puffin-user 2 clara.in
-```
-to start the container, running Puffin on 2 MPI processes (it will download the `puffin-user` image if not already explicitly downloaded with `docker pull`). The `-v` flag mounts the working directory to the `project` area in the container. The output files will be left intact in the (hosts) working directory when the container finishes running Puffin.
-
-----
-
 ## Release Notes
 
 1.9.0
