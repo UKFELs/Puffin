@@ -19,7 +19,7 @@ use pdiff
 use lattice
 use RK4int
 !use dumpFiles
-use dummyf
+use write_adapter
 use ParaField
 use InitDataType
 

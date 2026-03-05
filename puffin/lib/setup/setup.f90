@@ -23,7 +23,7 @@ module Setup
    use Read_data
    use checks
    use ParaField
-   use dummyf
+   use write_adapter
 
    implicit none
 

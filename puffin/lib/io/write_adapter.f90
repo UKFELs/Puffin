@@ -9,10 +9,10 @@
 !> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> This module contains top-level subroutines to write data in SDDS or HDF5
+!> This module contains top-level subroutines to write data in HDF5
 !> format.
 
-module dummyf
+module write_adapter
 
 USE lattice
 USE RK4int
@@ -254,4 +254,4 @@ function qWriteq(iStep, iCsteps, iWriteNthSteps, iIntWriteNthSteps, nSteps)
 
 end function qWriteq
 
-end module dummyf
+end module write_adapter
