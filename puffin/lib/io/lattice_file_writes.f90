@@ -50,10 +50,6 @@ contains
         if (ios < 0) then  ! if reached end of file:-
 
           if (tProcInfo_G%qroot) print*, "Reached end of file!! (for the second time)"
-          !print*, "Turns out you had ", cnt, "lines in the file!!"
-          !print*, "Turns out you had ", cntq, "quads in the file!! in lines ", lineq
-          !print*, "Turns out you had ", cntu, "undulators in the file!!"
-
           exit
 
         else if (ios > 0) then
