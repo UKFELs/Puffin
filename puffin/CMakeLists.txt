@@ -63,3 +63,4 @@ endif()
 
 #target_link_libraries(puffin puffin_mpi)
 install (TARGETS puffin DESTINATION bin)
+install (TARGETS puffin_mpi DESTINATION lib)

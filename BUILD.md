@@ -8,53 +8,43 @@ Puffin is written in modern fortran, uses MPI for parallelism, and the post-proc
 
 The below guide is for use on linux and other *nix environments. It has been built on numerous HPC clusters and large servers. On Mac OS, Homebrew can be used to install MPI, a Fortran compiler, hdf5 and fftw. In the past Puffin has been built on Windows by way of both Cygwin and WSL.
 
-### General Instructions
 
-To build Puffin you will need parallel hdf5 and fftw3 libs already installed. If you're installing on a system with different compilers, you'll need to make sure these libraries are built with the same build chain as you're going to use for Puffin. If you wish, fftw3 and hdf5 may be obtained and built using Bilder (see later in this guide).
+### Getting Puffin
 
-1. Fetch Puffin to wherever you would like: here we'll use `/home/user/gitroot/puffin/src`. To clone from Github, do
+Fetch Puffin from the repo: here we'll copy it to `/home/user/gitroot/puffin/src`. To clone from Github, do
 
-    ```sh
-    git clone git@github.com:UKFELs/Puffin.git /home/user/gitroot/puffin/src
-    ```
-
-2. Run cmake, e.g.
-
-    ```sh
-    cmake -DENABLE_PARALLEL:BOOL=TRUE -DCMAKE_INSTALL_PREFIX:PATH=/home/user/gitroot/puffin/install -B /home/user/gitroot/puffin/build -DHDF5_ROOT=/path/to/hdf5-parallel /home/user/gitroot/puffin/src
-    ```
-    
-    With the above, under the `puffin/` directory we're going for the directory structure `src/` for the source repo, `build/` for the build files (e.g. the Makefile + headers/compile artifacts/etc), and `install/` for the actual final executable etc. But you can pick whatever structure you'd like. The HDF5_ROOT option hints at where to find your HDF5 install if it's having trouble finding it (on Mac with Homebrew, this is needed, and the MPI HDF5 is in `/usr/local/opt/hdf5-parallel`).
-
-    To specify compilers, you can pass them as environment varables *e.g.*
-
-    ```sh
-    export CC=mpicc
-    export CXX=mpicxx
-    export F90=mpif90
-    export F77=mpif90
-    export F9X=mpif90
-    export FC=mpif90
-    export MPICC=mpicc
-    export MPICXX=mpicxx
-    export MPIF90=mpif90
-    export MPI_CXX=mpicxx
-    ...etc
-    ```
-    
-4. Go to the build directory (`cd /home/user/gitroot/puffin/build`) and do `make && make install`. You should get a puffin binary in `/home/user/gitroot/puffin/install/bin`.
+```sh
+git clone git@github.com:UKFELs/Puffin.git /home/user/gitroot/puffin/src
+```
 
 
-### Build using Conda-forge
+### General instructions for building 
 
-Users have reported install dependencies via conda-forge with e.g.
+To build Puffin you will need parallel hdf5 and fftw3 libs already installed. If you're installing on a system with different compilers, you'll need to make sure these libraries are built with the same build chain as you're going to use for Puffin.
 
+Then build using CMake in the usual way - here we're using a dedicated build directory and install location a level up from the source:
+```sh
+cmake -B ../build .
+cmake --build ../build
+cmake --install ../build --prefix ../install
+```
+
+Puffin uses PFUnit for testing. If you want to run tests, you can modify the above instructions like so:
+```sh
+cmake -B ../build -DENABLE_TESTING=TRUE -DCMAKE_PREFIX_PATH='/path/to/pfunit/installed' .
+cmake --build ../build
+cmake --build ../build --target test
+cmake --install ../build --prefix ../install
+```
+
+### Install dependencies using conda-forge
+
+Installing dependencies via conda-forge is simple and fast, and consistent across different systems. First create the puffin environment, installing compilers and libs, and then activate it:
 ```sh
 conda create -y -n puffin compilers openmpi hdf5=*=mpi_openmpi* fftw=*=mpi_openmpi* cmake doxygen
 conda activate puffin
-cmake -B build .
-cmake --build build
 ```
+Unfortunately, PFUnit is not (yet) distributed on conda-forge, so you'll still have to build it yourself if you want tests to run.
 
 
 #### Common issues
@@ -63,19 +53,37 @@ HPC clusters are unique beasts, and compilation problems vary significantly from
 
 1. Sometimes CMake does not pick up the environment variables which set which compilers to use. These can be explicitly set by doing:
 
-    ```sh
-    cmake -DMPI_C_COMPILER=$MPICC -DMPI_CXX_COMPILER=$MPICXX -DMPI_FORTRAN_COMPILER=$MPIFC -DENABLE_PARALLEL:BOOL=TRUE -DCMAKE_INSTALL_PREFIX:PATH=/path/to/puffin-install ...etc
-    ```
-    where `$MPICC` *etc* should be pointing to your MPI C/Fortran compilers.
-    
-2. Depending on your setup, the OpenMP flags may be picked up by CMake and added to the compile flags, but not the link flags. When `make`ing, this results in successful individual compilation of modules, but it will fail at the link stage complaining about not being able to recognise OpenMP commands (which will have the form \*omp\* *e.g.* the name of one is omp_get_num_threads). To fix this, you need to modify the file `/where/you/ran/cmake/source/CMakeFiles/puffin.dir/link.txt`, and add the OpenMP flag for your compiler, usually `-fopenmp` for gfortran, next to the `-O3` flag. Then do `make` again (then `make install`).
+```sh
+cmake -DMPI_C_COMPILER=$MPICC -DMPI_CXX_COMPILER=$MPICXX -DMPI_FORTRAN_COMPILER=$MPIFC -DENABLE_PARALLEL:BOOL=TRUE -DCMAKE_INSTALL_PREFIX:PATH=/path/to/puffin-install ...etc
+```
+where `$MPICC` *etc* should be pointing to your MPI C/Fortran compilers. Also, sometimes setting the following environment variables for the MPI C and Fortran compilers helps:
+```sh
+export CC=mpicc
+export CXX=mpicxx
+export F90=mpif90
+export F77=mpif90
+export F9X=mpif90
+export FC=mpif90
+export MPICC=mpicc
+export MPICXX=mpicxx
+export MPIF90=mpif90
+export MPI_CXX=mpicxx
+...etc
+```
 
-3. If you have built hdf5 yourself (see section on building hdf5 and fftw below), then you may find that everything compiles and links, but when you run it says that it can't find the shared hdf5 libraries, usually called something like `libhdf5_fortran.so.10`. You'll need to add the built hdf5 libs to your LD_LIBRARY_PATH (which should be located in the `lib` subdirectory of the top-level of the built hdf5). So do 
-    ```sh
-    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/shared/hdf5/lib/directory/
-    ```
+2. If CMake can't find the parallel libs, the HDF5_ROOT option hints at where to find your HDF5 install if it's having trouble finding it. For example, on Mac OS using dependencies installed with Homebrew, this is needed, and the MPI HDF5 variant is in `/usr/local/opt/hdf5-parallel`, so for the initial cmake call you would do:
+```sh
+cmake -DENABLE_PARALLEL:BOOL=TRUE -DCMAKE_INSTALL_PREFIX:PATH=/home/user/gitroot/puffin/install -B /home/user/gitroot/puffin/build -DHDF5_ROOT=/path/to/hdf5-parallel /home/user/gitroot/puffin/src
+```
 
-4. You will see in the CMake logs which compilers have been identified. On Mac with Homebrew, we sometimes see mixups between the Apple C compiler and the Homebrew-installed gcc compiler. To resolve, set `CMAKE_C_COMPILER` and `CMAKE_CXX_COMPILER` options in `CMake` - e.g. `-DCMAKE_C_COMPILER:FILEPATH=/usr/local/bin/gcc-15` and `-DCMAKE_CXX_COMPILER:FILEPATH=/usr/local/bin/g++-15`.
+3. Speaking of Mac OS, you will see in the CMake logs which compilers have been identified. On Mac with Homebrew, we sometimes see mixups between the Apple C compiler and the Homebrew-installed gcc compiler. To resolve, set `CMAKE_C_COMPILER` and `CMAKE_CXX_COMPILER` options in that initial `cmake` command - e.g. `-DCMAKE_C_COMPILER:FILEPATH=/usr/local/bin/gcc-15` and `-DCMAKE_CXX_COMPILER:FILEPATH=/usr/local/bin/g++-15`. 
+
+4. Depending on your setup, the OpenMP flags may be picked up by CMake and added to the compile flags, but not the link flags. When `make`ing, this results in successful individual compilation of modules, but it will fail at the link stage complaining about not being able to recognise OpenMP commands (which will have the form \*omp\* *e.g.* the name of one is omp_get_num_threads). To fix this, you need to modify the file `/where/you/ran/cmake/source/CMakeFiles/puffin.dir/link.txt`, and add the OpenMP flag for your compiler, usually `-fopenmp` for gfortran, next to the `-O3` flag. Then do `make` again (then `make install`).
+
+5. If you have built hdf5 yourself (see section on building hdf5 and fftw below), then you may find that everything compiles and links, but when you run it says that it can't find the shared hdf5 libraries, usually called something like `libhdf5_fortran.so.10`. You'll need to add the built hdf5 libs to your LD_LIBRARY_PATH (which should be located in the `lib` subdirectory of the top-level of the built hdf5). So do 
+```sh
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/shared/hdf5/lib/directory/
+```
 
 ## Building HDF5 and FFTW3 manually
 

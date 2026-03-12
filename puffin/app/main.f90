@@ -4,6 +4,7 @@ program puffin
     use puffin_kinds, only: ip
     use IO
     use MPI
+    use puffin_mpiInfo, only: tProcInfo_G
 
     character(1024_IP) :: input_file_name
     integer(KIND=IP)    :: error, provided
@@ -15,11 +16,11 @@ program puffin
     call getarg(1,input_file_name)
     call MPI_INIT_THREAD(MPI_THREAD_FUNNELED, provided, error)
     call puffin_main(input_file_name, qOK)
-    call MPI_FINALIZE(error)
     if (.not. qOK) then
-      print*, 'Puffin simulation failed, check error log for details, ', tErrorLog_G%zFileName
+      if (tProcInfo_G%qroot) print*, 'Puffin simulation failed, check error log for details, ', tErrorLog_G%zFileName
     else
-      print*, 'Puffin simulation completed successfully.'
+      if (tProcInfo_G%qroot) print*, 'Puffin simulation completed'
     end if
+    call MPI_FINALIZE(error)
 
 end program puffin
