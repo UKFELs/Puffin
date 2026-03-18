@@ -47,7 +47,7 @@ conda activate puffin
 Unfortunately, PFUnit is not (yet) distributed on conda-forge, so you'll still have to build it yourself if you want tests to run.
 
 
-#### Common issues
+### Common issues
 
 HPC clusters are unique beasts, and compilation problems vary significantly from machine-to-machine. Here are some issues encountered:
 
