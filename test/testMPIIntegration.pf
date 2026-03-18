@@ -8,81 +8,14 @@ module testMPIIntegration
   use MPI
   use puffin_kinds
   use puffin_mod, only: puffin_main
+  use H5in, only: getMacroparticleCount, readH5BeamDataOntoRootProcess
+  use puffin_mpiInfo, only: tProcInfo_G
   implicit none
 
   character(len=1024_IP) :: test_file_1 = 'inputs/f1main.in'
+  character(len=1024_ip) :: output_file_base = 'inputs/f1main'
 
 contains
-
-  ! !> Test that Puffin runs successfully with MPI via mpirun
-  ! !! This test:
-  ! !! 1. Uses input files from the test/inputs directory
-  ! !! 2. Executes the Puffin executable with mpirun (or serial if mpirun not available)
-  ! !! 3. Validates that the simulation completes without errors
-  ! @test
-  ! subroutine testPuffinMPIIntegration()
-
-  !   implicit none
-
-  !   character(len=1024) :: cmd, input_dir, test_dir, puffin_exe
-  !   integer :: iounit, ierr, cmdstat
-  !   character(len=256) :: line
-  !   logical :: file_exists
-  !   character(len=256) :: test_output
-
-  !   print *, 'Starting Puffin MPI integration test...'
-
-  !   ! Get the directory where this test is being run from
-  !   ! We use the current working directory which should be the test build directory
-  !   test_dir = '.'
-
-  !   ! Set input directory relative to test
-  !   input_dir = './inputs'
-
-  !   ! Assume puffin executable is in the same directory or in parent directory
-  !   ! Try to find the puffin executable
-  !   inquire(file='./puffin', exist=file_exists)
-  !   if (file_exists) then
-  !     puffin_exe = './puffin'
-  !   else
-  !     inquire(file='../puffin/puffin', exist=file_exists)
-  !     if (file_exists) then
-  !       puffin_exe = '../puffin/puffin'
-  !     else
-  !       ! Default assumption
-  !       puffin_exe = 'puffin'
-  !     end if
-  !   end if
-
-  !   ! Build command: try with mpirun first, fall back to serial execution
-  !   ! Use 1 process for testing to keep things simple
-  !   write(cmd, '(A)') 'which mpirun > /dev/null 2>&1'
-  !   call execute_command_line(trim(cmd), wait=.true., exitstat=ierr)
-
-  !   if (ierr == 0) then
-  !     ! mpirun is available, use it
-  !     write(cmd, '(A)') 'cd ' // trim(test_dir) // &
-  !                       ' && mpirun -np 1 ' // trim(puffin_exe) // &
-  !                       ' ' // trim(input_dir) // '/test_main.in'
-  !   else
-  !     ! mpirun not available, try serial execution
-  !     write(cmd, '(A)') 'cd ' // trim(test_dir) // &
-  !                       ' && ' // trim(puffin_exe) // &
-  !                       ' ' // trim(input_dir) // '/test_main.in'
-  !   end if
-
-  !   print *, 'Running: ', trim(cmd)
-
-  !   ! Execute Puffin
-  !   call execute_command_line(trim(cmd), wait=.true., exitstat=cmdstat)
-
-  !   ! Check if execution was successful
-  !   @AssertEqual(cmdstat, 0, 'Puffin execution failed with exit status')
-
-  !   print *, 'Puffin MPI integration test completed successfully'
-
-  ! end subroutine testPuffinMPIIntegration
-
 
   !> Test that Puffin simulation runs
   !! This verifies that at least the simulation initializes and runs
@@ -98,6 +31,9 @@ contains
                               test_output_field_final_file, &
                               test_output_electron_final_file, &
                               test_output_integrated_final_file
+    integer(kind=ip) :: nMPs
+    real(kind=WP), allocatable :: sElX(:), sElY(:), sElZ2(:), sElPX(:), sElPY(:), sElGam(:), s_chi_bar(:)
+    real(kind=WP) :: expected_sElZ2(319)
 
     print *, 'Testing Puffin simulation completion...'
 
@@ -105,19 +41,146 @@ contains
 
     ! Verify successful execution
     ! f1main_aperp_2.h5
-    test_output_field_initial_file = test_file_1 // '_aperp_0.h5'
-    test_output_electron_initial_file = test_file_1 // '_electrons_0.h5'
-    test_output_integrated_initial_file = test_file_1 // '_integrated_0.h5'
+    test_output_field_initial_file = trim(output_file_base) // "_aperp_0.h5"
+    test_output_electron_initial_file = trim(output_file_base) // '_electrons_0.h5'
+    test_output_integrated_initial_file = trim(output_file_base) // '_integrated_0.h5'
 
-    test_output_field_final_file = test_file_1 // '_aperp_0.h5'
-    test_output_electron_final_file = test_file_1 // '_electrons_0.h5'
-    test_output_integrated_final_file = test_file_1 // '_integrated_0.h5'
+    test_output_field_final_file = trim(output_file_base) // '_aperp_2.h5'
+    test_output_electron_final_file = trim(output_file_base) // '_electrons_2.h5'
+    test_output_integrated_final_file = trim(output_file_base) // '_integrated_2.h5'
+
 
     inquire(file=test_output_field_initial_file, exist=file_exists)
-    @AssertEqual(file_exists, .true.)
+    @AssertTrue(file_exists)
 
     inquire(file=test_output_electron_initial_file, exist=file_exists)
     @AssertEqual(file_exists, .true.)
+
+
+
+    nMPs = getMacroparticleCount(trim(test_output_electron_final_file))
+    
+
+    if (.not. tProcInfo_G%qRoot) nMPs = 0
+
+    if (tProcInfo_G%qroot) then
+      @AssertEqual(nMPs, 319_ip)
+    end if
+
+    allocate(sElX(nMPs), sElY(nMPs), sElZ2(nMPs), sElPX(nMPs), sElPY(nMPs), sElGam(nMPs), s_chi_bar(nMPs))
+    call readH5BeamDataOntoRootProcess(trim(test_output_electron_final_file), sElX, sElY, sElZ2, sElPX, sElPY, sElGam, s_chi_bar, nMPs)
+    
+    expected_sElZ2 = (/0.12880412274246036_WP, 0.13507388179478330_WP, 0.14134347655425447_WP, &
+                   0.14761306891417314_WP, 0.15388265999359443_WP, 0.16015225280870160_WP, &
+                   0.16642184632799531_WP, 0.17269143899377890_WP, 0.17896103123130727_WP, &
+                   0.18523062230506193_WP, 0.19150021520151889_WP, 0.19776980879345779_WP, &
+                   0.20403940145907093_WP, 0.21030899349585844_WP, 0.21657858460179130_WP, &
+                   0.22284817763547599_WP, 0.22911777118628127_WP, 0.23538736392025580_WP, &
+                   0.24165695580616520_WP, 0.24792654681641912_WP, 0.25419614007576918_WP, &
+                   0.26046573362698056_WP, 0.26673532629996521_WP, 0.27300491812786692_WP, &
+                   0.27927450908730639_WP, 0.28554410246027562_WP, 0.29181369607229551_WP, &
+                   0.29808328872188089_WP, 0.30435288042136160_WP, 0.31062247135993443_WP, &
+                   0.31689206486378751_WP, 0.32316165850092871_WP, 0.32943125115108296_WP, &
+                   0.33570084272810174_WP, 0.34197043362769225_WP, 0.34824002726888170_WP, &
+                   0.35450962093191452_WP, 0.36077921358783777_WP, 0.36704880504166493_WP, &
+                   0.37331839589034638_WP, 0.37958798967472146_WP, 0.38585758337034937_WP, &
+                   0.39212717602670016_WP, 0.39839676735676555_WP, 0.40466635815500135_WP, &
+                   0.41093595208189726_WP, 0.41720554581095426_WP, 0.42347513846783669_WP, &
+                   0.42974472967473815_WP, 0.43601432042067612_WP, 0.44228391449022497_WP, &
+                   0.44855350825375206_WP, 0.45482310091127787_WP, 0.46109269199560626_WP, &
+                   0.46736228268742686_WP, 0.47363187689970698_WP, 0.47990147069873068_WP, &
+                   0.48617106335702193_WP, 0.49244065431941109_WP, 0.49871024495519861_WP, &
+                   0.50497983931035006_WP, 0.51124943314585758_WP, 0.51751902580506048_WP, &
+                   0.52378861664606791_WP, 0.53005820722402752_WP, 0.53632780172216654_WP, &
+                   0.54259739559519460_WP, 0.54886698825537983_WP, 0.55513657897567914_WP, &
+                   0.56140616949387778_WP, 0.56767576413512499_WP, 0.57394535804673130_WP, &
+                   0.58021495070802298_WP, 0.58648454130818573_WP, 0.59275413176478831_WP, &
+                   0.59902372654925851_WP, 0.60529332050042961_WP, 0.61156291316293676_WP, &
+                   0.61783250364355591_WP, 0.62410209403674055_WP, 0.63037168896454843_WP, &
+                   0.63664128295629041_WP, 0.64291087562014426_WP, 0.64918046598185264_WP, &
+                   0.65545005630973752_WP, 0.66171965138101141_WP, 0.66798924541436444_WP, &
+                   0.67425883808003617_WP, 0.68052842832421812_WP, 0.68679801858309975_WP, &
+                   0.69306761379558002_WP, 0.69933720787097708_WP, 0.70560680053992408_WP, &
+                   0.71187639067101016_WP, 0.71814598085382420_WP, 0.72441557620111963_WP, &
+                   0.73068517032046454_WP, 0.73695476299588680_WP, 0.74322435302130552_WP, &
+                   0.74949394312577233_WP, 0.75576353861055978_WP, 0.76203313278507290_WP, &
+                   0.76830272547515965_WP, 0.77457231540468530_WP, 0.78084190542745779_WP, &
+                   0.78711150104999617_WP, 0.79338109524994627_WP, 0.79965068796620209_WP, &
+                   0.80592027784697196_WP, 0.81218986774836111_WP, 0.81845946348471244_WP, &
+                   0.82472905766874216_WP, 0.83099865030559017_WP, 0.83726824031616187_WP, &
+                   0.84353783014636285_WP, 0.84980742578792978_WP, 0.85607702009622855_WP, &
+                   0.86234661269620050_WP, 0.86861620267051909_WP, 0.87488579254834997_WP, &
+                   0.88115538812304628_WP, 0.88742498244632306_WP, 0.89369457509933992_WP, &
+                   0.89996416503268939_WP, 0.90623375490618385_WP, 0.91250335048178355_WP, &
+                   0.91877294478809701_WP, 0.92504253748539655_WP, 0.93131212741741609_WP, &
+                   0.93758171723694761_WP, 0.94385131284515489_WP, 0.95012090716110431_WP, &
+                   0.95639049983266133_WP, 0.96266008981040885_WP, 0.96892967960092391_WP, &
+                   0.97519927517404548_WP, 0.98146886954323320_WP, 0.98773846220754435_WP, &
+                   0.99400805217986843_WP, 1.0002776419744603_WP, 1.0065472375259166_WP, &
+                   1.0128168319109709_WP, 1.0190864245816804_WP, 1.0253560145659588_WP, &
+                   1.0316256043489866_WP, 1.0378951998750929_WP, 1.0441647942812988_WP, &
+                   1.0504343869591362_WP, 1.0567039769561923_WP, 1.0629735667245426_WP, &
+                   1.0692431622252050_WP, 1.0755127566544707_WP, 1.0817823493387002_WP, &
+                   1.0880519393480348_WP, 1.0943215291022894_WP, 1.1005911245769937_WP, &
+                   1.1068607190296531_WP, 1.1131303117203164_WP, 1.1193999017415042_WP, &
+                   1.1256694914821939_WP, 1.1319390869304413_WP, 1.1382086814067998_WP, &
+                   1.1444782741039823_WP, 1.1507478641365849_WP, 1.1570174538642879_WP, &
+                   1.1632870492855778_WP, 1.1695566437859135_WP, 1.1758262364896876_WP, &
+                   1.1820958265333021_WP, 1.1883654162485615_WP, 1.1946350116423841_WP, &
+                   1.2009046061670303_WP, 1.2071741988774438_WP, 1.2134437889316367_WP, &
+                   1.2197133786350340_WP, 1.2259829740008694_WP, 1.2322525685501127_WP, &
+                   1.2385221612672319_WP, 1.2447917513316029_WP, 1.2510613410236817_WP, &
+                   1.2573309363610166_WP, 1.2636005309351859_WP, 1.2698701236590753_WP, &
+                   1.2761397137331831_WP, 1.2824093034144850_WP, 1.2886788987228355_WP, &
+                   1.2949484933222328_WP, 1.3012180860529505_WP, 1.3074876761363909_WP, &
+                   1.3137572658075634_WP, 1.3200268610863717_WP, 1.3262964557111658_WP, &
+                   1.3325660484487243_WP, 1.3388356385411591_WP, 1.3451052282035141_WP, &
+                   1.3513748234518010_WP, 1.3576444181002336_WP, 1.3639140108436767_WP, &
+                   1.3701836009450945_WP, 1.3764531906010422_WP, 1.3827227858170874_WP, &
+                   1.3889923804854367_WP, 1.3952619732346669_WP, 1.4015315633484235_WP, &
+                   1.4078011530032561_WP, 1.4140707481873331_WP, 1.4203403428735826_WP, &
+                   1.4266099356316198_WP, 1.4328795257627278_WP, 1.4391491154242526_WP, &
+                   1.4454187105798653_WP, 1.4516883052818124_WP, 1.4579578980459635_WP, &
+                   1.4642274881555257_WP, 1.4704970778753659_WP, 1.4767666730402078_WP, &
+                   1.4830362676625632_WP, 1.4893058604209977_WP, 1.4955754505613397_WP, &
+                   1.5018450403489323_WP, 1.5081146355138002_WP, 1.5143842300054029_WP, &
+                   1.5206538226664659_WP, 1.5269234129873692_WP, 1.5331930028809941_WP, &
+                   1.5394625978513377_WP, 1.5457321923630261_WP, 1.5520017849889505_WP, &
+                   1.5582713753012636_WP, 1.5645409654150360_WP, 1.5708105602509501_WP, &
+                   1.5770801546353346_WP, 1.5833497473126772_WP, 1.5896193376568875_WP, &
+                   1.5958889278829633_WP, 1.6021585226510728_WP, 1.6084281169346755_WP, &
+                   1.6146977096036486_WP, 1.6209673000169411_WP, 1.6272368903564065_WP, &
+                   1.6335064850425536_WP, 1.6397760792487661_WP, 1.6460456718881387_WP, &
+                   1.6523152623731001_WP, 1.6585848528437381_WP, 1.6648544474264524_WP, &
+                   1.6711240415677415_WP, 1.6773936341858442_WP, 1.6836632247148215_WP, &
+                   1.6899328153356705_WP, 1.6962024098284141_WP, 1.7024720038802967_WP, &
+                   1.7087415964826895_WP, 1.7150111870636420_WP, 1.7212807778298533_WP, &
+                   1.7275503722329475_WP, 1.7338199661950155_WP, 1.7400895587817360_WP, &
+                   1.7463591494134529_WP, 1.7526287403253358_WP, 1.7588983346404921_WP, &
+                   1.7651679285119470_WP, 1.7714375210828843_WP, 1.7777071117642180_WP, &
+                   1.7839767028221136_WP, 1.7902462970509689_WP, 1.7965158908310059_WP, &
+                   1.8027854833861841_WP, 1.8090550741159717_WP, 1.8153246653202053_WP, &
+                   1.8215942594644297_WP, 1.8278638531522944_WP, 1.8341334456915506_WP, &
+                   1.8404030364686870_WP, 1.8466726278195806_WP, 1.8529422218808373_WP, &
+                   1.8592118154757229_WP, 1.8654814079990589_WP, 1.8717509988223551_WP, &
+                   1.8780205903202378_WP, 1.8842901843002116_WP, 1.8905597778013310_WP, &
+                   1.8968293703086385_WP, 1.9030989611770190_WP, 1.9093685528222260_WP, &
+                   1.9156381467225376_WP, 1.9219077401291340_WP, 1.9281773326203584_WP, &
+                   1.9344469235326205_WP, 1.9407165153254800_WP, 1.9469861091478398_WP, &
+                   1.9532557024590751_WP, 1.9595252949341690_WP, 1.9657948858892185_WP, &
+                   1.9720644778300227_WP, 1.9783340715760946_WP, 1.9846036647912144_WP, &
+                   1.9908732572500851_WP, 1.9971428481857159_WP, 2.0034124396214890_WP, &
+                   2.0096820303412075_WP, 2.0159516172407228_WP, 2.0222212040133933_WP, &
+                   2.0284908014318295_WP, 2.0347604292834656_WP, 2.0410301102958850_WP, &
+                   2.0472998611960720_WP, 2.0535696958626235_WP, 2.0598396107754646_WP, &
+                   2.0661095876767575_WP, 2.0723795822882809_WP, 2.0786495261127671_WP, &
+                   2.0849193387695446_WP, 2.0911889268741857_WP, 2.0974582123285614_WP, &
+                   2.1037271263568429_WP, 2.1099956431614983_WP, 2.1162637807652263_WP, &
+                   2.1225317831494892_WP/)
+
+    if (tProcInfo_G%qroot) then
+      @AssertEqual(sElZ2, expected_sElZ2, 1e-10_WP)
+    end if
 
     inquire(file=test_output_integrated_initial_file, exist=file_exists)
     @AssertEqual(file_exists, .true.)
