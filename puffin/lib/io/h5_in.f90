@@ -269,6 +269,106 @@ contains
   end subroutine readH5BeamDataOntoRootProcess
 
 
+
+  function getNZ2(zFile) result(nZ2)
+
+    character(*), intent(in) :: zFile
+    INTEGER(HID_T) :: file_id       !< File identifier
+    INTEGER(HID_T) :: group_id      !< Group identifier
+    INTEGER(HID_T) :: attr_id       !< Attribute identifier
+    INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
+    INTEGER(HID_T) :: atype_id      !< Attribute Data type identifier
+    CHARACTER(LEN=7), PARAMETER :: grpname = "runInfo"  ! Group name
+    CHARACTER(LEN=3) :: aname   !< Attribute name
+    character(1024_IP) :: filename
+    INTEGER(HSIZE_T), DIMENSION(1) :: adims  !< Attribute dims
+    INTEGER(HSIZE_T), DIMENSION(1) :: attr_data_int !< For integer attribs
+    integer :: error ! Error flag
+    integer(kind=ip) :: nZ2
+
+    filename = zfile
+
+    if (tProcInfo_G%qRoot) then
+      CALL h5open_f(error)
+      CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
+      CALL h5gopen_f(file_id, grpname, group_id, error)
+      aname = "nZ2"
+      CALL h5aopen_f(group_id, aname, attr_id, error)
+      CALL h5aread_f(attr_id, H5T_NATIVE_INTEGER, attr_data_int, adims, error)
+      nZ2 = attr_data_int(1)
+      CALL h5aclose_f(attr_id, error)
+      CALL h5gclose_f(group_id, error)
+      CALL h5fclose_f(file_id, error)
+      CALL h5close_f(error)
+    else
+      nZ2 = 0
+    end if
+
+  end function getNZ2
+
+
+  subroutine readH5FieldDataOntoRootProcess(zFile, rfield, ifield, nZ2)
+
+    character(*), intent(in) :: zFile
+    integer(kind=ip), intent(in) :: nZ2
+    REAL(kind=WP), intent(out) :: rfield(:), ifield(:)
+    INTEGER(HID_T) :: file_id       !< File identifier
+    INTEGER(HID_T) :: dset_id       !< Dataset identifier
+    INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
+    INTEGER(HID_T) :: dtype         !< So we can check we're reading in doubles
+    INTEGER(kind=ip) :: dclass         !< So we can check we're reading in doubles
+    INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
+    INTEGER(HID_T) :: memspace     !< Dataspace identifier in file
+    CHARACTER(LEN=5), PARAMETER :: dsetname = "aperp" !< Dataset name
+    character(1024_IP) :: filename
+    INTEGER(HSIZE_T), DIMENSION(2) :: dims   !< dims of field dataset
+    INTEGER(HSIZE_T), DIMENSION(2) :: mdims   !< maxdims of field dataset
+    INTEGER(HSIZE_T), DIMENSION(2) :: doffset!< Offset for write, could be rank dependent
+    INTEGER(HSIZE_T), DIMENSION(1) :: dsize  !< Size of hyperslab to write
+    INTEGER(HSIZE_T), DIMENSION(2) :: count  !< Count for hyperslab
+    INTEGER(kind=ip) ::  rank                !< Particle Dataset rank
+    INTEGER     ::  arank = 1                !< Attribute rank - 1 is vector
+    INTEGER(HSIZE_T), DIMENSION(1) :: adims  !< Attribute dims
+    INTEGER(HSIZE_T), DIMENSION(1) :: attr_data_int !< For integer attribs (numdims)
+    INTEGER     :: numSpatialDims    !< Attr content, and also num elsewhere
+    REAL(kind=WP) :: attr_data_double
+    CHARACTER(LEN=100) :: attr_data_string
+    CHARACTER(LEN=16) :: scaleToSIstring
+    INTEGER(HSIZE_T) :: attr_string_len
+    integer :: error ! Error flag
+    character(LEN=40) :: errorstr !<String to write an error
+    integer(kind=ip) :: mpiinfo
+
+    mpiinfo=MPI_INFO_NULL
+    filename = zfile
+
+    if (tProcInfo_G%qRoot) then
+      CALL h5open_f(error)
+      CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
+      CALL h5dopen_f (file_id, dsetname, dset_id, error)
+      dims = (/nZ2, 2/)
+      dsize = (/nZ2/)
+      doffset = (/0, 0/)
+      count = (/INT(nZ2, HSIZE_T), 1_HSIZE_T/)
+      CALL h5screate_simple_f(1, dsize, memspace, error)
+      CALL h5Dget_space_f(dset_id,dspace_id,error)
+      CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, count, error)
+      CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, rfield, dsize, error, &
+       file_space_id = dspace_id, mem_space_id = memspace)
+      doffset = (/0, 1/)
+      CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, count, error)
+      CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, ifield, dsize, error, &
+       file_space_id = dspace_id, mem_space_id = memspace)
+      call h5sclose_f(dspace_id,error)
+      call h5sclose_f(memspace,error)
+      call h5dclose_f(dset_id,error)
+      call h5fclose_f(file_id,error)
+      CALL h5close_f(error)
+    end if
+
+  end subroutine readH5FieldDataOntoRootProcess
+
+
   subroutine readH5BeamfileSerial(zFile)
 
 

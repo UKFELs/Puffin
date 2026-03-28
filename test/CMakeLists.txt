@@ -47,6 +47,24 @@ configure_file(
   COPYONLY
 )
 
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/expected/f1main_expected_field.h5"
+  "${CMAKE_CURRENT_BINARY_DIR}/expected/f1main_expected_field.h5"
+  COPYONLY
+)
+
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/expected/f1main_expected_electrons.h5"
+  "${CMAKE_CURRENT_BINARY_DIR}/expected/f1main_expected_electrons.h5"
+  COPYONLY
+)
+
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/expected/f1main_expected_integrated.h5"
+  "${CMAKE_CURRENT_BINARY_DIR}/expected/f1main_expected_integrated.h5"
+  COPYONLY
+)
+
 add_pfunit_ctest (puffin_basic_tests
   TEST_SOURCES testTests.pf testFFunctions.pf # your application library
   LINK_LIBRARIES puffin_mpi # your application library
