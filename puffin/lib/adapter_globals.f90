@@ -310,6 +310,11 @@ subroutine PopulateIntegrationStateFromGlobals(integration)
     integration%step_parameter = sStep
     integration%step_size = sStepSize
 
+    ! Diffraction and redistribution
+    integration%diffraction_step_size = diffStep
+    integration%redistribution_length = sRedistLen_G
+    integration%redistribution_step = iRedistStp_G
+
     ! Timing
     integration%time_start = start_time
     integration%time_end = end_time
@@ -331,6 +336,11 @@ subroutine UpdateGlobalsFromIntegrationState(integration)
     ! Step sizes
     sStep = integration%step_parameter
     sStepSize = integration%step_size
+
+    ! Diffraction and redistribution
+    diffStep = integration%diffraction_step_size
+    sRedistLen_G = integration%redistribution_length
+    iRedistStp_G = integration%redistribution_step
 
     ! Timing
     start_time = integration%time_start
