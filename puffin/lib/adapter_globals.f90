@@ -66,13 +66,18 @@ subroutine PopulateFieldMeshFromGlobals(mesh)
     if (allocated(mesh%ky)) deallocate(mesh%ky)
     if (allocated(mesh%kz2_loc)) deallocate(mesh%kz2_loc)
 
-    allocate(mesh%kx(size(kx_G)))
-    allocate(mesh%ky(size(ky_G)))
-    allocate(mesh%kz2_loc(size(kz2_loc_G)))
-
-    mesh%kx = kx_G
-    mesh%ky = ky_G
-    mesh%kz2_loc = kz2_loc_G
+    if (allocated(kx_G)) then
+        allocate(mesh%kx(size(kx_G)))
+        mesh%kx = kx_G
+    end if
+    if (allocated(ky_G)) then
+        allocate(mesh%ky(size(ky_G)))
+        mesh%ky = ky_G
+    end if
+    if (allocated(kz2_loc_G)) then
+        allocate(mesh%kz2_loc(size(kz2_loc_G)))
+        mesh%kz2_loc = kz2_loc_G
+    end if
 
     ! Axis arrays
     if (allocated(mesh%x_axis)) deallocate(mesh%x_axis)

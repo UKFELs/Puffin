@@ -17,7 +17,7 @@ This document outlines a systematic approach to refactor the global variables in
 | 1 | ✅ DONE | Low | Field mesh & helper code | Adapter functions & first migrated modules |
 | 2 | ✅ DONE | Low-Medium | Integration state | tIntegrationState integrated into UndSection |
 | 3 | ✅ DONE | Low-Medium | Lattice elements | tLatticeElements integrated into UndSection |
-| 4 | ~5-7 days | Medium | Electron phase space | Core physics code updated |
+| 4 | ✅ DONE | Medium | Field mesh | tFieldMesh integrated into UndSection |
 | 5 | ~3-4 days | Medium | Physics parameters | FEL math preserved but typed |
 | 6 | ~2-3 days | Low | Flags and IO | Remaining scattered variables |
 | 7 | ~2-3 days | High | Final migration | Complete removal of untyped globals |

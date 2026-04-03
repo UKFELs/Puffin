@@ -22,9 +22,10 @@ use RK4int
 use write_adapter
 use ParaField
 use InitDataType
-use GlobalTypes, only: tIntegrationState, tLatticeElements
+use GlobalTypes, only: tIntegrationState, tLatticeElements, tFieldMesh
 use AdapterGlobals, only: PopulateIntegrationStateFromGlobals, UpdateGlobalsFromIntegrationState, &
-                          PopulateLatticeElementsFromGlobals, UpdateGlobalsFromLatticeElements
+                          PopulateLatticeElementsFromGlobals, UpdateGlobalsFromLatticeElements, &
+                          PopulateFieldMeshFromGlobals, UpdateGlobalsFromFieldMesh
 
 
 implicit none
@@ -68,6 +69,7 @@ contains
     integer error
     type(tIntegrationState) :: integration
     type(tLatticeElements) :: latt
+    type(tFieldMesh) :: mesh
 
   call Get_time(locTimeSt)
 
@@ -83,6 +85,10 @@ contains
 
   call PopulateLatticeElementsFromGlobals(latt)
 
+! Populate field mesh state from globals
+
+  call PopulateFieldMeshFromGlobals(mesh)
+
   if (qResume_G) then
 
     integration%start_step = tInitData_G%iStep
@@ -91,7 +97,8 @@ contains
     sz = tInitData_G%zbarTotal
     szl = tInitData_G%zbarlocal
     sZi_G = tInitData_G%Zbarinter
-    igwr = tInitData_G%igwr
+    mesh%highpass_filter_gr = tInitData_G%igwr
+    igwr = mesh%highpass_filter_gr
 
   else
 
@@ -374,6 +381,7 @@ end if
     print*,' Finished undulator module in ', end_time-locTimeSt, 'seconds'
   end if
 
+  call UpdateGlobalsFromFieldMesh(mesh)
   call UpdateGlobalsFromLatticeElements(latt)
   call UpdateGlobalsFromIntegrationState(integration)
 
