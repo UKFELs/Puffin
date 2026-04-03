@@ -22,10 +22,11 @@ use RK4int
 use write_adapter
 use ParaField
 use InitDataType
-use GlobalTypes, only: tIntegrationState, tLatticeElements, tFieldMesh
+use GlobalTypes, only: tIntegrationState, tLatticeElements, tFieldMesh, tFELPhysics
 use AdapterGlobals, only: PopulateIntegrationStateFromGlobals, UpdateGlobalsFromIntegrationState, &
                           PopulateLatticeElementsFromGlobals, UpdateGlobalsFromLatticeElements, &
-                          PopulateFieldMeshFromGlobals, UpdateGlobalsFromFieldMesh
+                          PopulateFieldMeshFromGlobals, UpdateGlobalsFromFieldMesh, &
+                          PopulateFELPhysicsFromGlobals, UpdateGlobalsFromFELPhysics
 
 
 implicit none
@@ -70,6 +71,7 @@ contains
     type(tIntegrationState) :: integration
     type(tLatticeElements) :: latt
     type(tFieldMesh) :: mesh
+    type(tFELPhysics) :: physics
 
   call Get_time(locTimeSt)
 
@@ -89,6 +91,10 @@ contains
 
   call PopulateFieldMeshFromGlobals(mesh)
 
+! Populate FEL physics parameters from globals
+
+  call PopulateFELPhysicsFromGlobals(physics)
+
   if (qResume_G) then
 
     integration%start_step = tInitData_G%iStep
@@ -104,7 +110,7 @@ contains
 
     integration%start_step = 0_ip  ! ...TEMP...
 
-    if (.not. qUndEnds_G) call matchIn(szl)
+    if (.not. physics%model_undulator_ends) call matchIn(szl)
 
   end if
 
@@ -244,7 +250,7 @@ end if
 !       (we now have solution at zbar + sStepsize)
 
     sZl = sZl + integration%step_size
-    sZ = sZ0 + szl
+    sZ = physics%z_taper_start + szl
     sZi_G = sZi_G + integration%step_size
 
 
@@ -370,7 +376,7 @@ end if
 
   end if
 
-  if (.not. qUndEnds_G) call matchOut(sZ)
+  if (.not. physics%model_undulator_ends) call matchOut(sZ)
 
   call correctTrans()  ! correct transverse motion at undulator exit
 
@@ -381,9 +387,16 @@ end if
     print*,' Finished undulator module in ', end_time-locTimeSt, 'seconds'
   end if
 
+! Re-sync taper-mutated fields from globals before writing back physics state.
+! wiggler_taper::getAlpha modifies n2col and n2col0 during the integration loop,
+! so we must pull the current values back into physics before calling the update.
+  physics%n2col = n2col
+  physics%n2col_initial = n2col0
+
   call UpdateGlobalsFromFieldMesh(mesh)
   call UpdateGlobalsFromLatticeElements(latt)
   call UpdateGlobalsFromIntegrationState(integration)
+  call UpdateGlobalsFromFELPhysics(physics)
 
 end subroutine UndSection
 
