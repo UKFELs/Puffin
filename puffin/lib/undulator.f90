@@ -22,8 +22,9 @@ use RK4int
 use write_adapter
 use ParaField
 use InitDataType
-use GlobalTypes, only: tIntegrationState
-use AdapterGlobals, only: PopulateIntegrationStateFromGlobals, UpdateGlobalsFromIntegrationState
+use GlobalTypes, only: tIntegrationState, tLatticeElements
+use AdapterGlobals, only: PopulateIntegrationStateFromGlobals, UpdateGlobalsFromIntegrationState, &
+                          PopulateLatticeElementsFromGlobals, UpdateGlobalsFromLatticeElements
 
 
 implicit none
@@ -66,6 +67,7 @@ contains
     logical :: qDWrDone
     integer error
     type(tIntegrationState) :: integration
+    type(tLatticeElements) :: latt
 
   call Get_time(locTimeSt)
 
@@ -77,10 +79,15 @@ contains
 
   call PopulateIntegrationStateFromGlobals(integration)
 
+! Populate lattice state from globals
+
+  call PopulateLatticeElementsFromGlobals(latt)
+
   if (qResume_G) then
 
     integration%start_step = tInitData_G%iStep
-    iCSteps = tInitData_G%iCSteps
+    latt%cumulative_steps = tInitData_G%iCSteps
+    iCSteps = latt%cumulative_steps
     sz = tInitData_G%zbarTotal
     szl = tInitData_G%zbarlocal
     sZi_G = tInitData_G%Zbarinter
@@ -195,7 +202,8 @@ end if
 
     if (integration%current_step > integration%total_steps) exit
 
-    iCsteps = iCsteps + 1_ip
+    latt%cumulative_steps = latt%cumulative_steps + 1_ip
+    iCsteps = latt%cumulative_steps
 
 !   Second half of split step method: electron propagation
 !                    and field driving.
@@ -269,7 +277,7 @@ end if
 
         end if
 
-        if (.not. qWriteq(integration%current_step, iCsteps, iWriteNthSteps, iIntWriteNthSteps, &
+        if (.not. qWriteq(integration%current_step, latt%cumulative_steps, iWriteNthSteps, iIntWriteNthSteps, &
                                                          integration%total_steps)) then
 
         ! if not writing then we can do the last half of the
@@ -288,7 +296,7 @@ end if
 
           call diffractIM(dzdF, qDiffrctd, qOKL)  ! Finish diffraction step
           call writeIM(sZ, sZl, &
-                       integration%current_step, iCsteps, iM, iWriteNthSteps, &
+                       integration%current_step, latt%cumulative_steps, iM, iWriteNthSteps, &
                        iIntWriteNthSteps, integration%total_steps, qOKL)   ! Write data
           if (dzdS > 0.0_wp) call diffractIM(dzdS, qDiffrctd, qOKL)  ! Start new diffraction step
           call outer2Inner(ac_rfield_in, ac_ifield_in)
@@ -302,7 +310,7 @@ end if
 
   integration%count = integration%count + 1_IP
 
-    if (qWriteq(integration%current_step, iCsteps, iWriteNthSteps, iIntWriteNthSteps, &
+    if (qWriteq(integration%current_step, latt%cumulative_steps, iWriteNthSteps, iIntWriteNthSteps, &
                 integration%total_steps)) then
 
       if (.not. qDWrDone) then
@@ -312,7 +320,7 @@ end if
         call inner2Outer(ac_rfield_in, ac_ifield_in)
 
         call writeIM(sZ, sZl, &
-                     integration%current_step, iCsteps, iM, iWriteNthSteps, &
+                     integration%current_step, latt%cumulative_steps, iM, iWriteNthSteps, &
                      iIntWriteNthSteps, integration%total_steps, qOKL)
 
       else
@@ -327,13 +335,13 @@ end if
   call Get_time(end_time)
 
   if ((tProcInfo_G%QROOT ) .and. (ioutInfo_G > 1)) then
-    print*,' finished step ',iCsteps, integration%current_step, end_time-start_time
-    WRITE(137,*) ' finished step ',iCsteps, integration%current_step, end_time-start_time
+    print*,' finished step ',latt%cumulative_steps, integration%current_step, end_time-start_time
+    WRITE(137,*) ' finished step ',latt%cumulative_steps, integration%current_step, end_time-start_time
   end if
 
 
 
-  if (mod(iCsteps, integration%redistribution_step) == 0) then
+  if (mod(latt%cumulative_steps, integration%redistribution_step) == 0) then
 
     call deallact_rk4_arrs()
     call getLocalFieldIndices(integration%redistribution_length)
@@ -366,6 +374,7 @@ end if
     print*,' Finished undulator module in ', end_time-locTimeSt, 'seconds'
   end if
 
+  call UpdateGlobalsFromLatticeElements(latt)
   call UpdateGlobalsFromIntegrationState(integration)
 
 end subroutine UndSection

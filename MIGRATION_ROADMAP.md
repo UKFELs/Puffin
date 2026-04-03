@@ -14,13 +14,14 @@ This document outlines a systematic approach to refactor the global variables in
 | Phase | Duration | Risk | Scope | Key Deliverable |
 |-------|----------|------|-------|-----------------|
 | 0 | ✅ DONE | Low | Create GlobalTypes.f90 | Type definitions module |
-| 1 | ~3-4 days | Low | Field mesh & helper code | Adapter functions & first migrated modules |
-| 2 | ~4-5 days | Low-Medium | Lattice elements & integration | Element management refactored |
-| 3 | ~5-7 days | Medium | Electron phase space | Core physics code updated |
-| 4 | ~3-4 days | Medium | Physics parameters | FEL math preserved but typed |
-| 5 | ~2-3 days | Low | Flags and IO | Remaining scattered variables |
-| 6 | ~2-3 days | High | Final migration | Complete removal of untyped globals |
-| 7 | ~1-2 days | Medium | Testing & validation | Full test suite passes |
+| 1 | ✅ DONE | Low | Field mesh & helper code | Adapter functions & first migrated modules |
+| 2 | ✅ DONE | Low-Medium | Integration state | tIntegrationState integrated into UndSection |
+| 3 | ✅ DONE | Low-Medium | Lattice elements | tLatticeElements integrated into UndSection |
+| 4 | ~5-7 days | Medium | Electron phase space | Core physics code updated |
+| 5 | ~3-4 days | Medium | Physics parameters | FEL math preserved but typed |
+| 6 | ~2-3 days | Low | Flags and IO | Remaining scattered variables |
+| 7 | ~2-3 days | High | Final migration | Complete removal of untyped globals |
+| 8 | ~1-2 days | Medium | Testing & validation | Full test suite passes |
 
 **Total Effort:** ~3-4 weeks of development work
 
