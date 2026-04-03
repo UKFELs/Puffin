@@ -19,7 +19,7 @@ This document outlines a systematic approach to refactor the global variables in
 | 3 | ✅ DONE | Low-Medium | Lattice elements | tLatticeElements integrated into UndSection |
 | 4 | ✅ DONE | Medium | Field mesh | tFieldMesh integrated into UndSection |
 | 5 | ✅ DONE | Medium | Physics parameters | tFELPhysics integrated into UndSection |
-| 6 | ~2-3 days | Low | Flags and IO | Remaining scattered variables |
+| 6 | ✅ DONE | Low | Flags and IO | tSimulationFlags & tOutputConfig integrated into UndSection |
 | 7 | ~2-3 days | High | Final migration | Complete removal of untyped globals |
 | 8 | ~1-2 days | Medium | Testing & validation | Full test suite passes |
 

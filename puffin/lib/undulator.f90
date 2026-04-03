@@ -22,11 +22,14 @@ use RK4int
 use write_adapter
 use ParaField
 use InitDataType
-use GlobalTypes, only: tIntegrationState, tLatticeElements, tFieldMesh, tFELPhysics
+use GlobalTypes, only: tIntegrationState, tLatticeElements, tFieldMesh, tFELPhysics, &
+                       tSimulationFlags, tOutputConfig
 use AdapterGlobals, only: PopulateIntegrationStateFromGlobals, UpdateGlobalsFromIntegrationState, &
                           PopulateLatticeElementsFromGlobals, UpdateGlobalsFromLatticeElements, &
                           PopulateFieldMeshFromGlobals, UpdateGlobalsFromFieldMesh, &
-                          PopulateFELPhysicsFromGlobals, UpdateGlobalsFromFELPhysics
+                          PopulateFELPhysicsFromGlobals, UpdateGlobalsFromFELPhysics, &
+                          PopulateSimulationFlagsFromGlobals, UpdateGlobalsFromSimulationFlags, &
+                          PopulateOutputConfigFromGlobals, UpdateGlobalsFromOutputConfig
 
 
 implicit none
@@ -72,6 +75,8 @@ contains
     type(tLatticeElements) :: latt
     type(tFieldMesh) :: mesh
     type(tFELPhysics) :: physics
+    type(tSimulationFlags) :: flags
+    type(tOutputConfig) :: output
 
   call Get_time(locTimeSt)
 
@@ -94,6 +99,14 @@ contains
 ! Populate FEL physics parameters from globals
 
   call PopulateFELPhysicsFromGlobals(physics)
+
+! Populate simulation flags from globals
+
+  call PopulateSimulationFlagsFromGlobals(flags)
+
+! Populate output configuration from globals
+
+  call PopulateOutputConfigFromGlobals(output)
 
   if (qResume_G) then
 
@@ -122,7 +135,7 @@ contains
 
   else
 
-    integration%count = mod(integration%start_step-1_IP,iWriteNthSteps)
+    integration%count = mod(integration%start_step-1_IP,output%write_nth_steps)
 
   end if
 
@@ -140,7 +153,7 @@ contains
 ! split-steps.
 
 if (qresume_G) then
-  if (qDiffraction_G) then
+  if (flags%diffraction) then
 
     drstart = integration%start_step - mod(integration%start_step,isteps4diff)
 
@@ -180,7 +193,7 @@ if (qresume_G) then
 
 else  ! if not resuming, just do first half diffraction step
 
-  if (qDiffraction_G) then
+  if (flags%diffraction) then
 
     dzdS = real(isteps4diff, kind=wp) * integration%step_size / 2.0_wp
 
@@ -221,8 +234,8 @@ end if
 !   Second half of split step method: electron propagation
 !                    and field driving.
 
-    if (qElectronsEvolve_G .OR. qFieldEvolve_G &
-             .OR. qElectronFieldCoupling_G) then
+    if (flags%electrons_evolve .OR. flags%field_evolve &
+             .OR. flags%electron_field_coupling) then
 
       igoes = 1_ip
       do
@@ -256,7 +269,7 @@ end if
 
 !   diffract field to complete diffraction step
 
-    if (qDiffraction_G) then
+    if (flags%diffraction) then
 
       if ((mod(integration%current_step,isteps4diff) == 0_ip) .or. &
           (integration%current_step == integration%total_steps))  then
@@ -290,7 +303,7 @@ end if
 
         end if
 
-        if (.not. qWriteq(integration%current_step, latt%cumulative_steps, iWriteNthSteps, iIntWriteNthSteps, &
+        if (.not. qWriteq(integration%current_step, latt%cumulative_steps, output%write_nth_steps, output%write_nth_steps_intermediate, &
                                                          integration%total_steps)) then
 
         ! if not writing then we can do the last half of the
@@ -309,8 +322,8 @@ end if
 
           call diffractIM(dzdF, qDiffrctd, qOKL)  ! Finish diffraction step
           call writeIM(sZ, sZl, &
-                       integration%current_step, latt%cumulative_steps, iM, iWriteNthSteps, &
-                       iIntWriteNthSteps, integration%total_steps, qOKL)   ! Write data
+                       integration%current_step, latt%cumulative_steps, iM, output%write_nth_steps, &
+                       output%write_nth_steps_intermediate, integration%total_steps, qOKL)   ! Write data
           if (dzdS > 0.0_wp) call diffractIM(dzdS, qDiffrctd, qOKL)  ! Start new diffraction step
           call outer2Inner(ac_rfield_in, ac_ifield_in)
           qDWrDone = .true.
@@ -323,7 +336,7 @@ end if
 
   integration%count = integration%count + 1_IP
 
-    if (qWriteq(integration%current_step, latt%cumulative_steps, iWriteNthSteps, iIntWriteNthSteps, &
+    if (qWriteq(integration%current_step, latt%cumulative_steps, output%write_nth_steps, output%write_nth_steps_intermediate, &
                 integration%total_steps)) then
 
       if (.not. qDWrDone) then
@@ -333,8 +346,8 @@ end if
         call inner2Outer(ac_rfield_in, ac_ifield_in)
 
         call writeIM(sZ, sZl, &
-                     integration%current_step, latt%cumulative_steps, iM, iWriteNthSteps, &
-                     iIntWriteNthSteps, integration%total_steps, qOKL)
+                     integration%current_step, latt%cumulative_steps, iM, output%write_nth_steps, &
+                     output%write_nth_steps_intermediate, integration%total_steps, qOKL)
 
       else
 
@@ -347,7 +360,7 @@ end if
 
   call Get_time(end_time)
 
-  if ((tProcInfo_G%QROOT ) .and. (ioutInfo_G > 1)) then
+  if ((tProcInfo_G%QROOT ) .and. (output%output_info_level > 1)) then
     print*,' finished step ',latt%cumulative_steps, integration%current_step, end_time-start_time
     WRITE(137,*) ' finished step ',latt%cumulative_steps, integration%current_step, end_time-start_time
   end if
@@ -383,7 +396,7 @@ end if
   iUnd_cr = iUnd_cr + 1_ip
   qResume_G = .false.
 
-  if ((tProcInfo_G%QROOT ) .and. (ioutInfo_G > 0)) then
+  if ((tProcInfo_G%QROOT ) .and. (output%output_info_level > 0)) then
     print*,' Finished undulator module in ', end_time-locTimeSt, 'seconds'
   end if
 
@@ -393,10 +406,18 @@ end if
   physics%n2col = n2col
   physics%n2col_initial = n2col0
 
+! Re-sync callee-modified flags from globals before writing back flags state.
+! qPArrOK_G and qInnerXYOK_G are set by deep callees during rk4par and read
+! directly as globals in the loop body; pull final values back before the update.
+  flags%parallel_arrays_ok = qPArrOK_G
+  flags%inner_xy_ok = qInnerXYOK_G
+
   call UpdateGlobalsFromFieldMesh(mesh)
   call UpdateGlobalsFromLatticeElements(latt)
   call UpdateGlobalsFromIntegrationState(integration)
   call UpdateGlobalsFromFELPhysics(physics)
+  call UpdateGlobalsFromSimulationFlags(flags)
+  call UpdateGlobalsFromOutputConfig(output)
 
 end subroutine UndSection
 
