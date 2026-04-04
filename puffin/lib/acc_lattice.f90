@@ -22,6 +22,7 @@ use gtop2
 use initConds
 use functions
 use pdiff
+use GlobalTypes, only: tLatticeElements, tFELFrame, tSimulationFlags
 
 implicit none
 
@@ -417,32 +418,35 @@ contains
 !> @param[in] iL The element number in the lattice
 !> @param[out] sZ Scaled distance through the machine
 
-  subroutine disperse(iL, sZ)
+  subroutine disperse(iL, sZ, latt, frame, flags)
 
   implicit none
 
   integer(kind=ip), intent(in) :: iL
   real(kind=wp), intent(out) :: sZ
+  type(tLatticeElements), intent(inout) :: latt
+  type(tFELFrame),        intent(in)    :: frame
+  type(tSimulationFlags), intent(in)    :: flags
 
   real(kind=wp) :: szbar4d
   real(kind=wp), allocatable :: sp2(:)
   logical :: qDummy
 
   real(kind=wp) :: lenz2
-  
+
 
   logical :: qOKL
 
-  szbar4d = chic_zbar(iChic_cr)
+  szbar4d = latt%chic_zbar(iChic_cr)
 
 !     Propagate through chicane
 
 
-  sElZ2_G = sElZ2_G - 2.0_WP * chic_disp(iChic_cr) *  &
+  sElZ2_G = sElZ2_G - 2.0_WP * latt%chic_disp(iChic_cr) *  &
                (sElGam_G - 1_wp) &
-               + chic_slip(iChic_cr)
+               + latt%chic_slip(iChic_cr)
 
-  if (qDiffraction_G) then
+  if (flags%diffraction) then
 
 !  Convert slippage in z2bar to spatial length for diffraction
 
@@ -457,7 +461,7 @@ contains
 
     lenz2 = sLengthOfElmZ2_G * real((nz2_G - 1_ip), kind=wp )
     sElZ2_G = sElZ2_G - (real(floor(sElZ2_G / lenz2), kind=wp) * lenz2 )
-  
+
   end if
 
   end subroutine disperse
@@ -475,10 +479,13 @@ contains
 !> @param[in] iL The element number in the lattice
 !> @param[out] sZ Scaled distance through the machine
 
-  subroutine driftSection(iL, sZ)
+  subroutine driftSection(iL, sZ, latt, frame, flags)
 
     integer(kind=ip), intent(in) :: iL
     real(kind=wp), intent(out) :: sZ
+    type(tLatticeElements), intent(inout) :: latt
+    type(tFELFrame),        intent(in)    :: frame
+    type(tSimulationFlags), intent(in)    :: flags
 
     real(kind=wp) :: del_dr_z
 
@@ -486,29 +493,29 @@ contains
     logical :: qDummy, qOKL
 
 
-    del_dr_z = drift_zbar(iDrift_cr) ! dummy until global
+    del_dr_z = latt%drift_zbar(iDrift_cr)
 
     allocate(sp2(iNumberElectrons_G))
 
-    call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, sEta_G, sGammaR_G, saw_G)
+    call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, frame%eta, frame%gamma_ref, frame%aw)
 
     sElZ2_G = sElZ2_G + del_dr_z * sp2
 
-    if (.not. qOneD_G) then
-    
+    if (.not. flags%one_dimensional) then
+
       ! drift in x and y...
 
-      sElX_G = sElX_G + (2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
-            (1 + sEta_G * sp2) / sElGam_G *  &
+      sElX_G = sElX_G + (2 * frame%rho * frame%kappa / sqrt(frame%eta) * &
+            (1 + frame%eta * sp2) / sElGam_G *  &
             sElPX_G) * del_dr_z
 
-      sElY_G = sElY_G - (2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
-            (1 + sEta_G * sp2) / sElGam_G *  &
+      sElY_G = sElY_G - (2 * frame%rho * frame%kappa / sqrt(frame%eta) * &
+            (1 + frame%eta * sp2) / sElGam_G *  &
             sElPY_G) * del_dr_z
 
     end if
 
-    if (qDiffraction_G) call diffractIM(del_dr_z, qDummy, qOKL)
+    if (flags%diffraction) call diffractIM(del_dr_z, qDummy, qOKL)
 
     deallocate(sp2)
 
@@ -528,31 +535,32 @@ contains
 !> simple point transform.
 !> @param[in] iL The element number in the lattice
 
-  subroutine Quad(iL)
+  subroutine Quad(iL, latt, frame, flags)
 
     integer(kind=ip), intent(in) :: iL
+    type(tLatticeElements), intent(inout) :: latt
+    type(tFELFrame),        intent(in)    :: frame
+    type(tSimulationFlags), intent(in)    :: flags
 
     real(kind=wp), allocatable :: sp2(:)
 
     allocate(sp2(iNumberElectrons_G))
 
-    call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, sEta_G, sGammaR_G, saw_G)
+    call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, frame%eta, frame%gamma_ref, frame%aw)
 
 !    Apply quad transform (point transform)
 
+    if (.not. flags%one_dimensional) then
 
-    if (.not. qOneD_G) then
+      sElPX_G = sElPX_G + sqrt(frame%eta) / &
+                  (2 * frame%rho * frame%kappa) * sElX_G &
+                   / latt%quad_fx(iQuad_cr)
 
-      sElPX_G = sElPX_G + sqrt(sEta_G) / &
-                  (2 * sRho_G * sKappa_G) * sElX_G &
-                   / quad_fx(iQuad_cr)
-
-      sElPY_G = sElPY_G - sqrt(sEta_G) / &
-                  (2 * sRho_G * sKappa_G) * sElY_G &
-                  / quad_fy(iQuad_cr)
+      sElPY_G = sElPY_G - sqrt(frame%eta) / &
+                  (2 * frame%rho * frame%kappa) * sElY_G &
+                  / latt%quad_fy(iQuad_cr)
 
     end if
-
 
   deallocate(sp2)
 
@@ -572,13 +580,13 @@ contains
 !> Apply a simple energy modulation to the beam in Puffin.
 !> @param[in] iL The element number in the lattice
 
-  subroutine bModulation(iL)
+  subroutine bModulation(iL, latt)
 
     integer(kind=ip), intent(in) :: iL
+    type(tLatticeElements), intent(inout) :: latt
 
-    sElGam_G = sElGam_G + ( enmod_mag(iModulation_cr) &
-               * cos(enmod_wavenum(iModulation_cr) * sElZ2_G) )
-
+    sElGam_G = sElGam_G + ( latt%enmod_mag(iModulation_cr) &
+               * cos(latt%enmod_wavenum(iModulation_cr) * sElZ2_G) )
 
     iModulation_cr = iModulation_cr + 1
 

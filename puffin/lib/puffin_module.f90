@@ -26,6 +26,13 @@ contains
       use initDataType
       use Globals
       use IO, only: tErrorLog_G, log_error
+      use GlobalTypes, only: tFieldMesh, tFELFrame, tSimulationFlags, &
+                             tOutputConfig, tLatticeElements
+      use AdapterGlobals, only: PopulateFieldMeshFromGlobals, &
+                                PopulateFELFrameFromGlobals, &
+                                PopulateSimulationFlagsFromGlobals, &
+                                PopulateOutputConfigFromGlobals, &
+                                PopulateLatticeElementsFromGlobals
 
       implicit none
 
@@ -34,6 +41,13 @@ contains
       real(kind=wp)    :: sZ, szl
       integer(kind=ip) :: iL, iLst
       logical          :: qOKL
+
+      ! Simulation-lifetime derived types - owned here, passed to all element routines
+      type(tFieldMesh)       :: mesh
+      type(tFELFrame)        :: frame
+      type(tSimulationFlags) :: flags
+      type(tOutputConfig)    :: output
+      type(tLatticeElements) :: latt
 
       qOK = .false.
 !           Read in data file and initialize system
@@ -44,6 +58,15 @@ contains
          print*, 'Error during initialization, check error log for details, ', tErrorLog_G%zFileName
          goto 1000
       end if
+
+      ! Populate simulation-lifetime types once from globals set during init().
+      ! These are passed as arguments to all element subroutines.
+      call PopulateFieldMeshFromGlobals(mesh)
+      call PopulateFELFrameFromGlobals(frame)
+      call PopulateSimulationFlagsFromGlobals(flags)
+      call PopulateOutputConfigFromGlobals(output)
+      call PopulateLatticeElementsFromGlobals(latt)
+
       call Get_time(start_time)
 
       if ((tProcInfo_G%qRoot) .and. (ioutInfo_G>0)) print*,' starting simulation... '
@@ -62,19 +85,19 @@ contains
                print*, 'Simulating undulator module', iUnd_cr
             end if
 
-            call UndSection(iL, sZ)
+            call UndSection(iL, sZ, mesh, frame, flags, output, latt)
 
          else if (iElmType(iL) == iQuad) then
 
-            call Quad(iL)
+            call Quad(iL, latt, frame, flags)
 
          else if (iElmType(iL) == iChic) then
 
-            call disperse(iL, sZ)
+            call disperse(iL, sZ, latt, frame, flags)
 
          else if (iElmType(iL) == iDrift) then
 
-            call driftSection(iL, sZ)
+            call driftSection(iL, sZ, latt, frame, flags)
 !     FOR WRITING AFTER EACH DRIFT
 !    szl = 0.0_wp
 !    call wr_cho(sZ, szl, &
@@ -83,7 +106,7 @@ contains
 
          else if (iElmType(iL) == iModulation) then
 
-            call BModulation(iL)
+            call BModulation(iL, latt)
 
          end if
 

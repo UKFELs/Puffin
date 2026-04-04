@@ -79,54 +79,65 @@ type :: tElectronCloud
 end type tElectronCloud
 
 ! ============================================================================
-! 3. FEL PHYSICS PARAMETERS TYPE - Wiggler & undulator physics
+! 3a. FEL FRAME TYPE - Immutable simulation-lifetime scaling frame
+!     Set once at initialization; read by all elements and callees.
+!     Will be owned by puffin_main (Phase 8) and passed as argument.
 ! ============================================================================
-type :: tFELPhysics
-    ! Core undulator parameters (usually set once at initialization)
+type :: tFELFrame
+    ! Core parameters (set from input, never modified during integration)
     real(kind=wp) :: rho                    ! sRho_G - Pierce parameter
-    real(kind=wp) :: aw                     ! sAw_G - undulator strength
-    real(kind=wp) :: gamma_ref              ! sGammaR_G - reference electron energy
+    real(kind=wp) :: aw                     ! sAw_G - undulator strength (reference)
+    real(kind=wp) :: gamma_ref              ! sGammaR_G - reference Lorentz factor
 
-    ! Derived parameters (computed from above in Jsetupcalcs)
+    ! Derived scaling parameters (computed once in Jsetupcalcs)
     real(kind=wp) :: eta                    ! sEta_G - detuning parameter
-    real(kind=wp) :: kappa                  ! sKappa_G
-    real(kind=wp) :: k_beta                 ! sKBeta_G
-    real(kind=wp) :: k_beta_x, k_beta_y    ! sKBetaX_G, sKBetaY_G
-    real(kind=wp) :: k_beta_x_sf, k_beta_y_sf  ! sKBetaXSF_G, sKBetaYSF_G
+    real(kind=wp) :: kappa                  ! sKappa_G - coupling strength
 
-    ! Wavelengths and characteristic lengths
-    real(kind=wp) :: lambda_w               ! sLam_w_G - wiggler period
-    real(kind=wp) :: lambda_r               ! sLam_r_G - resonant radiation wavelength
-    real(kind=wp) :: gain_length            ! lg_G
-    real(kind=wp) :: cooperation_length     ! lc_G
+    ! Characteristic lengths
+    real(kind=wp) :: lambda_w               ! lam_w_G - wiggler period
+    real(kind=wp) :: lambda_r               ! lam_r_G - resonant radiation wavelength
+    real(kind=wp) :: gain_length            ! lg_G - e-folding gain length
+    real(kind=wp) :: cooperation_length     ! lc_G - cooperation/slippage length
 
-    ! Undulator field shape
-    character(32_IP) :: undulator_type      ! zUndType_G
-    real(kind=wp) :: kx_undulator, ky_undulator  ! 3D undulator B-field wavenumbers
+    ! Scaling coefficient
+    real(kind=wp) :: coefficient_1          ! cf1_G - setup scaling coefficient
+end type tFELFrame
+
+! ============================================================================
+! 3b. UNDULATOR TYPE - Properties of the current undulator lattice element
+!     Re-populated by initUndulator() on each UndSection call.
+!     Stays local to UndSection throughout the migration.
+! ============================================================================
+type :: tUndulator
+    ! Undulator field shape (per element from lattice arrays)
+    character(32_IP) :: undulator_type          ! zUndType_G
+    real(kind=wp) :: kx_undulator, ky_undulator ! kx_und_G, ky_und_G - off-axis wavenumbers
+
+    ! Beta-function wavenumbers (per element)
+    real(kind=wp) :: k_beta_x_sf, k_beta_y_sf  ! sKBetaXSF_G, sKBetaYSF_G - scaled beta
+    real(kind=wp) :: k_beta                     ! sKBeta_G
+    real(kind=wp) :: k_beta_x, k_beta_y         ! sKBetaX_G, sKBetaY_G
 
     ! Focusing
-    real(kind=wp) :: focus_factor           ! sFocusfactor_G
-    real(kind=wp) :: focus_factor_saved     ! For backup
-    real(kind=wp) :: fx, fy                 ! Focusing in x, y
+    real(kind=wp) :: focus_factor               ! sFocusfactor_G - natural focusing
+    real(kind=wp) :: focus_factor_saved         ! sFocusfactor_save_G - backup
+    real(kind=wp) :: fx, fy                     ! fx_G, fy_G - polarisation focusing
 
     ! Absorption
-    real(kind=wp) :: beta_absorption        ! sBeta_G
+    real(kind=wp) :: beta_absorption            ! sBeta_G - per-element absorption
 
     ! Undulator ends modeling
-    logical :: model_undulator_ends         ! qUndEnds_G
-    real(kind=wp) :: z_start_undulator, z_end_undulator  ! Markers
-    integer(kind=ip) :: undulator_position  ! iUndPlace_G (start/middle/end)
+    logical :: model_undulator_ends             ! qUndEnds_G
+    real(kind=wp) :: z_start_undulator, z_end_undulator  ! sZFS, sZFE - ends geometry
+    integer(kind=ip) :: undulator_position      ! iUndPlace_G
 
-    ! Field-dependent parameters (updated during tapering)
-    real(kind=wp) :: n2col                  ! Fractional change in aw
-    real(kind=wp) :: n2col_initial          ! n2col0 - at start of module
-    real(kind=wp) :: undulator_gradient     ! undgrad - d/dz of n2col
-    real(kind=wp) :: z_taper_start          ! sz0
-    real(kind=wp) :: m2col                  ! Fractional change in eta (redundant)
-
-    ! Scaling factor (from cf1_G calculation)
-    real(kind=wp) :: coefficient_1
-end type tFELPhysics
+    ! Field-dependent parameters (updated during tapering mid-loop)
+    real(kind=wp) :: n2col                      ! Fractional change in aw (evolves)
+    real(kind=wp) :: n2col_initial              ! n2col0 - field strength at entry
+    real(kind=wp) :: undulator_gradient         ! undgrad - d/dz of n2col
+    real(kind=wp) :: z_taper_start              ! sz0 - z reference for taper
+    real(kind=wp) :: m2col                      ! m2col - legacy field
+end type tUndulator
 
 ! ============================================================================
 ! 4. LATTICE ELEMENTS TYPE - All element types in one unified structure
@@ -300,7 +311,8 @@ type :: tSimulationContext
     ! Major data objects
     type(tFieldMesh) :: mesh
     type(tElectronCloud) :: electrons
-    type(tFELPhysics) :: physics
+    type(tFELFrame) :: frame         ! Simulation-lifetime scaling frame
+    type(tUndulator) :: und          ! Current undulator element state
     type(tLatticeElements) :: lattice
     type(tIntegrationState) :: integration
     type(tOutputConfig) :: output

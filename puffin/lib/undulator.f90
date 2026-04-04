@@ -22,14 +22,10 @@ use RK4int
 use write_adapter
 use ParaField
 use InitDataType
-use GlobalTypes, only: tIntegrationState, tLatticeElements, tFieldMesh, tFELPhysics, &
-                       tSimulationFlags, tOutputConfig
+use GlobalTypes, only: tIntegrationState, tLatticeElements, tFieldMesh, tFELFrame, &
+                       tUndulator, tSimulationFlags, tOutputConfig
 use AdapterGlobals, only: PopulateIntegrationStateFromGlobals, UpdateGlobalsFromIntegrationState, &
-                          PopulateLatticeElementsFromGlobals, UpdateGlobalsFromLatticeElements, &
-                          PopulateFieldMeshFromGlobals, UpdateGlobalsFromFieldMesh, &
-                          PopulateFELPhysicsFromGlobals, UpdateGlobalsFromFELPhysics, &
-                          PopulateSimulationFlagsFromGlobals, UpdateGlobalsFromSimulationFlags, &
-                          PopulateOutputConfigFromGlobals, UpdateGlobalsFromOutputConfig
+                          PopulateUndulatorFromGlobals, UpdateGlobalsFromUndulator
 
 
 implicit none
@@ -38,22 +34,45 @@ implicit none
 contains
 
 
-  subroutine UndSection(iM, sZ)
+  subroutine UndSection(iM, sZ, mesh, frame, flags, output, latt)
 
+! -----------------------------------------------------------------------
+! Remaining globals used in UndSection that CANNOT be removed yet.
+! These are read or written by deep callees via `use Globals` / `use lattice`,
+! so removing them requires threading types through callee signatures (Phase 9).
+!
+! Variable        | Why it remains global
+! ----------------|------------------------------------------------------
+! iStep           | hdf5PuffID.f90 reads it for output filenames
+! iCsteps         | hdf5PuffLow.f90 reads it for dataset writes
+! igwr            | hdf5PuffLow.f90, hdf5_puff.f90, hdf5_puff_coll.f90
+! sZi_G           | hdf5PuffLow.f90 reads it for z-coordinate output
+! iUnd_cr         | hdf5PuffLow.f90 reads it for undulator section index
+! end_time        | diffraction.f90 reads it; start_time set by puffin_module
+! start_time      | Set externally by puffin_module.f90 before entry
+! n2col / n2col0  | Modified by wiggler_taper callees mid-loop
+! qPArrOK_G       | Set by rk4par callees mid-loop
+! qInnerXYOK_G    | Set by rk4par callees mid-loop
+!
+! Infrastructure globals (not candidates for migration):
+! tProcInfo_G     | MPI communicator/rank info, used in 67+ locations
+! ac_rfield_in    | Module-level RK4 work arrays, managed by RK4int
+! ac_ifield_in    | Module-level RK4 work arrays, managed by RK4int
+! -----------------------------------------------------------------------
 
     implicit none
 
-! nPeriods        -      Number of periods in the module
-! nStepsPerPeriod -      Number of steps per undulator period
-!                        to be used in the integration
-! iM          -      Which module is this?
-! sV              -      6D electron data, arranged according
-!                 -      to ArrayFunctions.f90
-! sA              -      Field array
-! sZ              -      zbar
+! iM   - Which lattice module is this?
+! sZ   - zbar position through the machine
+! mesh, frame, flags, output, latt - simulation-lifetime types owned by puffin_main
 
     integer(kind=ip), intent(in) :: iM
-    real(kind=wp), intent(inout) :: sZ ! , sA(:)
+    real(kind=wp), intent(inout) :: sZ
+    type(tFieldMesh),       intent(inout) :: mesh
+    type(tFELFrame),        intent(in)    :: frame
+    type(tSimulationFlags), intent(inout) :: flags
+    type(tOutputConfig),    intent(in)    :: output
+    type(tLatticeElements), intent(inout) :: latt
 
 
 ! Local args
@@ -72,11 +91,9 @@ contains
     logical :: qDWrDone
     integer error
     type(tIntegrationState) :: integration
-    type(tLatticeElements) :: latt
-    type(tFieldMesh) :: mesh
-    type(tFELPhysics) :: physics
-    type(tSimulationFlags) :: flags
-    type(tOutputConfig) :: output
+    type(tUndulator) :: und
+    logical :: qResuming
+    type(cInitData) :: init_data
 
   call Get_time(locTimeSt)
 
@@ -88,42 +105,29 @@ contains
 
   call PopulateIntegrationStateFromGlobals(integration)
 
-! Populate lattice state from globals
+! Populate per-element undulator parameters from globals set by initUndulator
 
-  call PopulateLatticeElementsFromGlobals(latt)
+  call PopulateUndulatorFromGlobals(und)
 
-! Populate field mesh state from globals
+  qResuming = qResume_G
+  init_data = tInitData_G
 
-  call PopulateFieldMeshFromGlobals(mesh)
+  if (qResuming) then
 
-! Populate FEL physics parameters from globals
-
-  call PopulateFELPhysicsFromGlobals(physics)
-
-! Populate simulation flags from globals
-
-  call PopulateSimulationFlagsFromGlobals(flags)
-
-! Populate output configuration from globals
-
-  call PopulateOutputConfigFromGlobals(output)
-
-  if (qResume_G) then
-
-    integration%start_step = tInitData_G%iStep
-    latt%cumulative_steps = tInitData_G%iCSteps
+    integration%start_step = init_data%iStep
+    latt%cumulative_steps = init_data%iCSteps
     iCSteps = latt%cumulative_steps
-    sz = tInitData_G%zbarTotal
-    szl = tInitData_G%zbarlocal
-    sZi_G = tInitData_G%Zbarinter
-    mesh%highpass_filter_gr = tInitData_G%igwr
+    sz = init_data%zbarTotal
+    szl = init_data%zbarlocal
+    sZi_G = init_data%Zbarinter
+    mesh%highpass_filter_gr = init_data%igwr
     igwr = mesh%highpass_filter_gr
 
   else
 
     integration%start_step = 0_ip  ! ...TEMP...
 
-    if (.not. physics%model_undulator_ends) call matchIn(szl)
+    if (.not. und%model_undulator_ends) call matchIn(szl)
 
   end if
 
@@ -152,7 +156,7 @@ contains
 ! will need to do first half step since writes are done on COMPLETED
 ! split-steps.
 
-if (qresume_G) then
+if (qResuming) then
   if (flags%diffraction) then
 
     drstart = integration%start_step - mod(integration%start_step,isteps4diff)
@@ -263,7 +267,7 @@ end if
 !       (we now have solution at zbar + sStepsize)
 
     sZl = sZl + integration%step_size
-    sZ = physics%z_taper_start + szl
+    sZ = und%z_taper_start + szl
     sZi_G = sZi_G + integration%step_size
 
 
@@ -389,7 +393,7 @@ end if
 
   end if
 
-  if (.not. physics%model_undulator_ends) call matchOut(sZ)
+  if (.not. und%model_undulator_ends) call matchOut(sZ)
 
   call correctTrans()  ! correct transverse motion at undulator exit
 
@@ -400,11 +404,11 @@ end if
     print*,' Finished undulator module in ', end_time-locTimeSt, 'seconds'
   end if
 
-! Re-sync taper-mutated fields from globals before writing back physics state.
+! Re-sync taper-mutated fields from globals before writing back undulator state.
 ! wiggler_taper::getAlpha modifies n2col and n2col0 during the integration loop,
-! so we must pull the current values back into physics before calling the update.
-  physics%n2col = n2col
-  physics%n2col_initial = n2col0
+! so we must pull the current values back into und before calling the update.
+  und%n2col = n2col
+  und%n2col_initial = n2col0
 
 ! Re-sync callee-modified flags from globals before writing back flags state.
 ! qPArrOK_G and qInnerXYOK_G are set by deep callees during rk4par and read
@@ -412,12 +416,8 @@ end if
   flags%parallel_arrays_ok = qPArrOK_G
   flags%inner_xy_ok = qInnerXYOK_G
 
-  call UpdateGlobalsFromFieldMesh(mesh)
-  call UpdateGlobalsFromLatticeElements(latt)
   call UpdateGlobalsFromIntegrationState(integration)
-  call UpdateGlobalsFromFELPhysics(physics)
-  call UpdateGlobalsFromSimulationFlags(flags)
-  call UpdateGlobalsFromOutputConfig(output)
+  call UpdateGlobalsFromUndulator(und)
 
 end subroutine UndSection
 

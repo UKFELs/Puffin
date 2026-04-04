@@ -29,7 +29,8 @@ private
 public :: PopulateFieldMeshFromGlobals, UpdateGlobalsFromFieldMesh
 public :: PopulateElectronCloudFromGlobals, UpdateGlobalsFromElectronCloud
 public :: PopulateIntegrationStateFromGlobals, UpdateGlobalsFromIntegrationState
-public :: PopulateFELPhysicsFromGlobals, UpdateGlobalsFromFELPhysics
+public :: PopulateFELFrameFromGlobals, UpdateGlobalsFromFELFrame
+public :: PopulateUndulatorFromGlobals, UpdateGlobalsFromUndulator
 public :: PopulateLatticeElementsFromGlobals, UpdateGlobalsFromLatticeElements
 public :: PopulateOutputConfigFromGlobals, UpdateGlobalsFromOutputConfig
 public :: PopulateSimulationFlagsFromGlobals, UpdateGlobalsFromSimulationFlags
@@ -356,120 +357,145 @@ subroutine UpdateGlobalsFromIntegrationState(integration)
 end subroutine UpdateGlobalsFromIntegrationState
 
 ! ============================================================================
-! FEL PHYSICS ADAPTERS
+! FEL FRAME ADAPTERS  (simulation-lifetime scaling frame)
 ! ============================================================================
 
-!> Populate tFELPhysics type from global variables
-subroutine PopulateFELPhysicsFromGlobals(physics)
-    type(tFELPhysics), intent(inout) :: physics
+!> Populate tFELFrame type from global variables
+!!
+!! Copies all simulation-lifetime FEL scaling globals into the frame type.
+!! These values are set once during initialization and never change.
+subroutine PopulateFELFrameFromGlobals(frame)
+    type(tFELFrame), intent(inout) :: frame
 
     ! Core parameters
-    physics%rho = sRho_G
-    physics%aw = sAw_G
-    physics%gamma_ref = sGammaR_G
+    frame%rho = sRho_G
+    frame%aw = sAw_G
+    frame%gamma_ref = sGammaR_G
 
-    ! Derived parameters
-    physics%eta = sEta_G
-    physics%kappa = sKappa_G
-    physics%k_beta = sKBeta_G
-    physics%k_beta_x = sKBetaX_G
-    physics%k_beta_y = sKBetaY_G
-    physics%k_beta_x_sf = sKBetaXSF_G
-    physics%k_beta_y_sf = sKBetaYSF_G
+    ! Derived scaling parameters
+    frame%eta = sEta_G
+    frame%kappa = sKappa_G
 
-    ! Wavelengths and lengths
-    physics%lambda_w = lam_w_G
-    physics%lambda_r = lam_r_G
-    physics%gain_length = lg_G
-    physics%cooperation_length = lc_G
+    ! Characteristic lengths
+    frame%lambda_w = lam_w_G
+    frame%lambda_r = lam_r_G
+    frame%gain_length = lg_G
+    frame%cooperation_length = lc_G
 
-    ! Undulator parameters
-    physics%undulator_type = zUndType_G
-    physics%kx_undulator = kx_und_G
-    physics%ky_undulator = ky_und_G
+    ! Scaling coefficient
+    frame%coefficient_1 = cf1_G
 
-    ! Focusing
-    physics%focus_factor = sFocusfactor_G
-    physics%focus_factor_saved = sFocusfactor_save_G
-    physics%fx = fx_G
-    physics%fy = fy_G
+end subroutine PopulateFELFrameFromGlobals
 
-    ! Absorption
-    physics%beta_absorption = sBeta_G
-
-    ! Undulator ends
-    physics%model_undulator_ends = qUndEnds_G
-    physics%z_start_undulator = sZFS
-    physics%z_end_undulator = sZFE
-    physics%undulator_position = iUndPlace_G
-
-    ! Tapering
-    physics%n2col = n2col
-    physics%n2col_initial = n2col0
-    physics%undulator_gradient = undgrad
-    physics%z_taper_start = sz0
-    physics%m2col = m2col
-
-    ! Scaling
-    physics%coefficient_1 = cf1_G
-
-end subroutine PopulateFELPhysicsFromGlobals
-
-!> Update global variables from tFELPhysics type
-subroutine UpdateGlobalsFromFELPhysics(physics)
-    type(tFELPhysics), intent(in) :: physics
+!> Update global variables from tFELFrame type
+subroutine UpdateGlobalsFromFELFrame(frame)
+    type(tFELFrame), intent(in) :: frame
 
     ! Core parameters
-    sRho_G = physics%rho
-    sAw_G = physics%aw
-    sGammaR_G = physics%gamma_ref
+    sRho_G = frame%rho
+    sAw_G = frame%aw
+    sGammaR_G = frame%gamma_ref
 
-    ! Derived parameters
-    sEta_G = physics%eta
-    sKappa_G = physics%kappa
-    sKBeta_G = physics%k_beta
-    sKBetaX_G = physics%k_beta_x
-    sKBetaY_G = physics%k_beta_y
-    sKBetaXSF_G = physics%k_beta_x_sf
-    sKBetaYSF_G = physics%k_beta_y_sf
+    ! Derived scaling parameters
+    sEta_G = frame%eta
+    sKappa_G = frame%kappa
 
-    ! Wavelengths and lengths
-    lam_w_G = physics%lambda_w
-    lam_r_G = physics%lambda_r
-    lg_G = physics%gain_length
-    lc_G = physics%cooperation_length
+    ! Characteristic lengths
+    lam_w_G = frame%lambda_w
+    lam_r_G = frame%lambda_r
+    lg_G = frame%gain_length
+    lc_G = frame%cooperation_length
 
-    ! Undulator parameters
-    zUndType_G = physics%undulator_type
-    kx_und_G = physics%kx_undulator
-    ky_und_G = physics%ky_undulator
+    ! Scaling coefficient
+    cf1_G = frame%coefficient_1
+
+end subroutine UpdateGlobalsFromFELFrame
+
+! ============================================================================
+! UNDULATOR ADAPTERS  (per-element undulator properties)
+! ============================================================================
+
+!> Populate tUndulator type from global variables
+!!
+!! Called after initUndulator() sets up the globals for a new element.
+subroutine PopulateUndulatorFromGlobals(und)
+    type(tUndulator), intent(inout) :: und
+
+    ! Undulator field shape
+    und%undulator_type = zUndType_G
+    und%kx_undulator = kx_und_G
+    und%ky_undulator = ky_und_G
+
+    ! Beta-function wavenumbers
+    und%k_beta_x_sf = sKBetaXSF_G
+    und%k_beta_y_sf = sKBetaYSF_G
+    und%k_beta = sKBeta_G
+    und%k_beta_x = sKBetaX_G
+    und%k_beta_y = sKBetaY_G
 
     ! Focusing
-    sFocusfactor_G = physics%focus_factor
-    sFocusfactor_save_G = physics%focus_factor_saved
-    fx_G = physics%fx
-    fy_G = physics%fy
+    und%focus_factor = sFocusfactor_G
+    und%focus_factor_saved = sFocusfactor_save_G
+    und%fx = fx_G
+    und%fy = fy_G
 
     ! Absorption
-    sBeta_G = physics%beta_absorption
+    und%beta_absorption = sBeta_G
 
     ! Undulator ends
-    qUndEnds_G = physics%model_undulator_ends
-    sZFS = physics%z_start_undulator
-    sZFE = physics%z_end_undulator
-    iUndPlace_G = physics%undulator_position
+    und%model_undulator_ends = qUndEnds_G
+    und%z_start_undulator = sZFS
+    und%z_end_undulator = sZFE
+    und%undulator_position = iUndPlace_G
+
+    ! Tapering (field-dependent, may evolve mid-loop)
+    und%n2col = n2col
+    und%n2col_initial = n2col0
+    und%undulator_gradient = undgrad
+    und%z_taper_start = sz0
+    und%m2col = m2col
+
+end subroutine PopulateUndulatorFromGlobals
+
+!> Update global variables from tUndulator type
+subroutine UpdateGlobalsFromUndulator(und)
+    type(tUndulator), intent(in) :: und
+
+    ! Undulator field shape
+    zUndType_G = und%undulator_type
+    kx_und_G = und%kx_undulator
+    ky_und_G = und%ky_undulator
+
+    ! Beta-function wavenumbers
+    sKBetaXSF_G = und%k_beta_x_sf
+    sKBetaYSF_G = und%k_beta_y_sf
+    sKBeta_G = und%k_beta
+    sKBetaX_G = und%k_beta_x
+    sKBetaY_G = und%k_beta_y
+
+    ! Focusing
+    sFocusfactor_G = und%focus_factor
+    sFocusfactor_save_G = und%focus_factor_saved
+    fx_G = und%fx
+    fy_G = und%fy
+
+    ! Absorption
+    sBeta_G = und%beta_absorption
+
+    ! Undulator ends
+    qUndEnds_G = und%model_undulator_ends
+    sZFS = und%z_start_undulator
+    sZFE = und%z_end_undulator
+    iUndPlace_G = und%undulator_position
 
     ! Tapering
-    n2col = physics%n2col
-    n2col0 = physics%n2col_initial
-    undgrad = physics%undulator_gradient
-    sz0 = physics%z_taper_start
-    m2col = physics%m2col
+    n2col = und%n2col
+    n2col0 = und%n2col_initial
+    undgrad = und%undulator_gradient
+    sz0 = und%z_taper_start
+    m2col = und%m2col
 
-    ! Scaling
-    cf1_G = physics%coefficient_1
-
-end subroutine UpdateGlobalsFromFELPhysics
+end subroutine UpdateGlobalsFromUndulator
 
 ! ============================================================================
 ! LATTICE ELEMENTS ADAPTERS
