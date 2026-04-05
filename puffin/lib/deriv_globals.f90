@@ -293,9 +293,6 @@ real(kind=wp) :: undgrad ! d/dzbar of alpha (n2col)
 
 real(kind=wp) :: n2col0  ! Initial alpha in the current undulator module
 
-real(kind=wp) :: m2col   ! Fractional change in eta due to change in aw
-                         ! (redundant) 
-
 logical :: qUndEnds_G     ! If modelling undulator ends
 
 logical :: qhdf5_G, qsdds_G  ! Switches for data output file formats

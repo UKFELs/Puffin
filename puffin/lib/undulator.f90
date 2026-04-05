@@ -243,15 +243,20 @@ end if
 
       igoes = 1_ip
       do
-        call rk4par(sZl,integration%step_size,qDiffrctd)
+        call rk4par(sZl, integration%step_size, qDiffrctd, und, frame, flags)
         if (igoes>3_ip) exit
-        if (.not. qPArrOK_G) then
+        if (.not. flags%parallel_arrays_ok) then
           call deallact_rk4_arrs()
-          if (.not. qInnerXYOK_G) then
+          if (.not. flags%inner_xy_ok) then
             call getInNode()
+            qInnerXYOK_G = .true.
+            flags%inner_xy_ok = .true.
           end if
           call getLocalFieldIndices(integration%redistribution_length)
+          qPArrOK_G = .true.
+          flags%parallel_arrays_ok = .true.
           call allact_rk4_arrs()
+          flags%inner_xy_ok = .true.
         else
           exit
         end if
@@ -403,18 +408,6 @@ end if
   if ((tProcInfo_G%QROOT ) .and. (output%output_info_level > 0)) then
     print*,' Finished undulator module in ', end_time-locTimeSt, 'seconds'
   end if
-
-! Re-sync taper-mutated fields from globals before writing back undulator state.
-! wiggler_taper::getAlpha modifies n2col and n2col0 during the integration loop,
-! so we must pull the current values back into und before calling the update.
-  und%n2col = n2col
-  und%n2col_initial = n2col0
-
-! Re-sync callee-modified flags from globals before writing back flags state.
-! qPArrOK_G and qInnerXYOK_G are set by deep callees during rk4par and read
-! directly as globals in the loop body; pull final values back before the update.
-  flags%parallel_arrays_ok = qPArrOK_G
-  flags%inner_xy_ok = qInnerXYOK_G
 
   call UpdateGlobalsFromIntegrationState(integration)
   call UpdateGlobalsFromUndulator(und)

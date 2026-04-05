@@ -136,7 +136,6 @@ type :: tUndulator
     real(kind=wp) :: n2col_initial              ! n2col0 - field strength at entry
     real(kind=wp) :: undulator_gradient         ! undgrad - d/dz of n2col
     real(kind=wp) :: z_taper_start              ! sz0 - z reference for taper
-    real(kind=wp) :: m2col                      ! m2col - legacy field
 end type tUndulator
 
 ! ============================================================================

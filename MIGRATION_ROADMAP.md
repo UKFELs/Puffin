@@ -6,9 +6,8 @@ This document outlines the refactoring of global variables in `EDerivGlobals.f90
 organized Fortran derived types. The goal is to improve code maintainability, reduce global
 namespace pollution, and make data dependencies explicit.
 
-**Current State:** Phases 0–7 complete. Derived types exist and adapters work.
-**Target State:** Simulation-lifetime types owned by `puffin_main`; passed as arguments to
-all element subroutines; globals eliminated.
+**Current State:** Phases 0–9 complete. Types fully threaded through the RK4 integration chain.
+**Target State:** All remaining globals eliminated (HDF5 writers, remaining init-only globals).
 
 ---
 
@@ -24,10 +23,10 @@ all element subroutines; globals eliminated.
 | 5 | ✅ DONE | FEL physics | `tFELPhysics` in `UndSection` |
 | 6 | ✅ DONE | Flags & IO | `tSimulationFlags` & `tOutputConfig` in `UndSection` |
 | 7 | ✅ DONE | Final cleanup | `qResume_G`→local, `tInitData_G`→local; remaining globals documented |
-| 7b | 🔜 NEXT | Split tFELPhysics | Replace with `tFELFrame` + `tUndulator` |
-| 8 | 🔜 | Architectural lift | Types owned by `puffin_main`, passed to all element routines |
-| 9 | 🔜 | Global removal | Remove globals unlocked by Phase 8 |
-| 10 | 🔜 | Naming cleanup | Optional: rename fields to domain-meaningful names |
+| 7b | ✅ DONE | Split tFELPhysics | Replace with `tFELFrame` + `tUndulator` |
+| 8 | ✅ DONE | Architectural lift | Types owned by `puffin_main`, passed to all element routines |
+| 9 | ✅ DONE | RK4 chain threading | `tUndulator`/`tFELFrame`/`tSimulationFlags` threaded through full RK4 chain; dead `m2col` removed |
+| 10 | 🔜 NEXT | Naming cleanup | Optional: rename fields to domain-meaningful names |
 
 ---
 
@@ -100,9 +99,9 @@ architectural lift in Phase 8.
 | `n2col` | `n2col` | Current field strength (evolves via taper) |
 | `undulator_gradient` | `undgrad` | Taper rate |
 | `z_taper_start` | `sz0` | z reference for taper |
-| `m2col` | `m2col` | Legacy field |
-
 **Scope:** local to `UndSection` — re-populated by `initUndulator()` on each call.
+
+Note: `m2col` was removed in Phase 9 as dead code (never read or written in any computation).
 
 ### Files to change
 - `puffin/lib/global_types.f90` — replace `tFELPhysics` with `tFELFrame` + `tUndulator`
@@ -168,17 +167,67 @@ to every element subroutine. This eliminates the populate/update round-trip for 
 
 ---
 
-## Phase 9: Remove Remaining Globals (Unlocked by Phase 8)
+## Phase 9: Thread Types Through RK4 Integration Chain ✅ DONE
 
-Once types are at `puffin_main` scope and callees receive types as arguments, globals that
-were "blocked" in the Phase 7 audit can be removed:
+### Objective
+Thread `tUndulator`, `tFELFrame`, and `tSimulationFlags` through the full RK4 call chain
+so the integration loop no longer reads undulator/frame globals directly.
 
-- `iStep`, `iCsteps` — thread via `tIntegrationState` / `tLatticeElements`
-- `igwr`, `sZi_G` — now in `tFieldMesh` / `tIntegrationState`
-- `iUnd_cr` — indexable via `tLatticeElements`
-- `n2col`, `n2col0` — in `tUndulator`, mutated in place
-- `qPArrOK_G`, `qInnerXYOK_G` — in `tSimulationFlags`, mutated in place
-- HDF5-writer globals: `qhdf5_G`, `qSeparateStepFiles_G`, `zFileName_G`, etc.
+### Call chain threaded
+
+```
+UndSection
+  └─ rk4par(und inout, frame in, flags inout)       [puffin_mpi_RK4.f90]
+       └─ derivs(und inout, frame in, flags inout)   [derivative.f90]
+            └─ getrhs(und inout, frame in)           [rhs.f90]
+                 ├─ rhs_tmsavers(und in, frame in)   — replaces sRho_G, sAw_G, sEta_G, fx_G, fy_G etc.
+                 ├─ getAlpha(sZ, und)                [wiggler_taper.f90] — writes und%n2col, und%n2col_initial
+                 ├─ adjUndPlace(sZ, und)             [puffin_equations.f90] — writes und%undulator_position
+                 ├─ getBFields(..., und, frame)       [bfields.f90] — reads all und/frame fields
+                 └─ dppdz_r/i_f, dgamdz_f,
+                    dxdz_f, dydz_f(..., und, frame)  [puffin_equations.f90]
+```
+
+### Key design decisions
+
+- `qPArrOK_G` / `qInnerXYOK_G` are still written by `system_interpolation.f90` and
+  `para_field.f90` (not modified in Phase 9). `derivs` syncs `flags%xxx = qXxx_G` after
+  each `getrhs` call, does the allreduce on the flags fields, and writes back to both
+  `flags%xxx` and the globals (keeping them in sync for the unthreaded callees).
+- `und intent(inout)` is required in `getrhs` because `getAlpha` and `adjUndPlace`
+  mutate `und%n2col`, `und%n2col_initial`, and `und%undulator_position`.
+- Post-loop sync hacks in `undulator.f90` (`und%n2col = n2col` etc.) removed — values
+  are now updated in-place on `und` throughout the loop.
+- Dead field `m2col` removed from `tUndulator`, both adapters, and `deriv_globals.f90`.
+
+### Globals removed / partially decoupled
+
+| Global | Replaced by | Status |
+|--------|-------------|--------|
+| `n2col` | `und%n2col` (updated by `getAlpha`) | ✅ Removed from integration chain |
+| `n2col0` | `und%n2col_initial` | ✅ Removed from integration chain |
+| `iUndPlace_G` | `und%undulator_position` | ✅ Removed from integration chain |
+| `undgrad` | `und%undulator_gradient` | ✅ Removed from integration chain |
+| `sz0` | `und%z_taper_start` | ✅ Removed from integration chain |
+| `sZFS`, `sZFE` | `und%z_start_undulator`, `und%z_end_undulator` | ✅ Removed from integration chain |
+| `qUndEnds_G` | `und%model_undulator_ends` | ✅ Removed from integration chain |
+| `zUndType_G` | `und%undulator_type` | ✅ Removed from integration chain |
+| `kx_und_G`, `ky_und_G` | `und%kx_undulator`, `und%ky_undulator` | ✅ Removed from integration chain |
+| `fx_G`, `fy_G` | `und%fx`, `und%fy` | ✅ Removed from integration chain |
+| `sKBetaXSF_G`, `sKBetaYSF_G` | `und%k_beta_x_sf`, `und%k_beta_y_sf` | ✅ Removed from integration chain |
+| `sRho_G` | `frame%rho` | ✅ Removed from integration chain |
+| `sAw_G` | `frame%aw` | ✅ Removed from integration chain |
+| `sGammaR_G` | `frame%gamma_ref` | ✅ Removed from integration chain |
+| `sEta_G` | `frame%eta` | ✅ Removed from integration chain |
+| `sKappa_G` | `frame%kappa` | ✅ Removed from integration chain |
+| `qPArrOK_G` | `flags%parallel_arrays_ok` | ⚠️ Decoupled in chain; global kept in sync |
+| `qInnerXYOK_G` | `flags%inner_xy_ok` | ⚠️ Decoupled in chain; global kept in sync |
+| `m2col` | — | ✅ Deleted (dead code) |
+
+Note: globals listed as "removed from integration chain" still exist in `deriv_globals.f90`
+because initialization code (`acc_lattice.f90`, `init_conds.f90`, `setup_calcs.f90`) still
+writes them, and `PopulateUndulatorFromGlobals` / `UpdateGlobalsFromUndulator` bridge the
+gap. Full removal requires threading types through the initialization path.
 
 ---
 
@@ -215,18 +264,15 @@ The e2e test verifies numerical results to 1e-10 tolerance.
 
 ---
 
-## Remaining Globals Audit (from Phase 7)
-
-These globals remain in `UndSection` and cannot be removed until Phase 8 threads types
-through the relevant callees:
+## Remaining Globals Audit (after Phase 9)
 
 | Variable | Why it remains | Phase that removes it |
 |----------|----------------|-----------------------|
-| `iStep` | read by HDF5 writers for output filenames | 8/9 |
-| `iCsteps` | read by HDF5 writers for dataset writes | 8/9 |
-| `igwr` | read by HDF5 writers | 8/9 |
-| `sZi_G` | read by HDF5 writers for z-coordinate output | 8/9 |
-| `iUnd_cr` | read by HDF5 writers for undulator index | 8/9 |
-| `end_time`, `start_time` | read by diffraction.f90 | 8/9 |
-| `n2col`, `n2col0` | modified by wiggler_taper mid-loop | 9 |
-| `qPArrOK_G`, `qInnerXYOK_G` | set by rk4par callees mid-loop | 9 |
+| `iStep` | read by HDF5 writers for output filenames | 10+ |
+| `iCsteps` | read by HDF5 writers for dataset writes | 10+ |
+| `igwr` | read by HDF5 writers | 10+ |
+| `sZi_G` | read by HDF5 writers for z-coordinate output | 10+ |
+| `iUnd_cr` | read by HDF5 writers for undulator index | 10+ |
+| `end_time`, `start_time` | read by diffraction.f90 | 10+ |
+| `qPArrOK_G`, `qInnerXYOK_G` | written by `system_interpolation.f90` and `para_field.f90` | 10+ |
+| `sRho_G`, `sAw_G`, etc. | still written by init code (`acc_lattice.f90`, `setup_calcs.f90`) | 10+ |

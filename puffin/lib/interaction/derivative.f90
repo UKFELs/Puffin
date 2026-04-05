@@ -17,6 +17,7 @@ module Derivative
 
 use rhs
 use ParaField
+use GlobalTypes, only: tUndulator, tFELFrame, tSimulationFlags
 
 implicit none
 
@@ -34,7 +35,8 @@ contains
 
 
   subroutine derivs(sz, sAr, sAi, sx, sy, sz2, spr, spi, sp2, &
-                    sdx, sdy, sdz2, sdpr, sdpi, sdp2, sdAr, sdAi)
+                    sdx, sdy, sdz2, sdpr, sdpi, sdp2, sdAr, sdAi, &
+                    und, frame, flags)
 
   implicit none
 
@@ -55,6 +57,9 @@ contains
                                   sdpr(:), sdpi(:), sdp2(:)
 
     real(kind=wp), contiguous, intent(inout) :: sdAr(:), sdAi(:)
+    type(tUndulator),       intent(inout) :: und
+    type(tFELFrame),        intent(in)    :: frame
+    type(tSimulationFlags), intent(inout) :: flags
 
 !                 LOCAL ARGS
 !
@@ -80,7 +85,12 @@ contains
                 sdx, sdy, sdz2, &
                 sdpr, sdpi, sdp2, &
                 sdAr, sdAi, &
-                qOKL)
+                qOKL, und, frame)
+
+! Sync flags from globals after getrhs: getInterps_3D (system_interpolation.f90)
+! writes qPArrOK_G and qInnerXYOK_G directly; pull them into flags here.
+    flags%parallel_arrays_ok = qPArrOK_G
+    flags%inner_xy_ok = qInnerXYOK_G
 
 
 
@@ -93,7 +103,7 @@ contains
 
 !     Check to see if parallel field setup OK...
 
-      if (.not. qPArrOK_G) then
+      if (.not. flags%parallel_arrays_ok) then
         iArEr = 1_ip
       else
         iArEr = 0_ip
@@ -104,7 +114,8 @@ contains
             MPI_SUM, MPI_COMM_WORLD, error)
 
       if (iArEr > 0_ip) then
-        qPArrOK_G = .false.
+        flags%parallel_arrays_ok = .false.
+        qPArrOK_G = .false.  ! keep global in sync (para_field.f90 reads it)
         if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 2)) then
           print*, 'electron outside parallel bounds!'
           print*, 'Emergency redistribute!!!'
@@ -117,7 +128,7 @@ contains
 
 
 
-      if (.not. qInnerXYOK_G) then
+      if (.not. flags%inner_xy_ok) then
         iArEr = 1_ip
       else
         iArEr = 0_ip
@@ -128,7 +139,8 @@ contains
             MPI_SUM, MPI_COMM_WORLD, error)
 
       if (iArEr > 0_ip) then
-        qInnerXYOK_G = .false.
+        flags%inner_xy_ok = .false.
+        qInnerXYOK_G = .false.  ! keep global in sync
         if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 2) ) then
           print*, 'electron outside transverse bounds!'
           print*, 'Emergency redistribute!!!'

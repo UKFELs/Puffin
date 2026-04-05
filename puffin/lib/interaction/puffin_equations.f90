@@ -9,13 +9,14 @@ use puffin_kinds
 use ArrayFunctions
 use Globals
 use rhs_vars
+use GlobalTypes, only: tUndulator, tFELFrame
 
 implicit none
 
 contains
 
   subroutine dppdz_r_f(sx, sy, sz2, spr, spi, sgam, &
-                       sZ, sdpr)
+                       sZ, sdpr, und, frame)
 
   	implicit none
 
@@ -24,45 +25,47 @@ contains
                                              spi(:), sgam(:)
     real(kind=wp), intent(in) :: sZ
     real(kind=wp), contiguous, intent(out) :: sdpr(:)
+    type(tUndulator), intent(in) :: und
+    type(tFELFrame), intent(in) :: frame
 
     real(kind=wp) :: szt
 
 !$OMP WORKSHARE
-    sdpr = sInv2rho * ( n2col * byu  & 
-                        - sEta_G * sp2 / sKappa_G**2 *    &
-                        sField4ElecReal ) & 
-           + sKappa_G * spi / sgam * (1 + sEta_G * sp2) &
-               * n2col * bzu
+    sdpr = sInv2rho * ( und%n2col * byu  &
+                        - frame%eta * sp2 / frame%kappa**2 *    &
+                        sField4ElecReal ) &
+           + frame%kappa * spi / sgam * (1 + frame%eta * sp2) &
+               * und%n2col * bzu
 !$OMP END WORKSHARE
 
   end subroutine dppdz_r_f
 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 
 
   subroutine dppdz_i_f(sx, sy, sz2, spr, spi, sgam, sZ, &
-                       sdpi)
+                       sdpi, und, frame)
 
     implicit none
 
     real(kind=wp), contiguous, intent(in) :: sx(:), sy(:), sz2(:), spr(:), &
-                                             spi(:), sgam(:) 
+                                             spi(:), sgam(:)
     real(kind=wp), intent(in) :: sZ
     real(kind=wp), contiguous, intent(out) :: sdpi(:)
+    type(tUndulator), intent(in) :: und
+    type(tFELFrame), intent(in) :: frame
 
     real(kind=wp) :: szt
 
 !$OMP WORKSHARE
-    sdpi = sInv2rho * (  n2col * bxu  & 
-           - sEta_G * sp2 / sKappa_G**2 * &
-                        sField4ElecImag ) & 
-           - sKappa_G * spr / sgam * (1 + sEta_G * sp2) &
-               * n2col * bzu
+    sdpi = sInv2rho * (  und%n2col * bxu  &
+           - frame%eta * sp2 / frame%kappa**2 * &
+                        sField4ElecImag ) &
+           - frame%kappa * spr / sgam * (1 + frame%eta * sp2) &
+               * und%n2col * bzu
 !$OMP END WORKSHARE
 
   end subroutine dppdz_i_f
@@ -70,7 +73,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine dgamdz_f(sx, sy, sz2, spr, spi, sgam, &
-                      sdgam)
+                      sdgam, frame)
 
     implicit none
 
@@ -79,12 +82,13 @@ contains
                                              spi(:), sgam(:)
 
     real(kind=wp), contiguous, intent(out) :: sdgam(:)
+    type(tFELFrame), intent(in) :: frame
 
 
 !$OMP WORKSHARE
 
-    sdgam = -sRho_G * ( 1 + sEta_G * sp2 ) / sgam * 2_wp *   &
-           ( spr * sField4ElecReal + spi * sField4ElecImag ) 
+    sdgam = -frame%rho * ( 1 + frame%eta * sp2 ) / sgam * 2_wp *   &
+           ( spr * sField4ElecReal + spi * sField4ElecImag )
 
 !$OMP END WORKSHARE
 
@@ -93,11 +97,8 @@ contains
 
 
 
-
-
-
   subroutine dxdz_f(sx, sy, sz2, spr, spi, sgam, &
-                    sdx)
+                    sdx, frame)
 
     implicit none
 
@@ -109,11 +110,12 @@ contains
     real(kind=wp), contiguous,  intent(in) :: sx(:), sy(:), sz2(:), spr(:), &
                                               spi(:), sgam(:)
     real(kind=wp), contiguous, intent(out) :: sdx(:)
+    type(tFELFrame), intent(in) :: frame
 
 !$OMP WORKSHARE
 
-    sdx = 2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
-          (1 + sEta_G * sp2) / sgam *  &
+    sdx = 2 * frame%rho * frame%kappa / sqrt(frame%eta) * &
+          (1 + frame%eta * sp2) / sgam *  &
           spr
 
 !$OMP END WORKSHARE
@@ -123,9 +125,8 @@ contains
 
 
 
-
   subroutine dydz_f(sx, sy, sz2, spr, spi, sgam, &
-                    sdy)
+                    sdy, frame)
 
     implicit none
 
@@ -136,13 +137,14 @@ contains
 
     real(kind=wp), contiguous, intent(in) :: sx(:), sy(:), sz2(:), spr(:), &
                                              spi(:), sgam(:)
-    
+
     real(kind=wp), contiguous, intent(out) :: sdy(:)
+    type(tFELFrame), intent(in) :: frame
 
 !$OMP WORKSHARE
 
-    sdy = - 2 * sRho_G * sKappa_G / sqrt(sEta_G) * &
-          (1 + sEta_G * sp2) / sgam *  &
+    sdy = - 2 * frame%rho * frame%kappa / sqrt(frame%eta) * &
+          (1 + frame%eta * sp2) / sgam *  &
           spi
 
 !$OMP END WORKSHARE
@@ -174,9 +176,6 @@ contains
 !$OMP END WORKSHARE
 
   end subroutine dz2dz_f
-  
-
-
 
 
 
@@ -186,7 +185,7 @@ contains
     implicit none
 
 ! Allocate the arrays used in the calculation of
-! the electron eqns  
+! the electron eqns
 
     integer(kind=ip), intent(in) :: ar_sz
 
@@ -204,7 +203,7 @@ contains
     implicit none
 
 ! Allocate the arrays used in the calculation of
-! the electron eqns  
+! the electron eqns
 
     deallocate(sp2, sField4ElecReal, &
              sField4ElecImag)! , Lj(ar_sz))
@@ -215,39 +214,44 @@ contains
 
 
 
-  subroutine adjUndPlace(szl)
+  subroutine adjUndPlace(szl, und)
 
-    real(kind=wp) :: szl
+! Sets und%undulator_position based on current z position szl.
+! Uses und%model_undulator_ends, und%z_start_undulator, und%z_end_undulator.
+! Replaces the global iUndPlace_G; no longer touches any globals.
 
-      if (qUndEnds_G) then
+    real(kind=wp), intent(in) :: szl
+    type(tUndulator), intent(inout) :: und
+
+      if (und%model_undulator_ends) then
 
         if (szl < 0) then
 
           print*, 'undulator section not recognised, sz < 0!!'
           stop
 
-        else if (sZl <= sZFS) then 
+        else if (sZl <= und%z_start_undulator) then
 
-          iUndPlace_G = iUndStart_G
+          und%undulator_position = iUndStart_G
 
-        else if (sZl >= sZFE) then
- 
-          iUndPlace_G = iUndEnd_G
+        else if (sZl >= und%z_end_undulator) then
 
-        else if ((sZl > sZFS) .and. (sZl < sZFE)) then
+          und%undulator_position = iUndEnd_G
 
-          iUndPlace_G = iUndMain_G
+        else if ((sZl > und%z_start_undulator) .and. (sZl < und%z_end_undulator)) then
 
-        else 
+          und%undulator_position = iUndMain_G
 
-          print*, 'undulator section not recognised, sz > sZFE!!'
+        else
+
+          print*, 'undulator section not recognised, sz > z_end_undulator!!'
           stop
 
         end if
 
       else
 
-        iUndPlace_G = iUndMain_G
+        und%undulator_position = iUndMain_G
 
       end if
 
@@ -256,7 +260,4 @@ contains
 
 
 
-
-
 end module equations
-

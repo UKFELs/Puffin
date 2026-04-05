@@ -453,7 +453,6 @@ subroutine PopulateUndulatorFromGlobals(und)
     und%n2col_initial = n2col0
     und%undulator_gradient = undgrad
     und%z_taper_start = sz0
-    und%m2col = m2col
 
 end subroutine PopulateUndulatorFromGlobals
 
@@ -493,7 +492,6 @@ subroutine UpdateGlobalsFromUndulator(und)
     n2col0 = und%n2col_initial
     undgrad = und%undulator_gradient
     sz0 = und%z_taper_start
-    m2col = und%m2col
 
 end subroutine UpdateGlobalsFromUndulator
 
