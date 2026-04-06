@@ -111,9 +111,6 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 !    end if
 
 
-    qInnerXYOK_G = .true.
-
-
     ntrndsi_G = nspinDX * nspinDY
 
     IF (NX_G == 1 .AND. NY_G == 1) THEN

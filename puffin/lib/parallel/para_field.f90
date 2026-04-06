@@ -521,7 +521,6 @@ contains
       call pupd8(ac_rfield, ac_ifield)
 
       flags%parallel_arrays_ok = .true.
-      qPArrOK_G = .true.  ! keep global in sync until Step 5
 
     end subroutine getLocalFieldIndices
 
@@ -1509,7 +1508,6 @@ contains
   ntrndsi_G = nspinDX * nspinDY
 
   flags%inner_xy_ok = .true.
-  qInnerXYOK_G = .true.  ! keep global in sync until Step 5
 
   end subroutine getInNode
 

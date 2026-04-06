@@ -62,15 +62,11 @@ real(kind=wp) :: locx, locy, locz2, &
       if ((xnode >= nspinDX) .or. (xnode < 1)) then
         flags%inner_xy_ok = .false.
         flags%parallel_arrays_ok = .false.
-        qInnerXYOK_G = .false.  ! keep global in sync until Step 5
-        qPArrOK_G = .false.     ! keep global in sync until Step 5
       end if
 
       if ((ynode >= nspinDY) .or. (ynode < 1)) then
         flags%inner_xy_ok = .false.
         flags%parallel_arrays_ok = .false.
-        qInnerXYOK_G = .false.  ! keep global in sync until Step 5
-        qPArrOK_G = .false.     ! keep global in sync until Step 5
       end if
 
       if (fieldMesh == itemporal) then
@@ -83,7 +79,6 @@ real(kind=wp) :: locx, locy, locz2, &
 
       if (z2node >= bz2) then
         flags%parallel_arrays_ok = .false.
-        qPArrOK_G = .false.  ! keep global in sync until Step 5
       end if
 
 !                  Get weights for interpolant

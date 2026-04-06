@@ -54,7 +54,6 @@ real(kind=wp) :: locz2
 
       if (z2node >= bz2) then
         flags%parallel_arrays_ok = .false.
-        qPArrOK_G = .false.  ! keep global in sync until Step 5
       end if
 
 

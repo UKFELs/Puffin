@@ -111,7 +111,6 @@ contains
 
       if (iArEr > 0_ip) then
         ctx%flags%parallel_arrays_ok = .false.
-        qPArrOK_G = .false.  ! keep global in sync (para_field.f90 reads it)
         if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 2)) then
           print*, 'electron outside parallel bounds!'
           print*, 'Emergency redistribute!!!'
@@ -136,7 +135,6 @@ contains
 
       if (iArEr > 0_ip) then
         ctx%flags%inner_xy_ok = .false.
-        qInnerXYOK_G = .false.  ! keep global in sync
         if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 2) ) then
           print*, 'electron outside transverse bounds!'
           print*, 'Emergency redistribute!!!'

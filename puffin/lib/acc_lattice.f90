@@ -34,8 +34,6 @@ integer(kind=ip), parameter :: iUnd = 1_ip, &
 
 integer(kind=ip), allocatable :: iElmType(:)
 
-integer(kind=ip) :: iUnd_cr, iChic_cr, iDrift_cr, iQuad_cr, iModulation_cr    ! Counters for each element type
-
 !integer(kind=ip) :: inum_latt_elms
 
 contains
@@ -183,7 +181,6 @@ contains
       delmz(1) = dz_f
       tapers(1) = taper
       nSteps_arr(1) = nSteps_f
-      iUnd_cr = 1_ip
       nSteps_arr(1) = nSteps_f
       delmz(1) = dz_f
       mf(1) = 1_wp
@@ -194,12 +191,6 @@ contains
       kbny_arr(1) = kbny_f 
 
     end if
-
-    iUnd_cr=1_ip
-    iChic_cr=1_ip
-    iDrift_cr=1_ip
-    iQuad_cr=1_ip
-    iModulation_cr = 1_ip
 
     iCsteps = 1_ip
 
@@ -454,7 +445,6 @@ contains
 
   sZ = sZ + szbar4d
   ctx%lattice%current_chic_index = ctx%lattice%current_chic_index + 1_ip
-  iChic_cr = ctx%lattice%current_chic_index  ! keep global in sync until Step 5
 
   if (FieldMesh == iPeriodic) then
 
@@ -518,7 +508,6 @@ contains
 
     sZ = sZ + del_dr_z
     ctx%lattice%current_drift_index = ctx%lattice%current_drift_index + 1_ip
-    iDrift_cr = ctx%lattice%current_drift_index  ! keep global in sync until Step 5
 
   end subroutine driftSection
 
@@ -561,7 +550,6 @@ contains
   deallocate(sp2)
 
   ctx%lattice%current_quad_index = ctx%lattice%current_quad_index + 1_ip
-  iQuad_cr = ctx%lattice%current_quad_index  ! keep global in sync until Step 5
 
   end subroutine Quad
 
@@ -586,7 +574,6 @@ contains
                * cos(ctx%lattice%enmod_wavenum(ctx%lattice%current_modulation_index) * sElZ2_G) )
 
     ctx%lattice%current_modulation_index = ctx%lattice%current_modulation_index + 1_ip
-    iModulation_cr = ctx%lattice%current_modulation_index  ! keep global in sync until Step 5
 
   end subroutine bModulation
 

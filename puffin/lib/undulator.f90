@@ -47,8 +47,6 @@ contains
 ! end_time        | diffraction.f90 reads it; start_time set by puffin_module
 ! start_time      | Set externally by puffin_module.f90 before entry
 ! n2col / n2col0  | Modified by wiggler_taper callees mid-loop
-! qPArrOK_G       | Set by rk4par callees mid-loop
-! qInnerXYOK_G    | Set by rk4par callees mid-loop
 !
 ! Infrastructure globals (not candidates for migration):
 ! tProcInfo_G     | MPI communicator/rank info, used in 67+ locations
@@ -236,11 +234,9 @@ end if
           call deallact_rk4_arrs()
           if (.not. ctx%flags%inner_xy_ok) then
             call getInNode(ctx%flags)
-            qInnerXYOK_G = .true.
             ctx%flags%inner_xy_ok = .true.
           end if
           call getLocalFieldIndices(ctx%integration%redistribution_length, ctx%flags)
-          qPArrOK_G = .true.
           ctx%flags%parallel_arrays_ok = .true.
           call allact_rk4_arrs()
           ctx%flags%inner_xy_ok = .true.

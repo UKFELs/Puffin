@@ -20,7 +20,6 @@ use puffin_kinds
 use puffin_constants
 use GlobalTypes
 use Globals
-use lattice, only: iUnd_cr, iChic_cr, iDrift_cr, iQuad_cr, iModulation_cr
 
 implicit none
 
@@ -522,12 +521,12 @@ subroutine PopulateLatticeElementsFromGlobals(lattice)
     lattice%num_modules = ModNum
     lattice%module_count = ModCount
 
-    ! Per-element-type index counters
-    lattice%current_und_index = iUnd_cr
-    lattice%current_chic_index = iChic_cr
-    lattice%current_drift_index = iDrift_cr
-    lattice%current_quad_index = iQuad_cr
-    lattice%current_modulation_index = iModulation_cr
+    ! Per-element-type index counters (start at 1; resume path overrides in setup.f90)
+    lattice%current_und_index = 1_ip
+    lattice%current_chic_index = 1_ip
+    lattice%current_drift_index = 1_ip
+    lattice%current_quad_index = 1_ip
+    lattice%current_modulation_index = 1_ip
 
     ! Allocate and copy undulator arrays
     if (allocated(lattice%und_z_mod)) deallocate(lattice%und_z_mod)
@@ -653,13 +652,6 @@ subroutine UpdateGlobalsFromLatticeElements(lattice)
     iCsteps = lattice%cumulative_steps
     ModNum = lattice%num_modules
     ModCount = lattice%module_count
-
-    ! Per-element-type index counters
-    iUnd_cr = lattice%current_und_index
-    iChic_cr = lattice%current_chic_index
-    iDrift_cr = lattice%current_drift_index
-    iQuad_cr = lattice%current_quad_index
-    iModulation_cr = lattice%current_modulation_index
 
     ! Copy undulator arrays back
     if (allocated(lattice%und_z_mod) .and. allocated(zMod)) then
@@ -841,9 +833,9 @@ subroutine PopulateSimulationFlagsFromGlobals(flags)
     flags%initial_write_lattice = qInitWrLat_G
     flags%dump_at_end = qDumpEnd_G
 
-    ! Particle arrays status
-    flags%parallel_arrays_ok = qPArrOK_G
-    flags%inner_xy_ok = qInnerXYOK_G
+    ! Particle arrays status (initialize to .true.; getInterps will set .false. on out-of-bounds)
+    flags%parallel_arrays_ok = .true.
+    flags%inner_xy_ok = .true.
 
     ! Seed properties
     if (allocated(flags%field_round_edges)) deallocate(flags%field_round_edges)
@@ -922,10 +914,6 @@ subroutine UpdateGlobalsFromSimulationFlags(flags)
     qscaled_G = flags%scaled_coordinates
     qInitWrLat_G = flags%initial_write_lattice
     qDumpEnd_G = flags%dump_at_end
-
-    ! Particle arrays status
-    qPArrOK_G = flags%parallel_arrays_ok
-    qInnerXYOK_G = flags%inner_xy_ok
 
     ! Seed properties
     if (allocated(flags%field_round_edges) .and. allocated(qRndFj_G)) then

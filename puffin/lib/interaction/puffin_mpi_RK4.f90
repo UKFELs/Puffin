@@ -415,8 +415,6 @@ contains
 
       call outer2Inner(ac_rfield_in, ac_ifield_in)
 
-      qInnerXYOK_G = .true.
-
    end subroutine allact_rk4_arrs
 
 

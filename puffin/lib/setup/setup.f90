@@ -294,11 +294,6 @@ contains
 
       if (qresume_G) then
 
-         iUnd_cr = tInitData_G%iUnd_cr
-         iChic_cr = tInitData_G%iChic_cr
-         iDrift_cr = tInitData_G%iDrift_cr
-         iQuad_cr = tInitData_G%iQuad_cr
-         iModulation_cr = tInitData_G%iModulation_cr
          igwr = tInitData_G%igwr
 
       end if
@@ -439,6 +434,15 @@ contains
       call PopulateIntegrationStateFromGlobals(ctx%integration)
       call PopulateUndulatorFromGlobals(ctx%und)
       ctx%init_data = tInitData_G
+
+      ! Override element-type counters from restart data (Populate hardcodes 1)
+      if (qresume_G) then
+        ctx%lattice%current_und_index = tInitData_G%iUnd_cr
+        ctx%lattice%current_chic_index = tInitData_G%iChic_cr
+        ctx%lattice%current_drift_index = tInitData_G%iDrift_cr
+        ctx%lattice%current_quad_index = tInitData_G%iQuad_cr
+        ctx%lattice%current_modulation_index = tInitData_G%iModulation_cr
+      end if
 
       qOK = .true.
 
