@@ -6,8 +6,9 @@ This document outlines the refactoring of global variables in `EDerivGlobals.f90
 organized Fortran derived types. The goal is to improve code maintainability, reduce global
 namespace pollution, and make data dependencies explicit.
 
-**Current State:** Phases 0–9 complete. Types fully threaded through the RK4 integration chain.
-**Target State:** All remaining globals eliminated (HDF5 writers, remaining init-only globals).
+**Current State:** Phases 0–10 complete. `tSimulationContext` adopted; ctx threaded through RK4
+chain, HDF5/write chain, and init path; element-counter and flag globals removed.
+**Target State:** All remaining globals eliminated (init-only physics globals, HDF5 timing globals).
 
 ---
 
@@ -26,7 +27,8 @@ namespace pollution, and make data dependencies explicit.
 | 7b | ✅ DONE | Split tFELPhysics | Replace with `tFELFrame` + `tUndulator` |
 | 8 | ✅ DONE | Architectural lift | Types owned by `puffin_main`, passed to all element routines |
 | 9 | ✅ DONE | RK4 chain threading | `tUndulator`/`tFELFrame`/`tSimulationFlags` threaded through full RK4 chain; dead `m2col` removed |
-| 10 | 🔜 NEXT | Naming cleanup | Optional: rename fields to domain-meaningful names |
+| 10 | ✅ DONE | tSimulationContext + init path | ctx adopted; threaded through write chain, flags chain, init; dead globals removed |
+| 11 | 🔜 NEXT | Remove remaining globals | Remove `iCsteps`, `igwr`, `sZi_G`, physics globals (`sRho_G` etc.) |
 
 ---
 
@@ -220,8 +222,8 @@ UndSection
 | `sGammaR_G` | `frame%gamma_ref` | ✅ Removed from integration chain |
 | `sEta_G` | `frame%eta` | ✅ Removed from integration chain |
 | `sKappa_G` | `frame%kappa` | ✅ Removed from integration chain |
-| `qPArrOK_G` | `flags%parallel_arrays_ok` | ⚠️ Decoupled in chain; global kept in sync |
-| `qInnerXYOK_G` | `flags%inner_xy_ok` | ⚠️ Decoupled in chain; global kept in sync |
+| `qPArrOK_G` | `flags%parallel_arrays_ok` | ✅ Deleted in Phase 10 |
+| `qInnerXYOK_G` | `flags%inner_xy_ok` | ✅ Deleted in Phase 10 |
 | `m2col` | — | ✅ Deleted (dead code) |
 
 Note: globals listed as "removed from integration chain" still exist in `deriv_globals.f90`
@@ -231,11 +233,79 @@ gap. Full removal requires threading types through the initialization path.
 
 ---
 
-## Phase 10: Naming Cleanup (Optional, Low Risk)
+## Phase 10: Adopt tSimulationContext + Thread Init Path ✅ DONE
 
-Current type field names were chosen to match the global names they replaced. Now that types
-are properly scoped, rename fields to domain-meaningful names (e.g.
-`integration%redistribution_length` → `integration%redistrib_len`).
+### Objective
+Bundle all 8 simulation types into a single `tSimulationContext ctx` owned by `puffin_main`,
+thread it through the HDF5/write chain and the init path, and remove the now-dead element-counter
+and flag globals.
+
+### Steps completed
+
+**Step 0 — Add element counters and z_inter to existing types**
+- Added `current_xxx_index` fields to `tLatticeElements` (chic, drift, quad, modulation)
+- Added `z_inter` to `tIntegrationState`
+- Updated adapters accordingly
+
+**Step 1 — Adopt ctx in puffin_main and element subroutine signatures**
+- `puffin_main` now declares a single `type(tSimulationContext) :: ctx`
+- All 5 element subroutines (`UndSection`, `Quad`, `disperse`, `driftSection`, `BModulation`)
+  take `ctx` as their sole simulation-data argument
+- `rk4par`, `derivs`, `getrhs` updated to take `ctx` (replaces separate `und/frame/flags` args)
+
+**Step 2 — Thread ctx through the HDF5/write path**
+- `writeIM` / `wr_cho` / `writeCommonAtts` / `writeRunAtts` receive `ctx`
+- Replaced ~25 global reads in the HDF5 writers with `ctx%xxx` field accesses
+  (including `iCsteps`, `igwr`, `sZi_G`, `iUnd_cr`, all five element counters,
+  and the `sRho_G`, `sAw_G`, ... physics frame fields)
+
+**Step 3 — Thread flags through para_field and system_interpolation**
+- `getLocalFieldIndices(sdz, flags)` and `getInNode(flags)` take explicit `flags` arg
+- `getInterps_1D(sz2, flags)` and `getInterps_3D(sx, sy, sz2, flags)` write directly to
+  `flags%parallel_arrays_ok` / `flags%inner_xy_ok` — no global→flags sync needed in `derivs`
+
+**Step 4 — Thread init functions to write directly to ctx**
+- All `PopulateXxxFromGlobals` calls moved inside `init()` (unconditional, covers both resume
+  and non-resume paths); `puffin_main` no longer calls any Populate functions after `init()`
+
+**Step 5 — Remove dead globals (Clusters A and E)**
+- **Cluster E** (`qPArrOK_G`, `qInnerXYOK_G`): removed all "keep in sync" writes and
+  declarations; `PopulateSimulationFlagsFromGlobals` now initialises both to `.true.`
+- **Cluster A** (`iUnd_cr`, `iChic_cr`, `iDrift_cr`, `iQuad_cr`, `iModulation_cr`):
+  removed module-variable declarations and initialisations from `acc_lattice.f90`; removed
+  four sync writes in element routines; `PopulateLatticeElementsFromGlobals` hardcodes
+  counters to 1; resume override added after Populate block in `setup.f90`
+
+### Globals removed / partially decoupled in Phase 10
+
+| Global | Replaced by | Status |
+|--------|-------------|--------|
+| `qPArrOK_G` | `ctx%flags%parallel_arrays_ok` | ✅ Deleted |
+| `qInnerXYOK_G` | `ctx%flags%inner_xy_ok` | ✅ Deleted |
+| `iUnd_cr` | `ctx%lattice%current_und_index` | ✅ Deleted |
+| `iChic_cr` | `ctx%lattice%current_chic_index` | ✅ Deleted |
+| `iDrift_cr` | `ctx%lattice%current_drift_index` | ✅ Deleted |
+| `iQuad_cr` | `ctx%lattice%current_quad_index` | ✅ Deleted |
+| `iModulation_cr` | `ctx%lattice%current_modulation_index` | ✅ Deleted |
+| `iCsteps` | `ctx%lattice%cumulative_steps` | ⚠️ HDF5 writers use ctx; global still set for compat |
+| `igwr` | `ctx%mesh%highpass_filter_gr` | ⚠️ HDF5 writers use ctx; global still set for compat |
+| `sZi_G` | `ctx%integration%z_inter` | ⚠️ HDF5 writers use ctx; global still set for compat |
+| `sRho_G`, `sAw_G`, ... | `ctx%frame%rho`, `ctx%frame%aw`, ... | ⚠️ HDF5 writers use ctx; globals still written by init code |
+
+---
+
+## Phase 11: Remove Remaining Globals
+
+### Remaining globals that cannot be removed yet
+
+| Variable | Why it remains | Blocker |
+|----------|----------------|---------|
+| `iCsteps` | Still written in `acc_lattice.f90:setupMods` and sync'd in `undulator.f90`; HDF5 writers now use ctx | Need to remove sync writes |
+| `igwr` | Set in `undulator.f90` resume path; HDF5 writers now use ctx | Need to remove sync writes |
+| `sZi_G` | Set in `undulator.f90` resume path; HDF5 writers now use ctx | Need to remove sync writes |
+| `sRho_G`, `sAw_G`, `sGammaR_G`, `sEta_G`, `sKappa_G` | Written by `calcScaling`/`setup_calcs.f90`; read by `init_conds.f90`, `gen_macros.f90`, `MPfDists.f90` | Thread ctx through init/generation path |
+| `lam_w_G`, `lam_r_G`, `lg_G`, `lc_G`, `cf1_G` | Written by `calcScaling`; read throughout init | Thread ctx through init |
+| `end_time`, `start_time` | Timing globals read by `diffraction.f90` | Minor; move to local vars |
 
 ---
 
@@ -264,15 +334,15 @@ The e2e test verifies numerical results to 1e-10 tolerance.
 
 ---
 
-## Remaining Globals Audit (after Phase 9)
+## Remaining Globals Audit (after Phase 10)
 
 | Variable | Why it remains | Phase that removes it |
 |----------|----------------|-----------------------|
-| `iStep` | read by HDF5 writers for output filenames | 10+ |
-| `iCsteps` | read by HDF5 writers for dataset writes | 10+ |
-| `igwr` | read by HDF5 writers | 10+ |
-| `sZi_G` | read by HDF5 writers for z-coordinate output | 10+ |
-| `iUnd_cr` | read by HDF5 writers for undulator index | 10+ |
-| `end_time`, `start_time` | read by diffraction.f90 | 10+ |
-| `qPArrOK_G`, `qInnerXYOK_G` | written by `system_interpolation.f90` and `para_field.f90` | 10+ |
-| `sRho_G`, `sAw_G`, etc. | still written by init code (`acc_lattice.f90`, `setup_calcs.f90`) | 10+ |
+| `iCsteps` | written by `setupMods`; sync write in `undulator.f90`; HDF5 writers already use ctx | 11 |
+| `igwr` | set in `undulator.f90` resume path; HDF5 writers already use ctx | 11 |
+| `sZi_G` | set in `undulator.f90` resume path; HDF5 writers already use ctx | 11 |
+| `end_time`, `start_time` | timing globals read by `diffraction.f90` | 11 |
+| `sRho_G`, `sAw_G`, `sGammaR_G`, `sEta_G`, `sKappa_G` | written by `calcScaling`; read by `init_conds.f90`, `gen_macros.f90`, `MPfDists.f90` | 11 |
+| `lam_w_G`, `lam_r_G`, `lg_G`, `lc_G`, `cf1_G` | written by `calcScaling`; read throughout init | 11 |
+| `qPArrOK_G`, `qInnerXYOK_G` | ✅ Deleted in Phase 10 | — |
+| `iUnd_cr`, `iChic_cr`, `iDrift_cr`, `iQuad_cr`, `iModulation_cr` | ✅ Deleted in Phase 10 | — |
