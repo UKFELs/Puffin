@@ -23,6 +23,7 @@ USE ArrayFunctions
 USE puffin_constants
 Use avWrite
 use hdf5PuffLow
+use GlobalTypes, only: tSimulationContext
 
 contains
 
@@ -40,11 +41,12 @@ contains
 !! each rank, what the cumulative num electrons is, and then determine
 !! the array slice based on that.
 !! so instead of
-  subroutine outputH5BeamFilesSD(time, sz_loc, iL, error)
+  subroutine outputH5BeamFilesSD(time, sz_loc, iL, error, ctx)
     implicit none
     REAL(kind=WP),intent(in) :: time !< Current time
     REAL(kind=WP),intent(in) :: sz_loc
     integer(kind=ip), intent(in) :: iL  !< lattice element number
+    type(tSimulationContext), intent(in) :: ctx
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier
     INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
@@ -121,7 +123,7 @@ contains
 ! Prepare filename
 
     filename = ( trim(adjustl(zFilename_G)) // '_electrons_' // &
-                 trim(adjustl(IntegerToString(igwr))) // '.h5' )
+                 trim(adjustl(IntegerToString(ctx%mesh%highpass_filter_gr))) // '.h5' )
 
 
     CALL h5open_f(error)
@@ -445,7 +447,7 @@ contains
     CALL h5aclose_f(attr_id, error)
 
 
-    call writeCommonAtts(dset_id, time, sz_loc, iL, aspace_id)
+    call writeCommonAtts(dset_id, time, sz_loc, iL, aspace_id, ctx)
 !    aname="zbarInter"
 !    attr_data_double=time !real(iCSteps,kind=wp)*sStepSize*lg_G
 !    CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
@@ -522,10 +524,10 @@ contains
 
 
 ! Write time Group
-    CALL writeH5TimeGroup(file_id, timegrpname, time, 'outputH5Beam', error)
+    CALL writeH5TimeGroup(file_id, timegrpname, time, 'outputH5Beam', error, ctx)
 
 ! Write run info
-    CALL writeH5RunInfo(file_id,  time, sz_loc, iL, 'outputH5Beam', error)
+    CALL writeH5RunInfo(file_id,  time, sz_loc, iL, 'outputH5Beam', error, ctx)
 
 ! We make the limits
     CALL h5gcreate_f(file_id, limgrpname, group_id, error)
@@ -669,10 +671,11 @@ contains
 
 !> outputH5Field3DSD is for writing the full field output.
 !! This version dumps one single file, but writes individually rather than collectively
-  subroutine outputH5Field3DSD(time, sz_loc, iL, error, nlonglength, rawdata, nlo, nhi, component, createNewFlag, chkactiveflag)
+  subroutine outputH5Field3DSD(time, sz_loc, iL, error, nlonglength, rawdata, nlo, nhi, component, createNewFlag, chkactiveflag, ctx)
     implicit none
     REAL(kind=WP), intent(in) :: time, sz_loc, rawdata(:) !< The data to write
     integer(kind=ip), intent(in) :: iL
+    type(tSimulationContext), intent(in) :: ctx
     INTEGER(kind=IP), intent(in) :: nlonglength !<number of cells in z in this section
     INTEGER(kind=IP), intent(in) :: nlo,nhi !< cell range in z in this raw data selection
     INTEGER(kind=IP), intent(in) :: component, createNewFlag !< cell range in 4th dim in this raw data selection
@@ -767,7 +770,7 @@ contains
 
 !    Print*,('Spatialdims: ' // trim(IntegerToString(numSpatialDims)))
       filename = (trim(adjustl(zFilename_G)) // '_' // trim(adjustl(dsetname)) &
-          // '_' // trim(adjustl(IntegerToString(igwr))) // '.h5' )
+          // '_' // trim(adjustl(IntegerToString(ctx%mesh%highpass_filter_gr))) // '.h5' )
       CALL h5open_f(error)
       CALL h5pcreate_f(H5P_FILE_ACCESS_F, plist_id, error)
 !      Print*,'hdf5_puff:outputH5FieldSD(property created)'
@@ -990,7 +993,7 @@ contains
 
 ! Create dataset floating point attributes.
 
-          call writeCommonAtts(dset_id, time, sz_loc, iL, aspace_id)
+          call writeCommonAtts(dset_id, time, sz_loc, iL, aspace_id, ctx)
 
 !     CALL addH5FloatAttribute(dset_id, "time", time,aspace_id)
 !     CALL addH5FloatAttribute(dset_id, "zbarInter", time, aspace_id)
@@ -1026,8 +1029,8 @@ contains
           CALL h5dclose_f(dset_id, error)
 ! Time Group
           CALL writeH5TimeGroup(file_id, timegrpname, time, &
-	               'outH5Field3D', error)
-          CALL writeH5RunInfo(file_id,  time, sz_loc, iL, 'outH5Field3D', error)
+	               'outH5Field3D', error, ctx)
+          CALL writeH5RunInfo(file_id,  time, sz_loc, iL, 'outH5Field3D', error, ctx)
 
           if (qOneD_G) then
 
@@ -1092,7 +1095,7 @@ contains
   !! This version dumps one single file, but writes individually rather than collectively
 
     subroutine outputH5Field1D2CompSD(time, sz_loc, iL, error, nlonglength, rawdata, nlo, &
-                                    nhi, component, createNewFlag, chkactiveflag)
+                                    nhi, component, createNewFlag, chkactiveflag, ctx)
 
 
       implicit none
@@ -1100,6 +1103,7 @@ contains
 
       real(kind=wp), intent(in) :: time, sz_loc, rawdata(:)  !< The data to write
       integer(kind=ip), intent(in) :: iL
+    type(tSimulationContext), intent(in) :: ctx
       integer(kind=ip), intent(in) :: nlonglength    !<number of cells in z in this section
       integer(kind=ip), intent(in) :: nlo,nhi        !< cell range in z in this raw data selection
       integer(kind=ip), intent(in) :: component, createNewFlag !< cell range in 4th dim in this raw data selection
@@ -1184,7 +1188,7 @@ contains
   !    Print*,('Spatialdims: ' // trim(IntegerToString(numSpatialDims)))
 
         filename = (trim(adjustl(zFilename_G)) // '_' // trim(adjustl(dsetname)) &
-                 // '_' // trim(adjustl(IntegerToString(igwr))) // '.h5' )
+                 // '_' // trim(adjustl(IntegerToString(ctx%mesh%highpass_filter_gr))) // '.h5' )
 
       call h5open_f(error)
 
@@ -1409,7 +1413,7 @@ contains
 
   !     Create dataset floating point attributes.
 
-          call writeCommonAtts(dset_id, time, sz_loc, iL, aspace_id)
+          call writeCommonAtts(dset_id, time, sz_loc, iL, aspace_id, ctx)
 
   !          call addH5FloatAttribute(dset_id, "time", time,aspace_id)
   !          call addH5FloatAttribute(dset_id, "zBarInter", time, aspace_id)
@@ -1446,9 +1450,9 @@ contains
   !                       Time Group
 
           call writeH5TimeGroup(file_id, timegrpname, time, &
-                                'radH5Field1D', error)
+                                'radH5Field1D', error, ctx)
 
-          call writeH5RunInfo(file_id,  time, sz_loc, iL, 'radH5Field1D', error)
+          call writeH5RunInfo(file_id,  time, sz_loc, iL, 'radH5Field1D', error, ctx)
 
           lb=0.0_WP*sLengthOfElmZ2_G  ! Lower and upper bounds...
           ub=NZ2_G*sLengthOfElmZ2_G
@@ -1484,13 +1488,14 @@ contains
 
 !> CreateIntegrated1DFloat(simtime,error)
 !! Creates a single integrated file for the 1D datasets
-  subroutine CreateIntegrated1DFloat(simtime, sz_loc, iL, error,nslices)
+  subroutine CreateIntegrated1DFloat(simtime, sz_loc, iL, error, nslices, ctx)
 
     implicit none
 
     REAL(kind=WP), intent(in) :: simtime      !< simulation time
     real(kind=wp), intent(in) :: sz_loc        !< zbar local to current undulator module
     integer(kind=ip), intent(in) :: iL        !< lattice element counter
+    type(tSimulationContext), intent(in) :: ctx
     INTEGER(kind=IP),intent(in) :: nslices       !< Number of slices
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: attr_id       !< Attribute identifier
@@ -1508,12 +1513,12 @@ contains
     integer(kind=ip) :: error !< Local Error flag
     if (tProcInfo_G%qRoot) then
       filename = ( trim(adjustl(zFilename_G)) // '_integrated_' &
-        //trim(adjustl(IntegerToString(igwr))) &
+        //trim(adjustl(IntegerToString(ctx%mesh%highpass_filter_gr))) &
         // '.h5' )
       CALL h5open_f(error)
       CALL h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error)
-      CALL writeH5TimeGroup(file_id, timegrpname, simtime, 'intH5field1D', error)
-      CALL writeH5RunInfo(file_id,  simtime, sz_loc, iL, 'integratedH5Field1D', error)
+      CALL writeH5TimeGroup(file_id, timegrpname, simtime, 'intH5field1D', error, ctx)
+      CALL writeH5RunInfo(file_id,  simtime, sz_loc, iL, 'integratedH5Field1D', error, ctx)
 ! Limits group
 !      CALL h5gcreate_f(file_id, limgrpname, group_id, error)
       CALL write1DlimGrp(file_id,limgrpname,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G)
@@ -1553,7 +1558,7 @@ contains
 !>addH5Field1DFloat() This subroutine writes data
 
   subroutine addH5Field1DFloat(writeData, dsetname, meshname, zLabels, simtime, &
-                               sz_loc, iL, error)
+                               sz_loc, iL, error, ctx)
 
     implicit none
 
@@ -1567,6 +1572,7 @@ contains
     REAL(kind=WP), intent(in) :: simtime      !< simulation time
     real(kind=wp), intent(in) :: sz_loc  !< zbar local to the current undulator module
     integer(kind=ip), intent(in) :: iL !< Lattice element number
+    type(tSimulationContext), intent(in) :: ctx
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier
     INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
@@ -1594,7 +1600,7 @@ contains
     if (tProcInfo_G%qRoot) then
       dims = size(writeData) ! Dataset dimensions
       filename = ( trim(adjustl(zFilename_G)) // '_integrated_' &
-        //trim(adjustl(IntegerToString(igwr))) &
+        //trim(adjustl(IntegerToString(ctx%mesh%highpass_filter_gr))) &
         // '.h5' )
       CALL h5open_f(error)
       CALL h5fopen_f(filename, H5F_ACC_RDWR_F, file_id, error)
@@ -1606,7 +1612,7 @@ contains
 ! scalar dataset for simpler values
       CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
 
-      call writeCommonAtts(dset_id, simtime, sz_loc, iL, aspace_id)
+      call writeCommonAtts(dset_id, simtime, sz_loc, iL, aspace_id, ctx)
 
 
 
@@ -1651,7 +1657,7 @@ contains
 ! ! scalar dataset for simpler values
 !       CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
 !
-!       call writeCommonAtts(dset_id, simtime, sz_loc, iL, aspace_id)
+!       call writeCommonAtts(dset_id, simtime, sz_loc, iL, aspace_id, ctx)
 !
 ! !      CALL addH5FloatAttribute(dset_id, "time", simtime, aspace_id)
 ! !      CALL addH5FloatAttribute(dset_id, "zbarInter", simtime, aspace_id)

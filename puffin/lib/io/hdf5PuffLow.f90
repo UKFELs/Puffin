@@ -21,6 +21,7 @@ USE ParallelSetUp
 USE ArrayFunctions
 USE puffin_constants
 use hdf5
+use GlobalTypes, only: tSimulationContext
 
 contains
 
@@ -429,114 +430,107 @@ contains
 
 
 
-  subroutine writeCommonAtts(dset_id, simtime, z_loc, iL, aspace_id)
+  subroutine writeCommonAtts(dset_id, simtime, z_loc, iL, aspace_id, ctx)
 
     integer(HID_T), intent(in) :: dset_id   !< h5 handle of write location
     real(kind=wp), intent(in) :: simtime   !< Current simulation 'time' (zbar)
     real(kind=wp), intent(in) :: z_loc     !< zbar local to current undulator module
     integer(kind=ip), intent(in) :: iL        !< lattice element counter
     integer(HID_T), intent(in) :: aspace_id   !< h5 handle of write location
+    type(tSimulationContext), intent(in) :: ctx
 
     CALL addH5FloatAttribute(dset_id, "time", simtime, aspace_id)
-    
+
     call addH5FloatAttribute(dset_id, "zbarTotal", simtime, aspace_id)
-    call addH5FloatAttribute(dset_id, "zTotal", simtime * lg_G, aspace_id)
+    call addH5FloatAttribute(dset_id, "zTotal", simtime * ctx%frame%gain_length, aspace_id)
 
-    CALL addH5FloatAttribute(dset_id, "zbarInter", sZi_G, aspace_id)
-    CALL addH5FloatAttribute(dset_id, "zInter", sZi_G * lg_G, aspace_id)
-    
+    CALL addH5FloatAttribute(dset_id, "zbarInter", ctx%integration%z_inter, aspace_id)
+    CALL addH5FloatAttribute(dset_id, "zInter", ctx%integration%z_inter * ctx%frame%gain_length, aspace_id)
+
     call addH5FloatAttribute(dset_id, "zbarLocal", z_loc, aspace_id)
-    call addH5FloatAttribute(dset_id, "zLocal", z_loc * lg_G,aspace_id)
+    call addH5FloatAttribute(dset_id, "zLocal", z_loc * ctx%frame%gain_length, aspace_id)
 
-    CALL addH5IntegerAttribute(dset_id, "iCsteps", iCsteps, aspace_id)
-    CALL addH5IntegerAttribute(dset_id, "istep", istep, aspace_id)
-    
-    call addH5IntegerAttribute(dset_id, "iUnd_cr", iUnd_cr, aspace_id)
-    call addH5IntegerAttribute(dset_id, "iChic_cr", iChic_cr, aspace_id)
-    call addH5IntegerAttribute(dset_id, "iDrift_cr", iDrift_cr, aspace_id)
-    call addH5IntegerAttribute(dset_id, "iQuad_cr", iQuad_cr, aspace_id)
-    call addH5IntegerAttribute(dset_id, "iModulation_cr", iModulation_cr, aspace_id)
+    CALL addH5IntegerAttribute(dset_id, "iCsteps", ctx%lattice%cumulative_steps, aspace_id)
+    CALL addH5IntegerAttribute(dset_id, "istep", ctx%integration%current_step, aspace_id)
+
+    call addH5IntegerAttribute(dset_id, "iUnd_cr", ctx%lattice%current_und_index, aspace_id)
+    call addH5IntegerAttribute(dset_id, "iChic_cr", ctx%lattice%current_chic_index, aspace_id)
+    call addH5IntegerAttribute(dset_id, "iDrift_cr", ctx%lattice%current_drift_index, aspace_id)
+    call addH5IntegerAttribute(dset_id, "iQuad_cr", ctx%lattice%current_quad_index, aspace_id)
+    call addH5IntegerAttribute(dset_id, "iModulation_cr", ctx%lattice%current_modulation_index, aspace_id)
     call addH5IntegerAttribute(dset_id, 'iL', iL, aspace_id)
-    call addH5IntegerAttribute(dset_id, 'iWrite_cr', igwr, aspace_id)
+    call addH5IntegerAttribute(dset_id, 'iWrite_cr', ctx%mesh%highpass_filter_gr, aspace_id)
 
   end subroutine writeCommonAtts
 
 
 
-  subroutine writeRunAtts(dset_id, simtime, z_loc, iL, aspace_id)
+  subroutine writeRunAtts(dset_id, simtime, z_loc, iL, aspace_id, ctx)
 
     integer(HID_T), intent(in) :: dset_id     !< h5 handle of write location
     real(kind=wp), intent(in) :: simtime      !< Current simulation 'time' (zbar)
     real(kind=wp), intent(in) :: z_loc        !< zbar local to current undulator module
     integer(kind=ip), intent(in) :: iL        !< lattice element counter
     integer(HID_T), intent(in) :: aspace_id   !< h5 handle of write location
+    type(tSimulationContext), intent(in) :: ctx
 
     CALL addH5FloatAttribute(dset_id, "time", simtime, aspace_id)
-    
+
     call addH5FloatAttribute(dset_id, "zbarTotal", simtime, aspace_id)
-    call addH5FloatAttribute(dset_id, "zTotal", simtime * lg_G, aspace_id)
+    call addH5FloatAttribute(dset_id, "zTotal", simtime * ctx%frame%gain_length, aspace_id)
 
-    CALL addH5FloatAttribute(dset_id, "zbarInter", sZi_G, aspace_id)
-    CALL addH5FloatAttribute(dset_id, "zInter", sZi_G * lg_G, aspace_id)
-    
+    CALL addH5FloatAttribute(dset_id, "zbarInter", ctx%integration%z_inter, aspace_id)
+    CALL addH5FloatAttribute(dset_id, "zInter", ctx%integration%z_inter * ctx%frame%gain_length, aspace_id)
+
     call addH5FloatAttribute(dset_id, "zbarLocal", z_loc, aspace_id)
-    call addH5FloatAttribute(dset_id, "zLocal", z_loc * lg_G,aspace_id)
+    call addH5FloatAttribute(dset_id, "zLocal", z_loc * ctx%frame%gain_length, aspace_id)
 
-    CALL addH5IntegerAttribute(dset_id, "iCsteps", iCsteps, aspace_id)
-    CALL addH5IntegerAttribute(dset_id, "istep", istep, aspace_id)
-    
-    call addH5IntegerAttribute(dset_id, "iUnd_cr", iUnd_cr, aspace_id)
-    call addH5IntegerAttribute(dset_id, "iChic_cr", iChic_cr, aspace_id)
-    call addH5IntegerAttribute(dset_id, "iDrift_cr", iDrift_cr, aspace_id)
-    call addH5IntegerAttribute(dset_id, "iQuad_cr", iQuad_cr, aspace_id)
-    call addH5IntegerAttribute(dset_id, "iModulation_cr", iModulation_cr, aspace_id)
+    CALL addH5IntegerAttribute(dset_id, "iCsteps", ctx%lattice%cumulative_steps, aspace_id)
+    CALL addH5IntegerAttribute(dset_id, "istep", ctx%integration%current_step, aspace_id)
+
+    call addH5IntegerAttribute(dset_id, "iUnd_cr", ctx%lattice%current_und_index, aspace_id)
+    call addH5IntegerAttribute(dset_id, "iChic_cr", ctx%lattice%current_chic_index, aspace_id)
+    call addH5IntegerAttribute(dset_id, "iDrift_cr", ctx%lattice%current_drift_index, aspace_id)
+    call addH5IntegerAttribute(dset_id, "iQuad_cr", ctx%lattice%current_quad_index, aspace_id)
+    call addH5IntegerAttribute(dset_id, "iModulation_cr", ctx%lattice%current_modulation_index, aspace_id)
     call addH5IntegerAttribute(dset_id, 'iL', iL, aspace_id)
-    call addH5IntegerAttribute(dset_id, 'iWrite_cr', igwr, aspace_id)
-    
-    call addH5IntegerAttribute(dset_id, 'nX', nX_G, aspace_id)  
-    call addH5IntegerAttribute(dset_id, 'nY', nY_G, aspace_id)  
-    call addH5IntegerAttribute(dset_id, 'nZ2', nZ2_G, aspace_id)  
-    
-    call addH5FloatAttribute(dset_id, 'sLengthOfElmX', sLengthOfElmX_G, aspace_id)  
-    call addH5FloatAttribute(dset_id, 'sLengthOfElmY', sLengthOfElmY_G, aspace_id)  
-    call addH5FloatAttribute(dset_id, 'sLengthOfElmZ2', sLengthOfElmZ2_G, aspace_id)  
-    call addH5FloatAttribute(dset_id, 'sStepSize', sStepSize, aspace_id)  
-    call addH5IntegerAttribute(dset_id, 'nSteps', nSteps, aspace_id)  
-    call addH5FloatAttribute(dset_id, 'rho', sRho_G, aspace_id)  
-    call addH5FloatAttribute(dset_id, 'aw', sAw_G, aspace_id)  
-    call addH5FloatAttribute(dset_id, 'eta', seta_G, aspace_id)  
-    call addH5FloatAttribute(dset_id, 'gamma_r', sGammaR_G, aspace_id)
-    call addH5FloatAttribute(dset_id, 'kappa', sKappa_G, aspace_id)  
-    call addH5FloatAttribute(dset_id, 'npk_bar', npk_bar_G, aspace_id)  
-    call addH5FloatAttribute(dset_id, 'Lg', lg_G, aspace_id)  
-    call addH5FloatAttribute(dset_id, 'Lc', lc_G, aspace_id)  
-    call addH5FloatAttribute(dset_id, 'lambda_w', lam_w_G, aspace_id)
-    call addH5FloatAttribute(dset_id, 'lambda_r', lam_r_G, aspace_id)
+    call addH5IntegerAttribute(dset_id, 'iWrite_cr', ctx%mesh%highpass_filter_gr, aspace_id)
+
+    call addH5IntegerAttribute(dset_id, 'nX', ctx%mesh%nx, aspace_id)
+    call addH5IntegerAttribute(dset_id, 'nY', ctx%mesh%ny, aspace_id)
+    call addH5IntegerAttribute(dset_id, 'nZ2', ctx%mesh%nz2, aspace_id)
+
+    call addH5FloatAttribute(dset_id, 'sLengthOfElmX', ctx%mesh%dx, aspace_id)
+    call addH5FloatAttribute(dset_id, 'sLengthOfElmY', ctx%mesh%dy, aspace_id)
+    call addH5FloatAttribute(dset_id, 'sLengthOfElmZ2', ctx%mesh%dz2, aspace_id)
+    call addH5FloatAttribute(dset_id, 'sStepSize', sStepSize, aspace_id)
+    call addH5IntegerAttribute(dset_id, 'nSteps', nSteps, aspace_id)
+    call addH5FloatAttribute(dset_id, 'rho', ctx%frame%rho, aspace_id)
+    call addH5FloatAttribute(dset_id, 'aw', ctx%frame%aw, aspace_id)
+    call addH5FloatAttribute(dset_id, 'eta', ctx%frame%eta, aspace_id)
+    call addH5FloatAttribute(dset_id, 'gamma_r', ctx%frame%gamma_ref, aspace_id)
+    call addH5FloatAttribute(dset_id, 'kappa', ctx%frame%kappa, aspace_id)
+    call addH5FloatAttribute(dset_id, 'npk_bar', npk_bar_G, aspace_id)
+    call addH5FloatAttribute(dset_id, 'Lg', ctx%frame%gain_length, aspace_id)
+    call addH5FloatAttribute(dset_id, 'Lc', ctx%frame%cooperation_length, aspace_id)
+    call addH5FloatAttribute(dset_id, 'lambda_w', ctx%frame%lambda_w, aspace_id)
+    call addH5FloatAttribute(dset_id, 'lambda_r', ctx%frame%lambda_r, aspace_id)
     call addH5IntegerAttribute(dset_id, 'fieldMesh', fieldMesh, aspace_id)
     call addH5IntegerAttribute(dset_id, 'iScale', 1, aspace_id)
     call addH5FloatAttribute(dset_id, 'transArea', ata_G, aspace_id)
-    call addH5FloatAttribute(dset_id, 'transAreaSI', ata_G * lg_G * lc_G, aspace_id)
-    !call addH5IntegerAttribute(dset_id, 'qOneD', qOneD_G, aspace_id)  
-    !call addH5IntegerAttribute(dset_id, 'iL', iL, aspace_id)  
-    !call addH5IntegerAttribute(dset_id, 'iL', iL, aspace_id)  
-    !call addH5IntegerAttribute(dset_id, 'iL', iL, aspace_id)  
-    !call addH5IntegerAttribute(dset_id, 'iL', iL, aspace_id)  
-    !call addH5IntegerAttribute(dset_id, 'iL', iL, aspace_id)  
-    !call addH5IntegerAttribute(dset_id, 'iL', iL, aspace_id)  
-    !call addH5IntegerAttribute(dset_id, 'iL', iL, aspace_id)  
-    !call addH5IntegerAttribute(dset_id, 'iL', iL, aspace_id)  
-    !call addH5IntegerAttribute(dset_id, 'iL', iL, aspace_id)  
+    call addH5FloatAttribute(dset_id, 'transAreaSI', ata_G * ctx%frame%gain_length * ctx%frame%cooperation_length, aspace_id)
 
   end subroutine writeRunAtts
   
   
-  subroutine writeH5TimeGroup(file_id, timegrpname, simtime, callerstr, error)
+  subroutine writeH5TimeGroup(file_id, timegrpname, simtime, callerstr, error, ctx)
 
     INTEGER(HID_T) :: file_id       ! File identifier
     CHARACTER(LEN=4), intent(in) :: timegrpname  ! Group name
     REAL(kind=WP), intent(in) :: simtime ! Current time
     CHARACTER(LEN=12), intent(in) :: callerstr
     INTEGER(kind=ip) :: error
+    type(tSimulationContext), intent(in) :: ctx
 !
 ! Local
     INTEGER(HID_T) :: attr_id       ! Attribute identifier
@@ -597,7 +591,7 @@ contains
     CALL h5tcopy_f(H5T_NATIVE_INTEGER, atype_id, error)
     aname="vsStep"
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
-    CALL h5awrite_f(attr_id, atype_id, iCSteps, adims, error) 
+    CALL h5awrite_f(attr_id, atype_id, ctx%lattice%cumulative_steps, adims, error)
     CALL h5tclose_f(atype_id, error)
     CALL h5aclose_f(attr_id, error)
 !    print*,'hdf5_puff:' // callerstr // ' close vsStep attribute'
@@ -614,16 +608,17 @@ contains
 !! @param file_id file identifier, location to put provenance data
 !! @callerstr allows the passing in of information about what is
 !!   asking for the run information to be written (ie parent routine)
-   subroutine writeH5RunInfo(file_id, simtime, z_loc, iL, callerstr, error)
+   subroutine writeH5RunInfo(file_id, simtime, z_loc, iL, callerstr, error, ctx)
 
     use PuffProvenance
 
-    INTEGER(HID_T), INTENT(in) :: file_id 
+    INTEGER(HID_T), INTENT(in) :: file_id
     real(kind=wp), intent(in) :: simtime      !< Current simulation 'time' (zbar)
     real(kind=wp), intent(in) :: z_loc        !< zbar local to current undulator module
     integer(kind=ip), intent(in) :: iL        !< lattice element counter
     CHARACTER(LEN=12), intent(in) :: callerstr
     INTEGER(kind=ip) :: error
+    type(tSimulationContext), intent(in) :: ctx
 !
 ! Local
     INTEGER(HID_T) :: attr_id       !< Attribute identifier
@@ -697,7 +692,7 @@ contains
     CALL addH5StringAttribute(group_id,"vsBeamFile",zBFile_G,aspace_id)
     CALL addH5StringAttribute(group_id,"vsSeedFile",zSFile_G,aspace_id)
     
-    call writeRunAtts(group_id,  simtime, z_loc, iL, aspace_id)
+    call writeRunAtts(group_id, simtime, z_loc, iL, aspace_id, ctx)
 !    aname="vsSeedFile"
 !    attr_data_string=zSFile_G
 !    attr_string_len=len(attr_data_string)

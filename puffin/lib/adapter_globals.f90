@@ -20,6 +20,7 @@ use puffin_kinds
 use puffin_constants
 use GlobalTypes
 use Globals
+use lattice, only: iUnd_cr, iChic_cr, iDrift_cr, iQuad_cr, iModulation_cr
 
 implicit none
 
@@ -321,6 +322,9 @@ subroutine PopulateIntegrationStateFromGlobals(integration)
     integration%redistribution_length = sRedistLen_G
     integration%redistribution_step = iRedistStp_G
 
+    ! Intermediate z tracker
+    integration%z_inter = sZi_G
+
     ! Timing
     integration%time_start = start_time
     integration%time_end = end_time
@@ -347,6 +351,9 @@ subroutine UpdateGlobalsFromIntegrationState(integration)
     diffStep = integration%diffraction_step_size
     sRedistLen_G = integration%redistribution_length
     iRedistStp_G = integration%redistribution_step
+
+    ! Intermediate z tracker
+    sZi_G = integration%z_inter
 
     ! Timing
     start_time = integration%time_start
@@ -515,6 +522,13 @@ subroutine PopulateLatticeElementsFromGlobals(lattice)
     lattice%num_modules = ModNum
     lattice%module_count = ModCount
 
+    ! Per-element-type index counters
+    lattice%current_und_index = iUnd_cr
+    lattice%current_chic_index = iChic_cr
+    lattice%current_drift_index = iDrift_cr
+    lattice%current_quad_index = iQuad_cr
+    lattice%current_modulation_index = iModulation_cr
+
     ! Allocate and copy undulator arrays
     if (allocated(lattice%und_z_mod)) deallocate(lattice%und_z_mod)
     if (allocated(lattice%und_field)) deallocate(lattice%und_field)
@@ -639,6 +653,13 @@ subroutine UpdateGlobalsFromLatticeElements(lattice)
     iCsteps = lattice%cumulative_steps
     ModNum = lattice%num_modules
     ModCount = lattice%module_count
+
+    ! Per-element-type index counters
+    iUnd_cr = lattice%current_und_index
+    iChic_cr = lattice%current_chic_index
+    iDrift_cr = lattice%current_drift_index
+    iQuad_cr = lattice%current_quad_index
+    iModulation_cr = lattice%current_modulation_index
 
     ! Copy undulator arrays back
     if (allocated(lattice%und_z_mod) .and. allocated(zMod)) then

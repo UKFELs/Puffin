@@ -152,6 +152,13 @@ type :: tLatticeElements
     integer(kind=ip) :: module_count
     integer(kind=ip) :: current_module
 
+    ! Per-element-type index counters (replacing module-level vars in acc_lattice.f90)
+    integer(kind=ip) :: current_und_index
+    integer(kind=ip) :: current_chic_index
+    integer(kind=ip) :: current_drift_index
+    integer(kind=ip) :: current_quad_index
+    integer(kind=ip) :: current_modulation_index
+
     ! -------- UNDULATOR ELEMENTS --------
     real(kind=wp), allocatable :: und_z_mod(:)        ! zMod - position modulators
     real(kind=wp), allocatable :: und_field(:)        ! mf - field strength
@@ -206,6 +213,9 @@ type :: tIntegrationState
 
     ! Current z position
     real(kind=wp) :: z_current              ! sZl (if tracked separately)
+
+    ! Intermediate-output z tracker (was sZi_G global)
+    real(kind=wp) :: z_inter
 
     ! Timing
     real(kind=wp) :: time_start, time_end

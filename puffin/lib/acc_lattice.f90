@@ -22,7 +22,7 @@ use gtop2
 use initConds
 use functions
 use pdiff
-use GlobalTypes, only: tLatticeElements, tFELFrame, tSimulationFlags
+use GlobalTypes, only: tLatticeElements, tFELFrame, tSimulationFlags, tSimulationContext
 
 implicit none
 
@@ -418,15 +418,13 @@ contains
 !> @param[in] iL The element number in the lattice
 !> @param[out] sZ Scaled distance through the machine
 
-  subroutine disperse(iL, sZ, latt, frame, flags)
+  subroutine disperse(iL, sZ, ctx)
 
   implicit none
 
   integer(kind=ip), intent(in) :: iL
   real(kind=wp), intent(out) :: sZ
-  type(tLatticeElements), intent(inout) :: latt
-  type(tFELFrame),        intent(in)    :: frame
-  type(tSimulationFlags), intent(in)    :: flags
+  type(tSimulationContext), intent(inout) :: ctx
 
   real(kind=wp) :: szbar4d
   real(kind=wp), allocatable :: sp2(:)
@@ -437,16 +435,16 @@ contains
 
   logical :: qOKL
 
-  szbar4d = latt%chic_zbar(iChic_cr)
+  szbar4d = ctx%lattice%chic_zbar(ctx%lattice%current_chic_index)
 
 !     Propagate through chicane
 
 
-  sElZ2_G = sElZ2_G - 2.0_WP * latt%chic_disp(iChic_cr) *  &
+  sElZ2_G = sElZ2_G - 2.0_WP * ctx%lattice%chic_disp(ctx%lattice%current_chic_index) *  &
                (sElGam_G - 1_wp) &
-               + latt%chic_slip(iChic_cr)
+               + ctx%lattice%chic_slip(ctx%lattice%current_chic_index)
 
-  if (flags%diffraction) then
+  if (ctx%flags%diffraction) then
 
 !  Convert slippage in z2bar to spatial length for diffraction
 
@@ -455,7 +453,8 @@ contains
   end if
 
   sZ = sZ + szbar4d
-  iChic_cr = iChic_cr + 1_ip
+  ctx%lattice%current_chic_index = ctx%lattice%current_chic_index + 1_ip
+  iChic_cr = ctx%lattice%current_chic_index  ! keep global in sync until Step 5
 
   if (FieldMesh == iPeriodic) then
 
@@ -479,13 +478,11 @@ contains
 !> @param[in] iL The element number in the lattice
 !> @param[out] sZ Scaled distance through the machine
 
-  subroutine driftSection(iL, sZ, latt, frame, flags)
+  subroutine driftSection(iL, sZ, ctx)
 
     integer(kind=ip), intent(in) :: iL
     real(kind=wp), intent(out) :: sZ
-    type(tLatticeElements), intent(inout) :: latt
-    type(tFELFrame),        intent(in)    :: frame
-    type(tSimulationFlags), intent(in)    :: flags
+    type(tSimulationContext), intent(inout) :: ctx
 
     real(kind=wp) :: del_dr_z
 
@@ -493,34 +490,35 @@ contains
     logical :: qDummy, qOKL
 
 
-    del_dr_z = latt%drift_zbar(iDrift_cr)
+    del_dr_z = ctx%lattice%drift_zbar(ctx%lattice%current_drift_index)
 
     allocate(sp2(iNumberElectrons_G))
 
-    call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, frame%eta, frame%gamma_ref, frame%aw)
+    call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, ctx%frame%eta, ctx%frame%gamma_ref, ctx%frame%aw)
 
     sElZ2_G = sElZ2_G + del_dr_z * sp2
 
-    if (.not. flags%one_dimensional) then
+    if (.not. ctx%flags%one_dimensional) then
 
       ! drift in x and y...
 
-      sElX_G = sElX_G + (2 * frame%rho * frame%kappa / sqrt(frame%eta) * &
-            (1 + frame%eta * sp2) / sElGam_G *  &
+      sElX_G = sElX_G + (2 * ctx%frame%rho * ctx%frame%kappa / sqrt(ctx%frame%eta) * &
+            (1 + ctx%frame%eta * sp2) / sElGam_G *  &
             sElPX_G) * del_dr_z
 
-      sElY_G = sElY_G - (2 * frame%rho * frame%kappa / sqrt(frame%eta) * &
-            (1 + frame%eta * sp2) / sElGam_G *  &
+      sElY_G = sElY_G - (2 * ctx%frame%rho * ctx%frame%kappa / sqrt(ctx%frame%eta) * &
+            (1 + ctx%frame%eta * sp2) / sElGam_G *  &
             sElPY_G) * del_dr_z
 
     end if
 
-    if (flags%diffraction) call diffractIM(del_dr_z, qDummy, qOKL)
+    if (ctx%flags%diffraction) call diffractIM(del_dr_z, qDummy, qOKL)
 
     deallocate(sp2)
 
     sZ = sZ + del_dr_z
-    iDrift_cr = iDrift_cr + 1_ip
+    ctx%lattice%current_drift_index = ctx%lattice%current_drift_index + 1_ip
+    iDrift_cr = ctx%lattice%current_drift_index  ! keep global in sync until Step 5
 
   end subroutine driftSection
 
@@ -535,36 +533,35 @@ contains
 !> simple point transform.
 !> @param[in] iL The element number in the lattice
 
-  subroutine Quad(iL, latt, frame, flags)
+  subroutine Quad(iL, ctx)
 
     integer(kind=ip), intent(in) :: iL
-    type(tLatticeElements), intent(inout) :: latt
-    type(tFELFrame),        intent(in)    :: frame
-    type(tSimulationFlags), intent(in)    :: flags
+    type(tSimulationContext), intent(inout) :: ctx
 
     real(kind=wp), allocatable :: sp2(:)
 
     allocate(sp2(iNumberElectrons_G))
 
-    call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, frame%eta, frame%gamma_ref, frame%aw)
+    call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, ctx%frame%eta, ctx%frame%gamma_ref, ctx%frame%aw)
 
 !    Apply quad transform (point transform)
 
-    if (.not. flags%one_dimensional) then
+    if (.not. ctx%flags%one_dimensional) then
 
-      sElPX_G = sElPX_G + sqrt(frame%eta) / &
-                  (2 * frame%rho * frame%kappa) * sElX_G &
-                   / latt%quad_fx(iQuad_cr)
+      sElPX_G = sElPX_G + sqrt(ctx%frame%eta) / &
+                  (2 * ctx%frame%rho * ctx%frame%kappa) * sElX_G &
+                   / ctx%lattice%quad_fx(ctx%lattice%current_quad_index)
 
-      sElPY_G = sElPY_G - sqrt(frame%eta) / &
-                  (2 * frame%rho * frame%kappa) * sElY_G &
-                  / latt%quad_fy(iQuad_cr)
+      sElPY_G = sElPY_G - sqrt(ctx%frame%eta) / &
+                  (2 * ctx%frame%rho * ctx%frame%kappa) * sElY_G &
+                  / ctx%lattice%quad_fy(ctx%lattice%current_quad_index)
 
     end if
 
   deallocate(sp2)
 
-  iQuad_cr = iQuad_cr + 1_ip
+  ctx%lattice%current_quad_index = ctx%lattice%current_quad_index + 1_ip
+  iQuad_cr = ctx%lattice%current_quad_index  ! keep global in sync until Step 5
 
   end subroutine Quad
 
@@ -580,15 +577,16 @@ contains
 !> Apply a simple energy modulation to the beam in Puffin.
 !> @param[in] iL The element number in the lattice
 
-  subroutine bModulation(iL, latt)
+  subroutine bModulation(iL, ctx)
 
     integer(kind=ip), intent(in) :: iL
-    type(tLatticeElements), intent(inout) :: latt
+    type(tSimulationContext), intent(inout) :: ctx
 
-    sElGam_G = sElGam_G + ( latt%enmod_mag(iModulation_cr) &
-               * cos(latt%enmod_wavenum(iModulation_cr) * sElZ2_G) )
+    sElGam_G = sElGam_G + ( ctx%lattice%enmod_mag(ctx%lattice%current_modulation_index) &
+               * cos(ctx%lattice%enmod_wavenum(ctx%lattice%current_modulation_index) * sElZ2_G) )
 
-    iModulation_cr = iModulation_cr + 1
+    ctx%lattice%current_modulation_index = ctx%lattice%current_modulation_index + 1_ip
+    iModulation_cr = ctx%lattice%current_modulation_index  ! keep global in sync until Step 5
 
   end subroutine bModulation
 

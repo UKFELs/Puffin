@@ -31,8 +31,15 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   subroutine init(infile, sZ, qOK)
+   subroutine init(infile, sZ, ctx, qOK)
       use InitVars
+      use GlobalTypes, only: tSimulationContext
+      use AdapterGlobals, only: PopulateFieldMeshFromGlobals, &
+                                PopulateFELFrameFromGlobals, &
+                                PopulateSimulationFlagsFromGlobals, &
+                                PopulateOutputConfigFromGlobals, &
+                                PopulateLatticeElementsFromGlobals, &
+                                PopulateIntegrationStateFromGlobals
       implicit none
 
 ! Subroutine to perform the initialization of
@@ -44,10 +51,13 @@ contains
 ! sZ             Electron propagation distance in z
 !                through undulator.
 !
+! ctx            Simulation context (populated from globals before writeIM)
+!
 ! qOK            Error flag; .false. if no error
 
       character(1024_IP), intent(in) :: infile
       real(kind=wp), intent(out) :: sZ
+      type(tSimulationContext), intent(inout) :: ctx
       logical, intent(out) :: qOK
 
 !     Set error flag
@@ -393,9 +403,18 @@ contains
 
       if (.not. qResume_G) then
 
-         call writeIM(sZ, sZlSt_G, &
-            0_ip, 0_ip, 0_ip, iWriteNthSteps, &
-            iIntWriteNthSteps, nSteps, qOKL)
+!       Populate ctx from globals set during init so writeIM can use ctx fields.
+!       (Full ctx population also done in puffin_main after init returns.)
+        call PopulateFieldMeshFromGlobals(ctx%mesh)
+        call PopulateFELFrameFromGlobals(ctx%frame)
+        call PopulateSimulationFlagsFromGlobals(ctx%flags)
+        call PopulateOutputConfigFromGlobals(ctx%output)
+        call PopulateLatticeElementsFromGlobals(ctx%lattice)
+        call PopulateIntegrationStateFromGlobals(ctx%integration)
+        ctx%lattice%cumulative_steps = 0_ip
+        ctx%integration%current_step = 0_ip
+
+        call writeIM(sZ, sZlSt_G, ctx, 0_ip, qOKL)
 
       end if
 

@@ -26,13 +26,14 @@ contains
       use initDataType
       use Globals
       use IO, only: tErrorLog_G, log_error
-      use GlobalTypes, only: tFieldMesh, tFELFrame, tSimulationFlags, &
-                             tOutputConfig, tLatticeElements
+      use GlobalTypes, only: tSimulationContext
       use AdapterGlobals, only: PopulateFieldMeshFromGlobals, &
                                 PopulateFELFrameFromGlobals, &
                                 PopulateSimulationFlagsFromGlobals, &
                                 PopulateOutputConfigFromGlobals, &
-                                PopulateLatticeElementsFromGlobals
+                                PopulateLatticeElementsFromGlobals, &
+                                PopulateIntegrationStateFromGlobals, &
+                                PopulateUndulatorFromGlobals
 
       implicit none
 
@@ -42,17 +43,13 @@ contains
       integer(kind=ip) :: iL, iLst
       logical          :: qOKL
 
-      ! Simulation-lifetime derived types - owned here, passed to all element routines
-      type(tFieldMesh)       :: mesh
-      type(tFELFrame)        :: frame
-      type(tSimulationFlags) :: flags
-      type(tOutputConfig)    :: output
-      type(tLatticeElements) :: latt
+      ! Single simulation context — owns all types, passed to all element routines
+      type(tSimulationContext) :: ctx
 
       qOK = .false.
 !           Read in data file and initialize system
 
-      call init(input_file_name, sZ, qOKL)
+      call init(input_file_name, sZ, ctx, qOKL)
       if (.not. qOKL) then
          call log_error('Error during initialization', tErrorLog_G)
          print*, 'Error during initialization, check error log for details, ', tErrorLog_G%zFileName
@@ -60,12 +57,15 @@ contains
       end if
 
       ! Populate simulation-lifetime types once from globals set during init().
-      ! These are passed as arguments to all element subroutines.
-      call PopulateFieldMeshFromGlobals(mesh)
-      call PopulateFELFrameFromGlobals(frame)
-      call PopulateSimulationFlagsFromGlobals(flags)
-      call PopulateOutputConfigFromGlobals(output)
-      call PopulateLatticeElementsFromGlobals(latt)
+      ! ctx bundles all types and is passed as a single argument to element routines.
+      call PopulateFieldMeshFromGlobals(ctx%mesh)
+      call PopulateFELFrameFromGlobals(ctx%frame)
+      call PopulateSimulationFlagsFromGlobals(ctx%flags)
+      call PopulateOutputConfigFromGlobals(ctx%output)
+      call PopulateLatticeElementsFromGlobals(ctx%lattice)
+      call PopulateIntegrationStateFromGlobals(ctx%integration)
+      call PopulateUndulatorFromGlobals(ctx%und)
+      ctx%init_data = tInitData_G
 
       call Get_time(start_time)
 
@@ -82,22 +82,22 @@ contains
 
          if (iElmType(iL) == iUnd) then
             if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-               print*, 'Simulating undulator module', iUnd_cr
+               print*, 'Simulating undulator module', ctx%lattice%current_und_index
             end if
 
-            call UndSection(iL, sZ, mesh, frame, flags, output, latt)
+            call UndSection(iL, sZ, ctx)
 
          else if (iElmType(iL) == iQuad) then
 
-            call Quad(iL, latt, frame, flags)
+            call Quad(iL, ctx)
 
          else if (iElmType(iL) == iChic) then
 
-            call disperse(iL, sZ, latt, frame, flags)
+            call disperse(iL, sZ, ctx)
 
          else if (iElmType(iL) == iDrift) then
 
-            call driftSection(iL, sZ, latt, frame, flags)
+            call driftSection(iL, sZ, ctx)
 !     FOR WRITING AFTER EACH DRIFT
 !    szl = 0.0_wp
 !    call wr_cho(sZ, szl, &
@@ -106,17 +106,15 @@ contains
 
          else if (iElmType(iL) == iModulation) then
 
-            call BModulation(iL, latt)
+            call BModulation(iL, ctx)
 
          end if
 
       end do
 
-      if (qDumpEnd_G) then
+      if (ctx%flags%dump_at_end) then
          szl = 0.0_wp
-         call wr_cho(sZ, szl, &
-            0_ip, iCsteps, modNum, iWriteNthSteps, &
-            iIntWriteNthSteps, 0_ip, .true., .true., qOKL)
+         call wr_cho(sZ, szl, ctx, 0_ip, .true., .true., qOKL)
       end if
 
       call cleanup(sZ)   !     Clear arrays and stucts used during integration

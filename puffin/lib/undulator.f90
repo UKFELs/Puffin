@@ -22,8 +22,7 @@ use RK4int
 use write_adapter
 use ParaField
 use InitDataType
-use GlobalTypes, only: tIntegrationState, tLatticeElements, tFieldMesh, tFELFrame, &
-                       tUndulator, tSimulationFlags, tOutputConfig
+use GlobalTypes, only: tSimulationContext
 use AdapterGlobals, only: PopulateIntegrationStateFromGlobals, UpdateGlobalsFromIntegrationState, &
                           PopulateUndulatorFromGlobals, UpdateGlobalsFromUndulator
 
@@ -34,20 +33,17 @@ implicit none
 contains
 
 
-  subroutine UndSection(iM, sZ, mesh, frame, flags, output, latt)
+  subroutine UndSection(iM, sZ, ctx)
 
 ! -----------------------------------------------------------------------
 ! Remaining globals used in UndSection that CANNOT be removed yet.
 ! These are read or written by deep callees via `use Globals` / `use lattice`,
-! so removing them requires threading types through callee signatures (Phase 9).
+! so removing them requires threading types through callee signatures (Phase 10).
 !
 ! Variable        | Why it remains global
 ! ----------------|------------------------------------------------------
-! iStep           | hdf5PuffID.f90 reads it for output filenames
-! iCsteps         | hdf5PuffLow.f90 reads it for dataset writes
-! igwr            | hdf5PuffLow.f90, hdf5_puff.f90, hdf5_puff_coll.f90
-! sZi_G           | hdf5PuffLow.f90 reads it for z-coordinate output
-! iUnd_cr         | hdf5PuffLow.f90 reads it for undulator section index
+! igwr            | hdf5_puff.f90 increments it; kept in sync with ctx%mesh%highpass_filter_gr
+! sZi_G           | Used by h5_in.f90 for restart; set from ctx%init_data%Zbarinter on resume
 ! end_time        | diffraction.f90 reads it; start_time set by puffin_module
 ! start_time      | Set externally by puffin_module.f90 before entry
 ! n2col / n2col0  | Modified by wiggler_taper callees mid-loop
@@ -64,15 +60,11 @@ contains
 
 ! iM   - Which lattice module is this?
 ! sZ   - zbar position through the machine
-! mesh, frame, flags, output, latt - simulation-lifetime types owned by puffin_main
+! ctx  - simulation context owned by puffin_main
 
     integer(kind=ip), intent(in) :: iM
     real(kind=wp), intent(inout) :: sZ
-    type(tFieldMesh),       intent(inout) :: mesh
-    type(tFELFrame),        intent(in)    :: frame
-    type(tSimulationFlags), intent(inout) :: flags
-    type(tOutputConfig),    intent(in)    :: output
-    type(tLatticeElements), intent(inout) :: latt
+    type(tSimulationContext), intent(inout) :: ctx
 
 
 ! Local args
@@ -90,64 +82,62 @@ contains
     real(kind=wp) :: dzdS, dzdF, dzd
     logical :: qDWrDone
     integer error
-    type(tIntegrationState) :: integration
-    type(tUndulator) :: und
     logical :: qResuming
-    type(cInitData) :: init_data
 
   call Get_time(locTimeSt)
 
 !     Need to match into undulator
 
-  call initUndulator(iUnd_cr, sZ, szl)
+  call initUndulator(ctx%lattice%current_und_index, sZ, szl)
 
 ! Populate integration state from globals set by initUndulator
 
-  call PopulateIntegrationStateFromGlobals(integration)
+  call PopulateIntegrationStateFromGlobals(ctx%integration)
 
 ! Populate per-element undulator parameters from globals set by initUndulator
 
-  call PopulateUndulatorFromGlobals(und)
+  call PopulateUndulatorFromGlobals(ctx%und)
 
   qResuming = qResume_G
-  init_data = tInitData_G
 
   if (qResuming) then
 
-    integration%start_step = init_data%iStep
-    latt%cumulative_steps = init_data%iCSteps
-    iCSteps = latt%cumulative_steps
-    sz = init_data%zbarTotal
-    szl = init_data%zbarlocal
-    sZi_G = init_data%Zbarinter
-    mesh%highpass_filter_gr = init_data%igwr
-    igwr = mesh%highpass_filter_gr
+    ctx%integration%start_step = ctx%init_data%iStep
+    ctx%lattice%cumulative_steps = ctx%init_data%iCSteps
+    iCSteps = ctx%lattice%cumulative_steps
+    sz = ctx%init_data%zbarTotal
+    szl = ctx%init_data%zbarlocal
+    ctx%integration%z_inter = ctx%init_data%Zbarinter
+    sZi_G = ctx%integration%z_inter  ! keep global in sync for resume compatibility
+    ctx%mesh%highpass_filter_gr = ctx%init_data%igwr
+    igwr = ctx%mesh%highpass_filter_gr
 
   else
 
-    integration%start_step = 0_ip  ! ...TEMP...
+    ctx%integration%start_step = 0_ip  ! ...TEMP...
 
-    if (.not. und%model_undulator_ends) call matchIn(szl)
+    if (.not. ctx%und%model_undulator_ends) call matchIn(szl)
 
   end if
 
   qDiffrctd = .false.
 
-  if (integration%start_step==1_IP) then
+  if (ctx%integration%start_step==1_IP) then
 
-    integration%count = 0_IP
+    ctx%integration%count = 0_IP
 
   else
 
-    integration%count = mod(integration%start_step-1_IP,output%write_nth_steps)
+    ctx%integration%count = mod(ctx%integration%start_step-1_IP, &
+                                ctx%output%write_nth_steps)
 
   end if
 
 
-  call getLocalFieldIndices(integration%redistribution_length*2.0_wp)
+  call getLocalFieldIndices(ctx%integration%redistribution_length*2.0_wp)
 
 
-  iSteps4Diff = nint(integration%diffraction_step_size / integration%step_size)
+  iSteps4Diff = nint(ctx%integration%diffraction_step_size / ctx%integration%step_size)
 
 !     #####
 !     Begin integration through undulator
@@ -157,24 +147,24 @@ contains
 ! split-steps.
 
 if (qResuming) then
-  if (flags%diffraction) then
+  if (ctx%flags%diffraction) then
 
-    drstart = integration%start_step - mod(integration%start_step,isteps4diff)
+    drstart = ctx%integration%start_step - mod(ctx%integration%start_step,isteps4diff)
 
-    if (drstart == integration%total_steps) then
+    if (drstart == ctx%integration%total_steps) then
 
       dzdS = 0.0_wp
 
     else
 
-      if ((drstart + isteps4diff) <= integration%total_steps) then
+      if ((drstart + isteps4diff) <= ctx%integration%total_steps) then
 
-        dzdS = real(isteps4diff,kind=wp) * integration%step_size / 2.0_wp
+        dzdS = real(isteps4diff,kind=wp) * ctx%integration%step_size / 2.0_wp
 
-      else if ((drstart + isteps4diff) > integration%total_steps) then
+      else if ((drstart + isteps4diff) > ctx%integration%total_steps) then
 
-        stepsLeft = integration%total_steps - drstart
-        dzdS = real(stepsLeft,kind=wp)*integration%step_size / 2.0_wp
+        stepsLeft = ctx%integration%total_steps - drstart
+        dzdS = real(stepsLeft,kind=wp)*ctx%integration%step_size / 2.0_wp
 
       end if
 
@@ -185,7 +175,7 @@ if (qResuming) then
 
     if (dzdS > 0.0_wp) then
 
-      if (mod(integration%start_step,isteps4diff) == 0_ip) then
+      if (mod(ctx%integration%start_step,isteps4diff) == 0_ip) then
 
         call diffractIM(dzdS, qDiffrctd, qOKL)
 
@@ -197,9 +187,9 @@ if (qResuming) then
 
 else  ! if not resuming, just do first half diffraction step
 
-  if (flags%diffraction) then
+  if (ctx%flags%diffraction) then
 
-    dzdS = real(isteps4diff, kind=wp) * integration%step_size / 2.0_wp
+    dzdS = real(isteps4diff, kind=wp) * ctx%integration%step_size / 2.0_wp
 
     call diffractIM(dzdS, qDiffrctd, qOKL)
 
@@ -221,42 +211,39 @@ end if
   qDWrDone = .false.
 
 
-  integration%current_step = integration%start_step
-  iStep = integration%current_step
+  ctx%integration%current_step = ctx%integration%start_step
 
   do
 
 
-    integration%current_step = integration%current_step + 1_ip
-    iStep = integration%current_step
+    ctx%integration%current_step = ctx%integration%current_step + 1_ip
 
-    if (integration%current_step > integration%total_steps) exit
+    if (ctx%integration%current_step > ctx%integration%total_steps) exit
 
-    latt%cumulative_steps = latt%cumulative_steps + 1_ip
-    iCsteps = latt%cumulative_steps
+    ctx%lattice%cumulative_steps = ctx%lattice%cumulative_steps + 1_ip
 
 !   Second half of split step method: electron propagation
 !                    and field driving.
 
-    if (flags%electrons_evolve .OR. flags%field_evolve &
-             .OR. flags%electron_field_coupling) then
+    if (ctx%flags%electrons_evolve .OR. ctx%flags%field_evolve &
+             .OR. ctx%flags%electron_field_coupling) then
 
       igoes = 1_ip
       do
-        call rk4par(sZl, integration%step_size, qDiffrctd, und, frame, flags)
+        call rk4par(sZl, ctx%integration%step_size, qDiffrctd, ctx)
         if (igoes>3_ip) exit
-        if (.not. flags%parallel_arrays_ok) then
+        if (.not. ctx%flags%parallel_arrays_ok) then
           call deallact_rk4_arrs()
-          if (.not. flags%inner_xy_ok) then
+          if (.not. ctx%flags%inner_xy_ok) then
             call getInNode()
             qInnerXYOK_G = .true.
-            flags%inner_xy_ok = .true.
+            ctx%flags%inner_xy_ok = .true.
           end if
-          call getLocalFieldIndices(integration%redistribution_length)
+          call getLocalFieldIndices(ctx%integration%redistribution_length)
           qPArrOK_G = .true.
-          flags%parallel_arrays_ok = .true.
+          ctx%flags%parallel_arrays_ok = .true.
           call allact_rk4_arrs()
-          flags%inner_xy_ok = .true.
+          ctx%flags%inner_xy_ok = .true.
         else
           exit
         end if
@@ -271,17 +258,17 @@ end if
 !                  Increment z position
 !       (we now have solution at zbar + sStepsize)
 
-    sZl = sZl + integration%step_size
-    sZ = und%z_taper_start + szl
-    sZi_G = sZi_G + integration%step_size
+    sZl = sZl + ctx%integration%step_size
+    sZ = ctx%und%z_taper_start + szl
+    ctx%integration%z_inter = ctx%integration%z_inter + ctx%integration%step_size
 
 
 !   diffract field to complete diffraction step
 
-    if (flags%diffraction) then
+    if (ctx%flags%diffraction) then
 
-      if ((mod(integration%current_step,isteps4diff) == 0_ip) .or. &
-          (integration%current_step == integration%total_steps))  then
+      if ((mod(ctx%integration%current_step,isteps4diff) == 0_ip) .or. &
+          (ctx%integration%current_step == ctx%integration%total_steps))  then
 
 !        call deallact_rk4_arrs()
 
@@ -293,27 +280,28 @@ end if
 ! Start of next diffraction step is this ->
 ! dzdS = either 0, steps4diff*dz / 2, or stepsLeft*dz / 2
 
-        if (integration%current_step == integration%total_steps) then
+        if (ctx%integration%current_step == ctx%integration%total_steps) then
 
           dzdS = 0.0_wp
 
         else
 
-          if ((integration%current_step + isteps4diff) <= integration%total_steps) then
+          if ((ctx%integration%current_step + isteps4diff) <= ctx%integration%total_steps) then
 
-            dzdS = real(isteps4diff,kind=wp)*integration%step_size / 2
+            dzdS = real(isteps4diff,kind=wp)*ctx%integration%step_size / 2
 
-          else if ((integration%current_step + isteps4diff) > integration%total_steps) then
+          else if ((ctx%integration%current_step + isteps4diff) > ctx%integration%total_steps) then
 
-            stepsLeft = integration%total_steps - integration%current_step
-            dzdS = real(stepsLeft,kind=wp)*integration%step_size / 2
+            stepsLeft = ctx%integration%total_steps - ctx%integration%current_step
+            dzdS = real(stepsLeft,kind=wp)*ctx%integration%step_size / 2
 
           end if
 
         end if
 
-        if (.not. qWriteq(integration%current_step, latt%cumulative_steps, output%write_nth_steps, output%write_nth_steps_intermediate, &
-                                                         integration%total_steps)) then
+        if (.not. qWriteq(ctx%integration%current_step, ctx%lattice%cumulative_steps, &
+                          ctx%output%write_nth_steps, ctx%output%write_nth_steps_intermediate, &
+                          ctx%integration%total_steps)) then
 
         ! if not writing then we can do the last half of the
         ! last diffraction step and the first half of the next
@@ -330,9 +318,7 @@ end if
         ! and then start the next diffraction step.
 
           call diffractIM(dzdF, qDiffrctd, qOKL)  ! Finish diffraction step
-          call writeIM(sZ, sZl, &
-                       integration%current_step, latt%cumulative_steps, iM, output%write_nth_steps, &
-                       output%write_nth_steps_intermediate, integration%total_steps, qOKL)   ! Write data
+          call writeIM(sZ, sZl, ctx, iM, qOKL)   ! Write data
           if (dzdS > 0.0_wp) call diffractIM(dzdS, qDiffrctd, qOKL)  ! Start new diffraction step
           call outer2Inner(ac_rfield_in, ac_ifield_in)
           qDWrDone = .true.
@@ -343,10 +329,11 @@ end if
 
 !                   Write result to file
 
-  integration%count = integration%count + 1_IP
+  ctx%integration%count = ctx%integration%count + 1_IP
 
-    if (qWriteq(integration%current_step, latt%cumulative_steps, output%write_nth_steps, output%write_nth_steps_intermediate, &
-                integration%total_steps)) then
+    if (qWriteq(ctx%integration%current_step, ctx%lattice%cumulative_steps, &
+                ctx%output%write_nth_steps, ctx%output%write_nth_steps_intermediate, &
+                ctx%integration%total_steps)) then
 
       if (.not. qDWrDone) then
 
@@ -354,9 +341,7 @@ end if
 
         call inner2Outer(ac_rfield_in, ac_ifield_in)
 
-        call writeIM(sZ, sZl, &
-                     integration%current_step, latt%cumulative_steps, iM, output%write_nth_steps, &
-                     output%write_nth_steps_intermediate, integration%total_steps, qOKL)
+        call writeIM(sZ, sZl, ctx, iM, qOKL)
 
       else
 
@@ -369,17 +354,19 @@ end if
 
   call Get_time(end_time)
 
-  if ((tProcInfo_G%QROOT ) .and. (output%output_info_level > 1)) then
-    print*,' finished step ',latt%cumulative_steps, integration%current_step, end_time-start_time
-    WRITE(137,*) ' finished step ',latt%cumulative_steps, integration%current_step, end_time-start_time
+  if ((tProcInfo_G%QROOT ) .and. (ctx%output%output_info_level > 1)) then
+    print*,' finished step ',ctx%lattice%cumulative_steps, &
+           ctx%integration%current_step, end_time-start_time
+    WRITE(137,*) ' finished step ',ctx%lattice%cumulative_steps, &
+                 ctx%integration%current_step, end_time-start_time
   end if
 
 
 
-  if (mod(latt%cumulative_steps, integration%redistribution_step) == 0) then
+  if (mod(ctx%lattice%cumulative_steps, ctx%integration%redistribution_step) == 0) then
 
     call deallact_rk4_arrs()
-    call getLocalFieldIndices(integration%redistribution_length)
+    call getLocalFieldIndices(ctx%integration%redistribution_length)
     call allact_rk4_arrs()
 
   end if
@@ -398,19 +385,19 @@ end if
 
   end if
 
-  if (.not. und%model_undulator_ends) call matchOut(sZ)
+  if (.not. ctx%und%model_undulator_ends) call matchOut(sZ)
 
   call correctTrans()  ! correct transverse motion at undulator exit
 
-  iUnd_cr = iUnd_cr + 1_ip
+  ctx%lattice%current_und_index = ctx%lattice%current_und_index + 1_ip
   qResume_G = .false.
 
-  if ((tProcInfo_G%QROOT ) .and. (output%output_info_level > 0)) then
+  if ((tProcInfo_G%QROOT ) .and. (ctx%output%output_info_level > 0)) then
     print*,' Finished undulator module in ', end_time-locTimeSt, 'seconds'
   end if
 
-  call UpdateGlobalsFromIntegrationState(integration)
-  call UpdateGlobalsFromUndulator(und)
+  call UpdateGlobalsFromIntegrationState(ctx%integration)
+  call UpdateGlobalsFromUndulator(ctx%und)
 
 end subroutine UndSection
 
