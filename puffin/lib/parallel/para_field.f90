@@ -18,6 +18,7 @@ use puffin_mpiInfo
 use puffin_fftwInfo
 use gtop2
 use filetype
+use GlobalTypes, only: tSimulationFlags
 
 implicit none
 
@@ -80,7 +81,7 @@ logical :: qStart_new
 contains
 
 
-	subroutine getLocalFieldIndices(sdz)
+	subroutine getLocalFieldIndices(sdz, flags)
 
     implicit none
 
@@ -98,6 +99,7 @@ contains
 !            or start to share electrons between processes.
 
     real(kind=wp), intent(in) :: sdz
+    type(tSimulationFlags), intent(inout) :: flags
 
     real(kind=wp), allocatable :: sp2(:), fr_rfield_old(:), &
                                   fr_ifield_old(:), &
@@ -518,7 +520,8 @@ contains
 
       call pupd8(ac_rfield, ac_ifield)
 
-      qPArrOK_G = .true.
+      flags%parallel_arrays_ok = .true.
+      qPArrOK_G = .true.  ! keep global in sync until Step 5
 
     end subroutine getLocalFieldIndices
 
@@ -1429,7 +1432,9 @@ contains
   end subroutine outer2Inner
 
 
-  subroutine getInNode()
+  subroutine getInNode(flags)
+
+  type(tSimulationFlags), intent(inout) :: flags
 
   real(kind=wp) :: sminx, smaxx, sminy, smaxy
   integer(kind=ip) :: iminx, imaxx, iminy, imaxy, &
@@ -1503,7 +1508,8 @@ contains
 
   ntrndsi_G = nspinDX * nspinDY
 
-  qInnerXYOK_G = .true.
+  flags%inner_xy_ok = .true.
+  qInnerXYOK_G = .true.  ! keep global in sync until Step 5
 
   end subroutine getInNode
 

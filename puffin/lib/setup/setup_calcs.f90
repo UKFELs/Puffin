@@ -27,6 +27,7 @@ use MASPin
 use h5in
 use parafield
 use scale
+use GlobalTypes, only: tSimulationFlags
 
 IMPLICIT NONE
 
@@ -1100,7 +1101,7 @@ end subroutine calcSamples
 SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
                              sigma, alphax, alphay, emitx, emity, &
                              beamCenZ2, gamma_d, eThresh, &
-                             chirp, mag, fr, nbeams, qOK)
+                             chirp, mag, fr, nbeams, flags, qOK)
 
 !                     ARGUMENTS
 
@@ -1117,6 +1118,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
     real(kind=wp),     intent(in)    :: alphax(:), alphay(:), emitx(:), emity(:)
     REAL(KIND=WP),     INTENT(INOUT) :: beamCenZ2(:)
     REAL(KIND=WP),     INTENT(IN)    :: eThresh
+    type(tSimulationFlags), intent(inout) :: flags
     LOGICAL,           INTENT(OUT)   :: qOK
 
 !                   LOCAL ARGS
@@ -1289,7 +1291,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
         print*, 'Getting inner node set for MPI communication'
       end if
 
-      call getInNode()
+      call getInNode(flags)
 
       if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1)) then
         print*, '...'

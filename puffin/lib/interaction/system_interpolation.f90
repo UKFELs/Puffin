@@ -16,17 +16,19 @@ module FiElec
 use puffin_kinds
 use globals
 use parafield
+use GlobalTypes, only: tSimulationFlags
 
 implicit none
 
 contains
 
 
-subroutine getInterps_3D(sx, sy, sz2)
+subroutine getInterps_3D(sx, sy, sz2, flags)
 
 use rhs_vars
 
 real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:)
+type(tSimulationFlags), intent(inout) :: flags
 
 integer(kind=ip) :: xnode, ynode, z2node
 integer(kind=ipl) :: i
@@ -58,13 +60,17 @@ real(kind=wp) :: locx, locy, locz2, &
       z2_in1 = (1.0_wp - z2_in2)
 
       if ((xnode >= nspinDX) .or. (xnode < 1)) then
-        qInnerXYOK_G = .false.
-        qPArrOK_G = .false.
+        flags%inner_xy_ok = .false.
+        flags%parallel_arrays_ok = .false.
+        qInnerXYOK_G = .false.  ! keep global in sync until Step 5
+        qPArrOK_G = .false.     ! keep global in sync until Step 5
       end if
 
       if ((ynode >= nspinDY) .or. (ynode < 1)) then
-        qInnerXYOK_G = .false.
-        qPArrOK_G = .false.
+        flags%inner_xy_ok = .false.
+        flags%parallel_arrays_ok = .false.
+        qInnerXYOK_G = .false.  ! keep global in sync until Step 5
+        qPArrOK_G = .false.     ! keep global in sync until Step 5
       end if
 
       if (fieldMesh == itemporal) then
@@ -76,7 +82,8 @@ real(kind=wp) :: locx, locy, locz2, &
       end if
 
       if (z2node >= bz2) then
-        qPArrOK_G = .false.
+        flags%parallel_arrays_ok = .false.
+        qPArrOK_G = .false.  ! keep global in sync until Step 5
       end if
 
 !                  Get weights for interpolant

@@ -286,7 +286,7 @@ contains
       call PopMacroElectrons(qSimple, dist_f, sQe,iNumElectrons,q_noise,sZ,sLenEPulse,&
          sEleSig, alphax, alphay, emitx, emity, beamCenZ2,gamma_d,&
          sElectronThreshold,chirp, mag, fr, &
-         nbeams, qOK)
+         nbeams, ctx%flags, qOK)
 
       IF (.NOT. qOKL) GOTO 1000
 
@@ -307,7 +307,7 @@ contains
 
          qStart_new = .true.
 
-         call getLocalFieldIndices(sRedistLen_G)
+         call getLocalFieldIndices(sRedistLen_G, ctx%flags)
 
          CALL SetUpInitialValues(nseeds, freqf, &
             ph_sh, SmeanZ2, &
@@ -323,7 +323,7 @@ contains
 
       else if (iFieldSeedType_G==iReadH5Field_G) then
 
-         call readH5FieldfileSingleDump(field_file(1), sFiltFrac)
+         call readH5FieldfileSingleDump(field_file(1), sFiltFrac, ctx%flags)
          call initPowerCalc()
 
          sFieldModelLength(iX_CG) = sLengthOfElmX_G * real((NX_G-1_ip),kind=wp)

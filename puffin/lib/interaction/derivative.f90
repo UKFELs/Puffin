@@ -85,10 +85,8 @@ contains
                 sdAr, sdAi, &
                 qOKL, ctx)
 
-! Sync flags from globals after getrhs: getInterps_3D (system_interpolation.f90)
-! writes qPArrOK_G and qInnerXYOK_G directly; pull them into flags here.
-    ctx%flags%parallel_arrays_ok = qPArrOK_G
-    ctx%flags%inner_xy_ok = qInnerXYOK_G
+! flags%parallel_arrays_ok and flags%inner_xy_ok are now written directly by
+! getInterps_1D/3D via ctx%flags — no global→flags sync needed here.
 
 
 

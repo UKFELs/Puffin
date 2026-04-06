@@ -194,16 +194,16 @@ contains
 
   if (tTransInfo_G%qOneD) then
 
-    call getInterps_1D(sz2)
-    if (qPArrOK_G) then
+    call getInterps_1D(sz2, ctx%flags)
+    if (ctx%flags%parallel_arrays_ok) then
       call getFFelecs_1D(sAr, sAi)
       call getSource_1D(sDADzr, sDADzi, spr, spi, sgam, ctx%frame%eta)
     end if
 
   else
 
-    call getInterps_3D(sx, sy, sz2)
-    if ((qPArrOK_G) .and. (qInnerXYOK_G)) then
+    call getInterps_3D(sx, sy, sz2, ctx%flags)
+    if ((ctx%flags%parallel_arrays_ok) .and. (ctx%flags%inner_xy_ok)) then
       call getFFelecs_3D(sAr, sAi)
       call getSource_3D(sDADzr, sDADzi, spr, spi, sgam, ctx%frame%eta)
     end if

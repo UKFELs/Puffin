@@ -134,7 +134,7 @@ contains
   end if
 
 
-  call getLocalFieldIndices(ctx%integration%redistribution_length*2.0_wp)
+  call getLocalFieldIndices(ctx%integration%redistribution_length*2.0_wp, ctx%flags)
 
 
   iSteps4Diff = nint(ctx%integration%diffraction_step_size / ctx%integration%step_size)
@@ -235,11 +235,11 @@ end if
         if (.not. ctx%flags%parallel_arrays_ok) then
           call deallact_rk4_arrs()
           if (.not. ctx%flags%inner_xy_ok) then
-            call getInNode()
+            call getInNode(ctx%flags)
             qInnerXYOK_G = .true.
             ctx%flags%inner_xy_ok = .true.
           end if
-          call getLocalFieldIndices(ctx%integration%redistribution_length)
+          call getLocalFieldIndices(ctx%integration%redistribution_length, ctx%flags)
           qPArrOK_G = .true.
           ctx%flags%parallel_arrays_ok = .true.
           call allact_rk4_arrs()
@@ -366,7 +366,7 @@ end if
   if (mod(ctx%lattice%cumulative_steps, ctx%integration%redistribution_step) == 0) then
 
     call deallact_rk4_arrs()
-    call getLocalFieldIndices(ctx%integration%redistribution_length)
+    call getLocalFieldIndices(ctx%integration%redistribution_length, ctx%flags)
     call allact_rk4_arrs()
 
   end if

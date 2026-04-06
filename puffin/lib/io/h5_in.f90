@@ -13,6 +13,7 @@ use paraField
 use scale
 use HDF5
 use initDataType
+use GlobalTypes, only: tSimulationFlags
 
 implicit none
 
@@ -723,10 +724,11 @@ contains
 
   end subroutine readH5Beamfile
 
-  subroutine readH5FieldfileSingleDump(zFile, sFiltFrac)
+  subroutine readH5FieldfileSingleDump(zFile, sFiltFrac, flags)
 
     character(*), intent(in) :: zFile
     real(kind=wp), intent(in) :: sFiltFrac
+    type(tSimulationFlags), intent(inout) :: flags
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier
     INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
@@ -831,7 +833,7 @@ contains
 
       qStart_new = .true.
 
-      call getLocalFieldIndices(sRedistLen_G)
+      call getLocalFieldIndices(sRedistLen_G, flags)
 
 !     Close runInfo group
 

@@ -15,17 +15,19 @@ module FiElec1D
 use puffin_kinds
 use globals
 use parafield
+use GlobalTypes, only: tSimulationFlags
 
 implicit none
 
 contains
 
 
-subroutine getInterps_1D(sz2)
+subroutine getInterps_1D(sz2, flags)
 
 use rhs_vars
 
 real(kind=wp), intent(in) :: sz2(:)
+type(tSimulationFlags), intent(inout) :: flags
 
 integer(kind=ip) :: z2node
 integer(kind=ipl) :: i
@@ -51,7 +53,8 @@ real(kind=wp) :: locz2
 
 
       if (z2node >= bz2) then
-        qPArrOK_G = .false.
+        flags%parallel_arrays_ok = .false.
+        qPArrOK_G = .false.  ! keep global in sync until Step 5
       end if
 
 
