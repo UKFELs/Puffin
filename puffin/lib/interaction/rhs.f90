@@ -25,7 +25,7 @@ use FiElec
 use gtop2
 use ParaField
 use bfields
-use GlobalTypes, only: tUndulator, tFELFrame
+use GlobalTypes, only: tUndulator, tFELFrame, tSimulationContext
 
 
 implicit none
@@ -67,7 +67,7 @@ contains
                     sdx, sdy, sdz2, &
                     sdpr, sdpi, sdgam, &
                     sDADzr, sDADzi, &
-                    qOK, und, frame)
+                    qOK, ctx)
 
   use rhs_vars
 
@@ -94,8 +94,7 @@ contains
 
   real(kind=wp), contiguous,  intent(inout) :: sDADzr(:), sDADzi(:) !!!!!!!
   logical, intent(inout) :: qOK
-  type(tUndulator), intent(inout) :: und
-  type(tFELFrame), intent(in) :: frame
+  type(tSimulationContext), intent(inout) :: ctx
 
   integer(kind=ipl) :: i, z2node
   integer :: error
@@ -128,12 +127,12 @@ contains
   sField4ElecReal = 0.0_WP
   sField4ElecImag = 0.0_WP
 
-  call rhs_tmsavers(sz, und, frame)  ! This can be moved later...
+  call rhs_tmsavers(sz, ctx%und, ctx%frame)  ! This can be moved later...
 
 !     Adjust undulator tuning
 
-  call getAlpha(sZ, und)
-  call adjUndPlace(sZ, und)
+  call getAlpha(sZ, ctx%und)
+  call adjUndPlace(sZ, ctx%und)
 
 
 
@@ -145,7 +144,7 @@ contains
 !     end do
 ! !$OMP END SIMD
 
-  call getP2(sp2, sgam, spr, spi, frame%eta, frame%gamma_ref, frame%aw)
+  call getP2(sp2, sgam, spr, spi, ctx%frame%eta, ctx%frame%gamma_ref, ctx%frame%aw)
 
 
 
@@ -198,7 +197,7 @@ contains
     call getInterps_1D(sz2)
     if (qPArrOK_G) then
       call getFFelecs_1D(sAr, sAi)
-      call getSource_1D(sDADzr, sDADzi, spr, spi, sgam, frame%eta)
+      call getSource_1D(sDADzr, sDADzi, spr, spi, sgam, ctx%frame%eta)
     end if
 
   else
@@ -206,7 +205,7 @@ contains
     call getInterps_3D(sx, sy, sz2)
     if ((qPArrOK_G) .and. (qInnerXYOK_G)) then
       call getFFelecs_3D(sAr, sAi)
-      call getSource_3D(sDADzr, sDADzi, spr, spi, sgam, frame%eta)
+      call getSource_3D(sDADzr, sDADzi, spr, spi, sgam, ctx%frame%eta)
     end if
 
   end if
@@ -231,7 +230,7 @@ contains
     if (qElectronsEvolve_G) then
 
         call getBFields(sx, sy, sz, &
-                        bxu, byu, bzu, und, frame)
+                        bxu, byu, bzu, ctx%und, ctx%frame)
 
 !     z2
 
@@ -241,28 +240,28 @@ contains
 !     X
 
         call dxdz_f(sx, sy, sz2, spr, spi, sgam, &
-                    sdx, frame)
+                    sdx, ctx%frame)
 
 !     Y
 
         call dydz_f(sx, sy, sz2, spr, spi, sgam, &
-                    sdy, frame)
+                    sdy, ctx%frame)
 
 
 !     PX (Real pperp)
 
         call dppdz_r_f(sx, sy, sz2, spr, spi, sgam, sZ, &
-                       sdpr, und, frame)
+                       sdpr, ctx%und, ctx%frame)
 
 !     -PY (Imaginary pperp)
 
         call dppdz_i_f(sx, sy, sz2, spr, spi, sgam, sz, &
-                       sdpi, und, frame)
+                       sdpi, ctx%und, ctx%frame)
 
 !     P2
 
         call dgamdz_f(sx, sy, sz2, spr, spi, sgam, &
-                     sdgam, frame)
+                     sdgam, ctx%frame)
 
     end if
 
