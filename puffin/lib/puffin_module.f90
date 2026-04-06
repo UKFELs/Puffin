@@ -27,13 +27,6 @@ contains
       use Globals
       use IO, only: tErrorLog_G, log_error
       use GlobalTypes, only: tSimulationContext
-      use AdapterGlobals, only: PopulateFieldMeshFromGlobals, &
-                                PopulateFELFrameFromGlobals, &
-                                PopulateSimulationFlagsFromGlobals, &
-                                PopulateOutputConfigFromGlobals, &
-                                PopulateLatticeElementsFromGlobals, &
-                                PopulateIntegrationStateFromGlobals, &
-                                PopulateUndulatorFromGlobals
 
       implicit none
 
@@ -56,16 +49,7 @@ contains
          goto 1000
       end if
 
-      ! Populate simulation-lifetime types once from globals set during init().
-      ! ctx bundles all types and is passed as a single argument to element routines.
-      call PopulateFieldMeshFromGlobals(ctx%mesh)
-      call PopulateFELFrameFromGlobals(ctx%frame)
-      call PopulateSimulationFlagsFromGlobals(ctx%flags)
-      call PopulateOutputConfigFromGlobals(ctx%output)
-      call PopulateLatticeElementsFromGlobals(ctx%lattice)
-      call PopulateIntegrationStateFromGlobals(ctx%integration)
-      call PopulateUndulatorFromGlobals(ctx%und)
-      ctx%init_data = tInitData_G
+      ! ctx is fully populated by init() — no further Populate calls needed here.
 
       call Get_time(start_time)
 

@@ -39,7 +39,8 @@ contains
                                 PopulateSimulationFlagsFromGlobals, &
                                 PopulateOutputConfigFromGlobals, &
                                 PopulateLatticeElementsFromGlobals, &
-                                PopulateIntegrationStateFromGlobals
+                                PopulateIntegrationStateFromGlobals, &
+                                PopulateUndulatorFromGlobals
       implicit none
 
 ! Subroutine to perform the initialization of
@@ -404,7 +405,6 @@ contains
       if (.not. qResume_G) then
 
 !       Populate ctx from globals set during init so writeIM can use ctx fields.
-!       (Full ctx population also done in puffin_main after init returns.)
         call PopulateFieldMeshFromGlobals(ctx%mesh)
         call PopulateFELFrameFromGlobals(ctx%frame)
         call PopulateSimulationFlagsFromGlobals(ctx%flags)
@@ -425,6 +425,21 @@ contains
 
       if ((tProcInfo_G%qROOT) .and. (ioutInfo_G > 0)) print*, 'Initial data written'
       deallocate(s_Normalised_chi_G)
+
+!     Fully populate ctx from all globals now set by init so that puffin_main
+!     needs no further Populate calls after init returns.
+!     (For non-resume, the mesh/frame/flags/output/lattice/integration fields
+!      were already populated above for writeIM; this also covers und and init_data
+!      and handles the resume path which skips the writeIM block entirely.)
+      call PopulateFieldMeshFromGlobals(ctx%mesh)
+      call PopulateFELFrameFromGlobals(ctx%frame)
+      call PopulateSimulationFlagsFromGlobals(ctx%flags)
+      call PopulateOutputConfigFromGlobals(ctx%output)
+      call PopulateLatticeElementsFromGlobals(ctx%lattice)
+      call PopulateIntegrationStateFromGlobals(ctx%integration)
+      call PopulateUndulatorFromGlobals(ctx%und)
+      ctx%init_data = tInitData_G
+
       qOK = .true.
 
       goto 2000
