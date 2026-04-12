@@ -80,15 +80,16 @@ contains
 !> input file. Updated if a lattice file is supplied.
 
   subroutine setupMods(lattFile, taper, sRho, nSteps_f, dz_f, &
-                       ux_f, uy_f, kbnx_f, kbny_f)
+                       ux_f, uy_f, kbnx_f, kbny_f, frame)
 
     implicit none
 
-    character(1024_ip), intent(in) :: LattFile 
+    character(1024_ip), intent(in) :: LattFile
     real(kind=wp), intent(inout) :: taper
     real(kind=wp), intent(in) :: sRho
     real(kind=wp), intent(inout) :: dz_f, ux_f, uy_f, kbnx_f, kbny_f
     integer(kind=ip), intent(inout) :: nSteps_f
+    type(tFELFrame), intent(in) :: frame
 
 
     if (lattFile=='') then
@@ -139,13 +140,13 @@ contains
       taper = tapers(1)
 
       if (.not. qscaled_G) then
-        kbnx_arr = kbnx_arr * lg_G
-        kbny_arr = kbny_arr * lg_G
-        tapers = tapers * lg_G
-        quad_fx = quad_fx / lg_G
-        quad_fy = quad_fy / lg_G
-        chic_disp = chic_disp / 2.0_wp / lc_G
-        enmod_wavenum = enmod_wavenum * lc_G
+        kbnx_arr = kbnx_arr * frame%gain_length
+        kbny_arr = kbny_arr * frame%gain_length
+        tapers = tapers * frame%gain_length
+        quad_fx = quad_fx / frame%gain_length
+        quad_fy = quad_fy / frame%gain_length
+        chic_disp = chic_disp / 2.0_wp / frame%cooperation_length
+        enmod_wavenum = enmod_wavenum * frame%cooperation_length
       end if
 
     else
@@ -192,8 +193,6 @@ contains
 
     end if
 
-    iCsteps = 1_ip
-
     totUndLineLength = sum(real(nsteps_arr,kind=wp)*delmz) + sum(drift_zbar) + sum(chic_zbar)
 
     if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1)) then
@@ -204,7 +203,7 @@ contains
         print*, 'Total interaction distance in (1D) gain lengths is z-bar =', &
                 sum(nsteps_arr*delmz)
         print*, 'Total length of FEL undulator line in meters is z =', &
-             (sum(nsteps_arr*delmz) + sum(drift_zbar) + sum(chic_zbar)) * lg_G
+             (sum(nsteps_arr*delmz) + sum(drift_zbar) + sum(chic_zbar)) * frame%gain_length
         print*, ''
         print*, 'initial step size (in zbar, or 1D gain lengths) will be ', delmz(1)
         print*, ''
@@ -372,7 +371,7 @@ contains
         cntt = cntt + 1
         iElmType(cntt) = iDrift
 
-        drift_zbar(cntd) = drift_zbar(cntd) * 4.0_wp * pi * sRho_G
+        drift_zbar(cntd) = drift_zbar(cntd) * 4.0_wp * pi * rho
 
       else if (ztest(1:2) == 'MO') then
 
@@ -439,7 +438,7 @@ contains
 
 !  Convert slippage in z2bar to spatial length for diffraction
 
-    if (szbar4d > 0.0_wp) call diffractIM(szbar4d, qDummy, qOKL)
+    if (szbar4d > 0.0_wp) call diffractIM(szbar4d, qDummy, qOKL, ctx)
 
   end if
 
@@ -502,7 +501,7 @@ contains
 
     end if
 
-    if (ctx%flags%diffraction) call diffractIM(del_dr_z, qDummy, qOKL)
+    if (ctx%flags%diffraction) call diffractIM(del_dr_z, qDummy, qOKL, ctx)
 
     deallocate(sp2)
 
@@ -628,9 +627,10 @@ contains
 !> the correctTrans subroutine after the exit to correct the transverse motion...
 !> @param[in] sZ zbar position
 
-  subroutine matchOut(sZ)
+  subroutine matchOut(sZ, frame)
 
     real(kind=wp), intent(in) :: sZ
+    type(tFELFrame), intent(in) :: frame
 
     real(kind=wp), allocatable :: spx0_offset(:),spy0_offset(:), &
                                   sx_offset(:),sy_offset(:)
@@ -655,12 +655,12 @@ contains
 ! when calculating initial conditions, this may need change eventually
 
 
-        spx0_offset = pxOffset(sZ, srho_G, fy_G) &
+        spx0_offset = pxOffset(sZ, frame%rho, fy_G) &
             - 0.5_WP * kx**2 * sElX_G**2 &
             -  0.5_WP * kY**2 * sElY_G**2
 
         spy0_offset = -1_wp *  &
-                      ( pyOffset(sZ, srho_G, fx_G) &
+                      ( pyOffset(sZ, frame%rho, fx_G) &
                       - kx**2 *  sElX_G  * sElY_G)
 
 
@@ -671,11 +671,11 @@ contains
 
 
 
-        spx0_offset = pxOffset(sZ, srho_G, fy_G) &
-            - 0.5_WP * (sEta_G / (4 * sRho_G**2)) * sElX_G**2
+        spx0_offset = pxOffset(sZ, frame%rho, fy_G) &
+            - 0.5_WP * (frame%eta / (4 * frame%rho**2)) * sElX_G**2
 
         spy0_offset = -1_wp * &
-                      pyOffset(sZ, srho_G, fx_G)
+                      pyOffset(sZ, frame%rho, fx_G)
 
 
     else
@@ -684,21 +684,21 @@ contains
 ! field variation
 
 
-        spx0_offset = pxOffset(sZ, srho_G, fy_G)
+        spx0_offset = pxOffset(sZ, frame%rho, fy_G)
 
         spy0_offset = -1.0_wp * &
-                     pyOffset(sZ, srho_G, fx_G)
+                     pyOffset(sZ, frame%rho, fx_G)
 
 
     end if
 
 
-    sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
-                           sEta_G, sKappa_G, sFocusfactor_G, spx0_offset, spy0_offset, &
+    sx_offset =    xOffSet(frame%rho, frame%aw, frame%gamma_ref, frame%gamma_ref * sElGam_G, &
+                           frame%eta, frame%kappa, sFocusfactor_G, spx0_offset, spy0_offset, &
                            fx_G, fy_G, sZ)
 
-    sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
-                           sEta_G, sKappa_G, sFocusfactor_G, spx0_offset, spy0_offset, &
+    sy_offset =    yOffSet(frame%rho, frame%aw, frame%gamma_ref, frame%gamma_ref * sElGam_G, &
+                           frame%eta, frame%kappa, sFocusfactor_G, spx0_offset, spy0_offset, &
                            fx_G, fy_G, sZ)
 
 
@@ -733,9 +733,10 @@ contains
 !> the undulator exit. 
 !> @param[in] sZ zbar position
 
-  subroutine matchIn(sZ)
+  subroutine matchIn(sZ, frame)
 
     real(kind=wp), intent(in) :: sZ
+    type(tFELFrame), intent(in) :: frame
 
     real(kind=wp), allocatable :: spx0_offset(:),spy0_offset(:), &
                                   sx_offset(:),sy_offset(:)
@@ -760,12 +761,12 @@ contains
 ! when calculating initial conditions, this may need change eventually
 
 
-        spx0_offset = pxOffset(sZ, srho_G, fy_G) &
+        spx0_offset = pxOffset(sZ, frame%rho, fy_G) &
             - 0.5_WP * kx**2 * sElX_G**2 &
             -  0.5_WP * kY**2 * sElY_G**2
 
         spy0_offset = -1_wp *  &
-                      ( pyOffset(sZ, srho_G, fx_G) &
+                      ( pyOffset(sZ, frame%rho, fx_G) &
                       - kx**2 *  sElX_G  * sElY_G)
 
 
@@ -776,11 +777,11 @@ contains
 
 
 
-        spx0_offset = pxOffset(sZ, srho_G, fy_G) &
-            - 0.5_WP * (sEta_G / (4 * sRho_G**2)) * sElX_G**2
+        spx0_offset = pxOffset(sZ, frame%rho, fy_G) &
+            - 0.5_WP * (frame%eta / (4 * frame%rho**2)) * sElX_G**2
 
         spy0_offset = -1_wp * &
-                      pyOffset(sZ, srho_G, fx_G)
+                      pyOffset(sZ, frame%rho, fx_G)
 
 
     else
@@ -789,22 +790,22 @@ contains
 ! field variation
 
 
-        spx0_offset = pxOffset(sZ, srho_G, fy_G)
+        spx0_offset = pxOffset(sZ, frame%rho, fy_G)
 
         spy0_offset = -1.0_wp * &
-                     pyOffset(sZ, srho_G, fx_G)
+                     pyOffset(sZ, frame%rho, fx_G)
 
 
     end if
 
 
-    sx_offset =    xOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
-                           sEta_G, sKappa_G, sFocusfactor_G, spx0_offset, -spy0_offset, &
+    sx_offset =    xOffSet(frame%rho, frame%aw, frame%gamma_ref, frame%gamma_ref * sElGam_G, &
+                           frame%eta, frame%kappa, sFocusfactor_G, spx0_offset, -spy0_offset, &
                            fx_G, fy_G, sZ)
 
 
-    sy_offset =    yOffSet(sRho_G, sAw_G, sGammaR_G, sGammaR_G * sElGam_G, &
-                           sEta_G, sKappa_G, sFocusfactor_G, spx0_offset, -spy0_offset, &
+    sy_offset =    yOffSet(frame%rho, frame%aw, frame%gamma_ref, frame%gamma_ref * sElGam_G, &
+                           frame%eta, frame%kappa, sFocusfactor_G, spx0_offset, -spy0_offset, &
                            fx_G, fy_G, sZ)
 
 
@@ -838,11 +839,12 @@ contains
 !> @param[in] sZ zbar position in the machine
 !> @param[inout] sZ zbar position local to undulator (initialized to = 0) here
 
-  subroutine initUndulator(iM, sZ, szl)
+  subroutine initUndulator(iM, sZ, szl, frame)
 
     integer(kind=ip), intent(in) :: iM
     real(kind=wp), intent(in) :: sZ
     real(kind=wp), intent(inout) :: szl
+    type(tFELFrame), intent(in) :: frame
 
 ! Want to update using arrays describing each module...
 
@@ -874,9 +876,9 @@ contains
 
     if (qUndEnds_G) then
 
-      sZFS = 4_wp * pi * sRho_G  *  2.0_wp
+      sZFS = 4_wp * pi * frame%rho  *  2.0_wp
       sZFE = nSteps * sStepSize - &
-               4_wp * pi * sRho_G  *  2.0_wp
+               4_wp * pi * frame%rho  *  2.0_wp
 
     else
 

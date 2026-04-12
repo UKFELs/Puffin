@@ -18,7 +18,7 @@ use puffin_mpiInfo
 use puffin_fftwInfo
 use gtop2
 use filetype
-use GlobalTypes, only: tSimulationFlags
+use GlobalTypes, only: tSimulationFlags, tFELFrame
 
 implicit none
 
@@ -81,7 +81,7 @@ logical :: qStart_new
 contains
 
 
-	subroutine getLocalFieldIndices(sdz, flags)
+	subroutine getLocalFieldIndices(sdz, flags, frame)
 
     implicit none
 
@@ -100,6 +100,7 @@ contains
 
     real(kind=wp), intent(in) :: sdz
     type(tSimulationFlags), intent(inout) :: flags
+    type(tFELFrame), intent(in) :: frame
 
     real(kind=wp), allocatable :: sp2(:), fr_rfield_old(:), &
                                   fr_ifield_old(:), &
@@ -232,7 +233,7 @@ contains
 
   if (qUnique) call rearrElecs()   ! Rearrange electrons
 
-  call calcBuff(4 * pi * sRho_G * sdz)  ! Calculate buffers
+  call calcBuff(4 * pi * frame%rho * sdz, frame%eta, frame%gamma_ref, frame%aw)  ! Calculate buffers
 
   call getFrBk()  ! Get surrounding nodes
 
@@ -1660,7 +1661,7 @@ contains
 
 
 
-  subroutine calcBuff(dz)
+  subroutine calcBuff(dz, sEta, sGammaR, sAw)
 
 ! Subroutine to setup the 'buffer' region
 ! at the end of the parallel field section
@@ -1673,7 +1674,7 @@ contains
 ! the electron macroparticles over a distance
 ! dz through the undulator.
 
-    real(kind=wp), intent(in) :: dz
+    real(kind=wp), intent(in) :: dz, sEta, sGammaR, sAw
     real(kind=wp), allocatable :: sp2(:)
 
     real(kind=wp) :: bz2_len
@@ -1691,7 +1692,7 @@ contains
 
       allocate(sp2(iNumberElectrons_G))
 
-      call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, sEta_G, sGammaR_G, sAw_G)
+      call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, sEta, sGammaR, sAw)
 
       bz2_len = dz  ! distance in zbar until next rearrangement
       bz2_len = maxval(sElZ2_G + bz2_len * sp2)  ! predicted length in z2 needed needed in buffer for beam

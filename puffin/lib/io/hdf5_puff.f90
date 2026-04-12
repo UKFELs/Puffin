@@ -55,7 +55,6 @@ contains
     slicetrim=(4*pi*ctx%frame%rho*nslices)-ctx%mesh%dz2*ctx%mesh%nz2
 
     ctx%mesh%highpass_filter_gr = ctx%mesh%highpass_filter_gr + 1_ip
-    igwr = ctx%mesh%highpass_filter_gr  ! keep global in sync until Step 5
     time = sZ
 
     if (qWriteFull) then

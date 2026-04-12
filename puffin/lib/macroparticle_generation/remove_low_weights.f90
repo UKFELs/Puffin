@@ -19,7 +19,7 @@ use puffin_kinds, only: WP, IPL, IP
 use MPI
 use Globals, only: sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, &
                    s_chi_bar_G, s_Normalised_chi_G, iNumberElectrons_G, &
-                   iGloNumElectrons_G, sGammaR_G, tProcInfo_G, sum_mpi_int14
+                   iGloNumElectrons_G, tProcInfo_G, sum_mpi_int14
 
 implicit none
 
@@ -27,7 +27,7 @@ contains
 
 SUBROUTINE removeLowNC(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
                        npk,nbeams,x_tmpcoord,y_tmpcoord,z2_tmpcoord,px_tmpvector,&
-                       py_tmpvector, pz2_tmpvector,totalmps_b)
+                       py_tmpvector, pz2_tmpvector,totalmps_b, gamma_ref)
 
 ! Discard macroparticles with weights below a certain threshold.
 ! This subroutine assigns macroparticle values to global arrays,
@@ -49,6 +49,7 @@ SUBROUTINE removeLowNC(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold,
   INTEGER(KIND=IP), INTENT(IN) :: nbeams
   REAL(KIND=WP), INTENT(IN) :: sElectronThreshold, npk
   INTEGER(KIND=IPL), INTENT(IN) :: totalmps_b(:)
+  REAL(KIND=WP), INTENT(IN) :: gamma_ref
 
 !                  LOCAL ARGS
 
@@ -121,7 +122,7 @@ SUBROUTINE removeLowNC(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold,
 !    sElGam_G = getP2(sElGam_G, sElPX_G,&
 !                     sElPY_G, sEta_G, sAw_G)
      
-  sElGam_G = sElGam_G / sGammaR_G
+  sElGam_G = sElGam_G / gamma_ref
 
 END SUBROUTINE removeLowNC
 

@@ -175,7 +175,7 @@ contains
 
       call removeLowNC(chi_b, chi, b_sts, b_ends, sEThresh, npk_bar_G, &
          nbeams, x, y, z2, px,&
-         py, gamma, totMPs_b)
+         py, gamma, totMPs_b, sGammaR_G)
 
 !  if (qEquiXY_G)  npk_bar_G = npk
 

@@ -109,7 +109,7 @@ subroutine PopulateFieldMeshFromGlobals(mesh)
 
     ! Filtering
     mesh%filter_cutoff_freq = sfilt
-    mesh%highpass_filter_gr = igwr
+    mesh%highpass_filter_gr = -1_ip
 
     ! Flags
     mesh%is_1d = qOneD_G
@@ -171,7 +171,6 @@ subroutine UpdateGlobalsFromFieldMesh(mesh)
 
     ! Filtering
     sfilt = mesh%filter_cutoff_freq
-    igwr = mesh%highpass_filter_gr
 
     ! Flags
     qOneD_G = mesh%is_1d
@@ -242,7 +241,7 @@ subroutine PopulateElectronCloudFromGlobals(electrons)
     electrons%ata = ata_G
 
     ! Tracking positions
-    electrons%z_interaction = sZi_G
+    electrons%z_interaction = 0.0_wp
     electrons%z_last_step = sZlSt_G
 
 end subroutine PopulateElectronCloudFromGlobals
@@ -293,7 +292,6 @@ subroutine UpdateGlobalsFromElectronCloud(electrons)
     ata_G = electrons%ata
 
     ! Tracking positions
-    sZi_G = electrons%z_interaction
     sZlSt_G = electrons%z_last_step
 
 end subroutine UpdateGlobalsFromElectronCloud
@@ -322,11 +320,11 @@ subroutine PopulateIntegrationStateFromGlobals(integration)
     integration%redistribution_step = iRedistStp_G
 
     ! Intermediate z tracker
-    integration%z_inter = sZi_G
+    integration%z_inter = 0.0_wp
 
-    ! Timing
-    integration%time_start = start_time
-    integration%time_end = end_time
+    ! Timing (time_start is set by puffin_main after init; time_end is local to UndSection)
+    integration%time_start = 0.0_wp
+    integration%time_end = 0.0_wp
     integration%time_debug1 = time1
     integration%time_debug2 = time2
 
@@ -351,12 +349,7 @@ subroutine UpdateGlobalsFromIntegrationState(integration)
     sRedistLen_G = integration%redistribution_length
     iRedistStp_G = integration%redistribution_step
 
-    ! Intermediate z tracker
-    sZi_G = integration%z_inter
-
     ! Timing
-    start_time = integration%time_start
-    end_time = integration%time_end
     time1 = integration%time_debug1
     time2 = integration%time_debug2
 
@@ -516,8 +509,8 @@ subroutine PopulateLatticeElementsFromGlobals(lattice)
     lattice%num_modulations = numOfModulations
     lattice%num_quadrupoles = numOfQuads
 
-    ! Overall tracking
-    lattice%cumulative_steps = iCsteps
+    ! Overall tracking (cumulative_steps starts at 0; resume path overrides in setup.f90)
+    lattice%cumulative_steps = 0_ip
     lattice%num_modules = ModNum
     lattice%module_count = ModCount
 
@@ -649,7 +642,6 @@ subroutine UpdateGlobalsFromLatticeElements(lattice)
     numOfQuads = lattice%num_quadrupoles
 
     ! Overall tracking
-    iCsteps = lattice%cumulative_steps
     ModNum = lattice%num_modules
     ModCount = lattice%module_count
 

@@ -38,14 +38,10 @@ contains
 ! -----------------------------------------------------------------------
 ! Remaining globals used in UndSection that CANNOT be removed yet.
 ! These are read or written by deep callees via `use Globals` / `use lattice`,
-! so removing them requires threading types through callee signatures (Phase 10).
+! so removing them requires threading types through callee signatures.
 !
 ! Variable        | Why it remains global
 ! ----------------|------------------------------------------------------
-! igwr            | hdf5_puff.f90 increments it; kept in sync with ctx%mesh%highpass_filter_gr
-! sZi_G           | Used by h5_in.f90 for restart; set from ctx%init_data%Zbarinter on resume
-! end_time        | diffraction.f90 reads it; start_time set by puffin_module
-! start_time      | Set externally by puffin_module.f90 before entry
 ! n2col / n2col0  | Modified by wiggler_taper callees mid-loop
 !
 ! Infrastructure globals (not candidates for migration):
@@ -71,7 +67,7 @@ contains
     integer(kind=ip) :: iPer, iS ! Loop index - period counter
     integer(kind=ip) :: nW
     integer(kind=ip) :: iSteps4Diff, igoes
-    real(kind=wp) :: delz_D, nextDiff, szl, locTimeSt
+    real(kind=wp) :: delz_D, nextDiff, szl, locTimeSt, locEndTime
     logical :: qFirst, qLast, qDiffrctd
     logical :: qWPF
     logical :: qWIF
@@ -86,7 +82,7 @@ contains
 
 !     Need to match into undulator
 
-  call initUndulator(ctx%lattice%current_und_index, sZ, szl)
+  call initUndulator(ctx%lattice%current_und_index, sZ, szl, ctx%frame)
 
 ! Populate integration state from globals set by initUndulator
 
@@ -102,19 +98,16 @@ contains
 
     ctx%integration%start_step = ctx%init_data%iStep
     ctx%lattice%cumulative_steps = ctx%init_data%iCSteps
-    iCSteps = ctx%lattice%cumulative_steps
     sz = ctx%init_data%zbarTotal
     szl = ctx%init_data%zbarlocal
     ctx%integration%z_inter = ctx%init_data%Zbarinter
-    sZi_G = ctx%integration%z_inter  ! keep global in sync for resume compatibility
     ctx%mesh%highpass_filter_gr = ctx%init_data%igwr
-    igwr = ctx%mesh%highpass_filter_gr
 
   else
 
     ctx%integration%start_step = 0_ip  ! ...TEMP...
 
-    if (.not. ctx%und%model_undulator_ends) call matchIn(szl)
+    if (.not. ctx%und%model_undulator_ends) call matchIn(szl, ctx%frame)
 
   end if
 
@@ -132,7 +125,7 @@ contains
   end if
 
 
-  call getLocalFieldIndices(ctx%integration%redistribution_length*2.0_wp, ctx%flags)
+  call getLocalFieldIndices(ctx%integration%redistribution_length*2.0_wp, ctx%flags, ctx%frame)
 
 
   iSteps4Diff = nint(ctx%integration%diffraction_step_size / ctx%integration%step_size)
@@ -175,7 +168,7 @@ if (qResuming) then
 
       if (mod(ctx%integration%start_step,isteps4diff) == 0_ip) then
 
-        call diffractIM(dzdS, qDiffrctd, qOKL)
+        call diffractIM(dzdS, qDiffrctd, qOKL, ctx)
 
       end if
 
@@ -189,7 +182,7 @@ else  ! if not resuming, just do first half diffraction step
 
     dzdS = real(isteps4diff, kind=wp) * ctx%integration%step_size / 2.0_wp
 
-    call diffractIM(dzdS, qDiffrctd, qOKL)
+    call diffractIM(dzdS, qDiffrctd, qOKL, ctx)
 
 !    nextDiff = nextDiff + diffStep
 
@@ -236,7 +229,7 @@ end if
             call getInNode(ctx%flags)
             ctx%flags%inner_xy_ok = .true.
           end if
-          call getLocalFieldIndices(ctx%integration%redistribution_length, ctx%flags)
+          call getLocalFieldIndices(ctx%integration%redistribution_length, ctx%flags, ctx%frame)
           ctx%flags%parallel_arrays_ok = .true.
           call allact_rk4_arrs()
           ctx%flags%inner_xy_ok = .true.
@@ -305,7 +298,7 @@ end if
 
           dzd = dzdF + dzdS
 
-          call diffractIM(dzd, qDiffrctd, qOKL)
+          call diffractIM(dzd, qDiffrctd, qOKL, ctx)
           call outer2Inner(ac_rfield_in, ac_ifield_in)
         else
 
@@ -313,9 +306,9 @@ end if
         ! finish the last diffraction step, and THEN write,
         ! and then start the next diffraction step.
 
-          call diffractIM(dzdF, qDiffrctd, qOKL)  ! Finish diffraction step
+          call diffractIM(dzdF, qDiffrctd, qOKL, ctx)  ! Finish diffraction step
           call writeIM(sZ, sZl, ctx, iM, qOKL)   ! Write data
-          if (dzdS > 0.0_wp) call diffractIM(dzdS, qDiffrctd, qOKL)  ! Start new diffraction step
+          if (dzdS > 0.0_wp) call diffractIM(dzdS, qDiffrctd, qOKL, ctx)  ! Start new diffraction step
           call outer2Inner(ac_rfield_in, ac_ifield_in)
           qDWrDone = .true.
 
@@ -348,13 +341,13 @@ end if
     end if
 
 
-  call Get_time(end_time)
+  call Get_time(locEndTime)
 
   if ((tProcInfo_G%QROOT ) .and. (ctx%output%output_info_level > 1)) then
     print*,' finished step ',ctx%lattice%cumulative_steps, &
-           ctx%integration%current_step, end_time-start_time
+           ctx%integration%current_step, locEndTime - ctx%integration%time_start
     WRITE(137,*) ' finished step ',ctx%lattice%cumulative_steps, &
-                 ctx%integration%current_step, end_time-start_time
+                 ctx%integration%current_step, locEndTime - ctx%integration%time_start
   end if
 
 
@@ -362,7 +355,7 @@ end if
   if (mod(ctx%lattice%cumulative_steps, ctx%integration%redistribution_step) == 0) then
 
     call deallact_rk4_arrs()
-    call getLocalFieldIndices(ctx%integration%redistribution_length, ctx%flags)
+    call getLocalFieldIndices(ctx%integration%redistribution_length, ctx%flags, ctx%frame)
     call allact_rk4_arrs()
 
   end if
@@ -381,7 +374,7 @@ end if
 
   end if
 
-  if (.not. ctx%und%model_undulator_ends) call matchOut(sZ)
+  if (.not. ctx%und%model_undulator_ends) call matchOut(sZ, ctx%frame)
 
   call correctTrans()  ! correct transverse motion at undulator exit
 
@@ -389,7 +382,7 @@ end if
   qResume_G = .false.
 
   if ((tProcInfo_G%QROOT ) .and. (ctx%output%output_info_level > 0)) then
-    print*,' Finished undulator module in ', end_time-locTimeSt, 'seconds'
+    print*,' Finished undulator module in ', locEndTime-locTimeSt, 'seconds'
   end if
 
   call UpdateGlobalsFromIntegrationState(ctx%integration)

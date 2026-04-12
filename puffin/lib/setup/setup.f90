@@ -89,8 +89,6 @@ contains
 
       zFileName_G = zFile
 
-      igwr = -1_ip
-
 !     Initialise Error log for this run
 
       tErrorLog_G%zFileName = TRIM(ADJUSTL(zFile))//"_Error.log"
@@ -166,7 +164,7 @@ contains
 
 
       call calcScaling(srho, saw, sgammar, lambda_w, &
-         zUndType, fx, fy)
+         zUndType, fx, fy, ctx)
 
 
       if (.not. qscaled_G) then
@@ -182,7 +180,7 @@ contains
          call scaleParams(sEleSig, sLenEPulse, sSigEj_G, &
             beamCenZ2, chirp, sEmit_n, emitx, emity, gamma_d, &
             sFieldModelLength, sLengthofElm, &
-            sSeedSigma, sA0_Re, sA0_Im, SmeanZ2, fr, sKBetaXSF_G, sKBetaYSF_G)
+            sSeedSigma, sA0_Re, sA0_Im, SmeanZ2, fr, sKBetaXSF_G, sKBetaYSF_G, ctx%frame)
       end if
 
 
@@ -193,9 +191,9 @@ contains
       call calcSamples(sFieldModelLength, iNodes, sLengthofElm, &
          sStepSize, stepsPerPeriod, nSteps, &
          nperiods, nodesperlambda, gamma_d, sEleSig, sLenEPulse, &
-         iNumElectrons, iMPsZ2PerWave, qSimple)
+         iNumElectrons, iMPsZ2PerWave, qSimple, ctx%frame)
 
-      call calcCharge(sQe, Ipk, sEleSig(:,iZ2_CG), sLenEPulse(:, iZ2_CG), sSigEj_G, qRndEj_G)
+      call calcCharge(sQe, Ipk, sEleSig(:,iZ2_CG), sLenEPulse(:, iZ2_CG), sSigEj_G, qRndEj_G, ctx%frame)
 
 !  if (qscaled_G) then
 
@@ -218,7 +216,7 @@ contains
 
 
       call setupMods(lattFile, taper, sRho, nSteps, sStepSize, fx, fy, &
-         sKBetaXSF_G, sKBetaYSF_G)
+         sKBetaXSF_G, sKBetaYSF_G, ctx%frame)
 
       if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 0)) print*, 'setup lattice'
 
@@ -228,7 +226,7 @@ contains
          sLengthOfElm, qSimple, iNumElectrons, &
          fx,fy,taper, sEleSig(1,iX_CG), sEleSig(1,iY_CG), &
          sFiltFrac,sDiffFrac,sBeta, &
-         zUndType,qFormattedFiles, qSwitches,qOK)
+         zUndType,qFormattedFiles, qSwitches, ctx, qOK)
 
       if (.not. qOKL) goto 1000
 
@@ -287,23 +285,16 @@ contains
       call PopMacroElectrons(qSimple, dist_f, sQe,iNumElectrons,q_noise,sZ,sLenEPulse,&
          sEleSig, alphax, alphay, emitx, emity, beamCenZ2,gamma_d,&
          sElectronThreshold,chirp, mag, fr, &
-         nbeams, ctx%flags, qOK)
+         nbeams, ctx%frame, ctx%flags, qOK)
 
       IF (.NOT. qOKL) GOTO 1000
-
-
-      if (qresume_G) then
-
-         igwr = tInitData_G%igwr
-
-      end if
 
 
       if (iFieldSeedType_G==iSimpleSeed_G) then
 
          qStart_new = .true.
 
-         call getLocalFieldIndices(sRedistLen_G, ctx%flags)
+         call getLocalFieldIndices(sRedistLen_G, ctx%flags, ctx%frame)
 
          CALL SetUpInitialValues(nseeds, freqf, &
             ph_sh, SmeanZ2, &
@@ -311,6 +302,7 @@ contains
             sSeedSigma, &
             sA0_Re,&
             sA0_Im,&
+            ctx%frame%rho, &
             qOKL)
 
 !  send init'd seed field to periodic buffer
@@ -319,7 +311,7 @@ contains
 
       else if (iFieldSeedType_G==iReadH5Field_G) then
 
-         call readH5FieldfileSingleDump(field_file(1), sFiltFrac, ctx%flags)
+         call readH5FieldfileSingleDump(field_file(1), sFiltFrac, ctx%frame, ctx%flags)
          call initPowerCalc()
 
          sFieldModelLength(iX_CG) = sLengthOfElmX_G * real((NX_G-1_ip),kind=wp)
@@ -395,8 +387,6 @@ contains
 
       CALL MPI_BARRIER(tProcInfo_G%comm,error)
 
-      iCSteps = 0_ip
-
       if (.not. qResume_G) then
 
 !       Populate ctx from globals set during init so writeIM can use ctx fields.
@@ -435,13 +425,16 @@ contains
       call PopulateUndulatorFromGlobals(ctx%und)
       ctx%init_data = tInitData_G
 
-      ! Override element-type counters from restart data (Populate hardcodes 1)
+      ! Override element-type counters and mesh state from restart data
+      ! (PopulateLatticeElementsFromGlobals hardcodes counters to 1;
+      !  PopulateFieldMeshFromGlobals hardcodes highpass_filter_gr to -1)
       if (qresume_G) then
         ctx%lattice%current_und_index = tInitData_G%iUnd_cr
         ctx%lattice%current_chic_index = tInitData_G%iChic_cr
         ctx%lattice%current_drift_index = tInitData_G%iDrift_cr
         ctx%lattice%current_quad_index = tInitData_G%iQuad_cr
         ctx%lattice%current_modulation_index = tInitData_G%iModulation_cr
+        ctx%mesh%highpass_filter_gr = tInitData_G%igwr
       end if
 
       qOK = .true.

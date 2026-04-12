@@ -51,9 +51,8 @@ real(kind=wp), allocatable :: kz2_loc_G(:)
 
 real(kind=wp) :: sBeta_G    ! Absorption coefficient
 
-real(kind=wp)  :: sfilt   ! Frequency cutoff for high pass filter, in units 
+real(kind=wp)  :: sfilt   ! Frequency cutoff for high pass filter, in units
                           ! of f_z2 = Lenz2 * ffrac / lamda_rz2
-integer(kind=ip) :: igwr
 
 integer(kind=ip) :: fieldMesh
 integer(kind=ip), parameter :: iTemporal = 0_ip
@@ -145,7 +144,7 @@ real(kind=wp), allocatable     :: dadz_w(:)
 ! For recording the INTERACTION zbar only - the distance
 ! with no drifts
 
-real(kind=wp) :: sZi_G, sZlSt_G
+real(kind=wp) :: sZlSt_G
 
 
 ! For restarting from a previous run
@@ -272,8 +271,6 @@ integer(kind=ip) :: numOfUnds, numOfChics, numOfDrifts, numOfModulations, numOfQ
 
 
 
-integer(kind=ip) :: iCsteps  ! Cumulative steps across all modules
-
 integer(kind=ip)    :: ModNum, ModCount   !  Number of modules and module counter
 
 
@@ -325,7 +322,6 @@ integer(kind=ip) :: iCount, iStep, start_step
 real(kind=wp)    :: sStep, sStepSize
 integer(kind=ip) :: nSteps
 
-real(kind=wp)   :: start_time,end_time
 real(kind=wp)   :: time1, time2 !!!FOR DEBUGGING!!!
 
 

@@ -51,7 +51,7 @@ contains
 
       ! ctx is fully populated by init() — no further Populate calls needed here.
 
-      call Get_time(start_time)
+      call Get_time(ctx%integration%time_start)
 
       if ((tProcInfo_G%qRoot) .and. (ioutInfo_G>0)) print*,' starting simulation... '
       if (tProcInfo_G%qRoot) OPEN(UNIT=137,FILE='rec.out',STATUS='REPLACE',FORM='FORMATTED')

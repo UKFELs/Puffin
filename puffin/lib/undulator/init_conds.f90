@@ -9,6 +9,7 @@ module initConds
 
 use puffin_kinds
 use Globals
+use GlobalTypes, only: tFELFrame
 
 
 implicit none
@@ -252,7 +253,7 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE getOffsets(sZ,samLenE,sZ2_center,gamma_d,offsets)
+SUBROUTINE getOffsets(sZ,samLenE,sZ2_center,gamma_d,offsets,frame)
 
   IMPLICIT NONE
 
@@ -261,6 +262,7 @@ SUBROUTINE getOffsets(sZ,samLenE,sZ2_center,gamma_d,offsets)
   REAL(KIND=WP), INTENT(IN) :: sZ, samLenE(:),gamma_d
   REAL(KIND=WP), INTENT(INOUT) :: sZ2_center
   REAL(KIND=WP), INTENT(INOUT) :: offsets(:)
+  type(tFELFrame), intent(in) :: frame
 
 !             LOCAL ARGS
 
@@ -270,19 +272,19 @@ SUBROUTINE getOffsets(sZ,samLenE,sZ2_center,gamma_d,offsets)
 
 !     Get offsets
 
-  spx_offset     = pxOffset(sZ, sRho_G, fy_G)
-  
-  spy_offset     = pyOffset(sZ, sRho_G, fx_G)
-  
-  sGamma_offset  = sGammaR_G * gamma_d
-         
-  sx_offset      = xOffSet(sRho_G, sAw_G,  sGammaR_G, sGamma_offset, &
-                           sEta_G, sKappa_G, sFocusfactor_G, &
+  spx_offset     = pxOffset(sZ, frame%rho, fy_G)
+
+  spy_offset     = pyOffset(sZ, frame%rho, fx_G)
+
+  sGamma_offset  = frame%gamma_ref * gamma_d
+
+  sx_offset      = xOffSet(frame%rho, frame%aw, frame%gamma_ref, sGamma_offset, &
+                           frame%eta, frame%kappa, sFocusfactor_G, &
                            spx_offset, spy_offset, &
                            fx_G,fy_G, sZ)
-            
-  sy_offset      = yOffSet(sRho_G, sAw_G,  sGammaR_G, sGamma_offset, &
-                           sEta_G, sKappa_G, sFocusfactor_G, &
+
+  sy_offset      = yOffSet(frame%rho, frame%aw, frame%gamma_ref, sGamma_offset, &
+                           frame%eta, frame%kappa, sFocusfactor_G, &
                            spx_offset, spy_offset, &
                            fx_G,fy_G, sZ)
               
