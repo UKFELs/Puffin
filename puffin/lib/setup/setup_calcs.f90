@@ -219,10 +219,10 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
     end if
 
-    n2col = modfact1
-    n2col0 = n2col
-    sz0 = 0.0_WP
-    undgrad = taper
+    ctx%und%n2col = modfact1
+    ctx%und%n2col_initial = modfact1
+    ctx%und%z_taper_start = 0.0_WP
+    ctx%und%undulator_gradient = taper
 
 
 
@@ -1092,7 +1092,7 @@ end subroutine calcSamples
 SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
                              sigma, alphax, alphay, emitx, emity, &
                              beamCenZ2, gamma_d, eThresh, &
-                             chirp, mag, fr, nbeams, frame, flags, qOK)
+                             chirp, mag, fr, nbeams, frame, flags, n2col, qOK)
 
 !                     ARGUMENTS
 
@@ -1111,6 +1111,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
     REAL(KIND=WP),     INTENT(IN)    :: eThresh
     type(tFELFrame),        intent(in)    :: frame
     type(tSimulationFlags), intent(inout) :: flags
+    REAL(KIND=WP),          intent(in)    :: n2col
     LOGICAL,           INTENT(OUT)   :: qOK
 
 !                   LOCAL ARGS
@@ -1160,7 +1161,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
                          Z,nbeams, LenEPulse,sigma, alphax, alphay, &
                          emitx, emity, beamCenZ2, gamma_d, &
                          eThresh,tTransInfo_G%qOneD, &
-                         chirp,mag,fr,frame,qOKL)
+                         chirp,mag,fr,frame,n2col,qOKL)
       IF (.NOT. qOKL) GOTO 1000
 
     else if (iInputType_G == iReadDist_G) then

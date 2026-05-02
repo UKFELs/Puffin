@@ -395,12 +395,6 @@ subroutine PopulateUndulatorFromGlobals(und)
     und%z_end_undulator = sZFE
     und%undulator_position = iUndPlace_G
 
-    ! Tapering (field-dependent, may evolve mid-loop)
-    und%n2col = n2col
-    und%n2col_initial = n2col0
-    und%undulator_gradient = undgrad
-    und%z_taper_start = sz0
-
 end subroutine PopulateUndulatorFromGlobals
 
 !> Update global variables from tUndulator type
@@ -433,12 +427,6 @@ subroutine UpdateGlobalsFromUndulator(und)
     sZFS = und%z_start_undulator
     sZFE = und%z_end_undulator
     iUndPlace_G = und%undulator_position
-
-    ! Tapering
-    n2col = und%n2col
-    n2col0 = und%n2col_initial
-    undgrad = und%undulator_gradient
-    sz0 = und%z_taper_start
 
 end subroutine UpdateGlobalsFromUndulator
 

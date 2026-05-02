@@ -82,7 +82,7 @@ contains
 
 !     Need to match into undulator
 
-  call initUndulator(ctx%lattice%current_und_index, sZ, szl, ctx%frame)
+  call initUndulator(ctx%lattice%current_und_index, sZ, szl, ctx%frame, ctx%und)
 
 ! Populate integration state from globals set by initUndulator
 
@@ -107,7 +107,7 @@ contains
 
     ctx%integration%start_step = 0_ip  ! ...TEMP...
 
-    if (.not. ctx%und%model_undulator_ends) call matchIn(szl, ctx%frame)
+    if (.not. ctx%und%model_undulator_ends) call matchIn(szl, ctx%frame, ctx%und%n2col)
 
   end if
 
@@ -374,7 +374,7 @@ end if
 
   end if
 
-  if (.not. ctx%und%model_undulator_ends) call matchOut(sZ, ctx%frame)
+  if (.not. ctx%und%model_undulator_ends) call matchOut(sZ, ctx%frame, ctx%und%n2col)
 
   call correctTrans()  ! correct transverse motion at undulator exit
 

@@ -284,7 +284,7 @@ contains
       call PopMacroElectrons(qSimple, dist_f, sQe,iNumElectrons,q_noise,sZ,sLenEPulse,&
          sEleSig, alphax, alphay, emitx, emity, beamCenZ2,gamma_d,&
          sElectronThreshold,chirp, mag, fr, &
-         nbeams, ctx%frame, ctx%flags, qOK)
+         nbeams, ctx%frame, ctx%flags, ctx%und%n2col, qOK)
 
       IF (.NOT. qOKL) GOTO 1000
 

@@ -53,6 +53,7 @@ CONTAINS
        chirp, &
        mag, fr, &
        frame, &
+       n2col, &
        qOK)
 
 ! Calculate the electron grid positions
@@ -94,6 +95,7 @@ CONTAINS
     LOGICAL,         INTENT(IN):: qOneD
 
     type(tFELFrame), intent(in) :: frame
+    REAL(KIND=WP),   INTENT(IN) :: n2col
 
     LOGICAL,         INTENT(OUT):: qOK
 
@@ -266,7 +268,7 @@ CONTAINS
                     pz2_tmpvector(b_sts(b_ind):b_ends(b_ind)), &
                     s_tmp_max_av(b_ind), &
                     s_tmp_macro(b_sts(b_ind):b_ends(b_ind)), &
-                    s_tmp_Vk(b_sts(b_ind):b_ends(b_ind)), b_ind, frame)
+                    s_tmp_Vk(b_sts(b_ind):b_ends(b_ind)), b_ind, frame, n2col)
                       
     END DO
 
@@ -379,7 +381,7 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
                    gamma_d, samLenE, sZ2_center, numproc, rank, &
                    i_RealE, q_noise, qOneD, sZ, x_tmpcoord, &
                    y_tmpcoord,z2_tmpcoord,px_tmpvector,py_tmpvector,&
-                   pz2_tmpvector,s_tmp_max_av,s_tmp_macro,s_tmp_Vk, b_num, frame)
+                   pz2_tmpvector,s_tmp_max_av,s_tmp_macro,s_tmp_Vk, b_num, frame, n2col)
 
   IMPLICIT NONE
 
@@ -389,6 +391,7 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
   REAL(KIND=WP), INTENT(IN) :: samLenE(:), sigE(:), i_realE, &
                                gamma_d, sZ, alphax, betax, alphay, betay
   type(tFELFrame), intent(in) :: frame
+  REAL(KIND=WP), INTENT(IN) :: n2col
                                
   REAL(KIND=WP), INTENT(INOUT) ::  sZ2_center
   INTEGER, INTENT(IN) :: numproc, rank
@@ -442,7 +445,7 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
   CALL getIntTypes(iNMP, samLenE, sigE, &
                    iLocalIntegralType)
 
-  CALL getOffsets(sZ,samLenE,sZ2_center,gamma_d,offsets,frame)
+  CALL getOffsets(sZ,samLenE,sZ2_center,gamma_d,offsets,frame,n2col)
 
 !!!!!!!!!! TEMP
 !!!!!!!!!! CENTERING BEAM IN DX/DZ, DY/DZ = 0

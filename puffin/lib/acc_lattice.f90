@@ -22,7 +22,7 @@ use gtop2
 use initConds
 use functions
 use pdiff
-use GlobalTypes, only: tLatticeElements, tFELFrame, tSimulationFlags, tSimulationContext
+use GlobalTypes, only: tLatticeElements, tFELFrame, tSimulationFlags, tSimulationContext, tUndulator
 
 implicit none
 
@@ -627,9 +627,9 @@ contains
 !> the correctTrans subroutine after the exit to correct the transverse motion...
 !> @param[in] sZ zbar position
 
-  subroutine matchOut(sZ, frame)
+  subroutine matchOut(sZ, frame, n2col)
 
-    real(kind=wp), intent(in) :: sZ
+    real(kind=wp), intent(in) :: sZ, n2col
     type(tFELFrame), intent(in) :: frame
 
     real(kind=wp), allocatable :: spx0_offset(:),spy0_offset(:), &
@@ -655,12 +655,12 @@ contains
 ! when calculating initial conditions, this may need change eventually
 
 
-        spx0_offset = pxOffset(sZ, frame%rho, fy_G) &
+        spx0_offset = pxOffset(sZ, frame%rho, fy_G, n2col) &
             - 0.5_WP * kx**2 * sElX_G**2 &
             -  0.5_WP * kY**2 * sElY_G**2
 
         spy0_offset = -1_wp *  &
-                      ( pyOffset(sZ, frame%rho, fx_G) &
+                      ( pyOffset(sZ, frame%rho, fx_G, n2col) &
                       - kx**2 *  sElX_G  * sElY_G)
 
 
@@ -671,11 +671,11 @@ contains
 
 
 
-        spx0_offset = pxOffset(sZ, frame%rho, fy_G) &
+        spx0_offset = pxOffset(sZ, frame%rho, fy_G, n2col) &
             - 0.5_WP * (frame%eta / (4 * frame%rho**2)) * sElX_G**2
 
         spy0_offset = -1_wp * &
-                      pyOffset(sZ, frame%rho, fx_G)
+                      pyOffset(sZ, frame%rho, fx_G, n2col)
 
 
     else
@@ -684,10 +684,10 @@ contains
 ! field variation
 
 
-        spx0_offset = pxOffset(sZ, frame%rho, fy_G)
+        spx0_offset = pxOffset(sZ, frame%rho, fy_G, n2col)
 
         spy0_offset = -1.0_wp * &
-                     pyOffset(sZ, frame%rho, fx_G)
+                     pyOffset(sZ, frame%rho, fx_G, n2col)
 
 
     end if
@@ -695,11 +695,11 @@ contains
 
     sx_offset =    xOffSet(frame%rho, frame%aw, frame%gamma_ref, frame%gamma_ref * sElGam_G, &
                            frame%eta, frame%kappa, sFocusfactor_G, spx0_offset, spy0_offset, &
-                           fx_G, fy_G, sZ)
+                           fx_G, fy_G, sZ, n2col)
 
     sy_offset =    yOffSet(frame%rho, frame%aw, frame%gamma_ref, frame%gamma_ref * sElGam_G, &
                            frame%eta, frame%kappa, sFocusfactor_G, spx0_offset, spy0_offset, &
-                           fx_G, fy_G, sZ)
+                           fx_G, fy_G, sZ, n2col)
 
 
 !     Add on new offset to initialize beam for undulator module
@@ -733,9 +733,9 @@ contains
 !> the undulator exit. 
 !> @param[in] sZ zbar position
 
-  subroutine matchIn(sZ, frame)
+  subroutine matchIn(sZ, frame, n2col)
 
-    real(kind=wp), intent(in) :: sZ
+    real(kind=wp), intent(in) :: sZ, n2col
     type(tFELFrame), intent(in) :: frame
 
     real(kind=wp), allocatable :: spx0_offset(:),spy0_offset(:), &
@@ -761,12 +761,12 @@ contains
 ! when calculating initial conditions, this may need change eventually
 
 
-        spx0_offset = pxOffset(sZ, frame%rho, fy_G) &
+        spx0_offset = pxOffset(sZ, frame%rho, fy_G, n2col) &
             - 0.5_WP * kx**2 * sElX_G**2 &
             -  0.5_WP * kY**2 * sElY_G**2
 
         spy0_offset = -1_wp *  &
-                      ( pyOffset(sZ, frame%rho, fx_G) &
+                      ( pyOffset(sZ, frame%rho, fx_G, n2col) &
                       - kx**2 *  sElX_G  * sElY_G)
 
 
@@ -777,11 +777,11 @@ contains
 
 
 
-        spx0_offset = pxOffset(sZ, frame%rho, fy_G) &
+        spx0_offset = pxOffset(sZ, frame%rho, fy_G, n2col) &
             - 0.5_WP * (frame%eta / (4 * frame%rho**2)) * sElX_G**2
 
         spy0_offset = -1_wp * &
-                      pyOffset(sZ, frame%rho, fx_G)
+                      pyOffset(sZ, frame%rho, fx_G, n2col)
 
 
     else
@@ -790,10 +790,10 @@ contains
 ! field variation
 
 
-        spx0_offset = pxOffset(sZ, frame%rho, fy_G)
+        spx0_offset = pxOffset(sZ, frame%rho, fy_G, n2col)
 
         spy0_offset = -1.0_wp * &
-                     pyOffset(sZ, frame%rho, fx_G)
+                     pyOffset(sZ, frame%rho, fx_G, n2col)
 
 
     end if
@@ -801,12 +801,12 @@ contains
 
     sx_offset =    xOffSet(frame%rho, frame%aw, frame%gamma_ref, frame%gamma_ref * sElGam_G, &
                            frame%eta, frame%kappa, sFocusfactor_G, spx0_offset, -spy0_offset, &
-                           fx_G, fy_G, sZ)
+                           fx_G, fy_G, sZ, n2col)
 
 
     sy_offset =    yOffSet(frame%rho, frame%aw, frame%gamma_ref, frame%gamma_ref * sElGam_G, &
                            frame%eta, frame%kappa, sFocusfactor_G, spx0_offset, -spy0_offset, &
-                           fx_G, fy_G, sZ)
+                           fx_G, fy_G, sZ, n2col)
 
 
 !     Add on new offset to initialize beam for undulator module
@@ -839,21 +839,22 @@ contains
 !> @param[in] sZ zbar position in the machine
 !> @param[inout] sZ zbar position local to undulator (initialized to = 0) here
 
-  subroutine initUndulator(iM, sZ, szl, frame)
+  subroutine initUndulator(iM, sZ, szl, frame, und)
 
     integer(kind=ip), intent(in) :: iM
     real(kind=wp), intent(in) :: sZ
     real(kind=wp), intent(inout) :: szl
     type(tFELFrame), intent(in) :: frame
+    type(tUndulator), intent(inout) :: und
 
 ! Want to update using arrays describing each module...
 
 !     Update undulator parameter:
 
-    n2col0 = mf(iM)
-    n2col = mf(iM)
-    undgrad = tapers(iM)
-    sz0 = sz
+    und%n2col_initial = mf(iM)
+    und%n2col = mf(iM)
+    und%undulator_gradient = tapers(iM)
+    und%z_taper_start = sz
     szl = 0_wp
 
 

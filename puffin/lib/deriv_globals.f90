@@ -272,19 +272,6 @@ integer(kind=ip)    :: ModNum, ModCount   !  Number of modules and module counte
 
 
 
-real(kind=wp) :: n2col ! alpha, fractional change in aw (see 
-	                     ! LT Campbell, BWJ McNeil and S Reiche, 
-	                     ! New Journal of Physics 16 (2014) 103019)
-
-! The following are used for linear magnetic field tapering
-! where n2col = n2col0 + (undgrad * (sz-sz0)) 
-
-real(kind=wp) :: sz0     ! zbar used for beginning of taper i.e.
-                         ! (usually, the start of the current undulator module)
-
-real(kind=wp) :: undgrad ! d/dzbar of alpha (n2col)
-
-real(kind=wp) :: n2col0  ! Initial alpha in the current undulator module
 
 logical :: qUndEnds_G     ! If modelling undulator ends
 

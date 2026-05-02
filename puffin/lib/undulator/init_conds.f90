@@ -29,7 +29,7 @@ contains
 
   FUNCTION xOffSet_OneValue(rho, aw, gamma_r, gamma_j, &
                             eta, kappa, ff, px, py, &
-                            ux, uy, sZ0)
+                            ux, uy, sZ0, n2col)
 !
 ! Calculate xOffset value
 ! Value of Range mid point offset from origin
@@ -38,22 +38,22 @@ contains
 !            of the field
 ! saw      - Wiggler parameter
 ! sgammar  - Mean electron velocity at resonance
-! sEpsilon - (1+aw^2)/(2*gammar^2) 
+! sEpsilon - (1+aw^2)/(2*gammar^2)
 ! sZ0      - Starting z position
     REAL(KIND=WP), INTENT(IN) :: rho,aw,gamma_r,gamma_j, &
-         eta,px,py,kappa,ff,ux,uy,sZ0
+         eta,px,py,kappa,ff,ux,uy,sZ0,n2col
     REAL(KIND=WP) :: xOffSet_OneValue, nc
     REAL(KIND=WP) ::srBcoeff,s_Sin_zOver2rho
-    
+
     !nc = 2.0_WP*aw**2/(ux**2 + uy**2)
     nc = aw**2_wp
-    
-!    srBcoeff = uy * 4.0_WP * sqrt(2.0) * ff * k_beta * & 
+
+!    srBcoeff = uy * 4.0_WP * sqrt(2.0) * ff * k_beta * &
 !              rho**2.0_WP / sqrt(ux**2 + uy**2) / sqrt(eta)* &
 !              (gamma_r / sqrt(gamma_j**2 - (1.0_WP + nc*(px**2 + py**2)))) !!!TEMP!!!
 
 
-    srBcoeff = -uy * 4.0_WP * kappa * & 
+    srBcoeff = -uy * 4.0_WP * kappa * &
               rho**2.0_WP / sqrt(eta)* &
               (gamma_r / sqrt(gamma_j**2 &
                   - (1.0_WP + nc*(px**2 + py**2)))) !!!TEMP!!!
@@ -70,7 +70,7 @@ contains
 
   FUNCTION xOffSet_Array(rho, aw, gamma_r, gamma_j, &
                          eta, kappa, ff, px, py, &
-                         ux, uy, sZ0)
+                         ux, uy, sZ0, n2col)
 !
 ! Calculate xOffset value
 ! Value of Range mid point offset from origin
@@ -79,22 +79,22 @@ contains
 !            of the field
 ! saw      - Wiggler parameter
 ! sgammar  - Mean electron velocity at resonance
-! sEpsilon - (1+aw^2)/(2*gammar^2) 
+! sEpsilon - (1+aw^2)/(2*gammar^2)
 ! sZ0      - Starting z position
     REAL(KIND=WP), INTENT(IN) :: rho,aw,gamma_r,gamma_j(:), &
-         eta,px(:),py(:),kappa,ff,ux,uy,sZ0
+         eta,px(:),py(:),kappa,ff,ux,uy,sZ0,n2col
     REAL(KIND=WP) :: xOffSet_Array(size(px)), nc
-    
+
     nc = aw**2_wp
-    
-!    xOffSet_Array = -uy * 4.0_WP * sqrt(2.0) * ff * k_beta * & 
+
+!    xOffSet_Array = -uy * 4.0_WP * sqrt(2.0) * ff * k_beta * &
 !                    rho**2.0_WP / sqrt(ux**2 + uy**2) / sqrt(eta)* &
 !                    (gamma_r / sqrt(gamma_j**2 - (1.0_WP + &
 !                    nc*(px**2 + py**2)))) * &
 !                    n2col * SIN(sZ0 / (2.0_WP * rho))
 
 
-    xOffSet_Array = -uy * 4.0_WP * kappa * & 
+    xOffSet_Array = -uy * 4.0_WP * kappa * &
               rho**2.0_WP / sqrt(eta)* &
               (gamma_r / sqrt(gamma_j**2 &
                   - (1.0_WP + nc*(px**2 + py**2)))) * &
@@ -107,7 +107,7 @@ contains
 
   FUNCTION yOffSet_OneValue(rho, aw, gamma_r, gamma_j, &
                             eta, kappa, ff, px, py, &
-                            ux, uy, sZ0)
+                            ux, uy, sZ0, n2col)
 
 ! Calculate xOffset value
 ! Value of Range mid point offset from origin
@@ -118,11 +118,11 @@ contains
 !            of the field
 ! saw      - Wiggler parameter
 ! sgammar  - Mean electron velocity at resonance
-! sEpsilon - (1+aw^2)/(2*gammar^2) 
+! sEpsilon - (1+aw^2)/(2*gammar^2)
 ! sZ0      - Starting z position
-!	
+!
     REAL(KIND=WP), INTENT(IN) :: rho,aw,gamma_r,gamma_j, &
-         eta,px,py,kappa,ff,ux,uy,sZ0
+         eta,px,py,kappa,ff,ux,uy,sZ0,n2col
     REAL(KIND=WP) :: yOffSet_OneValue, nc
     REAL(KIND=WP) ::srBcoeff,s_Cos_zOver2rho
 !
@@ -149,7 +149,7 @@ contains
 
   FUNCTION yOffSet_Array(rho, aw, gamma_r, gamma_j, &
                          eta, kappa, ff, px, py, &
-                         ux, uy, sZ0)
+                         ux, uy, sZ0, n2col)
 !
 ! Calculate xOffset value
 ! Value of Range mid point offset from origin
@@ -158,11 +158,11 @@ contains
 !            of the field
 ! saw      - Wiggler parameter
 ! sgammar  - Mean electron velocity at resonance
-! sEpsilon - (1+aw^2)/(2*gammar^2) 
+! sEpsilon - (1+aw^2)/(2*gammar^2)
 ! sZ0      - Starting z position
 
     REAL(KIND=WP), INTENT(IN) :: rho,aw,gamma_r,gamma_j(:), &
-         eta,px(:),py(:),kappa,ff,ux,uy,sZ0
+         eta,px(:),py(:),kappa,ff,ux,uy,sZ0,n2col
     REAL(KIND=WP) :: yOffSet_Array(size(px)), nc
     
     nc = 2.0_WP*aw**2/(ux**2 + uy**2)
@@ -186,41 +186,41 @@ contains
 
 !********************************************************
 
-  FUNCTION pxOffset(z, rho, uy)
-  
+  FUNCTION pxOffset(z, rho, uy, n2col)
+
 ! Equation for the initial electron px offset due to
-! the undulator field.  
-! 
+! the undulator field.
+!
 !               ARGUMENTS
 
-    REAL(KIND=WP), INTENT(IN) :: z, rho, uy
+    REAL(KIND=WP), INTENT(IN) :: z, rho, uy, n2col
 
 !                OUTPUT
 
     REAL(KIND=WP) :: pxOffset
 
     pxOffset = -uy * n2col * COS(z / (2.0_WP * rho))
-  
+
   END FUNCTION pxOffset
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  FUNCTION pyOffset(z, rho, ux)
+  FUNCTION pyOffset(z, rho, ux, n2col)
 
 ! Equation for the initial electron py offset due to
 ! the undulator field.  (NOTE:- py offset, NOT
 ! IM(pperp) offset)
-! 
+!
 !               ARGUMENTS
 
-    REAL(KIND=WP), INTENT(IN) :: z, rho, ux
+    REAL(KIND=WP), INTENT(IN) :: z, rho, ux, n2col
 
 !                OUTPUT
 
     REAL(KIND=WP) :: pyOffset
 
     pyOffset = -ux * n2col * SIN(z / (2.0_WP * rho))
-    
+
   END FUNCTION pyOffset
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
@@ -253,13 +253,13 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE getOffsets(sZ,samLenE,sZ2_center,gamma_d,offsets,frame)
+SUBROUTINE getOffsets(sZ,samLenE,sZ2_center,gamma_d,offsets,frame,n2col)
 
   IMPLICIT NONE
 
 !             ARGUMENTS
 
-  REAL(KIND=WP), INTENT(IN) :: sZ, samLenE(:),gamma_d
+  REAL(KIND=WP), INTENT(IN) :: sZ, samLenE(:),gamma_d,n2col
   REAL(KIND=WP), INTENT(INOUT) :: sZ2_center
   REAL(KIND=WP), INTENT(INOUT) :: offsets(:)
   type(tFELFrame), intent(in) :: frame
@@ -272,21 +272,21 @@ SUBROUTINE getOffsets(sZ,samLenE,sZ2_center,gamma_d,offsets,frame)
 
 !     Get offsets
 
-  spx_offset     = pxOffset(sZ, frame%rho, fy_G)
+  spx_offset     = pxOffset(sZ, frame%rho, fy_G, n2col)
 
-  spy_offset     = pyOffset(sZ, frame%rho, fx_G)
+  spy_offset     = pyOffset(sZ, frame%rho, fx_G, n2col)
 
   sGamma_offset  = frame%gamma_ref * gamma_d
 
   sx_offset      = xOffSet(frame%rho, frame%aw, frame%gamma_ref, sGamma_offset, &
                            frame%eta, frame%kappa, sFocusfactor_G, &
                            spx_offset, spy_offset, &
-                           fx_G,fy_G, sZ)
+                           fx_G, fy_G, sZ, n2col)
 
   sy_offset      = yOffSet(frame%rho, frame%aw, frame%gamma_ref, sGamma_offset, &
                            frame%eta, frame%kappa, sFocusfactor_G, &
                            spx_offset, spy_offset, &
-                           fx_G,fy_G, sZ)
+                           fx_G, fy_G, sZ, n2col)
               
 !  sz2_offset     = samLenE(iZ2_CG)/2.0_WP
 
