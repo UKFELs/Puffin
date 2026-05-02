@@ -18,6 +18,7 @@ module avwrite
    use functions
    use ParallelSetUp
    use parafield
+   use GlobalTypes, only: tFELFrame
 
 
    implicit none
@@ -294,12 +295,13 @@ contains
 
 !> Calculate the current through interpolating the charge into bins
 
-   subroutine getCurr(sam_len, Iarray)
+   subroutine getCurr(sam_len, Iarray, frame)
 
       use puffin_constants
 
       real(kind=wp), intent(in) :: sam_len !< length of bins in z2
       real(kind=wp), intent(inout) :: Iarray(:) !< data containing the current info
+      type(tFELFrame), intent(in) :: frame
 
       integer(kind=ip) :: ij, inl, inu, inlpb, inupb !<electron indices over which to integrate
       real(kind=wp) :: li1, li2, locz2 !<interpolation fractions
@@ -395,7 +397,7 @@ contains
       Iarray = Iarray * npk_bar_G    ! N_e at each node
       if (qOneD_G) Iarray = Iarray * ata_G
       Iarray = Iarray * q_e / sam_len    ! dQ / dz2
-      Iarray = Iarray * c / lc_G         ! dQ / dt
+      Iarray = Iarray * c / frame%cooperation_length  ! dQ / dt
 
    end subroutine getCurr
 
@@ -404,9 +406,10 @@ contains
 !! to get back to SI
    subroutine getSliceTwiss(nslices,slicetrim,aveX,aveY,avePX,avePY, &
       sdX,sdY,sdpx,sdpy,eX,eY,ax,ay,bx,by, &
-      aveGamma,aveDgamma,b1,b2,b3,b4,b5,sdata)
+      aveGamma,aveDgamma,b1,b2,b3,b4,b5,sdata,frame)
       integer(kind=ip), intent(in) :: nslices
       real(kind=wp), intent(in) :: slicetrim
+      type(tFELFrame), intent(in) :: frame
       real(kind=wp), intent(out), DIMENSION(nslices) :: aveX,aveY,avePX,avePY,aveGamma,aveDgamma
       real(kind=wp), intent(out), DIMENSION(nslices) :: sdX, sdY, sdpx, sdpy, eX, eY, ax, ay, bx, by
       real(kind=wp), intent(out), DIMENSION(nslices) :: b1,b2,b3,b4,b5,sdata
@@ -495,8 +498,8 @@ contains
       b5i = 0.0_wp   ! initialize
 !    sliceSizeZ2=(sLengthOfElmZ2_G*NBZ2)/(nslices-1)
 !    sliceSizeZ2=((sLengthOfElmZ2_G*NZ2_G)-slicetrim)/(nslices)
-      sliceSizeZ2=4*pi*srho_g
-!    print *,"evaluating slices of size",4*pi*srho_g,sliceSizeZ2,slicetrim
+      sliceSizeZ2=4*pi*frame%rho
+!    print *,"evaluating slices of size",4*pi*frame%rho,sliceSizeZ2,slicetrim
       if (iNumberElectrons_G > 0_ipl) then
 
 
@@ -559,94 +562,94 @@ contains
             meanGamGam(is)=meanGamGam(is)+s_chi_bar_G(ipc)*sElgam_G(ipc)*sElgam_G(ipc)
 
 
-            b1r(is) = b1r(is) + s_chi_bar_G(ipc)*cos(sElz2_G(ipc)/(2*sRho_G)) &
+            b1r(is) = b1r(is) + s_chi_bar_G(ipc)*cos(sElz2_G(ipc)/(2*frame%rho)) &
                * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
             if (fieldMesh /= iPeriodic) b1r(is+1) = b1r(is+1) + &
-               s_chi_bar_G(ipc)*cos(sElz2_G(ipc)/(2*sRho_G)) &
+               s_chi_bar_G(ipc)*cos(sElz2_G(ipc)/(2*frame%rho)) &
                * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-            b1i(is) = b1i(is) + s_chi_bar_G(ipc)*sin(sElz2_G(ipc)/(2*sRho_G)) &
+            b1i(is) = b1i(is) + s_chi_bar_G(ipc)*sin(sElz2_G(ipc)/(2*frame%rho)) &
                * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
             if (fieldMesh /= iPeriodic) b1i(is+1) = b1i(is+1) + &
-               s_chi_bar_G(ipc)*sin(sElz2_G(ipc)/(2*sRho_G)) &
+               s_chi_bar_G(ipc)*sin(sElz2_G(ipc)/(2*frame%rho)) &
                * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
 
-!      b1r(is)=b1r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(2*sRho_G))
-!      b1i(is)=b1i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(2*sRho_G))
+!      b1r(is)=b1r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(2*frame%rho))
+!      b1i(is)=b1i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(2*frame%rho))
 
-!      b2r(is)=b2r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(4*sRho_G))
-
-
-
-!      b2i(is)=b2i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(4*sRho_G))
+!      b2r(is)=b2r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(4*frame%rho))
 
 
-            b2r(is) = b2r(is) + s_chi_bar_G(ipc)*cos(2.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+
+!      b2i(is)=b2i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(4*frame%rho))
+
+
+            b2r(is) = b2r(is) + s_chi_bar_G(ipc)*cos(2.0_wp*sElz2_G(ipc)/(2.0_wp*frame%rho)) &
                * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
             if (fieldMesh /= iPeriodic) b2r(is+1) = b2r(is+1) + &
-               s_chi_bar_G(ipc)*cos(2.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+               s_chi_bar_G(ipc)*cos(2.0_wp*sElz2_G(ipc)/(2.0_wp*frame%rho)) &
                * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-            b2i(is) = b2i(is) + s_chi_bar_G(ipc)*sin(2.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+            b2i(is) = b2i(is) + s_chi_bar_G(ipc)*sin(2.0_wp*sElz2_G(ipc)/(2.0_wp*frame%rho)) &
                * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
             if (fieldMesh /= iPeriodic) b2i(is+1) = b2i(is+1) + &
-               s_chi_bar_G(ipc)*sin(2.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+               s_chi_bar_G(ipc)*sin(2.0_wp*sElz2_G(ipc)/(2.0_wp*frame%rho)) &
                * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
 
 
-            b3r(is) = b3r(is) + s_chi_bar_G(ipc)*cos(3.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+            b3r(is) = b3r(is) + s_chi_bar_G(ipc)*cos(3.0_wp*sElz2_G(ipc)/(2.0_wp*frame%rho)) &
                * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
             if (fieldMesh /= iPeriodic) b3r(is+1) = b3r(is+1) + &
-               s_chi_bar_G(ipc)*cos(3.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+               s_chi_bar_G(ipc)*cos(3.0_wp*sElz2_G(ipc)/(2.0_wp*frame%rho)) &
                * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-            b3i(is) = b3i(is) + s_chi_bar_G(ipc)*sin(3.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+            b3i(is) = b3i(is) + s_chi_bar_G(ipc)*sin(3.0_wp*sElz2_G(ipc)/(2.0_wp*frame%rho)) &
                * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
             if (fieldMesh /= iPeriodic) b3i(is+1) = b3i(is+1) + &
-               s_chi_bar_G(ipc)*sin(3.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+               s_chi_bar_G(ipc)*sin(3.0_wp*sElz2_G(ipc)/(2.0_wp*frame%rho)) &
                * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
 
 
 
 
-            b4r(is) = b4r(is) + s_chi_bar_G(ipc)*cos(4.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+            b4r(is) = b4r(is) + s_chi_bar_G(ipc)*cos(4.0_wp*sElz2_G(ipc)/(2.0_wp*frame%rho)) &
                * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
             if (fieldMesh /= iPeriodic) b4r(is+1) = b4r(is+1) + &
-               s_chi_bar_G(ipc)*cos(4.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+               s_chi_bar_G(ipc)*cos(4.0_wp*sElz2_G(ipc)/(2.0_wp*frame%rho)) &
                * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-            b4i(is) = b4i(is) + s_chi_bar_G(ipc)*sin(4.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+            b4i(is) = b4i(is) + s_chi_bar_G(ipc)*sin(4.0_wp*sElz2_G(ipc)/(2.0_wp*frame%rho)) &
                * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
             if (fieldMesh /= iPeriodic) b4i(is+1) = b4i(is+1) + &
-               s_chi_bar_G(ipc)*sin(4.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+               s_chi_bar_G(ipc)*sin(4.0_wp*sElz2_G(ipc)/(2.0_wp*frame%rho)) &
                * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
 
 
 
-            b5r(is) = b5r(is) + s_chi_bar_G(ipc)*cos(5.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+            b5r(is) = b5r(is) + s_chi_bar_G(ipc)*cos(5.0_wp*sElz2_G(ipc)/(2.0_wp*frame%rho)) &
                * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
             if (fieldMesh /= iPeriodic) b5r(is+1) = b5r(is+1) + &
-               s_chi_bar_G(ipc)*cos(5.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+               s_chi_bar_G(ipc)*cos(5.0_wp*sElz2_G(ipc)/(2.0_wp*frame%rho)) &
                * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
-            b5i(is) = b5i(is) + s_chi_bar_G(ipc)*sin(5.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+            b5i(is) = b5i(is) + s_chi_bar_G(ipc)*sin(5.0_wp*sElz2_G(ipc)/(2.0_wp*frame%rho)) &
                * ( (is*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
             if (fieldMesh /= iPeriodic) b5i(is+1) = b5i(is+1) + &
-               s_chi_bar_G(ipc)*sin(5.0_wp*sElz2_G(ipc)/(2.0_wp*sRho_G)) &
+               s_chi_bar_G(ipc)*sin(5.0_wp*sElz2_G(ipc)/(2.0_wp*frame%rho)) &
                * ( -((is-1)*sliceSizeZ2 - sElz2_G(ipc)) / sliceSizeZ2 )
 
 
@@ -655,12 +658,12 @@ contains
 
 
 
-!      b3r(is)=b3r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(6*sRho_G))
-!      b3i(is)=b3i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(6*sRho_G))
-!      b4r(is)=b4r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(8*sRho_G))
-!      b4i(is)=b4i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(8*sRho_G))
-!      b5r(is)=b5r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(10*sRho_G))
-!      b5i(is)=b5i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(10*sRho_G))
+!      b3r(is)=b3r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(6*frame%rho))
+!      b3i(is)=b3i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(6*frame%rho))
+!      b4r(is)=b4r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(8*frame%rho))
+!      b4i(is)=b4i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(8*frame%rho))
+!      b5r(is)=b5r(is)+s_chi_bar_G(ip)*cos(sElz2_G(ip)/(10*frame%rho))
+!      b5i(is)=b5i(is)+s_chi_bar_G(ip)*sin(sElz2_G(ip)/(10*frame%rho))
 !    call sum2RootArr(cs2data(, size(cs2data), 0)
 1000     end do
       end if

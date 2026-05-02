@@ -172,10 +172,10 @@ contains
 
 ! These call requires all ranks to participate
       call gPowerP(power)
-      call getCurr(dz2_I_G, Iarray)
+      call getCurr(dz2_I_G, Iarray, ctx%frame)
       call getSliceTwiss(nslices,slicetrim,aveX,aveY,avePX,avePY, &
         sdX,sdY,sdpx,sdpy,eX,eY,ax,ay,bx,by,aveGamma,aveDgamma, &
-        bun1,bun2,bun3,bun4,bun5,sq)
+        bun1,bun2,bun3,bun4,bun5,sq,ctx%frame)
 
 ! For starters, write on rank 0 only
 

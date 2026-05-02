@@ -246,7 +246,7 @@ contains
 
       allocate(sz2_temp(procelectrons_G(1)))
       sz2_temp = sElZ2_G
-      ebound = 4.0_wp * pi * sRho_G * sperwaves_G
+      ebound = 4.0_wp * pi * ctx%frame%rho * sperwaves_G
       where (sz2_temp > ebound) sz2_temp = sz2_temp - &
                       (real(floor(sElZ2_G / ebound), kind=wp) * ebound )
 
@@ -468,12 +468,12 @@ contains
 
 
     aname="gainLength"
-    attr_data_double=lg_G
+    attr_data_double=ctx%frame%gain_length
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
     CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error)
     CALL h5aclose_f(attr_id, error)
     aname="cooperationLength"
-    attr_data_double=lc_G
+    attr_data_double=ctx%frame%cooperation_length
     CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
     CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error)
     CALL h5aclose_f(attr_id, error)
@@ -588,7 +588,7 @@ contains
     CALL h5gclose_f(group_id, error)
 
     aname="electrons_xSI"
-    write(scaleToSIstring, '(E16.9)' ) (DSQRT(lg_G*lc_G))
+    write(scaleToSIstring, '(E16.9)' ) (DSQRT(ctx%frame%gain_length*ctx%frame%cooperation_length))
     attr_data_string=("electrons_x*" // scaleToSIstring)
     attr_string_len=len(trim(adjustl(attr_data_string)))
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
@@ -601,32 +601,32 @@ contains
 
 ! We make another group
     aname="electrons_zSI"
-    write(scaleToSIstring, '(E16.9)' ) lc_G
+    write(scaleToSIstring, '(E16.9)' ) ctx%frame%cooperation_length
     attr_data_string=("electrons_z*" // scaleToSIstring)
     attr_string_len=len(trim(adjustl(attr_data_string)))
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)!
 ! Were there an SI version of this, we might be in the right place to use it
 
     aname="electrons_dxdzSI"
-    write(scaleToSIstring, '(E16.9)' ) 2.0_wp * sRho_G * sKappa_G
+    write(scaleToSIstring, '(E16.9)' ) 2.0_wp * ctx%frame%rho * ctx%frame%kappa
     attr_data_string=("electrons_px*" // scaleToSIstring // "/electrons_gamma")
     attr_string_len=len(trim(adjustl(attr_data_string)))
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
     aname="electrons_dydzSI"
-    write(scaleToSIstring, '(E16.9)' ) -2.0_wp * sRho_G * sKappa_G
+    write(scaleToSIstring, '(E16.9)' ) -2.0_wp * ctx%frame%rho * ctx%frame%kappa
     attr_data_string=("electrons_py*" // scaleToSIstring // "/electrons_gamma")
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
     aname="electrons_gammaSI"
-    write(scaleToSIstring, '(E16.9)' ) sGammaR_G
+    write(scaleToSIstring, '(E16.9)' ) ctx%frame%gamma_ref
     attr_data_string=("electrons_gamma*" // scaleToSIstring)
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
     aname="slice_nom_lamda"
 ! Todo: Actually needs to take account of slippage, and needs to identify
 ! which lamda was used (eg for 2 colour)
-    write(scaleToSIstring, '(E16.9)' ) lam_r_G
+    write(scaleToSIstring, '(E16.9)' ) ctx%frame%lambda_r
     attr_data_string=("floor(electrons_zSI/" // scaleToSIstring // ")")
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
@@ -1522,7 +1522,7 @@ contains
 ! Limits group
 !      CALL h5gcreate_f(file_id, limgrpname, group_id, error)
       CALL write1DlimGrp(file_id,limgrpname,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G)
-      CALL write1DlimGrp(file_id,limgrpnameSI,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g)
+      CALL write1DlimGrp(file_id,limgrpnameSI,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*ctx%frame%cooperation_length)
 
       CALL write1DuniformMesh(file_id,"intFieldMeshSc",0._wp, &
         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G,NZ2_G,"z2,scaled parameter")
@@ -1535,13 +1535,13 @@ contains
         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G,npts_I_G,"z2,scaled parameter")
 
       CALL write1DuniformMesh(file_id,"intFieldMeshSI",0._wp, &
-        real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g,NZ2_g,"z [m], SI parameter")
+        real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*ctx%frame%cooperation_length,NZ2_g,"z [m], SI parameter")
 
       CALL write1DuniformMesh(file_id,"intPtclMeshSI",0._wp, &
-        real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g,nslices,"z [m], SI parameter")
+        real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*ctx%frame%cooperation_length,nslices,"z [m], SI parameter")
 
       CALL write1DuniformMesh(file_id,"intCurrMeshSI",0._wp, &
-         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*lc_g,npts_I_G,"z [m], SI parameter")
+         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*ctx%frame%cooperation_length,npts_I_G,"z [m], SI parameter")
 
 ! Close the file.
 

@@ -186,16 +186,12 @@ type(cInitData) :: tInitData_G
 
 
 
-real(kind=wp)    :: sRho_G,sAw_G,sGammaR_G
-real(kind=wp)    :: sEta_G,sKBeta_G, sKappa_G
+real(kind=wp)    :: sKBeta_G
 real(kind=wp)    :: sFocusfactor_G
 real(kind=wp)    :: sFocusfactor_save_G
 real(kind=wp)    :: fx_G, fy_G
 
 
-real(kind=wp) :: lam_w_G, lam_r_G   ! wiggler period, resonant wavelength
-
-real(kind=wp) :: lg_G, lc_G  ! gain length, cooperation length
 
 
 
@@ -312,7 +308,6 @@ real(kind=wp)  :: ffact    ! Scaling factor for fourier transforms
 
 
 
-real(kind=wp) :: cf1_G
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

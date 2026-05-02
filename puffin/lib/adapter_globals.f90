@@ -29,7 +29,6 @@ private
 public :: PopulateFieldMeshFromGlobals, UpdateGlobalsFromFieldMesh
 public :: PopulateElectronCloudFromGlobals, UpdateGlobalsFromElectronCloud
 public :: PopulateIntegrationStateFromGlobals, UpdateGlobalsFromIntegrationState
-public :: PopulateFELFrameFromGlobals, UpdateGlobalsFromFELFrame
 public :: PopulateUndulatorFromGlobals, UpdateGlobalsFromUndulator
 public :: PopulateLatticeElementsFromGlobals, UpdateGlobalsFromLatticeElements
 public :: PopulateOutputConfigFromGlobals, UpdateGlobalsFromOutputConfig
@@ -358,57 +357,6 @@ end subroutine UpdateGlobalsFromIntegrationState
 ! ============================================================================
 ! FEL FRAME ADAPTERS  (simulation-lifetime scaling frame)
 ! ============================================================================
-
-!> Populate tFELFrame type from global variables
-!!
-!! Copies all simulation-lifetime FEL scaling globals into the frame type.
-!! These values are set once during initialization and never change.
-subroutine PopulateFELFrameFromGlobals(frame)
-    type(tFELFrame), intent(inout) :: frame
-
-    ! Core parameters
-    frame%rho = sRho_G
-    frame%aw = sAw_G
-    frame%gamma_ref = sGammaR_G
-
-    ! Derived scaling parameters
-    frame%eta = sEta_G
-    frame%kappa = sKappa_G
-
-    ! Characteristic lengths
-    frame%lambda_w = lam_w_G
-    frame%lambda_r = lam_r_G
-    frame%gain_length = lg_G
-    frame%cooperation_length = lc_G
-
-    ! Scaling coefficient
-    frame%coefficient_1 = cf1_G
-
-end subroutine PopulateFELFrameFromGlobals
-
-!> Update global variables from tFELFrame type
-subroutine UpdateGlobalsFromFELFrame(frame)
-    type(tFELFrame), intent(in) :: frame
-
-    ! Core parameters
-    sRho_G = frame%rho
-    sAw_G = frame%aw
-    sGammaR_G = frame%gamma_ref
-
-    ! Derived scaling parameters
-    sEta_G = frame%eta
-    sKappa_G = frame%kappa
-
-    ! Characteristic lengths
-    lam_w_G = frame%lambda_w
-    lam_r_G = frame%lambda_r
-    lg_G = frame%gain_length
-    lc_G = frame%cooperation_length
-
-    ! Scaling coefficient
-    cf1_G = frame%coefficient_1
-
-end subroutine UpdateGlobalsFromFELFrame
 
 ! ============================================================================
 ! UNDULATOR ADAPTERS  (per-element undulator properties)

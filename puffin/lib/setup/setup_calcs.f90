@@ -235,7 +235,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
 
 
-    cf1_G = ctx%frame%eta / ctx%frame%kappa**2 ; ctx%frame%coefficient_1 = cf1_G
+    ctx%frame%coefficient_1 = ctx%frame%eta / ctx%frame%kappa**2
 
     diffstep = dStepFrac * 4.0_WP * pi * rho
     sBeta_G = sBeta
@@ -730,12 +730,12 @@ subroutine calcScaling(srho, saw, sgamr, slam_w, &
 
   real(kind=wp) :: saw_rms, sBetaz
 
-  sRho_G = srho ; ctx%frame%rho = srho
+  ctx%frame%rho = srho
 
   fx_G = sfx
   fy_G = sfy
 
-  sGammaR_G = sgamr ; ctx%frame%gamma_ref = sgamr
+  ctx%frame%gamma_ref = sgamr
 
   if (zUndType == 'curved') then
 
@@ -778,17 +778,17 @@ subroutine calcScaling(srho, saw, sgamr, slam_w, &
   sbetaz = SQRT(sgamr**2.0_WP - 1.0_WP - (saw_rms)**2.0_WP) / &
            sgamr
 
-  sEta_G = (1.0_WP - sbetaz) / sbetaz   ; ctx%frame%eta = sEta_G
-  sKappa_G = saw / 2.0_WP / srho / sgamr ; ctx%frame%kappa = sKappa_G
-  sKBeta_G = sKappa_G
+  ctx%frame%eta   = (1.0_WP - sbetaz) / sbetaz
+  ctx%frame%kappa = saw / 2.0_WP / srho / sgamr
+  sKBeta_G = ctx%frame%kappa
 
-  sAw_G = saw ; ctx%frame%aw = saw
+  ctx%frame%aw = saw
 
-  lam_w_G = slam_w                  ; ctx%frame%lambda_w = slam_w
-  lam_r_G = slam_w * ctx%frame%eta  ; ctx%frame%lambda_r = lam_r_G
+  ctx%frame%lambda_w = slam_w
+  ctx%frame%lambda_r = slam_w * ctx%frame%eta
 
-  lg_G = slam_w / 4.0_WP / pi / srho ; ctx%frame%gain_length = lg_G
-  lc_G = lam_r_G / 4.0_WP / pi / srho ; ctx%frame%cooperation_length = lc_G
+  ctx%frame%gain_length        = slam_w / 4.0_WP / pi / srho
+  ctx%frame%cooperation_length = ctx%frame%lambda_r / 4.0_WP / pi / srho
 
 end subroutine calcScaling
 
@@ -1165,12 +1165,12 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
 
     else if (iInputType_G == iReadDist_G) then
 
-      call getMPs(fname, nbeams, Z, noise, eThresh, NE)
+      call getMPs(fname, nbeams, Z, noise, eThresh, NE, frame)
 
     else if (iInputType_G == iReadMASP_G) then
 
       fname_temp = fname(1)
-      call readMASPfile(fname_temp)
+      call readMASPfile(fname_temp, frame)
 
     else if (iInputType_G == iReadH5_G) then
       fname_temp = fname(1)

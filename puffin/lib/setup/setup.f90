@@ -35,7 +35,6 @@ contains
       use InitVars
       use GlobalTypes, only: tSimulationContext
       use AdapterGlobals, only: PopulateFieldMeshFromGlobals, &
-                                PopulateFELFrameFromGlobals, &
                                 PopulateSimulationFlagsFromGlobals, &
                                 PopulateOutputConfigFromGlobals, &
                                 PopulateLatticeElementsFromGlobals, &
@@ -241,7 +240,7 @@ contains
 
             call stptrns(sEleSig, sLenEPulse, iNumElectrons, &
                emitx, emity, gamma_d, &
-               qMatched_A, qMatchS_G, qFMesh_G, sSeedSigma)
+               qMatched_A, qMatchS_G, qFMesh_G, sSeedSigma, ctx%frame)
 
             sFieldModelLength(iX_CG) = sLengthOfElmX_G * real((NX_G-1_ip),kind=wp)
             sFieldModelLength(iY_CG) = sLengthOfElmY_G * real((NY_G-1_ip),kind=wp)
@@ -391,7 +390,6 @@ contains
 
 !       Populate ctx from globals set during init so writeIM can use ctx fields.
         call PopulateFieldMeshFromGlobals(ctx%mesh)
-        call PopulateFELFrameFromGlobals(ctx%frame)
         call PopulateSimulationFlagsFromGlobals(ctx%flags)
         call PopulateOutputConfigFromGlobals(ctx%output)
         call PopulateLatticeElementsFromGlobals(ctx%lattice)
@@ -417,7 +415,6 @@ contains
 !      were already populated above for writeIM; this also covers und and init_data
 !      and handles the resume path which skips the writeIM block entirely.)
       call PopulateFieldMeshFromGlobals(ctx%mesh)
-      call PopulateFELFrameFromGlobals(ctx%frame)
       call PopulateSimulationFlagsFromGlobals(ctx%flags)
       call PopulateOutputConfigFromGlobals(ctx%output)
       call PopulateLatticeElementsFromGlobals(ctx%lattice)
