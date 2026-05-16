@@ -370,6 +370,118 @@ contains
   end subroutine readH5FieldDataOntoRootProcess
 
 
+  function getNX(zFile) result(nX)
+
+    character(*), intent(in) :: zFile
+    INTEGER(HID_T) :: file_id
+    INTEGER(HID_T) :: group_id
+    INTEGER(HID_T) :: attr_id
+    CHARACTER(LEN=7), PARAMETER :: grpname = "runInfo"
+    character(1024_IP) :: filename
+    INTEGER(HSIZE_T), DIMENSION(1) :: adims
+    INTEGER(HSIZE_T), DIMENSION(1) :: attr_data_int
+    integer :: error
+    integer(kind=ip) :: nX
+
+    filename = zfile
+    if (tProcInfo_G%qRoot) then
+      CALL h5open_f(error)
+      CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
+      CALL h5gopen_f(file_id, grpname, group_id, error)
+      CALL h5aopen_f(group_id, "nX", attr_id, error)
+      CALL h5aread_f(attr_id, H5T_NATIVE_INTEGER, attr_data_int, adims, error)
+      nX = attr_data_int(1)
+      CALL h5aclose_f(attr_id, error)
+      CALL h5gclose_f(group_id, error)
+      CALL h5fclose_f(file_id, error)
+      CALL h5close_f(error)
+    else
+      nX = 0
+    end if
+
+  end function getNX
+
+
+  function getNY(zFile) result(nY)
+
+    character(*), intent(in) :: zFile
+    INTEGER(HID_T) :: file_id
+    INTEGER(HID_T) :: group_id
+    INTEGER(HID_T) :: attr_id
+    CHARACTER(LEN=7), PARAMETER :: grpname = "runInfo"
+    character(1024_IP) :: filename
+    INTEGER(HSIZE_T), DIMENSION(1) :: adims
+    INTEGER(HSIZE_T), DIMENSION(1) :: attr_data_int
+    integer :: error
+    integer(kind=ip) :: nY
+
+    filename = zfile
+    if (tProcInfo_G%qRoot) then
+      CALL h5open_f(error)
+      CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
+      CALL h5gopen_f(file_id, grpname, group_id, error)
+      CALL h5aopen_f(group_id, "nY", attr_id, error)
+      CALL h5aread_f(attr_id, H5T_NATIVE_INTEGER, attr_data_int, adims, error)
+      nY = attr_data_int(1)
+      CALL h5aclose_f(attr_id, error)
+      CALL h5gclose_f(group_id, error)
+      CALL h5fclose_f(file_id, error)
+      CALL h5close_f(error)
+    else
+      nY = 0
+    end if
+
+  end function getNY
+
+
+  subroutine readH5FieldDataOntoRootProcess3D(zFile, rfield, ifield, nX, nY, nZ2)
+
+    character(*), intent(in) :: zFile
+    integer(kind=ip), intent(in) :: nX, nY, nZ2
+    REAL(kind=WP), intent(out) :: rfield(:), ifield(:)
+    INTEGER(HID_T) :: file_id
+    INTEGER(HID_T) :: dset_id
+    INTEGER(HID_T) :: dspace_id
+    INTEGER(HID_T) :: memspace
+    CHARACTER(LEN=5), PARAMETER :: dsetname = "aperp"
+    character(1024_IP) :: filename
+    INTEGER(HSIZE_T), DIMENSION(4) :: doffset, count
+    INTEGER(HSIZE_T), DIMENSION(1) :: dsize_mem
+    integer :: error
+
+    filename = zfile
+
+    if (tProcInfo_G%qRoot) then
+      CALL h5open_f(error)
+      CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
+      CALL h5dopen_f(file_id, dsetname, dset_id, error)
+
+      dsize_mem = (/INT(nX, HSIZE_T) * INT(nY, HSIZE_T) * INT(nZ2, HSIZE_T)/)
+      count = (/INT(nX, HSIZE_T), INT(nY, HSIZE_T), INT(nZ2, HSIZE_T), 1_HSIZE_T/)
+
+      CALL h5screate_simple_f(1, dsize_mem, memspace, error)
+      CALL h5Dget_space_f(dset_id, dspace_id, error)
+
+      doffset = (/0_HSIZE_T, 0_HSIZE_T, 0_HSIZE_T, 0_HSIZE_T/)
+      CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, count, error)
+      CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, rfield, dsize_mem, error, &
+        file_space_id=dspace_id, mem_space_id=memspace)
+
+      doffset = (/0_HSIZE_T, 0_HSIZE_T, 0_HSIZE_T, 1_HSIZE_T/)
+      CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, count, error)
+      CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, ifield, dsize_mem, error, &
+        file_space_id=dspace_id, mem_space_id=memspace)
+
+      CALL h5sclose_f(dspace_id, error)
+      CALL h5sclose_f(memspace, error)
+      CALL h5dclose_f(dset_id, error)
+      CALL h5fclose_f(file_id, error)
+      CALL h5close_f(error)
+    end if
+
+  end subroutine readH5FieldDataOntoRootProcess3D
+
+
   subroutine readH5BeamfileSerial(zFile)
 
 
