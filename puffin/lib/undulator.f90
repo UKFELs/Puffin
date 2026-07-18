@@ -63,14 +63,9 @@ contains
 
 ! Local args
 
-    real(kind=wp), allocatable  :: sAr(:), Ar_local(:)
-    integer(kind=ip) :: iPer, iS ! Loop index - period counter
-    integer(kind=ip) :: nW
     integer(kind=ip) :: iSteps4Diff, igoes
-    real(kind=wp) :: delz_D, nextDiff, szl, locTimeSt, locEndTime
-    logical :: qFirst, qLast, qDiffrctd
-    logical :: qWPF
-    logical :: qWIF
+    real(kind=wp) :: szl, locTimeSt, locEndTime
+    logical :: qDiffrctd
     logical :: qOKL
     integer(kind=ip) :: drstart, stepsLeft
     real(kind=wp) :: dzdS, dzdF, dzd
@@ -334,7 +329,7 @@ end if
 
       else
 
-      	qDWrDone = .false.  ! reset
+        qDWrDone = .false.  ! reset
 
       end if
 

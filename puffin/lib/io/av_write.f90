@@ -45,7 +45,6 @@ contains
       real(kind=wp), allocatable :: fr_power(:), &  !< Power in 'front' field section
          bk_power(:), &  !< Power in 'back' field section
          ac_power(:)     !< Power in 'active' field section
-      integer :: error  !< Error flag for MPI routines
 
       allocate(ac_power(mainlen), fr_power(tlflen4arr), bk_power(tlelen4arr))
 
@@ -171,9 +170,8 @@ contains
       real(kind=wp), intent(out) :: power(:)
 
       real(kind=wp), allocatable :: intens(:), intens2(:,:)
-      integer(kind=ip) :: i, bt, et, ntr, nx, ny, nz2, nno
+      integer(kind=ip) :: i, bt, et, ntr, nx, ny, nz2
 
-      integer :: error
 
       
       nx = NX_G
@@ -221,7 +219,7 @@ contains
 
       real(kind=wp), dimension(:) :: x,y
       real(kind=wp), dimension(:,:) :: fxy
-      integer(kind=ip) :: xe, ye, i, j
+      integer(kind=ip) :: ye, i
       real(kind=wp), allocatable :: cul(:)
 
       allocate(cul(size(y)))
@@ -423,8 +421,7 @@ contains
 !    real(kind=wp), intent(out) :: bY(:)
 !    real(kind=wp), intent(out) :: aveGamma(nslices)
 !    real(kind=wp), intent(out) :: aveDgamma(:)
-      integer(kind=ip),parameter :: ncoord=6
-      integer(kind=ip) :: ipc,ic1,ic2,is !< particle,coord,slice index
+      integer(kind=ip) :: ipc, is!< particle,coord,slice index
       real(kind=wp) :: sliceSizeZ2
       real(kind=wp),DIMENSION(nslices) :: b1r,b2r,b3r,b4r,b5r
       real(kind=wp),DIMENSION(nslices) :: b1i,b2i,b3i,b4i,b5i

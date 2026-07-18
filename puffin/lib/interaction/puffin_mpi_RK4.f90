@@ -71,16 +71,13 @@ contains
 ! dAdx       Field derivative
 ! dydx       Electron derivatives
 
-      INTEGER(KIND=IP) :: iy,idydx,iyout,i,p
       REAL(KIND=WP)    :: h6, hh, szh
       !REAL(KIND=WP), DIMENSION(size(y)) :: dym, dyt, yt
 
 
 
 
-      REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dAdx
-      REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localt
-      INTEGER(KIND=IP) :: error, trans
+      INTEGER(KIND=IP) :: trans
 
 !    Transverse nodes
 
@@ -361,7 +358,7 @@ contains
 
 !   Error Handler - Error log Subroutine in CIO.f90 line 709
 
-1000  CALL log_error('Error in MathLib:rk4',tErrorLog_G)
+      CALL log_error('Error in MathLib:rk4',tErrorLog_G)
       PRINT*,'Error in MathLib:rk4'
 2000  CONTINUE
 

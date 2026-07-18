@@ -36,7 +36,6 @@ contains
 !    real(kind=wp) :: dV_bar
     
     real(kind=wp) :: dummy1, dummy2, dummy3
-    real(kind=wp) :: npk_bar
 
     integer :: error
 
@@ -111,7 +110,7 @@ contains
         nBlanks = displs_eb(ir+1) + nBlanks_head
         !print*, 'num of blanks now ', nblanks
         do ij = 1,nBlanks 
-        	READ(UNIT=fid, FMT=*) 
+                READ(UNIT=fid, FMT=*) 
         end do
 
         !do ij = displs_eb(ir+1)+1, nMPsLoc + displs_eb(ir+1)

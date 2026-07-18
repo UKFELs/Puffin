@@ -52,8 +52,8 @@ Module ArrayFunctions
   INTEGER(KIND=IP), PARAMETER    :: iRe_Y_CG           = 6_IP
       
   INTEGER(KIND=IP), PARAMETER    :: nFieldEquations_CG = 2_IP
-  INTEGER(KIND=IP), PARAMETER    :: iRe_A_CG	       = 1_IP
-  INTEGER(KIND=IP), PARAMETER    :: iIm_A_CG	       = 2_IP
+  INTEGER(KIND=IP), PARAMETER    :: iRe_A_CG           = 1_IP
+  INTEGER(KIND=IP), PARAMETER    :: iIm_A_CG           = 2_IP
  
   INTEGER(KIND=IP), PARAMETER    :: nElectronEquations_CG  = 6_IP
 

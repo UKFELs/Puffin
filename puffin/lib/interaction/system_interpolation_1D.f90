@@ -83,7 +83,6 @@ use rhs_vars
 
 real(kind=wp), intent(in) :: sAr(:), sAi(:)
 integer(kind=ip) :: i
-integer error
 
 
 !$OMP DO

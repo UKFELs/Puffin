@@ -31,7 +31,7 @@ module puffin_kinds
     integer, parameter :: LP  = long
     integer, parameter :: IPN = int64
 
-    integer, parameter :: LGT = kind(.true.)	
+    integer, parameter :: LGT = kind(.true.)    
 
 end module puffin_kinds
 

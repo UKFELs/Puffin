@@ -64,14 +64,13 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
 !           Local vars
 
-  INTEGER(KIND=IP) :: i,nninner, error
-  REAL(KIND=WP) :: sEE,dx,lwx,lexm,maxr
+  INTEGER(KIND=IP) :: i
   LOGICAL :: qOKL  
 
   qOK = .FALSE.
 
   if (qSimple) call check1D(qSwitches(iOneD_CG), qSwitches(iDiffraction_CG), qSwitches(iFocussing_CG), &
-  	                        iNodes)
+                                iNodes)
 
   do i = 1,nbeams
 
@@ -433,7 +432,6 @@ END SUBROUTINE chkESampleLens
     
     integer(kind=ip) :: inttypes(6_ip), ib
     real(kind=wp) :: gausslen
-    logical :: qOKL
 
     do ib = 1, nBeams
 

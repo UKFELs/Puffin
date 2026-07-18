@@ -20,7 +20,7 @@ contains
 
 !                LOCAL VARS
 
-  INTEGER(KIND=IP)   :: i,ios,nw,error,ri
+  INTEGER(KIND=IP)   :: ios
 
   integer(kind=ip) :: nwrts
 

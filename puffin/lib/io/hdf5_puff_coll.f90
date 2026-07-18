@@ -661,7 +661,7 @@ contains
     goto 2000
 
 !     Error Handler - Error log Subroutine in CIO.f90 line 709
-1000 call log_error('Error in hdf5_puff:outputBeamFiles',tErrorLog_G)
+     call log_error('Error in hdf5_puff:outputBeamFiles',tErrorLog_G)
     print*,'Error in hdf5_puff:outputBeamFiles'
 2000 continue
   end subroutine outputH5BeamFilesSD
@@ -687,7 +687,6 @@ contains
     INTEGER(HID_T) :: attr_id       !< Attribute identifier
     INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
     INTEGER(HID_T) :: atype_id      !< Attribute Data type identifier
-    INTEGER(HID_T) :: group_id      !< Group identifier
     INTEGER(HID_T) :: plist_id      !< Property list id.
 
 ! may yet need this, but field data is not separated amongst cores
@@ -697,25 +696,20 @@ contains
 !    character(1024_IP), intent(in) :: zDFName
     character(64_IP) :: filename
     INTEGER(HSIZE_T), DIMENSION(4) :: fdims,dims !<no longer includes component
-    INTEGER(HSIZE_T), DIMENSION(4) :: doffset,dsize,stride !<no longer includes component
+    INTEGER(HSIZE_T), DIMENSION(4) :: doffset, dsize!<no longer includes component
 ! Data as component*reducedNX*reducedNY*reducedNZ2
 ! Not described as a parameter, so can prob modify
 ! for single component (rank 3 data) like charge
     INTEGER     ::   rank = 4               !< Dataset rank
     INTEGER(HSIZE_T), DIMENSION(1) :: adims !< Attribute dims
-    REAL(kind=WP) :: attr_data_double       !< holder of attribute double data
     REAL(kind=WP), DIMENSION(3) :: ub       !< holder of attribute double data
     REAL(kind=WP), DIMENSION(3) :: lb       !< holder of attribute double data
     CHARACTER(LEN=100) :: attr_data_string  !< holder of attribute strings
     INTEGER(HSIZE_T) :: attr_string_len     !< length of attribute strings
     INTEGER(kind=IP) :: numSpatialDims,mpiinfo      !< Attr content,
-    INTEGER     ::  arank = 1               !< Attribute Dataset rank (1: vector)
     CHARACTER(LEN=4), PARAMETER :: timegrpname = "time"  !< Name of time group
     CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  !< Name of limits grp
     CHARACTER(LEN=10), PARAMETER :: meshScaledGrpname = "meshScaled" !< Name of mesh grp
-    CHARACTER(LEN=6), PARAMETER :: meshSIGrpname = "meshSI"  !< Dummy scaled mesh grp name
-    REAL(kind=WP), ALLOCATABLE :: limdata (:)  !< Data to write (diff for 1D and 3D)
-    INTEGER(kind=IP), ALLOCATABLE :: numcelldata (:)  !< Mesh info for uniform grid
     ! Local vars
     integer :: error !< Error flag
 
@@ -1117,7 +1111,6 @@ contains
       integer(HID_T) :: attr_id       !< Attribute identifier
       integer(HID_T) :: aspace_id     !< Attribute Dataspace identifier
       integer(HID_T) :: atype_id      !< Attribute Data type identifier
-      integer(HID_T) :: group_id      !< Group identifier
       integer(HID_T) :: plist_id      !< Property list id.
 
   ! may yet need this, but field data is not separated amongst cores
@@ -1136,19 +1129,14 @@ contains
 
       integer     ::   rank = 2               !< Dataset rank
       integer(HSIZE_T), dimension(1) :: adims !< Attribute dims
-      real(kind=wp) :: attr_data_double       !< holder of attribute double data
       real(kind=wp) :: ub       !< holder of attribute double data
       real(kind=wp) :: lb       !< holder of attribute double data
       character(len=100) :: attr_data_string  !< holder of attribute strings
       integer(HSIZE_T) :: attr_string_len     !< length of attribute strings
       integer(kind=ip) :: numSpatialDims,mpiinfo      !< Attr content,
-      integer     ::  arank = 1               !< Attribute Dataset rank (1: vector)
       character(len=4),  parameter :: timegrpname = "time"  !< Name of time group
       character(len=12), parameter :: limgrpname = "globalLimits"  !< Name of limits grp
       character(len=10), parameter :: meshScaledGrpname = "meshScaled" !< Name of mesh grp
-      character(len=6),  parameter :: meshSIGrpname = "meshSI"  !< Dummy scaled mesh grp name
-      real(kind=wp),  allocatable  :: limdata (:)  !< Data to write (diff for 1D and 3D)
-      integer(kind=ip), allocatable :: numcelldata (:)  !< Mesh info for uniform grid
       ! Local vars
       integer :: error !< Error flag
 
@@ -1498,18 +1486,10 @@ contains
     type(tSimulationContext), intent(in) :: ctx
     INTEGER(kind=IP),intent(in) :: nslices       !< Number of slices
     INTEGER(HID_T) :: file_id       !< File identifier
-    INTEGER(HID_T) :: attr_id       !< Attribute identifier
-    INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
-    INTEGER(HID_T) :: atype_id      !< Attribute Data type identifier
-    INTEGER(HID_T) :: group_id      !< Group identifier
     CHARACTER(LEN=4), PARAMETER :: timegrpname = "time"  !< Time Group name
     CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  !< Lims Group name
     CHARACTER(LEN=14), PARAMETER :: limgrpnameSI = "globalLimitsSI"  !< Lims Group name
-    CHARACTER(LEN=10), PARAMETER :: meshScaledGrpname = "meshScaled" !< Mesh Group name
-    CHARACTER(LEN=6), PARAMETER :: meshSIGrpname = "meshSI"  !< SI Mesh Group name
     character(1024_IP) :: filename !< output filename
-    REAL(kind=WP), ALLOCATABLE :: limdata (:)  !< dataset containing limits to write
-    INTEGER(kind=IP), ALLOCATABLE :: numcelldata (:)  !< Dataset to write with numcells
     integer(kind=ip) :: error !< Local Error flag
     if (tProcInfo_G%qRoot) then
       filename = ( trim(adjustl(zFilename_G)) // '_integrated_' &
@@ -1566,7 +1546,6 @@ contains
     integer(kind=ip) :: error !< Local Error flag
     real(kind=wp), intent(in) :: writeData(:) !< data to be written
     character(*), intent(in) :: zLabels  !< Axis labels for plotting
-    real(kind=wp), allocatable :: writeDataSI(:) !< data to be written
     CHARACTER(LEN=*), intent(in) :: dsetname  !< Dataset name
     CHARACTER(LEN=*), INTENT(IN) :: meshname !<name of mesh to assign integrated data
     REAL(kind=WP), intent(in) :: simtime      !< simulation time
@@ -1576,7 +1555,6 @@ contains
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier
     INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
-    INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
     INTEGER     ::   rank = 1               !< Dataset rank
     INTEGER(HSIZE_T), DIMENSION(1) :: dims  !< Dataset dimensionality
     INTEGER(HSIZE_T), DIMENSION(1) :: adims !< Attribute dims
@@ -1584,19 +1562,14 @@ contains
     INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
     INTEGER(HID_T) :: atype_id      !< Attribute Data type identifier
     CHARACTER(LEN=40) :: aname   !< Attribute name
-    REAL(kind=WP) :: attr_data_double       !< for attrs of type double
     CHARACTER(LEN=100) :: attr_data_string  !< attrs of type string
     INTEGER(HSIZE_T) :: attr_string_len     !< len of attrs of type string
-    INTEGER(kind=IP) :: numSpatialDims = 1  !< Attr content,
     CHARACTER(LEN=4), PARAMETER :: timegrpname = "time"  !< Time Group name
-    CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  !< Lims Group name
     CHARACTER(LEN=14), PARAMETER :: limgrpnameSI = "globalLimitsSI"  !< Lims Group name
 !    CHARACTER(LEN=10), PARAMETER :: meshScaledGrpname = "meshScaled" !< Mesh Group name
 !    CHARACTER(LEN=6), PARAMETER :: meshSIGrpname = "meshSI"  !< SI Mesh Group name
 !    CHARACTER(LEN=15), PARAMETER :: meshScaledGrpname = "meshIntPtclData" !< Mesh Group name
 !    CHARACTER(LEN=6), PARAMETER :: meshSIGrpname = "meshIntPtclSI"  !< SI Mesh Group name
-    CHARACTER(LEN=40) :: scaleToSIstring !< placeholder for scaling factor strings
-    INTEGER     ::  arank = 1               !< Attribute Dataset rank
     if (tProcInfo_G%qRoot) then
       dims = size(writeData) ! Dataset dimensions
       filename = ( trim(adjustl(zFilename_G)) // '_integrated_' &

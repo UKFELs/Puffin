@@ -179,9 +179,9 @@ FUNCTION Mask2D(x,y,dx,dy,nx,ny,nbx,nby)
 !     Combine in some cunning way
 
   DO iy = 1,ny
-  	DO ix = 1,nx
+        DO ix = 1,nx
 
-  	  Mask2D(ix,iy) = masky2(iy)*maskx(ix) + maskx2(ix)*masky(iy)
+          Mask2D(ix,iy) = masky2(iy)*maskx(ix) + maskx2(ix)*masky(iy)
 
     END DO
   END DO
@@ -278,7 +278,7 @@ FUNCTION Mask1D2(x,dx,nx,nb)
   INTEGER(KIND=IP), INTENT(IN) :: nb, nx
   REAL(KIND=WP) :: Mask1D2(nx)
 
-  REAL(KIND=WP) :: Lb, x0, x01, x02
+  REAL(KIND=WP) :: Lb, x01, x02
 
 !     Get the length of the boundary, Lb
 

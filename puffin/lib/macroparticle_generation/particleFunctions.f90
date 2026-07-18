@@ -42,9 +42,9 @@ CONTAINS
 ! sGrid(:)  - OUTPUT - Grid positions
 ! qOK       - OUTPUT - Error flag
 !
-    INTEGER(KIND=IP),INTENT(IN)	:: iGridType,iNumMP
+    INTEGER(KIND=IP),INTENT(IN) :: iGridType,iNumMP
     REAL(KIND=WP),INTENT(IN)    :: sStart,sEnd
-    REAL(KIND=WP),INTENT(IN),OPTIONAL	:: sMean,sSigma
+    REAL(KIND=WP),INTENT(IN),OPTIONAL   :: sMean,sSigma
     REAL(KIND=WP),INTENT(OUT) :: sGrid(:)
     LOGICAL, INTENT(OUT) :: qOK
 !--------------------------------------------------------
@@ -69,7 +69,7 @@ CONTAINS
     END SELECT
 
 !  Set error flag and exit         
-    qOK = .TRUE.				    
+    qOK = .TRUE.                                    
     GOTO 2000
 
 ! Error Handler
@@ -122,9 +122,9 @@ CONTAINS
 !                              specific distribution
 ! qOK               - OUTPUT - Error flag
 !
-    INTEGER(KIND=IP),INTENT(IN)	:: iDistributionType,iNumMP
-    REAL(KIND=WP),INTENT(IN)		:: sGrid(:),sMean,sSigma
-    REAL(KIND=WP),INTENT(OUT)		:: sIntegral(:)
+    INTEGER(KIND=IP),INTENT(IN) :: iDistributionType,iNumMP
+    REAL(KIND=WP),INTENT(IN)            :: sGrid(:),sMean,sSigma
+    REAL(KIND=WP),INTENT(OUT)           :: sIntegral(:)
     LOGICAL,      INTENT(OUT)         :: qOK
 !
 !LOCAL VARIABLES
@@ -144,7 +144,7 @@ CONTAINS
        CALL GaussianDistribution(iNumMP,sGrid,sMean,&
             sSigma,sFunc)
        DO i=1,iNumMP
-          sDel(i)=sGrid(i+1)-sGrid(i)		
+          sDel(i)=sGrid(i+1)-sGrid(i)           
        ENDDO
        sIntegral= sFunc * sDel  
 !********************************************************
@@ -156,11 +156,11 @@ CONTAINS
     END SELECT
 
 !  Set error flag and exit
-    qOK = .TRUE.				    
+    qOK = .TRUE.                                    
     GOTO 2000
 !
 ! Error Handler
-1000 CALL log_error('Error in ElectronGrid:DistributionIntegral',&
+     CALL log_error('Error in ElectronGrid:DistributionIntegral',&
           tErrorLog_G)
     PRINT*,'Error in ElectronGrid:DistributionIntegral'
 2000 CONTINUE
@@ -185,10 +185,10 @@ CONTAINS
 !                                  specific distribution
 ! qOK                   - OUTPUT - Error flag
 !
-    INTEGER(KIND=IP),INTENT(IN)	:: iDistributionType,&
+    INTEGER(KIND=IP),INTENT(IN) :: iDistributionType,&
          iLocNumMP,iNumMP
     REAL(KIND=WP),INTENT(IN)    :: sGrid(:),sMean,sSigma
-    REAL(KIND=WP),INTENT(OUT)	:: sIntegral(:)
+    REAL(KIND=WP),INTENT(OUT)   :: sIntegral(:)
     LOGICAL,      INTENT(OUT)   :: qOK
 !
 ! LOCAL VARIABLES
@@ -207,7 +207,7 @@ CONTAINS
        CALL GaussianDistributionZ2(iLocNumMP,sGrid,&
             sMean,sSigma,sFunc)
        DO i=1,ilocNumMP
-          sDel(i)=sGrid(i+1)-sGrid(i)		
+          sDel(i)=sGrid(i+1)-sGrid(i)           
        ENDDO
        sIntegral= sFunc * sDel
        DEALLOCATE(sFunc,sDel)
@@ -217,11 +217,11 @@ CONTAINS
     END SELECT
 
 !  Set error flag and exit         
-    qOK = .TRUE.				    
+    qOK = .TRUE.                                    
     GOTO 2000     
 
 ! Error Handler
-1000 CALL log_error('Error in ElectronGrid:DistributionIntegral',&
+     CALL log_error('Error in ElectronGrid:DistributionIntegral',&
           tErrorLog_G)
     PRINT*,'Error in ElectronGrid:DistributionIntegral'
 2000 CONTINUE

@@ -44,9 +44,8 @@ subroutine writeIM(sZ, sZl, ctx, iL, qOK)
   integer(kind=ip), intent(in) :: iL
   logical, intent(inout) :: qOK
 
-  integer error
 
-  logical :: qOKL, qWriteInt, qWriteFull
+  logical :: qWriteInt, qWriteFull
 
   qOK = .false.
 
@@ -65,7 +64,7 @@ subroutine writeIM(sZ, sZl, ctx, iL, qOK)
 
   goto 2000
 
-1000  call log_error('Error in writeIM',tErrorLog_G)
+      call log_error('Error in writeIM',tErrorLog_G)
 
 2000 continue
 
@@ -96,9 +95,7 @@ subroutine wr_cho(sZ, sZl, ctx, iL, qWriteInt, qWriteFull, qOK)
   logical, intent(inout) :: qOK
 
   integer(kind=ip) :: nslices
-  integer error
 
-  logical :: qOKL
 
   if (qhdf5_G) then
 
@@ -137,7 +134,6 @@ end subroutine wr_cho
 
     integer(kind=ip) :: iw
 
-    logical ::  qOKL
 
     qOK = .false.
 

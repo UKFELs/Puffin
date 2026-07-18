@@ -86,7 +86,6 @@ contains
 
     integer(HID_T) :: attr_id                 !< Attribute identifier
     integer(HID_T) :: atype_id                !< Attribute Data type identifier
-    integer(HSIZE_T) :: attr_string_len       !< Length of attribute string 
     integer(HSIZE_T), dimension(1) :: adims=(/1/) !< Attribute Data type identifier
     integer :: error                             !< Error flag
 
@@ -119,7 +118,6 @@ contains
 
     integer(HID_T) :: attr_id                 !< Attribute identifier
     integer(HID_T) :: atype_id                !< Attribute Data type identifier
-    integer(HSIZE_T) :: attr_string_len       !< Length of attribute string 
     integer(HSIZE_T), dimension(1) :: adims=(/1/) !< Attribute Data type identifier
     integer :: error                             !< Error flag
 !    aname="vsType"
@@ -537,13 +535,10 @@ contains
     INTEGER(HID_T) :: aspace_id     ! Attribute Dataspace identifier
     INTEGER(HID_T) :: atype_id      ! Attribute Data type identifier
     INTEGER(HID_T) :: group_id      ! Group identifier
-    INTEGER     ::   rank = 1               ! Dataset rank
     INTEGER(HSIZE_T), DIMENSION(1) :: adims ! Attribute dims
     REAL(kind=WP) :: attr_data_double
     CHARACTER(LEN=100) :: attr_data_string
     INTEGER(HSIZE_T) :: attr_string_len
-    INTEGER(kind=IP) :: numSpatialDims = 1   ! Attr content,  
-    INTEGER     ::  arank = 1               ! Attribute Dataset rank
     CHARACTER(LEN=16) :: aname   ! Attribute name
 
 ! with the main dataset done we work on the other groups with attributes
@@ -625,13 +620,9 @@ contains
     INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
     INTEGER(HID_T) :: atype_id      !< Attribute Data type identifier
     INTEGER(HID_T) :: group_id      !< Group identifier
-    INTEGER     ::   rank = 1               !< Dataset rank
     INTEGER(HSIZE_T), DIMENSION(1) :: adims !< Attribute dims
-    REAL(kind=WP) :: attr_data_double       !< attrib data (type double)
     CHARACTER(LEN=1024) :: attr_data_string !< attrib data (type string)
     INTEGER(HSIZE_T) :: attr_string_len     !< length of attrib string
-    INTEGER(kind=IP) :: numSpatialDims = 1  !< Attr content, identifying nu 
-    INTEGER     ::  arank = 1               !< Attribute Dataset rank
     CHARACTER(LEN=24) :: aname   ! Attribute name
     character(8)  :: date
     character(10) :: time
@@ -778,7 +769,7 @@ FUNCTION IntegerToString(iInteger)
 !  Set error flag and exit
        GoTo 2000
 ! Error Handler - Error log Subroutine in CIO.f90 line 709
-1000 call log_error('Error in sddsPuffin:IntegerToString',tErrorLog_G)
+     call log_error('Error in sddsPuffin:IntegerToString',tErrorLog_G)
       Print*,'Error in sddsPuffin:IntegerToString'
 2000 CONTINUE
 

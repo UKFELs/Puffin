@@ -790,6 +790,19 @@ IF (mu > 10.0) THEN
 !     STEP N. NORMAL SAMPLE - random_normal() FOR STANDARD NORMAL DEVIATE
 
   g = mu + s*random_normal()
+
+! ival/fk/difmuk are set on both the g > 0.0 and g < 0.0 branches below;
+! only the measure-zero g == 0.0 edge case would otherwise leave them
+! unset, so default them here to keep that edge case deterministic.
+  ival = NINT(mu, KIND=IP)
+  fk = REAL(ival, KIND=WP)
+  difmuk = mu - fk
+  omega = 0.0_WP
+  c0 = 0.0_WP
+  c1 = 0.0_WP
+  c2 = 0.0_WP
+  c3 = 0.0_WP
+
   IF (g > 0.0) THEN
     ival = g
 
@@ -1439,12 +1452,14 @@ REAL(KIND=WP)         :: dk
 IF (first) THEN                        ! Initialization, if necessary
   IF (k < zero) THEN
     WRITE(*, *) '** Error: argument k for random_von_Mises = ', k
+    fn_val = zero
     RETURN
   END IF
 
   nk = k + k + one
   IF (nk > 20) THEN
     WRITE(*, *) '** Error: argument k for random_von_Mises = ', k
+    fn_val = zero
     RETURN
   END IF
 

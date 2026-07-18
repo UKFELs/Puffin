@@ -132,8 +132,7 @@ contains
       REAL(KIND=WP),ALLOCATABLE,DIMENSION(:) :: p_3_position, p_3_del
       INTEGER(KIND=IP) :: np3full(3)
       !REAL(KIND=WP) ::  radius,sLOne,sLTwo
-      INTEGER(KIND=IP) :: error,nprocs,proc
-      LOGICAL :: qOKL
+      INTEGER(KIND=IP) :: error, nprocs
 
 !     Determine the number of macroparticles in each dimension
 !     If the dimension is not present, then the number of macroparticles
@@ -488,15 +487,5 @@ contains
 
 
 
-
-   subroutine getGlobalnpk(npk_num, npk_numl)
-
-      real(kind=wp), intent(inout) :: npk_num, npk_numl
-      integer :: error
-
-      CALL MPI_ALLREDUCE(npk_numl, npk_num, 1, MPI_DOUBLE_PRECISION, &
-         MPI_MAX, MPI_COMM_WORLD, error)
-
-   end subroutine getGlobalnpk
 
 END MODULE MacrosGen

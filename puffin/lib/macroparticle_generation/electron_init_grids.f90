@@ -90,7 +90,6 @@ SUBROUTINE genGrids(ib, sigmas,offsets,slens,intType,iNMPs,iNMPs_loc, &
 
 !         LOCAL ARGS
   
-  INTEGER(KIND=IP) :: ind
   LOGICAL :: qOKL
   
 ! Generate grids and integrals in each dimension
@@ -158,7 +157,7 @@ SUBROUTINE genGrid(b_num, inttype,gridtype,centre,sigma,length,&
 !         LOCAL VARS
 
   REAL(KIND=WP) :: start, final, local_start, local_fin, shift, &
-                   sige, flat_len
+flat_len
   INTEGER(KIND=IP) :: locN
   LOGICAL :: qOKL
 
@@ -252,7 +251,7 @@ SUBROUTINE genGrid(b_num, inttype,gridtype,centre,sigma,length,&
                    qOK = qOKL)
 
     IF (.NOT. qOKL) GOTO 1000
-		  
+                  
     CALL DistributionIntegral(inttype, &
                               iNMP, &
                               Grid, &
@@ -267,7 +266,7 @@ SUBROUTINE genGrid(b_num, inttype,gridtype,centre,sigma,length,&
 
 !     Set error flag and exit         
 
-  qOK = .TRUE.				    
+  qOK = .TRUE.                              
   GOTO 2000     
 
 !     Error Handler

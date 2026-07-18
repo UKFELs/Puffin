@@ -45,7 +45,6 @@ contains
     logical, intent(in) :: qMatchA(:), qMatchS(:), qFMesh
     type(tFELFrame), intent(in) :: frame
 
-    real(kind=wp) :: sLenF
 
 
     call MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
@@ -723,11 +722,11 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 ! ! ux,uy              Polarization variables of undulator
 ! ! qOK                Error flag
 
-!   REAL(KIND=WP), INTENT(IN)    :: srho	      
-!   REAL(KIND=WP), INTENT(IN)    :: sEmit_n	      
-!   REAL(KIND=WP), INTENT(IN)    :: k_beta	      
+!   REAL(KIND=WP), INTENT(IN)    :: srho              
+!   REAL(KIND=WP), INTENT(IN)    :: sEmit_n           
+!   REAL(KIND=WP), INTENT(IN)    :: k_beta            
 !   REAL(KIND=WP), INTENT(IN)    :: sFF,sEta,sKappa
-!   REAL(KIND=WP), INTENT(INOUT) :: sLenE(:)	   
+!   REAL(KIND=WP), INTENT(INOUT) :: sLenE(:)       
 !   REAL(KIND=WP), INTENT(INOUT) :: sSigE(:)
 !   LOGICAL,       INTENT(OUT)   :: qOK
 
@@ -780,7 +779,7 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 
 ! ! Set error flag and exit         
 
-!   qOK = .TRUE.				    
+!   qOK = .TRUE.                                    
 
 !   GOTO 2000     
 
@@ -913,9 +912,9 @@ SUBROUTINE Check4Diff(z,sRaleighLength,&
 ! z                     - INPUT  - Total z diffracting over
 ! sRaleighLength        - INPUT  - Raleigh length
 ! sigma                 - INPUT  - Field sigma
-! sWigglerLength	- UPDATED - Wiggler length
+! sWigglerLength        - UPDATED - Wiggler length
 ! qUpdatedWigglerLength - OUTPUT - If updated wiggler length
-! qOK			- OUTPUT - Error flag
+! qOK                   - OUTPUT - Error flag
 
   REAL(KIND=WP),INTENT(IN)    :: z,sRaleighLength,sigma
   REAL(KIND=WP),INTENT(INOUT) :: sWigglerLength
@@ -952,11 +951,11 @@ SUBROUTINE Check4Diff(z,sRaleighLength,&
 
 !     Set error flag and exit
     
-  qOK = .TRUE.				    
+  qOK = .TRUE.                              
   
   GOTO 2000     
 
-1000 CALL log_error('Error in setupcalcs:Check4Diff',tErrorLog_G)
+     CALL log_error('Error in setupcalcs:Check4Diff',tErrorLog_G)
 
 2000 CONTINUE
 

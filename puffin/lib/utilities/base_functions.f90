@@ -44,13 +44,13 @@ CONTAINS
 
     pi=4.0_WP*ATAN(1.0_WP)
     s_twopi_sigma=sqrt(2*pi)*sigma
-	
+        
     if (sigma > 0.0_wp) then
       ngaussian=exp(-((x-xc)/sigma)**2/2.0_WP)
     else
       ngaussian = 0.0_wp
     end if
-	
+        
     gaussian=ngaussian
 
     return
@@ -139,15 +139,15 @@ CONTAINS
     s_area=0.0_WP
     s_integralstart=0.5_WP*(1.0_WP+erf((s_x-s_xc)/(SQRT(2.0_WP)*sigma)))
     s_area=s_integralstart
-    	
+        
     IF (s_A1<s_area)  THEN
        PRINT * ,"Error In 'getx (Dfunctions.f90)' Subroutine,",&
             " try to use less than ",i_nmp
        STOP 
     ENDIF
-	
+        
 10  s_integral=0.5_WP*(1.0_WP+erf((s_x+s_h-s_xc)/(SQRT(2.0_WP)*sigma)))-0.5_WP*(1.0_WP+erf((s_x-s_xc)/(SQRT(2.0_WP)*sigma)))
-	
+        
     IF (s_h>s_tol) THEN
        IF(s_area+s_integral>s_A1) THEN
           s_h=s_h/2.0_WP
@@ -263,7 +263,7 @@ CONTAINS
 ! Input parameters
 !
     INTEGER(KIND=IP),INTENT(IN) :: i_Macro
-    REAL(KIND=WP),INTENT(IN)	:: s_MeanGuass,s_SigmaGuass
+    REAL(KIND=WP),INTENT(IN)    :: s_MeanGuass,s_SigmaGuass
     REAL(KIND=WP),INTENT(IN) :: s_grid(:)
 ! Output parameters
     REAL(KIND=WP),INTENT(OUT) :: s_func(:)

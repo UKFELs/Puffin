@@ -154,7 +154,7 @@ contains
 
 !     Error Handler
 
-1000 CALL log_error('Error in Derivative:derivs',tErrorLog_G)
+     CALL log_error('Error in Derivative:derivs',tErrorLog_G)
     PRINT*,'Error in Derivative:derivs'
 2000 CONTINUE
 

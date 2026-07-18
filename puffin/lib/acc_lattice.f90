@@ -240,7 +240,7 @@ contains
 
 !                LOCAL VARS
 
-  INTEGER(KIND=IP)   :: i,ios,nw,error,ri,NL
+  INTEGER(KIND=IP)   :: ios, nw
   REAL(KIND=WP)      :: c1, slamw
 
   integer(kind=ip) :: nperlam
@@ -417,7 +417,6 @@ contains
   type(tSimulationContext), intent(inout) :: ctx
 
   real(kind=wp) :: szbar4d
-  real(kind=wp), allocatable :: sp2(:)
   logical :: qDummy
 
   real(kind=wp) :: lenz2
@@ -743,7 +742,6 @@ contains
 
     real(kind=wp) :: kx, ky
 
-    integer :: error
 
     kx = kx_und_G
     ky = ky_und_G

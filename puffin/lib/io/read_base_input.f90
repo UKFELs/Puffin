@@ -237,13 +237,12 @@ subroutine read_in(zfilename, &
 ! Define local variables
 
   integer(kind=ip), intent(out) :: stepsPerPeriod, nodesperlambda, nperiods ! Steps per lambda_w, nodes per lambda_r
-  real(kind=wp) :: dz2, zbar, sPerWaves
-  integer(kind=ip) :: nwaves, iRedNodesX, iRedNodesY
+  real(kind=wp) :: sPerWaves
+  integer(kind=ip) :: iRedNodesX, iRedNodesY
 
-  INTEGER::ios
   CHARACTER(1024_IP) :: beam_file, seed_file, wr_file
   character(1024_IP) :: zDataFileName
-  LOGICAL :: qOKL, qMatched !   TEMP VAR FOR NOW, SHOULD MAKE FOR EACH BEAM
+  LOGICAL :: qOKL!   TEMP VAR FOR NOW, SHOULD MAKE FOR EACH BEAM
 
   logical :: qWriteZ, qWriteA, &
              qWritePperp, qWriteP2, qWriteZ2, &
@@ -627,7 +626,6 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   integer(kind=ip), allocatable :: inmps1DGam(:)
   logical :: qFixCharge, qAMatch
   integer(kind=ip), allocatable :: iNumMPsD(:,:)
-  INTEGER::ios
   CHARACTER(96) :: dtype
 
   character(:), allocatable :: fext
@@ -1066,7 +1064,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   qOK = .TRUE.
   GOTO 2000
 
-1000 CALL log_error('Error in Read_Data:read_beamfile',tErrorLog_G)
+     CALL log_error('Error in Read_Data:read_beamfile',tErrorLog_G)
     PRINT*,'Error in read_beamfile'
 2000 CONTINUE
 
@@ -1095,8 +1093,6 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
 
 !                     LOCAL ARGS
 
-  INTEGER(KIND=IP) :: s_ind
-  INTEGER::ios
   CHARACTER(len=1024) :: dtype
 
   character(:), allocatable :: fext
@@ -1192,7 +1188,7 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
     
   end if
 
-1000 CALL log_error('Error in Read_Data:read_seedfile',tErrorLog_G)
+     CALL log_error('Error in Read_Data:read_seedfile',tErrorLog_G)
     PRINT*,'Error in read_seedfile'
 2000 CONTINUE
 

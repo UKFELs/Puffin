@@ -282,7 +282,7 @@ function halton(ind, ibase) result(y)
 
   integer(kind=ip), intent(in) :: ind, ibase
 
-  real(kind=wp) :: ft, t1
+  real(kind=wp) :: ft
   real(kind=wp) :: y
   integer(kind=ip) :: it
 
@@ -415,6 +415,11 @@ function interp1(x, func, smplx) result(smpl_interp)
 
   is = size(func)
   ic = 1_ip
+
+! Defensive default: the three branches below are exhaustive for a
+! sorted grid (x ascending), but leave smpl_interp unset if x is not
+! sorted or smplx is NaN.
+  smpl_interp = 0.0_wp
 
   if ((smplx > x(1)) .and. (smplx < x(is))) then
     

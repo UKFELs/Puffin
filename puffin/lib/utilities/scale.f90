@@ -4,7 +4,7 @@
 
 module scale
 
-	! Module containing routines to scale SI input to rho
+        ! Module containing routines to scale SI input to rho
 
 use puffin_kinds
 use puffin_constants
@@ -109,7 +109,7 @@ end subroutine unscaleEmit
 
 subroutine scaleG_single(sGamma, sGamma0)
 
-	real(kind=wp), intent(inout) :: sGamma
+        real(kind=wp), intent(inout) :: sGamma
     real(kind=wp), intent(in) :: sGamma0
 
     sGamma = sGamma / sGamma0
@@ -119,7 +119,7 @@ end subroutine scaleG_single
 
 subroutine unscaleG_single(sGamma, sGamma0)
 
-	real(kind=wp), intent(inout) :: sGamma
+        real(kind=wp), intent(inout) :: sGamma
     real(kind=wp), intent(in) :: sGamma0
 
     sGamma = sGamma * sGamma0
@@ -130,7 +130,7 @@ end subroutine unscaleG_single
 
 subroutine scaleG_array(sGamma, sGamma0)
 
-	real(kind=wp), intent(inout) :: sGamma(:)
+        real(kind=wp), intent(inout) :: sGamma(:)
     real(kind=wp), intent(in) :: sGamma0
 
     sGamma = sGamma / sGamma0
@@ -140,7 +140,7 @@ end subroutine scaleG_array
 
 subroutine unscaleG_array(sGamma, sGamma0)
 
-	real(kind=wp), intent(inout) :: sGamma(:)
+        real(kind=wp), intent(inout) :: sGamma(:)
     real(kind=wp), intent(in) :: sGamma0
 
     sGamma = sGamma * sGamma0
@@ -157,7 +157,7 @@ end subroutine unscaleG_array
 
 subroutine scaleX_single(sx, Lg, Lc)
 
-	real(kind=wp), intent(inout) :: sx
+        real(kind=wp), intent(inout) :: sx
     real(kind=wp), intent(in) :: Lg, Lc
 
     sx = sx / sqrt(Lg*Lc)
@@ -167,7 +167,7 @@ end subroutine scaleX_single
 
 subroutine unscaleX_single(sx, Lg, Lc)
 
-	real(kind=wp), intent(inout) :: sx
+        real(kind=wp), intent(inout) :: sx
     real(kind=wp), intent(in) :: Lg, Lc
 
     sx = sx * sqrt(Lg*Lc)
@@ -182,7 +182,7 @@ end subroutine unscaleX_single
 
 subroutine scaleX_array(sx, Lg, Lc)
 
-	real(kind=wp), intent(inout) :: sx(:)
+        real(kind=wp), intent(inout) :: sx(:)
     real(kind=wp), intent(in) :: Lg, Lc
 
     sx = sx / sqrt(Lg*Lc)
@@ -192,7 +192,7 @@ end subroutine scaleX_array
 
 subroutine unscaleX_array(sx, Lg, Lc)
 
-	real(kind=wp), intent(inout) :: sx(:)
+        real(kind=wp), intent(inout) :: sx(:)
     real(kind=wp), intent(in) :: Lg, Lc
 
     sx = sx * sqrt(Lg*Lc)
@@ -271,7 +271,7 @@ end subroutine unscalePx_array
 !!  
 !!  !    Inputting px, outputting \bar{px}
 !!  
-!!  	real(kind=wp), intent(inout) :: sPx
+!!      real(kind=wp), intent(inout) :: sPx
 !!      real(kind=wp), intent(in) :: saw
 !!  
 !!      sPx = sPx / saw / m_e / c
@@ -283,7 +283,7 @@ end subroutine unscalePx_array
 !!  
 !!  !    Inputting \bar{px}, outputting px
 !!  
-!!  	real(kind=wp), intent(inout) :: sPx
+!!      real(kind=wp), intent(inout) :: sPx
 !!      real(kind=wp), intent(in) :: saw
 !!  
 !!      sPx = sPx * saw * m_e * c
@@ -294,7 +294,7 @@ end subroutine unscalePx_array
 !!  
 !!  !    Inputting px, outputting \bar{px}
 !!  
-!!  	real(kind=wp), intent(inout) :: sPx(:)
+!!      real(kind=wp), intent(inout) :: sPx(:)
 !!      real(kind=wp), intent(in) :: saw
 !!  
 !!      sPx = sPx / saw / m_e / c
@@ -306,7 +306,7 @@ end subroutine unscalePx_array
 !!  
 !!  !    Inputting \bar{px}, outputting px
 !!  
-!!  	real(kind=wp), intent(inout) :: sPx(:)
+!!      real(kind=wp), intent(inout) :: sPx(:)
 !!      real(kind=wp), intent(in) :: saw
 !!  
 !!      sPx = sPx * saw * m_e * c
@@ -326,7 +326,7 @@ subroutine scaleT_single(sT, Lc)
 ! Subroutine to scale t -> z2, for use in Puffin
 ! Takes in Lc, the cooperation length
 
-	real(kind=wp), intent(inout) :: sT
+        real(kind=wp), intent(inout) :: sT
     real(kind=wp), intent(in) :: Lc
 
     sT = c * sT / Lc
@@ -336,7 +336,7 @@ end subroutine scaleT_single
 
 subroutine unscaleT_single(sT, Lc)
 
-	real(kind=wp), intent(inout) :: sT
+        real(kind=wp), intent(inout) :: sT
     real(kind=wp), intent(in) :: Lc
 
     sT = sT * Lc / c
@@ -348,7 +348,7 @@ subroutine scaleT_array(sT, Lc)
 ! Subroutine to scale t -> z2, for use in Puffin
 ! Takes in Lc, the cooperation length
 
-	real(kind=wp), intent(inout) :: sT(:)
+        real(kind=wp), intent(inout) :: sT(:)
     real(kind=wp), intent(in) :: Lc
 
     sT = c * sT / Lc
@@ -358,7 +358,7 @@ end subroutine scaleT_array
 
 subroutine unscaleT_array(sT, Lc)
 
-	real(kind=wp), intent(inout) :: sT(:)
+        real(kind=wp), intent(inout) :: sT(:)
     real(kind=wp), intent(in) :: Lc
 
     sT = sT * Lc / c
@@ -374,7 +374,7 @@ end subroutine unscaleT_array
 
 subroutine scaleZ(sZ, Lg)
 
-	  real(kind=wp), intent(inout) :: sZ
+          real(kind=wp), intent(inout) :: sZ
     real(kind=wp), intent(in) :: Lg
 
     sZ = sZ / Lg
@@ -384,7 +384,7 @@ end subroutine scaleZ
 
 subroutine unscaleZ(sZ, Lg)
 
-	real(kind=wp), intent(inout) :: sZ
+        real(kind=wp), intent(inout) :: sZ
     real(kind=wp), intent(in) :: Lg
 
     sZ = sZ * Lg
@@ -408,7 +408,7 @@ subroutine scaleIntensity_single(intensity, Lg, Lc, gammar, kappa)
     intScale = c * e_0 * ((gammar * m_e * c**2.0_wp ) / &
                  (q_e * kappa * Lg ))**2.0_wp
 
-	  intensity = intensity / intScale
+          intensity = intensity / intScale
 
 end subroutine scaleIntensity_single
 
@@ -422,7 +422,7 @@ subroutine scaleIntensity_array(intensity, Lg, Lc, gammar, kappa)
     intScale = c * e_0 * ((gammar * m_e * c**2.0_wp ) / &
                  (q_e * kappa * Lg ))**2.0_wp
 
-	  intensity = intensity / intScale
+          intensity = intensity / intScale
 
 end subroutine scaleIntensity_array
 
@@ -436,7 +436,7 @@ subroutine unscaleIntensity_single(intensity, Lg, Lc, gammar, kappa)
     intScale = c * e_0 * ((gammar * m_e * c**2.0_wp ) / &
                  (q_e * kappa * Lg ))**2.0_wp
 
-	  intensity = intensity * intScale
+          intensity = intensity * intScale
 
 end subroutine unscaleIntensity_single
 
@@ -450,7 +450,7 @@ subroutine unscaleIntensity_array(intensity, Lg, Lc, gammar, kappa)
     intScale = c * e_0 * ((gammar * m_e * c**2.0_wp ) / &
                  (q_e * kappa * Lg ))**2.0_wp
 
-	  intensity = intensity * intScale
+          intensity = intensity * intScale
 
 end subroutine unscaleIntensity_array
 

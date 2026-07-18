@@ -435,7 +435,7 @@ contains
     goto 2000
 
 !     Error Handler - Error log Subroutine in CIO.f90 line 709
-1000 call log_error('Error in hdf5_puff:outputBeamFiles',tErrorLog_G)
+     call log_error('Error in hdf5_puff:outputBeamFiles',tErrorLog_G)
     print*,'Error in hdf5_puff:outputBeamFiles'
 2000 continue
   end subroutine outputH5BeamFilesID
@@ -462,16 +462,11 @@ contains
     type(tSimulationContext), intent(in) :: ctx
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier 
-    INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
     INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
-    INTEGER(HID_T) :: attr_id       !< Attribute identifier
     INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
-    INTEGER(HID_T) :: atype_id      !< Attribute Data type identifier
-    INTEGER(HID_T) :: group_id      !< Group identifier
 ! may yet need this, but field data is not separated amongst cores
 !    logical, intent(in) :: qSeparate
 !    CHARACTER(LEN=5), PARAMETER :: dsetname = "aperp"     ! Dataset name
-    CHARACTER(LEN=16) :: aname   ! Attribute name
 !    character(1024_IP), intent(in) :: zDFName
     character(64_IP) :: filename
     INTEGER(HSIZE_T), DIMENSION(3) :: dims !<no longer includes component
@@ -479,20 +474,12 @@ contains
 ! Not described as a parameter, so can prob modify 
 ! for single component (rank 3 data) like charge
     INTEGER     ::   rank = 3               !< Dataset rank
-    INTEGER(HSIZE_T), DIMENSION(1) :: adims !< Attribute dims
-    REAL(kind=WP) :: attr_data_double       !< holder of attribute double data
     REAL(kind=WP), DIMENSION(3) :: ub       !< holder of attribute double data
     REAL(kind=WP), DIMENSION(3) :: lb       !< holder of attribute double data
-    CHARACTER(LEN=100) :: attr_data_string  !< holder of attribute strings 
-    INTEGER(HSIZE_T) :: attr_string_len     !< length of attribute strings
     INTEGER(kind=IP) :: numSpatialDims      !< Attr content,  
-    INTEGER     ::  arank = 1               !< Attribute Dataset rank (1: vector)
     CHARACTER(LEN=4), PARAMETER :: timegrpname = "time"  !< Name of time group
     CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  !< Name of limits grp
     CHARACTER(LEN=10), PARAMETER :: meshScaledGrpname = "meshScaled" !< Name of mesh grp
-    CHARACTER(LEN=6), PARAMETER :: meshSIGrpname = "meshSI"  !< Dummy scaled mesh grp name
-    REAL(kind=WP), ALLOCATABLE :: limdata (:)  !< Data to write (diff for 1D and 3D)
-    INTEGER(kind=IP), ALLOCATABLE :: numcelldata (:)  !< Mesh info for uniform grid
     ! Local vars
     integer :: error !< Error flag
 
@@ -568,7 +555,7 @@ contains
       CALL addH5StringAttribute(dset_id,"vsLimits",limgrpname,aspace_id)
       CALL addH5StringAttribute(dset_id,"vsMesh",meshScaledGrpname,aspace_id)
       CALL addH5StringAttribute(dset_id,"vsAxisLabels","xbar,ybar,z2bar",aspace_id)
-      CALL h5dclose_f(dset_id, error)	  
+      CALL h5dclose_f(dset_id, error)     
 ! Time Group
       CALL writeH5TimeGroup(file_id, timegrpname, time, &
              'outH5Field3D', error, ctx)

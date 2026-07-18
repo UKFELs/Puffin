@@ -20,7 +20,7 @@ contains
 
 
 subroutine readPartDists(fname, z2m, gam_m, xm, ym, pxm, pym, &
-	                       gam_d, x_d, y_d, pxd, pyd, Ne, nZ2)
+                               gam_d, x_d, y_d, pxd, pyd, Ne, nZ2)
 
   implicit none
 
@@ -86,14 +86,14 @@ subroutine readDistHeader(fid, rho, dz2, nZ2, sgx1D, sgy1D)
   implicit none
 
   real(kind=wp), intent(out) :: rho, dz2, sgx1D, sgy1D
-  real(kind=wp) :: aw, lw, lr, Ipk 
+  real(kind=wp) :: aw, lw, lr
 
   integer(kind=ip), intent(inout) :: nZ2
 
   integer(kind=ip), intent(in) :: fid
 
   character(96) :: dum1, dum2, dum3, dum4, dum5, &
-                   dum6, dum7, dum8 , dum9, dum10, dum11
+dum6, dum7, dum8, dum9, dum10
 
   read(UNIT=fid, FMT=*) dum1, dum2, nZ2, dum3, dum4, dz2, dum5, dum6, aw, &
                         dum7, dum8, lw, dum9, dum10, lr
@@ -110,7 +110,7 @@ subroutine getHeaders(fnames, dz2, nZ2, sgx1D, sgy1D)
   real(kind=wp), intent(out) :: dz2(:), sgx1D, sgy1D
   integer(kind=ip), intent(inout) :: nZ2(:)
 
-  real(kind=wp) :: rho, eta   ! dummy for now
+  real(kind=wp) :: rho! dummy for now
   integer(kind=ip) :: ios, fid, ib, nbeams
 
   fid = 169

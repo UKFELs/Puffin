@@ -62,7 +62,6 @@ subroutine getTransformPlans4FEL(nnodes,qmeasure,qOK)
 ! qOKL - Local Logical error checker.
 
   logical :: qOKL
-  integer error
 
 !                   Begin
 
@@ -219,7 +218,7 @@ subroutine getTransformPlans_MultiD(sizes,nDims,qMeasure,qOK)
   qOK = .true.
   goto 2000
 
-1000  call log_error('Error in transforms:getTransformPlans_MultiD',tErrorLog_G)
+      call log_error('Error in transforms:getTransformPlans_MultiD',tErrorLog_G)
 
 2000 continue
 
@@ -316,7 +315,7 @@ subroutine clearTransformPlans_ThreeD(qOK)
 
   goto 2000
 
-1000  call log_error('Error in transforms:clearTransformPlans_ThreeD',tErrorLog_G)
+      call log_error('Error in transforms:clearTransformPlans_ThreeD',tErrorLog_G)
 
 2000 continue
 
@@ -428,7 +427,7 @@ subroutine Transform_MultiD(plan, local_in, qOK)
 
   goto 2000
 
-1000  call log_error('Error in transforms:Transform_MultiD',tErrorLog_G)
+      call log_error('Error in transforms:Transform_MultiD',tErrorLog_G)
 
 2000 continue
 
@@ -482,10 +481,9 @@ subroutine GetKValues(recvs,displs,qOK)
   integer(kind=ip), dimension(:), allocatable  :: nx
   integer(kind=ip), dimension(:), allocatable  :: ny
   integer(kind=ip), dimension(:), allocatable  :: nz2
-  real(KIND=WP), dimension(:), allocatable :: kz2_loc
   real(KIND=WP)  :: slengthX, sLengthY,sLengthZ2, pi
   integer(kind=ip) :: loc_z2_start, loc_nz2, nz2LOR
-  integer(kind=ip) :: error, trans
+  integer(kind=ip) :: trans
 
 !                      Begin
 
@@ -583,7 +581,7 @@ subroutine GetKValues(recvs,displs,qOK)
 
   goto 2000
 
-1000  call log_error('Error in transforms:GetKValues',tErrorLog_G)
+      call log_error('Error in transforms:GetKValues',tErrorLog_G)
 
 2000 continue
 

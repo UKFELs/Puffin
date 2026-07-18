@@ -20,6 +20,7 @@ option(ENABLE_PARALLEL "whether to build parallel PUFFIN" ON)
 option(USE_MKL "Use Intel MKL" OFF)
 option(ENABLE_TESTING "Enable testing" OFF)
 option(ENABLE_BENCHMARKS "Enable performance benchmarks (see benchmark/README.md)" OFF)
+option(ENABLE_LINT "Enable extra compiler warnings (-Wall -Wextra)" OFF)
 
 ######################################################################
 #
@@ -56,6 +57,32 @@ if (OpenMP_FOUND)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
+endif()
+
+if (ENABLE_LINT)
+  if (CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
+    # -Wno-unused-dummy-argument: many routines share a common call signature
+    # (lattice element interfaces, callback-style routines) where a given
+    # implementation legitimately ignores some arguments.
+    # -Wno-compare-reals: exact REAL(8) ==/ /= comparisons are used
+    # deliberately (sentinel values, zero guards) in several places; see
+    # doc/LINT_NOTES.md for the full list. Rewriting them risks changing
+    # numerical output in a codebase with a bit-exact E2E test.
+    # -Wno-aliasing: transforms.f90 passes the same buffer as FFTW's `in`
+    # and `out` arguments deliberately, for an in-place transform; see
+    # doc/LINT_NOTES.md.
+    # -Wno-intrinsic-shadow: error_fn.f90 deliberately defines its own
+    # erf/erfc, shadowing the Fortran 2008 intrinsics of the same name;
+    # see doc/LINT_NOTES.md.
+    # -Wno-conversion: legacy numerical/HDF5 code relies on implicit
+    # narrowing (REAL->INTEGER truncation, INTEGER(8)->INTEGER(4)) as a
+    # deliberate idiom throughout; see doc/LINT_NOTES.md.
+    set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wall -Wextra -Wno-unused-dummy-argument -Wno-compare-reals -Wno-aliasing -Wno-intrinsic-shadow -Wno-conversion")
+  elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
+    set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -warn all")
+  else()
+    message(WARNING "ENABLE_LINT requested but no warning flags known for Fortran compiler '${CMAKE_Fortran_COMPILER_ID}'")
+  endif()
 endif()
 
 execute_process(COMMAND git --work-tree=${CMAKE_SOURCE_DIR} rev-parse --abbrev-ref HEAD

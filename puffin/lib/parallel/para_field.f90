@@ -81,7 +81,7 @@ logical :: qStart_new
 contains
 
 
-	subroutine getLocalFieldIndices(sdz, flags, frame)
+        subroutine getLocalFieldIndices(sdz, flags, frame)
 
     implicit none
 
@@ -102,26 +102,21 @@ contains
     type(tSimulationFlags), intent(inout) :: flags
     type(tFELFrame), intent(in) :: frame
 
-    real(kind=wp), allocatable :: sp2(:), fr_rfield_old(:), &
+    real(kind=wp), allocatable :: fr_rfield_old(:), &
                                   fr_ifield_old(:), &
                                   bk_rfield_old(:), &
                                   bk_ifield_old(:), &
                                   ac_rfield_old(:), &
                                   ac_ifield_old(:)
 
-    integer(kind=ip) :: locN, ij
-    integer(kind=ip) :: fz2_r, gath_v
+    integer(kind=ip) :: ij
+    integer(kind=ip) :: gath_v
     integer :: req, error, lrank, rrank
     integer sendstat(MPI_STATUS_SIZE)
-    integer statr(MPI_STATUS_SIZE)
 
 
 
-    integer(kind=ip) :: fz2_OLD, ez2_OLD, lTr_OLD, bz2_OLD, &
-                        fbuffLen_OLD, fbuffLenM_OLD, tllen_OLD, &
-                        mainlen_OLD
 
-    integer(kind=ip) :: ffs_OLD, ffe_OLD, ees_OLD, eee_OLD
 
     integer(kind=ip), allocatable :: ee_ar_old(:,:), &
                                      ff_ar_old(:,:), &
@@ -129,7 +124,6 @@ contains
 
 
 
-    integer(kind=ip) :: tnjdlz2
 
 
     INTEGER(KIND=IPL) :: sendbuff, recvbuff
@@ -537,7 +531,6 @@ contains
 
       integer(kind=ip) :: gath_v
 
-      integer error
 
 
       if (ffe_GGG > 0) then
@@ -583,7 +576,7 @@ contains
 
 
       if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-      	gath_v = mainlen * ntrnds_G !-1
+        gath_v = mainlen * ntrnds_G !-1
       else
         gath_v = mainlen * ntrnds_G
       end if
@@ -658,7 +651,6 @@ contains
 
       real(kind=wp), allocatable :: A_local(:), powi(:)
 
-      integer :: error
 
       gpow=0.0_wp
 
@@ -835,7 +827,7 @@ contains
             CALL mpi_recv( tmp_A(1:lrank_v(ij)*ntrndsi_G), &
                    lrank_v(ij)*ntrndsi_G, &
                    mpi_double_precision, &
-            	     lrfromwhere(ij), 0, tProcInfo_G%comm, statr, error )
+                     lrfromwhere(ij), 0, tProcInfo_G%comm, statr, error )
 
             dadz_r(1:lrank_v(ij)*ntrndsi_G) = dadz_r(1:lrank_v(ij)*ntrndsi_G) &
                                            + tmp_A(1:lrank_v(ij)*ntrndsi_G)
@@ -1475,7 +1467,6 @@ contains
                       inBuf
 
   integer :: error
-  logical :: qOKL
 
   inBuf = 3_ip
 
@@ -2141,7 +2132,6 @@ contains
   subroutine getFStEnd()
 
 
-    real(kind=wp), allocatable :: sp2(:)
     integer(kind=ip) :: fz2_act, ez2_act
 
     integer :: error
@@ -2154,6 +2144,12 @@ contains
 ! (find min and max electron z2's)
 
 
+
+! Defensive default: only the iElectronBased/iFieldBased branches below
+! set fz2_act/ez2_act; the invalid-basis branch prints an error but
+! otherwise leaves them undefined.
+    fz2_act = 0_ip
+    ez2_act = 0_ip
 
     if (iParaBas == iElectronBased) then
 
@@ -2426,19 +2422,13 @@ contains
 
 ! local
 
-    integer(kind=ip) :: iproc_s, iproc_r
-    integer(kind=ip) :: st_ind_new, ed_ind_new, &
-                        st_ind_old, ed_ind_old, &
-                        nbase, obase
     integer(kind=ip), allocatable :: send_ptrs(:,:), recv_ptrs(:,:)
 
     integer(kind=ip), allocatable :: sdispls(:), rdispls(:)
 
 
     integer(kind=ip), allocatable :: nsends(:), nrecvs(:)
-    integer :: error, req, ij
-    integer statr(MPI_STATUS_SIZE)
-    integer sendstat(MPI_STATUS_SIZE)
+    integer :: error, ij
 
 
 
@@ -2585,7 +2575,6 @@ contains
 
     integer :: error, req
     integer statr(MPI_STATUS_SIZE)
-    integer sendstat(MPI_STATUS_SIZE)
 
 
 
@@ -2746,7 +2735,6 @@ contains
                                 sElY_OLD(:), sElGam_OLD(:), &
                                 sElPX_OLD(:), sElPY_OLD(:), &
                                 s_chi_bar_OLD(:), &
-                                s_Normalised_chi_OLD(:), &
                                 tmp4sending(:)
 
   integer(kind=ip) :: icds, new_sum, offe, offs, frmroot
@@ -3215,7 +3203,7 @@ contains
     implicit none
     
     integer :: req, error
-    integer(kind=ip) :: ij, si, sst, sse
+    integer(kind=ip) :: si, sst, sse
     integer statr(MPI_STATUS_SIZE)
     integer sendstat(MPI_STATUS_SIZE)
 

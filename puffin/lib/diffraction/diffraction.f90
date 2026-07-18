@@ -120,7 +120,7 @@ subroutine multiplyexp(h,qOK)
 
   complex(kind=wp) :: posI            !< Imaginary unit
   
-  integer(kind=IP) :: ind,   &        !< index 
+  integer(kind=IP) ::  &!< index 
                       x_inc, &        !< loop index for nodes in x
                       y_inc, &        !< loop index for nodes in y
                       z2_inc          !< loop index for nodes in z2
@@ -179,7 +179,7 @@ subroutine multiplyexp(h,qOK)
 
   GOTO 2000
 
-1000  call log_error('Error in transforms:RearrangeExp',tErrorLog_G)
+      call log_error('Error in transforms:RearrangeExp',tErrorLog_G)
 
 2000 continue
 
@@ -224,7 +224,6 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, ctx, qOK)
 
   integer(kind=ip) :: ntrh, ix, iy, iz
   logical :: qOKL
-  integer :: error
 
 !                      Begin
 
@@ -343,7 +342,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, ctx, qOK)
 
   GOTO 2000
 
-1000  CALL log_error('Error in transforms:DiffractionStep',tErrorLog_G)
+      CALL log_error('Error in transforms:DiffractionStep',tErrorLog_G)
 
 2000 CONTINUE
 
@@ -414,9 +413,8 @@ SUBROUTINE AbsorptionStep(sAl,h,ffact)
   REAL(KIND=WP), allocatable :: mask(:), mask_z2(:)
   COMPLEX(KIND=WP), allocatable :: sAnb(:,:,:)
   COMPLEX(KIND=WP) :: posI
-  INTEGER(KIND=IP) :: iz2, x_inc, y_inc, z2_inc, ind, ix, iy
+  INTEGER(KIND=IP) :: iz2, x_inc, y_inc, z2_inc, ix, iy
   INTEGER(KIND=IP) :: loc_nz2
-  integer :: error
   LOGICAL :: qOKL
 
 ! ############################
@@ -595,7 +593,7 @@ SUBROUTINE clearA(sA, qOK)
 
   GOTO 2000
 
-1000  CALL log_error('Error in transforms:clearA',tErrorLog_G)
+      CALL log_error('Error in transforms:clearA',tErrorLog_G)
 
 2000 CONTINUE
 

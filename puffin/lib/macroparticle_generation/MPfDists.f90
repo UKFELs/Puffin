@@ -54,7 +54,7 @@ contains
 
       real(kind=wp), allocatable :: x(:), y(:), &
          z2(:), px(:), &
-         py(:), pz2(:), gamma(:), &
+py(:), gamma(:),  &
          z2m(:), gm(:), gsig(:), &
          xm(:), ym(:), pxm(:), pym(:), &
          Ne(:), pxsig(:), pysig(:), &
@@ -70,7 +70,6 @@ contains
       integer(kind=ipl), allocatable :: totMPs_b(:), b_sts(:), b_ends(:)
       integer(kind=ipl) :: tnms
 
-      integer :: error
 
 
       qRndEj_G(:) = .false.
@@ -366,10 +365,10 @@ contains
 
       integer(kind=ip) :: i, intTypeG, nMPs, NMZ2  ! Num MPs in gamma
 
-      integer(kind=ipl) :: istart, iend, k, xin
+      integer(kind=ipl) :: istart, iend, k
 
       real(kind=wp) :: z2grid(2_IP), &
-         z2int(1_IP), px0, py0, x0, y0, npk_num, ndens_num, npk_numl
+z2int(1_IP), npk_num, ndens_num, npk_numl
 
       integer(kind=ip), allocatable :: arrbs(:)
 
@@ -381,9 +380,8 @@ contains
          xseqb(:), yseqb(:), pxseqb(:), pyseqb(:), gamseqb(:), &
          z2seqb(:)
 
-      real(kind=wp) :: sigxpr, sigpxpr, sigypr, sigpypr, siggampr
 
-      logical :: qOKL, error
+      logical :: qOKL
 
 !     Using 11 mp's and a gaussian distribution in p2 (gamma)
 

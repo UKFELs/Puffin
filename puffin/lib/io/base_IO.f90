@@ -43,7 +43,7 @@ contains
       logical,         intent(in)            :: qLOGIC
       type(cFileType), intent(inout)         :: tFileType
       character(*),    intent(in), optional  :: zFormat
-      logical,         intent(out)	         :: qOK
+      logical,         intent(out)               :: qOK
 
       integer(kind=ip)  :: iInt
       logical           :: qOKL
@@ -100,9 +100,8 @@ contains
       integer(kind=ip),intent(in)             :: iInt
       type(cFileType), intent(inout)          :: tFileType
       character(*),    intent(in),  optional  :: zFormat
-      logical,         intent(out)	      :: qOK
+      logical,         intent(out)            :: qOK
 
-      logical           :: qOKL
 
       qOK = .false.
 
@@ -126,7 +125,7 @@ contains
 
 !          Error Handler
 
-1000  call log_error('Error in DIO:WriteINTEGER',tErrorLog_G)
+      call log_error('Error in DIO:WriteINTEGER',tErrorLog_G)
       print*,'Error in DIO:WriteINTEGER'
 2000  continue
 
@@ -150,9 +149,9 @@ contains
       integer(kind=ipl),intent(in)             :: iInt
       type(cFileType), intent(inout)          :: tFileType
       character(*),    intent(in),  optional  :: zFormat
-      logical,         intent(out)	      :: qOK
+      logical,         intent(out)            :: qOK
 
-      logical           :: qOKL
+      logical, parameter :: qOKL = .true.
 
       qOK = .false.
 
@@ -199,9 +198,9 @@ contains
       integer(kind=ipn),intent(in)            :: iInt
       type(cFileType), intent(inout)          :: tFileType
       character(*),    intent(in),  optional  :: zFormat
-      logical,         intent(out)	  :: qOK
+      logical,         intent(out)        :: qOK
 
-      logical           :: qOKL
+      logical, parameter :: qOKL = .true.
 
 !     Set error flag to false
 
@@ -253,9 +252,9 @@ contains
       real(kind=wp),  intent(in)             :: sReal
       type(cFileType),intent(inout)          :: tFileType
       character(*),   intent(in),  optional  :: zFormat
-      logical,        intent(out)	     :: qOK
+      logical,        intent(out)            :: qOK
 
-      logical           :: qOKL
+      logical, parameter :: qOKL = .true.
 
       qOK = .false.
 
@@ -303,7 +302,7 @@ contains
       character(*),   intent(in),  optional  :: zFormat
       logical,        intent(out)      :: qOK
 
-      logical           :: qOKL
+      logical, parameter :: qOKL = .true.
 
       qOK = .false.
 
@@ -349,9 +348,9 @@ contains
       real(kind=wp),  intent(in)             :: sReal(:,:)
       type(cFileType),intent(inout)          :: tFileType
       character(*),   intent(in),  optional  :: zFormat
-      logical,        intent(out)	     :: qOK
+      logical,        intent(out)            :: qOK
 
-      logical           :: qOKL
+      logical, parameter :: qOKL = .true.
 
       qOK = .false.
 
@@ -399,7 +398,7 @@ contains
       character(*),   intent(in),  optional  :: zFormat
       logical,        intent(out)     :: qOK
 
-      logical           :: qOKL
+      logical, parameter :: qOKL = .true.
 
       qOK = .false.
 
@@ -466,7 +465,7 @@ contains
 ! Error Handler
 !--------------------------------------------------------------------------------
 !
-1000  call log_error('Error in DIO: FreeFile',tErrorLog_G)
+      call log_error('Error in DIO: FreeFile',tErrorLog_G)
       Print*,'Error in DIO: FreeFile'
 2000  CONTINUE
 
@@ -495,14 +494,14 @@ contains
 
       CHARACTER(*),   INTENT(IN)            :: zFileName
       TYPE(cFileType),INTENT(INOUT)         :: tFileType
-      LOGICAL,        INTENT(OUT)	    :: qOK
+      LOGICAL,        INTENT(OUT)           :: qOK
 !
 !--------------------------------------------------------------------------------
 ! Local Scalars
 !--------------------------------------------------------------------------------
 !
       INTEGER      ::ios
-      LOGICAL      ::qOKL
+      LOGICAL, parameter :: qOKL = .true.
 !
 !--------------------------------------------------------------------------------
 ! Set error flag to false
@@ -578,7 +577,7 @@ contains
       IMPLICIT NONE
 !
       TYPE(cFileType),INTENT(INOUT)           :: tFileType
-      LOGICAL,       INTENT(OUT)	      :: qOK
+      LOGICAL,       INTENT(OUT)              :: qOK
 !
       IF (tFileType%qFormatted) Then
          CLOSE(tFileType%iUnit, STATUS='KEEP')
@@ -587,7 +586,7 @@ contains
       qOK = .TRUE.
       GoTo 2000
 
-1000  call log_error('Error in DIO: CloseFile',tErrorLog_G)
+      call log_error('Error in DIO: CloseFile',tErrorLog_G)
       Print*,'Error in DIO: CloseFile'
 2000  CONTINUE
    end subroutine CloseFile
@@ -804,7 +803,7 @@ contains
 ! Error Handler
 !--------------------------------------------------------------------------------
 !
-1000  call log_error('Error in DIO: OpenFileForAppend',tErrorLog_G)
+      call log_error('Error in DIO: OpenFileForAppend',tErrorLog_G)
       Print*,'Error in DIO: OpenFileForAppend'
 2000  CONTINUE
 
@@ -860,7 +859,7 @@ contains
 
 ! Error Handler
 
-1000  call log_error('Error in DIO: OpenFileForAppend',tErrorLog_G)
+      call log_error('Error in DIO: OpenFileForAppend',tErrorLog_G)
       print*,'Error in DIO: OpenFileForAppend'
 2000  continue
 

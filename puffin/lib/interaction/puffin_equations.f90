@@ -18,7 +18,7 @@ contains
   subroutine dppdz_r_f(sx, sy, sz2, spr, spi, sgam, &
                        sZ, sdpr, und, frame)
 
-  	implicit none
+        implicit none
 
 
     real(kind=wp), contiguous, intent(in) :: sx(:), sy(:), sz2(:), spr(:), &
@@ -28,7 +28,6 @@ contains
     type(tUndulator), intent(in) :: und
     type(tFELFrame), intent(in) :: frame
 
-    real(kind=wp) :: szt
 
 !$OMP WORKSHARE
     sdpr = sInv2rho * ( und%n2col * byu  &
@@ -58,7 +57,6 @@ contains
     type(tUndulator), intent(in) :: und
     type(tFELFrame), intent(in) :: frame
 
-    real(kind=wp) :: szt
 
 !$OMP WORKSHARE
     sdpi = sInv2rho * (  und%n2col * bxu  &

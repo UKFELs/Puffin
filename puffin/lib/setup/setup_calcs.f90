@@ -81,8 +81,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
     LOGICAL,           INTENT(OUT)   :: qOK
 
 
-    REAL(KIND=WP) :: lam_r_bar, LenZ2, modfact1, sbetaz, aw_rms
-    LOGICAL :: qOKL
+    REAL(KIND=WP) :: lam_r_bar, LenZ2, modfact1
 
     qOK = .FALSE.
 
@@ -563,10 +562,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, sFiltFrac, &
 ! iXY          Number of nodes in XY plane
 ! sA0gauss_Re  Initial field over all planes
 
-    LOGICAL           :: qOKL
-    LOGICAL           :: qInitialGauss
-    INTEGER(KIND=IP)  :: iZ2,iXY,i,lowind,highind,error,NN(3)
-    REAL(KIND=WP)     :: z2bar,rho
+    INTEGER(KIND=IP)  :: iZ2, iXY, NN(3)
     REAL(KIND=WP)     :: sLengthOfElm(3)
 !    REAL(KIND=WP),DIMENSION(:),ALLOCATABLE :: sAx_mag,sAy_mag,&
 !                                              sAreal,sAimag
@@ -611,7 +607,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, sFiltFrac, &
     qOK = .TRUE.
     GOTO 2000
 
-1000 CALL log_error('Error in FEMethod:SetUpInitialValues',tErrorLog_G)
+     CALL log_error('Error in FEMethod:SetUpInitialValues',tErrorLog_G)
     PRINT*,'Error in FEMethod:SetUpInitialValues'
 2000 CONTINUE
 
@@ -1116,7 +1112,6 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
 
 !                   LOCAL ARGS
 
-    INTEGER(KIND=IPL) :: NMacroE
     REAL(KIND=WP)     :: sQOneE, totNk_glob, totNk_loc
     REAL(KIND=WP), ALLOCATABLE  :: RealE(:)
     INTEGER(KIND=IP) :: j,error, req, lrank, rrank
@@ -1330,7 +1325,6 @@ subroutine getPaSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
                                ph_sh(:), magxs(:), magys(:), dels(:)
   LOGICAL, INTENT(IN) :: qFTs(:)
   INTEGER(KIND=IP), INTENT(IN) :: nSeeds
-  integer :: error
 
 
 !  1st gen front seed if present
@@ -1452,7 +1446,7 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
                    z2env(:), oscx(:), &
                    oscy(:)
 
-  REAL(KIND=WP) :: lx, ly, lz2, z2sl, z2el
+  REAL(KIND=WP) :: lx, ly, z2sl, z2el
 
   INTEGER(KIND=IP) :: ind1, ind2, ind3, gind, nz2l
 
@@ -1593,7 +1587,6 @@ subroutine ftron(env, fl_len, rn_sig, cen, z2nds)
   real(kind=wp) :: len_gauss, sSt, sEd, sg1cen, sg1st, &
                    sg2cen, sg2st, sftst
 
-  integer(kind=ip) :: nnz2
 
 
 

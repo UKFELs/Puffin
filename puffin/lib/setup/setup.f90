@@ -511,7 +511,7 @@ contains
 
       GOTO 2000
 
-1000  PRINT*, 'ERROR IN cleanuptemp'
+      PRINT*, 'ERROR IN cleanuptemp'
       STOP
 2000  CONTINUE
 

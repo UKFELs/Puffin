@@ -65,7 +65,7 @@ CONTAINS
 !                             in all direction
 ! q_noise             INPUT   if allowing shot noise
 ! sZ                  INPUT   initial Z position
-! samLenE(:)	      UPDATE  Length of elecgtron pulse in x,y,z2
+! samLenE(:)          UPDATE  Length of elecgtron pulse in x,y,z2
 ! sigE(:)   INPUT   Sigma spread of electron gaussian
 !                             distribution
 ! sElectronThreshold  INTPUT  Beyond this threshold level,
@@ -123,17 +123,13 @@ CONTAINS
 ! ilowerElectron          The lower limit of REAL electrons using the
 !                         threshold limit
 
-    LOGICAL  :: qOKL	
-    INTEGER(KIND=IP) :: i
 
     INTEGER(KIND=IPL) :: TOTALMPS
 
-    REAL(KIND=WP) :: ilowerElectron
 
     INTEGER(KIND=IPL), ALLOCATABLE :: totalmps_b(:)
-	
-    REAL(KIND=WP),ALLOCATABLE :: s_tmp_macro(:),&
-                                 s_mean_number_macro(:)
+        
+    REAL(KIND=WP),ALLOCATABLE :: s_tmp_macro(:)
 
     REAL(KIND=WP),ALLOCATABLE :: Tmp_chibar(:),Tmp_Normchi(:)
 
@@ -145,13 +141,12 @@ CONTAINS
     REAL(KIND=WP),ALLOCATABLE :: s_tmp_Vk(:)
 
     REAL(KIND=WP), ALLOCATABLE :: s_tmp_max_av(:)
-    REAL(KIND=WP) :: local_start, local_end, afact, um, kx, ky
+    REAL(KIND=WP) :: afact
 
-    REAL(KIND=WP) :: offsets(6), betax(nbeams), betay(nbeams)
+    REAL(KIND=WP) :: betax(nbeams), betay(nbeams)
 
-    real(kind=wp) :: sigpx0, sigpy0
     
-    REAL(KIND=WP), ALLOCATABLE :: Qchoff(:), tconv(:)
+    REAL(KIND=WP), ALLOCATABLE :: tconv(:)
 
     INTEGER(KIND=IPL), ALLOCATABLE :: b_sts(:), b_ends(:)
 
@@ -159,7 +154,6 @@ CONTAINS
 
     INTEGER(KIND=IP)    :: rank, b_ind
     INTEGER(KIND=IP)    :: numproc
-    INTEGER(KIND=IP)    :: error
     
 !     Set error flag to false         
 
@@ -186,7 +180,7 @@ CONTAINS
     ALLOCATE(z2_tmpcoord(TOTALMPS))
     ALLOCATE(px_tmpvector(TOTALMPS))
     ALLOCATE(py_tmpvector(TOTALMPS))
-    ALLOCATE(pz2_tmpvector(TOTALMPS))	  
+    ALLOCATE(pz2_tmpvector(TOTALMPS))     
     ALLOCATE(s_tmp_macro(TOTALMPS))
     ALLOCATE(Tmp_chibar(TOTALMPS))
     ALLOCATE(Tmp_Normchi(TOTALMPS))
@@ -365,12 +359,12 @@ CONTAINS
 
 !     Set error flag and exit         
 
-    qOK = .TRUE.				    
+    qOK = .TRUE.                                    
     GOTO 2000     
 
 !     Error Handler
 
-1000 CALL log_error('Error in simple_electron_gen:generate_simple_beam',tErrorLog_G)
+     CALL log_error('Error in simple_electron_gen:generate_simple_beam',tErrorLog_G)
     PRINT*,'Error in simple_electron_gen:generate_simple_beam'
 2000 CONTINUE
   END SUBROUTINE generate_simple_beam
@@ -412,10 +406,8 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
                                 spz2_integral(:)
                                 
 
-  INTEGER(KIND=IP) :: iNumLocalElectrons(6)
   INTEGER(KIND=IP), ALLOCATABLE :: iLocalIntegralType(:)
   REAL(KIND=WP) :: offsets(6), gxpx, gypy
-  integer :: error
   integer(kind=ip) :: nseqparts
   real(kind=wp), allocatable :: xseq(:), yseq(:), pxseq(:), &
                                 pyseq(:), gamseq(:), z2seq(:)

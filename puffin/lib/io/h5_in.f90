@@ -30,28 +30,11 @@ contains
     INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
     INTEGER(HID_T) :: dtype         !< So we can check we're reading in doubles
     INTEGER(kind=ip) :: dclass         !< So we can check we're reading in doubles
-    INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
-    INTEGER(HID_T) :: memspace     !< Dataspace identifier in file
-    INTEGER(HID_T) :: attr_id       !< Attribute identifier
-    INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
-    INTEGER(HID_T) :: atype_id      !< Attribute Data type identifier
     CHARACTER(LEN=9), PARAMETER :: dsetname = "electrons" !< Dataset name
-    CHARACTER(LEN=30) :: aname   !< Attribute name
     character(1024_IP) :: filename
     INTEGER(HSIZE_T), DIMENSION(2) :: dims   !< dims of ptcl dataset (coords*numelecs)
     INTEGER(HSIZE_T), DIMENSION(2) :: mdims   !< maxdims of ptcl dataset (coords*numelecs)
     INTEGER(kind=ip) ::  rank                !< Particle Dataset rank
-    INTEGER     ::  arank = 1                !< Attribute rank - 1 is vector
-    INTEGER(HSIZE_T), DIMENSION(1) :: adims  !< Attribute dims
-    INTEGER(HSIZE_T), DIMENSION(1) :: attr_data_int !< For integer attribs (numdims)
-    INTEGER     :: numSpatialDims    !< Attr content, and also num elsewhere
-    REAL(kind=WP) :: attr_data_double
-    CHARACTER(LEN=100) :: attr_data_string
-    CHARACTER(LEN=16) :: scaleToSIstring
-    INTEGER(HSIZE_T) :: attr_string_len
-    CHARACTER(LEN=4), PARAMETER :: timegrpname = "time"  ! Group name
-    CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  ! Group name
-    REAL(kind=WP), ALLOCATABLE :: limdata (:)  ! Data to write
     integer :: error ! Error flag
     character(LEN=40) :: errorstr !<String to write an error
     integer(kind=ip) :: nMPs
@@ -139,34 +122,13 @@ contains
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier
     INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
-    INTEGER(HID_T) :: dtype         !< So we can check we're reading in doubles
-    INTEGER(kind=ip) :: dclass         !< So we can check we're reading in doubles
-    INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
     INTEGER(HID_T) :: memspace     !< Dataspace identifier in file
-    INTEGER(HID_T) :: attr_id       !< Attribute identifier
-    INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
-    INTEGER(HID_T) :: atype_id      !< Attribute Data type identifier
     CHARACTER(LEN=9), PARAMETER :: dsetname = "electrons" !< Dataset name
-    CHARACTER(LEN=30) :: aname   !< Attribute name
     character(1024_IP) :: filename
     INTEGER(HSIZE_T), DIMENSION(2) :: dims   !< dims of ptcl dataset (coords*numelecs)
-    INTEGER(HSIZE_T), DIMENSION(2) :: mdims   !< maxdims of ptcl dataset (coords*numelecs)
     INTEGER(HSIZE_T), DIMENSION(2) :: doffset!< Offset for write, could be rank dependent
     INTEGER(HSIZE_T), DIMENSION(2) :: dsize  !< Size of hyperslab to write
-    INTEGER(kind=ip) ::  rank                !< Particle Dataset rank
-    INTEGER     ::  arank = 1                !< Attribute rank - 1 is vector
-    INTEGER(HSIZE_T), DIMENSION(1) :: adims  !< Attribute dims
-    INTEGER(HSIZE_T), DIMENSION(1) :: attr_data_int !< For integer attribs (numdims)
-    INTEGER     :: numSpatialDims    !< Attr content, and also num elsewhere
-    REAL(kind=WP) :: attr_data_double
-    CHARACTER(LEN=100) :: attr_data_string
-    CHARACTER(LEN=16) :: scaleToSIstring
-    INTEGER(HSIZE_T) :: attr_string_len
-    CHARACTER(LEN=4), PARAMETER :: timegrpname = "time"  ! Group name
-    CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  ! Group name
-    REAL(kind=WP), ALLOCATABLE :: limdata (:)  ! Data to write
     integer :: error ! Error flag
-    character(LEN=40) :: errorstr !<String to write an error
     integer(kind=ip) :: mpiinfo
 
     mpiinfo=MPI_INFO_NULL
@@ -277,8 +239,6 @@ contains
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: group_id      !< Group identifier
     INTEGER(HID_T) :: attr_id       !< Attribute identifier
-    INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
-    INTEGER(HID_T) :: atype_id      !< Attribute Data type identifier
     CHARACTER(LEN=7), PARAMETER :: grpname = "runInfo"  ! Group name
     CHARACTER(LEN=3) :: aname   !< Attribute name
     character(1024_IP) :: filename
@@ -347,28 +307,14 @@ contains
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier
     INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
-    INTEGER(HID_T) :: dtype         !< So we can check we're reading in doubles
-    INTEGER(kind=ip) :: dclass         !< So we can check we're reading in doubles
-    INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
     INTEGER(HID_T) :: memspace     !< Dataspace identifier in file
     CHARACTER(LEN=5), PARAMETER :: dsetname = "aperp" !< Dataset name
     character(1024_IP) :: filename
     INTEGER(HSIZE_T), DIMENSION(2) :: dims   !< dims of field dataset
-    INTEGER(HSIZE_T), DIMENSION(2) :: mdims   !< maxdims of field dataset
     INTEGER(HSIZE_T), DIMENSION(2) :: doffset!< Offset for write, could be rank dependent
     INTEGER(HSIZE_T), DIMENSION(1) :: dsize  !< Size of hyperslab to write
     INTEGER(HSIZE_T), DIMENSION(2) :: count  !< Count for hyperslab
-    INTEGER(kind=ip) ::  rank                !< Particle Dataset rank
-    INTEGER     ::  arank = 1                !< Attribute rank - 1 is vector
-    INTEGER(HSIZE_T), DIMENSION(1) :: adims  !< Attribute dims
-    INTEGER(HSIZE_T), DIMENSION(1) :: attr_data_int !< For integer attribs (numdims)
-    INTEGER     :: numSpatialDims    !< Attr content, and also num elsewhere
-    REAL(kind=WP) :: attr_data_double
-    CHARACTER(LEN=100) :: attr_data_string
-    CHARACTER(LEN=16) :: scaleToSIstring
-    INTEGER(HSIZE_T) :: attr_string_len
     integer :: error ! Error flag
-    character(LEN=40) :: errorstr !<String to write an error
     integer(kind=ip) :: mpiinfo
 
     mpiinfo=MPI_INFO_NULL
@@ -634,16 +580,11 @@ contains
     INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
     INTEGER(HID_T) :: dtype         !< So we can check we're reading in doubles
     INTEGER(kind=ip) :: dclass         !< So we can check we're reading in doubles
-    INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
     INTEGER(HID_T) :: memspace     !< Dataspace identifier in file
-    INTEGER(HID_T) :: attr_id       !< Attribute identifier
-    INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
-    INTEGER(HID_T) :: atype_id      !< Attribute Data type identifier
     INTEGER(HID_T) :: plist_id      !< (parallel) Property list identifier
 !    INTEGER(HID_T) :: group_id      !< Group identifier
 !    logical, intent(in) :: qSeparate !<May reinstitute this.
     CHARACTER(LEN=9), PARAMETER :: dsetname = "electrons" !< Dataset name
-    CHARACTER(LEN=30) :: aname   !< Attribute name
     character(1024_IP) :: filename
 !    logical, intent(inout) :: qOK
 !    INTEGER(HSIZE_T), DIMENSION(1) :: dims = (/iGloNumElectrons_G/) ! Dataset dimensions
@@ -652,19 +593,8 @@ contains
     INTEGER(HSIZE_T), DIMENSION(2) :: doffset!< Offset for write, could be rank dependent
     INTEGER(HSIZE_T), DIMENSION(2) :: dsize  !< Size of hyperslab to write
     INTEGER(kind=ip)  ::  rank                 !< Particle Dataset rank
-    INTEGER(kind=ip)  ::  arank = 1                !< Attribute rank - 1 is vector
-    INTEGER(HSIZE_T), DIMENSION(1) :: adims  !< Attribute dims
-    INTEGER(HSIZE_T), DIMENSION(1) :: attr_data_int !< For integer attribs (numdims)
-    INTEGER     :: numSpatialDims    !< Attr content, and also num elsewhere
 !assumed 3D sim. May be 1D.
 !    TYPE(C_PTR) :: f_ptr
-    REAL(kind=WP) :: attr_data_double
-    CHARACTER(LEN=100) :: attr_data_string
-    CHARACTER(LEN=16) :: scaleToSIstring
-    INTEGER(HSIZE_T) :: attr_string_len
-    CHARACTER(LEN=4), PARAMETER :: timegrpname = "time"  ! Group name
-    CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  ! Group name
-    REAL(kind=WP), ALLOCATABLE :: limdata (:)  ! Data to write
     ! Local vars
     !integer(kind=ip) :: iep
     integer :: error !< Error flag
@@ -946,7 +876,6 @@ contains
     INTEGER(HID_T) :: plist_id      !< (parallel) Property list identifier
     INTEGER(HID_T) :: dtype         !< So we can check we're reading in doubles
     INTEGER(kind=ip) :: dclass         !< So we can check we're reading in doubles
-    INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
     INTEGER(HID_T) :: memspace     !< Dataspace identifier in file
     INTEGER(kind=ip) ::  rank       !< Field file Dataset rank
     INTEGER(HSIZE_T), DIMENSION(2) :: dims1d   !< dims of field dataset (NZ2_G*components)
@@ -959,7 +888,6 @@ contains
     INTEGER(HSIZE_T), DIMENSION(4) :: doffset3d   !< maxdims of ptcl dataset (coords*numelecs)
     INTEGER(HID_T) :: group_id
 
-    INTEGER(kind=ip) :: loopindex
     CHARACTER(LEN=5), PARAMETER :: dsetname = "aperp"     ! Dataset name
     character(1024_IP) :: filename
     integer :: error !< Error flag
@@ -1371,7 +1299,6 @@ contains
 
     integer(HID_T) :: attr_id                 !< Attribute identifier
     integer(HID_T) :: atype_id                !< Attribute Data type identifier
-    integer(HSIZE_T) :: attr_string_len       !< Length of attribute string
     integer(HSIZE_T), dimension(1) :: adims=(/1/) !< Attribute Data type identifier
     integer :: error                             !< Error flag
 
@@ -1405,7 +1332,6 @@ contains
 
     integer(HID_T) :: attr_id                 !< Attribute identifier
     integer(HID_T) :: atype_id                !< Attribute Data type identifier
-    integer(HSIZE_T) :: attr_string_len       !< Length of attribute string
     integer(HSIZE_T), dimension(1) :: adims=(/1/) !< Attribute Data type identifier
     integer :: error                             !< Error flag
 

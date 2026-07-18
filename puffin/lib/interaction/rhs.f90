@@ -96,8 +96,6 @@ contains
   logical, intent(inout) :: qOK
   type(tSimulationContext), intent(inout) :: ctx
 
-  integer(kind=ipl) :: i, z2node
-  integer :: error
   logical qOKL
 
 !     Begin
@@ -326,7 +324,7 @@ contains
 
     goto 2000
 
-1000 call log_error('Error in rhs:getrhs',tErrorLog_G)
+    call log_error('Error in rhs:getrhs',tErrorLog_G)
     print*,'Error in rhs:getrhs'
 2000 continue
 

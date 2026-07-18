@@ -40,19 +40,19 @@ FUNCTION erfc(x)
   IMPLICIT NONE
 
   REAL(KIND=WP),INTENT(IN)   :: x
-  REAL(KIND=WP)		   :: erfc
+  REAL(KIND=WP)            :: erfc
 
   erfc=merge(1.0_WP+gammp(0.5_WP,x**2),gammq(0.5_WP,x**2),x<0.0)
 
 END FUNCTION erfc
 !********************************************************
 
-FUNCTION erfi(Y)			
+FUNCTION erfi(Y)                        
 !-----------------------
 ! Inverse error function
 !-----------------------
   REAL(KIND=WP),INTENT(IN)   :: Y
-  REAL(KIND=WP)		   :: erfi
+  REAL(KIND=WP)            :: erfi
  
 !---
 ! constants and parameters
@@ -124,8 +124,8 @@ FUNCTION gammp(a,x)
 
   IMPLICIT NONE
 
-  REAL(KIND=WP),INTENT(IN)			:: a,x
-  REAL(KIND=WP)					:: gammp
+  REAL(KIND=WP),INTENT(IN)                      :: a,x
+  REAL(KIND=WP)                                 :: gammp
 
   CALL assert(x>=0.0, a>0.0,'gammp args')
 
@@ -143,7 +143,7 @@ FUNCTION gammq(a,x)
   IMPLICIT NONE
 
   REAL(KIND=WP),INTENT(IN) :: a,x
-  REAL(KIND=WP)	:: gammq
+  REAL(KIND=WP) :: gammq
 
   CALL assert(x>=0.0, a>0.0,'gammq args')
 
@@ -162,7 +162,7 @@ FUNCTION gser_s(A,X,GLN)
   REAL(KIND=WP),OPTIONAL,INTENT(OUT) :: GLN
 
   INTEGER(KIND=IP) :: ITMAX,N
-  REAL(KIND=WP)	:: gser_s,EPS,AP,SUMM,DEL
+  REAL(KIND=WP) :: gser_s,EPS,AP,SUMM,DEL
 
   ITMAX=100_IP
   EPS=epsilon(X)
@@ -199,11 +199,11 @@ END FUNCTION gser_s
 
 FUNCTION gcf(a,x,gln)
 
-  REAL(KIND=WP),INTENT(IN)			:: a,x
-  REAL(KIND=WP),OPTIONAL,INTENT(OUT)		:: gln
-  REAL(KIND=WP)					:: gcf,EPS,FPMIN
-  REAL(KIND=WP)					:: an,b,c,d,del,h
-  INTEGER(KIND=IP)				:: ITMAX,i
+  REAL(KIND=WP),INTENT(IN)                      :: a,x
+  REAL(KIND=WP),OPTIONAL,INTENT(OUT)            :: gln
+  REAL(KIND=WP)                                 :: gcf,EPS,FPMIN
+  REAL(KIND=WP)                                 :: an,b,c,d,del,h
+  INTEGER(KIND=IP)                              :: ITMAX,i
 
   ITMAX=100_IP
   EPS=epsilon(x)
@@ -259,7 +259,10 @@ FUNCTION gammln(xx)
   coef=(/76.18009172947146_WP,-86.50532032941677_WP,24.01409824083091_WP, &
        -1.231739572450155_WP,0.1208650973866179E-2_WP,-0.5395239384953E-5_WP /)
 
-  IF (xx==0) RETURN
+  IF (xx==0) THEN
+     gammln = 0.0_WP
+     RETURN
+  END IF
 
   CALL assert(xx > 0.0,'gammln_s arg')
 
