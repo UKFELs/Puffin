@@ -152,6 +152,28 @@ if (DOXYGEN_FOUND)
         )
 endif()
 
+######################################################################
+#
+# Static lint target (opt-in, not part of the default build)
+#
+######################################################################
+
+find_program(FORTITUDE_EXECUTABLE NAMES fortitude)
+
+if (FORTITUDE_EXECUTABLE)
+    add_custom_target(lint
+        ${FORTITUDE_EXECUTABLE} check ${CMAKE_SOURCE_DIR}/puffin
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Running fortitude static analysis on puffin/" VERBATIM
+        )
+else()
+    add_custom_target(lint
+        ${CMAKE_COMMAND} -E echo
+            "fortitude not found. Install it (e.g. 'pip install fortitude-lint' or 'cargo install fortitude-lint'), re-run cmake, then 'make lint'."
+        COMMENT "fortitude not found" VERBATIM
+        )
+endif()
+
 install (DIRECTORY utilities/post DESTINATION bin)
 install (DIRECTORY utilities/pyPlotting DESTINATION bin)
 install (DIRECTORY utilities/setup DESTINATION bin)
