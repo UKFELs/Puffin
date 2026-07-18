@@ -19,17 +19,17 @@ contains
 
 ! Get local beam macroparticle number
 ! and start and end points in z2.
-! 
+!
 !           ARGUMENTS
 
     INTEGER(KIND=IP), INTENT(IN) :: N, numproc, rank
     REAL(KIND=WP), INTENT(IN) :: globLen
-    
+
     INTEGER(KIND=IP), INTENT(OUT) :: locN
     REAL(KIND=WP), INTENT(OUT) :: local_start, local_end
-    
+
 !          LOCAL ARGS
-    
+
     REAL(KIND=WP) :: frac, OneElmLength, upperLength, lowerLength
     INTEGER(KIND=IP) :: lowern, highern, remainder
 
@@ -38,7 +38,7 @@ contains
     lowern = FLOOR(frac)
     highern = CEILING(frac)
     remainder = MOD(N,numproc)
-     
+
     IF (remainder==0) THEN
        locN = lowern
     ELSE
@@ -46,16 +46,16 @@ contains
           locN = highern
        ELSE
           locN = lowern
-       ENDIF
-    ENDIF
+       END IF
+    END IF
 
 !     Calculate the distance covered by one element of the grid in z2
 
-    OneElmLength = globLen/N  
+    OneElmLength = globLen/N
 
 !     Calculate the local length of the electron pulse a local process
 !     will hold, in both the lower and upper case.
-    
+
     lowerLength = lowern*OneElmLength
     upperLength = highern*OneElmLength
 
@@ -69,9 +69,9 @@ contains
     ELSE
        local_start = rank*upperLength
        local_end = (rank+1)*upperLength
-    ENDIF
-  
-    
+    END IF
+
+
   END SUBROUTINE splitBeam
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -80,7 +80,7 @@ SUBROUTINE splitBeams(iNMP,samLenE,nBeams,numproc,rank,&
                       iNumLocalElectrons,totalmps_b)
 
   IMPLICIT NONE
-  
+
 !                   ARGUMENTS
 
   INTEGER(KIND=IP), INTENT(IN) :: iNMP(:,:)
@@ -89,7 +89,7 @@ SUBROUTINE splitBeams(iNMP,samLenE,nBeams,numproc,rank,&
   INTEGER, INTENT(IN) :: numproc, rank
   INTEGER(KIND=IP), INTENT(INOUT) :: iNumLocalElectrons(:,:)
   INTEGER(KIND=IPL), INTENT(INOUT) :: totalmps_b(:)
-  
+
 !                   LOCAL ARGS
 
   REAL(KIND=WP) :: local_start, local_end
@@ -108,12 +108,12 @@ SUBROUTINE splitBeams(iNMP,samLenE,nBeams,numproc,rank,&
 
     CALL splitBeam(iNMP(ind,iZ2_CG), samLenE(ind,iZ2_CG), numproc, rank, &
                    iNumLocalElectrons(ind,iZ2_CG), local_start, local_end)
-                   
+
 !             Total no of MPs in this beam
 
     if (qEquiXY_G) then
 
-      totalmps_b(ind) = PRODUCT(INT(iNumLocalElectrons(ind,:),KIND=IPL)) 
+      totalmps_b(ind) = PRODUCT(INT(iNumLocalElectrons(ind,:),KIND=IPL))
 
     else
 
@@ -132,17 +132,17 @@ subroutine divMPs(ndpts, numproc, rank, &
                   locN, local_start, local_end)
 
 ! Get local number of nodes and start and global
-! indices of start and end points. 
-! 
+! indices of start and end points.
+!
 !           ARGUMENTS
 
   integer(kind=ip), intent(in) :: ndpts, numproc, rank
-  
+
   integer(kind=ip), intent(out) :: locN
   integer(kind=ip), intent(out) :: local_start, local_end
-  
+
 !          LOCAL ARGS
-  
+
   real(kind=wp) :: frac
   integer(kind=ip) :: lowern, highern, remainder
 
@@ -151,7 +151,7 @@ subroutine divMPs(ndpts, numproc, rank, &
   lowern = FLOOR(frac)
   highern = CEILING(frac)
   remainder = MOD(ndpts,numproc)
-   
+
   IF (remainder==0) THEN
      locN = lowern
   ELSE
@@ -159,25 +159,25 @@ subroutine divMPs(ndpts, numproc, rank, &
         locN = highern
      ELSE
         locN = lowern
-     ENDIF
-  ENDIF
+     END IF
+  END IF
 
 
 !     Calculate local start and end values.
 
   IF (rank >= remainder) THEN
-    
+
     local_start = (remainder*highern) + ((rank-remainder) * lowern) + 1
     local_end = local_start + locN - 1
 
   ELSE
-     
+
     local_start = rank*locN + 1
     local_end = local_start + locN - 1
-  
-  ENDIF
 
-  
+  END IF
+
+
 end subroutine divMPs
 
 

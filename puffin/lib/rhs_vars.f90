@@ -54,30 +54,30 @@ real(kind=wp), allocatable :: bxu(:), byu(:), bzu(:)
 
 !   INTEGER(KIND=IP) :: icheck
 !   REAL(KIND=WP) :: dx,dy,dz2
-!   
+!
 !   INTEGER(KIND=IP) :: xx,yy,xred,yred,zz2
 !   REAL(KIND=WP) :: s_Lex,s_Ley,s_Lez2
 !   INTEGER(KIND=IP),DIMENSION(:),ALLOCATABLE ::&
 !               i_n4e,iNodeList_Re,iNodeList_Im,&
 !               i_n4ered
 !   REAL(KIND=WP),DIMENSION(:),ALLOCATABLE :: N
-! 
-! 
-! 
-!   
-! 
-! 
+!
+!
+!
+!
+!
+!
 !   INTEGER(KIND=IP) :: iNodesX,iNodesZ2,iNodesY, j, ntrans
-! 
-! 
+!
+!
 !   INTEGER :: stat,req,error,lrank,rrank
-!   REAL(KIND=WP),DIMENSION(10)	:: couple 
-! 
-! 
+!   REAL(KIND=WP),DIMENSION(10)	:: couple
+!
+!
 !   REAL(KIND=WP) :: time1, start_time
 
 
 
 
 
-end module
+end module rhs_vars

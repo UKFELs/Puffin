@@ -4,10 +4,10 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Module containing routines dealing with the interpolation of the 
+!> Module containing routines dealing with the interpolation of the
 !> macroparticles to the 1D field mesh.
 
 module FiElec1D
@@ -38,15 +38,15 @@ real(kind=wp) :: locz2
 !$OMP DO PRIVATE(z2node, locz2)
   do i = 1, procelectrons_G(1)
 
-!                  Get surrounding nodes 
+!                  Get surrounding nodes
 
       z2node = floor(sz2(i)  / dz2)  + 1_IP
       locz2 = sz2(i) - REAL(z2node  - 1_IP, kind=wp) * dz2
-      
+
       if (fieldMesh == itemporal) then
         if (z2node >= NZ2_G) then
-          print*, 'Z2 coord is too large!! with node:', z2node, &
-                  ' and pos ', sz2(i)
+          print*, "Z2 coord is too large!! with node:", z2node, &
+                  " and pos ", sz2(i)
           STOP
         end if
       end if
@@ -90,7 +90,7 @@ integer(kind=ip) :: i
 
       sField4ElecReal(i) = lis_GR(1,i) * sAr(p_nodes(i)) + sField4ElecReal(i)
       sField4ElecReal(i) = lis_GR(2,i) * sAr(p_nodes(i) + 1_ip) + sField4ElecReal(i)
-  
+
   end do
 !$OMP END DO
 
@@ -100,8 +100,8 @@ integer(kind=ip) :: i
 
       sField4ElecImag(i) = lis_GR(1,i) * sAi(p_nodes(i)) + sField4ElecImag(i)
       sField4ElecImag(i) = lis_GR(2,i) * sAi(p_nodes(i) + 1_ip) + sField4ElecImag(i)
-  
-  end do 
+
+  end do
 !$OMP END DO
 
 
@@ -173,7 +173,7 @@ real(kind=wp) :: dadzRInst, dadzIInst
       !$OMP ATOMIC
       sDADzr(p_nodes(i)) =                         &
         lis_GR(1,i) * dadzRInst + sDADzr(p_nodes(i))
-      
+
       !$OMP ATOMIC
       sDADzr(p_nodes(i) + 1_ip) =                  &
         lis_GR(2,i) * dadzRInst + sDADzr(p_nodes(i) + 1_ip)
@@ -182,20 +182,20 @@ real(kind=wp) :: dadzRInst, dadzIInst
 !                   Imaginary part
 
       !dadzIInst = ((s_chi_bar_G(i)/dV3) * (1 + seta * sp2(i) ) &
-      !                  * spi(i) / sgam(i) ) 
-      
+      !                  * spi(i) / sgam(i) )
+
 
       dadzIInst = dadz_w(i) * spi(i)
 
 
       !$OMP ATOMIC
-      sDADzi(p_nodes(i)) =                             & 
-        lis_GR(1,i) * dadzIInst + sDADzi(p_nodes(i))                        
+      sDADzi(p_nodes(i)) =                             &
+        lis_GR(1,i) * dadzIInst + sDADzi(p_nodes(i))
 
       !$OMP ATOMIC
-      sDADzi(p_nodes(i) + 1_ip) =                      & 
+      sDADzi(p_nodes(i) + 1_ip) =                      &
         lis_GR(2,i) * dadzIInst + sDADzi(p_nodes(i) + 1_ip)
-  
+
   end do
 !$OMP END DO
 

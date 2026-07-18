@@ -96,7 +96,7 @@ contains
   logical, intent(inout) :: qOK
   type(tSimulationContext), intent(inout) :: ctx
 
-  logical qOKL
+  logical :: qOKL
 
 !     Begin
 
@@ -324,8 +324,8 @@ contains
 
     goto 2000
 
-    call log_error('Error in rhs:getrhs',tErrorLog_G)
-    print*,'Error in rhs:getrhs'
+    call log_error("Error in rhs:getrhs",tErrorLog_G)
+    print*,"Error in rhs:getrhs"
 2000 continue
 
   end subroutine getrhs

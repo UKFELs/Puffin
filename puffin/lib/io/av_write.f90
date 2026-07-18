@@ -173,7 +173,7 @@ contains
       integer(kind=ip) :: i, bt, et, ntr, nx, ny, nz2
 
 
-      
+
       nx = NX_G
       ny = NY_G
 
@@ -190,7 +190,7 @@ contains
 
          intens = abs(rfield(bt:et))**2.0_WP + abs(ifield(bt:et))**2.0_WP
 
-         intens2 = reshape(intens, (/nx,ny/))
+         intens2 = reshape(intens, [nx,ny])
 
          power(i) = m_trapz2D(xaxis, yaxis, intens2)
 
@@ -328,7 +328,7 @@ contains
 
 !      if ((inu > npts_I_G) .or. (inl<=0)) then
             if (inl<=0) then
-               print*, 'NODES OUTSIDE BOUNDS'
+               print*, "NODES OUTSIDE BOUNDS"
                stop
             end if
 
@@ -339,12 +339,12 @@ contains
             li1 = 1_wp - li2
 
             if ((li2 < 0.0_wp) .or. (li1<0.0_wp)) then
-               print*, 'Unable to calculate correct interpolation fraction'
-               print*, 'Particle coords'
+               print*, "Unable to calculate correct interpolation fraction"
+               print*, "Particle coords"
                print*, sElX_G(ij)
                print*, sElY_G(ij)
                print*, sElZ2_G(ij)
-               print*, 'Interps are negative!'
+               print*, "Interps are negative!"
                STOP
             end if
 
@@ -363,7 +363,7 @@ contains
             inu = inl + 1
 
             if ((inu > npts_I_G) .or. (inl<=0)) then
-               print*, 'NODES OUTSIDE BOUNDS'
+               print*, "NODES OUTSIDE BOUNDS"
                STOP
             end if
 
@@ -373,12 +373,12 @@ contains
             li1 = 1_wp - li2
 
             if ((li2 < 0.0_wp) .or. (li1<0.0_wp)) then
-               print*, 'Unable to calculate correct interpolation fraction'
-               print*, 'Particle coords'
+               print*, "Unable to calculate correct interpolation fraction"
+               print*, "Particle coords"
                print*, sElX_G(ij)
                print*, sElY_G(ij)
                print*, sElZ2_G(ij)
-               print*, 'Interps are negative!'
+               print*, "Interps are negative!"
                STOP
             end if
 

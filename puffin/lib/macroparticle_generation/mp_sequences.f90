@@ -6,7 +6,7 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Module for calculating sequences used in the macroparticle generation.
@@ -25,7 +25,7 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Generate random sequence with normal
@@ -50,7 +50,7 @@ end subroutine genRSNorm
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Widen / shorten unit variance sequence
@@ -70,11 +70,11 @@ end subroutine modVar
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Generate random sequence with normal distribution,
-!> then modify to give random gaussian distribution 
+!> then modify to give random gaussian distribution
 !> specified with input rms sigma
 !> @param[inout] com Array to output sequence
 !> @param[in] nparts Length of sequence
@@ -94,7 +94,7 @@ end subroutine genGSeq
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Generate random sequence distributed evenly between zero and one
@@ -105,7 +105,7 @@ subroutine genSeqFlat(com, nparts)
 
   real(kind=wp), contiguous, intent(inout) :: com(:)
   integer(kind=ip), intent(in) :: nparts
-  
+
   integer(kind=ip) :: ij
 
   do ij = 1, nparts
@@ -117,17 +117,17 @@ end subroutine genSeqFlat
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Generate sequences for 5-D phase space for Puffin. The 5 dimensions
-!> are 4 transverse (x,y,px,py) and energy. 
+!> are 4 transverse (x,y,px,py) and energy.
 !> @param[inout] xcom Sequence in x dimension
 !> @param[inout] ycom Sequence in y dimension
 !> @param[inout] pxcom Sequence in px dimension
 !> @param[inout] pycom Sequence in py dimension
 !> @param[inout] gcom Sequence in energy dimension
-!> @param[in] sigE 6 element array of requested gaussian r.m.s. width 
+!> @param[in] sigE 6 element array of requested gaussian r.m.s. width
 !> in the Puffin order (x,y,z2,px,py,gamma).
 
 subroutine getSeqs(xcom, ycom, pxcom, pycom, gcom, zcom, sigE, iTrLoad)
@@ -193,10 +193,10 @@ subroutine getSeqs(xcom, ycom, pxcom, pycom, gcom, zcom, sigE, iTrLoad)
 
   call mpi_bcast(ycom, nseqparts_G, mpi_double_precision, 0, &
                tProcInfo_G%comm, error )
-    
+
   call mpi_bcast(pxcom, nseqparts_G, mpi_double_precision, 0, &
                tProcInfo_G%comm, error )
-  
+
   call mpi_bcast(pycom, nseqparts_G, mpi_double_precision, 0, &
                tProcInfo_G%comm, error )
 
@@ -206,13 +206,13 @@ subroutine getSeqs(xcom, ycom, pxcom, pycom, gcom, zcom, sigE, iTrLoad)
   call mpi_bcast(zcom, nseqparts_G, mpi_double_precision, 0, &
                tProcInfo_G%comm, error )
 
-  
+
 end subroutine getSeqs
 
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Subroutine to generate a Halton sequence of length size nparts
@@ -243,7 +243,7 @@ end subroutine genHSeq
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Subroutine to generate a Halton sequence of length size nparts
@@ -270,10 +270,10 @@ end subroutine genHSeqFLAT
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Function which calculates the nth element in the bit-reversed Halton 
+!> Function which calculates the nth element in the bit-reversed Halton
 !> sequence of specified base.
 !> @param[in] ind Nth element of sequence
 !> @param[in] ibase Index of sequence
@@ -303,17 +303,17 @@ end function halton
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Subroutine to project given distribution to a Gaussian of unit variance.
 !> @param[inout] seq Random/semi-random sequence to be projected.
 
 subroutine projectRSeq(seq)
-  
+
   use functions
   use error_fn
-  
+
   real(kind=wp), intent(inout) :: seq(:)
 
   integer(kind=ip) :: is, ic1
@@ -329,7 +329,7 @@ subroutine projectRSeq(seq)
 
   is = size(seq)
 
-! can do general sequence (so no need to know inverse - will need to numerically 
+! can do general sequence (so no need to know inverse - will need to numerically
 ! calculate 'real' sequence)
 
   if (iMeth == GS) then
@@ -342,7 +342,7 @@ subroutine projectRSeq(seq)
     do ic1 = 1, iIntMesh
       cdf(ic1) = 0.5_wp * (1.0_wp + erf(yf(ic1) / sqrt(2.0_wp)))  ! CDF of Gaussian
     end do
-    
+
     ! interpolate as MATLAB interp1(cdf, yf, seq)
 !    print*, cdf
     call interps(cdf, yf, seq, tseq)
@@ -352,9 +352,9 @@ subroutine projectRSeq(seq)
 ! ...or could do joint probability projection a-la Genesis...
 
   else if (iMeth == JP) then
-    
-!    rsq = 
-    
+
+!    rsq =
+
   end if
 
   deallocate(tseq)
@@ -364,15 +364,15 @@ end subroutine projectRSeq
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Interpolate values of x -> f(x) using linear interpolants. Values of x to be 
-!> interpolated do not have to be in order, and the grid in x does not have to 
+!> Interpolate values of x -> f(x) using linear interpolants. Values of x to be
+!> interpolated do not have to be in order, and the grid in x does not have to
 !> be equispaced.
 !> @param[in] x Mesh in x
 !> @param[in] func f(x) - the function to be interpolated to.
-!> @param[in] smplsx The values or samples in x to be interpolated. (finding 
+!> @param[in] smplsx The values or samples in x to be interpolated. (finding
 !> f(x) at these points)
 !> @param[out] smpls_interp The output interpolated values.
 
@@ -383,26 +383,26 @@ subroutine interps(x, func, smplsx, smpls_interp)
 
   integer(kind=ip) :: nsamples, ic
 
-  nsamples = size(smplsx)  
+  nsamples = size(smplsx)
 
   do ic = 1, nsamples
 
     smpls_interp(ic) = interp1(x, func, smplsx(ic))
 
   end do
-  
+
 end subroutine interps
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Interpolate single value of x -> f(x) using linear interpolants. The grid in 
+!> Interpolate single value of x -> f(x) using linear interpolants. The grid in
 !> x does not have to be equispaced.
 !> @param[in] x Mesh in x
 !> @param[in] func f(x) - the function to be interpolated to.
-!> @param[in] smplx The value or sample in x to be interpolated. (i.e. finding 
+!> @param[in] smplx The value or sample in x to be interpolated. (i.e. finding
 !> f(smplx))
 
 function interp1(x, func, smplx) result(smpl_interp)
@@ -422,8 +422,8 @@ function interp1(x, func, smplx) result(smpl_interp)
   smpl_interp = 0.0_wp
 
   if ((smplx > x(1)) .and. (smplx < x(is))) then
-    
-    do while (smplx > x(ic)) 
+
+    do while (smplx > x(ic))
       ic = ic + 1_ip
     end do
 
@@ -438,12 +438,12 @@ function interp1(x, func, smplx) result(smpl_interp)
     smpl_interp = smpl_interp + func(ifu) * locx / dx
 
   else if (smplx <= x(1)) then
-    
+
     smpl_interp = func(1)
 !    print*, 'eh, why here? func(1) = ', func(1), 'smplx = ', smplx
 
   else if (smplx >= x(is)) then
-    
+
     smpl_interp = func(is)
 !    print*, 'eh, why here? func(1) = ', func(1), 'smplx = ', smplx
 

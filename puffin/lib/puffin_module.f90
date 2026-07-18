@@ -44,8 +44,8 @@ contains
 
       call init(input_file_name, sZ, ctx, qOKL)
       if (.not. qOKL) then
-         call log_error('Error during initialization', tErrorLog_G)
-         print*, 'Error during initialization, check error log for details, ', tErrorLog_G%zFileName
+         call log_error("Error during initialization", tErrorLog_G)
+         print*, "Error during initialization, check error log for details, ", tErrorLog_G%zFileName
          goto 1000
       end if
 
@@ -53,9 +53,9 @@ contains
 
       call Get_time(ctx%integration%time_start)
 
-      if ((tProcInfo_G%qRoot) .and. (ioutInfo_G>0)) print*,' starting simulation... '
-      if (tProcInfo_G%qRoot) OPEN(UNIT=137,FILE='rec.out',STATUS='REPLACE',FORM='FORMATTED')
-      if (tProcInfo_G%qRoot) WRITE(137,*) ' starting..... '
+      if ((tProcInfo_G%qRoot) .and. (ioutInfo_G>0)) print*," starting simulation... "
+      if (tProcInfo_G%qRoot) OPEN(UNIT=137,FILE="rec.out",STATUS="REPLACE",FORM="FORMATTED")
+      if (tProcInfo_G%qRoot) WRITE(137,*) " starting..... "
 
 !!!!!!!!!!!!!!!!!!!!!!!  BEGIN INTEGRATION !!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -66,7 +66,7 @@ contains
 
          if (iElmType(iL) == iUnd) then
             if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-               print*, 'Simulating undulator module', ctx%lattice%current_und_index
+               print*, "Simulating undulator module", ctx%lattice%current_und_index
             end if
 
             call UndSection(iL, sZ, ctx)
@@ -103,18 +103,18 @@ contains
 
       call cleanup(sZ)   !     Clear arrays and stucts used during integration
 
-      close(UNIT=137,STATUS='KEEP')
+      close(UNIT=137,STATUS="KEEP")
 
       qOK = .true.
       goto 2000     !       Exit
 
-1000  call log_error('Error in Main',tErrorLog_G)
-      print*,'Error in Main'
-      print*, 'Check error log file for details, ',tErrorLog_G%zFileName
+1000  call log_error("Error in Main",tErrorLog_G)
+      print*,"Error in Main"
+      print*, "Check error log file for details, ",tErrorLog_G%zFileName
 
 2000  continue
 
-      if (tProcInfo_G%qRoot) print*,'Exited successfully'
+      if (tProcInfo_G%qRoot) print*,"Exited successfully"
 
    end subroutine puffin_main
 

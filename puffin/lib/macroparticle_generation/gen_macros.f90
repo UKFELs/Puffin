@@ -182,7 +182,7 @@ contains
             IF(PRESENT(p_1_grid)) p_1_random(i)=RandomNoGenerator(u)
             IF(PRESENT(p_2_grid)) p_2_random(i)=RandomNoGenerator(u)
             IF(PRESENT(p_3_grid)) p_3_random(i)=RandomNoGenerator(u)
-         ENDDO
+         END DO
       ELSE
          x_1_random=0.5_WP
 
@@ -192,7 +192,7 @@ contains
          IF(PRESENT(p_1_grid)) p_1_random = 0.5_WP
          IF(PRESENT(p_2_grid)) p_2_random = 0.5_WP
          IF(PRESENT(p_3_grid)) p_3_random = 0.5_WP
-      ENDIF
+      END IF
 
 !     Following loops sets up macroparticle mean positions and intervals
 !     based on grid-pts
@@ -321,7 +321,7 @@ contains
                            s_macro =random_Poisson(s_mean, .TRUE.)
                         ELSE
                            s_macro =s_mean
-                        ENDIF
+                        END IF
 
                         IF (s_macro > 0 ) THEN
 
@@ -384,7 +384,7 @@ contains
                            END IF
 
                            s_macro = 0.0_WP
-                        ENDIF
+                        END IF
                         !     write(*,*)'py is now', p_2_vector(index),'at index',index
                         s_number_macro(index)=s_macro
                         s_mean_number_macro(index)=s_mean
@@ -414,7 +414,7 @@ contains
 
       IF (icount==0) THEN
          IF (tProcInfo_G%qROOT)  STOP "Error in GenMacros.f90, no macroparticles exist\!"
-      ENDIF
+      END IF
 
 ! Calculate the scaled weighting (chi_bar) and weighting(chichi) of all macro particles
 
@@ -465,7 +465,7 @@ contains
 
       DO i=1,(SIZE(s_grid)-1_IP)
          sd(i)=s_grid(i+1)-s_grid(i)
-      ENDDO
+      END DO
 
       sMax_del=MAXVAL(sd)
 

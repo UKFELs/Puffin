@@ -78,7 +78,7 @@ contains
 
       if (infile == emptstring) then
 
-         print *, 'ERROR, no input filename specified'
+         print *, "ERROR, no input filename specified"
          stop
 
       end if
@@ -93,7 +93,7 @@ contains
       tErrorLog_G%zFileName = TRIM(ADJUSTL(zFile))//"_Error.log"
       tErrorLog_G%qFormatted = .true.
 
-      call log_error('',tErrorLog_G)
+      call log_error("",tErrorLog_G)
 
 !     Rlog_error file
 
@@ -170,10 +170,10 @@ contains
 
 
          if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1)) then
-            print*, '*******************'
-            print*, ''
-            print*, 'Scaling params....'
-            print*, ''
+            print*, "*******************"
+            print*, ""
+            print*, "Scaling params...."
+            print*, ""
          end if
 
          call scaleParams(sEleSig, sLenEPulse, sSigEj_G, &
@@ -217,7 +217,7 @@ contains
       call setupMods(lattFile, taper, sRho, nSteps, sStepSize, fx, fy, &
          sKBetaXSF_G, sKBetaYSF_G, ctx%frame)
 
-      if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 0)) print*, 'setup lattice'
+      if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 0)) print*, "setup lattice"
 
 !     Pass local vars to global vars
 
@@ -436,14 +436,14 @@ contains
 
       CALL MPI_BARRIER(tProcInfo_G%comm,error)
 
-      if ((tProcInfo_G%qROOT) .and. (ioutInfo_G > 0)) print*, 'Initial data written'
+      if ((tProcInfo_G%qROOT) .and. (ioutInfo_G > 0)) print*, "Initial data written"
       deallocate(s_Normalised_chi_G)
 
       qOK = .true.
 
       goto 2000
 
-1000  call log_error('Error in Setup:init',tErrorLog_G)
+1000  call log_error("Error in Setup:init",tErrorLog_G)
 
 2000  continue
 
@@ -464,7 +464,7 @@ contains
 
 ! Local
 
-      LOGICAL qOKl
+      LOGICAL :: qOKl
 
 !    Dump data for resumption
 
@@ -489,12 +489,12 @@ contains
          IF (tTransInfo_G%qOneD) THEN
             IF (tTransInfo_G%loc_nz2_aft_trans/=0) THEN
                DEALLOCATE(kz2_loc_G)
-            ENDIF
+            END IF
          ELSE
             IF (tTransInfo_G%loc_nz2/=0) THEN
                DEALLOCATE(kz2_loc_G)
-            ENDIF
-         ENDIF
+            END IF
+         END IF
       END IF
 
 !    Clear FFTW plans
@@ -511,7 +511,7 @@ contains
 
       GOTO 2000
 
-      PRINT*, 'ERROR IN cleanuptemp'
+      PRINT*, "ERROR IN cleanuptemp"
       STOP
 2000  CONTINUE
 

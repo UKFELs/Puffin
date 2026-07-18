@@ -639,8 +639,9 @@ subroutine UpdateGlobalsFromLatticeElements(lattice)
 
     ! Copy modulation arrays back
     if (allocated(lattice%enmod_wavenum) .and. allocated(enmod_wavenum)) then
-        if (size(lattice%enmod_wavenum) == size(enmod_wavenum)) &
-            enmod_wavenum = lattice%enmod_wavenum
+        if (size(lattice%enmod_wavenum) == size(enmod_wavenum)) then
+          enmod_wavenum = lattice%enmod_wavenum
+        end if
     end if
     if (allocated(lattice%enmod_mag) .and. allocated(enmod_mag)) then
         if (size(lattice%enmod_mag) == size(enmod_mag)) enmod_mag = lattice%enmod_mag
@@ -725,13 +726,15 @@ subroutine UpdateGlobalsFromOutputConfig(output)
 
     ! MPI displacement info
     if (allocated(output%field_recv_counts) .and. allocated(frecvs)) then
-        if (size(output%field_recv_counts) == size(frecvs)) &
-            frecvs = output%field_recv_counts
+        if (size(output%field_recv_counts) == size(frecvs)) then
+          frecvs = output%field_recv_counts
+        end if
     end if
 
     if (allocated(output%field_displacements) .and. allocated(fdispls)) then
-        if (size(output%field_displacements) == size(fdispls)) &
-            fdispls = output%field_displacements
+        if (size(output%field_displacements) == size(fdispls)) then
+          fdispls = output%field_displacements
+        end if
     end if
 
 end subroutine UpdateGlobalsFromOutputConfig
@@ -853,16 +856,19 @@ subroutine UpdateGlobalsFromSimulationFlags(flags)
 
     ! Seed properties
     if (allocated(flags%field_round_edges) .and. allocated(qRndFj_G)) then
-        if (size(flags%field_round_edges) == size(qRndFj_G)) &
-            qRndFj_G = flags%field_round_edges
+        if (size(flags%field_round_edges) == size(qRndFj_G)) then
+          qRndFj_G = flags%field_round_edges
+        end if
     end if
     if (allocated(flags%field_edge_sigma) .and. allocated(sSigFj_G)) then
-        if (size(flags%field_edge_sigma) == size(sSigFj_G)) &
-            sSigFj_G = flags%field_edge_sigma
+        if (size(flags%field_edge_sigma) == size(sSigFj_G)) then
+          sSigFj_G = flags%field_edge_sigma
+        end if
     end if
     if (allocated(flags%match_seed) .and. allocated(qMatchS_G)) then
-        if (size(flags%match_seed) == size(qMatchS_G)) &
-            qMatchS_G = flags%match_seed
+        if (size(flags%match_seed) == size(qMatchS_G)) then
+          qMatchS_G = flags%match_seed
+        end if
     end if
 
     ! Sequencing
@@ -886,8 +892,9 @@ subroutine UpdateGlobalsFromSimulationFlags(flags)
         if (size(flags%seed_sigma) == size(sSigEj_G)) sSigEj_G = flags%seed_sigma
     end if
     if (allocated(flags%seed_round_edges) .and. allocated(qRndEj_G)) then
-        if (size(flags%seed_round_edges) == size(qRndEj_G)) &
-            qRndEj_G = flags%seed_round_edges
+        if (size(flags%seed_round_edges) == size(qRndEj_G)) then
+          qRndEj_G = flags%seed_round_edges
+        end if
     end if
 
 end subroutine UpdateGlobalsFromSimulationFlags

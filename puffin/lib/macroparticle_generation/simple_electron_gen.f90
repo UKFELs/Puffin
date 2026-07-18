@@ -4,7 +4,7 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Top-level module for generating electron beam macroparticles in the simple
@@ -86,8 +86,8 @@ CONTAINS
 
 
     INTEGER(KIND=IP), INTENT(IN) :: nbeams
-    REAL(KIND=WP), INTENT(INOUT):: samLenE(:,:)    
-    
+    REAL(KIND=WP), INTENT(INOUT):: samLenE(:,:)
+
     REAL(KIND=WP), INTENT(INOUT)   :: sigE(:,:)
     REAL(KIND=WP), INTENT(IN)   :: gamma_d(:)
     REAL(KIND=WP), INTENT(IN)   :: sElectronThreshold
@@ -128,7 +128,7 @@ CONTAINS
 
 
     INTEGER(KIND=IPL), ALLOCATABLE :: totalmps_b(:)
-        
+
     REAL(KIND=WP),ALLOCATABLE :: s_tmp_macro(:)
 
     REAL(KIND=WP),ALLOCATABLE :: Tmp_chibar(:),Tmp_Normchi(:)
@@ -145,7 +145,7 @@ CONTAINS
 
     REAL(KIND=WP) :: betax(nbeams), betay(nbeams)
 
-    
+
     REAL(KIND=WP), ALLOCATABLE :: tconv(:)
 
     INTEGER(KIND=IPL), ALLOCATABLE :: b_sts(:), b_ends(:)
@@ -154,12 +154,12 @@ CONTAINS
 
     INTEGER(KIND=IP)    :: rank, b_ind
     INTEGER(KIND=IP)    :: numproc
-    
-!     Set error flag to false         
+
+!     Set error flag to false
 
     qOK = .FALSE.
-    
-    
+
+
     rank = tProcInfo_G%rank
     numproc = tProcInfo_G%size
 
@@ -180,7 +180,7 @@ CONTAINS
     ALLOCATE(z2_tmpcoord(TOTALMPS))
     ALLOCATE(px_tmpvector(TOTALMPS))
     ALLOCATE(py_tmpvector(TOTALMPS))
-    ALLOCATE(pz2_tmpvector(TOTALMPS))     
+    ALLOCATE(pz2_tmpvector(TOTALMPS))
     ALLOCATE(s_tmp_macro(TOTALMPS))
     ALLOCATE(Tmp_chibar(TOTALMPS))
     ALLOCATE(Tmp_Normchi(TOTALMPS))
@@ -218,12 +218,12 @@ CONTAINS
 
         samLenE(b_ind,iPX_CG) = 6.0_wp * sigE(b_ind,iPX_CG)
 
-      else 
+      else
         betax(b_ind) = -1.0_wp
       end if
 
       if (emity(b_ind) > 0.0_wp) then
-        
+
         betay(b_ind) = frame%gain_length * sigE(b_ind,iY_CG)**2.0_wp / frame%rho / emity(b_ind)
 
         sigE(b_ind,iPY_CG) = gamma_d(b_ind) * frame%gamma_ref * &
@@ -232,7 +232,7 @@ CONTAINS
 
         samLenE(b_ind,iPY_CG) = 6.0_wp * sigE(b_ind,iPY_CG)
 
-      else 
+      else
         betay(b_ind) = -1.0_wp
       end if
 
@@ -263,14 +263,14 @@ CONTAINS
                     s_tmp_max_av(b_ind), &
                     s_tmp_macro(b_sts(b_ind):b_ends(b_ind)), &
                     s_tmp_Vk(b_sts(b_ind):b_ends(b_ind)), b_ind, frame, n2col)
-                      
+
     END DO
 
 !    npk_bar_G = maxval(s_tmp_max_av) ! record peak density
-    
+
     CALL getChi(s_tmp_macro, s_tmp_Vk, npk_bar_G, &
                 Tmp_chibar, Tmp_Normchi)
-    
+
     DEALLOCATE(s_tmp_macro,s_tmp_Vk)
 
     CALL removeLow(Tmp_chibar, Tmp_Normchi, b_sts, b_ends, sElectronThreshold, &
@@ -295,21 +295,21 @@ CONTAINS
     !   1D limit:--
 
     if (qOneD_G) then
-      
+
       s_chi_bar_G = s_chi_bar_G / ata_G * fillFact_G
-      
+
     end if
-      
+
 
 !!!!!!! TEMP
 !!!!!!! COVERT DX/DZ AND DY/DZ -> SCALED PX, PY AND ADD OFFSET
-!!!!!!! BECAUSE PXBAR OFFSET IS NOT DEPENDENT ON GAMMA, BUT SIGMA_PXBAR 
+!!!!!!! BECAUSE PXBAR OFFSET IS NOT DEPENDENT ON GAMMA, BUT SIGMA_PXBAR
 !!!!!!! IS - AND DXDZ OFFSET *IS* DEPENDANT ON GAMMA, BUT SIGMA_DXDZ
 !!!!!!! IS NOT
 
 
     ALLOCATE(tconv(size(sElPX_G)))
-    
+
 !    tconv = sElPX_G**2.0_WP + sElPY_G**2.0_WP
 
 !    sElPX_G = sqrt((sElGam_G**2.0_WP - 1.0_WP) / &
@@ -339,33 +339,33 @@ CONTAINS
     chirp(:) = chirp(:) / frame%gamma_ref
 
     do b_ind = 1, nbeams
-  
+
       call addChirp(sElGam_G(b_sts(b_ind):b_ends(b_ind)), &
                     sElZ2_G(b_sts(b_ind):b_ends(b_ind)), &
                     b_ends(b_ind) - b_sts(b_ind) + 1, beamCenZ2(b_ind), &
                     chirp(b_ind))
-  
-  
+
+
       call addModulation(sElGam_G(b_sts(b_ind):b_ends(b_ind)), &
                          sElZ2_G(b_sts(b_ind):b_ends(b_ind)), &
                          mag(b_ind), fr(b_ind))
-  
+
 
     end do
 
 !    print*, 'max z2 b4 mp init is', maxval(sElZ2_G)
 !    print*, 'min z2 b4 mp init is', minval(sElZ2_G)
-    
 
-!     Set error flag and exit         
 
-    qOK = .TRUE.                                    
-    GOTO 2000     
+!     Set error flag and exit
+
+    qOK = .TRUE.
+    GOTO 2000
 
 !     Error Handler
 
-     CALL log_error('Error in simple_electron_gen:generate_simple_beam',tErrorLog_G)
-    PRINT*,'Error in simple_electron_gen:generate_simple_beam'
+     CALL log_error("Error in simple_electron_gen:generate_simple_beam",tErrorLog_G)
+    PRINT*,"Error in simple_electron_gen:generate_simple_beam"
 2000 CONTINUE
   END SUBROUTINE generate_simple_beam
 
@@ -386,7 +386,7 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
                                gamma_d, sZ, alphax, betax, alphay, betay
   type(tFELFrame), intent(in) :: frame
   REAL(KIND=WP), INTENT(IN) :: n2col
-                               
+
   REAL(KIND=WP), INTENT(INOUT) ::  sZ2_center
   INTEGER, INTENT(IN) :: numproc, rank
   LOGICAL, INTENT(IN) :: q_noise, qOneD
@@ -397,14 +397,14 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
 
 
 !                  LOCAL ARGS
-  
-  REAL(KIND=WP), ALLOCATABLE :: sx_grid(:), sy_grid(:), sz2_grid(:), & 
+
+  REAL(KIND=WP), ALLOCATABLE :: sx_grid(:), sy_grid(:), sz2_grid(:), &
                                 spx_grid(:), spy_grid(:), spz2_grid(:), &
                                 sx_integral(:), sy_integral(:), &
                                 sz2_integral(:), &
                                 spx_integral(:), spy_integral(:), &
                                 spz2_integral(:)
-                                
+
 
   INTEGER(KIND=IP), ALLOCATABLE :: iLocalIntegralType(:)
   REAL(KIND=WP) :: offsets(6), gxpx, gypy
@@ -420,7 +420,7 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
   ALLOCATE(sy_grid(iNMP_loc(iY_CG)+1))
   ALLOCATE(sz2_grid(iNMP_loc(iZ2_CG)+1))
   ALLOCATE(spx_grid(iNMP_loc(iPX_CG)+1))
-  ALLOCATE(spy_grid(iNMP_loc(iPY_CG)+1))   
+  ALLOCATE(spy_grid(iNMP_loc(iPY_CG)+1))
   ALLOCATE(spz2_grid(iNMP_loc(iGam_CG)+1))
 
   ALLOCATE(sX_integral(iNMP_loc(iX_CG)))
@@ -428,7 +428,7 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
   ALLOCATE(sz2_integral(iNMP_loc(iZ2_CG)))
   ALLOCATE(sPX_integral(iNMP_loc(iPX_CG)))
   ALLOCATE(sPY_integral(iNMP_loc(iPY_CG)))
-  ALLOCATE(sPZ2_integral(iNMP_loc(iGam_CG))) 
+  ALLOCATE(sPZ2_integral(iNMP_loc(iGam_CG)))
 
   ALLOCATE(iLocalIntegralType(6))
 
@@ -446,7 +446,7 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
   offsets(iY_CG) = 0.0_WP
   offsets(iPX_CG) = 0.0_WP
   offsets(iPY_CG) = 0.0_WP
-  
+
 !    sZ2_center = offsets(iZ2_CG)
 
   CALL genGrids(b_num, sigE,offsets,samLenE,iLocalIntegralType,iNMP, iNMP_loc, &
@@ -477,10 +477,10 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
       if (iNMP(iGam_CG) == 1_IP) then ! Cold beam case (important for noise)
 
         call genMacros(i_total_electrons=i_RealE, &
-                       q_noise=q_noise,                & 
+                       q_noise=q_noise,                &
                        x_1_grid=sz2_grid,               &
                        x_1_integral=sZ2_integral,       &
-                       s_number_macro=s_tmp_macro,     & 
+                       s_number_macro=s_tmp_macro,     &
                        s_vol_element=s_tmp_Vk,          &
                        max_av=s_tmp_max_av,             &
                        x_1_coord=z2_tmpcoord)
@@ -490,40 +490,40 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
       else
 
         call genMacros(i_total_electrons=i_RealE, &
-                       q_noise=q_noise,                & 
+                       q_noise=q_noise,                &
                        x_1_grid=sz2_grid,               &
-                       x_1_integral=sZ2_integral,       & 
+                       x_1_integral=sZ2_integral,       &
                        p_3_grid=spz2_grid,              &
                        p_3_integral=sPZ2_integral,      &
                        s_number_macro=s_tmp_macro,     &
                        s_vol_element=s_tmp_Vk,         &
-                       max_av=s_tmp_max_av,            & 
+                       max_av=s_tmp_max_av,            &
                        x_1_coord=z2_tmpcoord,           &
                        p_3_vector=pz2_tmpvector)
-  
+
       end if
-  
-      x_tmpcoord  = offsets(iX_CG) 
+
+      x_tmpcoord  = offsets(iX_CG)
       y_tmpcoord  = offsets(iY_CG)
       px_tmpvector = offsets(iPX_CG)
-      py_tmpvector = offsets(iPY_CG)    
-  
+      py_tmpvector = offsets(iPY_CG)
+
     else ! 6D beam
 
     !if (qEquiXY_G) then
 
       call genMacros(i_total_electrons=i_RealE, &
-                     q_noise=q_noise,                     & 
+                     q_noise=q_noise,                     &
                      x_1_grid=sx_grid,               &
                      x_1_integral=sX_integral,       &
                      x_2_grid=sy_grid,               &
-                     x_2_integral=sY_integral,       & 
+                     x_2_integral=sY_integral,       &
                      x_3_grid=sz2_grid,                   &
-                     x_3_integral=sZ2_integral,      &  
+                     x_3_integral=sZ2_integral,      &
                      p_1_grid=spx_grid,              &
-                     p_1_integral=sPX_integral,      &   
+                     p_1_integral=sPX_integral,      &
                      p_2_grid=spy_grid,              &
-                     p_2_integral=sPY_integral,      &  
+                     p_2_integral=sPY_integral,      &
                      p_3_grid=spz2_grid,             &
                      p_3_integral=sPZ2_integral,     &
                      s_number_macro=s_tmp_macro,     &
@@ -540,7 +540,7 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
 
       if (betax > 0.0_wp) then
         gxpx = -alphax / betax
-      else 
+      else
         gxpx = 0.0_wp
       end if
 
@@ -554,14 +554,14 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
       py_tmpvector = py_tmpvector + pz2_tmpvector * gypy * sqrt(frame%gain_length * frame%cooperation_length) * y_tmpcoord / frame%aw
 
     end if  ! exhausted 1D and 3D options of equispaced phase space filling...
-  
-  else   ! if using random or quasi-random sequences to fill phase space 
+
+  else   ! if using random or quasi-random sequences to fill phase space
          ! (in every dimension except z2)
 
 ! #####################################################################
 !
 !  For equispaced particles (before noise is added) in z2 only -
-!  a random or low-discrepancy sequence will be used for every other 
+!  a random or low-discrepancy sequence will be used for every other
 !  dimension. The same sequences will be reused for every slice,
 !  creating 'beamlets' in the 6D phase space in z2.
 !
@@ -569,14 +569,14 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
 !  will only be correct in z2.
 !
 !  Currently, only random sequences in the other dimensions are used.
-!  Halton/Hammersley or other low-discrepency sequences may be added 
+!  Halton/Hammersley or other low-discrepency sequences may be added
 !  later...
 
       nseqparts = nseqparts_G
- 
+
       allocate(nktemp(iNMP_loc(iZ2_CG)), z2base(iNMP_loc(iZ2_CG)))
       allocate(vkt(iNMP_loc(iZ2_CG)))
-   
+
 
 !    if (tProcInfo_G%qRoot) then
 !    print*, 'size z2 grid = ', size(sz2_grid)
@@ -594,10 +594,10 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
 !   Create quiet 'base' beam in z2...
 
       CALL genMacros(i_total_electrons=i_RealE, &
-                     q_noise=.false.,           & 
+                     q_noise=.false.,           &
                      x_1_grid=sz2_grid,         &
                      x_1_integral=sZ2_integral, &
-                     s_number_macro=nktemp,   & 
+                     s_number_macro=nktemp,   &
                      s_vol_element=vkt,       &
                      max_av=s_tmp_max_av,     &
                      x_1_coord=z2base)
@@ -617,12 +617,12 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
       gamseq = gamseq + offsets(iGam_CG)
 
       z2seq = (z2seq - 0.5_wp) * (z2base(2) - z2base(1))
-      
+
 !   Rotate phase space to Twiss params...
 
       if (betax > 0.0_wp) then
         gxpx = -alphax / betax
-      else 
+      else
         gxpx = 0.0_wp
       end if
 
@@ -638,9 +638,9 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
 
       if (qOneD) then
         xseq(:) = offsets(iX_CG)
-        yseq(:) = offsets(iY_CG) 
-        pxseq(:) = offsets(iPX_CG) 
-        pyseq(:) = offsets(iPY_CG) 
+        yseq(:) = offsets(iY_CG)
+        pxseq(:) = offsets(iPX_CG)
+        pyseq(:) = offsets(iPY_CG)
       end if
 
       do ij = 1, iNMP_loc(iZ2_CG)
@@ -668,7 +668,7 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
 
       if (q_noise) call applyNoise(z2_tmpcoord, sz2_grid(2) - sz2_grid(1), s_tmp_macro)  ! add noise in z2
 
-  end if 
+  end if
 
 !  end if
 
@@ -705,39 +705,39 @@ SUBROUTINE beamReport(s_tmp_macro,sElectronThreshold,beam_no)
 
     CALL MPI_ALLREDUCE(total_local_real_electrons,&
          n_real_electrons, 1, MPI_DOUBLE_PRECISION, &
-         MPI_SUM,tProcInfo_G%comm,error) 
+         MPI_SUM,tProcInfo_G%comm,error)
 
 !     Print info to standard out
 
     IF (tProcInfo_G%qROOT) THEN
-       PRINT*, 'generating beam number ', beam_no
-       PRINT '(A22,ES11.5E2)', 'Total Real Electrons ',&
+       PRINT*, "generating beam number ", beam_no
+       PRINT "(A22,ES11.5E2)", "Total Real Electrons ",&
             n_real_electrons
-       PRINT '(A19,F6.2,A2)', 'THRESHOLD LEVEL - ',&
-            sElectronThreshold,'%'
+       PRINT "(A19,F6.2,A2)", "THRESHOLD LEVEL - ",&
+            sElectronThreshold,"%"
        !PRINT '(A8,F6.4,A2)', 'LOST - ',&
        !     (totalmps-igloNumElectrons_G)*100.0_WP/&
        !     totalmps,'%'
-    ENDIF
+    END IF
 
 END SUBROUTINE beamReport
 
 subroutine shuntBeam(sz2, dz2)
-  
+
   real(kind=wp), intent(inout) :: sz2(:)
   real(kind=wp), intent(in) :: dz2
   real(kind=wp) :: lminz2, gminz2
   integer :: error
 
   lminz2 = minval(sz2)
-  
+
   call mpi_allreduce(lminz2, gminz2, 1, mpi_double_precision, &
                      mpi_min, tProcInfo_G%comm, error)
 
   if (gminz2 <= 0) then
 
     sz2(:) = sz2(:) - gminz2 + (dz2/10.0_wp)
-    
+
   end if
 
 end subroutine shuntBeam

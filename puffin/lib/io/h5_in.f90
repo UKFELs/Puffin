@@ -46,46 +46,46 @@ contains
 
     if (tProcInfo_G%qRoot) then
       CALL h5open_f(error)
-      Print*,'h5in:H5 interface opened'
-      print*,'reading hdf5 input - first opening file on rank 0'
+      Print*,"h5in:H5 interface opened"
+      print*,"reading hdf5 input - first opening file on rank 0"
       CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
-      Print*,'h5in:readH5Beamfile(file opened in serial)'
+      Print*,"h5in:readH5Beamfile(file opened in serial)"
       Print*,error
       CALL h5dopen_f (file_id, dsetname, dset_id, error)
-      Print*,'h5in:readH5Beamfile(dataset opened in serial)'
+      Print*,"h5in:readH5Beamfile(dataset opened in serial)"
       Print*,error
       CALL h5dget_type_f (dset_id, dtype, error)
-      Print*,'h5in:readH5Beamfile(checking data type)'
+      Print*,"h5in:readH5Beamfile(checking data type)"
       Print*,error
       CALL h5tget_class_f (dtype, dclass, error)
-      Print*,'h5in:readH5Beamfile(dataset opened in serial)'
+      Print*,"h5in:readH5Beamfile(dataset opened in serial)"
       Print*,error
       if (dclass==H5T_FLOAT_F) then
-       print*,'data is float'
+       print*,"data is float"
       else
       errorstr = trim("data is no float")
       print*,dclass
       goto 1000
       end if
       CALL h5Dget_space_f(dset_id,dspace_id,error)
-      Print*,'h5in:readH5Beamfile(dataspace opened in serial)'
+      Print*,"h5in:readH5Beamfile(dataspace opened in serial)"
       Print*,error
       CALL h5Sget_simple_extent_ndims_f(dspace_id,rank,error)
-      Print*,'h5in:readH5Beamfile(dataspace opened in serial)'
+      Print*,"h5in:readH5Beamfile(dataspace opened in serial)"
       Print*,rank
       Print*,error
       if (rank==2) then
-       print*,'data rank is 2, which is good'
+       print*,"data rank is 2, which is good"
       else
       errorstr = trim("data does not have rank 2, has rank")
       goto 1000
       end if
       CALL h5Sget_simple_extent_dims_f(dspace_id,dims,mdims,error)
-      Print*,'hdf5_puff:readH5Beamfile(dataspace getting dims)'
+      Print*,"hdf5_puff:readH5Beamfile(dataspace getting dims)"
       Print*,error ! rank on success = 2
       print*,dims
       if (dims(1)==7) then
-       print*,'data has seven columns, which is good'
+       print*,"data has seven columns, which is good"
       else
       errorstr = trim("data does not have seven columns")
       goto 1000
@@ -107,7 +107,7 @@ contains
 
    goto 2000
 
-1000 call log_error('Error in H5in:getMacroparticleCount',&
+1000 call log_error("Error in H5in:getMacroparticleCount",&
           tErrorLog_G)
    print*, "abort, abort, Error in getMacroparticleCount",errorstr
 2000 CONTINUE
@@ -136,17 +136,17 @@ contains
 
     if (tProcInfo_G%qRoot) then
       CALL h5open_f(error)
-      Print*,'h5in:H5 interface opened'
-      print*,'reading hdf5 input - first opening file on rank 0'
+      Print*,"h5in:H5 interface opened"
+      print*,"reading hdf5 input - first opening file on rank 0"
       CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
      print*,error
      print*,"h5f open"
       CALL h5dopen_f (file_id, dsetname, dset_id, error)
      print*,error
      print*,"h5d open"
-      dims=(/1,size(sElX)/)
-      dsize=(/7,nMPs/)
-      doffset=(/0,0/)
+      dims=[1,size(sElX)]
+      dsize=[7,nMPs]
+      doffset=[0,0]
       CALL h5screate_simple_f(2, dims, memspace, error)
      print*,error
      print*,"h5s mem created"
@@ -167,7 +167,7 @@ contains
      print*,error
      print*,"h5d slab read"
 
-      doffset=(/1,0/)
+      doffset=[1,0]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
      print*,error
@@ -177,7 +177,7 @@ contains
      print*,error
      print*,"h5d slab1 read"
 
-      doffset=(/2,0/)
+      doffset=[2,0]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
      print*,"h5s slab2 selected"
@@ -186,7 +186,7 @@ contains
      print*,error
      print*,"h5d slab2 read"
 
-      doffset=(/3,0/)
+      doffset=[3,0]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, sElPX, dims, error, &
@@ -194,7 +194,7 @@ contains
      print*,error
      print*,"h5d slab3 read"
 
-      doffset=(/4,0/)
+      doffset=[4,0]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, sElPY, dims, error, &
@@ -202,7 +202,7 @@ contains
      print*,error
      print*,"h5d slab4 read"
 
-      doffset=(/5,0/)
+      doffset=[5,0]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, sElGam, dims, error, &
@@ -210,7 +210,7 @@ contains
      print*,error
      print*,"h5d slab5 read"
 
-      doffset=(/6,0/)
+      doffset=[6,0]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, s_chi_bar, dims, error, &
@@ -324,16 +324,16 @@ contains
       CALL h5open_f(error)
       CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
       CALL h5dopen_f (file_id, dsetname, dset_id, error)
-      dims = (/nZ2, 2/)
-      dsize = (/nZ2/)
-      doffset = (/0, 0/)
-      count = (/INT(nZ2, HSIZE_T), 1_HSIZE_T/)
+      dims = [nZ2, 2]
+      dsize = [nZ2]
+      doffset = [0, 0]
+      count = [INT(nZ2, HSIZE_T), 1_HSIZE_T]
       CALL h5screate_simple_f(1, dsize, memspace, error)
       CALL h5Dget_space_f(dset_id,dspace_id,error)
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, count, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, rfield, dsize, error, &
        file_space_id = dspace_id, mem_space_id = memspace)
-      doffset = (/0, 1/)
+      doffset = [0, 1]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, count, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, ifield, dsize, error, &
        file_space_id = dspace_id, mem_space_id = memspace)
@@ -433,18 +433,18 @@ contains
       CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
       CALL h5dopen_f(file_id, dsetname, dset_id, error)
 
-      dsize_mem = (/INT(nX, HSIZE_T) * INT(nY, HSIZE_T) * INT(nZ2, HSIZE_T)/)
-      count = (/INT(nX, HSIZE_T), INT(nY, HSIZE_T), INT(nZ2, HSIZE_T), 1_HSIZE_T/)
+      dsize_mem = [INT(nX, HSIZE_T) * INT(nY, HSIZE_T) * INT(nZ2, HSIZE_T)]
+      count = [INT(nX, HSIZE_T), INT(nY, HSIZE_T), INT(nZ2, HSIZE_T), 1_HSIZE_T]
 
       CALL h5screate_simple_f(1, dsize_mem, memspace, error)
       CALL h5Dget_space_f(dset_id, dspace_id, error)
 
-      doffset = (/0_HSIZE_T, 0_HSIZE_T, 0_HSIZE_T, 0_HSIZE_T/)
+      doffset = [0_HSIZE_T, 0_HSIZE_T, 0_HSIZE_T, 0_HSIZE_T]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, count, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, rfield, dsize_mem, error, &
         file_space_id=dspace_id, mem_space_id=memspace)
 
-      doffset = (/0_HSIZE_T, 0_HSIZE_T, 0_HSIZE_T, 1_HSIZE_T/)
+      doffset = [0_HSIZE_T, 0_HSIZE_T, 0_HSIZE_T, 1_HSIZE_T]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, count, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, ifield, dsize_mem, error, &
         file_space_id=dspace_id, mem_space_id=memspace)
@@ -695,7 +695,7 @@ contains
      call h5sclose_f(dspace_id,error) !dspace_id
 !     print*,error
 !     print*,"h5s closed"
-     if (nMPs .LT. tProcInfo_G%size) then
+     if (nMPs < tProcInfo_G%size) then
       errorstr = trim("Data has fewer particles than MPI ranks.")
       goto 1000
      end if
@@ -736,9 +736,9 @@ contains
 !      CALL h5dopen_f (file_id, dsetname, dset_id, error)
 !     print*,error
 !     print*,"h5d open"
-      dims=(/1,nMPsLoc/)
-      dsize=(/7,nMPsLoc/)
-      doffset=(/0,(firstParticleToRead-1)/)
+      dims=[1,nMPsLoc]
+      dsize=[7,nMPsLoc]
+      doffset=[0,(firstParticleToRead-1)]
       CALL h5screate_simple_f(rank, dims, memspace, error)
 !     print*,error
 !     print*,"h5s mem created"
@@ -767,7 +767,7 @@ contains
 !     print*,error
 !     print*,"h5s dspace closed"
 
-      doffset=(/1,(firstParticleToRead-1)/)
+      doffset=[1,(firstParticleToRead-1)]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
 !     print*,error
@@ -778,7 +778,7 @@ contains
 !     print*,"h5d slab1 read"
 !      call h5sclose_f(dspace_id,error)
 
-      doffset=(/2,(firstParticleToRead-1)/)
+      doffset=[2,(firstParticleToRead-1)]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
 !     print*,"h5s slab2 selected"
@@ -788,7 +788,7 @@ contains
 !     print*,"h5d slab2 read"
 !      call h5sclose_f(dspace_id,error)
 
-      doffset=(/3,(firstParticleToRead-1)/)
+      doffset=[3,(firstParticleToRead-1)]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, sElPX_G, dims, error, &
@@ -797,7 +797,7 @@ contains
 !     print*,"h5d slab3 read"
 !      call h5sclose_f(dspace_id,error)
 
-      doffset=(/4,(firstParticleToRead-1)/)
+      doffset=[4,(firstParticleToRead-1)]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, sElPY_G, dims, error, &
@@ -806,7 +806,7 @@ contains
 !     print*,"h5d slab4 read"
 !      call h5sclose_f(dspace_id,error)
 
-      doffset=(/5,(firstParticleToRead-1)/)
+      doffset=[5,(firstParticleToRead-1)]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, sElGam_G, dims, error, &
@@ -815,7 +815,7 @@ contains
 !     print*,"h5d slab5 read"
 !      call h5sclose_f(dspace_id,error)
 
-      doffset=(/6,(firstParticleToRead-1)/)
+      doffset=[6,(firstParticleToRead-1)]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, s_chi_bar_G, dims, error, &
@@ -856,7 +856,7 @@ contains
 
 ! Error Handler - Error log Subroutine in CIO.f90 line 709
 
-1000 call log_error('Error in H5in:readH5BeamFile',&
+1000 call log_error("Error in H5in:readH5BeamFile",&
           tErrorLog_G)
    print*, "abort, abort, Error in readH5Beamfile",errorstr
 
@@ -939,7 +939,7 @@ contains
 
 !     open the runInfo group
 
-      call h5gOpen_f(file_id, 'runInfo', group_id, error)
+      call h5gOpen_f(file_id, "runInfo", group_id, error)
 
 
 !      read attributes in runInfo group
@@ -1024,8 +1024,8 @@ contains
           CALL h5pclose_f(plist_id, error)
 
           ! Do some reading
-          doffset1d=(/(ffs-1),0/)
-          dsize1d=(/tlflen,1/)
+          doffset1d=[(ffs-1),0]
+          dsize1d=[tlflen,1]
 
           CALL h5screate_simple_f(rank, dsize1d, memspace, error)
     !      print*,error,tprocinfo_g%rank,"h5s fr  memspace created"
@@ -1043,7 +1043,7 @@ contains
     !      print*,error,tprocinfo_g%rank,"h5d slab fr_rfield read"
 
 ! use same memspace again
-          doffset1d=(/(ffs-1),1/)
+          doffset1d=[(ffs-1),1]
           CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset1d, &
             dsize1d, error)
     !      print*,error,tprocinfo_g%rank,"h5s slab fr_ifield selected"
@@ -1055,8 +1055,8 @@ contains
           call h5sclose_f(memspace,error)
     !      print*,error,tprocinfo_g%rank,"h5s fr memspace closed"
 
-          doffset1d=(/(fz2-1),0/)
-          dsize1d=(/mainlen,1/)
+          doffset1d=[(fz2-1),0]
+          dsize1d=[mainlen,1]
 
           CALL h5screate_simple_f(rank, dsize1d, memspace, error)
     !      print*,error,tprocinfo_g%rank,"h5s ac memspace created"
@@ -1070,7 +1070,7 @@ contains
     !      print*,error,tprocinfo_g%rank,"h5d slab ac_rfield read"
 
 ! use same memspace again
-          doffset1d=(/(fz2-1),1/)
+          doffset1d=[(fz2-1),1]
           CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset1d, &
             dsize1d, error)
     !      print*,error,tprocinfo_g%rank,"h5s slab ac_ifield selected"
@@ -1082,8 +1082,8 @@ contains
           call h5sclose_f(memspace,error)
     !      print*,error,tprocinfo_g%rank,"h5s ac memspace closed"
 
-          doffset1d=(/(ees-1),0/)
-          dsize1d=(/tlelen,1/)
+          doffset1d=[(ees-1),0]
+          dsize1d=[tlelen,1]
           CALL h5screate_simple_f(rank, dsize1d, memspace, error)
     !      print*,error,tprocinfo_g%rank,"h5s back memspace created"
 
@@ -1096,7 +1096,7 @@ contains
     !      print*,error,tprocinfo_g%rank,"h5d slab bk_rfield read"
 
 ! use same memspace again
-          doffset1d=(/(ees-1),1/)
+          doffset1d=[(ees-1),1]
           CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset1d, &
             dsize1d, error)
     !      print*,error,tprocinfo_g%rank,"h5s slab bk_ifield selected"
@@ -1160,8 +1160,8 @@ contains
           CALL h5pclose_f(plist_id, error)
 
 
-          doffset3d=(/0,0,(ffs-1),0/)
-          dsize3d=(/NX_G,NY_G,tlflen,1/)
+          doffset3d=[0,0,(ffs-1),0]
+          dsize3d=[NX_G,NY_G,tlflen,1]
 
           CALL h5screate_simple_f(rank, dsize3d, memspace, error)
     !      print*,error,tprocinfo_g%rank,"h5s memspace 3d created"
@@ -1178,7 +1178,7 @@ contains
     !      print*,error,tprocinfo_g%rank,"h5d slab fr_rfield 3d read"
 
 ! keep memspace
-          doffset3d=(/0,0,(ffs-1),1/)
+          doffset3d=[0,0,(ffs-1),1]
 
           CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset3d, &
             dsize3d, error)
@@ -1191,8 +1191,8 @@ contains
           call h5sclose_f(memspace,error)
       !    print*,error,tprocinfo_g%rank,"h5s memspace 3d closed"
 
-          doffset3d=(/0,0,(fz2-1),0/)
-          dsize3d=(/NX_G,NY_G,mainlen,1/)
+          doffset3d=[0,0,(fz2-1),0]
+          dsize3d=[NX_G,NY_G,mainlen,1]
           CALL h5screate_simple_f(rank, dsize3d, memspace, error)
       !    print*,error,tprocinfo_g%rank,"h5s memspace 3d created"
 
@@ -1205,7 +1205,7 @@ contains
       !    print*,error,tprocinfo_g%rank,"h5d slab ac_rfield 3d read"
 
 ! keep memspace
-          doffset3d=(/0,0,(fz2-1),1/)
+          doffset3d=[0,0,(fz2-1),1]
 
           CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset3d, &
             dsize3d, error)
@@ -1218,8 +1218,8 @@ contains
           call h5sclose_f(memspace,error)
       !    print*,error,tprocinfo_g%rank,"h5s memspace 3d closed"
 
-          doffset3d=(/0,0,(ees-1),0/)
-          dsize3d=(/NX_G,NY_G,tlelen,1/)
+          doffset3d=[0,0,(ees-1),0]
+          dsize3d=[NX_G,NY_G,tlelen,1]
           CALL h5screate_simple_f(rank, dsize3d, memspace, error)
       !    print*,error,tprocinfo_g%rank,"h5s back memspace 3d created"
 
@@ -1232,7 +1232,7 @@ contains
       !    print*,error,tprocinfo_g%rank,"h5d slab bk_rfield 3d read"
 
 ! keep memspace
-          doffset3d=(/0,0,(ees-1),1/)
+          doffset3d=[0,0,(ees-1),1]
 
           CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset3d, &
             dsize3d, error)
@@ -1277,7 +1277,7 @@ contains
     GoTo 2000
 
 ! Error Handler - Error log Subroutine in CIO.f90 line 709
-1000 call log_error('Error in H5in:readH5FieldfileSerialSingleDump',&
+1000 call log_error("Error in H5in:readH5FieldfileSerialSingleDump",&
           tErrorLog_G)
    print*, "abort, abort, Error in readH5FieldfileSerialSingleDump",errorstr
 2000 CONTINUE
@@ -1299,7 +1299,7 @@ contains
 
     integer(HID_T) :: attr_id                 !< Attribute identifier
     integer(HID_T) :: atype_id                !< Attribute Data type identifier
-    integer(HSIZE_T), dimension(1) :: adims=(/1/) !< Attribute Data type identifier
+    integer(HSIZE_T), dimension(1) :: adims=[1] !< Attribute Data type identifier
     integer :: error                             !< Error flag
 
 !    aname="vsType"
@@ -1332,7 +1332,7 @@ contains
 
     integer(HID_T) :: attr_id                 !< Attribute identifier
     integer(HID_T) :: atype_id                !< Attribute Data type identifier
-    integer(HSIZE_T), dimension(1) :: adims=(/1/) !< Attribute Data type identifier
+    integer(HSIZE_T), dimension(1) :: adims=[1] !< Attribute Data type identifier
     integer :: error                             !< Error flag
 
 !    aname="vsType"

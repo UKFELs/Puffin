@@ -36,7 +36,7 @@ CONTAINS
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Subroutine to pass all the temporary variables to global
@@ -257,7 +257,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
 !  Get focusing for 'reference' beam energy
 
-    if (zUndType_G == 'curved') then
+    if (zUndType_G == "curved") then
 
       kx_und_G = SQRT(ctx%frame%eta/(8.0_WP*rho**2)) ! Giving equal focusing for now....
       ky_und_G = SQRT(ctx%frame%eta/(8.0_WP*rho**2))
@@ -265,7 +265,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
       sKBetaX_G = aw / sqrt(2.0_wp * ctx%frame%eta) / gamr * kx_und_G
       sKBetaY_G = aw / sqrt(2.0_wp * ctx%frame%eta) / gamr * ky_und_G
 
-    else if (zUndType_G == 'planepole') then
+    else if (zUndType_G == "planepole") then
 
       kx_und_G = 0.0_wp
       ky_und_G = 0.0_wp
@@ -273,7 +273,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
       sKBetaX_G = 0.0_wp
       sKBetaY_G = aw / 2 / sqrt(2.0_wp) / rho / gamr
 
-    else if (zUndType_G == 'helical') then
+    else if (zUndType_G == "helical") then
 
       sKBetaX_G = aw / 2 / sqrt(2.0_wp) / rho / gamr
       sKBetaY_G = aw / 2 / sqrt(2.0_wp) / rho / gamr
@@ -312,7 +312,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
       else
         sKBetaXSF_G = 0.0_wp
         if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-          print*, 'No in-undulator strong focusing in x'
+          print*, "No in-undulator strong focusing in x"
         end if
       end if
 
@@ -321,7 +321,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
       else
         sKBetaYSF_G = 0.0_wp
         if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-          print*, 'No in-undulator strong focusing in y'
+          print*, "No in-undulator strong focusing in y"
         end if
       end if
 
@@ -358,7 +358,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
 
     IF(iNumberNodes_G <= 0_IPN) THEN
-       CALL log_error('iNumberNodes_G <= 0.',tErrorLog_G)
+       CALL log_error("iNumberNodes_G <= 0.",tErrorLog_G)
        GOTO 1000
     END IF
 
@@ -382,7 +382,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
     GOTO 2000
 
-1000 CALL log_error('Error in setupCalcs:setupParams',tErrorLog_G)
+1000 CALL log_error("Error in setupCalcs:setupParams",tErrorLog_G)
 
 2000 CONTINUE
 
@@ -392,7 +392,7 @@ END SUBROUTINE passToGlobals
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Subroutine to recalculate the beam charge to match the value of rho
@@ -427,8 +427,8 @@ subroutine fixCharge(sQb, sSigz2, sLenz2, sSigTails, qTails, &
 
   call getQFmNpk(sQb, sTarea, sLarea, qOneD)
 
-  if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 0)) print*, 'FIXING CHARGE '
-  if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 0)) print*, 'Q =  ', sQb
+  if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 0)) print*, "FIXING CHARGE "
+  if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 0)) print*, "Q =  ", sQb
 
 end subroutine fixCharge
 
@@ -436,7 +436,7 @@ end subroutine fixCharge
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Calculates the area under the current profile in z2.
@@ -480,7 +480,7 @@ end subroutine getLBArea
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Calculates the area under the current profile in z2.
@@ -504,7 +504,7 @@ subroutine getQFmNpk(sQb, sTarea, sLarea, qOneD)
 
     if (qOneD) then
       sVol = sLArea * ata_G
-      if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) print*, 'TRANS AREA = ', ata_G
+      if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) print*, "TRANS AREA = ", ata_G
     else
       sVol = sLArea * sTArea
     end if
@@ -607,8 +607,8 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, sFiltFrac, &
     qOK = .TRUE.
     GOTO 2000
 
-     CALL log_error('Error in FEMethod:SetUpInitialValues',tErrorLog_G)
-    PRINT*,'Error in FEMethod:SetUpInitialValues'
+     CALL log_error("Error in FEMethod:SetUpInitialValues",tErrorLog_G)
+    PRINT*,"Error in FEMethod:SetUpInitialValues"
 2000 CONTINUE
 
 END SUBROUTINE SetUpInitialValues
@@ -733,7 +733,7 @@ subroutine calcScaling(srho, saw, sgamr, slam_w, &
 
   ctx%frame%gamma_ref = sgamr
 
-  if (zUndType == 'curved') then
+  if (zUndType == "curved") then
 
     saw_rms =  saw / sqrt(2.0_wp)
 
@@ -749,7 +749,7 @@ subroutine calcScaling(srho, saw, sgamr, slam_w, &
     sfx = 0.0_wp
     sfy = 1.0_wp
 
-  else if (zUndType == 'planepole') then
+  else if (zUndType == "planepole") then
 
     saw_rms =  saw / sqrt(2.0_wp)
     fx_G = 0.0_wp   ! Temp fix for initialization bug
@@ -757,7 +757,7 @@ subroutine calcScaling(srho, saw, sgamr, slam_w, &
     sfx = 0.0_wp
     sfy = 1.0_wp
 
-  else if (zUndType == 'helical') then
+  else if (zUndType == "helical") then
 
     saw_rms = saw
     fx_G = 1   ! Temp fix for initialization bug
@@ -801,7 +801,7 @@ subroutine calcCharge(sQe, Ipk, sSigz2, sLenz2, sSigTails, qTails, frame)
 
   nbeams = size(sQe)
   if (size(Ipk) /= nbeams) then
-    print*, 'ERROR - size of current and charge arrays are incompatible...'
+    print*, "ERROR - size of current and charge arrays are incompatible..."
     stop
   end if
 
@@ -809,8 +809,8 @@ subroutine calcCharge(sQe, Ipk, sSigz2, sLenz2, sSigTails, qTails, frame)
     if (Ipk(b) > 0.0_wp) then
       call getLBArea(sLArea, sSigz2(b), sLenz2(b), sSigTails(b), qTails(b))
       sQe(b) = Ipk(b) * sLArea * frame%cooperation_length / c
-      if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 0)) print*, 'Charge specified from Ipk '
-      if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 0)) print*, 'Q =  ', sQe(b)
+      if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 0)) print*, "Charge specified from Ipk "
+      if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 0)) print*, "Q =  ", sQe(b)
     end if
   end do
 
@@ -851,7 +851,7 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
   iNumNodes(iZ2_CG) = ceiling(sFieldModelLength(iZ2_CG) / dz2) + 1_IP
 
   if (fieldMesh == iPeriodic) then
-  
+
     if (sPerWaves_G < 0.0_wp) then
 
       sLengthOfElm(iZ2_CG) = dz2
@@ -868,19 +868,19 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
       sFieldModelLength(iZ2_CG) = sperwaves_G * (4.0_WP * pi * frame%rho)
       sLengthOfElm(iZ2_CG) = dz2
 
-!            For now, keeping dz2 to give an integer number of nodes per 
+!            For now, keeping dz2 to give an integer number of nodes per
 !           scaled wavelength, and rounding total mesh length to nearest
 !                           integer number of nodes
 
       iNumNodes(iZ2_CG) = nint((sFieldModelLength(iZ2_CG) / dz2), kind=ip) + 1_IP
       sFieldModelLength(iZ2_CG) = real(iNumNodes(iZ2_CG) - 1_ip, kind=wp) * dz2
-      
+
       sLenEPulse(1,iZ2_CG) = sFieldModelLength(iZ2_CG)
 
     end if
 
   end if
-  
+
 
   if (iNumNodes(iX_CG) <= 1_ip) then
 
@@ -930,7 +930,7 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
   else
 
-    if (ioutInfo_G > 0) print*, 'less than one step per period!!'
+    if (ioutInfo_G > 0) print*, "less than one step per period!!"
 
   end if
 
@@ -957,14 +957,14 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
     minENum = ceiling(sLenEPulse(:,iZ2_CG) / (slamr / real(iMPsZ2PerWave, kind=wp)) )
 
     do ib = 1, size(sGamFrac)
-      
+
       if (iMPsZ2PerWave(ib) > 0) then
         if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0_ip)) then
-          print*,'The beam sampling has been specified through iMPsZ2PerWave'
+          print*,"The beam sampling has been specified through iMPsZ2PerWave"
         end if
 
         iNumElectrons(ib,iZ2_CG) = minENum(ib)
-        
+
       end if
     end do
 
@@ -975,16 +975,16 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
       if ((iNumElectrons(ib,iZ2_CG) < 0) .or. (iNumElectrons(ib,iZ2_CG) < minENum(ib)) ) then
 
         if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-          print*, '******************************'
-          print*, ''
-          print*, 'WARNING - e-beam macroparticles sampling &
-                                          & in z2 not fine enough - fixing...'
+          print*, "******************************"
+          print*, ""
+          print*, "WARNING - e-beam macroparticles sampling &
+                                          & in z2 not fine enough - fixing..."
         end if
 
         iNumElectrons(ib,iZ2_CG) = minENum(ib)
 
         if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-          print*, 'num MPs in z2 now = ', &
+          print*, "num MPs in z2 now = ", &
                             iNumElectrons(ib,iZ2_CG)
         end if
 
@@ -1011,19 +1011,19 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
 
           if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-            print*, '******************************'
-            print*, ''
-            print*, 'WARNING - field mesh may not be large &
-                                     &enough in z2 - fixing....'
+            print*, "******************************"
+            print*, ""
+            print*, "WARNING - field mesh may not be large &
+                                     &enough in z2 - fixing...."
           end if
 
           sFieldModelLength(iZ2_CG) = fmlenTmp + 10.0_wp  ! Add buffer 10 long for
                                                           ! extra security...
 
           if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-            print*, 'Field mesh length in z2 now = ', &
+            print*, "Field mesh length in z2 now = ", &
                                 sFieldModelLength(iZ2_CG)
-            print*, ''
+            print*, ""
           end if
 
         end if
@@ -1041,40 +1041,40 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
   iNumNodes(iZ2_CG) = ceiling(sFieldModelLength(iZ2_CG) / dz2) + 1_IP
 
 !   if (fieldMesh == iPeriodic) then
-!   
+!
 !     if (sPerWaves_G < 0.0_wp) then
-! 
+!
 !       sLengthOfElm(iZ2_CG) = dz2
 !       sFieldModelLength(iZ2_CG) = real(iNumNodes(iZ2_CG) - 1_ip, kind=wp) * dz2
 !       sperwaves_G = sFieldModelLength(iZ2_CG) / (4.0_WP * pi * sRho_G)
-! 
+!
 !       sLenEPulse(1,iZ2_CG) = sFieldModelLength(iZ2_CG)
-! 
+!
 !     else
-! 
+!
 ! !           Field mesh length is then number of waves times scaled wavelength
-! 
+!
 !       sFieldModelLength(iZ2_CG) = sperwaves_G * (4.0_WP * pi * sRho_G)
 !       sLengthOfElm(iZ2_CG) = dz2
-! 
-! !            For now, keeping dz2 to give an integer number of nodes per 
+!
+! !            For now, keeping dz2 to give an integer number of nodes per
 ! !           scaled wavelength, and rounding total mesh length to nearest
 ! !                           integer number of nodes
-! 
+!
 !       iNumNodes(iZ2_CG) = nint((sFieldModelLength(iZ2_CG) / dz2), kind=ip) + 1_IP
 !       sFieldModelLength(iZ2_CG) = real(iNumNodes(iZ2_CG) - 1_ip, kind=wp) * dz2
-!       
+!
 !       sLenEPulse(1,iZ2_CG) = sFieldModelLength(iZ2_CG)
-! 
+!
 !     end if
-! 
+!
 !   end if
- 
- 
+
+
   if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1)) then
-    print*, '******************************'
-    print*, ''
-    print*, 'number of nodes in z2 --- ', iNumNodes(iZ2_CG)
+    print*, "******************************"
+    print*, ""
+    print*, "number of nodes in z2 --- ", iNumNodes(iZ2_CG)
   end if
 
 
@@ -1116,8 +1116,8 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
     REAL(KIND=WP), ALLOCATABLE  :: RealE(:)
     INTEGER(KIND=IP) :: j,error, req, lrank, rrank
     INTEGER(KIND=IPL) :: sendbuff, recvbuff
-    INTEGER sendstat(MPI_STATUS_SIZE)
-    INTEGER recvstat(MPI_STATUS_SIZE)
+    INTEGER :: sendstat(MPI_STATUS_SIZE)
+    INTEGER :: recvstat(MPI_STATUS_SIZE)
     character(1024) :: fname_temp
     LOGICAL :: qOKL
 
@@ -1132,11 +1132,11 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
 
     IF ((tProcInfo_G%qROOT) .and. (ioutInfo_G > 1)) then
        IF (noise) THEN
-          PRINT *, 'SHOT-NOISE TURNED ON'
+          PRINT *, "SHOT-NOISE TURNED ON"
        ELSE
-          PRINT *, 'SHOT-NOISE TURNED OFF'
-       ENDIF
-    ENDIF
+          PRINT *, "SHOT-NOISE TURNED OFF"
+       END IF
+    END IF
 
 !     Number of real electrons
 
@@ -1175,8 +1175,8 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
     else
 
       if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-        print*, 'No beam input type specified....'
-        print*, 'Exiting...'
+        print*, "No beam input type specified...."
+        print*, "Exiting..."
       end if
       call StopCode()
 
@@ -1185,7 +1185,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
     call shuntBeam(sElZ2_G, sLengthOfElmZ2_G)
 
     if (iGloNumElectrons_G <= 0_IPL) then
-       call log_error('iGloNumElectrons_G <=0.',tErrorLog_G)
+       call log_error("iGloNumElectrons_G <=0.",tErrorLog_G)
        goto 1000
     end if
 
@@ -1194,7 +1194,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
     else
       totNk_loc = 0._WP
     end if
-    
+
     if (qOneD_G) totNk_loc = totNk_loc * ata_g
 !    print *,"Rank ", tProcInfo_G%Rank, " sum ",totNk_loc
     CALL MPI_ALLREDUCE(totNk_loc, totNk_glob, 1, MPI_DOUBLE_PRECISION, &
@@ -1204,18 +1204,18 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
     if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
 
 
-      print*, ''
+      print*, ""
 
-      print*, '-----------------------------------------'
-      print*, 'Generated beam....'
+      print*, "-----------------------------------------"
+      print*, "Generated beam...."
 
       if (ioutInfo_G > 1) then
-        print*, 'Total number of macroparticles = ', iGloNumElectrons_G
+        print*, "Total number of macroparticles = ", iGloNumElectrons_G
 
-        print*, 'Avg num of real electrons per macroparticle Nk = ', &
+        print*, "Avg num of real electrons per macroparticle Nk = ", &
                                     totNk_glob / iGloNumElectrons_G
 
-        print*, 'Total number of real electrons modelled = ', &
+        print*, "Total number of real electrons modelled = ", &
                         totNk_glob
       end if
 
@@ -1273,19 +1273,19 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
 
     if ( (nspinDX<0) .or. (nspinDY<0) ) then
       if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1)) then
-        print*, ''
-        print*, ''
-        print*, '----------------'
-        print*, 'Getting inner node set for MPI communication'
+        print*, ""
+        print*, ""
+        print*, "----------------"
+        print*, "Getting inner node set for MPI communication"
       end if
 
       call getInNode(flags)
 
       if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1)) then
-        print*, '...'
-        print*, 'inner nx = ', nspinDX
-        print*, 'inner ny = ', nspinDY
-        print*, 'inner ntransnodes = ', ntrndsi_G
+        print*, "..."
+        print*, "inner nx = ", nspinDX
+        print*, "inner ny = ", nspinDY
+        print*, "inner ntransnodes = ", ntrndsi_G
       end if
     end if
 
@@ -1302,7 +1302,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
 
     GOTO 2000
 
-1000 CALL log_error('Error in SetupCalcs:PopMacroElectrons',tErrorLog_G)
+1000 CALL log_error("Error in SetupCalcs:PopMacroElectrons",tErrorLog_G)
 
 2000 CONTINUE
 
@@ -1520,11 +1520,11 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
 
         z2env = 0.0_WP
 
-      ELSEWHERE (z2nds > (cen + sig(iZ2_CG)))
+      ELSE WHERE (z2nds > (cen + sig(iZ2_CG)))
 
         z2env = 0.0_WP
 
-      ELSEWHERE
+      ELSE WHERE
 
         z2env = 1.0_WP
 
@@ -1613,15 +1613,15 @@ subroutine ftron(env, fl_len, rn_sig, cen, z2nds)
 
     env = gaussian(z2nds, sg1cen, rn_sig)
 
-  elsewhere ((z2nds > sg1cen) .and. (z2nds <= sg2cen))
+  else where ((z2nds > sg1cen) .and. (z2nds <= sg2cen))
 
     env = 1.0_wp
 
-  elsewhere ((z2nds > sg2cen) .and.  (z2nds <= sg2st + len_gauss))
+  else where ((z2nds > sg2cen) .and.  (z2nds <= sg2st + len_gauss))
 
     env = gaussian(z2nds, sg2cen, rn_sig)
 
-  elsewhere
+  else where
 
     env = 0.0_wp
 

@@ -4,7 +4,7 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Module to check various parameters specified in the input file
@@ -65,7 +65,7 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 !           Local vars
 
   INTEGER(KIND=IP) :: i
-  LOGICAL :: qOKL  
+  LOGICAL :: qOKL
 
   qOK = .FALSE.
 
@@ -79,7 +79,7 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
       call chkESampleLens(sLenEPulse(i,:),iNumElectrons(i,:), srho,qSwitches(iOneD_CG),qOKL)
       if (.NOT. qOKL) goto 1000
 
-    end if  
+    end if
 
   end do
 
@@ -104,12 +104,12 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
 !    call calcCharge()
 
- 
+
     do i = 1, nSeeds
-  
-      call chkFldBnds(qFlatTopS(i), qRndFj_G(i), sSigF(i,iZ2_CG), sSigFj_G(i), & 
+
+      call chkFldBnds(qFlatTopS(i), qRndFj_G(i), sSigF(i,iZ2_CG), sSigFj_G(i), &
                       SmeanZ2(i))
-  
+
     end do
 
 
@@ -131,12 +131,12 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
   goto 2000
 
-1000 call log_error('Error in setupcalcs:CheckParameters',tErrorLog_G)
+1000 call log_error("Error in setupcalcs:CheckParameters",tErrorLog_G)
 
 2000 continue
 
 end subroutine CheckParameters
-  
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
@@ -181,7 +181,7 @@ subroutine chkFldBnds(qF, qR, sig, sigEj, cen)
 !
 
   real(kind=wp), intent(in) :: sig, sigEj
-  logical, intent(in) :: qF, qR  
+  logical, intent(in) :: qF, qR
   real(kind=wp), intent(inout) :: cen
 
   real(kind=wp) :: start, tl, shft
@@ -199,7 +199,7 @@ subroutine chkFldBnds(qF, qR, sig, sigEj, cen)
 
       tl = sigEj * gExtEj_G  +  2.0_wp * sig
 
-    else 
+    else
 
 !     Flat top only
 
@@ -207,7 +207,7 @@ subroutine chkFldBnds(qF, qR, sig, sigEj, cen)
 
     end if
 
-  else 
+  else
 
 !     Gaussian seed field case
 
@@ -224,7 +224,7 @@ subroutine chkFldBnds(qF, qR, sig, sigEj, cen)
     cen = cen + shft
 
 
-  end if 
+  end if
 
 
 
@@ -283,26 +283,26 @@ SUBROUTINE stpFSampleLens(iNodes,sWigglerLength,sLengthOfElm,qOneD,qOK)
   qOK = .FALSE.
 
   IF (qOneD) THEN
-  
+
     iNodes(iX_CG) = 1_IP
     iNodes(iY_CG) = 1_IP
-    
+
     sLengthOfElm(iX_CG) = 1.0_WP
     sLengthOfElm(iY_CG) = 1.0_WP
-    
+
   ELSE
-  
+
     IF (iNodes(iX_CG)==1_IP) THEN
-      CALL log_error('The field in x is sampled with only one node...',tErrorLog_G)
-      CALL log_error('...and you have not specified a 1D option in the input file.',tErrorLog_G)
+      CALL log_error("The field in x is sampled with only one node...",tErrorLog_G)
+      CALL log_error("...and you have not specified a 1D option in the input file.",tErrorLog_G)
       GOTO 1000
     END IF
 
     IF (iNodes(iY_CG)==1_IP) THEN
-      CALL log_error('The field in x is sampled with only one node...',tErrorLog_G)
-      CALL log_error('...and you have not specified a 1D option in the input file.',tErrorLog_G)
+      CALL log_error("The field in x is sampled with only one node...",tErrorLog_G)
+      CALL log_error("...and you have not specified a 1D option in the input file.",tErrorLog_G)
       GOTO 1000
-    END IF  
+    END IF
 
     sLengthOfElm(iX_CG) = sWigglerLength(iX_CG) / (iNodes(iX_CG) - 1_IP)
     sLengthOfElm(iY_CG) = sWigglerLength(iY_CG) / (iNodes(iY_CG) - 1_IP)
@@ -317,7 +317,7 @@ SUBROUTINE stpFSampleLens(iNodes,sWigglerLength,sLengthOfElm,qOneD,qOK)
 
   GOTO 2000
 
-1000 CALL log_error('Error in setupcalcs:stpFSampleLens',tErrorLog_G)
+1000 CALL log_error("Error in setupcalcs:stpFSampleLens",tErrorLog_G)
 
 2000 CONTINUE
 
@@ -338,9 +338,9 @@ subroutine checkOscMag(sgammar, mag, nbeams)
 
     if (sgammar <= mag(ii)) then
 
-      PRINT*, 'ERROR: Magnitude of beam oscillation is too large in beam number ', ii
-      print*, 'ERROR: Ensure magnitude of beam energy modulation is < gamma_r'
-  
+      PRINT*, "ERROR: Magnitude of beam oscillation is too large in beam number ", ii
+      print*, "ERROR: Ensure magnitude of beam energy modulation is < gamma_r"
+
       call MPI_FINALIZE(error)
       STOP
 
@@ -367,7 +367,7 @@ SUBROUTINE chkESampleLens(sLenEPulse,iNumElectrons,rho,qOneD,qOK)
 
   INTEGER(KIND=IP) :: i
   REAL(KIND=WP) :: wlen, maxspcing, spcing
-  
+
   qOK = .FALSE.
 
   if (qOneD) then
@@ -381,23 +381,23 @@ SUBROUTINE chkESampleLens(sLenEPulse,iNumElectrons,rho,qOneD,qOK)
   maxspcing = wlen / 1.0_WP
 
   spcing = sLenEPulse(iZ2_CG) / iNumElectrons(iZ2_CG)
- 
+
 !     Check sampling
 
   IF (spcing > maxspcing) THEN
-    CALL log_error('Macroparticle spacing in z2 > 1/8th of resonant wavelength',tErrorLog_G)
+    CALL log_error("Macroparticle spacing in z2 > 1/8th of resonant wavelength",tErrorLog_G)
     GOTO 1000
-  END IF 
-    
+  END IF
+
   DO i= 1, SIZE(sLenEPulse)
 
     IF (sLenEPulse(i) <=0.0_WP .AND. iNumElectrons(i) > 1_IP) THEN
-      CALL log_error('Negative or zero electron pulse length',tErrorLog_G)
+      CALL log_error("Negative or zero electron pulse length",tErrorLog_G)
       GOTO 1000
     END IF
 
     IF (iNumElectrons(i) < 1_IP) THEN
-      CALL log_error('Number of electrons is less than 1 in one or more dimensions.',tErrorLog_G)
+      CALL log_error("Number of electrons is less than 1 in one or more dimensions.",tErrorLog_G)
       GOTO 1000
     END IF
 
@@ -416,7 +416,7 @@ SUBROUTINE chkESampleLens(sLenEPulse,iNumElectrons,rho,qOneD,qOK)
 
   GOTO 2000
 
-1000 CALL log_error('Error in setupcalcs:chkESampleLens',tErrorLog_G)
+1000 CALL log_error("Error in setupcalcs:chkESampleLens",tErrorLog_G)
 
 2000 CONTINUE
 
@@ -429,23 +429,23 @@ END SUBROUTINE chkESampleLens
 
     integer(kind=ip), intent(in) :: iNMP(:,:), nbeams
     real(kind=wp), intent(in) :: eSamLen(:,:), sigs(:,:)
-    
+
     integer(kind=ip) :: inttypes(6_ip), ib
     real(kind=wp) :: gausslen
 
     do ib = 1, nBeams
 
       call getIntTypes(iNMP(ib,:), eSamLen(ib,:), sigs(ib,:), inttypes)
-      
+
       if (inttypes(iZ2_CG) == iTopHatDistribution_CG) then
 
         if (qRndEj_G(ib)) then
 
           gausslen = sSigEj_G(ib) * gExtEj_G !    Check if there is enough room for the rounded edges
-          
+
           if ((eSamLen(ib,iZ2_CG) - gausslen) <= 0) then
 
-            print*, 'ERROR:- electron beam model not long enough in z2 to include the gaussian tails'
+            print*, "ERROR:- electron beam model not long enough in z2 to include the gaussian tails"
             call StopCode()
             stop
 
@@ -487,30 +487,30 @@ SUBROUTINE chkFSampleLens(iNodes,sWigglerLength,sLengthOfElm,rho,qOK)
   maxspcing = wlen / 8.0_WP
 
 !     Check got nodes set in every direction
-  
+
   DO i = 1, SIZE(iNodes)
 
     IF (iNodes(i) <= 0_IP) THEN
-      CALL log_error('Number of nodes <=0 in one or more dimensions',tErrorLog_G)
+      CALL log_error("Number of nodes <=0 in one or more dimensions",tErrorLog_G)
       GOTO 1000
     END IF
 
   END DO
- 
+
 !     Check length of elements in field are valid
 
   DO i = 1, SIZE(sLengthOfElm)
 
     IF(sLengthOfElm(i) <= 0_IP) THEN
-      CALL log_error('Length of elements <=0 in one or more dimensions.',tErrorLog_G)
+      CALL log_error("Length of elements <=0 in one or more dimensions.",tErrorLog_G)
       GOTO 1000
     END IF
 
     IF (sLengthOfElm(iZ2_CG) > maxspcing) THEN
-      CALL log_error('Length of field elements > 1/8th of resonant wavelength in z2.',tErrorLog_G)
+      CALL log_error("Length of field elements > 1/8th of resonant wavelength in z2.",tErrorLog_G)
       GOTO 1000
     END IF
-    
+
   END DO
 
 !     Set error flag and exit
@@ -519,14 +519,14 @@ SUBROUTINE chkFSampleLens(iNodes,sWigglerLength,sLengthOfElm,rho,qOK)
 
   GOTO 2000
 
-1000 CALL log_error('Error in setupcalcs:chkFSampleLens',tErrorLog_G)
+1000 CALL log_error("Error in setupcalcs:chkFSampleLens",tErrorLog_G)
 
 2000 CONTINUE
 
 END SUBROUTINE chkFSampleLens
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-  
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 SUBROUTINE checkIntSampling(sStepSize,nSteps,sLengthOfElm,qSwitches,qOK)
 
 !                 ARGUMENTS
@@ -541,10 +541,10 @@ SUBROUTINE checkIntSampling(sStepSize,nSteps,sLengthOfElm,qSwitches,qOK)
 !     Check if the stepsize is OK
 
   IF(sStepSize <= 0.0_WP) THEN
-    CALL log_error('Step size <=0.',tErrorLog_G)
+    CALL log_error("Step size <=0.",tErrorLog_G)
     GOTO 1000
   END IF
-  
+
   !IF (qSwitches(iFieldEvolve_CG)) THEN
 
     !IF( sStepSize >= (0.5_WP * sLengthOfElm(iZ2_CG))) THEN
@@ -555,7 +555,7 @@ SUBROUTINE checkIntSampling(sStepSize,nSteps,sLengthOfElm,qSwitches,qOK)
   !END IF
 
   IF(nSteps <= 0_IP) THEN
-    CALL log_error('Number of steps <=0.',tErrorLog_G)
+    CALL log_error("Number of steps <=0.",tErrorLog_G)
     GOTO 1000
   END IF
 
@@ -574,7 +574,7 @@ SUBROUTINE checkIntSampling(sStepSize,nSteps,sLengthOfElm,qSwitches,qOK)
 
   GOTO 2000
 
-1000 CALL log_error('Error in setupcalcs:checkIntSampling',tErrorLog_G)
+1000 CALL log_error("Error in setupcalcs:checkIntSampling",tErrorLog_G)
 
 2000 CONTINUE
 
@@ -604,7 +604,7 @@ SUBROUTINE getElmLengths(sLenEPulse,sWigglerLength,iNodes,qOneD,sLengthOfElm)
 
   sLengthOfElm(iZ2_CG) = (sLenEPulse(iZ2_CG) + &
                           sWigglerLength(iZ2_CG)) / &
-                          REAL(iNodes(iZ2_CG)-1,KIND=WP) 
+                          REAL(iNodes(iZ2_CG)-1,KIND=WP)
 
 END SUBROUTINE getElmLengths
 
@@ -620,26 +620,26 @@ SUBROUTINE checkFreeParams(srho,saw,sgammar,f_x,f_y,qOK)
 !     Check got valid value for rho
 
   IF (srho <= 0.0_WP) THEN
-    CALL log_error('Parameter rho <=0.',tErrorLog_G)
-    GOTO 1000    
+    CALL log_error("Parameter rho <=0.",tErrorLog_G)
+    GOTO 1000
   END IF
 
 !     Check got valid value for aw and gamma
-  
+
   IF (saw <= 0.0_WP) THEN
-    CALL log_error('Parameter saw <=0.',tErrorLog_G)
-    GOTO 1000    
+    CALL log_error("Parameter saw <=0.",tErrorLog_G)
+    GOTO 1000
   END IF
-  
+
   IF (sgammar <= 0.0_WP) THEN
-    CALL log_error('Parameter gamma_r <= 0.',tErrorLog_G)
-    GOTO 1000    
+    CALL log_error("Parameter gamma_r <= 0.",tErrorLog_G)
+    GOTO 1000
   END IF
-    
+
 !     Check got valid value for fx or fy
 
   IF (.NOT. (f_x==1.0_WP .OR. f_y==1.0_WP)) THEN
-    CALL log_error('Either fx OR fy must be 1.',tErrorLog_G)
+    CALL log_error("Either fx OR fy must be 1.",tErrorLog_G)
     GOTO 1000
   END IF
 
@@ -649,7 +649,7 @@ SUBROUTINE checkFreeParams(srho,saw,sgammar,f_x,f_y,qOK)
 
   GOTO 2000
 
-1000 CALL log_error('Error in setupcalcs:checkFreeParams',tErrorLog_G)
+1000 CALL log_error("Error in setupcalcs:checkFreeParams",tErrorLog_G)
 
 2000 CONTINUE
 

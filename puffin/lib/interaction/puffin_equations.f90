@@ -225,7 +225,7 @@ contains
 
         if (szl < 0) then
 
-          print*, 'undulator section not recognised, sz < 0!!'
+          print*, "undulator section not recognised, sz < 0!!"
           stop
 
         else if (sZl <= und%z_start_undulator) then
@@ -242,7 +242,7 @@ contains
 
         else
 
-          print*, 'undulator section not recognised, sz > z_end_undulator!!'
+          print*, "undulator section not recognised, sz > z_end_undulator!!"
           stop
 
         end if

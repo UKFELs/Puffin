@@ -34,7 +34,7 @@ contains
     integer(kind=ip), allocatable :: recvs_eb(:), displs_eb(:)
 
 !    real(kind=wp) :: dV_bar
-    
+
     real(kind=wp) :: dummy1, dummy2, dummy3
 
     integer :: error
@@ -57,13 +57,13 @@ contains
 
     call mpi_barrier(tProcInfo_G%comm, error)
 
-    if ( tProcInfo_G%qRoot ) print*, 'made it 0.1'
+    if ( tProcInfo_G%qRoot ) print*, "made it 0.1"
 
     allocate(recvs_eb(tProcInfo_G%size), displs_eb(tProcInfo_G%size))
 
     call mpi_barrier(tProcInfo_G%comm, error)
 
-    if ( tProcInfo_G%qRoot ) print*, 'made it 0.2'
+    if ( tProcInfo_G%qRoot ) print*, "made it 0.2"
 
 
     call getGathArrs(nMPsLoc,recvs_eb,displs_eb)
@@ -71,12 +71,12 @@ contains
 
     call mpi_barrier(tProcInfo_G%comm, error)
 
-    if ( tProcInfo_G%qRoot ) print*, 'made it 0.3', ' and displs = ', displs_eb
+    if ( tProcInfo_G%qRoot ) print*, "made it 0.3", " and displs = ", displs_eb
 
 
     call mpi_barrier(tProcInfo_G%comm, error)
 
-    if ( tProcInfo_G%qRoot ) print*, 'made it 1'
+    if ( tProcInfo_G%qRoot ) print*, "made it 1"
 
     iNumberElectrons_G = nMPsLoc
 
@@ -93,7 +93,7 @@ contains
 
     call mpi_barrier(tProcInfo_G%comm, error)
 
-    if ( tProcInfo_G%qRoot ) print*, 'made it 1.1'
+    if ( tProcInfo_G%qRoot ) print*, "made it 1.1"
 
 
     ! read file
@@ -105,17 +105,17 @@ contains
       if (ir == tProcInfo_G%rank) then
 
         OPEN(UNIT=fid,FILE=zFile,IOSTAT=ios,&
-             ACTION='READ',POSITION='REWIND')   
-  
+             ACTION="READ",POSITION="REWIND")
+
         nBlanks = displs_eb(ir+1) + nBlanks_head
         !print*, 'num of blanks now ', nblanks
-        do ij = 1,nBlanks 
-                READ(UNIT=fid, FMT=*) 
+        do ij = 1,nBlanks
+                READ(UNIT=fid, FMT=*)
         end do
 
         !do ij = displs_eb(ir+1)+1, nMPsLoc + displs_eb(ir+1)
 
-!       Reading in particle positions in 6D phase space, 
+!       Reading in particle positions in 6D phase space,
 !       + Nk, number of electrons represented by each
 !       macroparticle.
 

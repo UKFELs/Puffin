@@ -4,7 +4,7 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Module to retrieve and populate array
@@ -19,11 +19,11 @@ Module ArrayFunctions
   USE FileType
   USE IO
   USE ParallelSetup
-!      
+!
   IMPLICIT NONE
 !
 !
-!        
+!
 !         Global Parameters
 !
 ! iMtxStartPosition_G           Array holding pointers to equations in matrix
@@ -50,11 +50,11 @@ Module ArrayFunctions
   INTEGER(KIND=IP), PARAMETER    :: iRe_z2_CG          = 4_IP
   INTEGER(KIND=IP), PARAMETER    :: iRe_X_CG           = 5_IP
   INTEGER(KIND=IP), PARAMETER    :: iRe_Y_CG           = 6_IP
-      
+
   INTEGER(KIND=IP), PARAMETER    :: nFieldEquations_CG = 2_IP
   INTEGER(KIND=IP), PARAMETER    :: iRe_A_CG           = 1_IP
   INTEGER(KIND=IP), PARAMETER    :: iIm_A_CG           = 2_IP
- 
+
   INTEGER(KIND=IP), PARAMETER    :: nElectronEquations_CG  = 6_IP
 
 
@@ -68,7 +68,7 @@ Module ArrayFunctions
 
 
 
-  
+
   LOGICAL  :: qEmpty
 
 !                 Define type cArraySegment
@@ -81,9 +81,9 @@ Module ArrayFunctions
 
   TYPE cArraySegment
     LOGICAL             :: qWrite = .FALSE.
-    CHARACTER(32_IP)    :: zVariable = ''
+    CHARACTER(32_IP)    :: zVariable = ""
     TYPE(cFileType)     :: tFileType
-  END TYPE
+  END TYPE cArraySegment
 
 
 

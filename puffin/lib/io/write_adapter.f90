@@ -64,7 +64,7 @@ subroutine writeIM(sZ, sZl, ctx, iL, qOK)
 
   goto 2000
 
-      call log_error('Error in writeIM',tErrorLog_G)
+      call log_error("Error in writeIM",tErrorLog_G)
 
 2000 continue
 

@@ -4,10 +4,10 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Module which calculates d/dz of the local electron and field variables, and 
+!> Module which calculates d/dz of the local electron and field variables, and
 !> then sums the global regions together.
 
 module Derivative
@@ -26,11 +26,11 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-!> Subroutine which calculate d/dz of the local electron and field 
+!> Subroutine which calculate d/dz of the local electron and field
 !> variables, and then sums the global regions together.
 !> @param sz position in undulator module.
-!> @param sAr real field 
-!> @param sAi imaginary field 
+!> @param sAr real field
+!> @param sAi imaginary field
 !> @param sx electron macroparticles' x position
 
 
@@ -112,12 +112,12 @@ contains
       if (iArEr > 0_ip) then
         ctx%flags%parallel_arrays_ok = .false.
         if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 2)) then
-          print*, 'electron outside parallel bounds!'
-          print*, 'Emergency redistribute!!!'
-          print*, 'If this happens often, then &
+          print*, "electron outside parallel bounds!"
+          print*, "Emergency redistribute!!!"
+          print*, "If this happens often, then &
                 & it is possible the parallel &
                 & tuning parameters are inefficient, &
-                & and not suitable...'
+                & and not suitable..."
         end if
       end if
 
@@ -136,8 +136,8 @@ contains
       if (iArEr > 0_ip) then
         ctx%flags%inner_xy_ok = .false.
         if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 2) ) then
-          print*, 'electron outside transverse bounds!'
-          print*, 'Emergency redistribute!!!'
+          print*, "electron outside transverse bounds!"
+          print*, "Emergency redistribute!!!"
         end if
       end if
 
@@ -154,8 +154,8 @@ contains
 
 !     Error Handler
 
-     CALL log_error('Error in Derivative:derivs',tErrorLog_G)
-    PRINT*,'Error in Derivative:derivs'
+     CALL log_error("Error in Derivative:derivs",tErrorLog_G)
+    PRINT*,"Error in Derivative:derivs"
 2000 CONTINUE
 
   END SUBROUTINE derivs

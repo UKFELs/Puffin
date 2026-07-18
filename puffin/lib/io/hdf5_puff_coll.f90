@@ -96,7 +96,7 @@ contains
 !   Fortran index of first particle to be written might be '1', however
 !   We're interested in the offset from the first step.
     startOffset=0
-    if (tProcInfo_G%rank .GT. 0) then
+    if (tProcInfo_G%rank > 0) then
     Do rankIterator=1,tProcInfo_G%rank
       startOffset = startOffset+procelectrons_G(rankIterator+1)
     end do
@@ -111,19 +111,19 @@ contains
 
     attr_data_int(1)=numSpatialDims
     adims(1)=1
-    adims = (/1/)
-    dims = (/7,iNumberElectrons_G/) ! Dataset dimensions
-    fdims = (/7,iGloNumElectrons_G/) ! Dataset dimensions
-    doffset=(/0,startOffset/)
-    dsize=(/1,iNumberElectrons_G/)
+    adims = [1]
+    dims = [7,iNumberElectrons_G] ! Dataset dimensions
+    fdims = [7,iGloNumElectrons_G] ! Dataset dimensions
+    doffset=[0,startOffset]
+    dsize=[1,iNumberElectrons_G]
     attr_data_string="electrons_x,electrons_y,electrons_z,electrons_px," // &
       "electrons_py,electrons_gamma,electrons_weight"
     attr_string_len=94
 
 ! Prepare filename
 
-    filename = ( trim(adjustl(zFilename_G)) // '_electrons_' // &
-                 trim(adjustl(IntegerToString(ctx%mesh%highpass_filter_gr))) // '.h5' )
+    filename = ( trim(adjustl(zFilename_G)) // "_electrons_" // &
+                 trim(adjustl(IntegerToString(ctx%mesh%highpass_filter_gr))) // ".h5" )
 
 
     CALL h5open_f(error)
@@ -191,7 +191,7 @@ contains
 ! repeat for some next y dataset
 
 
-    doffset=(/1,startOffset/)
+    doffset=[1,startOffset]
 
 !if (procelectrons_G(1).GT.0) then
 ! for the corresponding space on disk
@@ -226,7 +226,7 @@ contains
 
 !
 ! repeat for some next z dataset
-    doffset=(/2,startOffset/)
+    doffset=[2,startOffset]
 
 !    if (procelectrons_G(1).GT.0) then
     ! for the corresponding space on disk
@@ -253,7 +253,7 @@ contains
       call h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, &
          sz2_temp, dsize, error, &
          xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
-         
+
       deallocate(sz2_temp)
 
     else
@@ -271,7 +271,7 @@ contains
     CALL h5sclose_f(filespace, error)
 
 ! repeat for some next px dataset
-    doffset=(/3,startOffset/)
+    doffset=[3,startOffset]
 
 !    if (procelectrons_G(1).GT.0) then
     ! for the corresponding space on disk
@@ -300,7 +300,7 @@ contains
     CALL h5sclose_f(filespace, error)
 
 ! repeat for some next py dataset
-    doffset=(/4,startOffset/)
+    doffset=[4,startOffset]
 
 !    if (procelectrons_G(1).GT.0) then
     ! for the corresponding space on disk
@@ -328,7 +328,7 @@ contains
     CALL h5sclose_f(filespace, error)
 
 ! repeat for some next gamma dataset (actually beta*gamma)
-    doffset=(/5,startOffset/)
+    doffset=[5,startOffset]
 
 !    if (procelectrons_G(1).GT.0) then
     ! for the corresponding space on disk
@@ -361,7 +361,7 @@ contains
 ! Everything self contained. Perhaps we use in future a funky h5 technique
 ! to point this column at a separate file which holds the data, reducing
 ! the size of this column from every written file.
-    doffset=(/6,startOffset/)
+    doffset=[6,startOffset]
 
 !    if (procelectrons_G(1).GT.0) then
     ! for the corresponding space on disk
@@ -505,7 +505,7 @@ contains
     CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
 ! then text attributes
     CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
-    if (attr_string_len .eq. 0) attr_string_len = 1
+    if (attr_string_len == 0) attr_string_len = 1
     CALL h5tset_size_f(atype_id, attr_string_len, error)
     CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
 !    Print*,'hdf5_puff:outputH5BeamFiles(string padding enabled)'
@@ -524,10 +524,10 @@ contains
 
 
 ! Write time Group
-    CALL writeH5TimeGroup(file_id, timegrpname, time, 'outputH5Beam', error, ctx)
+    CALL writeH5TimeGroup(file_id, timegrpname, time, "outputH5Beam", error, ctx)
 
 ! Write run info
-    CALL writeH5RunInfo(file_id,  time, sz_loc, iL, 'outputH5Beam', error, ctx)
+    CALL writeH5RunInfo(file_id,  time, sz_loc, iL, "outputH5Beam", error, ctx)
 
 ! We make the limits
     CALL h5gcreate_f(file_id, limgrpname, group_id, error)
@@ -538,7 +538,7 @@ contains
 
 ! And the limits themselves which require non-scalar attributes
 ! This is the 3D version.
-    adims = (/numSpatialDims/)
+    adims = [numSpatialDims]
     CALL h5screate_simple_f(arank, adims, aspace_id, error)
     aname="vsLowerBounds"
     CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
@@ -546,7 +546,7 @@ contains
 !    Print*,'hdf5_puff:outputH5BeamFiles(lower bounds attribute created)'
     ALLOCATE ( limdata(numSpatialDims))
 
-    
+
     if (numSpatialDims == 3) then
 
         limdata(1)=-0.5_wp*NX_G*sLengthOfElmX_G
@@ -558,7 +558,7 @@ contains
         limdata(1)=0.0_wp
 
     end if
-      
+
 !    end if
 
     CALL h5awrite_f(attr_id, atype_id, limdata, adims, error)
@@ -588,7 +588,7 @@ contains
     CALL h5gclose_f(group_id, error)
 
     aname="electrons_xSI"
-    write(scaleToSIstring, '(E16.9)' ) (DSQRT(ctx%frame%gain_length*ctx%frame%cooperation_length))
+    write(scaleToSIstring, "(E16.9)" ) (DSQRT(ctx%frame%gain_length*ctx%frame%cooperation_length))
     attr_data_string=("electrons_x*" // scaleToSIstring)
     attr_string_len=len(trim(adjustl(attr_data_string)))
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
@@ -601,32 +601,32 @@ contains
 
 ! We make another group
     aname="electrons_zSI"
-    write(scaleToSIstring, '(E16.9)' ) ctx%frame%cooperation_length
+    write(scaleToSIstring, "(E16.9)" ) ctx%frame%cooperation_length
     attr_data_string=("electrons_z*" // scaleToSIstring)
     attr_string_len=len(trim(adjustl(attr_data_string)))
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)!
 ! Were there an SI version of this, we might be in the right place to use it
 
     aname="electrons_dxdzSI"
-    write(scaleToSIstring, '(E16.9)' ) 2.0_wp * ctx%frame%rho * ctx%frame%kappa
+    write(scaleToSIstring, "(E16.9)" ) 2.0_wp * ctx%frame%rho * ctx%frame%kappa
     attr_data_string=("electrons_px*" // scaleToSIstring // "/electrons_gamma")
     attr_string_len=len(trim(adjustl(attr_data_string)))
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
     aname="electrons_dydzSI"
-    write(scaleToSIstring, '(E16.9)' ) -2.0_wp * ctx%frame%rho * ctx%frame%kappa
+    write(scaleToSIstring, "(E16.9)" ) -2.0_wp * ctx%frame%rho * ctx%frame%kappa
     attr_data_string=("electrons_py*" // scaleToSIstring // "/electrons_gamma")
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
     aname="electrons_gammaSI"
-    write(scaleToSIstring, '(E16.9)' ) ctx%frame%gamma_ref
+    write(scaleToSIstring, "(E16.9)" ) ctx%frame%gamma_ref
     attr_data_string=("electrons_gamma*" // scaleToSIstring)
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
     aname="slice_nom_lamda"
 ! Todo: Actually needs to take account of slippage, and needs to identify
 ! which lamda was used (eg for 2 colour)
-    write(scaleToSIstring, '(E16.9)' ) ctx%frame%lambda_r
+    write(scaleToSIstring, "(E16.9)" ) ctx%frame%lambda_r
     attr_data_string=("floor(electrons_zSI/" // scaleToSIstring // ")")
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
@@ -638,12 +638,12 @@ contains
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
     aname="electrons_numPhysicalParticles"
-    write(scaleToSIstring, '(E16.9)' ) npk_bar_G
+    write(scaleToSIstring, "(E16.9)" ) npk_bar_G
     attr_data_string=("electrons_weight*" // scaleToSIstring)
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
     aname="electrons_chargeSI"
-    write(scaleToSIstring, '(E16.9)' ) npk_bar_G*q_e
+    write(scaleToSIstring, "(E16.9)" ) npk_bar_G*q_e
     attr_data_string=("electrons_weight*" // scaleToSIstring)
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
@@ -661,8 +661,8 @@ contains
     goto 2000
 
 !     Error Handler - Error log Subroutine in CIO.f90 line 709
-     call log_error('Error in hdf5_puff:outputBeamFiles',tErrorLog_G)
-    print*,'Error in hdf5_puff:outputBeamFiles'
+     call log_error("Error in hdf5_puff:outputBeamFiles",tErrorLog_G)
+    print*,"Error in hdf5_puff:outputBeamFiles"
 2000 continue
   end subroutine outputH5BeamFilesSD
 
@@ -726,26 +726,26 @@ contains
 !    if (qUnique .OR. (tProcInfo_G%qRoot)) then
       if (qONED_G) then
         numSpatialDims=1
-        dims = (/1,1,nlonglength,1/) ! Dataset dimensions
-        fdims = (/2,2,NZ2_G,2/) ! Dataset dimensions
-        doffset = (/0,0,(nlo-1),component/)
-        dsize = (/1,1,nhi-nlo+1,1/)
+        dims = [1,1,nlonglength,1] ! Dataset dimensions
+        fdims = [2,2,NZ2_G,2] ! Dataset dimensions
+        doffset = [0,0,(nlo-1),component]
+        dsize = [1,1,nhi-nlo+1,1]
       else
         numSpatialDims=3
-        dims = (/nx_g,ny_g,nlonglength,1/) ! Dataset dimensions
-        fdims = (/nx_g,ny_g,NZ2_G,2/) ! Dataset dimensions
-        doffset = (/0,0,(nlo-1),component/)
+        dims = [nx_g,ny_g,nlonglength,1] ! Dataset dimensions
+        fdims = [nx_g,ny_g,NZ2_G,2] ! Dataset dimensions
+        doffset = [0,0,(nlo-1),component]
 !      dsize = (/nx_g,ny_g,nhi-nlo+1,1/)
-        dsize = (/nx_g,ny_g,nlonglength,1/)
-        
+        dsize = [nx_g,ny_g,nlonglength,1]
+
 !        numSpatialDims=3
 !        dims = (/nlonglength,ny_g,nx_g,1/) ! Dataset dimensions
 !        fdims = (/NZ2_G,ny_g,nx_g,2/) ! Dataset dimensions
 !        doffset = (/(nlo-1),0,0,component/)
 !!      dsize = (/nx_g,ny_g,nhi-nlo+1,1/)
 !        dsize = (/nlonglength,ny_g,nx_g,1/)
-        
-        
+
+
       end if
 !    print *,IntegerToString(size(rawdata)) // " vs " // &
 !      trim(adjustl(IntegerToString(Nx_g*ny_g*nlonglength))) // &
@@ -763,8 +763,8 @@ contains
 
 
 !    Print*,('Spatialdims: ' // trim(IntegerToString(numSpatialDims)))
-      filename = (trim(adjustl(zFilename_G)) // '_' // trim(adjustl(dsetname)) &
-          // '_' // trim(adjustl(IntegerToString(ctx%mesh%highpass_filter_gr))) // '.h5' )
+      filename = (trim(adjustl(zFilename_G)) // "_" // trim(adjustl(dsetname)) &
+          // "_" // trim(adjustl(IntegerToString(ctx%mesh%highpass_filter_gr))) // ".h5" )
       CALL h5open_f(error)
       CALL h5pcreate_f(H5P_FILE_ACCESS_F, plist_id, error)
 !      Print*,'hdf5_puff:outputH5FieldSD(property created)'
@@ -772,7 +772,7 @@ contains
       CALL h5pset_fapl_mpio_f(plist_id, tProcInfo_G%comm, mpiinfo, error)
 !      Print*,'hdf5_puff:outputH5FieldSD(property set up)'
 !      Print*,error
-      if (createNewFlag .EQ. 1) then
+      if (createNewFlag == 1) then
         CALL h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error, access_prp = plist_id)
 !      Print*,'hdf5_puff:outputH5FieldSD(file created)'
 !      Print*,error
@@ -951,7 +951,7 @@ contains
 ! end of parallel write stuff
 
 ! add stuff just on rank 0
-      if (createNewFlag .EQ. 1) then
+      if (createNewFlag == 1) then
 
         if (tProcInfo_G%qRoot) then
 
@@ -1023,8 +1023,8 @@ contains
           CALL h5dclose_f(dset_id, error)
 ! Time Group
           CALL writeH5TimeGroup(file_id, timegrpname, time, &
-	               'outH5Field3D', error, ctx)
-          CALL writeH5RunInfo(file_id,  time, sz_loc, iL, 'outH5Field3D', error, ctx)
+	               "outH5Field3D", error, ctx)
+          CALL writeH5RunInfo(file_id,  time, sz_loc, iL, "outH5Field3D", error, ctx)
 
           if (qOneD_G) then
 
@@ -1041,19 +1041,19 @@ contains
               lb(1)=0.0_WP*sLengthOfElmZ2_G
               lb(2)=-0.5*NY_G*sLengthOfElmY_G
               lb(3)=-0.5*NX_G*sLengthOfElmX_G
-          
+
               ub(1)=NZ2_G*sLengthOfElmZ2_G
               ub(2)=0.5*NY_G*sLengthOfElmY_G
               ub(3)=0.5*NX_G*sLengthOfElmX_G
 
           end if
-          
+
           CALL write3DlimGrp(file_id,limgrpname,lb,ub)
 
           if (qONED_G) then
-            CALL write3DuniformMesh(file_id,meshScaledGrpname,lb,ub,(/1,1,NZ2_G-1/))
+            CALL write3DuniformMesh(file_id,meshScaledGrpname,lb,ub,[1,1,NZ2_G-1])
           else
-            CALL write3DuniformMesh(file_id,meshScaledGrpname,lb,ub,(/NZ2_G-1,ny_g-1,nx_g-1/))
+            CALL write3DuniformMesh(file_id,meshScaledGrpname,lb,ub,[NZ2_G-1,ny_g-1,nx_g-1])
           end if
 
           aname="intensityScaled"
@@ -1157,10 +1157,10 @@ contains
       if (qONED_G) then
 
         numSpatialDims=1
-        dims = (/nlonglength,1/) ! Dataset dimensions (portion of single comp.)
-        fdims = (/NZ2_G,2/)      ! File Dataset dimensions
-        doffset = (/(nlo-1),component/)
-        dsize = (/nhi-nlo+1,1/)
+        dims = [nlonglength,1] ! Dataset dimensions (portion of single comp.)
+        fdims = [NZ2_G,2]      ! File Dataset dimensions
+        doffset = [(nlo-1),component]
+        dsize = [nhi-nlo+1,1]
 
       else   ! if not 1D (WE SHOULD NOT BE HERE)
   !        numSpatialDims=3
@@ -1175,8 +1175,8 @@ contains
 
   !    Print*,('Spatialdims: ' // trim(IntegerToString(numSpatialDims)))
 
-        filename = (trim(adjustl(zFilename_G)) // '_' // trim(adjustl(dsetname)) &
-                 // '_' // trim(adjustl(IntegerToString(ctx%mesh%highpass_filter_gr))) // '.h5' )
+        filename = (trim(adjustl(zFilename_G)) // "_" // trim(adjustl(dsetname)) &
+                 // "_" // trim(adjustl(IntegerToString(ctx%mesh%highpass_filter_gr))) // ".h5" )
 
       call h5open_f(error)
 
@@ -1360,7 +1360,7 @@ contains
 
   !        add stuff just on rank 0
 
-      if (createNewFlag .EQ. 1) then
+      if (createNewFlag == 1) then
 
         if (tProcInfo_G%qRoot) then
 
@@ -1438,9 +1438,9 @@ contains
   !                       Time Group
 
           call writeH5TimeGroup(file_id, timegrpname, time, &
-                                'radH5Field1D', error, ctx)
+                                "radH5Field1D", error, ctx)
 
-          call writeH5RunInfo(file_id,  time, sz_loc, iL, 'radH5Field1D', error, ctx)
+          call writeH5RunInfo(file_id,  time, sz_loc, iL, "radH5Field1D", error, ctx)
 
           lb=0.0_WP*sLengthOfElmZ2_G  ! Lower and upper bounds...
           ub=NZ2_G*sLengthOfElmZ2_G
@@ -1492,13 +1492,13 @@ contains
     character(1024_IP) :: filename !< output filename
     integer(kind=ip) :: error !< Local Error flag
     if (tProcInfo_G%qRoot) then
-      filename = ( trim(adjustl(zFilename_G)) // '_integrated_' &
+      filename = ( trim(adjustl(zFilename_G)) // "_integrated_" &
         //trim(adjustl(IntegerToString(ctx%mesh%highpass_filter_gr))) &
-        // '.h5' )
+        // ".h5" )
       CALL h5open_f(error)
       CALL h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error)
-      CALL writeH5TimeGroup(file_id, timegrpname, simtime, 'intH5field1D', error, ctx)
-      CALL writeH5RunInfo(file_id,  simtime, sz_loc, iL, 'integratedH5Field1D', error, ctx)
+      CALL writeH5TimeGroup(file_id, timegrpname, simtime, "intH5field1D", error, ctx)
+      CALL writeH5RunInfo(file_id,  simtime, sz_loc, iL, "integratedH5Field1D", error, ctx)
 ! Limits group
 !      CALL h5gcreate_f(file_id, limgrpname, group_id, error)
       CALL write1DlimGrp(file_id,limgrpname,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G)
@@ -1572,9 +1572,9 @@ contains
 !    CHARACTER(LEN=6), PARAMETER :: meshSIGrpname = "meshIntPtclSI"  !< SI Mesh Group name
     if (tProcInfo_G%qRoot) then
       dims = size(writeData) ! Dataset dimensions
-      filename = ( trim(adjustl(zFilename_G)) // '_integrated_' &
+      filename = ( trim(adjustl(zFilename_G)) // "_integrated_" &
         //trim(adjustl(IntegerToString(ctx%mesh%highpass_filter_gr))) &
-        // '.h5' )
+        // ".h5" )
       CALL h5open_f(error)
       CALL h5fopen_f(filename, H5F_ACC_RDWR_F, file_id, error)
       CALL h5screate_simple_f(rank, dims, filespace, error)
@@ -1593,14 +1593,14 @@ contains
       aname="vsLabels"
       attr_data_string=trim(adjustl(dsetname))
       attr_string_len=len(trim(adjustl(dsetname)))
-      if (attr_string_len .eq. 0) attr_string_len = 1
+      if (attr_string_len == 0) attr_string_len = 1
       CALL h5tset_size_f(atype_id, attr_string_len, error)
       CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
       CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
       CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error)
       CALL h5aclose_f(attr_id, error)
       CALL addH5StringAttribute(dset_id,"vsType","variable",aspace_id)
-      if (size(writeData) .eq. NZ2_G) then
+      if (size(writeData) == NZ2_G) then
         CALL addH5StringAttribute(dset_id,"vsCentering","nodal",aspace_id)
       else
         CALL addH5StringAttribute(dset_id,"vsCentering","zonal",aspace_id)

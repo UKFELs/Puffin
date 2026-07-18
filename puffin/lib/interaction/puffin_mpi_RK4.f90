@@ -209,11 +209,12 @@ contains
 !    Second step
 !    Get derivatives
 
-      if (ctx%flags%parallel_arrays_ok) &
-         call derivs(szh, A_localtr1, A_localti1, &
+      if (ctx%flags%parallel_arrays_ok) then
+        call derivs(szh, A_localtr1, A_localti1, &
          xt, yt, z2t, pxt, pyt, pz2t, &
          dxt, dyt, dz2t, dpxt, dpyt, dpz2t, &
          dadz_r1, dadz_i1, ctx)
+      end if
 
 
 
@@ -245,11 +246,12 @@ contains
 !    Get derivatives
 
 
-      if (ctx%flags%parallel_arrays_ok) &
-         call derivs(szh, A_localtr2, A_localti2, &
+      if (ctx%flags%parallel_arrays_ok) then
+        call derivs(szh, A_localtr2, A_localti2, &
          xt, yt, z2t, pxt, pyt, pz2t, &
          dxm, dym, dz2m, dpxm, dpym, dpz2m, &
          dadz_r2, dadz_i2, ctx)
+      end if
 
 !    Incrementing
 
@@ -292,11 +294,12 @@ contains
 
 !    Get derivatives
 
-      if (ctx%flags%parallel_arrays_ok) &
-         call derivs(szh, A_localtr3, A_localti3, &
+      if (ctx%flags%parallel_arrays_ok) then
+        call derivs(szh, A_localtr3, A_localti3, &
          xt, yt, z2t, pxt, pyt, pz2t, &
          dxt, dyt, dz2t, dpxt, dpyt, dpz2t, &
          dadz_r1, dadz_i1, ctx)
+      end if
 
 
 !    Accumulate increments with proper weights
@@ -358,8 +361,8 @@ contains
 
 !   Error Handler - Error log Subroutine in CIO.f90 line 709
 
-      CALL log_error('Error in MathLib:rk4',tErrorLog_G)
-      PRINT*,'Error in MathLib:rk4'
+      CALL log_error("Error in MathLib:rk4",tErrorLog_G)
+      PRINT*,"Error in MathLib:rk4"
 2000  CONTINUE
 
    end subroutine rk4par

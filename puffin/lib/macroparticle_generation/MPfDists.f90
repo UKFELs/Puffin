@@ -421,7 +421,7 @@ z2int(1_IP), npk_num, ndens_num, npk_numl
             pxseqb(nseqparts_G), pyseqb(nseqparts_G), &
             gamseqb(nseqparts_G), z2seqb(nseqparts_G))
          call getSeqs(xseqb, yseqb, pxseqb, pyseqb, gamseqb, z2seqb, &
-            (/1.0_wp, 1.0_wp, 1.0_wp, 1.0_wp, 1.0_wp, 1.0_wp/), TrLdMeth_G)
+            [1.0_wp, 1.0_wp, 1.0_wp, 1.0_wp, 1.0_wp, 1.0_wp], TrLdMeth_G)
 
          z2seqb = (z2seqb - 0.5_wp) * dz2
          !sigxpr = 1.0_wp
@@ -443,7 +443,7 @@ z2int(1_IP), npk_num, ndens_num, npk_numl
 
          !    arrbs = linspace( (k-1) * iNMPG + 1,  k * (iNMPG-1) + 1, iNMPG )    !  calarrayboundsfrom k, nx, ny, npx, npy, ngamma
 
-         z2grid = (/ z2m(k) - ( dz2 / 2.0_WP) , z2m(k) + ( dz2 / 2.0_WP) /)
+         z2grid = [ z2m(k) - ( dz2 / 2.0_WP) , z2m(k) + ( dz2 / 2.0_WP) ]
 
 ! what should the length of the grid in gamma be?
 ! since we have a different sigGam for each?.....
@@ -477,7 +477,7 @@ z2int(1_IP), npk_num, ndens_num, npk_numl
                   istart = iend + 1
                   iend = iStart + iNMPG - 1
 
-                  arrbs = (/ ( (k-1) * iNMPG + 1 + i,    i=0, (iNMPG-1) ) /)
+                  arrbs = [ ( (k-1) * iNMPG + 1 + i,    i=0, (iNMPG-1) ) ]
 
                   call genGrid(1_ip, intTypeG, iLinear_CG, gm(k), &
                      gsig(k), 6.0_WP*gsig(k), iNMPG, iNMPG, &
@@ -616,11 +616,11 @@ z2int(1_IP), npk_num, ndens_num, npk_numl
 
       if (.not. qEquiXY_G) then
 
-         if (minval(z2) < 0) print*, 'WARNING. B4 noise z2<0'
+         if (minval(z2) < 0) print*, "WARNING. B4 noise z2<0"
 
          call applyNoise(z2, dz2, Nk)  ! add noise in z2
 
-         if (minval(z2) < 0) print*, 'WARNING. AFTER noise z2<0'
+         if (minval(z2) < 0) print*, "WARNING. AFTER noise z2<0"
 
          deallocate(xseq, yseq, pxseq, pyseq, gamseq, z2seq)
          deallocate(xseqb, yseqb, pxseqb, pyseqb, gamseqb, z2seqb)

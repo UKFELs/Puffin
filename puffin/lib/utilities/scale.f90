@@ -72,7 +72,7 @@ contains
 
 subroutine scaleEmit(sEmit, sLambda_R)
 
-!     Inputting unnormalized emittance, 
+!     Inputting unnormalized emittance,
 !     outputting scaled emittance \bar{\epsilon}
 
     real(kind=wp), intent(inout) :: sEmit
@@ -230,7 +230,7 @@ subroutine unscalePx_single(sPx, sgamma, saw)
     real(kind=wp), intent(in) :: saw, sgamma
 
 
-    sPx = sPx * saw / sgamma 
+    sPx = sPx * saw / sgamma
 
 end subroutine unscalePx_single
 
@@ -258,7 +258,7 @@ subroutine unscalePx_array(sPx, sgamma, saw)
     real(kind=wp), intent(in) :: saw, sgamma(:)
 
 
-    sPx = sPx * saw / sgamma 
+    sPx = sPx * saw / sgamma
 
 end subroutine unscalePx_array
 
@@ -268,49 +268,49 @@ end subroutine unscalePx_array
 
 
 !!  subroutine scalePx_single(sPx, saw)
-!!  
+!!
 !!  !    Inputting px, outputting \bar{px}
-!!  
+!!
 !!      real(kind=wp), intent(inout) :: sPx
 !!      real(kind=wp), intent(in) :: saw
-!!  
+!!
 !!      sPx = sPx / saw / m_e / c
-!!  
+!!
 !!  end subroutine scalePx_single
-!!  
-!!  
+!!
+!!
 !!  subroutine unscalePx_single(sPx, saw)
-!!  
+!!
 !!  !    Inputting \bar{px}, outputting px
-!!  
+!!
 !!      real(kind=wp), intent(inout) :: sPx
 !!      real(kind=wp), intent(in) :: saw
-!!  
+!!
 !!      sPx = sPx * saw * m_e * c
-!!  
+!!
 !!  end subroutine unscalePx_single
-!!  
+!!
 !!  subroutine scalePx_array(sPx, saw)
-!!  
+!!
 !!  !    Inputting px, outputting \bar{px}
-!!  
+!!
 !!      real(kind=wp), intent(inout) :: sPx(:)
 !!      real(kind=wp), intent(in) :: saw
-!!  
+!!
 !!      sPx = sPx / saw / m_e / c
-!!  
+!!
 !!  end subroutine scalePx_array
-!!  
-!!  
+!!
+!!
 !!  subroutine unscalePx_array(sPx, saw)
-!!  
+!!
 !!  !    Inputting \bar{px}, outputting px
-!!  
+!!
 !!      real(kind=wp), intent(inout) :: sPx(:)
 !!      real(kind=wp), intent(in) :: saw
-!!  
+!!
 !!      sPx = sPx * saw * m_e * c
-!!  
+!!
 !!  end subroutine unscalePx_array
 
 

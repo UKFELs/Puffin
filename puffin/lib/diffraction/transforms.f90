@@ -83,7 +83,7 @@ subroutine getTransformPlans4FEL(nnodes,qmeasure,qOK)
   qOK = .true.
   goto 2000
 
-1000  call log_error('Error in transforms:getTransformPlans4FEL',tErrorLog_G)
+1000  call log_error("Error in transforms:getTransformPlans4FEL",tErrorLog_G)
 
 2000 continue
 
@@ -144,7 +144,7 @@ subroutine getTransformPlans_MultiD(sizes,nDims,qMeasure,qOK)
   M = int(sizes(iY_CG), C_INTPTR_T)
   if (fieldMesh == iPeriodic) then
     N = int(sizes(iZ2_CG)-1_ip, C_INTPTR_T)
-  else 
+  else
     N = int(sizes(iZ2_CG), C_INTPTR_T)
   end if
 
@@ -179,7 +179,7 @@ subroutine getTransformPlans_MultiD(sizes,nDims,qMeasure,qOK)
 !     Create plans
 
   if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 1)) then
-    print*, 'Creating FFTW3 plans'
+    print*, "Creating FFTW3 plans"
   end if
 
   if (qDiffraction_G) then
@@ -195,7 +195,7 @@ subroutine getTransformPlans_MultiD(sizes,nDims,qMeasure,qOK)
                             FFTW_BACKWARD, FFTW_MEASURE)
 
     else
-      
+
       tTransInfo_G%fplan = fftw_mpi_plan_dft_3d(N, M, L, &
                             Afftw, Afftw, tProcInfo_G%comm, &
                             FFTW_FORWARD, FFTW_ESTIMATE)
@@ -203,22 +203,22 @@ subroutine getTransformPlans_MultiD(sizes,nDims,qMeasure,qOK)
 
       tTransInfo_G%bplan = fftw_mpi_plan_dft_3d(N, M, L, &
                             Afftw, Afftw, tProcInfo_G%comm, &
-                            FFTW_BACKWARD, FFTW_ESTIMATE)      
+                            FFTW_BACKWARD, FFTW_ESTIMATE)
 
 
     end if
   end if
 
-  if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 1)) then 
-    print*, 'Created FFTW3 plans'
-    print*,  ''
-    print*, '***********************'
+  if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 1)) then
+    print*, "Created FFTW3 plans"
+    print*,  ""
+    print*, "***********************"
   end if
 
   qOK = .true.
   goto 2000
 
-      call log_error('Error in transforms:getTransformPlans_MultiD',tErrorLog_G)
+      call log_error("Error in transforms:getTransformPlans_MultiD",tErrorLog_G)
 
 2000 continue
 
@@ -268,7 +268,7 @@ subroutine clearTransformPlans(qOK)
 
   goto 2000
 
-1000  call log_error('Error in transforms:clearTransformPlans',tErrorLog_G)
+1000  call log_error("Error in transforms:clearTransformPlans",tErrorLog_G)
 
 2000 continue
 
@@ -315,7 +315,7 @@ subroutine clearTransformPlans_ThreeD(qOK)
 
   goto 2000
 
-      call log_error('Error in transforms:clearTransformPlans_ThreeD',tErrorLog_G)
+      call log_error("Error in transforms:clearTransformPlans_ThreeD",tErrorLog_G)
 
 2000 continue
 
@@ -377,7 +377,7 @@ subroutine Transform(plan, &
 
   goto 2000
 
-1000  call log_error('Error in transforms:Transform',tErrorLog_G)
+1000  call log_error("Error in transforms:Transform",tErrorLog_G)
 
 2000 continue
 
@@ -427,7 +427,7 @@ subroutine Transform_MultiD(plan, local_in, qOK)
 
   goto 2000
 
-      call log_error('Error in transforms:Transform_MultiD',tErrorLog_G)
+      call log_error("Error in transforms:Transform_MultiD",tErrorLog_G)
 
 2000 continue
 
@@ -581,7 +581,7 @@ subroutine GetKValues(recvs,displs,qOK)
 
   goto 2000
 
-      call log_error('Error in transforms:GetKValues',tErrorLog_G)
+      call log_error("Error in transforms:GetKValues",tErrorLog_G)
 
 2000 continue
 

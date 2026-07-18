@@ -11,7 +11,7 @@ use puffin_mpiInfo
 integer(kind=ip), allocatable :: wrarray(:)
 logical :: qWrArray_G
 
-contains 
+contains
 
 
   subroutine getWrArray(fname)
@@ -35,15 +35,15 @@ contains
 
     allocate(wrarray(nwrts))
 
-      open(168,FILE=fname, IOSTAT=ios, STATUS='OLD', ACTION='READ', POSITION ='REWIND')
+      open(168,FILE=fname, IOSTAT=ios, STATUS="OLD", ACTION="READ", POSITION ="REWIND")
 
       if (ios /= 0) then
-        print*, 'iostat = ', ios
+        print*, "iostat = ", ios
         stop "OPEN(input file) not performed correctly, IOSTAT /= 0"
       end if
 
 
-      do 
+      do
 
         read (168,*, IOSTAT=ios) ztest  ! probe the line
 
@@ -54,13 +54,13 @@ contains
 
         else if (ios > 0) then
 
-          print*, 'THIS LINE HAS NOTHING FOR ME', ios
+          print*, "THIS LINE HAS NOTHING FOR ME", ios
           exit
           cnt = cnt + 1
 
         else
 
-          if (ztest(1:2) == 'WR') then
+          if (ztest(1:2) == "WR") then
 
             backspace(168)
 
@@ -75,9 +75,9 @@ contains
 
         end if
 
-      end do    
+      end do
 
-      close(168, STATUS='KEEP')
+      close(168, STATUS="KEEP")
 
 
 
@@ -103,18 +103,18 @@ contains
   integer(kind=ip) :: cnt, cntw
   character(40) :: ztest
 
-  ztest = ''
+  ztest = ""
   cnt = 0
   cntw = 0
 
 
-  open(168,FILE=fname, IOSTAT=ios, STATUS='OLD', ACTION='READ', POSITION ='REWIND')
+  open(168,FILE=fname, IOSTAT=ios, STATUS="OLD", ACTION="READ", POSITION ="REWIND")
   if (ios /= 0) then
-    print*, 'iostat = ', ios
+    print*, "iostat = ", ios
     stop "OPEN(input file) not performed correctly, IOSTAT /= 0"
   end if
 
-  do 
+  do
 
     read (168,*, IOSTAT=ios) ztest  ! probe the line
 
@@ -128,13 +128,13 @@ contains
 
     else if (ios > 0) then
 
-      print*, 'THIS LINE HAS NOTHING FOR ME'
+      print*, "THIS LINE HAS NOTHING FOR ME"
       cnt = cnt + 1
       stop
 
     else
 
-      if (ztest(1:2) == 'WR') then
+      if (ztest(1:2) == "WR") then
 
         cntw = cntw + 1
 !        print*, 'quad number ', cntq, ' has params ', quad1, quad2
@@ -146,7 +146,7 @@ contains
 
   end do
 
-  close(168, STATUS='KEEP')
+  close(168, STATUS="KEEP")
 
   numOfWrites = cntw
 

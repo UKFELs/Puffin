@@ -70,7 +70,7 @@ contains
     integer(kind=ip) :: drstart, stepsLeft
     real(kind=wp) :: dzdS, dzdF, dzd
     logical :: qDWrDone
-    integer error
+    integer :: error
     logical :: qResuming
 
   call Get_time(locTimeSt)
@@ -339,9 +339,9 @@ end if
   call Get_time(locEndTime)
 
   if ((tProcInfo_G%QROOT ) .and. (ctx%output%output_info_level > 1)) then
-    print*,' finished step ',ctx%lattice%cumulative_steps, &
+    print*," finished step ",ctx%lattice%cumulative_steps, &
            ctx%integration%current_step, locEndTime - ctx%integration%time_start
-    WRITE(137,*) ' finished step ',ctx%lattice%cumulative_steps, &
+    WRITE(137,*) " finished step ",ctx%lattice%cumulative_steps, &
                  ctx%integration%current_step, locEndTime - ctx%integration%time_start
   end if
 
@@ -362,8 +362,8 @@ end if
 
   if (igoes>3_ip) then
 
-    if (tProcInfo_G%qRoot) print*, 'Tried rearranging 3 times...'
-    if (tProcInfo_G%qRoot) print*, '...didnt work, so stopping...'
+    if (tProcInfo_G%qRoot) print*, "Tried rearranging 3 times..."
+    if (tProcInfo_G%qRoot) print*, "...didnt work, so stopping..."
     call mpi_finalize(error)
     stop
 
@@ -377,7 +377,7 @@ end if
   qResume_G = .false.
 
   if ((tProcInfo_G%QROOT ) .and. (ctx%output%output_info_level > 0)) then
-    print*,' Finished undulator module in ', locEndTime-locTimeSt, 'seconds'
+    print*," Finished undulator module in ", locEndTime-locTimeSt, "seconds"
   end if
 
   call UpdateGlobalsFromIntegrationState(ctx%integration)

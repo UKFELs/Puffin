@@ -4,9 +4,9 @@
 
 module grids
 
-! This module contains the subroutines used to 
+! This module contains the subroutines used to
 ! define and create the grids in each phase space
-! dimension which define the positions of the 
+! dimension which define the positions of the
 ! electron beam macroparticles.
 
 use puffin_mpiInfo, only: tProcInfo_G
@@ -25,19 +25,19 @@ contains
 
   SUBROUTINE getExtent(off,length,start,endm)
 
-! Simple subroutine to calculate the extent, 
+! Simple subroutine to calculate the extent,
 ! or beginning and end of the model in a dimension,
 ! given the length and the offset from zero.
-! 
+!
 !              ARGUMENTS
 
     REAL(KIND=WP), INTENT(IN) :: off, length
     REAL(KIND=WP), INTENT(OUT) :: start, endm
-    
+
     start = -length/2.0_WP + off
-    
+
     endm = start + length
-  
+
   END SUBROUTINE getExtent
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -65,7 +65,7 @@ SUBROUTINE getIntTypes(iNMPs, samplens, sigmas, &
           inttypes(iLIT)=iGaussianDistribution_CG
           !IF (tProcInfo_G%qROOT) PRINT *, 'gauss'
        END IF
-    ENDDO
+    END DO
 
 END SUBROUTINE getIntTypes
 
@@ -89,9 +89,9 @@ SUBROUTINE genGrids(ib, sigmas,offsets,slens,intType,iNMPs,iNMPs_loc, &
                                   sPX_integral(:), sPY_integral(:), sPZ2_integral(:)
 
 !         LOCAL ARGS
-  
+
   LOGICAL :: qOKL
-  
+
 ! Generate grids and integrals in each dimension
 
   CALL genGrid(ib,intType(iX_CG),iLinear_CG,offsets(iX_CG), &
@@ -124,7 +124,7 @@ SUBROUTINE genGrids(ib, sigmas,offsets,slens,intType,iNMPs,iNMPs_loc, &
                iNMPs(iGam_CG),iNMPs_loc(iGam_CG),spz2_grid,sPZ2_integral,.FALSE., &
                qOKL)
 
-! Each gamma has its own sig_px, sig_py....need to change above to 
+! Each gamma has its own sig_px, sig_py....need to change above to
 ! do this. For now, sigma_px and sigma_py are the same for all gamma_j.
 
 !  sigpx(size(nMP_P2))
@@ -167,11 +167,11 @@ flat_len
 
     if ((qRndEj_G(b_num)) .and. &
            (inttype == iTopHatDistribution_CG) ) then !!!  If rounding edges of flat-top
-  
+
       CALL splitBeam(iNMP, length, tProcInfo_G%size, tProcInfo_G%rank, &
                      locN, local_start, local_fin)
 
-      shift = centre - (length / 2.0_WP) ! Amount the beam is shifted from 
+      shift = centre - (length / 2.0_WP) ! Amount the beam is shifted from
                                          ! having the head at z2=0
 
       local_start = local_start + shift
@@ -185,7 +185,7 @@ flat_len
                      qOK = qOKL)
 
       IF (.NOT. qOKL) GOTO 1000
-      
+
 !     CALL DistributionIntegralZ2(inttype, &
 !                                 locN, &
 !                                 iNMP, &
@@ -204,26 +204,26 @@ flat_len
 
 
 
-    else 
+    else
 
       CALL splitBeam(iNMP, length, tProcInfo_G%size, tProcInfo_G%rank, &
                      locN, local_start, local_fin)
-  
-      shift = centre - (length / 2.0_WP) ! Amount the beam is shifted from 
+
+      shift = centre - (length / 2.0_WP) ! Amount the beam is shifted from
                                          ! having the head at z2=0
-  
+
       local_start = local_start + shift
       local_fin = local_fin + shift
-  
+
       CALL PulseGrid(iGridType=gridtype, &
                      iNumMP=locN, &
                      sStart=local_start, &
                      sEnd=local_fin, &
                      sGrid=Grid, &
                      qOK = qOKL)
-  
+
       IF (.NOT. qOKL) GOTO 1000
-        
+
       CALL DistributionIntegralZ2(inttype, &
                                   locN, &
                                   iNMP, &
@@ -251,7 +251,7 @@ flat_len
                    qOK = qOKL)
 
     IF (.NOT. qOKL) GOTO 1000
-                  
+
     CALL DistributionIntegral(inttype, &
                               iNMP, &
                               Grid, &
@@ -259,20 +259,20 @@ flat_len
                               sigma, &
                               Integral, &
                               qOKL)
-  
+
     IF (.NOT. qOKL) GOTO 1000
 
   END IF
 
-!     Set error flag and exit         
+!     Set error flag and exit
 
-  qOK = .TRUE.                              
-  GOTO 2000     
+  qOK = .TRUE.
+  GOTO 2000
 
 !     Error Handler
 
-1000 CALL log_error('Error in grids:genGrid',tErrorLog_G)
-  PRINT*,'Error in grids:genGrid'
+1000 CALL log_error("Error in grids:genGrid",tErrorLog_G)
+  PRINT*,"Error in grids:genGrid"
 
 2000 CONTINUE
 
@@ -301,7 +301,7 @@ END SUBROUTINE genGrid
   IF (nbeams > 1) THEN
 
     DO b_ind = 2,nbeams
- 
+
       b_sts(b_ind) = b_ends(b_ind-1) + 1_IPL
       b_ends(b_ind) = b_ends(b_ind-1) + totalmps_b(b_ind)
 

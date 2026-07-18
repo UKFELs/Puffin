@@ -59,7 +59,7 @@ subroutine InitializeProcessors(tProcInfo, &
 
   call MPI_Initialized(isInitialized, error)
   if (.not. isInitialized) then
-    call log_error('MPI not initialized!', tErrorLog_G)
+    call log_error("MPI not initialized!", tErrorLog_G)
     goto 1000
   end if
 
@@ -93,10 +93,10 @@ subroutine InitializeProcessors(tProcInfo, &
 
 ! Error Handler
 
-1000 CALL log_error('Error in ParallelSetUp:DefineParallelLibrary', &
+1000 CALL log_error("Error in ParallelSetUp:DefineParallelLibrary", &
                     tErrorLog_G)
 
-  PRINT*,'Error in ParallelSetUp:DefineParallelLibrary'
+  PRINT*,"Error in ParallelSetUp:DefineParallelLibrary"
 
 2000 CONTINUE
 
@@ -363,7 +363,7 @@ SUBROUTINE shareFileType(fileType)
 
 TYPE(cFileType),INTENT(INOUT)  ::  filetype
 
-INTEGER error,strsize
+INTEGER :: error,strsize
 
 strsize=len(filetype%zFileName)
 

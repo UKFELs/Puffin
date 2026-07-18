@@ -5,9 +5,9 @@
 MODULE InitDataType
 
   use puffin_kinds
-		
+
   IMPLICIT NONE
-      
+
   type cInitData
 
     real(kind=wp) :: zbarTotal

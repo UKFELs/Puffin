@@ -17,8 +17,8 @@ implicit none
 
 ! This module contains the subroutines used to precondition
 ! the beam in Puffin. This involves matching the electron
-! beam transverse radius to the undulator, working out the 
-! necessary radiation transverse grid size, and checking 
+! beam transverse radius to the undulator, working out the
+! necessary radiation transverse grid size, and checking
 ! diffraction length of the resonant wavelength.
 !
 ! -Lawrence Campbell
@@ -64,9 +64,9 @@ contains
 
   subroutine fixXYMesh(sSigE, sLenE, iNMPs)
 
-    real(kind=wp), intent(in) :: sSigE(:,:), sLenE(:,:) 
+    real(kind=wp), intent(in) :: sSigE(:,:), sLenE(:,:)
     integer(kind=ip), intent(in) :: iNMPs(:,:)
-  
+
 
     call fixMesh(sLengthOfElmX_G, sSigE(1, iX_CG), sLenE(1, iX_CG), &
                  iNMPs(1, iX_CG), iRedNodesX_G)
@@ -75,10 +75,10 @@ contains
                  iNMPs(1, iY_CG), iRedNodesY_G)
 
     if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1) ) then
-      print*, 'FIXING MESH - dx = ', &
-              sLengthOfElmX_G, ','
+      print*, "FIXING MESH - dx = ", &
+              sLengthOfElmX_G, ","
 
-      print*, 'and dy = ', sLengthOfElmY_G
+      print*, "and dy = ", sLengthOfElmY_G
     end if
 
   end subroutine fixXYMesh
@@ -88,7 +88,7 @@ contains
   subroutine fixMesh(dx, sSigE, sLenE, iNMPs, iRNX)
 
 
-    real(kind=wp), intent(in) :: sSigE, sLenE 
+    real(kind=wp), intent(in) :: sSigE, sLenE
     integer(kind=ip), intent(in) :: iNMPs, iRNX
     real(kind=wp), intent(out) :: dx
 
@@ -98,7 +98,7 @@ contains
 
       dx = sLenE / REAL((iRNX - 1_ip), kind=wp) !macroparticle dx
 
-    else 
+    else
 
       dx = 6.0_wp * sSigE / real((iRNX - 1), kind=wp)
 
@@ -131,7 +131,7 @@ contains
 !  match the excess seeds to the first beam.
 !
 !  qMatchS   - Should this seed be matched?
-!  sSigE - rms width of e-beam in each dimension, 
+!  sSigE - rms width of e-beam in each dimension,
 !          for each beam
 !  sSigF - rms width of seed FIELD (NOT intensity),
 !          in each dimension
@@ -139,7 +139,7 @@ contains
     logical, intent(in) :: qMatchS(:)
     real(kind=wp), intent(in) :: sSigE(:,:)
     real(kind=wp), intent(out) :: sSigF(:,:)
-    
+
     integer(kind=ip) :: nseeds, nbeams, ic
 
     nseeds = size(sSigF(:,1))
@@ -265,16 +265,16 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
       call matchTransBeam(sSigE(ic,:), sLenE(ic,:), &
                       emitx(ic), emity(ic), sGamFrac(ic), frame)
 
-      if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1) ) then 
+      if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1) ) then
         print*, &
-             'New Gaussian sigma of electron beam in x is ',sSigE(ic, iX_CG)
+             "New Gaussian sigma of electron beam in x is ",sSigE(ic, iX_CG)
         print*, &
-            '...so total sampled length of beam in x is ', sLenE(ic, iX_CG)
-        print*,''
+            "...so total sampled length of beam in x is ", sLenE(ic, iX_CG)
+        print*,""
         print*, &
-            'New Gaussian sigma of e-beam in px is ', sSigE(ic, iPX_CG)
+            "New Gaussian sigma of e-beam in px is ", sSigE(ic, iPX_CG)
         print*, &
-            'New Gaussian sigma of e-beam in py is ', sSigE(ic, iPY_CG)
+            "New Gaussian sigma of e-beam in py is ", sSigE(ic, iPY_CG)
       end if
 
     end if
@@ -298,14 +298,14 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 
     if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1) ) then
        print*, &
-      'Scaled betatron wavenumber in undulator in x (in units of 1 / gain length) = ', kbx
+      "Scaled betatron wavenumber in undulator in x (in units of 1 / gain length) = ", kbx
     end if
 
     call getKBetas(kbx, kby, sEnfrac)
 
     if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1) ) then
       print*, &
-    'Scaled betatron wavenumber in undulator in y (in units of 1 / gain length) = ', kby
+    "Scaled betatron wavenumber in undulator in y (in units of 1 / gain length) = ", kby
     end if
 
     call matchxPx(sSigE(iX_CG), sSigE(iPX_CG), emitx, &
@@ -318,8 +318,8 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
     call matchxPx(sSigE(iY_CG), sSigE(iPY_CG), emity, &
                   kby, sEnFrac, frame)
 
-    sLenE(iY_CG) = sSigE(iY_CG) * 6_wp    
-    sLenE(iPY_CG) = sSigE(iPY_CG) * 6_wp    
+    sLenE(iY_CG) = sSigE(iY_CG) * 6_wp
+    sLenE(iPY_CG) = sSigE(iPY_CG) * 6_wp
 
     if (kbx == 0_wp) then
 
@@ -335,7 +335,7 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 
   subroutine getKBetas(kbx, kby, gamma_fr)
 
-    real(kind=wp), intent(out) :: kbx, kby 
+    real(kind=wp), intent(out) :: kbx, kby
     real(kind=wp), intent(in) :: gamma_fr
 
     kbx = sKBetaX_G / gamma_fr
@@ -416,7 +416,7 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 
 !   REAL(KIND=WP), intent(INOUT) :: sLenE(:,:), sSigE(:,:), &
 !                                   sSigF(:,:), sLenF(:),&
-!                                   sDelF(:) 
+!                                   sDelF(:)
 
 !   character(32_IP),  intent(in)  :: zUndType
 !   INTEGER(KIND=IP), intent(INOUT) :: iRNX,iRNY
@@ -440,7 +440,7 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 !                      iNNE(ic,:),sLenE(ic,:),sSigE(ic,:), &
 !                      zUndType,qOKL)
 
-!     end if  
+!     end if
 
 !   end do
 
@@ -449,7 +449,7 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 !     call matchMesh(match to 1st beam sigmas)
 
 !     ! Match to TOTAL length of beam
-!     ! Usually want inner mesh to 
+!     ! Usually want inner mesh to
 !     ! have 1-2 MPs in each mesh element
 !     ! Or if doing ditributed beam with random
 !     ! transverse pos's, then the mesh element length
@@ -461,15 +461,15 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 
 
 !   IF (.NOT. qOKL) GOTO 1000
-  
+
 !   qOK = .TRUE.
-  
+
 !   GOTO 2000
 
 ! 1000 CALL Error_log('Error in setupcalcs:matchbeam',tErrorLog_G)
 
 ! 2000 CONTINUE
-                     
+
 ! END SUBROUTINE MatchBeams
 
 ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -489,11 +489,11 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 ! ! srho                FEL parameter
 ! ! sEmit_n             Scaled emmittance
 ! ! saw                 RMS undulator parameter
-! ! sgamma_r            Relativistic factor for beam energy 
+! ! sgamma_r            Relativistic factor for beam energy
 ! ! sFF                 Focussing factor
 ! ! sUndPer             Undulator period
 ! ! ux, uy              Undulator polarization
-! ! sLenE               Length of electron pulse in each dimension 
+! ! sLenE               Length of electron pulse in each dimension
 ! !                     (x,y,z2,px,py,p2)
 ! ! sSigE               Electron pulse standard deviation in each
 ! !                     dimension (x,y,z2,px,py,p2)
@@ -506,7 +506,7 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 
 !   REAL(KIND=WP), INTENT(INOUT) :: sLenE(:), sSigE(:), &
 !                                   sSigF(:,:), sLenF(:),&
-!                                   sDelF(:) 
+!                                   sDelF(:)
 
 !   character(32_IP),  intent(in)  :: zUndType
 
@@ -518,7 +518,7 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 ! ! qOKL               Local error flag
 
 !   LOGICAL :: qOKL
-  
+
 ! !     Set error flag
 
 !   qOK = .FALSE.
@@ -555,7 +555,7 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 !                      qOKL)
 
 !   IF (.NOT. qOKL) GOTO 1000
-  
+
 ! !     ...and y.
 
 !   IF(tProcInfo_G%qRoot) THEN
@@ -571,15 +571,15 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 !                      qOKL)
 
 !   IF (.NOT. qOKL) GOTO 1000
-  
+
 !   qOK = .TRUE.
-  
+
 !   GOTO 2000
 
 ! 1000 CALL Error_log('Error in setupcalcs:matchbeam',tErrorLog_G)
 
 ! 2000 CONTINUE
-                     
+
 ! END SUBROUTINE MatchBeam
 
 ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -601,7 +601,7 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 ! !
 ! ! iNodes                 Number of radiation field nodes in
 ! !                        each dimension (x,y,z2)
-! ! iNumElectrons          Number of macroparticles in each 
+! ! iNumElectrons          Number of macroparticles in each
 ! !                        dimension (x,y,z2,px,py,pz2)
 ! ! sLenEPulse             Electron pulse length in x,y,z2
 ! ! sLengthOfElm           Radiation field element length in
@@ -642,8 +642,8 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 
 
 ! !     Max matched radius of beam
-                                   
-!   maxr = sLenEPulse * SQRT(2.0_WP) 
+
+!   maxr = sLenEPulse * SQRT(2.0_WP)
 
 ! !     Num inner nodes
 
@@ -670,24 +670,24 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 
 !   END IF
 
-! !     Ensure if number of electron macroparticles in x and y are even, then 
-! !     so is the number of 'matched' elements (so that each macroparticle is 
-! !     initialized in the center of each element in the transverse plane.)... 
- 
+! !     Ensure if number of electron macroparticles in x and y are even, then
+! !     so is the number of 'matched' elements (so that each macroparticle is
+! !     initialized in the center of each element in the transverse plane.)...
+
 !   IF (MOD(iNodes,2)==0) THEN
 
-!     IF (MOD(iRedNodes,2)==1) iRedNodes=iRedNodes+1  
+!     IF (MOD(iRedNodes,2)==1) iRedNodes=iRedNodes+1
 
 !   END IF
- 
+
 !   IF (MOD(iNodes,2)==1) THEN
 
-!     IF (MOD(iRedNodes,2)==0) iRedNodes=iRedNodes+1  
+!     IF (MOD(iRedNodes,2)==0) iRedNodes=iRedNodes+1
 
 !   END IF
-  
+
 !   qOK = .TRUE.
-  
+
 !   GOTO 2000
 
 ! 1000 CALL Error_log('Error in setupcalcs:GetInnerNodes',tErrorLog_G)
@@ -722,11 +722,11 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 ! ! ux,uy              Polarization variables of undulator
 ! ! qOK                Error flag
 
-!   REAL(KIND=WP), INTENT(IN)    :: srho              
-!   REAL(KIND=WP), INTENT(IN)    :: sEmit_n           
-!   REAL(KIND=WP), INTENT(IN)    :: k_beta            
+!   REAL(KIND=WP), INTENT(IN)    :: srho
+!   REAL(KIND=WP), INTENT(IN)    :: sEmit_n
+!   REAL(KIND=WP), INTENT(IN)    :: k_beta
 !   REAL(KIND=WP), INTENT(IN)    :: sFF,sEta,sKappa
-!   REAL(KIND=WP), INTENT(INOUT) :: sLenE(:)       
+!   REAL(KIND=WP), INTENT(INOUT) :: sLenE(:)
 !   REAL(KIND=WP), INTENT(INOUT) :: sSigE(:)
 !   LOGICAL,       INTENT(OUT)   :: qOK
 
@@ -743,7 +743,7 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 !   IF (tProcInfo_G%qRoot) PRINT*, 'Matching transverse beam area to focusing channel...'
 
 
-! !     Matched beam radius used for electron sigma spread        
+! !     Matched beam radius used for electron sigma spread
 
 !   sSigE(iX_CG:iY_CG) = MatchedBeamRadius(srho,&
 !                  sEmit_n,k_beta)
@@ -762,9 +762,9 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 !   sSigE(iPX_CG:iPY_CG)=sSigE(iPX_CG:iPY_CG)/3.0_WP/sqrt(2.0_WP)
 
 ! !     Length of electron pulse from new sigma, modelling to 6*sigma
-         
+
 !   sLenE(iX_CG:iY_CG)   = 6.0_WP * sSigE(iX_CG:iY_CG)
-         
+
 !   sLenE(iPX_CG:iPY_CG) = 6.0_WP * sSigE(iPX_CG:iPY_CG)
 
 
@@ -777,11 +777,11 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 
 !   IF (tProcInfo_G%qRoot) PRINT*, 'Scaled betatron wavelength (in gain lengths) = ', 2.0_WP*pi/k_beta
 
-! ! Set error flag and exit         
+! ! Set error flag and exit
 
-!   qOK = .TRUE.                                    
+!   qOK = .TRUE.
 
-!   GOTO 2000     
+!   GOTO 2000
 
 ! ! Error Handler
 
@@ -795,20 +795,20 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 
 SUBROUTINE CheckSourceDiff(srho,sSigE,sLenF,sDelF,iNNF,qOK)
 
-! Subroutine which checks the radiation field in x and y is sampled 
+! Subroutine which checks the radiation field in x and y is sampled
 ! to a large enough length to model diffraction of the resonant
 ! FEL wavelength, based on the initial electron beam sigma.
 !
 !          ARGUMENTS
 !
-! 
+!
 !
   REAL(KIND=WP), INTENT(IN) :: sSigE(:,:),srho
-  
+
   INTEGER(KIND=IP), INTENT(IN) :: iNNF(:)
-  
+
   REAL(KIND=WP), INTENT(INOUT) :: sDelF(:),sLenF(:)
-  
+
   LOGICAL, INTENT(OUT) :: qOK
 
 !          LOCAL ARGS
@@ -822,37 +822,37 @@ SUBROUTINE CheckSourceDiff(srho,sSigE,sLenF,sDelF,iNNF,qOK)
 
   qOK = .FALSE.
 
-! Checking the wiggler has enough space in x and y for 
+! Checking the wiggler has enough space in x and y for
 ! diffraction based on the initial parameters
 ! X:-
 
   CALL Check4Diff(totUndLineLength,&
             RaleighLength(srho,sSigE(1,iX_CG)),&
             sSigE(1,iX_CG),&
-            sLenF(iX_CG),& 
+            sLenF(iX_CG),&
             qUpdate,&
             qOKL)
 
   IF (.NOT. qOKL) GOTO 1000
 
   IF (qUpdate) THEN
-    
+
 !    sDelF(iX_CG) = sLenF(iX_CG) / REAL(iNNF(iX_CG)-1_IP,KIND=WP)
 
     if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 1) ) then
-      print*, ''
-      print*, '*************************************'
-      print*, 'WARNING: There may be too much diffraction in the x direction'
-      print*, 'Rayleigh length (based on initial conditions) means that'
-      print*, 'the undulator line will cause the transverse radiation profile to'
-      print*, 'become significantly larger than the transverse mesh size...' 
-      print*, '(when neglecting FEL guiding effects)'
-      print*, ''
-      print*, 'Puffin has absorbing boundaries in the transverse mesh, but be'
-      print*, 'aware that unphysical reflections from the boundaries, however'
-      print*, 'minimized, may be present...'
+      print*, ""
+      print*, "*************************************"
+      print*, "WARNING: There may be too much diffraction in the x direction"
+      print*, "Rayleigh length (based on initial conditions) means that"
+      print*, "the undulator line will cause the transverse radiation profile to"
+      print*, "become significantly larger than the transverse mesh size..."
+      print*, "(when neglecting FEL guiding effects)"
+      print*, ""
+      print*, "Puffin has absorbing boundaries in the transverse mesh, but be"
+      print*, "aware that unphysical reflections from the boundaries, however"
+      print*, "minimized, may be present..."
     end if
-    
+
   end if
 
 ! Y:-
@@ -860,28 +860,28 @@ SUBROUTINE CheckSourceDiff(srho,sSigE,sLenF,sDelF,iNNF,qOK)
   CALL Check4Diff(totUndLineLength,&
             RaleighLength(srho,sSigE(1,iY_CG)),&
             sSigE(1,iY_CG),&
-            sLenF(iY_CG),& 
+            sLenF(iY_CG),&
             qUpdate, &
             qOKL)
 
   IF (.NOT. qOKL)  GOTO 1000
 
-  IF (qUpdate) THEN 
+  IF (qUpdate) THEN
 
 !    sDelF(iY_CG) = sLenF(iY_CG) / REAL(iNNF(iY_CG)-1_IP,KIND=WP)
 
     if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 1) ) then
-      print*, ''
-      print*, '*************************************'
-      print*, 'WARNING: There may be too much diffraction in the y direction'
-      print*, 'Rayleigh length (based on initial conditions) means that'
-      print*, 'the undulator line will cause the transverse radiation profile to'
-      print*, 'become significantly larger than the transverse mesh size...' 
-      print*, '(when neglecting FEL guiding effects)'
-      print*, ''
-      print*, 'Puffin has absorbing boundaries in the transverse mesh, but be'
-      print*, 'aware that unphysical reflections from the boundaries, however'
-      print*, 'minimized, may be present...'
+      print*, ""
+      print*, "*************************************"
+      print*, "WARNING: There may be too much diffraction in the y direction"
+      print*, "Rayleigh length (based on initial conditions) means that"
+      print*, "the undulator line will cause the transverse radiation profile to"
+      print*, "become significantly larger than the transverse mesh size..."
+      print*, "(when neglecting FEL guiding effects)"
+      print*, ""
+      print*, "Puffin has absorbing boundaries in the transverse mesh, but be"
+      print*, "aware that unphysical reflections from the boundaries, however"
+      print*, "minimized, may be present..."
     end if
 
   end if
@@ -889,10 +889,10 @@ SUBROUTINE CheckSourceDiff(srho,sSigE,sLenF,sDelF,iNNF,qOK)
 !     Set error flag and exit
 
   qOK = .TRUE.
-  
+
   GOTO 2000
 
-1000 CALL log_error('Error in setupcalcs:CheckXYDiff',tErrorLog_G)
+1000 CALL log_error("Error in setupcalcs:CheckXYDiff",tErrorLog_G)
 
 2000 CONTINUE
 
@@ -927,38 +927,38 @@ SUBROUTINE Check4Diff(z,sRaleighLength,&
 
   REAL(KIND=WP) :: sDiffractionLength
 
-!     Set error flag to false         
+!     Set error flag to false
 
-  qOK = .FALSE.         
+  qOK = .FALSE.
 
 !     Set updated wiggler length to false
 
   qUpdatedWigglerLength = .FALSE.
 
-!     Calculate the length required for diffraction         
-    
+!     Calculate the length required for diffraction
+
   sDiffractionLength = DiffractionLength(z,&
          sRaleighLength,sigma)
 
 !     If wiggler length is smaller than required
-!     for diffraction set to required wiggler length        
+!     for diffraction set to required wiggler length
   IF (sWigglerLength<sDiffractionLength) THEN
 
 !    sWigglerLength=sDiffractionLength
-    qUpdatedWigglerLength = .TRUE.  
+    qUpdatedWigglerLength = .TRUE.
 
-  ENDIF
+  END IF
 
 !     Set error flag and exit
-    
-  qOK = .TRUE.                              
-  
-  GOTO 2000     
 
-     CALL log_error('Error in setupcalcs:Check4Diff',tErrorLog_G)
+  qOK = .TRUE.
+
+  GOTO 2000
+
+     CALL log_error("Error in setupcalcs:Check4Diff",tErrorLog_G)
 
 2000 CONTINUE
 
-END SUBROUTINE Check4Diff  
-  
+END SUBROUTINE Check4Diff
+
 END MODULE SETUPTRANS
