@@ -107,6 +107,11 @@ contains
         OPEN(UNIT=fid,FILE=zFile,IOSTAT=ios,&
              ACTION="READ",POSITION="REWIND")
 
+        if (ios /= 0) then
+          print*, "iostat = ", ios
+          stop "OPEN(MASP restart file) not performed correctly, IOSTAT /= 0"
+        end if
+
         nBlanks = displs_eb(ir+1) + nBlanks_head
         !print*, 'num of blanks now ', nblanks
         do ij = 1,nBlanks

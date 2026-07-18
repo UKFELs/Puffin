@@ -6,6 +6,8 @@ program puffin
     use MPI
     use puffin_mpiInfo, only: tProcInfo_G
 
+    implicit none
+
     character(1024_IP) :: input_file_name
     integer(KIND=IP)    :: error, provided
     logical :: qOK

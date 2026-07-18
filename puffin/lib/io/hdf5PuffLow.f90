@@ -23,6 +23,8 @@ USE puffin_constants
 use hdf5
 use GlobalTypes, only: tSimulationContext
 
+implicit none
+
 contains
 
 !> Simple wrapper routine to write a string attribute into hdf5
@@ -41,7 +43,7 @@ contains
     integer(HID_T) :: attr_id                 !< Attribute identifier
     integer(HID_T) :: atype_id                !< Attribute Data type identifier
     integer(HSIZE_T) :: attr_string_len       !< Length of attribute string
-    integer(HSIZE_T), dimension(1) :: adims=[1] !< Attribute Data type identifier
+    integer(HSIZE_T), dimension(1), parameter :: adims=[1] !< Attribute Data type identifier
     integer :: error                             !< Error flag
 
 !    aname="vsType"
@@ -86,7 +88,7 @@ contains
 
     integer(HID_T) :: attr_id                 !< Attribute identifier
     integer(HID_T) :: atype_id                !< Attribute Data type identifier
-    integer(HSIZE_T), dimension(1) :: adims=[1] !< Attribute Data type identifier
+    integer(HSIZE_T), dimension(1), parameter :: adims=[1] !< Attribute Data type identifier
     integer :: error                             !< Error flag
 
 !    aname="vsType"
@@ -118,7 +120,7 @@ contains
 
     integer(HID_T) :: attr_id                 !< Attribute identifier
     integer(HID_T) :: atype_id                !< Attribute Data type identifier
-    integer(HSIZE_T), dimension(1) :: adims=[1] !< Attribute Data type identifier
+    integer(HSIZE_T), dimension(1), parameter :: adims=[1] !< Attribute Data type identifier
     integer :: error                             !< Error flag
 !    aname="vsType"
 !    attr_data_string="vsVars"
@@ -146,7 +148,7 @@ contains
 
     integer(HID_T) :: group_id      !< Group identifier
     integer(HID_T) :: aspace_id     !< Attribute Dataspace identifier
-    integer :: error ! Error flag
+    integer, intent(out) :: error ! Error flag
 
 !               We make a new group
 
@@ -173,7 +175,7 @@ contains
 
     integer(HID_T) :: group_id      !< Group identifier
     integer(HID_T) :: aspace_id     !< Attribute Dataspace identifier
-    integer :: error ! Error flag
+    integer, intent(out) :: error ! Error flag
 
 !               We make a new group
 
@@ -200,8 +202,8 @@ contains
     integer(HID_T), intent(in) :: location   !< h5 handle of write location
     character(LEN=*), intent(in) :: aname    !<derived var name
     real(kind=wp), intent(in) :: valarray(:) !<the array to be written
-    integer(HSIZE_T), dimension(1) :: adims=[3]  !< Attribute dims
-    integer        ::  arank = 1                !< Attribute rank - 1 is vector
+    integer(HSIZE_T), dimension(1), parameter :: adims=[3]  !< Attribute dims
+    integer, parameter ::  arank = 1                !< Attribute rank - 1 is vector
     integer(HID_T) :: aspace_id              !< Attribute Dataspace identifier
     integer(HID_T) :: atype_id                !< Attribute Data type identifier
     integer(HID_T) :: attr_id                 !< Attribute identifier
@@ -238,8 +240,8 @@ contains
     integer(HID_T), intent(in) :: location   !< h5 handle of write location
     character(LEN=*), intent(in) :: aname    !<derived var name
     integer(kind=IP), intent(in) :: valarray(:) !<the array to be written
-    integer(HSIZE_T), dimension(1) :: adims=[3]  !< Attribute dims
-    integer        ::  arank = 1                !< Attribute rank - 1 is vector
+    integer(HSIZE_T), dimension(1), parameter :: adims=[3]  !< Attribute dims
+    integer, parameter ::  arank = 1                !< Attribute rank - 1 is vector
     integer(HID_T) :: aspace_id              !< Attribute Dataspace identifier
     integer(HID_T) :: atype_id                !< Attribute Data type identifier
     integer(HID_T) :: attr_id                 !< Attribute identifier
@@ -277,7 +279,7 @@ contains
 
     integer(HID_T), intent(in) :: location        !< h5 handle of write location
     character(len=*), intent(in) :: limgrpname    !<derived var name
-    real(kind=wp), dimension(3), intent(in) :: ub(:), lb(:)     !<Bounds to write
+    real(kind=wp), intent(in) :: ub(:), lb(:)     !<Bounds to write
     integer(HID_T) :: group_id      !< Group identifier
     integer        :: error                   !< Error flag
     integer(HID_T) :: aspace_id              !< Attribute Dataspace identifier
@@ -350,8 +352,8 @@ contains
 
     integer(HID_T), intent(in) :: location        !< h5 handle of write location
     character(len=*), intent(in) :: meshname    !<derived var name
-    real(kind=wp), dimension(3), intent(in) :: ub(:), lb(:)     !<Bounds to write
-    integer(kind=ip), dimension(3), intent(in) :: numcells(:) !<the array to be written
+    real(kind=wp), intent(in) :: ub(:), lb(:)     !<Bounds to write
+    integer(kind=ip), intent(in) :: numcells(:) !<the array to be written
     integer(HID_T) :: group_id      !< Group identifier
     integer        :: error                   !< Error flag
     integer(HID_T) :: aspace_id              !< Attribute Dataspace identifier
@@ -400,7 +402,7 @@ contains
     character(len=*), intent(in) :: labels    !<derived var name
     real(kind=wp), intent(in) :: ub, lb   !<Bounds to write
     integer(kind=IP), intent(in) :: numcells !<the array to be written
-    integer(kind=IP) :: startcell=0 !<another array to be written
+    integer(kind=IP), parameter :: startcell=0 !<another array to be written
     integer(HID_T) :: group_id      !< Group identifier
     integer        :: error                   !< Error flag
     integer(HID_T) :: aspace_id              !< Attribute Dataspace identifier
@@ -523,11 +525,11 @@ contains
 
   subroutine writeH5TimeGroup(file_id, timegrpname, simtime, callerstr, error, ctx)
 
-    INTEGER(HID_T) :: file_id       ! File identifier
+    INTEGER(HID_T), intent(in) :: file_id       ! File identifier
     CHARACTER(LEN=4), intent(in) :: timegrpname  ! Group name
     REAL(kind=WP), intent(in) :: simtime ! Current time
     CHARACTER(LEN=12), intent(in) :: callerstr
-    INTEGER(kind=ip) :: error
+    INTEGER(kind=ip), intent(out) :: error
     type(tSimulationContext), intent(in) :: ctx
 !
 ! Local
@@ -612,7 +614,7 @@ contains
     real(kind=wp), intent(in) :: z_loc        !< zbar local to current undulator module
     integer(kind=ip), intent(in) :: iL        !< lattice element counter
     CHARACTER(LEN=12), intent(in) :: callerstr
-    INTEGER(kind=ip) :: error
+    INTEGER(kind=ip), intent(out) :: error
     type(tSimulationContext), intent(in) :: ctx
 !
 ! Local

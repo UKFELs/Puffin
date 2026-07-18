@@ -53,10 +53,6 @@ CONTAINS
 
     gaussian=ngaussian
 
-    return
-
-    deallocate(gaussian)
-
   END FUNCTION gaussian
 
 !********************************************************
@@ -91,9 +87,6 @@ CONTAINS
     ELSE
        STOP "*** Number of points must be >0 in LINSPACE ***"
     END IF
-
-    return
-    deallocate(linspace)
 
   END FUNCTION linspace
 

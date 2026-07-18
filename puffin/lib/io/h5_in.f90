@@ -1299,7 +1299,7 @@ contains
 
     integer(HID_T) :: attr_id                 !< Attribute identifier
     integer(HID_T) :: atype_id                !< Attribute Data type identifier
-    integer(HSIZE_T), dimension(1) :: adims=[1] !< Attribute Data type identifier
+    integer(HSIZE_T), dimension(1), parameter :: adims=[1] !< Attribute Data type identifier
     integer :: error                             !< Error flag
 
 !    aname="vsType"
@@ -1332,7 +1332,7 @@ contains
 
     integer(HID_T) :: attr_id                 !< Attribute identifier
     integer(HID_T) :: atype_id                !< Attribute Data type identifier
-    integer(HSIZE_T), dimension(1) :: adims=[1] !< Attribute Data type identifier
+    integer(HSIZE_T), dimension(1), parameter :: adims=[1] !< Attribute Data type identifier
     integer :: error                             !< Error flag
 
 !    aname="vsType"

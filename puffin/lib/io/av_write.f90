@@ -217,8 +217,8 @@ contains
 
       implicit none
 
-      real(kind=wp), dimension(:) :: x,y
-      real(kind=wp), dimension(:,:) :: fxy
+      real(kind=wp), dimension(:), intent(in) :: x,y
+      real(kind=wp), dimension(:,:), intent(in) :: fxy
       integer(kind=ip) :: ye, i
       real(kind=wp), allocatable :: cul(:)
 
@@ -250,8 +250,8 @@ contains
 
       implicit none
 
-      real(kind=wp), dimension(:) :: x,y
-      integer(kind=ip), optional :: lower, upper
+      real(kind=wp), dimension(:), intent(in) :: x,y
+      integer(kind=ip), optional, intent(in) :: lower, upper
       integer(kind=ip) :: l, u, i
 
       if (present(lower)) then

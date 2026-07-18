@@ -26,6 +26,8 @@ Use avWrite
 use hdf5PuffLow
 use GlobalTypes, only: tSimulationContext
 
+implicit none
+
 contains
 
 !> Output the electron bean macroparticle
@@ -67,8 +69,8 @@ contains
     integer(HSIZE_T), dimension(2) :: dims   !< dims of ptcl dataset (coords*numelecs)
     integer(HSIZE_T), dimension(2) :: doffset!< Offset for write, could be rank dependent
     integer(HSIZE_T), dimension(2) :: dsize  !< Size of hyperslab to write
-    integer     ::  rank = 2                 !< Particle Dataset rank
-    integer     ::  arank = 1                !< Attribute rank - 1 is vector
+    integer, parameter ::  rank = 2                 !< Particle Dataset rank
+    integer, parameter ::  arank = 1                !< Attribute rank - 1 is vector
     integer(HSIZE_T), dimension(1) :: adims  !< Attribute dims
     integer(HSIZE_T), dimension(1) :: attr_data_int !< For integer attribs (numdims)
     integer     :: numSpatialDims    !< Attr content, and also num elsewhere
@@ -83,7 +85,7 @@ contains
     real(kind=wp), allocatable :: limdata (:)  ! Data to write
     ! Local vars
     !integer(kind=ip) :: iep
-    integer :: error ! Error flag
+    integer, intent(out) :: error ! Error flag
 
     if (qONED_G) then
       numSpatialDims=1
@@ -363,7 +365,7 @@ contains
     CALL h5gclose_f(group_id, error)
 
     aname="electrons_xSI"
-    write(scaleToSIstring, "(E16.9)" ) (DSQRT(ctx%frame%gain_length*ctx%frame%cooperation_length))
+    write(scaleToSIstring, "(E16.9)" ) (SQRT(ctx%frame%gain_length*ctx%frame%cooperation_length))
     attr_data_string=("electrons_x*" // scaleToSIstring)
     attr_string_len=len(trim(adjustl(attr_data_string)))
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
@@ -473,7 +475,7 @@ contains
 ! Data as component*reducedNX*reducedNY*reducedNZ2
 ! Not described as a parameter, so can prob modify
 ! for single component (rank 3 data) like charge
-    INTEGER     ::   rank = 3               !< Dataset rank
+    INTEGER, parameter ::   rank = 3               !< Dataset rank
     REAL(kind=WP), DIMENSION(3) :: ub       !< holder of attribute double data
     REAL(kind=WP), DIMENSION(3) :: lb       !< holder of attribute double data
     INTEGER(kind=IP) :: numSpatialDims      !< Attr content,
@@ -481,7 +483,7 @@ contains
     CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  !< Name of limits grp
     CHARACTER(LEN=10), PARAMETER :: meshScaledGrpname = "meshScaled" !< Name of mesh grp
     ! Local vars
-    integer :: error !< Error flag
+    integer, intent(out) :: error !< Error flag
 
 ! signature: nlonglength, dsetname, data, nlo, nhi, chkactiveflag
 ! tlflen, 'aperp_front_real', fr_rfield, [ffs,ffe], .false.

@@ -452,6 +452,9 @@ contains
          mvar_iFreeFile=mvar_iFreeFile + 1_IP
        Case (5_IP,6_IP,7_IP)
          mvar_iFreeFile = 8_IP
+       Case Default
+         ! Other unit numbers are used as-is
+         Continue
       End Select
       FreeFile = mvar_iFreeFile
 !
@@ -760,6 +763,9 @@ contains
       implicit none
 
       character(*),   intent(in)  :: zFileName
+      ! zFile is always a fixed character(1024) buffer at the call site, and the
+      ! result here is never longer than zFileName, so truncation cannot occur.
+      ! allow(assumed-size-character-intent)
       character(*),   intent(out) :: zFile
       logical,        intent(out)  :: qOK
 

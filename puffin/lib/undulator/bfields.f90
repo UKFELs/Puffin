@@ -19,6 +19,8 @@ use puffin_kinds
 use globals
 use GlobalTypes, only: tUndulator, tFELFrame
 
+implicit none
+
 contains
 
 !> @author

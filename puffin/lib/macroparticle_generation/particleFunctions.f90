@@ -66,6 +66,9 @@ CONTAINS
           GOTO 1000
        END IF
        CALL GaussianGrid(iNumMP,sMean,sSigma,sStart,sEnd,sGrid)
+    CASE DEFAULT
+       CALL log_error("Error creating grid: unknown grid type.",tErrorLog_G)
+       GOTO 1000
     END SELECT
 
 !  Set error flag and exit
@@ -153,6 +156,8 @@ CONTAINS
 
     CASE(iGaussianDistribution_CG)
        CALL EvalIntegral(sGrid,sMean,sSigma,sIntegral)
+    CASE DEFAULT
+       CONTINUE
     END SELECT
 
 !  Set error flag and exit
@@ -214,6 +219,8 @@ CONTAINS
 
     CASE(iGaussianDistribution_CG)
        CALL EvalIntegral(sGrid,sMean,sSigma,sIntegral)
+    CASE DEFAULT
+       CONTINUE
     END SELECT
 
 !  Set error flag and exit

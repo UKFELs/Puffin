@@ -10,6 +10,8 @@ use puffin_mpiInfo
 use lattice
 use GlobalTypes, only: tUndulator
 
+implicit none
+
 contains
 
 

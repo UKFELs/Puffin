@@ -7,6 +7,7 @@ module cwrites
 use puffin_kinds
 use puffin_mpiInfo
 
+implicit none
 
 integer(kind=ip), allocatable :: wrarray(:)
 logical :: qWrArray_G
@@ -56,7 +57,6 @@ contains
 
           print*, "THIS LINE HAS NOTHING FOR ME", ios
           exit
-          cnt = cnt + 1
 
         else
 
@@ -67,6 +67,11 @@ contains
             cntw = cntw + 1
 
             read (168,*, IOSTAT=ios) ztest, wrarray(cntw)  ! read step to write at
+
+            if (ios /= 0) then
+              print*, "iostat = ", ios
+              stop "READ(write-step, input file) not performed correctly, IOSTAT /= 0"
+            end if
 
           end if
 

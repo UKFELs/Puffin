@@ -141,8 +141,9 @@ FUNCTION random_normal() RESULT(fn_val)
 REAL(KIND=WP) :: fn_val
 
 !     Local variables
-REAL(KIND=WP)     :: s = 0.449871, t = -0.386595, a = 0.19600, b = 0.25472,    &
-            r1 = 0.27597, r2 = 0.27846, u, v, x, y, q
+REAL(KIND=WP), PARAMETER :: s = 0.449871, t = -0.386595, a = 0.19600, b = 0.25472,    &
+            r1 = 0.27597, r2 = 0.27846
+REAL(KIND=WP)     :: u, v, x, y, q
 
 !     Generate P = (u,v) uniform in rectangle enclosing acceptance region
 
@@ -487,7 +488,7 @@ REAL(KIND=WP)             :: r, x, v
 
 REAL(KIND=WP) , PARAMETER :: three = 3.0, four = 4.0, quart = 0.25,   &
                    five = 5.0, sixteen = 16.0
-INTEGER(KIND=IP)        :: mm = 0
+INTEGER(KIND=IP) , SAVE :: mm = 0
 
 IF (m < 1) THEN
   WRITE(*, *) "IMPERMISSIBLE DEGREES OF FREEDOM"
@@ -1039,7 +1040,7 @@ REAL(KIND=WP) , INTENT(IN)    :: p
 REAL(KIND=WP)                 :: fn_val
 
 !     Local variable
-REAL(KIND=WP)                 :: one = 1.0
+REAL(KIND=WP), PARAMETER       :: one = 1.0
 
 fn_val = EXP( lngamma(DBLE(n+1)) - lngamma(DBLE(r+1)) - lngamma(DBLE(n-r+1)) &
               + r*LOG(p) + (n-r)*LOG(one - p) )
@@ -1063,10 +1064,11 @@ REAL(KIND=WP)              :: fn_val
 
 !       Local variables
 
-REAL(KIND=WP)  :: a1 = -4.166666666554424D-02, a2 = 2.430554511376954D-03,  &
+REAL(KIND=WP), PARAMETER :: a1 = -4.166666666554424D-02, a2 = 2.430554511376954D-03,  &
              a3 = -7.685928044064347D-04, a4 = 5.660478426014386D-04,  &
-             temp, arg, product, lnrt2pi = 9.189385332046727D-1,       &
+             lnrt2pi = 9.189385332046727D-1,       &
              pi = 3.141592653589793D0
+REAL(KIND=WP)  :: temp, arg, product
 LOGICAL   :: reflect
 
 !       lngamma is not defined if x = 0 or a negative integer.
@@ -1529,7 +1531,8 @@ REAL(KIND=WP) , INTENT(OUT)     :: result
 
 !     Local variables
 
-REAL(KIND=WP):: xmid, range, x1, x2,                                    &
+REAL(KIND=WP):: xmid, range, x1, x2
+REAL(KIND=WP), PARAMETER :: &
   x(3) = [0.238619186083197_dp, 0.661209386466265_dp, 0.932469514203152_dp], &
   w(3) = [0.467913934572691_dp, 0.360761573048139_dp, 0.171324492379170_dp]
 INTEGER(KIND=IP)     :: i

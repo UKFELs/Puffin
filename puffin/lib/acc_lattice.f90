@@ -286,7 +286,6 @@ contains
 
       if (ioutInfo_G > 0) print*, "THIS LINE HAS NOTHING FOR ME", ios
       exit
-      cnt = cnt + 1
 
     else
 
@@ -297,6 +296,11 @@ contains
         cntq = cntq + 1
 
         read (168,*, IOSTAT=ios) ztest, quad_fx(cntq), quad_fy(cntq)  ! read vars
+
+        if (ios /= 0) then
+          print*, "iostat = ", ios
+          stop "READ(quad, input file) not performed correctly, IOSTAT /= 0"
+        end if
 
         cntt = cntt + 1
         iElmType(cntt) = iQuad
@@ -316,6 +320,11 @@ contains
         read (168,*, IOSTAT=ios) ztest, zundtype_arr(cntu), nw, mf(cntu), tapers(cntu), &
                                  nperlam, ux_arr(cntu), uy_arr(cntu), kbnx_arr(cntu), &
                                  kbny_arr(cntu)  ! read vars
+
+        if (ios /= 0) then
+          print*, "iostat = ", ios
+          stop "READ(undulator, input file) not performed correctly, IOSTAT /= 0"
+        end if
 
         cntt = cntt + 1
         iElmType(cntt) = iUnd
@@ -353,6 +362,11 @@ contains
         cntc = cntc + 1
         read (168,*, IOSTAT=ios) ztest, chic_zbar(cntc), chic_slip(cntc), chic_disp(cntc)  ! read vars
 
+        if (ios /= 0) then
+          print*, "iostat = ", ios
+          stop "READ(chicane, input file) not performed correctly, IOSTAT /= 0"
+        end if
+
         cntt = cntt + 1
         iElmType(cntt) = iChic
 
@@ -368,6 +382,11 @@ contains
         cntd = cntd + 1
         read (168,*, IOSTAT=ios) ztest, drift_zbar(cntd)   ! read vars
 
+        if (ios /= 0) then
+          print*, "iostat = ", ios
+          stop "READ(drift, input file) not performed correctly, IOSTAT /= 0"
+        end if
+
         cntt = cntt + 1
         iElmType(cntt) = iDrift
 
@@ -378,6 +397,11 @@ contains
         backspace(168)
         cntm = cntm + 1
         read (168,*, IOSTAT=ios) ztest, enmod_wavenum(cntm), enmod_mag(cntm) ! read vars
+
+        if (ios /= 0) then
+          print*, "iostat = ", ios
+          stop "READ(energy modulation, input file) not performed correctly, IOSTAT /= 0"
+        end if
 
         cntt = cntt + 1
         iElmType(cntt) = iModulation

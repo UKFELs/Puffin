@@ -61,7 +61,7 @@ contains
 
 
     REAL(KIND=WP), INTENT(IN) ::  i_total_electrons
-    LOGICAL ::  q_noise
+    LOGICAL, INTENT(IN) ::  q_noise
     REAL(KIND=WP),INTENT(IN) ::  x_1_grid(:),x_1_integral(:)
     REAL(KIND=WP),INTENT(IN),OPTIONAL :: x_2_grid(:), x_3_grid(:)
     REAL(KIND=WP),INTENT(IN),OPTIONAL :: x_2_integral(:),&

@@ -23,6 +23,8 @@ use H5in
 use cwrites
 use randomGauss, only: setRandomSeed
 
+implicit none
+
 contains
 
 !> @author
@@ -184,9 +186,9 @@ subroutine read_in(zfilename, &
   REAL(KIND=WP) ,    INTENT(OUT)  :: sZ0
   CHARACTER(1024_IP),  INTENT(INOUT):: LattFile
   INTEGER(KIND=IP),  INTENT(OUT)  :: iWriteNthSteps, iWriteIntNthSteps
-  TYPE(cArraySegment)             :: tArrayZ
-  TYPE(cArraySegment)             :: tArrayA(:)
-  TYPE(cArraySegment)             :: tArrayVariables(:)
+  TYPE(cArraySegment), INTENT(OUT) :: tArrayZ
+  TYPE(cArraySegment), INTENT(OUT) :: tArrayA(:)
+  TYPE(cArraySegment), INTENT(OUT) :: tArrayVariables(:)
 
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sLenEPulse(:,:)
   INTEGER(KIND=IP),  INTENT(OUT)  :: iNumNodes(:)
@@ -599,7 +601,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 !                     ARGUMENTS
 
   LOGICAL, INTENT(OUT) :: qSimple
-  CHARACTER(*), INTENT(INOUT) :: be_f     ! beam file name
+  CHARACTER(*), INTENT(IN) :: be_f     ! beam file name
   CHARACTER(1024_ip), INTENT(INOUT), ALLOCATABLE :: dist_f(:)     ! dist file names
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sEmit_n(:),chirp(:), mag(:), fr(:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sSigmaE(:,:)

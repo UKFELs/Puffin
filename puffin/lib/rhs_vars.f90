@@ -6,6 +6,8 @@ module rhs_vars
 
 use puffin_kinds
 
+implicit none
+
 !!!!!!!!!!!
 
 

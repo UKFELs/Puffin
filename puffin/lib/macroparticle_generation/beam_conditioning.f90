@@ -14,6 +14,8 @@ module beam_conditioning
 
 use puffin_kinds, only: wp, ipl
 
+implicit none
+
 contains
 
 subroutine addChirp(gamj, z2, Nk, center, chirp)

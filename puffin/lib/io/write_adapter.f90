@@ -199,7 +199,7 @@ function qWriteq(iStep, iCsteps, iWriteNthSteps, iIntWriteNthSteps, nSteps)
   implicit none
 
   logical :: qWriteq
-  integer(kind=ip) :: iStep, iCsteps, iWriteNthSteps, iIntWriteNthSteps, nSteps
+  integer(kind=ip), intent(in) :: iStep, iCsteps, iWriteNthSteps, iIntWriteNthSteps, nSteps
   integer(kind=ip) :: iw
 
 

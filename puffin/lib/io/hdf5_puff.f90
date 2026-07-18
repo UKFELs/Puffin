@@ -48,7 +48,7 @@ contains
     logical, intent(inout) :: qOK  !< Flag set if any probs happen
     integer :: error, numSpatialDims
     real(kind=wp) :: slicetrim
-    logical :: qWriteInt, qWriteFull !<Flags identifying if it is time to write
+    logical, intent(in) :: qWriteInt, qWriteFull !<Flags identifying if it is time to write
     real(kind=wp) :: time,stime,ftime !<Simulation time, calcualted here
     real(kind=wp) :: PowScale !< Scaling factor for power
     error = 0
@@ -235,7 +235,7 @@ contains
         call addH5Field1DFloat(aveX, "meanXbar", "intPtclMeshSc", &
                                "z2, xbar", time, sz_loc, iL, error, ctx)
 
-        wrEArray = aveX * (DSQRT(ctx%frame%gain_length*ctx%frame%cooperation_length))
+        wrEArray = aveX * (SQRT(ctx%frame%gain_length*ctx%frame%cooperation_length))
 
         call addH5Field1DFloat(wrEArray, "meanXSI", "intPtclMeshSI", &
                                "ct-z (m), x (m)", time, sz_loc, iL, error, ctx)
@@ -248,7 +248,7 @@ contains
         call addH5Field1DFloat(aveY, "meanYbar", "intPtclMeshSc", &
                                "z2, ybar", time, sz_loc, iL, error, ctx)
 
-        wrEArray = aveY * (DSQRT(ctx%frame%gain_length*ctx%frame%cooperation_length))
+        wrEArray = aveY * (SQRT(ctx%frame%gain_length*ctx%frame%cooperation_length))
 
         call addH5Field1DFloat(wrEArray, "meanYSI", "intPtclMeshSI", &
                                "ct-z (m), y (m)", time, sz_loc, iL, error, ctx)
@@ -308,7 +308,7 @@ contains
         call addH5Field1DFloat(sdx, "sigmaXbar", "intPtclMeshSc", &
                                "z2, sigma_xbar", time, sz_loc, iL, error, ctx)
 
-        wrEArray = sdx * (DSQRT(ctx%frame%gain_length*ctx%frame%cooperation_length))
+        wrEArray = sdx * (SQRT(ctx%frame%gain_length*ctx%frame%cooperation_length))
 
         call addH5Field1DFloat(wrEArray, "sigmaXSI", "intPtclMeshSI", &
                                "ct-z (m), sigma_x (m)", time, sz_loc, iL, error, ctx)
@@ -317,7 +317,7 @@ contains
         call addH5Field1DFloat(sdy, "sigmaYbar", "intPtclMeshSc", &
                                "z2, sigma_ybar", time, sz_loc, iL, error, ctx)
 
-        wrEArray = sdy * (DSQRT(ctx%frame%gain_length*ctx%frame%cooperation_length))
+        wrEArray = sdy * (SQRT(ctx%frame%gain_length*ctx%frame%cooperation_length))
 
         call addH5Field1DFloat(wrEArray, "sigmaYSI", "intPtclMeshSI", &
                                "ct-z (m), sigma_y (m)", time, sz_loc, iL, error, ctx)

@@ -108,7 +108,7 @@ SUBROUTINE Get_time(in_time)
 
   IMPLICIT NONE
 
-  REAL(KIND=WP) ::      in_time
+  REAL(KIND=WP), INTENT(OUT) :: in_time
 
 
   in_time = MPI_Wtime()
