@@ -157,7 +157,8 @@ CONTAINS
     CASE(iGaussianDistribution_CG)
        CALL EvalIntegral(sGrid,sMean,sSigma,sIntegral)
     CASE DEFAULT
-       CONTINUE
+       CALL log_error('Error in ElectronGrid:DistributionIntegral - unrecognised distribution type.',tErrorLog_G)
+       GOTO 1000
     END SELECT
 
 !  Set error flag and exit
@@ -165,7 +166,7 @@ CONTAINS
     GOTO 2000
 !
 ! Error Handler
-     CALL log_error("Error in ElectronGrid:DistributionIntegral",&
+1000 CALL log_error("Error in ElectronGrid:DistributionIntegral",&
           tErrorLog_G)
     PRINT*,"Error in ElectronGrid:DistributionIntegral"
 2000 CONTINUE
@@ -220,7 +221,8 @@ CONTAINS
     CASE(iGaussianDistribution_CG)
        CALL EvalIntegral(sGrid,sMean,sSigma,sIntegral)
     CASE DEFAULT
-       CONTINUE
+       CALL log_error('Error in ElectronGrid:DistributionIntegralz2 - unrecognised distribution type.',tErrorLog_G)
+       GOTO 1000
     END SELECT
 
 !  Set error flag and exit
@@ -228,7 +230,7 @@ CONTAINS
     GOTO 2000
 
 ! Error Handler
-     CALL log_error("Error in ElectronGrid:DistributionIntegral",&
+1000 CALL log_error("Error in ElectronGrid:DistributionIntegral",&
           tErrorLog_G)
     PRINT*,"Error in ElectronGrid:DistributionIntegral"
 2000 CONTINUE
