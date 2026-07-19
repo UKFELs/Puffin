@@ -15,13 +15,16 @@
 
 Module ParallelSetUp
 
-use puffin_kinds
-use puffin_mpiInfo
-use IO
-use mpi
+use puffin_kinds, only: WP, IPL, IP
+use puffin_mpiInfo, only: puffin_mpiInfoType, tProcInfo_G
+use IO, only: tErrorLog_G, log_error, cFileType
+use mpi, only: MPI_ALLGATHER, MPI_ALLGATHERV, MPI_ALLREDUCE, MPI_BCAST, MPI_CHARACTER, &
+  MPI_COMM_RANK, MPI_COMM_SIZE, MPI_COMM_WORLD, MPI_DOUBLE_PRECISION, MPI_FINALIZE, &
+  MPI_IN_PLACE, MPI_Initialized, MPI_INTEGER, MPI_LOGICAL, MPI_REDUCE, MPI_SCATTERV, MPI_SUM, &
+  MPI_Wtime
 
 
-implicit none
+implicit none (type, external)
 
 INTEGER :: MPI_INT_HIGH
 
@@ -31,7 +34,7 @@ CONTAINS
 subroutine InitializeProcessors(tProcInfo, &
                                        qOk)
 
-  implicit none
+  implicit none (type, external)
 
 ! Initialize and retrieve info on the MPI processes
 !
@@ -106,7 +109,7 @@ END SUBROUTINE InitializeProcessors
 
 SUBROUTINE Get_time(in_time)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
   REAL(KIND=WP), INTENT(OUT) :: in_time
 
@@ -127,7 +130,7 @@ END SUBROUTINE Get_time
 !
 !********************************************************************
 !
-      implicit none
+      implicit none (type, external)
       integer(kind=ip) :: error
 
       call MPI_FINALIZE(error)
@@ -224,7 +227,7 @@ END SUBROUTINE scatterE2Loc
 
 SUBROUTINE gather2Acomtoreal(A_local,sA,nA_loc,nA,totsize,recvs,displs)
 
-IMPLICIT NONE
+IMPLICIT NONE (type, external)
 
 ! Gather from A_local to A
 
@@ -397,7 +400,7 @@ END SUBROUTINE shareFileType
 
   SUBROUTINE sum_mpi_int14(in1,o1)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 
     INTEGER(KIND=IPL), INTENT(IN) :: in1
     INTEGER(KIND=IPL), INTENT(OUT) :: o1
@@ -419,7 +422,7 @@ END SUBROUTINE shareFileType
 
   SUBROUTINE sum_mpi_real(in1,o1)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 
     real(kind=wp), intent(in) :: in1
     real(kind=wp), intent(out) :: o1

@@ -12,16 +12,17 @@
 
 module checks
 
-use puffin_kinds
-use puffin_mpiInfo
-use puffin_mpiInfo
-use IO
-use puffin_constants
-use Globals
-use particleFunctions
-use grids
+use puffin_kinds, only: long, WP, IP
+use IO, only: tErrorLog_G, log_error
+use puffin_constants, only: pi, iX_CG, iY_CG, iZ2_CG, iPX_CG, iPY_CG, iDiffraction_CG, &
+  iFocussing_CG, iOneD_CG
+use Globals, only: qRndFj_G, sSigFj_G, qRndEj_G, sSigEj_G, gExtEj_G, sStepSize, nSteps
+use particleFunctions, only: iTopHatDistribution_CG, gaussian
+use grids, only: getinttypes
+use ParallelSetUp, only: stopcode
+use mpi, only: MPI_FINALIZE
 
-implicit none
+implicit none (type, external)
 
 contains
 
@@ -31,7 +32,7 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
        qSwitches,qSimple,sSigF, &
        freqf, SmeanZ2, qFlatTopS, nseeds, qOK)
 
-  implicit none
+  implicit none (type, external)
 
 ! Subroutine to check that the electron and field
 ! parameters are sensible.
@@ -69,8 +70,8 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
   qOK = .FALSE.
 
-  if (qSimple) call check1D(qSwitches(iOneD_CG), qSwitches(iDiffraction_CG), qSwitches(iFocussing_CG), &
-                                iNodes)
+  if (qSimple) call check1D(qSwitches(iOneD_CG), qSwitches(iDiffraction_CG), &
+                             qSwitches(iFocussing_CG), iNodes)
 
   do i = 1,nbeams
 
@@ -441,11 +442,13 @@ END SUBROUTINE chkESampleLens
 
         if (qRndEj_G(ib)) then
 
-          gausslen = sSigEj_G(ib) * gExtEj_G !    Check if there is enough room for the rounded edges
+          !    Check if there is enough room for the rounded edges
+          gausslen = sSigEj_G(ib) * gExtEj_G
 
           if ((eSamLen(ib,iZ2_CG) - gausslen) <= 0) then
 
-            print*, "ERROR:- electron beam model not long enough in z2 to include the gaussian tails"
+            print*, "ERROR:- electron beam model not long enough in z2 to include the &
+                     &gaussian tails"
             call StopCode()
             stop
 

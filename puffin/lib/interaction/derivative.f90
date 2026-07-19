@@ -15,11 +15,12 @@ module Derivative
 ! Module to calculate derivative required to integrate
 ! using rk4
 
-use rhs
-use ParaField
+use rhs, only: getrhs, WP, IP, tProcInfo_G, tErrorLog_G, log_error, sp2
+use ParaField, only: upd8da, ioutInfo_G
 use GlobalTypes, only: tSimulationContext
+use mpi, only: MPI_ALLREDUCE, MPI_COMM_WORLD, MPI_IN_PLACE, MPI_INTEGER, MPI_SUM
 
-implicit none
+implicit none (type, external)
 
 contains
 
@@ -38,7 +39,7 @@ contains
                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, sdAr, sdAi, &
                     ctx)
 
-  implicit none
+  implicit none (type, external)
 
 ! External subroutine returning dydz at z for use with RK4
 !

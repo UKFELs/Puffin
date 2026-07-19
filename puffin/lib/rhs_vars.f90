@@ -4,9 +4,9 @@
 
 module rhs_vars
 
-use puffin_kinds
+use puffin_kinds, only: WP, IPL, IP
 
-implicit none
+implicit none (type, external)
 
 !!!!!!!!!!!
 

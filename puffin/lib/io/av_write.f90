@@ -12,16 +12,21 @@
 
 module avwrite
 
-   use puffin_kinds
-   use arrayfunctions
-   use globals
-   use functions
-   use ParallelSetUp
-   use parafield
+   use puffin_kinds, only: WP, IP, IPL
+   use arrayfunctions, only: tProcInfo_G
+   use globals, only: NX_G, NY_G, NZ2_G, ntrnds_G, sLengthOfElmX_G, sLengthOfElmY_G, &
+     sLengthOfElmZ2_G, fieldMesh, iPeriodic, x_ax_G, y_ax_G, npts_I_G, s_chi_bar_G, &
+     iNumberElectrons_G, npk_bar_G, ata_G, sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, &
+     qOneD_G, pi, c, q_e
+   use functions, only: linspace
+   use ParallelSetUp, only: sum2rootarr
+   use parafield, only: fr_rfield, bk_rfield, ac_rfield, fr_ifield, bk_ifield, ac_ifield, &
+     mainlen, tlflen, tlelen, tlflen4arr, tlelen4arr, ffe_GGG, ees_GGG, updateglobalpow
    use GlobalTypes, only: tFELFrame
+   use mpi, only: mpi_barrier
 
 
-   implicit none
+   implicit none (type, external)
 
 contains
 
@@ -39,7 +44,7 @@ contains
 
    subroutine gPowerP(power)
 
-      implicit none
+      implicit none (type, external)
 
       real(kind=wp), intent(out) :: power(:)  !< Returned power array
       real(kind=wp), allocatable :: fr_power(:), &  !< Power in 'front' field section
@@ -111,7 +116,7 @@ contains
 
    subroutine gPower(rfield, ifield, power)
 
-      implicit none
+      implicit none (type, external)
 
       real(kind=wp), intent(in) :: rfield(:), &
          ifield(:)
@@ -215,7 +220,7 @@ contains
 
    real function m_trapz2D(x, y, fxy)
 
-      implicit none
+      implicit none (type, external)
 
       real(kind=wp), dimension(:), intent(in) :: x,y
       real(kind=wp), dimension(:,:), intent(in) :: fxy
@@ -248,7 +253,7 @@ contains
 
    real function m_trapz(x, y, lower, upper)
 
-      implicit none
+      implicit none (type, external)
 
       real(kind=wp), dimension(:), intent(in) :: x,y
       integer(kind=ip), optional, intent(in) :: lower, upper
@@ -295,7 +300,7 @@ contains
 
    subroutine getCurr(sam_len, Iarray, frame)
 
-      use puffin_constants
+      use puffin_constants, only: c, q_e, ip, wp
 
       real(kind=wp), intent(in) :: sam_len !< length of bins in z2
       real(kind=wp), intent(inout) :: Iarray(:) !< data containing the current info

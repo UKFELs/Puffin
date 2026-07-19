@@ -7,12 +7,12 @@ module initConds
 ! This module contains the functions calculating the initial
 ! electron macroparticle phase space conditions in Puffin.
 
-use puffin_kinds
-use Globals
+use puffin_kinds, only: WP
+use Globals, only: sFocusfactor_G, fx_G, fy_G, iX_CG, iY_CG, iZ2_CG, iPX_CG, iPY_CG, iGam_CG
 use GlobalTypes, only: tFELFrame
 
 
-implicit none
+implicit none (type, external)
 
   INTERFACE xOffSet
     MODULE PROCEDURE xOffSet_OneValue, xOffSet_Array
@@ -255,7 +255,7 @@ contains
 
 SUBROUTINE getOffsets(sZ,samLenE,sZ2_center,gamma_d,offsets,frame,n2col)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
 !             ARGUMENTS
 

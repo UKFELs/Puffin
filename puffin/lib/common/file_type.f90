@@ -4,9 +4,9 @@
 
 MODULE FileType
 
-  use puffin_kinds
+  use puffin_kinds, only: IP
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
 !
 !*****************************************************

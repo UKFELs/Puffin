@@ -14,17 +14,23 @@
 
 MODULE lattice
 
-use puffin_kinds
-USE Globals
-USE ArrayFunctions
-USE simple_electron_gen
-use gtop2
-use initConds
-use functions
-use pdiff
+use puffin_kinds, only: WP, IP
+use Globals, only: NZ2_G, sLengthOfElmZ2_G, fieldMesh, iPeriodic, s_chi_bar_G, &
+  iNumberElectrons_G, sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, sFocusfactor_G, fx_G, &
+  fy_G, zUndType_G, kx_und_G, ky_und_G, sKBetaXSF_G, sKBetaYSF_G, zMod, mf, delmz, tapers, &
+  ux_arr, uy_arr, kbnx_arr, kbny_arr, zundtype_arr, nSteps_arr, chic_zbar, chic_slip, chic_disp, &
+  drift_zbar, enmod_wavenum, enmod_mag, quad_fx, quad_fy, numOfUnds, numOfChics, numOfDrifts, &
+  numOfModulations, numOfQuads, ModNum, ModCount, qUndEnds_G, sZFS, sZFE, sStepSize, nSteps, &
+  totUndLineLength, ioutInfo_G, qMod_G, qscaled_G, pi
+use ArrayFunctions, only: tProcInfo_G, log_error
+use gtop2, only: getp2
+use initConds, only: xOffSet, yOffSet, pxoffset, pyoffset
+use functions, only: arr_mean_para_weighted
+use pdiff, only: diffractim
 use GlobalTypes, only: tLatticeElements, tFELFrame, tSimulationFlags, tSimulationContext, tUndulator
 
-implicit none
+use simple_electron_gen, only: tErrorLog_G
+implicit none (type, external)
 
 integer(kind=ip), parameter :: iUnd = 1_ip, &
                                iChic = 2_ip, &
@@ -82,7 +88,7 @@ contains
   subroutine setupMods(lattFile, taper, sRho, nSteps_f, dz_f, &
                        ux_f, uy_f, kbnx_f, kbny_f, frame)
 
-    implicit none
+    implicit none (type, external)
 
     character(1024_ip), intent(in) :: LattFile
     real(kind=wp), intent(inout) :: taper
@@ -232,7 +238,7 @@ contains
 
   SUBROUTINE readLatt(lattFile, rho)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
   CHARACTER(1024_IP), INTENT(IN) :: lattFile
 
@@ -275,7 +281,8 @@ contains
 
     if (ios < 0) then  ! if reached end of file:-
 
-      if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 2)) print*, "Reached end of file!! (for the second time)"
+      if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 2)) &
+        print*, "Reached end of file!! (for the second time)"
       !print*, "Turns out you had ", cnt, "lines in the file!!"
       !print*, "Turns out you had ", cntq, "quads in the file!! in lines ", lineq
       !print*, "Turns out you had ", cntu, "undulators in the file!!"
@@ -360,7 +367,8 @@ contains
 
         backspace(168)
         cntc = cntc + 1
-        read (168,*, IOSTAT=ios) ztest, chic_zbar(cntc), chic_slip(cntc), chic_disp(cntc)  ! read vars
+        ! read vars
+        read (168,*, IOSTAT=ios) ztest, chic_zbar(cntc), chic_slip(cntc), chic_disp(cntc)
 
         if (ios /= 0) then
           print*, "iostat = ", ios
@@ -434,7 +442,7 @@ contains
 
   subroutine disperse(iL, sZ, ctx)
 
-  implicit none
+  implicit none (type, external)
 
   integer(kind=ip), intent(in) :: iL
   real(kind=wp), intent(out) :: sZ

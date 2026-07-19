@@ -13,19 +13,30 @@
 
 module hdf5PuffColl
 
-use puffin_kinds
-use hdf5
-use globals
-use puffin_mpiInfo
-use lattice
-USE ParallelSetUp
-USE ArrayFunctions
-USE puffin_constants
-Use avWrite
-use hdf5PuffLow
+use puffin_kinds, only: WP, IP
+use hdf5, only: h5aclose_f, h5acreate_f, h5awrite_f, h5close_f, h5dclose_f, h5dcreate_f, &
+  h5dget_space_f, h5dopen_f, h5dwrite_f, H5F_ACC_RDWR_F, H5F_ACC_TRUNC_F, h5fclose_f, &
+  h5fcreate_f, H5FD_MPIO_COLLECTIVE_F, H5FD_MPIO_INDEPENDENT_F, h5fopen_f, h5gclose_f, &
+  h5gcreate_f, h5open_f, H5P_DATASET_XFER_F, H5P_FILE_ACCESS_F, h5pclose_f, h5pcreate_f, &
+  h5pset_dxpl_mpio_f, h5pset_fapl_mpio_f, H5S_SCALAR_F, H5S_SELECT_SET_F, h5sclose_f, &
+  h5screate_f, h5screate_simple_f, h5sselect_hyperslab_f, h5sselect_none_f, &
+  H5T_NATIVE_CHARACTER, H5T_NATIVE_DOUBLE, H5T_NATIVE_INTEGER, H5T_STR_SPACEPAD_F, h5tclose_f, &
+  h5tcopy_f, h5tset_size_f, h5tset_strpad_f, HID_T, HSIZE_T
+use globals, only: NX_G, NY_G, NZ2_G, sLengthOfElmX_G, sLengthOfElmY_G, sLengthOfElmZ2_G, &
+  fieldMesh, iPeriodic, sperwaves_G, npts_I_G, s_chi_bar_G, procelectrons_G, iNumberElectrons_G, &
+  iGloNumElectrons_G, npk_bar_G, sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, &
+  zFileName_G, qOneD_G
+use puffin_mpiInfo, only: tProcInfo_G
+use lattice, only: log_error, tErrorLog_G
+USE puffin_constants, only: pi, m_e, q_e
+use hdf5PuffLow, only: addh5stringattribute, addh5derivedvariable, write3dlimgrp, write1dlimgrp, &
+  write3duniformmesh, write1duniformmesh, writecommonatts, writeh5timegroup, writeh5runinfo, &
+  integertostring
 use GlobalTypes, only: tSimulationContext
+use ParaField, only: qUnique
+use mpi, only: MPI_INFO_NULL
 
-implicit none
+implicit none (type, external)
 
 contains
 
@@ -44,7 +55,7 @@ contains
 !! the array slice based on that.
 !! so instead of
   subroutine outputH5BeamFilesSD(time, sz_loc, iL, error, ctx)
-    implicit none
+    implicit none (type, external)
     REAL(kind=WP),intent(in) :: time !< Current time
     REAL(kind=WP),intent(in) :: sz_loc
     integer(kind=ip), intent(in) :: iL  !< lattice element number
@@ -166,7 +177,8 @@ contains
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
 !      else
-! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
+! all ranks must participate, so select no space to write when dealing with
+! ranks which hold no data for this field fr_real, etc
 !        CALL h5sselect_none_f(filespace,error)
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
@@ -203,7 +215,8 @@ contains
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
 !else
-! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
+! all ranks must participate, so select no space to write when dealing with
+! ranks which hold no data for this field fr_real, etc
   if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
@@ -238,7 +251,8 @@ contains
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
 !    else
-    ! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
+    ! all ranks must participate, so select no space to write when dealing with
+    ! ranks which hold no data for this field fr_real, etc
       if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
@@ -283,7 +297,8 @@ contains
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
 !    else
-    ! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
+    ! all ranks must participate, so select no space to write when dealing with
+    ! ranks which hold no data for this field fr_real, etc
       if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
 
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
@@ -312,7 +327,8 @@ contains
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
 !    else
-    ! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
+    ! all ranks must participate, so select no space to write when dealing with
+    ! ranks which hold no data for this field fr_real, etc
       if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
@@ -340,7 +356,8 @@ contains
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
 !    else
-    ! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
+    ! all ranks must participate, so select no space to write when dealing with
+    ! ranks which hold no data for this field fr_real, etc
       if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
@@ -373,7 +390,8 @@ contains
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
 !    else
-    ! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
+    ! all ranks must participate, so select no space to write when dealing with
+    ! ranks which hold no data for this field fr_real, etc
       if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
@@ -673,15 +691,18 @@ contains
 
 !> outputH5Field3DSD is for writing the full field output.
 !! This version dumps one single file, but writes individually rather than collectively
-  subroutine outputH5Field3DSD(time, sz_loc, iL, error, nlonglength, rawdata, nlo, nhi, component, createNewFlag, chkactiveflag, ctx)
-    implicit none
+  subroutine outputH5Field3DSD(time, sz_loc, iL, error, nlonglength, rawdata, nlo, &
+                                nhi, component, createNewFlag, chkactiveflag, ctx)
+    implicit none (type, external)
     REAL(kind=WP), intent(in) :: time, sz_loc, rawdata(:) !< The data to write
     integer(kind=ip), intent(in) :: iL
     type(tSimulationContext), intent(in) :: ctx
     INTEGER(kind=IP), intent(in) :: nlonglength !<number of cells in z in this section
     INTEGER(kind=IP), intent(in) :: nlo,nhi !< cell range in z in this raw data selection
-    INTEGER(kind=IP), intent(in) :: component, createNewFlag !< cell range in 4th dim in this raw data selection
-    LOGICAL, intent(in) :: chkactiveflag !< flag determines whether to test for the entire field on every rank
+    INTEGER(kind=IP), intent(in) :: component, createNewFlag
+      !< cell range in 4th dim in this raw data selection
+    LOGICAL, intent(in) :: chkactiveflag
+      !< flag determines whether to test for the entire field on every rank
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier
     INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
@@ -814,7 +835,8 @@ contains
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting slab on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
       !else
-! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
+! all ranks must participate, so select no space to write when dealing with
+! ranks which hold no data for this field fr_real, etc
         if (nlonglength <= 0) CALL h5sselect_none_f(filespace,error)
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting empty slab on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
@@ -887,7 +909,8 @@ contains
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting slab on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
       !else
-! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
+! all ranks must participate, so select no space to write when dealing with
+! ranks which hold no data for this field fr_real, etc
         if (tProcInfo_G%rank /= 0) CALL h5sselect_none_f(filespace,error)
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting empty slab on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
@@ -1015,7 +1038,8 @@ contains
           if (qoned_g) then
             CALL addH5StringAttribute(dset_id,"vsIndexOrder","compMinorF",aspace_id)
           else
-            CALL addH5StringAttribute(dset_id,"vsIndexOrder","compMajorC",aspace_id)  ! WAS compMajorF
+            ! WAS compMajorF
+            CALL addH5StringAttribute(dset_id,"vsIndexOrder","compMajorC",aspace_id)
           end if
 
           CALL addH5StringAttribute(dset_id,"vsTimeGroup",timegrpname,aspace_id)
@@ -1094,7 +1118,7 @@ contains
                                     nhi, component, createNewFlag, chkactiveflag, ctx)
 
 
-      implicit none
+      implicit none (type, external)
 
 
       real(kind=wp), intent(in) :: time, sz_loc, rawdata(:)  !< The data to write
@@ -1102,8 +1126,10 @@ contains
     type(tSimulationContext), intent(in) :: ctx
       integer(kind=ip), intent(in) :: nlonglength    !<number of cells in z in this section
       integer(kind=ip), intent(in) :: nlo,nhi        !< cell range in z in this raw data selection
-      integer(kind=ip), intent(in) :: component, createNewFlag !< cell range in 4th dim in this raw data selection
-      LOGICAL, intent(in) :: chkactiveflag   !< flag determines whether to test for the entire field on every rank
+      integer(kind=ip), intent(in) :: component, createNewFlag
+        !< cell range in 4th dim in this raw data selection
+      LOGICAL, intent(in) :: chkactiveflag
+        !< flag determines whether to test for the entire field on every rank
 
 
       integer(HID_T) :: file_id       !< File identifier
@@ -1296,7 +1322,8 @@ contains
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting slab on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
       !else
-! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
+! all ranks must participate, so select no space to write when dealing with
+! ranks which hold no data for this field fr_real, etc
         if (tProcInfo_G%rank /= 0) CALL h5sselect_none_f(filespace,error)
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting empty slab on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
@@ -1448,7 +1475,8 @@ contains
           ub=NZ2_G*sLengthOfElmZ2_G
 
           call write1DlimGrp(file_id,limgrpname,lb,ub)
-          call write1DuniformMesh(file_id,meshScaledGrpname,lb,ub,(NZ2_G-1),"z2,A_perp radiation field")
+          call write1DuniformMesh(file_id,meshScaledGrpname,lb,ub,(NZ2_G-1), &
+                                   "z2,A_perp radiation field")
 
           aname="intensityScaled"
           attr_data_string="sqr(aperp_real)+sqr(aperp_imaginary)"
@@ -1480,7 +1508,7 @@ contains
 !! Creates a single integrated file for the 1D datasets
   subroutine CreateIntegrated1DFloat(simtime, sz_loc, iL, error, nslices, ctx)
 
-    implicit none
+    implicit none (type, external)
 
     REAL(kind=WP), intent(in) :: simtime      !< simulation time
     real(kind=wp), intent(in) :: sz_loc        !< zbar local to current undulator module
@@ -1504,7 +1532,8 @@ contains
 ! Limits group
 !      CALL h5gcreate_f(file_id, limgrpname, group_id, error)
       CALL write1DlimGrp(file_id,limgrpname,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G)
-      CALL write1DlimGrp(file_id,limgrpnameSI,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*ctx%frame%cooperation_length)
+      CALL write1DlimGrp(file_id,limgrpnameSI,0._wp, &
+        real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*ctx%frame%cooperation_length)
 
       CALL write1DuniformMesh(file_id,"intFieldMeshSc",0._wp, &
         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G,NZ2_G,"z2,scaled parameter")
@@ -1517,13 +1546,16 @@ contains
         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G,npts_I_G,"z2,scaled parameter")
 
       CALL write1DuniformMesh(file_id,"intFieldMeshSI",0._wp, &
-        real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*ctx%frame%cooperation_length,NZ2_g,"z [m], SI parameter")
+        real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*ctx%frame%cooperation_length, &
+        NZ2_g,"z [m], SI parameter")
 
       CALL write1DuniformMesh(file_id,"intPtclMeshSI",0._wp, &
-        real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*ctx%frame%cooperation_length,nslices,"z [m], SI parameter")
+        real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*ctx%frame%cooperation_length, &
+        nslices,"z [m], SI parameter")
 
       CALL write1DuniformMesh(file_id,"intCurrMeshSI",0._wp, &
-         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*ctx%frame%cooperation_length,npts_I_G,"z [m], SI parameter")
+         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*ctx%frame%cooperation_length, &
+         npts_I_G,"z [m], SI parameter")
 
 ! Close the file.
 
@@ -1542,7 +1574,7 @@ contains
   subroutine addH5Field1DFloat(writeData, dsetname, meshname, zLabels, simtime, &
                                sz_loc, iL, error, ctx)
 
-    implicit none
+    implicit none (type, external)
 
     character(1024_IP) :: filename !< output filename
     integer(kind=ip), intent(out) :: error !< Local Error flag

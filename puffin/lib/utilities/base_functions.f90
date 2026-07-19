@@ -11,20 +11,20 @@
 
 MODULE Functions
 
-use puffin_kinds
-use puffin_mpiInfo
-USE error_fn
-USE puffin_constants
-USE MPI
+use puffin_kinds, only: WP, IP
+use puffin_mpiInfo, only: tProcInfo_G
+USE error_fn, only: erf, erfi
+USE puffin_constants, only: pi
+USE MPI, only: MPI_ALLREDUCE, MPI_DOUBLE_PRECISION, MPI_SUM
 
-IMPLICIT NONE
+IMPLICIT NONE (type, external)
 
 CONTAINS
 !********************************************************
 
   FUNCTION gaussian(x,xc,sigma)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 !
 ! Return array of the Gaussian function for aray of
 ! points x
@@ -62,7 +62,7 @@ CONTAINS
 
   FUNCTION linspace(xstart,xend,n)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 !
 !Generate a uniform array of n values between xstart and xend
 !
@@ -98,7 +98,7 @@ CONTAINS
   FUNCTION getx(i,i_nmp,s_xc,sigma,s_xstart,s_h_in,&
        s_tol_in)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 !
 ! CALCULATE THE X VALUE WHERE IT HAS THE SAME AREA
 ! UNDER THE GAUSSIAN
@@ -139,7 +139,8 @@ CONTAINS
        STOP
     END IF
 
-10  s_integral=0.5_WP*(1.0_WP+erf((s_x+s_h-s_xc)/(SQRT(2.0_WP)*sigma)))-0.5_WP*(1.0_WP+erf((s_x-s_xc)/(SQRT(2.0_WP)*sigma)))
+10  s_integral=0.5_WP*(1.0_WP+erf((s_x+s_h-s_xc)/(SQRT(2.0_WP)*sigma))) &
+             -0.5_WP*(1.0_WP+erf((s_x-s_xc)/(SQRT(2.0_WP)*sigma)))
 
     IF (s_h>s_tol) THEN
        IF(s_area+s_integral>s_A1) THEN
@@ -163,7 +164,7 @@ CONTAINS
 
   SUBROUTINE GaussianGrid(i_Macro,s_MeanGuass,s_SigmaGuass,s_start,s_end,sgrid)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 
     INTEGER(KIND=IP),INTENT(IN) :: i_Macro
     REAL(KIND=WP),INTENT(IN) :: s_MeanGuass,s_SigmaGuass,s_start,s_end
@@ -251,7 +252,7 @@ CONTAINS
   SUBROUTINE GaussianDistribution(i_Macro,s_grid,&
        s_MeanGuass,s_SigmaGuass,s_func)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 !
 ! Input parameters
 !
@@ -296,7 +297,7 @@ CONTAINS
   SUBROUTINE GaussianDistributionz2(i_Macro,s_grid,&
        s_MeanGuass,s_SigmaGuass,s_func)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 !
 ! Input parameters
 !
@@ -346,7 +347,7 @@ CONTAINS
 
   SUBROUTINE hpsort(N,RA)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 !
 ! INPUTS & OUTPUTS PARAMETERS
 !
@@ -409,7 +410,7 @@ CONTAINS
 
   FUNCTION epsilonParameter(saw,sgamma_r,fx,fy)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 
     REAL(KIND=WP),INTENT(IN)  :: saw,sgamma_r,fx,fy
 
@@ -440,7 +441,7 @@ CONTAINS
 
   FUNCTION GainLength(sWigglerWaveLength,rho)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 
     REAL(KIND=WP),INTENT(IN) :: sWigglerWaveLength,rho
 
@@ -457,7 +458,7 @@ CONTAINS
 
   FUNCTION MatchedBeamRadius(srho, sEmit, k_beta)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 
     REAL(KIND=WP),INTENT(IN) :: srho, sEmit, k_beta
 
@@ -481,7 +482,7 @@ CONTAINS
 
   FUNCTION DiffractionLength(z,sRaleighLength,sigma)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 
     REAL(KIND=WP),INTENT(IN) :: z,sRaleighLength,sigma
 
@@ -505,7 +506,7 @@ CONTAINS
 
 ! sigma of the seed field
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 
     REAL(KIND=WP),INTENT(IN) :: srho,sigma
 
@@ -523,9 +524,9 @@ CONTAINS
 
 ! Return the mean of an array of real values
 
-    use ParallelSetUp
+    use ParallelSetUp, only: sum_mpi_real, WP
 
-    implicit none
+    implicit none (type, external)
 
     real(kind=wp), intent(in) :: s_ar(:)
     real(kind=wp) :: arr_mean_para
@@ -546,9 +547,9 @@ CONTAINS
 
 ! Return the mean of an array of real values
 
-    use ParallelSetUp
+    use ParallelSetUp, only: sum_mpi_real, WP
 
-    implicit none
+    implicit none (type, external)
 
     real(kind=wp), intent(in) :: s_ar(:), weights(:)
     real(kind=wp) :: arr_mean_para_weighted

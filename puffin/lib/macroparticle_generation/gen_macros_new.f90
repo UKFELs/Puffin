@@ -6,11 +6,10 @@ module MacrosGenNew
 
 use puffin_kinds, only: WP, IP, IPL
 use randomGauss, only: random_Poisson
-use MPI
 use macrosGen, only: RandomNoGenerator
 use puffin_mpiInfo, only: tProcInfo_G
 
-implicit none
+implicit none (type, external)
 
 contains
 
@@ -333,23 +332,28 @@ contains
 
 
                      IF(PRESENT(x_2_grid)) THEN
-                        x_2_coord(index)=x_2_position(j)+(x_2_random(index)- 0.5_WP)*x_2_del(j)/SQRT(s_macro)
+                        x_2_coord(index)=x_2_position(j)+ &
+                          (x_2_random(index)- 0.5_WP)*x_2_del(j)/SQRT(s_macro)
                      END IF
 
                      IF(PRESENT(x_3_grid)) THEN
-                        x_3_coord(index)=x_3_position(k)+(x_3_random(index)- 0.5_WP)*x_3_del(k)/SQRT(s_macro)
+                        x_3_coord(index)=x_3_position(k)+ &
+                          (x_3_random(index)- 0.5_WP)*x_3_del(k)/SQRT(s_macro)
                      END IF
 
                      IF(PRESENT(p_1_grid)) THEN
-                        p_1_vector(index)=p_1_position(a)+(p_1_random(index)- 0.5_WP)*p_1_del(a)/SQRT(s_macro)
+                        p_1_vector(index)=p_1_position(a)+ &
+                          (p_1_random(index)- 0.5_WP)*p_1_del(a)/SQRT(s_macro)
                      END IF
 
                      IF(PRESENT(p_2_grid)) THEN
-                        p_2_vector(index)=p_2_position(b)+(p_2_random(index)- 0.5_WP)*p_2_del(b)/SQRT(s_macro)
+                        p_2_vector(index)=p_2_position(b)+ &
+                          (p_2_random(index)- 0.5_WP)*p_2_del(b)/SQRT(s_macro)
                      END IF
 
                      IF(PRESENT(p_3_grid)) THEN
-                        p_3_vector(index)=p_3_position(c)+(p_3_random(index)- 0.5_WP)*p_3_del(c)/SQRT(s_macro)
+                        p_3_vector(index)=p_3_position(c)+ &
+                          (p_3_random(index)- 0.5_WP)*p_3_del(c)/SQRT(s_macro)
                      END IF
 
                   ELSE

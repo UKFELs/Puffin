@@ -14,13 +14,13 @@ Module ArrayFunctions
 
 
 
-  use puffin_kinds
-  use puffin_mpiInfo
-  USE FileType
-  USE IO
-  USE ParallelSetup
+  use puffin_kinds, only: IP
+  USE FileType, only: cFileType
 !
-  IMPLICIT NONE
+use puffin_mpiInfo, only: tProcInfo_G
+use IO, only: filenamenoextension, filenameextension, log_error, tErrorLog_G, WP
+use ParallelSetup, only: MPI_INT_HIGH, stopcode, initializeprocessors
+  IMPLICIT NONE (type, external)
 !
 !
 !

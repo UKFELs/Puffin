@@ -14,14 +14,14 @@
 
 module write_adapter
 
-USE lattice
-USE RK4int
-use hdf5_puff
-use ParaField
-use cwrites
+use lattice, only: WP, IP, fieldMesh, nSteps, pi, log_error, tErrorLog_G
+use hdf5_puff, only: wr_h5, tArrayE, tArrayA, tArrayZ, iStep
+use ParaField, only: iTemporal
+use cwrites, only: wrarray, qWrArray_G
 use GlobalTypes, only: tSimulationContext
+use Globals, only: qInitWrLat_G, qhdf5_G, qSeparateStepFiles_G
 
-implicit none
+implicit none (type, external)
 
 contains
 
@@ -37,7 +37,7 @@ subroutine writeIM(sZ, sZl, ctx, iL, qOK)
 ! University of Strathclyde
 ! Jan 2015
 
-  implicit none
+  implicit none (type, external)
 
   real(kind=wp), intent(inout) :: sZ, sZl
   type(tSimulationContext), intent(inout) :: ctx
@@ -86,7 +86,7 @@ subroutine wr_cho(sZ, sZl, ctx, iL, qWriteInt, qWriteFull, qOK)
 ! University of Strathclyde
 ! Jan 2017
 
-  implicit none
+  implicit none (type, external)
 
   real(kind=wp), intent(inout) :: sZ, sZl
   type(tSimulationContext), intent(inout) :: ctx
@@ -122,7 +122,7 @@ end subroutine wr_cho
   subroutine int_or_full(istep, iCsteps, iIntWr, iWr, &
                          qWriteInt, qWriteFull, qOK)
 
-    implicit none
+    implicit none (type, external)
 
 !   Figure out whether to write integrated data or
 !   full particle dump
@@ -196,7 +196,7 @@ function qWriteq(iStep, iCsteps, iWriteNthSteps, iIntWriteNthSteps, nSteps)
 
 
 
-  implicit none
+  implicit none (type, external)
 
   logical :: qWriteq
   integer(kind=ip), intent(in) :: iStep, iCsteps, iWriteNthSteps, iIntWriteNthSteps, nSteps

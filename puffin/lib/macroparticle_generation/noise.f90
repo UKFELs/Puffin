@@ -15,7 +15,7 @@ MODULE addNoise
    use randomGauss, only: init_random_seed, random_Poisson
    use macrosGen, only: RandomNoGenerator
 
-   implicit none
+   implicit none (type, external)
    private
    public :: applyNoise
 
@@ -28,7 +28,7 @@ contains
 ! weight and phase space coordinate in each
 ! dimension.
 
-      implicit none
+      implicit none (type, external)
 
 !            ARGUMENTS
 
@@ -69,7 +69,7 @@ contains
 ! it's weight Nk (which is the number of
 ! macroparticles it represents).
 
-      implicit none
+      implicit none (type, external)
 
 !           ARGUMENTS
 

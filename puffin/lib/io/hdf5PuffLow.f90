@@ -13,17 +13,17 @@
 
 module hdf5PuffLow
 
-use puffin_kinds
-use globals
-use puffin_mpiInfo
-use lattice
-USE ParallelSetUp
-USE ArrayFunctions
-USE puffin_constants
-use hdf5
+use puffin_kinds, only: WP, IP
+use globals, only: fieldMesh, npk_bar_G, ata_G, iStep, sStepSize, nSteps, zFileName_G, zBFile_G, &
+  zSFile_G
+use lattice, only: log_error, tErrorLog_G
+use hdf5, only: h5aclose_f, h5acreate_f, h5awrite_f, h5gclose_f, h5gcreate_f, H5S_SCALAR_F, &
+  h5sclose_f, h5screate_f, h5screate_simple_f, H5T_NATIVE_CHARACTER, H5T_NATIVE_DOUBLE, &
+  H5T_NATIVE_INTEGER, H5T_STR_SPACEPAD_F, h5tclose_f, h5tcopy_f, h5tset_size_f, h5tset_strpad_f, &
+  HID_T, HSIZE_T
 use GlobalTypes, only: tSimulationContext
 
-implicit none
+implicit none (type, external)
 
 contains
 
@@ -33,7 +33,7 @@ contains
 
   subroutine addH5StringAttribute(locHandle,attrName,attrValue,aspace_id)
 
-    implicit none
+    implicit none (type, external)
 
     integer(HID_T), intent(in) :: locHandle   !< h5 handle of write location
     character(len=*), intent(in) :: attrName  !<attrib name
@@ -78,7 +78,7 @@ contains
 
   subroutine addH5FloatAttribute(locHandle,attrName,attrValue,aspace_id)
 
-    implicit none
+    implicit none (type, external)
 
     integer(HID_T), intent(in) :: locHandle   !< h5 handle of write location
     character(LEN=*), intent(in) :: attrName  !<attrib name
@@ -109,7 +109,7 @@ contains
 
   subroutine addH5IntegerAttribute(locHandle,attrName,attrValue,aspace_id)
 
-    implicit none
+    implicit none (type, external)
 
     integer(HID_T), intent(in) :: locHandle   !< h5 handle of write location
     character(LEN=*), intent(in) :: attrName  !<attrib name
@@ -138,7 +138,7 @@ contains
 !> addH5derivedVariable() add vizschema derived variable
   subroutine addH5derivedVariable(location,varName,expression,error)
 
-    implicit none
+    implicit none (type, external)
 
     integer(HID_T), intent(in) :: location !< h5 handle of write location
     character(len=*), intent(in) :: varName !<derived var name
@@ -164,7 +164,7 @@ contains
 !> addH5derivedVariable() add vizschema derived variable
   subroutine addH5derivedVariableSI(location,varName,expression,meshname,error)
 
-    implicit none
+    implicit none (type, external)
 
     integer(HID_T), intent(in) :: location !< h5 handle of write location
     character(len=*), intent(in) :: varName !<derived var name
@@ -197,7 +197,7 @@ contains
 
   subroutine write3DfloatAttribute(location, aname, valarray)
 
-    implicit none
+    implicit none (type, external)
 
     integer(HID_T), intent(in) :: location   !< h5 handle of write location
     character(LEN=*), intent(in) :: aname    !<derived var name
@@ -235,7 +235,7 @@ contains
 
   subroutine write3DintAttribute(location, aname, valarray)
 
-    implicit none
+    implicit none (type, external)
 
     integer(HID_T), intent(in) :: location   !< h5 handle of write location
     character(LEN=*), intent(in) :: aname    !<derived var name
@@ -275,7 +275,7 @@ contains
 
   subroutine write3DlimGrp(location,limgrpname,lb,ub)
 
-    implicit none
+    implicit none (type, external)
 
     integer(HID_T), intent(in) :: location        !< h5 handle of write location
     character(len=*), intent(in) :: limgrpname    !<derived var name
@@ -312,7 +312,7 @@ contains
 
   subroutine write1DlimGrp(location,limgrpname,lb,ub)
 
-    implicit none
+    implicit none (type, external)
 
     integer(HID_T), intent(in) :: location        !< h5 handle of write location
     character(len=*), intent(in) :: limgrpname    !<derived var name
@@ -348,7 +348,7 @@ contains
 
   subroutine write3DuniformMesh(location,meshname,lb,ub,numcells)
 
-    implicit none
+    implicit none (type, external)
 
     integer(HID_T), intent(in) :: location        !< h5 handle of write location
     character(len=*), intent(in) :: meshname    !<derived var name
@@ -395,7 +395,7 @@ contains
 
   subroutine write1DuniformMesh(location,meshname,lb,ub,numcells,labels)
 
-    implicit none
+    implicit none (type, external)
 
     integer(HID_T), intent(in) :: location        !< h5 handle of write location
     character(len=*), intent(in) :: meshname    !<derived var name
@@ -445,7 +445,8 @@ contains
     call addH5FloatAttribute(dset_id, "zTotal", simtime * ctx%frame%gain_length, aspace_id)
 
     CALL addH5FloatAttribute(dset_id, "zbarInter", ctx%integration%z_inter, aspace_id)
-    CALL addH5FloatAttribute(dset_id, "zInter", ctx%integration%z_inter * ctx%frame%gain_length, aspace_id)
+    CALL addH5FloatAttribute(dset_id, "zInter", &
+                              ctx%integration%z_inter * ctx%frame%gain_length, aspace_id)
 
     call addH5FloatAttribute(dset_id, "zbarLocal", z_loc, aspace_id)
     call addH5FloatAttribute(dset_id, "zLocal", z_loc * ctx%frame%gain_length, aspace_id)
@@ -457,7 +458,8 @@ contains
     call addH5IntegerAttribute(dset_id, "iChic_cr", ctx%lattice%current_chic_index, aspace_id)
     call addH5IntegerAttribute(dset_id, "iDrift_cr", ctx%lattice%current_drift_index, aspace_id)
     call addH5IntegerAttribute(dset_id, "iQuad_cr", ctx%lattice%current_quad_index, aspace_id)
-    call addH5IntegerAttribute(dset_id, "iModulation_cr", ctx%lattice%current_modulation_index, aspace_id)
+    call addH5IntegerAttribute(dset_id, "iModulation_cr", &
+                                ctx%lattice%current_modulation_index, aspace_id)
     call addH5IntegerAttribute(dset_id, "iL", iL, aspace_id)
     call addH5IntegerAttribute(dset_id, "iWrite_cr", ctx%mesh%highpass_filter_gr, aspace_id)
 
@@ -480,7 +482,8 @@ contains
     call addH5FloatAttribute(dset_id, "zTotal", simtime * ctx%frame%gain_length, aspace_id)
 
     CALL addH5FloatAttribute(dset_id, "zbarInter", ctx%integration%z_inter, aspace_id)
-    CALL addH5FloatAttribute(dset_id, "zInter", ctx%integration%z_inter * ctx%frame%gain_length, aspace_id)
+    CALL addH5FloatAttribute(dset_id, "zInter", &
+                              ctx%integration%z_inter * ctx%frame%gain_length, aspace_id)
 
     call addH5FloatAttribute(dset_id, "zbarLocal", z_loc, aspace_id)
     call addH5FloatAttribute(dset_id, "zLocal", z_loc * ctx%frame%gain_length, aspace_id)
@@ -492,7 +495,8 @@ contains
     call addH5IntegerAttribute(dset_id, "iChic_cr", ctx%lattice%current_chic_index, aspace_id)
     call addH5IntegerAttribute(dset_id, "iDrift_cr", ctx%lattice%current_drift_index, aspace_id)
     call addH5IntegerAttribute(dset_id, "iQuad_cr", ctx%lattice%current_quad_index, aspace_id)
-    call addH5IntegerAttribute(dset_id, "iModulation_cr", ctx%lattice%current_modulation_index, aspace_id)
+    call addH5IntegerAttribute(dset_id, "iModulation_cr", &
+                                ctx%lattice%current_modulation_index, aspace_id)
     call addH5IntegerAttribute(dset_id, "iL", iL, aspace_id)
     call addH5IntegerAttribute(dset_id, "iWrite_cr", ctx%mesh%highpass_filter_gr, aspace_id)
 
@@ -518,7 +522,9 @@ contains
     call addH5IntegerAttribute(dset_id, "fieldMesh", fieldMesh, aspace_id)
     call addH5IntegerAttribute(dset_id, "iScale", 1, aspace_id)
     call addH5FloatAttribute(dset_id, "transArea", ata_G, aspace_id)
-    call addH5FloatAttribute(dset_id, "transAreaSI", ata_G * ctx%frame%gain_length * ctx%frame%cooperation_length, aspace_id)
+    call addH5FloatAttribute(dset_id, "transAreaSI", &
+                              ata_G * ctx%frame%gain_length * ctx%frame%cooperation_length, &
+                              aspace_id)
 
   end subroutine writeRunAtts
 
@@ -607,7 +613,8 @@ contains
 !!   asking for the run information to be written (ie parent routine)
    subroutine writeH5RunInfo(file_id, simtime, z_loc, iL, callerstr, error, ctx)
 
-    use PuffProvenance
+    use PuffProvenance, only: timeStamp, gitBranch, puffVersion, fortCompiler, fortVersion, &
+      fortFlags, buildHost, hostType
 
     INTEGER(HID_T), INTENT(in) :: file_id
     real(kind=wp), intent(in) :: simtime      !< Current simulation 'time' (zbar)
@@ -734,7 +741,8 @@ contains
 !     Prepare filename
 !          zFilename = (trim(adjustl(tArrayY(iap)%zVariable)) // trim(adjustl(zDFName)) // '.h5')
 !          if (qOptional) then
-!            zFilename = (trim(adjustl(zOptionalString)) // '_' // trim(adjustl(zFilename)) // '.h5')
+!            zFilename = (trim(adjustl(zOptionalString)) // '_' // &
+!                         trim(adjustl(zFilename)) // '.h5')
 !          end if
 !          call CreateSDDSFile(zFilename, &
 !                              tArrayY(iap)%zVariable, &
@@ -759,7 +767,7 @@ contains
 !! @param  iInteger    - INPUT  - Integer to convert
 FUNCTION IntegerToString(iInteger)
 
-        IMPLICIT NONE
+        IMPLICIT NONE (type, external)
         INTEGER(KIND=IP), INTENT(IN) :: iInteger
         CHARACTER(32_IP) :: IntegerToString
 ! Define local variables

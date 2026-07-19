@@ -7,9 +7,9 @@ MODULE nrutil
 ! Module to deal with writing out error messages
 
 
-use puffin_kinds
+use puffin_kinds, only: IP
 
-IMPLICIT NONE
+IMPLICIT NONE (type, external)
 
 INTERFACE assert_eq
    MODULE PROCEDURE assert_eq2, assert_eq3, assert_eq4, assert_eqn
@@ -101,7 +101,7 @@ FUNCTION assert_eqn(nn, string)
 END FUNCTION assert_eqn
 SUBROUTINE assert1(n1,string)
 
-IMPLICIT NONE
+IMPLICIT NONE (type, external)
 
         CHARACTER(LEN=*), INTENT(IN)            :: string
         LOGICAL,INTENT(IN)                      :: n1
@@ -118,7 +118,7 @@ END SUBROUTINE assert1
 
 SUBROUTINE assert2(n1,n2,string)
 
-IMPLICIT NONE
+IMPLICIT NONE (type, external)
 
         CHARACTER(LEN=*), INTENT(IN)            :: string
         LOGICAL,INTENT(IN)                      :: n1,n2

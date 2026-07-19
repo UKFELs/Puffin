@@ -13,19 +13,20 @@
 
 module FiElec
 
-use puffin_kinds
-use globals
-use parafield
+use puffin_kinds, only: WP, IPL, IP
+use globals, only: NZ2_G, ntrndsi_G, nspinDX, nspinDY, fieldMesh, iTemporal, s_chi_bar_G, &
+  procelectrons_G
+use parafield, only: bz2
 use GlobalTypes, only: tSimulationFlags
 
-implicit none
+implicit none (type, external)
 
 contains
 
 
 subroutine getInterps_3D(sx, sy, sz2, flags)
 
-use rhs_vars
+use rhs_vars, only: maxEl, halfx, halfy, lis_GR, dx, dy, dz2, WP, IPL, IP
 
 real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:)
 type(tSimulationFlags), intent(inout) :: flags
@@ -112,7 +113,7 @@ end subroutine getInterps_3D
 subroutine getFFelecs_3D(sAr, sAi)
 
 
-use rhs_vars
+use rhs_vars, only: p_nodes, lis_GR, sField4ElecReal, sField4ElecImag, WP, IP
 
 real(kind=wp), contiguous, intent(in) :: sAr(:), sAi(:)
 integer(kind=ip) :: i
@@ -127,7 +128,8 @@ integer(kind=ip) :: i
       sField4ElecReal(i) = lis_GR(5,i) * sAr(p_nodes(i) + ntrndsi_G) + sField4ElecReal(i)
       sField4ElecReal(i) = lis_GR(6,i) * sAr(p_nodes(i) + ntrndsi_G + 1_ip) + sField4ElecReal(i)
       sField4ElecReal(i) = lis_GR(7,i) * sAr(p_nodes(i) + ntrndsi_G + nspinDX) + sField4ElecReal(i)
-      sField4ElecReal(i) = lis_GR(8,i) * sAr(p_nodes(i) + ntrndsi_G + nspinDX + 1) + sField4ElecReal(i)
+      sField4ElecReal(i) = lis_GR(8,i) * sAr(p_nodes(i) + ntrndsi_G + nspinDX + 1) + &
+                            sField4ElecReal(i)
 
       sField4ElecImag(i) = lis_GR(1,i) * sAi(p_nodes(i)) + sField4ElecImag(i)
       sField4ElecImag(i) = lis_GR(2,i) * sAi(p_nodes(i)  + 1_ip) + sField4ElecImag(i)
@@ -136,7 +138,8 @@ integer(kind=ip) :: i
       sField4ElecImag(i) = lis_GR(5,i) * sAi(p_nodes(i)  + ntrndsi_G) + sField4ElecImag(i)
       sField4ElecImag(i) = lis_GR(6,i) * sAi(p_nodes(i)  + ntrndsi_G + 1_ip) + sField4ElecImag(i)
       sField4ElecImag(i) = lis_GR(7,i) * sAi(p_nodes(i)  + ntrndsi_G + nspinDX) + sField4ElecImag(i)
-      sField4ElecImag(i) = lis_GR(8,i) * sAi(p_nodes(i)  + ntrndsi_G + nspinDX + 1) + sField4ElecImag(i)
+      sField4ElecImag(i) = lis_GR(8,i) * sAi(p_nodes(i)  + ntrndsi_G + nspinDX + 1) + &
+                            sField4ElecImag(i)
 
   end do
 !$OMP END DO
@@ -165,7 +168,7 @@ end subroutine getFFelecs_3D
 subroutine getSource_3D(sDADzr, sDADzi, spr, spi, sgam, seta)
 
 
-use rhs_vars
+use rhs_vars, only: maxEl, p_nodes, lis_GR, dV3, sp2, WP, IPL
 
 real(kind=wp), contiguous, intent(inout) :: sDADzr(:), sDADzi(:)
 real(kind=wp), contiguous, intent(in) :: spr(:), spi(:)

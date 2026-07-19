@@ -5,14 +5,16 @@
 MODULE particleFunctions
 
 use puffin_kinds, only: IP, WP
+use puffin_mpiInfo, only: tProcInfo_G
 use error_fn, only: erf
-USE Functions, only: linspace, GaussianGrid, GaussianDistribution, GaussianDistributionZ2
+use Functions, only: linspace, GaussianGrid, GaussianDistribution, GaussianDistributionZ2, gaussian
 USE puffin_constants, only: pi
-USE IO, only: log_error
-use globals, only: tErrorLog_G, tProcInfo_G, gExtEj_G
-use MPI
+USE IO, only: log_error, tErrorLog_G
+use globals, only: gExtEj_G
+use MPI, only: MPI_ALLREDUCE, MPI_COMM_WORLD, MPI_DOUBLE_PRECISION, mpi_finalize, MPI_IN_PLACE, &
+  MPI_INTEGER, MPI_MAX, MPI_MIN, MPI_SUM
 
-IMPLICIT NONE
+IMPLICIT NONE (type, external)
 
 INTEGER(KIND=IP), PARAMETER :: iLinear_CG = 1_IP
 INTEGER(KIND=IP), PARAMETER :: iGaussian_CG = 2_IP
@@ -28,7 +30,7 @@ CONTAINS
   SUBROUTINE PulseGrid(iGridType,iNumMP,sStart,&
        sEnd,sMean,sSigma,sGrid,qOK)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 ! Calculate the electron grid positions
 !
 ! iGridType - INPUT  - If linear or gaussian grid
@@ -85,7 +87,7 @@ CONTAINS
   SUBROUTINE EvalIntegral(s_gridPoints,s_mean,s_sigma,&
        s_integral)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 
     REAL(KIND=WP),INTENT(IN)  :: s_gridPoints(:)
     REAL(KIND=WP),INTENT(IN)  :: s_mean,s_sigma
@@ -109,7 +111,7 @@ CONTAINS
   SUBROUTINE DistributionIntegral(iDistributionType,&
        iNumMP,sGrid,sMean,sSigma,sIntegral,qOK)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 !
 ! Calculate the integral of the chosen distribution for
 ! the electron pulse
@@ -157,7 +159,8 @@ CONTAINS
     CASE(iGaussianDistribution_CG)
        CALL EvalIntegral(sGrid,sMean,sSigma,sIntegral)
     CASE DEFAULT
-       CALL log_error('Error in ElectronGrid:DistributionIntegral - unrecognised distribution type.',tErrorLog_G)
+       CALL log_error("Error in ElectronGrid:DistributionIntegral - unrecognised distribution &
+                       &type.",tErrorLog_G)
        GOTO 1000
     END SELECT
 
@@ -175,7 +178,7 @@ CONTAINS
   SUBROUTINE DistributionIntegralz2(iDistributionType,&
      iLocNumMP,iNumMP,sGrid,sMean,sSigma,sIntegral,qOK)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 !
 ! Calculate the integral of the chosen distribution
 ! for the electron pulse
@@ -221,7 +224,8 @@ CONTAINS
     CASE(iGaussianDistribution_CG)
        CALL EvalIntegral(sGrid,sMean,sSigma,sIntegral)
     CASE DEFAULT
-       CALL log_error('Error in ElectronGrid:DistributionIntegralz2 - unrecognised distribution type.',tErrorLog_G)
+       CALL log_error("Error in ElectronGrid:DistributionIntegralz2 - unrecognised distribution &
+                       &type.",tErrorLog_G)
        GOTO 1000
     END SELECT
 
@@ -270,7 +274,8 @@ subroutine flattop2(sig_edj, len_f, sGrid, iNumMP, iLocNumMP, qPara, s_Integral)
 
   len_gauss = gExtEj_G * sig_edj /2.0_wp  ! model out how many sigma??
 
-! Get start and end of gaussian (need to send data around to determine global sts and ends in parallel version)
+! Get start and end of gaussian (need to send data around to determine global sts and ends
+! in parallel version)
 
   sSt = sGrid(1_ip)
   sEd = sGrid(iLocNumMP)
@@ -367,7 +372,8 @@ subroutine flattop2(sig_edj, len_f, sGrid, iNumMP, iLocNumMP, qPara, s_Integral)
 
   if (iStrange > 0) then
 
-    if (tProcInfo_G%qRoot) print*, "ERROR IN subroutine flattop2: perhaps the beam is not sampled finely enough"
+    if (tProcInfo_G%qRoot) print*, &
+      "ERROR IN subroutine flattop2: perhaps the beam is not sampled finely enough"
     if (tProcInfo_G%qRoot) print*, "sum of iStrange was : ", iStrange
 
     call mpi_finalize(error)

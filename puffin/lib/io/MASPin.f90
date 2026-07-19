@@ -4,14 +4,16 @@
 
 module MASPin
 
-use puffin_kinds
-use globals
+use puffin_kinds, only: WP, IP
+use globals, only: s_chi_bar_G, s_Normalised_chi_G, iNumberElectrons_G, iGloNumElectrons_G, &
+  npk_bar_G, sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, qscaled_G
 use GlobalTypes, only: tFELFrame
-use ParallelSetUp
-use parBeam
-use scale
+use ParallelSetUp, only: getgatharrs, tProcInfo_G
+use parBeam, only: splitbeam
+use scale, only: scaleX, scalePx, scaleT
+use mpi, only: mpi_barrier
 
-implicit none
+implicit none (type, external)
 
 
 integer(kind=ip) :: nMPs4MASP_G

@@ -14,19 +14,22 @@
 
 module PDiff
 
-use puffin_kinds
-use puffin_mpiInfo
-use puffin_mpiInfo
-use transforms
-use masks
-use Globals
-use IO
-use parafield
+use puffin_kinds, only: WP, IP
+use puffin_mpiInfo, only: tProcInfo_G
+use transforms, only: tr_time_s, tr_time_e, Afftw, transform, tTransInfo_G, pi
+use masks, only: getmask, getz2mask
+use Globals, only: NX_G, NBX_G, NY_G, NBY_G, NZ2_G, NBZ2_G, sLengthOfElmX_G, sLengthOfElmY_G, &
+  sLengthOfElmZ2_G, seedend, kx_G, ky_G, kz2_loc_G, sBeta_G, sfilt, fieldMesh, iPeriodic, &
+  sperwaves_G, sElZ2_G, ffact, sStep, ioutInfo_G, qFilter
+use IO, only: tErrorLog_G, log_error
+use parafield, only: tre_fft, tim_fft, redist2fftwlt, redistbackfft
 use GlobalTypes, only: tSimulationContext
+use ParallelSetUp, only: Get_time
+use mpi, only: MPI_ALLREDUCE, MPI_COMM_WORLD, MPI_DOUBLE_PRECISION, MPI_MAX
 
-use, intrinsic :: iso_c_binding
+use, intrinsic :: iso_c_binding, only: C_DOUBLE_COMPLEX
 
-implicit none
+implicit none (type, external)
 
 
 
@@ -47,7 +50,7 @@ contains
 subroutine diffractIM(sStep, &
                       qDiffrctd, qOK, ctx)
 
-  implicit none
+  implicit none (type, external)
 
   real(kind=wp), intent(in) :: sStep
   logical, intent(out) :: qDiffrctd, qOK
@@ -112,7 +115,7 @@ end subroutine diffractIM
 
 subroutine multiplyexp(h,qOK)
 
-  implicit none
+  implicit none (type, external)
 
   real(kind=wp), intent(in) :: h
 
@@ -210,7 +213,7 @@ end subroutine multiplyexp
 
 SUBROUTINE DiffractionStep(h, sAr, sAi, ctx, qOK)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 !
 ! Subroutine to perform free space radiation field diffraction
 ! in the dimensionless scaled notation.
@@ -236,7 +239,8 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, ctx, qOK)
   call Get_time(tr_time_s)
 
   if ((tProcInfo_G%qroot ) .and. (ioutInfo_G > 2) ) then
-    print*," inside diffraction... ", ctx%lattice%cumulative_steps, tr_time_s - ctx%integration%time_start
+    print*," inside diffraction... ", ctx%lattice%cumulative_steps, &
+           tr_time_s - ctx%integration%time_start
   end if
 
 
@@ -459,7 +463,8 @@ SUBROUTINE AbsorptionStep(sAl,h,ffact)
                   ( mask_z2(iz2) *  (1.0_WP - mask(ix+((iy-1)*nx_g) ) ) ) ) ) * &
                   sAl(ix,iy,iz2)
 
-!    sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP) =   (1.0_WP - mask_z2(iz2)) * sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
+!    sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP) =   (1.0_WP - mask_z2(iz2)) * &
+!      sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
 
           sAl(ix, iy, iz2) = (mask(ix+((iy-1)*nx_g))   +  &
                   ( mask_z2(iz2) *  (1.0_WP - mask(ix+((iy-1)*nx_g) ) ) ) ) * &
@@ -545,7 +550,7 @@ SUBROUTINE clearA(sA, qOK)
 
 ! qOK       OUT      Error flag; if .false. error has occured
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
   REAL(KIND=WP),INTENT(INOUT) :: sA(:)
   LOGICAL, INTENT(OUT) :: qOK

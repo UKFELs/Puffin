@@ -4,11 +4,12 @@
 
 MODULE InitVars
 
-use puffin_kinds
-USE puffin_constants
-USE ArrayFunctions
+use puffin_kinds, only: WP, IP
+USE puffin_constants, only: nSpaceDimensions_CG, nSwitches_CG
+use ArrayFunctions, only: tProcInfo_G, tErrorLog_G, log_error, filenamenoextension, &
+  initializeprocessors
 
-IMPLICIT NONE
+IMPLICIT NONE (type, external)
 
 !====================================================================
 ! Define variables

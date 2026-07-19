@@ -11,9 +11,9 @@
 
 module puffin_kinds
 
-    use, intrinsic :: iso_fortran_env
+    use, intrinsic :: iso_fortran_env, only: int64
 
-    implicit none
+    implicit none (type, external)
 
 !              Definitions of data types
 !                  used in Puffin

@@ -11,16 +11,21 @@
 
 module ParaField
 
-use puffin_kinds
-use globals
-use ParallelSetUp
-use puffin_mpiInfo
-use puffin_fftwInfo
-use gtop2
-use filetype
+use puffin_kinds, only: WP, IPL, IP
+use globals, only: NX_G, NY_G, NZ2_G, ntrnds_G, ntrndsi_G, nspinDX, nspinDY, sLengthOfElmX_G, &
+  sLengthOfElmY_G, sLengthOfElmZ2_G, fieldMesh, iTemporal, iPeriodic, s_chi_bar_G, &
+  procelectrons_G, iNumberElectrons_G, sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, &
+  ioutInfo_G, pi
+use ParallelSetUp, only: MPI_INT_HIGH, stopcode, gather1a, getgatharrs
+use puffin_mpiInfo, only: tProcInfo_G
+use puffin_fftwInfo, only: tTransInfo_G
+use gtop2, only: getp2
 use GlobalTypes, only: tSimulationFlags, tFELFrame
+use mpi, only: MPI_ALLGATHER, mpi_allreduce, mpi_alltoallv, mpi_barrier, MPI_Bcast, &
+  mpi_double_precision, MPI_IN_PLACE, mpi_integer, MPI_ISSEND, mpi_max, mpi_min, MPI_RECV, &
+  mpi_reduce, mpi_scatter, MPI_STATUS_SIZE, mpi_sum, MPI_WAIT
 
-implicit none
+implicit none (type, external)
 
 real(kind=wp), allocatable :: fr_rfield(:), bk_rfield(:), ac_rfield(:), &
                               fr_ifield(:), bk_ifield(:), ac_ifield(:), &
@@ -83,7 +88,7 @@ contains
 
         subroutine getLocalFieldIndices(sdz, flags, frame)
 
-    implicit none
+    implicit none (type, external)
 
 !     Setup local field pointers. These describe how the field is
 !     parallelized. For now, only set up constant field barriers to
@@ -1158,7 +1163,7 @@ contains
 
     subroutine upd8a(ac_rl, ac_il)
 
-      implicit none
+      implicit none (type, external)
 
     ! Send sA from buffer to process on the left
     ! Data in 'buffer' on the left is overwritten.
@@ -1381,7 +1386,7 @@ contains
   subroutine inner2Outer(inner_ra, inner_ia)
 
 
-    implicit none
+    implicit none (type, external)
 
     real(kind=wp), contiguous, intent(in) :: inner_ra(:), inner_ia(:)
 
@@ -1423,7 +1428,7 @@ contains
   subroutine outer2Inner(inner_ra, inner_ia)
 
 
-    implicit none
+    implicit none (type, external)
 
     real(kind=wp), contiguous, intent(out) :: inner_ra(:), inner_ia(:)
 
@@ -1635,21 +1640,25 @@ contains
 
       if (f_ar(iproc+1,1) > 0) then
 
-        if ((ieo >= f_ar(iproc+1,2)) .and. (ieo <= f_ar(iproc+1,3) ) )  then ! end node between limits
+        ! end node between limits
+        if ((ieo >= f_ar(iproc+1,2)) .and. (ieo <= f_ar(iproc+1,3) ) )  then
 
           f_send(iproc+1,3) = ieo
 
-          if (iso < f_ar(iproc+1,2)) f_send(iproc+1,2) = f_ar(iproc+1,2)    ! front node before first limit
+          ! front node before first limit
+          if (iso < f_ar(iproc+1,2)) f_send(iproc+1,2) = f_ar(iproc+1,2)
 
           if (iso >= f_ar(iproc+1,2)) f_send(iproc+1,2) = iso   ! front node after first limit
 
           f_send(iproc+1,1) = f_send(iproc+1,3) - f_send(iproc+1,2) + 1
 
-        else if ( (ieo >= f_ar(iproc+1,3)) .and.  (iso <= f_ar(iproc+1,3)))  then ! end node after last limit
+        ! end node after last limit
+        else if ( (ieo >= f_ar(iproc+1,3)) .and.  (iso <= f_ar(iproc+1,3)))  then
 
           f_send(iproc+1, 3) = f_ar(iproc+1,3)
 
-          if (iso < f_ar(iproc+1,2)) f_send(iproc+1,2) = f_ar(iproc+1,2)    ! front node before first limit
+          ! front node before first limit
+          if (iso < f_ar(iproc+1,2)) f_send(iproc+1,2) = f_ar(iproc+1,2)
 
           if (iso >= f_ar(iproc+1,2)) f_send(iproc+1,2) = iso   ! front node after first limit
 
@@ -1726,7 +1735,8 @@ contains
       call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, sEta, sGammaR, sAw)
 
       bz2_len = dz  ! distance in zbar until next rearrangement
-      bz2_len = maxval(sElZ2_G + bz2_len * sp2)  ! predicted length in z2 needed needed in buffer for beam
+      ! predicted length in z2 needed needed in buffer for beam
+      bz2_len = maxval(sElZ2_G + bz2_len * sp2)
 
 !    print*, 'bz2 length is...', bz2_len
 !    print*, 'max p2 is ', maxval(sp2)
@@ -1741,7 +1751,8 @@ contains
 
 !    print*, tProcInfo_G%rank, 'is inside calcBuff, with buffer length', bz2_len
 
-!    bz2 = ez2 + nint(4 * 4 * pi * sRho_G / sLengthOfElmZ2_G)   ! Boundary only 4 lambda_r long - so can only go ~ 3 periods
+!    bz2 = ez2 + nint(4 * 4 * pi * sRho_G / sLengthOfElmZ2_G)
+!    Boundary only 4 lambda_r long - so can only go ~ 3 periods
 
     bz2 = nint(bz2_len / sLengthOfElmZ2_G)  ! node index of final node in boundary
 
@@ -2407,7 +2418,7 @@ contains
 
   subroutine redist2new2(old_dist, new_dist, field_old, field_new)
 
-  implicit none
+  implicit none (type, external)
 
 ! Alternative subroutine to redistribute the field values in field_old
 ! to field_new. The layout of the field in field_old is
@@ -2594,8 +2605,8 @@ contains
 
       call golaps(old_dist(iproc_s+1,2), old_dist(iproc_s+1,3), new_dist, send_ptrs)
 
-!      if (tProcInfo_G%qroot) print*, 'olaps are ', send_ptrs, 'for old nodes ', old_dist(iproc_s+1,2), &
-!          'to', old_dist(iproc_s+1,3)
+!      if (tProcInfo_G%qroot) print*, 'olaps are ', send_ptrs, 'for old nodes ', &
+!          old_dist(iproc_s+1,2), 'to', old_dist(iproc_s+1,3)
 
 !      call mpi_barrier(tProcInfo_G%comm, error)
 
@@ -2725,7 +2736,7 @@ contains
 
   subroutine rearrElecs()
 
-  implicit none
+  implicit none (type, external)
 
   integer :: error
   integer(kind=ip) :: iproc, iproc_r, iproc_s
@@ -3142,7 +3153,7 @@ contains
 
   subroutine redist2FFTWlt()
 
-    implicit none
+    implicit none (type, external)
 
     integer(kind=ip) :: tmpfz2, tmpez2, tmpmainlen, &
                         tmpbz2, tmptllen, tmpfz2_act, &
@@ -3200,7 +3211,7 @@ contains
 
   subroutine redistbackFFT()
 
-    implicit none
+    implicit none (type, external)
 
     integer :: req, error
     integer(kind=ip) :: si, sst, sse

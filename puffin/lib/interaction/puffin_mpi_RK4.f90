@@ -4,14 +4,15 @@
 
 module RK4int
 
-   use puffin_mpiInfo
-   use Globals
-   use Derivative
-   use IO
-   use ParaField
+   use puffin_mpiInfo, only: ip
+   use Globals, only: NX_G, NY_G, ntrndsi_G, iNumberElectrons_G, sElX_G, sElY_G, sElZ2_G, &
+     sElPX_G, sElPY_G, sElGam_G, dadz_w, WP
+   use Derivative, only: derivs
+   use IO, only: tErrorLog_G, log_error
+   use ParaField, only: tllen, upd8a, inner2outer, outer2inner
    use GlobalTypes, only: tSimulationContext
 
-   implicit none
+   implicit none (type, external)
 
    REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dadz_r0, dadz_i0
    REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dadz_r1, dadz_i1
@@ -27,7 +28,8 @@ module RK4int
    REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dxdx, dydx, dz2dx, dpxdx, dpydx, dpz2dx
 
 
-   REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dxm, dxt, xt    ! *t is 'temp', for use in next rhs call...
+   ! *t is 'temp', for use in next rhs call...
+   REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dxm, dxt, xt
    REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dym, dyt, yt
    REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dpxm, dpxt, pxt
    REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dpym, dpyt, pyt
@@ -38,7 +40,7 @@ contains
 
    subroutine rk4par(sZ, h, qD, ctx)
 
-      implicit none
+      implicit none (type, external)
 !
 ! Perform 4th order Runge-Kutta integration, tailored
 ! to Puffin and its method of parallelization:

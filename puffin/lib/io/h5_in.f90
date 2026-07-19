@@ -4,18 +4,27 @@
 
 module H5in
 
-use puffin_kinds
+use puffin_kinds, only: float, WP, IP, IPN
 use puffin_mpiInfo, only: tProcInfo_G
-use globals
-use ParallelSetUp
-use parBeam
-use paraField
-use scale
-use HDF5
-use initDataType
+use globals, only: NX_G, NY_G, NZ2_G, ntrnds_G, sLengthOfElmX_G, sLengthOfElmY_G, &
+  sLengthOfElmZ2_G, iNumberNodes_G, sfilt, delta_G, s_chi_bar_G, s_Normalised_chi_G, &
+  iNumberElectrons_G, iGloNumElectrons_G, sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, &
+  tInitData_G, iStep, sRedistLen_G, qResume_G, qOneD_G, pi
+use ParallelSetUp, only: tErrorLog_G, log_error
+use parBeam, only: divmps
+use paraField, only: fr_rfield, bk_rfield, ac_rfield, fr_ifield, bk_ifield, ac_ifield, fz2, &
+  mainlen, ffs, tlflen, ees, tlelen, qStart_new, getlocalfieldindices
+use HDF5, only: h5aclose_f, h5aopen_f, H5Aopen_name_f, h5aread_f, h5close_f, h5dclose_f, &
+  h5Dget_space_f, h5dget_type_f, h5dopen_f, h5dread_f, H5F_ACC_RDONLY_F, h5fclose_F, &
+  H5FD_MPIO_COLLECTIVE_F, h5fopen_f, h5gclose_f, h5gopen_f, h5open_f, H5P_DATASET_XFER_F, &
+  H5P_FILE_ACCESS_F, h5pclose_f, h5pcreate_f, h5pset_dxpl_mpio_f, h5pset_fapl_mpio_f, &
+  H5S_SELECT_SET_F, h5sclose_f, h5screate_simple_f, h5Sget_simple_extent_dims_f, &
+  h5Sget_simple_extent_ndims_f, h5sselect_hyperslab_f, H5T_FLOAT_F, H5T_NATIVE_DOUBLE, &
+  H5T_NATIVE_INTEGER, h5tclose_f, h5tcopy_f, h5tget_class_f, HID_T, HSIZE_T
 use GlobalTypes, only: tSimulationFlags, tFELFrame
+use mpi, only: MPI_ALLREDUCE, mpi_barrier, MPI_COMM_WORLD, MPI_INFO_NULL, MPI_INTEGER, MPI_SUM
 
-implicit none
+implicit none (type, external)
 
 
 
@@ -114,11 +123,13 @@ contains
   end function getMacroparticleCount
 
 
-  subroutine readH5BeamDataOntoRootProcess(zFile, sElX, sElY, sElZ2, sElPX, sElPY, sElGam, s_chi_bar, nMPs)
+  subroutine readH5BeamDataOntoRootProcess(zFile, sElX, sElY, sElZ2, sElPX, sElPY, sElGam, &
+                                            s_chi_bar, nMPs)
 
     character(*), intent(in) :: zFile
     integer(kind=ip), intent(in) :: nMPs
-    REAL(kind=WP), intent(out) :: sElX(:), sElY(:), sElZ2(:), sElPX(:), sElPY(:), sElGam(:), s_chi_bar(:)
+    REAL(kind=WP), intent(out) :: sElX(:), sElY(:), sElZ2(:), sElPX(:), sElPY(:), sElGam(:), &
+                                   s_chi_bar(:)
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier
     INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
@@ -552,7 +563,8 @@ contains
              s_chi_bar_G(nMPsLoc), &
              s_Normalised_chi_G(nMPsLoc))
 
-    call readH5BeamDataOntoRootProcess(zFile, sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, s_chi_bar_G, nMPs)
+    call readH5BeamDataOntoRootProcess(zFile, sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, &
+                                        sElGam_G, s_chi_bar_G, nMPs)
 
     if (tProcInfo_G%qRoot) then
       print*,"Low grade smoke test"
@@ -572,7 +584,7 @@ contains
 
   subroutine readH5Beamfile(zFile)
 
-    use parBeam
+    use parBeam, only: divmps, IP
 
     character(*), intent(in) :: zFile
     INTEGER(HID_T) :: file_id       !< File identifier
@@ -715,7 +727,8 @@ contains
 
     call mpi_barrier(tProcInfo_G%comm, mpierr)
 
-!    firstParticleToRead=(nMPs*tProcInfo_g%rank/tProcInfo_g%size)+1 !does integer arithmetic, no NINT needed
+!    firstParticleToRead=(nMPs*tProcInfo_g%rank/tProcInfo_g%size)+1
+!    does integer arithmetic, no NINT needed
 !    lastParticleToRead=(nMPs*(tProcInfo_g%rank+1)/tProcInfo_g%size) ! does integer arithmetic
 !    nMPsLoc=(lastParticleToRead-firstParticleToRead)+1
     iNumberElectrons_G=nMPsLoc
@@ -1289,7 +1302,7 @@ contains
 
   subroutine readH5IntegerAttribute(locHandle,attrName,attrValue)
 
-    implicit none
+    implicit none (type, external)
 
     integer(HID_T), intent(in) :: locHandle   !< h5 handle of write location
     character(LEN=*), intent(in) :: attrName  !<attrib name
@@ -1322,7 +1335,7 @@ contains
 
   subroutine readH5FloatAttribute(locHandle,attrName,attrValue)
 
-    implicit none
+    implicit none (type, external)
 
     integer(HID_T), intent(in) :: locHandle   !< h5 handle of write location
     character(LEN=*), intent(in) :: attrName  !<attrib name

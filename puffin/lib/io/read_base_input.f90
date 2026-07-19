@@ -14,16 +14,26 @@
 
 module Read_data
 
-use ArrayFunctions
-use puffin_constants
-use Globals
-use ParallelSetUp
-use MASPin
-use H5in
-use cwrites
+use ArrayFunctions, only: iRe_PPerp_CG, iIm_PPerp_CG, iRe_Gam_CG, iRe_z2_CG, iRe_X_CG, iRe_Y_CG, &
+  iRe_A_CG, iIm_A_CG, cArraySegment, IP, tProcInfo_G, tErrorLog_G, log_error, &
+  filenamenoextension, filenameextension, WP
+use puffin_constants, only: iX_CG, iY_CG, iZ2_CG, iPX_CG, iPY_CG, iGam_CG, iFieldEvolve_CG, &
+  iElectronsEvolve_CG, iElectronFieldCoupling_CG, iDiffraction_CG, iFocussing_CG, iOneD_CG, &
+  iDump_CG, iResume_CG
+use Globals, only: nspinDX, nspinDY, iRedNodesX_G, iRedNodesY_G, fieldMesh, sperwaves_G, &
+  qRndFj_G, sSigFj_G, qMatchS_G, qFMesh_G, nseqparts_G, qEquiXY_G, qFixCharge_G, fillFact_G, &
+  qRndEj_G, sSigEj_G, iInputType_G, iGenHom_G, iReadDist_G, iReadMASP_G, iReadH5_G, &
+  iFieldSeedType_G, iSimpleSeed_G, iReadH5Field_G, TrLdMeth_G, sKBetaXSF_G, sKBetaYSF_G, &
+  qUndEnds_G, qhdf5_G, sRedistLen_G, iRedistStp_G, tArrayA, tArrayZ, iWriteNthSteps, cmd_call_G, &
+  zBFile_G, zSFile_G, ioutInfo_G, qDiffraction_G, qFilter, qResume, qWrite, qscaled_G, &
+  qInitWrLat_G, qDumpEnd_G
+use MASPin, only: nMPs4MASP_G
+use cwrites, only: qWrArray_G, getwrarray
 use randomGauss, only: setRandomSeed
 
-implicit none
+use ParallelSetUp, only: initializeprocessors
+use H5in, only: readh5fieldfilesingledump
+implicit none (type, external)
 
 contains
 
@@ -176,7 +186,7 @@ subroutine read_in(zfilename, &
        qMeasure, &
        qOK)
 
-       IMPLICIT NONE
+       IMPLICIT NONE (type, external)
 
   CHARACTER(*),INTENT(IN) :: zfilename
 
@@ -238,7 +248,8 @@ subroutine read_in(zfilename, &
 
 ! Define local variables
 
-  integer(kind=ip), intent(out) :: stepsPerPeriod, nodesperlambda, nperiods ! Steps per lambda_w, nodes per lambda_r
+  ! Steps per lambda_w, nodes per lambda_r
+  integer(kind=ip), intent(out) :: stepsPerPeriod, nodesperlambda, nperiods
   real(kind=wp) :: sPerWaves
   integer(kind=ip) :: iRedNodesX, iRedNodesY
 
@@ -592,7 +603,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
                          iNumElectrons,sQe, Ipk, chirp, bcenter, mag, fr,gammaf,nbeams,&
                          qMatched_A, iMPsZ2PerWave, qOneD, qOK)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
 
 ! Read the beamfile into Puffin
@@ -661,7 +672,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 !  OPEN(UNIT=168,FILE=be_f,IOSTAT=ios,&
 !    ACTION='READ',POSITION='REWIND')
 !  IF  (ios/=0_IP) THEN
-!    CALL Error_log('Error in read_in:OPEN(input file) not performed correctly, IOSTAT/=0',tErrorLog_G)
+!    CALL Error_log('Error in read_in:OPEN(input file) not performed correctly, &
+!      IOSTAT/=0',tErrorLog_G)
 !    GOTO 1000
 !  END IF
 
@@ -672,7 +684,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
 
 !!!!! Need to make qMatched an array
-!!!!! Maybe make qMathcField or something to choose which beam is matched to transverse field area (numerically - sampling wise)..???
+!!!!! Maybe make qMathcField or something to choose which beam is matched to transverse
+!!!!! field area (numerically - sampling wise)..???
 
 
 !  Default vals
@@ -873,10 +886,12 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
     if (TrLdMeth == 0_ip) then
       if (qOneD) then
         do b_ind = 1, nbeams
-          if (( iNumMPsD(b_ind, 5) < 0_ip ) .and. (inmps1DGam(b_ind) < 0_ip) .and. (.not. qOneDCold(b_ind)) ) then
+          if (( iNumMPsD(b_ind, 5) < 0_ip ) .and. (inmps1DGam(b_ind) < 0_ip) .and. &
+              (.not. qOneDCold(b_ind)) ) then
             if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
               print*, ""
-              print*, "Warning: Numbers of Macroparticles (iNumMPsD or inmps1DGam) to use have not been specified."
+              print*, "Warning: Numbers of Macroparticles (iNumMPsD or inmps1DGam) &
+                       &to use have not been specified."
               print*, "...in beam ", b_ind
               print*,""
             end if
@@ -1077,7 +1092,7 @@ END SUBROUTINE read_beamfile
 SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
                          qFlatTop, meanZ2,field_file,qsc, qOK)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
 !                     ARGUMENTS
 

@@ -11,10 +11,10 @@
 
 MODULE error_fn
 
-USE puffin_constants
-USE nrutil
+use puffin_constants, only: pi, c, ip, wp
+USE nrutil, only: assert, nrerror
 
-IMPLICIT NONE
+IMPLICIT NONE (type, external)
 CONTAINS
 
 !********************************************************
@@ -22,7 +22,7 @@ CONTAINS
 
 FUNCTION erf(x)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
   REAL(KIND=WP),INTENT(IN) :: x
   REAL(KIND=WP) :: erf
@@ -37,7 +37,7 @@ END FUNCTION erf
 
 FUNCTION erfc(x)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
   REAL(KIND=WP),INTENT(IN)   :: x
   REAL(KIND=WP)            :: erfc
@@ -122,7 +122,7 @@ End Function erfi
 
 FUNCTION gammp(a,x)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
   REAL(KIND=WP),INTENT(IN)                      :: a,x
   REAL(KIND=WP)                                 :: gammp
@@ -140,7 +140,7 @@ END FUNCTION gammp
 
 FUNCTION gammq(a,x)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
   REAL(KIND=WP),INTENT(IN) :: a,x
   REAL(KIND=WP) :: gammq
@@ -245,9 +245,9 @@ END FUNCTION gcf
 
 FUNCTION gammln(xx)
 
-  use puffin_kinds
+  use puffin_kinds, only: WP, IP
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
   REAL(KIND=WP),INTENT(IN) :: xx
   REAL(KIND=WP) :: gammln,tmp,ser,x,y,stp

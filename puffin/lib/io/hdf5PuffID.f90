@@ -14,19 +14,24 @@
 
 module hdf5PuffID
 
-use puffin_kinds
-use HDF5
-use globals
-use puffin_mpiInfo
-use lattice
-USE ParallelSetUp
-USE ArrayFunctions
-USE puffin_constants
-Use avWrite
-use hdf5PuffLow
+use puffin_kinds, only: WP, IP
+use HDF5, only: h5aclose_f, h5acreate_f, h5awrite_f, h5close_f, h5dclose_f, h5dcreate_f, &
+  H5Dget_space_f, h5dwrite_f, H5F_ACC_TRUNC_F, h5fclose_f, h5fcreate_f, h5gclose_f, h5gcreate_f, &
+  h5open_f, H5S_SCALAR_F, H5S_SELECT_SET_F, h5sclose_f, h5screate_f, h5screate_simple_f, &
+  h5sselect_hyperslab_f, H5T_NATIVE_CHARACTER, H5T_NATIVE_DOUBLE, H5T_NATIVE_INTEGER, &
+  H5T_STR_SPACEPAD_F, h5tclose_f, h5tcopy_f, h5tset_size_f, h5tset_strpad_f, HID_T, HSIZE_T
+use globals, only: NX_G, NY_G, s_chi_bar_G, iNumberElectrons_G, npk_bar_G, sElX_G, sElY_G, &
+  sElZ2_G, sElPX_G, sElPY_G, sElGam_G, zFileName_G, qOneD_G
+use puffin_mpiInfo, only: tProcInfo_G
+use lattice, only: log_error, tErrorLog_G
+USE puffin_constants, only: m_e, q_e
+use hdf5PuffLow, only: addh5stringattribute, addh5derivedvariable, write3dlimgrp, &
+  write3duniformmesh, writecommonatts, writeh5timegroup, writeh5runinfo, integertostring
 use GlobalTypes, only: tSimulationContext
+use ParaField, only: qUnique
+use mpi, only: MPI_INFO_NULL
 
-implicit none
+implicit none (type, external)
 
 contains
 
@@ -46,7 +51,7 @@ contains
 
   subroutine outputH5BeamFilesID(time, sz_loc, iL, error, ctx)
 
-    implicit none
+    implicit none (type, external)
 
     real(kind=wp),intent(in) :: time !< Current time
     real(kind=wp),intent(in) :: sz_loc
@@ -453,14 +458,16 @@ contains
 
 !> outputH5Field3DID is for writing the full field output.
 !! This version dumps on each rank separately.
-  subroutine outputH5Field3DID(time, sz_loc, iL, error, nlonglength, dsetname, rawdata, nlo, nhi, chkactiveflag, ctx)
-    implicit none
+  subroutine outputH5Field3DID(time, sz_loc, iL, error, nlonglength, dsetname, rawdata, nlo, &
+                                nhi, chkactiveflag, ctx)
+    implicit none (type, external)
     REAL(kind=WP), intent(in) :: time, sz_loc, rawdata(:) !< The data to write
     integer(kind=ip), intent(in) :: iL
     CHARACTER(*), intent(in) :: dsetname !< Dataset name
     INTEGER(kind=IP), intent(in) :: nlonglength !<number of cells in z in this section
     INTEGER(kind=IP), intent(in) :: nlo,nhi !< cell range in z in this raw data selection
-    LOGICAL, intent(in) :: chkactiveflag !< flag determines whether to test for the entire field on every rank
+    LOGICAL, intent(in) :: chkactiveflag
+      !< flag determines whether to test for the entire field on every rank
     type(tSimulationContext), intent(in) :: ctx
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier
@@ -504,7 +511,8 @@ contains
       numSpatialDims=3
       dims = [nx_g,ny_g,nlonglength] ! Dataset dimensions
     end if
-!    print *,IntegerToString(size(fr_rfield)) // " vs " //trim(adjustl(IntegerToString(Nx_g*ny_g*nlonglength)))
+!    print *,IntegerToString(size(fr_rfield)) // " vs " // &
+!      trim(adjustl(IntegerToString(Nx_g*ny_g*nlonglength)))
 
 !    Print*,('Spatialdims: ' // trim(IntegerToString(numSpatialDims)))
     filename = (trim(adjustl(zFilename_G)) // "_" // trim(adjustl(dsetname)) &

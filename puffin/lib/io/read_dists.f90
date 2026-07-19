@@ -11,10 +11,9 @@
 
 module readDists
 
-use puffin_kinds
-use puffin_mpiInfo
+use puffin_kinds, only: WP, IP
 
-implicit none
+implicit none (type, external)
 
 contains
 
@@ -22,7 +21,7 @@ contains
 subroutine readPartDists(fname, z2m, gam_m, xm, ym, pxm, pym, &
                                gam_d, x_d, y_d, pxd, pyd, Ne, nZ2)
 
-  implicit none
+  implicit none (type, external)
 
   character(*), intent(in) :: fname
 
@@ -83,7 +82,7 @@ subroutine readDistHeader(fid, rho, dz2, nZ2, sgx1D, sgy1D)
 
 ! Reads the header of the dist files
 
-  implicit none
+  implicit none (type, external)
 
   real(kind=wp), intent(out) :: rho, dz2, sgx1D, sgy1D
   real(kind=wp) :: aw, lw, lr
@@ -147,7 +146,7 @@ subroutine readBlanks(fid,Nl)
 ! usually to advance to a desired position within
 ! a file.
 
-  implicit none
+  implicit none (type, external)
 
   integer(kind=ip), intent(in) :: fid,Nl
 
@@ -172,7 +171,7 @@ subroutine readLine(fid, z2, gam, x, y, px, py, gam_d, x_d, y_d, pxd, pyd, Ne)
 !
 !                  ARGUMENTS
 
-  implicit none
+  implicit none (type, external)
 
   real(kind=wp), intent(inout) :: z2, gam, x, y, px, py, gam_d, pxd, pyd, &
                                   x_d, y_d, Ne

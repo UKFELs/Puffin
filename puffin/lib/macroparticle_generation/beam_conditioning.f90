@@ -14,7 +14,7 @@ module beam_conditioning
 
 use puffin_kinds, only: wp, ipl
 
-implicit none
+implicit none (type, external)
 
 contains
 

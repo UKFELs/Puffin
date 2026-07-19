@@ -14,12 +14,11 @@ use puffin_kinds, only: WP, IP, IPL
 use particleFunctions, only: PulseGrid, DistributionIntegralZ2, &
                              DistributionIntegral, flattop2, &
                              iTopHatDistribution_CG, iGaussianDistribution_CG, iLinear_CG
-use MPI
 use parBeam, only: splitBeam
-use globals, only: iX_CG, iY_CG, iZ2_CG, iPX_CG, iPY_CG, iGam_CG, tErrorLog_G, log_error, &
-                   qRndEj_G, sSigEj_G, gExtEj_G
+use globals, only: iX_CG, iY_CG, iZ2_CG, iPX_CG, iPY_CG, iGam_CG, qRndEj_G, sSigEj_G, gExtEj_G
+use IO, only: tErrorLog_G, log_error
 
-implicit none
+implicit none (type, external)
 
 contains
 
@@ -77,7 +76,7 @@ SUBROUTINE genGrids(ib, sigmas,offsets,slens,intType,iNMPs,iNMPs_loc, &
                     sX_integral, sY_integral, sz2_integral, &
                     sPX_integral, sPY_integral, sPZ2_integral)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
 !           ARGUMENTS
 
@@ -141,7 +140,7 @@ END SUBROUTINE genGrids
 SUBROUTINE genGrid(b_num, inttype,gridtype,centre,sigma,length,&
                    iNMP,iNMP_loc,Grid,Integral,qParallel,qOK)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
 ! gridtype == iLinear_CG
 !

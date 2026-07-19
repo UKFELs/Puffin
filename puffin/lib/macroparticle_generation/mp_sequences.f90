@@ -15,11 +15,11 @@ module puffin_macroparticle_sequences
 
 use puffin_kinds, only: WP, IP
 use puffin_mpiInfo, only: tProcInfo_G
-use MPI
+use MPI, only: mpi_bcast, mpi_double_precision
 use globals, only: nseqparts_G, iX_CG, iY_CG, iPX_CG, iPY_CG, iGam_CG
 use randomGauss, only: random_normal, init_random_seed
 
-implicit none
+implicit none (type, external)
 
 contains
 
@@ -311,8 +311,8 @@ end function halton
 
 subroutine projectRSeq(seq)
 
-  use functions
-  use error_fn
+  use functions, only: linspace, WP, IP
+  use error_fn, only: erf
 
   real(kind=wp), intent(inout) :: seq(:)
 

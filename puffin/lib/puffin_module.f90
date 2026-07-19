@@ -16,19 +16,21 @@
 !> @param qOKL Error flag
 
 module puffin_mod
-   implicit none
+   implicit none (type, external)
 contains
    subroutine puffin_main(input_file_name, qOK)
-      use transforms
-      use lattice
+      use transforms, only: tProcInfo_G, WP, IP
+      use lattice, only: iUnd, iChic, iDrift, iQuad, iModulation, iElmType, disperse, &
+        driftsection, quad, bmodulation
       use Setup, only: init, cleanup
-      use undulator
-      use initDataType
-      use Globals
+      use undulator, only: undsection
+      use Globals, only: tInitData_G, ModNum, ioutInfo_G, qResume_G
       use IO, only: tErrorLog_G, log_error
       use GlobalTypes, only: tSimulationContext
+      use write_adapter, only: wr_cho
+      use ParallelSetUp, only: Get_time
 
-      implicit none
+      implicit none (type, external)
 
       character(1024_IP), intent(in) :: input_file_name
       logical, intent(out) :: qOK

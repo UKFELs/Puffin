@@ -4,16 +4,17 @@
 
 MODULE SETUPTRANS
 
-use puffin_kinds
-use puffin_mpiInfo
-USE puffin_constants
-USE functions
-USE IO
-use globals
+use puffin_kinds, only: WP, IP
+use puffin_mpiInfo, only: tProcInfo_G
+USE puffin_constants, only: iX_CG, iY_CG, iPX_CG, iPY_CG
+USE functions, only: gaussian, diffractionlength, raleighlength
+USE IO, only: tErrorLog_G, log_error
+use globals, only: sLengthOfElmX_G, sLengthOfElmY_G, sLengthOfElmZ2_G, iRedNodesX_G, &
+  iRedNodesY_G, delta_G, qEquiXY_G, sKBetaX_G, sKBetaY_G, totUndLineLength, ioutInfo_G
 use GlobalTypes, only: tFELFrame
 
 
-implicit none
+implicit none (type, external)
 
 ! This module contains the subroutines used to precondition
 ! the beam in Puffin. This involves matching the electron
@@ -775,7 +776,8 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 !   IF (tProcInfo_G%qRoot) PRINT*, 'New Gaussian sigma of e-beam in py is ', sSigE(iPY_CG)
 
 
-!   IF (tProcInfo_G%qRoot) PRINT*, 'Scaled betatron wavelength (in gain lengths) = ', 2.0_WP*pi/k_beta
+!   IF (tProcInfo_G%qRoot) PRINT*, 'Scaled betatron wavelength (in gain lengths) = ', &
+!     2.0_WP*pi/k_beta
 
 ! ! Set error flag and exit
 
@@ -903,7 +905,7 @@ END SUBROUTINE CheckSourceDiff
 SUBROUTINE Check4Diff(z,sRaleighLength,&
        sigma,sWigglerLength,qUpdatedWigglerLength,qOK)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
 ! Check wiggler long enough to allow for diffraction
 !

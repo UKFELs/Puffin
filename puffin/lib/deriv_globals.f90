@@ -11,12 +11,12 @@
 
 module Globals
 
-use puffin_kinds
-use puffin_constants
-use ArrayFunctions
-use initDataType
+use puffin_kinds, only: WP, IPL, IP, IPN
+use ArrayFunctions, only: nFieldEquations_CG, nElectronEquations_CG, cArraySegment
+use initDataType, only: cInitData
 
-implicit none
+use puffin_constants, only: c, iY_CG, iPX_CG, pi, iPY_CG, iGam_CG, iZ2_CG, q_e, iX_CG
+implicit none (type, external)
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -373,7 +373,8 @@ logical   ::  qSeparateStepFiles_G  ! Make seperate sdds files for each phase sp
 
 logical   ::  qMod_G  ! Using undulator modules and chicanes?
 
-logical   ::  qResume            ! Reading from previously crashed runs dump files? (ACTUALLY IN USE!!)
+! Reading from previously crashed runs dump files? (ACTUALLY IN USE!!)
+logical   ::  qResume
 
 logical   ::  qWrite             ! Write data?
 

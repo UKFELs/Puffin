@@ -13,10 +13,10 @@
 
 module IO
 
-   use puffin_kinds
-   use FileType
+   use puffin_kinds, only: WP, IPL, IP, IPN
+   use FileType, only: cFileType
 
-   implicit none
+   implicit none (type, external)
 
    integer(kind=ip) :: mvar_iFreeFile = 0_IP
    type(cFileType), save :: tErrorLog_G
@@ -38,7 +38,7 @@ contains
 
    subroutine WriteLOGICINTEGER(qLogic, tFileType, qOK, zFormat)
 
-      implicit none
+      implicit none (type, external)
 
       logical,         intent(in)            :: qLOGIC
       type(cFileType), intent(inout)         :: tFileType
@@ -95,7 +95,7 @@ contains
 
    subroutine WriteINTEGER(iInt, tFileType, qOK, zFormat)
 
-      implicit none
+      implicit none (type, external)
 
       integer(kind=ip),intent(in)             :: iInt
       type(cFileType), intent(inout)          :: tFileType
@@ -145,7 +145,7 @@ contains
 
    subroutine WriteINTEGERL(iInt, tFileType, qOK, zFormat)
 
-      implicit none
+      implicit none (type, external)
       integer(kind=ipl),intent(in)             :: iInt
       type(cFileType), intent(inout)          :: tFileType
       character(*),    intent(in),  optional  :: zFormat
@@ -193,7 +193,7 @@ contains
 
    subroutine WriteINTEGERL64(iInt, tFileType, qOK, zFormat)
 
-      implicit none
+      implicit none (type, external)
 
       integer(kind=ipn),intent(in)            :: iInt
       type(cFileType), intent(inout)          :: tFileType
@@ -247,7 +247,7 @@ contains
 
    subroutine WriteRealNumber(sReal, tFileType, qOK, zFormat)
 
-      implicit none
+      implicit none (type, external)
 
       real(kind=wp),  intent(in)             :: sReal
       type(cFileType),intent(inout)          :: tFileType
@@ -296,7 +296,7 @@ contains
 
    subroutine Write1DRealArray(sReal, tFileType, qOK, zFormat)
 
-      implicit none
+      implicit none (type, external)
       real(kind=wp),  intent(in)             :: sReal(:)
       type(cFileType),intent(inout)          :: tFileType
       character(*),   intent(in),  optional  :: zFormat
@@ -344,7 +344,7 @@ contains
 
    subroutine Write2DRealArray(sReal, tFileType, qOK, zFormat)
 
-      implicit none
+      implicit none (type, external)
       real(kind=wp),  intent(in)             :: sReal(:,:)
       type(cFileType),intent(inout)          :: tFileType
       character(*),   intent(in),  optional  :: zFormat
@@ -392,7 +392,7 @@ contains
 
    subroutine Write3DRealArray(sReal, tFileType, qOK, zFormat)
 
-      implicit none
+      implicit none (type, external)
       real(kind=wp),  intent(in)             :: sReal(:,:,:)
       type(cFileType),intent(inout)          :: tFileType
       character(*),   intent(in),  optional  :: zFormat
@@ -442,7 +442,7 @@ contains
 !
 !====================================================
 !
-      IMPLICIT NONE
+      IMPLICIT NONE (type, external)
 !
       INTEGER(KIND=IP)   :: FreeFile
 !
@@ -493,7 +493,7 @@ contains
 !
 !=====================================================================
 !
-      IMPLICIT NONE
+      IMPLICIT NONE (type, external)
 
       CHARACTER(*),   INTENT(IN)            :: zFileName
       TYPE(cFileType),INTENT(INOUT)         :: tFileType
@@ -577,7 +577,7 @@ contains
 !
 !====================================================
 !
-      IMPLICIT NONE
+      IMPLICIT NONE (type, external)
 !
       TYPE(cFileType),INTENT(INOUT)           :: tFileType
       LOGICAL,       INTENT(OUT)              :: qOK
@@ -611,8 +611,8 @@ contains
 ! ios - Input/ output status
 ! qOKL - Local error flag
 !
-      use puffin_mpiInfo
-      implicit none
+      use puffin_mpiInfo, only: tProcInfo_G
+      implicit none (type, external)
 !
       character(*), intent(in)       :: zError
       type(cFileType), intent(inout) :: tFileType
@@ -670,7 +670,7 @@ contains
 !
 !=====================================================================
 !
-      implicit none
+      implicit none (type, external)
 
       character(*),   intent(in)            :: zFileName
       type(cFileType),intent(inout)         :: tFileType
@@ -760,7 +760,7 @@ contains
 !
 ! Define local variables
 
-      implicit none
+      implicit none (type, external)
 
       character(*),   intent(in)  :: zFileName
       ! zFile is always a fixed character(1024) buffer at the call site, and the
@@ -827,7 +827,7 @@ contains
 
    subroutine FileNameExtension(zFileName, zFile, qOK)
 
-      implicit none
+      implicit none (type, external)
 
       character(*),   intent(in)  :: zFileName
       character(:), allocatable,  intent(out) :: zFile

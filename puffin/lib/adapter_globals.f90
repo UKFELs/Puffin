@@ -16,12 +16,28 @@
 
 module AdapterGlobals
 
-use puffin_kinds
-use puffin_constants
-use GlobalTypes
-use Globals
+use puffin_kinds, only: ip, wp
+use GlobalTypes, only: tFieldMesh, tElectronCloud, tUndulator, tLatticeElements, &
+  tIntegrationState, tOutputConfig, tSimulationFlags
+use Globals, only: NX_G, NBX_G, NY_G, NBY_G, NZ2_G, NBZ2_G, nspinDX, nspinDY, sLengthOfElmX_G, &
+  sLengthOfElmY_G, sLengthOfElmZ2_G, iRedNodesX_G, iRedNodesY_G, outnodex_G, outnodey_G, &
+  iNodesPerElement_G, kx_G, ky_G, kz2_loc_G, sBeta_G, sfilt, fieldMesh, sperwaves_G, delta_G, &
+  x_ax_G, y_ax_G, qRndFj_G, sSigFj_G, qMatchS_G, qFMesh_G, nseqparts_G, qEquiXY_G, qFixCharge_G, &
+  qUseEmit_G, npts_I_G, dz2_I_G, procelectrons_G, iNumberElectrons_G, iGloNumElectrons_G, &
+  npk_bar_G, fillFact_G, ata_G, qRndEj_G, sSigEj_G, iInputType_G, iFieldSeedType_G, sElX_G, &
+  sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, TrLdMeth_G, sZlSt_G, sKBeta_G, sFocusfactor_G, &
+  sFocusfactor_save_G, fx_G, fy_G, zUndType_G, kx_und_G, ky_und_G, sKBetaX_G, sKBetaY_G, &
+  sKBetaXSF_G, sKBetaYSF_G, zMod, mf, delmz, tapers, ux_arr, uy_arr, kbnx_arr, kbny_arr, &
+  zundtype_arr, nSteps_arr, chic_zbar, chic_slip, chic_disp, drift_zbar, enmod_wavenum, &
+  enmod_mag, quad_fx, quad_fy, numOfUnds, numOfChics, numOfDrifts, numOfModulations, numOfQuads, &
+  ModNum, ModCount, qUndEnds_G, qhdf5_G, qsdds_G, sZFS, sZFE, iUndPlace_G, diffStep, iCount, &
+  iStep, start_step, sStep, sStepSize, nSteps, time1, time2, sRedistLen_G, iRedistStp_G, &
+  totUndLineLength, iWriteNthSteps, iIntWriteNthSteps, cmd_call_G, zFileName_G, zBFile_G, &
+  zSFile_G, ioutInfo_G, frecvs, fdispls, qElectronsEvolve_G, qFieldEvolve_G, &
+  qElectronFieldCoupling_G, qDiffraction_G, qFocussing_G, qFilter, qDump_G, qSeparateStepFiles_G, &
+  qMod_G, qResume, qWrite, qOneD_G, qscaled_G, qInitWrLat_G, qDumpEnd_G
 
-implicit none
+implicit none (type, external)
 
 private
 

@@ -15,7 +15,7 @@
 module puffin_constants
 
       use puffin_kinds, only: ip, wp
-      implicit none
+      implicit none (type, external)
 
 !============== Define physical constants ===========================
 

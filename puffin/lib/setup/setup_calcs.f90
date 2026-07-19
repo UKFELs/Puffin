@@ -13,23 +13,37 @@
 
 MODULE setupcalcs
 
-use puffin_kinds
-use puffin_mpiInfo
-use puffin_mpiInfo
-USE IO
-USE ArrayFunctions
-USE puffin_constants
-USE Globals
-USE simple_electron_gen
-USE gMPsFromDists
-use avwrite
-use MASPin
-use h5in
-use parafield
-use scale
+use puffin_kinds, only: WP, IPL, IP, IPN
+use puffin_mpiInfo, only: tProcInfo_G
+USE IO, only: tErrorLog_G, log_error
+use ArrayFunctions, only: qEmpty, MPI_INT_HIGH, stopcode
+USE puffin_constants, only: pi, c, e_0, m_e, q_e, iX_CG, iY_CG, iZ2_CG, iPX_CG, iPY_CG, iGam_CG, &
+  nSwitches_CG, iFieldEvolve_CG, iElectronsEvolve_CG, iElectronFieldCoupling_CG, iDiffraction_CG, &
+  iFocussing_CG, iOneD_CG, iDump_CG, iResume_CG
+USE Globals, only: NX_G, NBX_G, NY_G, NBY_G, NZ2_G, NBZ2_G, ntrnds_G, ntrndsi_G, nspinDX, &
+  nspinDY, sLengthOfElmX_G, sLengthOfElmY_G, sLengthOfElmZ2_G, iRedNodesX_G, iRedNodesY_G, &
+  outnodex_G, outnodey_G, iNodesPerElement_G, iNumberNodes_G, sBeta_G, sfilt, fieldMesh, &
+  iTemporal, iPeriodic, sperwaves_G, delta_G, sMNum_G, qRndFj_G, sSigFj_G, npts_I_G, dz2_I_G, &
+  s_chi_bar_G, procelectrons_G, iNumberElectrons_G, iGloNumElectrons_G, npk_bar_G, ata_G, &
+  gExtEj_G, iInputType_G, iGenHom_G, iReadDist_G, iReadMASP_G, iReadH5_G, sElZ2_G, sZlSt_G, &
+  sKBeta_G, fx_G, fy_G, zUndType_G, kx_und_G, ky_und_G, sKBetaX_G, sKBetaY_G, sKBetaXSF_G, &
+  sKBetaYSF_G, mf, diffStep, sStepSize, nSteps, sRedistLen_G, iRedistStp_G, tArrayE, tArrayA, &
+  tArrayZ, ioutInfo_G, qElectronsEvolve_G, qFieldEvolve_G, qElectronFieldCoupling_G, &
+  qDiffraction_G, qFocussing_G, qDump_G, qResume_G, qMod_G, qOneD_G
+USE simple_electron_gen, only: generate_simple_beam, shuntbeam
+USE gMPsFromDists, only: getmps
+use avwrite, only: getcurrnpts, linspace
+use MASPin, only: readmaspfile
+use h5in, only: readh5beamfile
+use parafield, only: fr_rfield, bk_rfield, ac_rfield, fr_ifield, bk_ifield, ac_ifield, fz2, ez2, &
+  ffs, ffe, ees, eee, ffe_GGG, eee_GGG, getinnode, tTransInfo_G
+use scale, only: scaleX, scalePx, scaleT, scaleIntensity, scaleemit
 use GlobalTypes, only: tSimulationFlags, tSimulationContext, tFELFrame
+use Functions, only: gaussian
+use mpi, only: MPI_ALLREDUCE, MPI_COMM_WORLD, MPI_DOUBLE_PRECISION, MPI_ISSEND, MPI_RECV, &
+  MPI_STATUS_SIZE, MPI_SUM, MPI_WAIT
 
-IMPLICIT NONE
+IMPLICIT NONE (type, external)
 
 CONTAINS
 
@@ -65,7 +79,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
                          dStepFrac, sBeta, zUndType, &
                          qFormatted, qSwitch, ctx, qOK)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 
     REAL(KIND=WP),     INTENT(IN)    :: rho,aw,gamr, lam_w
     INTEGER(KIND=IP),  INTENT(IN)    :: iNN(:), iNMPs(:,:)
@@ -349,7 +363,8 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
 !     Get n_pk_bar
 
-    npk_bar_G = ctx%frame%gain_length * ctx%frame%cooperation_length**2.0_wp * e_0 * m_e / q_e**2.0_wp * &
+    npk_bar_G = ctx%frame%gain_length * ctx%frame%cooperation_length**2.0_wp * e_0 * m_e / &
+                q_e**2.0_wp * &
                 gamr**3.0_wp * rho**3.0_wp * (4.0_wp * &
                 c * 2.0_wp * pi / lam_w / aw  )**2.0_wp
 
@@ -527,7 +542,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, sFiltFrac, &
                               qFlatTopS, sSigmaF, &
                               sA0_x, sA0_y, sRho, qOK)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 !
 ! Set up the initial macroparticle and field values
 !
@@ -689,8 +704,10 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
       call scaleX(sSeedSigma(is,iX_CG), frame%gain_length, frame%cooperation_length)
       call scaleX(sSeedSigma(is,iY_CG), frame%gain_length, frame%cooperation_length)
       call scaleT(sSeedSigma(is,iZ2_CG), frame%cooperation_length)
-      call scaleIntensity(sAx(is), frame%gain_length, frame%cooperation_length, frame%gamma_ref, frame%kappa)
-      call scaleIntensity(sAy(is), frame%gain_length, frame%cooperation_length, frame%gamma_ref, frame%kappa)
+      call scaleIntensity(sAx(is), frame%gain_length, frame%cooperation_length, &
+                           frame%gamma_ref, frame%kappa)
+      call scaleIntensity(sAy(is), frame%gain_length, frame%cooperation_length, &
+                           frame%gamma_ref, frame%kappa)
       call scaleT(scr(is), frame%cooperation_length)
       call scaleT(sSigFj_G(is), frame%cooperation_length)
 
@@ -791,7 +808,7 @@ end subroutine calcScaling
 
 subroutine calcCharge(sQe, Ipk, sSigz2, sLenz2, sSigTails, qTails, frame)
 
-  implicit none
+  implicit none (type, external)
   real(kind=wp), intent(inout) :: sQe(:), Ipk(:)
   real(kind=wp), intent(in) :: sSigz2(:), sLenz2(:), sSigTails(:)
   logical, intent(in) :: qTails(:)
@@ -1428,7 +1445,7 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
                    sSigR, rho,fr,ph_sh, &
                    dels,iz2_s, iz2_e, xfield,yfield)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
 !             ARGUMENTS
 
@@ -1577,7 +1594,7 @@ END SUBROUTINE getSeed
 subroutine ftron(env, fl_len, rn_sig, cen, z2nds)
 
 
-  implicit none
+  implicit none (type, external)
 
 
   real(kind=wp), intent(inout) :: env(:)

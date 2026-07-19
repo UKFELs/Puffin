@@ -12,23 +12,24 @@
 
 module rhs
 
-use puffin_kinds
-use ArrayFunctions
-use Globals
-use Functions
-use puffin_mpiInfo
-use puffin_mpiInfo
-use Equations
-use wigglerVar
-use FiElec1D
-use FiElec
-use gtop2
-use ParaField
-use bfields
+use puffin_kinds, only: WP, IP
+use ArrayFunctions, only: tErrorLog_G, log_error
+use Globals, only: NX_G, NY_G, NZ2_G, ntrndsi_G, nspinDX, nspinDY, sLengthOfElmX_G, &
+  sLengthOfElmY_G, sLengthOfElmZ2_G, procelectrons_G, iNumberElectrons_G, qElectronsEvolve_G, &
+  qFieldEvolve_G, qElectronFieldCoupling_G
+use Equations, only: dppdz_r_f, dppdz_i_f, dgamdz_f, dxdz_f, dydz_f, dz2dz_f, alct_e_srtcts, &
+  dalct_e_srtcts, adjundplace, sInv2rho, sp2, sField4ElecReal, sField4ElecImag, bxu, byu, bzu
+use wigglerVar, only: getalpha
+use FiElec1D, only: getinterps_1d, getffelecs_1d, getsource_1d
+use FiElec, only: getinterps_3d, getffelecs_3d, getsource_3d
+use gtop2, only: getp2
+use ParaField, only: fz2, tTransInfo_G
+use bfields, only: getbfields
 use GlobalTypes, only: tUndulator, tFELFrame, tSimulationContext
 
 
-implicit none
+use Functions, only: tProcInfo_G
+implicit none (type, external)
 
 contains
 
@@ -69,9 +70,10 @@ contains
                     sDADzr, sDADzi, &
                     qOK, ctx)
 
-  use rhs_vars
+  use rhs_vars, only: p_nodes, halfx, halfy, lis_GR, dx, dy, dz2, sp2, sField4ElecReal, &
+    sField4ElecImag, bxu, byu, bzu, WP, IP
 
-  implicit none
+  implicit none (type, external)
 
 !> Inputs %%%
 !
@@ -348,7 +350,8 @@ contains
 
 subroutine rhs_tmsavers(sz, und, frame)
 
-use rhs_vars
+use rhs_vars, only: iOutside, maxEl, retim, ntrans, halfx, halfy, nc, nb, ZOver2rho, salphaSq, &
+  sInv2rho, econst, un, dV3, dx, dy, dz2, qoutside, WP
 
 real(kind=wp), intent(in) :: sz
 type(tUndulator), intent(in) :: und

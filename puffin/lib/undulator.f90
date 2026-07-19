@@ -14,20 +14,22 @@ module undulator
 
 ! use FFTW_Constants
 
-use pdiff
+use pdiff, only: diffractim, WP, IP, tProcInfo_G
 !use sddsPuffin
-use lattice
-use RK4int
+use lattice, only: correcttrans, matchout, matchin, initundulator
+use RK4int, only: ac_rfield_in, ac_ifield_in, rk4par, allact_rk4_arrs, deallact_rk4_arrs
 !use dumpFiles
-use write_adapter
-use ParaField
-use InitDataType
+use write_adapter, only: writeim, qwriteq, iStep
+use ParaField, only: getlocalfieldindices, inner2outer, outer2inner, getinnode
 use GlobalTypes, only: tSimulationContext
 use AdapterGlobals, only: PopulateIntegrationStateFromGlobals, UpdateGlobalsFromIntegrationState, &
-                          PopulateUndulatorFromGlobals, UpdateGlobalsFromUndulator
+  PopulateUndulatorFromGlobals, UpdateGlobalsFromUndulator
+use Globals, only: qResume_G
+use ParallelSetUp, only: Get_time
+use mpi, only: mpi_barrier, mpi_finalize
 
 
-implicit none
+implicit none (type, external)
 
 
 contains
@@ -50,7 +52,7 @@ contains
 ! ac_ifield_in    | Module-level RK4 work arrays, managed by RK4int
 ! -----------------------------------------------------------------------
 
-    implicit none
+    implicit none (type, external)
 
 ! iM   - Which lattice module is this?
 ! sZ   - zbar position through the machine
@@ -303,7 +305,8 @@ end if
 
           call diffractIM(dzdF, qDiffrctd, qOKL, ctx)  ! Finish diffraction step
           call writeIM(sZ, sZl, ctx, iM, qOKL)   ! Write data
-          if (dzdS > 0.0_wp) call diffractIM(dzdS, qDiffrctd, qOKL, ctx)  ! Start new diffraction step
+          ! Start new diffraction step
+          if (dzdS > 0.0_wp) call diffractIM(dzdS, qDiffrctd, qOKL, ctx)
           call outer2Inner(ac_rfield_in, ac_ifield_in)
           qDWrDone = .true.
 

@@ -15,11 +15,10 @@ MODULE simple_electron_gen
 
 use puffin_kinds, only: WP, IP, IPL
 use puffin_mpiInfo, only: tProcInfo_G
-use MPI
-use Globals, only: iX_CG, iY_CG, iZ2_CG, &
-                   iPX_CG, iPY_CG, iGam_CG, npk_bar_G, qOneD_G, ata_G, fillFact_G, &
-                   s_chi_bar_G, sElPX_G, sElPY_G, sElGam_G, sElZ2_G, iNumberElectrons_G, &
-                   iGloNumElectrons_G, qEquiXY_G, TrLdMeth_G, nseqparts_G, log_error
+use MPI, only: MPI_ALLREDUCE, MPI_DOUBLE_PRECISION, mpi_min, MPI_SUM
+use Globals, only: iX_CG, iY_CG, iZ2_CG, iPX_CG, iPY_CG, iGam_CG, npk_bar_G, qOneD_G, ata_G, &
+  fillFact_G, s_chi_bar_G, sElPX_G, sElPY_G, sElGam_G, sElZ2_G, iNumberElectrons_G, &
+  iGloNumElectrons_G, qEquiXY_G, TrLdMeth_G, nseqparts_G
 use GlobalTypes, only: tFELFrame
 use MacrosGen, only: genMacros, getChi
 use parBeam, only: splitBeams
@@ -29,11 +28,11 @@ use initConds, only: getOffsets
 use parallelSetup, only: sum_mpi_int14
 use addNoise, only: applyNoise
 use puffin_macroparticle_sequences, only: getSeqs
-use IO, only: tErrorLog_G
+use IO, only: tErrorLog_G, log_error
 use beam_conditioning, only: addChirp, addModulation
 
 
-IMPLICIT NONE
+IMPLICIT NONE (type, external)
 
 CONTAINS
 
@@ -74,7 +73,7 @@ CONTAINS
 ! sy0_offset          OUTPUT  Offset from centre
 ! qOK                 OUTPUT  Error flag
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 
     REAL(KIND=WP), INTENT(IN)   :: i_RealE(:), alphax(:), alphay(:), &
                                    emitx(:), emity(:)
@@ -377,7 +376,7 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
                    y_tmpcoord,z2_tmpcoord,px_tmpvector,py_tmpvector,&
                    pz2_tmpvector,s_tmp_max_av,s_tmp_macro,s_tmp_Vk, b_num, frame, n2col)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
 !                   ARGUMENTS
 
@@ -550,8 +549,10 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
         gypy = 0.0_wp
       end if
 
-      px_tmpvector = px_tmpvector + pz2_tmpvector * gxpx * sqrt(frame%gain_length * frame%cooperation_length) * x_tmpcoord / frame%aw
-      py_tmpvector = py_tmpvector + pz2_tmpvector * gypy * sqrt(frame%gain_length * frame%cooperation_length) * y_tmpcoord / frame%aw
+      px_tmpvector = px_tmpvector + pz2_tmpvector * gxpx * &
+                     sqrt(frame%gain_length * frame%cooperation_length) * x_tmpcoord / frame%aw
+      py_tmpvector = py_tmpvector + pz2_tmpvector * gypy * &
+                     sqrt(frame%gain_length * frame%cooperation_length) * y_tmpcoord / frame%aw
 
     end if  ! exhausted 1D and 3D options of equispaced phase space filling...
 
@@ -604,9 +605,10 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
 
 !   ...then generate some random sequences for the other 5 dimensions...
 
+      ! to store 'constant' sequences which will be replicated for each z2 slice
       allocate(xseq(nseqparts), yseq(nseqparts), &
                pxseq(nseqparts), pyseq(nseqparts), &
-               gamseq(nseqparts), z2seq(nseqparts))  ! to store 'constant' sequences which will be replicated for each z2 slice
+               gamseq(nseqparts), z2seq(nseqparts))
 
       call getSeqs(xseq, yseq, pxseq, pyseq, gamseq, z2seq, sigE, TrLdMeth_G)
 
@@ -632,8 +634,10 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
         gypy = 0.0_wp
       end if
 
-      pxseq = pxseq + gamseq * gxpx * sqrt(frame%gain_length * frame%cooperation_length) * xseq / frame%aw
-      pyseq = pyseq + gamseq * gypy * sqrt(frame%gain_length * frame%cooperation_length) * yseq / frame%aw
+      pxseq = pxseq + gamseq * gxpx * &
+              sqrt(frame%gain_length * frame%cooperation_length) * xseq / frame%aw
+      pyseq = pyseq + gamseq * gypy * &
+              sqrt(frame%gain_length * frame%cooperation_length) * yseq / frame%aw
 
 
       if (qOneD) then
@@ -666,7 +670,8 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
       deallocate(xseq, yseq, pxseq, pyseq, gamseq)
       deallocate(nktemp, z2base)
 
-      if (q_noise) call applyNoise(z2_tmpcoord, sz2_grid(2) - sz2_grid(1), s_tmp_macro)  ! add noise in z2
+      ! add noise in z2
+      if (q_noise) call applyNoise(z2_tmpcoord, sz2_grid(2) - sz2_grid(1), s_tmp_macro)
 
   end if
 

@@ -23,7 +23,7 @@ module gMPsFromDists
    use puffin_macroparticle_sequences, only: getSeqs, init_random_seed
    use scale, only: scaleT, scaleX, scalePX
 
-   implicit none
+   implicit none (type, external)
    private
    public :: getMPs
 
@@ -121,7 +121,8 @@ py(:), gamma(:),  &
 
       if (qEquiXY_G) then
 
-         totMPs_b(:) = int(nZ2(:),kind=ipl) * int(nMPDims(:,iGam_CG),kind=ipl) * &  ! no of mps in z2 times num in gamma
+         ! no of mps in z2 times num in gamma
+         totMPs_b(:) = int(nZ2(:),kind=ipl) * int(nMPDims(:,iGam_CG),kind=ipl) * &
             int(nMPDims(:,iX_CG),kind=ipl) * int(nMPDims(:,iPX_CG),kind=ipl) * &
             int(nMPDims(:,iY_CG),kind=ipl) * int(nMPDims(:,iPY_CG),kind=ipl)
 
@@ -161,12 +162,14 @@ py(:), gamma(:),  &
 
 !     get Macroparticles in this beam
 
-         call getMPsFDists(z2m, gm, gsig, xm, xsig, ym, ysig, pxm, pxsig, pym, pysig, dz2(ib), Ne, npk, &
+         call getMPsFDists(z2m, gm, gsig, xm, xsig, ym, ysig, pxm, pxsig, pym, pysig, &
+            dz2(ib), Ne, npk, &
             qnoise, x(b_sts(ib):b_ends(ib)), y(b_sts(ib):b_ends(ib)), &
             px(b_sts(ib):b_ends(ib)), py(b_sts(ib):b_ends(ib)), &
             z2(b_sts(ib):b_ends(ib)), gamma(b_sts(ib):b_ends(ib)), &   ! ....BOUNDS.... !
             chi_b(b_sts(ib):b_ends(ib)), chi(b_sts(ib):b_ends(ib)),sZ,nMPDims(ib,iGam_CG), &
-            nMPDims(ib,iX_CG), nMPDims(ib,iY_CG), nMPDims(ib,iPX_CG), nMPDims(ib,iPY_CG), sgx1D, sgy1D)
+            nMPDims(ib,iX_CG), nMPDims(ib,iY_CG), nMPDims(ib,iPX_CG), nMPDims(ib,iPY_CG), &
+            sgx1D, sgy1D)
 
          deallocate(z2m, gm, gsig, xm, ym, pxm, pym, Ne, pxsig, pysig, xsig, ysig)
 
@@ -441,7 +444,8 @@ z2int(1_IP), npk_num, ndens_num, npk_numl
 
       do k = 1, NMZ2
 
-         !    arrbs = linspace( (k-1) * iNMPG + 1,  k * (iNMPG-1) + 1, iNMPG )    !  calarrayboundsfrom k, nx, ny, npx, npy, ngamma
+         !    arrbs = linspace( (k-1) * iNMPG + 1,  k * (iNMPG-1) + 1, iNMPG )
+         !    calarrayboundsfrom k, nx, ny, npx, npy, ngamma
 
          z2grid = [ z2m(k) - ( dz2 / 2.0_WP) , z2m(k) + ( dz2 / 2.0_WP) ]
 

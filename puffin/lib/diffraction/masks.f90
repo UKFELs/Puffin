@@ -21,11 +21,11 @@ MODULE masks
 
 
 
-use puffin_kinds
-USE puffin_constants
-USE Functions
+use puffin_kinds, only: WP, IP
+USE puffin_constants, only: pi
+USE Functions, only: linspace
 
-IMPLICIT NONE
+IMPLICIT NONE (type, external)
 
 CONTAINS
 

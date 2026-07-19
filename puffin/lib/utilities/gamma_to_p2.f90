@@ -13,15 +13,15 @@
 
 module gtop2
 
-use puffin_kinds
+use puffin_kinds, only: WP
 
-implicit none
+implicit none (type, external)
 
 contains
 
   subroutine getGamma(gamma, p2, px, py, eta, gamma0, aw)
 
-    implicit none
+    implicit none (type, external)
 
 ! Return gamma, given p2, px, py and eta
 !
@@ -46,7 +46,7 @@ contains
 
   subroutine getP2(p2, gamma, px, py, eta, gamma0, aw)
 
-  implicit none
+  implicit none (type, external)
 
 ! Return p2, given Gamma, px, py and eta
 !

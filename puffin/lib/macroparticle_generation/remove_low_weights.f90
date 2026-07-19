@@ -16,12 +16,13 @@ module filter_low_weights
 
 
 use puffin_kinds, only: WP, IPL, IP
-use MPI
-use Globals, only: sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, &
-                   s_chi_bar_G, s_Normalised_chi_G, iNumberElectrons_G, &
-                   iGloNumElectrons_G, tProcInfo_G, sum_mpi_int14
+use puffin_mpiInfo, only: tProcInfo_G
+use ParallelSetUp, only: sum_mpi_int14
+use MPI, only: MPI_ALLREDUCE, MPI_DOUBLE_PRECISION, MPI_INTEGER, MPI_SUM
+use Globals, only: sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, s_chi_bar_G, &
+  s_Normalised_chi_G, iNumberElectrons_G, iGloNumElectrons_G
 
-implicit none
+implicit none (type, external)
 
 contains
 
@@ -39,7 +40,7 @@ SUBROUTINE removeLowNC(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold,
 
 !                   ARGUMENTS
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
   REAL(KIND=WP), INTENT(IN) :: Tmp_chibar(:), Tmp_Normchi(:), &
                                x_tmpcoord(:), y_tmpcoord(:), &
@@ -133,7 +134,7 @@ SUBROUTINE removeLow(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
                      py_tmpvector, pz2_tmpvector,totalmps_b,&
                      sZ2_center)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
 ! Discard macroparticles with weights below a certain threshold.
 ! This subroutine assigns macroparticle values to global arrays,
@@ -222,7 +223,7 @@ END SUBROUTINE removeLow
 SUBROUTINE getKeepNum(s_tmp_macro,sElectronThreshold,TOTALMPS, &
                      ikeepnumber, iendnumber, ilowerElectron)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
 ! Discard macroparticles with weights below a certain threshold.
 ! Return the number of macroparticles which we are keeping, and the
@@ -269,7 +270,7 @@ END SUBROUTINE getKeepNum
 SUBROUTINE getIndices(s_tmp_macro,ilowerElectron,TOTALMPS, &
                      ikeepos, iendpos)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
 ! Discard macroparticles with weights below a certain threshold.
 ! Return indices of macroparticles which we are keeping, and indices

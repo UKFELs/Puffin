@@ -4,10 +4,10 @@
 
 module cwrites
 
-use puffin_kinds
-use puffin_mpiInfo
+use puffin_kinds, only: IP
+use puffin_mpiInfo, only: tProcInfo_G
 
-implicit none
+implicit none (type, external)
 
 integer(kind=ip), allocatable :: wrarray(:)
 logical :: qWrArray_G

@@ -4,7 +4,7 @@
 
 module puffin_mpiInfo
    use puffin_kinds, only: ip
-   implicit none
+   implicit none (type, external)
 
 !*****************************************************
 ! Originally created by Cynthia Nam

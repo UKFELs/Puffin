@@ -5,8 +5,9 @@
 module puffin_fftwInfo
 
    use puffin_kinds, only: ip
-   use, intrinsic :: iso_c_binding
-   implicit none
+   use, intrinsic :: iso_c_binding, only: C_CHAR, C_DOUBLE, C_DOUBLE_COMPLEX, &
+     C_FLOAT, C_FLOAT_COMPLEX, C_FUNPTR, C_INT, C_INT32_T, C_INTPTR_T, C_PTR, C_SIZE_T
+   implicit none (type, external)
 
    include 'fftw3-mpi.f03'
 

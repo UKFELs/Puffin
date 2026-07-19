@@ -6,10 +6,10 @@ module scale
 
         ! Module containing routines to scale SI input to rho
 
-use puffin_kinds
-use puffin_constants
+use puffin_kinds, only: WP
+use puffin_constants, only: pi, c, e_0, m_e, q_e
 
-implicit none
+implicit none (type, external)
 
 
 interface scaleG

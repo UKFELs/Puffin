@@ -15,11 +15,11 @@
 
 module bfields
 
-use puffin_kinds
-use globals
+use puffin_kinds, only: WP
+use globals, only: iUndStart_G, iUndEnd_G, iUndMain_G, qFocussing_G, qOneD_G, pi
 use GlobalTypes, only: tUndulator, tFELFrame
 
-implicit none
+implicit none (type, external)
 
 contains
 

@@ -4,9 +4,9 @@
 
 MODULE InitDataType
 
-  use puffin_kinds
+  use puffin_kinds, only: WP, IP
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
   type cInitData
 

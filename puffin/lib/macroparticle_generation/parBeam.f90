@@ -10,7 +10,7 @@ module parBeam
 use puffin_kinds, only: IP, WP, IPL
 use globals, only: iX_CG, iY_CG, iPX_CG, iPY_CG, iGam_CG, iZ2_CG, qEquiXY_G, nseqparts_G
 
-implicit none
+implicit none (type, external)
 
 contains
 
@@ -79,7 +79,7 @@ contains
 SUBROUTINE splitBeams(iNMP,samLenE,nBeams,numproc,rank,&
                       iNumLocalElectrons,totalmps_b)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
 !                   ARGUMENTS
 
