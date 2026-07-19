@@ -15,6 +15,10 @@ use GlobalTypes, only: tFELFrame
 
 
 implicit none (type, external)
+private
+
+public :: checksourcediff, IP, iX_CG, iY_CG, log_error, stptrns, tErrorLog_G, tProcInfo_G, WP
+
 
 ! This module contains the subroutines used to precondition
 ! the beam in Puffin. This involves matching the electron

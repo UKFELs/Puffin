@@ -17,6 +17,33 @@ use initDataType, only: cInitData
 
 use puffin_constants, only: c, iY_CG, iPX_CG, pi, iPY_CG, iGam_CG, iZ2_CG, q_e, iX_CG
 implicit none (type, external)
+private
+
+public :: ata_G, c, chic_disp, chic_slip, chic_zbar, cmd_call_G, dadz_w, delmz, delta_G, diffStep, &
+           drift_zbar, dz2_I_G, enmod_mag, enmod_wavenum, fdispls, ffact, fieldMesh, fillFact_G, &
+           frecvs, fx_G, fy_G, gExtEj_G, iCount, iFieldSeedType_G, iGam_CG, iGenHom_G, &
+           iGloNumElectrons_G, iInputType_G, iIntWriteNthSteps, iNodesPerElement_G, &
+           iNumberElectrons_G, iNumberNodes_G, ioutInfo_G, iPeriodic, iPX_CG, iPY_CG, iReadDist_G, &
+           iReadH5_G, iReadH5Field_G, iReadMASP_G, iRedistStp_G, iRedNodesX_G, iRedNodesY_G, &
+           iSimpleSeed_G, iStep, iTemporal, iUndEnd_G, iUndMain_G, iUndPlace_G, iUndStart_G, &
+           iWriteNthSteps, iX_CG, iY_CG, iZ2_CG, kbnx_arr, kbny_arr, kx_G, kx_und_G, ky_G, &
+           ky_und_G, kz2_loc_G, mf, ModCount, ModNum, NBX_G, NBY_G, NBZ2_G, npk_bar_G, npts_I_G, &
+           nseqparts_G, nspinDX, nspinDY, nSteps, nSteps_arr, ntrnds_G, ntrndsi_G, numOfChics, &
+           numOfDrifts, numOfModulations, numOfQuads, numOfUnds, NX_G, NY_G, NZ2_G, outnodex_G, &
+           outnodey_G, pi, procelectrons_G, q_e, qDiffraction_G, qDump_G, qDumpEnd_G, &
+           qElectronFieldCoupling_G, qElectronsEvolve_G, qEquiXY_G, qFieldEvolve_G, qFilter, &
+           qFixCharge_G, qFMesh_G, qFocussing_G, qhdf5_G, qInitWrLat_G, qMatchS_G, qMod_G, &
+           qOneD_G, qResume, qResume_G, qRndEj_G, qRndFj_G, qscaled_G, qsdds_G, &
+           qSeparateStepFiles_G, &
+           quad_fx, quad_fy, qUndEnds_G, qUseEmit_G, qWrite, s_chi_bar_G, s_Normalised_chi_G, &
+           sBeta_G, seedend, sElGam_G, sElPX_G, sElPY_G, sElX_G, sElY_G, sElZ2_G, sfilt, &
+           sFocusfactor_G, sFocusfactor_save_G, sKBeta_G, sKBetaX_G, sKBetaXSF_G, sKBetaY_G, &
+           sKBetaYSF_G, sLengthOfElmX_G, sLengthOfElmY_G, sLengthOfElmZ2_G, sMNum_G, sperwaves_G, &
+           sRedistLen_G, sSigEj_G, sSigFj_G, sStep, sStepSize, start_step, sZFE, sZFS, sZlSt_G, &
+           tapers, tArrayA, tArrayE, tArrayZ, time1, time2, tInitData_G, totUndLineLength, &
+           TrLdMeth_G, ux_arr, uy_arr, WP, x_ax_G, y_ax_G, zBFile_G, zFileName_G, zMod, zSFile_G, &
+           zundtype_arr, zUndType_G
+
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

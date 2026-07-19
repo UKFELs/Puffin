@@ -32,6 +32,10 @@ use ParaField, only: qUnique
 use mpi, only: MPI_INFO_NULL
 
 implicit none (type, external)
+private
+
+public :: outputh5beamfilesid, outputh5field3did
+
 
 contains
 

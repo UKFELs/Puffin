@@ -20,6 +20,10 @@ use parafield, only: bz2
 use GlobalTypes, only: tSimulationFlags
 
 implicit none (type, external)
+private
+
+public :: getffelecs_3d, getinterps_3d, getsource_3d
+
 
 contains
 

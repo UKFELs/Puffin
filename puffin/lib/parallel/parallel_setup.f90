@@ -25,6 +25,12 @@ use mpi, only: MPI_ALLGATHER, MPI_ALLGATHERV, MPI_ALLREDUCE, MPI_BCAST, MPI_CHAR
 
 
 implicit none (type, external)
+private
+
+public :: gather1a, Get_time, getGathArrs, initializeprocessors, log_error, MPI_INT_HIGH, &
+           scatterE2Loc, stopcode, sum2rootarr, sum_mpi_int14, sum_mpi_real, tErrorLog_G, &
+           tProcInfo_G, WP
+
 
 INTEGER :: MPI_INT_HIGH
 

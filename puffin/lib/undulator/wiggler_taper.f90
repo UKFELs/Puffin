@@ -8,6 +8,10 @@ use puffin_kinds, only: WP
 use GlobalTypes, only: tUndulator
 
 implicit none (type, external)
+private
+
+public :: getalpha
+
 
 contains
 

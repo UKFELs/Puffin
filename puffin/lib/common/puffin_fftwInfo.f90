@@ -8,6 +8,12 @@ module puffin_fftwInfo
    use, intrinsic :: iso_c_binding, only: C_CHAR, C_DOUBLE, C_DOUBLE_COMPLEX, &
      C_FLOAT, C_FLOAT_COMPLEX, C_FUNPTR, C_INT, C_INT32_T, C_INTPTR_T, C_PTR, C_SIZE_T
    implicit none (type, external)
+private
+
+public :: fftw_alloc_complex, FFTW_BACKWARD, fftw_destroy_plan, FFTW_ESTIMATE, FFTW_FORWARD, &
+           fftw_free, FFTW_MEASURE, fftw_mpi_execute_dft, fftw_mpi_init, fftw_mpi_local_size_3d, &
+           fftw_mpi_plan_dft_3d, tTransInfo_G
+
 
    include 'fftw3-mpi.f03'
 

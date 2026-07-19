@@ -13,6 +13,10 @@ use GlobalTypes, only: tFELFrame
 
 
 implicit none (type, external)
+private
+
+public :: getOffsets, pxoffset, pyoffset, xOffSet, yOffSet
+
 
   INTERFACE xOffSet
     MODULE PROCEDURE xOffSet_OneValue, xOffSet_Array

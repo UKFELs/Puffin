@@ -23,6 +23,10 @@ use ParallelSetUp, only: stopcode
 use mpi, only: MPI_FINALIZE
 
 implicit none (type, external)
+private
+
+public :: checkparameters
+
 
 contains
 

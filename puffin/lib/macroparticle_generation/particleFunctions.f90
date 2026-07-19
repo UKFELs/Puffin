@@ -15,6 +15,11 @@ use MPI, only: MPI_ALLREDUCE, MPI_COMM_WORLD, MPI_DOUBLE_PRECISION, mpi_finalize
   MPI_INTEGER, MPI_MAX, MPI_MIN, MPI_SUM
 
 IMPLICIT NONE (type, external)
+private
+
+public :: DistributionIntegral, DistributionIntegralZ2, flattop2, gaussian, &
+           iGaussianDistribution_CG, iLinear_CG, iTopHatDistribution_CG, PulseGrid
+
 
 INTEGER(KIND=IP), PARAMETER :: iLinear_CG = 1_IP
 INTEGER(KIND=IP), PARAMETER :: iGaussian_CG = 2_IP

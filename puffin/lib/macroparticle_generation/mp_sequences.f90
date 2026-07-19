@@ -20,6 +20,10 @@ use globals, only: nseqparts_G, iX_CG, iY_CG, iPX_CG, iPY_CG, iGam_CG
 use randomGauss, only: random_normal, init_random_seed
 
 implicit none (type, external)
+private
+
+public :: getSeqs, init_random_seed
+
 
 contains
 

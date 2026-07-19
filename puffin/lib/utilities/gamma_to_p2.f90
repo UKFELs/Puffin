@@ -16,6 +16,10 @@ module gtop2
 use puffin_kinds, only: WP
 
 implicit none (type, external)
+private
+
+public :: getp2
+
 
 contains
 

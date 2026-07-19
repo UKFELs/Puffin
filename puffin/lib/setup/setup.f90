@@ -36,6 +36,10 @@ module Setup
    use mpi, only: mpi_barrier
 
    implicit none (type, external)
+private
+
+public :: cleanup, init
+
 
 contains
 

@@ -17,6 +17,10 @@ module IO
    use FileType, only: cFileType
 
    implicit none (type, external)
+private
+
+public :: cFileType, filenameextension, filenamenoextension, log_error, tErrorLog_G, WP
+
 
    integer(kind=ip) :: mvar_iFreeFile = 0_IP
    type(cFileType), save :: tErrorLog_G

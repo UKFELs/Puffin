@@ -10,6 +10,10 @@ MODULE nrutil
 use puffin_kinds, only: IP
 
 IMPLICIT NONE (type, external)
+private
+
+public :: assert, nrerror
+
 
 INTERFACE assert_eq
    MODULE PROCEDURE assert_eq2, assert_eq3, assert_eq4, assert_eqn

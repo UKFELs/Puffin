@@ -20,6 +20,10 @@ use globals, only: iUndStart_G, iUndEnd_G, iUndMain_G, qFocussing_G, qOneD_G, pi
 use GlobalTypes, only: tUndulator, tFELFrame
 
 implicit none (type, external)
+private
+
+public :: getbfields
+
 
 contains
 

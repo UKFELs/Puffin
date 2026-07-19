@@ -26,6 +26,10 @@ USE puffin_constants, only: pi
 USE Functions, only: linspace
 
 IMPLICIT NONE (type, external)
+private
+
+public :: getmask, getz2mask
+
 
 CONTAINS
 

@@ -24,6 +24,12 @@ use hdf5, only: h5aclose_f, h5acreate_f, h5awrite_f, h5gclose_f, h5gcreate_f, H5
 use GlobalTypes, only: tSimulationContext
 
 implicit none (type, external)
+private
+
+public :: addh5derivedvariable, addh5stringattribute, integertostring, iStep, write1dlimgrp, &
+           write1duniformmesh, write3dlimgrp, write3duniformmesh, writecommonatts, writeh5runinfo, &
+           writeh5timegroup
+
 
 contains
 

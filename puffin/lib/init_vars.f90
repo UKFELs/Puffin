@@ -10,6 +10,17 @@ use ArrayFunctions, only: tProcInfo_G, tErrorLog_G, log_error, filenamenoextensi
   initializeprocessors
 
 IMPLICIT NONE (type, external)
+private
+
+public :: alphax, alphay, beamCenZ2, chirp, dist_f, emitx, emity, emptstring, error, field_file, &
+           filenamenoextension, fr, freqf, fx, fy, gamma_d, iMPsZ2PerWave, initializeprocessors, &
+           iNodes, iNumElectrons, Ipk, lambda_w, LattFile, log_error, mag, nbeams, nodesperlambda, &
+           nperiods, nseeds, ph_sh, q_noise, qFlatTopS, qFormattedFiles, qMatched_A, qMeasure, &
+           qOKL, qResume, qSeparateStepFiles, qSimple, qSwitches, qWrite, sA0_Im, sA0_Re, saw, &
+           sBeta, sDiffFrac, sElectronThreshold, sEleSig, sEmit_n, sFieldModelLength, sFiltFrac, &
+           sgammar, sLenEPulse, sLengthOfElm, SmeanZ2, sQe, srho, sSeedSigma, stepsPerPeriod, &
+           taper, tErrorLog_G, tProcInfo_G, WP, zFile, zFileName, zUndType
+
 
 !====================================================================
 ! Define variables

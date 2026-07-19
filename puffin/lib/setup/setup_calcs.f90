@@ -44,6 +44,11 @@ use mpi, only: MPI_ALLREDUCE, MPI_COMM_WORLD, MPI_DOUBLE_PRECISION, MPI_ISSEND, 
   MPI_STATUS_SIZE, MPI_SUM, MPI_WAIT
 
 IMPLICIT NONE (type, external)
+private
+
+public :: calccharge, calcsamples, calcscaling, fixcharge, iDiffraction_CG, iZ2_CG, passtoglobals, &
+           popmacroelectrons, scaleparams, setupinitialvalues, tSimulationContext
+
 
 CONTAINS
 

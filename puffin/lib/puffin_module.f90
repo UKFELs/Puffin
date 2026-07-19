@@ -17,6 +17,10 @@
 
 module puffin_mod
    implicit none (type, external)
+private
+
+public :: puffin_main
+
 contains
    subroutine puffin_main(input_file_name, qOK)
       use transforms, only: tProcInfo_G, WP, IP

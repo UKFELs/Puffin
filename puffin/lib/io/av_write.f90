@@ -27,6 +27,11 @@ module avwrite
 
 
    implicit none (type, external)
+private
+
+public :: ac_ifield, ac_rfield, bk_ifield, bk_rfield, fr_ifield, fr_rfield, getcurr, getcurrnpts, &
+           getslicetwiss, gpowerp, initPowerCalc, linspace, mainlen, tlelen, tlflen
+
 
 contains
 

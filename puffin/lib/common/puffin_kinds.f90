@@ -14,6 +14,10 @@ module puffin_kinds
     use, intrinsic :: iso_fortran_env, only: int64
 
     implicit none (type, external)
+private
+
+public :: float, IP, IPL, IPN, long, WP
+
 
 !              Definitions of data types
 !                  used in Puffin

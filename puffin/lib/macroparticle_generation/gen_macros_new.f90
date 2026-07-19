@@ -10,6 +10,10 @@ use macrosGen, only: RandomNoGenerator
 use puffin_mpiInfo, only: tProcInfo_G
 
 implicit none (type, external)
+private
+
+public :: genMacrosNew
+
 
 contains
 

@@ -31,6 +31,12 @@ use GlobalTypes, only: tLatticeElements, tFELFrame, tSimulationFlags, tSimulatio
 
 use simple_electron_gen, only: tErrorLog_G
 implicit none (type, external)
+private
+
+public :: bModulation, correcttrans, disperse, driftsection, fieldMesh, iChic, iDrift, iElmType, &
+           iModulation, initundulator, IP, iQuad, iUnd, log_error, matchin, matchout, nSteps, pi, &
+           Quad, setupmods, tErrorLog_G, WP
+
 
 integer(kind=ip), parameter :: iUnd = 1_ip, &
                                iChic = 2_ip, &
@@ -281,8 +287,9 @@ contains
 
     if (ios < 0) then  ! if reached end of file:-
 
-      if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 2)) &
+      if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 2)) then
         print*, "Reached end of file!! (for the second time)"
+      end if
       !print*, "Turns out you had ", cnt, "lines in the file!!"
       !print*, "Turns out you had ", cntq, "quads in the file!! in lines ", lineq
       !print*, "Turns out you had ", cntu, "undulators in the file!!"

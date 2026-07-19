@@ -25,6 +25,12 @@ use GlobalTypes, only: tSimulationFlags, tFELFrame
 use mpi, only: MPI_ALLREDUCE, mpi_barrier, MPI_COMM_WORLD, MPI_INFO_NULL, MPI_INTEGER, MPI_SUM
 
 implicit none (type, external)
+private
+
+public :: getMacroparticleCount, getNX, getNY, getNZ2, readH5BeamDataOntoRootProcess, &
+           readh5beamfile, readH5FieldDataOntoRootProcess, readH5FieldDataOntoRootProcess3D, &
+           readh5fieldfilesingledump
+
 
 
 

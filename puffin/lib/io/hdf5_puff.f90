@@ -19,6 +19,10 @@ use ParaField, only: fz2, ez2, ffs, ffe, ees, eee
 !use MPI
 use hdf5PuffLow, only: iStep
 implicit none (type, external)
+private
+
+public :: iStep, tArrayA, tArrayE, tArrayZ, wr_h5
+
 
 contains
 

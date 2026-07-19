@@ -21,6 +21,10 @@ use GlobalTypes, only: tSimulationContext
 use mpi, only: MPI_ALLREDUCE, MPI_COMM_WORLD, MPI_IN_PLACE, MPI_INTEGER, MPI_SUM
 
 implicit none (type, external)
+private
+
+public :: derivs
+
 
 contains
 

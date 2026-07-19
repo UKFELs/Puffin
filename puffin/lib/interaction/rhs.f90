@@ -30,6 +30,10 @@ use GlobalTypes, only: tUndulator, tFELFrame, tSimulationContext
 
 use Functions, only: tProcInfo_G
 implicit none (type, external)
+private
+
+public :: getrhs, IP, log_error, sp2, tErrorLog_G, tProcInfo_G, WP
+
 
 contains
 

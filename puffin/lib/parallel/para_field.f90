@@ -26,6 +26,14 @@ use mpi, only: MPI_ALLGATHER, mpi_allreduce, mpi_alltoallv, mpi_barrier, MPI_Bca
   mpi_reduce, mpi_scatter, MPI_STATUS_SIZE, mpi_sum, MPI_WAIT
 
 implicit none (type, external)
+private
+
+public :: ac_ifield, ac_rfield, bk_ifield, bk_rfield, bz2, eee, eee_GGG, ees, ees_GGG, ez2, ffe, &
+           ffe_GGG, ffs, fr_ifield, fr_rfield, fz2, getinnode, getlocalfieldindices, inner2outer, &
+           ioutInfo_G, iTemporal, mainlen, outer2inner, pupd8, qStart_new, qUnique, redist2fftwlt, &
+           redistbackfft, tim_fft, tlelen, tlelen4arr, tlflen, tlflen4arr, tllen, tre_fft, &
+           tTransInfo_G, upd8a, upd8da, updateglobalpow
+
 
 real(kind=wp), allocatable :: fr_rfield(:), bk_rfield(:), ac_rfield(:), &
                               fr_ifield(:), bk_ifield(:), ac_ifield(:), &

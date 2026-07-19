@@ -30,6 +30,10 @@ use mpi, only: MPI_ALLREDUCE, MPI_COMM_WORLD, MPI_DOUBLE_PRECISION, MPI_MAX
 use, intrinsic :: iso_c_binding, only: C_DOUBLE_COMPLEX
 
 implicit none (type, external)
+private
+
+public :: diffractim, IP, tProcInfo_G, WP
+
 
 
 

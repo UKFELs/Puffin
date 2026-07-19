@@ -15,6 +15,10 @@ use puffin_constants, only: pi, c, ip, wp
 USE nrutil, only: assert, nrerror
 
 IMPLICIT NONE (type, external)
+private
+
+public :: erf, erfi
+
 CONTAINS
 
 !********************************************************

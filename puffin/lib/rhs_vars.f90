@@ -7,6 +7,12 @@ module rhs_vars
 use puffin_kinds, only: WP, IPL, IP
 
 implicit none (type, external)
+private
+
+public :: bxu, byu, bzu, dV3, dx, dy, dz2, econst, halfx, halfy, iOutside, IP, IPL, lis_GR, maxEl, &
+           nb, nc, ntrans, p_nodes, qoutside, retim, salphaSq, sField4ElecImag, sField4ElecReal, &
+           sInv2rho, sp2, un, WP, ZOver2rho
+
 
 !!!!!!!!!!!
 

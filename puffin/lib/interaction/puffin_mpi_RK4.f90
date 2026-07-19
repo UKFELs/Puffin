@@ -13,6 +13,10 @@ module RK4int
    use GlobalTypes, only: tSimulationContext
 
    implicit none (type, external)
+private
+
+public :: ac_ifield_in, ac_rfield_in, allact_rk4_arrs, deallact_rk4_arrs, rk4par
+
 
    REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dadz_r0, dadz_i0
    REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dadz_r1, dadz_i1

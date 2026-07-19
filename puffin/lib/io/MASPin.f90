@@ -14,6 +14,10 @@ use scale, only: scaleX, scalePx, scaleT
 use mpi, only: mpi_barrier
 
 implicit none (type, external)
+private
+
+public :: nMPs4MASP_G, readmaspfile
+
 
 
 integer(kind=ip) :: nMPs4MASP_G

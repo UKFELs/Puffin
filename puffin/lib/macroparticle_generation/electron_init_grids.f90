@@ -19,6 +19,10 @@ use globals, only: iX_CG, iY_CG, iZ2_CG, iPX_CG, iPY_CG, iGam_CG, qRndEj_G, sSig
 use IO, only: tErrorLog_G, log_error
 
 implicit none (type, external)
+private
+
+public :: genGrid, genGrids, getIntTypes, getStEnd
+
 
 contains
 

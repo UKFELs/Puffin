@@ -8,6 +8,10 @@ use puffin_kinds, only: IP
 use puffin_mpiInfo, only: tProcInfo_G
 
 implicit none (type, external)
+private
+
+public :: getwrarray, qWrArray_G, wrarray
+
 
 integer(kind=ip), allocatable :: wrarray(:)
 logical :: qWrArray_G

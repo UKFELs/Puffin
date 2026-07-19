@@ -10,6 +10,10 @@ use puffin_kinds, only: WP
 use puffin_constants, only: pi, c, e_0, m_e, q_e
 
 implicit none (type, external)
+private
+
+public :: scaleemit, scaleIntensity, scalePx, scaleT, scaleX
+
 
 
 interface scaleG

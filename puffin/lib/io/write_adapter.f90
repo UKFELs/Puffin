@@ -22,6 +22,10 @@ use GlobalTypes, only: tSimulationContext
 use Globals, only: qInitWrLat_G, qhdf5_G, qSeparateStepFiles_G
 
 implicit none (type, external)
+private
+
+public :: iStep, qwriteq, wr_cho, writeim
+
 
 contains
 

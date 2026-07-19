@@ -37,6 +37,11 @@ use ParaField, only: qUnique
 use mpi, only: MPI_INFO_NULL
 
 implicit none (type, external)
+private
+
+public :: addh5field1dfloat, createintegrated1dfloat, outputh5beamfilessd, outputh5field1d2compsd, &
+           outputh5field3dsd
+
 
 contains
 

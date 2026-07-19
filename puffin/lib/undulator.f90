@@ -30,6 +30,10 @@ use mpi, only: mpi_barrier, mpi_finalize
 
 
 implicit none (type, external)
+private
+
+public :: undsection
+
 
 
 contains

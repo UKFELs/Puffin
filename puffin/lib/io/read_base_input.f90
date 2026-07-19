@@ -34,6 +34,10 @@ use randomGauss, only: setRandomSeed
 use ParallelSetUp, only: initializeprocessors
 use H5in, only: readh5fieldfilesingledump
 implicit none (type, external)
+private
+
+public :: filenamenoextension, initializeprocessors, read_in, readh5fieldfilesingledump
+
 
 contains
 

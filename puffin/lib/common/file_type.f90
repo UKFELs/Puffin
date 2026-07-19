@@ -7,6 +7,10 @@ MODULE FileType
   use puffin_kinds, only: IP
 
   IMPLICIT NONE (type, external)
+private
+
+public :: cFileType
+
 
 !
 !*****************************************************

@@ -15,6 +15,10 @@ module beam_conditioning
 use puffin_kinds, only: wp, ipl
 
 implicit none (type, external)
+private
+
+public :: addChirp, addModulation
+
 
 contains
 

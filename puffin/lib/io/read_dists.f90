@@ -14,6 +14,10 @@ module readDists
 use puffin_kinds, only: WP, IP
 
 implicit none (type, external)
+private
+
+public :: getHeaders, readPartDists
+
 
 contains
 

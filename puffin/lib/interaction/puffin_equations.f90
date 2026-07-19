@@ -11,6 +11,11 @@ use rhs_vars, only: sInv2rho, sp2, sField4ElecReal, sField4ElecImag, bxu, byu, b
 use GlobalTypes, only: tUndulator, tFELFrame
 
 implicit none (type, external)
+private
+
+public :: adjundplace, alct_e_srtcts, bxu, byu, bzu, dalct_e_srtcts, dgamdz_f, dppdz_i_f, &
+           dppdz_r_f, dxdz_f, dydz_f, dz2dz_f, sField4ElecImag, sField4ElecReal, sInv2rho, sp2
+
 
 contains
 

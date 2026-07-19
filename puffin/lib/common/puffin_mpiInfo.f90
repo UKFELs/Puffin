@@ -5,6 +5,10 @@
 module puffin_mpiInfo
    use puffin_kinds, only: ip
    implicit none (type, external)
+private
+
+public :: ip, puffin_mpiInfoType, tProcInfo_G
+
 
 !*****************************************************
 ! Originally created by Cynthia Nam

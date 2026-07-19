@@ -33,6 +33,10 @@ use beam_conditioning, only: addChirp, addModulation
 
 
 IMPLICIT NONE (type, external)
+private
+
+public :: generate_simple_beam, shuntbeam, tErrorLog_G
+
 
 CONTAINS
 

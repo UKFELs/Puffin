@@ -23,6 +23,10 @@ use Globals, only: sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, s_chi_ba
   s_Normalised_chi_G, iNumberElectrons_G, iGloNumElectrons_G
 
 implicit none (type, external)
+private
+
+public :: removeLow, removeLowNC
+
 
 contains
 

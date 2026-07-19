@@ -18,6 +18,12 @@ USE puffin_constants, only: pi
 USE MPI, only: MPI_ALLREDUCE, MPI_DOUBLE_PRECISION, MPI_SUM
 
 IMPLICIT NONE (type, external)
+private
+
+public :: arr_mean_para_weighted, diffractionlength, GainLength, gaussian, GaussianDistribution, &
+           GaussianDistributionZ2, GaussianGrid, IP, linspace, MatchedBeamRadius, raleighlength, &
+           tProcInfo_G, WP
+
 
 CONTAINS
 !********************************************************

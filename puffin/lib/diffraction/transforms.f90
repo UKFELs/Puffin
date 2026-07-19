@@ -26,6 +26,11 @@ use ParallelSetUp, only: getGathArrs
 
 use, intrinsic :: iso_c_binding, only: C_DOUBLE_COMPLEX, c_f_pointer, C_INTPTR_T, C_PTR
 implicit none (type, external)
+private
+
+public :: Afftw, cleartransformplans, getkvalues, gettransformplans4fel, IP, pi, tProcInfo_G, &
+           tr_time_e, tr_time_s, transform, tTransInfo_G, WP
+
 
 !INCLUDE 'fftw3-mpi.f03'
 
