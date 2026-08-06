@@ -151,7 +151,7 @@ contains
           call outputH5Field3DID(time, sz_loc, iL, error, tlelen, "aperp_back_real", &
                                   bk_rfield,  ees, eee, .false., ctx)
           call outputH5Field3DID(time, sz_loc, iL, error, tlelen, "aperp_back_imag", &
-                                  bk_rfield,  ees, eee, .false., ctx)
+                                  bk_ifield,  ees, eee, .false., ctx)
           call cpu_time(ftime)
 !        print '("Dumped separate fields. Took time = ",f6.3," secs on rank ",i5)' &
 !          ,ftime-stime,tprocinfo_g%rank
