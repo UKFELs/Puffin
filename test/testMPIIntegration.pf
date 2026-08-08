@@ -54,14 +54,15 @@ contains
     call puffin_main(test_file_1, qOK)
 
     ! Verify successful execution
-    ! f1main_aperp_2.h5
+    ! The final dump for this deck is index 1: with nPeriods=1 and
+    ! stepsPerPeriod=30 the run writes at step 0 and step 30 only.
     test_output_field_initial_file = trim(output_file_base) // "_aperp_0.h5"
     test_output_electron_initial_file = trim(output_file_base) // '_electrons_0.h5'
     test_output_integrated_initial_file = trim(output_file_base) // '_integrated_0.h5'
 
-    test_output_field_final_file = trim(output_file_base) // '_aperp_2.h5'
-    test_output_electron_final_file = trim(output_file_base) // '_electrons_2.h5'
-    test_output_integrated_final_file = trim(output_file_base) // '_integrated_2.h5'
+    test_output_field_final_file = trim(output_file_base) // '_aperp_1.h5'
+    test_output_electron_final_file = trim(output_file_base) // '_electrons_1.h5'
+    test_output_integrated_final_file = trim(output_file_base) // '_integrated_1.h5'
 
     expected_field_file = 'expected/f1main_expected_field.h5'
     expected_electron_file = 'expected/f1main_expected_electrons.h5'

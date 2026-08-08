@@ -149,15 +149,51 @@ end subroutine getFFelecs_3D
 
 
 
+!> Scatter the electron source term into the local field arrays.
+!>
+!> The scatter loop itself lives in getSource_3D_kernel below, and the module
+!> data it needs is handed over as dummy arguments.  That is deliberate: the
+!> !$OMP ATOMIC updates act as memory barriers, so if the loop reads
+!> s_chi_bar_G, sp2, p_nodes, lis_GR and dV3 straight from their modules the
+!> compiler must reload each array descriptor from memory on every iteration.
+!> Those reloads then sit on the critical path, and the speed of this routine
+!> becomes hostage to wherever the linker happened to place the module symbols
+!> - an unrelated commit that repacks a module can cost 2x here.  See
+!> benchmark/RESULTS-2026-08-07-globals-refactor.md.  Passed as dummy
+!> arguments, the base addresses are loop-invariant by construction.
+
 subroutine getSource_3D(sDADzr, sDADzi, spr, spi, sgam, seta)
 
 
 use rhs_vars
 
-real(kind=wp), intent(inout) :: sDADzr(:), sDADzi(:)
-real(kind=wp), intent(in) :: spr(:), spi(:)
-real(kind=wp), intent(in) :: sgam(:)
+real(kind=wp), contiguous, intent(inout) :: sDADzr(:), sDADzi(:)
+real(kind=wp), contiguous, intent(in) :: spr(:), spi(:)
+real(kind=wp), contiguous, intent(in) :: sgam(:)
 real(kind=wp), intent(in) :: seta
+
+  call getSource_3D_kernel(sDADzr, sDADzi, spr, spi, sgam, seta, &
+                           s_chi_bar_G, sp2, p_nodes, lis_GR, dV3, &
+                           nspinDX, ntrndsi_G, maxEl, procelectrons_G(1))
+
+end subroutine getSource_3D
+
+
+
+subroutine getSource_3D_kernel(sDADzr, sDADzi, spr, spi, sgam, seta, &
+                               s_chi_bar_G, sp2, p_nodes, lis_GR, dV3, &
+                               nspinDX, ntrndsi_G, maxEl, nLocalElecs)
+
+real(kind=wp), contiguous, intent(inout) :: sDADzr(:), sDADzi(:)
+real(kind=wp), contiguous, intent(in) :: spr(:), spi(:)
+real(kind=wp), contiguous, intent(in) :: sgam(:)
+real(kind=wp), intent(in) :: seta
+real(kind=wp), contiguous, intent(in) :: s_chi_bar_G(:), sp2(:)
+integer(kind=ip), contiguous, intent(in) :: p_nodes(:)
+real(kind=wp), contiguous, intent(in) :: lis_GR(:,:)
+real(kind=wp), intent(in) :: dV3
+integer(kind=ip), intent(in) :: nspinDX, ntrndsi_G
+integer(kind=ipl), intent(in) :: maxEl, nLocalElecs
 
 integer(kind=ipl) :: i
 real(kind=wp) :: dadzRInst, dadzIInst
@@ -165,7 +201,7 @@ real(kind=wp) :: dadzRInst, dadzIInst
 !$OMP DO PRIVATE(dadzRInst, dadzIInst)
   do i = 1, maxEl
   
-    if (i<=procelectrons_G(1)) then
+    if (i<=nLocalElecs) then
 
 
 !                  Get 'instantaneous' dAdz
@@ -247,6 +283,6 @@ real(kind=wp) :: dadzRInst, dadzIInst
   end do 
 !$OMP END DO
 
-end subroutine getSource_3D
+end subroutine getSource_3D_kernel
 
 end module FiElec
