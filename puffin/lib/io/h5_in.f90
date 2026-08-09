@@ -308,6 +308,37 @@ contains
   end function getNZ2
 
 
+!> Read the step number a dump was written at, from the 'vsStep' attribute of
+!! its 'time' group. Every Puffin output file (full or integrated) carries
+!! this, so it identifies which point in the run a given output index holds.
+!! Returns 0 on non-root ranks.
+
+  function getWriteStep(zFile) result(iStep)
+
+    character(*), intent(in) :: zFile
+    INTEGER(HID_T) :: file_id       !< File identifier
+    INTEGER(HID_T) :: group_id      !< Group identifier
+    CHARACTER(LEN=4), PARAMETER :: grpname = "time"  !< Time group name
+    character(1024_IP) :: filename
+    integer :: error ! Error flag
+    integer(kind=ip) :: iStep
+
+    filename = zFile
+    iStep = 0_ip
+
+    if (tProcInfo_G%qRoot) then
+      CALL h5open_f(error)
+      CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
+      CALL h5gopen_f(file_id, grpname, group_id, error)
+      call readH5IntegerAttribute(group_id, "vsStep", iStep)
+      CALL h5gclose_f(group_id, error)
+      CALL h5fclose_f(file_id, error)
+      CALL h5close_f(error)
+    end if
+
+  end function getWriteStep
+
+
   subroutine readH5FieldDataOntoRootProcess(zFile, rfield, ifield, nZ2)
 
     character(*), intent(in) :: zFile

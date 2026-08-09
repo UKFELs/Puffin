@@ -17,7 +17,7 @@
 !!        clara_test_aperp_N.h5      -> test/expected/3D/clara_expected_field.h5
 !!        clara_test_electrons_N.h5  -> test/expected/3D/clara_expected_electrons.h5
 !!        clara_test_integrated_N.h5 -> test/expected/3D/clara_expected_integrated.h5
-!!      where N is CLARA_FINAL_STEP below (verify after the golden run).
+!!      where N is CLARA_FINAL_INDEX below (verify after the golden run).
 
 module testMPIIntegration3D
 
@@ -26,12 +26,17 @@ module testMPIIntegration3D
   use puffin_kinds
   use puffin_mod, only: puffin_main
   use H5in, only: getMacroparticleCount, readH5BeamDataOntoRootProcess, &
-                  getNX, getNY, getNZ2, readH5FieldDataOntoRootProcess3D
+                  getNX, getNY, getNZ2, readH5FieldDataOntoRootProcess3D, &
+                  getWriteStep
   use globals
   use puffin_mpiInfo, only: tProcInfo_G
   implicit none
 
-  integer(kind=ip), parameter :: CLARA_FINAL_STEP = 5_ip
+  ! Output *file index* of the final dump - the counter advances once per dump,
+  ! so this is not the step number. Distinct from CLARA_FINAL_STEP, the
+  ! integration step that dump is taken at (5 periods x 30 steps per period).
+  integer(kind=ip), parameter :: CLARA_FINAL_INDEX = 6_ip
+  integer(kind=ip), parameter :: CLARA_FINAL_STEP  = 150_ip
 
   character(len=1024_IP) :: test_file_1    = 'inputs/3D/clara_test.in'
   character(len=1024_ip) :: output_file_base = 'inputs/3D/clara_test'
@@ -66,7 +71,7 @@ contains
 
     call puffin_main(test_file_1, qOK)
 
-    write(step_str, '(i0)') CLARA_FINAL_STEP
+    write(step_str, '(i0)') CLARA_FINAL_INDEX
 
     test_output_field_initial_file    = trim(output_file_base) // '_aperp_0.h5'
     test_output_electron_initial_file = trim(output_file_base) // '_electrons_0.h5'
@@ -97,6 +102,23 @@ contains
 
     inquire(file=test_output_integrated_final_file, exist=file_exists)
     @AssertEqual(file_exists, .true.)
+
+    ! The dumps must land at the step each index claims to hold, not merely
+    ! exist. The output file index is advanced once per dump, so anything that
+    ! rewinds it silently overwrites an earlier index with later data --
+    ! index 0 is the only record of the initial state of the run.
+
+    if (tProcInfo_G%qroot) then
+
+      @AssertEqual(getWriteStep(trim(test_output_integrated_initial_file)), 0_ip)
+      @AssertEqual(getWriteStep(trim(test_output_field_initial_file)), 0_ip)
+      @AssertEqual(getWriteStep(trim(test_output_electron_initial_file)), 0_ip)
+
+      @AssertEqual(getWriteStep(trim(test_output_integrated_final_file)), CLARA_FINAL_STEP)
+      @AssertEqual(getWriteStep(trim(test_output_field_final_file)), CLARA_FINAL_STEP)
+      @AssertEqual(getWriteStep(trim(test_output_electron_final_file)), CLARA_FINAL_STEP)
+
+    end if
 
     ! --- Electron macroparticle comparison ---
 

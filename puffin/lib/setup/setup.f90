@@ -386,34 +386,15 @@ contains
 
       CALL MPI_BARRIER(tProcInfo_G%comm,error)
 
-      if (.not. qResume_G) then
-
-!       Populate ctx from globals set during init so writeIM can use ctx fields.
-        call PopulateFieldMeshFromGlobals(ctx%mesh)
-        call PopulateSimulationFlagsFromGlobals(ctx%flags)
-        call PopulateOutputConfigFromGlobals(ctx%output)
-        call PopulateLatticeElementsFromGlobals(ctx%lattice)
-        call PopulateIntegrationStateFromGlobals(ctx%integration)
-        ctx%lattice%cumulative_steps = 0_ip
-        ctx%integration%current_step = 0_ip
-
-        call writeIM(sZ, sZlSt_G, ctx, 0_ip, qOKL)
-
-      end if
-
-      if (.not. qOKL) goto 1000
-
-
-      CALL MPI_BARRIER(tProcInfo_G%comm,error)
-
-      if ((tProcInfo_G%qROOT) .and. (ioutInfo_G > 0)) print*, 'Initial data written'
-      deallocate(s_Normalised_chi_G)
-
 !     Fully populate ctx from all globals now set by init so that puffin_main
 !     needs no further Populate calls after init returns.
-!     (For non-resume, the mesh/frame/flags/output/lattice/integration fields
-!      were already populated above for writeIM; this also covers und and init_data
-!      and handles the resume path which skips the writeIM block entirely.)
+!
+!     This MUST happen before the initial write below. The Populate routines
+!     reset per-run state to its start-of-run value - in particular
+!     PopulateFieldMeshFromGlobals hardcodes highpass_filter_gr to -1, and that
+!     is the running output file index, which wr_h5 advances on every dump.
+!     Populating after the initial write would rewind the index and make the
+!     next dump overwrite the step-0 files.
       call PopulateFieldMeshFromGlobals(ctx%mesh)
       call PopulateSimulationFlagsFromGlobals(ctx%flags)
       call PopulateOutputConfigFromGlobals(ctx%output)
@@ -433,6 +414,23 @@ contains
         ctx%lattice%current_modulation_index = tInitData_G%iModulation_cr
         ctx%mesh%highpass_filter_gr = tInitData_G%igwr
       end if
+
+      if (.not. qResume_G) then
+
+        ctx%lattice%cumulative_steps = 0_ip
+        ctx%integration%current_step = 0_ip
+
+        call writeIM(sZ, sZlSt_G, ctx, 0_ip, qOKL)
+
+      end if
+
+      if (.not. qOKL) goto 1000
+
+
+      CALL MPI_BARRIER(tProcInfo_G%comm,error)
+
+      if ((tProcInfo_G%qROOT) .and. (ioutInfo_G > 0)) print*, 'Initial data written'
+      deallocate(s_Normalised_chi_G)
 
       qOK = .true.
 
