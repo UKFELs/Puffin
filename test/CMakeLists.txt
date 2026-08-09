@@ -141,7 +141,7 @@ add_pfunit_ctest (puffin_e2e_tests_3d
 
 
 # Slow full-lattice 3D test — gated by CMake option, not run by default
-option(PUFFIN_SLOW_TESTS "Build slow integration tests (full CLARA 17-module lattice, takes minutes)" OFF)
+option(PUFFIN_SLOW_TESTS "Build slow integration tests (full CLARA 17-module lattice, ~30s and ~750 HDF5 dumps)" OFF)
 
 if(PUFFIN_SLOW_TESTS)
 

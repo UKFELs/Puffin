@@ -2,8 +2,9 @@
 !! (17 undulators × 29 periods × 30 steps = 14790 steps) with 2 MPI processes
 !! and validates output against pre-generated golden reference files.
 !!
-!! This test is gated by the CMake option PUFFIN_SLOW_TESTS=ON and takes
-!! several minutes to complete.
+!! This test is gated by the CMake option PUFFIN_SLOW_TESTS=ON. It runs in
+!! about 30s on an M-series Mac with 2 ranks, but that is ~60x the rest of the
+!! suite combined, and it writes ~750 HDF5 dumps.
 !!
 !! Before this test can pass you must complete a one-off golden run:
 !!
@@ -11,9 +12,14 @@
 !!        mpiexec -n 2 <build>/puffin inputs/3D/clara_full.in
 !!      (from build/test/ so CWD-relative paths resolve correctly)
 !!
-!!   2. Identify the final step index N from the output filenames
-!!      (clara_full_aperp_N.h5, etc.) — expected ~246 given iWriteNthSteps=60.
-!!      Set CLARA_FULL_FINAL_STEP below to that value.
+!!   2. Identify the final output *file index* N from the output filenames
+!!      (clara_full_aperp_N.h5, etc.) and set CLARA_FULL_FINAL_INDEX below to
+!!      it. Integrated and full dumps share one counter, so with
+!!      iWriteIntNthSteps=30 and iWriteNthSteps=60 the integrated files take
+!!      every index and the full dumps only the even ones — N is roughly twice
+!!      the number of full dumps, not equal to it. Also read the last step
+!!      number off the dump ('h5dump -a /time/vsStep') and set
+!!      CLARA_FULL_FINAL_STEP to that.
 !!
 !!   3. Copy the final outputs:
 !!        clara_full_aperp_N.h5      -> test/expected/3D/clara_full_expected_field.h5
@@ -29,13 +35,18 @@ module testMPIIntegration3DSlow
   use puffin_kinds
   use puffin_mod, only: puffin_main
   use H5in, only: getMacroparticleCount, readH5BeamDataOntoRootProcess, &
-                  getNX, getNY, getNZ2, readH5FieldDataOntoRootProcess3D
+                  getNX, getNY, getNZ2, readH5FieldDataOntoRootProcess3D, &
+                  getWriteStep
   use globals
   use puffin_mpiInfo, only: tProcInfo_G
   implicit none
 
-  ! Final step index from the golden simulation run (verified from output filenames).
-  integer(kind=ip), parameter :: CLARA_FULL_FINAL_STEP = 99_ip
+  ! Output *file index* of the final dump - the counter advances once per dump,
+  ! so this is not the step number. Distinct from CLARA_FULL_FINAL_STEP, the
+  ! integration step that dump is taken at (17 modules x 29 periods x 30 steps
+  ! per period).
+  integer(kind=ip), parameter :: CLARA_FULL_FINAL_INDEX = 494_ip
+  integer(kind=ip), parameter :: CLARA_FULL_FINAL_STEP  = 14790_ip
 
   character(len=1024_IP) :: test_file_1    = 'inputs/3D/clara_full.in'
   character(len=1024_ip) :: output_file_base = 'inputs/3D/clara_full'
@@ -70,7 +81,7 @@ contains
 
     call puffin_main(test_file_1, qOK)
 
-    write(step_str, '(i0)') CLARA_FULL_FINAL_STEP
+    write(step_str, '(i0)') CLARA_FULL_FINAL_INDEX
 
     test_output_field_initial_file      = trim(output_file_base) // '_aperp_0.h5'
     test_output_electron_initial_file   = trim(output_file_base) // '_electrons_0.h5'
@@ -101,6 +112,23 @@ contains
 
     inquire(file=test_output_integrated_final_file, exist=file_exists)
     @AssertEqual(file_exists, .true.)
+
+    ! The dumps must land at the step each index claims to hold, not merely
+    ! exist. The output file index is advanced once per dump, so anything that
+    ! rewinds it silently overwrites an earlier index with later data --
+    ! index 0 is the only record of the initial state of the run.
+
+    if (tProcInfo_G%qroot) then
+
+      @AssertEqual(getWriteStep(trim(test_output_integrated_initial_file)), 0_ip)
+      @AssertEqual(getWriteStep(trim(test_output_field_initial_file)), 0_ip)
+      @AssertEqual(getWriteStep(trim(test_output_electron_initial_file)), 0_ip)
+
+      @AssertEqual(getWriteStep(trim(test_output_integrated_final_file)), CLARA_FULL_FINAL_STEP)
+      @AssertEqual(getWriteStep(trim(test_output_field_final_file)), CLARA_FULL_FINAL_STEP)
+      @AssertEqual(getWriteStep(trim(test_output_electron_final_file)), CLARA_FULL_FINAL_STEP)
+
+    end if
 
     ! --- Electron macroparticle comparison ---
 
