@@ -1,0 +1,37 @@
+!
+! Puffin 1D performance benchmark deck.
+!
+! Derived from test/inputs/f1main.in (the Opt. Comm. fig 1 flat-top CSE case)
+! but scaled up so that a run takes several seconds rather than milliseconds,
+! which makes the timing signal usable.  Relative to the test deck:
+!
+!   nPeriods          1  ->  200      (longer integration, more RK4 steps)
+!   sFModelLengthZ2   4.0 -> 20.0     (5x larger field mesh in z2)
+!   iMPsZ2PerWave     20 -> 400       (in inputs/bench_beam_1d.in)
+!   write cadence     every 100 steps -> every 600 (I/O kept, but not dominant)
+!
+! Everything else matches the test deck, so this exercises exactly the code
+! paths covered by testMPIIntegration.pf.
+!
+
+&MDATA
+ qOneD                  = .true.
+ beam_file              = 'inputs/bench_beam_1d.in'
+ seed_file              = 'inputs/seed_file.in'
+ q_noise                = .false.
+ sElectronThreshold     = 0.05
+ nodesPerLambdar        = 17
+ sFModelLengthZ2        = 20.0
+ srho                   = 0.01
+ sux                    = 1.0
+ suy                    = 1.0
+ saw                    = 1.0
+ sgamma_r               = 100.0
+ lambda_w               = 0.04
+ taper                  = 0.0
+ lattFile               = ''
+ stepsPerPeriod         = 30
+ nPeriods               = 200
+ iWriteNthSteps         = 600
+ iWriteIntNthSteps      = 300
+ /

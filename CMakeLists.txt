@@ -19,6 +19,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules")
 option(ENABLE_PARALLEL "whether to build parallel PUFFIN" ON)
 option(USE_MKL "Use Intel MKL" OFF)
 option(ENABLE_TESTING "Enable testing" OFF)
+option(ENABLE_BENCHMARKS "Enable performance benchmarks (see benchmark/README.md)" OFF)
 
 ######################################################################
 #
@@ -91,7 +92,7 @@ set(CFLAGS "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${CBT_UC}}")
 set(CXXFLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${CBT_UC}}")
 set(HAVE_CMAKE 1 CACHE STRING "Whether built with CMake")
 
-if(ENABLE_TESTING)
+if(ENABLE_TESTING OR ENABLE_BENCHMARKS)
   enable_testing()
 endif()
 
@@ -107,6 +108,10 @@ configure_file(puffin/lib/common/puffProvenance.f90.in puffin/lib/common/puffPro
 # configure_file(doc/fortran.dxg.in doc/fortran.dxg)
 
 add_subdirectory(puffin)
+
+if (ENABLE_BENCHMARKS)
+  add_subdirectory(benchmark)
+endif (ENABLE_BENCHMARKS)
 
 if (ENABLE_TESTING)
   add_subdirectory(test)
