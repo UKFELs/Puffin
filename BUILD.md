@@ -37,6 +37,29 @@ cmake --build ../build --target test
 cmake --install ../build --prefix ../install
 ```
 
+#### Optional test tiers
+
+The default test run is quick. Two heavier integration tests are opt-in, because
+they are too expensive to sit in a routine build:
+
+| Option | Test | Cost |
+| --- | --- | --- |
+| `-DPUFFIN_SLOW_TESTS=ON` | full CLARA 17-module lattice | ~30 s, ~750 HDF5 dumps |
+| `-DPUFFIN_BIG_TESTS=ON` | shortCSE on an 85x85x5780 mesh | ~9 min, 9-12 GB RAM, ~1.3 GB written |
+
+They are labelled `slow` and `slow;big` respectively, so you can pick a tier:
+
+```sh
+ctest --test-dir ../build -LE slow    # the default quick suite only
+ctest --test-dir ../build -L big      # just the big one
+```
+
+The big test defaults to 6 MPI ranks — the performance-core count of the machine
+it was calibrated on — and `-DPUFFIN_BIG_TEST_PES=N` changes it, matching `npes=`
+in `test/testMPIIntegration3DBig.pf`. Its memory per rank scales as roughly 1/N,
+so lowering the rank count raises the per-rank footprint: at 2 ranks it needs
+1.8 GB each and takes some 40 minutes.
+
 ### Install dependencies using conda-forge
 
 Installing dependencies via conda-forge is simple and fast, and consistent across different systems. First create the puffin environment, installing compilers and libs, and then activate it:

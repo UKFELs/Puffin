@@ -513,6 +513,73 @@ contains
   end subroutine readH5FieldDataOntoRootProcess3D
 
 
+!> Length of a rank-1 dataset. Used for the integrated output files, whose
+!! datasets are all 1D but not all the same length ('Slice Charge' is one
+!! shorter than 'beamCurrent'), so each has to be sized individually.
+!! Returns 0 on non-root ranks.
+
+  function getH5DatasetLength1D(zFile, dsetName) result(nLen)
+
+    character(*), intent(in) :: zFile, dsetName
+    INTEGER(HID_T) :: file_id
+    INTEGER(HID_T) :: dset_id
+    INTEGER(HID_T) :: dspace_id
+    character(1024_IP) :: filename
+    INTEGER(HSIZE_T), DIMENSION(1) :: dims, mdims
+    integer :: error
+    integer(kind=ip) :: nLen
+
+    filename = zfile
+    nLen = 0_ip
+
+    if (tProcInfo_G%qRoot) then
+      CALL h5open_f(error)
+      CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
+      CALL h5dopen_f(file_id, dsetName, dset_id, error)
+      CALL h5Dget_space_f(dset_id, dspace_id, error)
+      CALL h5Sget_simple_extent_dims_f(dspace_id, dims, mdims, error)
+      nLen = dims(1)
+      CALL h5sclose_f(dspace_id, error)
+      CALL h5dclose_f(dset_id, error)
+      CALL h5fclose_f(file_id, error)
+      CALL h5close_f(error)
+    end if
+
+  end function getH5DatasetLength1D
+
+
+!> Read a named rank-1 double dataset onto the root process. Written for the
+!! integrated output files ('power', 'bunchingFundamental', ...), which are
+!! small enough to compare element by element against a golden reference.
+!! Leaves data untouched on non-root ranks.
+
+  subroutine readH5Dataset1DOntoRootProcess(zFile, dsetName, data, nLen)
+
+    character(*), intent(in) :: zFile, dsetName
+    integer(kind=ip), intent(in) :: nLen
+    REAL(kind=WP), intent(out) :: data(:)
+    INTEGER(HID_T) :: file_id
+    INTEGER(HID_T) :: dset_id
+    character(1024_IP) :: filename
+    INTEGER(HSIZE_T), DIMENSION(1) :: dsize
+    integer :: error
+
+    filename = zfile
+
+    if (tProcInfo_G%qRoot) then
+      CALL h5open_f(error)
+      CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
+      CALL h5dopen_f(file_id, dsetName, dset_id, error)
+      dsize = (/INT(nLen, HSIZE_T)/)
+      CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, data, dsize, error)
+      CALL h5dclose_f(dset_id, error)
+      CALL h5fclose_f(file_id, error)
+      CALL h5close_f(error)
+    end if
+
+  end subroutine readH5Dataset1DOntoRootProcess
+
+
   subroutine readH5BeamfileSerial(zFile)
 
 
