@@ -319,7 +319,15 @@ subroutine PopulateIntegrationStateFromGlobals(integration)
     integration%redistribution_step = iRedistStp_G
 
     ! Intermediate z tracker
-    integration%z_inter = 0.0_wp
+    !
+    ! DELIBERATELY NOT TOUCHED HERE. z_inter accumulates the interaction
+    ! (undulator) length over the WHOLE run - it is the old sZi_G global, which
+    ! was zeroed exactly once, at setup. This routine is called at the start of
+    ! every undulator module (see UndSection in undulator.f90), so resetting
+    ! z_inter here would throw away the length accumulated by all previous
+    ! modules and make the zbarInter/zInter output attributes read low by a
+    ! factor of the number of modules. The single start-of-run zeroing lives in
+    ! setup.f90; on a resume, UndSection restores it from tInitData_G%Zbarinter.
 
     ! Timing (time_start is set by puffin_main after init; time_end is local to UndSection)
     integration%time_start = 0.0_wp

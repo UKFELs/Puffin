@@ -403,6 +403,13 @@ contains
       call PopulateUndulatorFromGlobals(ctx%und)
       ctx%init_data = tInitData_G
 
+!     Start-of-run zeroing of the accumulated interaction length (old sZi_G).
+!     This is the ONLY place it may be zeroed - it must accumulate across all
+!     undulator modules, so PopulateIntegrationStateFromGlobals deliberately
+!     leaves it alone (it is called once per module from UndSection).
+!     On a resume, UndSection overwrites it with tInitData_G%Zbarinter.
+      ctx%integration%z_inter = 0.0_wp
+
       ! Override element-type counters and mesh state from restart data
       ! (PopulateLatticeElementsFromGlobals hardcodes counters to 1;
       !  PopulateFieldMeshFromGlobals hardcodes highpass_filter_gr to -1)
