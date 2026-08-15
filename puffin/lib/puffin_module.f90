@@ -98,7 +98,7 @@ contains
 
       if (ctx%flags%dump_at_end) then
          szl = 0.0_wp
-         call wr_cho(sZ, szl, ctx, 0_ip, .true., .true., qOKL)
+         call wr_cho(sZ, szl, ctx, modNum, .true., .true., qOKL)
       end if
 
       call cleanup(sZ)   !     Clear arrays and stucts used during integration
