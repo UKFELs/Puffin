@@ -2,843 +2,347 @@
 
 ## Overview
 
-This document outlines a systematic approach to refactor the global variables in `EDerivGlobals.f90` into organized Fortran derived types. The goal is to improve code maintainability, reduce global namespace pollution, and make data dependencies explicit.
+This document outlines the refactoring of global variables in `EDerivGlobals.f90` into
+organized Fortran derived types. The goal is to improve code maintainability, reduce global
+namespace pollution, and make data dependencies explicit.
 
-**Current State:** 100+ global variables scattered across Globals module
-**Target State:** 8 organized derived types bundled into tSimulationContext
-
----
-
-## Executive Summary - Phase Breakdown
-
-| Phase | Duration | Risk | Scope | Key Deliverable |
-|-------|----------|------|-------|-----------------|
-| 0 | ✅ DONE | Low | Create GlobalTypes.f90 | Type definitions module |
-| 1 | ~3-4 days | Low | Field mesh & helper code | Adapter functions & first migrated modules |
-| 2 | ~4-5 days | Low-Medium | Lattice elements & integration | Element management refactored |
-| 3 | ~5-7 days | Medium | Electron phase space | Core physics code updated |
-| 4 | ~3-4 days | Medium | Physics parameters | FEL math preserved but typed |
-| 5 | ~2-3 days | Low | Flags and IO | Remaining scattered variables |
-| 6 | ~2-3 days | High | Final migration | Complete removal of untyped globals |
-| 7 | ~1-2 days | Medium | Testing & validation | Full test suite passes |
-
-**Total Effort:** ~3-4 weeks of development work
+**Current State:** Phases 0–10 complete. `tSimulationContext` adopted; ctx threaded through RK4
+chain, HDF5/write chain, and init path; element-counter and flag globals removed.
+**Target State:** All remaining globals eliminated (init-only physics globals, HDF5 timing globals).
 
 ---
 
-## Phase 0: Foundation (COMPLETED)
+## Executive Summary — Phase Status
 
-### Deliverables
-- ✅ Created `GlobalTypes.f90` with 8 derived types:
-  - `tFieldMesh` - Grid dimensions, wavenumbers, element sizes
-  - `tElectronCloud` - 6D particle coordinates and metadata
-  - `tFELPhysics` - Undulator/wiggler parameters and derived quantities
-  - `tLatticeElements` - All lattice element arrays organized by type
-  - `tIntegrationState` - Integration loop control variables
-  - `tOutputConfig` - IO configuration and file handling
-  - `tSimulationFlags` - Boolean control flags
-  - `tSimulationContext` - Master type bundling all above
-
-### What to do next
-- Build the code with GlobalTypes included
-- Ensure no compilation errors before proceeding to Phase 1
-
----
-
-## Phase 1: Create Adapter/Wrapper Layer (LOW RISK)
-
-### Objective
-Establish a safe migration path by creating adapter functions that convert between globals and types without changing existing code.
-
-### Approach
-1. **Create AdapterGlobals module** with read/write subroutines:
-   ```fortran
-   ! File: AdapterGlobals.f90 (new)
-   module AdapterGlobals
-   ! Helper subroutines to populate types from globals and vice versa
-   contains
-       subroutine PopulateFieldMeshFromGlobals(mesh)
-       subroutine PopulateElectronCloudFromGlobals(electrons)
-       subroutine UpdateGlobalsFromFieldMesh(mesh)
-       subroutine UpdateGlobalsFromElectronCloud(electrons)
-   end module
-   ```
-
-2. **Key adapter subroutines for Phase 1:**
-
-   ```fortran
-   subroutine PopulateFieldMeshFromGlobals(mesh)
-       type(tFieldMesh), intent(inout) :: mesh
-       mesh%nx = NX_G
-       mesh%ny = NY_G
-       mesh%nz2 = NZ2_G
-       mesh%nbx = NBX_G
-       mesh%nby = NBY_G
-       mesh%nbz2 = NBZ2_G
-       if (allocated(mesh%kx)) deallocate(mesh%kx)
-       allocate(mesh%kx(size(kx_G)))
-       mesh%kx = kx_G
-       ! ... etc for all mesh fields
-   end subroutine
-   ```
-
-3. **Identify module entry points** - Find initialization points where globals are first set:
-   - `Msetup.f90` - Allocates and initializes field mesh
-   - `FreadData.f90` - Reads configuration from input files
-   - `simple_electron_gen.f90` - Generates electron distribution
-
-### Candidate Modules for Immediate Wrapping (Leaf Modules)
-These have few dependencies and are good candidates to be wrapped first:
-
-1. **ArrayFunctions.f90** - Utility functions (very low risk)
-   - No user-facing globals, mostly self-contained
-   - Action: Minimal changes, add dependency on GlobalTypes
-
-2. **puffin_kinds.f90** - Type definitions (zero risk)
-   - No changes needed, just ensure GlobalTypes imports this
-
-3. **puffin_constants.f90** - Mathematical/physical constants (zero risk)
-   - No changes needed, ensure GlobalTypes can use it
-
-### Files to Create
-- `AdapterGlobals.f90` - Adapter/wrapper module with conversion functions
-  - PopulateFieldMeshFromGlobals()
-  - PopulateElectronCloudFromGlobals()
-  - PopulateIntegrationStateFromGlobals()
-  - UpdateGlobalsFromFieldMesh()
-  - UpdateGlobalsFromIntegrationState()
-
-### Testing Strategy
-- Compile with GlobalTypes and AdapterGlobals
-- No behavioral changes expected
-- Run existing tests to ensure baseline works
-
-### Files to Modify
-- Update `CMakeLists.txt` or build system to include GlobalTypes.f90 and AdapterGlobals.f90
-- Update all module dependencies to `use GlobalTypes`
+| Phase | Status | Scope | Key Deliverable |
+|-------|--------|-------|-----------------|
+| 0 | ✅ DONE | Type definitions | `GlobalTypes.f90` with 8 derived types |
+| 1 | ✅ DONE | Adapter layer | `AdapterGlobals.f90` with populate/update functions |
+| 2 | ✅ DONE | Integration state | `tIntegrationState` in `UndSection` |
+| 3 | ✅ DONE | Lattice elements | `tLatticeElements` in `UndSection` |
+| 4 | ✅ DONE | Field mesh | `tFieldMesh` in `UndSection` |
+| 5 | ✅ DONE | FEL physics | `tFELPhysics` in `UndSection` |
+| 6 | ✅ DONE | Flags & IO | `tSimulationFlags` & `tOutputConfig` in `UndSection` |
+| 7 | ✅ DONE | Final cleanup | `qResume_G`→local, `tInitData_G`→local; remaining globals documented |
+| 7b | ✅ DONE | Split tFELPhysics | Replace with `tFELFrame` + `tUndulator` |
+| 8 | ✅ DONE | Architectural lift | Types owned by `puffin_main`, passed to all element routines |
+| 9 | ✅ DONE | RK4 chain threading | `tUndulator`/`tFELFrame`/`tSimulationFlags` threaded through full RK4 chain; dead `m2col` removed |
+| 10 | ✅ DONE | tSimulationContext + init path | ctx adopted; threaded through write chain, flags chain, init; dead globals removed |
+| 11 | 🔜 NEXT | Remove remaining globals | Remove `iCsteps`, `igwr`, `sZi_G`, physics globals (`sRho_G` etc.) |
 
 ---
 
-## Phase 2: Migrate Integration & Stepping (LOW-MEDIUM RISK)
+## Architectural Insight: Phases 2–7 Hit the Wrong Scope Boundary
 
-### Objective
-Migrate integration control variables from globals to `tIntegrationState` type.
+Phases 2–7 proved that the adapter pattern works and successfully scoped six derived types
+into `UndSection`. However, this approach has reached a structural ceiling.
 
-### Why Start Here
-- Integration state is **self-contained** (doesn't feed back into many modules)
-- Used primarily in:
-  - `undulator.f90` - Main integration loop
-  - `MRK4.f90` - RK4 stepping
-  - `choWrite.f90` - Decides when to write output
-
-### Migration Steps
-
-1. **Identify all integration variable uses:**
-   ```
-   iStep, nSteps, start_step, sStep, sStepSize, iCount
-   start_time, end_time, time1, time2
-   diffStep, sRedistLen_G, iRedistStp_G, totUndLineLength
-   ```
-
-2. **Create IntegrationState initialization in Msetup.f90:**
-   ```fortran
-   type(tIntegrationState) :: integration
-   ! Initialize from globals at program start
-   call PopulateIntegrationStateFromGlobals(integration)
-   ```
-
-3. **Update function signatures in order:**
-   - `undulator.f90`: Main integration loop
-     ```fortran
-     ! OLD: function rk4par(sZl, sStepSize, qDiffrctd)
-     ! NEW: function rk4par(sZl, integration, qDiffrctd)
-     ```
-   - `MRK4.f90`: RK4 kernel
-     ```fortran
-     ! Pass integration%step_size instead of reading global sStepSize
-     ```
-   - `choWrite.f90`: Write decision logic
-     ```fortran
-     ! Pass integration%write_nth_steps instead of global iWriteNthSteps
-     ```
-
-4. **Create wrapper versions before full migration:**
-   - Keep old globals active
-   - Add optional integration argument to functions
-   - Auto-populate from globals if not provided (for backwards compatibility)
-
-### Key Files to Modify
-1. `Msetup.f90` - Create and initialize integration state
-2. `undulator.f90` - Main loop, pass to callees
-3. `MRK4.f90` - Accept integration parameter
-4. `choWrite.f90` - Accept integration parameter
-5. `Jdatawrite.f90` - Any timing/step info handling
-
-### Testing
-- Compile with modified files
-- Run simulation with various step counts
-- Verify output matches previous runs (numerical results should be identical)
-- Check timing information is correct
-
-### Rollback Plan
-If issues arise, these modules are isolated - can revert just Phase 2 changes and continue with other phases.
-
----
-
-## Phase 3: Migrate Lattice Elements (LOW-MEDIUM RISK)
-
-### Objective
-Migrate all lattice element arrays into `tLatticeElements` type.
-
-### Why This Phase
-- **Clear data organization:** Each element type has its own array set
-- **Limited coupling:** Lattice is mostly read during setup, used in element selection
-- **Reduces global array proliferation:** Currently have 15+ allocatable arrays
-
-### Migration Steps
-
-1. **Audit lattice array usage:**
-   - Find all references to: zMod, mf, delmz, tapers, ux_arr, uy_arr, kbnx_arr, kbny_arr
-   - Find references to: chic_zbar, chic_slip, chic_disp
-   - Find references to: drift_zbar, enmod_wavenum, enmod_mag, quad_fx, quad_fy
-
-2. **Create LatticeElements initialization in Lattice.f90:**
-   ```fortran
-   type(tLatticeElements) :: lattice
-   ! Read from input files into lattice type instead of globals
-   ```
-
-3. **Update function signatures:**
-   - `Lattice.f90`: Element initialization routines
-   - `SetupLattice()` - Initialize lattice structure
-   - `initUndulator()` - Read undulator array data into lattice%und_* fields
-   - `initChicane()` - Read chicane data into lattice%chic_* fields
-   - `Element selection routines` - Use lattice%current_module index
-
-4. **Scaling transformations:**
-   - In `Lattice.f90::prepLattice()` or similar:
-     ```fortran
-     ! OLD:
-     kbnx_arr = kbnx_arr * lg_G
-     kbny_arr = kbny_arr * lg_G
-
-     ! NEW:
-     lattice%und_kbx = lattice%und_kbx * physics%gain_length
-     lattice%und_kby = lattice%und_kby * physics%gain_length
-     ```
-
-### Key Files to Modify
-1. `Lattice.f90` - Core lattice management (allocate, initialize, access)
-2. `undulator.f90` - Switch element types using lattice
-3. `Jsetupcalcs.f90` - Apply scaling to lattice arrays
-4. `simple_electron_gen.f90` - Read beam parameters (if lattice-dependent)
-
-### Testing
-- Parse input file with multiple lattice elements
-- Verify correct element selection during integration
-- Check field values match pre-migration values
-
----
-
-## Phase 4: Migrate Field Mesh (MEDIUM RISK)
-
-### Objective
-Migrate field grid variables from globals to `tFieldMesh` type.
-
-### Why This Phase (not earlier)
-- **More widespread usage:** Used in FFT routines, field access patterns
-- **Benefits from Phase 1-3:** Reduces field indices when steps/lattice migrate
-- **Depends on Phase 2:** Integration variables may be needed for dimensions
-
-### Migration Steps
-
-1. **Create FieldMesh initialization in Msetup.f90:**
-   ```fortran
-   type(tFieldMesh) :: mesh
-   mesh%nx = NX_G
-   mesh%ny = NY_G
-   mesh%nz2 = NZ2_G
-   allocate(mesh%kx(size(kx_G)))
-   mesh%kx = kx_G
-   ! etc.
-   ```
-
-2. **Update field-heavy modules in order:**
-   - `JFiElec.f90` - Electron-field interpolation (HIGH USE)
-     ```fortran
-     ! OLD: Uses NX_G, NY_G, NZ2_G directly
-     ! NEW: function electron_field_coupling(electrons, mesh, ...)
-     ```
-   - `para_field.f90` - Parallel field communication
-     ```fortran
-     ! Pass mesh for dimensions in MPI calls
-     ```
-   - `Ltransforms.f90` - Coordinate transforms
-     - Uses kx_G, ky_G, kz2_loc_G
-     - Pass mesh instead
-   - `GEquations.f90` - Field equation RHS
-   - `hdf5_puff.f90` - HDF5 data writing
-
-3. **Update FFT wrapper calls:**
-   - FFTW calls reference NX_G, NY_G, NZ2_G
-   - Create FFT plan with mesh dimensions instead
-
-4. **Field axis arrays:**
-   - x_ax_G, y_ax_G used for integration/plotting
-   - Store in mesh%x_axis, mesh%y_axis
-
-### Dependency Graph for This Phase
-```
-Msetup.f90 (initialize mesh) →
-    ├─ JFiElec.f90 (most critical)
-    ├─ para_field.f90
-    ├─ Ltransforms.f90
-    ├─ GEquations.f90
-    └─ hdf5_puff.f90
-```
-
-### Key Files to Modify
-1. `Msetup.f90` - Populate mesh structure from input file
-2. `JFiElec.f90` - Pass mesh to electron coupling
-3. `para_field.f90` - Use mesh for MPI distribution
-4. `FFT wrapper` - Use mesh dimensions
-5. `GEquations.f90` - Use mesh in coefficient calculations
-6. `hdf5_puff.f90` - Use mesh for array sizing
-
-### Testing
-- Verify electron-field interpolation produces same results
-- Check parallel field gathering/scattering works
-- Validate FFT output matches previous runs
-- Check HDF5 file dimensions
-
----
-
-## Phase 5: Migrate Physics Parameters (MEDIUM RISK)
-
-### Objective
-Migrate FEL physics parameters to `tFELPhysics` type.
-
-### Why This Phase (order matters)
-- **Must follow Phase 4:** Field mesh needs to be migrated first
-- **Must follow Phase 2:** Integration stepping doesn't depend on physics parameters, but good to clear that first
-- **Physics parameters used throughout:** Once migrated, many equations simplify
-
-### Critical Operations on Physics Parameters
-Analyzed from `Jsetupcalcs.f90`:
+**Root cause:** `UndSection` is not the main loop — it is one of five element handlers
+called by `puffin_main`. Types scoped *inside* `UndSection` cannot be passed to HDF5
+writers or sibling element subroutines (`disperse`, `driftSection`, `Quad`, `BModulation`).
+This is why many globals "cannot be removed" — they are blocked because the types live at
+the wrong level.
 
 ```
-sEta_G = (1.0 - sbetaz) / sbetaz
-sKappa_G = aw / 2 / srho / sgamr
-cf1_G = sEta_G / sKappa_G^2
-sKBetaX_G = aw / sqrt(2*sEta_G) / sGammaR_G * kx_und_G
-lam_r_G = slam_w * sEta_G
-lg_G = lam_r_G / (2.0 * pi * srho)
-lc_G = lam_r_G / (2.0 * sqrt(2.0 * srho))
+puffin_main (puffin_module.f90)
+  do iL = 1, modNum
+    iUnd  → UndSection(iL, sZ)        ← only one of five handlers
+    iChic → disperse(iL, sZ)
+    iDrift → driftSection(iL, sZ)
+    iQuad → Quad(iL)
+    iMod  → BModulation(iL)
+  end do
 ```
 
-### Migration Steps
-
-1. **Create physics initialization routine in Jsetupcalcs.f90:**
-   ```fortran
-   subroutine InitializePhysics(physics, input_data)
-       type(tFELPhysics), intent(inout) :: physics
-       ! Read sRho_G, sAw_G, sGammaR_G
-       physics%rho = sRho_G
-       physics%aw = sAw_G
-       physics%gamma_ref = sGammaR_G
-       ! Compute derived quantities
-       physics%eta = (1.0 - sbetaz) / sbetaz
-       physics%kappa = physics%aw / (2 * physics%rho * physics%gamma_ref)
-       ! etc.
-   end subroutine
-   ```
-
-2. **Audit all files using physics parameters:**
-   - Search for: sRho_G, sAw_G, sEta_G, sKappa_G, sKBeta_G
-   - Main users:
-     - `GEquations.f90` - Uses in algebraic field equations
-     - `Jrhs.f90` - Right-hand side derivatives
-     - `KDerivative.f90` - Orchestrates derivatives
-     - `CinitConds.f90` - Initial conditions using sRho_G, sAw_G, sGammaR_G
-     - `simple_electron_gen.f90` - Beam energy scaled by sGammaR_G
-
-3. **Update signatures (from users → Jsetupcalcs.f90):**
-   ```fortran
-   ! OLD in GEquations.f90:
-   function GetFieldCoefficient() result(coeff)
-       coeff = 1.0 / (sRho_G * sKappa_G)
-   end function
-
-   ! NEW:
-   function GetFieldCoefficient(physics) result(coeff)
-       type(tFELPhysics), intent(in) :: physics
-       coeff = 1.0 / (physics%rho * physics%kappa)
-   end function
-   ```
-
-4. **Update lattice/physics connections:**
-   - Currently, tapering modifies field settings mid-run
-   - See `Lattice.f90` where n2col, undgrad are used
-   - These should update physics%n2col, physics%undulator_gradient
-
-### Key Files to Modify
-1. `Jsetupcalcs.f90` - Initialize physics parameters
-2. `GEquations.f90` - Pass physics to coefficient functions
-3. `Jrhs.f90` - Pass physics to RHS calculation
-4. `KDerivative.f90` - Coordinate physics parameter passing
-5. `CinitConds.f90` - Use physics for initial conditions
-6. `simple_electron_gen.f90` - Use physics%gamma_ref for beam energy
-7. `Lattice.f90` - Update physics%n2col and tapering parameters
-
-### Testing
-- Verify initial FEL parameter values calculated correctly
-- Check derived quantities (eta, kappa, etc.) match hand calculations
-- Run simulation with tapering enabled
-- Verify gain length and cooperation length still correct
-- Check against benchmarks with known FEL physics
+**Corrected architecture:** simulation-lifetime types are created and owned by `puffin_main`,
+then passed as arguments to every element subroutine. This eliminates the populate/update
+round-trip and allows globals to be removed because callees receive the type directly.
 
 ---
 
-## Phase 6: Migrate Electron Data (HIGH RISK - Do Carefully)
+## Phase 7b: Split tFELPhysics → tFELFrame + tUndulator
 
 ### Objective
-Migrate `sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G` and electron metadata to `tElectronCloud` type.
+Replace the monolithic `tFELPhysics` type with two correctly-scoped types before the
+architectural lift in Phase 8.
 
-### Why This Phase (near end)
-- **High coupling:** Electron data appears everywhere (RK4, coupling, output)
-- **Benefits from prior phases:** Field mesh and physics migrated means cleaner electron function signatures
-- **Change is deep:** Touches nearly every file in dynamics code
+### tFELFrame — simulation scaling frame (immutable for the entire run)
 
-### Migration Steps
+| Field | Global | Note |
+|-------|--------|------|
+| `rho` | `sRho_G` | Pierce parameter |
+| `aw` | `sAw_G` | Undulator strength (reference) |
+| `gamma_ref` | `sGammaR_G` | Reference Lorentz factor |
+| `eta` | `sEta_G` | Detuning parameter |
+| `kappa` | `sKappa_G` | Coupling strength |
+| `lambda_w` | `lam_w_G` | Wiggler period |
+| `lambda_r` | `lam_r_G` | Resonant wavelength |
+| `gain_length` | `lg_G` | e-folding gain length |
+| `cooperation_length` | `lc_G` | Cooperation/slippage length |
+| `coefficient_1` | `cf1_G` | Setup scaling coefficient |
 
-1. **Create electron initialization in simple_electron_gen.f90:**
-   ```fortran
-   subroutine GenerateElectrons(electrons, physics)
-       type(tElectronCloud), intent(inout) :: electrons
-       type(tFELPhysics), intent(in) :: physics
-       ! Generate sElX_G, sElY_G, etc. → electrons%x, electrons%y, etc.
-   end subroutine
-   ```
+**Scope:** `puffin_main` (populated once after `init()` in Phase 8).
 
-2. **Create electron metadata structure:**
-   ```fortran
-   electrons%num_electrons = iNumberElectrons_G
-   electrons%num_electrons_global = iGloNumElectrons_G
-   allocate(electrons%electrons_per_proc(mpi_size))
-   electrons%electrons_per_proc = procelectrons_G
-   ```
+### tUndulator — properties of the current undulator element (reset per element)
 
-3. **Update RK4 integrator:**
-   - Current: Reads sElX_G(i), sElY_G(i), etc.
-   - New: Reads electrons%x(i), electrons%y(i), etc.
-   ```fortran
-   ! OLD in MRK4.f90:
-   subroutine rk4par(sZl, sStepSize, qDiffrctd)
-       real(kind=wp), intent(inout) :: sElX_G(:), sElY_G(:)
+| Field | Global | Note |
+|-------|--------|------|
+| `undulator_type` | `zUndType_G` | Per-element |
+| `kx_undulator`, `ky_undulator` | `kx_und_G`, `ky_und_G` | Off-axis wavenumbers |
+| `k_beta_x_sf`, `k_beta_y_sf` | `sKBetaXSF_G`, `sKBetaYSF_G` | Scaled beta (per-element) |
+| `k_beta`, `k_beta_x`, `k_beta_y` | `sKBeta_G`, `sKBetaX_G`, `sKBetaY_G` | Kept for now |
+| `focus_factor`, `focus_factor_saved` | `sFocusfactor_G` | Natural focusing |
+| `fx`, `fy` | `fx_G`, `fy_G` | Polarisation focusing |
+| `beta_absorption` | `sBeta_G` | Per-element absorption |
+| `model_undulator_ends` | `qUndEnds_G` | Entrance/exit corrections |
+| `z_start_undulator`, `z_end_undulator` | `sZFS`, `sZFE` | Ends geometry |
+| `undulator_position` | `iUndPlace_G` | Position marker |
+| `n2col_initial` | `n2col0` | Field strength at entry |
+| `n2col` | `n2col` | Current field strength (evolves via taper) |
+| `undulator_gradient` | `undgrad` | Taper rate |
+| `z_taper_start` | `sz0` | z reference for taper |
+**Scope:** local to `UndSection` — re-populated by `initUndulator()` on each call.
 
-   ! NEW:
-   subroutine rk4par(electrons, integration, physics, mesh, qDiffrctd)
-       type(tElectronCloud), intent(inout) :: electrons
-       type(tIntegrationState), intent(in) :: integration
-   ```
+Note: `m2col` was removed in Phase 9 as dead code (never read or written in any computation).
 
-4. **Update electron-field coupling:**
-   ```fortran
-   ! OLD in JFiElec.f90:
-   call get_local_field_index(sElX_G(iel), sElY_G(iel), NX_G, NY_G, ix, iy)
-
-   ! NEW:
-   call get_local_field_index(electrons%x(iel), electrons%y(iel), &
-                              mesh%nx, mesh%ny, ix, iy)
-   ```
-
-5. **Update output/writing:**
-   - Instead of reading global sElX_G in write routines
-   - Pass electrons structure to write functions
-
-### Dependency Chain
-```
-MRK4.f90 (RK4 and derivatives) ←
-    ↑
-    ├─ Jrhs.f90 (right-hand sides) ←
-    │   ├─ GEquations.f90 (field equations)
-    │   └─ JFiElec.f90 (electron-field coupling) ← mesh
-    │
-    ├─ JFiElec.f90
-    │
-    └─ choWrite.f90 (output) ← electrons
-```
-
-### Key Files to Modify (IN ORDER)
-1. `simple_electron_gen.f90` - Generate electrons structure
-2. `MRK4.f90` - Modify RK4 to use electrons structure
-3. `Jrhs.f90` - Pass electrons to RHS calculation
-4. `GEquations.f90` - Adapt to receive electrons%px, electrons%py, etc.
-5. `JFiElec.f90` - Use electrons%x, electrons%y, electrons%z2
-6. `KDerivative.f90` - Coordinate electron parameter passing
-7. `choWrite.f90` - Write electrons structure to output
-8. `remove_low_weights.f90` - Reference electrons%num_electrons
-9. `undulator.f90` - Main loop orchestration
-
-### Special Considerations
-- **Temporary RK4 arrays:** Both old code and new need intermediate q arrays
-  - These could go into integration state OR stay as temporaries
-  - Keep as allocatable temp arrays within RK4.f90 for now
-- **MPI communication:** procelectrons_G used in parallel communication
-  - Transition electrons%electrons_per_proc carefully
-  - Test parallel runs thoroughly
-
-### Testing
-- Run single electron simulation (check one value matches)
-- Run multi-electron simulation with different distributions
-- Test with MPI (2+ processes)
-- Verify output file format and values match
-- **Very important:** Numerical results must be bit-identical
+### Files to change
+- `puffin/lib/global_types.f90` — replace `tFELPhysics` with `tFELFrame` + `tUndulator`
+- `puffin/lib/adapter_globals.f90` — replace `FELPhysics` adapters with adapters for both new types
+- `puffin/lib/undulator.f90` — rename `physics` local to `und` of `type(tUndulator)`
 
 ---
 
-## Phase 7: Migrate Flags & Output (LOW RISK)
+## Phase 8: Lift Types to puffin_module Scope
 
 ### Objective
-Migrate remaining boolean flags and output configuration to `tSimulationFlags` and `tOutputConfig`.
+Create all simulation-lifetime types in `puffin_main`, initialize once, pass as arguments
+to every element subroutine. This eliminates the populate/update round-trip for those types.
 
-### Flags Migration
-```fortran
-! tSimulationFlags should contain:
-qElectronsEvolve_G → electrons_evolve
-qFieldEvolve_G → field_evolve
-qElectronFieldCoupling_G → electron_field_coupling
-qDiffraction_G → diffraction
-qFocussing_G → focusing
-qFilter → highpass_filter
-qDump_G → dump_on_crash
-qResume → resume_from_dump
-qWrite → write_output
-qOneD_G → one_dimensional
-qMod_G → using_modules
-qFMesh_G → fixed_mesh
-qFixCharge_G → fixed_charge
-qUseEmit_G → use_emittance
-qscaled_G → scaled_coordinates
-qInitWrLat_G → initial_write_lattice
-qDumpEnd_G → dump_at_end
-qPArrOK_G → parallel_arrays_ok
-qInnerXYOK_G → inner_xy_ok
-```
+### Types that are simulation-lifetime (belong in puffin_main)
 
-### Output Configuration Migration
-```fortran
-! tOutputConfig should contain:
-tArrayE(:) → array_electron(:)
-tArrayA(:) → array_field(:)
-tArrayZ → array_z
-iWriteNthSteps → write_nth_steps
-iIntWriteNthSteps → write_nth_steps_intermediate
-zFileName_G → main_filename
-zBFile_G → beam_filename
-zSFile_G → seed_filename
-qhdf5_G → write_hdf5
-qsdds_G → write_sdds
-ioutInfo_G → output_info_level
-frecvs → field_recv_counts
-fdispls → field_displacements
-cmd_call_G → command_call
-```
+| Type | Reason |
+|------|--------|
+| `tFieldMesh` | Grid geometry set once at init; read by all elements + HDF5 writers |
+| `tFELFrame` | Scaling frame set once; read by all elements and callees |
+| `tSimulationFlags` | Control switches set once; checked everywhere |
+| `tOutputConfig` | Filenames/frequencies set once; used by write infrastructure |
+| `tLatticeElements` | Master element list; each element indexes into it |
 
-### Migration Steps
-1. **Update FreadData.f90** - Populate flags and output config from input
-2. **Update Msetup.f90** - Initialize before main loop
-3. **Update choWrite.f90** - Use output config in write decisions
-4. **Update all modules using flags** - Pass flags structure instead of reading globals
+### Types that are element-local (stay local to UndSection)
 
-### Key Files to Modify
-1. `FreadData.f90` - Read into tSimulationFlags and tOutputConfig
-2. `Msetup.f90` - Initialize structures
-3. `choWrite.f90` - Use output config
-4. `undulator.f90` - Check flags in main loop
-5. Any module checking qDiffraction_G, qFocussing_G, etc.
-
-### Testing
-- Verify all flags still control behavior correctly
-- Test with various flag combinations
-- Check output files written to correct names
-
----
-
-## Phase 8: Final Integration & Removal (HIGHEST RISK)
-
-### Objective
-- Assemble all structures into `tSimulationContext`
-- Remove old global variables from `EDerivGlobals.f90`
-- Full codebase using derived types
+| Type | Reason |
+|------|--------|
+| `tIntegrationState` | Per-undulator step counter; re-initialized for each UndSection call |
+| `tUndulator` | Per-element undulator properties; re-initialized by `initUndulator()` |
 
 ### Steps
 
-1. **Create SimulationContext initialization:**
-   ```fortran
-   type(tSimulationContext) :: sim
-   call InitializeContext(sim, input_file)
-   call MainIntegrationLoop(sim)
-   ```
+1. **Add type declarations to `puffin_module.f90`**
+   - Declare `mesh`, `frame`, `flags`, `output`, `lattice` after `use` statements
+   - Call `PopulateXxxFromGlobals(xxx)` once, immediately after `init()` returns
+   - Pass all types as `intent(inout)` arguments into the element dispatch loop
 
-2. **Update all module signatures** to accept context:
-   ```fortran
-   ! OLD:
-   subroutine undulator()
-       Use Globals
-       ! ... uses 50+ globals
+2. **Update element subroutine signatures**
+   - `UndSection(iM, sZ, mesh, frame, flags, output, lattice)` — receive simulation-lifetime types; `tUndulator` and `tIntegrationState` remain local
+   - `disperse(iL, sZ, lattice, frame, flags)` — currently reads all as globals
+   - `driftSection(iL, sZ, lattice, frame, flags)` — same
+   - `Quad(iL, lattice, frame, flags)` — same
+   - `BModulation(iL, lattice)` — same
 
-   ! NEW:
-   subroutine undulator(sim)
-       type(tSimulationContext), intent(inout) :: sim
-       ! ... uses sim%mesh, sim%electrons, sim%integration, etc.
-   ```
+3. **Remove populate/update boilerplate from UndSection**
+   - Delete populate calls for simulation-lifetime types; keep for `tIntegrationState` and `tUndulator`
+   - Replace re-sync hacks with direct type mutations
 
-3. **Remove globals from EDerivGlobals.f90** (or keep as deprecated/wrapped):
-   - Option A: Delete all unreferenced globals
-   - Option B: Keep stubs that point to internal context (for debugging)
+4. **Thread types through callees that currently read globals**
+   - `writeIM` / `wr_cho` receive `output` → removes global reads of `qhdf5_G` etc.
+   - `diffractIM` receives `flags` or `mesh` → removes `qDiffraction_G`, `NX_G` reads
 
-4. **Update main program:**
-   ```fortran
-   program puffin
-       type(tSimulationContext) :: sim
-       call ReadInput(sim)
-       call InitializeMesh(sim%mesh)
-       call InitializePhysics(sim%physics)
-       call InitializeElectrons(sim%electrons, sim%physics)
-       call SetupLattice(sim%lattice)
-       call MainIntegrationLoop(sim)
-   end program puffin
-   ```
+5. **Update `UpdateGlobalsFromXxx` calls**
+   - Simulation-lifetime types no longer need Update calls from UndSection
+   - Only `UpdateGlobalsFromUndulator` and `UpdateGlobalsFromIntegrationState` remain in UndSection
 
-5. **Comprehensive testing:**
-   - Full regression test suite
-   - Compare output files bit-by-bit with baseline
-   - Performance benchmarking
-   - Parallel runs with various MPI configurations
-   - HDF5 and SDDS output validation
-
-### Risk Mitigation
-- Keep old Globals module intact through Phase 7
-- Run both versions in parallel during Phase 8
-- Have clear rollback points at each major transformation
-- Test incrementally, don't migrate all at once
+### Key files to modify
+- `puffin/lib/puffin_module.f90` — primary: declare & own types, pass to dispatch
+- `puffin/lib/undulator.f90` — remove local declares for simulation-lifetime types
+- `puffin/lib/acc_lattice.f90` — update signatures for element subroutines
+- `puffin/lib/adapter_globals.f90` — populate calls move to puffin_module; update calls removed for simulation-lifetime types
 
 ---
 
-## Files to Create
+## Phase 9: Thread Types Through RK4 Integration Chain ✅ DONE
 
-1. **GlobalTypes.f90** ✅ DONE
-   - All derived type definitions
-   - Location: `/src/puffin/lib/GlobalTypes.f90`
-   - Dependencies: puffin_kinds, puffin_constants, ArrayFunctions, initDataType
+### Objective
+Thread `tUndulator`, `tFELFrame`, and `tSimulationFlags` through the full RK4 call chain
+so the integration loop no longer reads undulator/frame globals directly.
 
-2. **AdapterGlobals.f90** (Phase 1)
-   - Wrapper functions to read/write globals from/to types
-   - Location: `/src/puffin/lib/AdapterGlobals.f90`
-   - Dependencies: GlobalTypes, Globals
+### Call chain threaded
 
-3. **SimulationContext.f90** (Phase 8, optional)
-   - Advanced module that orchestrates type initialization
-   - Location: `/src/puffin/lib/SimulationContext.f90`
-   - Dependencies: All other type modules
-
----
-
-## Files to Modify (Summary)
-
-### Always Safe (Early Phases)
-- CMakeLists.txt or build system (add new files)
-- puffin_kinds.f90, puffin_constants.f90 (just dependencies)
-
-### Phase 1-3 (Low Risk)
-- Msetup.f90 - Initialize structures
-- Lattice.f90 - Lattice management
-- undulator.f90 - Main loop
-- MRK4.f90 - RK4 stepping
-- choWrite.f90 - Output decisions
-
-### Phase 4-5 (Medium Risk)
-- Jsetupcalcs.f90 - Physics initialization
-- JFiElec.f90 - Electron-field coupling
-- GEquations.f90 - Field equations
-- Jrhs.f90 - Right-hand sides
-- para_field.f90 - Parallel field code
-- KDerivative.f90 - Integration coordinator
-
-### Phase 6 (High Risk - Most Extensive)
-- simple_electron_gen.f90 - Electron generation
-- MRK4.f90 - RK4 (already noted)
-- Jrhs.f90 - RHS (already noted)
-- JFiElec.f90 - Coupling (already noted)
-- remove_low_weights.f90 - Electron filtering
-- CinitConds.f90 - Initial conditions
-- Jdatawrite.f90 - Data writing
-- Any domain-specific physics modules
-
-### Phase 7-8 (Cleanup)
-- FreadData.f90 - Reading all configuration
-- EDerivGlobals.f90 - Removal/cleanup
-- Main program files
-- All files that transitioned in earlier phases
-
----
-
-## Compilation & Testing Strategy
-
-### Build System Changes
-```cmake
-# Add to CMakeLists.txt:
-add_library(puffin_types
-    src/puffin/lib/GlobalTypes.f90
-    src/puffin/lib/AdapterGlobals.f90
-)
-
-# Update main library:
-target_link_libraries(puffin_lib PRIVATE puffin_types)
+```
+UndSection
+  └─ rk4par(und inout, frame in, flags inout)       [puffin_mpi_RK4.f90]
+       └─ derivs(und inout, frame in, flags inout)   [derivative.f90]
+            └─ getrhs(und inout, frame in)           [rhs.f90]
+                 ├─ rhs_tmsavers(und in, frame in)   — replaces sRho_G, sAw_G, sEta_G, fx_G, fy_G etc.
+                 ├─ getAlpha(sZ, und)                [wiggler_taper.f90] — writes und%n2col, und%n2col_initial
+                 ├─ adjUndPlace(sZ, und)             [puffin_equations.f90] — writes und%undulator_position
+                 ├─ getBFields(..., und, frame)       [bfields.f90] — reads all und/frame fields
+                 └─ dppdz_r/i_f, dgamdz_f,
+                    dxdz_f, dydz_f(..., und, frame)  [puffin_equations.f90]
 ```
 
-### Testing at Each Phase
+### Key design decisions
 
-| Phase | Compilation Check | Behavioral Test | Output Validation |
-|-------|------------------|-----------------|-------------------|
-| 1 | ✓ Builds cleanly | Run existing test suite | No changes expected |
-| 2 | ✓ | Single step in loop | Step counters match |
-| 3 | ✓ | Multi-element lattice | Element selection correct |
-| 4 | ✓ | Field operations | FFT results match |
-| 5 | ✓ | FEL physics setup | Calculated parameters match |
-| 6 | ✓ | Full electron integration | Electron positions match |
-| 7 | ✓ | Flag/output operations | Files written correctly |
-| 8 | ✓ | Full simulation | Bit-identical output or acceptable tolerance |
+- `qPArrOK_G` / `qInnerXYOK_G` are still written by `system_interpolation.f90` and
+  `para_field.f90` (not modified in Phase 9). `derivs` syncs `flags%xxx = qXxx_G` after
+  each `getrhs` call, does the allreduce on the flags fields, and writes back to both
+  `flags%xxx` and the globals (keeping them in sync for the unthreaded callees).
+- `und intent(inout)` is required in `getrhs` because `getAlpha` and `adjUndPlace`
+  mutate `und%n2col`, `und%n2col_initial`, and `und%undulator_position`.
+- Post-loop sync hacks in `undulator.f90` (`und%n2col = n2col` etc.) removed — values
+  are now updated in-place on `und` throughout the loop.
+- Dead field `m2col` removed from `tUndulator`, both adapters, and `deriv_globals.f90`.
 
-### Regression Testing
-- Keep baseline output from current code
-- After each phase, compare against baseline
-- Numerical tolerance: 1e-10 for field values
-- Use diff/comparison script for HDF5 files
+### Globals removed / partially decoupled
 
-### Performance Testing
-- Time each phase before/after
-- Watch for unexpected slowdowns (type overhead)
-- Profile hotspot functions
+| Global | Replaced by | Status |
+|--------|-------------|--------|
+| `n2col` | `und%n2col` (updated by `getAlpha`) | ✅ Removed from integration chain |
+| `n2col0` | `und%n2col_initial` | ✅ Removed from integration chain |
+| `iUndPlace_G` | `und%undulator_position` | ✅ Removed from integration chain |
+| `undgrad` | `und%undulator_gradient` | ✅ Removed from integration chain |
+| `sz0` | `und%z_taper_start` | ✅ Removed from integration chain |
+| `sZFS`, `sZFE` | `und%z_start_undulator`, `und%z_end_undulator` | ✅ Removed from integration chain |
+| `qUndEnds_G` | `und%model_undulator_ends` | ✅ Removed from integration chain |
+| `zUndType_G` | `und%undulator_type` | ✅ Removed from integration chain |
+| `kx_und_G`, `ky_und_G` | `und%kx_undulator`, `und%ky_undulator` | ✅ Removed from integration chain |
+| `fx_G`, `fy_G` | `und%fx`, `und%fy` | ✅ Removed from integration chain |
+| `sKBetaXSF_G`, `sKBetaYSF_G` | `und%k_beta_x_sf`, `und%k_beta_y_sf` | ✅ Removed from integration chain |
+| `sRho_G` | `frame%rho` | ✅ Removed from integration chain |
+| `sAw_G` | `frame%aw` | ✅ Removed from integration chain |
+| `sGammaR_G` | `frame%gamma_ref` | ✅ Removed from integration chain |
+| `sEta_G` | `frame%eta` | ✅ Removed from integration chain |
+| `sKappa_G` | `frame%kappa` | ✅ Removed from integration chain |
+| `qPArrOK_G` | `flags%parallel_arrays_ok` | ✅ Deleted in Phase 10 |
+| `qInnerXYOK_G` | `flags%inner_xy_ok` | ✅ Deleted in Phase 10 |
+| `m2col` | — | ✅ Deleted (dead code) |
 
----
-
-## Rollback Strategy
-
-If major issues arise during a phase:
-
-1. **Phase-level rollback:**
-   - Commit work from previous phase
-   - Revert current phase changes
-   - Identify issue
-   - Try alternative approach
-
-2. **Git branches:**
-   - Main development branch: `global-refactor-main`
-   - Phase branches: `phase-1-integration`, `phase-2-lattice`, etc.
-   - Each phase has a clean commit history
-   - Can cherry-pick successful phases if needed
-
-3. **Global wrapper option:**
-   - Keep Globals module intact but deprecated
-   - Add compilation flag to choose old vs new
-   - Allows parallel comparison builds
+Note: globals listed as "removed from integration chain" still exist in `deriv_globals.f90`
+because initialization code (`acc_lattice.f90`, `init_conds.f90`, `setup_calcs.f90`) still
+writes them, and `PopulateUndulatorFromGlobals` / `UpdateGlobalsFromUndulator` bridge the
+gap. Full removal requires threading types through the initialization path.
 
 ---
 
-## Documentation & Code Comments
+## Phase 10: Adopt tSimulationContext + Thread Init Path ✅ DONE
 
-For each phase, add comments:
-```fortran
-! REFACTORING: This module has been migrated to use tFieldMesh
-! Old globals: NX_G, NY_G, NZ2_G → mesh%nx, mesh%ny, mesh%nz2
-! Migration completed in Phase 4
+### Objective
+Bundle all 8 simulation types into a single `tSimulationContext ctx` owned by `puffin_main`,
+thread it through the HDF5/write chain and the init path, and remove the now-dead element-counter
+and flag globals.
+
+### Steps completed
+
+**Step 0 — Add element counters and z_inter to existing types**
+- Added `current_xxx_index` fields to `tLatticeElements` (chic, drift, quad, modulation)
+- Added `z_inter` to `tIntegrationState`
+- Updated adapters accordingly
+
+**Step 1 — Adopt ctx in puffin_main and element subroutine signatures**
+- `puffin_main` now declares a single `type(tSimulationContext) :: ctx`
+- All 5 element subroutines (`UndSection`, `Quad`, `disperse`, `driftSection`, `BModulation`)
+  take `ctx` as their sole simulation-data argument
+- `rk4par`, `derivs`, `getrhs` updated to take `ctx` (replaces separate `und/frame/flags` args)
+
+**Step 2 — Thread ctx through the HDF5/write path**
+- `writeIM` / `wr_cho` / `writeCommonAtts` / `writeRunAtts` receive `ctx`
+- Replaced ~25 global reads in the HDF5 writers with `ctx%xxx` field accesses
+  (including `iCsteps`, `igwr`, `sZi_G`, `iUnd_cr`, all five element counters,
+  and the `sRho_G`, `sAw_G`, ... physics frame fields)
+
+**Step 3 — Thread flags through para_field and system_interpolation**
+- `getLocalFieldIndices(sdz, flags)` and `getInNode(flags)` take explicit `flags` arg
+- `getInterps_1D(sz2, flags)` and `getInterps_3D(sx, sy, sz2, flags)` write directly to
+  `flags%parallel_arrays_ok` / `flags%inner_xy_ok` — no global→flags sync needed in `derivs`
+
+**Step 4 — Thread init functions to write directly to ctx**
+- All `PopulateXxxFromGlobals` calls moved inside `init()` (unconditional, covers both resume
+  and non-resume paths); `puffin_main` no longer calls any Populate functions after `init()`
+
+**Step 5 — Remove dead globals (Clusters A and E)**
+- **Cluster E** (`qPArrOK_G`, `qInnerXYOK_G`): removed all "keep in sync" writes and
+  declarations; `PopulateSimulationFlagsFromGlobals` now initialises both to `.true.`
+- **Cluster A** (`iUnd_cr`, `iChic_cr`, `iDrift_cr`, `iQuad_cr`, `iModulation_cr`):
+  removed module-variable declarations and initialisations from `acc_lattice.f90`; removed
+  four sync writes in element routines; `PopulateLatticeElementsFromGlobals` hardcodes
+  counters to 1; resume override added after Populate block in `setup.f90`
+
+### Globals removed / partially decoupled in Phase 10
+
+| Global | Replaced by | Status |
+|--------|-------------|--------|
+| `qPArrOK_G` | `ctx%flags%parallel_arrays_ok` | ✅ Deleted |
+| `qInnerXYOK_G` | `ctx%flags%inner_xy_ok` | ✅ Deleted |
+| `iUnd_cr` | `ctx%lattice%current_und_index` | ✅ Deleted |
+| `iChic_cr` | `ctx%lattice%current_chic_index` | ✅ Deleted |
+| `iDrift_cr` | `ctx%lattice%current_drift_index` | ✅ Deleted |
+| `iQuad_cr` | `ctx%lattice%current_quad_index` | ✅ Deleted |
+| `iModulation_cr` | `ctx%lattice%current_modulation_index` | ✅ Deleted |
+| `iCsteps` | `ctx%lattice%cumulative_steps` | ⚠️ HDF5 writers use ctx; global still set for compat |
+| `igwr` | `ctx%mesh%highpass_filter_gr` | ⚠️ HDF5 writers use ctx; global still set for compat |
+| `sZi_G` | `ctx%integration%z_inter` | ⚠️ HDF5 writers use ctx; global still set for compat |
+| `sRho_G`, `sAw_G`, ... | `ctx%frame%rho`, `ctx%frame%aw`, ... | ⚠️ HDF5 writers use ctx; globals still written by init code |
+
+---
+
+## Phase 11: Remove Remaining Globals
+
+### Remaining globals that cannot be removed yet
+
+| Variable | Why it remains | Blocker |
+|----------|----------------|---------|
+| `iCsteps` | Still written in `acc_lattice.f90:setupMods` and sync'd in `undulator.f90`; HDF5 writers now use ctx | Need to remove sync writes |
+| `igwr` | Set in `undulator.f90` resume path; HDF5 writers now use ctx | Need to remove sync writes |
+| `sZi_G` | Set in `undulator.f90` resume path; HDF5 writers now use ctx | Need to remove sync writes |
+| `sRho_G`, `sAw_G`, `sGammaR_G`, `sEta_G`, `sKappa_G` | Written by `calcScaling`/`setup_calcs.f90`; read by `init_conds.f90`, `gen_macros.f90`, `MPfDists.f90` | Thread ctx through init/generation path |
+| `lam_w_G`, `lam_r_G`, `lg_G`, `lc_G`, `cf1_G` | Written by `calcScaling`; read throughout init | Thread ctx through init |
+| `end_time`, `start_time` | Timing globals read by `diffraction.f90` | Minor; move to local vars |
+
+---
+
+## Verification (every phase)
+
+```
+make -C build -j4
+ctest --output-on-failure
 ```
 
-Keep a REFACTORING.md file updated:
-```markdown
-# Refactoring Progress
-
-## Completed Phases
-- [x] Phase 0: GlobalTypes.f90 created
-- [ ] Phase 1: Adapter layer & integration state
-
-## Current Phase
-- [ ] Phase 2: Lattice elements
-
-## Blocked/In Progress
-(none)
-```
+Both `puffin_basic_tests` (unit) and `puffin_e2e_tests` (MPI, 2 processes) must pass.
+The e2e test verifies numerical results to 1e-10 tolerance.
 
 ---
 
-## Success Criteria
+## Key Files Reference
 
-Project is successful when:
-
-1. ✅ **No global variables in Globals module** (except deprecated wrappers)
-2. ✅ **All functions have explicit data dependencies** (passed as arguments)
-3. ✅ **Code compiles cleanly** with no warnings about global variable access
-4. ✅ **Test suite passes** with acceptable numerical agreement
-5. ✅ **Documentation updated** with new type usage patterns
-6. ✅ **Performance maintained or improved** (no overhead from types)
-7. ✅ **Parallel code verified** to work with explicit data passing
-8. ✅ **Code review approved** by maintainers
+| File | Role |
+|------|------|
+| `puffin/lib/global_types.f90` | All derived type definitions |
+| `puffin/lib/adapter_globals.f90` | Populate/Update adapters |
+| `puffin/lib/undulator.f90` | Main integration loop (UndSection) |
+| `puffin/lib/puffin_module.f90` | Top-level puffin_main loop |
+| `puffin/lib/acc_lattice.f90` | Element subroutines (disperse, drift, quad, BModulation) |
+| `puffin/lib/deriv_globals.f90` | All global variables |
 
 ---
 
-## Timeline Estimate
+## Remaining Globals Audit (after Phase 10)
 
-With one dedicated developer:
-- **Phase 0:** ✅ Day 1 (Design complete)
-- **Phase 1:** Days 2-3 (Adapter layer)
-- **Phase 2:** Days 4-5 (Integration state)
-- **Phase 3:** Days 6-7 (Lattice)
-- **Phase 4:** Days 8-10 (Field mesh)
-- **Phase 5:** Days 11-13 (Physics parameters)
-- **Phase 6:** Days 14-18 (Electron migration - longest)
-- **Phase 7:** Days 19-20 (Flags & output)
-- **Phase 8:** Days 21-24 (Final assembly & testing)
-
-**Total: ~3-4 weeks**
-
-With parallel development (multiple developers):
-- Phases can overlap where dependencies allow
-- Phase 2-3 can progress in parallel (little coupling)
-- Phase 4-5 have some dependencies but could partially overlap
-- Estimated time: **2 weeks**
-
----
-
-## Notes & Caveats
-
-1. **MPI Communication:** Special care needed when passing parallel arrays
-   - Currently: procelectrons_G defines electron distribution
-   - New: electrons%electrons_per_proc serves same role
-   - Test multi-process runs thoroughly
-
-2. **Memory Footprint:** Structs may have slight padding overhead
-   - Fortran compilers optimize this well
-   - Not expected to be significant
-
-3. **FFTW Plans:** FFT plans reference field dimensions
-   - May need to cache FFT plans in tFieldMesh
-   - Or recreate them as-needed with mesh%nx, mesh%ny, etc.
-
-4. **Checkpoint/Restart:** tInitData already defined
-   - Ensure checkpoint code reads/writes new type layouts
-   - Consider versioning checkpoint format
-
-5. **Legacy Code:** Some routines may have circular dependencies
-   - Identify these early in Phase 1
-   - Break cycles before full migration
-
----
-
-## Contact & Questions
-
-For questions about this roadmap:
-- Review the analysis document (separate file)
-- Check GlobalTypes.f90 for type member documentation
-- Reference specific file locations in roadmap
+| Variable | Why it remains | Phase that removes it |
+|----------|----------------|-----------------------|
+| `iCsteps` | written by `setupMods`; sync write in `undulator.f90`; HDF5 writers already use ctx | 11 |
+| `igwr` | set in `undulator.f90` resume path; HDF5 writers already use ctx | 11 |
+| `sZi_G` | set in `undulator.f90` resume path; HDF5 writers already use ctx | 11 |
+| `end_time`, `start_time` | timing globals read by `diffraction.f90` | 11 |
+| `sRho_G`, `sAw_G`, `sGammaR_G`, `sEta_G`, `sKappa_G` | written by `calcScaling`; read by `init_conds.f90`, `gen_macros.f90`, `MPfDists.f90` | 11 |
+| `lam_w_G`, `lam_r_G`, `lg_G`, `lc_G`, `cf1_G` | written by `calcScaling`; read throughout init | 11 |
+| `qPArrOK_G`, `qInnerXYOK_G` | ✅ Deleted in Phase 10 | — |
+| `iUnd_cr`, `iChic_cr`, `iDrift_cr`, `iQuad_cr`, `iModulation_cr` | ✅ Deleted in Phase 10 | — |

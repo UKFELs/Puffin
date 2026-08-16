@@ -31,8 +31,15 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   subroutine init(infile, sZ, qOK)
+   subroutine init(infile, sZ, ctx, qOK)
       use InitVars
+      use GlobalTypes, only: tSimulationContext
+      use AdapterGlobals, only: PopulateFieldMeshFromGlobals, &
+                                PopulateSimulationFlagsFromGlobals, &
+                                PopulateOutputConfigFromGlobals, &
+                                PopulateLatticeElementsFromGlobals, &
+                                PopulateIntegrationStateFromGlobals, &
+                                PopulateUndulatorFromGlobals
       implicit none
 
 ! Subroutine to perform the initialization of
@@ -44,10 +51,13 @@ contains
 ! sZ             Electron propagation distance in z
 !                through undulator.
 !
+! ctx            Simulation context (populated from globals before writeIM)
+!
 ! qOK            Error flag; .false. if no error
 
       character(1024_IP), intent(in) :: infile
       real(kind=wp), intent(out) :: sZ
+      type(tSimulationContext), intent(inout) :: ctx
       logical, intent(out) :: qOK
 
 !     Set error flag
@@ -77,8 +87,6 @@ contains
       if (.not. qOKL) goto 1000
 
       zFileName_G = zFile
-
-      igwr = -1_ip
 
 !     Initialise Error log for this run
 
@@ -155,7 +163,7 @@ contains
 
 
       call calcScaling(srho, saw, sgammar, lambda_w, &
-         zUndType, fx, fy)
+         zUndType, fx, fy, ctx)
 
 
       if (.not. qscaled_G) then
@@ -171,7 +179,7 @@ contains
          call scaleParams(sEleSig, sLenEPulse, sSigEj_G, &
             beamCenZ2, chirp, sEmit_n, emitx, emity, gamma_d, &
             sFieldModelLength, sLengthofElm, &
-            sSeedSigma, sA0_Re, sA0_Im, SmeanZ2, fr, sKBetaXSF_G, sKBetaYSF_G)
+            sSeedSigma, sA0_Re, sA0_Im, SmeanZ2, fr, sKBetaXSF_G, sKBetaYSF_G, ctx%frame)
       end if
 
 
@@ -182,9 +190,9 @@ contains
       call calcSamples(sFieldModelLength, iNodes, sLengthofElm, &
          sStepSize, stepsPerPeriod, nSteps, &
          nperiods, nodesperlambda, gamma_d, sEleSig, sLenEPulse, &
-         iNumElectrons, iMPsZ2PerWave, qSimple)
+         iNumElectrons, iMPsZ2PerWave, qSimple, ctx%frame)
 
-      call calcCharge(sQe, Ipk, sEleSig(:,iZ2_CG), sLenEPulse(:, iZ2_CG), sSigEj_G, qRndEj_G)
+      call calcCharge(sQe, Ipk, sEleSig(:,iZ2_CG), sLenEPulse(:, iZ2_CG), sSigEj_G, qRndEj_G, ctx%frame)
 
 !  if (qscaled_G) then
 
@@ -207,7 +215,7 @@ contains
 
 
       call setupMods(lattFile, taper, sRho, nSteps, sStepSize, fx, fy, &
-         sKBetaXSF_G, sKBetaYSF_G)
+         sKBetaXSF_G, sKBetaYSF_G, ctx%frame)
 
       if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 0)) print*, 'setup lattice'
 
@@ -217,7 +225,7 @@ contains
          sLengthOfElm, qSimple, iNumElectrons, &
          fx,fy,taper, sEleSig(1,iX_CG), sEleSig(1,iY_CG), &
          sFiltFrac,sDiffFrac,sBeta, &
-         zUndType,qFormattedFiles, qSwitches,qOK)
+         zUndType,qFormattedFiles, qSwitches, ctx, qOK)
 
       if (.not. qOKL) goto 1000
 
@@ -232,7 +240,7 @@ contains
 
             call stptrns(sEleSig, sLenEPulse, iNumElectrons, &
                emitx, emity, gamma_d, &
-               qMatched_A, qMatchS_G, qFMesh_G, sSeedSigma)
+               qMatched_A, qMatchS_G, qFMesh_G, sSeedSigma, ctx%frame)
 
             sFieldModelLength(iX_CG) = sLengthOfElmX_G * real((NX_G-1_ip),kind=wp)
             sFieldModelLength(iY_CG) = sLengthOfElmY_G * real((NY_G-1_ip),kind=wp)
@@ -276,28 +284,16 @@ contains
       call PopMacroElectrons(qSimple, dist_f, sQe,iNumElectrons,q_noise,sZ,sLenEPulse,&
          sEleSig, alphax, alphay, emitx, emity, beamCenZ2,gamma_d,&
          sElectronThreshold,chirp, mag, fr, &
-         nbeams, qOK)
+         nbeams, ctx%frame, ctx%flags, ctx%und%n2col, qOK)
 
       IF (.NOT. qOKL) GOTO 1000
-
-
-      if (qresume_G) then
-
-         iUnd_cr = tInitData_G%iUnd_cr
-         iChic_cr = tInitData_G%iChic_cr
-         iDrift_cr = tInitData_G%iDrift_cr
-         iQuad_cr = tInitData_G%iQuad_cr
-         iModulation_cr = tInitData_G%iModulation_cr
-         igwr = tInitData_G%igwr
-
-      end if
 
 
       if (iFieldSeedType_G==iSimpleSeed_G) then
 
          qStart_new = .true.
 
-         call getLocalFieldIndices(sRedistLen_G)
+         call getLocalFieldIndices(sRedistLen_G, ctx%flags, ctx%frame)
 
          CALL SetUpInitialValues(nseeds, freqf, &
             ph_sh, SmeanZ2, &
@@ -305,6 +301,7 @@ contains
             sSeedSigma, &
             sA0_Re,&
             sA0_Im,&
+            ctx%frame%rho, &
             qOKL)
 
 !  send init'd seed field to periodic buffer
@@ -313,7 +310,7 @@ contains
 
       else if (iFieldSeedType_G==iReadH5Field_G) then
 
-         call readH5FieldfileSingleDump(field_file(1), sFiltFrac)
+         call readH5FieldfileSingleDump(field_file(1), sFiltFrac, ctx%frame, ctx%flags)
          call initPowerCalc()
 
          sFieldModelLength(iX_CG) = sLengthOfElmX_G * real((NX_G-1_ip),kind=wp)
@@ -389,13 +386,48 @@ contains
 
       CALL MPI_BARRIER(tProcInfo_G%comm,error)
 
-      iCSteps = 0_ip
+!     Fully populate ctx from all globals now set by init so that puffin_main
+!     needs no further Populate calls after init returns.
+!
+!     This MUST happen before the initial write below. The Populate routines
+!     reset per-run state to its start-of-run value - in particular
+!     PopulateFieldMeshFromGlobals hardcodes highpass_filter_gr to -1, and that
+!     is the running output file index, which wr_h5 advances on every dump.
+!     Populating after the initial write would rewind the index and make the
+!     next dump overwrite the step-0 files.
+      call PopulateFieldMeshFromGlobals(ctx%mesh)
+      call PopulateSimulationFlagsFromGlobals(ctx%flags)
+      call PopulateOutputConfigFromGlobals(ctx%output)
+      call PopulateLatticeElementsFromGlobals(ctx%lattice)
+      call PopulateIntegrationStateFromGlobals(ctx%integration)
+      call PopulateUndulatorFromGlobals(ctx%und)
+      ctx%init_data = tInitData_G
+
+!     Start-of-run zeroing of the accumulated interaction length (old sZi_G).
+!     This is the ONLY place it may be zeroed - it must accumulate across all
+!     undulator modules, so PopulateIntegrationStateFromGlobals deliberately
+!     leaves it alone (it is called once per module from UndSection).
+!     On a resume, UndSection overwrites it with tInitData_G%Zbarinter.
+      ctx%integration%z_inter = 0.0_wp
+
+      ! Override element-type counters and mesh state from restart data
+      ! (PopulateLatticeElementsFromGlobals hardcodes counters to 1;
+      !  PopulateFieldMeshFromGlobals hardcodes highpass_filter_gr to -1)
+      if (qresume_G) then
+        ctx%lattice%current_und_index = tInitData_G%iUnd_cr
+        ctx%lattice%current_chic_index = tInitData_G%iChic_cr
+        ctx%lattice%current_drift_index = tInitData_G%iDrift_cr
+        ctx%lattice%current_quad_index = tInitData_G%iQuad_cr
+        ctx%lattice%current_modulation_index = tInitData_G%iModulation_cr
+        ctx%mesh%highpass_filter_gr = tInitData_G%igwr
+      end if
 
       if (.not. qResume_G) then
 
-         call writeIM(sZ, sZlSt_G, &
-            0_ip, 0_ip, 0_ip, iWriteNthSteps, &
-            iIntWriteNthSteps, nSteps, qOKL)
+        ctx%lattice%cumulative_steps = 0_ip
+        ctx%integration%current_step = 0_ip
+
+        call writeIM(sZ, sZlSt_G, ctx, 0_ip, qOKL)
 
       end if
 
@@ -406,6 +438,7 @@ contains
 
       if ((tProcInfo_G%qROOT) .and. (ioutInfo_G > 0)) print*, 'Initial data written'
       deallocate(s_Normalised_chi_G)
+
       qOK = .true.
 
       goto 2000

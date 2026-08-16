@@ -15,17 +15,19 @@ module FiElec1D
 use puffin_kinds
 use globals
 use parafield
+use GlobalTypes, only: tSimulationFlags
 
 implicit none
 
 contains
 
 
-subroutine getInterps_1D(sz2)
+subroutine getInterps_1D(sz2, flags)
 
 use rhs_vars
 
 real(kind=wp), intent(in) :: sz2(:)
+type(tSimulationFlags), intent(inout) :: flags
 
 integer(kind=ip) :: z2node
 integer(kind=ipl) :: i
@@ -51,7 +53,7 @@ real(kind=wp) :: locz2
 
 
       if (z2node >= bz2) then
-        qPArrOK_G = .false.
+        flags%parallel_arrays_ok = .false.
       end if
 
 
@@ -113,22 +115,25 @@ end subroutine getFFelecs_1D
 
 
 
+!> Scatter the electron source term into the local field arrays.
+!>
+!> Split into a wrapper and getSource_1D_kernel below for the same reason as
+!> getSource_3D in system_interpolation.f90 - see the comment there.  The
+!> !$OMP ATOMIC updates are memory barriers, so a loop reading dadz_w, p_nodes
+!> and lis_GR straight from their modules has to reload each array descriptor
+!> from memory every iteration, which puts the linker's choice of module symbol
+!> addresses on the critical path.  Passed as dummy arguments, the base
+!> addresses are loop-invariant by construction.
+
 subroutine getSource_1D(sDADzr, sDADzi, spr, spi, sgam, seta)
 
 
 use rhs_vars
 
-real(kind=wp), intent(inout) :: sDADzr(:), sDADzi(:)
-real(kind=wp), intent(in) :: spr(:), spi(:)
-real(kind=wp), intent(in) :: sgam(:)
+real(kind=wp), contiguous, intent(inout) :: sDADzr(:), sDADzi(:)
+real(kind=wp), contiguous, intent(in) :: spr(:), spi(:)
+real(kind=wp), contiguous, intent(in) :: sgam(:)
 real(kind=wp), intent(in) :: seta
-
-integer(kind=ipl) :: i
-real(kind=wp) :: dadzRInst, dadzIInst, dadzCom
-
-integer :: error
-
-
 
 
 !$OMP WORKSHARE
@@ -136,8 +141,28 @@ dadz_w = (s_chi_bar_G/dV3) * (1 + seta * sp2 ) &
                         / sgam
 !$OMP END WORKSHARE
 
+  call getSource_1D_kernel(sDADzr, sDADzi, spr, spi, &
+                           dadz_w, p_nodes, lis_GR, procelectrons_G(1))
+
+end subroutine getSource_1D
+
+
+
+subroutine getSource_1D_kernel(sDADzr, sDADzi, spr, spi, &
+                               dadz_w, p_nodes, lis_GR, nLocalElecs)
+
+real(kind=wp), contiguous, intent(inout) :: sDADzr(:), sDADzi(:)
+real(kind=wp), contiguous, intent(in) :: spr(:), spi(:)
+real(kind=wp), contiguous, intent(in) :: dadz_w(:)
+integer(kind=ip), contiguous, intent(in) :: p_nodes(:)
+real(kind=wp), contiguous, intent(in) :: lis_GR(:,:)
+integer(kind=ipl), intent(in) :: nLocalElecs
+
+integer(kind=ipl) :: i
+real(kind=wp) :: dadzRInst, dadzIInst
+
 !$OMP DO PRIVATE(dadzRInst, dadzIInst)
-  do i = 1, procelectrons_G(1)
+  do i = 1, nLocalElecs
 
 !                  Get 'instantaneous' dAdz
 
@@ -172,10 +197,10 @@ dadz_w = (s_chi_bar_G/dV3) * (1 + seta * sp2 ) &
       sDADzi(p_nodes(i) + 1_ip) =                      & 
         lis_GR(2,i) * dadzIInst + sDADzi(p_nodes(i) + 1_ip)
   
-  end do 
+  end do
 !$OMP END DO
 
 
-end subroutine getSource_1D
+end subroutine getSource_1D_kernel
 
 end module FiElec1D

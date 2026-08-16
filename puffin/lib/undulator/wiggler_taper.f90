@@ -8,74 +8,34 @@ use globals
 use puffin_kinds
 use puffin_mpiInfo
 use lattice
+use GlobalTypes, only: tUndulator
 
-contains 
+contains
 
 
 
-subroutine getAlpha(sZ)
+subroutine getAlpha(sZ, und)
 
-! Calculates linear taper based on
-! global variable undGrad
+! Calculates linear taper based on und%undulator_gradient.
+! Reads and writes und%n2col and und%n2col_initial directly;
+! no longer touches globals n2col, n2col0, undgrad, sz0, sZFS, sZFE.
 
   real(kind=wp), intent(in) :: sZ
+  type(tUndulator), intent(inout) :: und
 
-! Variables n2col, c2col0, undgrad and sz0 are
-! global variables, and are defined elsewhere.
+  if ((sZ >= und%z_start_undulator) .and. (sZ <= und%z_end_undulator)) then
 
-!  if (sZ <= sZFS) then   ! Work out wiggler ends and bounds???
-                          ! e.g. ...    (sZ <= sZFS)  (sZ >= sZFE)
- 
+    und%n2col = und%n2col_initial + und%undulator_gradient*(sZ - und%z_start_undulator)
 
-!    n2col = n2col0 * (sin( (sZ - sZ0) / (16_wp * sRho_G) ))**2_wp
+  else if (sZ > und%z_end_undulator) then
 
-!  else if (sZ >= sZFE) then
-
-!    n2col = n2col0 * cos( (sZ - sZFE) / (16_wp * sRho_G) )**2_wp
-
-!  else 
-
-
-  if ((sZ >= sZFS) .and. (sZ <= sZFE)) then
-
-    n2col = n2col0  + undgrad*(sz - sZFS)  ! linear taper
-
-  else if (sZ > sZFE) then
-
-    n2col0 = n2col
+    und%n2col_initial = und%n2col
 
   end if
-
-!  end if
 
 
 
 end subroutine getAlpha
-
-
-
-! subroutine getAlpha_end(sZ)
-
-! ! Calculates linear taper based on
-! ! global variable undGrad
-
-!   real(kind=wp), intent(in) :: sZ
-
-! ! Variables n2col, c2col0, undgrad and sz0 are
-! ! global variables, and are defined elsewhere.
-
-!   real(kind=wp) :: Nwt
-
-!   Nwt = 2.0_wp
-
-!   if (endType == iFront) then
-!     n2col = n2col0 * sin((sz-sz0) / 8.0_wp / sRho_G / Nwt)**2.0_wp
-!   else if (endType == iBack)
-!     n2col = n2col0 * sin((sz-sz0) / 8.0_wp / sRho_G / Nwt)**2.0_wp
-!   end if
-
-
-! end subroutine getAlpha_end
 
 
 

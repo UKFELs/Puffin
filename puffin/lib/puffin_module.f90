@@ -26,6 +26,7 @@ contains
       use initDataType
       use Globals
       use IO, only: tErrorLog_G, log_error
+      use GlobalTypes, only: tSimulationContext
 
       implicit none
 
@@ -35,16 +36,22 @@ contains
       integer(kind=ip) :: iL, iLst
       logical          :: qOKL
 
+      ! Single simulation context — owns all types, passed to all element routines
+      type(tSimulationContext) :: ctx
+
       qOK = .false.
 !           Read in data file and initialize system
 
-      call init(input_file_name, sZ, qOKL)
+      call init(input_file_name, sZ, ctx, qOKL)
       if (.not. qOKL) then
          call log_error('Error during initialization', tErrorLog_G)
          print*, 'Error during initialization, check error log for details, ', tErrorLog_G%zFileName
          goto 1000
       end if
-      call Get_time(start_time)
+
+      ! ctx is fully populated by init() — no further Populate calls needed here.
+
+      call Get_time(ctx%integration%time_start)
 
       if ((tProcInfo_G%qRoot) .and. (ioutInfo_G>0)) print*,' starting simulation... '
       if (tProcInfo_G%qRoot) OPEN(UNIT=137,FILE='rec.out',STATUS='REPLACE',FORM='FORMATTED')
@@ -59,22 +66,22 @@ contains
 
          if (iElmType(iL) == iUnd) then
             if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-               print*, 'Simulating undulator module', iUnd_cr
+               print*, 'Simulating undulator module', ctx%lattice%current_und_index
             end if
 
-            call UndSection(iL, sZ)
+            call UndSection(iL, sZ, ctx)
 
          else if (iElmType(iL) == iQuad) then
 
-            call Quad(iL)
+            call Quad(iL, ctx)
 
          else if (iElmType(iL) == iChic) then
 
-            call disperse(iL, sZ)
+            call disperse(iL, sZ, ctx)
 
          else if (iElmType(iL) == iDrift) then
 
-            call driftSection(iL, sZ)
+            call driftSection(iL, sZ, ctx)
 !     FOR WRITING AFTER EACH DRIFT
 !    szl = 0.0_wp
 !    call wr_cho(sZ, szl, &
@@ -83,17 +90,15 @@ contains
 
          else if (iElmType(iL) == iModulation) then
 
-            call BModulation(iL)
+            call BModulation(iL, ctx)
 
          end if
 
       end do
 
-      if (qDumpEnd_G) then
+      if (ctx%flags%dump_at_end) then
          szl = 0.0_wp
-         call wr_cho(sZ, szl, &
-            0_ip, iCsteps, modNum, iWriteNthSteps, &
-            iIntWriteNthSteps, 0_ip, .true., .true., qOKL)
+         call wr_cho(sZ, szl, ctx, modNum, .true., .true., qOKL)
       end if
 
       call cleanup(sZ)   !     Clear arrays and stucts used during integration

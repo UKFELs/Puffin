@@ -21,6 +21,7 @@ use ParallelSetUp
 use MASPin
 use H5in
 use cwrites
+use randomGauss, only: setRandomSeed
 
 contains
 
@@ -262,6 +263,7 @@ subroutine read_in(zfilename, &
   integer(kind=ip) :: iRedistStp
   integer(kind=ip) :: meshType
   integer(kind=ip) :: ioutInfo
+  integer(kind=ip) :: iRandSeed
 
 
 
@@ -294,7 +296,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  qFMesh_G, sKBetaXSF, sKBetaYSF, sRedistLen, &
                  iRedistStp, qscaled, nspinDX, nspinDY, qInitWrLat, qDumpEnd, &
                  wr_file, qMeasure, DFact, iDumpNthSteps, speout, meshType, &
-                 sPerWaves, ioutInfo
+                 sPerWaves, ioutInfo, iRandSeed
 
 
 ! Begin subroutine:
@@ -338,6 +340,12 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   iDumpNthSteps = -1000_ip
   speout = -1000.0_wp
   ioutInfo = 1_ip
+
+! Negative keeps the historical behaviour: seed the shot-noise RNG from the
+! system clock, so each run is a fresh realisation. Set iRandSeed >= 0 in the
+! input file to fix the realisation and make the run repeatable.
+
+  iRandSeed = -1_ip
 !  qplain = .false.
 
   beam_file = 'beam_file.in'
@@ -476,6 +484,12 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   fieldMesh = meshType
   
   ioutInfo_G = ioutInfo
+
+! Hand the base RNG seed straight to the module that owns it, rather than out
+! through this routine's argument list and back down through setup. Nothing
+! between here and the macroparticle generation has any use for it.
+
+  call setRandomSeed(iRandSeed)
 
 
   if (DFact /= -1000.0_wp) then

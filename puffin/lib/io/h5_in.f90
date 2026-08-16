@@ -13,6 +13,7 @@ use paraField
 use scale
 use HDF5
 use initDataType
+use GlobalTypes, only: tSimulationFlags, tFELFrame
 
 implicit none
 
@@ -307,6 +308,37 @@ contains
   end function getNZ2
 
 
+!> Read the step number a dump was written at, from the 'vsStep' attribute of
+!! its 'time' group. Every Puffin output file (full or integrated) carries
+!! this, so it identifies which point in the run a given output index holds.
+!! Returns 0 on non-root ranks.
+
+  function getWriteStep(zFile) result(iStep)
+
+    character(*), intent(in) :: zFile
+    INTEGER(HID_T) :: file_id       !< File identifier
+    INTEGER(HID_T) :: group_id      !< Group identifier
+    CHARACTER(LEN=4), PARAMETER :: grpname = "time"  !< Time group name
+    character(1024_IP) :: filename
+    integer :: error ! Error flag
+    integer(kind=ip) :: iStep
+
+    filename = zFile
+    iStep = 0_ip
+
+    if (tProcInfo_G%qRoot) then
+      CALL h5open_f(error)
+      CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
+      CALL h5gopen_f(file_id, grpname, group_id, error)
+      call readH5IntegerAttribute(group_id, "vsStep", iStep)
+      CALL h5gclose_f(group_id, error)
+      CALL h5fclose_f(file_id, error)
+      CALL h5close_f(error)
+    end if
+
+  end function getWriteStep
+
+
   subroutine readH5FieldDataOntoRootProcess(zFile, rfield, ifield, nZ2)
 
     character(*), intent(in) :: zFile
@@ -367,6 +399,185 @@ contains
     end if
 
   end subroutine readH5FieldDataOntoRootProcess
+
+
+  function getNX(zFile) result(nX)
+
+    character(*), intent(in) :: zFile
+    INTEGER(HID_T) :: file_id
+    INTEGER(HID_T) :: group_id
+    INTEGER(HID_T) :: attr_id
+    CHARACTER(LEN=7), PARAMETER :: grpname = "runInfo"
+    character(1024_IP) :: filename
+    INTEGER(HSIZE_T), DIMENSION(1) :: adims
+    INTEGER(HSIZE_T), DIMENSION(1) :: attr_data_int
+    integer :: error
+    integer(kind=ip) :: nX
+
+    filename = zfile
+    if (tProcInfo_G%qRoot) then
+      CALL h5open_f(error)
+      CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
+      CALL h5gopen_f(file_id, grpname, group_id, error)
+      CALL h5aopen_f(group_id, "nX", attr_id, error)
+      CALL h5aread_f(attr_id, H5T_NATIVE_INTEGER, attr_data_int, adims, error)
+      nX = attr_data_int(1)
+      CALL h5aclose_f(attr_id, error)
+      CALL h5gclose_f(group_id, error)
+      CALL h5fclose_f(file_id, error)
+      CALL h5close_f(error)
+    else
+      nX = 0
+    end if
+
+  end function getNX
+
+
+  function getNY(zFile) result(nY)
+
+    character(*), intent(in) :: zFile
+    INTEGER(HID_T) :: file_id
+    INTEGER(HID_T) :: group_id
+    INTEGER(HID_T) :: attr_id
+    CHARACTER(LEN=7), PARAMETER :: grpname = "runInfo"
+    character(1024_IP) :: filename
+    INTEGER(HSIZE_T), DIMENSION(1) :: adims
+    INTEGER(HSIZE_T), DIMENSION(1) :: attr_data_int
+    integer :: error
+    integer(kind=ip) :: nY
+
+    filename = zfile
+    if (tProcInfo_G%qRoot) then
+      CALL h5open_f(error)
+      CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
+      CALL h5gopen_f(file_id, grpname, group_id, error)
+      CALL h5aopen_f(group_id, "nY", attr_id, error)
+      CALL h5aread_f(attr_id, H5T_NATIVE_INTEGER, attr_data_int, adims, error)
+      nY = attr_data_int(1)
+      CALL h5aclose_f(attr_id, error)
+      CALL h5gclose_f(group_id, error)
+      CALL h5fclose_f(file_id, error)
+      CALL h5close_f(error)
+    else
+      nY = 0
+    end if
+
+  end function getNY
+
+
+  subroutine readH5FieldDataOntoRootProcess3D(zFile, rfield, ifield, nX, nY, nZ2)
+
+    character(*), intent(in) :: zFile
+    integer(kind=ip), intent(in) :: nX, nY, nZ2
+    REAL(kind=WP), intent(out) :: rfield(:), ifield(:)
+    INTEGER(HID_T) :: file_id
+    INTEGER(HID_T) :: dset_id
+    INTEGER(HID_T) :: dspace_id
+    INTEGER(HID_T) :: memspace
+    CHARACTER(LEN=5), PARAMETER :: dsetname = "aperp"
+    character(1024_IP) :: filename
+    INTEGER(HSIZE_T), DIMENSION(4) :: doffset, count
+    INTEGER(HSIZE_T), DIMENSION(1) :: dsize_mem
+    integer :: error
+
+    filename = zfile
+
+    if (tProcInfo_G%qRoot) then
+      CALL h5open_f(error)
+      CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
+      CALL h5dopen_f(file_id, dsetname, dset_id, error)
+
+      dsize_mem = (/INT(nX, HSIZE_T) * INT(nY, HSIZE_T) * INT(nZ2, HSIZE_T)/)
+      count = (/INT(nX, HSIZE_T), INT(nY, HSIZE_T), INT(nZ2, HSIZE_T), 1_HSIZE_T/)
+
+      CALL h5screate_simple_f(1, dsize_mem, memspace, error)
+      CALL h5Dget_space_f(dset_id, dspace_id, error)
+
+      doffset = (/0_HSIZE_T, 0_HSIZE_T, 0_HSIZE_T, 0_HSIZE_T/)
+      CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, count, error)
+      CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, rfield, dsize_mem, error, &
+        file_space_id=dspace_id, mem_space_id=memspace)
+
+      doffset = (/0_HSIZE_T, 0_HSIZE_T, 0_HSIZE_T, 1_HSIZE_T/)
+      CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, count, error)
+      CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, ifield, dsize_mem, error, &
+        file_space_id=dspace_id, mem_space_id=memspace)
+
+      CALL h5sclose_f(dspace_id, error)
+      CALL h5sclose_f(memspace, error)
+      CALL h5dclose_f(dset_id, error)
+      CALL h5fclose_f(file_id, error)
+      CALL h5close_f(error)
+    end if
+
+  end subroutine readH5FieldDataOntoRootProcess3D
+
+
+!> Length of a rank-1 dataset. Used for the integrated output files, whose
+!! datasets are all 1D but not all the same length ('Slice Charge' is one
+!! shorter than 'beamCurrent'), so each has to be sized individually.
+!! Returns 0 on non-root ranks.
+
+  function getH5DatasetLength1D(zFile, dsetName) result(nLen)
+
+    character(*), intent(in) :: zFile, dsetName
+    INTEGER(HID_T) :: file_id
+    INTEGER(HID_T) :: dset_id
+    INTEGER(HID_T) :: dspace_id
+    character(1024_IP) :: filename
+    INTEGER(HSIZE_T), DIMENSION(1) :: dims, mdims
+    integer :: error
+    integer(kind=ip) :: nLen
+
+    filename = zfile
+    nLen = 0_ip
+
+    if (tProcInfo_G%qRoot) then
+      CALL h5open_f(error)
+      CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
+      CALL h5dopen_f(file_id, dsetName, dset_id, error)
+      CALL h5Dget_space_f(dset_id, dspace_id, error)
+      CALL h5Sget_simple_extent_dims_f(dspace_id, dims, mdims, error)
+      nLen = dims(1)
+      CALL h5sclose_f(dspace_id, error)
+      CALL h5dclose_f(dset_id, error)
+      CALL h5fclose_f(file_id, error)
+      CALL h5close_f(error)
+    end if
+
+  end function getH5DatasetLength1D
+
+
+!> Read a named rank-1 double dataset onto the root process. Written for the
+!! integrated output files ('power', 'bunchingFundamental', ...), which are
+!! small enough to compare element by element against a golden reference.
+!! Leaves data untouched on non-root ranks.
+
+  subroutine readH5Dataset1DOntoRootProcess(zFile, dsetName, data, nLen)
+
+    character(*), intent(in) :: zFile, dsetName
+    integer(kind=ip), intent(in) :: nLen
+    REAL(kind=WP), intent(out) :: data(:)
+    INTEGER(HID_T) :: file_id
+    INTEGER(HID_T) :: dset_id
+    character(1024_IP) :: filename
+    INTEGER(HSIZE_T), DIMENSION(1) :: dsize
+    integer :: error
+
+    filename = zfile
+
+    if (tProcInfo_G%qRoot) then
+      CALL h5open_f(error)
+      CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
+      CALL h5dopen_f(file_id, dsetName, dset_id, error)
+      dsize = (/INT(nLen, HSIZE_T)/)
+      CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, data, dsize, error)
+      CALL h5dclose_f(dset_id, error)
+      CALL h5fclose_f(file_id, error)
+      CALL h5close_f(error)
+    end if
+
+  end subroutine readH5Dataset1DOntoRootProcess
 
 
   subroutine readH5BeamfileSerial(zFile)
@@ -723,10 +934,12 @@ contains
 
   end subroutine readH5Beamfile
 
-  subroutine readH5FieldfileSingleDump(zFile, sFiltFrac)
+  subroutine readH5FieldfileSingleDump(zFile, sFiltFrac, frame, flags)
 
     character(*), intent(in) :: zFile
     real(kind=wp), intent(in) :: sFiltFrac
+    type(tFELFrame), intent(in) :: frame
+    type(tSimulationFlags), intent(inout) :: flags
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier
     INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
@@ -814,7 +1027,7 @@ contains
       ntrnds_G = NX_G * NY_G
 
       Lenz2 = sLengthOfElmZ2_G * NZ2_G
-      lam_r_bar = 4*pi*sRho_G
+      lam_r_bar = 4*pi*frame%rho
       sFilt = Lenz2 / lam_r_bar * sFiltFrac
 
       iNumberNodes_G = int(NX_G, kind=IPN) * &
@@ -831,7 +1044,7 @@ contains
 
       qStart_new = .true.
 
-      call getLocalFieldIndices(sRedistLen_G)
+      call getLocalFieldIndices(sRedistLen_G, flags, frame)
 
 !     Close runInfo group
 

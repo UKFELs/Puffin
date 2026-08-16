@@ -1,0 +1,29 @@
+! PUFFIN BENCHMARK BEAM FILE (1D)
+!
+! Copy of test/inputs/beam_file.in with the beam scaled up for benchmarking:
+!
+!   iMPsZ2PerWave   20  -> 400   (20x more macroparticles per resonant wavelength)
+!   sLenE(z2)       2.0 -> 10.0  (5x longer flat-top, matching the larger mesh)
+!
+! q_noise is off in bench_1d.in and qOneDCold = .true., so the generated
+! macroparticle distribution is deterministic run-to-run.
+
+&NBLIST
+nbeams = 1
+dtype = 'simple'
+/
+
+&BLIST
+sSigmaE = 0.1, 0.1, 1E8, 1.0, 1.0, 1.0
+sLenE = 1E-6, 1E-6, 10.0, 1E-6, 1E-6, 1E-6
+qOneDCold = .true.
+iMPsZ2PerWave = 400
+emitx = 1.0
+emity = 1.0
+bcenter = 0.0
+gammaf = 1.0
+qRndEj_G = .false.
+sSigEj_G = 0.02
+qMatched_A = .false.
+qFixCharge = .true.
+/

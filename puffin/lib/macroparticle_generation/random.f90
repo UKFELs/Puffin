@@ -116,6 +116,11 @@ REAL(KIND=WP), PRIVATE      :: zero = 0.0, half = 0.5, one = 1.0, two = 2.0,   &
 PRIVATE            :: integral
 INTEGER(KIND=IP), PARAMETER :: dp = SELECTED_REAL_KIND(12, 60)
 
+!> Base seed for the macroparticle RNG, set once from the input file via
+!! setRandomSeed. Negative means "seed from the system clock", which is the
+!! historical, non-repeatable behaviour and remains the default.
+INTEGER(KIND=IP), PRIVATE   :: iBaseRandSeed = -1_IP
+
 
 CONTAINS
 
@@ -1608,18 +1613,42 @@ DEALLOCATE( seed )
 RETURN
 END SUBROUTINE seed_random_number
 
+!> Set the base value the macroparticle RNG is seeded from, from the iRandSeed
+!! entry of the main input file. A negative value (the default) keeps the
+!! historical behaviour of seeding from the system clock, so every run draws a
+!! different shot-noise realisation. Any value >= 0 is used directly, which
+!! makes a run repeatable — needed for regression tests, and for any study that
+!! has to hold the noise fixed while something else is varied.
+!!
+!! Repeatability is for a given number of MPI ranks. Each rank seeds its own
+!! stream and draws over the macroparticles it owns, so changing the rank count
+!! redistributes the draws and yields a different (statistically equivalent)
+!! realisation.
+
+SUBROUTINE setRandomSeed(iSeed)
+            INTEGER(kind=IP), intent(in) :: iSeed
+
+            iBaseRandSeed = iSeed
+
+END SUBROUTINE setRandomSeed
+
+
 SUBROUTINE init_random_seed()
             INTEGER :: i, n, clock
             INTEGER, DIMENSION(:), ALLOCATABLE :: seed
-          
+
             CALL RANDOM_SEED(size = n)
             ALLOCATE(seed(n))
-          
-            CALL SYSTEM_CLOCK(COUNT=clock)
-          
+
+            if (iBaseRandSeed >= 0_IP) then
+              clock = int(iBaseRandSeed)
+            else
+              CALL SYSTEM_CLOCK(COUNT=clock)
+            end if
+
             seed = clock + 37 * (/ (i - 1, i = 1, n) /)*tProcInfo_G%rank
             CALL RANDOM_SEED(PUT = seed)
-          
+
             DEALLOCATE(seed)
 END SUBROUTINE init_random_seed
 

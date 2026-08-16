@@ -12,7 +12,8 @@ module gMPsFromDists
    use ParallelSetUp, only: getGathArrs, scatterE2Loc
    use Globals, only: qRndEj_G, npk_bar_G, qEquiXY_G, nseqparts_G, qOneD_G, &
                       iGam_CG, iX_CG, iPX_CG, iY_CG, iPY_CG, &
-                      qscaled_G, Lc_G, Lg_G, sGammaR_G, saw_G, TrLdMeth_G, ata_G, fillFact_G
+                      qscaled_G, TrLdMeth_G, ata_G, fillFact_G
+   use GlobalTypes, only: tFELFrame
    use puffin_constants, only: pi
    use parBeam, only: splitBeam
    use grids, only: genGrid, getStEnd
@@ -29,7 +30,7 @@ module gMPsFromDists
 contains
 
 
-   subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh, nMPDims)
+   subroutine getMPs(fname, nbeams, sZ, qNoise, sEThresh, nMPDims, frame)
 
 
 ! This subroutine  loops around the beams, reading in each
@@ -46,6 +47,7 @@ contains
       real(kind=wp), intent(in) :: sZ, sEThresh
       logical, intent(in) :: qNoise
       integer(kind=ip), intent(in) :: nMPDims(:,:)
+      type(tFELFrame), intent(in) :: frame
 
 !           local args
 
@@ -156,7 +158,7 @@ contains
          call getLocalDists(fname(ib), z2m, gm, &
             xm, ym, pxm, pym, gsig, xsig, ysig, &
             pxsig, pysig, nz2(ib), nz2G(ib), &
-            Ne)
+            Ne, frame)
 
 !     get Macroparticles in this beam
 
@@ -175,7 +177,7 @@ contains
 
       call removeLowNC(chi_b, chi, b_sts, b_ends, sEThresh, npk_bar_G, &
          nbeams, x, y, z2, px,&
-         py, gamma, totMPs_b)
+         py, gamma, totMPs_b, frame%gamma_ref)
 
 !  if (qEquiXY_G)  npk_bar_G = npk
 
@@ -190,7 +192,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
    subroutine getLocalDists(fname, z2ml, gam_ml, xml, yml, pxml, &
-      pyml, gam_dl, xdl, ydl, pxdl, pydl, nz2, nz2g, Nel)
+      pyml, gam_dl, xdl, ydl, pxdl, pydl, nz2, nz2g, Nel, frame)
 
 
       character(*), intent(in) :: fname
@@ -201,6 +203,7 @@ contains
          Nel(:)
 
       integer(kind=ip), intent(inout) :: nz2, nz2g
+      type(tFELFrame), intent(in) :: frame
 
 !                 Local args
 
@@ -236,15 +239,15 @@ contains
 
          ! scale beam coordinates
 
-         call scaleT(z2ml, Lc_G)
-         call scaleX(xml, Lg_G, Lc_G)
-         call scaleX(xdl, Lg_G, Lc_G)
-         call scaleX(yml, Lg_G, Lc_G)
-         call scaleX(ydl, Lg_G, Lc_G)
-         call scalePX(pxml, sGammaR_G * gam_ml, saw_G)
-         call scalePX(pxdl, sGammaR_G * gam_ml, saw_G)
-         call scalePX(pyml, sGammaR_G * gam_ml, saw_G)
-         call scalePX(pydl, sGammaR_G * gam_ml, saw_G)
+         call scaleT(z2ml, frame%cooperation_length)
+         call scaleX(xml, frame%gain_length, frame%cooperation_length)
+         call scaleX(xdl, frame%gain_length, frame%cooperation_length)
+         call scaleX(yml, frame%gain_length, frame%cooperation_length)
+         call scaleX(ydl, frame%gain_length, frame%cooperation_length)
+         call scalePX(pxml, frame%gamma_ref * gam_ml, frame%aw)
+         call scalePX(pxdl, frame%gamma_ref * gam_ml, frame%aw)
+         call scalePX(pyml, frame%gamma_ref * gam_ml, frame%aw)
+         call scalePX(pydl, frame%gamma_ref * gam_ml, frame%aw)
 
 
       end if

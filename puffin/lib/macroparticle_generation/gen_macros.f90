@@ -8,7 +8,6 @@ module MacrosGen
    use randomGauss, only: init_random_seed, random_Poisson
    use puffin_mpiInfo, only: tProcInfo_G
    use MPI
-   use Globals, only: sEta_G, sRho_G
 
    implicit none
    private
@@ -120,7 +119,7 @@ contains
       INTEGER(KIND=IP) :: np1,np2,np3,nx1,nx2,nx3
       INTEGER(KIND=IP) :: a,b,c,i,j,k
       INTEGER(KIND=IPL) :: index,icount
-      REAL(KIND=WP) :: s_mean,s_macro,s_spatial_mean,u,kx,ky
+      REAL(KIND=WP) :: s_mean,s_macro,s_spatial_mean,u
       REAL(KIND=WP) :: local_max_av,px_shift,py_shift
       REAL(KIND=WP),ALLOCATABLE,DIMENSION(:) :: s_mean_number_macro
       REAL(KIND=WP),ALLOCATABLE,DIMENSION(:) :: s_spatial_macro
@@ -263,9 +262,6 @@ contains
 !    IF (tProcInfo_G%rank==proc) THEN
 !If (tParallelInfoType_G%qROOT) PRINT *, 'Radius= ', radius
 
-!workout kx and ky for 3D undulator
-      kx = SQRT(sEta_G/(8.0_WP*sRho_G**2))
-      ky = SQRT(sEta_G/(8.0_WP*sRho_G**2))
       px_shift = 0
       py_shift = 0
 

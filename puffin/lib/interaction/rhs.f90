@@ -25,6 +25,7 @@ use FiElec
 use gtop2
 use ParaField
 use bfields
+use GlobalTypes, only: tUndulator, tFELFrame, tSimulationContext
 
 
 implicit none
@@ -56,6 +57,8 @@ contains
 !> @param[out] sDADzr d/dz of real (x) component of A_perp
 !> @param[out] sDADzi d/dz of real (-y) component of A_perp
 !> @param[out] qOK Error flag
+!> @param[in] und Undulator parameters (replaces undulator globals in chain)
+!> @param[in] frame FEL frame parameters (replaces physics globals in chain)
 
   subroutine getrhs(sz, &
                     sAr, sAi, &
@@ -64,7 +67,7 @@ contains
                     sdx, sdy, sdz2, &
                     sdpr, sdpi, sdgam, &
                     sDADzr, sDADzi, &
-                    qOK)
+                    qOK, ctx)
 
   use rhs_vars
 
@@ -91,6 +94,7 @@ contains
 
   real(kind=wp), contiguous,  intent(inout) :: sDADzr(:), sDADzi(:) !!!!!!!
   logical, intent(inout) :: qOK
+  type(tSimulationContext), intent(inout) :: ctx
 
   integer(kind=ipl) :: i, z2node
   integer :: error
@@ -109,7 +113,7 @@ contains
 !  allocate(p_nodes2(ispt))
 !  allocate(tmp1(500000))
 !  allocate(tmp2(ispt))
-  
+
   call alct_e_srtcts(iNumberElectrons_G)
 
   if (tTransInfo_G%qOneD) then
@@ -123,12 +127,12 @@ contains
   sField4ElecReal = 0.0_WP
   sField4ElecImag = 0.0_WP
 
-  call rhs_tmsavers(sz)  ! This can be moved later...
+  call rhs_tmsavers(sz, ctx%und, ctx%frame)  ! This can be moved later...
 
 !     Adjust undulator tuning
 
-  call getAlpha(sZ)
-  call adjUndPlace(sZ)
+  call getAlpha(sZ, ctx%und)
+  call adjUndPlace(sZ, ctx%und)
 
 
 
@@ -140,7 +144,7 @@ contains
 !     end do
 ! !$OMP END SIMD
 
-  call getP2(sp2, sgam, spr, spi, sEta_G, sGammaR_G, saw_G)
+  call getP2(sp2, sgam, spr, spi, ctx%frame%eta, ctx%frame%gamma_ref, ctx%frame%aw)
 
 
 
@@ -188,21 +192,20 @@ contains
 
 
 
-
   if (tTransInfo_G%qOneD) then
 
-    call getInterps_1D(sz2)
-    if (qPArrOK_G) then
+    call getInterps_1D(sz2, ctx%flags)
+    if (ctx%flags%parallel_arrays_ok) then
       call getFFelecs_1D(sAr, sAi)
-      call getSource_1D(sDADzr, sDADzi,  spr, spi, sgam, sEta_G)
+      call getSource_1D(sDADzr, sDADzi, spr, spi, sgam, ctx%frame%eta)
     end if
 
   else
 
-    call getInterps_3D(sx, sy, sz2)
-    if ((qPArrOK_G) .and. (qInnerXYOK_G)) then
+    call getInterps_3D(sx, sy, sz2, ctx%flags)
+    if ((ctx%flags%parallel_arrays_ok) .and. (ctx%flags%inner_xy_ok)) then
       call getFFelecs_3D(sAr, sAi)
-      call getSource_3D(sDADzr, sDADzi, spr, spi, sgam, sEta_G)
+      call getSource_3D(sDADzr, sDADzi, spr, spi, sgam, ctx%frame%eta)
     end if
 
   end if
@@ -227,7 +230,7 @@ contains
     if (qElectronsEvolve_G) then
 
         call getBFields(sx, sy, sz, &
-                        bxu, byu, bzu)
+                        bxu, byu, bzu, ctx%und, ctx%frame)
 
 !     z2
 
@@ -237,28 +240,28 @@ contains
 !     X
 
         call dxdz_f(sx, sy, sz2, spr, spi, sgam, &
-                    sdx)
+                    sdx, ctx%frame)
 
 !     Y
 
         call dydz_f(sx, sy, sz2, spr, spi, sgam, &
-                    sdy)
+                    sdy, ctx%frame)
 
 
 !     PX (Real pperp)
 
         call dppdz_r_f(sx, sy, sz2, spr, spi, sgam, sZ, &
-                       sdpr)
+                       sdpr, ctx%und, ctx%frame)
 
 !     -PY (Imaginary pperp)
 
         call dppdz_i_f(sx, sy, sz2, spr, spi, sgam, sz, &
-                       sdpi)
+                       sdpi, ctx%und, ctx%frame)
 
 !     P2
 
         call dgamdz_f(sx, sy, sz2, spr, spi, sgam, &
-                     sdgam)
+                     sdgam, ctx%frame)
 
     end if
 
@@ -342,12 +345,16 @@ contains
 !> Initialize data used in the calculation of d/dz of electron beam + radiation
 !> field quantities
 !> @param[in] sz zbar
+!> @param[in] und Undulator parameters
+!> @param[in] frame FEL frame parameters
 
-subroutine rhs_tmsavers(sz)
+subroutine rhs_tmsavers(sz, und, frame)
 
 use rhs_vars
 
 real(kind=wp), intent(in) :: sz
+type(tUndulator), intent(in) :: und
+type(tFELFrame), intent(in) :: frame
 
   ioutside=0
 
@@ -363,12 +370,12 @@ real(kind=wp), intent(in) :: sz
 
 !     Time savers
 
-  sInv2rho    = 1.0_WP/(2.0_WP * sRho_G)
+  sInv2rho    = 1.0_WP/(2.0_WP * frame%rho)
 
   ZOver2rho   = sz * sInv2rho
-  salphaSq    = (2.0_WP * sGammaR_G * sRho_G / sAw_G)**2
+  salphaSq    = (2.0_WP * frame%gamma_ref * frame%rho / frame%aw)**2
 
-  un = sqrt(fx_G**2.0_WP + fy_G**2.0_WP)
+  un = sqrt(und%fx**2.0_WP + und%fy**2.0_WP)
 
 
 !     number of transverse nodes
@@ -379,11 +386,11 @@ real(kind=wp), intent(in) :: sz
 
   retim = nspinDX*nspinDY*nZ2_G
 
-  econst = sAw_G/(sRho_G*sqrt(2.0_WP*(fx_G**2.0_WP+fy_G**2.0_WP)))
+  econst = frame%aw/(frame%rho*sqrt(2.0_WP*(und%fx**2.0_WP+und%fy**2.0_WP)))
 
-  nc = 2.0_WP*saw_G**2/(fx_G**2.0_WP + fy_G**2.0_WP)
+  nc = 2.0_WP*frame%aw**2/(und%fx**2.0_WP + und%fy**2.0_WP)
 
-  nb = 2.0_WP * sRho_G / ((fx_G**2.0_WP+fy_G**2.0_WP)*sEta_G)
+  nb = 2.0_WP * frame%rho / ((und%fx**2.0_WP+und%fy**2.0_WP)*frame%eta)
 
   maxEl = maxval(procelectrons_G)
   qoutside=.FALSE.

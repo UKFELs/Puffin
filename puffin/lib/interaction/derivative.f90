@@ -17,6 +17,7 @@ module Derivative
 
 use rhs
 use ParaField
+use GlobalTypes, only: tSimulationContext
 
 implicit none
 
@@ -34,7 +35,8 @@ contains
 
 
   subroutine derivs(sz, sAr, sAi, sx, sy, sz2, spr, spi, sp2, &
-                    sdx, sdy, sdz2, sdpr, sdpi, sdp2, sdAr, sdAi)
+                    sdx, sdy, sdz2, sdpr, sdpi, sdp2, sdAr, sdAi, &
+                    ctx)
 
   implicit none
 
@@ -55,6 +57,7 @@ contains
                                   sdpr(:), sdpi(:), sdp2(:)
 
     real(kind=wp), contiguous, intent(inout) :: sdAr(:), sdAi(:)
+    type(tSimulationContext), intent(inout) :: ctx
 
 !                 LOCAL ARGS
 !
@@ -80,7 +83,10 @@ contains
                 sdx, sdy, sdz2, &
                 sdpr, sdpi, sdp2, &
                 sdAr, sdAi, &
-                qOKL)
+                qOKL, ctx)
+
+! flags%parallel_arrays_ok and flags%inner_xy_ok are now written directly by
+! getInterps_1D/3D via ctx%flags — no global→flags sync needed here.
 
 
 
@@ -93,7 +99,7 @@ contains
 
 !     Check to see if parallel field setup OK...
 
-      if (.not. qPArrOK_G) then
+      if (.not. ctx%flags%parallel_arrays_ok) then
         iArEr = 1_ip
       else
         iArEr = 0_ip
@@ -104,7 +110,7 @@ contains
             MPI_SUM, MPI_COMM_WORLD, error)
 
       if (iArEr > 0_ip) then
-        qPArrOK_G = .false.
+        ctx%flags%parallel_arrays_ok = .false.
         if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 2)) then
           print*, 'electron outside parallel bounds!'
           print*, 'Emergency redistribute!!!'
@@ -117,7 +123,7 @@ contains
 
 
 
-      if (.not. qInnerXYOK_G) then
+      if (.not. ctx%flags%inner_xy_ok) then
         iArEr = 1_ip
       else
         iArEr = 0_ip
@@ -128,7 +134,7 @@ contains
             MPI_SUM, MPI_COMM_WORLD, error)
 
       if (iArEr > 0_ip) then
-        qInnerXYOK_G = .false.
+        ctx%flags%inner_xy_ok = .false.
         if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 2) ) then
           print*, 'electron outside transverse bounds!'
           print*, 'Emergency redistribute!!!'

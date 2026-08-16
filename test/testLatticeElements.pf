@@ -1,0 +1,186 @@
+!> Unit tests for lattice element subroutines.
+!!
+!! Each test sets up minimal global state, calls one element subroutine, and
+!! checks the result against an analytic formula.  Diffraction is disabled in
+!! all tests to avoid any MPI/FFTW calls.
+
+module testLatticeElements
+
+  use pFUnit
+  use puffin_kinds
+  use Globals
+  use lattice, only: bModulation, Quad, disperse, driftSection
+  use GlobalTypes, only: tSimulationContext
+
+  implicit none
+
+contains
+
+  ! ---------------------------------------------------------------------------
+  ! bModulation: gamma_new = gamma_old + A * cos(k * z2)
+  ! ---------------------------------------------------------------------------
+  @test
+  subroutine testBModulationAppliesEnergyKick()
+    type(tSimulationContext) :: ctx
+    real(kind=wp), parameter :: pi  = acos(-1.0_wp)
+    real(kind=wp), parameter :: A   = 0.01_wp
+    real(kind=wp), parameter :: k   = 1.0_wp
+
+    iNumberElectrons_G = 2_ipl
+    allocate(sElGam_G(2), sElZ2_G(2))
+    sElGam_G = [100.0_wp, 200.0_wp]
+    sElZ2_G  = [0.0_wp,   pi / 2.0_wp]
+
+    allocate(ctx%lattice%enmod_mag(1), ctx%lattice%enmod_wavenum(1))
+    ctx%lattice%enmod_mag(1)             = A
+    ctx%lattice%enmod_wavenum(1)         = k
+    ctx%lattice%current_modulation_index = 1_ip
+
+    call bModulation(1_ip, ctx)
+
+    @AssertEqual(100.0_wp + A * cos(k * 0.0_wp),    sElGam_G(1), 1e-14_wp)
+    @AssertEqual(200.0_wp + A * cos(k * pi / 2.0_wp), sElGam_G(2), 1e-14_wp)
+
+    deallocate(sElGam_G, sElZ2_G)
+    deallocate(ctx%lattice%enmod_mag, ctx%lattice%enmod_wavenum)
+
+  end subroutine testBModulationAppliesEnergyKick
+
+
+  ! ---------------------------------------------------------------------------
+  ! Quad: px_new = px + sqrt(eta)/(2*rho*kappa) * x / fx
+  !       py_new = py - sqrt(eta)/(2*rho*kappa) * y / fy
+  ! ---------------------------------------------------------------------------
+  @test
+  subroutine testQuadAppliesTransverseMomentumKick()
+    type(tSimulationContext) :: ctx
+    real(kind=wp) :: expected_px, expected_py
+    real(kind=wp), parameter :: eta_v   = 0.5_wp
+    real(kind=wp), parameter :: rho_v   = 0.005_wp
+    real(kind=wp), parameter :: kappa_v = 1.0_wp
+    real(kind=wp), parameter :: gref_v  = 10.0_wp
+    real(kind=wp), parameter :: fx_v    = 10.0_wp
+    real(kind=wp), parameter :: fy_v    = 5.0_wp
+
+    iNumberElectrons_G = 1_ipl
+    allocate(sElGam_G(1), sElPX_G(1), sElPY_G(1), sElX_G(1), sElY_G(1), sElZ2_G(1))
+    sElGam_G = [gref_v]
+    sElPX_G  = [0.1_wp]
+    sElPY_G  = [0.2_wp]
+    sElX_G   = [1.0_wp]
+    sElY_G   = [2.0_wp]
+    sElZ2_G  = [0.0_wp]
+
+    ctx%frame%eta       = eta_v
+    ctx%frame%rho       = rho_v
+    ctx%frame%kappa     = kappa_v
+    ctx%frame%gamma_ref = gref_v
+    ctx%frame%aw        = 0.0_wp
+    ctx%flags%one_dimensional = .false.
+
+    allocate(ctx%lattice%quad_fx(1), ctx%lattice%quad_fy(1))
+    ctx%lattice%quad_fx(1)         = fx_v
+    ctx%lattice%quad_fy(1)         = fy_v
+    ctx%lattice%current_quad_index = 1_ip
+
+    call Quad(1_ip, ctx)
+
+    expected_px = 0.1_wp + sqrt(eta_v) / (2.0_wp * rho_v * kappa_v) * 1.0_wp / fx_v
+    expected_py = 0.2_wp - sqrt(eta_v) / (2.0_wp * rho_v * kappa_v) * 2.0_wp / fy_v
+
+    @AssertEqual(expected_px, sElPX_G(1), 1e-14_wp)
+    @AssertEqual(expected_py, sElPY_G(1), 1e-14_wp)
+
+    deallocate(sElGam_G, sElPX_G, sElPY_G, sElX_G, sElY_G, sElZ2_G)
+    deallocate(ctx%lattice%quad_fx, ctx%lattice%quad_fy)
+
+  end subroutine testQuadAppliesTransverseMomentumKick
+
+
+  ! ---------------------------------------------------------------------------
+  ! disperse: z2_new = z2 - 2*D*(gamma - 1) + slip
+  !           (diffraction and periodic wrapping disabled)
+  ! ---------------------------------------------------------------------------
+  @test
+  subroutine testDisperseAppliesSlippage()
+    type(tSimulationContext) :: ctx
+    real(kind=wp) :: sZ
+    real(kind=wp), parameter :: disp_v  = 0.1_wp
+    real(kind=wp), parameter :: slip_v  = 0.05_wp
+    real(kind=wp), parameter :: gamma_v = 3.0_wp
+    real(kind=wp), parameter :: z2_init = 1.0_wp
+
+    iNumberElectrons_G = 1_ipl
+    allocate(sElGam_G(1), sElZ2_G(1))
+    sElGam_G = [gamma_v]
+    sElZ2_G  = [z2_init]
+
+    ctx%flags%diffraction = .false.
+    fieldMesh = iTemporal
+
+    allocate(ctx%lattice%chic_zbar(1), ctx%lattice%chic_disp(1), ctx%lattice%chic_slip(1))
+    ctx%lattice%chic_zbar(1)         = 0.1_wp
+    ctx%lattice%chic_disp(1)         = disp_v
+    ctx%lattice%chic_slip(1)         = slip_v
+    ctx%lattice%current_chic_index   = 1_ip
+
+    sZ = 0.0_wp
+    call disperse(1_ip, sZ, ctx)
+
+    @AssertEqual(z2_init - 2.0_wp * disp_v * (gamma_v - 1.0_wp) + slip_v, sElZ2_G(1), 1e-14_wp)
+
+    deallocate(sElGam_G, sElZ2_G)
+    deallocate(ctx%lattice%chic_zbar, ctx%lattice%chic_disp, ctx%lattice%chic_slip)
+
+  end subroutine testDisperseAppliesSlippage
+
+
+  ! ---------------------------------------------------------------------------
+  ! driftSection (1D): z2_new = z2 + dz * getP2(gamma, 0, 0, eta, gamma_ref, aw)
+  !
+  ! getP2 formula (px=py=0, aw=0):
+  !   sp2 = (1 / sqrt(1 - 1/(gamma_ref^2 * gamma^2)) - 1) / eta
+  ! With gamma=gamma_ref=2, eta=1, aw=0:
+  !   sp2 = (1/sqrt(1 - 1/16) - 1) = 4/sqrt(15) - 1
+  ! ---------------------------------------------------------------------------
+  @test
+  subroutine testDriftAdvancesZ2()
+    type(tSimulationContext) :: ctx
+    real(kind=wp) :: sZ, sp2_expected
+    real(kind=wp), parameter :: gamma_v = 2.0_wp
+    real(kind=wp), parameter :: eta_v   = 1.0_wp
+    real(kind=wp), parameter :: dz_v    = 1.0_wp
+    real(kind=wp), parameter :: z2_init = 0.5_wp
+
+    iNumberElectrons_G = 1_ipl
+    allocate(sElGam_G(1), sElPX_G(1), sElPY_G(1), sElX_G(1), sElY_G(1), sElZ2_G(1))
+    sElGam_G = [gamma_v]
+    sElPX_G  = [0.0_wp]
+    sElPY_G  = [0.0_wp]
+    sElX_G   = [0.0_wp]
+    sElY_G   = [0.0_wp]
+    sElZ2_G  = [z2_init]
+
+    ctx%frame%eta       = eta_v
+    ctx%frame%gamma_ref = gamma_v
+    ctx%frame%aw        = 0.0_wp
+    ctx%flags%one_dimensional = .true.
+    ctx%flags%diffraction     = .false.
+
+    allocate(ctx%lattice%drift_zbar(1))
+    ctx%lattice%drift_zbar(1)       = dz_v
+    ctx%lattice%current_drift_index = 1_ip
+
+    sZ = 0.0_wp
+    call driftSection(1_ip, sZ, ctx)
+
+    sp2_expected = (1.0_wp / sqrt(1.0_wp - 1.0_wp / (gamma_v**2 * gamma_v**2)) - 1.0_wp) / eta_v
+
+    @AssertEqual(z2_init + dz_v * sp2_expected, sElZ2_G(1), 1e-14_wp)
+
+    deallocate(sElGam_G, sElPX_G, sElPY_G, sElX_G, sElY_G, sElZ2_G)
+    deallocate(ctx%lattice%drift_zbar)
+
+  end subroutine testDriftAdvancesZ2
+
+end module testLatticeElements

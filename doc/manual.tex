@@ -986,7 +986,7 @@ Integer, selecting the mesh type to be used. $= 0$ for fully temporal mesh, $=1$
 
 {\bf sperwaves}
 
-Length of the periodic mesh, expressed as the number of reference resonant wavelengths. If {\bf meshType} $=1$ (periodic), and this is defined, then it will be used rather than the more direct {\bf sFModelLengthZ2}. If {\bf meshType} $=1$ then this is ignored. [- (not used by default)] 
+Length of the periodic mesh, expressed as the number of reference resonant wavelengths. If {\bf meshType} $=1$ (periodic), and this is defined, then it will be used rather than the more direct {\bf sFModelLengthZ2}. If {\bf meshType} $=0$ (non-periodic) then this is ignored. [- (not used by default)] 
 
 {\bf nodesPerLambdar}
 
@@ -1106,6 +1106,10 @@ Switch on/off proper modelling of the wiggler module ends. If true, then the fir
 {\bf q\_Noise}
 
 If adding the statistical shot-noise to the beam in the simple beam case. [.true.]
+
+{\bf iRandSeed}
+
+Base seed for the random number generator used to load the macroparticles and add their shot-noise. If negative, the generator is seeded from the system clock, so every run draws a different noise realisation - this is the default and the historical behaviour. If zero or positive, the given value is used instead, and the run becomes repeatable: the same input file gives the same output, which is what makes regression testing possible, and lets a parameter be varied while the noise is held fixed. Note that repeatability is for a given number of MPI ranks, since each rank seeds its own stream and draws over the macroparticles it owns; changing the rank count gives a different, but statistically equivalent, realisation. [$-1$]
 
 {\bf qsdds}
 

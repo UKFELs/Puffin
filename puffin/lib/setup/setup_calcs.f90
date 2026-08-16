@@ -27,6 +27,7 @@ use MASPin
 use h5in
 use parafield
 use scale
+use GlobalTypes, only: tSimulationFlags, tSimulationContext, tFELFrame
 
 IMPLICIT NONE
 
@@ -62,7 +63,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
                          sElmLen, qSimple, iNMPs, fx, fy, &
                          taper, sFSigX, sFSigY, sFiltFrac, &
                          dStepFrac, sBeta, zUndType, &
-                         qFormatted, qSwitch, qOK)
+                         qFormatted, qSwitch, ctx, qOK)
 
     IMPLICIT NONE
 
@@ -76,6 +77,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
     LOGICAL,           INTENT(IN)    :: qSwitch(nSwitches_CG), qFormatted, &
                                         qSimple
     character(32_ip),  intent(in)    :: zUndType
+    type(tSimulationContext), intent(inout) :: ctx
     LOGICAL,           INTENT(OUT)   :: qOK
 
 
@@ -108,9 +110,6 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 !      nspinDY =  nspinDY + 1
 !
 !    end if
-
-
-    qInnerXYOK_G = .true.
 
 
     ntrndsi_G = nspinDX * nspinDY
@@ -220,10 +219,10 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
     end if
 
-    n2col = modfact1
-    n2col0 = n2col
-    sz0 = 0.0_WP
-    undgrad = taper
+    ctx%und%n2col = modfact1
+    ctx%und%n2col_initial = modfact1
+    ctx%und%z_taper_start = 0.0_WP
+    ctx%und%undulator_gradient = taper
 
 
 
@@ -236,8 +235,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
 
 
-    cf1_G = sEta_G / sKappa_G**2
-
+    ctx%frame%coefficient_1 = ctx%frame%eta / ctx%frame%kappa**2
 
     diffstep = dStepFrac * 4.0_WP * pi * rho
     sBeta_G = sBeta
@@ -262,11 +260,11 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
     if (zUndType_G == 'curved') then
 
-      kx_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2)) ! Giving equal focusing for now....
-      ky_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+      kx_und_G = SQRT(ctx%frame%eta/(8.0_WP*rho**2)) ! Giving equal focusing for now....
+      ky_und_G = SQRT(ctx%frame%eta/(8.0_WP*rho**2))
 
-      sKBetaX_G = aw / sqrt(2.0_wp * sEta_G) / sGammaR_G * kx_und_G
-      sKBetaY_G = aw / sqrt(2.0_wp * sEta_G) / sGammaR_G * ky_und_G
+      sKBetaX_G = aw / sqrt(2.0_wp * ctx%frame%eta) / gamr * kx_und_G
+      sKBetaY_G = aw / sqrt(2.0_wp * ctx%frame%eta) / gamr * ky_und_G
 
     else if (zUndType_G == 'planepole') then
 
@@ -274,17 +272,17 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
       ky_und_G = 0.0_wp
 
       sKBetaX_G = 0.0_wp
-      sKBetaY_G = aw / 2 / sqrt(2.0_wp) / sRho_G / sGammaR_G
+      sKBetaY_G = aw / 2 / sqrt(2.0_wp) / rho / gamr
 
     else if (zUndType_G == 'helical') then
 
-      sKBetaX_G = aw / 2 / sqrt(2.0_wp) / sRho_G / sGammaR_G
-      sKBetaY_G = aw / 2 / sqrt(2.0_wp) / sRho_G / sGammaR_G
+      sKBetaX_G = aw / 2 / sqrt(2.0_wp) / rho / gamr
+      sKBetaY_G = aw / 2 / sqrt(2.0_wp) / rho / gamr
 
     else
 
-      sKBetaX_G = aw / 2 / sqrt(2.0_wp) / sRho_G / sGammaR_G
-      sKBetaY_G = aw / 2 / sqrt(2.0_wp) / sRho_G / sGammaR_G
+      sKBetaX_G = aw / 2 / sqrt(2.0_wp) / rho / gamr
+      sKBetaY_G = aw / 2 / sqrt(2.0_wp) / rho / gamr
 
     end if
 
@@ -352,9 +350,9 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
 
 !     Get n_pk_bar
 
-    npk_bar_G = lg_G * lc_G**2.0_wp * e_0 * m_e / q_e**2.0_wp * &
-                sGammaR_G**3.0_wp * sRho_G**3.0_wp * (4.0_wp * &
-                c * 2.0_wp * pi / lam_w_G / saw_G  )**2.0_wp
+    npk_bar_G = ctx%frame%gain_length * ctx%frame%cooperation_length**2.0_wp * e_0 * m_e / q_e**2.0_wp * &
+                gamr**3.0_wp * rho**3.0_wp * (4.0_wp * &
+                c * 2.0_wp * pi / lam_w / aw  )**2.0_wp
 
 
 
@@ -366,7 +364,7 @@ SUBROUTINE passToGlobals(rho, aw, gamr, lam_w, iNN, &
     END IF
 
 
-    dz2_I_G = 4.0_wp * pi * sRho_G
+    dz2_I_G = 4.0_wp * pi * rho
     call getCurrNpts(dz2_I_G, npts_I_G)
 
 
@@ -528,7 +526,7 @@ end subroutine getQFmNpk
 
 SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, sFiltFrac, &
                               qFlatTopS, sSigmaF, &
-                              sA0_x, sA0_y, qOK)
+                              sA0_x, sA0_y, sRho, qOK)
 
     IMPLICIT NONE
 !
@@ -554,6 +552,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, sFiltFrac, &
     REAL(KIND=WP), INTENT(IN)    :: sA0_x(:)
     REAL(KIND=WP), INTENT(IN)    :: sA0_y(:)
     real(kind=wp), intent(in)    :: sFiltFrac
+    real(kind=wp), intent(in)    :: sRho
 !    REAL(KIND=WP), INTENT(INOUT) :: sA(:)
     LOGICAL,       INTENT(OUT)   :: qOK
 
@@ -576,7 +575,6 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, sFiltFrac, &
 
     qOK = .FALSE.
 
-    sZi_G = 0.0_wp
     sZlSt_G = 0.0_wp
 
     iZ2 = NZ2_G
@@ -599,7 +597,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, sFiltFrac, &
 
 
 
-    call getPaSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho_G,&
+    call getPaSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho,&
                     freqf,ph_sh,nseeds,sLengthOfElm)
 
 !    sA(1:iXY*iZ2) = sAreal
@@ -628,7 +626,7 @@ END SUBROUTINE SetUpInitialValues
 subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
                        beamCenZ2, chirp, sEmit, emitx, emity, gamFrac, &
                        sFieldModelLength, sLengthofElm, &
-                       sSeedSigma, sAx, sAy, scr, kbG, kbx, kby)
+                       sSeedSigma, sAx, sAy, scr, kbG, kbx, kby, frame)
 
     real(kind=wp), intent(inout) :: sEleSig(:,:), sLenEPulse(:,:), &
                                     sSigEdge(:), beamCenZ2(:), &
@@ -641,6 +639,7 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
                                     kbx, kby
 
     real(kind=wp), intent(in) :: gamFrac(:)
+    type(tFELFrame), intent(in) :: frame
 
 
     integer(kind=ip) :: nbeams, nseeds, ib, is
@@ -649,60 +648,60 @@ subroutine scaleParams(sEleSig, sLenEPulse, sSigEdge, &
 
     do ib = 1, nbeams
 
-      call scaleX(sEleSig(ib,iX_CG), lg_G, lc_G)
-      call scaleX(sEleSig(ib,iY_CG), lg_G, lc_G)
+      call scaleX(sEleSig(ib,iX_CG), frame%gain_length, frame%cooperation_length)
+      call scaleX(sEleSig(ib,iY_CG), frame%gain_length, frame%cooperation_length)
 
-      call scalePx(sEleSig(ib,iPX_CG), gamFrac(ib), saw_G)
-      call scalePx(sEleSig(ib,iPY_CG), gamFrac(ib), saw_G)
+      call scalePx(sEleSig(ib,iPX_CG), gamFrac(ib), frame%aw)
+      call scalePx(sEleSig(ib,iPY_CG), gamFrac(ib), frame%aw)
 
-      call scaleT(sEleSig(ib,iZ2_CG), lc_G)
+      call scaleT(sEleSig(ib,iZ2_CG), frame%cooperation_length)
 
-      call scaleX(sLenEPulse(ib,iX_CG), lg_G, lc_G)
-      call scaleX(sLenEPulse(ib,iY_CG), lg_G, lc_G)
+      call scaleX(sLenEPulse(ib,iX_CG), frame%gain_length, frame%cooperation_length)
+      call scaleX(sLenEPulse(ib,iY_CG), frame%gain_length, frame%cooperation_length)
 
-      call scalePx(sLenEPulse(ib,iPX_CG), gamFrac(ib), saw_G)
-      call scalePx(sLenEPulse(ib,iPY_CG), gamFrac(ib), saw_G)
-      call scaleT(sLenEPulse(ib,iZ2_CG), lc_G)
-      call scaleT(sSigEdge(ib), lc_G)
-      call scaleT(beamCenZ2(ib), lc_G)
+      call scalePx(sLenEPulse(ib,iPX_CG), gamFrac(ib), frame%aw)
+      call scalePx(sLenEPulse(ib,iPY_CG), gamFrac(ib), frame%aw)
+      call scaleT(sLenEPulse(ib,iZ2_CG), frame%cooperation_length)
+      call scaleT(sSigEdge(ib), frame%cooperation_length)
+      call scaleT(beamCenZ2(ib), frame%cooperation_length)
       !call scaleG(chirp(ib), gamFrac(ib)*sGammaR_G)
-      chirp(ib) = chirp(ib) * sGammaR_G * lc_g
+      chirp(ib) = chirp(ib) * frame%gamma_ref * frame%cooperation_length
       !call scaleT(chirp(ib), lc_G)
 
-      call scaleEmit(sEmit(ib), lam_r_G)
-      call scaleEmit(emitx(ib), lam_r_G)
-      call scaleEmit(emity(ib), lam_r_G)
-      kbG = kbG * lc_G
+      call scaleEmit(sEmit(ib), frame%lambda_r)
+      call scaleEmit(emitx(ib), frame%lambda_r)
+      call scaleEmit(emity(ib), frame%lambda_r)
+      kbG = kbG * frame%cooperation_length
 
     end do
 
 
 
-    call scaleX(sFieldModelLength(iX_CG), lg_G, lc_G)
-    call scaleX(sFieldModelLength(iY_CG), lg_G, lc_G)
-    call scaleT(sFieldModelLength(iZ2_CG), lc_G)
+    call scaleX(sFieldModelLength(iX_CG), frame%gain_length, frame%cooperation_length)
+    call scaleX(sFieldModelLength(iY_CG), frame%gain_length, frame%cooperation_length)
+    call scaleT(sFieldModelLength(iZ2_CG), frame%cooperation_length)
 
-    call scaleX(sLengthofElm(iX_CG), lg_G, lc_G)
-    call scaleX(sLengthofElm(iY_CG), lg_G, lc_G)
-    call scaleT(sLengthofElm(iZ2_CG), lc_G)
+    call scaleX(sLengthofElm(iX_CG), frame%gain_length, frame%cooperation_length)
+    call scaleX(sLengthofElm(iY_CG), frame%gain_length, frame%cooperation_length)
+    call scaleT(sLengthofElm(iZ2_CG), frame%cooperation_length)
 
 
     nseeds = size(sSeedSigma(:,1))
 
     do is = 1, nseeds
 
-      call scaleX(sSeedSigma(is,iX_CG), lg_G, lc_G)
-      call scaleX(sSeedSigma(is,iY_CG), lg_G, lc_G)
-      call scaleT(sSeedSigma(is,iZ2_CG), lc_G)
-      call scaleIntensity(sAx(is), lg_G, lc_G, sGammaR_G, sKappa_G)
-      call scaleIntensity(sAy(is), lg_G, lc_G, sGammaR_G, sKappa_G)
-      call scaleT(scr(is), lc_G)
-      call scaleT(sSigFj_G(is), lc_G)
+      call scaleX(sSeedSigma(is,iX_CG), frame%gain_length, frame%cooperation_length)
+      call scaleX(sSeedSigma(is,iY_CG), frame%gain_length, frame%cooperation_length)
+      call scaleT(sSeedSigma(is,iZ2_CG), frame%cooperation_length)
+      call scaleIntensity(sAx(is), frame%gain_length, frame%cooperation_length, frame%gamma_ref, frame%kappa)
+      call scaleIntensity(sAy(is), frame%gain_length, frame%cooperation_length, frame%gamma_ref, frame%kappa)
+      call scaleT(scr(is), frame%cooperation_length)
+      call scaleT(sSigFj_G(is), frame%cooperation_length)
 
     end do
 
-    kbx = kbx * lg_G
-    kby = kby * lg_G
+    kbx = kbx * frame%gain_length
+    kby = kby * frame%gain_length
 
 !    If not-scaled / in SI units, then
 !
@@ -720,39 +719,33 @@ end subroutine scaleParams
 
 
 subroutine calcScaling(srho, saw, sgamr, slam_w, &
-                       zUndType, sfx, sfy)
+                       zUndType, sfx, sfy, ctx)
 
   real(kind=wp), intent(in) :: srho, saw, sgamr, slam_w
-  
+
   real(kind=wp), intent(inout) :: sfx, sfy
 
   CHARACTER(32_IP), intent(in) :: zUndType
+  type(tSimulationContext), intent(inout) :: ctx
 
   real(kind=wp) :: saw_rms, sBetaz
 
-  sRho_G = srho
-
+  ctx%frame%rho = srho
 
   fx_G = sfx
   fy_G = sfy
 
-
-
-
-  sGammaR_G = sgamr
-
-
+  ctx%frame%gamma_ref = sgamr
 
   if (zUndType == 'curved') then
 
     saw_rms =  saw / sqrt(2.0_wp)
 
-    kx_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2)) ! Giving equal focusing for now....
-    ky_und_G = SQRT(sEta_G/(8.0_WP*sRho_G**2))
+    kx_und_G = SQRT(ctx%frame%eta/(8.0_WP*srho**2)) ! Giving equal focusing for now....
+    ky_und_G = SQRT(ctx%frame%eta/(8.0_WP*srho**2))
 
-    sKBetaX_G = saw / sqrt(2.0_wp * sEta_G) / sGammaR_G * kx_und_G
-    sKBetaY_G = saw / sqrt(2.0_wp * sEta_G) / sGammaR_G * ky_und_G
-
+    sKBetaX_G = saw / sqrt(2.0_wp * ctx%frame%eta) / sgamr * kx_und_G
+    sKBetaY_G = saw / sqrt(2.0_wp * ctx%frame%eta) / sgamr * ky_und_G
 
     fx_G = 0   ! Temp fix for initialization bug
     fy_G = 1
@@ -782,36 +775,34 @@ subroutine calcScaling(srho, saw, sgamr, slam_w, &
 
   end if
 
-
   sbetaz = SQRT(sgamr**2.0_WP - 1.0_WP - (saw_rms)**2.0_WP) / &
            sgamr
 
-  sEta_G = (1.0_WP - sbetaz) / sbetaz
-  sKappa_G = saw / 2.0_WP / srho / sgamr
-  sKBeta_G = sKappa_G ! aw_rms / 2.0_WP / sFocusFactor / srho / sgamr
+  ctx%frame%eta   = (1.0_WP - sbetaz) / sbetaz
+  ctx%frame%kappa = saw / 2.0_WP / srho / sgamr
+  sKBeta_G = ctx%frame%kappa
 
-  sAw_G = saw
+  ctx%frame%aw = saw
 
+  ctx%frame%lambda_w = slam_w
+  ctx%frame%lambda_r = slam_w * ctx%frame%eta
 
-  lam_w_G = slam_w
-  lam_r_G = slam_w * sEta_G
-
-  lg_G = lam_w_G / 4.0_WP / pi / srho
-  lc_G = lam_r_G / 4.0_WP / pi / srho
-
+  ctx%frame%gain_length        = slam_w / 4.0_WP / pi / srho
+  ctx%frame%cooperation_length = ctx%frame%lambda_r / 4.0_WP / pi / srho
 
 end subroutine calcScaling
 
 
-subroutine calcCharge(sQe, Ipk, sSigz2, sLenz2, sSigTails, qTails)
+subroutine calcCharge(sQe, Ipk, sSigz2, sLenz2, sSigTails, qTails, frame)
 
   implicit none
   real(kind=wp), intent(inout) :: sQe(:), Ipk(:)
   real(kind=wp), intent(in) :: sSigz2(:), sLenz2(:), sSigTails(:)
   logical, intent(in) :: qTails(:)
+  type(tFELFrame), intent(in) :: frame
   real(kind=wp) :: sLArea
   integer(kind=ip) :: b, nbeams
-  
+
   nbeams = size(sQe)
   if (size(Ipk) /= nbeams) then
     print*, 'ERROR - size of current and charge arrays are incompatible...'
@@ -821,7 +812,7 @@ subroutine calcCharge(sQe, Ipk, sSigz2, sLenz2, sSigTails, qTails)
   do b = 1, nbeams
     if (Ipk(b) > 0.0_wp) then
       call getLBArea(sLArea, sSigz2(b), sLenz2(b), sSigTails(b), qTails(b))
-      sQe(b) = Ipk(b) * sLArea * lc_G / c
+      sQe(b) = Ipk(b) * sLArea * frame%cooperation_length / c
       if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 0)) print*, 'Charge specified from Ipk '
       if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 0)) print*, 'Q =  ', sQe(b)
     end if
@@ -833,12 +824,13 @@ end subroutine calcCharge
 subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
                        sStepSize, stepsPerPeriod, nSteps, &
                        nperiods, nodesperlambda, sGamFrac, &
-                       sEleSig, sLenEPulse, iNumElectrons, iMPsZ2PerWave, qsimple)
+                       sEleSig, sLenEPulse, iNumElectrons, iMPsZ2PerWave, qsimple, frame)
 
 
   real(kind=wp), intent(inout) :: sFieldModelLength(:), sLenEPulse(:,:), sEleSig(:,:)
 
   real(kind=wp), intent(in) :: sGamFrac(:)
+  type(tFELFrame), intent(in) :: frame
 
   integer(kind=ip), intent(in) :: nperiods, nodesperlambda, &
                                   stepsPerPeriod
@@ -858,7 +850,7 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
   integer(kind=ip) :: ib
 
 
-  dz2 = 4.0_WP * pi * sRho_G / real(nodesperlambda-1_IP,kind=wp)
+  dz2 = 4.0_WP * pi * frame%rho / real(nodesperlambda-1_IP,kind=wp)
 
   iNumNodes(iZ2_CG) = ceiling(sFieldModelLength(iZ2_CG) / dz2) + 1_IP
 
@@ -868,7 +860,7 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
       sLengthOfElm(iZ2_CG) = dz2
       sFieldModelLength(iZ2_CG) = real(iNumNodes(iZ2_CG) - 1_ip, kind=wp) * dz2
-      sperwaves_G = sFieldModelLength(iZ2_CG) / (4.0_WP * pi * sRho_G)
+      sperwaves_G = sFieldModelLength(iZ2_CG) / (4.0_WP * pi * frame%rho)
 
       sLenEPulse(:,iZ2_CG) = sFieldModelLength(iZ2_CG)
       sEleSig(:, iZ2_CG) = 1E8_wp
@@ -877,7 +869,7 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
 !           Field mesh length is then number of waves times scaled wavelength
 
-      sFieldModelLength(iZ2_CG) = sperwaves_G * (4.0_WP * pi * sRho_G)
+      sFieldModelLength(iZ2_CG) = sperwaves_G * (4.0_WP * pi * frame%rho)
       sLengthOfElm(iZ2_CG) = dz2
 
 !            For now, keeping dz2 to give an integer number of nodes per 
@@ -937,7 +929,7 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
   if (stepsPerPeriod >= 1) then
 
 
-    sStepSize = 4.0_WP * pi * srho_G / real(stepsPerPeriod,kind=wp)
+    sStepSize = 4.0_WP * pi * frame%rho / real(stepsPerPeriod,kind=wp)
     nSteps = nperiods * stepsPerPeriod
 
   else
@@ -954,13 +946,13 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
 
 
-  szbar = nperiods * 4.0_WP * pi * srho_G
+  szbar = nperiods * 4.0_WP * pi * frame%rho
 
 
 
 
   allocate(minENum(size(sGamFrac)), minESample(size(sGamFrac)))
-  slamr = 4.0_WP * pi * srho_G
+  slamr = 4.0_WP * pi * frame%rho
   minESample = 4_ip   ! minimum MP's per wavelength
   !dztemp = slamr / minESample
 
@@ -1048,7 +1040,7 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
   end if
 
-  dz2 = 4.0_WP * pi * sRho_G / real(nodesperlambda-1_IP,kind=wp)
+  dz2 = 4.0_WP * pi * frame%rho / real(nodesperlambda-1_IP,kind=wp)
 
   iNumNodes(iZ2_CG) = ceiling(sFieldModelLength(iZ2_CG) / dz2) + 1_IP
 
@@ -1100,7 +1092,7 @@ end subroutine calcSamples
 SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
                              sigma, alphax, alphay, emitx, emity, &
                              beamCenZ2, gamma_d, eThresh, &
-                             chirp, mag, fr, nbeams, qOK)
+                             chirp, mag, fr, nbeams, frame, flags, n2col, qOK)
 
 !                     ARGUMENTS
 
@@ -1117,6 +1109,9 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
     real(kind=wp),     intent(in)    :: alphax(:), alphay(:), emitx(:), emity(:)
     REAL(KIND=WP),     INTENT(INOUT) :: beamCenZ2(:)
     REAL(KIND=WP),     INTENT(IN)    :: eThresh
+    type(tFELFrame),        intent(in)    :: frame
+    type(tSimulationFlags), intent(inout) :: flags
+    REAL(KIND=WP),          intent(in)    :: n2col
     LOGICAL,           INTENT(OUT)   :: qOK
 
 !                   LOCAL ARGS
@@ -1155,8 +1150,8 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
 
 !     Change sig_gamma / gamma to sig_gamma
 
-    IF (qSimple) LenEPulse(:,iGam_CG) = gamma_d(:) * sGammaR_G * LenEPulse(:,iGam_CG)
-    IF (qSimple) sigma(:,iGam_CG) = gamma_d(:) * sGammaR_G * sigma(:,iGam_CG)
+    IF (qSimple) LenEPulse(:,iGam_CG) = gamma_d(:) * frame%gamma_ref * LenEPulse(:,iGam_CG)
+    IF (qSimple) sigma(:,iGam_CG) = gamma_d(:) * frame%gamma_ref * sigma(:,iGam_CG)
 
 !     Setup electrons
 
@@ -1166,17 +1161,17 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
                          Z,nbeams, LenEPulse,sigma, alphax, alphay, &
                          emitx, emity, beamCenZ2, gamma_d, &
                          eThresh,tTransInfo_G%qOneD, &
-                         chirp,mag,fr,qOKL)
+                         chirp,mag,fr,frame,n2col,qOKL)
       IF (.NOT. qOKL) GOTO 1000
 
     else if (iInputType_G == iReadDist_G) then
 
-      call getMPs(fname, nbeams, Z, noise, eThresh, NE)
+      call getMPs(fname, nbeams, Z, noise, eThresh, NE, frame)
 
     else if (iInputType_G == iReadMASP_G) then
 
       fname_temp = fname(1)
-      call readMASPfile(fname_temp)
+      call readMASPfile(fname_temp, frame)
 
     else if (iInputType_G == iReadH5_G) then
       fname_temp = fname(1)
@@ -1289,7 +1284,7 @@ SUBROUTINE PopMacroElectrons(qSimple, fname, sQe, NE, noise, Z, LenEPulse, &
         print*, 'Getting inner node set for MPI communication'
       end if
 
-      call getInNode()
+      call getInNode(flags)
 
       if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1)) then
         print*, '...'

@@ -51,9 +51,8 @@ real(kind=wp), allocatable :: kz2_loc_G(:)
 
 real(kind=wp) :: sBeta_G    ! Absorption coefficient
 
-real(kind=wp)  :: sfilt   ! Frequency cutoff for high pass filter, in units 
+real(kind=wp)  :: sfilt   ! Frequency cutoff for high pass filter, in units
                           ! of f_z2 = Lenz2 * ffrac / lamda_rz2
-integer(kind=ip) :: igwr
 
 integer(kind=ip) :: fieldMesh
 integer(kind=ip), parameter :: iTemporal = 0_ip
@@ -145,7 +144,7 @@ real(kind=wp), allocatable     :: dadz_w(:)
 ! For recording the INTERACTION zbar only - the distance
 ! with no drifts
 
-real(kind=wp) :: sZi_G, sZlSt_G
+real(kind=wp) :: sZlSt_G
 
 
 ! For restarting from a previous run
@@ -187,16 +186,12 @@ type(cInitData) :: tInitData_G
 
 
 
-real(kind=wp)    :: sRho_G,sAw_G,sGammaR_G
-real(kind=wp)    :: sEta_G,sKBeta_G, sKappa_G
+real(kind=wp)    :: sKBeta_G
 real(kind=wp)    :: sFocusfactor_G
 real(kind=wp)    :: sFocusfactor_save_G
 real(kind=wp)    :: fx_G, fy_G
 
 
-real(kind=wp) :: lam_w_G, lam_r_G   ! wiggler period, resonant wavelength
-
-real(kind=wp) :: lg_G, lc_G  ! gain length, cooperation length
 
 
 
@@ -272,29 +267,11 @@ integer(kind=ip) :: numOfUnds, numOfChics, numOfDrifts, numOfModulations, numOfQ
 
 
 
-integer(kind=ip) :: iCsteps  ! Cumulative steps across all modules
-
 integer(kind=ip)    :: ModNum, ModCount   !  Number of modules and module counter
 
 
 
 
-real(kind=wp) :: n2col ! alpha, fractional change in aw (see 
-	                     ! LT Campbell, BWJ McNeil and S Reiche, 
-	                     ! New Journal of Physics 16 (2014) 103019)
-
-! The following are used for linear magnetic field tapering
-! where n2col = n2col0 + (undgrad * (sz-sz0)) 
-
-real(kind=wp) :: sz0     ! zbar used for beginning of taper i.e.
-                         ! (usually, the start of the current undulator module)
-
-real(kind=wp) :: undgrad ! d/dzbar of alpha (n2col)
-
-real(kind=wp) :: n2col0  ! Initial alpha in the current undulator module
-
-real(kind=wp) :: m2col   ! Fractional change in eta due to change in aw
-                         ! (redundant) 
 
 logical :: qUndEnds_G     ! If modelling undulator ends
 
@@ -318,7 +295,6 @@ real(kind=wp)  :: ffact    ! Scaling factor for fourier transforms
 
 
 
-real(kind=wp) :: cf1_G
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -328,7 +304,6 @@ integer(kind=ip) :: iCount, iStep, start_step
 real(kind=wp)    :: sStep, sStepSize
 integer(kind=ip) :: nSteps
 
-real(kind=wp)   :: start_time,end_time
 real(kind=wp)   :: time1, time2 !!!FOR DEBUGGING!!!
 
 
@@ -403,10 +378,6 @@ logical   ::  qResume            ! Reading from previously crashed runs dump fil
 logical   ::  qWrite             ! Write data?
 
 logical   ::  qOneD_G
-
-logical   ::  qPArrOK_G
-
-logical   ::  qInnerXYOK_G
 
 logical   ::  qscaled_G
 

@@ -9,6 +9,7 @@ module RK4int
    use Derivative
    use IO
    use ParaField
+   use GlobalTypes, only: tSimulationContext
 
    implicit none
 
@@ -35,7 +36,7 @@ module RK4int
 
 contains
 
-   subroutine rk4par(sZ,h,qD)
+   subroutine rk4par(sZ, h, qD, ctx)
 
       implicit none
 !
@@ -57,6 +58,7 @@ contains
       REAL(KIND=WP),  INTENT(IN)                  :: sZ
       REAL(KIND=WP),                INTENT(IN)  :: h
       LOGICAL, INTENT(INOUT) :: qD
+      type(tSimulationContext), intent(inout) :: ctx
 
 !               LOCAL ARGS
 !
@@ -174,7 +176,7 @@ contains
       call derivs(sZ, A_localtr0, A_localti0, &
          sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, &
          dxdx, dydx, dz2dx, dpxdx, dpydx, dpz2dx, &
-         dadz_r0, dadz_i0)
+         dadz_r0, dadz_i0, ctx)
 
 !call mpi_finalize(error)
 !stop
@@ -184,7 +186,7 @@ contains
 
 !    Increment local electron and field values
 
-      if (qPArrOK_G) then
+      if (ctx%flags%parallel_arrays_ok) then
 
 !$OMP PARALLEL WORKSHARE
          xt = sElX_G      +  hh*dxdx
@@ -210,11 +212,11 @@ contains
 !    Second step
 !    Get derivatives
 
-      if (qPArrOK_G) &
+      if (ctx%flags%parallel_arrays_ok) &
          call derivs(szh, A_localtr1, A_localti1, &
          xt, yt, z2t, pxt, pyt, pz2t, &
          dxt, dyt, dz2t, dpxt, dpyt, dpz2t, &
-         dadz_r1, dadz_i1)
+         dadz_r1, dadz_i1, ctx)
 
 
 
@@ -222,7 +224,7 @@ contains
 
 !    Incrementing with newest derivative value...
 
-      if (qPArrOK_G) then
+      if (ctx%flags%parallel_arrays_ok) then
 !$OMP PARALLEL WORKSHARE
          xt = sElX_G      +  hh*dxt
          yt = sElY_G      +  hh*dyt
@@ -246,15 +248,15 @@ contains
 !    Get derivatives
 
 
-      if (qPArrOK_G) &
+      if (ctx%flags%parallel_arrays_ok) &
          call derivs(szh, A_localtr2, A_localti2, &
          xt, yt, z2t, pxt, pyt, pz2t, &
          dxm, dym, dz2m, dpxm, dpym, dpz2m, &
-         dadz_r2, dadz_i2)
+         dadz_r2, dadz_i2, ctx)
 
 !    Incrementing
 
-      if (qPArrOK_G) then
+      if (ctx%flags%parallel_arrays_ok) then
 !$OMP PARALLEL WORKSHARE
          xt = sElX_G      +  h * dxm
          yt = sElY_G      +  h * dym
@@ -293,16 +295,16 @@ contains
 
 !    Get derivatives
 
-      if (qPArrOK_G) &
+      if (ctx%flags%parallel_arrays_ok) &
          call derivs(szh, A_localtr3, A_localti3, &
          xt, yt, z2t, pxt, pyt, pz2t, &
          dxt, dyt, dz2t, dpxt, dpyt, dpz2t, &
-         dadz_r1, dadz_i1)
+         dadz_r1, dadz_i1, ctx)
 
 
 !    Accumulate increments with proper weights
 
-      if (qPArrOK_G) then
+      if (ctx%flags%parallel_arrays_ok) then
 !$OMP PARALLEL WORKSHARE
          sElX_G    = sElX_G   + h6 * ( dxdx   + dxt   + 2.0_WP * dxm  )
          sElY_G    = sElY_G   + h6 * ( dydx   + dyt   + 2.0_WP * dym  )
@@ -412,8 +414,6 @@ contains
       allocate(dadz_w(iNumberElectrons_G))
 
       call outer2Inner(ac_rfield_in, ac_ifield_in)
-
-      qInnerXYOK_G = .true.
 
    end subroutine allact_rk4_arrs
 

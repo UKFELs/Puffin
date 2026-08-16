@@ -16,10 +16,11 @@ MODULE simple_electron_gen
 use puffin_kinds, only: WP, IP, IPL
 use puffin_mpiInfo, only: tProcInfo_G
 use MPI
-use Globals, only: saw_G, sRho_G, lg_G, lc_G, sGammaR_G, iX_CG, iY_CG, iZ2_CG, &
+use Globals, only: iX_CG, iY_CG, iZ2_CG, &
                    iPX_CG, iPY_CG, iGam_CG, npk_bar_G, qOneD_G, ata_G, fillFact_G, &
                    s_chi_bar_G, sElPX_G, sElPY_G, sElGam_G, sElZ2_G, iNumberElectrons_G, &
                    iGloNumElectrons_G, qEquiXY_G, TrLdMeth_G, nseqparts_G, log_error
+use GlobalTypes, only: tFELFrame
 use MacrosGen, only: genMacros, getChi
 use parBeam, only: splitBeams
 use filter_low_weights, only: removeLowNC, removeLow
@@ -51,6 +52,8 @@ CONTAINS
        qOneD, &
        chirp, &
        mag, fr, &
+       frame, &
+       n2col, &
        qOK)
 
 ! Calculate the electron grid positions
@@ -90,6 +93,9 @@ CONTAINS
     REAL(KIND=WP), INTENT(IN)   :: sElectronThreshold
 
     LOGICAL,         INTENT(IN):: qOneD
+
+    type(tFELFrame), intent(in) :: frame
+    REAL(KIND=WP),   INTENT(IN) :: n2col
 
     LOGICAL,         INTENT(OUT):: qOK
 
@@ -195,7 +201,7 @@ CONTAINS
 
 !!!!!!  TEMP
 !!!!!!  CONVERT SIGPX -> SIX_{DX/DZ}
-    afact = saw_G
+    afact = frame%aw
 
 !                 rms px at x = 0 and py at y = 0
 
@@ -208,12 +214,13 @@ CONTAINS
 
 !           'SI' beta!!! i.e. for dx/dz, not for px or py....
 
-        betax(b_ind) = lg_G * sigE(b_ind,iX_CG)**2.0_wp / sRho_G / emitx(b_ind)
+        betax(b_ind) = frame%gain_length * sigE(b_ind,iX_CG)**2.0_wp / frame%rho / emitx(b_ind)
 
 !     getting rms sigma pxbar (@ x=0) and pybar (@ y=0) from Twiss
 
-        sigE(b_ind,iPX_CG) = gamma_d(b_ind) * sGammaR_G * sqrt(lg_G*lc_G) * &
-                                    sigE(b_ind,iX_CG) / betax(b_ind) / saw_G
+        sigE(b_ind,iPX_CG) = gamma_d(b_ind) * frame%gamma_ref * &
+                                    sqrt(frame%gain_length*frame%cooperation_length) * &
+                                    sigE(b_ind,iX_CG) / betax(b_ind) / frame%aw
 
         samLenE(b_ind,iPX_CG) = 6.0_wp * sigE(b_ind,iPX_CG)
 
@@ -223,10 +230,11 @@ CONTAINS
 
       if (emity(b_ind) > 0.0_wp) then
         
-        betay(b_ind) = lg_G * sigE(b_ind,iY_CG)**2.0_wp / sRho_G / emity(b_ind)
+        betay(b_ind) = frame%gain_length * sigE(b_ind,iY_CG)**2.0_wp / frame%rho / emity(b_ind)
 
-        sigE(b_ind,iPY_CG) = gamma_d(b_ind) * sGammaR_G * sqrt(lg_G*lc_G) * &
-                                    sigE(b_ind,iY_CG) / betay(b_ind) / saw_G
+        sigE(b_ind,iPY_CG) = gamma_d(b_ind) * frame%gamma_ref * &
+                                    sqrt(frame%gain_length*frame%cooperation_length) * &
+                                    sigE(b_ind,iY_CG) / betay(b_ind) / frame%aw
 
         samLenE(b_ind,iPY_CG) = 6.0_wp * sigE(b_ind,iPY_CG)
 
@@ -260,7 +268,7 @@ CONTAINS
                     pz2_tmpvector(b_sts(b_ind):b_ends(b_ind)), &
                     s_tmp_max_av(b_ind), &
                     s_tmp_macro(b_sts(b_ind):b_ends(b_ind)), &
-                    s_tmp_Vk(b_sts(b_ind):b_ends(b_ind)), b_ind)
+                    s_tmp_Vk(b_sts(b_ind):b_ends(b_ind)), b_ind, frame, n2col)
                       
     END DO
 
@@ -325,7 +333,7 @@ CONTAINS
 !     We currently have gamma -
 !     need to change to gamma / gamma_r
 
-    sElGam_G = sElGam_G / sGammaR_G
+    sElGam_G = sElGam_G / frame%gamma_ref
 
     sElPY_G = - sElPY_G
 
@@ -333,8 +341,8 @@ CONTAINS
 
     call sum_mpi_int14(iNumberElectrons_G,iGloNumElectrons_G)
 
-    mag(:) = mag(:) / sGammaR_G
-    chirp(:) = chirp(:) / sGammaR_G
+    mag(:) = mag(:) / frame%gamma_ref
+    chirp(:) = chirp(:) / frame%gamma_ref
 
     do b_ind = 1, nbeams
   
@@ -373,7 +381,7 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
                    gamma_d, samLenE, sZ2_center, numproc, rank, &
                    i_RealE, q_noise, qOneD, sZ, x_tmpcoord, &
                    y_tmpcoord,z2_tmpcoord,px_tmpvector,py_tmpvector,&
-                   pz2_tmpvector,s_tmp_max_av,s_tmp_macro,s_tmp_Vk, b_num)
+                   pz2_tmpvector,s_tmp_max_av,s_tmp_macro,s_tmp_Vk, b_num, frame, n2col)
 
   IMPLICIT NONE
 
@@ -382,6 +390,8 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
   INTEGER(KIND=IP), INTENT(IN) :: iNMP(:),iNMP_loc(:), b_num
   REAL(KIND=WP), INTENT(IN) :: samLenE(:), sigE(:), i_realE, &
                                gamma_d, sZ, alphax, betax, alphay, betay
+  type(tFELFrame), intent(in) :: frame
+  REAL(KIND=WP), INTENT(IN) :: n2col
                                
   REAL(KIND=WP), INTENT(INOUT) ::  sZ2_center
   INTEGER, INTENT(IN) :: numproc, rank
@@ -435,7 +445,7 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
   CALL getIntTypes(iNMP, samLenE, sigE, &
                    iLocalIntegralType)
 
-  CALL getOffsets(sZ,samLenE,sZ2_center,gamma_d,offsets)
+  CALL getOffsets(sZ,samLenE,sZ2_center,gamma_d,offsets,frame,n2col)
 
 !!!!!!!!!! TEMP
 !!!!!!!!!! CENTERING BEAM IN DX/DZ, DY/DZ = 0
@@ -548,8 +558,8 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
         gypy = 0.0_wp
       end if
 
-      px_tmpvector = px_tmpvector + pz2_tmpvector * gxpx * sqrt(lg_G * lc_G) * x_tmpcoord / saw_G
-      py_tmpvector = py_tmpvector + pz2_tmpvector * gypy * sqrt(lg_G * lc_G) * y_tmpcoord / saw_G
+      px_tmpvector = px_tmpvector + pz2_tmpvector * gxpx * sqrt(frame%gain_length * frame%cooperation_length) * x_tmpcoord / frame%aw
+      py_tmpvector = py_tmpvector + pz2_tmpvector * gypy * sqrt(frame%gain_length * frame%cooperation_length) * y_tmpcoord / frame%aw
 
     end if  ! exhausted 1D and 3D options of equispaced phase space filling...
   
@@ -630,8 +640,8 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
         gypy = 0.0_wp
       end if
 
-      pxseq = pxseq + gamseq * gxpx * sqrt(lg_G * lc_G) * xseq / saw_G
-      pyseq = pyseq + gamseq * gypy * sqrt(lg_G * lc_G) * yseq / saw_G
+      pxseq = pxseq + gamseq * gxpx * sqrt(frame%gain_length * frame%cooperation_length) * xseq / frame%aw
+      pyseq = pyseq + gamseq * gypy * sqrt(frame%gain_length * frame%cooperation_length) * yseq / frame%aw
 
 
       if (qOneD) then

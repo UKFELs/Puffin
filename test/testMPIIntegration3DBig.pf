@@ -1,0 +1,382 @@
+!> Big 3D MPI integration test: runs the shortCSE example over its full
+!! 250-period undulator on an 85 x 85 x 5780 field mesh (41.8M nodes) and
+!! validates the result against a golden reference.
+!!
+!! This is the first test in the suite that is gated on *memory* as well as
+!! time, and it carries both the "slow" and "big" ctest labels. It runs on the
+!! 6 performance cores of the development machine and writes ~1.3 GB of output;
+!! for the measured memory and wall clock see test/CMakeLists.txt.
+!!
+!! Build it with -DPUFFIN_BIG_TESTS=ON; see test/CMakeLists.txt.
+!!
+!! ---------------------------------------------------------------------------
+!! Golden reference
+!! ---------------------------------------------------------------------------
+!!
+!! A 637 MB field dump and a 20 MB electron dump are far too large to keep under
+!! version control, so only the ~400 KB integrated file is committed. The field
+!! and the beam are checked against scale-invariant reductions hard-coded below
+!! instead. The reductions are all positive-definite (sums of magnitudes, RMS
+!! values, maxima) rather than signed sums, so they do not lose their precision
+!! to cancellation the way a raw sum over 41.8M nodes would.
+!!
+!! The run is only repeatable because shcse_big.in sets iRandSeed. Left at its
+!! default, the beam's shot noise is seeded from the system clock and successive
+!! runs of the same input disagree by tens of percent in radiated power, which
+!! no tolerance can absorb. Note that the fixed seed pins the realisation *for a
+!! given rank count*: each rank seeds its own stream and draws over the
+!! macroparticles it owns, so a different decomposition gives a different, though
+!! statistically equivalent, beam. That is why npes is pinned at 6 below and the
+!! reference must be regenerated if PUFFIN_BIG_TEST_PES changes.
+!!
+!! To regenerate the reference after an intentional change:
+!!
+!!   1. Build puffin and run, from build/test/ so the relative paths resolve:
+!!        OMP_NUM_THREADS=1 mpiexec -n 6 ../puffin/puffin inputs/3D/shcse_big.in
+!!
+!!   2. Copy the final integrated dump over the committed reference:
+!!        inputs/3D/shcse_big_integrated_N.h5
+!!          -> test/expected/3D/shcse_big_expected_integrated.h5
+!!      and set SHCSE_BIG_FINAL_INDEX below to N, and SHCSE_BIG_FINAL_STEP to
+!!      the step it was written at ('h5dump -a /time/vsStep' on that file).
+!!      Note that integrated and full dumps share one output counter, so N is
+!!      not the number of dumps of either kind.
+!!
+!!   3. Recompute the reduction constants from that same run's output, without
+!!      simulating anything a second time:
+!!        mpiexec -n 1 ./harvest_big_reference \
+!!          inputs/3D/shcse_big_aperp_N.h5 inputs/3D/shcse_big_electrons_N.h5
+!!      It prints the parameter block ready to paste in below. (This test also
+!!      prints what it computed, under the same banner, so a failure can be read
+!!      directly — but harvesting from the files costs seconds rather than the
+!!      nine minutes of re-running the simulation.)
+!!
+!!   4. Re-run cmake to pick up the new expected file, rebuild and retest.
+
+module testMPIIntegration3DBig
+
+  use pFUnit
+  use MPI
+  use puffin_kinds
+  use puffin_mod, only: puffin_main
+  use H5in, only: getMacroparticleCount, readH5BeamDataOntoRootProcess, &
+                  getNX, getNY, getNZ2, readH5FieldDataOntoRootProcess3D, &
+                  getWriteStep, getH5DatasetLength1D, &
+                  readH5Dataset1DOntoRootProcess
+  use globals
+  use puffin_mpiInfo, only: tProcInfo_G
+  implicit none
+
+  ! Output *file index* of the final dump, and the integration step that dump is
+  ! taken at (250 periods x 30 steps per period). The index counter is shared
+  ! between integrated and full dumps and advances once per dump, so the two
+  ! numbers are unrelated. Puffin also writes an unconditional dump when the run
+  ! ends, so the last one lands at index 11 and repeats step 7500, which index 10
+  ! already holds.
+  integer(kind=ip), parameter :: SHCSE_BIG_FINAL_INDEX = 11_ip
+  integer(kind=ip), parameter :: SHCSE_BIG_FINAL_STEP  = 7500_ip
+
+  ! Enough digits that the printed reference values below round-trip exactly
+  ! when pasted back into the parameter block.
+  character(len=*), parameter :: goldenFmt = '(1x, a, " = ", es25.17e3, "_WP")'
+
+  ! Field mesh, from the input file: iNumNodesX/Y and 31.0 z2-bar at 14 nodes
+  ! per resonant wavelength.
+  integer(kind=ip), parameter :: SHCSE_BIG_NX  = 85_ip
+  integer(kind=ip), parameter :: SHCSE_BIG_NY  = 85_ip
+  integer(kind=ip), parameter :: SHCSE_BIG_NZ2 = 5780_ip
+
+  ! Tolerance for the field and beam reductions. Every reduction below is
+  ! positive-definite by construction, so none of them loses precision to
+  ! cancellation, and two runs of this input agree to well inside this.
+  real(kind=WP), parameter :: relTol = 1.0e-10_WP
+
+  ! --- Golden reductions over the final field dump -------------------------
+  !
+  ! Generated by test/harvest_big_reference. Two independent runs of this input
+  ! agreed on these to 2.5e-12 at worst, which is where relTol above comes from.
+  real(kind=WP), parameter :: SHCSE_BIG_FIELD_SUMABSR =  4.91120823548862973E+003_WP
+  real(kind=WP), parameter :: SHCSE_BIG_FIELD_SUMABSI =  4.98008012987303300E+003_WP
+  real(kind=WP), parameter :: SHCSE_BIG_FIELD_INTENS  =  2.11219859579010716E+002_WP
+  real(kind=WP), parameter :: SHCSE_BIG_FIELD_MAXAMP  =  2.08682018200245262E-001_WP
+
+  ! --- Golden reductions over the final electron dump ----------------------
+  integer(kind=ip), parameter :: SHCSE_BIG_NMPS = 377779_ip
+  real(kind=WP), parameter :: SHCSE_BIG_RMS_X    =  2.46333746424652861E-001_WP
+  real(kind=WP), parameter :: SHCSE_BIG_RMS_Y    =  2.45973670768580538E-001_WP
+  real(kind=WP), parameter :: SHCSE_BIG_RMS_Z2   =  1.84556784358982817E+001_WP
+  real(kind=WP), parameter :: SHCSE_BIG_RMS_PX   =  2.23026338434219006E-002_WP
+  real(kind=WP), parameter :: SHCSE_BIG_RMS_PY   =  2.24279143664773313E-002_WP
+  real(kind=WP), parameter :: SHCSE_BIG_RMS_GAM  =  9.99879236885278355E-001_WP
+  real(kind=WP), parameter :: SHCSE_BIG_SUM_CHI  =  6.98184803670101051E-001_WP
+
+  ! Datasets compared element by element against the committed integrated file.
+  ! A spread of field, beam and slice diagnostics, including 'Slice Charge',
+  ! which is one element shorter than the rest and so catches any sizing slip.
+  !
+  ! The tolerances are per dataset because they are not all equally well
+  ! conditioned, and a single blanket number would have to be set by the worst
+  ! of them -- which would leave the well-behaved majority barely checked. They
+  ! were measured, not guessed: two runs of this exact input were compared, and
+  ! all but three datasets came back bit-identical over the full 7500 steps.
+  ! The three that move are the ones built on a difference of large similar
+  ! quantities -- an RMS energy spread is sqrt(<g^2> - <g>^2), so epsilon-level
+  ! differences in the beam state are amplified on the way out. Their observed
+  ! spread was 2.8e-7 (meanSigmaGamma), 3.6e-9 (sigmaYbar) and 7.2e-17
+  ! (emittanceYbar); the tolerances below sit an order or two above that. A
+  ! failure at 1e-12 on any of the rest is a real change, not noise.
+  integer(kind=ip), parameter :: nIntDsets = 14_ip
+  character(len=24), parameter :: intDsets(nIntDsets) = [ character(len=24) :: &
+      'power', 'powerSI', 'bunchingFundamental', 'bunching2ndHarmonic', &
+      'beamCurrent', 'meanGamma', 'meanSigmaGamma', 'sigmaXbar', 'sigmaYbar', &
+      'emittanceXbar', 'emittanceYbar', 'meanXbar', 'meanYbar', 'Slice Charge' ]
+  real(kind=WP), parameter :: intTols(nIntDsets) = [ &
+      1.0e-12_WP, 1.0e-12_WP, 1.0e-12_WP, 1.0e-12_WP, &
+      1.0e-12_WP, 1.0e-12_WP, 1.0e-5_WP,  1.0e-6_WP,  1.0e-6_WP, &
+      1.0e-9_WP,  1.0e-9_WP,  1.0e-12_WP, 1.0e-12_WP, 1.0e-12_WP ]
+
+  character(len=1024_ip) :: test_file_1      = 'inputs/3D/shcse_big.in'
+  character(len=1024_ip) :: output_file_base = 'inputs/3D/shcse_big'
+
+contains
+
+  @mpitest(npes=[6])
+  subroutine testPuffinSimulationCompletes3DBig(this)
+
+    class(MpiTestMethod), intent(inout) :: this
+    logical :: file_exists, qOK
+    character(len=1024_ip) :: test_output_field_initial_file, &
+                              test_output_electron_initial_file, &
+                              test_output_integrated_initial_file, &
+                              test_output_field_final_file, &
+                              test_output_electron_final_file, &
+                              test_output_integrated_final_file, &
+                              expected_integrated_file, &
+                              step_str
+    integer(kind=ip) :: nMPs, i, nLen, nLenExpected
+    real(kind=WP), allocatable :: sElX(:), sElY(:), sElZ2(:), sElPX(:), sElPY(:), &
+                                  sElGam(:), chi_bar(:)
+    integer(kind=ip) :: nX, nY, nZ2nodes
+    integer(kind=8) :: nField
+    real(kind=WP), allocatable :: rfield(:), ifield(:)
+    real(kind=WP), allocatable :: intData(:), expectedIntData(:)
+    real(kind=WP) :: sumAbsR, sumAbsI, intens, maxAmp
+    real(kind=WP) :: rmsX, rmsY, rmsZ2, rmsPX, rmsPY, rmsGam, sumChi
+
+    print *, 'Testing big 3D Puffin simulation completion (shortCSE, 250 periods)...'
+
+    call puffin_main(test_file_1, qOK)
+
+    write(step_str, '(i0)') SHCSE_BIG_FINAL_INDEX
+
+    test_output_field_initial_file      = trim(output_file_base) // '_aperp_0.h5'
+    test_output_electron_initial_file   = trim(output_file_base) // '_electrons_0.h5'
+    test_output_integrated_initial_file = trim(output_file_base) // '_integrated_0.h5'
+
+    test_output_field_final_file      = trim(output_file_base) // '_aperp_'      // trim(step_str) // '.h5'
+    test_output_electron_final_file   = trim(output_file_base) // '_electrons_'  // trim(step_str) // '.h5'
+    test_output_integrated_final_file = trim(output_file_base) // '_integrated_' // trim(step_str) // '.h5'
+
+    expected_integrated_file = 'expected/3D/shcse_big_expected_integrated.h5'
+
+    inquire(file=test_output_field_initial_file, exist=file_exists)
+    @AssertTrue(file_exists)
+
+    inquire(file=test_output_electron_initial_file, exist=file_exists)
+    @AssertTrue(file_exists)
+
+    inquire(file=test_output_integrated_initial_file, exist=file_exists)
+    @AssertTrue(file_exists)
+
+    inquire(file=test_output_field_final_file, exist=file_exists)
+    @AssertTrue(file_exists)
+
+    inquire(file=test_output_electron_final_file, exist=file_exists)
+    @AssertTrue(file_exists)
+
+    inquire(file=test_output_integrated_final_file, exist=file_exists)
+    @AssertTrue(file_exists)
+
+    ! The dumps must land at the step each index claims to hold, not merely
+    ! exist. The output file index advances once per dump, so anything that
+    ! rewinds it silently overwrites an earlier index with later data --
+    ! index 0 is the only record of the initial state of the run.
+
+    if (tProcInfo_G%qroot) then
+
+      @AssertEqual(getWriteStep(trim(test_output_integrated_initial_file)), 0_ip)
+      @AssertEqual(getWriteStep(trim(test_output_field_initial_file)), 0_ip)
+      @AssertEqual(getWriteStep(trim(test_output_electron_initial_file)), 0_ip)
+
+      @AssertEqual(getWriteStep(trim(test_output_integrated_final_file)), SHCSE_BIG_FINAL_STEP)
+      @AssertEqual(getWriteStep(trim(test_output_field_final_file)), SHCSE_BIG_FINAL_STEP)
+      @AssertEqual(getWriteStep(trim(test_output_electron_final_file)), SHCSE_BIG_FINAL_STEP)
+
+    end if
+
+    ! --- Field mesh --------------------------------------------------------
+    !
+    ! Checked against the values implied by the input file rather than against
+    ! a reference dump, so a mis-sized mesh is caught here and not as a wall of
+    ! failed value comparisons below.
+
+    nX       = getNX(trim(test_output_field_final_file))
+    nY       = getNY(trim(test_output_field_final_file))
+    nZ2nodes = getNZ2(trim(test_output_field_final_file))
+
+    if (tProcInfo_G%qroot) then
+      print *, 'Field mesh (nX, nY, nZ2):', nX, nY, nZ2nodes
+      @AssertEqual(nX,       SHCSE_BIG_NX)
+      @AssertEqual(nY,       SHCSE_BIG_NY)
+      @AssertEqual(nZ2nodes, SHCSE_BIG_NZ2)
+    end if
+
+    ! --- Reductions over the final field dump ------------------------------
+    !
+    ! Puffin itself never holds the whole field on one rank -- each rank writes
+    ! its own z2 slab straight into the shared file -- but reading it back for
+    ! a whole-mesh reduction does, so this is ~670 MB of buffer on root. Only
+    ! root allocates it; every other rank takes a zero-length array.
+
+    if (tProcInfo_G%qroot) then
+      nField = int(nX, 8) * int(nY, 8) * int(nZ2nodes, 8)
+    else
+      nField = 0_8
+    end if
+
+    allocate(rfield(nField), ifield(nField))
+
+    call readH5FieldDataOntoRootProcess3D(trim(test_output_field_final_file), &
+      rfield, ifield, nX, nY, nZ2nodes)
+
+    if (tProcInfo_G%qroot) then
+
+      sumAbsR = sum(abs(rfield))
+      sumAbsI = sum(abs(ifield))
+      intens  = sum(rfield*rfield + ifield*ifield)
+      maxAmp  = sqrt(maxval(rfield*rfield + ifield*ifield))
+
+      print *, '--- GOLDEN REFERENCE VALUES (field) ---'
+      write(*, goldenFmt) 'SHCSE_BIG_FIELD_SUMABSR', sumAbsR
+      write(*, goldenFmt) 'SHCSE_BIG_FIELD_SUMABSI', sumAbsI
+      write(*, goldenFmt) 'SHCSE_BIG_FIELD_INTENS ', intens
+      write(*, goldenFmt) 'SHCSE_BIG_FIELD_MAXAMP ', maxAmp
+
+      @AssertTrue(relClose(sumAbsR, SHCSE_BIG_FIELD_SUMABSR, relTol))
+      @AssertTrue(relClose(sumAbsI, SHCSE_BIG_FIELD_SUMABSI, relTol))
+      @AssertTrue(relClose(intens,  SHCSE_BIG_FIELD_INTENS,  relTol))
+      @AssertTrue(relClose(maxAmp,  SHCSE_BIG_FIELD_MAXAMP,  relTol))
+
+    end if
+
+    deallocate(rfield, ifield)
+
+    ! --- Reductions over the final electron dump ---------------------------
+    !
+    ! Macroparticle *order* in the file depends on the decomposition, so the
+    ! beam is compared through order-independent reductions rather than
+    ! element by element.
+
+    nMPs = getMacroparticleCount(trim(test_output_electron_final_file))
+    if (.not. tProcInfo_G%qRoot) nMPs = 0
+
+    allocate(sElX(nMPs), sElY(nMPs), sElZ2(nMPs), sElPX(nMPs), sElPY(nMPs), &
+             sElGam(nMPs), chi_bar(nMPs))
+
+    call readH5BeamDataOntoRootProcess(trim(test_output_electron_final_file), &
+      sElX, sElY, sElZ2, sElPX, sElPY, sElGam, chi_bar, nMPs)
+
+    if (tProcInfo_G%qroot) then
+
+      rmsX   = sqrt(sum(sElX*sElX)     / real(nMPs, WP))
+      rmsY   = sqrt(sum(sElY*sElY)     / real(nMPs, WP))
+      rmsZ2  = sqrt(sum(sElZ2*sElZ2)   / real(nMPs, WP))
+      rmsPX  = sqrt(sum(sElPX*sElPX)   / real(nMPs, WP))
+      rmsPY  = sqrt(sum(sElPY*sElPY)   / real(nMPs, WP))
+      rmsGam = sqrt(sum(sElGam*sElGam) / real(nMPs, WP))
+      sumChi = sum(chi_bar)
+
+      print *, '--- GOLDEN REFERENCE VALUES (electrons) ---'
+      print *, 'SHCSE_BIG_NMPS = ', nMPs
+      write(*, goldenFmt) 'SHCSE_BIG_RMS_X  ', rmsX
+      write(*, goldenFmt) 'SHCSE_BIG_RMS_Y  ', rmsY
+      write(*, goldenFmt) 'SHCSE_BIG_RMS_Z2 ', rmsZ2
+      write(*, goldenFmt) 'SHCSE_BIG_RMS_PX ', rmsPX
+      write(*, goldenFmt) 'SHCSE_BIG_RMS_PY ', rmsPY
+      write(*, goldenFmt) 'SHCSE_BIG_RMS_GAM', rmsGam
+      write(*, goldenFmt) 'SHCSE_BIG_SUM_CHI', sumChi
+
+      @AssertEqual(nMPs, SHCSE_BIG_NMPS)
+      @AssertTrue(relClose(rmsX,   SHCSE_BIG_RMS_X,   relTol))
+      @AssertTrue(relClose(rmsY,   SHCSE_BIG_RMS_Y,   relTol))
+      @AssertTrue(relClose(rmsZ2,  SHCSE_BIG_RMS_Z2,  relTol))
+      @AssertTrue(relClose(rmsPX,  SHCSE_BIG_RMS_PX,  relTol))
+      @AssertTrue(relClose(rmsPY,  SHCSE_BIG_RMS_PY,  relTol))
+      @AssertTrue(relClose(rmsGam, SHCSE_BIG_RMS_GAM, relTol))
+      @AssertTrue(relClose(sumChi, SHCSE_BIG_SUM_CHI, relTol))
+
+    end if
+
+    deallocate(sElX, sElY, sElZ2, sElPX, sElPY, sElGam, chi_bar)
+
+    ! --- Integrated diagnostics, element by element ------------------------
+    !
+    ! The one output small enough to hold a committed golden file, so this is
+    ! where the run is pinned down in detail rather than through summaries.
+
+    do i = 1, nIntDsets
+
+      nLen         = getH5DatasetLength1D(trim(test_output_integrated_final_file), trim(intDsets(i)))
+      nLenExpected = getH5DatasetLength1D(trim(expected_integrated_file), trim(intDsets(i)))
+
+      if (tProcInfo_G%qroot) then
+        @AssertEqual(nLen, nLenExpected)
+      end if
+
+      allocate(intData(nLen), expectedIntData(nLen))
+
+      call readH5Dataset1DOntoRootProcess(trim(test_output_integrated_final_file), &
+        trim(intDsets(i)), intData, nLen)
+      call readH5Dataset1DOntoRootProcess(trim(expected_integrated_file), &
+        trim(intDsets(i)), expectedIntData, nLen)
+
+      if (tProcInfo_G%qroot) then
+        print *, 'Comparing integrated dataset: ', trim(intDsets(i)), &
+                 ' at tolerance ', intTols(i)
+        @AssertTrue(arrayRelClose(intData, expectedIntData, intTols(i)))
+      end if
+
+      deallocate(intData, expectedIntData)
+
+    end do
+
+  end subroutine testPuffinSimulationCompletes3DBig
+
+
+!> Scale-aware closeness test for a single value. The quantities compared here
+!! span many orders of magnitude (SI power against scaled bunching), so a fixed
+!! absolute tolerance would be meaningless for one end or the other.
+
+  logical function relClose(actual, expected, tol)
+
+    real(kind=WP), intent(in) :: actual, expected, tol
+
+    relClose = ( abs(actual - expected) <= tol * abs(expected) )
+
+  end function relClose
+
+
+!> As relClose, for whole arrays. The absolute term is set from the largest
+!! element of the reference, so entries that are legitimately zero (or lost in
+!! the noise of the array they sit in) are not held to an impossible standard.
+
+  logical function arrayRelClose(actual, expected, tol)
+
+    real(kind=WP), intent(in) :: actual(:), expected(:), tol
+
+    arrayRelClose = all( abs(actual - expected) <= &
+                         tol * abs(expected) + tol * maxval(abs(expected)) )
+
+  end function arrayRelClose
+
+end module testMPIIntegration3DBig

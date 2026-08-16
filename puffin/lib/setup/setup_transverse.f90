@@ -10,6 +10,7 @@ USE puffin_constants
 USE functions
 USE IO
 use globals
+use GlobalTypes, only: tFELFrame
 
 
 implicit none
@@ -34,7 +35,7 @@ contains
 
 
   subroutine stptrns(sSigE, sLenE, iNMPs, emitx, emity, sGamFrac, &
-                     qMatchA, qMatchS, qFMesh, sSigF)
+                     qMatchA, qMatchS, qFMesh, sSigF, frame)
 
     real(kind=wp), intent(in) :: emitx(:), emity(:), sGamFrac(:)
 
@@ -42,12 +43,13 @@ contains
 
     integer(kind=ip), intent(in) :: iNMPs(:,:)
     logical, intent(in) :: qMatchA(:), qMatchS(:), qFMesh
+    type(tFELFrame), intent(in) :: frame
 
     real(kind=wp) :: sLenF
 
 
     call MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
-                        qMatchA)
+                        qMatchA, frame)
 
     call matchSeeds(qMatchS, sSigE, sSigF)
 
@@ -241,7 +243,7 @@ contains
 
 
 subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
-                      qMatchA)
+                      qMatchA, frame)
 
 ! Subroutine which matches the beam in x and y
 !
@@ -249,11 +251,12 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 
   real(kind=wp), intent(in) :: emitx(:), emity(:), sGamFrac(:)
   logical, intent(in) :: qMatchA(:)
+  type(tFELFrame), intent(in) :: frame
 
   real(kind=wp), intent(inout) :: sLenE(:,:), sSigE(:,:)
 
   integer(kind=ip) :: nbeams, ic
-  
+
   nbeams = size(emitx)
 
   do ic = 1, nbeams
@@ -261,7 +264,7 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
     if (qMatchA(ic)) then
 
       call matchTransBeam(sSigE(ic,:), sLenE(ic,:), &
-                      emitx(ic), emity(ic), sGamFrac(ic))
+                      emitx(ic), emity(ic), sGamFrac(ic), frame)
 
       if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1) ) then 
         print*, &
@@ -282,10 +285,11 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
   end subroutine MatchBeams
 
 
-  subroutine matchTransBeam(sSigE, sLenE, emitx, emity, sEnfrac)
+  subroutine matchTransBeam(sSigE, sLenE, emitx, emity, sEnfrac, frame)
 
     real(kind=wp), intent(in) :: emitx, emity, sEnfrac
     real(kind=wp), intent(out) :: sSigE(:), sLenE(:)
+    type(tFELFrame), intent(in) :: frame
 
     real(kind=wp) :: kbx, kby
 
@@ -306,14 +310,14 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
     end if
 
     call matchxPx(sSigE(iX_CG), sSigE(iPX_CG), emitx, &
-                  kbx, sEnFrac)
+                  kbx, sEnFrac, frame)
 
     sLenE(iX_CG) = sSigE(iX_CG) * 6_wp
     sLenE(iPX_CG) = sSigE(iPX_CG) * 6_wp
 
 
     call matchxPx(sSigE(iY_CG), sSigE(iPY_CG), emity, &
-                  kby, sEnFrac)
+                  kby, sEnFrac, frame)
 
     sLenE(iY_CG) = sSigE(iY_CG) * 6_wp    
     sLenE(iPY_CG) = sSigE(iPY_CG) * 6_wp    
@@ -342,17 +346,18 @@ subroutine MatchBeams(sSigE, sLenE, emitx, emity, sGamFrac, &
 
 
 
-  subroutine matchxPx(sigx, sigpx, emit, kx, sEnFrac)
+  subroutine matchxPx(sigx, sigpx, emit, kx, sEnFrac, frame)
 
 
     real(kind=wp), intent(in) :: emit, kx, sEnfrac
     real(kind=wp), intent(out) :: sigx, sigpx
+    type(tFELFrame), intent(in) :: frame
 
 
     if (kx /= 0_wp) then
 
-      sigx = sqrt(sRho_G * emit / kx)
-      sigpx = sqrt(sEta_G) / 2.0_wp / sKappa_G * &
+      sigx = sqrt(frame%rho * emit / kx)
+      sigpx = sqrt(frame%eta) / 2.0_wp / frame%kappa * &
                sEnfrac * emit / sigx
 
     end if

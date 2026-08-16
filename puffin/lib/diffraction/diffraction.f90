@@ -22,6 +22,7 @@ use masks
 use Globals
 use IO
 use parafield
+use GlobalTypes, only: tSimulationContext
 
 use, intrinsic :: iso_c_binding
 
@@ -44,12 +45,13 @@ contains
 !> @param[out] qOK Error flag.
 
 subroutine diffractIM(sStep, &
-                      qDiffrctd, qOK)
+                      qDiffrctd, qOK, ctx)
 
   implicit none
 
   real(kind=wp), intent(in) :: sStep
   logical, intent(out) :: qDiffrctd, qOK
+  type(tSimulationContext), intent(inout) :: ctx
 
   logical :: qOKL
 
@@ -65,7 +67,7 @@ subroutine diffractIM(sStep, &
 
   CALL DiffractionStep(sStep,&
        tre_fft, tim_fft,&
-       qOKL)
+       ctx, qOKL)
   if (.not. qOKL) goto 1000
 
   qDiffrctd = .true.
@@ -206,7 +208,7 @@ end subroutine multiplyexp
 !> @param qOKL local error flag
 !> @param error Error integer for MPI calls
 
-SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
+SUBROUTINE DiffractionStep(h, sAr, sAi, ctx, qOK)
 
   IMPLICIT NONE
 !
@@ -217,6 +219,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 
   real(kind=wp), intent(in)      ::   h
   real(kind=wp), dimension(:), intent(inout)  :: sAr, sAi
+  type(tSimulationContext), intent(inout) :: ctx
   logical, intent(out)  ::  qOK
 
   integer(kind=ip) :: ntrh, ix, iy, iz
@@ -231,12 +234,11 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, qOK)
 !     Transforming from A(x,y,z2,zbar) to A(kx,ky,kz2,zbar)
 
 
-  if ((tProcInfo_G%qroot ) .and. (ioutInfo_G > 2) ) then
-    print*,' inside diffraction... ',iCsteps, end_time-start_time
-  end if
-
-
   call Get_time(tr_time_s)
+
+  if ((tProcInfo_G%qroot ) .and. (ioutInfo_G > 2) ) then
+    print*,' inside diffraction... ', ctx%lattice%cumulative_steps, tr_time_s - ctx%integration%time_start
+  end if
 
 
 !  ALLOCATE(sA_local(0:tTransInfo_G%TOTAL_LOCAL_SIZE-1))

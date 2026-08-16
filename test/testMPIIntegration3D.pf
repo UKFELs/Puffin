@@ -1,0 +1,187 @@
+!> 3D MPI integration test: runs a full 3D CLARA single-slice FEL simulation
+!! (5 undulator periods, 2 MPI processes, diffraction enabled) and validates
+!! output against pre-generated golden reference files.
+!!
+!! The beam is read from a fixed HDF5 file (clara_electrons_0.h5) rather than
+!! sampled stochastically, so the shot-noise pattern and final state are
+!! deterministic and reproducible across runs.
+!!
+!! Before this test can pass you must complete two one-off setup steps:
+!!
+!!   1. Seed run  – run puffin once with the original beam_file.in (stochastic)
+!!      to produce clara_test_electrons_0.h5, then copy it to
+!!      test/inputs/3D/clara_electrons_0.h5 and commit it.
+!!
+!!   2. Golden run – run puffin once with beam_file_h5.in (fixed beam) to
+!!      produce deterministic output files, then copy the final-step outputs:
+!!        clara_test_aperp_N.h5      -> test/expected/3D/clara_expected_field.h5
+!!        clara_test_electrons_N.h5  -> test/expected/3D/clara_expected_electrons.h5
+!!        clara_test_integrated_N.h5 -> test/expected/3D/clara_expected_integrated.h5
+!!      where N is CLARA_FINAL_INDEX below (verify after the golden run).
+
+module testMPIIntegration3D
+
+  use pFUnit
+  use MPI
+  use puffin_kinds
+  use puffin_mod, only: puffin_main
+  use H5in, only: getMacroparticleCount, readH5BeamDataOntoRootProcess, &
+                  getNX, getNY, getNZ2, readH5FieldDataOntoRootProcess3D, &
+                  getWriteStep
+  use globals
+  use puffin_mpiInfo, only: tProcInfo_G
+  implicit none
+
+  ! Output *file index* of the final dump - the counter advances once per dump,
+  ! so this is not the step number. Distinct from CLARA_FINAL_STEP, the
+  ! integration step that dump is taken at (5 periods x 30 steps per period).
+  integer(kind=ip), parameter :: CLARA_FINAL_INDEX = 6_ip
+  integer(kind=ip), parameter :: CLARA_FINAL_STEP  = 150_ip
+
+  character(len=1024_IP) :: test_file_1    = 'inputs/3D/clara_test.in'
+  character(len=1024_ip) :: output_file_base = 'inputs/3D/clara_test'
+
+contains
+
+  @mpitest(npes=[2])
+  subroutine testPuffinSimulationCompletes3D(this)
+
+    class(MpiTestMethod), intent(inout) :: this
+    logical :: file_exists, qOK
+    character(len=1024_ip) :: test_output_field_initial_file, &
+                              test_output_electron_initial_file, &
+                              test_output_integrated_initial_file, &
+                              test_output_field_final_file, &
+                              test_output_electron_final_file, &
+                              test_output_integrated_final_file, &
+                              expected_field_file, &
+                              expected_electron_file, &
+                              expected_integrated_file, &
+                              step_str
+    integer(kind=ip) :: nMPs, i
+    real(kind=WP), allocatable :: sElX(:), sElY(:), sElZ2(:), sElPX(:), sElPY(:), sElGam(:), chi_bar(:)
+    integer(kind=ip) :: nX, nY, nZ2nodes, nField
+    integer(kind=ip) :: expected_nX, expected_nY, expected_nZ2
+    real(kind=WP), allocatable :: rfield(:), ifield(:), expected_rfield(:), expected_ifield(:)
+    real(kind=WP), allocatable :: expected_sElX(:), expected_sElY(:), expected_sElZ2(:)
+    real(kind=WP), allocatable :: expected_sElPX(:), expected_sElPY(:), expected_sElGam(:)
+    real(kind=WP), allocatable :: expected_chi_bar(:)
+
+    print *, 'Testing 3D Puffin simulation completion (CLARA single-slice)...'
+
+    call puffin_main(test_file_1, qOK)
+
+    write(step_str, '(i0)') CLARA_FINAL_INDEX
+
+    test_output_field_initial_file    = trim(output_file_base) // '_aperp_0.h5'
+    test_output_electron_initial_file = trim(output_file_base) // '_electrons_0.h5'
+    test_output_integrated_initial_file = trim(output_file_base) // '_integrated_0.h5'
+
+    test_output_field_final_file    = trim(output_file_base) // '_aperp_'    // trim(step_str) // '.h5'
+    test_output_electron_final_file = trim(output_file_base) // '_electrons_' // trim(step_str) // '.h5'
+    test_output_integrated_final_file = trim(output_file_base) // '_integrated_' // trim(step_str) // '.h5'
+
+    expected_field_file    = 'expected/3D/clara_expected_field.h5'
+    expected_electron_file = 'expected/3D/clara_expected_electrons.h5'
+    expected_integrated_file = 'expected/3D/clara_expected_integrated.h5'
+
+    inquire(file=test_output_field_initial_file, exist=file_exists)
+    @AssertTrue(file_exists)
+
+    inquire(file=test_output_electron_initial_file, exist=file_exists)
+    @AssertEqual(file_exists, .true.)
+
+    inquire(file=test_output_integrated_initial_file, exist=file_exists)
+    @AssertEqual(file_exists, .true.)
+
+    inquire(file=test_output_field_final_file, exist=file_exists)
+    @AssertEqual(file_exists, .true.)
+
+    inquire(file=test_output_electron_final_file, exist=file_exists)
+    @AssertEqual(file_exists, .true.)
+
+    inquire(file=test_output_integrated_final_file, exist=file_exists)
+    @AssertEqual(file_exists, .true.)
+
+    ! The dumps must land at the step each index claims to hold, not merely
+    ! exist. The output file index is advanced once per dump, so anything that
+    ! rewinds it silently overwrites an earlier index with later data --
+    ! index 0 is the only record of the initial state of the run.
+
+    if (tProcInfo_G%qroot) then
+
+      @AssertEqual(getWriteStep(trim(test_output_integrated_initial_file)), 0_ip)
+      @AssertEqual(getWriteStep(trim(test_output_field_initial_file)), 0_ip)
+      @AssertEqual(getWriteStep(trim(test_output_electron_initial_file)), 0_ip)
+
+      @AssertEqual(getWriteStep(trim(test_output_integrated_final_file)), CLARA_FINAL_STEP)
+      @AssertEqual(getWriteStep(trim(test_output_field_final_file)), CLARA_FINAL_STEP)
+      @AssertEqual(getWriteStep(trim(test_output_electron_final_file)), CLARA_FINAL_STEP)
+
+    end if
+
+    ! --- Electron macroparticle comparison ---
+
+    nMPs = getMacroparticleCount(trim(test_output_electron_final_file))
+    if (.not. tProcInfo_G%qRoot) nMPs = 0
+
+    allocate(sElX(nMPs), sElY(nMPs), sElZ2(nMPs), sElPX(nMPs), sElPY(nMPs), &
+             sElGam(nMPs), chi_bar(nMPs))
+    allocate(expected_sElX(nMPs), expected_sElY(nMPs), expected_sElZ2(nMPs), &
+             expected_sElPX(nMPs), expected_sElPY(nMPs), expected_sElGam(nMPs), &
+             expected_chi_bar(nMPs))
+
+    call readH5BeamDataOntoRootProcess(trim(test_output_electron_final_file), &
+      sElX, sElY, sElZ2, sElPX, sElPY, sElGam, chi_bar, nMPs)
+    call readH5BeamDataOntoRootProcess(trim(expected_electron_file), &
+      expected_sElX, expected_sElY, expected_sElZ2, &
+      expected_sElPX, expected_sElPY, expected_sElGam, expected_chi_bar, nMPs)
+
+    ! Running with different numbers of processes can lead to macroparticles being
+    ! ordered differently, so check each expected value matches at least one output value.
+    if (tProcInfo_G%qroot) then
+      do i = 1, nMPs
+        @AssertTrue(ANY( ABS(expected_sElX   - sElX(i))   <= 1e-10_WP))
+        @AssertTrue(ANY( ABS(expected_sElY   - sElY(i))   <= 1e-10_WP))
+        @AssertTrue(ANY( ABS(expected_sElZ2  - sElZ2(i))  <= 1e-10_WP))
+        @AssertTrue(ANY( ABS(expected_sElPX  - sElPX(i))  <= 1e-10_WP))
+        @AssertTrue(ANY( ABS(expected_sElPY  - sElPY(i))  <= 1e-10_WP))
+        @AssertTrue(ANY( ABS(expected_sElGam - sElGam(i)) <= 1e-10_WP))
+      end do
+    end if
+
+    ! --- 3D radiation field comparison ---
+
+    expected_nX    = getNX(trim(expected_field_file))
+    expected_nY    = getNY(trim(expected_field_file))
+    expected_nZ2   = getNZ2(trim(expected_field_file))
+
+    nX      = getNX(trim(test_output_field_final_file))
+    nY      = getNY(trim(test_output_field_final_file))
+    nZ2nodes = getNZ2(trim(test_output_field_final_file))
+
+    if (tProcInfo_G%qroot) then
+      print *, 'Field mesh (nX, nY, nZ2):', nX, nY, nZ2nodes
+      @AssertEqual(nX,      expected_nX)
+      @AssertEqual(nY,      expected_nY)
+      @AssertEqual(nZ2nodes, expected_nZ2)
+    end if
+
+    nField = nX * nY * nZ2nodes
+
+    allocate(rfield(nField), ifield(nField), &
+             expected_rfield(nField), expected_ifield(nField))
+
+    call readH5FieldDataOntoRootProcess3D(trim(test_output_field_final_file), &
+      rfield, ifield, nX, nY, nZ2nodes)
+    call readH5FieldDataOntoRootProcess3D(trim(expected_field_file), &
+      expected_rfield, expected_ifield, expected_nX, expected_nY, expected_nZ2)
+
+    if (tProcInfo_G%qroot) then
+      @AssertEqual(rfield, expected_rfield, 1e-10_WP)
+      @AssertEqual(ifield, expected_ifield, 1e-10_WP)
+    end if
+
+  end subroutine testPuffinSimulationCompletes3D
+
+end module testMPIIntegration3D

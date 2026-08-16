@@ -1,0 +1,15 @@
+! PUFFIN BEAM FILE
+!
+! Reads pre-generated macroparticles from an HDF5 file so that the
+! shot-noise pattern is fixed and the test result is deterministic.
+! clara_electrons_0.h5 is captured from a one-off seed run and committed
+! to the test tree.
+
+&NBLIST
+nbeams = 1
+dtype = 'h5'
+/
+
+&BH5LIST
+dist_f = 'inputs/3D/clara_electrons_0.h5'
+/

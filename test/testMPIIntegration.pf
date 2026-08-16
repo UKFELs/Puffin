@@ -9,7 +9,7 @@ module testMPIIntegration
   use puffin_kinds
   use puffin_mod, only: puffin_main
   use H5in, only: getMacroparticleCount, readH5BeamDataOntoRootProcess, &
-                  readH5FieldDataOntoRootProcess, getNZ2
+                  readH5FieldDataOntoRootProcess, getNZ2, getWriteStep
   use globals
   use puffin_mpiInfo, only: tProcInfo_G
   implicit none
@@ -49,12 +49,20 @@ contains
     real(kind=WP), allocatable :: rfield(:), ifield(:)
     real(kind=WP) :: expected_rfield(511), expected_ifield(511)
 
+    ! f1main.in runs a single undulator module of nPeriods=1 at
+    ! stepsPerPeriod=30, so the run finishes on step 30.
+    integer(kind=ip), parameter :: nStepsFinal = 30_ip
+
     print *, 'Testing Puffin simulation completion...'
 
     call puffin_main(test_file_1, qOK)
 
     ! Verify successful execution
-    ! f1main_aperp_2.h5
+    ! Indices below are output file indices, not steps. The counter advances
+    ! once per dump, and this deck dumps three times: at step 0, at the end of
+    ! the undulator module (step 30), and again for the qDumpEnd_G write. Only
+    ! the first and last of those produce full aperp/electrons files, so the
+    ! final full dump lands at index 2 while integrated runs 0, 1, 2.
     test_output_field_initial_file = trim(output_file_base) // "_aperp_0.h5"
     test_output_electron_initial_file = trim(output_file_base) // '_electrons_0.h5'
     test_output_integrated_initial_file = trim(output_file_base) // '_integrated_0.h5'
@@ -138,6 +146,23 @@ contains
 
     inquire(file=test_output_integrated_final_file, exist=file_exists)
     @AssertEqual(file_exists, .true.)
+
+    ! The dumps must land at the step each index claims to hold, not merely
+    ! exist. The output file index is advanced once per dump, so anything that
+    ! rewinds it silently overwrites an earlier index with later data --
+    ! index 0 is the only record of the initial state of the run.
+
+    if (tProcInfo_G%qroot) then
+
+      @AssertEqual(getWriteStep(trim(test_output_integrated_initial_file)), 0_ip)
+      @AssertEqual(getWriteStep(trim(test_output_field_initial_file)), 0_ip)
+      @AssertEqual(getWriteStep(trim(test_output_electron_initial_file)), 0_ip)
+
+      @AssertEqual(getWriteStep(trim(test_output_integrated_final_file)), nStepsFinal)
+      @AssertEqual(getWriteStep(trim(test_output_field_final_file)), nStepsFinal)
+      @AssertEqual(getWriteStep(trim(test_output_electron_final_file)), nStepsFinal)
+
+    end if
 
   end subroutine testPuffinSimulationCompletes
 

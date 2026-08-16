@@ -1,0 +1,56 @@
+! Input for the BIG 3D integration test (test/testMPIIntegration3DBig.pf).
+!
+! Derived from the shortCSE example, inputs/simple/3D/shortCSE/shCSE.in, kept at
+! the example's physical parameters so the test exercises a realistic
+! full-transverse-mesh CSE run rather than a contrived one. The changes from the
+! example are the input-file paths (which are resolved relative to build/test/,
+! where the test runs), the output cadence -- dialled right down, since the test
+! only ever compares the first and last dumps and each full field dump is
+! 637 MB -- and iRandSeed.
+!
+! iRandSeed is what makes this testable at all. Left at its default the beam's
+! shot noise is seeded from the system clock, so no two runs agree and no golden
+! reference means anything; fixing it pins the noise realisation and the run
+! repeats exactly. The particular value is arbitrary.
+!
+! Resources, measured over two full runs on a 48 GiB Apple M5 Pro with 6 MPI
+! ranks (one per performance core):
+!
+!   field mesh      85 x 85 x 5780  = 41.8M nodes
+!   resident memory 1.4-2.0 GB per rank at the end of the run, 9-12 GB total
+!   output written  ~1.3 GB (2 full field dumps + 2 electron dumps)
+!   wall clock      ~8.7 minutes (522 s and 532 s)
+!
+! Peak memory is not a fixed cost: it grows steadily with the number of
+! integration steps taken, roughly 750 MB per rank at 300 steps against 1.4 GB
+! at 7500, at any rank count. Budget from the step count, not from a short run.
+!
+! That is why the test is gated behind PUFFIN_BIG_TESTS as well as being slow —
+! see the comments in test/CMakeLists.txt.
+!
+! For the meaning of each parameter, see the commented header of
+! inputs/simple/3D/shortCSE/shCSE.in.
+
+&MDATA
+ qOneD                  = .false.
+ iNumNodesX             = 85
+ iNumNodesY             = 85
+ nodesPerLambdar        = 14
+ sFModelLengthX         = 44.49088
+ sFModelLengthY         = 44.49088
+ sFModelLengthZ2        = 31.0
+ iRedNodesX             = 20
+ iRedNodesY             = 20
+ zundType               = 'helical'
+ srho                   = 0.00555
+ sgamma_r               = 700.0
+ saw                    = 1.0
+ lambda_w               = 0.025
+ stepsPerPeriod         = 30
+ nPeriods               = 250
+ seed_file              = 'inputs/3D/seed_file.in'
+ beam_file              = 'inputs/3D/shcse_big_beam.in'
+ iWriteNthSteps         = 7500
+ iWriteIntNthSteps      = 750
+ iRandSeed              = 20260810
+ /

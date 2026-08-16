@@ -19,15 +19,14 @@ USE RK4int
 use hdf5_puff
 use ParaField
 use cwrites
+use GlobalTypes, only: tSimulationContext
 
 implicit none
 
 contains
 
 
-subroutine writeIM(sZ, sZl, &
-                   iStep, iCstep, iL, iWriteNthSteps, &
-                   iIntWriteNthSteps, nSteps, qOK)
+subroutine writeIM(sZ, sZl, ctx, iL, qOK)
 
 
 ! Subroutine to write data, making the necessary
@@ -41,9 +40,8 @@ subroutine writeIM(sZ, sZl, &
   implicit none
 
   real(kind=wp), intent(inout) :: sZ, sZl
-  integer(kind=ip), intent(in) :: iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps
-  integer(kind=ip), intent(in) :: iCstep, iL
-  integer(kind=ip) :: nslices
+  type(tSimulationContext), intent(inout) :: ctx
+  integer(kind=ip), intent(in) :: iL
   logical, intent(inout) :: qOK
 
   integer error
@@ -53,13 +51,13 @@ subroutine writeIM(sZ, sZl, &
   qOK = .false.
 
 
-  call int_or_full(istep, iCstep, iIntWriteNthSteps, iWriteNthSteps, &
+  call int_or_full(ctx%integration%current_step, ctx%lattice%cumulative_steps, &
+                   ctx%output%write_nth_steps_intermediate, &
+                   ctx%output%write_nth_steps, &
                    qWriteInt, qWriteFull, qOK)
 
 
-  call wr_cho(sZ, sZl, &
-              iStep, iCstep, iL, iWriteNthSteps, &
-              iIntWriteNthSteps, nSteps, qWriteInt, qWriteFull, qOK)
+  call wr_cho(sZ, sZl, ctx, iL, qWriteInt, qWriteFull, qOK)
 
 !              Set error flag and exit
 
@@ -80,9 +78,7 @@ end subroutine writeIM
 
 
 
-subroutine wr_cho(sZ, sZl, &
-                  iStep, iCstep, iL, iWriteNthSteps, &
-                  iIntWriteNthSteps, nSteps, qWriteInt, qWriteFull, qOK)
+subroutine wr_cho(sZ, sZl, ctx, iL, qWriteInt, qWriteFull, qOK)
 
 
 ! Subroutine to write data, choosing either sdds or hdf5 (or both!)
@@ -94,8 +90,8 @@ subroutine wr_cho(sZ, sZl, &
   implicit none
 
   real(kind=wp), intent(inout) :: sZ, sZl
-  integer(kind=ip), intent(in) :: iStep, iWriteNthSteps, iIntWriteNthSteps, nSteps
-  integer(kind=ip), intent(in) :: iCstep, iL
+  type(tSimulationContext), intent(inout) :: ctx
+  integer(kind=ip), intent(in) :: iL
   logical, intent(in) :: qWriteInt, qWriteFull
   logical, intent(inout) :: qOK
 
@@ -107,15 +103,14 @@ subroutine wr_cho(sZ, sZl, &
   if (qhdf5_G) then
 
     if (fieldMesh == iTemporal) then
-      nslices=ceiling( (sLengthOfElmZ2_G*NZ2_G)/(4*pi*srho_g))
+      nslices=ceiling( (ctx%mesh%dz2 * ctx%mesh%nz2) / (4*pi*ctx%frame%rho))
     else
-      nslices=ceiling( (sLengthOfElmZ2_G * real((NZ2_G-1_ip),kind=wp) )/(4*pi*srho_g)) ! + 30_ip
+      nslices=ceiling( (ctx%mesh%dz2 * real((ctx%mesh%nz2-1_ip),kind=wp)) / (4*pi*ctx%frame%rho))
     end if
 
     call wr_h5(sZ, szl, tArrayA, tArrayE, tArrayZ, iL, &
-               iIntWriteNthSteps, iWriteNthSteps, qSeparateStepFiles_G, &
-               qWriteFull, &
-               qWriteInt, nslices, qOK)
+               ctx%output%write_nth_steps_intermediate, ctx%output%write_nth_steps, &
+               qSeparateStepFiles_G, qWriteFull, qWriteInt, nslices, ctx, qOK)
 
   end if
 

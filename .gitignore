@@ -222,4 +222,4 @@ pip-log.txt
 venv/
 *.mod
 .github/skills/*
-
+.claude/
