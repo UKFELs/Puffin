@@ -113,7 +113,7 @@ use puffin_mpiInfo, only: tProcInfo_G
 IMPLICIT NONE (type, external)
 private
 
-public :: init_random_seed, random_normal, random_Poisson
+public :: init_random_seed, random_normal, random_Poisson, setRandomSeed
 
 REAL(KIND=WP), PRIVATE      :: zero = 0.0, half = 0.5, one = 1.0, two = 2.0,   &
                       vsmall = TINY(1.0), vlarge = HUGE(1.0)

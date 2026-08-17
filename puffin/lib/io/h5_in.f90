@@ -27,7 +27,8 @@ use mpi, only: MPI_ALLREDUCE, mpi_barrier, MPI_COMM_WORLD, MPI_INFO_NULL, MPI_IN
 implicit none (type, external)
 private
 
-public :: getMacroparticleCount, getNX, getNY, getNZ2, readH5BeamDataOntoRootProcess, &
+public :: getH5DatasetLength1D, getMacroparticleCount, getNX, getNY, getNZ2, getWriteStep, &
+           readH5BeamDataOntoRootProcess, readH5Dataset1DOntoRootProcess, &
            readh5beamfile, readH5FieldDataOntoRootProcess, readH5FieldDataOntoRootProcess3D, &
            readh5fieldfilesingledump
 

@@ -23,7 +23,7 @@ use gtop2, only: getp2
 use GlobalTypes, only: tSimulationFlags, tFELFrame
 use mpi, only: MPI_ALLGATHER, mpi_allreduce, mpi_alltoallv, mpi_barrier, MPI_Bcast, &
   mpi_double_precision, MPI_IN_PLACE, mpi_integer, MPI_ISSEND, mpi_max, mpi_min, MPI_RECV, &
-  mpi_reduce, mpi_scatter, MPI_STATUS_SIZE, mpi_sum, MPI_WAIT
+  mpi_reduce, mpi_scatter, MPI_STATUS_SIZE, mpi_sum, MPI_WAIT, MPI_WAITALL
 
 implicit none (type, external)
 private
