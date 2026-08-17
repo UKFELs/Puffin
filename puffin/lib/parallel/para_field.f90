@@ -782,9 +782,18 @@ contains
       integer statr(MPI_STATUS_SIZE)
       integer sendstat(MPI_STATUS_SIZE)
 
+!     One request per outstanding issend - a single scalar handle would
+!     be overwritten by each iteration, leaking every request but the last.
+
+      integer, allocatable :: reqs(:), sendstats(:,:)
+
       real(kind=wp), allocatable :: Abounds(:)
 
       if (qUnique) then
+
+        if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
+          allocate(reqs(nsnds_bf), sendstats(MPI_STATUS_SIZE, nsnds_bf))
+        end if
 
 
 
@@ -808,7 +817,7 @@ contains
             call mpi_issend(dadz_r(sst:sse), &
                       si, &
                       mpi_double_precision, &
-                      tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, req, error)
+                      tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, reqs(ij), error)
 
 
           end do
@@ -835,7 +844,8 @@ contains
 
         end if
 
-        if (tProcInfo_G%rank /= tProcInfo_G%size-1) call mpi_wait( req,sendstat,error )
+        if (tProcInfo_G%rank /= tProcInfo_G%size-1) call mpi_waitall( nsnds_bf, &
+                                                    reqs, sendstats, error )
 
 
 
@@ -863,7 +873,7 @@ contains
             call mpi_issend(dadz_i(sst:sse), &
                       si, &
                       mpi_double_precision, &
-                      tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, req, error)
+                      tProcInfo_G%rank+ij, 0, tProcInfo_G%comm, reqs(ij), error)
 
 
           end do
@@ -891,7 +901,10 @@ contains
         end if
 
 
-        if (tProcInfo_G%rank /= tProcInfo_G%size-1) call mpi_wait( req,sendstat,error )
+        if (tProcInfo_G%rank /= tProcInfo_G%size-1) call mpi_waitall( nsnds_bf, &
+                                                    reqs, sendstats, error )
+
+        if (tProcInfo_G%rank /= tProcInfo_G%size-1) deallocate(reqs, sendstats)
 
 
       else
@@ -964,6 +977,11 @@ contains
           end if
 
           if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
+
+!           Complete the size handshake above before reusing req - rank 0
+!           has posted its matching recv by now.
+
+            call mpi_wait( req,sendstat,error )
 
             call mpi_issend(dadz_r(sst:sse), &
                             si, &
@@ -1159,11 +1177,20 @@ contains
       integer statr(MPI_STATUS_SIZE)
       integer sendstat(MPI_STATUS_SIZE)
 
+!     One request per outstanding issend - a single scalar handle would
+!     be overwritten by each iteration, leaking every request but the last.
+
+      integer, allocatable :: reqs(:), sendstats(:,:)
+
 !      real(kind=wp), allocatable :: tstf(:), tstf2(:)
 
 
 
       if (qUnique) then
+
+        if (tProcInfo_G%rank /= 0) then
+          allocate(reqs(nrecvs_bf), sendstats(MPI_STATUS_SIZE, nrecvs_bf))
+        end if
 
 
         if (tProcInfo_G%rank /= 0) then
@@ -1175,7 +1202,7 @@ contains
             CALL mpi_issend( ac_rl(1:lrank_v(ij)*ntrndsi_G), &
                    lrank_v(ij)*ntrndsi_G, &
                    mpi_double_precision, &
-                   lrfromwhere(ij), 0, tProcInfo_G%comm, req, error )
+                   lrfromwhere(ij), 0, tProcInfo_G%comm, reqs(ij), error )
 
           end do
 
@@ -1218,6 +1245,10 @@ contains
         end if
 
 
+        if (tProcInfo_G%rank /= 0) call mpi_waitall( nrecvs_bf, reqs, &
+                                                     sendstats, error )
+
+
 
 
         if (tProcInfo_G%rank /= 0) then
@@ -1229,7 +1260,7 @@ contains
             CALL mpi_issend( ac_il(1:lrank_v(ij)*ntrndsi_G), &
                    lrank_v(ij)*ntrndsi_G, &
                    mpi_double_precision, &
-                   lrfromwhere(ij), 0, tProcInfo_G%comm, req, error )
+                   lrfromwhere(ij), 0, tProcInfo_G%comm, reqs(ij), error )
 
           end do
 
@@ -1272,7 +1303,10 @@ contains
         end if
 
 
-        if (tProcInfo_G%rank /= 0) call mpi_wait( req,sendstat,error )
+        if (tProcInfo_G%rank /= 0) then
+          call mpi_waitall( nrecvs_bf, reqs, sendstats, error )
+          deallocate(reqs, sendstats)
+        end if
 
 
 
@@ -1681,7 +1715,13 @@ contains
     integer(kind=ip) :: yip, ij, bz2_globm, ctrecvs, cpolap, dum_recvs, &
                         maxbz2PB, bz2last
     integer(kind=ip), allocatable :: drecar(:)
-    integer :: error, req
+    integer :: error, req, nsnd_hs
+    integer(kind=ip) :: izero_hs
+
+!   One request per outstanding issend - a single scalar handle would
+!   be overwritten by each iteration, leaking every request but the last.
+
+    integer, allocatable :: reqs(:), sendstats(:,:)
 
     integer statr(MPI_STATUS_SIZE)
     integer sendstat(MPI_STATUS_SIZE)
@@ -1928,6 +1968,9 @@ contains
 
         yip = 0
 
+        nsnd_hs = tProcInfo_G%size - 1 - tProcInfo_G%rank
+        allocate(reqs(nsnd_hs), sendstats(MPI_STATUS_SIZE, nsnd_hs))
+
         do ij = tProcInfo_G%rank + 1, tProcInfo_G%size-1
 
           yip = yip + 1
@@ -1938,14 +1981,15 @@ contains
 
             call mpi_issend(rrank_v(yip, 1), 1, mpi_integer, &
                      tProcInfo_G%rank + yip, 0, tProcInfo_G%comm, &
-                     req, error)
+                     reqs(yip), error)
 
           else
 
             !send 0 to tProcInfo_G%rank + yip
-            call mpi_issend(0, 1, mpi_integer, &
+            izero_hs = 0_ip
+            call mpi_issend(izero_hs, 1, mpi_integer, &
                      tProcInfo_G%rank + yip, 0, tProcInfo_G%comm, &
-                     req, error)
+                     reqs(yip), error)
 
           end if
 
@@ -1974,7 +2018,8 @@ contains
       end if
 
       if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-        call mpi_wait(req, sendstat, error)
+        call mpi_waitall(nsnd_hs, reqs, sendstats, error)
+        deallocate(reqs, sendstats)
       end if
 
       if (tProcInfo_G%rank /= 0) then
