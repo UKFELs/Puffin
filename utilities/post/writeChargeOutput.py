@@ -12,14 +12,14 @@ import numpy,tables,os,sys
 
 #def writeChargeOutput3D(filename,ptcldata,bins,dataname,simtime=0.):
 def writeChargeOutput3D(filename,ptcldata,bins,simtime=0.):
-  print ptcldata.shape
-  print str(ptcldata.shape[0]) + " particles to be histogrammed"
+  print(ptcldata.shape)
+  print(str(ptcldata.shape[0]) + " particles to be histogrammed")
   if ptcldata.shape[1]==7:
     histdata,edgedata=numpy.histogramdd(ptcldata[:,0:3],bins=bins,weights=ptcldata[:,6])
   elif ptcldata.shape[1]==6:
     histdata,edgedata=numpy.histogramdd(ptcldata[:,0:3],bins=bins)
   else:
-    print "expected 3 coordinate vector, 3 velocity vector and optional weight"
+    print("expected 3 coordinate vector, 3 velocity vector and optional weight")
     exit()
   filebasename,fileextname=filename.split('.')
   filebase=filebasename.split('_')[:-1]
@@ -124,9 +124,9 @@ def writeVsh53DParticlesSimple(filename,ptcldata,dsetname,simtime=0.,step=0,lowe
 
 
 def main():
-  print sys.argv
+  print(sys.argv)
   if len(sys.argv)<2:
-    print "usage reduce_particles.py input_filename [num_required_particles]" 
+    print("usage reduce_particles.py input_filename [num_required_particles]" )
   input_filename=sys.argv[1]
   if len(sys.argv)==3:
     num_required_particles=numpy.int(sys.argv[2])
@@ -135,17 +135,17 @@ def main():
   h5=tables.open_file(input_filename)
   elecs=h5.root.electrons.read()
   total_charge=numpy.sum(elecs[:,6])
-  print "Total charge: "+str(total_charge)
-  print "Total required particles: "+str(num_required_particles)
+  print("Total charge: "+str(total_charge))
+  print("Total required particles: "+str(num_required_particles))
   sum=numpy.double(0)
   charge_per_new_macro=total_charge/float(num_required_particles)
-  print "Charge pre new macro: "+str(charge_per_new_macro)
+  print("Charge pre new macro: "+str(charge_per_new_macro))
   num_old_elec_macroparticles=int(elecs.shape[0])
-  print "Number of original particles: "+str(elecs.shape[0])
+  print("Number of original particles: "+str(elecs.shape[0]))
   lb=h5.root.globalLimits._v_attrs.vsLowerBounds
-  print lb
+  print(lb)
   ub=h5.root.globalLimits._v_attrs.vsUpperBounds
-  print ub
+  print(ub)
   simtime=h5.root.electrons._v_attrs.time
   newelecs_count=0
   newparticles=numpy.zeros((num_required_particles,6))
@@ -162,25 +162,25 @@ def main():
 ###
 # Can we write a charge density field?
 ##
-#print "histogramming charge data"
+#print("histogramming charge data")
 #H,edges=numpy.histogramdd(elecs[:,0:3],bins=(numpy.linspace(lb[0],ub[0],32),numpy.linspace(lb[1],ub[1],32),numpy.linspace(lb[2],ub[2],228)),weights=elecs[:,6])
-#print "histogramming reduced data"
+#print("histogramming reduced data")
 #H_reduced,edges_reduced=numpy.histogramdd(newparticles[:,0:3],bins=(32,32,228))
-#print edges[0]
-#print numpy.max(H)
-#print "writing charge data"
+#print(edges[0])
+#print(numpy.max(H))
+#print("writing charge data")
   writeChargeOutput3D(('_'.join(outfilebase)+'Charge3D_'+dumpno+'.'+fileextname),elecs,(numpy.linspace(lb[0],ub[0],32),numpy.linspace(lb[1],ub[1],32),numpy.linspace(lb[2],ub[2],228)))
-  print "and writing reduced charge data"
+  print("and writing reduced charge data")
   writeChargeOutput3D(('_'.join(outfilebase)+'Charge3DReduced_'+dumpno+'.'+fileextname),newparticles,(numpy.linspace(lb[0],ub[0],32),numpy.linspace(lb[1],ub[1],32),numpy.linspace(lb[2],ub[2],228)))
 #  writeChargeOutput3D(H_reduced,edges_reduced,newparticles,'charge3D_reduced')
-#print "1D histogram"
+#print("1D histogram")
 #H1D,edges1D=numpy.histogram(elecs[:,2],bins=(numpy.linspace(lb[2],ub[2],570)),weights=elecs[:,6])
-#print edges1D
+#print(edges1D)
 #writeChargeOutput1D(H1D,edges1D,elecs,'charge1D')
 #Hreduced1D,edgesReduced1D=numpy.histogram(newparticles[:,2],bins=(numpy.linspace(lb[2],ub[2],570)))
-#print edgesReduced1D
-#print str(len(edgesReduced1D))
-#print str(len(edgesReduced1D)-1)
+#print(edgesReduced1D)
+#print(str(len(edgesReduced1D)))
+#print(str(len(edgesReduced1D)-1))
 #writeChargeOutput1D(Hreduced1D,edgesReduced1D,newparticles,'charge1D_reduced')
 
 

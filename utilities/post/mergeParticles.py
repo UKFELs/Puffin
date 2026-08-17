@@ -37,21 +37,21 @@ def getNumProcs(filelist,baseName,n):
   # determine first dump
   thisDump=int(thisFile.split(os.sep)[-1].split('.')[0].split('_')[-1])
   procPtclFiles=glob.glob(os.getcwd()+os.sep+baseName+'_*_'+str(thisDump)+'.h5')
-  print procPtclFiles
+  print(procPtclFiles)
   numProcs=len(procPtclFiles)
   procNos=[]
-  print "numProcs: "+str(numProcs)
+  print("numProcs: "+str(numProcs))
   for procFile in procPtclFiles:
     thisProc=int(procFile.split(os.sep)[-1].split('.')[0].split('_')[-2])
     procNos.append(thisProc)
-  print "maxProcNo: "+str(max(procNos))
+  print("maxProcNo: "+str(max(procNos)))
   if max(procNos) != numProcs:
-    print "This isn't very good, is it!"   
+    print("This isn't very good, is it!")
   return numProcs, sorted(procNos)
 
-print "Got "+str(len(sys.argv))+" arguments"
+print("Got "+str(len(sys.argv))+" arguments")
 baseName=sys.argv[1]
-print "using baseName = "+baseName
+print("using baseName = "+baseName)
 #baseName="fig7_electrons"
 #baseName="electrons"
 filelist, dumpStepNos=getTimeSlices(baseName)
@@ -65,25 +65,25 @@ for i in range(len(filelist)):
       h5out=tables.open_file(outfilename,'r+')
       particleCount+=h5out.root.electrons.shape[0]
     else:
-      print "particlesSoFar: "+str(particleCount)
-      print "Processor: "+str(j)
+      print("particlesSoFar: "+str(particleCount))
+      print("Processor: "+str(j))
       h5in=tables.open_file(baseName+'_'+str(j)+'_'+str(dumpStepNos[i])+'.h5','r')
       particleCount+=h5in.root.electrons.shape[0]
       h5in.close()
-      print "cumulativeSumSoFar: "+str(particleCount)
+      print("cumulativeSumSoFar: "+str(particleCount))
   oldElecs=h5out.root.electrons.read()
   elecs=numpy.zeros((particleCount+1,oldElecs.shape[1]))
   elecs[0:oldElecs.shape[0],:]=oldElecs
   particleCount=oldElecs.shape[0]
   for j in range(1,numProcs0):
-    print "particlesSoFar: "+str(particleCount)
-    print "Processor: "+str(j)
+    print("particlesSoFar: "+str(particleCount))
+    print("Processor: "+str(j))
     h5in=tables.open_file(baseName+'_'+str(j)+'_'+str(dumpStepNos[i])+'.h5','r')
     newElecs=h5in.root.electrons.read()
     elecs[particleCount:particleCount+h5in.root.electrons.shape[0],:]=newElecs
     particleCount+=h5in.root.electrons.shape[0]
     h5in.close()
-    print "cumulativeSumSoFar: "+str(particleCount)
+    print("cumulativeSumSoFar: "+str(particleCount))
   h5out.create_array('/','newElecs',elecs)
   h5out.copy_node_attrs('/electrons','/newElecs')
   h5out.remove_node('/electrons')

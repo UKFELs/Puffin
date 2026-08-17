@@ -75,15 +75,15 @@ if len(sys.argv) == 4 or len(sys.argv) == 3:
     stokesLength=200
   h5=tables.open_file(inputFilename)
   (nx,ny,nz,nComponents)=h5.root.aperp.shape
-  print "rho " + str(rho)
-  print "stokes averaging length " + str(stokesLength)
-  print "nx: " + str(nx)
-  print "ny: " + str(ny)
-  print "nz: " + str(nz)
-  print numpy.int((ny-1)/8.)
-  print numpy.int(7*(ny-1)/8.)+1
-  print numpy.int(numpy.ceil((ny-1)/8.))
-  print "nComponents: " + str(nComponents)
+  print("rho " + str(rho))
+  print("stokes averaging length " + str(stokesLength))
+  print("nx: " + str(nx))
+  print("ny: " + str(ny))
+  print("nz: " + str(nz))
+  print(numpy.int((ny-1)/8.))
+  print(numpy.int(7*(ny-1)/8.)+1)
+  print(numpy.int(numpy.ceil((ny-1)/8.)))
+  print("nComponents: " + str(nComponents))
   
   plt.figure(figsize=(35,35))
   gs = gridspec.GridSpec(7,7)
@@ -103,13 +103,13 @@ if len(sys.argv) == 4 or len(sys.argv) == 3:
   StokesParams=numpy.zeros((nx,ny,nz,3))
   #output file goes in current directory whether or not input was there.
   outFilename=inputFilename.split(os.sep)[-1].replace('aperp','stokes')
-  print outFilename
+  print(outFilename)
 #  for xi in range(0,nx):
 #    for yi in range(0,ny):
 # Just look in the middle while testing
   for xi in range(int(14*nx/32),int(18*nx/32)):
     for yi in range(int(14*ny/32),int(18*ny/32)):
-      print "xi: "+str(xi)+"  yi: "+str(yi)
+      print("xi: "+str(xi)+"  yi: "+str(yi))
       magx,phasex=getMagPhase(h5,rho,xi,yi,0)
       magy,phasey=getMagPhase(h5,rho,xi,yi,1)
       s0=numpy.max(numpy.add(numpy.square(magx),numpy.square(magy)),1.e-99)
@@ -131,6 +131,6 @@ if len(sys.argv) == 4 or len(sys.argv) == 3:
   h5out.close()
   h5.close()
 else:
-  print "Usage: plotPolarization.py filename rho"
-  print "We don't appear to have the correct arguments to proceed"
+  print("Usage: plotPolarization.py filename rho")
+  print("We don't appear to have the correct arguments to proceed")
   

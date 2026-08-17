@@ -25,7 +25,7 @@ def plotPowZZ2(basename):
 
 
     filelist = getIntFileSlices(basename)
-    print filelist
+    print(filelist)
 
     mdata = fdata(filelist[0])
 

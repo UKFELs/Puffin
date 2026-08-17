@@ -17,9 +17,9 @@ the reference frequency - so the fundamental is usually at cfr = 1.
 import sys, glob, os
 import numpy as np
 from numpy import arange
-from rawpuffin import getIntData
-from process import filterField
-import getMagPhase
+from .rawpuffin import getIntData
+from .process import filterField
+from . import getMagPhase
 from puffdata import fdata
 from puffdata import puffData
 

@@ -1,0 +1,70 @@
+name: Build Puffin
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        include:
+          - os: ubuntu-latest
+            compiler: gcc-11
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Miniconda
+      uses: conda-incubator/setup-miniconda@v3
+      with:
+        auto-activate-base: false
+        activate-environment: puffin
+        environment-file: environment.yml
+        python-version: '3.11'
+        auto-update-conda: true
+
+    - name: Build PFUnit
+      shell: bash -l {0}
+      run: |
+        cd /tmp
+        git clone https://github.com/Goddard-Fortran-Ecosystem/pFUnit.git
+        cd pFUnit
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/pfunit-install
+        make
+        make install
+    
+    - name: Create build directory
+      run: mkdir -p build
+    
+    - name: Configure with CMake
+      shell: bash -l {0}
+      working-directory: build
+      run: |
+        cmake .. \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DENABLE_PARALLEL:BOOL=TRUE \
+          -DENABLE_TESTING:BOOL=TRUE \
+          -DCMAKE_PREFIX_PATH='${{ github.workspace }}/pfunit-install' \
+          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
+    
+    - name: Build
+      shell: bash -l {0}
+      working-directory: build
+      run: make -j$(nproc)
+    
+    - name: Run tests
+      shell: bash -l {0}
+      working-directory: build
+      run: make test
+    
+    - name: Install
+      shell: bash -l {0}
+      working-directory: build
+      run: cmake --install .

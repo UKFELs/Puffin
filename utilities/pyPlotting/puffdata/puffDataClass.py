@@ -64,7 +64,7 @@ class puffData:
                           / (self.qe * self.kappa * self.lg ))
 
 
-        self.fieldScale = np.square((self.gamma0 * self.me * np.square(self.c0) ) \
+        self.fieldScale = ((self.gamma0 * self.me * np.square(self.c0) ) \
                           / (self.qe * self.kappa * self.lg ))
 
 

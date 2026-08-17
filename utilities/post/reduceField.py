@@ -61,7 +61,7 @@ def reduceField(fname, oname):
                                                # from the centre of the transverse
                                                # plane
 
-    print numpy.shape(redField)
+    print(numpy.shape(redField))
 # numpy.shape(redField)
 
     h5o = tables.open_file(oname,'w') # open output file
@@ -149,7 +149,7 @@ def reduceField(fname, oname):
 
 
 
-# print(h5o.root.runInfo._v_attrs)
+# print(h5o.root.runInfo._v_attrs))
 
 
 
@@ -167,14 +167,14 @@ if __name__ == '__main__':
     h5finame=sys.argv[1]
     if len(sys.argv) > 2:
       h5foname=sys.argv[2]
-      print "Output file specified as: " + sys.argv[2]
+      print("Output file specified as: " + sys.argv[2])
     else:
       filenamepieces=h5finame.split('_')
       dumpnoAndExt = filenamepieces[-1]
       bname = filenamepieces[0:-1]
       bname = '_'.join(bname)
       h5foname = bname + '_small_' + dumpnoAndExt
-      print "No output file specified - will be written to: " + h5foname
+      print("No output file specified - will be written to: " + h5foname)
       
     reduceField(h5finame, h5foname)
 

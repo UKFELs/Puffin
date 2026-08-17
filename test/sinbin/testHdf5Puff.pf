@@ -1,0 +1,24 @@
+@test
+subroutine testCreateIntegrated1DFloat()
+
+  use pfunit
+  use hdf5_puff
+
+  implicit none
+
+  real(KIND=WP) :: simtime,sz
+  integer(KIND=IP) :: iL,error,nslices,expected_error
+
+  simtime = 0.0_WP
+  sz = 1.1_WP
+  iL = 1_IP
+  error = 0_IP
+  expected_error = 10_IP
+  nslices = 0_IP
+
+  call CreateIntegrated1DFloat(simtime,sz,iL,error,nslices)
+
+  @assertEqual(error,expected_error)
+
+end subroutine testCreateIntegrated1DFloat
+

@@ -1,9 +1,9 @@
 @test
 subroutine testMatchBRad( )
 
-  use pFUnit_mod
+  use fUnit
   use Functions
-  use paratype
+  use puffin_kinds
 
   implicit none
 
@@ -26,9 +26,9 @@ end subroutine testMatchBRad
 
 @test
 subroutine testDiffractionLength()
-   use pFUnit_mod
+   use fUnit
    use Functions
-   use paratype
+   use puffin_kinds
    
    implicit none 
    real(KIND=WP) :: z,sRaleighLength,sigma
@@ -45,9 +45,9 @@ end subroutine testDiffractionLength
 
 @test
 subroutine testGainLength()
-   use pFUnit_mod
+   use fUnit
    use Functions
-   use paratype
+   use puffin_kinds
 	implicit none
 	real(KIND=WP) :: sWigglerWaveLength,rho
 	real(KIND=WP) :: GainResult,GainResult_exact,tol
@@ -61,9 +61,9 @@ end subroutine testGainLength
 
 @test
 subroutine testRaleighLength()
-   use pFUnit_mod
+   use fUnit
    use Functions
-   use paratype
+   use puffin_kinds
 	implicit none
 	real(KIND=WP) :: srho,sigma
 	real(KIND=WP) :: RLResult,RLResult_exact,tol
@@ -77,9 +77,9 @@ end subroutine testRaleighLength
 
 @test
 subroutine testGaussian()
-   use pFUnit_mod
+   use FUnit
    use Functions
-   use paratype
+   use puffin_kinds
 	implicit none
 	real(KIND=WP) :: x(3)
 	real(KIND=WP) :: xc,sigma

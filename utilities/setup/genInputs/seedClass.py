@@ -2,7 +2,6 @@
 # Authors: Lawrence T. Campbell
 # License: BSD-3-Clause
 
-import math
 import fBoolean
 import numpy as np
 

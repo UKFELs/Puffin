@@ -1,0 +1,13 @@
+name: puffin
+channels:
+  - conda-forge
+dependencies:
+  - compilers
+  - openmpi
+  - hdf5=*=mpi_openmpi*
+  - fftw=*=mpi_openmpi*
+  - cmake
+  - doxygen
+  - git
+  - python=3.11
+  - zlib

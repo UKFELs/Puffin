@@ -35,7 +35,7 @@ class SUBeam:
                 self.SU_data = SU_data
         else:
             x, px, y, py, z, pz, wghts = SUF.readSUF(fnamein)
-            self.SU_data = numpy.empty(len(x), 7)
+            self.SU_data = np.empty(len(x), 7)
             self.SU_data[:,0] = x
             self.SU_data[:,1] = px
             self.SU_data[:,2] = y

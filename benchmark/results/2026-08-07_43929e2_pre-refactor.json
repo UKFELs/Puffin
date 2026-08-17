@@ -1,0 +1,102 @@
+{
+  "label": "43929e2 (pre-refactor)",
+  "generated": "2026-08-07 23:16:13",
+  "toolchain": {
+    "host": "Lawrences-MacBook-Pro-2.local",
+    "platform": "macOS-26.6-arm64-arm-64bit",
+    "machine": "arm64",
+    "cpu_count": 18,
+    "puffin": "/private/tmp/claude-501/-Users-lawc-gitroot-github-mightylorenzo-puffin-puffin-src/8995f8ba-0fe0-4c0a-9038-26ec14f5a33e/scratchpad/baseline-build/puffin/puffin",
+    "puffin_mtime": "2026-08-07 22:58:43"
+  },
+  "results": {
+    "1d_serial": {
+      "desc": "1D flat-top CSE, single rank (isolates serial integration cost)",
+      "deck": "inputs/bench_1d.in",
+      "ranks": 1,
+      "reps": 5,
+      "wall_s": [
+        11.370979208000001,
+        11.348350542000002,
+        11.4095115,
+        11.446243000000003,
+        11.549634249999997
+      ],
+      "undulator_s": [
+        10.762251000000001,
+        10.750031,
+        10.811596,
+        10.840831999999999,
+        10.946683
+      ],
+      "wall_min": 11.348350542000002,
+      "undulator_min": 10.750031
+    },
+    "1d_mpi": {
+      "desc": "1D flat-top CSE, 2 ranks (adds parallel field/beam exchange)",
+      "deck": "inputs/bench_1d.in",
+      "ranks": 2,
+      "reps": 5,
+      "wall_s": [
+        8.966316625000005,
+        8.993149250000002,
+        9.00154950000001,
+        9.214000625000011,
+        8.93149383299999
+      ],
+      "undulator_s": [
+        8.154373000000001,
+        8.201836,
+        8.209262,
+        8.427659,
+        8.143887999999999
+      ],
+      "wall_min": 8.93149383299999,
+      "undulator_min": 8.143887999999999
+    },
+    "3d_single": {
+      "desc": "3D CLARA, single undulator module, 85x85 mesh, 2 ranks",
+      "deck": "inputs/3D/bench_3d.in",
+      "ranks": 2,
+      "reps": 5,
+      "wall_s": [
+        5.568928542000009,
+        5.483845792000011,
+        5.482779958999998,
+        5.501863957999987,
+        5.483936083000003
+      ],
+      "undulator_s": [
+        5.3248109999999995,
+        5.2509999999999994,
+        5.251771,
+        5.271839,
+        5.254344000000001
+      ],
+      "wall_min": 5.482779958999998,
+      "undulator_min": 5.2509999999999994
+    },
+    "3d_lattice": {
+      "desc": "3D CLARA, full 17-module lattice with quads/drifts/chicanes, 2 ranks",
+      "deck": "inputs/3D/clara_full.in",
+      "ranks": 2,
+      "reps": 5,
+      "wall_s": [
+        30.204520666999997,
+        29.953138209000002,
+        29.833709916000004,
+        30.176103834000003,
+        29.73119083399999
+      ],
+      "undulator_s": [
+        29.164656999999995,
+        28.899977999999997,
+        28.791496999999996,
+        29.141161,
+        28.697954999999997
+      ],
+      "wall_min": 29.73119083399999,
+      "undulator_min": 28.697954999999997
+    }
+  }
+}

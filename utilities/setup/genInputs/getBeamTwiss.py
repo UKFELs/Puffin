@@ -1,7 +1,4 @@
-
-
 import numpy as np
-import warnings
 
 def weighted_std(values, weights):
     """

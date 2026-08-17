@@ -9,11 +9,9 @@ contains the object definition of the puffData class, used for holding the
 scaling and mesh data about the simulation.
 """
 
-import sys, glob, os
 import numpy as np
 from numpy import pi
 from numpy import arange
-import tables
 
 class puffData:
     

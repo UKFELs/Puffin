@@ -25,7 +25,7 @@ def plotPowZZ2(basename, cfr=None, dfr=None):
 
 
     filelist = getFileSlices(basename)
-    print filelist
+    print(filelist)
 
     mdata = fdata(filelist[0])
 
@@ -49,8 +49,8 @@ def plotPowZZ2(basename, cfr=None, dfr=None):
 
     gAv = 3 # for cycle averaged
 
-    pows = np.ones([len(filelist), mdata.vars.nz2]);
-    powsN = np.ones([len(filelist), mdata.vars.nz2]);
+    pows = np.ones([len(filelist), mdata.vars.nz2])
+    powsN = np.ones([len(filelist), mdata.vars.nz2])
 
     for ij in filelist:
         pows[-1-fcount,:] = getPow(ij, cfr, dfr, irtype = gAv, qScale = 0)
