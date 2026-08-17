@@ -1,57 +1,35 @@
 ! PUFFIN BEAM FILE
 !
-!Describes electron beams for input into puffin. Multiple beams with
-!different parameters can be used. Please refer to POP-REF for an
-!explanation of the scaled variables used, such as z2 and p2.
+! Reads pre-generated macroparticles from an HDF5 file so that the
+! shot-noise pattern is fixed and the test result is deterministic.
 !
-! BEAM PARAMETERS - namelist NBLIST
+! This matters more than it might look. Puffin's shot noise is drawn from
+! the intrinsic RANDOM_NUMBER (see applyNoise -> random_Poisson ->
+! init_random_seed), and that stream is specific to the compiler and its
+! version -- iRandSeed makes a run repeatable on one toolchain, but the
+! realisation still differs between, say, gfortran on macOS/ARM and the
+! gcc used in CI. Generating the beam at runtime would therefore make the
+! golden files unreproducible anywhere but the machine they were made on.
 !
-! nbeams - number of electron beams
-! dtype  - Input type - simple, distribution, or macroparticle 
+! osc_taper_beam.h5 is the step-0 dump captured from a one-off run of this
+! deck with simple beam input, iRandSeed = 20260817 and the default
+! q_noise = .true., so the noise it was generated with is baked into the
+! file. Same approach as inputs/3D/beam_file_h5.in.
 !
-! BEAM PARAMETERS - namelist BLIST
-!========================================================================
-! sSigmaE - gaussian std dev in each dimension - x, y, z2, px, py, gamma, then for additional beams
-! sLenE   - Total length of beam modelled in each dimension - x, y, z2, px, py, gamma...
-! bcenter - Center of beam in z2
-! iNumElectrons  -  Number of macroparticles in each dimension used to model the beam 
-! sEmit_n - Scaled transverse beam emittance
-! sQe - Beam charge 
-! gammaf - Ratio of average beam energy to reference beam energy gamma / gamma_r 
-! chirp  - Energy chirp in z2 i.e. dgamma/dz2
-! mag    - magnitude of energy oscillation on beam
-! fr     - frequency in z2 of beam energy oscillation
-! qRndEj_G - Round edge of flat top?
-! sSigEj_G - Gaussian sigma of tail-off if used
-! qMatched_A - Automatically match beam to focusing channel??
-! TrLdMeth - Beam loading method in 5D transverse and energy planes:
-!                TrLdMeth = 1 for random sequences (default)
-!                TrLdMeth = 2 for Halton sequences
-!========================================================================
+! Note the name: it must NOT match anything the run itself writes. Puffin
+! derives its output base from the main input file, so this deck emits
+! osc_taper_aperp_N.h5, osc_taper_electrons_N.h5 and
+! osc_taper_integrated_N.h5. Calling this file osc_taper_electrons_0.h5 --
+! which is what it was captured as -- means the step-0 dump lands straight
+! on top of the beam being read, quietly rewriting the committed input on
+! every run. inputs/3D/ has the same split for the same reason: the beam is
+! clara_electrons_0.h5 while the deck's output base is clara_test.
 
 &NBLIST
 nbeams = 1
-dtype = 'simple'
+dtype = 'h5'
 /
 
-&BLIST
-sSigmaE = 35.0e-6, 35.0e-6, 1E8, 1.0, 1.0, 0.00005
-sLenE = 1E-6, 1E-6, 2.08477559498845e-18, 1E-6, 1E-6, 0.0003
-iNumMPs = 16, 16, 1900, 16, 16, 16
-sQe = 3e-12  !  2.011198339342929e-15 ! 1.0655301825665005e-12 !2.5E-10
-bcenter = 0.0
-gammaf = 1.0
-chirp = 0.0
-mag = 0.0
-fr = 1.0
-emitx = 6.249999999999999e-11
-emity = 6.249999999999999e-11
-alphax = -0.1
-alphay = 0.0
-qRndEj_G = .false.
-sSigEj_G = 0.4
-qequixy = .false.
-qMatched_A = .false.
-TrLdMeth = 2
-nseqparts = 20
+&BH5LIST
+dist_f = 'inputs/1D/osc_taper_beam.h5'
 /

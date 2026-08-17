@@ -15,9 +15,20 @@
 !!     of the beam's shot noise to a peak amplitude of order 8e-3
 !!
 !! Determinism. With no seed field the whole result hangs off the shot-noise
-!! realisation, which is drawn from the system clock unless iRandSeed is set.
-!! osc_taper.in pins it. Each rank seeds its own stream, so the realisation
-!! also depends on the decomposition: the golden files below were generated at
+!! realisation, so the beam is read from a committed HDF5 file
+!! (inputs/1D/osc_taper_beam.h5) rather than generated at runtime. This is not
+!! belt and braces: Puffin draws its shot noise from the intrinsic
+!! RANDOM_NUMBER, and that stream belongs to the compiler and its version.
+!! Setting iRandSeed makes a run repeatable on one toolchain, but it does not
+!! make it portable -- an earlier version of this test pinned iRandSeed and
+!! generated the beam at runtime, passed locally, and failed in CI with a
+!! wholly different beam. Every other e2e test that runs in CI avoids the
+!! runtime RNG the same way: f1main sets q_noise = .false., and the 3D test
+!! reads a pre-generated beam. The big test does use iRandSeed, and is gated
+!! out of CI.
+!!
+!! Reproducibility is still tied to the rank count, because the beam is
+!! distributed over ranks as it is read: the golden files were generated at
 !! 2 ranks and are only reproducible at 2 ranks. Changing npes here means
 !! regenerating them.
 !!
@@ -26,7 +37,11 @@
 !! headroom against a different compiler or host, not against observed drift.
 !!
 !! To regenerate the golden files, run from build/test/ so the CWD-relative
-!! paths in the deck resolve:
+!! paths in the deck resolve. Note that the beam file is named
+!! osc_taper_beam.h5, not osc_taper_electrons_0.h5 as it was captured -- the
+!! deck's output base is osc_taper, so the latter name would put the step-0
+!! dump straight on top of the beam being read and rewrite the input on every
+!! run:
 !!
 !!   mpiexec -n 2 <build>/puffin/puffin inputs/1D/osc_taper.in
 !!   cp inputs/1D/osc_taper_aperp_2.h5      ../../test/expected/1D/osc_taper_expected_field.h5

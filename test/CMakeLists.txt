@@ -90,6 +90,15 @@ configure_file(
   COPYONLY
 )
 
+# Frozen beam, captured from a one-off run. Read at runtime instead of
+# generating the macroparticles, so the shot-noise pattern does not depend on
+# the compiler's RANDOM_NUMBER stream. See inputs/1D/osc_taper_beam.in.
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/inputs/1D/osc_taper_beam.h5"
+  "${CMAKE_CURRENT_BINARY_DIR}/inputs/1D/osc_taper_beam.h5"
+  COPYONLY
+)
+
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/expected/1D/osc_taper_expected_field.h5"
   "${CMAKE_CURRENT_BINARY_DIR}/expected/1D/osc_taper_expected_field.h5"

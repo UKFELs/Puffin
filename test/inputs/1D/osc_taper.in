@@ -9,11 +9,19 @@
 !!  5 modules x 29 periods x 30 steps = 4350 integration steps.
 !!
 !!  The seed field is zero, so the interaction starts from the beam's
-!!  shot noise. iRandSeed pins that realisation -- without it every run
-!!  is a fresh one and nothing can be compared against a golden file.
-!!  Each rank seeds its own stream, so the realisation is only
-!!  reproducible at the rank count the reference was generated with
-!!  (2, matching npes in testMPIIntegration1DTaper.pf).
+!!  shot noise. The beam is therefore read from a committed HDF5 file
+!!  (see osc_taper_beam.in) rather than generated at runtime: Puffin's
+!!  shot noise comes from the intrinsic RANDOM_NUMBER, whose stream is
+!!  compiler- and version-specific, so a runtime-generated beam would
+!!  differ between the machine the golden files were made on and CI.
+!!
+!!  iRandSeed below is belt and braces only -- with the beam read from
+!!  file nothing should be drawing from the RNG at all. It is the frozen
+!!  beam, not this, that makes the run reproducible.
+!!
+!!  Reproducibility is still tied to the rank count, because the beam is
+!!  distributed over ranks on read (2, matching npes in
+!!  testMPIIntegration1DTaper.pf).
 !!
 !!  iWriteNthSteps / iWriteIntNthSteps are left far beyond the run
 !!  length so the only dumps are the initial one, the end of the first
