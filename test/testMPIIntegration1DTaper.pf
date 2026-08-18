@@ -190,14 +190,24 @@ contains
 
     ! --- Electron macroparticle comparison ---------------------------------
     !
-    ! Compared element by element, unlike the other e2e tests, which search the
-    ! expected array for each output value. That search is there to tolerate a
-    ! rank count other than the one the reference was made at, which reorders
-    ! the macroparticles. It buys nothing here: the shot noise already ties
-    ! this test to 2 ranks, and at 2 ranks the ordering is reproducible. The
-    ! direct comparison is also the stricter check, and it is O(n) rather than
-    ! O(n^2) -- at 38000 macroparticles the search would dominate the runtime
-    ! of the whole test.
+    ! Each component is sorted before comparing, so the check does not depend
+    ! on the order the macroparticles appear in the file.
+    !
+    ! An earlier version of this test compared them in file order, on the
+    ! reasoning that pinning the rank count pins the ordering too. That does
+    ! not follow. What lands at a given row is decided by which rank owns the
+    ! macroparticle and where that rank's block sits in the collective write,
+    ! and the beam is redistributed between ranks as it advances
+    ! (sRedistLen / iRedistStp in the deck). None of that is guaranteed to
+    ! come out the same under a different MPI or HDF5 build, and the values
+    ! can be bit-identical while the rows are permuted. Ordering was verified
+    ! stable on one machine and assumed to generalise, which is not evidence.
+    !
+    ! Sorting gives the same order-independence as the ANY() search in the
+    ! other e2e tests, but in O(n log n) rather than O(n^2) -- at 38000
+    ! macroparticles that search would dominate the runtime of the test -- and
+    ! is the stricter check of the two, because comparing sorted arrays also
+    ! catches a value appearing the wrong number of times.
 
     nMPs = getMacroparticleCount(trim(test_output_electron_final_file))
     if (tProcInfo_G%qroot) then
@@ -218,6 +228,15 @@ contains
       expected_sElPX, expected_sElPY, expected_sElGam, expected_chi_bar, nMPs)
 
     if (tProcInfo_G%qroot) then
+
+      call sortAsc(sElX);    call sortAsc(expected_sElX)
+      call sortAsc(sElY);    call sortAsc(expected_sElY)
+      call sortAsc(sElZ2);   call sortAsc(expected_sElZ2)
+      call sortAsc(sElPX);   call sortAsc(expected_sElPX)
+      call sortAsc(sElPY);   call sortAsc(expected_sElPY)
+      call sortAsc(sElGam);  call sortAsc(expected_sElGam)
+      call sortAsc(chi_bar); call sortAsc(expected_chi_bar)
+
       @AssertEqual(sElX,    expected_sElX,    1e-10_WP)
       @AssertEqual(sElY,    expected_sElY,    1e-10_WP)
       @AssertEqual(sElZ2,   expected_sElZ2,   1e-10_WP)
@@ -225,6 +244,7 @@ contains
       @AssertEqual(sElPY,   expected_sElPY,   1e-10_WP)
       @AssertEqual(sElGam,  expected_sElGam,  1e-10_WP)
       @AssertEqual(chi_bar, expected_chi_bar, 1e-10_WP)
+
     end if
 
     deallocate(sElX, sElY, sElZ2, sElPX, sElPY, sElGam, chi_bar)
@@ -292,6 +312,63 @@ contains
     end do
 
   end subroutine testPuffinSimulationCompletes1DTaper
+
+
+!> Sort an array ascending, in place. Used to compare the macroparticle
+!! components without depending on the order they were written in. Heapsort:
+!! no recursion, no scratch array, and no input ordering that degrades it --
+!! which matters here because the arrays being sorted are 38000 long and, when
+!! the test passes, are already very nearly sorted relative to one another.
+
+  subroutine sortAsc(a)
+
+    real(kind=WP), intent(inout) :: a(:)
+    integer(kind=ip) :: n, i
+    real(kind=WP) :: t
+
+    n = size(a, kind=ip)
+    if (n < 2_ip) return
+
+    do i = n/2_ip, 1_ip, -1_ip
+      call siftDown(a, i, n)
+    end do
+
+    do i = n, 2_ip, -1_ip
+      t = a(1_ip); a(1_ip) = a(i); a(i) = t
+      call siftDown(a, 1_ip, i - 1_ip)
+    end do
+
+  end subroutine sortAsc
+
+
+!> Restore the max-heap property for the subtree rooted at iRoot, considering
+!! only the first iEnd elements.
+
+  subroutine siftDown(a, iRoot, iEnd)
+
+    real(kind=WP), intent(inout) :: a(:)
+    integer(kind=ip), intent(in) :: iRoot, iEnd
+    integer(kind=ip) :: iR, iChild
+    real(kind=WP) :: t
+
+    iR = iRoot
+
+    do while (2_ip * iR <= iEnd)
+
+      iChild = 2_ip * iR
+
+      if (iChild + 1_ip <= iEnd) then
+        if (a(iChild) < a(iChild + 1_ip)) iChild = iChild + 1_ip
+      end if
+
+      if (a(iR) >= a(iChild)) return
+
+      t = a(iR); a(iR) = a(iChild); a(iChild) = t
+      iR = iChild
+
+    end do
+
+  end subroutine siftDown
 
 
 !> Scale-aware closeness test for whole arrays. The integrated datasets span
