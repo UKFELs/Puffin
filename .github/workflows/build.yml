@@ -62,7 +62,10 @@ jobs:
     - name: Run tests
       shell: bash -l {0}
       working-directory: build
-      run: make test
+      # Not `make test`: that runs ctest with no output, so a failure tells you
+      # which test failed but not which assertion, and the log that would say
+      # is left behind on the runner. --output-on-failure prints it inline.
+      run: ctest --output-on-failure
     
     - name: Install
       shell: bash -l {0}
