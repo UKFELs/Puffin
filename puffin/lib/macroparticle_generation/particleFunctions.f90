@@ -5,14 +5,21 @@
 MODULE particleFunctions
 
 use puffin_kinds, only: IP, WP
+use puffin_mpiInfo, only: tProcInfo_G
 use error_fn, only: erf
-USE Functions, only: linspace, GaussianGrid, GaussianDistribution, GaussianDistributionZ2
+use Functions, only: linspace, GaussianGrid, GaussianDistribution, GaussianDistributionZ2, gaussian
 USE puffin_constants, only: pi
-USE IO, only: log_error
-use globals, only: tErrorLog_G, tProcInfo_G, gExtEj_G
-use MPI
+USE IO, only: log_error, tErrorLog_G
+use globals, only: gExtEj_G
+use MPI, only: MPI_ALLREDUCE, MPI_COMM_WORLD, MPI_DOUBLE_PRECISION, mpi_finalize, MPI_IN_PLACE, &
+  MPI_INTEGER, MPI_MAX, MPI_MIN, MPI_SUM
 
-IMPLICIT NONE
+IMPLICIT NONE (type, external)
+private
+
+public :: DistributionIntegral, DistributionIntegralZ2, flattop2, gaussian, &
+           iGaussianDistribution_CG, iLinear_CG, iTopHatDistribution_CG, PulseGrid
+
 
 INTEGER(KIND=IP), PARAMETER :: iLinear_CG = 1_IP
 INTEGER(KIND=IP), PARAMETER :: iGaussian_CG = 2_IP
@@ -28,7 +35,7 @@ CONTAINS
   SUBROUTINE PulseGrid(iGridType,iNumMP,sStart,&
        sEnd,sMean,sSigma,sGrid,qOK)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 ! Calculate the electron grid positions
 !
 ! iGridType - INPUT  - If linear or gaussian grid
@@ -42,15 +49,15 @@ CONTAINS
 ! sGrid(:)  - OUTPUT - Grid positions
 ! qOK       - OUTPUT - Error flag
 !
-    INTEGER(KIND=IP),INTENT(IN)	:: iGridType,iNumMP
+    INTEGER(KIND=IP),INTENT(IN) :: iGridType,iNumMP
     REAL(KIND=WP),INTENT(IN)    :: sStart,sEnd
-    REAL(KIND=WP),INTENT(IN),OPTIONAL	:: sMean,sSigma
+    REAL(KIND=WP),INTENT(IN),OPTIONAL   :: sMean,sSigma
     REAL(KIND=WP),INTENT(OUT) :: sGrid(:)
     LOGICAL, INTENT(OUT) :: qOK
 !--------------------------------------------------------
 ! BEGIN:-
-! Set error flag to false         
-    qOK = .FALSE.    
+! Set error flag to false
+    qOK = .FALSE.
 
 ! Create grid
     SELECT CASE (iGridType)
@@ -58,23 +65,26 @@ CONTAINS
        sGrid=linspace(sStart,sEnd,iNumMP+1)
     CASE(iGaussian_CG)
        IF (.NOT. PRESENT(sMean)) THEN
-          CALL log_error('Error creating gaussian grid no mean given.',tErrorLog_G)
-          GOTO 1000    
+          CALL log_error("Error creating gaussian grid no mean given.",tErrorLog_G)
+          GOTO 1000
        END IF
        IF (.NOT. PRESENT(sSigma)) THEN
-          CALL log_error('Error creating gaussian grid no sigma given..',tErrorLog_G)
-          GOTO 1000    
+          CALL log_error("Error creating gaussian grid no sigma given..",tErrorLog_G)
+          GOTO 1000
        END IF
        CALL GaussianGrid(iNumMP,sMean,sSigma,sStart,sEnd,sGrid)
+    CASE DEFAULT
+       CALL log_error("Error creating grid: unknown grid type.",tErrorLog_G)
+       GOTO 1000
     END SELECT
 
-!  Set error flag and exit         
-    qOK = .TRUE.				    
+!  Set error flag and exit
+    qOK = .TRUE.
     GOTO 2000
 
 ! Error Handler
-1000 CALL log_error('Error in Chow:PulseGrid',tErrorLog_G)
-    PRINT*,'Error in Chow:PulseGrid'
+1000 CALL log_error("Error in Chow:PulseGrid",tErrorLog_G)
+    PRINT*,"Error in Chow:PulseGrid"
 2000 CONTINUE
 
   END SUBROUTINE PulseGrid
@@ -82,11 +92,11 @@ CONTAINS
   SUBROUTINE EvalIntegral(s_gridPoints,s_mean,s_sigma,&
        s_integral)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 
     REAL(KIND=WP),INTENT(IN)  :: s_gridPoints(:)
     REAL(KIND=WP),INTENT(IN)  :: s_mean,s_sigma
-    REAL(KIND=WP),INTENT(OUT) :: s_integral(:) 
+    REAL(KIND=WP),INTENT(OUT) :: s_integral(:)
 !
 !LOCAL VARIABLES
     INTEGER(KIND=IP) :: i
@@ -106,25 +116,25 @@ CONTAINS
   SUBROUTINE DistributionIntegral(iDistributionType,&
        iNumMP,sGrid,sMean,sSigma,sIntegral,qOK)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 !
 ! Calculate the integral of the chosen distribution for
 ! the electron pulse
 !
-! iDistributionType - INPUT  - If Top-hat or gaussian 
+! iDistributionType - INPUT  - If Top-hat or gaussian
 !                              distribution
 ! iNumMP            - INPUT  - Number of macro electrons
 ! sGrid(:)          - INTPUT - Grid positions
 ! sEnd              - INPUT  - End position for gaussian
-! sMean             - INPUT  - Mean position for gaussian 
-! sSigma            - INPUT  - Sigma for gaussian 
+! sMean             - INPUT  - Mean position for gaussian
+! sSigma            - INPUT  - Sigma for gaussian
 ! sIntegral(:)      - OUTPUT - Integral under the
 !                              specific distribution
 ! qOK               - OUTPUT - Error flag
 !
-    INTEGER(KIND=IP),INTENT(IN)	:: iDistributionType,iNumMP
-    REAL(KIND=WP),INTENT(IN)		:: sGrid(:),sMean,sSigma
-    REAL(KIND=WP),INTENT(OUT)		:: sIntegral(:)
+    INTEGER(KIND=IP),INTENT(IN) :: iDistributionType,iNumMP
+    REAL(KIND=WP),INTENT(IN)            :: sGrid(:),sMean,sSigma
+    REAL(KIND=WP),INTENT(OUT)           :: sIntegral(:)
     LOGICAL,      INTENT(OUT)         :: qOK
 !
 !LOCAL VARIABLES
@@ -133,43 +143,47 @@ CONTAINS
     INTEGER(KIND=IP) :: i
 !--------------------------------------------------------
 ! BEGIN:-
-! Set error flag to false         
-    qOK = .FALSE.    
+! Set error flag to false
+    qOK = .FALSE.
 
-! Create grid         
+! Create grid
     SELECT CASE (iDistributionType)
     CASE(iTopHatDistribution_CG)
-! ALLOCATE LOCAL ARRAYS         
-       ALLOCATE(sFunc(iNumMP),sDel(iNumMP))  
+! ALLOCATE LOCAL ARRAYS
+       ALLOCATE(sFunc(iNumMP),sDel(iNumMP))
        CALL GaussianDistribution(iNumMP,sGrid,sMean,&
             sSigma,sFunc)
        DO i=1,iNumMP
-          sDel(i)=sGrid(i+1)-sGrid(i)		
-       ENDDO
-       sIntegral= sFunc * sDel  
+          sDel(i)=sGrid(i+1)-sGrid(i)
+       END DO
+       sIntegral= sFunc * sDel
 !********************************************************
-! DEALLOCATE LOCAL ARRAYS         
+! DEALLOCATE LOCAL ARRAYS
        DEALLOCATE(sFunc,sDel)
 
     CASE(iGaussianDistribution_CG)
        CALL EvalIntegral(sGrid,sMean,sSigma,sIntegral)
+    CASE DEFAULT
+       CALL log_error("Error in ElectronGrid:DistributionIntegral - unrecognised distribution &
+                       &type.",tErrorLog_G)
+       GOTO 1000
     END SELECT
 
 !  Set error flag and exit
-    qOK = .TRUE.				    
+    qOK = .TRUE.
     GOTO 2000
 !
 ! Error Handler
-1000 CALL log_error('Error in ElectronGrid:DistributionIntegral',&
+1000 CALL log_error("Error in ElectronGrid:DistributionIntegral",&
           tErrorLog_G)
-    PRINT*,'Error in ElectronGrid:DistributionIntegral'
+    PRINT*,"Error in ElectronGrid:DistributionIntegral"
 2000 CONTINUE
   END SUBROUTINE DistributionIntegral
 !********************************************************
   SUBROUTINE DistributionIntegralz2(iDistributionType,&
      iLocNumMP,iNumMP,sGrid,sMean,sSigma,sIntegral,qOK)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 !
 ! Calculate the integral of the chosen distribution
 ! for the electron pulse
@@ -179,16 +193,16 @@ CONTAINS
 ! iNumMP                - INPUT  - Number of macro electrons
 ! sGrid(:)              - INTPUT - Grid positions
 ! sEnd                  - INPUT  - End position for gaussian
-! sMean                 - INPUT  - Mean position for gaussian 
-! sSigma                - INPUT  - Sigma for gaussian 
+! sMean                 - INPUT  - Mean position for gaussian
+! sSigma                - INPUT  - Sigma for gaussian
 ! sIntegral(:)          - OUTPUT - Integral under the
 !                                  specific distribution
 ! qOK                   - OUTPUT - Error flag
 !
-    INTEGER(KIND=IP),INTENT(IN)	:: iDistributionType,&
+    INTEGER(KIND=IP),INTENT(IN) :: iDistributionType,&
          iLocNumMP,iNumMP
     REAL(KIND=WP),INTENT(IN)    :: sGrid(:),sMean,sSigma
-    REAL(KIND=WP),INTENT(OUT)	:: sIntegral(:)
+    REAL(KIND=WP),INTENT(OUT)   :: sIntegral(:)
     LOGICAL,      INTENT(OUT)   :: qOK
 !
 ! LOCAL VARIABLES
@@ -197,33 +211,37 @@ CONTAINS
     INTEGER(KIND=IP) :: i
 !--------------------------------------------------------
 ! BEGIN:-
-! Set error flag to false         
-    qOK = .FALSE.    
+! Set error flag to false
+    qOK = .FALSE.
 
-! Create grid         
+! Create grid
     SELECT CASE (iDistributionType)
     CASE(iTopHatDistribution_CG)
        ALLOCATE(sFunc(iLocNumMP),sDel(iLocNumMP))
        CALL GaussianDistributionZ2(iLocNumMP,sGrid,&
             sMean,sSigma,sFunc)
        DO i=1,ilocNumMP
-          sDel(i)=sGrid(i+1)-sGrid(i)		
-       ENDDO
+          sDel(i)=sGrid(i+1)-sGrid(i)
+       END DO
        sIntegral= sFunc * sDel
        DEALLOCATE(sFunc,sDel)
 
     CASE(iGaussianDistribution_CG)
        CALL EvalIntegral(sGrid,sMean,sSigma,sIntegral)
+    CASE DEFAULT
+       CALL log_error("Error in ElectronGrid:DistributionIntegralz2 - unrecognised distribution &
+                       &type.",tErrorLog_G)
+       GOTO 1000
     END SELECT
 
-!  Set error flag and exit         
-    qOK = .TRUE.				    
-    GOTO 2000     
+!  Set error flag and exit
+    qOK = .TRUE.
+    GOTO 2000
 
 ! Error Handler
-1000 CALL log_error('Error in ElectronGrid:DistributionIntegral',&
+1000 CALL log_error("Error in ElectronGrid:DistributionIntegral",&
           tErrorLog_G)
-    PRINT*,'Error in ElectronGrid:DistributionIntegral'
+    PRINT*,"Error in ElectronGrid:DistributionIntegral"
 2000 CONTINUE
 
   END SUBROUTINE DistributionIntegralz2
@@ -236,12 +254,12 @@ subroutine flattop2(sig_edj, len_f, sGrid, iNumMP, iLocNumMP, qPara, s_Integral)
 
 ! Create a normalised flat top distribution with rounded edges.
 ! Round esges are modelled with half-gaussians. Uniprocessor version.
-  
+
   real(kind=wp), intent(in) :: sig_edj,  & ! sigma of each edge
                                len_f,    & ! length of flat section in centre
                                sGrid(:)    ! grid points
-                               
-  integer(kind=ip), intent(in) :: iNumMP,   & ! Total number of MPs 
+
+  integer(kind=ip), intent(in) :: iNumMP,   & ! Total number of MPs
                                   iLocNumMP   ! Local number of MPs
 
   logical, intent(in) :: qPara
@@ -259,9 +277,10 @@ subroutine flattop2(sig_edj, len_f, sGrid, iNumMP, iLocNumMP, qPara, s_Integral)
 !!! Get grid pts assigned to each section - gaussian -> flat -> gaussian
 
 
-  len_gauss = gExtEj_G * sig_edj /2.0_wp  ! model out how many sigma?? 
+  len_gauss = gExtEj_G * sig_edj /2.0_wp  ! model out how many sigma??
 
-! Get start and end of gaussian (need to send data around to determine global sts and ends in parallel version)
+! Get start and end of gaussian (need to send data around to determine global sts and ends
+! in parallel version)
 
   sSt = sGrid(1_ip)
   sEd = sGrid(iLocNumMP)
@@ -302,7 +321,7 @@ subroutine flattop2(sig_edj, len_f, sGrid, iNumMP, iLocNumMP, qPara, s_Integral)
 
       tmp_gdpt = sg1cen ! temp grid point
 
-      call AreaNDist( (/sGrid(ii),  tmp_gdpt/), sg1cen, sig_edj, tres)
+      call AreaNDist( [sGrid(ii),  tmp_gdpt], sg1cen, sig_edj, tres)
 
 
       a1 = tres ! Gauss section
@@ -323,7 +342,7 @@ subroutine flattop2(sig_edj, len_f, sGrid, iNumMP, iLocNumMP, qPara, s_Integral)
 
       tmp_gdpt = sg2cen ! temp grid point
 
-      call AreaNDist( (/tmp_gdpt,  sGrid(ii+1)/), sg2cen, sig_edj, tres)
+      call AreaNDist( [tmp_gdpt,  sGrid(ii+1)], sg2cen, sig_edj, tres)
 
 
       a1 = norm_pk * (tmp_gdpt - sGrid(ii)) ! Flat top section
@@ -338,7 +357,7 @@ subroutine flattop2(sig_edj, len_f, sGrid, iNumMP, iLocNumMP, qPara, s_Integral)
        call AreaNDist(sGrid(ii:ii+1), sg2cen, sig_edj, tres)
        s_integral(ii) = tres
 
-    else 
+    else
 
       iStrange = iStrange + 1_ip
 
@@ -354,12 +373,13 @@ subroutine flattop2(sig_edj, len_f, sGrid, iNumMP, iLocNumMP, qPara, s_Integral)
 
     iStrange = iT
 
-  end if 
+  end if
 
   if (iStrange > 0) then
-    
-    if (tProcInfo_G%qRoot) print*, 'ERROR IN subroutine flattop2: perhaps the beam is not sampled finely enough'
-    if (tProcInfo_G%qRoot) print*, 'sum of iStrange was : ', iStrange
+
+    if (tProcInfo_G%qRoot) print*, &
+      "ERROR IN subroutine flattop2: perhaps the beam is not sampled finely enough"
+    if (tProcInfo_G%qRoot) print*, "sum of iStrange was : ", iStrange
 
     call mpi_finalize(error)
     stop
@@ -375,7 +395,7 @@ subroutine flattop2(sig_edj, len_f, sGrid, iNumMP, iLocNumMP, qPara, s_Integral)
 
     CALL MPI_ALLREDUCE(MPI_IN_PLACE, tot_ar, 1, MPI_DOUBLE_PRECISION, &
          MPI_SUM, MPI_COMM_WORLD, error)
-    
+
   end if
 
   s_integral = s_integral / tot_ar

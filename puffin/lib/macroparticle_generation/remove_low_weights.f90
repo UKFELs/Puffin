@@ -4,11 +4,11 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> This module defines subroutines used to remove electron
-!> macroparticles with a low chi weighting factor from 
+!> macroparticles with a low chi weighting factor from
 !> the initially generated macroparticles.
 
 
@@ -16,12 +16,17 @@ module filter_low_weights
 
 
 use puffin_kinds, only: WP, IPL, IP
-use MPI
-use Globals, only: sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, &
-                   s_chi_bar_G, s_Normalised_chi_G, iNumberElectrons_G, &
-                   iGloNumElectrons_G, tProcInfo_G, sum_mpi_int14
+use puffin_mpiInfo, only: tProcInfo_G
+use ParallelSetUp, only: sum_mpi_int14
+use MPI, only: MPI_ALLREDUCE, MPI_DOUBLE_PRECISION, MPI_INTEGER, MPI_SUM
+use Globals, only: sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, s_chi_bar_G, &
+  s_Normalised_chi_G, iNumberElectrons_G, iGloNumElectrons_G
 
-implicit none
+implicit none (type, external)
+private
+
+public :: removeLow, removeLowNC
+
 
 contains
 
@@ -39,7 +44,7 @@ SUBROUTINE removeLowNC(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold,
 
 !                   ARGUMENTS
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
   REAL(KIND=WP), INTENT(IN) :: Tmp_chibar(:), Tmp_Normchi(:), &
                                x_tmpcoord(:), y_tmpcoord(:), &
@@ -60,7 +65,7 @@ SUBROUTINE removeLowNC(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold,
   INTEGER(KIND=IP) :: b_ind
 
   ALLOCATE(b_keepn(nbeams),b_neglectn(nbeams),ilowerElectron(nbeams))
-  
+
   DO b_ind=1, nbeams
 
     CALL getKeepNum(npk*Tmp_chibar(b_sts(b_ind):b_ends(b_ind)),&
@@ -121,7 +126,7 @@ SUBROUTINE removeLowNC(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold,
 
 !    sElGam_G = getP2(sElGam_G, sElPX_G,&
 !                     sElPY_G, sEta_G, sAw_G)
-     
+
   sElGam_G = sElGam_G / gamma_ref
 
 END SUBROUTINE removeLowNC
@@ -132,9 +137,9 @@ SUBROUTINE removeLow(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
                      nbeams,x_tmpcoord,y_tmpcoord,z2_tmpcoord,px_tmpvector,&
                      py_tmpvector, pz2_tmpvector,totalmps_b,&
                      sZ2_center)
-                   
-  IMPLICIT NONE
-  
+
+  IMPLICIT NONE (type, external)
+
 ! Discard macroparticles with weights below a certain threshold.
 ! This subroutine assigns macroparticle values to global arrays,
 ! and removes macroparticles with a low weight in the process.
@@ -160,7 +165,7 @@ SUBROUTINE removeLow(Tmp_chibar, Tmp_Normchi, b_sts,b_ends,sElectronThreshold, &
   INTEGER(KIND=IP) :: b_ind
 
   ALLOCATE(b_keepn(nbeams),b_neglectn(nbeams),ilowerElectron(nbeams))
-  
+
   DO b_ind=1, nbeams
 
     CALL getKeepNum(Tmp_chibar(b_sts(b_ind):b_ends(b_ind)),&
@@ -222,10 +227,10 @@ END SUBROUTINE removeLow
 SUBROUTINE getKeepNum(s_tmp_macro,sElectronThreshold,TOTALMPS, &
                      ikeepnumber, iendnumber, ilowerElectron)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
 ! Discard macroparticles with weights below a certain threshold.
-! Return the number of macroparticles which we are keeping, and the 
+! Return the number of macroparticles which we are keeping, and the
 ! number of particles we are discarding.
 
 !                 ARGUMENTS
@@ -242,7 +247,7 @@ SUBROUTINE getKeepNum(s_tmp_macro,sElectronThreshold,TOTALMPS, &
                    n_real_electrons
 
   integer(kind=ip) :: totalmpsG
-                   
+
   INTEGER :: error
 
   total_local_real_electrons = SUM(s_tmp_macro)
@@ -269,7 +274,7 @@ END SUBROUTINE getKeepNum
 SUBROUTINE getIndices(s_tmp_macro,ilowerElectron,TOTALMPS, &
                      ikeepos, iendpos)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
 ! Discard macroparticles with weights below a certain threshold.
 ! Return indices of macroparticles which we are keeping, and indices
@@ -290,7 +295,7 @@ SUBROUTINE getIndices(s_tmp_macro,ilowerElectron,TOTALMPS, &
 
     jl=0
     kl=0
-    
+
     DO il=1,TOTALMPS
 
        IF (s_tmp_macro(il)<ilowerElectron) THEN
@@ -298,10 +303,10 @@ SUBROUTINE getIndices(s_tmp_macro,ilowerElectron,TOTALMPS, &
           iendpos(jl)=il
        ELSE
           kl=kl+1_IPL
-          ikeepos(kl)=il 
-       ENDIF
-       
-    ENDDO
+          ikeepos(kl)=il
+       END IF
+
+    END DO
 
 END SUBROUTINE getIndices
 

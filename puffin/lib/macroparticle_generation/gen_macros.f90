@@ -7,9 +7,9 @@ module MacrosGen
    use puffin_kinds, only: WP, IP, IPL
    use randomGauss, only: init_random_seed, random_Poisson
    use puffin_mpiInfo, only: tProcInfo_G
-   use MPI
+   use MPI, only: MPI_ALLREDUCE, MPI_COMM_WORLD, MPI_DOUBLE_PRECISION, MPI_MAX
 
-   implicit none
+   implicit none (type, external)
    private
    public :: genMacros, getChi, RandomNoGenerator
 
@@ -55,7 +55,7 @@ contains
 ! x_1_coord               -OUTPUT  - hold the final macroparticle position!
 !--------------------------------------------------------
       REAL(KIND=WP), INTENT(IN) ::  i_total_electrons
-      LOGICAL ::  q_noise
+      LOGICAL, INTENT(IN) ::  q_noise
       REAL(KIND=WP),INTENT(IN) ::  x_1_grid(:),x_1_integral(:)
       REAL(KIND=WP),INTENT(IN),OPTIONAL :: x_2_grid(:), x_3_grid(:)
       REAL(KIND=WP),INTENT(IN),OPTIONAL :: x_2_integral(:),&
@@ -132,8 +132,7 @@ contains
       REAL(KIND=WP),ALLOCATABLE,DIMENSION(:) :: p_3_position, p_3_del
       INTEGER(KIND=IP) :: np3full(3)
       !REAL(KIND=WP) ::  radius,sLOne,sLTwo
-      INTEGER(KIND=IP) :: error,nprocs,proc
-      LOGICAL :: qOKL
+      INTEGER(KIND=IP) :: error, nprocs
 
 !     Determine the number of macroparticles in each dimension
 !     If the dimension is not present, then the number of macroparticles
@@ -165,11 +164,16 @@ contains
 
       ALLOCATE(x_1_position(nx1),x_1_del(nx1),x_1_random(i_total_number_macro))
 
-      IF(PRESENT(x_2_grid)) ALLOCATE(x_2_position(nx2),x_2_del(nx2),x_2_random(i_total_number_macro))
-      IF(PRESENT(x_3_grid)) ALLOCATE(x_3_position(nx3),x_3_del(nx3),x_3_random(i_total_number_macro))
-      IF(PRESENT(p_1_grid)) ALLOCATE(p_1_position(np1),p_1_del(np1),p_1_random(i_total_number_macro))
-      IF(PRESENT(p_2_grid)) ALLOCATE(p_2_position(np2),p_2_del(np2),p_2_random(i_total_number_macro))
-      IF(PRESENT(p_3_grid)) ALLOCATE(p_3_position(np3),p_3_del(np3),p_3_random(i_total_number_macro))
+      IF(PRESENT(x_2_grid)) ALLOCATE(x_2_position(nx2),x_2_del(nx2), &
+                                      x_2_random(i_total_number_macro))
+      IF(PRESENT(x_3_grid)) ALLOCATE(x_3_position(nx3),x_3_del(nx3), &
+                                      x_3_random(i_total_number_macro))
+      IF(PRESENT(p_1_grid)) ALLOCATE(p_1_position(np1),p_1_del(np1), &
+                                      p_1_random(i_total_number_macro))
+      IF(PRESENT(p_2_grid)) ALLOCATE(p_2_position(np2),p_2_del(np2), &
+                                      p_2_random(i_total_number_macro))
+      IF(PRESENT(p_3_grid)) ALLOCATE(p_3_position(np3),p_3_del(np3), &
+                                      p_3_random(i_total_number_macro))
 
 !     If shot-noise present then generate random numbers (0<x<1) else
 !     x_1_random set to 0.5.
@@ -183,7 +187,7 @@ contains
             IF(PRESENT(p_1_grid)) p_1_random(i)=RandomNoGenerator(u)
             IF(PRESENT(p_2_grid)) p_2_random(i)=RandomNoGenerator(u)
             IF(PRESENT(p_3_grid)) p_3_random(i)=RandomNoGenerator(u)
-         ENDDO
+         END DO
       ELSE
          x_1_random=0.5_WP
 
@@ -193,7 +197,7 @@ contains
          IF(PRESENT(p_1_grid)) p_1_random = 0.5_WP
          IF(PRESENT(p_2_grid)) p_2_random = 0.5_WP
          IF(PRESENT(p_3_grid)) p_3_random = 0.5_WP
-      ENDIF
+      END IF
 
 !     Following loops sets up macroparticle mean positions and intervals
 !     based on grid-pts
@@ -322,22 +326,27 @@ contains
                            s_macro =random_Poisson(s_mean, .TRUE.)
                         ELSE
                            s_macro =s_mean
-                        ENDIF
+                        END IF
 
                         IF (s_macro > 0 ) THEN
 
                            icount=icount+1_IPL
 
-                           x_1_coord(index)=x_1_position(i)+(x_1_random(index)-0.5_WP)*x_1_del(i)/SQRT(s_macro)
+                           x_1_coord(index)=x_1_position(i)+ &
+                             (x_1_random(index)-0.5_WP)*x_1_del(i)/SQRT(s_macro)
 
-                           !code to work out relative shift to the initial conditions of px and py included in the two if statements below
+                           !code to work out relative shift to the initial conditions of px and
+                           !py included in the two if statements below
                            IF(PRESENT(x_2_grid)) THEN
-                              x_2_coord(index)=x_2_position(j)+(x_2_random(index)- 0.5_WP)*x_2_del(j)/SQRT(s_macro)
+                              x_2_coord(index)=x_2_position(j)+ &
+                                (x_2_random(index)- 0.5_WP)*x_2_del(j)/SQRT(s_macro)
                            END IF
 
                            IF(PRESENT(x_3_grid)) THEN
-                              x_3_coord(index)=x_3_position(k)+(x_3_random(index)- 0.5_WP)*x_3_del(k)/SQRT(s_macro)
-!                                           px_shift =  0.5_WP * x_1_coord(index)**2 * kx**2 + 0.5_WP * x_2_coord(index)**2  * ky**2
+                              x_3_coord(index)=x_3_position(k)+ &
+                                (x_3_random(index)- 0.5_WP)*x_3_del(k)/SQRT(s_macro)
+!                             px_shift =  0.5_WP * x_1_coord(index)**2 * kx**2 &
+!                                       + 0.5_WP * x_2_coord(index)**2  * ky**2
 !1st order approximation is used
                               ! py_shift = kx**2 * x_1_coord(index) * x_2_coord(index)
                            END IF
@@ -350,15 +359,20 @@ contains
 !					 write(*,*)'I am py_shift',py_shift,'at index',index
 
                            IF(PRESENT(p_1_grid)) THEN
-                              p_1_vector(index)=p_1_position(a)+(p_1_random(index)- 0.5_WP)*p_1_del(a)/SQRT(s_macro) !- px_shift ! px_shift=0 for 1st order
+                              ! - px_shift ! px_shift=0 for 1st order
+                              p_1_vector(index)=p_1_position(a)+ &
+                                (p_1_random(index)- 0.5_WP)*p_1_del(a)/SQRT(s_macro)
                            END IF
 
                            IF(PRESENT(p_2_grid)) THEN
-                              p_2_vector(index)=p_2_position(b)+(p_2_random(index)- 0.5_WP)*p_2_del(b)/SQRT(s_macro) !+ py_shift
+                              ! + py_shift
+                              p_2_vector(index)=p_2_position(b)+ &
+                                (p_2_random(index)- 0.5_WP)*p_2_del(b)/SQRT(s_macro)
                            END IF
 
                            IF(PRESENT(p_3_grid)) THEN
-                              p_3_vector(index)=p_3_position(c)+(p_3_random(index)- 0.5_WP)*p_3_del(c)/SQRT(s_macro)
+                              p_3_vector(index)=p_3_position(c)+ &
+                                (p_3_random(index)- 0.5_WP)*p_3_del(c)/SQRT(s_macro)
                            END IF
 
                         ELSE
@@ -385,7 +399,7 @@ contains
                            END IF
 
                            s_macro = 0.0_WP
-                        ENDIF
+                        END IF
                         !     write(*,*)'py is now', p_2_vector(index),'at index',index
                         s_number_macro(index)=s_macro
                         s_mean_number_macro(index)=s_mean
@@ -415,7 +429,7 @@ contains
 
       IF (icount==0) THEN
          IF (tProcInfo_G%qROOT)  STOP "Error in GenMacros.f90, no macroparticles exist\!"
-      ENDIF
+      END IF
 
 ! Calculate the scaled weighting (chi_bar) and weighting(chichi) of all macro particles
 
@@ -443,7 +457,7 @@ contains
 
    FUNCTION RandomNoGenerator(u)
 
-      IMPLICIT NONE
+      IMPLICIT NONE (type, external)
 
       REAL(KIND=WP),INTENT(OUT)     :: u
       REAL(KIND=WP)                 :: RandomNoGenerator
@@ -456,7 +470,7 @@ contains
 
    function sMax_del(s_grid)
 
-      implicit none
+      implicit none (type, external)
 
       REAL(KIND=WP),DIMENSION(:),INTENT(IN) :: s_grid
 
@@ -466,7 +480,7 @@ contains
 
       DO i=1,(SIZE(s_grid)-1_IP)
          sd(i)=s_grid(i+1)-s_grid(i)
-      ENDDO
+      END DO
 
       sMax_del=MAXVAL(sd)
 
@@ -488,15 +502,5 @@ contains
 
 
 
-
-   subroutine getGlobalnpk(npk_num, npk_numl)
-
-      real(kind=wp), intent(inout) :: npk_num, npk_numl
-      integer :: error
-
-      CALL MPI_ALLREDUCE(npk_numl, npk_num, 1, MPI_DOUBLE_PRECISION, &
-         MPI_MAX, MPI_COMM_WORLD, error)
-
-   end subroutine getGlobalnpk
 
 END MODULE MacrosGen

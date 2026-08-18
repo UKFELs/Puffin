@@ -4,27 +4,39 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> This module contains subroutines to read in the lattice file and setup the
-!> elements in the undulator line. It also contains the subroutines/functions 
+!> elements in the undulator line. It also contains the subroutines/functions
 !> for all the non-undulator segements, and the initialization of the undulator
 !> segments.
 
 MODULE lattice
 
-use puffin_kinds
-USE Globals
-USE ArrayFunctions
-USE simple_electron_gen
-use gtop2
-use initConds
-use functions
-use pdiff
+use puffin_kinds, only: WP, IP
+use Globals, only: NZ2_G, sLengthOfElmZ2_G, fieldMesh, iPeriodic, s_chi_bar_G, &
+  iNumberElectrons_G, sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, sFocusfactor_G, fx_G, &
+  fy_G, zUndType_G, kx_und_G, ky_und_G, sKBetaXSF_G, sKBetaYSF_G, zMod, mf, delmz, tapers, &
+  ux_arr, uy_arr, kbnx_arr, kbny_arr, zundtype_arr, nSteps_arr, chic_zbar, chic_slip, chic_disp, &
+  drift_zbar, enmod_wavenum, enmod_mag, quad_fx, quad_fy, numOfUnds, numOfChics, numOfDrifts, &
+  numOfModulations, numOfQuads, ModNum, ModCount, qUndEnds_G, sZFS, sZFE, sStepSize, nSteps, &
+  totUndLineLength, ioutInfo_G, qMod_G, qscaled_G, pi
+use ArrayFunctions, only: tProcInfo_G, log_error
+use gtop2, only: getp2
+use initConds, only: xOffSet, yOffSet, pxoffset, pyoffset
+use functions, only: arr_mean_para_weighted
+use pdiff, only: diffractim
 use GlobalTypes, only: tLatticeElements, tFELFrame, tSimulationFlags, tSimulationContext, tUndulator
 
-implicit none
+use simple_electron_gen, only: tErrorLog_G
+implicit none (type, external)
+private
+
+public :: bModulation, correcttrans, disperse, driftsection, fieldMesh, iChic, iDrift, iElmType, &
+           iModulation, initundulator, IP, iQuad, iUnd, log_error, matchin, matchout, nSteps, pi, &
+           Quad, setupmods, tErrorLog_G, WP
+
 
 integer(kind=ip), parameter :: iUnd = 1_ip, &
                                iChic = 2_ip, &
@@ -44,45 +56,45 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Top-level subroutine for setting up the elements in the undulator line, 
+!> Top-level subroutine for setting up the elements in the undulator line,
 !> either from a supplied lattice file, or as the single undulator specified
-!> in the main input file. It takes as inputs the simple/single undulator 
-!> parameters as specified in the main input file. If a lattice file is 
+!> in the main input file. It takes as inputs the simple/single undulator
+!> parameters as specified in the main input file. If a lattice file is
 !> supplied, these values are updated. If no lattice file is supplied, then
 !> the undulator line is set up as one undulator with these parameters. Note:
-!> the lattice filename is not an optional parameter! If wishing to not 
+!> the lattice filename is not an optional parameter! If wishing to not
 !> specify a lattice file, the filename should be input as a blank string ('')
 !> @param[in] lattFile String: The lattice file name
-!> @param[inout] taper The taper of the initial undulator module. Input as 
-!> the taper specified in the main input file. Updated if a lattice file is 
+!> @param[inout] taper The taper of the initial undulator module. Input as
+!> the taper specified in the main input file. Updated if a lattice file is
 !> supplied.
 !> @param[in] sRho The FEL, or Pierce, parameter
 !> @param[inout] nSteps_f Number of steps in the first undulator module. Input
-!> as the number of steps calculated from the main input file. Updated if a  
+!> as the number of steps calculated from the main input file. Updated if a
 !> lattice file is supplied.
 !> @param[inout] dz_f Integration step size in the first undulator module. Input
-!> as the step size specified in the main input file. Updated if a lattice file 
+!> as the step size specified in the main input file. Updated if a lattice file
 !> is supplied.
 !> @param[inout] ux_f ux (see manual) in the first undulator module. Input
-!> as the ux specified in the main input file. Updated if a lattice file 
+!> as the ux specified in the main input file. Updated if a lattice file
 !> is supplied.
 !> @param[inout] uy_f uy (see manual) in the first undulator module. Input
-!> as the uy specified in the main input file. Updated if a lattice file 
+!> as the uy specified in the main input file. Updated if a lattice file
 !> is supplied.
-!> @param[inout] kbnx_f Strong (scaled) in-undulator wavenumber in x (see manual) 
-!> in the first undulator module. Input as the kbetax_SF specified in the main 
+!> @param[inout] kbnx_f Strong (scaled) in-undulator wavenumber in x (see manual)
+!> in the first undulator module. Input as the kbetax_SF specified in the main
 !> input file. Updated if a lattice file is supplied.
-!> @param[inout] kbny_f Strong (scaled) in-undulator wavenumber in y (see manual) 
-!> in the first undulator module. Input as the kbetay_SF specified in the main 
+!> @param[inout] kbny_f Strong (scaled) in-undulator wavenumber in y (see manual)
+!> in the first undulator module. Input as the kbetay_SF specified in the main
 !> input file. Updated if a lattice file is supplied.
 
   subroutine setupMods(lattFile, taper, sRho, nSteps_f, dz_f, &
                        ux_f, uy_f, kbnx_f, kbny_f, frame)
 
-    implicit none
+    implicit none (type, external)
 
     character(1024_ip), intent(in) :: LattFile
     real(kind=wp), intent(inout) :: taper
@@ -92,14 +104,14 @@ contains
     type(tFELFrame), intent(in) :: frame
 
 
-    if (lattFile=='') then
+    if (lattFile=="") then
       qMod_G = .false.
       if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1) ) print*, &
-          'There is no lattice file - using single undulator in main input file'
+          "There is no lattice file - using single undulator in main input file"
     else
       qMod_G = .true.
       if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1) ) print*, &
-          'Lattice being setup from lattice file'
+          "Lattice being setup from lattice file"
     end if
 
 
@@ -120,7 +132,7 @@ contains
       allocate(drift_zbar(numOfDrifts))
 
       allocate(enmod_wavenum(numOfModulations), &
-                 enmod_mag(numOfModulations)) 
+                 enmod_mag(numOfModulations))
 
       allocate(quad_fx(numOfQuads), quad_fy(numOfQuads))
 
@@ -173,7 +185,7 @@ contains
       allocate(drift_zbar(numOfDrifts))
 
       allocate(enmod_wavenum(numOfModulations), &
-                 enmod_mag(numOfModulations)) 
+                 enmod_mag(numOfModulations))
 
       allocate(quad_fx(numOfQuads), quad_fy(numOfQuads))
 
@@ -188,27 +200,27 @@ contains
       tapers(1) = taper
       ux_arr(1) = ux_f
       uy_arr(1) = uy_f
-      kbnx_arr(1) = kbnx_f 
-      kbny_arr(1) = kbny_f 
+      kbnx_arr(1) = kbnx_f
+      kbny_arr(1) = kbny_f
 
     end if
 
     totUndLineLength = sum(real(nsteps_arr,kind=wp)*delmz) + sum(drift_zbar) + sum(chic_zbar)
 
     if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1)) then
-        print*, ''
-        print*, ' ************************************* '
-        print*, ''
-        print*, 'In total, there will be ', sum(nSteps_arr), 'integration steps'
-        print*, 'Total interaction distance in (1D) gain lengths is z-bar =', &
+        print*, ""
+        print*, " ************************************* "
+        print*, ""
+        print*, "In total, there will be ", sum(nSteps_arr), "integration steps"
+        print*, "Total interaction distance in (1D) gain lengths is z-bar =", &
                 sum(nsteps_arr*delmz)
-        print*, 'Total length of FEL undulator line in meters is z =', &
+        print*, "Total length of FEL undulator line in meters is z =", &
              (sum(nsteps_arr*delmz) + sum(drift_zbar) + sum(chic_zbar)) * frame%gain_length
-        print*, ''
-        print*, 'initial step size (in zbar, or 1D gain lengths) will be ', delmz(1)
-        print*, ''
-        print*, ' ************************************* '
-        print*, ''
+        print*, ""
+        print*, "initial step size (in zbar, or 1D gain lengths) will be ", delmz(1)
+        print*, ""
+        print*, " ************************************* "
+        print*, ""
 
     end if
 
@@ -222,17 +234,17 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Subroutine for reading in the lattice file and setting up the lattice 
+!> Subroutine for reading in the lattice file and setting up the lattice
 !> element arrays. The element arrays are globally defined in this module.
 !> @param[in] lattFile String: The lattice file name
 !> @param[in] rho The FEL, or Pierce, parameter
 
   SUBROUTINE readLatt(lattFile, rho)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
   CHARACTER(1024_IP), INTENT(IN) :: lattFile
 
@@ -240,7 +252,7 @@ contains
 
 !                LOCAL VARS
 
-  INTEGER(KIND=IP)   :: i,ios,nw,error,ri,NL
+  INTEGER(KIND=IP)   :: ios, nw
   REAL(KIND=WP)      :: c1, slamw
 
   integer(kind=ip) :: nperlam
@@ -261,21 +273,23 @@ contains
 
 
 
-  open(168,FILE=lattFile, IOSTAT=ios, STATUS='OLD', ACTION='READ', POSITION ='REWIND')
+  open(168,FILE=lattFile, IOSTAT=ios, STATUS="OLD", ACTION="READ", POSITION ="REWIND")
 
   if (ios /= 0) then
-    print*, 'iostat = ', ios
+    print*, "iostat = ", ios
     stop "OPEN(input file) not performed correctly, IOSTAT /= 0"
   end if
 
 
-  do 
+  do
 
     read (168,*, IOSTAT=ios) ztest  ! probe the line
 
     if (ios < 0) then  ! if reached end of file:-
 
-      if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 2)) print*, "Reached end of file!! (for the second time)"
+      if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 2)) then
+        print*, "Reached end of file!! (for the second time)"
+      end if
       !print*, "Turns out you had ", cnt, "lines in the file!!"
       !print*, "Turns out you had ", cntq, "quads in the file!! in lines ", lineq
       !print*, "Turns out you had ", cntu, "undulators in the file!!"
@@ -284,13 +298,12 @@ contains
 
     else if (ios > 0) then
 
-      if (ioutInfo_G > 0) print*, 'THIS LINE HAS NOTHING FOR ME', ios
+      if (ioutInfo_G > 0) print*, "THIS LINE HAS NOTHING FOR ME", ios
       exit
-      cnt = cnt + 1
 
     else
 
-      if (ztest(1:2) == 'QU') then
+      if (ztest(1:2) == "QU") then
 
         backspace(168)
 
@@ -298,24 +311,34 @@ contains
 
         read (168,*, IOSTAT=ios) ztest, quad_fx(cntq), quad_fy(cntq)  ! read vars
 
+        if (ios /= 0) then
+          print*, "iostat = ", ios
+          stop "READ(quad, input file) not performed correctly, IOSTAT /= 0"
+        end if
+
         cntt = cntt + 1
         iElmType(cntt) = iQuad
 
-      else if (ztest(1:2) == 'UN') then
+      else if (ztest(1:2) == "UN") then
 
         backspace(168)
 
         cntu = cntu + 1
 
-!       reading ... element ID, undulator type, num of periods, alpha (aw / aw0), 
-!       taper (d alpha / dz), integration steps per period, ux and uy (polarization 
-!       control), and kbnx and kbny, betatron wavenumbers for in-undulator strong 
-!       focusing (applied in the wiggler!!! NOT from quads. Remember the natural 
+!       reading ... element ID, undulator type, num of periods, alpha (aw / aw0),
+!       taper (d alpha / dz), integration steps per period, ux and uy (polarization
+!       control), and kbnx and kbny, betatron wavenumbers for in-undulator strong
+!       focusing (applied in the wiggler!!! NOT from quads. Remember the natural
 !       undulator focusing is also included IN ADDITION to this...)
 
         read (168,*, IOSTAT=ios) ztest, zundtype_arr(cntu), nw, mf(cntu), tapers(cntu), &
                                  nperlam, ux_arr(cntu), uy_arr(cntu), kbnx_arr(cntu), &
                                  kbny_arr(cntu)  ! read vars
+
+        if (ios /= 0) then
+          print*, "iostat = ", ios
+          stop "READ(undulator, input file) not performed correctly, IOSTAT /= 0"
+        end if
 
         cntt = cntt + 1
         iElmType(cntt) = iUnd
@@ -325,18 +348,18 @@ contains
 
         slamw = 4.0_WP * pi * rho
         delmz(cntu) = slamw / real(nperlam, kind=wp)
-  
-        if (zundtype_arr(cntu) == 'curved') then
+
+        if (zundtype_arr(cntu) == "curved") then
 
           ux_arr(cntu) = 0   ! Temp fix for initialization bug
           uy_arr(cntu) = 1
 
-        else if (zundtype_arr(cntu) == 'planepole') then
+        else if (zundtype_arr(cntu) == "planepole") then
 
           ux_arr(cntu) = 0   ! Temp fix for initialization bug
           uy_arr(cntu) = 1
 
-        else if (zundtype_arr(cntu) == 'helical') then
+        else if (zundtype_arr(cntu) == "helical") then
 
           ux_arr(cntu) = 1   ! Temp fix for initialization bug
           uy_arr(cntu) = 1
@@ -347,11 +370,17 @@ contains
 
 
 
-      else if (ztest(1:2) == 'CH') then
+      else if (ztest(1:2) == "CH") then
 
         backspace(168)
         cntc = cntc + 1
-        read (168,*, IOSTAT=ios) ztest, chic_zbar(cntc), chic_slip(cntc), chic_disp(cntc)  ! read vars
+        ! read vars
+        read (168,*, IOSTAT=ios) ztest, chic_zbar(cntc), chic_slip(cntc), chic_disp(cntc)
+
+        if (ios /= 0) then
+          print*, "iostat = ", ios
+          stop "READ(chicane, input file) not performed correctly, IOSTAT /= 0"
+        end if
 
         cntt = cntt + 1
         iElmType(cntt) = iChic
@@ -362,22 +391,32 @@ contains
         ! D = Dfact*10.0/6.0*delta ! The Dispersion parameter
 
 
-      else if (ztest(1:2) == 'DR') then
+      else if (ztest(1:2) == "DR") then
 
         backspace(168)
         cntd = cntd + 1
         read (168,*, IOSTAT=ios) ztest, drift_zbar(cntd)   ! read vars
+
+        if (ios /= 0) then
+          print*, "iostat = ", ios
+          stop "READ(drift, input file) not performed correctly, IOSTAT /= 0"
+        end if
 
         cntt = cntt + 1
         iElmType(cntt) = iDrift
 
         drift_zbar(cntd) = drift_zbar(cntd) * 4.0_wp * pi * rho
 
-      else if (ztest(1:2) == 'MO') then
+      else if (ztest(1:2) == "MO") then
 
         backspace(168)
         cntm = cntm + 1
         read (168,*, IOSTAT=ios) ztest, enmod_wavenum(cntm), enmod_mag(cntm) ! read vars
+
+        if (ios /= 0) then
+          print*, "iostat = ", ios
+          stop "READ(energy modulation, input file) not performed correctly, IOSTAT /= 0"
+        end if
 
         cntt = cntt + 1
         iElmType(cntt) = iModulation
@@ -390,9 +429,9 @@ contains
 
     end if
 
-  end do    
+  end do
 
-  close(168, STATUS='KEEP')
+  close(168, STATUS="KEEP")
 
   end subroutine readLatt
 
@@ -400,7 +439,7 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Subroutine for modelling the chicane element in Puffin. This is achieved
@@ -410,14 +449,13 @@ contains
 
   subroutine disperse(iL, sZ, ctx)
 
-  implicit none
+  implicit none (type, external)
 
   integer(kind=ip), intent(in) :: iL
   real(kind=wp), intent(out) :: sZ
   type(tSimulationContext), intent(inout) :: ctx
 
   real(kind=wp) :: szbar4d
-  real(kind=wp), allocatable :: sp2(:)
   logical :: qDummy
 
   real(kind=wp) :: lenz2
@@ -460,7 +498,7 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Subroutine to model the electron drift between other lattice elements.
@@ -514,10 +552,10 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Subroutine to model the quad element in Puffin. This is implemented as a 
+!> Subroutine to model the quad element in Puffin. This is implemented as a
 !> simple point transform.
 !> @param[in] iL The element number in the lattice
 
@@ -558,7 +596,7 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Apply a simple energy modulation to the beam in Puffin.
@@ -584,7 +622,7 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Apply a virtual 'magnet corrector' at the end of the wiggler
@@ -619,7 +657,7 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> When not using undulator ends, this subroutine re-centres the beam after
@@ -648,7 +686,7 @@ contains
 !     Get offsets for start of undulator
 
 
-    if (zUndType_G == 'curved') then
+    if (zUndType_G == "curved") then
 
 ! used for curved pole puffin, the 2 order expansion of cosh and sinh
 ! allows us to simply add a correction term to the intial position
@@ -664,7 +702,7 @@ contains
                       - kx**2 *  sElX_G  * sElY_G)
 
 
-    else if (zUndType_G == 'planepole') then
+    else if (zUndType_G == "planepole") then
 
 ! plane pole initial conditions are calculated as a 2nd order expansion
 ! and added as a correction term.
@@ -725,12 +763,12 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> When not using undulator ends, this subroutine initializes the transverse beam
-!> coordinates to satisfy the initial offset conditions in the undulator. 
-!> the undulator exit. 
+!> coordinates to satisfy the initial offset conditions in the undulator.
+!> the undulator exit.
 !> @param[in] sZ zbar position
 
   subroutine matchIn(sZ, frame, n2col)
@@ -743,7 +781,6 @@ contains
 
     real(kind=wp) :: kx, ky
 
-    integer :: error
 
     kx = kx_und_G
     ky = ky_und_G
@@ -754,7 +791,7 @@ contains
 
 !     Get offsets for start of undulator
 
-    if (zUndType_G == 'curved') then
+    if (zUndType_G == "curved") then
 
 ! used for curved pole puffin, the 2 order expansion of cosh and sinh
 ! allows us to simply add a correction term to the intial position
@@ -770,7 +807,7 @@ contains
                       - kx**2 *  sElX_G  * sElY_G)
 
 
-    else if (zUndType_G == 'planepole') then
+    else if (zUndType_G == "planepole") then
 
 ! plane pole initial conditions are calculated as a 2nd order expansion
 ! and added as a correction term.
@@ -829,12 +866,12 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> When not using undulator ends, this subroutine initializes the transverse beam
-!> coordinates to satisfy the initial offset conditions in the undulator. 
-!> the undulator exit. 
+!> coordinates to satisfy the initial offset conditions in the undulator.
+!> the undulator exit.
 !> @param[in] iM Undulator number
 !> @param[in] sZ zbar position in the machine
 !> @param[inout] sZ zbar position local to undulator (initialized to = 0) here
@@ -896,10 +933,10 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Function to count the number of lines on a file 
+!> Function to count the number of lines on a file
 !> @param[in] fname Filename
 
   FUNCTION lineCount(fname)
@@ -913,7 +950,7 @@ contains
 
   INTEGER :: ios
 
-  OPEN(1,FILE=fname, IOSTAT=ios, ACTION='READ', POSITION ='REWIND')
+  OPEN(1,FILE=fname, IOSTAT=ios, ACTION="READ", POSITION ="REWIND")
   IF (ios /= 0) STOP "OPEN(input file) not performed correctly, IOSTAT /= 0"
 
   lineCount = 0_IP
@@ -923,7 +960,7 @@ contains
     READ(1,*,END=10)
   END DO
 
-  10 CLOSE(1, STATUS='KEEP')
+  10 CLOSE(1, STATUS="KEEP")
 
   END FUNCTION lineCount
 
@@ -931,7 +968,7 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Function to count the number of each type of element in the lattice file
@@ -950,7 +987,7 @@ contains
   integer(kind=ip) :: cnt, cntq, cntu, cntc, cntd, cntm
   character(40) :: ztest
 
-  ztest = ''
+  ztest = ""
   cnt = 0
   cntq = 0
   cntu = 0
@@ -958,13 +995,13 @@ contains
   cntd = 0
   cntm = 0
 
-  open(168,FILE=fname, IOSTAT=ios, STATUS='OLD', ACTION='READ', POSITION ='REWIND')
+  open(168,FILE=fname, IOSTAT=ios, STATUS="OLD", ACTION="READ", POSITION ="REWIND")
   if (ios /= 0) then
-    print*, 'iostat = ', ios
+    print*, "iostat = ", ios
     stop "OPEN(input file) not performed correctly, IOSTAT /= 0"
   end if
 
-  do 
+  do
 
     read (168,*, IOSTAT=ios) ztest  ! probe the line
 
@@ -984,36 +1021,36 @@ contains
 
     else if (ios > 0) then
 
-      if (ioutInfo_G > 2) print*, 'THIS LINE HAS NOTHING FOR ME'
+      if (ioutInfo_G > 2) print*, "THIS LINE HAS NOTHING FOR ME"
       cnt = cnt + 1
       stop
 
     else
 
-      if (ztest(1:2) == 'QU') then
+      if (ztest(1:2) == "QU") then
 
         cntq = cntq + 1
 !        print*, 'quad number ', cntq, ' has params ', quad1, quad2
 
-      else if (ztest(1:2) == 'UN') then
+      else if (ztest(1:2) == "UN") then
 
 
         cntu = cntu + 1
 
 
-      else if (ztest(1:2) == 'CH') then
+      else if (ztest(1:2) == "CH") then
 
 
         cntc = cntc + 1
 
 
-      else if (ztest(1:2) == 'DR') then
+      else if (ztest(1:2) == "DR") then
 
 
         cntd = cntd + 1
 
 
-      else if (ztest(1:2) == 'MO') then
+      else if (ztest(1:2) == "MO") then
 
 
         cntm = cntm + 1
@@ -1028,7 +1065,7 @@ contains
 
   end do
 
-  close(168, STATUS='KEEP')
+  close(168, STATUS="KEEP")
 
 
   numOfMods = cntq + cntu + cntc + cntd + cntm

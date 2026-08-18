@@ -6,7 +6,7 @@ MODULE randomGauss
 !
 ! This is a very slightly modified form of the module named 'random'
 ! written by Alan Miller (see individual function and subroutine
-! comments for details), currently (as of 23rd Jan 2017) hosted at 
+! comments for details), currently (as of 23rd Jan 2017) hosted at
 ! http://jblevins.org/mirror/amiller/ and released into the public domain.
 !
 ! Slightly modified by Lawrence Campbell with a subroutine to initialize
@@ -110,7 +110,11 @@ use puffin_mpiInfo, only: tProcInfo_G
 !     Author: Alan Miller
 !     e-mail: amiller @ bigpond.net.au
 
-IMPLICIT NONE
+IMPLICIT NONE (type, external)
+private
+
+public :: init_random_seed, random_normal, random_Poisson, setRandomSeed
+
 REAL(KIND=WP), PRIVATE      :: zero = 0.0, half = 0.5, one = 1.0, two = 2.0,   &
                       vsmall = TINY(1.0), vlarge = HUGE(1.0)
 PRIVATE            :: integral
@@ -141,8 +145,9 @@ FUNCTION random_normal() RESULT(fn_val)
 REAL(KIND=WP) :: fn_val
 
 !     Local variables
-REAL(KIND=WP)     :: s = 0.449871, t = -0.386595, a = 0.19600, b = 0.25472,    &
-            r1 = 0.27597, r2 = 0.27846, u, v, x, y, q
+REAL(KIND=WP), PARAMETER :: s = 0.449871, t = -0.386595, a = 0.19600, b = 0.25472,    &
+            r1 = 0.27597, r2 = 0.27846
+REAL(KIND=WP)     :: u, v, x, y, q
 
 !     Generate P = (u,v) uniform in rectangle enclosing acceptance region
 
@@ -190,7 +195,7 @@ LOGICAL, INTENT(IN) :: first
 REAL(KIND=WP)                :: fn_val
 
 IF (s <= zero) THEN
-  WRITE(*, *) 'SHAPE PARAMETER VALUE MUST BE POSITIVE'
+  WRITE(*, *) "SHAPE PARAMETER VALUE MUST BE POSITIVE"
   STOP
 END IF
 
@@ -279,7 +284,7 @@ REAL(KIND=WP)       :: r, x, w
 REAL(KIND=WP), SAVE :: a, p, c, uf, vr, d
 
 IF (s <= zero .OR. s >= one) THEN
-  WRITE(*, *) 'SHAPE PARAMETER VALUE OUTSIDE PERMITTED RANGE'
+  WRITE(*, *) "SHAPE PARAMETER VALUE OUTSIDE PERMITTED RANGE"
   STOP
 END IF
 
@@ -287,7 +292,7 @@ IF (first) THEN                        ! Initialization, if necessary
   a = one - s
   p = a/(a + s*EXP(-a))
   IF (s < vsmall) THEN
-    WRITE(*, *) 'SHAPE PARAMETER VALUE TOO SMALL'
+    WRITE(*, *) "SHAPE PARAMETER VALUE TOO SMALL"
     STOP
   END IF
   c = one/s
@@ -414,7 +419,7 @@ REAL(KIND=WP) , SAVE       :: d, f, h, t, c
 LOGICAL, SAVE    :: swap
 
 IF (aa <= zero .OR. bb <= zero) THEN
-  WRITE(*, *) 'IMPERMISSIBLE SHAPE PARAMETER VALUE(S)'
+  WRITE(*, *) "IMPERMISSIBLE SHAPE PARAMETER VALUE(S)"
   STOP
 END IF
 
@@ -487,10 +492,10 @@ REAL(KIND=WP)             :: r, x, v
 
 REAL(KIND=WP) , PARAMETER :: three = 3.0, four = 4.0, quart = 0.25,   &
                    five = 5.0, sixteen = 16.0
-INTEGER(KIND=IP)        :: mm = 0
+INTEGER(KIND=IP) , SAVE :: mm = 0
 
 IF (m < 1) THEN
-  WRITE(*, *) 'IMPERMISSIBLE DEGREES OF FREEDOM'
+  WRITE(*, *) "IMPERMISSIBLE DEGREES OF FREEDOM"
   STOP
 END IF
 
@@ -562,7 +567,7 @@ SUBROUTINE random_mvnorm(n, h, d, f, first, x, ier)
 
 INTEGER(KIND=IP), INTENT(IN)   :: n
 REAL(KIND=WP) , INTENT(IN)      :: h(:), d(:)   ! d(n*(n+1)/2)
-REAL(KIND=WP) , INTENT(IN OUT)  :: f(:)         ! f(n*(n+1)/2)
+REAL(KIND=WP) , INTENT(INOUT)  :: f(:)         ! f(n*(n+1)/2)
 REAL(KIND=WP) , INTENT(OUT)     :: x(:)
 LOGICAL, INTENT(IN)   :: first
 INTEGER(KIND=IP), INTENT(OUT)  :: ier
@@ -573,7 +578,7 @@ REAL(KIND=WP)           :: y, v
 INTEGER(KIND=IP), SAVE :: n2
 
 IF (n < 1) THEN
-  WRITE(*, *) 'SIZE OF VECTOR IS NON POSITIVE'
+  WRITE(*, *) "SIZE OF VECTOR IS NON POSITIVE"
   STOP
 END IF
 
@@ -652,20 +657,20 @@ REAL(KIND=WP) , SAVE      :: a, c, d, e
 REAL(KIND=WP) , PARAMETER :: quart = 0.25
 
 IF (h < zero .OR. b <= zero) THEN
-  WRITE(*, *) 'IMPERMISSIBLE DISTRIBUTION PARAMETER VALUES'
+  WRITE(*, *) "IMPERMISSIBLE DISTRIBUTION PARAMETER VALUES"
   STOP
 END IF
 
 IF (first) THEN                        ! Initialization, if necessary
   IF (h > quart*b*SQRT(vlarge)) THEN
-    WRITE(*, *) 'THE RATIO H:B IS TOO SMALL'
+    WRITE(*, *) "THE RATIO H:B IS TOO SMALL"
     STOP
   END IF
   e = b*b
   d = h + one
   ym = (-d + SQRT(d*d + e))/b
   IF (ym < vsmall) THEN
-    WRITE(*, *) 'THE VALUE OF B IS TOO SMALL'
+    WRITE(*, *) "THE VALUE OF B IS TOO SMALL"
     STOP
   END IF
 
@@ -677,7 +682,7 @@ IF (first) THEN                        ! Initialization, if necessary
   w = xm*ym
   a = w**(-half*h) * SQRT(xm/ym) * EXP(-e*(r - ym - one/ym))
   IF (a < vsmall) THEN
-    WRITE(*, *) 'THE VALUE OF H IS TOO LARGE'
+    WRITE(*, *) "THE VALUE OF H IS TOO LARGE"
     STOP
   END IF
   c = -d*LOG(xm) - e*r
@@ -766,8 +771,8 @@ REAL(KIND=WP) , PARAMETER :: a0 = -.5, a1 = .3333333, a2 = -.2500068, a3 = .2000
                    a4 = -.1661269, a5 = .1421878, a6 = -.1384794,   &
                    a7 = .1250060
 
-REAL(KIND=WP) , PARAMETER :: fact(10) = (/ 1., 1., 2., 6., 24., 120., 720., 5040.,  &
-                                 40320., 362880. /)
+REAL(KIND=WP) , PARAMETER :: fact(10) = [ 1., 1., 2., 6., 24., 120., 720., 5040.,  &
+                                 40320., 362880. ]
 
 !     ..
 !     .. Executable Statements ..
@@ -790,6 +795,19 @@ IF (mu > 10.0) THEN
 !     STEP N. NORMAL SAMPLE - random_normal() FOR STANDARD NORMAL DEVIATE
 
   g = mu + s*random_normal()
+
+! ival/fk/difmuk are set on both the g > 0.0 and g < 0.0 branches below;
+! only the measure-zero g == 0.0 edge case would otherwise leave them
+! unset, so default them here to keep that edge case deterministic.
+  ival = NINT(mu, KIND=IP)
+  fk = REAL(ival, KIND=WP)
+  difmuk = mu - fk
+  omega = 0.0_WP
+  c0 = 0.0_WP
+  c1 = 0.0_WP
+  c2 = 0.0_WP
+  c3 = 0.0_WP
+
   IF (g > 0.0) THEN
     ival = g
 
@@ -824,12 +842,12 @@ IF (mu > 10.0) THEN
     full_init = .true.
   END IF
 
-  IF (g < 0.0) GO TO 50
+  IF (g < 0.0) GOTO 50
 
 !             'SUBROUTINE' F IS CALLED (KFLAG=0 FOR CORRECT RETURN)
 
   kflag = 0
-  GO TO 70
+  GOTO 70
 
 !     STEP Q. QUOTIENT ACCEPTANCE (RARE CASE)
 
@@ -843,7 +861,7 @@ IF (mu > 10.0) THEN
   CALL RANDOM_NUMBER(u)
   u = u + u - one
   t = 1.8 + SIGN(e, u)
-  IF (t <= (-.6744)) GO TO 50
+  IF (t <= (-.6744)) GOTO 50
   ival = mu + s*t
   fk = ival
   difmuk = mu - fk
@@ -851,20 +869,20 @@ IF (mu > 10.0) THEN
 !             'SUBROUTINE' F IS CALLED (KFLAG=1 FOR CORRECT RETURN)
 
   kflag = 1
-  GO TO 70
+  GOTO 70
 
 !     STEP H. HAT ACCEPTANCE (E IS REPEATED ON REJECTION)
 
-  60 IF (c*ABS(u) > py*EXP(px+e) - fy*EXP(fx+e)) GO TO 50
+  60 IF (c*ABS(u) > py*EXP(px+e) - fy*EXP(fx+e)) GOTO 50
   RETURN
 
 !     STEP F. 'SUBROUTINE' F. CALCULATION OF PX, PY, FX, FY.
 !             CASE ival < 10 USES FACTORIALS FROM TABLE FACT
 
-  70 IF (ival>=10) GO TO 80
+  70 IF (ival>=10) GOTO 80
   px = -mu
   py = mu**ival/fact(ival+1)
-  GO TO 110
+  GOTO 110
 
 !             CASE ival >= 10 USES POLYNOMIAL APPROXIMATION
 !             A0-A7 FOR ACCURACY WHEN ADVISABLE
@@ -883,8 +901,8 @@ IF (mu > 10.0) THEN
   xx = x*x
   fx = -half*xx
   fy = omega* (((c3*xx + c2)*xx + c1)*xx + c0)
-  IF (kflag <= 0) GO TO 40
-  GO TO 60
+  IF (kflag <= 0) GOTO 40
+  GOTO 60
 
 !---------------------------------------------------------------------------
 !     C A S E  B.    mu < 10
@@ -910,11 +928,11 @@ ELSE
 !             PP-TABLE OF CUMULATIVE POISSON PROBABILITIES
 !             (0.458=PP(9) FOR MU=10)
 
-    IF (l == 0) GO TO 150
+    IF (l == 0) GOTO 150
     j = 1
     IF (u > 0.458) j = MIN(l, m)
     DO k = j, l
-      IF (u <= pp(k)) GO TO 180
+      IF (u <= pp(k)) GOTO 180
     END DO
     IF (l == 35) CYCLE
 
@@ -926,7 +944,7 @@ ELSE
       p = p*mu / k
       q = q + p
       pp(k) = q
-      IF (u <= q) GO TO 170
+      IF (u <= q) GOTO 170
     END DO
     l = 35
   END DO
@@ -1026,7 +1044,7 @@ REAL(KIND=WP) , INTENT(IN)    :: p
 REAL(KIND=WP)                 :: fn_val
 
 !     Local variable
-REAL(KIND=WP)                 :: one = 1.0
+REAL(KIND=WP), PARAMETER       :: one = 1.0
 
 fn_val = EXP( lngamma(DBLE(n+1)) - lngamma(DBLE(r+1)) - lngamma(DBLE(n-r+1)) &
               + r*LOG(p) + (n-r)*LOG(one - p) )
@@ -1050,16 +1068,17 @@ REAL(KIND=WP)              :: fn_val
 
 !       Local variables
 
-REAL(KIND=WP)  :: a1 = -4.166666666554424D-02, a2 = 2.430554511376954D-03,  &
+REAL(KIND=WP), PARAMETER :: a1 = -4.166666666554424D-02, a2 = 2.430554511376954D-03,  &
              a3 = -7.685928044064347D-04, a4 = 5.660478426014386D-04,  &
-             temp, arg, product, lnrt2pi = 9.189385332046727D-1,       &
+             lnrt2pi = 9.189385332046727D-1,       &
              pi = 3.141592653589793D0
+REAL(KIND=WP)  :: temp, arg, product
 LOGICAL   :: reflect
 
 !       lngamma is not defined if x = 0 or a negative integer.
 
-IF (x > 0.d0) GO TO 10
-IF (x /= INT(x)) GO TO 10
+IF (x > 0.d0) GOTO 10
+IF (x /= INT(x)) GOTO 10
 fn_val = 0.d0
 RETURN
 
@@ -1079,7 +1098,7 @@ product = 1.d0
 20 IF (arg <= 10.d0) THEN
   product = product * arg
   arg = arg + 1.d0
-  GO TO 20
+  GOTO 20
 END IF
 
 !  Use a polynomial approximation to Stirling's formula.
@@ -1216,7 +1235,7 @@ IF (xnp > 30.) THEN
 
   IF (u <= p1) THEN
     ix = xm - p1 * v + u
-    GO TO 110
+    GOTO 110
   END IF
 
 !     PARALLELOGRAM REGION
@@ -1224,7 +1243,7 @@ IF (xnp > 30.) THEN
   IF (u <= p2) THEN
     x = xl + (u-p1) / c
     v = v * c + one - ABS(xm-x) / p1
-    IF (v > one .OR. v <= zero) GO TO 20
+    IF (v > one .OR. v <= zero) GOTO 20
     ix = x
   ELSE
 
@@ -1232,14 +1251,14 @@ IF (xnp > 30.) THEN
 
     IF (u <= p3) THEN
       ix = xl + LOG(v) / xll
-      IF (ix < 0) GO TO 20
+      IF (ix < 0) GOTO 20
       v = v * (u-p2) * xll
     ELSE
 
 !     RIGHT TAIL
 
       ix = xr - LOG(v) / xlr
-      IF (ix > n) GO TO 20
+      IF (ix > n) GOTO 20
       v = v * (u-p3) * xlr
     END IF
   END IF
@@ -1268,9 +1287,9 @@ IF (xnp > 30.) THEN
     END IF
 
     IF (v > f) THEN
-      GO TO 20
+      GOTO 20
     ELSE
-      GO TO 110
+      GOTO 110
     END IF
   END IF
 
@@ -1279,8 +1298,8 @@ IF (xnp > 30.) THEN
   amaxp = (k/xnpq) * ((k*(k/3. + .625) + .1666666666666)/xnpq + half)
   ynorm = -k * k / (2.*xnpq)
   alv = LOG(v)
-  IF (alv<ynorm - amaxp) GO TO 110
-  IF (alv>ynorm + amaxp) GO TO 20
+  IF (alv<ynorm - amaxp) GOTO 110
+  IF (alv>ynorm + amaxp) GOTO 20
 
 !     STIRLING'S (actually de Moivre's) FORMULA TO MACHINE ACCURACY FOR
 !     THE FINAL ACCEPTANCE/REJECTION TEST
@@ -1298,9 +1317,9 @@ IF (xnp > 30.) THEN
       (13860.-(462.-(132.-(99.-140./z2)/z2)/z2)/z2)/z/166320. +                &
       (13860.-(462.-(132.-(99.-140./x2)/x2)/x2)/x2)/x1/166320. +               &
       (13860.-(462.-(132.-(99.-140./w2)/w2)/w2)/w2)/w/166320.) > zero) THEN
-    GO TO 20
+    GOTO 20
   ELSE
-    GO TO 110
+    GOTO 110
   END IF
 
 ELSE
@@ -1315,11 +1334,11 @@ ELSE
   f = qn
   CALL RANDOM_NUMBER(u)
   100 IF (u >= f) THEN
-    IF (ix > 110) GO TO 90
+    IF (ix > 110) GOTO 90
     u = u - f
     ix = ix + 1
     f = f * (g/ix - r)
-    GO TO 100
+    GOTO 100
   END IF
 END IF
 
@@ -1362,7 +1381,7 @@ REAL(KIND=WP)                :: q, x, st, uln, v, r, s, y, g
 INTEGER(KIND=IP)             :: k, i, n
 
 IF (sk <= zero .OR. p <= zero .OR. p >= one) THEN
-  WRITE(*, *) 'IMPERMISSIBLE DISTRIBUTION PARAMETER VALUES'
+  WRITE(*, *) "IMPERMISSIBLE DISTRIBUTION PARAMETER VALUES"
   STOP
 END IF
 
@@ -1386,7 +1405,7 @@ END IF
 s = zero
 uln = -LOG(vsmall)
 IF (st > -uln/LOG(q)) THEN
-  WRITE(*, *) ' P IS TOO LARGE FOR THIS VALUE OF SK'
+  WRITE(*, *) " P IS TOO LARGE FOR THIS VALUE OF SK"
   STOP
 END IF
 
@@ -1438,13 +1457,15 @@ REAL(KIND=WP)         :: dk
 
 IF (first) THEN                        ! Initialization, if necessary
   IF (k < zero) THEN
-    WRITE(*, *) '** Error: argument k for random_von_Mises = ', k
+    WRITE(*, *) "** Error: argument k for random_von_Mises = ", k
+    fn_val = zero
     RETURN
   END IF
 
   nk = k + k + one
   IF (nk > 20) THEN
-    WRITE(*, *) '** Error: argument k for random_von_Mises = ', k
+    WRITE(*, *) "** Error: argument k for random_von_Mises = ", k
+    fn_val = zero
     RETURN
   END IF
 
@@ -1494,7 +1515,7 @@ DO
     rlast = r
   END DO
 
-  IF (n .NE. 2*(n/2)) EXIT         ! is n even?
+  IF (n /= 2*(n/2)) EXIT         ! is n even?
   CALL RANDOM_NUMBER(r)
 END DO
 
@@ -1514,9 +1535,10 @@ REAL(KIND=WP) , INTENT(OUT)     :: result
 
 !     Local variables
 
-REAL(KIND=WP):: xmid, range, x1, x2,                                    &
-  x(3) = (/0.238619186083197_dp, 0.661209386466265_dp, 0.932469514203152_dp/), &
-  w(3) = (/0.467913934572691_dp, 0.360761573048139_dp, 0.171324492379170_dp/)
+REAL(KIND=WP):: xmid, range, x1, x2
+REAL(KIND=WP), PARAMETER :: &
+  x(3) = [0.238619186083197_dp, 0.661209386466265_dp, 0.932469514203152_dp], &
+  w(3) = [0.467913934572691_dp, 0.360761573048139_dp, 0.171324492379170_dp]
 INTEGER(KIND=IP)     :: i
 
 xmid = (a + b)/2._dp
@@ -1603,9 +1625,9 @@ INTEGER(KIND=IP) , ALLOCATABLE :: seed(:)
 CALL RANDOM_SEED(SIZE=k)
 ALLOCATE( seed(k) )
 
-WRITE(*, '(a, i2, a)')' Enter ', k, ' integers for random no. seeds: '
+WRITE(*, "(a, i2, a)")" Enter ", k, " integers for random no. seeds: "
 READ(*, *) seed
-WRITE(iounit, '(a, (7i10))') ' Random no. seeds: ', seed
+WRITE(iounit, "(a, (7i10))") " Random no. seeds: ", seed
 CALL RANDOM_SEED(PUT=seed)
 
 DEALLOCATE( seed )
@@ -1646,7 +1668,7 @@ SUBROUTINE init_random_seed()
               CALL SYSTEM_CLOCK(COUNT=clock)
             end if
 
-            seed = clock + 37 * (/ (i - 1, i = 1, n) /)*tProcInfo_G%rank
+            seed = clock + 37 * [ (i - 1, i = 1, n) ]*tProcInfo_G%rank
             CALL RANDOM_SEED(PUT = seed)
 
             DEALLOCATE(seed)

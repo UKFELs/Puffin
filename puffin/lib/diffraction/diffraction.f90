@@ -6,27 +6,34 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> This module contains subroutines for calculating the radiation diffraction 
+!> This module contains subroutines for calculating the radiation diffraction
 !> step.
 
 module PDiff
 
-use puffin_kinds
-use puffin_mpiInfo
-use puffin_mpiInfo
-use transforms
-use masks
-use Globals
-use IO
-use parafield
+use puffin_kinds, only: WP, IP
+use puffin_mpiInfo, only: tProcInfo_G
+use transforms, only: tr_time_s, tr_time_e, Afftw, transform, tTransInfo_G, pi
+use masks, only: getmask, getz2mask
+use Globals, only: NX_G, NBX_G, NY_G, NBY_G, NZ2_G, NBZ2_G, sLengthOfElmX_G, sLengthOfElmY_G, &
+  sLengthOfElmZ2_G, seedend, kx_G, ky_G, kz2_loc_G, sBeta_G, sfilt, fieldMesh, iPeriodic, &
+  sperwaves_G, sElZ2_G, ffact, sStep, ioutInfo_G, qFilter
+use IO, only: tErrorLog_G, log_error
+use parafield, only: tre_fft, tim_fft, redist2fftwlt, redistbackfft
 use GlobalTypes, only: tSimulationContext
+use ParallelSetUp, only: Get_time
+use mpi, only: MPI_ALLREDUCE, MPI_COMM_WORLD, MPI_DOUBLE_PRECISION, MPI_MAX
 
-use, intrinsic :: iso_c_binding
+use, intrinsic :: iso_c_binding, only: C_DOUBLE_COMPLEX
 
-implicit none
+implicit none (type, external)
+private
+
+public :: diffractim, IP, tProcInfo_G, WP
+
 
 
 
@@ -34,11 +41,11 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Setup parallel data structures for diffraction step, call diffraction 
-!> routine, then return data to nominal parallel distribution for RK4 
+!> Setup parallel data structures for diffraction step, call diffraction
+!> routine, then return data to nominal parallel distribution for RK4
 !> integration.
 !> @param[in] sStep Diffraction step size - distance to propagate field over.
 !> @param[out] qDiffrctd Whether field has been diffracted.
@@ -47,7 +54,7 @@ contains
 subroutine diffractIM(sStep, &
                       qDiffrctd, qOK, ctx)
 
-  implicit none
+  implicit none (type, external)
 
   real(kind=wp), intent(in) :: sStep
   logical, intent(out) :: qDiffrctd, qOK
@@ -85,7 +92,7 @@ subroutine diffractIM(sStep, &
 
   GOTO 2000
 
-1000  CALL log_error('Error in diffractIM',tErrorLog_G)
+1000  CALL log_error("Error in diffractIM",tErrorLog_G)
 
 2000 CONTINUE
 
@@ -100,11 +107,11 @@ end subroutine diffractIM
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Multiplies Fourier Transformed field by complex exponential to diffract the
-!> field. To diffract field, do \f$ A_\bot(\bar{z}+\Delta \bar{z}) = 
+!> field. To diffract field, do \f$ A_\bot(\bar{z}+\Delta \bar{z}) =
 !> A_\bot(\bar{z}) \exp(\frac{i \Delta \bar{z} (k_x^2 + k_y^2) }{2 k_{z2}}) \f$ :
 !> see LT Campbell and BWJ McNeil, Physics of Plasmas 19, 093119 (2012)
 !> @param[in] h Diffraction step size \f$ \Delta \bar{z} \f$
@@ -112,21 +119,21 @@ end subroutine diffractIM
 
 subroutine multiplyexp(h,qOK)
 
-  implicit none
+  implicit none (type, external)
 
   real(kind=wp), intent(in) :: h
 
   logical, intent(out) :: qOK
 
   complex(kind=wp) :: posI            !< Imaginary unit
-  
-  integer(kind=IP) :: ind,   &        !< index 
+
+  integer(kind=IP) ::  &!< index
                       x_inc, &        !< loop index for nodes in x
                       y_inc, &        !< loop index for nodes in y
                       z2_inc          !< loop index for nodes in z2
-                      
+
   integer(kind=IP) :: loc_nz2         !< Local number of z2 nodes
-  
+
   real(kind=wp) :: cutoff, &          !< Frequency cutoff for high pass filter
                    delz2              !< Mesh spacing in z2
 
@@ -179,7 +186,7 @@ subroutine multiplyexp(h,qOK)
 
   GOTO 2000
 
-1000  call log_error('Error in transforms:RearrangeExp',tErrorLog_G)
+      call log_error("Error in transforms:RearrangeExp",tErrorLog_G)
 
 2000 continue
 
@@ -190,7 +197,7 @@ end subroutine multiplyexp
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Subroutine to perform free space radiation field diffraction
@@ -210,7 +217,7 @@ end subroutine multiplyexp
 
 SUBROUTINE DiffractionStep(h, sAr, sAi, ctx, qOK)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 !
 ! Subroutine to perform free space radiation field diffraction
 ! in the dimensionless scaled notation.
@@ -224,7 +231,6 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, ctx, qOK)
 
   integer(kind=ip) :: ntrh, ix, iy, iz
   logical :: qOKL
-  integer :: error
 
 !                      Begin
 
@@ -237,7 +243,8 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, ctx, qOK)
   call Get_time(tr_time_s)
 
   if ((tProcInfo_G%qroot ) .and. (ioutInfo_G > 2) ) then
-    print*,' inside diffraction... ', ctx%lattice%cumulative_steps, tr_time_s - ctx%integration%time_start
+    print*," inside diffraction... ", ctx%lattice%cumulative_steps, &
+           tr_time_s - ctx%integration%time_start
   end if
 
 
@@ -247,7 +254,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, ctx, qOK)
   call Get_time(tr_time_e)
 
   if ((tProcInfo_G%qroot ) .and. (ioutInfo_G > 2)) then
-    print*,' allocating arrays took... ', tr_time_e-tr_time_s
+    print*," allocating arrays took... ", tr_time_e-tr_time_s
   end if
 
 
@@ -268,7 +275,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, ctx, qOK)
   call Get_time(tr_time_e)
 
   if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 2)) then
-    print*,' assigning data took... ', tr_time_e-tr_time_s
+    print*," assigning data took... ", tr_time_e-tr_time_s
   end if
 
   call Transform(tTransInfo_G%fplan, &
@@ -279,7 +286,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, ctx, qOK)
   call Get_time(tr_time_e)  ! ...timing info
 
   if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 2)) then
-    print*,' forward transform took... ', tr_time_e-tr_time_s
+    print*," forward transform took... ", tr_time_e-tr_time_s
   end if
 
 !    Multiply field by the exp factor to obtain A(kx,ky,kz2,zbar+h)
@@ -290,7 +297,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, ctx, qOK)
   call Get_time(tr_time_e)
 
   if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 2)) then
-    print*,' multiply exp took... ', tr_time_e-tr_time_s
+    print*," multiply exp took... ", tr_time_e-tr_time_s
   end if
 
 
@@ -304,7 +311,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, ctx, qOK)
   call Get_time(tr_time_e)
 
   if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 2)) then
-    print*,' back transform took... ', tr_time_e-tr_time_s
+    print*," back transform took... ", tr_time_e-tr_time_s
   end if
 
 !      Scale the field data to normalize transforms
@@ -319,7 +326,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, ctx, qOK)
   call Get_time(tr_time_e)
 
   if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 2)) then
-    print*,' absorption step took... ', tr_time_e-tr_time_s
+    print*," absorption step took... ", tr_time_e-tr_time_s
   end if
 
 
@@ -343,7 +350,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, ctx, qOK)
 
   GOTO 2000
 
-1000  CALL log_error('Error in transforms:DiffractionStep',tErrorLog_G)
+      CALL log_error("Error in transforms:DiffractionStep",tErrorLog_G)
 
 2000 CONTINUE
 
@@ -354,12 +361,12 @@ END SUBROUTINE DiffractionStep
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> This subroutine implements a boundary region
-!> in the x, y and z2 directions.The boundary 
-!> layer absorbs the outgoing radiation to 
+!> in the x, y and z2 directions.The boundary
+!> layer absorbs the outgoing radiation to
 !> minimize the reflections of the diffracted
 !> radiation.
 !> @param[inout] sAl Complex field \f$ A_\bot \f$
@@ -414,9 +421,8 @@ SUBROUTINE AbsorptionStep(sAl,h,ffact)
   REAL(KIND=WP), allocatable :: mask(:), mask_z2(:)
   COMPLEX(KIND=WP), allocatable :: sAnb(:,:,:)
   COMPLEX(KIND=WP) :: posI
-  INTEGER(KIND=IP) :: iz2, x_inc, y_inc, z2_inc, ind, ix, iy
+  INTEGER(KIND=IP) :: iz2, x_inc, y_inc, z2_inc, ix, iy
   INTEGER(KIND=IP) :: loc_nz2
-  integer :: error
   LOGICAL :: qOKL
 
 ! ############################
@@ -461,7 +467,8 @@ SUBROUTINE AbsorptionStep(sAl,h,ffact)
                   ( mask_z2(iz2) *  (1.0_WP - mask(ix+((iy-1)*nx_g) ) ) ) ) ) * &
                   sAl(ix,iy,iz2)
 
-!    sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP) =   (1.0_WP - mask_z2(iz2)) * sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
+!    sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP) =   (1.0_WP - mask_z2(iz2)) * &
+!      sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
 
           sAl(ix, iy, iz2) = (mask(ix+((iy-1)*nx_g))   +  &
                   ( mask_z2(iz2) *  (1.0_WP - mask(ix+((iy-1)*nx_g) ) ) ) ) * &
@@ -536,7 +543,7 @@ END SUBROUTINE AbsorptionStep
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Sets field to zero behind electron beam.
@@ -547,7 +554,7 @@ SUBROUTINE clearA(sA, qOK)
 
 ! qOK       OUT      Error flag; if .false. error has occured
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
   REAL(KIND=WP),INTENT(INOUT) :: sA(:)
   LOGICAL, INTENT(OUT) :: qOK
@@ -595,7 +602,7 @@ SUBROUTINE clearA(sA, qOK)
 
   GOTO 2000
 
-1000  CALL log_error('Error in transforms:clearA',tErrorLog_G)
+      CALL log_error("Error in transforms:clearA",tErrorLog_G)
 
 2000 CONTINUE
 

@@ -1,0 +1,467 @@
+!> 1D MPI integration test for a lattice-driven, linearly tapered run.
+!!
+!! Cut down from inputs/simple/1D/osc-linear-taper/shorter. The other 1D e2e
+!! test (testMPIIntegration.pf) runs a single bare undulator module straight
+!! out of the main input deck; this one drives the 1D solver from a lattice
+!! file instead, so it covers ground that test does not:
+!!
+!!   * five undulator modules in sequence, so the per-module setup/teardown
+!!     and the carry-over of beam and field state between modules are exercised
+!!   * undulator ends (qUndEnds), a linear taper (d/dz alpha = 0.14) and an
+!!     initial detuning (alpha = 0.89) inside each module
+!!   * drift, chicane and quad elements between the modules
+!!   * 4350 integration steps rather than 30, so the run actually lases: the
+!!     field starts identically zero (the seed file has sA0 = 0) and grows out
+!!     of the beam's shot noise to a peak amplitude of order 8e-3
+!!
+!! Determinism. With no seed field the whole result hangs off the shot-noise
+!! realisation, so the beam is read from a committed HDF5 file
+!! (inputs/1D/osc_taper_beam.h5) rather than generated at runtime. This is not
+!! belt and braces: Puffin draws its shot noise from the intrinsic
+!! RANDOM_NUMBER, and that stream belongs to the compiler and its version.
+!! Setting iRandSeed makes a run repeatable on one toolchain, but it does not
+!! make it portable -- an earlier version of this test pinned iRandSeed and
+!! generated the beam at runtime, passed locally, and failed in CI with a
+!! wholly different beam. Every other e2e test that runs in CI avoids the
+!! runtime RNG the same way: f1main sets q_noise = .false., and the 3D test
+!! reads a pre-generated beam. The big test does use iRandSeed, and is gated
+!! out of CI.
+!!
+!! Reproducibility is still tied to the rank count, because the beam is
+!! distributed over ranks as it is read: the golden files were generated at
+!! 2 ranks and are only reproducible at 2 ranks. Changing npes here means
+!! regenerating them.
+!!
+!! Two full runs of this input at 2 ranks were compared and every dataset in
+!! all three output files came back bit-identical, so the tolerances below are
+!! headroom against a different compiler or host, not against observed drift.
+!!
+!! To regenerate the golden files, run from build/test/ so the CWD-relative
+!! paths in the deck resolve. Note that the beam file is named
+!! osc_taper_beam.h5, not osc_taper_electrons_0.h5 as it was captured -- the
+!! deck's output base is osc_taper, so the latter name would put the step-0
+!! dump straight on top of the beam being read and rewrite the input on every
+!! run:
+!!
+!!   mpiexec -n 2 <build>/puffin/puffin inputs/1D/osc_taper.in
+!!   cp inputs/1D/osc_taper_aperp_2.h5      ../../test/expected/1D/osc_taper_expected_field.h5
+!!   cp inputs/1D/osc_taper_electrons_2.h5  ../../test/expected/1D/osc_taper_expected_electrons.h5
+!!   cp inputs/1D/osc_taper_integrated_2.h5 ../../test/expected/1D/osc_taper_expected_integrated.h5
+!!
+!! then re-run cmake to pick them up, and rebuild.
+
+module testMPIIntegration1DTaper
+
+  use pFUnit
+  use MPI
+  use puffin_kinds
+  use puffin_mod, only: puffin_main
+  use H5in, only: getMacroparticleCount, readH5BeamDataOntoRootProcess, &
+                  readH5FieldDataOntoRootProcess, getNZ2, getWriteStep, &
+                  getH5DatasetLength1D, readH5Dataset1DOntoRootProcess
+  use globals
+  use puffin_mpiInfo, only: tProcInfo_G
+  implicit none
+
+  ! The lattice is 5 undulator modules of 29 periods at 30 steps per period.
+  ! This counts undulator integration steps only -- drifts, chicanes and quads
+  ! do not advance it, so it is not a measure of how far down the lattice the
+  ! run got. zbar is: the dump this is checked against sits at zTotal 9.09091,
+  ! which is 5 x (1.16 undulator + 0.658182 drift), so the final state is taken
+  ! past the trailing drift/chicane/quad, at the true end of the lattice.
+  integer(kind=ip), parameter :: TAPER_FINAL_STEP = 4350_ip
+
+  ! iWriteNthSteps and iWriteIntNthSteps are both far beyond the run length, so
+  ! the only writes are the initial dump, one integrated dump at the end of the
+  ! first undulator module, and the end-of-run dump. Integrated and full dumps
+  ! share one counter, so the final dump lands at index 2 while the integrated
+  ! files run 0, 1, 2 -- the same shape as the f1main 1D test.
+  !
+  ! The final dump does not come from the in-loop write path at all. It is the
+  ! unconditional wr_cho(..., qWriteInt=.true., qWriteFull=.true.) that
+  ! puffin_main issues after the lattice loop when ctx%flags%dump_at_end is
+  ! set, which is why index 2 carries field, electrons and integrated data
+  ! while index 1 carries only integrated. That flag is qDumpEnd, which the
+  ! deck leaves at its .true. default -- if that default ever changes, this
+  ! test loses its final dump and fails on the inquire below rather than
+  ! silently comparing something else.
+  integer(kind=ip), parameter :: TAPER_FINAL_INDEX = 2_ip
+
+  ! 1900 macroparticles along z2 x 20 per Halton sequence in energy.
+  integer(kind=ip), parameter :: TAPER_NMPS = 38000_ip
+
+  ! 100 resonant wavelengths at nodesPerLambdar = 21, plus the end node.
+  integer(kind=ip), parameter :: TAPER_NZ2 = 2001_ip
+
+  ! Integrated diagnostics compared element by element: field power and
+  ! intensity, beam bunching at the fundamental and second harmonic, and the
+  ! slice quantities. 'Slice Charge' and beamCurrent have different lengths
+  ! from the rest, which catches any sizing slip in the slice binning.
+  integer(kind=ip), parameter :: nIntDsets = 8_ip
+  character(len=24), parameter :: intDsets(nIntDsets) = [ character(len=24) :: &
+      'power', 'powerSI', 'Intensity', 'bunchingFundamental', &
+      'bunching2ndHarmonic', 'beamCurrent', 'meanGamma', 'Slice Charge' ]
+
+  ! Tolerance for the integrated datasets, relative to each array's largest
+  ! element (see arrayRelClose).
+  !
+  ! Note this is a *relative* tolerance where the field and macroparticles are
+  ! held to an absolute one, so it is not the same standard: the field's 1e-10
+  ! absolute against a peak of ~7.8e-3 corresponds to ~1.3e-8 relative, and
+  ! power goes as |A|^2 so inherits roughly twice that. This check is therefore
+  ! the strictest in the test by some margin, and it is the one CI fails on
+  ! while the field and macroparticle comparisons pass on the same data.
+  !
+  ! Left at 1e-10 deliberately. The margins printed below say how far the run
+  ! actually moves between platforms; the tolerance should be set from those
+  ! numbers once they exist, not raised to make a red test go green.
+  real(kind=WP), parameter :: INT_REL_TOL = 1.0e-10_WP
+
+  character(len=1024_IP) :: test_file_1      = 'inputs/1D/osc_taper.in'
+  character(len=1024_ip) :: output_file_base = 'inputs/1D/osc_taper'
+
+contains
+
+  @mpitest(npes=[2])
+  subroutine testPuffinSimulationCompletes1DTaper(this)
+
+    class(MpiTestMethod), intent(inout) :: this
+    logical :: file_exists, qOK
+    character(len=1024_ip) :: test_output_field_initial_file, &
+                              test_output_electron_initial_file, &
+                              test_output_integrated_initial_file, &
+                              test_output_field_final_file, &
+                              test_output_electron_final_file, &
+                              test_output_integrated_final_file, &
+                              expected_field_file, &
+                              expected_electron_file, &
+                              expected_integrated_file, &
+                              index_str
+    integer(kind=ip) :: nMPs, i, nZ2nodes, nLen, nLenExpected
+    real(kind=WP), allocatable :: sElX(:), sElY(:), sElZ2(:), sElPX(:), &
+                                  sElPY(:), sElGam(:), chi_bar(:)
+    real(kind=WP), allocatable :: expected_sElX(:), expected_sElY(:), &
+                                  expected_sElZ2(:), expected_sElPX(:), &
+                                  expected_sElPY(:), expected_sElGam(:), &
+                                  expected_chi_bar(:)
+    real(kind=WP), allocatable :: rfield(:), ifield(:), &
+                                  expected_rfield(:), expected_ifield(:)
+    real(kind=WP), allocatable :: intData(:), expectedIntData(:)
+    logical :: qAllIntClose
+    character(len=24) :: worstIntDset
+    real(kind=WP) :: worstIntDev
+
+    print *, 'Testing 1D lattice-driven tapered Puffin simulation (5 modules)...'
+
+    call puffin_main(test_file_1, qOK)
+
+    write(index_str, '(i0)') TAPER_FINAL_INDEX
+
+    test_output_field_initial_file      = trim(output_file_base) // '_aperp_0.h5'
+    test_output_electron_initial_file   = trim(output_file_base) // '_electrons_0.h5'
+    test_output_integrated_initial_file = trim(output_file_base) // '_integrated_0.h5'
+
+    test_output_field_final_file      = trim(output_file_base) // '_aperp_'      // trim(index_str) // '.h5'
+    test_output_electron_final_file   = trim(output_file_base) // '_electrons_'  // trim(index_str) // '.h5'
+    test_output_integrated_final_file = trim(output_file_base) // '_integrated_' // trim(index_str) // '.h5'
+
+    expected_field_file      = 'expected/1D/osc_taper_expected_field.h5'
+    expected_electron_file   = 'expected/1D/osc_taper_expected_electrons.h5'
+    expected_integrated_file = 'expected/1D/osc_taper_expected_integrated.h5'
+
+    inquire(file=test_output_field_initial_file, exist=file_exists)
+    @AssertTrue(file_exists)
+
+    inquire(file=test_output_electron_initial_file, exist=file_exists)
+    @AssertTrue(file_exists)
+
+    inquire(file=test_output_integrated_initial_file, exist=file_exists)
+    @AssertTrue(file_exists)
+
+    inquire(file=test_output_field_final_file, exist=file_exists)
+    @AssertTrue(file_exists)
+
+    inquire(file=test_output_electron_final_file, exist=file_exists)
+    @AssertTrue(file_exists)
+
+    inquire(file=test_output_integrated_final_file, exist=file_exists)
+    @AssertTrue(file_exists)
+
+    ! The dumps must land at the step each index claims to hold, not merely
+    ! exist. The output file index is advanced once per dump, so anything that
+    ! rewinds it silently overwrites an earlier index with later data --
+    ! index 0 is the only record of the initial state of the run.
+
+    if (tProcInfo_G%qroot) then
+
+      @AssertEqual(getWriteStep(trim(test_output_field_initial_file)),      0_ip)
+      @AssertEqual(getWriteStep(trim(test_output_electron_initial_file)),   0_ip)
+      @AssertEqual(getWriteStep(trim(test_output_integrated_initial_file)), 0_ip)
+
+      @AssertEqual(getWriteStep(trim(test_output_field_final_file)),      TAPER_FINAL_STEP)
+      @AssertEqual(getWriteStep(trim(test_output_electron_final_file)),   TAPER_FINAL_STEP)
+      @AssertEqual(getWriteStep(trim(test_output_integrated_final_file)), TAPER_FINAL_STEP)
+
+    end if
+
+    ! --- Electron macroparticle comparison ---------------------------------
+    !
+    ! Each component is sorted before comparing, so the check does not depend
+    ! on the order the macroparticles appear in the file.
+    !
+    ! An earlier version of this test compared them in file order, on the
+    ! reasoning that pinning the rank count pins the ordering too. That does
+    ! not follow. What lands at a given row is decided by which rank owns the
+    ! macroparticle and where that rank's block sits in the collective write,
+    ! and the beam is redistributed between ranks as it advances
+    ! (sRedistLen / iRedistStp in the deck). None of that is guaranteed to
+    ! come out the same under a different MPI or HDF5 build, and the values
+    ! can be bit-identical while the rows are permuted. Ordering was verified
+    ! stable on one machine and assumed to generalise, which is not evidence.
+    !
+    ! Sorting gives the same order-independence as the ANY() search in the
+    ! other e2e tests, but in O(n log n) rather than O(n^2) -- at 38000
+    ! macroparticles that search would dominate the runtime of the test -- and
+    ! is the stricter check of the two, because comparing sorted arrays also
+    ! catches a value appearing the wrong number of times.
+
+    nMPs = getMacroparticleCount(trim(test_output_electron_final_file))
+    if (tProcInfo_G%qroot) then
+      @AssertEqual(nMPs, TAPER_NMPS)
+    end if
+    if (.not. tProcInfo_G%qRoot) nMPs = 0
+
+    allocate(sElX(nMPs), sElY(nMPs), sElZ2(nMPs), sElPX(nMPs), sElPY(nMPs), &
+             sElGam(nMPs), chi_bar(nMPs))
+    allocate(expected_sElX(nMPs), expected_sElY(nMPs), expected_sElZ2(nMPs), &
+             expected_sElPX(nMPs), expected_sElPY(nMPs), expected_sElGam(nMPs), &
+             expected_chi_bar(nMPs))
+
+    call readH5BeamDataOntoRootProcess(trim(test_output_electron_final_file), &
+      sElX, sElY, sElZ2, sElPX, sElPY, sElGam, chi_bar, nMPs)
+    call readH5BeamDataOntoRootProcess(trim(expected_electron_file), &
+      expected_sElX, expected_sElY, expected_sElZ2, &
+      expected_sElPX, expected_sElPY, expected_sElGam, expected_chi_bar, nMPs)
+
+    if (tProcInfo_G%qroot) then
+
+      call sortAsc(sElX);    call sortAsc(expected_sElX)
+      call sortAsc(sElY);    call sortAsc(expected_sElY)
+      call sortAsc(sElZ2);   call sortAsc(expected_sElZ2)
+      call sortAsc(sElPX);   call sortAsc(expected_sElPX)
+      call sortAsc(sElPY);   call sortAsc(expected_sElPY)
+      call sortAsc(sElGam);  call sortAsc(expected_sElGam)
+      call sortAsc(chi_bar); call sortAsc(expected_chi_bar)
+
+      print *, 'Electron max abs dev (z2, gam): ', &
+               maxval(abs(sElZ2 - expected_sElZ2)), &
+               maxval(abs(sElGam - expected_sElGam)), ' (tol 1e-10)'
+
+      @AssertEqual(sElX,    expected_sElX,    1e-10_WP)
+      @AssertEqual(sElY,    expected_sElY,    1e-10_WP)
+      @AssertEqual(sElZ2,   expected_sElZ2,   1e-10_WP)
+      @AssertEqual(sElPX,   expected_sElPX,   1e-10_WP)
+      @AssertEqual(sElPY,   expected_sElPY,   1e-10_WP)
+      @AssertEqual(sElGam,  expected_sElGam,  1e-10_WP)
+      @AssertEqual(chi_bar, expected_chi_bar, 1e-10_WP)
+
+    end if
+
+    deallocate(sElX, sElY, sElZ2, sElPX, sElPY, sElGam, chi_bar)
+    deallocate(expected_sElX, expected_sElY, expected_sElZ2, expected_sElPX, &
+               expected_sElPY, expected_sElGam, expected_chi_bar)
+
+    ! --- 1D radiation field comparison -------------------------------------
+
+    nZ2nodes = getNZ2(trim(test_output_field_final_file))
+
+    if (tProcInfo_G%qroot) then
+      print *, 'Number of Z2 nodes in field file: ', nZ2nodes
+      @AssertEqual(nZ2nodes, TAPER_NZ2)
+      @AssertEqual(nZ2nodes, getNZ2(trim(expected_field_file)))
+    end if
+
+    allocate(rfield(nZ2nodes), ifield(nZ2nodes), &
+             expected_rfield(nZ2nodes), expected_ifield(nZ2nodes))
+
+    call readH5FieldDataOntoRootProcess(trim(test_output_field_final_file), &
+      rfield, ifield, nZ2nodes)
+    call readH5FieldDataOntoRootProcess(trim(expected_field_file), &
+      expected_rfield, expected_ifield, nZ2nodes)
+
+    if (tProcInfo_G%qroot) then
+
+      print *, 'Field max abs dev (re, im): ', &
+               maxval(abs(rfield - expected_rfield)), &
+               maxval(abs(ifield - expected_ifield)), ' (tol 1e-10)'
+
+      @AssertEqual(rfield, expected_rfield, 1e-10_WP)
+      @AssertEqual(ifield, expected_ifield, 1e-10_WP)
+
+      ! The point of running 4350 steps rather than 30 is that the field grows
+      ! from nothing. If it did not, every comparison above would still pass
+      ! against a golden file full of zeros and the test would be checking
+      ! nothing at all.
+      @AssertTrue(maxval(abs(expected_rfield)) > 1.0e-4_WP)
+
+    end if
+
+    deallocate(rfield, ifield, expected_rfield, expected_ifield)
+
+    ! --- Integrated diagnostics, element by element ------------------------
+
+    qAllIntClose = .true.
+    worstIntDset = ''
+    worstIntDev  = 0.0_WP
+
+    do i = 1, nIntDsets
+
+      nLen         = getH5DatasetLength1D(trim(test_output_integrated_final_file), trim(intDsets(i)))
+      nLenExpected = getH5DatasetLength1D(trim(expected_integrated_file), trim(intDsets(i)))
+
+      if (tProcInfo_G%qroot) then
+        @AssertEqual(nLen, nLenExpected)
+      end if
+
+      allocate(intData(nLen), expectedIntData(nLen))
+
+      call readH5Dataset1DOntoRootProcess(trim(test_output_integrated_final_file), &
+        trim(intDsets(i)), intData, nLen)
+      call readH5Dataset1DOntoRootProcess(trim(expected_integrated_file), &
+        trim(intDsets(i)), expectedIntData, nLen)
+
+      if (tProcInfo_G%qroot) then
+
+        ! Report every dataset's margin before asserting on any of them. A
+        ! failing @Assert returns from the test immediately, so asserting
+        ! inside this loop would stop at the first bad dataset and report one
+        ! number; the interesting question is how all of them behave. The
+        ! assertion is therefore deferred until after the loop.
+        !
+        ! These margins are the only measurement of how far the run moves
+        ! between platforms. On the machine that generated the reference they
+        ! are all exactly zero, which is why they could not be used to set the
+        ! tolerances before.
+        print *, 'Integrated dataset ', trim(intDsets(i)), &
+                 ' max rel dev ', maxRelDev(intData, expectedIntData), &
+                 ' (tol ', INT_REL_TOL, ')'
+
+        if (.not. arrayRelClose(intData, expectedIntData, INT_REL_TOL)) then
+          qAllIntClose = .false.
+          worstIntDset = intDsets(i)
+          worstIntDev  = max(worstIntDev, maxRelDev(intData, expectedIntData))
+        end if
+
+      end if
+
+      deallocate(intData, expectedIntData)
+
+    end do
+
+    if (tProcInfo_G%qroot) then
+      if (.not. qAllIntClose) then
+        print *, 'Worst integrated dataset: ', trim(worstIntDset), &
+                 ' at max rel dev ', worstIntDev
+      end if
+      @AssertTrue(qAllIntClose)
+    end if
+
+  end subroutine testPuffinSimulationCompletes1DTaper
+
+
+!> Sort an array ascending, in place. Used to compare the macroparticle
+!! components without depending on the order they were written in. Heapsort:
+!! no recursion, no scratch array, and no input ordering that degrades it --
+!! which matters here because the arrays being sorted are 38000 long and, when
+!! the test passes, are already very nearly sorted relative to one another.
+
+  subroutine sortAsc(a)
+
+    real(kind=WP), intent(inout) :: a(:)
+    integer(kind=ip) :: n, i
+    real(kind=WP) :: t
+
+    n = size(a, kind=ip)
+    if (n < 2_ip) return
+
+    do i = n/2_ip, 1_ip, -1_ip
+      call siftDown(a, i, n)
+    end do
+
+    do i = n, 2_ip, -1_ip
+      t = a(1_ip); a(1_ip) = a(i); a(i) = t
+      call siftDown(a, 1_ip, i - 1_ip)
+    end do
+
+  end subroutine sortAsc
+
+
+!> Restore the max-heap property for the subtree rooted at iRoot, considering
+!! only the first iEnd elements.
+
+  subroutine siftDown(a, iRoot, iEnd)
+
+    real(kind=WP), intent(inout) :: a(:)
+    integer(kind=ip), intent(in) :: iRoot, iEnd
+    integer(kind=ip) :: iR, iChild
+    real(kind=WP) :: t
+
+    iR = iRoot
+
+    do while (2_ip * iR <= iEnd)
+
+      iChild = 2_ip * iR
+
+      if (iChild + 1_ip <= iEnd) then
+        if (a(iChild) < a(iChild + 1_ip)) iChild = iChild + 1_ip
+      end if
+
+      if (a(iR) >= a(iChild)) return
+
+      t = a(iR); a(iR) = a(iChild); a(iChild) = t
+      iR = iChild
+
+    end do
+
+  end subroutine siftDown
+
+
+!> Scale-aware closeness test for whole arrays. The integrated datasets span
+!! many orders of magnitude -- SI power against scaled bunching -- so a fixed
+!! absolute tolerance would be meaningless at one end or the other. The
+!! absolute term is set from the largest element of the reference, so entries
+!! that are legitimately zero, or lost in the noise of the array they sit in,
+!! are not held to an impossible standard.
+
+!> Largest relative deviation between two arrays, normalised the same way
+!! arrayRelClose compares them. Reported so a run states its own margin.
+
+  real(kind=WP) function maxRelDev(actual, expected)
+
+    real(kind=WP), intent(in) :: actual(:), expected(:)
+    real(kind=WP) :: scaleRef
+
+    scaleRef = maxval(abs(expected))
+
+    if (scaleRef <= 0.0_WP) then
+      maxRelDev = maxval(abs(actual - expected))
+    else
+      maxRelDev = maxval( abs(actual - expected) / max(abs(expected), scaleRef) )
+    end if
+
+  end function maxRelDev
+
+
+  logical function arrayRelClose(actual, expected, tol)
+
+    real(kind=WP), intent(in) :: actual(:), expected(:)
+    real(kind=WP), intent(in) :: tol
+    real(kind=WP) :: scaleRef
+
+    scaleRef = maxval(abs(expected))
+
+    arrayRelClose = all( abs(actual - expected) <= tol * max(abs(expected), scaleRef) )
+
+  end function arrayRelClose
+
+end module testMPIIntegration1DTaper

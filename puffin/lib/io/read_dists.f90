@@ -4,31 +4,34 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> This module was created to read in the dist files used by Puffin
 
 module readDists
 
-use puffin_kinds
-use puffin_mpiInfo
+use puffin_kinds, only: WP, IP
 
-implicit none
+implicit none (type, external)
+private
+
+public :: getHeaders, readPartDists
+
 
 contains
 
 
 subroutine readPartDists(fname, z2m, gam_m, xm, ym, pxm, pym, &
-	                       gam_d, x_d, y_d, pxd, pyd, Ne, nZ2)
+                               gam_d, x_d, y_d, pxd, pyd, Ne, nZ2)
 
-  implicit none
+  implicit none (type, external)
 
   character(*), intent(in) :: fname
 
   integer(kind=ip), intent(inout) :: nZ2
 
-  real(kind=wp), intent(inout) :: z2m(:), & 
+  real(kind=wp), intent(inout) :: z2m(:), &
                                pxm(:), pym(:), xm(:), ym(:), &
                                gam_m(:), gam_d(:), x_d(:), y_d(:), &
                                pxd(:), pyd(:), &
@@ -47,7 +50,7 @@ subroutine readPartDists(fname, z2m, gam_m, xm, ym, pxm, pym, &
   fid = 168
 
   open(unit=fid, file=fname, iostat=ios, &
-       action='READ', position='REWIND')
+       action="READ", position="REWIND")
   if  (ios/=0_ip) stop "Error opening file unit fid"
 
 
@@ -59,7 +62,7 @@ subroutine readPartDists(fname, z2m, gam_m, xm, ym, pxm, pym, &
 
   call readDistHeader(fid, rho, dZ2, nZ2, sgx1D, sgy1D)
 
-  call readBlanks(fid, 4)  
+  call readBlanks(fid, 4)
 
   do k = 1, nZ2
 
@@ -72,7 +75,7 @@ subroutine readPartDists(fname, z2m, gam_m, xm, ym, pxm, pym, &
 
   close(unit=fid, iostat=ios, status="KEEP")
   if ( ios /= 0 ) stop "Error closing file unit fid"
-  
+
 end subroutine readPartDists
 
 
@@ -83,17 +86,17 @@ subroutine readDistHeader(fid, rho, dz2, nZ2, sgx1D, sgy1D)
 
 ! Reads the header of the dist files
 
-  implicit none
+  implicit none (type, external)
 
   real(kind=wp), intent(out) :: rho, dz2, sgx1D, sgy1D
-  real(kind=wp) :: aw, lw, lr, Ipk 
+  real(kind=wp) :: aw, lw, lr
 
   integer(kind=ip), intent(inout) :: nZ2
 
   integer(kind=ip), intent(in) :: fid
 
   character(96) :: dum1, dum2, dum3, dum4, dum5, &
-                   dum6, dum7, dum8 , dum9, dum10, dum11
+dum6, dum7, dum8, dum9, dum10
 
   read(UNIT=fid, FMT=*) dum1, dum2, nZ2, dum3, dum4, dz2, dum5, dum6, aw, &
                         dum7, dum8, lw, dum9, dum10, lr
@@ -110,7 +113,7 @@ subroutine getHeaders(fnames, dz2, nZ2, sgx1D, sgy1D)
   real(kind=wp), intent(out) :: dz2(:), sgx1D, sgy1D
   integer(kind=ip), intent(inout) :: nZ2(:)
 
-  real(kind=wp) :: rho, eta   ! dummy for now
+  real(kind=wp) :: rho! dummy for now
   integer(kind=ip) :: ios, fid, ib, nbeams
 
   fid = 169
@@ -120,7 +123,7 @@ subroutine getHeaders(fnames, dz2, nZ2, sgx1D, sgy1D)
   do ib = 1, nbeams
 
     open(unit=fid, file=fnames(ib), iostat=ios, &
-         action='READ', position='REWIND')
+         action="READ", position="REWIND")
     if  (ios /= 0_IP) stop "Error closing file unit 169"
 
     call readBlanks(fid, 2)
@@ -130,24 +133,24 @@ subroutine getHeaders(fnames, dz2, nZ2, sgx1D, sgy1D)
     close(unit=fid, status="KEEP")
     if ( ios /= 0_IP ) stop "Error closing file unit 169"
 
-  end do    
+  end do
 
 
-  !nZ2(:) = 5000_IP    ! TEMP, THIS SHOULD BE READ IN 
+  !nZ2(:) = 5000_IP    ! TEMP, THIS SHOULD BE READ IN
                      ! BUT YOU MUST CHANGE THE FILE
                      ! FORMAT
 
-end subroutine getHeaders  
+end subroutine getHeaders
 !!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 subroutine readBlanks(fid,Nl)
 
-! Read in Nl blank or unwanted lines in a file, 
-! usually to advance to a desired position within 
+! Read in Nl blank or unwanted lines in a file,
+! usually to advance to a desired position within
 ! a file.
 
-  implicit none
+  implicit none (type, external)
 
   integer(kind=ip), intent(in) :: fid,Nl
 
@@ -172,7 +175,7 @@ subroutine readLine(fid, z2, gam, x, y, px, py, gam_d, x_d, y_d, pxd, pyd, Ne)
 !
 !                  ARGUMENTS
 
-  implicit none
+  implicit none (type, external)
 
   real(kind=wp), intent(inout) :: z2, gam, x, y, px, py, gam_d, pxd, pyd, &
                                   x_d, y_d, Ne

@@ -5,7 +5,7 @@
 !> @author
 !> Jonathan Smith (Tech-X UK Ltd)
 !> @brief
-!> This module contains low level writing functions for attribute writing 
+!> This module contains low level writing functions for attribute writing
 !> etc to hdf5 from Puffin.
 !>
 !> Routines originally written by Jonathan Smith (Tech-X UK Ltd)
@@ -13,15 +13,23 @@
 
 module hdf5PuffLow
 
-use puffin_kinds
-use globals
-use puffin_mpiInfo
-use lattice
-USE ParallelSetUp
-USE ArrayFunctions
-USE puffin_constants
-use hdf5
+use puffin_kinds, only: WP, IP
+use globals, only: fieldMesh, npk_bar_G, ata_G, iStep, sStepSize, nSteps, zFileName_G, zBFile_G, &
+  zSFile_G
+use lattice, only: log_error, tErrorLog_G
+use hdf5, only: h5aclose_f, h5acreate_f, h5awrite_f, h5gclose_f, h5gcreate_f, H5S_SCALAR_F, &
+  h5sclose_f, h5screate_f, h5screate_simple_f, H5T_NATIVE_CHARACTER, H5T_NATIVE_DOUBLE, &
+  H5T_NATIVE_INTEGER, H5T_STR_SPACEPAD_F, h5tclose_f, h5tcopy_f, h5tset_size_f, h5tset_strpad_f, &
+  HID_T, HSIZE_T
 use GlobalTypes, only: tSimulationContext
+
+implicit none (type, external)
+private
+
+public :: addh5derivedvariable, addh5stringattribute, integertostring, iStep, write1dlimgrp, &
+           write1duniformmesh, write3dlimgrp, write3duniformmesh, writecommonatts, writeh5runinfo, &
+           writeh5timegroup
+
 
 contains
 
@@ -31,7 +39,7 @@ contains
 
   subroutine addH5StringAttribute(locHandle,attrName,attrValue,aspace_id)
 
-    implicit none
+    implicit none (type, external)
 
     integer(HID_T), intent(in) :: locHandle   !< h5 handle of write location
     character(len=*), intent(in) :: attrName  !<attrib name
@@ -40,8 +48,8 @@ contains
     ! Local vars
     integer(HID_T) :: attr_id                 !< Attribute identifier
     integer(HID_T) :: atype_id                !< Attribute Data type identifier
-    integer(HSIZE_T) :: attr_string_len       !< Length of attribute string 
-    integer(HSIZE_T), dimension(1) :: adims=(/1/) !< Attribute Data type identifier
+    integer(HSIZE_T) :: attr_string_len       !< Length of attribute string
+    integer(HSIZE_T), dimension(1), parameter :: adims=[1] !< Attribute Data type identifier
     integer :: error                             !< Error flag
 
 !    aname="vsType"
@@ -50,19 +58,19 @@ contains
     call h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
 
     attr_string_len=len(trim(adjustl(attrValue)))
-    if (attr_string_len .eq. 0) attr_string_len = 1
+    if (attr_string_len == 0) attr_string_len = 1
 
     call h5tset_size_f(atype_id, attr_string_len, error)
 
     call h5acreate_f(locHandle, attrName, atype_id, aspace_id, attr_id, error)
 
-    call h5awrite_f(attr_id, atype_id, attrValue, adims, error) 
+    call h5awrite_f(attr_id, atype_id, attrValue, adims, error)
 
     call h5aclose_f(attr_id, error)
 
     call h5tclose_f(atype_id, error)
 
-  end subroutine
+  end subroutine addH5StringAttribute
 
 
 
@@ -75,8 +83,8 @@ contains
 !! Assumed that the h5 dataspace is set up outside here.
 
   subroutine addH5FloatAttribute(locHandle,attrName,attrValue,aspace_id)
-    
-    implicit none
+
+    implicit none (type, external)
 
     integer(HID_T), intent(in) :: locHandle   !< h5 handle of write location
     character(LEN=*), intent(in) :: attrName  !<attrib name
@@ -86,8 +94,7 @@ contains
 
     integer(HID_T) :: attr_id                 !< Attribute identifier
     integer(HID_T) :: atype_id                !< Attribute Data type identifier
-    integer(HSIZE_T) :: attr_string_len       !< Length of attribute string 
-    integer(HSIZE_T), dimension(1) :: adims=(/1/) !< Attribute Data type identifier
+    integer(HSIZE_T), dimension(1), parameter :: adims=[1] !< Attribute Data type identifier
     integer :: error                             !< Error flag
 
 !    aname="vsType"
@@ -95,7 +102,7 @@ contains
 
     call h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
     call h5acreate_f(locHandle, attrName, atype_id, aspace_id, attr_id, error)
-    call h5awrite_f(attr_id, atype_id, attrValue, adims, error) 
+    call h5awrite_f(attr_id, atype_id, attrValue, adims, error)
     call h5aclose_f(attr_id, error)
     call h5tclose_f(atype_id, error)
 
@@ -108,7 +115,7 @@ contains
 
   subroutine addH5IntegerAttribute(locHandle,attrName,attrValue,aspace_id)
 
-    implicit none
+    implicit none (type, external)
 
     integer(HID_T), intent(in) :: locHandle   !< h5 handle of write location
     character(LEN=*), intent(in) :: attrName  !<attrib name
@@ -119,15 +126,14 @@ contains
 
     integer(HID_T) :: attr_id                 !< Attribute identifier
     integer(HID_T) :: atype_id                !< Attribute Data type identifier
-    integer(HSIZE_T) :: attr_string_len       !< Length of attribute string 
-    integer(HSIZE_T), dimension(1) :: adims=(/1/) !< Attribute Data type identifier
+    integer(HSIZE_T), dimension(1), parameter :: adims=[1] !< Attribute Data type identifier
     integer :: error                             !< Error flag
 !    aname="vsType"
 !    attr_data_string="vsVars"
 
     call h5tcopy_f(H5T_NATIVE_INTEGER, atype_id, error)
     call h5acreate_f(locHandle, attrName, atype_id, aspace_id, attr_id, error)
-    call h5awrite_f(attr_id, atype_id, attrValue, adims, error) 
+    call h5awrite_f(attr_id, atype_id, attrValue, adims, error)
     call h5aclose_f(attr_id, error)
     call h5tclose_f(atype_id, error)
 
@@ -138,7 +144,7 @@ contains
 !> addH5derivedVariable() add vizschema derived variable
   subroutine addH5derivedVariable(location,varName,expression,error)
 
-    implicit none
+    implicit none (type, external)
 
     integer(HID_T), intent(in) :: location !< h5 handle of write location
     character(len=*), intent(in) :: varName !<derived var name
@@ -148,7 +154,7 @@ contains
 
     integer(HID_T) :: group_id      !< Group identifier
     integer(HID_T) :: aspace_id     !< Attribute Dataspace identifier
-    integer :: error ! Error flag
+    integer, intent(out) :: error ! Error flag
 
 !               We make a new group
 
@@ -164,7 +170,7 @@ contains
 !> addH5derivedVariable() add vizschema derived variable
   subroutine addH5derivedVariableSI(location,varName,expression,meshname,error)
 
-    implicit none
+    implicit none (type, external)
 
     integer(HID_T), intent(in) :: location !< h5 handle of write location
     character(len=*), intent(in) :: varName !<derived var name
@@ -175,7 +181,7 @@ contains
 
     integer(HID_T) :: group_id      !< Group identifier
     integer(HID_T) :: aspace_id     !< Attribute Dataspace identifier
-    integer :: error ! Error flag
+    integer, intent(out) :: error ! Error flag
 
 !               We make a new group
 
@@ -197,13 +203,13 @@ contains
 
   subroutine write3DfloatAttribute(location, aname, valarray)
 
-    implicit none
+    implicit none (type, external)
 
     integer(HID_T), intent(in) :: location   !< h5 handle of write location
     character(LEN=*), intent(in) :: aname    !<derived var name
     real(kind=wp), intent(in) :: valarray(:) !<the array to be written
-    integer(HSIZE_T), dimension(1) :: adims=(/3/)  !< Attribute dims
-    integer        ::  arank = 1                !< Attribute rank - 1 is vector
+    integer(HSIZE_T), dimension(1), parameter :: adims=[3]  !< Attribute dims
+    integer, parameter ::  arank = 1                !< Attribute rank - 1 is vector
     integer(HID_T) :: aspace_id              !< Attribute Dataspace identifier
     integer(HID_T) :: atype_id                !< Attribute Data type identifier
     integer(HID_T) :: attr_id                 !< Attribute identifier
@@ -217,7 +223,7 @@ contains
 !    limdata(1)=-0.5*(NX_G-1_IP)*sLengthOfElmX_G
 !    limdata(2)=-0.5*(NY_G-1_IP)*sLengthOfElmY_G
 !    limdata(3)=0.0
-    call h5awrite_f(attr_id, atype_id, valarray, adims, error) 
+    call h5awrite_f(attr_id, atype_id, valarray, adims, error)
 !    Print*,error
     call h5aclose_f(attr_id, error)
 !    Print*,error
@@ -235,13 +241,13 @@ contains
 
   subroutine write3DintAttribute(location, aname, valarray)
 
-    implicit none
+    implicit none (type, external)
 
     integer(HID_T), intent(in) :: location   !< h5 handle of write location
     character(LEN=*), intent(in) :: aname    !<derived var name
     integer(kind=IP), intent(in) :: valarray(:) !<the array to be written
-    integer(HSIZE_T), dimension(1) :: adims=(/3/)  !< Attribute dims
-    integer        ::  arank = 1                !< Attribute rank - 1 is vector
+    integer(HSIZE_T), dimension(1), parameter :: adims=[3]  !< Attribute dims
+    integer, parameter ::  arank = 1                !< Attribute rank - 1 is vector
     integer(HID_T) :: aspace_id              !< Attribute Dataspace identifier
     integer(HID_T) :: atype_id                !< Attribute Data type identifier
     integer(HID_T) :: attr_id                 !< Attribute identifier
@@ -254,7 +260,7 @@ contains
 
     call h5acreate_f(location, aname, atype_id, aspace_id, attr_id, error)
 
-    call h5awrite_f(attr_id, atype_id, valarray, adims, error) 
+    call h5awrite_f(attr_id, atype_id, valarray, adims, error)
 
     call h5aclose_f(attr_id, error)
 
@@ -274,12 +280,12 @@ contains
 !> Subroutine to write 3d limit data
 
   subroutine write3DlimGrp(location,limgrpname,lb,ub)
-    
-    implicit none
+
+    implicit none (type, external)
 
     integer(HID_T), intent(in) :: location        !< h5 handle of write location
     character(len=*), intent(in) :: limgrpname    !<derived var name
-    real(kind=wp), dimension(3), intent(in) :: ub(:), lb(:)     !<Bounds to write
+    real(kind=wp), intent(in) :: ub(:), lb(:)     !<Bounds to write
     integer(HID_T) :: group_id      !< Group identifier
     integer        :: error                   !< Error flag
     integer(HID_T) :: aspace_id              !< Attribute Dataspace identifier
@@ -296,7 +302,7 @@ contains
 
     call write3DfloatAttribute(group_id, "vsUpperBounds", ub)
 
-    call h5sclose_f(aspace_id, error)    
+    call h5sclose_f(aspace_id, error)
 
     call h5gclose_f(group_id, error)
 
@@ -311,9 +317,9 @@ contains
 !> Subroutine to write 1d or limit data
 
   subroutine write1DlimGrp(location,limgrpname,lb,ub)
-    
-    implicit none
-    
+
+    implicit none (type, external)
+
     integer(HID_T), intent(in) :: location        !< h5 handle of write location
     character(len=*), intent(in) :: limgrpname    !<derived var name
     real(kind=wp), intent(in) :: ub, lb           !<Bounds to write
@@ -333,7 +339,7 @@ contains
 
     call addH5FloatAttribute(group_id, "vsUpperBounds", ub,aspace_id)
 
-    call h5sclose_f(aspace_id, error)    
+    call h5sclose_f(aspace_id, error)
 
     call h5gclose_f(group_id, error)
 
@@ -348,12 +354,12 @@ contains
 
   subroutine write3DuniformMesh(location,meshname,lb,ub,numcells)
 
-    implicit none
+    implicit none (type, external)
 
     integer(HID_T), intent(in) :: location        !< h5 handle of write location
     character(len=*), intent(in) :: meshname    !<derived var name
-    real(kind=wp), dimension(3), intent(in) :: ub(:), lb(:)     !<Bounds to write
-    integer(kind=ip), dimension(3), intent(in) :: numcells(:) !<the array to be written
+    real(kind=wp), intent(in) :: ub(:), lb(:)     !<Bounds to write
+    integer(kind=ip), intent(in) :: numcells(:) !<the array to be written
     integer(HID_T) :: group_id      !< Group identifier
     integer        :: error                   !< Error flag
     integer(HID_T) :: aspace_id              !< Attribute Dataspace identifier
@@ -370,7 +376,7 @@ contains
     call addH5StringAttribute(group_id,"vsCentering","nodal",aspace_id)
 
     call addH5StringAttribute(group_id,"vsIndexOrder","compMajorF",aspace_id)
-    
+
     call addH5StringAttribute(group_id,"vsAxisLabels","z2,yb,xb",aspace_id)
 
     call h5sclose_f(aspace_id, error)
@@ -379,7 +385,7 @@ contains
 
     call write3DfloatAttribute(group_id, "vsUpperBounds", ub)
 
-    call write3DintAttribute(group_id, "vsStartCell", (/0,0,0/))
+    call write3DintAttribute(group_id, "vsStartCell", [0,0,0])
 
     call write3DintAttribute(group_id, "vsNumCells", numcells)
 
@@ -395,14 +401,14 @@ contains
 
   subroutine write1DuniformMesh(location,meshname,lb,ub,numcells,labels)
 
-    implicit none
+    implicit none (type, external)
 
     integer(HID_T), intent(in) :: location        !< h5 handle of write location
     character(len=*), intent(in) :: meshname    !<derived var name
     character(len=*), intent(in) :: labels    !<derived var name
     real(kind=wp), intent(in) :: ub, lb   !<Bounds to write
     integer(kind=IP), intent(in) :: numcells !<the array to be written
-    integer(kind=IP) :: startcell=0 !<another array to be written
+    integer(kind=IP), parameter :: startcell=0 !<another array to be written
     integer(HID_T) :: group_id      !< Group identifier
     integer        :: error                   !< Error flag
     integer(HID_T) :: aspace_id              !< Attribute Dataspace identifier
@@ -419,7 +425,7 @@ contains
     call addH5IntegerAttribute(group_id, "vsStartCell", startcell,aspace_id)
     call addH5IntegerAttribute(group_id, "vsNumCells", numcells,aspace_id)
 
-    call h5sclose_f(aspace_id, error)    
+    call h5sclose_f(aspace_id, error)
 
     call h5gclose_f(group_id, error)
 
@@ -445,7 +451,8 @@ contains
     call addH5FloatAttribute(dset_id, "zTotal", simtime * ctx%frame%gain_length, aspace_id)
 
     CALL addH5FloatAttribute(dset_id, "zbarInter", ctx%integration%z_inter, aspace_id)
-    CALL addH5FloatAttribute(dset_id, "zInter", ctx%integration%z_inter * ctx%frame%gain_length, aspace_id)
+    CALL addH5FloatAttribute(dset_id, "zInter", &
+                              ctx%integration%z_inter * ctx%frame%gain_length, aspace_id)
 
     call addH5FloatAttribute(dset_id, "zbarLocal", z_loc, aspace_id)
     call addH5FloatAttribute(dset_id, "zLocal", z_loc * ctx%frame%gain_length, aspace_id)
@@ -457,9 +464,10 @@ contains
     call addH5IntegerAttribute(dset_id, "iChic_cr", ctx%lattice%current_chic_index, aspace_id)
     call addH5IntegerAttribute(dset_id, "iDrift_cr", ctx%lattice%current_drift_index, aspace_id)
     call addH5IntegerAttribute(dset_id, "iQuad_cr", ctx%lattice%current_quad_index, aspace_id)
-    call addH5IntegerAttribute(dset_id, "iModulation_cr", ctx%lattice%current_modulation_index, aspace_id)
-    call addH5IntegerAttribute(dset_id, 'iL', iL, aspace_id)
-    call addH5IntegerAttribute(dset_id, 'iWrite_cr', ctx%mesh%highpass_filter_gr, aspace_id)
+    call addH5IntegerAttribute(dset_id, "iModulation_cr", &
+                                ctx%lattice%current_modulation_index, aspace_id)
+    call addH5IntegerAttribute(dset_id, "iL", iL, aspace_id)
+    call addH5IntegerAttribute(dset_id, "iWrite_cr", ctx%mesh%highpass_filter_gr, aspace_id)
 
   end subroutine writeCommonAtts
 
@@ -480,7 +488,8 @@ contains
     call addH5FloatAttribute(dset_id, "zTotal", simtime * ctx%frame%gain_length, aspace_id)
 
     CALL addH5FloatAttribute(dset_id, "zbarInter", ctx%integration%z_inter, aspace_id)
-    CALL addH5FloatAttribute(dset_id, "zInter", ctx%integration%z_inter * ctx%frame%gain_length, aspace_id)
+    CALL addH5FloatAttribute(dset_id, "zInter", &
+                              ctx%integration%z_inter * ctx%frame%gain_length, aspace_id)
 
     call addH5FloatAttribute(dset_id, "zbarLocal", z_loc, aspace_id)
     call addH5FloatAttribute(dset_id, "zLocal", z_loc * ctx%frame%gain_length, aspace_id)
@@ -492,44 +501,47 @@ contains
     call addH5IntegerAttribute(dset_id, "iChic_cr", ctx%lattice%current_chic_index, aspace_id)
     call addH5IntegerAttribute(dset_id, "iDrift_cr", ctx%lattice%current_drift_index, aspace_id)
     call addH5IntegerAttribute(dset_id, "iQuad_cr", ctx%lattice%current_quad_index, aspace_id)
-    call addH5IntegerAttribute(dset_id, "iModulation_cr", ctx%lattice%current_modulation_index, aspace_id)
-    call addH5IntegerAttribute(dset_id, 'iL', iL, aspace_id)
-    call addH5IntegerAttribute(dset_id, 'iWrite_cr', ctx%mesh%highpass_filter_gr, aspace_id)
+    call addH5IntegerAttribute(dset_id, "iModulation_cr", &
+                                ctx%lattice%current_modulation_index, aspace_id)
+    call addH5IntegerAttribute(dset_id, "iL", iL, aspace_id)
+    call addH5IntegerAttribute(dset_id, "iWrite_cr", ctx%mesh%highpass_filter_gr, aspace_id)
 
-    call addH5IntegerAttribute(dset_id, 'nX', ctx%mesh%nx, aspace_id)
-    call addH5IntegerAttribute(dset_id, 'nY', ctx%mesh%ny, aspace_id)
-    call addH5IntegerAttribute(dset_id, 'nZ2', ctx%mesh%nz2, aspace_id)
+    call addH5IntegerAttribute(dset_id, "nX", ctx%mesh%nx, aspace_id)
+    call addH5IntegerAttribute(dset_id, "nY", ctx%mesh%ny, aspace_id)
+    call addH5IntegerAttribute(dset_id, "nZ2", ctx%mesh%nz2, aspace_id)
 
-    call addH5FloatAttribute(dset_id, 'sLengthOfElmX', ctx%mesh%dx, aspace_id)
-    call addH5FloatAttribute(dset_id, 'sLengthOfElmY', ctx%mesh%dy, aspace_id)
-    call addH5FloatAttribute(dset_id, 'sLengthOfElmZ2', ctx%mesh%dz2, aspace_id)
-    call addH5FloatAttribute(dset_id, 'sStepSize', sStepSize, aspace_id)
-    call addH5IntegerAttribute(dset_id, 'nSteps', nSteps, aspace_id)
-    call addH5FloatAttribute(dset_id, 'rho', ctx%frame%rho, aspace_id)
-    call addH5FloatAttribute(dset_id, 'aw', ctx%frame%aw, aspace_id)
-    call addH5FloatAttribute(dset_id, 'eta', ctx%frame%eta, aspace_id)
-    call addH5FloatAttribute(dset_id, 'gamma_r', ctx%frame%gamma_ref, aspace_id)
-    call addH5FloatAttribute(dset_id, 'kappa', ctx%frame%kappa, aspace_id)
-    call addH5FloatAttribute(dset_id, 'npk_bar', npk_bar_G, aspace_id)
-    call addH5FloatAttribute(dset_id, 'Lg', ctx%frame%gain_length, aspace_id)
-    call addH5FloatAttribute(dset_id, 'Lc', ctx%frame%cooperation_length, aspace_id)
-    call addH5FloatAttribute(dset_id, 'lambda_w', ctx%frame%lambda_w, aspace_id)
-    call addH5FloatAttribute(dset_id, 'lambda_r', ctx%frame%lambda_r, aspace_id)
-    call addH5IntegerAttribute(dset_id, 'fieldMesh', fieldMesh, aspace_id)
-    call addH5IntegerAttribute(dset_id, 'iScale', 1, aspace_id)
-    call addH5FloatAttribute(dset_id, 'transArea', ata_G, aspace_id)
-    call addH5FloatAttribute(dset_id, 'transAreaSI', ata_G * ctx%frame%gain_length * ctx%frame%cooperation_length, aspace_id)
+    call addH5FloatAttribute(dset_id, "sLengthOfElmX", ctx%mesh%dx, aspace_id)
+    call addH5FloatAttribute(dset_id, "sLengthOfElmY", ctx%mesh%dy, aspace_id)
+    call addH5FloatAttribute(dset_id, "sLengthOfElmZ2", ctx%mesh%dz2, aspace_id)
+    call addH5FloatAttribute(dset_id, "sStepSize", sStepSize, aspace_id)
+    call addH5IntegerAttribute(dset_id, "nSteps", nSteps, aspace_id)
+    call addH5FloatAttribute(dset_id, "rho", ctx%frame%rho, aspace_id)
+    call addH5FloatAttribute(dset_id, "aw", ctx%frame%aw, aspace_id)
+    call addH5FloatAttribute(dset_id, "eta", ctx%frame%eta, aspace_id)
+    call addH5FloatAttribute(dset_id, "gamma_r", ctx%frame%gamma_ref, aspace_id)
+    call addH5FloatAttribute(dset_id, "kappa", ctx%frame%kappa, aspace_id)
+    call addH5FloatAttribute(dset_id, "npk_bar", npk_bar_G, aspace_id)
+    call addH5FloatAttribute(dset_id, "Lg", ctx%frame%gain_length, aspace_id)
+    call addH5FloatAttribute(dset_id, "Lc", ctx%frame%cooperation_length, aspace_id)
+    call addH5FloatAttribute(dset_id, "lambda_w", ctx%frame%lambda_w, aspace_id)
+    call addH5FloatAttribute(dset_id, "lambda_r", ctx%frame%lambda_r, aspace_id)
+    call addH5IntegerAttribute(dset_id, "fieldMesh", fieldMesh, aspace_id)
+    call addH5IntegerAttribute(dset_id, "iScale", 1, aspace_id)
+    call addH5FloatAttribute(dset_id, "transArea", ata_G, aspace_id)
+    call addH5FloatAttribute(dset_id, "transAreaSI", &
+                              ata_G * ctx%frame%gain_length * ctx%frame%cooperation_length, &
+                              aspace_id)
 
   end subroutine writeRunAtts
-  
-  
+
+
   subroutine writeH5TimeGroup(file_id, timegrpname, simtime, callerstr, error, ctx)
 
-    INTEGER(HID_T) :: file_id       ! File identifier
+    INTEGER(HID_T), intent(in) :: file_id       ! File identifier
     CHARACTER(LEN=4), intent(in) :: timegrpname  ! Group name
     REAL(kind=WP), intent(in) :: simtime ! Current time
     CHARACTER(LEN=12), intent(in) :: callerstr
-    INTEGER(kind=ip) :: error
+    INTEGER(kind=ip), intent(out) :: error
     type(tSimulationContext), intent(in) :: ctx
 !
 ! Local
@@ -537,13 +549,10 @@ contains
     INTEGER(HID_T) :: aspace_id     ! Attribute Dataspace identifier
     INTEGER(HID_T) :: atype_id      ! Attribute Data type identifier
     INTEGER(HID_T) :: group_id      ! Group identifier
-    INTEGER     ::   rank = 1               ! Dataset rank
     INTEGER(HSIZE_T), DIMENSION(1) :: adims ! Attribute dims
     REAL(kind=WP) :: attr_data_double
     CHARACTER(LEN=100) :: attr_data_string
     INTEGER(HSIZE_T) :: attr_string_len
-    INTEGER(kind=IP) :: numSpatialDims = 1   ! Attr content,  
-    INTEGER     ::  arank = 1               ! Attribute Dataset rank
     CHARACTER(LEN=16) :: aname   ! Attribute name
 
 ! with the main dataset done we work on the other groups with attributes
@@ -562,11 +571,11 @@ contains
 !    Print*,error
     CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
 !    Print*,('hdf5_puff:' // callerstr // '(scalar attr space created)')
-!    Print*,error   
+!    Print*,error
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
 !    Print*,'hdf5_puff:' // callerstr // '(create timegrp vstype at)'
 !    Print*,error
-    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error)
 !    Print*,'hdf5_puff:' // callerstr // '(write timegrp vstype attr)'
 !    Print*,error
     CALL h5aclose_f(attr_id, error)
@@ -583,7 +592,7 @@ contains
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
 !    print*,'hdf5_puff:' // callerstr // ' create vstime attribute'
 !    Print*,error
-    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error) 
+    CALL h5awrite_f(attr_id, atype_id, attr_data_double, adims, error)
 !    print*,'hdf5_puff:' // callerstr // ' write vstime attribute'
 !    Print*,error
     CALL h5aclose_f(attr_id, error)
@@ -610,14 +619,15 @@ contains
 !!   asking for the run information to be written (ie parent routine)
    subroutine writeH5RunInfo(file_id, simtime, z_loc, iL, callerstr, error, ctx)
 
-    use PuffProvenance
+    use PuffProvenance, only: timeStamp, gitBranch, puffVersion, fortCompiler, fortVersion, &
+      fortFlags, buildHost, hostType
 
     INTEGER(HID_T), INTENT(in) :: file_id
     real(kind=wp), intent(in) :: simtime      !< Current simulation 'time' (zbar)
     real(kind=wp), intent(in) :: z_loc        !< zbar local to current undulator module
     integer(kind=ip), intent(in) :: iL        !< lattice element counter
     CHARACTER(LEN=12), intent(in) :: callerstr
-    INTEGER(kind=ip) :: error
+    INTEGER(kind=ip), intent(out) :: error
     type(tSimulationContext), intent(in) :: ctx
 !
 ! Local
@@ -625,13 +635,9 @@ contains
     INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
     INTEGER(HID_T) :: atype_id      !< Attribute Data type identifier
     INTEGER(HID_T) :: group_id      !< Group identifier
-    INTEGER     ::   rank = 1               !< Dataset rank
     INTEGER(HSIZE_T), DIMENSION(1) :: adims !< Attribute dims
-    REAL(kind=WP) :: attr_data_double       !< attrib data (type double)
     CHARACTER(LEN=1024) :: attr_data_string !< attrib data (type string)
     INTEGER(HSIZE_T) :: attr_string_len     !< length of attrib string
-    INTEGER(kind=IP) :: numSpatialDims = 1  !< Attr content, identifying nu 
-    INTEGER     ::  arank = 1               !< Attribute Dataset rank
     CHARACTER(LEN=24) :: aname   ! Attribute name
     character(8)  :: date
     character(10) :: time
@@ -640,7 +646,7 @@ contains
     call date_and_time(date,time,zone,values)
  ! with the main dataset done we work on the other groups with attributes
 ! We make a group
-    CALL h5gcreate_f(file_id, 'runInfo' , group_id, error)
+    CALL h5gcreate_f(file_id, "runInfo" , group_id, error)
  !   Print*,'hdf5_puff:' // callerstr // '(group runinfo created)'
     CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
     CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
@@ -650,18 +656,18 @@ contains
     CALL h5tset_size_f(atype_id, attr_string_len, error)
     CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
 !    Print*,('hdf5_puff:' // callerstr // '(scalar attr space created)')
-!    Print*,error   
+!    Print*,error
     CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
-    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error)
     CALL h5aclose_f(attr_id, error)
 !    Print*,'hdf5_puff:' // callerstr // '(close timegrpname time attr)'
 !    Print*,error
     CALL addH5StringAttribute(group_id,"vsSoftware","PUFFIN",aspace_id)
-    
+
 !    write(attr_data_string, '(8i5)') values
 !    write(attr_data_string, '(5i4-3i2-3i2) zone (4i3 3i2:3i2:3i2 .4i3)') values
-    write(attr_data_string, '(a,a,a,a,a,2x,a,a,a,a,a,1x,a)') date(1:4),'-',date(5:6), &
-      '-',date(7:8),time(1:2),':',time(3:4),':',time(5:10), zone
+    write(attr_data_string, "(a,a,a,a,a,2x,a,a,a,a,a,1x,a)") date(1:4),"-",date(5:6), &
+      "-",date(7:8),time(1:2),":",time(3:4),":",time(5:10), zone
     CALL addH5StringAttribute(group_id,"vsRunDate",attr_data_string,aspace_id)
     CALL GETLOG(attr_data_string)
     CALL addH5StringAttribute(group_id,"vsUser",attr_data_string,aspace_id)
@@ -669,12 +675,12 @@ contains
     CALL addH5StringAttribute(group_id,"vsRunHost",attr_data_string,aspace_id)
     CALL addH5StringAttribute(group_id,"vsBuildConfigDate", timeStamp, aspace_id)
 
-!    attr_data_string='@GIT_BRANCH@ : @GIT_REVISION@' 
+!    attr_data_string='@GIT_BRANCH@ : @GIT_REVISION@'
     CALL addH5StringAttribute(group_id,"vsSwRevision", gitBranch,aspace_id)
 
-!    attr_data_string='@Puffin_VERSION_MAJOR@.@Puffin_VERSION_MINOR@.@Puffin_VERSION_PATCH@' 
+!    attr_data_string='@Puffin_VERSION_MAJOR@.@Puffin_VERSION_MINOR@.@Puffin_VERSION_PATCH@'
     CALL addH5StringAttribute(group_id,"vsSwVersion", puffVersion,aspace_id)
-   
+
     CALL addH5StringAttribute(group_id,"vsVsVersion","3.0",aspace_id)
     CALL addH5StringAttribute(group_id,"vsFCompiler", fortCompiler, aspace_id)
     CALL addH5StringAttribute(group_id,"vsFCompilerVersion", fortVersion, aspace_id)
@@ -691,14 +697,14 @@ contains
     CALL addH5StringAttribute(group_id,"vsInputFile",zFilename_G,aspace_id)
     CALL addH5StringAttribute(group_id,"vsBeamFile",zBFile_G,aspace_id)
     CALL addH5StringAttribute(group_id,"vsSeedFile",zSFile_G,aspace_id)
-    
+
     call writeRunAtts(group_id, simtime, z_loc, iL, aspace_id, ctx)
 !    aname="vsSeedFile"
 !    attr_data_string=zSFile_G
 !    attr_string_len=len(attr_data_string)
 !    CALL h5tset_size_f(atype_id, attr_string_len, error)
 !    CALL h5acreate_f(group_id, aname, atype_id, aspace_id, attr_id, error)
-!    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error) 
+!    CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error)
 !    CALL h5aclose_f(attr_id, error)
     CALL h5sclose_f(aspace_id, error)
 !    Print*,error
@@ -708,13 +714,13 @@ contains
 !    Print*,error
 
   end subroutine writeH5RunInfo
- 
+
 !  subroutine createH5Files(tArrayY, zDFName, zOptionalString, qOK)
 !
 !    implicit none
 
-! Create "Full" Files - creates either 
-! the full data sets for the field and 
+! Create "Full" Files - creates either
+! the full data sets for the field and
 ! electron phase space.
 
 !    type(cArraySegment), intent(inout) :: tArrayY(:)
@@ -738,15 +744,16 @@ contains
 !    do iap = 1, size(tArrayY)
 !      if (tArrayY(iap)%qWrite) then
 !        if (tProcInfo_G%qRoot) then
-!     Prepare filename      
+!     Prepare filename
 !          zFilename = (trim(adjustl(tArrayY(iap)%zVariable)) // trim(adjustl(zDFName)) // '.h5')
 !          if (qOptional) then
-!            zFilename = (trim(adjustl(zOptionalString)) // '_' // trim(adjustl(zFilename)) // '.h5')
+!            zFilename = (trim(adjustl(zOptionalString)) // '_' // &
+!                         trim(adjustl(zFilename)) // '.h5')
 !          end if
 !          call CreateSDDSFile(zFilename, &
 !                              tArrayY(iap)%zVariable, &
 !                              tArrayY(iap)%tFileType, &
-!                              qOKL)    
+!                              qOKL)
 !        end if
 !     end if
 !   end do
@@ -766,7 +773,7 @@ contains
 !! @param  iInteger    - INPUT  - Integer to convert
 FUNCTION IntegerToString(iInteger)
 
-        IMPLICIT NONE
+        IMPLICIT NONE (type, external)
         INTEGER(KIND=IP), INTENT(IN) :: iInteger
         CHARACTER(32_IP) :: IntegerToString
 ! Define local variables
@@ -778,11 +785,11 @@ FUNCTION IntegerToString(iInteger)
 !  Set error flag and exit
        GoTo 2000
 ! Error Handler - Error log Subroutine in CIO.f90 line 709
-1000 call log_error('Error in sddsPuffin:IntegerToString',tErrorLog_G)
-      Print*,'Error in sddsPuffin:IntegerToString'
+     call log_error("Error in sddsPuffin:IntegerToString",tErrorLog_G)
+      Print*,"Error in sddsPuffin:IntegerToString"
 2000 CONTINUE
 
 END FUNCTION IntegerToString
-	
+
 
 end module hdf5PuffLow

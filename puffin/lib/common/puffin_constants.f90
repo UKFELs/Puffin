@@ -6,7 +6,7 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> This module contains physical constants, and identifiers for array indices
@@ -15,7 +15,13 @@
 module puffin_constants
 
       use puffin_kinds, only: ip, wp
-      implicit none
+      implicit none (type, external)
+private
+
+public :: c, e_0, iDiffraction_CG, iDump_CG, iElectronFieldCoupling_CG, iElectronsEvolve_CG, &
+           iFieldEvolve_CG, iFocussing_CG, iGam_CG, iOneD_CG, ip, iPX_CG, iPY_CG, iResume_CG, &
+           iX_CG, iY_CG, iZ2_CG, m_e, nSpaceDimensions_CG, nSwitches_CG, pi, q_e, wp
+
 
 !============== Define physical constants ===========================
 

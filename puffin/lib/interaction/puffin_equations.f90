@@ -5,20 +5,24 @@
 module Equations
 
 
-use puffin_kinds
-use ArrayFunctions
-use Globals
-use rhs_vars
+use puffin_kinds, only: WP, IP
+use Globals, only: iUndStart_G, iUndEnd_G, iUndMain_G
+use rhs_vars, only: sInv2rho, sp2, sField4ElecReal, sField4ElecImag, bxu, byu, bzu
 use GlobalTypes, only: tUndulator, tFELFrame
 
-implicit none
+implicit none (type, external)
+private
+
+public :: adjundplace, alct_e_srtcts, bxu, byu, bzu, dalct_e_srtcts, dgamdz_f, dppdz_i_f, &
+           dppdz_r_f, dxdz_f, dydz_f, dz2dz_f, sField4ElecImag, sField4ElecReal, sInv2rho, sp2
+
 
 contains
 
   subroutine dppdz_r_f(sx, sy, sz2, spr, spi, sgam, &
                        sZ, sdpr, und, frame)
 
-  	implicit none
+        implicit none (type, external)
 
 
     real(kind=wp), contiguous, intent(in) :: sx(:), sy(:), sz2(:), spr(:), &
@@ -28,7 +32,6 @@ contains
     type(tUndulator), intent(in) :: und
     type(tFELFrame), intent(in) :: frame
 
-    real(kind=wp) :: szt
 
 !$OMP WORKSHARE
     sdpr = sInv2rho * ( und%n2col * byu  &
@@ -49,7 +52,7 @@ contains
   subroutine dppdz_i_f(sx, sy, sz2, spr, spi, sgam, sZ, &
                        sdpi, und, frame)
 
-    implicit none
+    implicit none (type, external)
 
     real(kind=wp), contiguous, intent(in) :: sx(:), sy(:), sz2(:), spr(:), &
                                              spi(:), sgam(:)
@@ -58,7 +61,6 @@ contains
     type(tUndulator), intent(in) :: und
     type(tFELFrame), intent(in) :: frame
 
-    real(kind=wp) :: szt
 
 !$OMP WORKSHARE
     sdpi = sInv2rho * (  und%n2col * bxu  &
@@ -75,7 +77,7 @@ contains
   subroutine dgamdz_f(sx, sy, sz2, spr, spi, sgam, &
                       sdgam, frame)
 
-    implicit none
+    implicit none (type, external)
 
 
     real(kind=wp), contiguous, intent(in) :: sx(:), sy(:), sz2(:), spr(:), &
@@ -100,7 +102,7 @@ contains
   subroutine dxdz_f(sx, sy, sz2, spr, spi, sgam, &
                     sdx, frame)
 
-    implicit none
+    implicit none (type, external)
 
 !   Calculate dx/dz
 !
@@ -128,7 +130,7 @@ contains
   subroutine dydz_f(sx, sy, sz2, spr, spi, sgam, &
                     sdy, frame)
 
-    implicit none
+    implicit none (type, external)
 
 !   Calculate dy/dz
 !
@@ -157,7 +159,7 @@ contains
   subroutine dz2dz_f(sx, sy, sz2, spr, spi, sgam, &
                      sdz2)
 
-    implicit none
+    implicit none (type, external)
 
 !   Calculate dz2/dz
 !
@@ -182,7 +184,7 @@ contains
 
   subroutine alct_e_srtcts(ar_sz)
 
-    implicit none
+    implicit none (type, external)
 
 ! Allocate the arrays used in the calculation of
 ! the electron eqns
@@ -200,7 +202,7 @@ contains
 
   subroutine dalct_e_srtcts()
 
-    implicit none
+    implicit none (type, external)
 
 ! Allocate the arrays used in the calculation of
 ! the electron eqns
@@ -227,7 +229,7 @@ contains
 
         if (szl < 0) then
 
-          print*, 'undulator section not recognised, sz < 0!!'
+          print*, "undulator section not recognised, sz < 0!!"
           stop
 
         else if (sZl <= und%z_start_undulator) then
@@ -244,7 +246,7 @@ contains
 
         else
 
-          print*, 'undulator section not recognised, sz > z_end_undulator!!'
+          print*, "undulator section not recognised, sz > z_end_undulator!!"
           stop
 
         end if

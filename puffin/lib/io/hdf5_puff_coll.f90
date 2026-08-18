@@ -13,17 +13,35 @@
 
 module hdf5PuffColl
 
-use puffin_kinds
-use hdf5
-use globals
-use puffin_mpiInfo
-use lattice
-USE ParallelSetUp
-USE ArrayFunctions
-USE puffin_constants
-Use avWrite
-use hdf5PuffLow
+use puffin_kinds, only: WP, IP
+use hdf5, only: h5aclose_f, h5acreate_f, h5awrite_f, h5close_f, h5dclose_f, h5dcreate_f, &
+  h5dget_space_f, h5dopen_f, h5dwrite_f, H5F_ACC_RDWR_F, H5F_ACC_TRUNC_F, h5fclose_f, &
+  h5fcreate_f, H5FD_MPIO_COLLECTIVE_F, H5FD_MPIO_INDEPENDENT_F, h5fopen_f, h5gclose_f, &
+  h5gcreate_f, h5open_f, H5P_DATASET_XFER_F, H5P_FILE_ACCESS_F, h5pclose_f, h5pcreate_f, &
+  h5pset_dxpl_mpio_f, h5pset_fapl_mpio_f, H5S_SCALAR_F, H5S_SELECT_SET_F, h5sclose_f, &
+  h5screate_f, h5screate_simple_f, h5sselect_hyperslab_f, h5sselect_none_f, &
+  H5T_NATIVE_CHARACTER, H5T_NATIVE_DOUBLE, H5T_NATIVE_INTEGER, H5T_STR_SPACEPAD_F, h5tclose_f, &
+  h5tcopy_f, h5tset_size_f, h5tset_strpad_f, HID_T, HSIZE_T
+use globals, only: NX_G, NY_G, NZ2_G, sLengthOfElmX_G, sLengthOfElmY_G, sLengthOfElmZ2_G, &
+  fieldMesh, iPeriodic, sperwaves_G, npts_I_G, s_chi_bar_G, procelectrons_G, iNumberElectrons_G, &
+  iGloNumElectrons_G, npk_bar_G, sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, &
+  zFileName_G, qOneD_G
+use puffin_mpiInfo, only: tProcInfo_G
+use lattice, only: log_error, tErrorLog_G
+USE puffin_constants, only: pi, m_e, q_e
+use hdf5PuffLow, only: addh5stringattribute, addh5derivedvariable, write3dlimgrp, write1dlimgrp, &
+  write3duniformmesh, write1duniformmesh, writecommonatts, writeh5timegroup, writeh5runinfo, &
+  integertostring
 use GlobalTypes, only: tSimulationContext
+use ParaField, only: qUnique
+use mpi, only: MPI_INFO_NULL
+
+implicit none (type, external)
+private
+
+public :: addh5field1dfloat, createintegrated1dfloat, outputh5beamfilessd, outputh5field1d2compsd, &
+           outputh5field3dsd
+
 
 contains
 
@@ -42,7 +60,7 @@ contains
 !! the array slice based on that.
 !! so instead of
   subroutine outputH5BeamFilesSD(time, sz_loc, iL, error, ctx)
-    implicit none
+    implicit none (type, external)
     REAL(kind=WP),intent(in) :: time !< Current time
     REAL(kind=WP),intent(in) :: sz_loc
     integer(kind=ip), intent(in) :: iL  !< lattice element number
@@ -65,8 +83,8 @@ contains
     INTEGER(HSIZE_T), DIMENSION(2) :: fdims,dims   !< dims of ptcl dataset (coords*numelecs)
     INTEGER(HSIZE_T), DIMENSION(2) :: doffset!< Offset for write, could be rank dependent
     INTEGER(HSIZE_T), DIMENSION(2) :: dsize  !< Size of hyperslab to write
-    INTEGER     ::  rank = 2                 !< Particle Dataset rank
-    INTEGER     ::  arank = 1                !< Attribute rank - 1 is vector
+    INTEGER, parameter ::  rank = 2                 !< Particle Dataset rank
+    INTEGER, parameter ::  arank = 1                !< Attribute rank - 1 is vector
     INTEGER(HSIZE_T), DIMENSION(1) :: adims  !< Attribute dims
     INTEGER(HSIZE_T), DIMENSION(1) :: attr_data_int !< For integer attribs (numdims)
     INTEGER     :: numSpatialDims,mpiinfo    !< Attr content, and also num elsewhere
@@ -84,7 +102,7 @@ contains
     real(kind=wp) :: ebound
     ! Local vars
     !integer(kind=ip) :: iep
-    integer :: error ! Error flag
+    integer, intent(out) :: error ! Error flag
     mpiinfo=MPI_INFO_NULL
 
     if (qONED_G) then
@@ -96,7 +114,7 @@ contains
 !   Fortran index of first particle to be written might be '1', however
 !   We're interested in the offset from the first step.
     startOffset=0
-    if (tProcInfo_G%rank .GT. 0) then
+    if (tProcInfo_G%rank > 0) then
     Do rankIterator=1,tProcInfo_G%rank
       startOffset = startOffset+procelectrons_G(rankIterator+1)
     end do
@@ -111,19 +129,19 @@ contains
 
     attr_data_int(1)=numSpatialDims
     adims(1)=1
-    adims = (/1/)
-    dims = (/7,iNumberElectrons_G/) ! Dataset dimensions
-    fdims = (/7,iGloNumElectrons_G/) ! Dataset dimensions
-    doffset=(/0,startOffset/)
-    dsize=(/1,iNumberElectrons_G/)
+    adims = [1]
+    dims = [7,iNumberElectrons_G] ! Dataset dimensions
+    fdims = [7,iGloNumElectrons_G] ! Dataset dimensions
+    doffset=[0,startOffset]
+    dsize=[1,iNumberElectrons_G]
     attr_data_string="electrons_x,electrons_y,electrons_z,electrons_px," // &
       "electrons_py,electrons_gamma,electrons_weight"
     attr_string_len=94
 
 ! Prepare filename
 
-    filename = ( trim(adjustl(zFilename_G)) // '_electrons_' // &
-                 trim(adjustl(IntegerToString(ctx%mesh%highpass_filter_gr))) // '.h5' )
+    filename = ( trim(adjustl(zFilename_G)) // "_electrons_" // &
+                 trim(adjustl(IntegerToString(ctx%mesh%highpass_filter_gr))) // ".h5" )
 
 
     CALL h5open_f(error)
@@ -164,7 +182,8 @@ contains
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
 !      else
-! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
+! all ranks must participate, so select no space to write when dealing with
+! ranks which hold no data for this field fr_real, etc
 !        CALL h5sselect_none_f(filespace,error)
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
@@ -191,7 +210,7 @@ contains
 ! repeat for some next y dataset
 
 
-    doffset=(/1,startOffset/)
+    doffset=[1,startOffset]
 
 !if (procelectrons_G(1).GT.0) then
 ! for the corresponding space on disk
@@ -201,7 +220,8 @@ contains
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
 !else
-! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
+! all ranks must participate, so select no space to write when dealing with
+! ranks which hold no data for this field fr_real, etc
   if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
@@ -226,7 +246,7 @@ contains
 
 !
 ! repeat for some next z dataset
-    doffset=(/2,startOffset/)
+    doffset=[2,startOffset]
 
 !    if (procelectrons_G(1).GT.0) then
     ! for the corresponding space on disk
@@ -236,7 +256,8 @@ contains
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
 !    else
-    ! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
+    ! all ranks must participate, so select no space to write when dealing with
+    ! ranks which hold no data for this field fr_real, etc
       if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
@@ -253,7 +274,7 @@ contains
       call h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, &
          sz2_temp, dsize, error, &
          xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
-         
+
       deallocate(sz2_temp)
 
     else
@@ -271,7 +292,7 @@ contains
     CALL h5sclose_f(filespace, error)
 
 ! repeat for some next px dataset
-    doffset=(/3,startOffset/)
+    doffset=[3,startOffset]
 
 !    if (procelectrons_G(1).GT.0) then
     ! for the corresponding space on disk
@@ -281,7 +302,8 @@ contains
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
 !    else
-    ! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
+    ! all ranks must participate, so select no space to write when dealing with
+    ! ranks which hold no data for this field fr_real, etc
       if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
 
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
@@ -300,7 +322,7 @@ contains
     CALL h5sclose_f(filespace, error)
 
 ! repeat for some next py dataset
-    doffset=(/4,startOffset/)
+    doffset=[4,startOffset]
 
 !    if (procelectrons_G(1).GT.0) then
     ! for the corresponding space on disk
@@ -310,7 +332,8 @@ contains
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
 !    else
-    ! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
+    ! all ranks must participate, so select no space to write when dealing with
+    ! ranks which hold no data for this field fr_real, etc
       if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
@@ -328,7 +351,7 @@ contains
     CALL h5sclose_f(filespace, error)
 
 ! repeat for some next gamma dataset (actually beta*gamma)
-    doffset=(/5,startOffset/)
+    doffset=[5,startOffset]
 
 !    if (procelectrons_G(1).GT.0) then
     ! for the corresponding space on disk
@@ -338,7 +361,8 @@ contains
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
 !    else
-    ! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
+    ! all ranks must participate, so select no space to write when dealing with
+    ! ranks which hold no data for this field fr_real, etc
       if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
@@ -361,7 +385,7 @@ contains
 ! Everything self contained. Perhaps we use in future a funky h5 technique
 ! to point this column at a separate file which holds the data, reducing
 ! the size of this column from every written file.
-    doffset=(/6,startOffset/)
+    doffset=[6,startOffset]
 
 !    if (procelectrons_G(1).GT.0) then
     ! for the corresponding space on disk
@@ -371,7 +395,8 @@ contains
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
 !    else
-    ! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
+    ! all ranks must participate, so select no space to write when dealing with
+    ! ranks which hold no data for this field fr_real, etc
       if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
     !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
     !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
@@ -505,7 +530,7 @@ contains
     CALL h5screate_f(H5S_SCALAR_F, aspace_id, error)
 ! then text attributes
     CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, error)
-    if (attr_string_len .eq. 0) attr_string_len = 1
+    if (attr_string_len == 0) attr_string_len = 1
     CALL h5tset_size_f(atype_id, attr_string_len, error)
     CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
 !    Print*,'hdf5_puff:outputH5BeamFiles(string padding enabled)'
@@ -524,10 +549,10 @@ contains
 
 
 ! Write time Group
-    CALL writeH5TimeGroup(file_id, timegrpname, time, 'outputH5Beam', error, ctx)
+    CALL writeH5TimeGroup(file_id, timegrpname, time, "outputH5Beam", error, ctx)
 
 ! Write run info
-    CALL writeH5RunInfo(file_id,  time, sz_loc, iL, 'outputH5Beam', error, ctx)
+    CALL writeH5RunInfo(file_id,  time, sz_loc, iL, "outputH5Beam", error, ctx)
 
 ! We make the limits
     CALL h5gcreate_f(file_id, limgrpname, group_id, error)
@@ -538,7 +563,7 @@ contains
 
 ! And the limits themselves which require non-scalar attributes
 ! This is the 3D version.
-    adims = (/numSpatialDims/)
+    adims = [numSpatialDims]
     CALL h5screate_simple_f(arank, adims, aspace_id, error)
     aname="vsLowerBounds"
     CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, error)
@@ -546,7 +571,7 @@ contains
 !    Print*,'hdf5_puff:outputH5BeamFiles(lower bounds attribute created)'
     ALLOCATE ( limdata(numSpatialDims))
 
-    
+
     if (numSpatialDims == 3) then
 
         limdata(1)=-0.5_wp*NX_G*sLengthOfElmX_G
@@ -558,7 +583,7 @@ contains
         limdata(1)=0.0_wp
 
     end if
-      
+
 !    end if
 
     CALL h5awrite_f(attr_id, atype_id, limdata, adims, error)
@@ -588,7 +613,7 @@ contains
     CALL h5gclose_f(group_id, error)
 
     aname="electrons_xSI"
-    write(scaleToSIstring, '(E16.9)' ) (DSQRT(ctx%frame%gain_length*ctx%frame%cooperation_length))
+    write(scaleToSIstring, "(E16.9)" ) (SQRT(ctx%frame%gain_length*ctx%frame%cooperation_length))
     attr_data_string=("electrons_x*" // scaleToSIstring)
     attr_string_len=len(trim(adjustl(attr_data_string)))
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
@@ -601,32 +626,32 @@ contains
 
 ! We make another group
     aname="electrons_zSI"
-    write(scaleToSIstring, '(E16.9)' ) ctx%frame%cooperation_length
+    write(scaleToSIstring, "(E16.9)" ) ctx%frame%cooperation_length
     attr_data_string=("electrons_z*" // scaleToSIstring)
     attr_string_len=len(trim(adjustl(attr_data_string)))
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)!
 ! Were there an SI version of this, we might be in the right place to use it
 
     aname="electrons_dxdzSI"
-    write(scaleToSIstring, '(E16.9)' ) 2.0_wp * ctx%frame%rho * ctx%frame%kappa
+    write(scaleToSIstring, "(E16.9)" ) 2.0_wp * ctx%frame%rho * ctx%frame%kappa
     attr_data_string=("electrons_px*" // scaleToSIstring // "/electrons_gamma")
     attr_string_len=len(trim(adjustl(attr_data_string)))
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
     aname="electrons_dydzSI"
-    write(scaleToSIstring, '(E16.9)' ) -2.0_wp * ctx%frame%rho * ctx%frame%kappa
+    write(scaleToSIstring, "(E16.9)" ) -2.0_wp * ctx%frame%rho * ctx%frame%kappa
     attr_data_string=("electrons_py*" // scaleToSIstring // "/electrons_gamma")
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
     aname="electrons_gammaSI"
-    write(scaleToSIstring, '(E16.9)' ) ctx%frame%gamma_ref
+    write(scaleToSIstring, "(E16.9)" ) ctx%frame%gamma_ref
     attr_data_string=("electrons_gamma*" // scaleToSIstring)
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
     aname="slice_nom_lamda"
 ! Todo: Actually needs to take account of slippage, and needs to identify
 ! which lamda was used (eg for 2 colour)
-    write(scaleToSIstring, '(E16.9)' ) ctx%frame%lambda_r
+    write(scaleToSIstring, "(E16.9)" ) ctx%frame%lambda_r
     attr_data_string=("floor(electrons_zSI/" // scaleToSIstring // ")")
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
@@ -638,12 +663,12 @@ contains
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
     aname="electrons_numPhysicalParticles"
-    write(scaleToSIstring, '(E16.9)' ) npk_bar_G
+    write(scaleToSIstring, "(E16.9)" ) npk_bar_G
     attr_data_string=("electrons_weight*" // scaleToSIstring)
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
     aname="electrons_chargeSI"
-    write(scaleToSIstring, '(E16.9)' ) npk_bar_G*q_e
+    write(scaleToSIstring, "(E16.9)" ) npk_bar_G*q_e
     attr_data_string=("electrons_weight*" // scaleToSIstring)
     CALL addH5derivedVariable(file_id,aname,attr_data_string,error)
 
@@ -661,8 +686,8 @@ contains
     goto 2000
 
 !     Error Handler - Error log Subroutine in CIO.f90 line 709
-1000 call log_error('Error in hdf5_puff:outputBeamFiles',tErrorLog_G)
-    print*,'Error in hdf5_puff:outputBeamFiles'
+     call log_error("Error in hdf5_puff:outputBeamFiles",tErrorLog_G)
+    print*,"Error in hdf5_puff:outputBeamFiles"
 2000 continue
   end subroutine outputH5BeamFilesSD
 
@@ -671,15 +696,18 @@ contains
 
 !> outputH5Field3DSD is for writing the full field output.
 !! This version dumps one single file, but writes individually rather than collectively
-  subroutine outputH5Field3DSD(time, sz_loc, iL, error, nlonglength, rawdata, nlo, nhi, component, createNewFlag, chkactiveflag, ctx)
-    implicit none
+  subroutine outputH5Field3DSD(time, sz_loc, iL, error, nlonglength, rawdata, nlo, &
+                                nhi, component, createNewFlag, chkactiveflag, ctx)
+    implicit none (type, external)
     REAL(kind=WP), intent(in) :: time, sz_loc, rawdata(:) !< The data to write
     integer(kind=ip), intent(in) :: iL
     type(tSimulationContext), intent(in) :: ctx
     INTEGER(kind=IP), intent(in) :: nlonglength !<number of cells in z in this section
     INTEGER(kind=IP), intent(in) :: nlo,nhi !< cell range in z in this raw data selection
-    INTEGER(kind=IP), intent(in) :: component, createNewFlag !< cell range in 4th dim in this raw data selection
-    LOGICAL, intent(in) :: chkactiveflag !< flag determines whether to test for the entire field on every rank
+    INTEGER(kind=IP), intent(in) :: component, createNewFlag
+      !< cell range in 4th dim in this raw data selection
+    LOGICAL, intent(in) :: chkactiveflag
+      !< flag determines whether to test for the entire field on every rank
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier
     INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
@@ -687,7 +715,6 @@ contains
     INTEGER(HID_T) :: attr_id       !< Attribute identifier
     INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
     INTEGER(HID_T) :: atype_id      !< Attribute Data type identifier
-    INTEGER(HID_T) :: group_id      !< Group identifier
     INTEGER(HID_T) :: plist_id      !< Property list id.
 
 ! may yet need this, but field data is not separated amongst cores
@@ -697,27 +724,22 @@ contains
 !    character(1024_IP), intent(in) :: zDFName
     character(64_IP) :: filename
     INTEGER(HSIZE_T), DIMENSION(4) :: fdims,dims !<no longer includes component
-    INTEGER(HSIZE_T), DIMENSION(4) :: doffset,dsize,stride !<no longer includes component
+    INTEGER(HSIZE_T), DIMENSION(4) :: doffset, dsize!<no longer includes component
 ! Data as component*reducedNX*reducedNY*reducedNZ2
 ! Not described as a parameter, so can prob modify
 ! for single component (rank 3 data) like charge
-    INTEGER     ::   rank = 4               !< Dataset rank
+    INTEGER, parameter ::   rank = 4               !< Dataset rank
     INTEGER(HSIZE_T), DIMENSION(1) :: adims !< Attribute dims
-    REAL(kind=WP) :: attr_data_double       !< holder of attribute double data
     REAL(kind=WP), DIMENSION(3) :: ub       !< holder of attribute double data
     REAL(kind=WP), DIMENSION(3) :: lb       !< holder of attribute double data
     CHARACTER(LEN=100) :: attr_data_string  !< holder of attribute strings
     INTEGER(HSIZE_T) :: attr_string_len     !< length of attribute strings
     INTEGER(kind=IP) :: numSpatialDims,mpiinfo      !< Attr content,
-    INTEGER     ::  arank = 1               !< Attribute Dataset rank (1: vector)
     CHARACTER(LEN=4), PARAMETER :: timegrpname = "time"  !< Name of time group
     CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  !< Name of limits grp
     CHARACTER(LEN=10), PARAMETER :: meshScaledGrpname = "meshScaled" !< Name of mesh grp
-    CHARACTER(LEN=6), PARAMETER :: meshSIGrpname = "meshSI"  !< Dummy scaled mesh grp name
-    REAL(kind=WP), ALLOCATABLE :: limdata (:)  !< Data to write (diff for 1D and 3D)
-    INTEGER(kind=IP), ALLOCATABLE :: numcelldata (:)  !< Mesh info for uniform grid
     ! Local vars
-    integer :: error !< Error flag
+    integer, intent(out) :: error !< Error flag
 
 ! signature: nlonglength, dsetname, data, nlo, nhi, chkactiveflag
 ! tlflen, 'aperp_front_real', fr_rfield, [ffs,ffe], .false.
@@ -732,26 +754,26 @@ contains
 !    if (qUnique .OR. (tProcInfo_G%qRoot)) then
       if (qONED_G) then
         numSpatialDims=1
-        dims = (/1,1,nlonglength,1/) ! Dataset dimensions
-        fdims = (/2,2,NZ2_G,2/) ! Dataset dimensions
-        doffset = (/0,0,(nlo-1),component/)
-        dsize = (/1,1,nhi-nlo+1,1/)
+        dims = [1,1,nlonglength,1] ! Dataset dimensions
+        fdims = [2,2,NZ2_G,2] ! Dataset dimensions
+        doffset = [0,0,(nlo-1),component]
+        dsize = [1,1,nhi-nlo+1,1]
       else
         numSpatialDims=3
-        dims = (/nx_g,ny_g,nlonglength,1/) ! Dataset dimensions
-        fdims = (/nx_g,ny_g,NZ2_G,2/) ! Dataset dimensions
-        doffset = (/0,0,(nlo-1),component/)
+        dims = [nx_g,ny_g,nlonglength,1] ! Dataset dimensions
+        fdims = [nx_g,ny_g,NZ2_G,2] ! Dataset dimensions
+        doffset = [0,0,(nlo-1),component]
 !      dsize = (/nx_g,ny_g,nhi-nlo+1,1/)
-        dsize = (/nx_g,ny_g,nlonglength,1/)
-        
+        dsize = [nx_g,ny_g,nlonglength,1]
+
 !        numSpatialDims=3
 !        dims = (/nlonglength,ny_g,nx_g,1/) ! Dataset dimensions
 !        fdims = (/NZ2_G,ny_g,nx_g,2/) ! Dataset dimensions
 !        doffset = (/(nlo-1),0,0,component/)
 !!      dsize = (/nx_g,ny_g,nhi-nlo+1,1/)
 !        dsize = (/nlonglength,ny_g,nx_g,1/)
-        
-        
+
+
       end if
 !    print *,IntegerToString(size(rawdata)) // " vs " // &
 !      trim(adjustl(IntegerToString(Nx_g*ny_g*nlonglength))) // &
@@ -769,8 +791,8 @@ contains
 
 
 !    Print*,('Spatialdims: ' // trim(IntegerToString(numSpatialDims)))
-      filename = (trim(adjustl(zFilename_G)) // '_' // trim(adjustl(dsetname)) &
-          // '_' // trim(adjustl(IntegerToString(ctx%mesh%highpass_filter_gr))) // '.h5' )
+      filename = (trim(adjustl(zFilename_G)) // "_" // trim(adjustl(dsetname)) &
+          // "_" // trim(adjustl(IntegerToString(ctx%mesh%highpass_filter_gr))) // ".h5" )
       CALL h5open_f(error)
       CALL h5pcreate_f(H5P_FILE_ACCESS_F, plist_id, error)
 !      Print*,'hdf5_puff:outputH5FieldSD(property created)'
@@ -778,7 +800,7 @@ contains
       CALL h5pset_fapl_mpio_f(plist_id, tProcInfo_G%comm, mpiinfo, error)
 !      Print*,'hdf5_puff:outputH5FieldSD(property set up)'
 !      Print*,error
-      if (createNewFlag .EQ. 1) then
+      if (createNewFlag == 1) then
         CALL h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error, access_prp = plist_id)
 !      Print*,'hdf5_puff:outputH5FieldSD(file created)'
 !      Print*,error
@@ -818,7 +840,8 @@ contains
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting slab on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
       !else
-! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
+! all ranks must participate, so select no space to write when dealing with
+! ranks which hold no data for this field fr_real, etc
         if (nlonglength <= 0) CALL h5sselect_none_f(filespace,error)
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting empty slab on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
@@ -891,7 +914,8 @@ contains
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting slab on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
       !else
-! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
+! all ranks must participate, so select no space to write when dealing with
+! ranks which hold no data for this field fr_real, etc
         if (tProcInfo_G%rank /= 0) CALL h5sselect_none_f(filespace,error)
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting empty slab on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
@@ -957,7 +981,7 @@ contains
 ! end of parallel write stuff
 
 ! add stuff just on rank 0
-      if (createNewFlag .EQ. 1) then
+      if (createNewFlag == 1) then
 
         if (tProcInfo_G%qRoot) then
 
@@ -1019,7 +1043,8 @@ contains
           if (qoned_g) then
             CALL addH5StringAttribute(dset_id,"vsIndexOrder","compMinorF",aspace_id)
           else
-            CALL addH5StringAttribute(dset_id,"vsIndexOrder","compMajorC",aspace_id)  ! WAS compMajorF
+            ! WAS compMajorF
+            CALL addH5StringAttribute(dset_id,"vsIndexOrder","compMajorC",aspace_id)
           end if
 
           CALL addH5StringAttribute(dset_id,"vsTimeGroup",timegrpname,aspace_id)
@@ -1029,8 +1054,8 @@ contains
           CALL h5dclose_f(dset_id, error)
 ! Time Group
           CALL writeH5TimeGroup(file_id, timegrpname, time, &
-	               'outH5Field3D', error, ctx)
-          CALL writeH5RunInfo(file_id,  time, sz_loc, iL, 'outH5Field3D', error, ctx)
+                       "outH5Field3D", error, ctx)
+          CALL writeH5RunInfo(file_id,  time, sz_loc, iL, "outH5Field3D", error, ctx)
 
           if (qOneD_G) then
 
@@ -1047,19 +1072,19 @@ contains
               lb(1)=0.0_WP*sLengthOfElmZ2_G
               lb(2)=-0.5*NY_G*sLengthOfElmY_G
               lb(3)=-0.5*NX_G*sLengthOfElmX_G
-          
+
               ub(1)=NZ2_G*sLengthOfElmZ2_G
               ub(2)=0.5*NY_G*sLengthOfElmY_G
               ub(3)=0.5*NX_G*sLengthOfElmX_G
 
           end if
-          
+
           CALL write3DlimGrp(file_id,limgrpname,lb,ub)
 
           if (qONED_G) then
-            CALL write3DuniformMesh(file_id,meshScaledGrpname,lb,ub,(/1,1,NZ2_G-1/))
+            CALL write3DuniformMesh(file_id,meshScaledGrpname,lb,ub,[1,1,NZ2_G-1])
           else
-            CALL write3DuniformMesh(file_id,meshScaledGrpname,lb,ub,(/NZ2_G-1,ny_g-1,nx_g-1/))
+            CALL write3DuniformMesh(file_id,meshScaledGrpname,lb,ub,[NZ2_G-1,ny_g-1,nx_g-1])
           end if
 
           aname="intensityScaled"
@@ -1098,7 +1123,7 @@ contains
                                     nhi, component, createNewFlag, chkactiveflag, ctx)
 
 
-      implicit none
+      implicit none (type, external)
 
 
       real(kind=wp), intent(in) :: time, sz_loc, rawdata(:)  !< The data to write
@@ -1106,8 +1131,10 @@ contains
     type(tSimulationContext), intent(in) :: ctx
       integer(kind=ip), intent(in) :: nlonglength    !<number of cells in z in this section
       integer(kind=ip), intent(in) :: nlo,nhi        !< cell range in z in this raw data selection
-      integer(kind=ip), intent(in) :: component, createNewFlag !< cell range in 4th dim in this raw data selection
-      LOGICAL, intent(in) :: chkactiveflag   !< flag determines whether to test for the entire field on every rank
+      integer(kind=ip), intent(in) :: component, createNewFlag
+        !< cell range in 4th dim in this raw data selection
+      LOGICAL, intent(in) :: chkactiveflag
+        !< flag determines whether to test for the entire field on every rank
 
 
       integer(HID_T) :: file_id       !< File identifier
@@ -1117,7 +1144,6 @@ contains
       integer(HID_T) :: attr_id       !< Attribute identifier
       integer(HID_T) :: aspace_id     !< Attribute Dataspace identifier
       integer(HID_T) :: atype_id      !< Attribute Data type identifier
-      integer(HID_T) :: group_id      !< Group identifier
       integer(HID_T) :: plist_id      !< Property list id.
 
   ! may yet need this, but field data is not separated amongst cores
@@ -1134,23 +1160,18 @@ contains
   ! Not described as a parameter, so can prob modify
   ! for single component (rank 3 data) like charge
 
-      integer     ::   rank = 2               !< Dataset rank
+      integer, parameter ::   rank = 2               !< Dataset rank
       integer(HSIZE_T), dimension(1) :: adims !< Attribute dims
-      real(kind=wp) :: attr_data_double       !< holder of attribute double data
       real(kind=wp) :: ub       !< holder of attribute double data
       real(kind=wp) :: lb       !< holder of attribute double data
       character(len=100) :: attr_data_string  !< holder of attribute strings
       integer(HSIZE_T) :: attr_string_len     !< length of attribute strings
       integer(kind=ip) :: numSpatialDims,mpiinfo      !< Attr content,
-      integer     ::  arank = 1               !< Attribute Dataset rank (1: vector)
       character(len=4),  parameter :: timegrpname = "time"  !< Name of time group
       character(len=12), parameter :: limgrpname = "globalLimits"  !< Name of limits grp
       character(len=10), parameter :: meshScaledGrpname = "meshScaled" !< Name of mesh grp
-      character(len=6),  parameter :: meshSIGrpname = "meshSI"  !< Dummy scaled mesh grp name
-      real(kind=wp),  allocatable  :: limdata (:)  !< Data to write (diff for 1D and 3D)
-      integer(kind=ip), allocatable :: numcelldata (:)  !< Mesh info for uniform grid
       ! Local vars
-      integer :: error !< Error flag
+      integer, intent(out) :: error !< Error flag
 
   ! signature: nlonglength, dsetname, data, nlo, nhi, chkactiveflag
   ! tlflen, 'aperp_front_real', fr_rfield, [ffs,ffe], .false.
@@ -1169,10 +1190,10 @@ contains
       if (qONED_G) then
 
         numSpatialDims=1
-        dims = (/nlonglength,1/) ! Dataset dimensions (portion of single comp.)
-        fdims = (/NZ2_G,2/)      ! File Dataset dimensions
-        doffset = (/(nlo-1),component/)
-        dsize = (/nhi-nlo+1,1/)
+        dims = [nlonglength,1] ! Dataset dimensions (portion of single comp.)
+        fdims = [NZ2_G,2]      ! File Dataset dimensions
+        doffset = [(nlo-1),component]
+        dsize = [nhi-nlo+1,1]
 
       else   ! if not 1D (WE SHOULD NOT BE HERE)
   !        numSpatialDims=3
@@ -1187,8 +1208,8 @@ contains
 
   !    Print*,('Spatialdims: ' // trim(IntegerToString(numSpatialDims)))
 
-        filename = (trim(adjustl(zFilename_G)) // '_' // trim(adjustl(dsetname)) &
-                 // '_' // trim(adjustl(IntegerToString(ctx%mesh%highpass_filter_gr))) // '.h5' )
+        filename = (trim(adjustl(zFilename_G)) // "_" // trim(adjustl(dsetname)) &
+                 // "_" // trim(adjustl(IntegerToString(ctx%mesh%highpass_filter_gr))) // ".h5" )
 
       call h5open_f(error)
 
@@ -1306,7 +1327,8 @@ contains
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting slab on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
       !else
-! all ranks must participate, so select no space to write when dealing with ranks which hold no data for this field fr_real, etc
+! all ranks must participate, so select no space to write when dealing with
+! ranks which hold no data for this field fr_real, etc
         if (tProcInfo_G%rank /= 0) CALL h5sselect_none_f(filespace,error)
 !        Print*,trim(adjustl(IntegerToString(error))) // " selecting empty slab on rank" &
 !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
@@ -1372,7 +1394,7 @@ contains
 
   !        add stuff just on rank 0
 
-      if (createNewFlag .EQ. 1) then
+      if (createNewFlag == 1) then
 
         if (tProcInfo_G%qRoot) then
 
@@ -1450,15 +1472,16 @@ contains
   !                       Time Group
 
           call writeH5TimeGroup(file_id, timegrpname, time, &
-                                'radH5Field1D', error, ctx)
+                                "radH5Field1D", error, ctx)
 
-          call writeH5RunInfo(file_id,  time, sz_loc, iL, 'radH5Field1D', error, ctx)
+          call writeH5RunInfo(file_id,  time, sz_loc, iL, "radH5Field1D", error, ctx)
 
           lb=0.0_WP*sLengthOfElmZ2_G  ! Lower and upper bounds...
           ub=NZ2_G*sLengthOfElmZ2_G
 
           call write1DlimGrp(file_id,limgrpname,lb,ub)
-          call write1DuniformMesh(file_id,meshScaledGrpname,lb,ub,(NZ2_G-1),"z2,A_perp radiation field")
+          call write1DuniformMesh(file_id,meshScaledGrpname,lb,ub,(NZ2_G-1), &
+                                   "z2,A_perp radiation field")
 
           aname="intensityScaled"
           attr_data_string="sqr(aperp_real)+sqr(aperp_imaginary)"
@@ -1490,7 +1513,7 @@ contains
 !! Creates a single integrated file for the 1D datasets
   subroutine CreateIntegrated1DFloat(simtime, sz_loc, iL, error, nslices, ctx)
 
-    implicit none
+    implicit none (type, external)
 
     REAL(kind=WP), intent(in) :: simtime      !< simulation time
     real(kind=wp), intent(in) :: sz_loc        !< zbar local to current undulator module
@@ -1498,31 +1521,24 @@ contains
     type(tSimulationContext), intent(in) :: ctx
     INTEGER(kind=IP),intent(in) :: nslices       !< Number of slices
     INTEGER(HID_T) :: file_id       !< File identifier
-    INTEGER(HID_T) :: attr_id       !< Attribute identifier
-    INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
-    INTEGER(HID_T) :: atype_id      !< Attribute Data type identifier
-    INTEGER(HID_T) :: group_id      !< Group identifier
     CHARACTER(LEN=4), PARAMETER :: timegrpname = "time"  !< Time Group name
     CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  !< Lims Group name
     CHARACTER(LEN=14), PARAMETER :: limgrpnameSI = "globalLimitsSI"  !< Lims Group name
-    CHARACTER(LEN=10), PARAMETER :: meshScaledGrpname = "meshScaled" !< Mesh Group name
-    CHARACTER(LEN=6), PARAMETER :: meshSIGrpname = "meshSI"  !< SI Mesh Group name
     character(1024_IP) :: filename !< output filename
-    REAL(kind=WP), ALLOCATABLE :: limdata (:)  !< dataset containing limits to write
-    INTEGER(kind=IP), ALLOCATABLE :: numcelldata (:)  !< Dataset to write with numcells
-    integer(kind=ip) :: error !< Local Error flag
+    integer(kind=ip), intent(out) :: error !< Local Error flag
     if (tProcInfo_G%qRoot) then
-      filename = ( trim(adjustl(zFilename_G)) // '_integrated_' &
+      filename = ( trim(adjustl(zFilename_G)) // "_integrated_" &
         //trim(adjustl(IntegerToString(ctx%mesh%highpass_filter_gr))) &
-        // '.h5' )
+        // ".h5" )
       CALL h5open_f(error)
       CALL h5fcreate_f(filename, H5F_ACC_TRUNC_F, file_id, error)
-      CALL writeH5TimeGroup(file_id, timegrpname, simtime, 'intH5field1D', error, ctx)
-      CALL writeH5RunInfo(file_id,  simtime, sz_loc, iL, 'integratedH5Field1D', error, ctx)
+      CALL writeH5TimeGroup(file_id, timegrpname, simtime, "intH5field1D", error, ctx)
+      CALL writeH5RunInfo(file_id,  simtime, sz_loc, iL, "integratedH5Field1D", error, ctx)
 ! Limits group
 !      CALL h5gcreate_f(file_id, limgrpname, group_id, error)
       CALL write1DlimGrp(file_id,limgrpname,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G)
-      CALL write1DlimGrp(file_id,limgrpnameSI,0._wp,real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*ctx%frame%cooperation_length)
+      CALL write1DlimGrp(file_id,limgrpnameSI,0._wp, &
+        real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*ctx%frame%cooperation_length)
 
       CALL write1DuniformMesh(file_id,"intFieldMeshSc",0._wp, &
         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G,NZ2_G,"z2,scaled parameter")
@@ -1535,13 +1551,16 @@ contains
         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G,npts_I_G,"z2,scaled parameter")
 
       CALL write1DuniformMesh(file_id,"intFieldMeshSI",0._wp, &
-        real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*ctx%frame%cooperation_length,NZ2_g,"z [m], SI parameter")
+        real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*ctx%frame%cooperation_length, &
+        NZ2_g,"z [m], SI parameter")
 
       CALL write1DuniformMesh(file_id,"intPtclMeshSI",0._wp, &
-        real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*ctx%frame%cooperation_length,nslices,"z [m], SI parameter")
+        real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*ctx%frame%cooperation_length, &
+        nslices,"z [m], SI parameter")
 
       CALL write1DuniformMesh(file_id,"intCurrMeshSI",0._wp, &
-         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*ctx%frame%cooperation_length,npts_I_G,"z [m], SI parameter")
+         real((NZ2_G-1),kind=wp)*sLengthOfElmZ2_G*ctx%frame%cooperation_length, &
+         npts_I_G,"z [m], SI parameter")
 
 ! Close the file.
 
@@ -1560,13 +1579,12 @@ contains
   subroutine addH5Field1DFloat(writeData, dsetname, meshname, zLabels, simtime, &
                                sz_loc, iL, error, ctx)
 
-    implicit none
+    implicit none (type, external)
 
     character(1024_IP) :: filename !< output filename
-    integer(kind=ip) :: error !< Local Error flag
+    integer(kind=ip), intent(out) :: error !< Local Error flag
     real(kind=wp), intent(in) :: writeData(:) !< data to be written
     character(*), intent(in) :: zLabels  !< Axis labels for plotting
-    real(kind=wp), allocatable :: writeDataSI(:) !< data to be written
     CHARACTER(LEN=*), intent(in) :: dsetname  !< Dataset name
     CHARACTER(LEN=*), INTENT(IN) :: meshname !<name of mesh to assign integrated data
     REAL(kind=WP), intent(in) :: simtime      !< simulation time
@@ -1576,32 +1594,26 @@ contains
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier
     INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
-    INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
-    INTEGER     ::   rank = 1               !< Dataset rank
+    INTEGER, parameter ::   rank = 1               !< Dataset rank
     INTEGER(HSIZE_T), DIMENSION(1) :: dims  !< Dataset dimensionality
     INTEGER(HSIZE_T), DIMENSION(1) :: adims !< Attribute dims
     INTEGER(HID_T) :: attr_id       !< Attribute identifier
     INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
     INTEGER(HID_T) :: atype_id      !< Attribute Data type identifier
     CHARACTER(LEN=40) :: aname   !< Attribute name
-    REAL(kind=WP) :: attr_data_double       !< for attrs of type double
     CHARACTER(LEN=100) :: attr_data_string  !< attrs of type string
     INTEGER(HSIZE_T) :: attr_string_len     !< len of attrs of type string
-    INTEGER(kind=IP) :: numSpatialDims = 1  !< Attr content,
     CHARACTER(LEN=4), PARAMETER :: timegrpname = "time"  !< Time Group name
-    CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  !< Lims Group name
     CHARACTER(LEN=14), PARAMETER :: limgrpnameSI = "globalLimitsSI"  !< Lims Group name
 !    CHARACTER(LEN=10), PARAMETER :: meshScaledGrpname = "meshScaled" !< Mesh Group name
 !    CHARACTER(LEN=6), PARAMETER :: meshSIGrpname = "meshSI"  !< SI Mesh Group name
 !    CHARACTER(LEN=15), PARAMETER :: meshScaledGrpname = "meshIntPtclData" !< Mesh Group name
 !    CHARACTER(LEN=6), PARAMETER :: meshSIGrpname = "meshIntPtclSI"  !< SI Mesh Group name
-    CHARACTER(LEN=40) :: scaleToSIstring !< placeholder for scaling factor strings
-    INTEGER     ::  arank = 1               !< Attribute Dataset rank
     if (tProcInfo_G%qRoot) then
       dims = size(writeData) ! Dataset dimensions
-      filename = ( trim(adjustl(zFilename_G)) // '_integrated_' &
+      filename = ( trim(adjustl(zFilename_G)) // "_integrated_" &
         //trim(adjustl(IntegerToString(ctx%mesh%highpass_filter_gr))) &
-        // '.h5' )
+        // ".h5" )
       CALL h5open_f(error)
       CALL h5fopen_f(filename, H5F_ACC_RDWR_F, file_id, error)
       CALL h5screate_simple_f(rank, dims, filespace, error)
@@ -1620,14 +1632,14 @@ contains
       aname="vsLabels"
       attr_data_string=trim(adjustl(dsetname))
       attr_string_len=len(trim(adjustl(dsetname)))
-      if (attr_string_len .eq. 0) attr_string_len = 1
+      if (attr_string_len == 0) attr_string_len = 1
       CALL h5tset_size_f(atype_id, attr_string_len, error)
       CALL h5tset_strpad_f(atype_id, H5T_STR_SPACEPAD_F, error)
       CALL h5acreate_f(dset_id, aname, atype_id, aspace_id, attr_id, error)
       CALL h5awrite_f(attr_id, atype_id, attr_data_string, adims, error)
       CALL h5aclose_f(attr_id, error)
       CALL addH5StringAttribute(dset_id,"vsType","variable",aspace_id)
-      if (size(writeData) .eq. NZ2_G) then
+      if (size(writeData) == NZ2_G) then
         CALL addH5StringAttribute(dset_id,"vsCentering","nodal",aspace_id)
       else
         CALL addH5StringAttribute(dset_id,"vsCentering","zonal",aspace_id)

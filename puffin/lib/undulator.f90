@@ -14,20 +14,26 @@ module undulator
 
 ! use FFTW_Constants
 
-use pdiff
+use pdiff, only: diffractim, WP, IP, tProcInfo_G
 !use sddsPuffin
-use lattice
-use RK4int
+use lattice, only: correcttrans, matchout, matchin, initundulator
+use RK4int, only: ac_rfield_in, ac_ifield_in, rk4par, allact_rk4_arrs, deallact_rk4_arrs
 !use dumpFiles
-use write_adapter
-use ParaField
-use InitDataType
+use write_adapter, only: writeim, qwriteq, iStep
+use ParaField, only: getlocalfieldindices, inner2outer, outer2inner, getinnode
 use GlobalTypes, only: tSimulationContext
 use AdapterGlobals, only: PopulateIntegrationStateFromGlobals, UpdateGlobalsFromIntegrationState, &
-                          PopulateUndulatorFromGlobals, UpdateGlobalsFromUndulator
+  PopulateUndulatorFromGlobals, UpdateGlobalsFromUndulator
+use Globals, only: qResume_G
+use ParallelSetUp, only: Get_time
+use mpi, only: mpi_barrier, mpi_finalize
 
 
-implicit none
+implicit none (type, external)
+private
+
+public :: undsection
+
 
 
 contains
@@ -50,7 +56,7 @@ contains
 ! ac_ifield_in    | Module-level RK4 work arrays, managed by RK4int
 ! -----------------------------------------------------------------------
 
-    implicit none
+    implicit none (type, external)
 
 ! iM   - Which lattice module is this?
 ! sZ   - zbar position through the machine
@@ -63,19 +69,14 @@ contains
 
 ! Local args
 
-    real(kind=wp), allocatable  :: sAr(:), Ar_local(:)
-    integer(kind=ip) :: iPer, iS ! Loop index - period counter
-    integer(kind=ip) :: nW
     integer(kind=ip) :: iSteps4Diff, igoes
-    real(kind=wp) :: delz_D, nextDiff, szl, locTimeSt, locEndTime
-    logical :: qFirst, qLast, qDiffrctd
-    logical :: qWPF
-    logical :: qWIF
+    real(kind=wp) :: szl, locTimeSt, locEndTime
+    logical :: qDiffrctd
     logical :: qOKL
     integer(kind=ip) :: drstart, stepsLeft
     real(kind=wp) :: dzdS, dzdF, dzd
     logical :: qDWrDone
-    integer error
+    integer :: error
     logical :: qResuming
 
   call Get_time(locTimeSt)
@@ -308,7 +309,8 @@ end if
 
           call diffractIM(dzdF, qDiffrctd, qOKL, ctx)  ! Finish diffraction step
           call writeIM(sZ, sZl, ctx, iM, qOKL)   ! Write data
-          if (dzdS > 0.0_wp) call diffractIM(dzdS, qDiffrctd, qOKL, ctx)  ! Start new diffraction step
+          ! Start new diffraction step
+          if (dzdS > 0.0_wp) call diffractIM(dzdS, qDiffrctd, qOKL, ctx)
           call outer2Inner(ac_rfield_in, ac_ifield_in)
           qDWrDone = .true.
 
@@ -334,7 +336,7 @@ end if
 
       else
 
-      	qDWrDone = .false.  ! reset
+        qDWrDone = .false.  ! reset
 
       end if
 
@@ -344,9 +346,9 @@ end if
   call Get_time(locEndTime)
 
   if ((tProcInfo_G%QROOT ) .and. (ctx%output%output_info_level > 1)) then
-    print*,' finished step ',ctx%lattice%cumulative_steps, &
+    print*," finished step ",ctx%lattice%cumulative_steps, &
            ctx%integration%current_step, locEndTime - ctx%integration%time_start
-    WRITE(137,*) ' finished step ',ctx%lattice%cumulative_steps, &
+    WRITE(137,*) " finished step ",ctx%lattice%cumulative_steps, &
                  ctx%integration%current_step, locEndTime - ctx%integration%time_start
   end if
 
@@ -367,8 +369,8 @@ end if
 
   if (igoes>3_ip) then
 
-    if (tProcInfo_G%qRoot) print*, 'Tried rearranging 3 times...'
-    if (tProcInfo_G%qRoot) print*, '...didnt work, so stopping...'
+    if (tProcInfo_G%qRoot) print*, "Tried rearranging 3 times..."
+    if (tProcInfo_G%qRoot) print*, "...didnt work, so stopping..."
     call mpi_finalize(error)
     stop
 
@@ -382,7 +384,7 @@ end if
   qResume_G = .false.
 
   if ((tProcInfo_G%QROOT ) .and. (ctx%output%output_info_level > 0)) then
-    print*,' Finished undulator module in ', locEndTime-locTimeSt, 'seconds'
+    print*," Finished undulator module in ", locEndTime-locTimeSt, "seconds"
   end if
 
   call UpdateGlobalsFromIntegrationState(ctx%integration)

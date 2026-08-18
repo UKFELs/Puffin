@@ -12,16 +12,26 @@
 
 module avwrite
 
-   use puffin_kinds
-   use arrayfunctions
-   use globals
-   use functions
-   use ParallelSetUp
-   use parafield
+   use puffin_kinds, only: WP, IP, IPL
+   use arrayfunctions, only: tProcInfo_G
+   use globals, only: NX_G, NY_G, NZ2_G, ntrnds_G, sLengthOfElmX_G, sLengthOfElmY_G, &
+     sLengthOfElmZ2_G, fieldMesh, iPeriodic, x_ax_G, y_ax_G, npts_I_G, s_chi_bar_G, &
+     iNumberElectrons_G, npk_bar_G, ata_G, sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, &
+     qOneD_G, pi, c, q_e
+   use functions, only: linspace
+   use ParallelSetUp, only: sum2rootarr
+   use parafield, only: fr_rfield, bk_rfield, ac_rfield, fr_ifield, bk_ifield, ac_ifield, &
+     mainlen, tlflen, tlelen, tlflen4arr, tlelen4arr, ffe_GGG, ees_GGG, updateglobalpow
    use GlobalTypes, only: tFELFrame
+   use mpi, only: mpi_barrier
 
 
-   implicit none
+   implicit none (type, external)
+private
+
+public :: ac_ifield, ac_rfield, bk_ifield, bk_rfield, fr_ifield, fr_rfield, getcurr, getcurrnpts, &
+           getslicetwiss, gpowerp, initPowerCalc, linspace, mainlen, tlelen, tlflen
+
 
 contains
 
@@ -39,13 +49,12 @@ contains
 
    subroutine gPowerP(power)
 
-      implicit none
+      implicit none (type, external)
 
       real(kind=wp), intent(out) :: power(:)  !< Returned power array
       real(kind=wp), allocatable :: fr_power(:), &  !< Power in 'front' field section
          bk_power(:), &  !< Power in 'back' field section
          ac_power(:)     !< Power in 'active' field section
-      integer :: error  !< Error flag for MPI routines
 
       allocate(ac_power(mainlen), fr_power(tlflen4arr), bk_power(tlelen4arr))
 
@@ -112,7 +121,7 @@ contains
 
    subroutine gPower(rfield, ifield, power)
 
-      implicit none
+      implicit none (type, external)
 
       real(kind=wp), intent(in) :: rfield(:), &
          ifield(:)
@@ -171,11 +180,10 @@ contains
       real(kind=wp), intent(out) :: power(:)
 
       real(kind=wp), allocatable :: intens(:), intens2(:,:)
-      integer(kind=ip) :: i, bt, et, ntr, nx, ny, nz2, nno
+      integer(kind=ip) :: i, bt, et, ntr, nx, ny, nz2
 
-      integer :: error
 
-      
+
       nx = NX_G
       ny = NY_G
 
@@ -192,7 +200,7 @@ contains
 
          intens = abs(rfield(bt:et))**2.0_WP + abs(ifield(bt:et))**2.0_WP
 
-         intens2 = reshape(intens, (/nx,ny/))
+         intens2 = reshape(intens, [nx,ny])
 
          power(i) = m_trapz2D(xaxis, yaxis, intens2)
 
@@ -217,11 +225,11 @@ contains
 
    real function m_trapz2D(x, y, fxy)
 
-      implicit none
+      implicit none (type, external)
 
-      real(kind=wp), dimension(:) :: x,y
-      real(kind=wp), dimension(:,:) :: fxy
-      integer(kind=ip) :: xe, ye, i, j
+      real(kind=wp), dimension(:), intent(in) :: x,y
+      real(kind=wp), dimension(:,:), intent(in) :: fxy
+      integer(kind=ip) :: ye, i
       real(kind=wp), allocatable :: cul(:)
 
       allocate(cul(size(y)))
@@ -250,10 +258,10 @@ contains
 
    real function m_trapz(x, y, lower, upper)
 
-      implicit none
+      implicit none (type, external)
 
-      real(kind=wp), dimension(:) :: x,y
-      integer(kind=ip), optional :: lower, upper
+      real(kind=wp), dimension(:), intent(in) :: x,y
+      integer(kind=ip), optional, intent(in) :: lower, upper
       integer(kind=ip) :: l, u, i
 
       if (present(lower)) then
@@ -297,7 +305,7 @@ contains
 
    subroutine getCurr(sam_len, Iarray, frame)
 
-      use puffin_constants
+      use puffin_constants, only: c, q_e, ip, wp
 
       real(kind=wp), intent(in) :: sam_len !< length of bins in z2
       real(kind=wp), intent(inout) :: Iarray(:) !< data containing the current info
@@ -330,7 +338,7 @@ contains
 
 !      if ((inu > npts_I_G) .or. (inl<=0)) then
             if (inl<=0) then
-               print*, 'NODES OUTSIDE BOUNDS'
+               print*, "NODES OUTSIDE BOUNDS"
                stop
             end if
 
@@ -341,12 +349,12 @@ contains
             li1 = 1_wp - li2
 
             if ((li2 < 0.0_wp) .or. (li1<0.0_wp)) then
-               print*, 'Unable to calculate correct interpolation fraction'
-               print*, 'Particle coords'
+               print*, "Unable to calculate correct interpolation fraction"
+               print*, "Particle coords"
                print*, sElX_G(ij)
                print*, sElY_G(ij)
                print*, sElZ2_G(ij)
-               print*, 'Interps are negative!'
+               print*, "Interps are negative!"
                STOP
             end if
 
@@ -365,7 +373,7 @@ contains
             inu = inl + 1
 
             if ((inu > npts_I_G) .or. (inl<=0)) then
-               print*, 'NODES OUTSIDE BOUNDS'
+               print*, "NODES OUTSIDE BOUNDS"
                STOP
             end if
 
@@ -375,12 +383,12 @@ contains
             li1 = 1_wp - li2
 
             if ((li2 < 0.0_wp) .or. (li1<0.0_wp)) then
-               print*, 'Unable to calculate correct interpolation fraction'
-               print*, 'Particle coords'
+               print*, "Unable to calculate correct interpolation fraction"
+               print*, "Particle coords"
                print*, sElX_G(ij)
                print*, sElY_G(ij)
                print*, sElZ2_G(ij)
-               print*, 'Interps are negative!'
+               print*, "Interps are negative!"
                STOP
             end if
 
@@ -423,8 +431,7 @@ contains
 !    real(kind=wp), intent(out) :: bY(:)
 !    real(kind=wp), intent(out) :: aveGamma(nslices)
 !    real(kind=wp), intent(out) :: aveDgamma(:)
-      integer(kind=ip),parameter :: ncoord=6
-      integer(kind=ip) :: ipc,ic1,ic2,is !< particle,coord,slice index
+      integer(kind=ip) :: ipc, is!< particle,coord,slice index
       real(kind=wp) :: sliceSizeZ2
       real(kind=wp),DIMENSION(nslices) :: b1r,b2r,b3r,b4r,b5r
       real(kind=wp),DIMENSION(nslices) :: b1i,b2i,b3i,b4i,b5i

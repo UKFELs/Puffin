@@ -14,14 +14,18 @@
 
 module write_adapter
 
-USE lattice
-USE RK4int
-use hdf5_puff
-use ParaField
-use cwrites
+use lattice, only: WP, IP, fieldMesh, nSteps, pi, log_error, tErrorLog_G
+use hdf5_puff, only: wr_h5, tArrayE, tArrayA, tArrayZ, iStep
+use ParaField, only: iTemporal
+use cwrites, only: wrarray, qWrArray_G
 use GlobalTypes, only: tSimulationContext
+use Globals, only: qInitWrLat_G, qhdf5_G, qSeparateStepFiles_G
 
-implicit none
+implicit none (type, external)
+private
+
+public :: iStep, qwriteq, wr_cho, writeim
+
 
 contains
 
@@ -37,16 +41,15 @@ subroutine writeIM(sZ, sZl, ctx, iL, qOK)
 ! University of Strathclyde
 ! Jan 2015
 
-  implicit none
+  implicit none (type, external)
 
   real(kind=wp), intent(inout) :: sZ, sZl
   type(tSimulationContext), intent(inout) :: ctx
   integer(kind=ip), intent(in) :: iL
   logical, intent(inout) :: qOK
 
-  integer error
 
-  logical :: qOKL, qWriteInt, qWriteFull
+  logical :: qWriteInt, qWriteFull
 
   qOK = .false.
 
@@ -65,7 +68,7 @@ subroutine writeIM(sZ, sZl, ctx, iL, qOK)
 
   goto 2000
 
-1000  call log_error('Error in writeIM',tErrorLog_G)
+      call log_error("Error in writeIM",tErrorLog_G)
 
 2000 continue
 
@@ -87,7 +90,7 @@ subroutine wr_cho(sZ, sZl, ctx, iL, qWriteInt, qWriteFull, qOK)
 ! University of Strathclyde
 ! Jan 2017
 
-  implicit none
+  implicit none (type, external)
 
   real(kind=wp), intent(inout) :: sZ, sZl
   type(tSimulationContext), intent(inout) :: ctx
@@ -96,9 +99,7 @@ subroutine wr_cho(sZ, sZl, ctx, iL, qWriteInt, qWriteFull, qOK)
   logical, intent(inout) :: qOK
 
   integer(kind=ip) :: nslices
-  integer error
 
-  logical :: qOKL
 
   if (qhdf5_G) then
 
@@ -125,7 +126,7 @@ end subroutine wr_cho
   subroutine int_or_full(istep, iCsteps, iIntWr, iWr, &
                          qWriteInt, qWriteFull, qOK)
 
-    implicit none
+    implicit none (type, external)
 
 !   Figure out whether to write integrated data or
 !   full particle dump
@@ -137,7 +138,6 @@ end subroutine wr_cho
 
     integer(kind=ip) :: iw
 
-    logical ::  qOKL
 
     qOK = .false.
 
@@ -200,10 +200,10 @@ function qWriteq(iStep, iCsteps, iWriteNthSteps, iIntWriteNthSteps, nSteps)
 
 
 
-  implicit none
+  implicit none (type, external)
 
   logical :: qWriteq
-  integer(kind=ip) :: iStep, iCsteps, iWriteNthSteps, iIntWriteNthSteps, nSteps
+  integer(kind=ip), intent(in) :: iStep, iCsteps, iWriteNthSteps, iIntWriteNthSteps, nSteps
   integer(kind=ip) :: iw
 
 

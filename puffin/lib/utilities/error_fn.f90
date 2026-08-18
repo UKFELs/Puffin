@@ -4,17 +4,21 @@
 
 !> @author
 !> Lawrence Campbell, Cynthia Nam
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Module to calculate the error function
 
 MODULE error_fn
 
-USE puffin_constants
-USE nrutil
+use puffin_constants, only: pi, c, ip, wp
+USE nrutil, only: assert, nrerror
 
-IMPLICIT NONE
+IMPLICIT NONE (type, external)
+private
+
+public :: erf, erfi
+
 CONTAINS
 
 !********************************************************
@@ -22,7 +26,7 @@ CONTAINS
 
 FUNCTION erf(x)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
   REAL(KIND=WP),INTENT(IN) :: x
   REAL(KIND=WP) :: erf
@@ -37,23 +41,23 @@ END FUNCTION erf
 
 FUNCTION erfc(x)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
   REAL(KIND=WP),INTENT(IN)   :: x
-  REAL(KIND=WP)		   :: erfc
+  REAL(KIND=WP)            :: erfc
 
   erfc=merge(1.0_WP+gammp(0.5_WP,x**2),gammq(0.5_WP,x**2),x<0.0)
 
 END FUNCTION erfc
 !********************************************************
 
-FUNCTION erfi(Y)			
+FUNCTION erfi(Y)
 !-----------------------
 ! Inverse error function
 !-----------------------
   REAL(KIND=WP),INTENT(IN)   :: Y
-  REAL(KIND=WP)		   :: erfi
- 
+  REAL(KIND=WP)            :: erfi
+
 !---
 ! constants and parameters
 !---
@@ -65,13 +69,13 @@ FUNCTION erfi(Y)
 
   maxit = 20_IP
   eps   = 0.0000001_WP
-  const = sqrt(pi)/2.0_WP     
+  const = sqrt(pi)/2.0_WP
 
 !---
 ! very small value
 !---
 
-  If(abs(Y).LE.eps) then
+  If(abs(Y)<=eps) then
      erfi = Const*Y
      iter = 1_IP
      Return
@@ -81,7 +85,7 @@ FUNCTION erfi(Y)
 ! Newton iterations
 !---
 
-  If(abs(Y).LT.1.0_WP) then
+  If(abs(Y)<1.0_WP) then
 
      erfi  = const*abs(Y)
      Y0    = ERF(0.9_WP*ERFI)
@@ -90,12 +94,12 @@ FUNCTION erfi(Y)
      Do iter=1,maxit
         Y1  = 1.0_WP - erfc(erfi)
         DY1 = abs(Y) - Y1
-        If (abs(DY1).LT.eps) Go to 99
+        If (abs(DY1)<eps) Goto 99
         DY0   = Y1 - Y0
         Derfi = Derfi*DY1/DY0
         Y0    = Y1
         erfi  = erfi + Derfi
-        If(abs(Derfi/erfi).LT.eps) Go to 99
+        If(abs(Derfi/erfi)<eps) Goto 99
      End Do
 
   End If
@@ -111,7 +115,7 @@ FUNCTION erfi(Y)
 
   99  Continue
 
-  If(Y.LT.0.0_WP) erfi = -erfi
+  If(Y<0.0_WP) erfi = -erfi
 
 !-----
 ! Done
@@ -122,37 +126,37 @@ End Function erfi
 
 FUNCTION gammp(a,x)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
-  REAL(KIND=WP),INTENT(IN)			:: a,x
-  REAL(KIND=WP)					:: gammp
+  REAL(KIND=WP),INTENT(IN)                      :: a,x
+  REAL(KIND=WP)                                 :: gammp
 
-  CALL assert(x>=0.0, a>0.0,'gammp args')
+  CALL assert(x>=0.0, a>0.0,"gammp args")
 
   IF (x<a+1.0_WP) THEN
      gammp=gser_s(a,x)
   ELSE
      gammp=1.0_WP-gcf(a,x)
-  ENDIF
+  END IF
 
 END FUNCTION gammp
 !********************************************************
 
 FUNCTION gammq(a,x)
-  
-  IMPLICIT NONE
+
+  IMPLICIT NONE (type, external)
 
   REAL(KIND=WP),INTENT(IN) :: a,x
-  REAL(KIND=WP)	:: gammq
+  REAL(KIND=WP) :: gammq
 
-  CALL assert(x>=0.0, a>0.0,'gammq args')
+  CALL assert(x>=0.0, a>0.0,"gammq args")
 
   IF (x<a+1.0_WP) THEN
      gammq=1.0_WP-gser_s(a,x)
   ELSE
      gammq=gcf(a,x)
-  ENDIF
-  
+  END IF
+
 END FUNCTION gammq
 !********************************************************
 
@@ -162,15 +166,15 @@ FUNCTION gser_s(A,X,GLN)
   REAL(KIND=WP),OPTIONAL,INTENT(OUT) :: GLN
 
   INTEGER(KIND=IP) :: ITMAX,N
-  REAL(KIND=WP)	:: gser_s,EPS,AP,SUMM,DEL
+  REAL(KIND=WP) :: gser_s,EPS,AP,SUMM,DEL
 
   ITMAX=100_IP
   EPS=epsilon(X)
-  
+
   IF (X == 0.0) THEN
      gser_s=0.0_WP
      RETURN
-  ENDIF
+  END IF
 
   AP=A
   SUMM=1.0_WP/A
@@ -180,11 +184,11 @@ FUNCTION gser_s(A,X,GLN)
      AP=AP+1.0_WP
      DEL=DEL*X/AP
      SUMM=SUMM+DEL
-     
-     IF (ABS(DEL) < ABS(SUMM)*EPS) EXIT
-  ENDDO
 
-  IF (N> ITMAX) CALL nrerror('A too large,ITMAX too small in GSER')
+     IF (ABS(DEL) < ABS(SUMM)*EPS) EXIT
+  END DO
+
+  IF (N> ITMAX) CALL nrerror("A too large,ITMAX too small in GSER")
 
   IF (present(GLN)) THEN
 
@@ -192,18 +196,18 @@ FUNCTION gser_s(A,X,GLN)
      gser_s=SUMM*EXP(-X+A*LOG(X)-GLN)
   ELSE
      gser_s=SUMM*EXP(-X+A*LOG(X)-gammln(A))
-  ENDIF
+  END IF
 
 END FUNCTION gser_s
 !********************************************************
 
 FUNCTION gcf(a,x,gln)
 
-  REAL(KIND=WP),INTENT(IN)			:: a,x
-  REAL(KIND=WP),OPTIONAL,INTENT(OUT)		:: gln
-  REAL(KIND=WP)					:: gcf,EPS,FPMIN
-  REAL(KIND=WP)					:: an,b,c,d,del,h
-  INTEGER(KIND=IP)				:: ITMAX,i
+  REAL(KIND=WP),INTENT(IN)                      :: a,x
+  REAL(KIND=WP),OPTIONAL,INTENT(OUT)            :: gln
+  REAL(KIND=WP)                                 :: gcf,EPS,FPMIN
+  REAL(KIND=WP)                                 :: an,b,c,d,del,h
+  INTEGER(KIND=IP)                              :: ITMAX,i
 
   ITMAX=100_IP
   EPS=epsilon(x)
@@ -212,7 +216,7 @@ FUNCTION gcf(a,x,gln)
   IF (x==0.0_WP) THEN
      gcf=1.0_WP
      RETURN
-  ENDIF
+  END IF
 
   b=x+1.0_WP-a
   c=1.0_WP/FPMIN
@@ -230,38 +234,41 @@ FUNCTION gcf(a,x,gln)
      del=d*c
      h=h*del
      IF (ABS(del-1.0_WP) <=EPS) EXIT
-  ENDDO
+  END DO
 
-  IF (i> ITMAX) CALL nrerror ('a too large, ITMAX too small in gcf')
+  IF (i> ITMAX) CALL nrerror ("a too large, ITMAX too small in gcf")
   IF (present(gln)) THEN
      gln=gammln(a)
      gcf=EXP(-x+a*log(x)-gln)*h
   ELSE
      gcf=EXP(-x+a*log(x)-gammln(a))*h
-  ENDIF
-  
+  END IF
+
 END FUNCTION gcf
 !********************************************************
 
 FUNCTION gammln(xx)
 
-  use puffin_kinds
+  use puffin_kinds, only: WP, IP
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
   REAL(KIND=WP),INTENT(IN) :: xx
   REAL(KIND=WP) :: gammln,tmp,ser,x,y,stp
   REAL(KIND=WP),DIMENSION(6) :: coef
-  
+
   INTEGER(KIND=IP) :: i
 
   stp=2.5066282746310005_WP
-  coef=(/76.18009172947146_WP,-86.50532032941677_WP,24.01409824083091_WP, &
-       -1.231739572450155_WP,0.1208650973866179E-2_WP,-0.5395239384953E-5_WP /)
+  coef=[76.18009172947146_WP,-86.50532032941677_WP,24.01409824083091_WP, &
+       -1.231739572450155_WP,0.1208650973866179E-2_WP,-0.5395239384953E-5_WP ]
 
-  IF (xx==0) RETURN
+  IF (xx==0) THEN
+     gammln = 0.0_WP
+     RETURN
+  END IF
 
-  CALL assert(xx > 0.0,'gammln_s arg')
+  CALL assert(xx > 0.0,"gammln_s arg")
 
   x=xx
   tmp=x+5.5_WP
@@ -271,7 +278,7 @@ FUNCTION gammln(xx)
   DO i=1,size(coef)
      y=y+1.0_WP
      ser=ser+coef(i)/y
-  ENDDO
+  END DO
   gammln=tmp+log(stp*ser/x)
 
 END FUNCTION gammln

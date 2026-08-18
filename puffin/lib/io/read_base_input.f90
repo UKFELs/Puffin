@@ -6,7 +6,7 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Module containing the routines which read in the input files in Puffin.
@@ -14,20 +14,36 @@
 
 module Read_data
 
-use ArrayFunctions
-use puffin_constants
-use Globals
-use ParallelSetUp
-use MASPin
-use H5in
-use cwrites
+use ArrayFunctions, only: iRe_PPerp_CG, iIm_PPerp_CG, iRe_Gam_CG, iRe_z2_CG, iRe_X_CG, iRe_Y_CG, &
+  iRe_A_CG, iIm_A_CG, cArraySegment, IP, tProcInfo_G, tErrorLog_G, log_error, &
+  filenamenoextension, filenameextension, WP
+use puffin_constants, only: iX_CG, iY_CG, iZ2_CG, iPX_CG, iPY_CG, iGam_CG, iFieldEvolve_CG, &
+  iElectronsEvolve_CG, iElectronFieldCoupling_CG, iDiffraction_CG, iFocussing_CG, iOneD_CG, &
+  iDump_CG, iResume_CG
+use Globals, only: nspinDX, nspinDY, iRedNodesX_G, iRedNodesY_G, fieldMesh, sperwaves_G, &
+  qRndFj_G, sSigFj_G, qMatchS_G, qFMesh_G, nseqparts_G, qEquiXY_G, qFixCharge_G, fillFact_G, &
+  qRndEj_G, sSigEj_G, iInputType_G, iGenHom_G, iReadDist_G, iReadMASP_G, iReadH5_G, &
+  iFieldSeedType_G, iSimpleSeed_G, iReadH5Field_G, TrLdMeth_G, sKBetaXSF_G, sKBetaYSF_G, &
+  qUndEnds_G, qhdf5_G, sRedistLen_G, iRedistStp_G, tArrayA, tArrayZ, iWriteNthSteps, cmd_call_G, &
+  zBFile_G, zSFile_G, ioutInfo_G, qDiffraction_G, qFilter, qResume, qWrite, qscaled_G, &
+  qInitWrLat_G, qDumpEnd_G
+use MASPin, only: nMPs4MASP_G
+use cwrites, only: qWrArray_G, getwrarray
 use randomGauss, only: setRandomSeed
+
+use ParallelSetUp, only: initializeprocessors
+use H5in, only: readh5fieldfilesingledump
+implicit none (type, external)
+private
+
+public :: filenamenoextension, initializeprocessors, read_in, readh5fieldfilesingledump
+
 
 contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Read in the namelist data files for Puffin.
@@ -45,74 +61,74 @@ contains
 !> @param[out] tArrayZ SDDS filetype for Z data
 !> @param[out] tArrayA SDDS filetype for field data
 !> @param[out] tArrayVariables SDDS filetype for electron macroparticle dump data
-!> @param[out] sLenEPulse 6*nbeams element array - Length of electron pulse in x, y, z2, px, 
+!> @param[out] sLenEPulse 6*nbeams element array - Length of electron pulse in x, y, z2, px,
 !> py, and gamma, in the simple beam case
 !> @param[out] iNumNodes 3 element array - Number of field nodes in x, y, and z2
 !> @param[out] sWigglerLength 3 element array - Length of radiation field mesh in
 !> x, y, and z2
-!> @param[out] nodesperlambda Number of radiation nodes to be used in the mesh 
+!> @param[out] nodesperlambda Number of radiation nodes to be used in the mesh
 !> per reference resonant wavelength in z2.
-!> @param[out] stepsPerPeriod Number of integration steps per undulator period 
+!> @param[out] stepsPerPeriod Number of integration steps per undulator period
 !> (ignored if lattuce is specified).
-!> @param[out] nPeriods Number of periods in undulator. Ignored if lattice is 
+!> @param[out] nPeriods Number of periods in undulator. Ignored if lattice is
 !> specified
 !> @param[out] sQe Charge in the electron beam if simple beam input is used.
-!> @param[out] q_noise If adding shot-noise to the beam (can switch off to see 
+!> @param[out] q_noise If adding shot-noise to the beam (can switch off to see
 !> only Coherent Spontaneous Emission (CSE))
 !> iNumElectrons[out] Number of electron macroparticles in each dimension,
 !> for simple beam case.
 !> @param[out] sSigmaGaussian Gaussian sigma of electron beam density profile
 !> in each dimension (use 1E8 for flat top) for simple beam input
 !> @param[out] sElectronThreshold Macroparticle charge weight limit, below which
-!> the electron macroparticle will be thrown away, expressed as a % of the mean 
+!> the electron macroparticle will be thrown away, expressed as a % of the mean
 !> charge weight.
 !> @param[out] bcenter Center of beam in z2 / t.
-!> @param[out] gamma_d Array of size nbeams. Energy of beam in the simple beam case, 
-!> scaled to the reference energy (gamma_r). So gamma_d = 1 for beam energy 
+!> @param[out] gamma_d Array of size nbeams. Energy of beam in the simple beam case,
+!> scaled to the reference energy (gamma_r). So gamma_d = 1 for beam energy
 !> gamma_r.
 !> @param[out] chirp Array of size nbeams. Energy chirp of electron beam in simple
-!> beam case. Expressed in units of \f$ \frac{d \gamma}{d \bar{z}_2} \f$ in the 
+!> beam case. Expressed in units of \f$ \frac{d \gamma}{d \bar{z}_2} \f$ in the
 !> scaled case, and \f$ \frac{d \gamma}{d t} \f$ in the unscaled (SI) case. Only
 !> specified in simple beam case.
-!> @param[out] mag Magnitude of beam energy oscillation. The oscillation is 
-!> sinusoidal. Set to zero to have no energy oscillation. Default = 0. In units 
-!> of \f$ \gamma \f$ 
+!> @param[out] mag Magnitude of beam energy oscillation. The oscillation is
+!> sinusoidal. Set to zero to have no energy oscillation. Default = 0. In units
+!> of \f$ \gamma \f$
 !> @param[out] fr Wavenumber \f$ (\frac{2 \pi}{\lambda}) \f$ of beam modulation.
 !> @param[out] nbeams Number of electron beams input into FEL
-!> @param[out] dist_f Name of external files to read from in the dist and 
+!> @param[out] dist_f Name of external files to read from in the dist and
 !> particle cases.
 !> @param[out] qSimple If simple beam input is beaing used.
-!> @param[out] sA0_Re Magnitude of x-polarized injected seed field, if used. 
+!> @param[out] sA0_Re Magnitude of x-polarized injected seed field, if used.
 !> @param[out] sA0_Im Magnitude of y-polarized injected seed field, if used.
-!> @param[out] sFiltFrac Cutoff frequency for high-pass filter in diffraction 
+!> @param[out] sFiltFrac Cutoff frequency for high-pass filter in diffraction
 !> step. Expressed as a fraction of the resonant reference frequency.
-!> @param[out] sDiffFrac Length of the difraction step, in units of the undulator 
+!> @param[out] sDiffFrac Length of the difraction step, in units of the undulator
 !> period. Usually= 1.
-!> @param[out] sBeta Absorption coefficient for absorbing boundaries in the 
+!> @param[out] sBeta Absorption coefficient for absorbing boundaries in the
 !> field mesh in the transverse plane.
 !> @param[out] sRho FEL, or pierce, parameter
 !> @param[out] saw Undulator parameter (peak, not rms) for reference frame
 !> @param[out] sgamma_r Reference beam energy
 !> @param[out] lambda_w Undulator period
-!> @param[out] sEmit_n Array of length nbeams. Scaled RMS Beam emittance in 
+!> @param[out] sEmit_n Array of length nbeams. Scaled RMS Beam emittance in
 !> simple beam case.
-!> @param[out] sux Relative magnitude of undulator magnetic field in 
+!> @param[out] sux Relative magnitude of undulator magnetic field in
 !> x-direction. Either sux OR suy should = 1. For Puffin undulator type
 !> only.
-!> @param[out] suy Relative magnitude of undulator magnetic field in 
+!> @param[out] suy Relative magnitude of undulator magnetic field in
 !> y-direction.
 !> @param[out] taper Taper of magnetic undulator field as function of z, only
-!> used in simple wiggler case (no lattice). In units of 
+!> used in simple wiggler case (no lattice). In units of
 !> \f$ \frac{d \alpha}{d \bar{z}} \f$.
 !> @param[out] zUndType Undulator type to be use in simple wiggler case.
-!> @param[out] sSigmaF Standard deviation of radiation seed field magnitude in 
+!> @param[out] sSigmaF Standard deviation of radiation seed field magnitude in
 !> each dimension.
-!> @param[out] freqf Frequency of seed field, scaled to the reference resonant 
+!> @param[out] freqf Frequency of seed field, scaled to the reference resonant
 !> frequency.
 !> @param[out] SmeanZ2 Mean position of seed in z2.
 !> @param[out] ph_sh Phase shift of seed
 !> @param[out] qFlatTopS If using flat top seed profile
-!> @param[out] nseeds Number of radiation seeds 
+!> @param[out] nseeds Number of radiation seeds
 !> @param[out] qSwitches Various simulation control flags
 !> @param[out] qMatched_A If matching transverse area of beam to wiggler. Simple
 !> beam case only.
@@ -174,7 +190,7 @@ subroutine read_in(zfilename, &
        qMeasure, &
        qOK)
 
-       IMPLICIT NONE
+       IMPLICIT NONE (type, external)
 
   CHARACTER(*),INTENT(IN) :: zfilename
 
@@ -184,9 +200,9 @@ subroutine read_in(zfilename, &
   REAL(KIND=WP) ,    INTENT(OUT)  :: sZ0
   CHARACTER(1024_IP),  INTENT(INOUT):: LattFile
   INTEGER(KIND=IP),  INTENT(OUT)  :: iWriteNthSteps, iWriteIntNthSteps
-  TYPE(cArraySegment)             :: tArrayZ
-  TYPE(cArraySegment)             :: tArrayA(:)
-  TYPE(cArraySegment)             :: tArrayVariables(:)
+  TYPE(cArraySegment), INTENT(OUT) :: tArrayZ
+  TYPE(cArraySegment), INTENT(OUT) :: tArrayA(:)
+  TYPE(cArraySegment), INTENT(OUT) :: tArrayVariables(:)
 
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT)  :: sLenEPulse(:,:)
   INTEGER(KIND=IP),  INTENT(OUT)  :: iNumNodes(:)
@@ -219,7 +235,7 @@ subroutine read_in(zfilename, &
 
   CHARACTER(1024_ip), ALLOCATABLE, INTENT(INOUT) :: dist_f(:), & !< particle distribution file
                                                 field_file(:)    !< field input file (if any)
-  
+
   REAL(KIND=WP),     INTENT(OUT)  :: sFiltFrac,sDiffFrac,sBeta
   REAL(KIND=WP),     INTENT(OUT)  :: srho
   REAL(KIND=WP),     INTENT(OUT)  :: saw
@@ -236,14 +252,14 @@ subroutine read_in(zfilename, &
 
 ! Define local variables
 
-  integer(kind=ip), intent(out) :: stepsPerPeriod, nodesperlambda, nperiods ! Steps per lambda_w, nodes per lambda_r
-  real(kind=wp) :: dz2, zbar, sPerWaves
-  integer(kind=ip) :: nwaves, iRedNodesX, iRedNodesY
+  ! Steps per lambda_w, nodes per lambda_r
+  integer(kind=ip), intent(out) :: stepsPerPeriod, nodesperlambda, nperiods
+  real(kind=wp) :: sPerWaves
+  integer(kind=ip) :: iRedNodesX, iRedNodesY
 
-  INTEGER::ios
   CHARACTER(1024_IP) :: beam_file, seed_file, wr_file
   character(1024_IP) :: zDataFileName
-  LOGICAL :: qOKL, qMatched !   TEMP VAR FOR NOW, SHOULD MAKE FOR EACH BEAM
+  LOGICAL :: qOKL!   TEMP VAR FOR NOW, SHOULD MAKE FOR EACH BEAM
 
   logical :: qWriteZ, qWriteA, &
              qWritePperp, qWriteP2, qWriteZ2, &
@@ -348,7 +364,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   iRandSeed = -1_ip
 !  qplain = .false.
 
-  beam_file = 'beam_file.in'
+  beam_file = "beam_file.in"
   sElectronThreshold     = 0.05
   iNumNodesX             = 129
   iNumNodesY             = 129
@@ -364,21 +380,21 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   sFiltFrac              = 0.3
   sDiffFrac              = 1.0
   sBeta                  = 1.0
-  seed_file              = ''
-  wr_file = ''
+  seed_file              = ""
+  wr_file = ""
   srho                   = 0.01
   sux                    = 1.0
   suy                    = 1.0
   saw                    = 1.0
   sgamma_r               = 100.0
   lambda_w               = 0.04
-  zundType               = ''
+  zundType               = ""
   taper                  = 0.0
-  lattFile               = ''
+  lattFile               = ""
   stepsPerPeriod         = 30
   nPeriods               = 8
   sZ0                    = 0.0
-  zDataFileName          = ''
+  zDataFileName          = ""
   iWriteNthSteps         = 30
   iWriteIntNthSteps      = 30
   meshType = 0_ip
@@ -390,9 +406,9 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
 
 ! Open and read namelist
 
-  open(168,file=zfilename, status='OLD', recl=80, delim='APOSTROPHE')
+  open(168,file=zfilename, status="OLD", recl=80, delim="APOSTROPHE")
   read(168,nml=mdata)
-  close(UNIT=168,STATUS='KEEP')
+  close(UNIT=168,STATUS="KEEP")
 
   if (qOneD) qDiffraction = .false.
 
@@ -415,30 +431,30 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
 
 
   tArrayZ%qWrite = qWriteZ
-  tArrayZ%zVariable = 'Z' ! Assign SDDS column names
+  tArrayZ%zVariable = "Z" ! Assign SDDS column names
 
   tArrayA(iRe_A_CG)%qWrite = qWriteA
-  tArrayA(iRe_A_CG)%zVariable = 'RE_A'
+  tArrayA(iRe_A_CG)%zVariable = "RE_A"
 
   tArrayA(iIm_A_CG)%qWrite = qWriteA
-  tArrayA(iIm_A_CG)%zVariable = 'IM_A'
+  tArrayA(iIm_A_CG)%zVariable = "IM_A"
 
   tArrayVariables(iRe_PPerp_CG)%qWrite = qWritePperp
-  tArrayVariables(iRe_PPerp_CG)%zVariable = 'RE_PPerp'
+  tArrayVariables(iRe_PPerp_CG)%zVariable = "RE_PPerp"
   tArrayVariables(iIm_PPerp_CG)%qWrite = qWritePperp
-  tArrayVariables(iIm_PPerp_CG)%zVariable = 'IM_PPerp'
+  tArrayVariables(iIm_PPerp_CG)%zVariable = "IM_PPerp"
 
   tArrayVariables(iRe_Gam_CG)%qWrite = qWriteP2
-  tArrayVariables(iRe_Gam_CG)%zVariable = 'Gamma'
+  tArrayVariables(iRe_Gam_CG)%zVariable = "Gamma"
 
   tArrayVariables(iRe_Z2_CG)%qWrite = qWriteZ2
-  tArrayVariables(iRe_Z2_CG)%zVariable = 'Z2'
+  tArrayVariables(iRe_Z2_CG)%zVariable = "Z2"
 
   tArrayVariables(iRe_X_CG)%qWrite = qWriteX
-  tArrayVariables(iRe_X_CG)%zVariable = 'X'
+  tArrayVariables(iRe_X_CG)%zVariable = "X"
 
   tArrayVariables(iRe_Y_CG)%qWrite = qWriteY
-  tArrayVariables(iRe_Y_CG)%zVariable = 'Y'
+  tArrayVariables(iRe_Y_CG)%zVariable = "Y"
 
 
   iNumNodes(iX_CG) = iNumNodesX
@@ -450,7 +466,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
 
 
 
-  if (wr_file /= '') then
+  if (wr_file /= "") then
     qWrArray_G = .true.
     call getWrArray(wr_file)
   else
@@ -478,11 +494,11 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
 
   zBFile_G = beam_file
   zSFile_G = seed_file
-  
+
   sPerWaves_G = sPerWaves
 
   fieldMesh = meshType
-  
+
   ioutInfo_G = ioutInfo
 
 ! Hand the base RNG seed straight to the module that owns it, rather than out
@@ -495,11 +511,11 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   if (DFact /= -1000.0_wp) then
     if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
 
-      print*, ''
-      print*, 'WARNING: Use of Dfact deprecated. It is kept only so your'
-      print*, 'old input files will not break!! It will do nothing. To specify'
-      print*, 'chicane strengths, please use the lattice file.'
-      print*, ''
+      print*, ""
+      print*, "WARNING: Use of Dfact deprecated. It is kept only so your"
+      print*, "old input files will not break!! It will do nothing. To specify"
+      print*, "chicane strengths, please use the lattice file."
+      print*, ""
 
     end if
   end if
@@ -508,10 +524,10 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   if (iDumpNthSteps /= -1000_ip) then
     if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
 
-      print*, ''
-      print*, 'WARNING: Use of iDumpNthSteps deprecated. It is kept only so your'
-      print*, 'old input files will not break!! It will do nothing.'
-      print*, ''
+      print*, ""
+      print*, "WARNING: Use of iDumpNthSteps deprecated. It is kept only so your"
+      print*, "old input files will not break!! It will do nothing."
+      print*, ""
 
     end if
   end if
@@ -519,21 +535,21 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   if (speout /= -1000.0_wp) then
     if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
 
-      print*, ''
-      print*, 'WARNING: Use of speout deprecated. It is kept only so your'
-      print*, 'old input files will not break!! It will do nothing.'
-      print*, ''
+      print*, ""
+      print*, "WARNING: Use of speout deprecated. It is kept only so your"
+      print*, "old input files will not break!! It will do nothing."
+      print*, ""
 
     end if
   end if
 
-  if (zDataFileName /= '') then
+  if (zDataFileName /= "") then
     if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
 
-      print*, ''
-      print*, 'WARNING: Use of zDataFileName deprecated. It is kept only so your'
-      print*, 'old input files will not break!! It will do nothing.'
-      print*, ''
+      print*, ""
+      print*, "WARNING: Use of zDataFileName deprecated. It is kept only so your"
+      print*, "old input files will not break!! It will do nothing."
+      print*, ""
 
     end if
   end if
@@ -548,16 +564,16 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                      ph_sh, qFlatTopS,SmeanZ2,field_file,qscaled,qOKL)
 
   call FileNameNoExtension(beam_file, zBFile_G, qOKL)
-  
-  if (seed_file == '') then
-    zSFile_G = 'unused'
+
+  if (seed_file == "") then
+    zSFile_G = "unused"
   else
     call FileNameNoExtension(seed_file, zSFile_G, qOKL)
   end if
 
 ! For 'proper' 1D beam i.e. no energy spread
 
-  if ((qOneD) .and. (iNumElectrons(1,6) == 1)) then 
+  if ((qOneD) .and. (iNumElectrons(1,6) == 1)) then
     qEquiXY_G = .true.
   end if
 
@@ -577,8 +593,8 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qOK = .TRUE.
   GOTO 2000
 
-1000 CALL log_error('Error in read_data:read_in',tErrorLog_G)
-  PRINT*,'Error in readData'
+1000 CALL log_error("Error in read_data:read_in",tErrorLog_G)
+  PRINT*,"Error in readData"
 2000 CONTINUE
 
 END SUBROUTINE read_in
@@ -591,7 +607,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
                          iNumElectrons,sQe, Ipk, chirp, bcenter, mag, fr,gammaf,nbeams,&
                          qMatched_A, iMPsZ2PerWave, qOneD, qOK)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
 
 ! Read the beamfile into Puffin
@@ -600,7 +616,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 !                     ARGUMENTS
 
   LOGICAL, INTENT(OUT) :: qSimple
-  CHARACTER(*), INTENT(INOUT) :: be_f     ! beam file name
+  CHARACTER(*), INTENT(IN) :: be_f     ! beam file name
   CHARACTER(1024_ip), INTENT(INOUT), ALLOCATABLE :: dist_f(:)     ! dist file names
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sEmit_n(:),chirp(:), mag(:), fr(:)
   REAL(KIND=WP), ALLOCATABLE, INTENT(OUT) :: sSigmaE(:,:)
@@ -627,7 +643,6 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   integer(kind=ip), allocatable :: inmps1DGam(:)
   logical :: qFixCharge, qAMatch
   integer(kind=ip), allocatable :: iNumMPsD(:,:)
-  INTEGER::ios
   CHARACTER(96) :: dtype
 
   character(:), allocatable :: fext
@@ -655,13 +670,14 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   call FileNameExtension(be_f, fext, qOK)
 
   qdirect = .false.
-  if (fext == '.h5') qdirect = .true.
+  if (fext == ".h5") qdirect = .true.
 
 ! Open the file
 !  OPEN(UNIT=168,FILE=be_f,IOSTAT=ios,&
 !    ACTION='READ',POSITION='REWIND')
 !  IF  (ios/=0_IP) THEN
-!    CALL Error_log('Error in read_in:OPEN(input file) not performed correctly, IOSTAT/=0',tErrorLog_G)
+!    CALL Error_log('Error in read_in:OPEN(input file) not performed correctly, &
+!      IOSTAT/=0',tErrorLog_G)
 !    GOTO 1000
 !  END IF
 
@@ -672,23 +688,24 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
 
 !!!!! Need to make qMatched an array
-!!!!! Maybe make qMathcField or something to choose which beam is matched to transverse field area (numerically - sampling wise)..???
+!!!!! Maybe make qMathcField or something to choose which beam is matched to transverse
+!!!!! field area (numerically - sampling wise)..???
 
 
 !  Default vals
 
   nbeams = 1
-  dtype = 'simple'
+  dtype = "simple"
 
 
 
 ! Read first namelist - number of beams only
 
   if (.not. qdirect) then
-    open(161,file=be_f, status='OLD', recl=80, delim='APOSTROPHE')
+    open(161,file=be_f, status="OLD", recl=80, delim="APOSTROPHE")
     read(161,nml=nblist)
   else
-    dtype = 'h5'
+    dtype = "h5"
   end if
 
 
@@ -736,12 +753,12 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   qOneDCold(:) = .false.
 
   if (qOneD) then
-    
+
     nseqparts = 19_ip
     TrLdMeth = 0_ip
-    
+
   else
-    
+
     nseqparts = 1000_ip
     TrLdMeth = 2_ip
 
@@ -769,7 +786,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
 ! &&&&&&&&&&&&&&&&&&&&&
 
-  if (dtype == 'simple') then
+  if (dtype == "simple") then
 
 ! Read in arrays
 
@@ -778,16 +795,16 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
     read(161,nml=blist)
 
-    close(UNIT=161,STATUS='KEEP')
+    close(UNIT=161,STATUS="KEEP")
 
     if (iNumElectrons(1,3) /= -1) then
 
       if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-        print*,''
-        print*, 'Warning: use of iNumElectrons in beam file is deprecated.'
-        print*, 'It will be removed in a future release.'
-        print*, 'In the future, use iNumMPs instead.'
-        print*,''
+        print*,""
+        print*, "Warning: use of iNumElectrons in beam file is deprecated."
+        print*, "It will be removed in a future release."
+        print*, "In the future, use iNumMPs instead."
+        print*,""
       end if
 
       iNumMPs = iNumElectrons
@@ -795,11 +812,11 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
       iNumElectrons = iNumMPs
       if ((iNumMPs(1,3) == -1_ip) .and. (iMPsZ2PerWave(1) == -1_ip) ) then
         if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-          print*, ''
-          print*, 'Warning: Numbers of Macroparticles to use have not been specified.'
-          print*,''
+          print*, ""
+          print*, "Warning: Numbers of Macroparticles to use have not been specified."
+          print*,""
         end if
-      end if      
+      end if
     end if
 
     if (qOneD) then
@@ -807,26 +824,26 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
       do b_ind = 1, nbeams
 
         if (qOneDCold(b_ind)) then
-        
+
           iNumMPs(b_ind,6) = 1_ip
           iNumElectrons(b_ind,6) = 1_ip
-      
+
         else
-          
+
           if (inmps1DGam(b_ind) > 0_ip) then
-            
+
             iNumMPs(b_ind,6) = inmps1DGam(b_ind)
             iNumElectrons(b_ind,6) = inmps1DGam(b_ind)
-            
+
           end if
-      
+
         end if
-      
+
       end do
 
     end if
 
-  else if (dtype == 'dist') then
+  else if (dtype == "dist") then
 
 
 !    Need to change this to namelist - could have array of strings...??
@@ -849,7 +866,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
     read(161,nml=bdlist)
 
-    close(UNIT=161,STATUS='KEEP')
+    close(UNIT=161,STATUS="KEEP")
 
     iNumElectrons(:,iX_CG) = iNumMPsD(:,1)
     iNumElectrons(:,iY_CG) = iNumMPsD(:,2)
@@ -861,11 +878,11 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
       if (.not. qOneD) then
         if ( iNumMPsD(1,1) < 0_ip ) then
           if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-            print*, ''
-            print*, 'Warning: Numbers of Macroparticles (iNumMPsD) to use have not been specified.'
-            print*,''
+            print*, ""
+            print*, "Warning: Numbers of Macroparticles (iNumMPsD) to use have not been specified."
+            print*,""
           end if
-        end if    
+        end if
       end if
     end if
 
@@ -873,14 +890,16 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
     if (TrLdMeth == 0_ip) then
       if (qOneD) then
         do b_ind = 1, nbeams
-          if (( iNumMPsD(b_ind, 5) < 0_ip ) .and. (inmps1DGam(b_ind) < 0_ip) .and. (.not. qOneDCold(b_ind)) ) then
+          if (( iNumMPsD(b_ind, 5) < 0_ip ) .and. (inmps1DGam(b_ind) < 0_ip) .and. &
+              (.not. qOneDCold(b_ind)) ) then
             if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-              print*, ''
-              print*, 'Warning: Numbers of Macroparticles (iNumMPsD or inmps1DGam) to use have not been specified.'
-              print*, '...in beam ', b_ind
-              print*,''
+              print*, ""
+              print*, "Warning: Numbers of Macroparticles (iNumMPsD or inmps1DGam) &
+                       &to use have not been specified."
+              print*, "...in beam ", b_ind
+              print*,""
             end if
-          end if    
+          end if
         end do
       end if
     end if
@@ -896,7 +915,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
           iNumElectrons(b_ind, iGam_CG) = 1_ip
 
         else
-          
+
           if (inmps1DGam(b_ind) > 0_ip) then
 
             iNumElectrons(b_ind, iGam_CG) = inmps1DGam(b_ind)
@@ -933,14 +952,14 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 !
 !    CLOSE(UNIT=161,STATUS='KEEP')
 
-  else if (dtype == 'particle') then
+  else if (dtype == "particle") then
 
     if (nbeams /= 1) then
 
       if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-         print*, 'WARNING - currently only 1 file', &
-                                      'is supported for the particle beam type'
-         print*, 'Only the 1st file will be read in....'
+         print*, "WARNING - currently only 1 file", &
+                                      "is supported for the particle beam type"
+         print*, "Only the 1st file will be read in...."
       end if
 
     end if
@@ -952,15 +971,15 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
     read(161,nml=bdlist)
 
-    close(UNIT=161,STATUS='KEEP')
+    close(UNIT=161,STATUS="KEEP")
 
-  else if (dtype == 'h5') then
-    if (nbeams /= 1) then 
-      
+  else if (dtype == "h5") then
+    if (nbeams /= 1) then
+
       if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-        print*, 'WARNING - currently only 1 file', &
-                                      'is supported for the h5 beam type'
-        print*, 'Only the 1st file will be read in....'
+        print*, "WARNING - currently only 1 file", &
+                                      "is supported for the h5 beam type"
+        print*, "Only the 1st file will be read in...."
       end if
 
     end if
@@ -969,7 +988,7 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
     if (.not. qdirect) then
       read(161,nml=bh5list)
-      close(UNIT=161,STATUS='KEEP')
+      close(UNIT=161,STATUS="KEEP")
     else
       dist_f = be_f
     end if
@@ -978,11 +997,11 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
   if (qEquiXY) then
     if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-      print*, ''
-      print*, '************************************************'
-      print*, 'WARNING - use of qEquiXY deprecated - use TrLdMeth instead'
-      print*, 'To recover qEquiXY=.true. behaviour, use TrLdMeth = 0'
-      print*, 'For now, TrLdMeth will be set to = 0 for you'
+      print*, ""
+      print*, "************************************************"
+      print*, "WARNING - use of qEquiXY deprecated - use TrLdMeth instead"
+      print*, "To recover qEquiXY=.true. behaviour, use TrLdMeth = 0"
+      print*, "For now, TrLdMeth will be set to = 0 for you"
     end if
     TrLdMeth = 0_ip
   end if
@@ -1003,20 +1022,20 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
     if (sEmit_n(b_ind) > 0.0_wp) then
       if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-        print*, ''
-        print*, '************************************************'
-        print*, 'WARNING - use of sEmit_n deprecated - use emitx and emity instead'
-        print*, 'For now, emitx and emity will = sEmit_n where not specified'
+        print*, ""
+        print*, "************************************************"
+        print*, "WARNING - use of sEmit_n deprecated - use emitx and emity instead"
+        print*, "For now, emitx and emity will = sEmit_n where not specified"
       end if
 
       if (emitx(b_ind) <= 0.0_wp) emitx(b_ind) = sEmit_n(b_ind)
       if (emity(b_ind) <= 0.0_wp) emity(b_ind) = sEmit_n(b_ind)
-    
-    end if  
+
+    end if
 
   end do
 
-  
+
 
   do b_ind = 1, nbeams
 
@@ -1038,18 +1057,18 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
 
 
   if (qAMatch) then
-    
+
     if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 0)) then
-      print*, ''
-      print*, '************************************************'
-      print*, 'You have chosen to match at least one beam'
-      print*, 'Please recall that the matching is only done', &
-                                  'for the in-undulator weak or strong focusing ', &
-                                  'of the first module, and not for any FODO lattice!!! '
-      print*, 'alphax and alphay will then be ignored....'
-      print*, '(if this is 1D then you wont care about this!)'
+      print*, ""
+      print*, "************************************************"
+      print*, "You have chosen to match at least one beam"
+      print*, "Please recall that the matching is only done", &
+                                  "for the in-undulator weak or strong focusing ", &
+                                  "of the first module, and not for any FODO lattice!!! "
+      print*, "alphax and alphay will then be ignored...."
+      print*, "(if this is 1D then you wont care about this!)"
     end if
-      
+
   end if
 
   deallocate(qOneDCold)
@@ -1066,8 +1085,8 @@ SUBROUTINE read_beamfile(qSimple, dist_f, be_f, sEmit_n,sSigmaE,sLenE, &
   qOK = .TRUE.
   GOTO 2000
 
-1000 CALL log_error('Error in Read_Data:read_beamfile',tErrorLog_G)
-    PRINT*,'Error in read_beamfile'
+     CALL log_error("Error in Read_Data:read_beamfile",tErrorLog_G)
+    PRINT*,"Error in read_beamfile"
 2000 CONTINUE
 
 END SUBROUTINE read_beamfile
@@ -1077,7 +1096,7 @@ END SUBROUTINE read_beamfile
 SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
                          qFlatTop, meanZ2,field_file,qsc, qOK)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
 !                     ARGUMENTS
 
@@ -1095,8 +1114,6 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
 
 !                     LOCAL ARGS
 
-  INTEGER(KIND=IP) :: s_ind
-  INTEGER::ios
   CHARACTER(len=1024) :: dtype
 
   character(:), allocatable :: fext
@@ -1114,23 +1131,23 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
 
   qdirect = .false.
 
-  if (fext == '.h5') qdirect = .true.
+  if (fext == ".h5") qdirect = .true.
 
 
 ! Default vals
 
   nseeds = 1
-  dtype = 'simple'
+  dtype = "simple"
   allocate(field_file(1))
-  field_file = ''
+  field_file = ""
 
 !   Open the file
-  if (se_f .ne. '') then
+  if (se_f /= "") then
     if (.not. qdirect) then
-      open(161,file=se_f, status='OLD', recl=80, delim='APOSTROPHE')
+      open(161,file=se_f, status="OLD", recl=80, delim="APOSTROPHE")
       read(161,nml=nslist)
     else
-      dtype = 'h5'
+      dtype = "h5"
     end if
   end if
 
@@ -1160,10 +1177,10 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
   qRndFj_G = .false.
   sSigFj_G = sSigmaF(:,3) / 100.0_wp
   qMatchS_G = .true.
-  if (dtype == 'simple') then 
-    if (se_f .ne. '') then
+  if (dtype == "simple") then
+    if (se_f /= "") then
       read(161,nml=slist)
-      close(UNIT=161,STATUS='KEEP')
+      close(UNIT=161,STATUS="KEEP")
     end if
 
     iFieldSeedType_G=iSimpleSeed_G
@@ -1175,13 +1192,13 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
 
 
 
-  if (dtype == 'h5') then
+  if (dtype == "h5") then
     iFieldSeedType_G=iReadH5Field_G
 
-    if (se_f .ne. '') then
+    if (se_f /= "") then
       if (.not. qdirect) then
         read(161,nml=sh5list)
-        close(UNIT=161,STATUS='KEEP')
+        close(UNIT=161,STATUS="KEEP")
       else
         field_file = se_f
       end if
@@ -1189,11 +1206,11 @@ SUBROUTINE read_seedfile(se_f, nseeds,sSigmaF,sA0_X,sA0_Y,freqf,ph_sh,&
 
     qOK = .TRUE.
     GOTO 2000
-    
+
   end if
 
-1000 CALL log_error('Error in Read_Data:read_seedfile',tErrorLog_G)
-    PRINT*,'Error in read_seedfile'
+     CALL log_error("Error in Read_Data:read_seedfile",tErrorLog_G)
+    PRINT*,"Error in read_seedfile"
 2000 CONTINUE
 
 

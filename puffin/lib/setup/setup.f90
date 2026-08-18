@@ -14,33 +14,52 @@
 
 module Setup
 
-   use setuptrans
-   use setupcalcs
-   use transforms
-   use lattice
-   use Globals
-   use simple_electron_gen
-   use Read_data
-   use checks
-   use ParaField
-   use write_adapter
+   use setuptrans, only: stptrns, checksourcediff, WP, IP, tProcInfo_G, iX_CG, iY_CG, tErrorLog_G, &
+     log_error
+   use setupcalcs, only: passtoglobals, fixcharge, setupinitialvalues, scaleparams, calcscaling, &
+     calccharge, calcsamples, popmacroelectrons, iZ2_CG, iDiffraction_CG, tSimulationContext
+   use transforms, only: gettransformplans4fel, cleartransformplans, getkvalues, tTransInfo_G
+   use lattice, only: setupmods
+   use Globals, only: NX_G, NY_G, sLengthOfElmX_G, sLengthOfElmY_G, sLengthOfElmZ2_G, kx_G, ky_G, &
+     kz2_loc_G, fieldMesh, iPeriodic, delta_G, qMatchS_G, qFMesh_G, qFixCharge_G, s_chi_bar_G, &
+     s_Normalised_chi_G, qRndEj_G, sSigEj_G, iFieldSeedType_G, iSimpleSeed_G, iReadH5Field_G, &
+     sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, sZlSt_G, tInitData_G, sKBetaXSF_G, &
+     sKBetaYSF_G, ffact, start_step, sStepSize, nSteps, sRedistLen_G, tArrayE, tArrayA, tArrayZ, &
+     iWriteNthSteps, iIntWriteNthSteps, zFileName_G, ioutInfo_G, frecvs, fdispls, qDiffraction_G, &
+     qResume_G, qResume, qWrite, qOneD_G, qscaled_G
+   use Read_data, only: read_in, filenamenoextension, initializeprocessors, &
+     readh5fieldfilesingledump
+   use checks, only: checkparameters
+   use ParaField, only: ac_rfield, ac_ifield, qStart_new, getlocalfieldindices, pupd8
+   use write_adapter, only: writeim
+   use avwrite, only: initPowerCalc
+   use mpi, only: mpi_barrier
 
-   implicit none
+   implicit none (type, external)
+private
+
+public :: cleanup, init
+
 
 contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
    subroutine init(infile, sZ, ctx, qOK)
-      use InitVars
-      use GlobalTypes, only: tSimulationContext
-      use AdapterGlobals, only: PopulateFieldMeshFromGlobals, &
-                                PopulateSimulationFlagsFromGlobals, &
-                                PopulateOutputConfigFromGlobals, &
-                                PopulateLatticeElementsFromGlobals, &
-                                PopulateIntegrationStateFromGlobals, &
-                                PopulateUndulatorFromGlobals
-      implicit none
+      use InitVars, only: sLenEPulse, iNumElectrons, sEleSig, sQe, beamCenZ2, gamma_d, chirp, &
+        sEmit_n, mag, fr, sA0_Re, sA0_Im, nbeams, qMatched_A, Ipk, alphax, alphay, emitx, emity, &
+        iMPsZ2PerWave, nseeds, freqf, ph_sh, SmeanZ2, qFlatTopS, sSeedSigma, emptstring, &
+        zUndType, sFieldModelLength, q_noise, qMeasure, sElectronThreshold, sDiffFrac, sBeta, &
+        srho, saw, sgammar, lambda_w, fx, fy, qOKL, qSwitches, qSeparateStepFiles, &
+        qFormattedFiles, sFiltFrac, taper, qSimple, dist_f, field_file, zFileName, zFile, &
+        LattFile, sLengthOfElm, iNodes, nodesperlambda, stepsPerPeriod, nperiods, qWrite, &
+        qResume, error, WP, tProcInfo_G, tErrorLog_G, log_error, filenamenoextension, &
+        initializeprocessors
+      use GlobalTypes, only: tSimulationContext, iX_CG, iY_CG, iZ2_CG, iDiffraction_CG
+      use AdapterGlobals, only: PopulateFieldMeshFromGlobals, PopulateSimulationFlagsFromGlobals, &
+        PopulateOutputConfigFromGlobals, PopulateLatticeElementsFromGlobals, &
+        PopulateIntegrationStateFromGlobals, PopulateUndulatorFromGlobals
+      implicit none (type, external)
 
 ! Subroutine to perform the initialization of
 ! the data for Puffin, and to write out initial
@@ -78,7 +97,7 @@ contains
 
       if (infile == emptstring) then
 
-         print *, 'ERROR, no input filename specified'
+         print *, "ERROR, no input filename specified"
          stop
 
       end if
@@ -93,7 +112,7 @@ contains
       tErrorLog_G%zFileName = TRIM(ADJUSTL(zFile))//"_Error.log"
       tErrorLog_G%qFormatted = .true.
 
-      call log_error('',tErrorLog_G)
+      call log_error("",tErrorLog_G)
 
 !     Rlog_error file
 
@@ -170,10 +189,10 @@ contains
 
 
          if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 1)) then
-            print*, '*******************'
-            print*, ''
-            print*, 'Scaling params....'
-            print*, ''
+            print*, "*******************"
+            print*, ""
+            print*, "Scaling params...."
+            print*, ""
          end if
 
          call scaleParams(sEleSig, sLenEPulse, sSigEj_G, &
@@ -192,7 +211,8 @@ contains
          nperiods, nodesperlambda, gamma_d, sEleSig, sLenEPulse, &
          iNumElectrons, iMPsZ2PerWave, qSimple, ctx%frame)
 
-      call calcCharge(sQe, Ipk, sEleSig(:,iZ2_CG), sLenEPulse(:, iZ2_CG), sSigEj_G, qRndEj_G, ctx%frame)
+      call calcCharge(sQe, Ipk, sEleSig(:,iZ2_CG), sLenEPulse(:, iZ2_CG), sSigEj_G, &
+                       qRndEj_G, ctx%frame)
 
 !  if (qscaled_G) then
 
@@ -217,7 +237,7 @@ contains
       call setupMods(lattFile, taper, sRho, nSteps, sStepSize, fx, fy, &
          sKBetaXSF_G, sKBetaYSF_G, ctx%frame)
 
-      if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 0)) print*, 'setup lattice'
+      if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 0)) print*, "setup lattice"
 
 !     Pass local vars to global vars
 
@@ -436,14 +456,14 @@ contains
 
       CALL MPI_BARRIER(tProcInfo_G%comm,error)
 
-      if ((tProcInfo_G%qROOT) .and. (ioutInfo_G > 0)) print*, 'Initial data written'
+      if ((tProcInfo_G%qROOT) .and. (ioutInfo_G > 0)) print*, "Initial data written"
       deallocate(s_Normalised_chi_G)
 
       qOK = .true.
 
       goto 2000
 
-1000  call log_error('Error in Setup:init',tErrorLog_G)
+1000  call log_error("Error in Setup:init",tErrorLog_G)
 
 2000  continue
 
@@ -453,7 +473,7 @@ contains
 
    SUBROUTINE cleanup(sZ)
 
-      IMPLICIT NONE
+      IMPLICIT NONE (type, external)
 
 ! Cleanup, deallocate, destroy
 !
@@ -464,7 +484,7 @@ contains
 
 ! Local
 
-      LOGICAL qOKl
+      LOGICAL :: qOKl
 
 !    Dump data for resumption
 
@@ -489,12 +509,12 @@ contains
          IF (tTransInfo_G%qOneD) THEN
             IF (tTransInfo_G%loc_nz2_aft_trans/=0) THEN
                DEALLOCATE(kz2_loc_G)
-            ENDIF
+            END IF
          ELSE
             IF (tTransInfo_G%loc_nz2/=0) THEN
                DEALLOCATE(kz2_loc_G)
-            ENDIF
-         ENDIF
+            END IF
+         END IF
       END IF
 
 !    Clear FFTW plans
@@ -511,7 +531,7 @@ contains
 
       GOTO 2000
 
-1000  PRINT*, 'ERROR IN cleanuptemp'
+      PRINT*, "ERROR IN cleanuptemp"
       STOP
 2000  CONTINUE
 

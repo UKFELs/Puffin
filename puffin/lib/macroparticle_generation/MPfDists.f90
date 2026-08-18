@@ -23,7 +23,7 @@ module gMPsFromDists
    use puffin_macroparticle_sequences, only: getSeqs, init_random_seed
    use scale, only: scaleT, scaleX, scalePX
 
-   implicit none
+   implicit none (type, external)
    private
    public :: getMPs
 
@@ -54,7 +54,7 @@ contains
 
       real(kind=wp), allocatable :: x(:), y(:), &
          z2(:), px(:), &
-         py(:), pz2(:), gamma(:), &
+py(:), gamma(:),  &
          z2m(:), gm(:), gsig(:), &
          xm(:), ym(:), pxm(:), pym(:), &
          Ne(:), pxsig(:), pysig(:), &
@@ -70,7 +70,6 @@ contains
       integer(kind=ipl), allocatable :: totMPs_b(:), b_sts(:), b_ends(:)
       integer(kind=ipl) :: tnms
 
-      integer :: error
 
 
       qRndEj_G(:) = .false.
@@ -122,7 +121,8 @@ contains
 
       if (qEquiXY_G) then
 
-         totMPs_b(:) = int(nZ2(:),kind=ipl) * int(nMPDims(:,iGam_CG),kind=ipl) * &  ! no of mps in z2 times num in gamma
+         ! no of mps in z2 times num in gamma
+         totMPs_b(:) = int(nZ2(:),kind=ipl) * int(nMPDims(:,iGam_CG),kind=ipl) * &
             int(nMPDims(:,iX_CG),kind=ipl) * int(nMPDims(:,iPX_CG),kind=ipl) * &
             int(nMPDims(:,iY_CG),kind=ipl) * int(nMPDims(:,iPY_CG),kind=ipl)
 
@@ -162,12 +162,14 @@ contains
 
 !     get Macroparticles in this beam
 
-         call getMPsFDists(z2m, gm, gsig, xm, xsig, ym, ysig, pxm, pxsig, pym, pysig, dz2(ib), Ne, npk, &
+         call getMPsFDists(z2m, gm, gsig, xm, xsig, ym, ysig, pxm, pxsig, pym, pysig, &
+            dz2(ib), Ne, npk, &
             qnoise, x(b_sts(ib):b_ends(ib)), y(b_sts(ib):b_ends(ib)), &
             px(b_sts(ib):b_ends(ib)), py(b_sts(ib):b_ends(ib)), &
             z2(b_sts(ib):b_ends(ib)), gamma(b_sts(ib):b_ends(ib)), &   ! ....BOUNDS.... !
             chi_b(b_sts(ib):b_ends(ib)), chi(b_sts(ib):b_ends(ib)),sZ,nMPDims(ib,iGam_CG), &
-            nMPDims(ib,iX_CG), nMPDims(ib,iY_CG), nMPDims(ib,iPX_CG), nMPDims(ib,iPY_CG), sgx1D, sgy1D)
+            nMPDims(ib,iX_CG), nMPDims(ib,iY_CG), nMPDims(ib,iPX_CG), nMPDims(ib,iPY_CG), &
+            sgx1D, sgy1D)
 
          deallocate(z2m, gm, gsig, xm, ym, pxm, pym, Ne, pxsig, pysig, xsig, ysig)
 
@@ -366,10 +368,10 @@ contains
 
       integer(kind=ip) :: i, intTypeG, nMPs, NMZ2  ! Num MPs in gamma
 
-      integer(kind=ipl) :: istart, iend, k, xin
+      integer(kind=ipl) :: istart, iend, k
 
       real(kind=wp) :: z2grid(2_IP), &
-         z2int(1_IP), px0, py0, x0, y0, npk_num, ndens_num, npk_numl
+z2int(1_IP), npk_num, ndens_num, npk_numl
 
       integer(kind=ip), allocatable :: arrbs(:)
 
@@ -381,9 +383,8 @@ contains
          xseqb(:), yseqb(:), pxseqb(:), pyseqb(:), gamseqb(:), &
          z2seqb(:)
 
-      real(kind=wp) :: sigxpr, sigpxpr, sigypr, sigpypr, siggampr
 
-      logical :: qOKL, error
+      logical :: qOKL
 
 !     Using 11 mp's and a gaussian distribution in p2 (gamma)
 
@@ -423,7 +424,7 @@ contains
             pxseqb(nseqparts_G), pyseqb(nseqparts_G), &
             gamseqb(nseqparts_G), z2seqb(nseqparts_G))
          call getSeqs(xseqb, yseqb, pxseqb, pyseqb, gamseqb, z2seqb, &
-            (/1.0_wp, 1.0_wp, 1.0_wp, 1.0_wp, 1.0_wp, 1.0_wp/), TrLdMeth_G)
+            [1.0_wp, 1.0_wp, 1.0_wp, 1.0_wp, 1.0_wp, 1.0_wp], TrLdMeth_G)
 
          z2seqb = (z2seqb - 0.5_wp) * dz2
          !sigxpr = 1.0_wp
@@ -443,9 +444,10 @@ contains
 
       do k = 1, NMZ2
 
-         !    arrbs = linspace( (k-1) * iNMPG + 1,  k * (iNMPG-1) + 1, iNMPG )    !  calarrayboundsfrom k, nx, ny, npx, npy, ngamma
+         !    arrbs = linspace( (k-1) * iNMPG + 1,  k * (iNMPG-1) + 1, iNMPG )
+         !    calarrayboundsfrom k, nx, ny, npx, npy, ngamma
 
-         z2grid = (/ z2m(k) - ( dz2 / 2.0_WP) , z2m(k) + ( dz2 / 2.0_WP) /)
+         z2grid = [ z2m(k) - ( dz2 / 2.0_WP) , z2m(k) + ( dz2 / 2.0_WP) ]
 
 ! what should the length of the grid in gamma be?
 ! since we have a different sigGam for each?.....
@@ -479,7 +481,7 @@ contains
                   istart = iend + 1
                   iend = iStart + iNMPG - 1
 
-                  arrbs = (/ ( (k-1) * iNMPG + 1 + i,    i=0, (iNMPG-1) ) /)
+                  arrbs = [ ( (k-1) * iNMPG + 1 + i,    i=0, (iNMPG-1) ) ]
 
                   call genGrid(1_ip, intTypeG, iLinear_CG, gm(k), &
                      gsig(k), 6.0_WP*gsig(k), iNMPG, iNMPG, &
@@ -618,11 +620,11 @@ contains
 
       if (.not. qEquiXY_G) then
 
-         if (minval(z2) < 0) print*, 'WARNING. B4 noise z2<0'
+         if (minval(z2) < 0) print*, "WARNING. B4 noise z2<0"
 
          call applyNoise(z2, dz2, Nk)  ! add noise in z2
 
-         if (minval(z2) < 0) print*, 'WARNING. AFTER noise z2<0'
+         if (minval(z2) < 0) print*, "WARNING. AFTER noise z2<0"
 
          deallocate(xseq, yseq, pxseq, pyseq, gamseq, z2seq)
          deallocate(xseqb, yseqb, pxseqb, pyseqb, gamseqb, z2seqb)

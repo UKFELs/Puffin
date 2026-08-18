@@ -11,16 +11,29 @@
 
 module ParaField
 
-use puffin_kinds
-use globals
-use ParallelSetUp
-use puffin_mpiInfo
-use puffin_fftwInfo
-use gtop2
-use filetype
+use puffin_kinds, only: WP, IPL, IP
+use globals, only: NX_G, NY_G, NZ2_G, ntrnds_G, ntrndsi_G, nspinDX, nspinDY, sLengthOfElmX_G, &
+  sLengthOfElmY_G, sLengthOfElmZ2_G, fieldMesh, iTemporal, iPeriodic, s_chi_bar_G, &
+  procelectrons_G, iNumberElectrons_G, sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, &
+  ioutInfo_G, pi
+use ParallelSetUp, only: MPI_INT_HIGH, stopcode, gather1a, getgatharrs
+use puffin_mpiInfo, only: tProcInfo_G
+use puffin_fftwInfo, only: tTransInfo_G
+use gtop2, only: getp2
 use GlobalTypes, only: tSimulationFlags, tFELFrame
+use mpi, only: MPI_ALLGATHER, mpi_allreduce, mpi_alltoallv, mpi_barrier, MPI_Bcast, &
+  mpi_double_precision, MPI_IN_PLACE, mpi_integer, MPI_ISSEND, mpi_max, mpi_min, MPI_RECV, &
+  mpi_reduce, mpi_scatter, MPI_STATUS_SIZE, mpi_sum, MPI_WAIT, MPI_WAITALL
 
-implicit none
+implicit none (type, external)
+private
+
+public :: ac_ifield, ac_rfield, bk_ifield, bk_rfield, bz2, eee, eee_GGG, ees, ees_GGG, ez2, ffe, &
+           ffe_GGG, ffs, fr_ifield, fr_rfield, fz2, getinnode, getlocalfieldindices, inner2outer, &
+           ioutInfo_G, iTemporal, mainlen, outer2inner, pupd8, qStart_new, qUnique, redist2fftwlt, &
+           redistbackfft, tim_fft, tlelen, tlelen4arr, tlflen, tlflen4arr, tllen, tre_fft, &
+           tTransInfo_G, upd8a, upd8da, updateglobalpow
+
 
 real(kind=wp), allocatable :: fr_rfield(:), bk_rfield(:), ac_rfield(:), &
                               fr_ifield(:), bk_ifield(:), ac_ifield(:), &
@@ -81,9 +94,9 @@ logical :: qStart_new
 contains
 
 
-	subroutine getLocalFieldIndices(sdz, flags, frame)
+        subroutine getLocalFieldIndices(sdz, flags, frame)
 
-    implicit none
+    implicit none (type, external)
 
 !     Setup local field pointers. These describe how the field is
 !     parallelized. For now, only set up constant field barriers to
@@ -102,26 +115,21 @@ contains
     type(tSimulationFlags), intent(inout) :: flags
     type(tFELFrame), intent(in) :: frame
 
-    real(kind=wp), allocatable :: sp2(:), fr_rfield_old(:), &
+    real(kind=wp), allocatable :: fr_rfield_old(:), &
                                   fr_ifield_old(:), &
                                   bk_rfield_old(:), &
                                   bk_ifield_old(:), &
                                   ac_rfield_old(:), &
                                   ac_ifield_old(:)
 
-    integer(kind=ip) :: locN, ij
-    integer(kind=ip) :: fz2_r, gath_v
+    integer(kind=ip) :: ij
+    integer(kind=ip) :: gath_v
     integer :: req, error, lrank, rrank
-    integer sendstat(MPI_STATUS_SIZE)
-    integer statr(MPI_STATUS_SIZE)
+    integer :: sendstat(MPI_STATUS_SIZE)
 
 
 
-    integer(kind=ip) :: fz2_OLD, ez2_OLD, lTr_OLD, bz2_OLD, &
-                        fbuffLen_OLD, fbuffLenM_OLD, tllen_OLD, &
-                        mainlen_OLD
 
-    integer(kind=ip) :: ffs_OLD, ffe_OLD, ees_OLD, eee_OLD
 
     integer(kind=ip), allocatable :: ee_ar_old(:,:), &
                                      ff_ar_old(:,:), &
@@ -129,11 +137,10 @@ contains
 
 
 
-    integer(kind=ip) :: tnjdlz2
 
 
     INTEGER(KIND=IPL) :: sendbuff, recvbuff
-    INTEGER recvstat(MPI_STATUS_SIZE)
+    INTEGER :: recvstat(MPI_STATUS_SIZE)
 
     real(kind=wp) :: lenz2
 
@@ -537,7 +544,6 @@ contains
 
       integer(kind=ip) :: gath_v
 
-      integer error
 
 
       if (ffe_GGG > 0) then
@@ -583,7 +589,7 @@ contains
 
 
       if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-      	gath_v = mainlen * ntrnds_G !-1
+        gath_v = mainlen * ntrnds_G !-1
       else
         gath_v = mainlen * ntrnds_G
       end if
@@ -658,7 +664,6 @@ contains
 
       real(kind=wp), allocatable :: A_local(:), powi(:)
 
-      integer :: error
 
       gpow=0.0_wp
 
@@ -779,8 +784,8 @@ contains
 
       integer :: req, error
       integer(kind=ip) :: ij, si, sst, sse
-      integer statr(MPI_STATUS_SIZE)
-      integer sendstat(MPI_STATUS_SIZE)
+      integer :: statr(MPI_STATUS_SIZE)
+      integer :: sendstat(MPI_STATUS_SIZE)
 
 !     One request per outstanding issend - a single scalar handle would
 !     be overwritten by each iteration, leaking every request but the last.
@@ -835,7 +840,7 @@ contains
             CALL mpi_recv( tmp_A(1:lrank_v(ij)*ntrndsi_G), &
                    lrank_v(ij)*ntrndsi_G, &
                    mpi_double_precision, &
-            	     lrfromwhere(ij), 0, tProcInfo_G%comm, statr, error )
+                     lrfromwhere(ij), 0, tProcInfo_G%comm, statr, error )
 
             dadz_r(1:lrank_v(ij)*ntrndsi_G) = dadz_r(1:lrank_v(ij)*ntrndsi_G) &
                                            + tmp_A(1:lrank_v(ij)*ntrndsi_G)
@@ -948,7 +953,7 @@ contains
           sse = tllen * ntrndsi_G
           if (ioutInfo_G > 0) print*, size(dadz_r), tllen, mainlen
 
-          if (ioutInfo_G > 0) print*, 'IM NOT UNIQUE'
+          if (ioutInfo_G > 0) print*, "IM NOT UNIQUE"
 
           dadz_r(1:si) = dadz_r(1:si) + dadz_r(sst:sse)
           dadz_i(1:si) = dadz_i(1:si) + dadz_i(sst:sse)
@@ -1021,7 +1026,7 @@ contains
 
             dadz_i(1:si) = dadz_i(1:si) + Abounds
 
-            deallocate(Abounds) 
+            deallocate(Abounds)
 
           end if
 
@@ -1034,9 +1039,9 @@ contains
 
 
 
-       
+
           if (tProcInfo_G%rank == 0_ip) then
-       
+
             call mpi_issend(dadz_r(1:si), si, mpi_double_precision, &
                             tProcInfo_G%size-1_ip, 0, &
                             tProcInfo_G%comm, req, error)
@@ -1049,7 +1054,7 @@ contains
 
             call mpi_recv( dadz_r(sst:sse), si, mpi_double_precision, &
                      0, 0, tProcInfo_G%comm, statr, error )
-       
+
           end if
 
 
@@ -1088,19 +1093,19 @@ contains
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Update the periodic boundary buffer for the periodic case
 
     subroutine pupd8(ar, ai)
-      
+
       real(kind=wp), intent(inout) :: ar(:), ai(:)
 
       integer :: req, error
       integer(kind=ip) :: si, sst, sse
-      integer statr(MPI_STATUS_SIZE)
-      integer sendstat(MPI_STATUS_SIZE)
+      integer :: statr(MPI_STATUS_SIZE)
+      integer :: sendstat(MPI_STATUS_SIZE)
 
       if (FieldMesh == iPeriodic) then
 
@@ -1109,9 +1114,9 @@ contains
           si = ntrnds_G * (bz2PB + 1_ip)
           sst = ((tllen - (bz2PB + 1_ip) ) * ntrnds_G) + 1_ip
           sse = tllen * ntrnds_G
-          
+
           if (tProcInfo_G%rank == 0_ip) then
-       
+
             call mpi_issend(ar(1:si), si, mpi_double_precision, &
                             tProcInfo_G%size-1_ip, 0, &
                             tProcInfo_G%comm, req, error)
@@ -1124,7 +1129,7 @@ contains
 
             call mpi_recv( ar(sst:sse), si, mpi_double_precision, &
                      0, 0, tProcInfo_G%comm, statr, error )
-       
+
           end if
 
 
@@ -1151,11 +1156,11 @@ contains
             call mpi_wait( req,sendstat,error )
 
           end if
-          
+
         end if
-        
+
       end if
-  
+
     end subroutine pupd8
 
 !  ###################################################
@@ -1166,7 +1171,7 @@ contains
 
     subroutine upd8a(ac_rl, ac_il)
 
-      implicit none
+      implicit none (type, external)
 
     ! Send sA from buffer to process on the left
     ! Data in 'buffer' on the left is overwritten.
@@ -1174,8 +1179,8 @@ contains
       real(kind=wp), contiguous, intent(inout) :: ac_rl(:), ac_il(:)
 
       integer(kind=ip) :: req, error, ij, si, sst, sse
-      integer statr(MPI_STATUS_SIZE)
-      integer sendstat(MPI_STATUS_SIZE)
+      integer :: statr(MPI_STATUS_SIZE)
+      integer :: sendstat(MPI_STATUS_SIZE)
 
 !     One request per outstanding issend - a single scalar handle would
 !     be overwritten by each iteration, leaking every request but the last.
@@ -1389,7 +1394,7 @@ contains
   subroutine inner2Outer(inner_ra, inner_ia)
 
 
-    implicit none
+    implicit none (type, external)
 
     real(kind=wp), contiguous, intent(in) :: inner_ra(:), inner_ia(:)
 
@@ -1431,7 +1436,7 @@ contains
   subroutine outer2Inner(inner_ra, inner_ia)
 
 
-    implicit none
+    implicit none (type, external)
 
     real(kind=wp), contiguous, intent(out) :: inner_ra(:), inner_ia(:)
 
@@ -1475,7 +1480,6 @@ contains
                       inBuf
 
   integer :: error
-  logical :: qOKL
 
   inBuf = 3_ip
 
@@ -1493,8 +1497,8 @@ contains
     imaxy = ceiling(smaxy / sLengthOfElmY_G)
     iminy = floor(sminy / sLengthOfElmY_G)
 
-    nspinDX = maxval((/imaxx,iminx/)) + inBuf
-    nspinDY = maxval((/imaxy,iminy/)) + inBuf
+    nspinDX = maxval([imaxx,iminx]) + inBuf
+    nspinDY = maxval([imaxy,iminy]) + inBuf
 
     nspinDX = nspinDX * 2
     nspinDY = nspinDY * 2
@@ -1506,13 +1510,13 @@ contains
 
   end if
 
-  if (mod(nx_g, 2) .ne. mod(nspinDX, 2) ) then
+  if (mod(nx_g, 2) /= mod(nspinDX, 2) ) then
 
     nspinDX =  nspinDX + 1
 
   end if
 
-  if (mod(ny_g, 2) .ne. mod(nspinDY, 2) ) then
+  if (mod(ny_g, 2) /= mod(nspinDY, 2) ) then
 
     nspinDY =  nspinDY + 1
 
@@ -1527,15 +1531,15 @@ contains
                    mpi_max, tProcInfo_G%comm, error)
 
   if (nspinDX > nx_g) then
-    print*, 'ERROR, x grid not large enough'
-    print*, 'nspinDX = ', nspinDX
+    print*, "ERROR, x grid not large enough"
+    print*, "nspinDX = ", nspinDX
     call StopCode()
   end if
 
 
   if (nspinDY > ny_g) then
-    print*, 'ERROR, y grid not large enough'
-    print*, 'nspinDY = ', nspinDY
+    print*, "ERROR, y grid not large enough"
+    print*, "nspinDY = ", nspinDY
     call StopCode()
   end if
 
@@ -1581,8 +1585,8 @@ contains
           locN = highern
        ELSE
           locN = lowern
-       ENDIF
-    ENDIF
+       END IF
+    END IF
 
 
 !     Calculate local start and end values.
@@ -1597,7 +1601,7 @@ contains
       local_start = rank*locN + 1
       local_end = local_start + locN - 1
 
-    ENDIF
+    END IF
 
 
   end subroutine divNodes
@@ -1644,21 +1648,25 @@ contains
 
       if (f_ar(iproc+1,1) > 0) then
 
-        if ((ieo >= f_ar(iproc+1,2)) .and. (ieo <= f_ar(iproc+1,3) ) )  then ! end node between limits
+        ! end node between limits
+        if ((ieo >= f_ar(iproc+1,2)) .and. (ieo <= f_ar(iproc+1,3) ) )  then
 
           f_send(iproc+1,3) = ieo
 
-          if (iso < f_ar(iproc+1,2)) f_send(iproc+1,2) = f_ar(iproc+1,2)    ! front node before first limit
+          ! front node before first limit
+          if (iso < f_ar(iproc+1,2)) f_send(iproc+1,2) = f_ar(iproc+1,2)
 
           if (iso >= f_ar(iproc+1,2)) f_send(iproc+1,2) = iso   ! front node after first limit
 
           f_send(iproc+1,1) = f_send(iproc+1,3) - f_send(iproc+1,2) + 1
 
-        else if ( (ieo >= f_ar(iproc+1,3)) .and.  (iso <= f_ar(iproc+1,3)))  then ! end node after last limit
+        ! end node after last limit
+        else if ( (ieo >= f_ar(iproc+1,3)) .and.  (iso <= f_ar(iproc+1,3)))  then
 
           f_send(iproc+1, 3) = f_ar(iproc+1,3)
 
-          if (iso < f_ar(iproc+1,2)) f_send(iproc+1,2) = f_ar(iproc+1,2)    ! front node before first limit
+          ! front node before first limit
+          if (iso < f_ar(iproc+1,2)) f_send(iproc+1,2) = f_ar(iproc+1,2)
 
           if (iso >= f_ar(iproc+1,2)) f_send(iproc+1,2) = iso   ! front node after first limit
 
@@ -1723,8 +1731,8 @@ contains
 
     integer, allocatable :: reqs(:), sendstats(:,:)
 
-    integer statr(MPI_STATUS_SIZE)
-    integer sendstat(MPI_STATUS_SIZE)
+    integer :: statr(MPI_STATUS_SIZE)
+    integer :: sendstat(MPI_STATUS_SIZE)
 
     ! get buffer location
 
@@ -1735,7 +1743,8 @@ contains
       call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, sEta, sGammaR, sAw)
 
       bz2_len = dz  ! distance in zbar until next rearrangement
-      bz2_len = maxval(sElZ2_G + bz2_len * sp2)  ! predicted length in z2 needed needed in buffer for beam
+      ! predicted length in z2 needed needed in buffer for beam
+      bz2_len = maxval(sElZ2_G + bz2_len * sp2)
 
 !    print*, 'bz2 length is...', bz2_len
 !    print*, 'max p2 is ', maxval(sp2)
@@ -1750,7 +1759,8 @@ contains
 
 !    print*, tProcInfo_G%rank, 'is inside calcBuff, with buffer length', bz2_len
 
-!    bz2 = ez2 + nint(4 * 4 * pi * sRho_G / sLengthOfElmZ2_G)   ! Boundary only 4 lambda_r long - so can only go ~ 3 periods
+!    bz2 = ez2 + nint(4 * 4 * pi * sRho_G / sLengthOfElmZ2_G)
+!    Boundary only 4 lambda_r long - so can only go ~ 3 periods
 
     bz2 = nint(bz2_len / sLengthOfElmZ2_G)  ! node index of final node in boundary
 
@@ -1802,9 +1812,9 @@ contains
       end if
 
 ! tell last process what the max periodic boundary is...
-      
+
 !      maxbz2PB = 1_ip
-      
+
       if (tProcInfo_G%qRoot) maxbz2PB = mainlen - 1_ip
 
 !      print*, 'bz2PB', bz2PB
@@ -1819,7 +1829,7 @@ contains
 
       end if
 
-! if, for any other process, bz2 goes bigger than bz2 on the last process, 
+! if, for any other process, bz2 goes bigger than bz2 on the last process,
 ! then it will have to reduce its own bz2 to be OK
 
       if (tProcInfo_G%rank == tProcInfo_G%size-1) bz2 = ez2 + bz2PB
@@ -1863,7 +1873,7 @@ contains
 
 
       if (tProcInfo_G%rank == tProcInfo_G%size-1) then
-        
+
         if (fieldMesh == iPeriodic) then
 
           !mainlen = tllen
@@ -1945,7 +1955,7 @@ contains
             if ((fieldMesh == iPeriodic) .and.  (ij == tProcInfo_G%size-1_ip)) then
 
               rrank_v(yip,3) = bz2
-              
+
             else
 
               if (bz2 > ac_ar(ij+1, 3)) then
@@ -2141,7 +2151,6 @@ contains
   subroutine getFStEnd()
 
 
-    real(kind=wp), allocatable :: sp2(:)
     integer(kind=ip) :: fz2_act, ez2_act
 
     integer :: error
@@ -2154,6 +2163,12 @@ contains
 ! (find min and max electron z2's)
 
 
+
+! Defensive default: only the iElectronBased/iFieldBased branches below
+! set fz2_act/ez2_act; the invalid-basis branch prints an error but
+! otherwise leaves them undefined.
+    fz2_act = 0_ip
+    ez2_act = 0_ip
 
     if (iParaBas == iElectronBased) then
 
@@ -2196,7 +2211,7 @@ contains
 
     else
 
-      print*, 'NO BASIS FOR PARALLELISM SELECTED!!!'
+      print*, "NO BASIS FOR PARALLELISM SELECTED!!!"
 
     end if
 
@@ -2218,10 +2233,10 @@ contains
       qUnique = .false.
 
       if (ioutInfo_G > 0) then
-        print*, 'So WHY AM I HERE, WITH nz2 = ', nz2_G
-        print*, 'n_act_g = ', n_act_g
-        print*, 'fz2_act = ', fz2_act
-        print*, 'ez2_act = ', ez2_act
+        print*, "So WHY AM I HERE, WITH nz2 = ", nz2_G
+        print*, "n_act_g = ", n_act_g
+        print*, "fz2_act = ", fz2_act
+        print*, "ez2_act = ", ez2_act
       end if
 
 
@@ -2411,7 +2426,7 @@ contains
 
   subroutine redist2new2(old_dist, new_dist, field_old, field_new)
 
-  implicit none
+  implicit none (type, external)
 
 ! Alternative subroutine to redistribute the field values in field_old
 ! to field_new. The layout of the field in field_old is
@@ -2426,19 +2441,13 @@ contains
 
 ! local
 
-    integer(kind=ip) :: iproc_s, iproc_r
-    integer(kind=ip) :: st_ind_new, ed_ind_new, &
-                        st_ind_old, ed_ind_old, &
-                        nbase, obase
     integer(kind=ip), allocatable :: send_ptrs(:,:), recv_ptrs(:,:)
 
     integer(kind=ip), allocatable :: sdispls(:), rdispls(:)
 
 
     integer(kind=ip), allocatable :: nsends(:), nrecvs(:)
-    integer :: error, req, ij
-    integer statr(MPI_STATUS_SIZE)
-    integer sendstat(MPI_STATUS_SIZE)
+    integer :: error, ij
 
 
 
@@ -2584,8 +2593,7 @@ contains
     integer(kind=ip), allocatable :: send_ptrs(:,:)
 
     integer :: error, req
-    integer statr(MPI_STATUS_SIZE)
-    integer sendstat(MPI_STATUS_SIZE)
+    integer :: statr(MPI_STATUS_SIZE)
 
 
 
@@ -2605,8 +2613,8 @@ contains
 
       call golaps(old_dist(iproc_s+1,2), old_dist(iproc_s+1,3), new_dist, send_ptrs)
 
-!      if (tProcInfo_G%qroot) print*, 'olaps are ', send_ptrs, 'for old nodes ', old_dist(iproc_s+1,2), &
-!          'to', old_dist(iproc_s+1,3)
+!      if (tProcInfo_G%qroot) print*, 'olaps are ', send_ptrs, 'for old nodes ', &
+!          old_dist(iproc_s+1,2), 'to', old_dist(iproc_s+1,3)
 
 !      call mpi_barrier(tProcInfo_G%comm, error)
 
@@ -2736,7 +2744,7 @@ contains
 
   subroutine rearrElecs()
 
-  implicit none
+  implicit none (type, external)
 
   integer :: error
   integer(kind=ip) :: iproc, iproc_r, iproc_s
@@ -2746,7 +2754,6 @@ contains
                                 sElY_OLD(:), sElGam_OLD(:), &
                                 sElPX_OLD(:), sElPY_OLD(:), &
                                 s_chi_bar_OLD(:), &
-                                s_Normalised_chi_OLD(:), &
                                 tmp4sending(:)
 
   integer(kind=ip) :: icds, new_sum, offe, offs, frmroot
@@ -3133,12 +3140,12 @@ contains
 !
 
     real(kind=wp), intent(inout) :: array(:)
-    integer(kind=ip), intent(inout) :: cnt 
+    integer(kind=ip), intent(inout) :: cnt
     integer(kind=ip), intent(in) :: iproc
     integer(kind=ip), intent(in) :: st_ind, ed_ind
 
     integer :: error
-    integer statr(MPI_STATUS_SIZE)
+    integer :: statr(MPI_STATUS_SIZE)
 
 
     call mpi_recv(array(st_ind:ed_ind), cnt, &
@@ -3154,7 +3161,7 @@ contains
 
   subroutine redist2FFTWlt()
 
-    implicit none
+    implicit none (type, external)
 
     integer(kind=ip) :: tmpfz2, tmpez2, tmpmainlen, &
                         tmpbz2, tmptllen, tmpfz2_act, &
@@ -3212,12 +3219,12 @@ contains
 
   subroutine redistbackFFT()
 
-    implicit none
-    
+    implicit none (type, external)
+
     integer :: req, error
-    integer(kind=ip) :: ij, si, sst, sse
-    integer statr(MPI_STATUS_SIZE)
-    integer sendstat(MPI_STATUS_SIZE)
+    integer(kind=ip) :: si, sst, sse
+    integer :: statr(MPI_STATUS_SIZE)
+    integer :: sendstat(MPI_STATUS_SIZE)
 
     call redist2new2(ft_ar, ff_ar, tre_fft, fr_rfield)
     call redist2new2(ft_ar, ff_ar, tim_fft, fr_ifield)
@@ -3255,7 +3262,7 @@ contains
 
 
       if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
-   
+
         call mpi_recv( ac_rfield(sst:sse), &
                  si, mpi_double_precision, &
                  0, 0, tProcInfo_G%comm, &
@@ -3272,27 +3279,27 @@ contains
                         mpi_double_precision, &
                         tProcInfo_G%size-1_ip, 0, &
                         tProcInfo_G%comm, req, error)
-   
+
       end if
 
 
 
-   
+
       if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
 
         call mpi_recv( ac_ifield(sst:sse), &
                  si, mpi_double_precision, &
                  0, 0, tProcInfo_G%comm, &
                  statr, error )
-   
-      end if
-   
 
-   
+      end if
+
+
+
       if (tProcInfo_G%rank == 0_ip) then
 
         call mpi_wait( req,sendstat,error )
-   
+
       end if
 
     end if

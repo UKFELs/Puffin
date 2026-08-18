@@ -6,7 +6,7 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> This module contains routines and functions
@@ -21,18 +21,22 @@ MODULE masks
 
 
 
-use puffin_kinds
-USE puffin_constants
-USE Functions
+use puffin_kinds, only: WP, IP
+USE puffin_constants, only: pi
+USE Functions, only: linspace
 
-IMPLICIT NONE
+IMPLICIT NONE (type, external)
+private
+
+public :: getmask, getz2mask
+
 
 CONTAINS
 
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Construct the mask for use in the absorption
@@ -44,7 +48,7 @@ CONTAINS
 !> @param[in] dy Distance between nodes in mesh in y
 !> @param[in] nbx Number of nodes to be used for mask in x
 !> @param[in] nby Number of nodes to be used for mask in y
-!> @param[out] Transverse 'mask', defining the boundaries to slow the 
+!> @param[out] Transverse 'mask', defining the boundaries to slow the
 !> diffraction in.
 
 SUBROUTINE getMask(nX,nY,dx,dy,nbx,nby,mask)
@@ -76,7 +80,7 @@ SUBROUTINE getMask(nX,nY,dx,dy,nbx,nby,mask)
 
 
 
-  mask = RESHAPE( maskt, (/ nx*ny /))
+  mask = RESHAPE( maskt, [ nx*ny ])
 
   !IF (tProcInfo_G%qRoot) PRINT*, '  '
 
@@ -91,14 +95,14 @@ END SUBROUTINE getMask
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> This function calculates a simple 1D mask
 !> to define the absorbing boundary in Puffin.
 !> @param[in] x (1D array) Coordinates of nodes
 !> @param[in] dx Distance between nodes in mesh
-!> @param[in] nx Number of nodes in mesh 
+!> @param[in] nx Number of nodes in mesh
 !> @param[in] nb Number of nodes to be used for mask in x
 
 FUNCTION Mask1D(x,dx,nx,nb)
@@ -179,9 +183,9 @@ FUNCTION Mask2D(x,y,dx,dy,nx,ny,nbx,nby)
 !     Combine in some cunning way
 
   DO iy = 1,ny
-  	DO ix = 1,nx
+        DO ix = 1,nx
 
-  	  Mask2D(ix,iy) = masky2(iy)*maskx(ix) + maskx2(ix)*masky(iy)
+          Mask2D(ix,iy) = masky2(iy)*maskx(ix) + maskx2(ix)*masky(iy)
 
     END DO
   END DO
@@ -278,7 +282,7 @@ FUNCTION Mask1D2(x,dx,nx,nb)
   INTEGER(KIND=IP), INTENT(IN) :: nb, nx
   REAL(KIND=WP) :: Mask1D2(nx)
 
-  REAL(KIND=WP) :: Lb, x0, x01, x02
+  REAL(KIND=WP) :: Lb, x01, x02
 
 !     Get the length of the boundary, Lb
 

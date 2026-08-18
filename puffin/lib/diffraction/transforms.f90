@@ -14,15 +14,23 @@
 
 module transforms
 
-use puffin_mpiInfo
-use puffin_fftwInfo
+use puffin_mpiInfo, only: tProcInfo_G, ip
+use puffin_fftwInfo, only: tTransInfo_G, fftw_alloc_complex, FFTW_BACKWARD, fftw_destroy_plan, &
+  FFTW_ESTIMATE, FFTW_FORWARD, fftw_free, FFTW_MEASURE, fftw_mpi_execute_dft, fftw_mpi_init, &
+  fftw_mpi_local_size_3d, fftw_mpi_plan_dft_3d
 !use FFTW_Constants
-use Globals
-use IO
-use masks
+use Globals, only: NX_G, NY_G, NZ2_G, sLengthOfElmX_G, sLengthOfElmY_G, sLengthOfElmZ2_G, kx_G, &
+  ky_G, kz2_loc_G, fieldMesh, iPeriodic, ioutInfo_G, qDiffraction_G, WP, pi, iX_CG, iY_CG, iZ2_CG
+use IO, only: tErrorLog_G, log_error
+use ParallelSetUp, only: getGathArrs
 
-use, intrinsic :: iso_c_binding
-implicit none
+use, intrinsic :: iso_c_binding, only: C_DOUBLE_COMPLEX, c_f_pointer, C_INTPTR_T, C_PTR
+implicit none (type, external)
+private
+
+public :: Afftw, cleartransformplans, getkvalues, gettransformplans4fel, IP, pi, tProcInfo_G, &
+           tr_time_e, tr_time_s, transform, tTransInfo_G, WP
+
 
 !INCLUDE 'fftw3-mpi.f03'
 
@@ -51,7 +59,7 @@ contains
 
 subroutine getTransformPlans4FEL(nnodes,qmeasure,qOK)
 
-  implicit none
+  implicit none (type, external)
 
   integer(kind=ip), intent(in) :: nnodes(3)
   logical, intent(in) :: qmeasure
@@ -62,7 +70,6 @@ subroutine getTransformPlans4FEL(nnodes,qmeasure,qOK)
 ! qOKL - Local Logical error checker.
 
   logical :: qOKL
-  integer error
 
 !                   Begin
 
@@ -84,7 +91,7 @@ subroutine getTransformPlans4FEL(nnodes,qmeasure,qOK)
   qOK = .true.
   goto 2000
 
-1000  call log_error('Error in transforms:getTransformPlans4FEL',tErrorLog_G)
+1000  call log_error("Error in transforms:getTransformPlans4FEL",tErrorLog_G)
 
 2000 continue
 
@@ -112,7 +119,7 @@ end subroutine getTransformPlans4FEL
 
 subroutine getTransformPlans_MultiD(sizes,nDims,qMeasure,qOK)
 
-  implicit none
+  implicit none (type, external)
 
 !
 !                  ARGUMENTS
@@ -145,7 +152,7 @@ subroutine getTransformPlans_MultiD(sizes,nDims,qMeasure,qOK)
   M = int(sizes(iY_CG), C_INTPTR_T)
   if (fieldMesh == iPeriodic) then
     N = int(sizes(iZ2_CG)-1_ip, C_INTPTR_T)
-  else 
+  else
     N = int(sizes(iZ2_CG), C_INTPTR_T)
   end if
 
@@ -180,7 +187,7 @@ subroutine getTransformPlans_MultiD(sizes,nDims,qMeasure,qOK)
 !     Create plans
 
   if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 1)) then
-    print*, 'Creating FFTW3 plans'
+    print*, "Creating FFTW3 plans"
   end if
 
   if (qDiffraction_G) then
@@ -196,7 +203,7 @@ subroutine getTransformPlans_MultiD(sizes,nDims,qMeasure,qOK)
                             FFTW_BACKWARD, FFTW_MEASURE)
 
     else
-      
+
       tTransInfo_G%fplan = fftw_mpi_plan_dft_3d(N, M, L, &
                             Afftw, Afftw, tProcInfo_G%comm, &
                             FFTW_FORWARD, FFTW_ESTIMATE)
@@ -204,22 +211,22 @@ subroutine getTransformPlans_MultiD(sizes,nDims,qMeasure,qOK)
 
       tTransInfo_G%bplan = fftw_mpi_plan_dft_3d(N, M, L, &
                             Afftw, Afftw, tProcInfo_G%comm, &
-                            FFTW_BACKWARD, FFTW_ESTIMATE)      
+                            FFTW_BACKWARD, FFTW_ESTIMATE)
 
 
     end if
   end if
 
-  if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 1)) then 
-    print*, 'Created FFTW3 plans'
-    print*,  ''
-    print*, '***********************'
+  if ((tProcInfo_G%qroot) .and. (ioutInfo_G > 1)) then
+    print*, "Created FFTW3 plans"
+    print*,  ""
+    print*, "***********************"
   end if
 
   qOK = .true.
   goto 2000
 
-1000  call log_error('Error in transforms:getTransformPlans_MultiD',tErrorLog_G)
+      call log_error("Error in transforms:getTransformPlans_MultiD",tErrorLog_G)
 
 2000 continue
 
@@ -238,7 +245,7 @@ end subroutine getTransformPlans_MultiD
 
 subroutine clearTransformPlans(qOK)
 
-  implicit none
+  implicit none (type, external)
 
   logical, intent(out) :: qOK
 
@@ -269,7 +276,7 @@ subroutine clearTransformPlans(qOK)
 
   goto 2000
 
-1000  call log_error('Error in transforms:clearTransformPlans',tErrorLog_G)
+1000  call log_error("Error in transforms:clearTransformPlans",tErrorLog_G)
 
 2000 continue
 
@@ -290,7 +297,7 @@ end subroutine clearTransformPlans
 
 subroutine clearTransformPlans_ThreeD(qOK)
 
-  implicit none
+  implicit none (type, external)
 !
 ! Subroutine to destroy multi-dimensional FFTW plans.
 ! Calls FFTW supplied subroutine.
@@ -316,7 +323,7 @@ subroutine clearTransformPlans_ThreeD(qOK)
 
   goto 2000
 
-1000  call log_error('Error in transforms:clearTransformPlans_ThreeD',tErrorLog_G)
+      call log_error("Error in transforms:clearTransformPlans_ThreeD",tErrorLog_G)
 
 2000 continue
 
@@ -344,7 +351,7 @@ subroutine Transform(plan, &
      local_in, &
      qOK)
 
-  implicit none
+  implicit none (type, external)
 
   type(C_PTR), intent(inout) :: plan
 
@@ -378,7 +385,7 @@ subroutine Transform(plan, &
 
   goto 2000
 
-1000  call log_error('Error in transforms:Transform',tErrorLog_G)
+1000  call log_error("Error in transforms:Transform",tErrorLog_G)
 
 2000 continue
 
@@ -405,7 +412,7 @@ end subroutine Transform
 
 subroutine Transform_MultiD(plan, local_in, qOK)
 
-  implicit none
+  implicit none (type, external)
 
   type(C_PTR), intent(inout) :: plan
 
@@ -428,7 +435,7 @@ subroutine Transform_MultiD(plan, local_in, qOK)
 
   goto 2000
 
-1000  call log_error('Error in transforms:Transform_MultiD',tErrorLog_G)
+      call log_error("Error in transforms:Transform_MultiD",tErrorLog_G)
 
 2000 continue
 
@@ -471,7 +478,7 @@ end subroutine Transform_MultiD
 
 subroutine GetKValues(recvs,displs,qOK)
 
-  implicit none
+  implicit none (type, external)
 
   integer(kind=ip),intent(inout) :: recvs(:),displs(:)
   logical, intent(out) :: qOK
@@ -482,10 +489,9 @@ subroutine GetKValues(recvs,displs,qOK)
   integer(kind=ip), dimension(:), allocatable  :: nx
   integer(kind=ip), dimension(:), allocatable  :: ny
   integer(kind=ip), dimension(:), allocatable  :: nz2
-  real(KIND=WP), dimension(:), allocatable :: kz2_loc
   real(KIND=WP)  :: slengthX, sLengthY,sLengthZ2, pi
   integer(kind=ip) :: loc_z2_start, loc_nz2, nz2LOR
-  integer(kind=ip) :: error, trans
+  integer(kind=ip) :: trans
 
 !                      Begin
 
@@ -583,7 +589,7 @@ subroutine GetKValues(recvs,displs,qOK)
 
   goto 2000
 
-1000  call log_error('Error in transforms:GetKValues',tErrorLog_G)
+      call log_error("Error in transforms:GetKValues",tErrorLog_G)
 
 2000 continue
 

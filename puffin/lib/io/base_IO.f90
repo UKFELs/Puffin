@@ -13,10 +13,14 @@
 
 module IO
 
-   use puffin_kinds
-   use FileType
+   use puffin_kinds, only: WP, IPL, IP, IPN
+   use FileType, only: cFileType
 
-   implicit none
+   implicit none (type, external)
+private
+
+public :: cFileType, filenameextension, filenamenoextension, log_error, tErrorLog_G, WP
+
 
    integer(kind=ip) :: mvar_iFreeFile = 0_IP
    type(cFileType), save :: tErrorLog_G
@@ -38,12 +42,12 @@ contains
 
    subroutine WriteLOGICINTEGER(qLogic, tFileType, qOK, zFormat)
 
-      implicit none
+      implicit none (type, external)
 
       logical,         intent(in)            :: qLOGIC
       type(cFileType), intent(inout)         :: tFileType
       character(*),    intent(in), optional  :: zFormat
-      logical,         intent(out)	         :: qOK
+      logical,         intent(out)               :: qOK
 
       integer(kind=ip)  :: iInt
       logical           :: qOKL
@@ -75,8 +79,8 @@ contains
 
 ! Error Handler
 
-1000  call log_error('Error in DIO:WriteLOGICINTEGER',tErrorLog_G)
-      print*,'Error in DIO:WriteLOGICINTEGER'
+1000  call log_error("Error in DIO:WriteLOGICINTEGER",tErrorLog_G)
+      print*,"Error in DIO:WriteLOGICINTEGER"
 2000  continue
 
    end subroutine WriteLOGICINTEGER
@@ -95,14 +99,13 @@ contains
 
    subroutine WriteINTEGER(iInt, tFileType, qOK, zFormat)
 
-      implicit none
+      implicit none (type, external)
 
       integer(kind=ip),intent(in)             :: iInt
       type(cFileType), intent(inout)          :: tFileType
       character(*),    intent(in),  optional  :: zFormat
-      logical,         intent(out)	      :: qOK
+      logical,         intent(out)            :: qOK
 
-      logical           :: qOKL
 
       qOK = .false.
 
@@ -112,7 +115,7 @@ contains
          if (present(zFormat) ) then
             write (tFileType%iUnit,zFormat) (iInt)
          else
-            write (tFileType%iUnit,'(I9)') (iInt)
+            write (tFileType%iUnit,"(I9)") (iInt)
          end if
       else
 !   call C_WriteInteger(tFileType%zFileName, iInt, qOKL)
@@ -126,8 +129,8 @@ contains
 
 !          Error Handler
 
-1000  call log_error('Error in DIO:WriteINTEGER',tErrorLog_G)
-      print*,'Error in DIO:WriteINTEGER'
+      call log_error("Error in DIO:WriteINTEGER",tErrorLog_G)
+      print*,"Error in DIO:WriteINTEGER"
 2000  continue
 
    end subroutine WriteINTEGER
@@ -146,13 +149,13 @@ contains
 
    subroutine WriteINTEGERL(iInt, tFileType, qOK, zFormat)
 
-      implicit none
+      implicit none (type, external)
       integer(kind=ipl),intent(in)             :: iInt
       type(cFileType), intent(inout)          :: tFileType
       character(*),    intent(in),  optional  :: zFormat
-      logical,         intent(out)	      :: qOK
+      logical,         intent(out)            :: qOK
 
-      logical           :: qOKL
+      logical, parameter :: qOKL = .true.
 
       qOK = .false.
 
@@ -160,7 +163,7 @@ contains
          if (present(zFormat) ) then
             write (tFileType%iUnit,zFormat) (iInt)
          else
-            write (tFileType%iUnit,'(I14)') (iInt)
+            write (tFileType%iUnit,"(I14)") (iInt)
          end if
       else
 !      call C_WriteIntegerL(tFileType%zFileName, iInt, qOKL)
@@ -174,8 +177,8 @@ contains
 
 !      Error Handler
 
-1000  call log_error('Error in DIO:WriteINTEGERL',tErrorLog_G)
-      print*,'Error in DIO:WriteINTEGERL'
+1000  call log_error("Error in DIO:WriteINTEGERL",tErrorLog_G)
+      print*,"Error in DIO:WriteINTEGERL"
 2000  continue
 
    end subroutine WriteINTEGERL
@@ -194,14 +197,14 @@ contains
 
    subroutine WriteINTEGERL64(iInt, tFileType, qOK, zFormat)
 
-      implicit none
+      implicit none (type, external)
 
       integer(kind=ipn),intent(in)            :: iInt
       type(cFileType), intent(inout)          :: tFileType
       character(*),    intent(in),  optional  :: zFormat
-      logical,         intent(out)	  :: qOK
+      logical,         intent(out)        :: qOK
 
-      logical           :: qOKL
+      logical, parameter :: qOKL = .true.
 
 !     Set error flag to false
 
@@ -213,7 +216,7 @@ contains
          if (present(zFormat) ) then
             write (tFileType%iUnit,zFormat) (iInt)
          else
-            write (tFileType%iUnit,'(I14)') (iInt)
+            write (tFileType%iUnit,"(I14)") (iInt)
          end if
       else
 !      call C_WriteIntegerL64(tFileType%zFileName, iInt, qOKL)
@@ -227,8 +230,8 @@ contains
 
 ! Error Handler
 
-1000  call log_error('Error in DIO:WriteINTEGERL64', tErrorLog_G)
-      print*,'Error in DIO:WriteINTEGERL64'
+1000  call log_error("Error in DIO:WriteINTEGERL64", tErrorLog_G)
+      print*,"Error in DIO:WriteINTEGERL64"
 2000  continue
 
    end subroutine WriteINTEGERL64
@@ -248,14 +251,14 @@ contains
 
    subroutine WriteRealNumber(sReal, tFileType, qOK, zFormat)
 
-      implicit none
+      implicit none (type, external)
 
       real(kind=wp),  intent(in)             :: sReal
       type(cFileType),intent(inout)          :: tFileType
       character(*),   intent(in),  optional  :: zFormat
-      logical,        intent(out)	     :: qOK
+      logical,        intent(out)            :: qOK
 
-      logical           :: qOKL
+      logical, parameter :: qOKL = .true.
 
       qOK = .false.
 
@@ -263,7 +266,7 @@ contains
          if (present(zFormat) ) then
             write (tFileType%iUnit,zFormat) (sReal)
          else
-            write (tFileType%iUnit,'(E22.14E3)') (sReal)
+            write (tFileType%iUnit,"(E22.14E3)") (sReal)
          end if
       else
 !     call C_WriteReal(tFileType%zFileName, sReal, qOKL)
@@ -277,8 +280,8 @@ contains
 
 ! Error Handler
 
-1000  call log_error('Error in DIO:WriteRealNumber',tErrorLog_G)
-      print*,'Error in DIO:WriteRealNumber'
+1000  call log_error("Error in DIO:WriteRealNumber",tErrorLog_G)
+      print*,"Error in DIO:WriteRealNumber"
 2000  continue
 
    end subroutine WriteRealNumber
@@ -297,13 +300,13 @@ contains
 
    subroutine Write1DRealArray(sReal, tFileType, qOK, zFormat)
 
-      implicit none
+      implicit none (type, external)
       real(kind=wp),  intent(in)             :: sReal(:)
       type(cFileType),intent(inout)          :: tFileType
       character(*),   intent(in),  optional  :: zFormat
       logical,        intent(out)      :: qOK
 
-      logical           :: qOKL
+      logical, parameter :: qOKL = .true.
 
       qOK = .false.
 
@@ -311,7 +314,7 @@ contains
          if (present(zFormat) ) then
             write (tFileType%iUnit,zFormat) (sReal)
          else
-            write (tFileType%iUnit,'(E22.14E3)') (sReal)
+            write (tFileType%iUnit,"(E22.14E3)") (sReal)
          end if
       else
 !        Call C_WriteRealArray(tFileType%zFilename, sReal, qOKL)
@@ -325,8 +328,8 @@ contains
 
 !     Error Handler
 
-1000  call log_error('Error in DIO: Write1DRealArray',tErrorLog_G)
-      print*,'Error in DIO: Write1DRealArray'
+1000  call log_error("Error in DIO: Write1DRealArray",tErrorLog_G)
+      print*,"Error in DIO: Write1DRealArray"
 2000  continue
 
    end subroutine Write1DRealArray
@@ -345,13 +348,13 @@ contains
 
    subroutine Write2DRealArray(sReal, tFileType, qOK, zFormat)
 
-      implicit none
+      implicit none (type, external)
       real(kind=wp),  intent(in)             :: sReal(:,:)
       type(cFileType),intent(inout)          :: tFileType
       character(*),   intent(in),  optional  :: zFormat
-      logical,        intent(out)	     :: qOK
+      logical,        intent(out)            :: qOK
 
-      logical           :: qOKL
+      logical, parameter :: qOKL = .true.
 
       qOK = .false.
 
@@ -359,7 +362,7 @@ contains
          if (present(zFormat) ) then
             write (tFileType%iUnit,zFormat) (sReal)
          else
-            write (tFileType%iUnit,'(E22.14E3)') (sReal)
+            write (tFileType%iUnit,"(E22.14E3)") (sReal)
          end if
       else
 !      call C_WriteRealArray(tFileType%zFileName, sReal, qOKL)
@@ -373,8 +376,8 @@ contains
 
 !     Error Handler
 
-1000  call log_error('Error in DIO: Write2DRealArray',tErrorLog_G)
-      print*,'Error in DIO: Write2DRealArray'
+1000  call log_error("Error in DIO: Write2DRealArray",tErrorLog_G)
+      print*,"Error in DIO: Write2DRealArray"
 2000  continue
 
    end subroutine Write2DRealArray
@@ -393,13 +396,13 @@ contains
 
    subroutine Write3DRealArray(sReal, tFileType, qOK, zFormat)
 
-      implicit none
+      implicit none (type, external)
       real(kind=wp),  intent(in)             :: sReal(:,:,:)
       type(cFileType),intent(inout)          :: tFileType
       character(*),   intent(in),  optional  :: zFormat
       logical,        intent(out)     :: qOK
 
-      logical           :: qOKL
+      logical, parameter :: qOKL = .true.
 
       qOK = .false.
 
@@ -407,7 +410,7 @@ contains
          if (present(zFormat) ) then
             write (tFileType%iUnit,zFormat) (sReal)
          else
-            write (tFileType%iUnit,'(E22.14E3)') (sReal)
+            write (tFileType%iUnit,"(E22.14E3)") (sReal)
          end if
       else
 !      call C_WriteRealArray(tFileType%zFileName, sReal, qOKL)
@@ -421,8 +424,8 @@ contains
 
 !     Error Handler
 
-1000  call log_error('Error in DIO: Write3DRealArray',tErrorLog_G)
-      print*,'Error in DIO: Write3DRealArray'
+1000  call log_error("Error in DIO: Write3DRealArray",tErrorLog_G)
+      print*,"Error in DIO: Write3DRealArray"
 2000  continue
 
    end subroutine Write3DRealArray
@@ -443,7 +446,7 @@ contains
 !
 !====================================================
 !
-      IMPLICIT NONE
+      IMPLICIT NONE (type, external)
 !
       INTEGER(KIND=IP)   :: FreeFile
 !
@@ -453,6 +456,9 @@ contains
          mvar_iFreeFile=mvar_iFreeFile + 1_IP
        Case (5_IP,6_IP,7_IP)
          mvar_iFreeFile = 8_IP
+       Case Default
+         ! Other unit numbers are used as-is
+         Continue
       End Select
       FreeFile = mvar_iFreeFile
 !
@@ -466,8 +472,8 @@ contains
 ! Error Handler
 !--------------------------------------------------------------------------------
 !
-1000  call log_error('Error in DIO: FreeFile',tErrorLog_G)
-      Print*,'Error in DIO: FreeFile'
+      call log_error("Error in DIO: FreeFile",tErrorLog_G)
+      Print*,"Error in DIO: FreeFile"
 2000  CONTINUE
 
    End Function FreeFile
@@ -491,18 +497,18 @@ contains
 !
 !=====================================================================
 !
-      IMPLICIT NONE
+      IMPLICIT NONE (type, external)
 
       CHARACTER(*),   INTENT(IN)            :: zFileName
       TYPE(cFileType),INTENT(INOUT)         :: tFileType
-      LOGICAL,        INTENT(OUT)	    :: qOK
+      LOGICAL,        INTENT(OUT)           :: qOK
 !
 !--------------------------------------------------------------------------------
 ! Local Scalars
 !--------------------------------------------------------------------------------
 !
       INTEGER      ::ios
-      LOGICAL      ::qOKL
+      LOGICAL, parameter :: qOKL = .true.
 !
 !--------------------------------------------------------------------------------
 ! Set error flag to false
@@ -526,10 +532,10 @@ contains
          OPEN(tFileType%iUnit, &
             FILE=tFileType%zFileName, &
             IOSTAT=ios, &
-            STATUS='REPLACE', &
-            ACCESS='SEQUENTIAL', &
-            ACTION='WRITE', &
-            POSITION='REWIND')
+            STATUS="REPLACE", &
+            ACCESS="SEQUENTIAL", &
+            ACTION="WRITE", &
+            POSITION="REWIND")
 !
          If (ios /= 0_IP) Goto 1000
 !
@@ -553,8 +559,8 @@ contains
 ! Error Handler
 !--------------------------------------------------------------------------------
 !
-1000  call log_error('Error in DIO: OpenFileForOutput',tErrorLog_G)
-      Print*,'Error in DIO: OpenFileForOutput'
+1000  call log_error("Error in DIO: OpenFileForOutput",tErrorLog_G)
+      Print*,"Error in DIO: OpenFileForOutput"
 2000  CONTINUE
    END SUBROUTINE OpenFileForOutput
 !--------------------------------------------------------------------------------
@@ -575,20 +581,20 @@ contains
 !
 !====================================================
 !
-      IMPLICIT NONE
+      IMPLICIT NONE (type, external)
 !
       TYPE(cFileType),INTENT(INOUT)           :: tFileType
-      LOGICAL,       INTENT(OUT)	      :: qOK
+      LOGICAL,       INTENT(OUT)              :: qOK
 !
       IF (tFileType%qFormatted) Then
-         CLOSE(tFileType%iUnit, STATUS='KEEP')
+         CLOSE(tFileType%iUnit, STATUS="KEEP")
       end if
 
       qOK = .TRUE.
       GoTo 2000
 
-1000  call log_error('Error in DIO: CloseFile',tErrorLog_G)
-      Print*,'Error in DIO: CloseFile'
+      call log_error("Error in DIO: CloseFile",tErrorLog_G)
+      Print*,"Error in DIO: CloseFile"
 2000  CONTINUE
    end subroutine CloseFile
 
@@ -609,8 +615,8 @@ contains
 ! ios - Input/ output status
 ! qOKL - Local error flag
 !
-      use puffin_mpiInfo
-      implicit none
+      use puffin_mpiInfo, only: tProcInfo_G
+      implicit none (type, external)
 !
       character(*), intent(in)       :: zError
       type(cFileType), intent(inout) :: tFileType
@@ -635,7 +641,7 @@ contains
 
          end if
 
-         write(unit=tFileType%iUnit,FMT='(A)') zError
+         write(unit=tFileType%iUnit,FMT="(A)") zError
 
          call CloseFile(tFileType,qOKL)
          if (.not. qOKL) goto 1000
@@ -643,7 +649,7 @@ contains
 
       Goto 2000
 
-1000  Print*,'Error setting up error log: critical error'
+1000  Print*,"Error setting up error log: critical error"
       Stop
 
 2000  continue
@@ -668,14 +674,14 @@ contains
 !
 !=====================================================================
 !
-      implicit none
+      implicit none (type, external)
 
       character(*),   intent(in)            :: zFileName
       type(cFileType),intent(inout)         :: tFileType
       logical,        intent(out)           :: qOK
 
 
-      CHARACTER*12 :: zForm
+      CHARACTER(len=12) :: zForm
       INTEGER      :: ios
       LOGICAL      :: qOKL
 !
@@ -706,9 +712,9 @@ contains
       tFILETYPE%qAppend   = .TRUE.
 !
       IF (tFILETYPE%qFormatted) THEN
-         zForm = 'FORMATTED'
+         zForm = "FORMATTED"
       ELSE
-         zForm = 'UNFORMATTED'
+         zForm = "UNFORMATTED"
       end if
 !
 !--------------------------------------------------------------------------------
@@ -720,10 +726,10 @@ contains
          OPEN(tFileType%iUnit, &
             FILE=tFileType%zFileName, &
             IOSTAT=ios, &
-            STATUS='OLD', &
-            ACCESS='SEQUENTIAL', &
-            ACTION='WRITE', &
-            POSITION='APPEND', &
+            STATUS="OLD", &
+            ACCESS="SEQUENTIAL", &
+            ACTION="WRITE", &
+            POSITION="APPEND", &
             FORM = zForm)
 !
          If (ios /= 0_IP) Goto 1000
@@ -740,8 +746,8 @@ contains
 ! Error Handler
 !--------------------------------------------------------------------------------
 !
-1000  call log_error('Error in DIO: OpenFileForAppend',tErrorLog_G)
-      Print*,'Error in DIO: OpenFileForAppend'
+1000  call log_error("Error in DIO: OpenFileForAppend",tErrorLog_G)
+      Print*,"Error in DIO: OpenFileForAppend"
 2000  CONTINUE
 
    END SUBROUTINE OpenFileForAppend
@@ -758,9 +764,12 @@ contains
 !
 ! Define local variables
 
-      implicit none
+      implicit none (type, external)
 
       character(*),   intent(in)  :: zFileName
+      ! zFile is always a fixed character(1024) buffer at the call site, and the
+      ! result here is never longer than zFileName, so truncation cannot occur.
+      ! allow(assumed-size-character-intent)
       character(*),   intent(out) :: zFile
       logical,        intent(out)  :: qOK
 
@@ -774,7 +783,7 @@ contains
 
 ! Find last position of '.' in filename
 
-      iExtension = INDEX(zfilename,'.',.TRUE.)
+      iExtension = INDEX(zfilename,".",.TRUE.)
 
 ! Return filename
 
@@ -782,7 +791,7 @@ contains
        Case (0)
          zFile = zFileName
        Case (1)
-         zFile = ''
+         zFile = ""
        Case (2:)
          zFile = zFileName(1:iExtension-1)
        Case Default
@@ -804,8 +813,8 @@ contains
 ! Error Handler
 !--------------------------------------------------------------------------------
 !
-1000  call log_error('Error in DIO: OpenFileForAppend',tErrorLog_G)
-      Print*,'Error in DIO: OpenFileForAppend'
+      call log_error("Error in DIO: OpenFileForAppend",tErrorLog_G)
+      Print*,"Error in DIO: OpenFileForAppend"
 2000  CONTINUE
 
    END SUBROUTINE FileNameNoExtension
@@ -822,7 +831,7 @@ contains
 
    subroutine FileNameExtension(zFileName, zFile, qOK)
 
-      implicit none
+      implicit none (type, external)
 
       character(*),   intent(in)  :: zFileName
       character(:), allocatable,  intent(out) :: zFile
@@ -834,7 +843,7 @@ contains
 
 !     Find last position of '.' in filename
 
-      iExtension = index(zfilename,'.',.true.)
+      iExtension = index(zfilename,".",.true.)
 
 !     Return filename
 
@@ -860,8 +869,8 @@ contains
 
 ! Error Handler
 
-1000  call log_error('Error in DIO: OpenFileForAppend',tErrorLog_G)
-      print*,'Error in DIO: OpenFileForAppend'
+      call log_error("Error in DIO: OpenFileForAppend",tErrorLog_G)
+      print*,"Error in DIO: OpenFileForAppend"
 2000  continue
 
    end subroutine FileNameExtension

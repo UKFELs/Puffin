@@ -4,10 +4,10 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Module which calculates d/dz of the local electron and field variables, and 
+!> Module which calculates d/dz of the local electron and field variables, and
 !> then sums the global regions together.
 
 module Derivative
@@ -15,22 +15,27 @@ module Derivative
 ! Module to calculate derivative required to integrate
 ! using rk4
 
-use rhs
-use ParaField
+use rhs, only: getrhs, WP, IP, tProcInfo_G, tErrorLog_G, log_error, sp2
+use ParaField, only: upd8da, ioutInfo_G
 use GlobalTypes, only: tSimulationContext
+use mpi, only: MPI_ALLREDUCE, MPI_COMM_WORLD, MPI_IN_PLACE, MPI_INTEGER, MPI_SUM
 
-implicit none
+implicit none (type, external)
+private
+
+public :: derivs
+
 
 contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-!> Subroutine which calculate d/dz of the local electron and field 
+!> Subroutine which calculate d/dz of the local electron and field
 !> variables, and then sums the global regions together.
 !> @param sz position in undulator module.
-!> @param sAr real field 
-!> @param sAi imaginary field 
+!> @param sAr real field
+!> @param sAi imaginary field
 !> @param sx electron macroparticles' x position
 
 
@@ -38,7 +43,7 @@ contains
                     sdx, sdy, sdz2, sdpr, sdpi, sdp2, sdAr, sdAi, &
                     ctx)
 
-  implicit none
+  implicit none (type, external)
 
 ! External subroutine returning dydz at z for use with RK4
 !
@@ -112,12 +117,12 @@ contains
       if (iArEr > 0_ip) then
         ctx%flags%parallel_arrays_ok = .false.
         if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 2)) then
-          print*, 'electron outside parallel bounds!'
-          print*, 'Emergency redistribute!!!'
-          print*, 'If this happens often, then &
+          print*, "electron outside parallel bounds!"
+          print*, "Emergency redistribute!!!"
+          print*, "If this happens often, then &
                 & it is possible the parallel &
                 & tuning parameters are inefficient, &
-                & and not suitable...'
+                & and not suitable..."
         end if
       end if
 
@@ -136,8 +141,8 @@ contains
       if (iArEr > 0_ip) then
         ctx%flags%inner_xy_ok = .false.
         if ((tProcInfo_G%qRoot) .and. (ioutInfo_G > 2) ) then
-          print*, 'electron outside transverse bounds!'
-          print*, 'Emergency redistribute!!!'
+          print*, "electron outside transverse bounds!"
+          print*, "Emergency redistribute!!!"
         end if
       end if
 
@@ -154,8 +159,8 @@ contains
 
 !     Error Handler
 
-1000 CALL log_error('Error in Derivative:derivs',tErrorLog_G)
-    PRINT*,'Error in Derivative:derivs'
+     CALL log_error("Error in Derivative:derivs",tErrorLog_G)
+    PRINT*,"Error in Derivative:derivs"
 2000 CONTINUE
 
   END SUBROUTINE derivs

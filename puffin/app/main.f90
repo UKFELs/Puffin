@@ -2,9 +2,11 @@ program puffin
 
     use puffin_mod, only: puffin_main
     use puffin_kinds, only: ip
-    use IO
-    use MPI
+    use IO, only: tErrorLog_G
+    use MPI, only: MPI_FINALIZE, MPI_INIT_THREAD, MPI_THREAD_FUNNELED
     use puffin_mpiInfo, only: tProcInfo_G
+
+    implicit none (type, external)
 
     character(1024_IP) :: input_file_name
     integer(KIND=IP)    :: error, provided
@@ -17,9 +19,10 @@ program puffin
     call MPI_INIT_THREAD(MPI_THREAD_FUNNELED, provided, error)
     call puffin_main(input_file_name, qOK)
     if (.not. qOK) then
-      if (tProcInfo_G%qroot) print*, 'Puffin simulation failed, check error log for details, ', tErrorLog_G%zFileName
+      if (tProcInfo_G%qroot) print*, "Puffin simulation failed, check error log for details, ", &
+                                      tErrorLog_G%zFileName
     else
-      if (tProcInfo_G%qroot) print*, 'Puffin simulation completed'
+      if (tProcInfo_G%qroot) print*, "Puffin simulation completed"
     end if
     call MPI_FINALIZE(error)
 

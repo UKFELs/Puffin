@@ -7,21 +7,25 @@ module initConds
 ! This module contains the functions calculating the initial
 ! electron macroparticle phase space conditions in Puffin.
 
-use puffin_kinds
-use Globals
+use puffin_kinds, only: WP
+use Globals, only: sFocusfactor_G, fx_G, fy_G, iX_CG, iY_CG, iZ2_CG, iPX_CG, iPY_CG, iGam_CG
 use GlobalTypes, only: tFELFrame
 
 
-implicit none
+implicit none (type, external)
+private
+
+public :: getOffsets, pxoffset, pyoffset, xOffSet, yOffSet
+
 
   INTERFACE xOffSet
-    MODULE PROCEDURE xOffSet_OneValue, xOffSet_Array   
-  END INTERFACE 
+    MODULE PROCEDURE xOffSet_OneValue, xOffSet_Array
+  END INTERFACE
 
 
   INTERFACE yOffSet
-    MODULE PROCEDURE yOffSet_OneValue, yOffSet_Array   
-  END INTERFACE 
+    MODULE PROCEDURE yOffSet_OneValue, yOffSet_Array
+  END INTERFACE
 
 contains
 
@@ -129,12 +133,12 @@ contains
 !    nc = 2.0_WP*aw**2/(ux**2 + uy**2)
     nc = aw**2
 
-!    srBcoeff = ux * 4.0_WP * sqrt(2.0_WP) * ff * k_beta * & 
+!    srBcoeff = ux * 4.0_WP * sqrt(2.0_WP) * ff * k_beta * &
 !              rho**2.0_WP / sqrt(ux**2 + uy**2) / sqrt(eta) * &
 !              (gamma_r / sqrt(gamma_j**2 - (1.0_WP + nc*(px**2 + py**2))))
 
 
-    srBcoeff = ux * 4.0_WP * kappa * & 
+    srBcoeff = ux * 4.0_WP * kappa * &
               rho**2.0_WP / sqrt(eta)* &
               (gamma_r / sqrt(gamma_j**2 &
                   - (1.0_WP + nc*(px**2 + py**2))))
@@ -142,7 +146,7 @@ contains
     s_Cos_zOver2rho = COS(sZ0 / (2.0_WP * rho))
 ! Initial values for the electron pulse in all direction
     yOffSet_OneValue         = srBcoeff * n2col * s_Cos_zOver2rho
-      
+
   END FUNCTION yOffSet_OneValue
 
 
@@ -164,17 +168,17 @@ contains
     REAL(KIND=WP), INTENT(IN) :: rho,aw,gamma_r,gamma_j(:), &
          eta,px(:),py(:),kappa,ff,ux,uy,sZ0,n2col
     REAL(KIND=WP) :: yOffSet_Array(size(px)), nc
-    
+
     nc = 2.0_WP*aw**2/(ux**2 + uy**2)
-    
-!    yOffSet_Array = ux * 4.0_WP * sqrt(2.0_wp) * ff * k_beta * & 
+
+!    yOffSet_Array = ux * 4.0_WP * sqrt(2.0_wp) * ff * k_beta * &
 !                    rho**2.0_WP / sqrt(ux**2 + uy**2) / sqrt(eta)* &
 !                    (gamma_r / sqrt(gamma_j**2 - (1.0_WP + &
 !                    nc*(px**2 + py**2)))) * &
 !                    n2col * cos(sZ0 / (2.0_WP * rho))
 
 
-    yOffSet_Array = ux * 4.0_WP * kappa * & 
+    yOffSet_Array = ux * 4.0_WP * kappa * &
                     rho**2.0_WP / sqrt(eta)* &
                     (gamma_r / sqrt(gamma_j**2 &
                        - (1.0_WP + nc*(px**2 + py**2)))) * &
@@ -223,13 +227,13 @@ contains
 
   END FUNCTION pyOffset
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   FUNCTION pz2Offset(gamma, px, py, eta, aw)
 
 ! Equation for the initial electron p2 offset due to
-! the undulator field. (Doesn't work for n2col /= 1)  
-! 
+! the undulator field. (Doesn't work for n2col /= 1)
+!
 !               ARGUMENTS
 
     REAL(KIND=WP), INTENT(IN) :: gamma, px, py, eta, aw
@@ -237,25 +241,25 @@ contains
 !                OUTPUT
 
     REAL(KIND=WP) :: pz2Offset
-    
+
 !              LOCAL ARGS
 
     REAL(KIND=WP) :: nc
 
 
     nc = 2.0_WP*aw**2/(fx_G**2 + fy_G**2)
-           
-          
+
+
     pz2Offset = ((gamma/SQRT(gamma**2 - 1.0_WP - &
                    nc*(px**2 + py**2)))-1.0_WP)/eta
-    
+
   END FUNCTION pz2Offset
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 SUBROUTINE getOffsets(sZ,samLenE,sZ2_center,gamma_d,offsets,frame,n2col)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
 !             ARGUMENTS
 
@@ -287,7 +291,7 @@ SUBROUTINE getOffsets(sZ,samLenE,sZ2_center,gamma_d,offsets,frame,n2col)
                            frame%eta, frame%kappa, sFocusfactor_G, &
                            spx_offset, spy_offset, &
                            fx_G, fy_G, sZ, n2col)
-              
+
 !  sz2_offset     = samLenE(iZ2_CG)/2.0_WP
 
   IF (sZ2_center < (samLenE(iZ2_CG) / 2.0_WP)) THEN

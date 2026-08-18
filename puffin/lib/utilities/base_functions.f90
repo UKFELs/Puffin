@@ -4,29 +4,35 @@
 
 !> @author
 !> Lawrence Campbell, Cynthia Nam
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Some basic low-level functions (Gaussian, linspace etc).
 
 MODULE Functions
 
-use puffin_kinds
-use puffin_mpiInfo 
-USE error_fn
-USE puffin_constants
-USE MPI
+use puffin_kinds, only: WP, IP
+use puffin_mpiInfo, only: tProcInfo_G
+USE error_fn, only: erf, erfi
+USE puffin_constants, only: pi
+USE MPI, only: MPI_ALLREDUCE, MPI_DOUBLE_PRECISION, MPI_SUM
 
-IMPLICIT NONE
+IMPLICIT NONE (type, external)
+private
+
+public :: arr_mean_para_weighted, diffractionlength, GainLength, gaussian, GaussianDistribution, &
+           GaussianDistributionZ2, GaussianGrid, IP, linspace, MatchedBeamRadius, raleighlength, &
+           tProcInfo_G, WP
+
 
 CONTAINS
 !********************************************************
 
   FUNCTION gaussian(x,xc,sigma)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 !
-! Return array of the Gaussian function for aray of 
+! Return array of the Gaussian function for aray of
 ! points x
 !
     REAL(KIND=WP), INTENT(IN) :: x(:)
@@ -44,18 +50,14 @@ CONTAINS
 
     pi=4.0_WP*ATAN(1.0_WP)
     s_twopi_sigma=sqrt(2*pi)*sigma
-	
+
     if (sigma > 0.0_wp) then
       ngaussian=exp(-((x-xc)/sigma)**2/2.0_WP)
     else
       ngaussian = 0.0_wp
     end if
-	
+
     gaussian=ngaussian
-
-    return
-
-    deallocate(gaussian)
 
   END FUNCTION gaussian
 
@@ -66,14 +68,14 @@ CONTAINS
 
   FUNCTION linspace(xstart,xend,n)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 !
 !Generate a uniform array of n values between xstart and xend
 !
     REAL(KIND=WP),INTENT(IN) ::xstart,xend
     INTEGER(KIND=IP),INTENT(IN) :: n
     REAL(KIND=WP),DIMENSION(:), allocatable :: linspace
-    
+
 ! Local vars:-
 
     REAL(KIND=WP) :: dx
@@ -85,15 +87,12 @@ CONTAINS
 
     IF(n>1) THEN
        dx=(xend-xstart)/REAL((n-1),KIND=WP)
-       linspace=(/ (xstart+i*dx,i=0,(n-1))/)
+       linspace=[ (xstart+i*dx,i=0,(n-1))]
     ELSE IF (n==1) THEN
-       linspace=(/ xstart /)
+       linspace=[ xstart ]
     ELSE
        STOP "*** Number of points must be >0 in LINSPACE ***"
     END IF
-
-    return
-    deallocate(linspace)
 
   END FUNCTION linspace
 
@@ -105,15 +104,15 @@ CONTAINS
   FUNCTION getx(i,i_nmp,s_xc,sigma,s_xstart,s_h_in,&
        s_tol_in)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 !
 ! CALCULATE THE X VALUE WHERE IT HAS THE SAME AREA
 ! UNDER THE GAUSSIAN
 !
     INTEGER(KIND=IP),INTENT(IN) :: i,i_nmp
     REAL(KIND=WP),INTENT(IN) :: s_xc,sigma,s_xstart
-    REAL(KIND=WP),INTENT(IN),OPTIONAL :: s_h_in 
-    REAL(KIND=WP),INTENT(IN),OPTIONAL :: s_tol_in 
+    REAL(KIND=WP),INTENT(IN),OPTIONAL :: s_h_in
+    REAL(KIND=WP),INTENT(IN),OPTIONAL :: s_tol_in
 
 ! Local vars:-
 
@@ -127,27 +126,28 @@ CONTAINS
        s_h = s_h_in
     else
        s_h = 1.0_WP
-    endif
+    end if
     If (PRESENT(s_tol_in)) then
        s_tol = s_tol_in
     else
        s_tol = 1e-4_WP
-    endif
+    end if
 
     s_A1=i*1.0_WP/REAL(i_nmp)
     s_x=s_xstart
     s_area=0.0_WP
     s_integralstart=0.5_WP*(1.0_WP+erf((s_x-s_xc)/(SQRT(2.0_WP)*sigma)))
     s_area=s_integralstart
-    	
+
     IF (s_A1<s_area)  THEN
        PRINT * ,"Error In 'getx (Dfunctions.f90)' Subroutine,",&
             " try to use less than ",i_nmp
-       STOP 
-    ENDIF
-	
-10  s_integral=0.5_WP*(1.0_WP+erf((s_x+s_h-s_xc)/(SQRT(2.0_WP)*sigma)))-0.5_WP*(1.0_WP+erf((s_x-s_xc)/(SQRT(2.0_WP)*sigma)))
-	
+       STOP
+    END IF
+
+10  s_integral=0.5_WP*(1.0_WP+erf((s_x+s_h-s_xc)/(SQRT(2.0_WP)*sigma))) &
+             -0.5_WP*(1.0_WP+erf((s_x-s_xc)/(SQRT(2.0_WP)*sigma)))
+
     IF (s_h>s_tol) THEN
        IF(s_area+s_integral>s_A1) THEN
           s_h=s_h/2.0_WP
@@ -155,12 +155,12 @@ CONTAINS
        ELSE
           s_area=s_area+s_integral
           s_x=s_x+s_h
-          GO TO 10
-       ENDIF
+          GOTO 10
+       END IF
     ELSE
        getx=s_x
-    ENDIF
-    
+    END IF
+
   END FUNCTION getx
 
 !********************************************************
@@ -170,7 +170,7 @@ CONTAINS
 
   SUBROUTINE GaussianGrid(i_Macro,s_MeanGuass,s_SigmaGuass,s_start,s_end,sgrid)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 
     INTEGER(KIND=IP),INTENT(IN) :: i_Macro
     REAL(KIND=WP),INTENT(IN) :: s_MeanGuass,s_SigmaGuass,s_start,s_end
@@ -186,28 +186,28 @@ CONTAINS
     LOGICAL :: qEven
 
 ! BEGIN:-
-! Number of grid points         
-    nGridPoints = i_Macro + 1_IP   
+! Number of grid points
+    nGridPoints = i_Macro + 1_IP
 
 ! Calculate half the number of gridpoints  as grid is
-! mirror image around centre        
-    nHalfGridPoints = ceiling(REAL(nGridPoints) / 2_WP)  
+! mirror image around centre
+    nHalfGridPoints = ceiling(REAL(nGridPoints) / 2_WP)
 
-! Find out if have even number of grid points        
-    If ((nHalfGridPoints * 2_IP).NE. nGridPoints) Then
+! Find out if have even number of grid points
+    If ((nHalfGridPoints * 2_IP)/= nGridPoints) Then
        qEven = .FALSE.
     else
        qEven = .TRUE.
     End if
 
-! Calculate half the electron pulse length         
+! Calculate half the electron pulse length
     sHalfLength = (abs(s_end - s_start)) / 2.0_WP
 
-! Calculate constant        
+! Calculate constant
     sX =  erf((sHalfLength) /&
          (sqrt(2.0_WP) * s_SigmaGuass)) / i_Macro
 
-! Grid start and end positions      
+! Grid start and end positions
     sGrid(1) = s_start
     sGrid(i_Macro + 1_IP) = s_end
 
@@ -217,28 +217,28 @@ CONTAINS
 ! Need only half area for first grid point as its
 ! position is mirror image around centre
        sY = sX / 2.0_WP
-       Do i = 1_IP, nHalfGridPoints - 1_IP     
+       Do i = 1_IP, nHalfGridPoints - 1_IP
           sGrid(nHalfGridPoints + i) = sqrt(2.0_WP)&
                * s_SigmaGuass * erfi((i+(i-1)) * sX)
        End do
 
        Do i = 2_IP, nHalfGridPoints
-          sGrid(i) = -sGrid(nGridPoints - i + 1_IP) 
+          sGrid(i) = -sGrid(nGridPoints - i + 1_IP)
        End do
 
 ! If have an odd number of grid points then have
 ! a grid point positioned at centre
     else
        sGrid(nHalfGridPoints) = 0.0_WP
-       Do i = 1_IP, nHalfGridPoints - 2_IP     
+       Do i = 1_IP, nHalfGridPoints - 2_IP
           sgrid(nHalfGridPoints + i) = sqrt(2.0_WP) *&
-               s_SigmaGuass * erfi(2.0_WP*i * sX) 
+               s_SigmaGuass * erfi(2.0_WP*i * sX)
        End do
        Do i = 2_IP, nHalfGridPoints - 1_IP
-          sgrid(i) = -sGrid(nGridPoints - i + 1_IP) 
+          sgrid(i) = -sGrid(nGridPoints - i + 1_IP)
        End do
     End if
-    
+
     sgrid(2_IP:(nGridPoints - 1_IP)) = &
          sgrid(2_IP:(nGridPoints - 1_IP)) + s_MeanGuass
 
@@ -258,12 +258,12 @@ CONTAINS
   SUBROUTINE GaussianDistribution(i_Macro,s_grid,&
        s_MeanGuass,s_SigmaGuass,s_func)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 !
 ! Input parameters
 !
     INTEGER(KIND=IP),INTENT(IN) :: i_Macro
-    REAL(KIND=WP),INTENT(IN)	:: s_MeanGuass,s_SigmaGuass
+    REAL(KIND=WP),INTENT(IN)    :: s_MeanGuass,s_SigmaGuass
     REAL(KIND=WP),INTENT(IN) :: s_grid(:)
 ! Output parameters
     REAL(KIND=WP),INTENT(OUT) :: s_func(:)
@@ -279,7 +279,7 @@ CONTAINS
        s_func(i)=EXP(-((s_new-s_MeanGuass)/s_SigmaGuass)**2&
             /2.0_WP)
        s_d(i)=s_grid(i+1)-s_grid(i)
-    ENDDO
+    END DO
 
     s_func=s_func/sum(s_d*s_func)
 
@@ -303,7 +303,7 @@ CONTAINS
   SUBROUTINE GaussianDistributionz2(i_Macro,s_grid,&
        s_MeanGuass,s_SigmaGuass,s_func)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 !
 ! Input parameters
 !
@@ -326,13 +326,13 @@ CONTAINS
        s_func(i)=EXP(-((s_new-s_MeanGuass)/s_SigmaGuass)**2&
             /2.0_WP)
        s_d(i)=s_grid(i+1)-s_grid(i)
-    ENDDO
-    tdenom = sum(s_d*s_func) 
+    END DO
+    tdenom = sum(s_d*s_func)
 
     CALL MPI_ALLREDUCE(tdenom,denom,1,MPI_DOUBLE_PRECISION,&
          MPI_SUM, &
          tProcInfo_G%comm,error)
-    
+
     s_func=s_func/denom
 
     DEALLOCATE(s_d)
@@ -352,57 +352,57 @@ CONTAINS
 
 
   SUBROUTINE hpsort(N,RA)
-    
-    IMPLICIT NONE
+
+    IMPLICIT NONE (type, external)
 !
 ! INPUTS & OUTPUTS PARAMETERS
 !
     INTEGER(KIND=IP), INTENT(IN) :: N
     REAL(KIND=WP),INTENT(INOUT) :: RA(:)
 
-! LOCAL PARAMETERS   
+! LOCAL PARAMETERS
 
     INTEGER(KIND=IP) :: i,IR,J,L
     REAL(KIND=WP) :: RRA
 
 
 
-! BEGIN:-   
+! BEGIN:-
 
-    IF (N.LT.2_IP) return
+    IF (N<2_IP) return
     L=N/2_IP+1_IP
     IR=N
 10  CONTINUE
-    IF (L.GT.1_IP) THEN
+    IF (L>1_IP) THEN
        L=L-1
        RRA=RA(L)
     ELSE
        RRA=RA(IR)
        RA(IR)=RA(1)
        IR=IR-1_IP
-       IF (IR.EQ.1_IP) THEN
+       IF (IR==1_IP) THEN
           RA(1)=RRA
           RETURN
-       ENDIF
-    ENDIF
+       END IF
+    END IF
     i=L
     J=L+L
-20  IF (J.LE.IR) THEN
-       IF(J.LT.IR) THEN
-          IF(RA(J).LT.RA(J+1_IP)) J=J+1_IP
-       ENDIF
-       IF(RRA.LT.RA(J)) THEN
+20  IF (J<=IR) THEN
+       IF(J<IR) THEN
+          IF(RA(J)<RA(J+1_IP)) J=J+1_IP
+       END IF
+       IF(RRA<RA(J)) THEN
           RA(I)=RA(J)
           I=J
           J=J+J
        ELSE
           J=IR+1_IP
-       ENDIF
+       END IF
        GOTO 20
-    ENDIF
+    END IF
     RA(I)=RRA
     GOTO 10
-    
+
   END SUBROUTINE hpsort
 
 !********************************************************
@@ -416,7 +416,7 @@ CONTAINS
 
   FUNCTION epsilonParameter(saw,sgamma_r,fx,fy)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 
     REAL(KIND=WP),INTENT(IN)  :: saw,sgamma_r,fx,fy
 
@@ -426,7 +426,7 @@ CONTAINS
     REAL(KIND=WP) :: beta_av
 
 
-! BEGIN:-   
+! BEGIN:-
 
     beta_av = SQRT(sgamma_r**2 - 1.0_WP - saw**2)&
          /sgamma_r
@@ -447,7 +447,7 @@ CONTAINS
 
   FUNCTION GainLength(sWigglerWaveLength,rho)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 
     REAL(KIND=WP),INTENT(IN) :: sWigglerWaveLength,rho
 
@@ -464,7 +464,7 @@ CONTAINS
 
   FUNCTION MatchedBeamRadius(srho, sEmit, k_beta)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 
     REAL(KIND=WP),INTENT(IN) :: srho, sEmit, k_beta
 
@@ -488,7 +488,7 @@ CONTAINS
 
   FUNCTION DiffractionLength(z,sRaleighLength,sigma)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 
     REAL(KIND=WP),INTENT(IN) :: z,sRaleighLength,sigma
 
@@ -512,7 +512,7 @@ CONTAINS
 
 ! sigma of the seed field
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 
     REAL(KIND=WP),INTENT(IN) :: srho,sigma
 
@@ -530,13 +530,13 @@ CONTAINS
 
 ! Return the mean of an array of real values
 
-    use ParallelSetUp
+    use ParallelSetUp, only: sum_mpi_real, WP
 
-    implicit none
+    implicit none (type, external)
 
     real(kind=wp), intent(in) :: s_ar(:)
     real(kind=wp) :: arr_mean_para
-    real(kind=wp) :: loc_sum, glob_sum    
+    real(kind=wp) :: loc_sum, glob_sum
 
     loc_sum = sum(s_ar)  ! local sum
 
@@ -553,9 +553,9 @@ CONTAINS
 
 ! Return the mean of an array of real values
 
-    use ParallelSetUp
+    use ParallelSetUp, only: sum_mpi_real, WP
 
-    implicit none
+    implicit none (type, external)
 
     real(kind=wp), intent(in) :: s_ar(:), weights(:)
     real(kind=wp) :: arr_mean_para_weighted

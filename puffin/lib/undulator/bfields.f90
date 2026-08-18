@@ -15,9 +15,15 @@
 
 module bfields
 
-use puffin_kinds
-use globals
+use puffin_kinds, only: WP
+use globals, only: iUndStart_G, iUndEnd_G, iUndMain_G, qFocussing_G, qOneD_G, pi
 use GlobalTypes, only: tUndulator, tFELFrame
+
+implicit none (type, external)
+private
+
+public :: getbfields
+
 
 contains
 
@@ -78,7 +84,7 @@ subroutine getBXfield(sx, sy, sz, bxj, und, frame)
 !    Curved pole case - planar wiggler with focusing
 !    in both x and y (electron wiggles in x)
 
-  if (und%undulator_type == 'curved') then
+  if (und%undulator_type == "curved") then
 
     if (und%undulator_position == iUndStart_G) then
 
@@ -118,7 +124,7 @@ subroutine getBXfield(sx, sy, sz, bxj, und, frame)
 !    Plane-pole case - planar wiggler with focusing
 !    only in y (and electron will wiggle in x)
 
-  else if (und%undulator_type == 'planepole')  then
+  else if (und%undulator_type == "planepole")  then
 
     if (und%undulator_position == iUndStart_G) then
 
@@ -152,7 +158,7 @@ subroutine getBXfield(sx, sy, sz, bxj, und, frame)
 !    Helical case - helical wiggler with focusing
 !    in x and y (and electron will wiggle in x and y)
 
-  else if (und%undulator_type == 'helical')  then
+  else if (und%undulator_type == "helical")  then
 
     if (und%undulator_position == iUndStart_G) then
 
@@ -296,7 +302,7 @@ subroutine getBXfield(sx, sy, sz, bxj, und, frame)
 !    in both x and y (electron wiggles in x)
 
 
-  if (und%undulator_type == 'curved') then
+  if (und%undulator_type == "curved") then
 
     if (und%undulator_position == iUndStart_G) then
 
@@ -338,7 +344,7 @@ subroutine getBXfield(sx, sy, sz, bxj, und, frame)
 
 
 
-  else if (und%undulator_type == 'planepole')  then
+  else if (und%undulator_type == "planepole")  then
 
     if (und%undulator_position == iUndStart_G) then
 
@@ -373,7 +379,7 @@ subroutine getBXfield(sx, sy, sz, bxj, und, frame)
 !    Helical case - helical wiggler with focusing
 !    in x and y (and electron will wiggle in x and y)
 
-  else if (und%undulator_type == 'helical')  then
+  else if (und%undulator_type == "helical")  then
 
     if (und%undulator_position == iUndStart_G) then
 
@@ -492,7 +498,7 @@ subroutine getBZfield(sx, sy, sz, bzj, und, frame)
 !    in both x and y (electron wiggles in x)
 
 
-  if (und%undulator_type == 'curved') then
+  if (und%undulator_type == "curved") then
 
     if (und%undulator_position == iUndStart_G) then
 
@@ -534,7 +540,7 @@ subroutine getBZfield(sx, sy, sz, bzj, und, frame)
 !    Plane-pole case - planar wiggler with focusing
 !    only in y (and electron will wiggle in x)
 
-  else if (und%undulator_type == 'planepole')  then
+  else if (und%undulator_type == "planepole")  then
 
     if (und%undulator_position == iUndStart_G) then
 
@@ -571,7 +577,7 @@ subroutine getBZfield(sx, sy, sz, bzj, und, frame)
 !    Helical case - helical wiggler with focusing
 !    in x and y (and electron will wiggle in x and y)
 
-  else if (und%undulator_type == 'helical')  then
+  else if (und%undulator_type == "helical")  then
 
     if (und%undulator_position == iUndStart_G) then
 

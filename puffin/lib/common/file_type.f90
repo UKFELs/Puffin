@@ -4,10 +4,14 @@
 
 MODULE FileType
 
-  use puffin_kinds
-		
-  IMPLICIT NONE
-      
+  use puffin_kinds, only: IP
+
+  IMPLICIT NONE (type, external)
+private
+
+public :: cFileType
+
+
 !
 !*****************************************************
 ! File type definition
@@ -30,10 +34,10 @@ MODULE FileType
 ! mvar_zBuffer     - Input file buffer
 ! mvar_iPage       - Page number in file
 !*****************************************************
- 
+
   type cFileType
 
-    character(1024_IP)  :: zFileName = ''
+    character(1024_IP)  :: zFileName = ""
     logical           :: qFormatted = .false.
     logical           :: qForInput = .false.
     logical           :: qAppend = .false.

@@ -4,18 +4,34 @@
 
 module H5in
 
-use puffin_kinds
+use puffin_kinds, only: float, WP, IP, IPN
 use puffin_mpiInfo, only: tProcInfo_G
-use globals
-use ParallelSetUp
-use parBeam
-use paraField
-use scale
-use HDF5
-use initDataType
+use globals, only: NX_G, NY_G, NZ2_G, ntrnds_G, sLengthOfElmX_G, sLengthOfElmY_G, &
+  sLengthOfElmZ2_G, iNumberNodes_G, sfilt, delta_G, s_chi_bar_G, s_Normalised_chi_G, &
+  iNumberElectrons_G, iGloNumElectrons_G, sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, &
+  tInitData_G, iStep, sRedistLen_G, qResume_G, qOneD_G, pi
+use ParallelSetUp, only: tErrorLog_G, log_error
+use parBeam, only: divmps
+use paraField, only: fr_rfield, bk_rfield, ac_rfield, fr_ifield, bk_ifield, ac_ifield, fz2, &
+  mainlen, ffs, tlflen, ees, tlelen, qStart_new, getlocalfieldindices
+use HDF5, only: h5aclose_f, h5aopen_f, H5Aopen_name_f, h5aread_f, h5close_f, h5dclose_f, &
+  h5Dget_space_f, h5dget_type_f, h5dopen_f, h5dread_f, H5F_ACC_RDONLY_F, h5fclose_F, &
+  H5FD_MPIO_COLLECTIVE_F, h5fopen_f, h5gclose_f, h5gopen_f, h5open_f, H5P_DATASET_XFER_F, &
+  H5P_FILE_ACCESS_F, h5pclose_f, h5pcreate_f, h5pset_dxpl_mpio_f, h5pset_fapl_mpio_f, &
+  H5S_SELECT_SET_F, h5sclose_f, h5screate_simple_f, h5Sget_simple_extent_dims_f, &
+  h5Sget_simple_extent_ndims_f, h5sselect_hyperslab_f, H5T_FLOAT_F, H5T_NATIVE_DOUBLE, &
+  H5T_NATIVE_INTEGER, h5tclose_f, h5tcopy_f, h5tget_class_f, HID_T, HSIZE_T
 use GlobalTypes, only: tSimulationFlags, tFELFrame
+use mpi, only: MPI_ALLREDUCE, mpi_barrier, MPI_COMM_WORLD, MPI_INFO_NULL, MPI_INTEGER, MPI_SUM
 
-implicit none
+implicit none (type, external)
+private
+
+public :: getH5DatasetLength1D, getMacroparticleCount, getNX, getNY, getNZ2, getWriteStep, &
+           readH5BeamDataOntoRootProcess, readH5Dataset1DOntoRootProcess, &
+           readh5beamfile, readH5FieldDataOntoRootProcess, readH5FieldDataOntoRootProcess3D, &
+           readh5fieldfilesingledump
+
 
 
 
@@ -30,28 +46,11 @@ contains
     INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
     INTEGER(HID_T) :: dtype         !< So we can check we're reading in doubles
     INTEGER(kind=ip) :: dclass         !< So we can check we're reading in doubles
-    INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
-    INTEGER(HID_T) :: memspace     !< Dataspace identifier in file
-    INTEGER(HID_T) :: attr_id       !< Attribute identifier
-    INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
-    INTEGER(HID_T) :: atype_id      !< Attribute Data type identifier
     CHARACTER(LEN=9), PARAMETER :: dsetname = "electrons" !< Dataset name
-    CHARACTER(LEN=30) :: aname   !< Attribute name
     character(1024_IP) :: filename
     INTEGER(HSIZE_T), DIMENSION(2) :: dims   !< dims of ptcl dataset (coords*numelecs)
     INTEGER(HSIZE_T), DIMENSION(2) :: mdims   !< maxdims of ptcl dataset (coords*numelecs)
     INTEGER(kind=ip) ::  rank                !< Particle Dataset rank
-    INTEGER     ::  arank = 1                !< Attribute rank - 1 is vector
-    INTEGER(HSIZE_T), DIMENSION(1) :: adims  !< Attribute dims
-    INTEGER(HSIZE_T), DIMENSION(1) :: attr_data_int !< For integer attribs (numdims)
-    INTEGER     :: numSpatialDims    !< Attr content, and also num elsewhere
-    REAL(kind=WP) :: attr_data_double
-    CHARACTER(LEN=100) :: attr_data_string
-    CHARACTER(LEN=16) :: scaleToSIstring
-    INTEGER(HSIZE_T) :: attr_string_len
-    CHARACTER(LEN=4), PARAMETER :: timegrpname = "time"  ! Group name
-    CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  ! Group name
-    REAL(kind=WP), ALLOCATABLE :: limdata (:)  ! Data to write
     integer :: error ! Error flag
     character(LEN=40) :: errorstr !<String to write an error
     integer(kind=ip) :: nMPs
@@ -63,46 +62,46 @@ contains
 
     if (tProcInfo_G%qRoot) then
       CALL h5open_f(error)
-      Print*,'h5in:H5 interface opened'
-      print*,'reading hdf5 input - first opening file on rank 0'
+      Print*,"h5in:H5 interface opened"
+      print*,"reading hdf5 input - first opening file on rank 0"
       CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
-      Print*,'h5in:readH5Beamfile(file opened in serial)'
+      Print*,"h5in:readH5Beamfile(file opened in serial)"
       Print*,error
       CALL h5dopen_f (file_id, dsetname, dset_id, error)
-      Print*,'h5in:readH5Beamfile(dataset opened in serial)'
+      Print*,"h5in:readH5Beamfile(dataset opened in serial)"
       Print*,error
       CALL h5dget_type_f (dset_id, dtype, error)
-      Print*,'h5in:readH5Beamfile(checking data type)'
+      Print*,"h5in:readH5Beamfile(checking data type)"
       Print*,error
       CALL h5tget_class_f (dtype, dclass, error)
-      Print*,'h5in:readH5Beamfile(dataset opened in serial)'
+      Print*,"h5in:readH5Beamfile(dataset opened in serial)"
       Print*,error
       if (dclass==H5T_FLOAT_F) then
-       print*,'data is float'
+       print*,"data is float"
       else
       errorstr = trim("data is no float")
       print*,dclass
       goto 1000
       end if
       CALL h5Dget_space_f(dset_id,dspace_id,error)
-      Print*,'h5in:readH5Beamfile(dataspace opened in serial)'
+      Print*,"h5in:readH5Beamfile(dataspace opened in serial)"
       Print*,error
       CALL h5Sget_simple_extent_ndims_f(dspace_id,rank,error)
-      Print*,'h5in:readH5Beamfile(dataspace opened in serial)'
+      Print*,"h5in:readH5Beamfile(dataspace opened in serial)"
       Print*,rank
       Print*,error
       if (rank==2) then
-       print*,'data rank is 2, which is good'
+       print*,"data rank is 2, which is good"
       else
       errorstr = trim("data does not have rank 2, has rank")
       goto 1000
       end if
       CALL h5Sget_simple_extent_dims_f(dspace_id,dims,mdims,error)
-      Print*,'hdf5_puff:readH5Beamfile(dataspace getting dims)'
+      Print*,"hdf5_puff:readH5Beamfile(dataspace getting dims)"
       Print*,error ! rank on success = 2
       print*,dims
       if (dims(1)==7) then
-       print*,'data has seven columns, which is good'
+       print*,"data has seven columns, which is good"
       else
       errorstr = trim("data does not have seven columns")
       goto 1000
@@ -124,49 +123,30 @@ contains
 
    goto 2000
 
-1000 call log_error('Error in H5in:getMacroparticleCount',&
+1000 call log_error("Error in H5in:getMacroparticleCount",&
           tErrorLog_G)
    print*, "abort, abort, Error in getMacroparticleCount",errorstr
 2000 CONTINUE
   end function getMacroparticleCount
 
 
-  subroutine readH5BeamDataOntoRootProcess(zFile, sElX, sElY, sElZ2, sElPX, sElPY, sElGam, s_chi_bar, nMPs)
+  subroutine readH5BeamDataOntoRootProcess(zFile, sElX, sElY, sElZ2, sElPX, sElPY, sElGam, &
+                                            s_chi_bar, nMPs)
 
     character(*), intent(in) :: zFile
     integer(kind=ip), intent(in) :: nMPs
-    REAL(kind=WP), intent(out) :: sElX(:), sElY(:), sElZ2(:), sElPX(:), sElPY(:), sElGam(:), s_chi_bar(:)
+    REAL(kind=WP), intent(out) :: sElX(:), sElY(:), sElZ2(:), sElPX(:), sElPY(:), sElGam(:), &
+                                   s_chi_bar(:)
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier
     INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
-    INTEGER(HID_T) :: dtype         !< So we can check we're reading in doubles
-    INTEGER(kind=ip) :: dclass         !< So we can check we're reading in doubles
-    INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
     INTEGER(HID_T) :: memspace     !< Dataspace identifier in file
-    INTEGER(HID_T) :: attr_id       !< Attribute identifier
-    INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
-    INTEGER(HID_T) :: atype_id      !< Attribute Data type identifier
     CHARACTER(LEN=9), PARAMETER :: dsetname = "electrons" !< Dataset name
-    CHARACTER(LEN=30) :: aname   !< Attribute name
     character(1024_IP) :: filename
     INTEGER(HSIZE_T), DIMENSION(2) :: dims   !< dims of ptcl dataset (coords*numelecs)
-    INTEGER(HSIZE_T), DIMENSION(2) :: mdims   !< maxdims of ptcl dataset (coords*numelecs)
     INTEGER(HSIZE_T), DIMENSION(2) :: doffset!< Offset for write, could be rank dependent
     INTEGER(HSIZE_T), DIMENSION(2) :: dsize  !< Size of hyperslab to write
-    INTEGER(kind=ip) ::  rank                !< Particle Dataset rank
-    INTEGER     ::  arank = 1                !< Attribute rank - 1 is vector
-    INTEGER(HSIZE_T), DIMENSION(1) :: adims  !< Attribute dims
-    INTEGER(HSIZE_T), DIMENSION(1) :: attr_data_int !< For integer attribs (numdims)
-    INTEGER     :: numSpatialDims    !< Attr content, and also num elsewhere
-    REAL(kind=WP) :: attr_data_double
-    CHARACTER(LEN=100) :: attr_data_string
-    CHARACTER(LEN=16) :: scaleToSIstring
-    INTEGER(HSIZE_T) :: attr_string_len
-    CHARACTER(LEN=4), PARAMETER :: timegrpname = "time"  ! Group name
-    CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  ! Group name
-    REAL(kind=WP), ALLOCATABLE :: limdata (:)  ! Data to write
     integer :: error ! Error flag
-    character(LEN=40) :: errorstr !<String to write an error
     integer(kind=ip) :: mpiinfo
 
     mpiinfo=MPI_INFO_NULL
@@ -174,17 +154,17 @@ contains
 
     if (tProcInfo_G%qRoot) then
       CALL h5open_f(error)
-      Print*,'h5in:H5 interface opened'
-      print*,'reading hdf5 input - first opening file on rank 0'
+      Print*,"h5in:H5 interface opened"
+      print*,"reading hdf5 input - first opening file on rank 0"
       CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
      print*,error
      print*,"h5f open"
       CALL h5dopen_f (file_id, dsetname, dset_id, error)
      print*,error
      print*,"h5d open"
-      dims=(/1,size(sElX)/)
-      dsize=(/7,nMPs/)
-      doffset=(/0,0/)
+      dims=[1,size(sElX)]
+      dsize=[7,nMPs]
+      doffset=[0,0]
       CALL h5screate_simple_f(2, dims, memspace, error)
      print*,error
      print*,"h5s mem created"
@@ -205,7 +185,7 @@ contains
      print*,error
      print*,"h5d slab read"
 
-      doffset=(/1,0/)
+      doffset=[1,0]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
      print*,error
@@ -215,7 +195,7 @@ contains
      print*,error
      print*,"h5d slab1 read"
 
-      doffset=(/2,0/)
+      doffset=[2,0]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
      print*,"h5s slab2 selected"
@@ -224,7 +204,7 @@ contains
      print*,error
      print*,"h5d slab2 read"
 
-      doffset=(/3,0/)
+      doffset=[3,0]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, sElPX, dims, error, &
@@ -232,7 +212,7 @@ contains
      print*,error
      print*,"h5d slab3 read"
 
-      doffset=(/4,0/)
+      doffset=[4,0]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, sElPY, dims, error, &
@@ -240,7 +220,7 @@ contains
      print*,error
      print*,"h5d slab4 read"
 
-      doffset=(/5,0/)
+      doffset=[5,0]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, sElGam, dims, error, &
@@ -248,7 +228,7 @@ contains
      print*,error
      print*,"h5d slab5 read"
 
-      doffset=(/6,0/)
+      doffset=[6,0]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, s_chi_bar, dims, error, &
@@ -277,8 +257,6 @@ contains
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: group_id      !< Group identifier
     INTEGER(HID_T) :: attr_id       !< Attribute identifier
-    INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
-    INTEGER(HID_T) :: atype_id      !< Attribute Data type identifier
     CHARACTER(LEN=7), PARAMETER :: grpname = "runInfo"  ! Group name
     CHARACTER(LEN=3) :: aname   !< Attribute name
     character(1024_IP) :: filename
@@ -347,28 +325,14 @@ contains
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier
     INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
-    INTEGER(HID_T) :: dtype         !< So we can check we're reading in doubles
-    INTEGER(kind=ip) :: dclass         !< So we can check we're reading in doubles
-    INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
     INTEGER(HID_T) :: memspace     !< Dataspace identifier in file
     CHARACTER(LEN=5), PARAMETER :: dsetname = "aperp" !< Dataset name
     character(1024_IP) :: filename
     INTEGER(HSIZE_T), DIMENSION(2) :: dims   !< dims of field dataset
-    INTEGER(HSIZE_T), DIMENSION(2) :: mdims   !< maxdims of field dataset
     INTEGER(HSIZE_T), DIMENSION(2) :: doffset!< Offset for write, could be rank dependent
     INTEGER(HSIZE_T), DIMENSION(1) :: dsize  !< Size of hyperslab to write
     INTEGER(HSIZE_T), DIMENSION(2) :: count  !< Count for hyperslab
-    INTEGER(kind=ip) ::  rank                !< Particle Dataset rank
-    INTEGER     ::  arank = 1                !< Attribute rank - 1 is vector
-    INTEGER(HSIZE_T), DIMENSION(1) :: adims  !< Attribute dims
-    INTEGER(HSIZE_T), DIMENSION(1) :: attr_data_int !< For integer attribs (numdims)
-    INTEGER     :: numSpatialDims    !< Attr content, and also num elsewhere
-    REAL(kind=WP) :: attr_data_double
-    CHARACTER(LEN=100) :: attr_data_string
-    CHARACTER(LEN=16) :: scaleToSIstring
-    INTEGER(HSIZE_T) :: attr_string_len
     integer :: error ! Error flag
-    character(LEN=40) :: errorstr !<String to write an error
     integer(kind=ip) :: mpiinfo
 
     mpiinfo=MPI_INFO_NULL
@@ -378,16 +342,16 @@ contains
       CALL h5open_f(error)
       CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
       CALL h5dopen_f (file_id, dsetname, dset_id, error)
-      dims = (/nZ2, 2/)
-      dsize = (/nZ2/)
-      doffset = (/0, 0/)
-      count = (/INT(nZ2, HSIZE_T), 1_HSIZE_T/)
+      dims = [nZ2, 2]
+      dsize = [nZ2]
+      doffset = [0, 0]
+      count = [INT(nZ2, HSIZE_T), 1_HSIZE_T]
       CALL h5screate_simple_f(1, dsize, memspace, error)
       CALL h5Dget_space_f(dset_id,dspace_id,error)
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, count, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, rfield, dsize, error, &
        file_space_id = dspace_id, mem_space_id = memspace)
-      doffset = (/0, 1/)
+      doffset = [0, 1]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, count, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, ifield, dsize, error, &
        file_space_id = dspace_id, mem_space_id = memspace)
@@ -487,18 +451,18 @@ contains
       CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
       CALL h5dopen_f(file_id, dsetname, dset_id, error)
 
-      dsize_mem = (/INT(nX, HSIZE_T) * INT(nY, HSIZE_T) * INT(nZ2, HSIZE_T)/)
-      count = (/INT(nX, HSIZE_T), INT(nY, HSIZE_T), INT(nZ2, HSIZE_T), 1_HSIZE_T/)
+      dsize_mem = [INT(nX, HSIZE_T) * INT(nY, HSIZE_T) * INT(nZ2, HSIZE_T)]
+      count = [INT(nX, HSIZE_T), INT(nY, HSIZE_T), INT(nZ2, HSIZE_T), 1_HSIZE_T]
 
       CALL h5screate_simple_f(1, dsize_mem, memspace, error)
       CALL h5Dget_space_f(dset_id, dspace_id, error)
 
-      doffset = (/0_HSIZE_T, 0_HSIZE_T, 0_HSIZE_T, 0_HSIZE_T/)
+      doffset = [0_HSIZE_T, 0_HSIZE_T, 0_HSIZE_T, 0_HSIZE_T]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, count, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, rfield, dsize_mem, error, &
         file_space_id=dspace_id, mem_space_id=memspace)
 
-      doffset = (/0_HSIZE_T, 0_HSIZE_T, 0_HSIZE_T, 1_HSIZE_T/)
+      doffset = [0_HSIZE_T, 0_HSIZE_T, 0_HSIZE_T, 1_HSIZE_T]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, count, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, ifield, dsize_mem, error, &
         file_space_id=dspace_id, mem_space_id=memspace)
@@ -606,7 +570,8 @@ contains
              s_chi_bar_G(nMPsLoc), &
              s_Normalised_chi_G(nMPsLoc))
 
-    call readH5BeamDataOntoRootProcess(zFile, sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, s_chi_bar_G, nMPs)
+    call readH5BeamDataOntoRootProcess(zFile, sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, &
+                                        sElGam_G, s_chi_bar_G, nMPs)
 
     if (tProcInfo_G%qRoot) then
       print*,"Low grade smoke test"
@@ -626,7 +591,7 @@ contains
 
   subroutine readH5Beamfile(zFile)
 
-    use parBeam
+    use parBeam, only: divmps, IP
 
     character(*), intent(in) :: zFile
     INTEGER(HID_T) :: file_id       !< File identifier
@@ -634,16 +599,11 @@ contains
     INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
     INTEGER(HID_T) :: dtype         !< So we can check we're reading in doubles
     INTEGER(kind=ip) :: dclass         !< So we can check we're reading in doubles
-    INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
     INTEGER(HID_T) :: memspace     !< Dataspace identifier in file
-    INTEGER(HID_T) :: attr_id       !< Attribute identifier
-    INTEGER(HID_T) :: aspace_id     !< Attribute Dataspace identifier
-    INTEGER(HID_T) :: atype_id      !< Attribute Data type identifier
     INTEGER(HID_T) :: plist_id      !< (parallel) Property list identifier
 !    INTEGER(HID_T) :: group_id      !< Group identifier
 !    logical, intent(in) :: qSeparate !<May reinstitute this.
     CHARACTER(LEN=9), PARAMETER :: dsetname = "electrons" !< Dataset name
-    CHARACTER(LEN=30) :: aname   !< Attribute name
     character(1024_IP) :: filename
 !    logical, intent(inout) :: qOK
 !    INTEGER(HSIZE_T), DIMENSION(1) :: dims = (/iGloNumElectrons_G/) ! Dataset dimensions
@@ -652,19 +612,8 @@ contains
     INTEGER(HSIZE_T), DIMENSION(2) :: doffset!< Offset for write, could be rank dependent
     INTEGER(HSIZE_T), DIMENSION(2) :: dsize  !< Size of hyperslab to write
     INTEGER(kind=ip)  ::  rank                 !< Particle Dataset rank
-    INTEGER(kind=ip)  ::  arank = 1                !< Attribute rank - 1 is vector
-    INTEGER(HSIZE_T), DIMENSION(1) :: adims  !< Attribute dims
-    INTEGER(HSIZE_T), DIMENSION(1) :: attr_data_int !< For integer attribs (numdims)
-    INTEGER     :: numSpatialDims    !< Attr content, and also num elsewhere
 !assumed 3D sim. May be 1D.
 !    TYPE(C_PTR) :: f_ptr
-    REAL(kind=WP) :: attr_data_double
-    CHARACTER(LEN=100) :: attr_data_string
-    CHARACTER(LEN=16) :: scaleToSIstring
-    INTEGER(HSIZE_T) :: attr_string_len
-    CHARACTER(LEN=4), PARAMETER :: timegrpname = "time"  ! Group name
-    CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  ! Group name
-    REAL(kind=WP), ALLOCATABLE :: limdata (:)  ! Data to write
     ! Local vars
     !integer(kind=ip) :: iep
     integer :: error !< Error flag
@@ -765,7 +714,7 @@ contains
      call h5sclose_f(dspace_id,error) !dspace_id
 !     print*,error
 !     print*,"h5s closed"
-     if (nMPs .LT. tProcInfo_G%size) then
+     if (nMPs < tProcInfo_G%size) then
       errorstr = trim("Data has fewer particles than MPI ranks.")
       goto 1000
      end if
@@ -785,7 +734,8 @@ contains
 
     call mpi_barrier(tProcInfo_G%comm, mpierr)
 
-!    firstParticleToRead=(nMPs*tProcInfo_g%rank/tProcInfo_g%size)+1 !does integer arithmetic, no NINT needed
+!    firstParticleToRead=(nMPs*tProcInfo_g%rank/tProcInfo_g%size)+1
+!    does integer arithmetic, no NINT needed
 !    lastParticleToRead=(nMPs*(tProcInfo_g%rank+1)/tProcInfo_g%size) ! does integer arithmetic
 !    nMPsLoc=(lastParticleToRead-firstParticleToRead)+1
     iNumberElectrons_G=nMPsLoc
@@ -806,9 +756,9 @@ contains
 !      CALL h5dopen_f (file_id, dsetname, dset_id, error)
 !     print*,error
 !     print*,"h5d open"
-      dims=(/1,nMPsLoc/)
-      dsize=(/7,nMPsLoc/)
-      doffset=(/0,(firstParticleToRead-1)/)
+      dims=[1,nMPsLoc]
+      dsize=[7,nMPsLoc]
+      doffset=[0,(firstParticleToRead-1)]
       CALL h5screate_simple_f(rank, dims, memspace, error)
 !     print*,error
 !     print*,"h5s mem created"
@@ -837,7 +787,7 @@ contains
 !     print*,error
 !     print*,"h5s dspace closed"
 
-      doffset=(/1,(firstParticleToRead-1)/)
+      doffset=[1,(firstParticleToRead-1)]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
 !     print*,error
@@ -848,7 +798,7 @@ contains
 !     print*,"h5d slab1 read"
 !      call h5sclose_f(dspace_id,error)
 
-      doffset=(/2,(firstParticleToRead-1)/)
+      doffset=[2,(firstParticleToRead-1)]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
 !     print*,"h5s slab2 selected"
@@ -858,7 +808,7 @@ contains
 !     print*,"h5d slab2 read"
 !      call h5sclose_f(dspace_id,error)
 
-      doffset=(/3,(firstParticleToRead-1)/)
+      doffset=[3,(firstParticleToRead-1)]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, sElPX_G, dims, error, &
@@ -867,7 +817,7 @@ contains
 !     print*,"h5d slab3 read"
 !      call h5sclose_f(dspace_id,error)
 
-      doffset=(/4,(firstParticleToRead-1)/)
+      doffset=[4,(firstParticleToRead-1)]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, sElPY_G, dims, error, &
@@ -876,7 +826,7 @@ contains
 !     print*,"h5d slab4 read"
 !      call h5sclose_f(dspace_id,error)
 
-      doffset=(/5,(firstParticleToRead-1)/)
+      doffset=[5,(firstParticleToRead-1)]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, sElGam_G, dims, error, &
@@ -885,7 +835,7 @@ contains
 !     print*,"h5d slab5 read"
 !      call h5sclose_f(dspace_id,error)
 
-      doffset=(/6,(firstParticleToRead-1)/)
+      doffset=[6,(firstParticleToRead-1)]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, &
        dims, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, s_chi_bar_G, dims, error, &
@@ -926,7 +876,7 @@ contains
 
 ! Error Handler - Error log Subroutine in CIO.f90 line 709
 
-1000 call log_error('Error in H5in:readH5BeamFile',&
+1000 call log_error("Error in H5in:readH5BeamFile",&
           tErrorLog_G)
    print*, "abort, abort, Error in readH5Beamfile",errorstr
 
@@ -946,7 +896,6 @@ contains
     INTEGER(HID_T) :: plist_id      !< (parallel) Property list identifier
     INTEGER(HID_T) :: dtype         !< So we can check we're reading in doubles
     INTEGER(kind=ip) :: dclass         !< So we can check we're reading in doubles
-    INTEGER(HID_T) :: filespace     !< Dataspace identifier in file
     INTEGER(HID_T) :: memspace     !< Dataspace identifier in file
     INTEGER(kind=ip) ::  rank       !< Field file Dataset rank
     INTEGER(HSIZE_T), DIMENSION(2) :: dims1d   !< dims of field dataset (NZ2_G*components)
@@ -959,7 +908,6 @@ contains
     INTEGER(HSIZE_T), DIMENSION(4) :: doffset3d   !< maxdims of ptcl dataset (coords*numelecs)
     INTEGER(HID_T) :: group_id
 
-    INTEGER(kind=ip) :: loopindex
     CHARACTER(LEN=5), PARAMETER :: dsetname = "aperp"     ! Dataset name
     character(1024_IP) :: filename
     integer :: error !< Error flag
@@ -1011,7 +959,7 @@ contains
 
 !     open the runInfo group
 
-      call h5gOpen_f(file_id, 'runInfo', group_id, error)
+      call h5gOpen_f(file_id, "runInfo", group_id, error)
 
 
 !      read attributes in runInfo group
@@ -1096,8 +1044,8 @@ contains
           CALL h5pclose_f(plist_id, error)
 
           ! Do some reading
-          doffset1d=(/(ffs-1),0/)
-          dsize1d=(/tlflen,1/)
+          doffset1d=[(ffs-1),0]
+          dsize1d=[tlflen,1]
 
           CALL h5screate_simple_f(rank, dsize1d, memspace, error)
     !      print*,error,tprocinfo_g%rank,"h5s fr  memspace created"
@@ -1115,7 +1063,7 @@ contains
     !      print*,error,tprocinfo_g%rank,"h5d slab fr_rfield read"
 
 ! use same memspace again
-          doffset1d=(/(ffs-1),1/)
+          doffset1d=[(ffs-1),1]
           CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset1d, &
             dsize1d, error)
     !      print*,error,tprocinfo_g%rank,"h5s slab fr_ifield selected"
@@ -1127,8 +1075,8 @@ contains
           call h5sclose_f(memspace,error)
     !      print*,error,tprocinfo_g%rank,"h5s fr memspace closed"
 
-          doffset1d=(/(fz2-1),0/)
-          dsize1d=(/mainlen,1/)
+          doffset1d=[(fz2-1),0]
+          dsize1d=[mainlen,1]
 
           CALL h5screate_simple_f(rank, dsize1d, memspace, error)
     !      print*,error,tprocinfo_g%rank,"h5s ac memspace created"
@@ -1142,7 +1090,7 @@ contains
     !      print*,error,tprocinfo_g%rank,"h5d slab ac_rfield read"
 
 ! use same memspace again
-          doffset1d=(/(fz2-1),1/)
+          doffset1d=[(fz2-1),1]
           CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset1d, &
             dsize1d, error)
     !      print*,error,tprocinfo_g%rank,"h5s slab ac_ifield selected"
@@ -1154,8 +1102,8 @@ contains
           call h5sclose_f(memspace,error)
     !      print*,error,tprocinfo_g%rank,"h5s ac memspace closed"
 
-          doffset1d=(/(ees-1),0/)
-          dsize1d=(/tlelen,1/)
+          doffset1d=[(ees-1),0]
+          dsize1d=[tlelen,1]
           CALL h5screate_simple_f(rank, dsize1d, memspace, error)
     !      print*,error,tprocinfo_g%rank,"h5s back memspace created"
 
@@ -1168,7 +1116,7 @@ contains
     !      print*,error,tprocinfo_g%rank,"h5d slab bk_rfield read"
 
 ! use same memspace again
-          doffset1d=(/(ees-1),1/)
+          doffset1d=[(ees-1),1]
           CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset1d, &
             dsize1d, error)
     !      print*,error,tprocinfo_g%rank,"h5s slab bk_ifield selected"
@@ -1232,8 +1180,8 @@ contains
           CALL h5pclose_f(plist_id, error)
 
 
-          doffset3d=(/0,0,(ffs-1),0/)
-          dsize3d=(/NX_G,NY_G,tlflen,1/)
+          doffset3d=[0,0,(ffs-1),0]
+          dsize3d=[NX_G,NY_G,tlflen,1]
 
           CALL h5screate_simple_f(rank, dsize3d, memspace, error)
     !      print*,error,tprocinfo_g%rank,"h5s memspace 3d created"
@@ -1250,7 +1198,7 @@ contains
     !      print*,error,tprocinfo_g%rank,"h5d slab fr_rfield 3d read"
 
 ! keep memspace
-          doffset3d=(/0,0,(ffs-1),1/)
+          doffset3d=[0,0,(ffs-1),1]
 
           CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset3d, &
             dsize3d, error)
@@ -1263,8 +1211,8 @@ contains
           call h5sclose_f(memspace,error)
       !    print*,error,tprocinfo_g%rank,"h5s memspace 3d closed"
 
-          doffset3d=(/0,0,(fz2-1),0/)
-          dsize3d=(/NX_G,NY_G,mainlen,1/)
+          doffset3d=[0,0,(fz2-1),0]
+          dsize3d=[NX_G,NY_G,mainlen,1]
           CALL h5screate_simple_f(rank, dsize3d, memspace, error)
       !    print*,error,tprocinfo_g%rank,"h5s memspace 3d created"
 
@@ -1277,7 +1225,7 @@ contains
       !    print*,error,tprocinfo_g%rank,"h5d slab ac_rfield 3d read"
 
 ! keep memspace
-          doffset3d=(/0,0,(fz2-1),1/)
+          doffset3d=[0,0,(fz2-1),1]
 
           CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset3d, &
             dsize3d, error)
@@ -1290,8 +1238,8 @@ contains
           call h5sclose_f(memspace,error)
       !    print*,error,tprocinfo_g%rank,"h5s memspace 3d closed"
 
-          doffset3d=(/0,0,(ees-1),0/)
-          dsize3d=(/NX_G,NY_G,tlelen,1/)
+          doffset3d=[0,0,(ees-1),0]
+          dsize3d=[NX_G,NY_G,tlelen,1]
           CALL h5screate_simple_f(rank, dsize3d, memspace, error)
       !    print*,error,tprocinfo_g%rank,"h5s back memspace 3d created"
 
@@ -1304,7 +1252,7 @@ contains
       !    print*,error,tprocinfo_g%rank,"h5d slab bk_rfield 3d read"
 
 ! keep memspace
-          doffset3d=(/0,0,(ees-1),1/)
+          doffset3d=[0,0,(ees-1),1]
 
           CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset3d, &
             dsize3d, error)
@@ -1349,7 +1297,7 @@ contains
     GoTo 2000
 
 ! Error Handler - Error log Subroutine in CIO.f90 line 709
-1000 call log_error('Error in H5in:readH5FieldfileSerialSingleDump',&
+1000 call log_error("Error in H5in:readH5FieldfileSerialSingleDump",&
           tErrorLog_G)
    print*, "abort, abort, Error in readH5FieldfileSerialSingleDump",errorstr
 2000 CONTINUE
@@ -1361,7 +1309,7 @@ contains
 
   subroutine readH5IntegerAttribute(locHandle,attrName,attrValue)
 
-    implicit none
+    implicit none (type, external)
 
     integer(HID_T), intent(in) :: locHandle   !< h5 handle of write location
     character(LEN=*), intent(in) :: attrName  !<attrib name
@@ -1371,8 +1319,7 @@ contains
 
     integer(HID_T) :: attr_id                 !< Attribute identifier
     integer(HID_T) :: atype_id                !< Attribute Data type identifier
-    integer(HSIZE_T) :: attr_string_len       !< Length of attribute string
-    integer(HSIZE_T), dimension(1) :: adims=(/1/) !< Attribute Data type identifier
+    integer(HSIZE_T), dimension(1), parameter :: adims=[1] !< Attribute Data type identifier
     integer :: error                             !< Error flag
 
 !    aname="vsType"
@@ -1395,7 +1342,7 @@ contains
 
   subroutine readH5FloatAttribute(locHandle,attrName,attrValue)
 
-    implicit none
+    implicit none (type, external)
 
     integer(HID_T), intent(in) :: locHandle   !< h5 handle of write location
     character(LEN=*), intent(in) :: attrName  !<attrib name
@@ -1405,8 +1352,7 @@ contains
 
     integer(HID_T) :: attr_id                 !< Attribute identifier
     integer(HID_T) :: atype_id                !< Attribute Data type identifier
-    integer(HSIZE_T) :: attr_string_len       !< Length of attribute string
-    integer(HSIZE_T), dimension(1) :: adims=(/1/) !< Attribute Data type identifier
+    integer(HSIZE_T), dimension(1), parameter :: adims=[1] !< Attribute Data type identifier
     integer :: error                             !< Error flag
 
 !    aname="vsType"

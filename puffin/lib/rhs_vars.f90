@@ -4,7 +4,15 @@
 
 module rhs_vars
 
-use puffin_kinds
+use puffin_kinds, only: WP, IPL, IP
+
+implicit none (type, external)
+private
+
+public :: bxu, byu, bzu, dV3, dx, dy, dz2, econst, halfx, halfy, iOutside, IP, IPL, lis_GR, maxEl, &
+           nb, nc, ntrans, p_nodes, qoutside, retim, salphaSq, sField4ElecImag, sField4ElecReal, &
+           sInv2rho, sp2, un, WP, ZOver2rho
+
 
 !!!!!!!!!!!
 
@@ -54,30 +62,30 @@ real(kind=wp), allocatable :: bxu(:), byu(:), bzu(:)
 
 !   INTEGER(KIND=IP) :: icheck
 !   REAL(KIND=WP) :: dx,dy,dz2
-!   
+!
 !   INTEGER(KIND=IP) :: xx,yy,xred,yred,zz2
 !   REAL(KIND=WP) :: s_Lex,s_Ley,s_Lez2
 !   INTEGER(KIND=IP),DIMENSION(:),ALLOCATABLE ::&
 !               i_n4e,iNodeList_Re,iNodeList_Im,&
 !               i_n4ered
 !   REAL(KIND=WP),DIMENSION(:),ALLOCATABLE :: N
-! 
-! 
-! 
-!   
-! 
-! 
+!
+!
+!
+!
+!
+!
 !   INTEGER(KIND=IP) :: iNodesX,iNodesZ2,iNodesY, j, ntrans
-! 
-! 
+!
+!
 !   INTEGER :: stat,req,error,lrank,rrank
-!   REAL(KIND=WP),DIMENSION(10)	:: couple 
-! 
-! 
+!   REAL(KIND=WP),DIMENSION(10)	:: couple
+!
+!
 !   REAL(KIND=WP) :: time1, start_time
 
 
 
 
 
-end module
+end module rhs_vars

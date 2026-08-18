@@ -12,12 +12,18 @@
 
 module GlobalTypes
 
-use puffin_kinds
-use puffin_constants
-use ArrayFunctions
-use initDataType
+use puffin_kinds, only: WP, IPL, IP
+use ArrayFunctions, only: cArraySegment
+use initDataType, only: cInitData
 
-implicit none
+use puffin_constants, only: iDiffraction_CG, iX_CG, iZ2_CG, iY_CG
+implicit none (type, external)
+private
+
+public :: iDiffraction_CG, iX_CG, iY_CG, iZ2_CG, tElectronCloud, tFELFrame, tFieldMesh, &
+           tIntegrationState, tLatticeElements, tOutputConfig, tSimulationContext, &
+           tSimulationFlags, tUndulator
+
 
 ! ============================================================================
 ! 1. FIELD MESH TYPE - Encapsulates spatial grid and field mesh properties

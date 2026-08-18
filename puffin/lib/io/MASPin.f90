@@ -4,14 +4,20 @@
 
 module MASPin
 
-use puffin_kinds
-use globals
+use puffin_kinds, only: WP, IP
+use globals, only: s_chi_bar_G, s_Normalised_chi_G, iNumberElectrons_G, iGloNumElectrons_G, &
+  npk_bar_G, sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, qscaled_G
 use GlobalTypes, only: tFELFrame
-use ParallelSetUp
-use parBeam
-use scale
+use ParallelSetUp, only: getgatharrs, tProcInfo_G
+use parBeam, only: splitbeam
+use scale, only: scaleX, scalePx, scaleT
+use mpi, only: mpi_barrier
 
-implicit none
+implicit none (type, external)
+private
+
+public :: nMPs4MASP_G, readmaspfile
+
 
 
 integer(kind=ip) :: nMPs4MASP_G
@@ -34,9 +40,8 @@ contains
     integer(kind=ip), allocatable :: recvs_eb(:), displs_eb(:)
 
 !    real(kind=wp) :: dV_bar
-    
+
     real(kind=wp) :: dummy1, dummy2, dummy3
-    real(kind=wp) :: npk_bar
 
     integer :: error
 
@@ -58,13 +63,13 @@ contains
 
     call mpi_barrier(tProcInfo_G%comm, error)
 
-    if ( tProcInfo_G%qRoot ) print*, 'made it 0.1'
+    if ( tProcInfo_G%qRoot ) print*, "made it 0.1"
 
     allocate(recvs_eb(tProcInfo_G%size), displs_eb(tProcInfo_G%size))
 
     call mpi_barrier(tProcInfo_G%comm, error)
 
-    if ( tProcInfo_G%qRoot ) print*, 'made it 0.2'
+    if ( tProcInfo_G%qRoot ) print*, "made it 0.2"
 
 
     call getGathArrs(nMPsLoc,recvs_eb,displs_eb)
@@ -72,12 +77,12 @@ contains
 
     call mpi_barrier(tProcInfo_G%comm, error)
 
-    if ( tProcInfo_G%qRoot ) print*, 'made it 0.3', ' and displs = ', displs_eb
+    if ( tProcInfo_G%qRoot ) print*, "made it 0.3", " and displs = ", displs_eb
 
 
     call mpi_barrier(tProcInfo_G%comm, error)
 
-    if ( tProcInfo_G%qRoot ) print*, 'made it 1'
+    if ( tProcInfo_G%qRoot ) print*, "made it 1"
 
     iNumberElectrons_G = nMPsLoc
 
@@ -94,7 +99,7 @@ contains
 
     call mpi_barrier(tProcInfo_G%comm, error)
 
-    if ( tProcInfo_G%qRoot ) print*, 'made it 1.1'
+    if ( tProcInfo_G%qRoot ) print*, "made it 1.1"
 
 
     ! read file
@@ -106,17 +111,22 @@ contains
       if (ir == tProcInfo_G%rank) then
 
         OPEN(UNIT=fid,FILE=zFile,IOSTAT=ios,&
-             ACTION='READ',POSITION='REWIND')   
-  
+             ACTION="READ",POSITION="REWIND")
+
+        if (ios /= 0) then
+          print*, "iostat = ", ios
+          stop "OPEN(MASP restart file) not performed correctly, IOSTAT /= 0"
+        end if
+
         nBlanks = displs_eb(ir+1) + nBlanks_head
         !print*, 'num of blanks now ', nblanks
-        do ij = 1,nBlanks 
-        	READ(UNIT=fid, FMT=*) 
+        do ij = 1,nBlanks
+                READ(UNIT=fid, FMT=*)
         end do
 
         !do ij = displs_eb(ir+1)+1, nMPsLoc + displs_eb(ir+1)
 
-!       Reading in particle positions in 6D phase space, 
+!       Reading in particle positions in 6D phase space,
 !       + Nk, number of electrons represented by each
 !       macroparticle.
 

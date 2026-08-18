@@ -4,14 +4,19 @@
 
 module RK4int
 
-   use puffin_mpiInfo
-   use Globals
-   use Derivative
-   use IO
-   use ParaField
+   use puffin_mpiInfo, only: ip
+   use Globals, only: NX_G, NY_G, ntrndsi_G, iNumberElectrons_G, sElX_G, sElY_G, sElZ2_G, &
+     sElPX_G, sElPY_G, sElGam_G, dadz_w, WP
+   use Derivative, only: derivs
+   use IO, only: tErrorLog_G, log_error
+   use ParaField, only: tllen, upd8a, inner2outer, outer2inner
    use GlobalTypes, only: tSimulationContext
 
-   implicit none
+   implicit none (type, external)
+private
+
+public :: ac_ifield_in, ac_rfield_in, allact_rk4_arrs, deallact_rk4_arrs, rk4par
+
 
    REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dadz_r0, dadz_i0
    REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dadz_r1, dadz_i1
@@ -27,7 +32,8 @@ module RK4int
    REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dxdx, dydx, dz2dx, dpxdx, dpydx, dpz2dx
 
 
-   REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dxm, dxt, xt    ! *t is 'temp', for use in next rhs call...
+   ! *t is 'temp', for use in next rhs call...
+   REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dxm, dxt, xt
    REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dym, dyt, yt
    REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dpxm, dpxt, pxt
    REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dpym, dpyt, pyt
@@ -38,7 +44,7 @@ contains
 
    subroutine rk4par(sZ, h, qD, ctx)
 
-      implicit none
+      implicit none (type, external)
 !
 ! Perform 4th order Runge-Kutta integration, tailored
 ! to Puffin and its method of parallelization:
@@ -71,16 +77,13 @@ contains
 ! dAdx       Field derivative
 ! dydx       Electron derivatives
 
-      INTEGER(KIND=IP) :: iy,idydx,iyout,i,p
       REAL(KIND=WP)    :: h6, hh, szh
       !REAL(KIND=WP), DIMENSION(size(y)) :: dym, dyt, yt
 
 
 
 
-      REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dAdx
-      REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localt
-      INTEGER(KIND=IP) :: error, trans
+      INTEGER(KIND=IP) :: trans
 
 !    Transverse nodes
 
@@ -212,11 +215,12 @@ contains
 !    Second step
 !    Get derivatives
 
-      if (ctx%flags%parallel_arrays_ok) &
-         call derivs(szh, A_localtr1, A_localti1, &
+      if (ctx%flags%parallel_arrays_ok) then
+        call derivs(szh, A_localtr1, A_localti1, &
          xt, yt, z2t, pxt, pyt, pz2t, &
          dxt, dyt, dz2t, dpxt, dpyt, dpz2t, &
          dadz_r1, dadz_i1, ctx)
+      end if
 
 
 
@@ -248,11 +252,12 @@ contains
 !    Get derivatives
 
 
-      if (ctx%flags%parallel_arrays_ok) &
-         call derivs(szh, A_localtr2, A_localti2, &
+      if (ctx%flags%parallel_arrays_ok) then
+        call derivs(szh, A_localtr2, A_localti2, &
          xt, yt, z2t, pxt, pyt, pz2t, &
          dxm, dym, dz2m, dpxm, dpym, dpz2m, &
          dadz_r2, dadz_i2, ctx)
+      end if
 
 !    Incrementing
 
@@ -295,11 +300,12 @@ contains
 
 !    Get derivatives
 
-      if (ctx%flags%parallel_arrays_ok) &
-         call derivs(szh, A_localtr3, A_localti3, &
+      if (ctx%flags%parallel_arrays_ok) then
+        call derivs(szh, A_localtr3, A_localti3, &
          xt, yt, z2t, pxt, pyt, pz2t, &
          dxt, dyt, dz2t, dpxt, dpyt, dpz2t, &
          dadz_r1, dadz_i1, ctx)
+      end if
 
 
 !    Accumulate increments with proper weights
@@ -361,8 +367,8 @@ contains
 
 !   Error Handler - Error log Subroutine in CIO.f90 line 709
 
-1000  CALL log_error('Error in MathLib:rk4',tErrorLog_G)
-      PRINT*,'Error in MathLib:rk4'
+      CALL log_error("Error in MathLib:rk4",tErrorLog_G)
+      PRINT*,"Error in MathLib:rk4"
 2000  CONTINUE
 
    end subroutine rk4par

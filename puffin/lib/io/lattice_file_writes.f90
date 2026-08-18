@@ -4,14 +4,19 @@
 
 module cwrites
 
-use puffin_kinds
-use puffin_mpiInfo
+use puffin_kinds, only: IP
+use puffin_mpiInfo, only: tProcInfo_G
+
+implicit none (type, external)
+private
+
+public :: getwrarray, qWrArray_G, wrarray
 
 
 integer(kind=ip), allocatable :: wrarray(:)
 logical :: qWrArray_G
 
-contains 
+contains
 
 
   subroutine getWrArray(fname)
@@ -20,7 +25,7 @@ contains
 
 !                LOCAL VARS
 
-  INTEGER(KIND=IP)   :: i,ios,nw,error,ri
+  INTEGER(KIND=IP)   :: ios
 
   integer(kind=ip) :: nwrts
 
@@ -35,15 +40,15 @@ contains
 
     allocate(wrarray(nwrts))
 
-      open(168,FILE=fname, IOSTAT=ios, STATUS='OLD', ACTION='READ', POSITION ='REWIND')
+      open(168,FILE=fname, IOSTAT=ios, STATUS="OLD", ACTION="READ", POSITION ="REWIND")
 
       if (ios /= 0) then
-        print*, 'iostat = ', ios
+        print*, "iostat = ", ios
         stop "OPEN(input file) not performed correctly, IOSTAT /= 0"
       end if
 
 
-      do 
+      do
 
         read (168,*, IOSTAT=ios) ztest  ! probe the line
 
@@ -54,19 +59,23 @@ contains
 
         else if (ios > 0) then
 
-          print*, 'THIS LINE HAS NOTHING FOR ME', ios
+          print*, "THIS LINE HAS NOTHING FOR ME", ios
           exit
-          cnt = cnt + 1
 
         else
 
-          if (ztest(1:2) == 'WR') then
+          if (ztest(1:2) == "WR") then
 
             backspace(168)
 
             cntw = cntw + 1
 
             read (168,*, IOSTAT=ios) ztest, wrarray(cntw)  ! read step to write at
+
+            if (ios /= 0) then
+              print*, "iostat = ", ios
+              stop "READ(write-step, input file) not performed correctly, IOSTAT /= 0"
+            end if
 
           end if
 
@@ -75,9 +84,9 @@ contains
 
         end if
 
-      end do    
+      end do
 
-      close(168, STATUS='KEEP')
+      close(168, STATUS="KEEP")
 
 
 
@@ -103,18 +112,18 @@ contains
   integer(kind=ip) :: cnt, cntw
   character(40) :: ztest
 
-  ztest = ''
+  ztest = ""
   cnt = 0
   cntw = 0
 
 
-  open(168,FILE=fname, IOSTAT=ios, STATUS='OLD', ACTION='READ', POSITION ='REWIND')
+  open(168,FILE=fname, IOSTAT=ios, STATUS="OLD", ACTION="READ", POSITION ="REWIND")
   if (ios /= 0) then
-    print*, 'iostat = ', ios
+    print*, "iostat = ", ios
     stop "OPEN(input file) not performed correctly, IOSTAT /= 0"
   end if
 
-  do 
+  do
 
     read (168,*, IOSTAT=ios) ztest  ! probe the line
 
@@ -128,13 +137,13 @@ contains
 
     else if (ios > 0) then
 
-      print*, 'THIS LINE HAS NOTHING FOR ME'
+      print*, "THIS LINE HAS NOTHING FOR ME"
       cnt = cnt + 1
       stop
 
     else
 
-      if (ztest(1:2) == 'WR') then
+      if (ztest(1:2) == "WR") then
 
         cntw = cntw + 1
 !        print*, 'quad number ', cntq, ' has params ', quad1, quad2
@@ -146,7 +155,7 @@ contains
 
   end do
 
-  close(168, STATUS='KEEP')
+  close(168, STATUS="KEEP")
 
   numOfWrites = cntw
 

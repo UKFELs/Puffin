@@ -4,19 +4,46 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Module defining shared (global) variables used in Puffin
 
 module Globals
 
-use puffin_kinds
-use puffin_constants
-use ArrayFunctions
-use initDataType
+use puffin_kinds, only: WP, IPL, IP, IPN
+use ArrayFunctions, only: nFieldEquations_CG, nElectronEquations_CG, cArraySegment
+use initDataType, only: cInitData
 
-implicit none
+use puffin_constants, only: c, iY_CG, iPX_CG, pi, iPY_CG, iGam_CG, iZ2_CG, q_e, iX_CG
+implicit none (type, external)
+private
+
+public :: ata_G, c, chic_disp, chic_slip, chic_zbar, cmd_call_G, dadz_w, delmz, delta_G, diffStep, &
+           drift_zbar, dz2_I_G, enmod_mag, enmod_wavenum, fdispls, ffact, fieldMesh, fillFact_G, &
+           frecvs, fx_G, fy_G, gExtEj_G, iCount, iFieldSeedType_G, iGam_CG, iGenHom_G, &
+           iGloNumElectrons_G, iInputType_G, iIntWriteNthSteps, iNodesPerElement_G, &
+           iNumberElectrons_G, iNumberNodes_G, ioutInfo_G, iPeriodic, iPX_CG, iPY_CG, iReadDist_G, &
+           iReadH5_G, iReadH5Field_G, iReadMASP_G, iRedistStp_G, iRedNodesX_G, iRedNodesY_G, &
+           iSimpleSeed_G, iStep, iTemporal, iUndEnd_G, iUndMain_G, iUndPlace_G, iUndStart_G, &
+           iWriteNthSteps, iX_CG, iY_CG, iZ2_CG, kbnx_arr, kbny_arr, kx_G, kx_und_G, ky_G, &
+           ky_und_G, kz2_loc_G, mf, ModCount, ModNum, NBX_G, NBY_G, NBZ2_G, npk_bar_G, npts_I_G, &
+           nseqparts_G, nspinDX, nspinDY, nSteps, nSteps_arr, ntrnds_G, ntrndsi_G, numOfChics, &
+           numOfDrifts, numOfModulations, numOfQuads, numOfUnds, NX_G, NY_G, NZ2_G, outnodex_G, &
+           outnodey_G, pi, procelectrons_G, q_e, qDiffraction_G, qDump_G, qDumpEnd_G, &
+           qElectronFieldCoupling_G, qElectronsEvolve_G, qEquiXY_G, qFieldEvolve_G, qFilter, &
+           qFixCharge_G, qFMesh_G, qFocussing_G, qhdf5_G, qInitWrLat_G, qMatchS_G, qMod_G, &
+           qOneD_G, qResume, qResume_G, qRndEj_G, qRndFj_G, qscaled_G, qsdds_G, &
+           qSeparateStepFiles_G, &
+           quad_fx, quad_fy, qUndEnds_G, qUseEmit_G, qWrite, s_chi_bar_G, s_Normalised_chi_G, &
+           sBeta_G, seedend, sElGam_G, sElPX_G, sElPY_G, sElX_G, sElY_G, sElZ2_G, sfilt, &
+           sFocusfactor_G, sFocusfactor_save_G, sKBeta_G, sKBetaX_G, sKBetaXSF_G, sKBetaY_G, &
+           sKBetaYSF_G, sLengthOfElmX_G, sLengthOfElmY_G, sLengthOfElmZ2_G, sMNum_G, sperwaves_G, &
+           sRedistLen_G, sSigEj_G, sSigFj_G, sStep, sStepSize, start_step, sZFE, sZFS, sZlSt_G, &
+           tapers, tArrayA, tArrayE, tArrayZ, time1, time2, tInitData_G, totUndLineLength, &
+           TrLdMeth_G, ux_arr, uy_arr, WP, x_ax_G, y_ax_G, zBFile_G, zFileName_G, zMod, zSFile_G, &
+           zundtype_arr, zUndType_G
+
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -29,8 +56,8 @@ integer(kind=ip) :: ntrnds_G, ntrndsi_G
 
 integer(kind=ip) :: nspinDX, nspinDY
 
-real(kind=wp)    :: sLengthOfElmX_G 
-real(kind=wp)    :: sLengthOfElmY_G 
+real(kind=wp)    :: sLengthOfElmX_G
+real(kind=wp)    :: sLengthOfElmY_G
 real(kind=wp)    :: sLengthOfElmZ2_G
 
 
@@ -107,7 +134,7 @@ real(kind=wp) :: fillFact_G, ata_G
 !   ---   For rounded edge beam   ---   !
 
 logical, allocatable :: qRndEj_G(:)
-real(kind=wp), allocatable :: sSigEj_G(:) 
+real(kind=wp), allocatable :: sSigEj_G(:)
 real(kind=wp), parameter :: gExtEj_G = 7.5_wp
 
 !  --- Read particle set algorithms ---
@@ -122,7 +149,7 @@ integer(kind=ip) :: iFieldSeedType_G
 integer(kind=ip), parameter :: iSimpleSeed_G = 1_ip
 integer(kind=ip), parameter :: iReadH5Field_G = 2_ip
 
-! Electron macroparticle phase space coordinates 
+! Electron macroparticle phase space coordinates
 
 real(kind=wp), allocatable     :: sElX_G(:)
 real(kind=wp), allocatable     :: sElY_G(:)
@@ -155,23 +182,23 @@ type(cInitData) :: tInitData_G
 ! Temporary intermediate arrays for RK4
 
 ! *t is 'temp', for intermediate stages of RK4
-! d*t and d*m are temp intermediate d/dz of each variable 
+! d*t and d*m are temp intermediate d/dz of each variable
 
 
 ! allocate with size iNumberElectrons_G
 
 
 
-!real(kind=wp), allocatable :: dxm(:), dxt(:), xt(:)    
+!real(kind=wp), allocatable :: dxm(:), dxt(:), xt(:)
 !real(kind=wp), allocatable :: dym(:), dyt(:), yt(:)
 !real(kind=wp), allocatable :: dpxm(:), dpxt(:), pxt(:)
 !real(kind=wp), allocatable :: dpym(:), dpyt(:), pyt(:)
 !real(kind=wp), allocatable :: dz2m(:), dz2t(:), z2t(:)
-!real(kind=wp), allocatable :: dpz2m(:), dpz2t(:), pz2t(:) 
+!real(kind=wp), allocatable :: dpz2m(:), dpz2t(:), pz2t(:)
 
 
 
-!real(kind=wp), allocatable :: dAm(:), dAt(:), A_localt(:) 
+!real(kind=wp), allocatable :: dAm(:), dAt(:), A_localt(:)
 
 
 
@@ -212,9 +239,9 @@ real(kind=wp) :: sKBetaXSF_G, sKBetaYSF_G
 
 real(kind=wp), allocatable    :: zMod(:), mf(:), delmz(:), tapers(:), &
                                  ux_arr(:), uy_arr(:), &
-                                 kbnx_arr(:), kbny_arr(:) 
+                                 kbnx_arr(:), kbny_arr(:)
 
-                                 
+
 character(32_ip), allocatable :: zundtype_arr(:)
 
 integer(kind=ip), allocatable :: nSteps_arr(:)
@@ -234,7 +261,7 @@ real(kind=wp), allocatable    :: chic_zbar(:), chic_slip(:), &
 !     For lattice element type 'drift'
 
 
-real(kind=wp), allocatable    :: drift_zbar(:) 
+real(kind=wp), allocatable    :: drift_zbar(:)
 
 
 
@@ -252,7 +279,7 @@ real(kind=wp), allocatable    :: enmod_wavenum(:), enmod_mag(:)
 !     For lattice element type 'quadrupole'
 
 
-real(kind=wp), allocatable    :: quad_fx(:), quad_fy(:) 
+real(kind=wp), allocatable    :: quad_fx(:), quad_fy(:)
 
 
 !     End module specific array definitions
@@ -287,7 +314,7 @@ integer(kind=ip), parameter :: iUndStart_G = 1_ip, &
                                iUndEnd_G = 2_ip, &
                                iUndMain_G = 0_ip
 
-real(kind=wp)  :: diffStep ! Stepsize in zbar used for diffraction 
+real(kind=wp)  :: diffStep ! Stepsize in zbar used for diffraction
 
 real(kind=wp)  :: ffact    ! Scaling factor for fourier transforms
                            ! (= nnodesX * nnodesY * nnodesz2)
@@ -334,7 +361,7 @@ integer(kind=ip) :: ioutInfo_G
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Parallel Vars
 
-! These describe the displacement of data across MPI processes (see 
+! These describe the displacement of data across MPI processes (see
 ! MPI dcumentation, e.g. inputs of MPI_ALLGATHERV)...
 
 
@@ -368,12 +395,13 @@ logical   ::  qDump_G            ! Dump data in case of crash?
 
 logical   ::  qResume_G          ! Reading from previously crashed runs dump files? (REDUNDANT)
 
-logical   ::  qSeparateStepFiles_G  ! Make seperate sdds files for each phase space coordinate? 
+logical   ::  qSeparateStepFiles_G  ! Make seperate sdds files for each phase space coordinate?
 
 
 logical   ::  qMod_G  ! Using undulator modules and chicanes?
 
-logical   ::  qResume            ! Reading from previously crashed runs dump files? (ACTUALLY IN USE!!)
+! Reading from previously crashed runs dump files? (ACTUALLY IN USE!!)
+logical   ::  qResume
 
 logical   ::  qWrite             ! Write data?
 

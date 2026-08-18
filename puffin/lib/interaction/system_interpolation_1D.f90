@@ -4,27 +4,31 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
-!> Module containing routines dealing with the interpolation of the 
+!> Module containing routines dealing with the interpolation of the
 !> macroparticles to the 1D field mesh.
 
 module FiElec1D
 
-use puffin_kinds
-use globals
-use parafield
+use puffin_kinds, only: WP, IPL, IP
+use globals, only: NZ2_G, fieldMesh, iTemporal, s_chi_bar_G, procelectrons_G, dadz_w
+use parafield, only: bz2
 use GlobalTypes, only: tSimulationFlags
 
-implicit none
+implicit none (type, external)
+private
+
+public :: getffelecs_1d, getinterps_1d, getsource_1d
+
 
 contains
 
 
 subroutine getInterps_1D(sz2, flags)
 
-use rhs_vars
+use rhs_vars, only: lis_GR, dz2, WP, IPL, IP
 
 real(kind=wp), intent(in) :: sz2(:)
 type(tSimulationFlags), intent(inout) :: flags
@@ -38,15 +42,15 @@ real(kind=wp) :: locz2
 !$OMP DO PRIVATE(z2node, locz2)
   do i = 1, procelectrons_G(1)
 
-!                  Get surrounding nodes 
+!                  Get surrounding nodes
 
       z2node = floor(sz2(i)  / dz2)  + 1_IP
       locz2 = sz2(i) - REAL(z2node  - 1_IP, kind=wp) * dz2
-      
+
       if (fieldMesh == itemporal) then
         if (z2node >= NZ2_G) then
-          print*, 'Z2 coord is too large!! with node:', z2node, &
-                  ' and pos ', sz2(i)
+          print*, "Z2 coord is too large!! with node:", z2node, &
+                  " and pos ", sz2(i)
           STOP
         end if
       end if
@@ -79,11 +83,10 @@ end subroutine getInterps_1D
 subroutine getFFelecs_1D(sAr, sAi)
 
 
-use rhs_vars
+use rhs_vars, only: p_nodes, lis_GR, sField4ElecReal, sField4ElecImag, WP, IP
 
 real(kind=wp), intent(in) :: sAr(:), sAi(:)
 integer(kind=ip) :: i
-integer error
 
 
 !$OMP DO
@@ -91,7 +94,7 @@ integer error
 
       sField4ElecReal(i) = lis_GR(1,i) * sAr(p_nodes(i)) + sField4ElecReal(i)
       sField4ElecReal(i) = lis_GR(2,i) * sAr(p_nodes(i) + 1_ip) + sField4ElecReal(i)
-  
+
   end do
 !$OMP END DO
 
@@ -101,8 +104,8 @@ integer error
 
       sField4ElecImag(i) = lis_GR(1,i) * sAi(p_nodes(i)) + sField4ElecImag(i)
       sField4ElecImag(i) = lis_GR(2,i) * sAi(p_nodes(i) + 1_ip) + sField4ElecImag(i)
-  
-  end do 
+
+  end do
 !$OMP END DO
 
 
@@ -128,7 +131,7 @@ end subroutine getFFelecs_1D
 subroutine getSource_1D(sDADzr, sDADzi, spr, spi, sgam, seta)
 
 
-use rhs_vars
+use rhs_vars, only: p_nodes, lis_GR, dV3, sp2, WP, IPL
 
 real(kind=wp), contiguous, intent(inout) :: sDADzr(:), sDADzi(:)
 real(kind=wp), contiguous, intent(in) :: spr(:), spi(:)
@@ -174,7 +177,7 @@ real(kind=wp) :: dadzRInst, dadzIInst
       !$OMP ATOMIC
       sDADzr(p_nodes(i)) =                         &
         lis_GR(1,i) * dadzRInst + sDADzr(p_nodes(i))
-      
+
       !$OMP ATOMIC
       sDADzr(p_nodes(i) + 1_ip) =                  &
         lis_GR(2,i) * dadzRInst + sDADzr(p_nodes(i) + 1_ip)
@@ -183,20 +186,20 @@ real(kind=wp) :: dadzRInst, dadzIInst
 !                   Imaginary part
 
       !dadzIInst = ((s_chi_bar_G(i)/dV3) * (1 + seta * sp2(i) ) &
-      !                  * spi(i) / sgam(i) ) 
-      
+      !                  * spi(i) / sgam(i) )
+
 
       dadzIInst = dadz_w(i) * spi(i)
 
 
       !$OMP ATOMIC
-      sDADzi(p_nodes(i)) =                             & 
-        lis_GR(1,i) * dadzIInst + sDADzi(p_nodes(i))                        
+      sDADzi(p_nodes(i)) =                             &
+        lis_GR(1,i) * dadzIInst + sDADzi(p_nodes(i))
 
       !$OMP ATOMIC
-      sDADzi(p_nodes(i) + 1_ip) =                      & 
+      sDADzi(p_nodes(i) + 1_ip) =                      &
         lis_GR(2,i) * dadzIInst + sDADzi(p_nodes(i) + 1_ip)
-  
+
   end do
 !$OMP END DO
 

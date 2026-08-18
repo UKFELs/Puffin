@@ -6,17 +6,20 @@ module MacrosGenNew
 
 use puffin_kinds, only: WP, IP, IPL
 use randomGauss, only: random_Poisson
-use MPI
 use macrosGen, only: RandomNoGenerator
 use puffin_mpiInfo, only: tProcInfo_G
 
-implicit none
+implicit none (type, external)
+private
+
+public :: genMacrosNew
+
 
 contains
 
 
   subroutine genMacrosNew(i_total_electrons, &
-       q_noise, & 
+       q_noise, &
        x_1_grid, x_1_integral, &
        x_2_grid, x_2_integral, &
        x_3_grid, x_3_integral, &
@@ -61,7 +64,7 @@ contains
 
 
     REAL(KIND=WP), INTENT(IN) ::  i_total_electrons
-    LOGICAL ::  q_noise
+    LOGICAL, INTENT(IN) ::  q_noise
     REAL(KIND=WP),INTENT(IN) ::  x_1_grid(:),x_1_integral(:)
     REAL(KIND=WP),INTENT(IN),OPTIONAL :: x_2_grid(:), x_3_grid(:)
     REAL(KIND=WP),INTENT(IN),OPTIONAL :: x_2_integral(:),&
@@ -71,7 +74,7 @@ contains
     REAL(KIND=WP),INTENT(IN),OPTIONAL :: p_1_integral(:), &
      p_2_integral(:), p_3_integral(:)
 
-    
+
     !REAL(KIND=WP),DIMENSION(:), INTENT(IN)  ::  sigma
     !REAL(KIND=WP), INTENT(IN)               ::  pxstart,pxend,pxmean
     !REAL(KIND=WP), INTENT(IN)               ::  pystart,pyend,pymean
@@ -135,13 +138,12 @@ contains
          x_1_del, x_1_random,x_2_position, x_2_del,&
          x_2_random, x_3_position, x_3_del, x_3_random
     REAL(KIND=WP),ALLOCATABLE,DIMENSION(:) ::  p_1_position, p_1_del,&
-         p_1_random, p_2_position, p_2_del, p_2_random, & 
+         p_1_random, p_2_position, p_2_del, p_2_random, &
          p_3_random
-	REAL(KIND=WP),ALLOCATABLE,DIMENSION(:) :: p_3_position, p_3_del
+        REAL(KIND=WP),ALLOCATABLE,DIMENSION(:) :: p_3_position, p_3_del
     INTEGER(KIND=IP) :: np3full(3)
     !REAL(KIND=WP) ::  radius,sLOne,sLTwo
-    INTEGER(KIND=IP) :: error,nprocs,proc
-    LOGICAL :: qOKL
+    INTEGER(KIND=IP) :: nprocs
 
 !     Determine the number of macroparticles in each dimension
 !     If the dimension is not present, then the number of macroparticles
@@ -161,9 +163,9 @@ contains
     IF(PRESENT(p_1_integral)) np1=SIZE(p_1_integral)
     IF(PRESENT(p_2_integral)) np2=SIZE(p_2_integral)
     IF(PRESENT(p_3_integral)) np3=SIZE(p_3_integral)
-	  IF(PRESENT(p_3_integral)) np3full=SIZE(p_3_integral)
+          IF(PRESENT(p_3_integral)) np3full=SIZE(p_3_integral)
 
-!     Total number of macroparticles 
+!     Total number of macroparticles
 
     i_total_number_macro=nx1*nx2*nx3*np1*np2*np3
 
@@ -177,7 +179,7 @@ contains
     IF(PRESENT(p_2_grid)) ALLOCATE(p_2_position(np2),p_2_del(np2),p_2_random(i_total_number_macro))
     IF(PRESENT(p_3_grid)) ALLOCATE(p_3_position(np3),p_3_del(np3),p_3_random(i_total_number_macro))
 
-!     If shot-noise present then generate random numbers (0<x<1) else 
+!     If shot-noise present then generate random numbers (0<x<1) else
 !     x_1_random set to 0.5.
 
     IF (q_noise) THEN
@@ -188,20 +190,20 @@ contains
           IF(PRESENT(p_1_grid)) p_1_random(i)=RandomNoGenerator(u)
           IF(PRESENT(p_2_grid)) p_2_random(i)=RandomNoGenerator(u)
           IF(PRESENT(p_3_grid)) p_3_random(i)=RandomNoGenerator(u)
-       ENDDO
+       END DO
     ELSE
        x_1_random=0.5_WP
 
        IF(PRESENT(x_2_grid)) x_2_random = 0.5_WP
        IF(PRESENT(x_3_grid)) x_3_random = 0.5_WP
-       
+
        IF(PRESENT(p_1_grid)) p_1_random = 0.5_WP
        IF(PRESENT(p_2_grid)) p_2_random = 0.5_WP
-       IF(PRESENT(p_3_grid)) p_3_random = 0.5_WP   
-    ENDIF
+       IF(PRESENT(p_3_grid)) p_3_random = 0.5_WP
+    END IF
 
-!     Following loops sets up macroparticle mean positions and intervals 
-!     based on grid-pts 
+!     Following loops sets up macroparticle mean positions and intervals
+!     based on grid-pts
 
     DO i=1,nx1
        x_1_del(i)=x_1_grid(i+1)-x_1_grid(i)
@@ -274,30 +276,30 @@ contains
              DO b=1,np2
                 DO a=1,np1
 
-                  index=index+1_IPL	
+                  index=index+1_IPL
 
                   s_mean= i_total_electrons*x_1_integral(i)
-  
+
                   IF(PRESENT(x_2_grid)) THEN
                      s_mean=s_mean*x_2_integral(j)
                   END IF
 
-                  IF(PRESENT(x_3_grid)) THEN 
+                  IF(PRESENT(x_3_grid)) THEN
                      s_mean=s_mean*x_3_integral(k)
                   END IF
 
                   s_spatial_mean=s_mean
 
 
-                  IF(PRESENT(p_1_grid)) THEN 
+                  IF(PRESENT(p_1_grid)) THEN
                      s_mean=s_mean*p_1_integral(a)
                   END IF
-      
-                  IF(PRESENT(p_2_grid)) THEN 
+
+                  IF(PRESENT(p_2_grid)) THEN
                      s_mean=s_mean*p_2_integral(b)
                   END IF
-      
-                  IF(PRESENT(p_3_grid)) THEN 
+
+                  IF(PRESENT(p_3_grid)) THEN
                      s_mean=s_mean*p_3_integral(c)
                   END IF
 
@@ -323,39 +325,44 @@ contains
                   IF(q_noise) THEN
                      s_macro =random_Poisson(s_mean, .TRUE.)
                   ELSE
-                     s_macro =s_mean  		       
-                  ENDIF
- 
+                     s_macro =s_mean
+                  END IF
+
                   IF (s_macro > 0 ) THEN
-		       
+
                      icount=icount+1_IPL
-				
+
                      x_1_coord(index)=x_1_position(i)+(x_1_random(index)-0.5_WP)*x_1_del(i)/SQRT(s_macro)
-		      	      
+
 
                      IF(PRESENT(x_2_grid)) THEN
-                        x_2_coord(index)=x_2_position(j)+(x_2_random(index)- 0.5_WP)*x_2_del(j)/SQRT(s_macro)
-                     END IF
-     
-                     IF(PRESENT(x_3_grid)) THEN
-                        x_3_coord(index)=x_3_position(k)+(x_3_random(index)- 0.5_WP)*x_3_del(k)/SQRT(s_macro)
-                     END IF
-     
-                     IF(PRESENT(p_1_grid)) THEN
-                        p_1_vector(index)=p_1_position(a)+(p_1_random(index)- 0.5_WP)*p_1_del(a)/SQRT(s_macro)
-                     END IF
-      
-                     IF(PRESENT(p_2_grid)) THEN
-                        p_2_vector(index)=p_2_position(b)+(p_2_random(index)- 0.5_WP)*p_2_del(b)/SQRT(s_macro)
-                     END IF
-      
-                     IF(PRESENT(p_3_grid)) THEN
-                        p_3_vector(index)=p_3_position(c)+(p_3_random(index)- 0.5_WP)*p_3_del(c)/SQRT(s_macro)
+                        x_2_coord(index)=x_2_position(j)+ &
+                          (x_2_random(index)- 0.5_WP)*x_2_del(j)/SQRT(s_macro)
                      END IF
 
-                  ELSE 
+                     IF(PRESENT(x_3_grid)) THEN
+                        x_3_coord(index)=x_3_position(k)+ &
+                          (x_3_random(index)- 0.5_WP)*x_3_del(k)/SQRT(s_macro)
+                     END IF
+
+                     IF(PRESENT(p_1_grid)) THEN
+                        p_1_vector(index)=p_1_position(a)+ &
+                          (p_1_random(index)- 0.5_WP)*p_1_del(a)/SQRT(s_macro)
+                     END IF
+
+                     IF(PRESENT(p_2_grid)) THEN
+                        p_2_vector(index)=p_2_position(b)+ &
+                          (p_2_random(index)- 0.5_WP)*p_2_del(b)/SQRT(s_macro)
+                     END IF
+
+                     IF(PRESENT(p_3_grid)) THEN
+                        p_3_vector(index)=p_3_position(c)+ &
+                          (p_3_random(index)- 0.5_WP)*p_3_del(c)/SQRT(s_macro)
+                     END IF
+
+                  ELSE
                      x_1_coord(index)=x_1_position(i)
-		      
+
                      IF (PRESENT(x_2_grid)) THEN
                         x_2_coord(index)=x_2_position(j)
                      END IF
@@ -367,28 +374,28 @@ contains
                      IF (PRESENT(p_1_grid)) THEN
                         p_1_vector(index)=p_1_position(a)
                      END IF
-		      
+
                      IF (PRESENT(p_2_grid)) THEN
                         p_2_vector(index)=p_2_position(b)
                      END IF
-		      
+
                      IF (PRESENT(p_3_grid)) THEN
                         p_3_vector(index)=p_3_position(c)
                      END IF
-		      
+
                      s_macro = 0.0_WP
-                  ENDIF
-		     
+                  END IF
+
                   s_number_macro(index)=s_macro
                   s_mean_number_macro(index)=s_mean
                   s_spatial_macro(index)=s_spatial_mean
 
 !*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+
-! Calculate the element volume of each macro particle		
-!*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+	 
-    
+! Calculate the element volume of each macro particle
+!*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+
+
                   s_vol_element(index)=x_1_del(i)
-                  
+
                   IF (PRESENT(x_2_grid)) THEN
                      s_vol_element(index)=s_vol_element(index)*x_2_del(j)
                   END IF
@@ -396,7 +403,7 @@ contains
                   IF (PRESENT(x_3_grid)) THEN
                      s_vol_element(index)=s_vol_element(index)*x_3_del(k)
                   END IF
-                  
+
                 END DO
              END DO
           END DO
@@ -423,7 +430,7 @@ contains
 
     DEALLOCATE(s_mean_number_macro,s_spatial_macro)
     DEALLOCATE(x_1_position,x_1_del,x_1_random)
-    
+
     IF(PRESENT(x_2_grid)) DEALLOCATE(x_2_position,x_2_del,x_2_random)
     IF(PRESENT(x_3_grid)) DEALLOCATE(x_3_position,x_3_del,x_3_random)
 !

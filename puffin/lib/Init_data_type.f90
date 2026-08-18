@@ -4,10 +4,14 @@
 
 MODULE InitDataType
 
-  use puffin_kinds
-		
-  IMPLICIT NONE
-      
+  use puffin_kinds, only: WP, IP
+
+  IMPLICIT NONE (type, external)
+private
+
+public :: cInitData
+
+
   type cInitData
 
     real(kind=wp) :: zbarTotal

@@ -15,13 +15,22 @@
 
 Module ParallelSetUp
 
-use puffin_kinds
-use puffin_mpiInfo
-use IO
-use mpi
+use puffin_kinds, only: WP, IPL, IP
+use puffin_mpiInfo, only: puffin_mpiInfoType, tProcInfo_G
+use IO, only: tErrorLog_G, log_error, cFileType
+use mpi, only: MPI_ALLGATHER, MPI_ALLGATHERV, MPI_ALLREDUCE, MPI_BCAST, MPI_CHARACTER, &
+  MPI_COMM_RANK, MPI_COMM_SIZE, MPI_COMM_WORLD, MPI_DOUBLE_PRECISION, MPI_FINALIZE, &
+  MPI_IN_PLACE, MPI_Initialized, MPI_INTEGER, MPI_LOGICAL, MPI_REDUCE, MPI_SCATTERV, MPI_SUM, &
+  MPI_Wtime
 
 
-implicit none
+implicit none (type, external)
+private
+
+public :: gather1a, Get_time, getGathArrs, initializeprocessors, log_error, MPI_INT_HIGH, &
+           scatterE2Loc, stopcode, sum2rootarr, sum_mpi_int14, sum_mpi_real, tErrorLog_G, &
+           tProcInfo_G, WP
+
 
 INTEGER :: MPI_INT_HIGH
 
@@ -29,9 +38,9 @@ CONTAINS
 
 
 subroutine InitializeProcessors(tProcInfo, &
-				       qOk)
+                                       qOk)
 
-  implicit none
+  implicit none (type, external)
 
 ! Initialize and retrieve info on the MPI processes
 !
@@ -40,7 +49,7 @@ subroutine InitializeProcessors(tProcInfo, &
 ! tProcInfo    OUTPUT    Custom type to hold MPI info
 ! q0k          OUTPUT    Error flag for Puffin
 
-  type(puffin_mpiInfoType), intent(out)	   :: tProcInfo
+  type(puffin_mpiInfoType), intent(out)    :: tProcInfo
   logical,                 intent(out)         :: qOk
 
 !              Local Vars
@@ -48,7 +57,7 @@ subroutine InitializeProcessors(tProcInfo, &
 ! error - error flag for MPI
 
   Logical :: isInitialized
-  integer(kind=ip)    :: error, provided
+  integer(kind=ip)    :: error
 
 
 !     Begin
@@ -59,7 +68,7 @@ subroutine InitializeProcessors(tProcInfo, &
 
   call MPI_Initialized(isInitialized, error)
   if (.not. isInitialized) then
-    call log_error('MPI not initialized!', tErrorLog_G)
+    call log_error("MPI not initialized!", tErrorLog_G)
     goto 1000
   end if
 
@@ -93,10 +102,10 @@ subroutine InitializeProcessors(tProcInfo, &
 
 ! Error Handler
 
-1000 CALL log_error('Error in ParallelSetUp:DefineParallelLibrary', &
+1000 CALL log_error("Error in ParallelSetUp:DefineParallelLibrary", &
                     tErrorLog_G)
 
-  PRINT*,'Error in ParallelSetUp:DefineParallelLibrary'
+  PRINT*,"Error in ParallelSetUp:DefineParallelLibrary"
 
 2000 CONTINUE
 
@@ -106,11 +115,10 @@ END SUBROUTINE InitializeProcessors
 
 SUBROUTINE Get_time(in_time)
 
-  IMPLICIT NONE
+  IMPLICIT NONE (type, external)
 
-  REAL(KIND=WP)	::	in_time
+  REAL(KIND=WP), INTENT(OUT) :: in_time
 
-  INTEGER(KIND=IP)	::	error
 
   in_time = MPI_Wtime()
 
@@ -128,7 +136,7 @@ END SUBROUTINE Get_time
 !
 !********************************************************************
 !
-      implicit none
+      implicit none (type, external)
       integer(kind=ip) :: error
 
       call MPI_FINALIZE(error)
@@ -150,12 +158,12 @@ REAL(KIND=WP),INTENT(OUT) ::  sA(:)
 INTEGER(KIND=IP)  ::  error
 
  CALL MPI_ALLGATHERV( A_local(1:nA_loc),nA_loc,MPI_DOUBLE_PRECISION, &
-	                  sA(1:nA), recvs,displs, MPI_DOUBLE_PRECISION, &
-			  		  tProcInfo_G%comm, error)
+                          sA(1:nA), recvs,displs, MPI_DOUBLE_PRECISION, &
+                                          tProcInfo_G%comm, error)
 
  CALL MPI_ALLGATHERV( A_local(nA_loc+1:2*nA_loc),nA_loc,MPI_DOUBLE_PRECISION, &
-	                  sA(nA+1:2*nA), recvs,displs, MPI_DOUBLE_PRECISION, &
-			  		  tProcInfo_G%comm, error)
+                          sA(nA+1:2*nA), recvs,displs, MPI_DOUBLE_PRECISION, &
+                                          tProcInfo_G%comm, error)
 
 
 END SUBROUTINE gather2A
@@ -191,12 +199,12 @@ REAL(KIND=WP),INTENT(INOUT) ::  sA(:)
 INTEGER(KIND=IP)  ::  error
 
  CALL MPI_SCATTERV( sA(1:nA),recvs,displs,MPI_DOUBLE_PRECISION, &
-	                 A_local(1:nA_loc),nA_loc,MPI_DOUBLE_PRECISION, &
-			  	root,tProcInfo_G%comm, error)
+                         A_local(1:nA_loc),nA_loc,MPI_DOUBLE_PRECISION, &
+                                root,tProcInfo_G%comm, error)
 
  CALL MPI_SCATTERV( sA(nA+1:2*nA),recvs,displs,MPI_DOUBLE_PRECISION, &
-	                 A_local(nA_loc+1:2*nA_loc),nA_loc,MPI_DOUBLE_PRECISION, &
-			  	root,tProcInfo_G%comm, error)
+                         A_local(nA_loc+1:2*nA_loc),nA_loc,MPI_DOUBLE_PRECISION, &
+                                root,tProcInfo_G%comm, error)
 
 END SUBROUTINE scatter2Loc
 
@@ -225,7 +233,7 @@ END SUBROUTINE scatterE2Loc
 
 SUBROUTINE gather2Acomtoreal(A_local,sA,nA_loc,nA,totsize,recvs,displs)
 
-IMPLICIT NONE
+IMPLICIT NONE (type, external)
 
 ! Gather from A_local to A
 
@@ -238,12 +246,12 @@ REAL(KIND=WP),INTENT(OUT) ::  sA(:)
 INTEGER(KIND=IP)  ::  error
 
  CALL MPI_ALLGATHERV( REAL(A_local(0:nA_loc-1),KIND=WP),nA_loc,MPI_DOUBLE_PRECISION, &
-	                  sA(1:nA), recvs,displs, MPI_DOUBLE_PRECISION, &
-			  		  tProcInfo_G%comm, error)
+                          sA(1:nA), recvs,displs, MPI_DOUBLE_PRECISION, &
+                                          tProcInfo_G%comm, error)
 
  CALL MPI_ALLGATHERV( AIMAG(A_local(0:nA_loc-1)),nA_loc,MPI_DOUBLE_PRECISION, &
-	                  sA(nA+1:2*nA), recvs,displs, MPI_DOUBLE_PRECISION, &
-			  		  tProcInfo_G%comm, error)
+                          sA(nA+1:2*nA), recvs,displs, MPI_DOUBLE_PRECISION, &
+                                          tProcInfo_G%comm, error)
 
 
 END SUBROUTINE gather2Acomtoreal
@@ -258,8 +266,8 @@ INTEGER(KIND=IP),INTENT(OUT)  ::  recvs(:),displs(:)
 INTEGER(KIND=IP)  ::  i,error
 
    CALL MPI_ALLGATHER(nlocalvals, 1, MPI_INTEGER, &
-   					  recvs, 1, MPI_INTEGER, &
-					  tProcInfo_G%comm, error)
+                                          recvs, 1, MPI_INTEGER, &
+                                          tProcInfo_G%comm, error)
 
    displs(1) = 0
 
@@ -279,7 +287,7 @@ INTEGER(KIND=IP),INTENT(IN)  ::  nvals
 INTEGER(KIND=IP)  ::  error
 
  CALL MPI_ALLREDUCE(MPI_IN_PLACE,loc_arr,nvals,MPI_DOUBLE_PRECISION,&
- 			MPI_SUM,MPI_COMM_WORLD,error)
+                        MPI_SUM,MPI_COMM_WORLD,error)
 
 END SUBROUTINE sum2GlobalArr
 
@@ -311,12 +319,12 @@ INTEGER(KIND=IP)  ::  error
  IF (tProcInfo_G%rank == root) THEN
 
   CALL MPI_REDUCE(MPI_IN_PLACE,loc_arr,nvals,MPI_DOUBLE_PRECISION,&
- 			 MPI_SUM,root,MPI_COMM_WORLD,error)
+                         MPI_SUM,root,MPI_COMM_WORLD,error)
 
  ELSE
 
   CALL MPI_REDUCE(loc_arr,loc_arr,nvals,MPI_DOUBLE_PRECISION,&
- 			 MPI_SUM,root,MPI_COMM_WORLD,error)
+                         MPI_SUM,root,MPI_COMM_WORLD,error)
 
  END IF
 
@@ -326,7 +334,7 @@ END SUBROUTINE sum2RootArr
 
 ! SUBROUTINE GetMPIfiletype(filetype,mpifiletype)
 !
-! TYPE(cFileType),INTENT(IN)	::	filetype
+! TYPE(cFileType),INTENT(IN)    ::      filetype
 ! INTEGER(KIND=IP),INTENT(OUT)  ::  mpifiletype
 !
 ! INTEGER(KIND=IP) ::  error
@@ -351,8 +359,8 @@ END SUBROUTINE sum2RootArr
 ! arrayofdisps(3)=address-startaddress
 !
 !  CALL MPI_TYPE_STRUCT(3,arrayofblocklengths,&
-!  					  arrayofdisps,arrayoftypes,&
-! 					  mpifiletype,error)
+!                                         arrayofdisps,arrayoftypes,&
+!                                         mpifiletype,error)
 !
 !  CALL MPI_TYPE_COMMIT(mpifiletype,error)
 !
@@ -364,7 +372,7 @@ SUBROUTINE shareFileType(fileType)
 
 TYPE(cFileType),INTENT(INOUT)  ::  filetype
 
-INTEGER error,strsize
+INTEGER :: error,strsize
 
 strsize=len(filetype%zFileName)
 
@@ -398,7 +406,7 @@ END SUBROUTINE shareFileType
 
   SUBROUTINE sum_mpi_int14(in1,o1)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 
     INTEGER(KIND=IPL), INTENT(IN) :: in1
     INTEGER(KIND=IPL), INTENT(OUT) :: o1
@@ -420,7 +428,7 @@ END SUBROUTINE shareFileType
 
   SUBROUTINE sum_mpi_real(in1,o1)
 
-    IMPLICIT NONE
+    IMPLICIT NONE (type, external)
 
     real(kind=wp), intent(in) :: in1
     real(kind=wp), intent(out) :: o1

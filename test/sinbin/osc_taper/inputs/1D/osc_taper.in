@@ -1,0 +1,74 @@
+!!!!!!!!!!!!!!  CLARA linear-taper input deck  !!!!!!!!!!!!!!
+!!
+!!  Cut down from inputs/simple/1D/osc-linear-taper/shorter.
+!!
+!!  1D, but driven from a lattice file, so unlike the other 1D test
+!!  (inputs/f1main.in) this exercises the multi-element path: five
+!!  undulator modules with undulator ends and a linear taper
+!!  (d/dz alpha = 0.14), separated by drift / chicane / quad triples.
+!!  5 modules x 29 periods x 30 steps = 4350 integration steps.
+!!
+!!  The seed field is zero, so the interaction starts from the beam's
+!!  shot noise. The beam is therefore read from a committed HDF5 file
+!!  (see osc_taper_beam.in) rather than generated at runtime: Puffin's
+!!  shot noise comes from the intrinsic RANDOM_NUMBER, whose stream is
+!!  compiler- and version-specific, so a runtime-generated beam would
+!!  differ between the machine the golden files were made on and CI.
+!!
+!!  iRandSeed below is belt and braces only -- with the beam read from
+!!  file nothing should be drawing from the RNG at all. It is the frozen
+!!  beam, not this, that makes the run reproducible.
+!!
+!!  Reproducibility is still tied to the rank count, because the beam is
+!!  distributed over ranks on read (2, matching npes in
+!!  testMPIIntegration1DTaper.pf).
+!!
+!!  iWriteNthSteps / iWriteIntNthSteps are left far beyond the run
+!!  length so the only dumps are the initial one, the end of the first
+!!  undulator module, and the final qDumpEnd write.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+&MDATA
+ qScaled                = .false.
+ qOneD                  = .true.
+ qFieldEvolve           = .true.
+ qElectronsEvolve       = .true.
+ qElectronFieldCoupling = .true.
+ qFocussing             = .false.
+ qDiffraction           = .true.
+ qsdds                  = .false.
+ qhdf5                  = .true.
+ qUndEnds               = .true.
+ qFMesh_G               = .false.
+ qfilter                = .true.
+ beam_file              = 'inputs/1D/osc_taper_beam.in'
+ sElectronThreshold     = 0.05
+ meshType               = 1
+ iNumNodesX             = 85
+ iNumNodesY             = 85
+ nodesPerLambdar        = 21
+ sFModelLengthX         = 0.0016677689533916074
+ sFModelLengthY         = 0.0016677689533916074
+ sFModelLengthZ2        = 2.08477559498845e-16
+ iRedNodesX             = 21
+ iRedNodesY             = 21
+ sFiltFrac              = 0.3
+ sDiffFrac              = 1.0
+ sBeta                  = 0.5
+ seed_file              = 'inputs/1D/osc_taper_seed.in'
+ srho                   = 0.001
+ saw                    = 1.414216
+ sgamma_r               = 8000.0
+ lambda_w               = 0.04
+ zundType               = 'planepole'
+ lattFile               = 'inputs/1D/osc_taper.latt'
+ iRandSeed              = 20260817
+ stepsPerPeriod         = 30
+ nPeriods               = 5
+ sZ0                    = 0.0
+ iWriteNthSteps         = 30000
+ iWriteIntNthSteps      = 30000
+ sRedistLen             = 0.25
+ iRedistStp             = 10
+ /

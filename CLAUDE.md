@@ -6,7 +6,7 @@ Fortran FEL (Free Electron Laser) simulation code.
 
 - Build: `make -j4 -C build/`
 - Tests: `ctest --output-on-failure --test-dir build/`
-- Two test suites: `puffin_basic_tests` (unit) and `puffin_e2e_tests`/`puffin_e2e_tests_1d_taper`/`puffin_e2e_tests_3d`/`puffin_e2e_tests_3d_slow` (MPI integration tests)
+- Two test suites: `puffin_basic_tests` (unit) and `puffin_e2e_tests`/`puffin_e2e_tests_3d`/`puffin_e2e_tests_3d_slow` (MPI integration tests)
 - E2E tests verify numerical results to 1e-10 tolerance (bit-exact)
 
 ### Slow and big tests — off by default

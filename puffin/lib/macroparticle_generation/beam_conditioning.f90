@@ -4,7 +4,7 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Module to add additional preparation steps to the electron beam. Can add
@@ -14,7 +14,13 @@ module beam_conditioning
 
 use puffin_kinds, only: wp, ipl
 
-contains 
+implicit none (type, external)
+private
+
+public :: addChirp, addModulation
+
+
+contains
 
 subroutine addChirp(gamj, z2, Nk, center, chirp)
 

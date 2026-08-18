@@ -4,16 +4,20 @@
 
 !> @author
 !> Lawrence Campbell,
-!> University of Strathclyde, 
+!> University of Strathclyde,
 !> Glasgow, UK
 !> @brief
 !> Definitions of data types used in Puffin
 
 module puffin_kinds
 
-    use, intrinsic :: iso_fortran_env
+    use, intrinsic :: iso_fortran_env, only: int64
 
-    implicit none
+    implicit none (type, external)
+private
+
+public :: float, IP, IPL, IPN, long, WP
+
 
 !              Definitions of data types
 !                  used in Puffin
@@ -31,7 +35,7 @@ module puffin_kinds
     integer, parameter :: LP  = long
     integer, parameter :: IPN = int64
 
-    integer, parameter :: LGT = kind(.true.)	
+    integer, parameter :: LGT = kind(.true.)
 
 end module puffin_kinds
 
