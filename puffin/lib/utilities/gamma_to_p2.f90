@@ -82,13 +82,29 @@ contains
 
     real(kind=wp), contiguous, intent(out) :: p2(:)
 
+!            LOCAL
+
+    real(kind=wp), allocatable :: u(:), rt(:)
+
+! Computed via the algebraically-equivalent but numerically-stable form.
+! Writing this as (1/sqrt(1-u) - 1)/eta subtracts two quantities both very
+! close to 1 to produce a result of order u/2 ~ 1e-8, losing ~8 significant
+! digits before the division by eta (~1e-8) scales it back up. Since
+! (1 - sqrt(1-u)) * (1 + sqrt(1-u)) = u, the same value is
+! u / (sqrt(1-u) * (1 + sqrt(1-u))), which has no cancellation: u itself is
+! a sum of positive terms.
+
+    allocate(u(size(p2)), rt(size(p2)))
 
 !$OMP WORKSHARE
 
-    p2 = (( 1_wp/sqrt(1_wp - 1_wp / (gamma0**2 * gamma**2) * ( 1 + &
-             aw**2*(px**2 + py**2))))-1_wp) / eta
+    u = ( 1.0_wp + aw**2*(px**2 + py**2) ) / (gamma0**2 * gamma**2)
+    rt = sqrt(1.0_wp - u)
+    p2 = u / (eta * rt * (1.0_wp + rt))
 
 !$OMP END WORKSHARE
+
+    deallocate(u, rt)
 
   end subroutine getP2
 
