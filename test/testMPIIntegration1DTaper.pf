@@ -36,8 +36,20 @@
 !! all three output files came back bit-identical, so the tolerances below are
 !! headroom against a different compiler or host, not against observed drift.
 !!
-!! To regenerate the golden files, run from build/test/ so the CWD-relative
-!! paths in the deck resolve. Note that the beam file is named
+!! History. This test spent time parked in test/sinbin/: it passed on
+!! macOS/ARM and failed in CI on Linux/x86, worst at 1.28e-9 relative on
+!! power against a 1e-10 tolerance, and the disagreement was not understood.
+!! The cause was catastrophic cancellation in getP2. Its old form also
+!! contained an FMA contraction site, so whether a given macroparticle landed
+!! above or below that error floor depended on whether the compiler fused the
+!! multiply-add -- which aarch64 does by baseline ISA and x86-64 without
+!! -march cannot. With getP2 written in its numerically stable form the
+!! platform sensitivity is gone, so the test is back in the suite and the
+!! goldens have been regenerated against the fixed arithmetic.
+!!
+!! The committed goldens were generated on Linux/x86 with conda-forge
+!! gfortran 14.3.0 at 2 ranks. To regenerate them, run from build/test/ so
+!! the CWD-relative paths in the deck resolve. Note that the beam file is named
 !! osc_taper_beam.h5, not osc_taper_electrons_0.h5 as it was captured -- the
 !! deck's output base is osc_taper, so the latter name would put the step-0
 !! dump straight on top of the beam being read and rewrite the input on every
@@ -109,12 +121,19 @@ module testMPIIntegration1DTaper
   ! held to an absolute one, so it is not the same standard: the field's 1e-10
   ! absolute against a peak of ~7.8e-3 corresponds to ~1.3e-8 relative, and
   ! power goes as |A|^2 so inherits roughly twice that. This check is therefore
-  ! the strictest in the test by some margin, and it is the one CI fails on
-  ! while the field and macroparticle comparisons pass on the same data.
+  ! the strictest in the test by some margin, and it is the one that used to
+  ! fail in CI while the field and macroparticle comparisons passed on the
+  ! same data -- so it is the one to watch if this run ever drifts again.
   !
-  ! Left at 1e-10 deliberately. The margins printed below say how far the run
-  ! actually moves between platforms; the tolerance should be set from those
-  ! numbers once they exist, not raised to make a red test go green.
+  ! Kept at 1e-10, now backed by measurement rather than left pending one.
+  ! Rebuilding the same source with FMA contraction enabled (-march=native
+  ! -mfma -ffp-contract=fast) re-creates the arithmetic difference that used
+  ! to make this test platform-dependent, and is the nearest proxy to an ARM
+  ! build available on x86. Against these goldens that build's worst margin
+  ! is 1.01e-11 relative, on power -- a factor of 10 inside this tolerance,
+  ! where before the getP2 fix the same quantity sat at 1.28e-9, a factor of
+  ! 13 outside it. Varying OpenMP thread count instead moves power by
+  ! 6.3e-15. The margins printed below state each run's own numbers.
   real(kind=WP), parameter :: INT_REL_TOL = 1.0e-10_WP
 
   character(len=1024_IP) :: test_file_1      = 'inputs/1D/osc_taper.in'

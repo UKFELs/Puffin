@@ -65,6 +65,58 @@ configure_file(
   COPYONLY
 )
 
+# 1D lattice-driven linear-taper test inputs
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/inputs/1D/osc_taper.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/inputs/1D/osc_taper.in"
+  COPYONLY
+)
+
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/inputs/1D/osc_taper.latt"
+  "${CMAKE_CURRENT_BINARY_DIR}/inputs/1D/osc_taper.latt"
+  COPYONLY
+)
+
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/inputs/1D/osc_taper_beam.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/inputs/1D/osc_taper_beam.in"
+  COPYONLY
+)
+
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/inputs/1D/osc_taper_seed.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/inputs/1D/osc_taper_seed.in"
+  COPYONLY
+)
+
+# Frozen beam, captured from a one-off run. Read at runtime instead of
+# generating the macroparticles, so the shot-noise pattern does not depend on
+# the compiler's RANDOM_NUMBER stream. See inputs/1D/osc_taper_beam.in.
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/inputs/1D/osc_taper_beam.h5"
+  "${CMAKE_CURRENT_BINARY_DIR}/inputs/1D/osc_taper_beam.h5"
+  COPYONLY
+)
+
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/expected/1D/osc_taper_expected_field.h5"
+  "${CMAKE_CURRENT_BINARY_DIR}/expected/1D/osc_taper_expected_field.h5"
+  COPYONLY
+)
+
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/expected/1D/osc_taper_expected_electrons.h5"
+  "${CMAKE_CURRENT_BINARY_DIR}/expected/1D/osc_taper_expected_electrons.h5"
+  COPYONLY
+)
+
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/expected/1D/osc_taper_expected_integrated.h5"
+  "${CMAKE_CURRENT_BINARY_DIR}/expected/1D/osc_taper_expected_integrated.h5"
+  COPYONLY
+)
+
 # 3D CLARA single-slice test inputs
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/inputs/3D/clara_test.in"
@@ -127,6 +179,13 @@ add_pfunit_ctest (puffin_basic_tests
 
 add_pfunit_ctest (puffin_e2e_tests
   TEST_SOURCES testMPIIntegration.pf
+  LINK_LIBRARIES puffin_mpi
+  MAX_PES 2
+)
+
+# As with the 3D test, its own binary so puffin's global allocatables are clean
+add_pfunit_ctest (puffin_e2e_tests_1d_taper
+  TEST_SOURCES testMPIIntegration1DTaper.pf
   LINK_LIBRARIES puffin_mpi
   MAX_PES 2
 )
