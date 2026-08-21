@@ -13,7 +13,7 @@
 
 module gtop2
 
-use puffin_kinds, only: WP
+use puffin_kinds, only: WP, IP
 
 implicit none (type, external)
 private
@@ -84,7 +84,8 @@ contains
 
 !            LOCAL
 
-    real(kind=wp), allocatable :: u(:), rt(:)
+    integer(kind=ip) :: i
+    real(kind=wp) :: u, rt
 
 ! Computed via the algebraically-equivalent but numerically-stable form.
 ! Writing this as (1/sqrt(1-u) - 1)/eta subtracts two quantities both very
@@ -93,18 +94,23 @@ contains
 ! (1 - sqrt(1-u)) * (1 + sqrt(1-u)) = u, the same value is
 ! u / (sqrt(1-u) * (1 + sqrt(1-u))), which has no cancellation: u itself is
 ! a sum of positive terms.
+!
+! Written as an explicit !$OMP DO over private scalars rather than array
+! expressions in a WORKSHARE. getP2 is called from inside the !$OMP PARALLEL
+! region in getrhs, where any local array temporary would be thread-private:
+! a WORKSHARE would then have each thread fill only its own slice of its own
+! copy and read the rest uninitialised. Only p2 -- a dummy argument, and so
+! shared -- may be written across a worksharing construct here.
 
-    allocate(u(size(p2)), rt(size(p2)))
+!$OMP DO PRIVATE(u, rt)
 
-!$OMP WORKSHARE
+    do i = 1, size(p2, kind=ip)
+      u = ( 1.0_wp + aw**2*(px(i)**2 + py(i)**2) ) / (gamma0**2 * gamma(i)**2)
+      rt = sqrt(1.0_wp - u)
+      p2(i) = u / (eta * rt * (1.0_wp + rt))
+    end do
 
-    u = ( 1.0_wp + aw**2*(px**2 + py**2) ) / (gamma0**2 * gamma**2)
-    rt = sqrt(1.0_wp - u)
-    p2 = u / (eta * rt * (1.0_wp + rt))
-
-!$OMP END WORKSHARE
-
-    deallocate(u, rt)
+!$OMP END DO
 
   end subroutine getP2
 
