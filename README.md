@@ -58,6 +58,39 @@ mpirun -np 2 puffin clara.in
 ```
 to run the CLARA example on 2 MPI processes.
 
+## Contributing
+
+`dev` is the base branch for development, on both the upstream
+[UKFELs/Puffin](https://github.com/UKFELs/Puffin) repository and its forks.
+`master` is only updated by periodic merges from `dev` at release points, so
+it lags behind and should not be used as a starting point for new work.
+
+To contribute:
+
+1. Fork the repository, and add the upstream repo as a remote:
+   ```
+   git remote add upstream https://github.com/UKFELs/Puffin.git
+   ```
+2. Sync your `dev` branch with upstream before starting:
+   ```
+   git fetch upstream
+   git checkout dev
+   git merge upstream/dev
+   ```
+3. Create your topic branch off `dev`:
+   ```
+   git checkout -b my-feature
+   ```
+4. Make your changes, and check that the test suites still pass:
+   ```
+   ctest --output-on-failure --test-dir build/
+   ```
+5. Push the branch to your fork and open a pull request **against `dev`**,
+   not `master`.
+
+Keep your branch up to date by merging (or rebasing on) `upstream/dev` rather
+than `upstream/master`.
+
 ## Release Notes
 
 1.9.0
