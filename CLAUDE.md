@@ -2,6 +2,22 @@
 
 Fortran FEL (Free Electron Laser) simulation code.
 
+## Git workflow
+
+`dev` is the base branch, both here (`origin`, mightylorenzo/Puffin) and
+upstream (`upstream`, UKFELs/Puffin). Always sync from and branch off `dev`:
+
+```
+git fetch upstream
+git checkout dev
+git merge upstream/dev    # or: git rebase upstream/dev
+git checkout -b my-feature
+```
+
+Open pull requests against `dev`, never `master`. `master` upstream is only
+updated by periodic merges from `dev` at release points, so do not branch off
+it, target it, or sync to it for normal work.
+
 ## Build & Test
 
 - Build: `make -j4 -C build/`
