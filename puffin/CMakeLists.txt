@@ -49,6 +49,42 @@ else()
 endif()
 
 add_library(puffin_mpi ${F_LIB_SOURCES})
+
+#
+# Disable F2003 reallocation-on-assignment for the integration hot path.
+#
+# gfortran cannot parallelise an !$OMP WORKSHARE array assignment whose
+# left-hand side is an `allocatable`: the realloc-on-assign test it has to emit
+# is not something it can spread across a team, so it falls back to
+# `#pragma omp single` and the whole block runs on one thread.  Every WORKSHARE
+# target in rk4par is a module allocatable, so without this all five parallel
+# regions there are silently serial.  Verified with -fdump-tree-original:
+# rk4par goes from 5 `omp single` / 0 `omp for` to 40 `omp for`.
+#
+# This is scoped to these three files ON PURPOSE.  Applied globally the flag
+# breaks the 3D and 1D-taper E2E tests (reproducible SIGSEGV on a clean build):
+# code elsewhere -- setup, IO, the parallel field redistribution -- does rely on
+# assignment auto-allocating its left-hand side.  Here the targets are all
+# explicitly allocated first (allact_rk4_arrs, and the allocate() at the top of
+# getrhs), so dropping the realloc semantics is a no-op for correctness.
+#
+# Adding a new file to this list therefore means checking every array
+# assignment in it, not just that it happens to compile.
+#
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+  set(PUFFIN_NO_REALLOC_LHS_FLAG "-fno-realloc-lhs")
+elseif (CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
+  set(PUFFIN_NO_REALLOC_LHS_FLAG "-assume;norealloc_lhs")
+endif()
+
+if (PUFFIN_NO_REALLOC_LHS_FLAG)
+  set_source_files_properties(
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/interaction/puffin_mpi_RK4.f90
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/interaction/rhs.f90
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/interaction/system_interpolation_1D.f90
+    TARGET_DIRECTORY puffin_mpi
+    PROPERTIES COMPILE_OPTIONS "${PUFFIN_NO_REALLOC_LHS_FLAG}")
+endif()
 add_executable(puffin ${F_EXE_SOURCES})
 #add_dependencies(puffin AIO)
 

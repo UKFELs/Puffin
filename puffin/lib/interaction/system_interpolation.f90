@@ -30,7 +30,7 @@ contains
 
 subroutine getInterps_3D(sx, sy, sz2, flags)
 
-use rhs_vars, only: maxEl, halfx, halfy, lis_GR, dx, dy, dz2, WP, IPL, IP
+use rhs_vars, only: halfx, halfy, lis_GR, dx, dy, dz2, WP, IPL, IP
 
 real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:)
 type(tSimulationFlags), intent(inout) :: flags
@@ -43,9 +43,7 @@ real(kind=wp) :: locx, locy, locz2, &
 
 !$OMP DO PRIVATE(xnode, ynode, z2node, locx, locy, locz2, &
 !$OMP x_in1, x_in2, y_in1, y_in2, z2_in1, z2_in2)
-  do i = 1, maxEl
-    if (i<=procelectrons_G(1)) then
-
+  do i = 1, procelectrons_G(1)
 
 !                  Get surrounding nodes
 
@@ -97,7 +95,6 @@ real(kind=wp) :: locx, locy, locz2, &
       lis_GR(7,i) = x_in1 * y_in2 * z2_in2
       lis_GR(8,i) = x_in2 * y_in2 * z2_in2
 
-    end if
   end do
 !$OMP END DO
 
@@ -172,7 +169,7 @@ end subroutine getFFelecs_3D
 subroutine getSource_3D(sDADzr, sDADzi, spr, spi, sgam, seta)
 
 
-use rhs_vars, only: maxEl, p_nodes, lis_GR, dV3, sp2, WP, IPL
+use rhs_vars, only: p_nodes, lis_GR, dV3, sp2, WP, IPL
 
 real(kind=wp), contiguous, intent(inout) :: sDADzr(:), sDADzi(:)
 real(kind=wp), contiguous, intent(in) :: spr(:), spi(:)
@@ -181,7 +178,7 @@ real(kind=wp), intent(in) :: seta
 
   call getSource_3D_kernel(sDADzr, sDADzi, spr, spi, sgam, seta, &
                            s_chi_bar_G, sp2, p_nodes, lis_GR, dV3, &
-                           nspinDX, ntrndsi_G, maxEl, procelectrons_G(1))
+                           nspinDX, ntrndsi_G, procelectrons_G(1))
 
 end subroutine getSource_3D
 
@@ -189,7 +186,7 @@ end subroutine getSource_3D
 
 subroutine getSource_3D_kernel(sDADzr, sDADzi, spr, spi, sgam, seta, &
                                s_chi_bar_G, sp2, p_nodes, lis_GR, dV3, &
-                               nspinDX, ntrndsi_G, maxEl, nLocalElecs)
+                               nspinDX, ntrndsi_G, nLocalElecs)
 
 real(kind=wp), contiguous, intent(inout) :: sDADzr(:), sDADzi(:)
 real(kind=wp), contiguous, intent(in) :: spr(:), spi(:)
@@ -200,16 +197,13 @@ integer(kind=ip), contiguous, intent(in) :: p_nodes(:)
 real(kind=wp), contiguous, intent(in) :: lis_GR(:,:)
 real(kind=wp), intent(in) :: dV3
 integer(kind=ip), intent(in) :: nspinDX, ntrndsi_G
-integer(kind=ipl), intent(in) :: maxEl, nLocalElecs
+integer(kind=ipl), intent(in) :: nLocalElecs
 
 integer(kind=ipl) :: i
 real(kind=wp) :: dadzRInst, dadzIInst
 
 !$OMP DO PRIVATE(dadzRInst, dadzIInst)
-  do i = 1, maxEl
-
-    if (i<=nLocalElecs) then
-
+  do i = 1, nLocalElecs
 
 !                  Get 'instantaneous' dAdz
 
@@ -284,8 +278,6 @@ real(kind=wp) :: dadzRInst, dadzIInst
       !$OMP ATOMIC
       sDADzi(p_nodes(i) + ntrndsi_G + nspinDX + 1) =  &
         lis_GR(8,i) * dadzIInst + sDADzi(p_nodes(i) + ntrndsi_G + nspinDX + 1)
-
-    end if
 
   end do
 !$OMP END DO
