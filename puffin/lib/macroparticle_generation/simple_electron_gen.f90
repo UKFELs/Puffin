@@ -622,7 +622,15 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
 
       gamseq = gamseq + offsets(iGam_CG)
 
-      z2seq = (z2seq - 0.5_wp) * (z2base(2) - z2base(1))
+!   Spread the sequence over one z2 slice. Use the grid spacing rather than
+!   z2base(2)-z2base(1): with few z2 macroparticles and many MPI ranks a rank
+!   can hold a single z2 slice, and z2base(2) is then out of bounds.
+
+      if (iNMP_loc(iZ2_CG) > 0_ip) then
+        z2seq = (z2seq - 0.5_wp) * (sz2_grid(2) - sz2_grid(1))
+      else
+        z2seq = 0.0_wp
+      end if
 
 !   Rotate phase space to Twiss params...
 
@@ -675,7 +683,8 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
       deallocate(nktemp, z2base)
 
       ! add noise in z2
-      if (q_noise) call applyNoise(z2_tmpcoord, sz2_grid(2) - sz2_grid(1), s_tmp_macro)
+      if (q_noise .and. (iNMP_loc(iZ2_CG) > 0_ip)) &
+        call applyNoise(z2_tmpcoord, sz2_grid(2) - sz2_grid(1), s_tmp_macro)
 
   end if
 
