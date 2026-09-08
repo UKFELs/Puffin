@@ -16,9 +16,8 @@ module hdf5PuffColl
 use puffin_kinds, only: WP, IP
 use hdf5, only: h5aclose_f, h5acreate_f, h5awrite_f, h5close_f, h5dclose_f, h5dcreate_f, &
   h5dget_space_f, h5dopen_f, h5dwrite_f, H5F_ACC_RDWR_F, H5F_ACC_TRUNC_F, h5fclose_f, &
-  h5fcreate_f, H5FD_MPIO_COLLECTIVE_F, H5FD_MPIO_INDEPENDENT_F, h5fopen_f, h5gclose_f, &
-  h5gcreate_f, h5open_f, H5P_DATASET_XFER_F, H5P_FILE_ACCESS_F, h5pclose_f, h5pcreate_f, &
-  h5pset_dxpl_mpio_f, h5pset_fapl_mpio_f, H5S_SCALAR_F, H5S_SELECT_SET_F, h5sclose_f, &
+  h5fcreate_f, h5fopen_f, h5gclose_f, h5gcreate_f, h5open_f, H5P_DATASET_XFER_F, &
+  H5P_FILE_ACCESS_F, h5pclose_f, h5pcreate_f, H5S_SCALAR_F, H5S_SELECT_SET_F, h5sclose_f, &
   h5screate_f, h5screate_simple_f, h5sselect_hyperslab_f, h5sselect_none_f, &
   H5T_NATIVE_CHARACTER, H5T_NATIVE_DOUBLE, H5T_NATIVE_INTEGER, H5T_STR_SPACEPAD_F, h5tclose_f, &
   h5tcopy_f, h5tset_size_f, h5tset_strpad_f, HID_T, HSIZE_T
@@ -34,6 +33,8 @@ use hdf5PuffLow, only: addh5stringattribute, addh5derivedvariable, write3dlimgrp
   integertostring
 use GlobalTypes, only: tSimulationContext
 use ParaField, only: qUnique
+use puffin_h5_par, only: H5FD_MPIO_COLLECTIVE_F, H5FD_MPIO_INDEPENDENT_F, &
+  h5pset_dxpl_mpio_f, h5pset_fapl_mpio_f
 use mpi, only: MPI_INFO_NULL
 
 implicit none (type, external)

@@ -16,6 +16,12 @@ set (Puffin_VERSION_PATCH 0a)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules")
 
+# ENABLE_PARALLEL=ON  builds against a real MPI, FFTW3-MPI and parallel HDF5.
+# ENABLE_PARALLEL=OFF builds a serial executable that needs none of them: the
+# sources in puffin/lib/backends/serial stand in for the MPI module, the
+# fftw_mpi_* planner and the parallel-HDF5 property calls, all with one-rank
+# semantics. No call site elsewhere in Puffin changes between the two modes.
+# See doc/SERIAL_BUILD.md.
 option(ENABLE_PARALLEL "whether to build parallel PUFFIN" ON)
 option(USE_MKL "Use Intel MKL" OFF)
 option(ENABLE_TESTING "Enable testing" OFF)
@@ -31,6 +37,10 @@ option(ENABLE_LINT "Enable extra compiler warnings (-Wall -Wextra)" OFF)
 if(ENABLE_PARALLEL)
   find_package(MPI REQUIRED)
   set(USE_MPI 1 CACHE BOOL "setting USE_MPI to 1" FORCE)
+  message(STATUS "Building parallel Puffin (MPI enabled)")
+else()
+  set(USE_MPI 0 CACHE BOOL "setting USE_MPI to 0" FORCE)
+  message(STATUS "Building serial Puffin (MPI disabled) - run the executable directly, not under mpirun")
 endif()
 
 if (USE_MKL)
@@ -40,11 +50,27 @@ if (USE_MKL)
     set(MKL_INCLUDE_DIRS "$ENV{MKLROOT}/include")
   endif()
   message(STATUS "Using MKL. MKL_LIBRARY_DIRS: ${MKL_LIBRARY_DIRS}")
+elseif (ENABLE_PARALLEL)
+  find_package(FFTW3 REQUIRED COMPONENTS MPI)
 else()
+  # Serial build: plain FFTW3 only. backends/serial/puffin_fftw3.f90 supplies
+  # the fftw_mpi_* entry points on top of it, so libfftw3_mpi is not linked.
   find_package(FFTW3 REQUIRED)
 endif()
 
 find_package(HDF5 COMPONENTS Fortran HL REQUIRED)
+
+# A serial build never calls the MPI-IO driver, but if the HDF5 that was found
+# is itself a parallel build then linking it still drags libmpi in. That is
+# harmless - the executable is still launched directly, not under mpirun - but
+# it does mean the binary is not MPI-free. Point at a serial HDF5 with
+# HDF5_ROOT if that matters.
+if (NOT ENABLE_PARALLEL AND HDF5_IS_PARALLEL)
+  message(STATUS
+    "Serial build linked against a parallel HDF5, so libmpi comes in transitively. "
+    "Set HDF5_ROOT to a serial HDF5 for a build with no MPI dependency at all.")
+endif()
+
 find_package(OpenMP REQUIRED)
 find_package(Doxygen)
 
