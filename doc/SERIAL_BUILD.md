@@ -136,6 +136,12 @@ if that matters. CMake says so at configure time.
 The `puffin_e2e_tests*` suites are declared `@mpitest(npes=[2])` and so are
 built only for a parallel configure, as are the opt-in slow and big tiers.
 
+CI covers both modes: `.github/workflows/build.yml` runs its `build` job over a
+`mode: [parallel, serial]` matrix, so the serial backend is built and tested on
+every push and pull request. The serial leg also asserts that the executable
+does not link `libfftw3_mpi` — nothing else would notice if it crept back in,
+since the build would still succeed and the tests would still pass.
+
 Benchmarks work too, for the single-rank case:
 
 ```sh
