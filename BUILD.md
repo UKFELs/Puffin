@@ -4,7 +4,7 @@ The source code is hosted [here](https://github.com/UKFELs/Puffin).
 
 ## Building from source
 
-Puffin is written in modern fortran, uses MPI for parallelism, and the post-processing scripts are in Python, using pytables and numpy. Puffin can be built using CMake. It requires the parallel (MPI) versions of the FFTW and HDF5 libraries. 
+Puffin is written in modern fortran, uses MPI for parallelism, and the post-processing scripts are in Python, using pytables and numpy. Puffin can be built using CMake. It requires the parallel (MPI) versions of the FFTW and HDF5 libraries — or, with `-DENABLE_PARALLEL=OFF`, the serial versions and no MPI at all; see [Serial builds](#serial-builds-no-mpi) below. 
 
 The below guide is for use on linux and other *nix environments. It has been built on numerous HPC clusters and large servers. On Mac OS, Homebrew can be used to install MPI, a Fortran compiler, hdf5 and fftw. In the past Puffin has been built on Windows by way of both Cygwin and WSL.
 
@@ -36,6 +36,23 @@ cmake --build ../build
 cmake --build ../build --target test
 cmake --install ../build --prefix ../install
 ```
+
+### Serial builds (no MPI)
+
+Puffin can also be built without MPI at all:
+
+```sh
+cmake -B ../build-serial -DENABLE_PARALLEL=OFF .
+cmake --build ../build-serial
+../build-serial/puffin/puffin my_deck.in     # run it directly, no mpirun
+```
+
+This needs only serial FFTW3 and HDF5, and produces an executable that is
+numerically identical to `mpirun -n 1` of the parallel build. It is meant for
+debugging, profiling and machines without MPI, not for production runs — a
+serial build puts all the work and all the memory on one core. See
+[doc/SERIAL_BUILD.md](doc/SERIAL_BUILD.md) for what it guarantees and how it is
+put together.
 
 #### Optional test tiers
 

@@ -8,13 +8,27 @@ on:
 
 jobs:
   build:
+    name: build (${{ matrix.os }}, ${{ matrix.mode }})
     runs-on: ${{ matrix.os }}
     strategy:
+      # Both modes are built from the same tree but through different backend
+      # sources, so a failure in one says nothing about the other. Let each
+      # finish and report rather than cancelling its sibling.
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]
+        # parallel: the usual MPI build.
+        # serial:   -DENABLE_PARALLEL=OFF, which compiles
+        #           puffin/lib/backends/serial in place of backends/mpi and
+        #           runs without a launcher. See doc/SERIAL_BUILD.md.
+        mode: [parallel, serial]
         include:
           - os: ubuntu-latest
             compiler: gcc-11
+          - mode: parallel
+            enable_parallel: 'TRUE'
+          - mode: serial
+            enable_parallel: 'FALSE'
 
     steps:
     - uses: actions/checkout@v4
@@ -49,7 +63,7 @@ jobs:
       run: |
         cmake .. \
           -DCMAKE_BUILD_TYPE=Release \
-          -DENABLE_PARALLEL:BOOL=TRUE \
+          -DENABLE_PARALLEL:BOOL=${{ matrix.enable_parallel }} \
           -DENABLE_TESTING:BOOL=TRUE \
           -DCMAKE_PREFIX_PATH='${{ github.workspace }}/pfunit-install' \
           -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
@@ -59,6 +73,22 @@ jobs:
       working-directory: build
       run: make -j$(nproc)
     
+    - name: Check the serial build links no MPI FFTW
+      if: matrix.mode == 'serial'
+      shell: bash -l {0}
+      working-directory: build
+      # backends/serial supplies the fftw_mpi_* entry points itself, so a serial
+      # build must not link libfftw3_mpi. Nothing else would notice if it crept
+      # back in: the build would still succeed and the tests would still pass.
+      # libmpi is not checked, because it still arrives transitively whenever
+      # the HDF5 in the environment is a parallel one - as it is here.
+      run: |
+        ldd puffin/puffin
+        if ldd puffin/puffin | grep -q libfftw3_mpi; then
+          echo "::error::serial build linked libfftw3_mpi"
+          exit 1
+        fi
+
     - name: Run tests
       shell: bash -l {0}
       working-directory: build
