@@ -411,6 +411,13 @@ type :: tSimulationFlags
     logical :: period_averaged               ! qAveraged_G - field held as a
                                              ! slowly varying envelope, quiver
                                              ! averaged out (see averaging.f90)
+    ! Integrator
+    logical :: quiver_split                  ! qQuiverSplit - split the analytic
+                                             ! undulator quiver out of pperp
+                                             ! before the RK4 step (see quiver.f90)
+    logical :: quiver_split_active           ! whether the step now being taken is
+                                             ! actually split - set per step by
+                                             ! rk4par, false in the end ramps
 
     ! Mesh properties
     logical :: fixed_mesh                    ! qFMesh_G

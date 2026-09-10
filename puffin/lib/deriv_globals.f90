@@ -33,7 +33,8 @@ public :: ata_G, c, chic_disp, chic_slip, chic_zbar, cmd_call_G, dadz_w, delmz, 
            outnodey_G, pi, procelectrons_G, q_e, qDiffraction_G, qDump_G, qDumpEnd_G, &
            qElectronFieldCoupling_G, qElectronsEvolve_G, qEquiXY_G, qFieldEvolve_G, qFilter, &
            qFixCharge_G, qFMesh_G, qFocussing_G, qhdf5_G, qInitWrLat_G, qMatchS_G, qMod_G, &
-           qAveraged_G, qOneD_G, qResume, qResume_G, qRndEj_G, qRndFj_G, qscaled_G, qsdds_G, &
+           qAveraged_G, qOneD_G, qQuiverSplit_G, qResume, qResume_G, qRndEj_G, qRndFj_G, &
+           qscaled_G, qsdds_G, &
            qSeparateStepFiles_G, &
            quad_fx, quad_fy, qUndEnds_G, qUseEmit_G, qWrite, s_chi_bar_G, s_Normalised_chi_G, &
            sBeta_G, seedend, sElGam_G, sElPX_G, sElPY_G, sElX_G, sElY_G, sElZ2_G, sfilt, &
@@ -399,6 +400,9 @@ logical   ::  qAveraged_G        ! Period-averaged (SVEA) mode? The field
 real(kind=wp) :: sLambdarPerCell_G  ! z2 mesh spacing in resonant wavelengths,
                                     ! averaged mode only (replaces
                                     ! nodesPerLambdar there)
+logical   ::  qQuiverSplit_G     ! Integrate the slow remainder of pperp, with
+                                 ! the undulator quiver carried in closed form?
+                                 ! See quiver.f90. Off by default.
 
 
 logical   ::  qDump_G            ! Dump data in case of crash?

@@ -1,0 +1,165 @@
+!> Unit tests for the analytic undulator quiver used by the split integrator.
+!!
+!! The split scheme integrates u = pperp - Pw(zbar) and reconstructs pperp by
+!! adding Pw back at each RK4 stage.  That only closes if getQuiverDrive is the
+!! exact zbar-derivative of getQuiverMomentum: any mismatch is a spurious force
+!! that RK4 cannot see, so it would not show up as an instability - it would
+!! quietly bias the momentum.  These tests pin that relationship down, with and
+!! without a taper, for each undulator type.
+!!
+!! No MPI, no field mesh, no globals beyond the two derived types.
+
+module testQuiver
+
+  use pFUnit
+  use puffin_kinds
+  use GlobalTypes, only: tUndulator, tFELFrame
+  use quiver, only: getQuiverAmps, getQuiverDrive, getQuiverMomentum, qQuiverStepOK
+
+  implicit none
+
+contains
+
+  !> A frame and undulator loosely modelled on the 1D CLARA deck.
+  subroutine makeUnd(und, frame, undType, grad)
+    type(tUndulator), intent(out) :: und
+    type(tFELFrame), intent(out) :: frame
+    character(*), intent(in) :: undType
+    real(kind=wp), intent(in) :: grad
+
+    frame%rho = 0.005_wp
+    frame%eta = 3.6296e-6_wp
+    frame%aw = 1.0121809_wp
+    frame%gamma_ref = 456.40_wp
+    frame%kappa = 0.22177_wp
+
+    und%undulator_type = undType
+    und%fx = 0.6_wp
+    und%fy = 0.8_wp
+    und%model_undulator_ends = .false.
+    und%z_start_undulator = 0.0_wp
+    und%z_end_undulator = 10.0_wp
+    und%n2col = 1.0_wp
+    und%n2col_initial = 1.0_wp
+    und%undulator_gradient = grad
+    und%z_taper_start = 0.0_wp
+
+  end subroutine makeUnd
+
+
+  !> Central difference of Pw must reproduce the drive. Second-order accurate,
+  !! so with delta = 1e-7 on a function whose scale of variation is 2*rho=1e-2,
+  !! agreement to ~1e-6 relative is the most this can assert.
+  subroutine checkDriveIsDerivative(undType, grad, sZ)
+    character(*), intent(in) :: undType
+    real(kind=wp), intent(in) :: grad, sZ
+
+    type(tUndulator) :: und
+    type(tFELFrame) :: frame
+    real(kind=wp) :: PwrP, PwiP, PwrM, PwiM, Fwr, Fwi
+    real(kind=wp), parameter :: delta = 1.0e-7_wp
+
+    call makeUnd(und, frame, undType, grad)
+
+    call getQuiverMomentum(sZ + delta, und, frame, PwrP, PwiP)
+    call getQuiverMomentum(sZ - delta, und, frame, PwrM, PwiM)
+    call getQuiverDrive(sZ, und, frame, Fwr, Fwi)
+
+    @AssertEqual((PwrP - PwrM) / (2.0_wp * delta), Fwr, 1.0e-4_wp)
+    @AssertEqual((PwiP - PwiM) / (2.0_wp * delta), Fwi, 1.0e-4_wp)
+
+  end subroutine checkDriveIsDerivative
+
+
+  @test
+  subroutine testDriveIsDerivativeOfMomentumHelical()
+    call checkDriveIsDerivative("helical", 0.0_wp, 0.037_wp)
+    call checkDriveIsDerivative("helical", 0.0_wp, 0.113_wp)
+  end subroutine testDriveIsDerivativeOfMomentumHelical
+
+
+  @test
+  subroutine testDriveIsDerivativeOfMomentumPlanepole()
+    call checkDriveIsDerivative("planepole", 0.0_wp, 0.037_wp)
+    call checkDriveIsDerivative("planepole", 0.0_wp, 0.113_wp)
+  end subroutine testDriveIsDerivativeOfMomentumPlanepole
+
+
+  @test
+  subroutine testDriveIsDerivativeOfMomentumElliptical()
+    call checkDriveIsDerivative("", 0.0_wp, 0.037_wp)
+    call checkDriveIsDerivative("", 0.0_wp, 0.113_wp)
+  end subroutine testDriveIsDerivativeOfMomentumElliptical
+
+
+  !> The taper term is the part most easily got wrong: alpha varies with zbar,
+  !! so Pw picks up a 2*rho*alpha' piece from integrating by parts that has to
+  !! cancel the alpha' term on differentiating back.
+  @test
+  subroutine testDriveIsDerivativeUnderTaper()
+    call checkDriveIsDerivative("planepole", 0.05_wp, 0.037_wp)
+    call checkDriveIsDerivative("helical", -0.05_wp, 0.113_wp)
+  end subroutine testDriveIsDerivativeUnderTaper
+
+
+  !> On-axis amplitudes must match the iUndMain_G branches of bfields.f90.
+  @test
+  subroutine testQuiverAmpsMatchFieldDescription()
+    type(tUndulator) :: und
+    type(tFELFrame) :: frame
+    real(kind=wp) :: cx, cy
+
+    call makeUnd(und, frame, "planepole", 0.0_wp)
+    call getQuiverAmps(und, cx, cy)
+    @AssertEqual(0.0_wp, cx, 1e-14_wp)
+    @AssertEqual(1.0_wp, cy, 1e-14_wp)
+
+    call makeUnd(und, frame, "curved", 0.0_wp)
+    call getQuiverAmps(und, cx, cy)
+    @AssertEqual(0.0_wp, cx, 1e-14_wp)
+    @AssertEqual(1.0_wp, cy, 1e-14_wp)
+
+    call makeUnd(und, frame, "helical", 0.0_wp)
+    call getQuiverAmps(und, cx, cy)
+    @AssertEqual(1.0_wp, cx, 1e-14_wp)
+    @AssertEqual(1.0_wp, cy, 1e-14_wp)
+
+    ! Variably-polarised default takes its amplitudes from fx, fy
+    call makeUnd(und, frame, "", 0.0_wp)
+    call getQuiverAmps(und, cx, cy)
+    @AssertEqual(0.6_wp, cx, 1e-14_wp)
+    @AssertEqual(0.8_wp, cy, 1e-14_wp)
+
+  end subroutine testQuiverAmpsMatchFieldDescription
+
+
+  !> The closed form is only valid in the main section, so a step that touches
+  !! either end ramp must decline to split.
+  @test
+  subroutine testStepDeclinedInEndRamps()
+    type(tUndulator) :: und
+    type(tFELFrame) :: frame
+
+    call makeUnd(und, frame, "planepole", 0.0_wp)
+
+    ! No ends modelled: everything is main section
+    @AssertTrue(qQuiverStepOK(0.0_wp, 0.002_wp, und))
+
+    und%model_undulator_ends = .true.
+    und%z_start_undulator = 0.1_wp
+    und%z_end_undulator = 5.0_wp
+
+    ! inside the start ramp
+    @AssertFalse(qQuiverStepOK(0.05_wp, 0.002_wp, und))
+    ! step would cross from the start ramp into the main section
+    @AssertFalse(qQuiverStepOK(0.099_wp, 0.002_wp, und))
+    ! well inside the main section
+    @AssertTrue(qQuiverStepOK(1.0_wp, 0.002_wp, und))
+    ! step would cross from the main section into the end ramp
+    @AssertFalse(qQuiverStepOK(4.999_wp, 0.002_wp, und))
+    ! past the end of the undulator
+    @AssertFalse(qQuiverStepOK(6.0_wp, 0.002_wp, und))
+
+  end subroutine testStepDeclinedInEndRamps
+
+end module testQuiver

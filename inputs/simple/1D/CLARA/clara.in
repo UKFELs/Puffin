@@ -19,6 +19,8 @@
 ! qMatchedBeam               if matching beam to undulator. If TRUE, electron pulse sigma and length in x,y,px,py are automatically calculated
 ! qDiffraction               if modelling diffraction
 ! qFilter                    TRUE to filter, if FALSE the low frequencies will just be ignored during diffraction
+! qQuiverSplit               TRUE to integrate only the slow part of p_perp, carrying the undulator quiver
+!                            analytically. Same equations, different integrator. See benchmark/convergence.
 ! q_noise                    Shot noise in initial electron beam distribution
 ! qDump                      Do you wish to dump data so the run can be resumed if anything goes wrong? .TRUE. for yes.
 ! qResume                    If resuming from dump files left from a previous run
@@ -92,6 +94,7 @@
  qFocussing             = .false. 
  qDiffraction           = .false.   
  qFilter                = .true.   
+ qQuiverSplit           = .false.
  q_noise                = .true.
  qUndEnds = .true.
  beam_file              = 'beam_file.in'     
