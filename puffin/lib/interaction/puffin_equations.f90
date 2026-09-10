@@ -7,7 +7,8 @@ module Equations
 
 use puffin_kinds, only: WP, IP
 use Globals, only: iUndStart_G, iUndEnd_G, iUndMain_G
-use rhs_vars, only: sInv2rho, sp2, sField4ElecReal, sField4ElecImag, bxu, byu, bzu
+use rhs_vars, only: sInv2rho, sp2, sField4ElecReal, sField4ElecImag, bxu, byu, bzu, &
+                    quiverDriveR, quiverDriveI
 use GlobalTypes, only: tUndulator, tFELFrame
 
 implicit none (type, external)
@@ -33,12 +34,17 @@ contains
     type(tFELFrame), intent(in) :: frame
 
 
+! quiverDriveR is the on-axis undulator drive already accounted for analytically
+! by the split integrator, and is zero on the unsplit path. Subtracting it here
+! turns this into d/dz of the slow remainder u = pperp - Pw(zbar).
+
 !$OMP WORKSHARE
     sdpr = sInv2rho * ( und%n2col * byu  &
                         - frame%eta * sp2 / frame%kappa**2 *    &
                         sField4ElecReal ) &
            + frame%kappa * spi / sgam * (1 + frame%eta * sp2) &
-               * und%n2col * bzu
+               * und%n2col * bzu &
+           - quiverDriveR
 !$OMP END WORKSHARE
 
   end subroutine dppdz_r_f
@@ -67,7 +73,8 @@ contains
            - frame%eta * sp2 / frame%kappa**2 * &
                         sField4ElecImag ) &
            - frame%kappa * spr / sgam * (1 + frame%eta * sp2) &
-               * und%n2col * bzu
+               * und%n2col * bzu &
+           - quiverDriveI
 !$OMP END WORKSHARE
 
   end subroutine dppdz_i_f
