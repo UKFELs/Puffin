@@ -345,11 +345,26 @@ falling back sensibly on files written before the metadata existed. The viewers 
   showing someone what the field looks like. It is documented as a view rather than data:
   the envelope is interpolated linearly, so it is exact only insofar as the envelope is slow.
 
-**Not executed.** There is no numpy or h5py on the development machine — the `puffin` conda
-environment has no Python at all — so the viz changes are syntax-checked, their
-attribute-reading paths exercised against real dumps with numpy stubbed, and the spectrum
-sign convention verified with a hand-rolled DFT. The array paths themselves have not been
-run. Worth an eye from someone with a working plotting environment.
+**Verified on real dumps.** `environment.yml` declared `python=3.11` but none of the packages
+the plotting utilities actually import, and the `puffin` environment had drifted to having no
+Python at all — so the viz code could not be run. `numpy`, `h5py` (pinned to the
+`mpi_openmpi` build, so it resolves against the solver's own parallel HDF5) and `bokeh` are
+now declared there and in `BUILD.md`. Installing them left `hdf5`, `openmpi`, `fftw` and
+`gfortran` untouched and all four ctest suites still pass, which matters because the e2e
+goldens are bit-exact.
+
+With that, both viewers run to completion on averaged and unaveraged output, and the numbers
+check out on real files:
+
+| | z2 mesh | spectrum range in w/wr | peak |
+| --- | --- | --- | --- |
+| averaged, 1 λr/cell | 956 | 0.501 to 1.500 — exactly the band | 1.0000 |
+| unaveraged, n = 12 | 10506 | 0.000 to 5.501 — Nyquist at 11 cells/λr | 1.0001 |
+
+Both peak on resonance, which a resonantly-seeded deck requires; all of the averaged run's
+spectral power falls inside the band; and `reconstruct_resolved` takes 956 envelope nodes to
+15281, preserving peak `|A|` while going from 5 zero crossings to 1909 — the carrier
+appearing, which is the point of it.
 
 ## W6 — Finish the accuracy map
 
