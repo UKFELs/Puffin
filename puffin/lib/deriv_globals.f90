@@ -24,6 +24,7 @@ public :: ata_G, c, chic_disp, chic_slip, chic_zbar, cmd_call_G, dadz_w, delmz, 
            frecvs, fx_G, fy_G, gExtEj_G, iCount, iFieldSeedType_G, iGam_CG, iGenHom_G, &
            iGloNumElectrons_G, iInputType_G, iIntWriteNthSteps, iNodesPerElement_G, &
            iNumberElectrons_G, iNumberNodes_G, ioutInfo_G, iPeriodic, iPX_CG, iPY_CG, iReadDist_G, &
+           iShapeOrder_G, &
            iReadH5_G, iReadH5Field_G, iReadMASP_G, iRedistStp_G, iRedNodesX_G, iRedNodesY_G, &
            iSimpleSeed_G, iStep, iTemporal, iUndEnd_G, iUndMain_G, iUndPlace_G, iUndStart_G, &
            iWriteNthSteps, iX_CG, iY_CG, iZ2_CG, kbnx_arr, kbny_arr, kx_G, kx_und_G, ky_G, &
@@ -403,6 +404,13 @@ real(kind=wp) :: sLambdarPerCell_G  ! z2 mesh spacing in resonant wavelengths,
 logical   ::  qQuiverSplit_G     ! Integrate the slow remainder of pperp, with
                                  ! the undulator quiver carried in closed form?
                                  ! See quiver.f90. Off by default.
+
+
+integer(kind=ip) :: iShapeOrder_G ! Degree of the B-spline used to deposit the
+                                  ! macroparticles onto the field mesh, and to
+                                  ! gather the field back. 1 = linear (default,
+                                  ! the historical scheme), 2 = quadratic,
+                                  ! 3 = cubic. See shape_functions.f90.
 
 
 logical   ::  qDump_G            ! Dump data in case of crash?

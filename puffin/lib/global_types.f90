@@ -419,6 +419,17 @@ type :: tSimulationFlags
                                              ! actually split - set per step by
                                              ! rk4par, false in the end ramps
 
+    ! Deposition
+    ! Defaulted, not merely documented: a type whose zero value would divert
+    ! getrhs onto the B-spline path is a trap for anything that builds a
+    ! tSimulationFlags directly rather than through the adapters - the unit
+    ! tests do exactly that.
+    integer(kind=ip) :: shape_order = 1_ip   ! iShapeOrder - B-spline degree used
+                                             ! to scatter the source onto the mesh
+                                             ! and gather the field back. 1 is the
+                                             ! historical linear deposition
+                                             ! (see shape_functions.f90)
+
     ! Mesh properties
     logical :: fixed_mesh                    ! qFMesh_G
     logical :: fixed_charge                  ! qFixCharge_G

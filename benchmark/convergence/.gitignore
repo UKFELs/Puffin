@@ -1,0 +1,2 @@
+# Scan working directories - one per run, holding the deck and its HDF5 dumps.
+run_*/
