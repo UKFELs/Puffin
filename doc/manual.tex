@@ -844,6 +844,10 @@ which reproduces the betatron wavenumbers of the unaveraged solver: $\kappa/\sqr
 
 The field arrays hold the envelope, so an array Fourier mode at $k_{\bar{z}_2}$ is physically at $k_{\bar{z}_2} - 1/2\rho$, and it is that physical wavenumber which enters the diffraction phase $\exp(i h (k_{\bar{x}}^2 + k_{\bar{y}}^2)/2k_{\bar{z}_2})$, the absorbing boundary, and the {\bf sFiltFrac} high-pass cutoff. Offsetting rather than freezing $k_{\bar{z}_2}$ at the carrier keeps diffraction frequency dependent across the envelope's band. The envelope's own $k_{\bar{z}_2} = 0$ mode is the carrier, and diffracts exactly as it would on a mesh that resolved it. The high-pass filter is then inert in averaged mode, since every representable mode lies within roughly $1/(2\times${\bf lambdarPerCell}$)$ of the carrier and so far above any sensible cutoff; that is the correct behaviour rather than a special case, as a cut placed at envelope $k_{\bar{z}_2} = 0$ would delete the carrier itself.
 
+\subsubsection{What averaged mode refuses}
+
+Averaged mode rejects, at setup, the inputs it cannot represent rather than running on them: resuming from a dump ({\bf qResume}), reading a field from HDF5 ({\bf field\_file}), and reading macroparticles from HDF5 or MASP. In each case the file holds the unaveraged representation - a field that resolves the carrier, or a $\bar{p}_\bot$ that still carries the quiver - and nothing in the file records which solver mode wrote it, so it would be read back as an envelope and a slow momentum and be quietly wrong. A seed whose {\bf freqf} lies outside the band the envelope mesh can hold, roughly $1 \pm 1/(2\times${\bf lambdarPerCell}$)$, is likewise an error; a beam energy oscillation or energy spread wider than that band warns, since it puts part of the beam outside the single carrier the mode carries.
+
 \subsection{Full Magnetic Undulator Field Analytic Description}
 
 \label{puff-undfields}

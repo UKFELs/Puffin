@@ -455,6 +455,97 @@ contains
   end subroutine testCarrierOffset
 
 
+  !> The mode's guards.  These exist because the alternative is being silently
+  !! wrong - a resolved field read into an envelope array, or a pperp that still
+  !! carries the quiver, both look perfectly plausible and are not.  A guard
+  !! that quietly stops firing is the same failure again, so each one is pinned
+  !! here.
+  @test
+  subroutine testAveragedGuards()
+
+    use Globals, only: qAveraged_G, sLambdarPerCell_G, iInputType_G, iGenHom_G, &
+                       iReadH5_G, iReadMASP_G, iFieldSeedType_G, iSimpleSeed_G, &
+                       iReadH5Field_G
+    use checks, only: chkAveraged
+
+    real(kind=wp) :: freqf(1), sSigE(1, 6), mag(1)
+    logical :: qOK
+
+    freqf = 1.0_wp
+    sSigE = 0.0_wp
+    mag = 0.0_wp
+
+    qAveraged_G = .true.
+    sLambdarPerCell_G = 1.0_wp
+    iInputType_G = iGenHom_G
+    iFieldSeedType_G = iSimpleSeed_G
+
+!   A plain helical setup passes
+
+    call chkAveraged(1.0_wp, 1.0_wp, .false., 64_ip, freqf, sSigE, mag, qOK)
+    @assertTrue(qOK)
+
+!   ...and every guard rejects on its own
+
+    call chkAveraged(1.0_wp, 1.0_wp, .true., 64_ip, freqf, sSigE, mag, qOK)
+    @assertFalse(qOK)
+
+!   A tiny z2 mesh only warns - it is the one way to model a single periodic
+!   cycle, and on few enough ranks it runs.
+
+    call chkAveraged(1.0_wp, 1.0_wp, .false., 2_ip, freqf, sSigE, mag, qOK)
+    @assertTrue(qOK)
+
+    iFieldSeedType_G = iReadH5Field_G
+    call chkAveraged(1.0_wp, 1.0_wp, .false., 64_ip, freqf, sSigE, mag, qOK)
+    @assertFalse(qOK)
+    iFieldSeedType_G = iSimpleSeed_G
+
+    iInputType_G = iReadH5_G
+    call chkAveraged(1.0_wp, 1.0_wp, .false., 64_ip, freqf, sSigE, mag, qOK)
+    @assertFalse(qOK)
+
+    iInputType_G = iReadMASP_G
+    call chkAveraged(1.0_wp, 1.0_wp, .false., 64_ip, freqf, sSigE, mag, qOK)
+    @assertFalse(qOK)
+    iInputType_G = iGenHom_G
+
+!   Elliptical polarisation needs two envelopes
+
+    call chkAveraged(0.6_wp, 0.8_wp, .false., 64_ip, freqf, sSigE, mag, qOK)
+    @assertFalse(qOK)
+
+!   lambdarPerCell must be positive, and sets the band
+
+    sLambdarPerCell_G = 0.0_wp
+    call chkAveraged(1.0_wp, 1.0_wp, .false., 64_ip, freqf, sSigE, mag, qOK)
+    @assertFalse(qOK)
+
+!   Band is 1 +/- 1/(2 lambdarPerCell): at 4 cells per wavelength that is
+!   +/- 0.125, so a seed at 1.3 is out and one at 1.1 is in.
+
+    sLambdarPerCell_G = 4.0_wp
+
+    freqf = 1.3_wp
+    call chkAveraged(1.0_wp, 1.0_wp, .false., 64_ip, freqf, sSigE, mag, qOK)
+    @assertFalse(qOK)
+
+    freqf = 1.1_wp
+    call chkAveraged(1.0_wp, 1.0_wp, .false., 64_ip, freqf, sSigE, mag, qOK)
+    @assertTrue(qOK)
+
+!   And none of it applies when the mode is off
+
+    freqf = 1.3_wp
+    qAveraged_G = .false.
+    call chkAveraged(0.6_wp, 0.8_wp, .true., 2_ip, freqf, sSigE, mag, qOK)
+    @assertTrue(qOK)
+
+    sLambdarPerCell_G = 1.0_wp
+
+  end subroutine testAveragedGuards
+
+
   @test
   subroutine testPolarisationSupport()
     ! helical, planar in x, planar in y
