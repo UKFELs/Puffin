@@ -31,7 +31,7 @@ USE Globals, only: NX_G, NBX_G, NY_G, NBY_G, NZ2_G, NBZ2_G, ntrnds_G, ntrndsi_G,
   tArrayZ, ioutInfo_G, qElectronsEvolve_G, qFieldEvolve_G, qElectronFieldCoupling_G, &
   qDiffraction_G, qFocussing_G, qDump_G, qResume_G, qMod_G, qOneD_G, qAveraged_G, &
   sLambdarPerCell_G
-use averaging, only: getAvgSeedFactor
+use averaging, only: getAvgSeedFactor, getAvgUndAmps, getAvgPolarisation
 USE simple_electron_gen, only: generate_simple_beam, shuntbeam
 USE gMPsFromDists, only: getmps
 use avwrite, only: getcurrnpts, linspace
@@ -1479,7 +1479,8 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
                    oscy(:)
 
   REAL(KIND=WP) :: lx, ly, z2sl, z2el
-  REAL(KIND=WP) :: magxl, magyl
+  REAL(KIND=WP) :: magxl, magyl, resFrac, cxs, cys, uMinusS, uPlusS, fpS
+  REAL(KIND=WP) :: aPlusSq, aMinusSq
 
   INTEGER(KIND=IP) :: ind1, ind2, ind3, gind, nz2l
 
@@ -1589,6 +1590,47 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
 
     magxl = 0.5_wp * (magx + magy) * getAvgSeedFactor("", fx_G, fy_G)
     magyl = magxl
+
+!     Warn if the seed's polarisation is not one the single envelope can hold.
+!
+!     One envelope fixes the ratio of the two helicity components of the field:
+!     A_perp = (u-/sqrt(fp)) Atilde exp(-i psi) + (u+/sqrt(fp)) Atilde* exp(+i psi),
+!     so |A-|/|A+| is pinned at u+/u-.  The seed decomposes as
+!     A+ = (i/2)(magx + magy), A- = (i/2)(magy - magx), and only its A+ is read.
+!
+!     For a planar undulator u+ = u- and the envelope carries both helicities,
+!     so a linearly polarised seed is reproduced exactly - nothing is lost.  For
+!     a helical undulator u+ = 0 and the opposite helicity cannot be represented
+!     at all: a linear seed then loses half its power, silently, which later
+!     looks like the averaged run simply having less field than the unaveraged
+!     one.  A circular seed on a planar undulator is wrong the other way, and
+!     would double the stored power.  reproduced below is what the envelope
+!     puts back as a fraction of what was asked for.
+
+    if ((abs(magx) + abs(magy)) > 0.0_wp) then
+
+      call getAvgUndAmps("", fx_G, fy_G, cxs, cys)
+      call getAvgPolarisation(cxs, cys, uMinusS, uPlusS, fpS)
+
+      aPlusSq = (0.5_wp * (magx + magy))**2
+      aMinusSq = (0.5_wp * (magy - magx))**2
+
+      if ((aPlusSq + aMinusSq) > 0.0_wp) then
+
+        resFrac = aPlusSq * (1.0_wp + (uPlusS / uMinusS)**2) &
+                  / (aPlusSq + aMinusSq)
+
+        if ((abs(resFrac - 1.0_wp) > 0.01_wp) .and. (tProcInfo_G%qRoot)) then
+          print*, "WARNING: this seed's polarisation is not one a single ", &
+                  "averaged-mode envelope can represent - it reproduces", &
+                  resFrac * 100.0_wp, "% of the seed power. A helical ", &
+                  "undulator wants sA0_X = sA0_Y (the resonant helicity); a ", &
+                  "planar one wants a linear seed, one of them zero."
+        end if
+
+      end if
+
+    end if
 
   else
 

@@ -49,7 +49,22 @@ once saturation sets in. `sBeta = 0` there on purpose - see the comment in `deck
 
 `compare3d.py` refuses to compare two runs that ended at different `zbar`: Puffin exits
 with status 0 when it gives up rearranging its parallel field, so a run that stopped
-early otherwise looks finished.
+early otherwise looks finished. It also reports the power ratio at the first write and
+warns if it is not 1 - any deviation there means the two runs did not start from the
+same field, and nothing after it is a comparison of the physics.
+
+The usual cause of that is the seed polarisation. One averaged-mode envelope fixes the
+ratio of the field's two helicity components at `u+/u-`, so a helical undulator needs
+`sA0_X = sA0_Y` (the resonant helicity) and a planar one needs a linear seed. Get it
+wrong on a helical undulator and the averaged run starts with exactly half the seed
+power - and the ratio then climbs from 0.5 towards 1 as the field grows, which is easy
+to mistake for a physics result. `run_compare3d.py` sets it from the undulator type, and
+Puffin itself warns at setup.
+
+Note neither `compare3d.py` nor the tables below filter power to the fundamental band, as
+the 1D `compare.py`'s `demod` does. For a planar undulator that makes total power a
+like-for-unlike comparison, since the unaveraged run radiates harmonics the averaged mode
+cannot carry; the 3D deck is helical, which has no harmonic content.
 
 ### What the 3D comparison showed (2026-09-12)
 

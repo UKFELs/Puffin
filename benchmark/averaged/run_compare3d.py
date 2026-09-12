@@ -49,8 +49,17 @@ def run(tag, und, aw, averaged, mesh, steps, nranks, periods, writes):
     os.makedirs(workdir)
     shutil.copy(os.path.join(HERE, "beam_file3d.in"),
                 os.path.join(workdir, "beam_file.in"))
-    shutil.copy(os.path.join(HERE, "seed_file3d.in"),
-                os.path.join(workdir, "seed_file.in"))
+    # The seed polarisation has to match the undulator, or the averaged run
+    # starts from a different field: it carries only the resonant helicity, so
+    # a linear seed on a helical undulator gives it exactly half the seed
+    # power, and every comparison downstream is measuring that.  Helical wants
+    # sA0_X = sA0_Y (circular, the resonant helicity); a planar undulator wants
+    # one of them zero.
+    with open(os.path.join(HERE, "seed_file3d.in")) as fh:
+        seed = fh.read()
+    seed = sub(seed, "sA0_Y", "0.001" if und == "helical" else "0.0")
+    with open(os.path.join(workdir, "seed_file.in"), "w") as fh:
+        fh.write(seed)
 
     with open(os.path.join(HERE, "deck3d.in")) as fh:
         deck = fh.read()

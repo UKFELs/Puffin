@@ -201,45 +201,57 @@ that averaged mode happens to reach sooner than the unaveraged solver does.
   and the unaveraged quiver phase are the same quantity across a module boundary. Measured on
   three helical modules against the same total length as one:
 
-  | lattice | power ratio avg/unavg |
-  | --- | --- |
-  | single module, 60 periods | 1.0495 |
-  | 3 modules back to back | 1.0496 |
-  | 3 modules + 2 drifts | 1.0537 |
+  | lattice | power ratio avg/unavg | bunching ratio |
+  | --- | --- | --- |
+  | single module, 60 periods | 1.0811 | 1.0139 |
+  | 3 modules back to back | 1.0812 | 1.0139 |
+  | 3 modules + 2 drifts | 1.0754 | 1.0113 |
 
-### Chicanes: a half-integer slip diverges, because it suppresses the FEL
+  (Re-measured with the resonant-helicity seed; the first numbers recorded here were a few
+  per cent off for the reason given under chicanes below.)
 
-Adding chicanes to that lattice moved the power ratio to 0.895, flat in `lambdarPerCell`
-(0.8952, 0.8957, 0.8976 at 1.0, 0.5, 0.25), so not a mesh effect. Scanning the slip, with
-dispersion off:
+### Chicanes work, at any slip
 
-| `chic_slip` (λr) | P unaveraged | P ratio | bunching ratio |
-| --- | --- | --- | --- |
-| 0.0 | 4.141e-1 | 1.0537 | 1.0231 |
-| 0.5 | **2.931e-2** | **0.5409** | 1.0189 |
-| 1.0 | 4.138e-1 | 1.0537 | 1.0231 |
-| 1.5 | **2.934e-2** | **0.5415** | 1.0189 |
-| 2.0 | 4.136e-1 | 1.0537 | 1.0231 |
+An earlier version of this section reported that a half-integer chicane slip made the power
+ratio collapse to 0.54, and explained it as near-cancellation amplifying the model
+difference. **That was an artefact of the test, not a property of the mode.** The test deck's
+seed (`benchmark/averaged/seed_file.in`) is linearly polarised, and the lattice used a
+*helical* undulator. One envelope pins the ratio of the field's two helicity components at
+`u+/u-`, which is zero for helical, so the opposite helicity cannot be represented at all and
+half a linear seed's power is dropped - correctly, it does not couple to the beam, but
+silently. The harness for the 1D study sets `sA0_Y` to match the undulator for exactly this
+reason; the ad-hoc lattice runs did not.
 
-`R56` on its own is clean too: 1.0545 at `chic_slip = 0`, `R56 = 0.02`.
+The giveaway was in the data and went unnoticed: the power ratio was already exactly 0.5000
+at zbar = 0, before either run had done anything. With the resonant-helicity seed:
 
-**The response is exactly periodic in one radiation wavelength**, so what matters is the
-slip modulo λr - a π phase flip - and not whether the slip is a whole number. That
-distinction matters because the *total* slippage is never a whole number here anyway: see
-the drift note below. An earlier version of this section called the effect "fractional
-versus integer slip", which was the wrong axis.
+| `chic_slip` (λr) | P unaveraged | P avg | P ratio | bunching ratio | ratio at zbar = 0 |
+| --- | --- | --- | --- | --- | --- |
+| 0.0 | 1.168e+0 | 1.256e+0 | 1.0754 | 1.0113 | 1.0000 |
+| 0.5 | 6.075e-2 | 6.016e-2 | **0.9905** | 1.0163 | 1.0000 |
+| 1.0 | 1.167e+0 | 1.255e+0 | 1.0754 | 1.0113 | 1.0000 |
 
-The second column says why the half-integer cases diverge. Half a wavelength reverses the
-sign of the coupling, which is what a phase shifter is for, and it knocks the **unaveraged**
-run's own power down 14x. What is left is a small residual of large cancelling terms, and the
-~2% coupling difference between the two solvers is amplified into a factor of two there.
-Bunching still agrees to 1.9% in every row, so the beam dynamics are fine; it is the radiated
-field that is a difference of near-cancelling contributions.
+The half-wavelength slip agrees to **1%** - better than the in-phase cases do. It looked
+catastrophic before because that configuration de-phases the beam on purpose and keeps the
+field near its seeded level, so the dropped half of the seed dominated the total; in the
+in-phase cases the field grew ~30x and swamped it, which is why those rows looked fine.
+Dispersion is likewise clean.
 
-So: not a bug, but a real limitation worth stating. **Any regime that works by near
-cancellation - a phase shifter, a deliberately de-phased section - amplifies the model
-difference, and averaged mode should not be trusted quantitatively there.** The same caution
-applies wherever gain is suppressed rather than exponential.
+**So there is no chicane limitation, and the claim that near-cancellation regimes amplify the
+model difference is withdrawn - it was never supported by anything but this artefact.** The
+arithmetic never worked either: a 2% coupling difference propagating through a 3.8x amplitude
+suppression gives of order 10%, not a factor of two.
+
+Two guards now exist so this cannot recur silently:
+
+- `getSeed` warns when the seed's polarisation is not one a single envelope can hold, naming
+  the fraction of the seed power it actually reproduces. A linear seed on a helical undulator
+  reports 50%; a linear seed on a planar one is exact and stays quiet, because there
+  `u+ = u-` and the envelope carries both helicities.
+- `compare3d.py` reports the power ratio at the first write and warns if it is not 1, since
+  any deviation there means the two runs did not start from the same field and nothing
+  downstream is a comparison of the physics. `run_compare3d.py` sets the seed polarisation
+  from the undulator type, as the 1D harness does.
 
 ### Drifts do not slip a whole number of radiation wavelengths
 
@@ -472,10 +484,11 @@ Honest limits of what has been shown, rather than open tasks:
   1D README already warns that such a deck cannot discriminate cell sizes; the same applies
   to the 3D one. SASE, sharp current gradients or a short bunch would be far more demanding,
   and would exercise the coherent spontaneous emission that averaging discards.
-- **Near-cancellation regimes amplify the model difference.** The half-integer chicane slip
-  is the clean example: where the unaveraged run's own power is suppressed 14x, a 2% coupling
-  difference becomes a factor of two. Anywhere gain is suppressed rather than exponential
-  deserves the same suspicion.
+- **The seed has to be a polarisation one envelope can hold.** Not a limit so much as a trap,
+  and the one that produced the only wrong finding in this programme: a linear seed on a
+  helical undulator silently loses half its power, because `u+ = 0` there and the opposite
+  helicity cannot be represented. `getSeed` warns now, and `compare3d.py` checks the ratio at
+  zbar = 0. A comparison that does not start at 1.0 is not a comparison.
 - **Undulator ends are untested in 3D and across modules.** `getAvgEnvelope` uses the `by`
   ramp for both components, while the helical `bx` ramp has a different shape — a phase
   difference that would recur at every module boundary with `qUndEnds` on, rather than once.

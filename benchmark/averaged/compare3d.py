@@ -10,7 +10,14 @@ magnitude apart, but whether the same physics comes out.  So this compares
 mesh-independent observables instead.
 
   power      total radiated power, sum(/power) * dz2, so the two z2 meshes
-             are comparable.  The headline number.
+             are comparable.  The headline number, with one caveat: it is the
+             total over every frequency the mesh resolves, and is NOT filtered
+             to the fundamental band the way the 1D compare.py's `demod` is.
+             For a planar undulator the unaveraged run radiates at the odd
+             harmonics and the averaged mode carries one band, so some of the
+             gap is a like-for-unlike comparison - see the 1D README's
+             harmonic decomposition.  Helical has no harmonic content, which
+             is why the 3D deck is helical.
   bunching   current-weighted mean of /bunchingFundamental.  In the exponential
              regime this is the most sensitive measure of the coupling, and it
              is not diluted by the seed the way power is early on.
@@ -165,7 +172,17 @@ def metrics(plain, avg):
             "rearranging the parallel field); there is nothing to compare."
             % (plain, zp, avg, za))
 
+    k0p, k0a = last_index(plain, "integrated")[0], last_index(avg, "integrated")[0]
+
     res = {
+        # The first write, before either run has done anything. This has to be
+        # 1.0: if it is not, the two runs did not start from the same field and
+        # every other number here is measuring that instead of the physics.
+        # The way to get it wrong is a seed whose polarisation does not match
+        # the undulator - averaged mode carries only the resonant helicity, so
+        # a linear seed on a helical undulator starts it at exactly half the
+        # power, and the ratio then drifts from 0.5 to 1 as the field grows.
+        "power at z=0": (total_power(plain, k0p), total_power(avg, k0a)),
         "power": (total_power(plain, kp), total_power(avg, ka)),
         "bunching": (weighted(plain, kp, "/bunchingFundamental"),
                      weighted(avg, ka, "/bunchingFundamental")),
@@ -215,7 +232,7 @@ def main():
     res, series = metrics(plain, avg)
 
     print("  %-16s %-13s %-13s %s" % ("", "unaveraged", "averaged", "avg/unavg"))
-    for name in ("power", "bunching", "field sigma_x", "field sigma_y",
+    for name in ("power at z=0", "power", "bunching", "field sigma_x", "field sigma_y",
                  "beam sigma_x", "beam sigma_y"):
         if name not in res:
             continue
@@ -225,6 +242,16 @@ def main():
     for name in ("profile L2 x", "profile L2 y"):
         if name in res:
             print("  %-16s %-13s %-13.4e" % (name, "-", res[name][1]))
+
+    p0, a0 = res["power at z=0"]
+    if p0 and abs(a0 / p0 - 1.0) > 1e-3:
+        print()
+        print("  WARNING: the two runs start from different field power "
+              "(ratio %.4f)." % (a0 / p0))
+        print("  Nothing below is a comparison of the physics until that is 1.")
+        print("  Most likely the seed polarisation does not match the undulator:")
+        print("  averaged mode carries only the resonant helicity, so a linear")
+        print("  seed on a helical undulator starts it at half the power.")
 
     if series:
         print()

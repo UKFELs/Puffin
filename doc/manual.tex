@@ -878,7 +878,9 @@ Warned about, but allowed to run:
 
 \end{itemize}
 
-Two further limits are not checked, because they cannot be detected from the input: averaged and unaveraged results are not expected to agree once a run saturates, and any regime that works by near cancellation - a chicane slip of half a radiation wavelength used as a phase shifter, or a deliberately de-phased section - amplifies the difference between the two models, because what is left is a small residual of large cancelling terms. Note that a {\tt DR} drift is specified in {\it undulator} periods and slips the beam by only $1/(1+\bar{a}_u^2)$ radiation wavelengths per period, since there is no quiver to slow $v_z$; so the slippage accumulated through a lattice is not a whole number of wavelengths, and it is the slip modulo one wavelength that matters here rather than whether any single number is an integer.
+One further limit is not checked, because it cannot be detected from the input: averaged and unaveraged results are not expected to agree once a run saturates.
+
+A seed's polarisation, on the other hand, does need care. One envelope fixes the ratio of the radiation's two helicity components at $u_+/u_-$, so the seed must be a polarisation the envelope can hold. For a planar undulator $u_+ = u_-$ and a linearly polarised seed is reproduced exactly; for a helical one $u_+ = 0$, the opposite helicity cannot be represented at all, and a linear seed silently loses half its power - correctly, in that the dropped component does not couple to the beam, but surprisingly if one is comparing total field energy against an unaveraged run. Puffin warns at setup when the seed's polarisation is not one the envelope can reproduce, naming the fraction of the seed power that survives.
 
 \subsubsection{What the output files say about the mode}
 
