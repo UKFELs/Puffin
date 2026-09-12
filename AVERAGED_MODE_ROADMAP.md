@@ -5,12 +5,15 @@
 The period-averaged (SVEA) solver mode, `qAveraged`, stores the radiation as a slowly
 varying envelope about the resonant carrier and averages the electron equations over an
 undulator period. It exists to make runs cheap where averaging is valid: on the 1D
-validation deck it is 9.3x faster than the unaveraged solver at its own settings, and
-closer to the converged answer.
+validation deck it is 9.3x faster than the unaveraged solver at its own settings, and on
+the 3D one 17x — rising to 126x against the mesh the unaveraged solver actually needs to
+converge. In both cases it is also closer to the converged answer than the unaveraged
+solver is at its own defaults.
 
-**Current state:** 1D only, helical or linearly polarised undulators only, single band.
-Implemented and validated on `feature/period-averaged`. The default (unaveraged) path is
-byte-identical to `dev`.
+**Current state:** 1D and 3D, helical or linearly polarised undulators only, single band.
+The 1D mode is on `feature/period-averaged` and in review as UKFELs/Puffin#131; 3D and the
+compatibility guards are on `feature/averaged-3d`, branched from it. The default
+(unaveraged) path is byte-identical to `dev` throughout.
 
 **Governing constraint:** this is a *mode*, never a replacement. The unaveraged solver is
 Puffin's reason to exist; every change here must leave it bit-exact.
@@ -24,13 +27,21 @@ section of `doc/manual.tex`. The accuracy map and its harness are in `benchmark/
 
 | # | Workstream | Status | Depends on | Issue |
 |---|------------|--------|-----------|-------|
-| W1 | Land the 1D mode on `dev` | Ready to submit — decision needed | — | — |
-| W2 | 3D | Implemented — validated against the unaveraged solver | — | — |
+| W1 | Land the 1D mode on `dev` | **In review** — PR #131 open against `dev` | — | #131 |
+| W2 | 3D | **Done** — validated against the unaveraged solver | — | — |
 | W3 | Multiple field arrays (elliptical + harmonics) | Not started | #107 (ideally) | #129 |
-| W4 | Compatibility: periodic mesh, lattices, restart | Done, bar one `dev` bug | — | — |
-| W5 | Diagnostics, dump metadata and viz tools | Not started | W2 for 3D views | — |
+| W4 | Compatibility: periodic mesh, lattices, restart | **Done** — guards in, one `dev` bug left open | — | — |
+| W5 | Diagnostics, dump metadata and viz tools | Not started — **next** | W2 for 3D views | — |
 | W6 | Finish the accuracy map | Partly done | W3 for harmonics | #130 |
-| W7 | Housekeeping: buffer bug, benchmarks, defaults | Partly done | — | #128 |
+| W7 | Housekeeping: buffer bug, benchmarks, defaults | Partly done — on hold | — | #128 |
+
+Raised by this work and not yet filed:
+
+| what | where | who owns it |
+|---|---|---|
+| The `qUnique = .false.` duplicated-mesh path is broken, in both solver modes | W4 | `dev` — pre-existing |
+| `NBZ2_G` sizes the z2 absorbing boundary in nodes, not length | W2, W7 | with W7 |
+| A failed field rearrangement exits with status 0 | W7 | with W7 |
 
 ---
 
@@ -51,13 +62,16 @@ Anything below must preserve these, and they are cheap to check:
 
 ## W1 — Land the 1D mode
 
-Everything for a PR against `dev` is in place: opt-in, default bit-exact, unit and e2e suites
-passing, manual and benchmark documentation written. The open ~1% planar residual is
-documented and tracked (#130, #129) rather than unknown.
+**Submitted, and open for review: UKFELs/Puffin#131 against `dev`.** The decision recorded
+here — submit now rather than hold for the ~1% planar residual — was taken that way, on the
+grounds that the diff was already 22 files and that later work should build on a merged base.
+The residual stays documented and tracked (#130, #129) rather than unknown.
 
-**Decision:** submit now and treat 3D and the rest as follow-ups, or hold the PR until the
-residual is understood. Submitting now keeps the diff reviewable — it is already 22 files —
-and lets 3D build on a merged base.
+Everything else it needed is in place: opt-in, default bit-exact, unit and e2e suites passing,
+manual and benchmark documentation written.
+
+W2 and W4 are built on the PR branch rather than on `dev`, so they will need a rebase if #131
+picks up review changes.
 
 ## W2 — 3D
 
@@ -83,18 +97,19 @@ Done. `chkAveraged` no longer rejects 3D, and the two pieces of physics 3D needs
   `doc/manual.tex`.
 - **Tests** — `testAveraging.pf` gained the `kbeta` checks above, the focusing signs, the
   carrier offset, and the `getrhs` energy balance through the 3D path (`getInterps_3D`,
-  `getFFelecs_3D`, `getSource_3D`) for all three undulator types. 27 unit tests; all four
-  ctest suites still pass and the default path is untouched.
-- **Still to do:** a committed 3D comparison deck and harness. `benchmark/averaged/compare.py`
-  is 1D-only; the numbers below came from an ad-hoc 3D deck driven by hand. Turning that into
-  a `run_compare3d.py` alongside the 1D one — integrated power, bunching, and a transverse
-  profile — is what would make these reproducible, and is the natural next step here.
+  `getFFelecs_3D`, `getSource_3D`) for all three undulator types, and the W4 guards. 28 unit
+  tests; all four ctest suites still pass and the default path is untouched.
+- **Harness** — `benchmark/averaged/run_compare3d.py` and `compare3d.py`, on `deck3d.in` /
+  `beam_file3d.in` / `seed_file3d.in`, so every number below is reproducible. It compares
+  mesh-independent observables rather than differencing fields node by node as the 1D
+  `compare.py` does, because the two runs' z2 meshes differ by an order of magnitude.
 
 ### Validated against the unaveraged solver
 
-A 3D seeded deck, rho = 0.005, aw = 1.012, helical and plane-pole, 41x41x(2.0 -> 12.8)
-mesh, matched beam, averaged at `lambdarPerCell = 1` and `stepsPerPeriod = 2` against the
-unaveraged solver at `nodesPerLambdar = 12` and `stepsPerPeriod = 30`:
+First, the two new pieces of physics in isolation. These were measured by hand on a variant
+of `deck3d.in` — the same mesh and beam, but with the coupling or the diffraction switched
+off to leave one effect at a time, which `run_compare3d.py` does not do for you. Averaged at
+`lambdarPerCell = 1` and `stepsPerPeriod = 2` against `nodesPerLambdar = 12` and 30 steps:
 
 | what | measure | agreement |
 | --- | --- | --- |
@@ -160,7 +175,10 @@ envelope. Doing them as one generalisation is much cheaper than twice.
 
 ## W4 — Compatibility
 
-Guards are in and unit tested; two findings are open, one of them not ours.
+Done. Guards are in and unit tested, and the three compatibility questions the roadmap
+raised — periodic meshes, lattices, restart and HDF5 input — are each answered below. One
+finding is left open, and it is not ours: a `dev` bug in the parallel field decomposition
+that averaged mode happens to reach sooner than the unaveraged solver does.
 
 ### Done
 
@@ -253,7 +271,9 @@ that the unaveraged e2e goldens depend on.
 
 - **Write averaged-mode metadata into the dumps** (`qAveraged`, `lambdarPerCell`, carrier
   wavenumber). Cheap, and it is what lets every downstream tool adapt instead of guessing.
-  Worth doing early, independently of the rest.
+  Worth doing early, independently of the rest — and it is now what stands between W4's
+  blanket rejection of `qResume` and being able to resume an averaged run from an averaged
+  dump. The rejection exists only because nothing in the file says which mode wrote it.
 - **Viz tools** (`utilities/pyPlotting/`: `puffin_viz_data.py`, `viewField1D_bokeh.py`,
   `viewField3D_bokeh.py`, player and theme). In averaged mode the field arrays hold an
   envelope: there is no carrier oscillation to plot, spectra are about the carrier rather
@@ -276,27 +296,72 @@ that the unaveraged e2e goldens depend on.
 
 ## W7 — Housekeeping
 
+**On hold** — deliberately not picked up, pending a decision on the `calcBuff` item. W2 and
+W4 each turned up another member of the same family, so they are collected here rather than
+fixed in passing.
+
 - **#128** — `calcBuff` rounds the field buffer short; fixed in averaged mode only, because
-  fixing it generally shifts e2e goldens at the 1e-10 level. Also: a failed rearrangement
-  exits with status 0.
-- **`NBZ2_G`** — the z2 absorbing boundary is a fixed node count, so it covers ~10x more of
-  the field on a coarse envelope mesh. See the note under W2 for the measurement.
+  fixing it generally shifts e2e goldens at the 1e-10 level.
+- **`NBZ2_G`** — the z2 absorbing boundary is sized in *nodes*, not length, so it covers
+  ~10x more of a coarse envelope mesh than of an unaveraged one. Measured under W2: ~6% of
+  the field absorbed over 20 periods against 0.45% unaveraged. Same family as #128 — a node
+  count that does not survive mesh coarsening. Until it is settled, 3D averaged runs want
+  `sBeta = 0`, which is what `deck3d.in` does.
 - **A failed rearrangement exits 0**, so a half-finished run is indistinguishable from a
-  finished one except by its last write's `zbarTotal`. `benchmark/averaged/compare3d.py`
-  refuses to compare runs that ended at different zbar for exactly this reason; the fix is
-  to exit non-zero.
-- **The `qUnique = .false.` path** — see W4. Pre-existing, affects both solver modes.
+  finished one except by its last write's `zbarTotal` — which is how one bogus comparison
+  got made during W4 before it was caught. `benchmark/averaged/compare3d.py` now refuses to
+  compare runs that ended at different zbar; the real fix is to exit non-zero.
+- **The `qUnique = .false.` path** — see W4. Pre-existing, affects both solver modes, and
+  bigger than the rest of this list; probably its own issue against `dev`.
 - **Benchmarks and defaults.** Add an averaged case to the benchmark suite. The cheapest
-  converged setting on the validation deck is `stepsPerPeriod = 1`, `lambdarPerCell = 1`.
+  converged setting on the 1D validation deck is `stepsPerPeriod = 1`, `lambdarPerCell = 1`;
+  the 3D deck converges at `stepsPerPeriod = 2`, `lambdarPerCell = 1`.
 
 ---
 
-## Suggested order
+## Where things stand
 
-1. **W1** — land 1D, so later work builds on a merged base.
-2. **W7 + the metadata item from W5** — cheap, and they unblock coarse meshes and the viz work.
-3. **W2** — 3D. *(done)*
-4. **W4** *(guards done; two findings open)* — compatibility and guards; mostly tests, and they protect users from silent wrongness.
-5. **#107, then W3** — multiple field arrays: elliptical first (simpler, two components), then
-   harmonic bands.
-6. **W6** — close out the accuracy map, once W3 makes the harmonic question answerable.
+Done, in order of landing:
+
+1. **W1** — 1D mode written, validated and submitted as #131. In review.
+2. **W2** — 3D. Averaged natural focusing and the diffraction carrier offset, validated
+   against the unaveraged solver on focusing (2e-5), diffraction (1.2%) and a full mesh-
+   refinement scan showing the residual converging away. 17x faster than the unaveraged
+   solver at its own default mesh, 126x against the mesh it needs to converge.
+3. **W4** — compatibility. Guards against the silently-wrong inputs; periodic meshes,
+   multi-module lattices, drifts and chicanes each checked against the unaveraged solver.
+
+Not done, in suggested order:
+
+4. **W5** — diagnostics, dump metadata and viz. Promoted: the metadata item is small, it is
+   what lets the viz tools stop guessing, and it is the thing that would let W4 relax its
+   `qResume` rejection into a conversion. 3D views are now worth having, since W2 is done.
+5. **W7** — housekeeping. On hold pending a decision on the `calcBuff` rounding; the
+   `NBZ2_G` and exit-status items found during W2 and W4 are parked with it.
+6. **#107, then W3** — multiple field arrays: elliptical first (simpler, two components),
+   then harmonic bands.
+7. **W6** — close out the accuracy map, once W3 makes the harmonic question answerable.
+
+Separately, and not part of this programme: **the `qUnique = .false.` duplicated-mesh path
+is broken on `dev`** (see W4). It affects the unaveraged solver too, and it is what stands
+between averaged mode and a single-cycle periodic run on more than a few ranks. Best raised
+as its own issue against `dev` rather than carried here, since fixing it means changing
+shared parallel code that the unaveraged e2e goldens depend on.
+
+## What would change the picture
+
+Honest limits of what has been shown, rather than open tasks:
+
+- **Every 3D validation is helical or plane-pole, seeded, noise-free, and flat-top.** The
+  1D README already warns that such a deck cannot discriminate cell sizes; the same applies
+  to the 3D one. SASE, sharp current gradients or a short bunch would be far more demanding,
+  and would exercise the coherent spontaneous emission that averaging discards.
+- **Near-cancellation regimes amplify the model difference.** The fractional-slip chicane
+  result is the clean example: where the unaveraged run's own power is suppressed 14x, a 2%
+  coupling difference becomes a factor of two. Anywhere gain is suppressed rather than
+  exponential deserves the same suspicion.
+- **Undulator ends are untested in 3D and across modules.** `getAvgEnvelope` uses the `by`
+  ramp for both components, while the helical `bx` ramp has a different shape — a phase
+  difference that would recur at every module boundary with `qUndEnds` on, rather than once.
+- **Saturation is not validated, and should not be expected to agree.** The 3D deck is run
+  far enough to start rolling over precisely so the divergence is visible in the series.
