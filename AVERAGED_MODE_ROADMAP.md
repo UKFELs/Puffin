@@ -39,7 +39,7 @@ Raised by this work and not yet filed:
 
 | what | where | who owns it |
 |---|---|---|
-| The `qUnique = .false.` duplicated-mesh path is broken, in both solver modes — includes a live heap overflow in `UpdateGlobalPow` | W4 | `dev` — pre-existing |
+| The `qUnique = .false.` duplicated-mesh path is broken, in both solver modes — fails to integrate, and corrupts `/power` | W4 | `dev` — pre-existing |
 | `NBZ2_G` sizes the z2 absorbing boundary in nodes, not length | W2, W7 | with W7 |
 | A failed field rearrangement exits with status 0 | W7 | with W7 |
 
@@ -309,38 +309,44 @@ ez2_GGG = 1          ! should be ez2_act
 The electron-based branch immediately above sets `fz2_GGG = fz2_act` and `ez2_GGG = ez2_act`.
 Here the first line happens to be right and the second is not.
 
-**Why it is invisible.** `fz2_GGG`/`ez2_GGG` are read in only two places, and both are
-written so that `ez2_GGG = 1` masks a second defect rather than exposing it:
+**Where it bites, and where it does not.** `ez2_GGG` is reassigned later, at
+`para_field.f90:1940` (`ez2_GGG = ac_ar(tProcInfo_G%size, 3)`) inside `calcBuff`, after the
+buffer work. So it is only the window *before* that which matters, and the damage is done
+entirely inside `getFStEnd` itself:
 
-- The non-unique branch takes `fz2 = fz2_GGG`, `ez2 = ez2_GGG`, `mainlen = n_act_g`. So the
+- The non-unique branch takes `fz2 = fz2_GGG`, `ez2 = ez2_GGG`, `mainlen = n_act_g` — so the
   rank is told it owns node 1 only, while `mainlen` says it owns the whole mesh.
-- `UpdateGlobalPow` sizes `powi` as `ez2_GGG - fz2_GGG + 1` and, on the non-unique path,
-  does `powi = A_local` where `A_local` has `mainlen` elements. With `ez2_GGG = 1` that
-  copies `mainlen` doubles into a one-element allocation — a live heap overflow today,
-  every time `/power` is written while `qUnique` is false.
+- `calcBuff` then derives the buffer from that `ez2`: on a periodic mesh the last rank does
+  `bz2 = ez2 + bz2PB`, which is computed from 1 instead of `NZ2_G`.
 
-Several nearby gather counts are also written `(fz2_GGG - ez2_GGG + 1)` rather than the other
-way round — `para_field.f90:615` and `:725`, against `:622` and `:697` which have it right.
-While `fz2_GGG == ez2_GGG == 1` the two spellings are numerically identical, so the reversal
-cannot bite. `:615` is in `UpdateGlobalField`, which is neither public nor called from
-anywhere — dead code.
+Measured, instrumenting the bound check on a 7-node periodic mesh at 4 ranks:
+`fz2 = 1, ez2 = 5, bz2 = 5, nz2_G = 7`, with particles sitting at node 6 — legitimately inside
+a periodic mesh, flagged out of bounds because the region stops short. Every retry re-derives
+the same region, so the three emergency rearrangements cannot help, and it stops.
 
-**What was measured, and what was not.** Instrumenting the bound check gives, on a 7-node
-periodic mesh at 4 ranks, `fz2 = 1, ez2 = 5, bz2 = 5, nz2_G = 7` with particles sitting at
-node 6 — legitimately inside a periodic mesh, flagged out of bounds because the region stops
-short. Every retry re-derives the same region, so the three emergency rearrangements cannot
-help, and it stops. Setting `ez2_GGG = ez2_act` changes the failure to a segfault inside
-`free()`, which says that value really does drive the behaviour, **but the site of that
-corruption was not isolated** — it is not `:615`, which is dead, and `UpdateGlobalPow`'s
-overflow gets *better* with the fix, not worse. Something further downstream is also wrong.
+**The output is wrong too, not just the run.** On the same 4-rank run, the initial `/power`
+has only 3 of its 7 nodes nonzero and sums to 43% of what the same deck gives at 2 ranks
+(1.885e15 against 4.398e15). So the duplicated-mesh path produces corrupt diagnostics as well
+as failing to integrate.
 
-So: at least one root defect, one live heap overflow it masks, a family of reversed counts
-waiting behind it, and an unidentified third problem. The path has evidently never run with
-`ez2_GGG /= 1`. That is a piece of work on the parallel decomposition, not a one-liner, and
-it belongs to `dev` rather than to this branch — it is what stands between averaged mode and
-a single-cycle periodic run on more than a few ranks. Until then, periodic averaged runs need
-`nz2 >= 2 * nprocs`. Left here rather than fixed because it changes shared parallel code the
-unaveraged e2e goldens depend on.
+**Two earlier claims here were wrong and are withdrawn.** (i) There is no live heap overflow in
+`UpdateGlobalPow`: by the time it runs, `ez2_GGG` has been repaired, and on the working path it
+is `1..NZ2_G` with `powi` correctly sized — verified by instrumenting the allocation. (ii) The
+reversed gather counts at `:615` and `:725` — `(fz2_GGG - ez2_GGG + 1)` against `:622` and
+`:697`, which have it the right way round — are latent, not live: `MPI_ALLGATHERV` places data
+by `recvcounts`/`displs` rather than by the length of the section handed to it, and `powi` is
+correctly sized, so a negative section length is inert. `:615` is in `UpdateGlobalField`, which
+is neither public nor called from anywhere — dead code. Both are still worth fixing, but
+neither is doing damage today.
+
+What is left, then: one root defect with a measured consequence, corrupted power output on the
+same path, and an unidentified further problem — setting `ez2_GGG = ez2_act` turns the clean
+stop into a segfault inside `free()`, and that site was not isolated. The path has evidently
+never run with `ez2_GGG /= 1`. That is a piece of work on the parallel decomposition, not a
+one-liner, and it belongs to `dev` rather than to this branch — it is what stands between
+averaged mode and a single-cycle periodic run on more than a few ranks. Until then, periodic
+averaged runs need `nz2 >= 2 * nprocs`. Left here rather than fixed because it changes shared
+parallel code the unaveraged e2e goldens depend on.
 
 ## W5 — Diagnostics, metadata and viz
 
