@@ -90,30 +90,14 @@ def temporal_profile(xf, yf, attrs, u=None):
 
 
 def spectral_profile(xf, yf, attrs):
-    """Normalised spectral intensity and ω/ωr axis."""
-    nz2  = int(attrs['nZ2'])
-    dz2  = float(attrs['sLengthOfElmZ2'])
-    rho  = float(attrs['rho'])
-    lenz2 = (nz2 - 1) * dz2
-    fs    = nz2 / lenz2
-    npts  = int(np.ceil((nz2 + 1) / 2))
+    """Normalised spectral intensity and ω/ωr axis.
 
-    ftx = np.fft.fft(xf)
-    fty = np.fft.fft(yf)
-
-    px = np.abs(ftx[:npts])**2
-    py = np.abs(fty[:npts])**2
-    for p in (px, py):
-        if nz2 % 2 == 1:
-            p[1:] *= 2
-        else:
-            p[1:-1] *= 2
-
-    spec = px + py
-    spec_norm = spec / np.max(spec) if np.max(spec) > 0 else spec
-
-    omega_axis = np.arange(npts) * (fs / nz2) * (4 * np.pi * rho)
-    return omega_axis, spec_norm
+    Delegates to puffin_viz_data.spectrum, which handles both solver modes:
+    unaveraged the arrays resolve the carrier and each component has its own
+    real spectrum, while in averaged mode they are the two halves of one
+    complex envelope whose frequencies are offsets from the carrier.
+    """
+    return pvd.spectrum(xf, yf, attrs)
 
 
 def load_electrons(path, attrs):
@@ -435,7 +419,7 @@ i_per_p = _derive_i_per_p()
 # right axis is a Range1d that honours the values pushed to it, while a
 # DataRange1d re-derives its own limits client-side. Mixing the two lets the
 # axes disagree, which would make the twin-axis reading wrong.
-p_intens = figure(title='Temporal profile  (cycle-avg)',
+p_intens = figure(title='Temporal profile  (cycle-avg, %s)' % pvd.mode_label(attrs0),
                   x_axis_label=UNITS.z2_label,
                   y_axis_label=UNITS.intens_label,
                   y_range=Range1d(start=0.0, end=1.0),
@@ -472,7 +456,12 @@ _spec_ref = Span(location=1.0, dimension='height', line_color=T['muted'],
 _spec_ref2 = Span(location=1.0, dimension='height', line_color=T['muted'],
                   line_dash='dashed', line_width=1)
 
-p_spec = figure(title='Spectral intensity  (linear)',
+_spec_title = ('Spectral intensity  (linear)' if not pvd.is_averaged(attrs0)
+               else 'Spectral intensity  (linear, about the carrier)')
+_spec_log_title = ('Spectral intensity  (log)' if not pvd.is_averaged(attrs0)
+                   else 'Spectral intensity  (log, about the carrier)')
+
+p_spec = figure(title=_spec_title,
                 x_axis_label='ω / ωᵣ',
                 y_axis_label='Intensity  (a.u.)',
                 width=HW, height=300, tools=TOOLS)
@@ -480,7 +469,7 @@ _r = p_spec.line('x', 'y', source=src_spec_lin, color=T['field'], line_width=2)
 _hover(p_spec, _r, 'ω/ωᵣ', '{0.000}', 'I', '{0.000}')
 p_spec.add_layout(_spec_ref)
 
-p_spec_log = figure(title='Spectral intensity  (log)',
+p_spec_log = figure(title=_spec_log_title,
                     x_axis_label='ω / ωᵣ',
                     y_axis_label='Intensity  (a.u.)',
                     x_range=p_spec.x_range,
@@ -489,6 +478,17 @@ p_spec_log = figure(title='Spectral intensity  (log)',
 _r = p_spec_log.line('x', 'y', source=src_spec_log, color=T['field'], line_width=2)
 _hover(p_spec_log, _r, 'ω/ωᵣ', '{0.000}', 'I', '{0.00e+0}')
 p_spec_log.add_layout(_spec_ref2)
+
+# In averaged mode the envelope mesh can only carry ~1 +/- 1/(2 lambdarPerCell)
+# of the resonant frequency. Mark it, because everything beyond is an alias
+# rather than a measurement.
+_band = pvd.band_edges(attrs0)
+if _band is not None:
+    for _edge in _band:
+        for _fig in (p_spec, p_spec_log):
+            _fig.add_layout(Span(location=_edge, dimension='height',
+                                 line_color=T['muted'], line_dash='dotted',
+                                 line_width=1))
 
 
 # ── current profile panel ─────────────────────────────────────────────────────

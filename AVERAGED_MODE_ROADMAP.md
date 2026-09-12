@@ -31,7 +31,7 @@ section of `doc/manual.tex`. The accuracy map and its harness are in `benchmark/
 | W2 | 3D | **Done** — validated against the unaveraged solver | — | — |
 | W3 | Multiple field arrays (elliptical + harmonics) | Not started | #107 (ideally) | #129 |
 | W4 | Compatibility: periodic mesh, lattices, restart | **Done** — guards in, one `dev` bug left open | — | — |
-| W5 | Diagnostics, dump metadata and viz tools | Not started — **next** | W2 for 3D views | — |
+| W5 | Diagnostics, dump metadata and viz tools | **Done** | — | — |
 | W6 | Finish the accuracy map | Partly done | W3 for harmonics | #130 |
 | W7 | Housekeeping: buffer bug, benchmarks, defaults | Partly done — on hold | — | #128 |
 
@@ -298,19 +298,58 @@ unaveraged e2e goldens depend on.
 
 ## W5 — Diagnostics, metadata and viz
 
-- **Write averaged-mode metadata into the dumps** (`qAveraged`, `lambdarPerCell`, carrier
-  wavenumber). Cheap, and it is what lets every downstream tool adapt instead of guessing.
-  Worth doing early, independently of the rest — and it is now what stands between W4's
-  blanket rejection of `qResume` and being able to resume an averaged run from an averaged
-  dump. The rejection exists only because nothing in the file says which mode wrote it.
-- **Viz tools** (`utilities/pyPlotting/`: `puffin_viz_data.py`, `viewField1D_bokeh.py`,
-  `viewField3D_bokeh.py`, player and theme). In averaged mode the field arrays hold an
-  envelope: there is no carrier oscillation to plot, spectra are about the carrier rather
-  than absolute, and a "reconstruct the resolved field" view may be worth offering. Power is
-  already consistent, because the envelope is normalised so `|Atilde|^2` is the period
-  average of `|A_perp|^2`.
-- **Electron dumps.** `pperp` holds only its slow part in averaged mode — correct, and
-  arguably more useful (it is the betatron momentum), but it must be labelled.
+Done.
+
+### Dump metadata
+
+`writeRunAtts` (`io/hdf5PuffLow.f90`) writes four attributes into `/runInfo` of every dump —
+field, electron and integrated — in **both** solver modes, so a reader never has to branch on
+their presence:
+
+| attribute | meaning |
+| --- | --- |
+| `qAveraged` | 0 or 1, the solver mode that wrote the file |
+| `kz2Carrier` | carrier the stored field is an envelope about, so `A_perp = aperp * exp(i kz2Carrier z2)` holds in both modes; 0 unaveraged, where applying it is a no-op |
+| `lambdarPerCell` | z2 cell size in resonant wavelengths, **measured from the mesh**, not copied from the input of the same name |
+| `pperpMeaning` | whether electron `px`, `py` carry the undulator quiver or only their slow (betatron) part |
+
+`lambdarPerCell` is measured rather than copied deliberately. The input is meaningless
+unaveraged — writing it there would have claimed 1 where the mesh is really
+`1/(nodesPerLambdar - 1)` — and even in averaged mode the mesh is rounded to a whole number
+of nodes, so a deck asking for 2.0 can get 1.99776. The attribute is always true about the
+file it is in.
+
+This is also what would let W4's blanket `qResume` rejection become a conversion: the
+rejection exists only because nothing in a dump said which mode wrote it. That is no longer
+the case for dumps written from here on, though a conversion still has to be written, and
+old dumps still carry no marker.
+
+### Viz tools
+
+`utilities/pyPlotting/puffin_viz_data.py` gains `is_averaged`, `carrier_kz2`,
+`lambdar_per_cell`, `mode_label`, `band_edges`, `spectrum` and `reconstruct_resolved`, all
+falling back sensibly on files written before the metadata existed. The viewers use them:
+
+- **Spectra are about the carrier.** Unaveraged, the two field components each have their own
+  real spectrum. Averaged, they are the halves of one complex envelope, so the transform is
+  the complex one and its frequencies are offsets: `w/wr = 1 - 4 pi rho f_env`. The sign
+  follows from `A = Atilde exp(-i z2/2rho)` — a positive envelope wavenumber is a *lower*
+  physical frequency — and is checked against the physics independently rather than against
+  the same formula.
+- **The representable band is drawn.** Beyond `1 +/- 1/(2 lambdarPerCell)` an averaged
+  spectrum is showing aliases, so the viewers mark the edges.
+- **Titles say what is plotted** — "envelope, 2 λr/cell" against "resolved field", `|Ã⊥|`
+  against `|A⊥|`. Power and intensity are numerically unchanged, because the envelope is
+  normalised so `|Atilde|^2` is the period average of `|A_perp|^2`; only the symbol moves.
+- **`reconstruct_resolved`** rebuilds `A_perp` from the envelope on an upsampled mesh, for
+  showing someone what the field looks like. It is documented as a view rather than data:
+  the envelope is interpolated linearly, so it is exact only insofar as the envelope is slow.
+
+**Not executed.** There is no numpy or h5py on the development machine — the `puffin` conda
+environment has no Python at all — so the viz changes are syntax-checked, their
+attribute-reading paths exercised against real dumps with numpy stubbed, and the spectrum
+sign convention verified with a hand-rolled DFT. The array paths themselves have not been
+run. Worth an eye from someone with a working plotting environment.
 
 ## W6 — Finish the accuracy map
 
@@ -359,12 +398,11 @@ Done, in order of landing:
    solver at its own default mesh, 126x against the mesh it needs to converge.
 3. **W4** — compatibility. Guards against the silently-wrong inputs; periodic meshes,
    multi-module lattices, drifts and chicanes each checked against the unaveraged solver.
+4. **W5** — dump metadata saying which mode wrote a file and what its arrays mean, and viz
+   tools that read it instead of guessing.
 
 Not done, in suggested order:
 
-4. **W5** — diagnostics, dump metadata and viz. Promoted: the metadata item is small, it is
-   what lets the viz tools stop guessing, and it is the thing that would let W4 relax its
-   `qResume` rejection into a conversion. 3D views are now worth having, since W2 is done.
 5. **W7** — housekeeping. On hold pending a decision on the `calcBuff` rounding; the
    `NBZ2_G` and exit-status items found during W2 and W4 are parked with it.
 6. **#107, then W3** — multiple field arrays: elliptical first (simpler, two components),
