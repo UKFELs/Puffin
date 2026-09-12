@@ -207,31 +207,65 @@ that averaged mode happens to reach sooner than the unaveraged solver does.
   | 3 modules back to back | 1.0496 |
   | 3 modules + 2 drifts | 1.0537 |
 
-### Chicanes: only a *fractional* slip diverges, and only because it suppresses the FEL
+### Chicanes: a half-integer slip diverges, because it suppresses the FEL
 
 Adding chicanes to that lattice moved the power ratio to 0.895, flat in `lambdarPerCell`
-(0.8952, 0.8957, 0.8976 at 1.0, 0.5, 0.25), so not a mesh effect. Separating the chicane's
-three knobs, on the same three-module lattice:
+(0.8952, 0.8957, 0.8976 at 1.0, 0.5, 0.25), so not a mesh effect. Scanning the slip, with
+dispersion off:
 
-| chicane | P ratio | bunching ratio | P unaveraged |
+| `chic_slip` (λr) | P unaveraged | P ratio | bunching ratio |
 | --- | --- | --- | --- |
-| slip 0, no dispersion | 1.0537 | 1.0231 | 4.141e-1 |
-| slip 0, `R56` = 0.02 | 1.0545 | 1.0232 | 4.221e-1 |
-| slip 1.0 (a whole wavelength) | 1.0537 | 1.0231 | 4.138e-1 |
-| slip 0.5 (fractional) | **0.541** | 1.0189 | **2.931e-2** |
+| 0.0 | 4.141e-1 | 1.0537 | 1.0231 |
+| 0.5 | **2.931e-2** | **0.5409** | 1.0189 |
+| 1.0 | 4.138e-1 | 1.0537 | 1.0231 |
+| 1.5 | **2.934e-2** | **0.5415** | 1.0189 |
+| 2.0 | 4.136e-1 | 1.0537 | 1.0231 |
 
-Dispersion and integer slips are exact to the same ~5% as the rest of the lattice. Only the
-fractional slip diverges - and the last column says why. A fractional slip is a phase
-shifter: it de-phases the beam against the radiation on purpose, and the unaveraged run's own
-power drops 14x when it is switched on. What is left is a small residual of large cancelling
-terms, and the ~2% coupling difference between the two solvers is amplified into a factor of
-two there. Bunching still agrees to 1.9%, so the beam dynamics are fine; it is the radiated
+`R56` on its own is clean too: 1.0545 at `chic_slip = 0`, `R56 = 0.02`.
+
+**The response is exactly periodic in one radiation wavelength**, so what matters is the
+slip modulo λr - a π phase flip - and not whether the slip is a whole number. That
+distinction matters because the *total* slippage is never a whole number here anyway: see
+the drift note below. An earlier version of this section called the effect "fractional
+versus integer slip", which was the wrong axis.
+
+The second column says why the half-integer cases diverge. Half a wavelength reverses the
+sign of the coupling, which is what a phase shifter is for, and it knocks the **unaveraged**
+run's own power down 14x. What is left is a small residual of large cancelling terms, and the
+~2% coupling difference between the two solvers is amplified into a factor of two there.
+Bunching still agrees to 1.9% in every row, so the beam dynamics are fine; it is the radiated
 field that is a difference of near-cancelling contributions.
 
 So: not a bug, but a real limitation worth stating. **Any regime that works by near
 cancellation - a phase shifter, a deliberately de-phased section - amplifies the model
 difference, and averaged mode should not be trusted quantitatively there.** The same caution
 applies wherever gain is suppressed rather than exponential.
+
+### Drifts do not slip a whole number of radiation wavelengths
+
+Worth recording because it is easy to assume otherwise, and because it is what makes the
+"modulo λr" framing above the right one. A `DR` element is specified in **undulator**
+periods. Inside the undulator, resonance makes one undulator period exactly one radiation
+wavelength of slippage - that is how Puffin's scaling is built, `p2 = 1` at resonance and
+both `zbar` and `z2` advance by 4πρ. In a drift there is no quiver, so `1 - beta_z` falls
+from `(1 + aw^2)/2gamma^2` to `1/2gamma^2` and the same `zbar` buys a factor `1/(1 + aw^2)`
+as much `z2`.
+
+Measured by differencing two lattices that differ only by the drift, with field coupling off
+so the advance is purely kinematic:
+
+| | slippage from `DR 4.0` |
+| --- | --- |
+| unaveraged | 1.976581 λr |
+| averaged | 1.976581 λr |
+| predicted, 4/(1 + aw^2) at aw = 1.0122 | 1.9758 λr |
+
+0.04% from the analytic value, and the two solver modes agree to seven significant figures -
+so the drift slippage itself is handled identically, which is the part that had to be checked.
+At `aw ~ 1` a drift slips about half a wavelength per undulator period, so a lattice that
+wants the beam back in phase after a drift has to put the remainder in deliberately. The
+CLARA lattice in `test/inputs/1D/osc_taper.latt` does exactly that, with a dispersionless
+`CH` used as a phase shifter after each drift.
 
 ### Open, and pre-existing on `dev`: the duplicated-mesh path
 
@@ -438,10 +472,10 @@ Honest limits of what has been shown, rather than open tasks:
   1D README already warns that such a deck cannot discriminate cell sizes; the same applies
   to the 3D one. SASE, sharp current gradients or a short bunch would be far more demanding,
   and would exercise the coherent spontaneous emission that averaging discards.
-- **Near-cancellation regimes amplify the model difference.** The fractional-slip chicane
-  result is the clean example: where the unaveraged run's own power is suppressed 14x, a 2%
-  coupling difference becomes a factor of two. Anywhere gain is suppressed rather than
-  exponential deserves the same suspicion.
+- **Near-cancellation regimes amplify the model difference.** The half-integer chicane slip
+  is the clean example: where the unaveraged run's own power is suppressed 14x, a 2% coupling
+  difference becomes a factor of two. Anywhere gain is suppressed rather than exponential
+  deserves the same suspicion.
 - **Undulator ends are untested in 3D and across modules.** `getAvgEnvelope` uses the `by`
   ramp for both components, while the helical `bx` ramp has a different shape — a phase
   difference that would recur at every module boundary with `qUndEnds` on, rather than once.
