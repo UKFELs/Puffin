@@ -39,7 +39,7 @@ Raised by this work and not yet filed:
 
 | what | where | who owns it |
 |---|---|---|
-| The `qUnique = .false.` duplicated-mesh path is broken, in both solver modes | W4 | `dev` — pre-existing |
+| The `qUnique = .false.` duplicated-mesh path is broken, in both solver modes — includes a live heap overflow in `UpdateGlobalPow` | W4 | `dev` — pre-existing |
 | `NBZ2_G` sizes the z2 absorbing boundary in nodes, not length | W2, W7 | with W7 |
 | A failed field rearrangement exits with status 0 | W7 | with W7 |
 
@@ -250,22 +250,51 @@ unaveraged solver reaches it too, just at more ranks, because it never coarsens.
 is `getInterps` finding particles past `bz2`, three failed emergency redistributes, then
 `stop` — **with exit status 0**, the silent failure already noted in W7.
 
-Two concrete defects found while instrumenting it, neither sufficient alone:
+**Root defect.** `getFStEnd`'s field-based branch (`para_field.f90` ~2241), which is the
+branch a periodic mesh takes, sets
 
-1. `getFStEnd`, field-based branch (`para_field.f90` ~2245): `fz2_GGG = 1` and `ez2_GGG = 1`,
-   where `ez2_act = NZ2_G`. The electron-based branch just above correctly sets
-   `ez2_GGG = ez2_act`. Since `fz2`/`ez2` are taken straight from these in the non-unique
-   branch, the duplicated region covers one node instead of the mesh.
-2. Setting `ez2_GGG = ez2_act` then segfaults, because `(fz2_GGG - ez2_GGG + 1)` at
-   `para_field.f90:615` and `:725` has its operands reversed — negative gather counts. Line
-   622 has the same expression the right way round.
+```fortran
+fz2_act = 1_ip
+ez2_act = NZ2_G      ! the active region is the whole mesh - correct
+fz2_GGG = 1
+ez2_GGG = 1          ! should be ez2_act
+```
 
-Together these say the path has never executed with `ez2_GGG /= 1`. Fixing it is a piece of
-work on the parallel decomposition rather than a one-liner, and it belongs to `dev` rather
-than to this branch; it is what stands between averaged mode and a single-cycle periodic run
-on more than a few ranks. Until then, periodic averaged runs need
-`nz2 >= 2 * nprocs`. Filed here rather than fixed because it changes shared parallel code
-that the unaveraged e2e goldens depend on.
+The electron-based branch immediately above sets `fz2_GGG = fz2_act` and `ez2_GGG = ez2_act`.
+Here the first line happens to be right and the second is not.
+
+**Why it is invisible.** `fz2_GGG`/`ez2_GGG` are read in only two places, and both are
+written so that `ez2_GGG = 1` masks a second defect rather than exposing it:
+
+- The non-unique branch takes `fz2 = fz2_GGG`, `ez2 = ez2_GGG`, `mainlen = n_act_g`. So the
+  rank is told it owns node 1 only, while `mainlen` says it owns the whole mesh.
+- `UpdateGlobalPow` sizes `powi` as `ez2_GGG - fz2_GGG + 1` and, on the non-unique path,
+  does `powi = A_local` where `A_local` has `mainlen` elements. With `ez2_GGG = 1` that
+  copies `mainlen` doubles into a one-element allocation — a live heap overflow today,
+  every time `/power` is written while `qUnique` is false.
+
+Several nearby gather counts are also written `(fz2_GGG - ez2_GGG + 1)` rather than the other
+way round — `para_field.f90:615` and `:725`, against `:622` and `:697` which have it right.
+While `fz2_GGG == ez2_GGG == 1` the two spellings are numerically identical, so the reversal
+cannot bite. `:615` is in `UpdateGlobalField`, which is neither public nor called from
+anywhere — dead code.
+
+**What was measured, and what was not.** Instrumenting the bound check gives, on a 7-node
+periodic mesh at 4 ranks, `fz2 = 1, ez2 = 5, bz2 = 5, nz2_G = 7` with particles sitting at
+node 6 — legitimately inside a periodic mesh, flagged out of bounds because the region stops
+short. Every retry re-derives the same region, so the three emergency rearrangements cannot
+help, and it stops. Setting `ez2_GGG = ez2_act` changes the failure to a segfault inside
+`free()`, which says that value really does drive the behaviour, **but the site of that
+corruption was not isolated** — it is not `:615`, which is dead, and `UpdateGlobalPow`'s
+overflow gets *better* with the fix, not worse. Something further downstream is also wrong.
+
+So: at least one root defect, one live heap overflow it masks, a family of reversed counts
+waiting behind it, and an unidentified third problem. The path has evidently never run with
+`ez2_GGG /= 1`. That is a piece of work on the parallel decomposition, not a one-liner, and
+it belongs to `dev` rather than to this branch — it is what stands between averaged mode and
+a single-cycle periodic run on more than a few ranks. Until then, periodic averaged runs need
+`nz2 >= 2 * nprocs`. Left here rather than fixed because it changes shared parallel code the
+unaveraged e2e goldens depend on.
 
 ## W5 — Diagnostics, metadata and viz
 
