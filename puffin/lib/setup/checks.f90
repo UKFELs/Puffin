@@ -92,7 +92,7 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
   call stpFSampleLens(iNodes,sWigglerLength,sLengthOfElm,qSwitches(iOneD_CG),qOKL)
 
-  call chkAveraged(qSwitches(iOneD_CG), f_x, f_y, qOKL)
+  call chkAveraged(f_x, f_y, qOKL)
   if (.NOT. qOKL) goto 1000
 
   if (qSimple) then
@@ -483,9 +483,8 @@ end subroutine checkRndEjLens
 !> Checks specific to the period-averaged mode (qAveraged).  f_x, f_y are the
 !> polarisation after calcScaling, which sets them from the undulator type.
 
-subroutine chkAveraged(qOneD, f_x, f_y, qOK)
+subroutine chkAveraged(f_x, f_y, qOK)
 
-  logical, intent(in) :: qOneD
   real(kind=wp), intent(in) :: f_x, f_y
   logical, intent(out) :: qOK
 
@@ -494,11 +493,6 @@ subroutine chkAveraged(qOneD, f_x, f_y, qOK)
   qOK = .true.
 
   if (.not. qAveraged_G) return
-
-  if (.not. qOneD) then
-    call log_error('Averaged mode (qAveraged) supports 1D only so far.', tErrorLog_G)
-    qOK = .false.
-  end if
 
   call getAvgUndAmps("", f_x, f_y, cx, cy)
 

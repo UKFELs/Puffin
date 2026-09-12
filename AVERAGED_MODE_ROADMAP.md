@@ -25,7 +25,7 @@ section of `doc/manual.tex`. The accuracy map and its harness are in `benchmark/
 | # | Workstream | Status | Depends on | Issue |
 |---|------------|--------|-----------|-------|
 | W1 | Land the 1D mode on `dev` | Ready to submit — decision needed | — | — |
-| W2 | 3D | Not started | — | — |
+| W2 | 3D | Implemented — validated against the unaveraged solver | — | — |
 | W3 | Multiple field arrays (elliptical + harmonics) | Not started | #107 (ideally) | #129 |
 | W4 | Compatibility: periodic mesh, lattices, restart | Not started | — | — |
 | W5 | Diagnostics, dump metadata and viz tools | Not started | W2 for 3D views | — |
@@ -61,24 +61,69 @@ and lets 3D build on a merged base.
 
 ## W2 — 3D
 
-Largest single piece of user value, and independent of W3.
+Done. `chkAveraged` no longer rejects 3D, and the two pieces of physics 3D needs are in
+`averaging.f90` alongside the rest of the model.
 
-- **Averaged natural focusing.** In 1D `bz = 0` and the slow transverse momentum is constant.
-  In 3D the natural focusing arises from the quiver beating against `bz` and the off-axis
-  field variation; that product has to be averaged analytically, giving a betatron term in
-  `dppdz` rather than the current zero.
-- **Diffraction carrier offset.** `multiplyexp` in `diffraction.f90` applies
-  `exp(i h (kx^2+ky^2) / 2 kz2)`. With the field stored as an envelope, the physical
-  wavenumber is `kz2_envelope - 1/2rho`. Offsetting rather than freezing `kz2` at the
-  carrier keeps diffraction frequency-dependent across the band, which is better than the
-  usual averaged-code treatment — worth doing deliberately and documenting.
-- **Filter semantics.** `qFilter`'s cutoff is defined on physical `kz2`; decide what it means
-  in envelope coordinates (in band terms it will usually be inert) and document it.
-- Lift the 3D rejection in `chkAveraged` (`puffin/lib/setup/checks.f90`). `getSource_3D` is
-  already wired for the averaged coupling.
-- **Tests:** extend the `getrhs` energy-balance test to the 3D path; validate against
-  `test/inputs/3D/clara_test.in`. Note `benchmark/averaged/compare.py` is 1D-only and will
-  need a 3D comparison (integrated power plus transverse profile).
+- **Averaged natural focusing** — `getAvgFocusCoef` / `getAvgFocusing`. It survives averaging
+  only through products of two fast quantities: the `bz` beat against the quiver, plus, for a
+  curved-pole undulator, the off-axis structure of `bx`/`by` sampled along the quiver
+  excursion (focusing in x, defocusing in y — what canting the poles is for). The result
+  reproduces the `sKBetaX_G` / `sKBetaY_G` the unaveraged solver derives from the same
+  undulator field, in all three geometries, which `test/testAveraging.pf` asserts. The
+  strong-focusing channel (`qFocussing`) is already slow and carries through unchanged, with
+  one factor of alpha as in `dppdz_r_f`.
+- **Diffraction carrier offset** — `getAvgCarrierKz2`, threaded into `multiplyexp` and
+  `AbsorptionStep`. The physical wavenumber is `kz2_envelope - 1/2rho`; offsetting rather
+  than freezing it at the carrier keeps diffraction frequency-dependent across the band, and
+  the envelope's own `kz2 = 0` mode diffracts exactly as the carrier did on a resolved mesh.
+- **Filter semantics** — the `sFiltFrac` cutoff is applied to the physical wavenumber, which
+  makes it inert in averaged mode: every representable mode sits within ~`1/(2 lambdarPerCell)`
+  of the carrier, far above any sensible cutoff. That is the right answer rather than a
+  special case — a cut at envelope `kz2 = 0` would delete the carrier. Documented in
+  `doc/manual.tex`.
+- **Tests** — `testAveraging.pf` gained the `kbeta` checks above, the focusing signs, the
+  carrier offset, and the `getrhs` energy balance through the 3D path (`getInterps_3D`,
+  `getFFelecs_3D`, `getSource_3D`) for all three undulator types. 27 unit tests; all four
+  ctest suites still pass and the default path is untouched.
+- **Still to do:** a committed 3D comparison deck and harness. `benchmark/averaged/compare.py`
+  is 1D-only; the numbers below came from an ad-hoc 3D deck driven by hand. Turning that into
+  a `run_compare3d.py` alongside the 1D one — integrated power, bunching, and a transverse
+  profile — is what would make these reproducible, and is the natural next step here.
+
+### Validated against the unaveraged solver
+
+A 3D seeded deck, rho = 0.005, aw = 1.012, helical and plane-pole, 41x41x(2.0 -> 12.8)
+mesh, matched beam, averaged at `lambdarPerCell = 1` and `stepsPerPeriod = 2` against the
+unaveraged solver at `nodesPerLambdar = 12` and `stepsPerPeriod = 30`:
+
+| what | measure | agreement |
+| --- | --- | --- |
+| Natural focusing, helical | beam `sigmaXbar`, `sigmaYbar` over 20 periods | 2e-5 |
+| Natural + strong focusing, plane-pole | beam `sigmaXbar`, `sigmaYbar` over 20 periods | 4e-7 |
+| Diffraction | field transverse RMS growth, 20 periods, seed only | 1.2% |
+| Full coupling + diffraction | `bunchingFundamental` over 60 periods, growing 70x | 2.7% |
+| Full coupling + diffraction | `/power` over 60 periods | 0.1% |
+
+The 60-period run takes 10.7 s averaged against 158 s unaveraged, **15x**. Its bunching ratio
+is flat from about a third of the way in, so the 2.7% is a coupling offset rather than a
+growth-rate error — comfortably inside the ~9% the 1D study showed the unaveraged solver
+itself carries at `nodesPerLambdar = 12`, from deposition and interpolation attenuating a
+carrier sampled at 11 cells per wavelength.
+
+The diffraction test is sensitive: with the carrier offset removed as a control, the field
+is annihilated (`sum|A|^2` from 1.4e2 to 5e-20) because the high-pass filter then sees every
+envelope mode as sub-cutoff.
+
+### Known interaction: node-count boundaries on a coarse mesh
+
+`NBZ2_G = 37` (`setup_calcs.f90`) sizes the z2 absorbing boundary in **nodes**, not length.
+That is 1.7% of an unaveraged z2 mesh and ~18% of a `lambdarPerCell = 1` envelope mesh of the
+same physical length, so with `sBeta > 0` the averaged run absorbs far more of the field —
+about 6% over 20 periods on the deck above, against 0.45% unaveraged. Same class of problem
+as the `calcBuff` rounding in W7 (a node count that does not survive mesh coarsening), so it
+is parked with W7 rather than fixed here. Until then, 3D averaged runs should set
+`sBeta = 0`, or accept a wider absorber. `NBX_G` / `NBY_G` are unaffected: the transverse
+mesh does not coarsen.
 
 ## W3 — Multiple field arrays
 
@@ -147,6 +192,8 @@ Each of these is mostly a test, and each may turn up a guard that needs writing.
 - **#128** — `calcBuff` rounds the field buffer short; fixed in averaged mode only, because
   fixing it generally shifts e2e goldens at the 1e-10 level. Also: a failed rearrangement
   exits with status 0.
+- **`NBZ2_G`** — the z2 absorbing boundary is a fixed node count, so it covers ~10x more of
+  the field on a coarse envelope mesh. See the note under W2 for the measurement.
 - **Benchmarks and defaults.** Add an averaged case to the benchmark suite. The cheapest
   converged setting on the validation deck is `stepsPerPeriod = 1`, `lambdarPerCell = 1`.
 
@@ -156,7 +203,7 @@ Each of these is mostly a test, and each may turn up a guard that needs writing.
 
 1. **W1** — land 1D, so later work builds on a merged base.
 2. **W7 + the metadata item from W5** — cheap, and they unblock coarse meshes and the viz work.
-3. **W2** — 3D.
+3. **W2** — 3D. *(done)*
 4. **W4** — compatibility and guards; mostly tests, and they protect users from silent wrongness.
 5. **#107, then W3** — multiple field arrays: elliptical first (simpler, two components), then
    harmonic bands.

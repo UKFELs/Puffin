@@ -26,7 +26,8 @@ module testAveraging
   use puffin_constants, only: pi
   use GlobalTypes, only: tUndulator, tFELFrame, tSimulationContext
   use averaging, only: tAvgCoupling, getAvgUndAmps, getAvgPolarisation, qAvgPolarisationOK, &
-                       getAvgEnvelope, getAvgCoupling, avgJJ, getAvgSeedFactor
+                       getAvgEnvelope, getAvgCoupling, avgJJ, getAvgSeedFactor, &
+                       tAvgFocusing, getAvgFocusCoef, getAvgFocusing, getAvgCarrierKz2
   use gtop2, only: getP2, getP2Avg
 
   implicit none
@@ -66,7 +67,44 @@ contains
     frame%eta = 1.0_wp / sqrt(1.0_wp - (1.0_wp + frame%aw**2 * fp) &
                                         / frame%gamma_ref**2) - 1.0_wp
 
+!   As calcScaling sets them: off-axis wavenumbers only for the curved pole,
+!   split evenly between the planes, and no strong-focusing channel.
+
+    und%kx_undulator = 0.0_wp
+    und%ky_undulator = 0.0_wp
+
+    if (undType == "curved") then
+      und%kx_undulator = sqrt(frame%eta / (8.0_wp * frame%rho**2))
+      und%ky_undulator = und%kx_undulator
+    end if
+
+    und%k_beta_x_sf = 0.0_wp
+    und%k_beta_y_sf = 0.0_wp
+
   end subroutine makeUnd
+
+
+  !> The betatron wavenumbers squared that the averaged focusing coefficients
+  !! imply for a reference particle, Gamma = 1 and (1 + eta p2) = 1.  From
+  !! dx/dz = C spr and dy/dz = -C spi with C = 2 rho kappa (1 + eta p2)/
+  !! (sqrt(eta) Gamma), d2x/dz2 = -C cNatX x and d2y/dz2 = -C cNatY y.
+  subroutine kBetaSqFromFocus(und, frame, qFocusing, kbxSq, kbySq)
+    type(tUndulator), intent(in) :: und
+    type(tFELFrame), intent(in) :: frame
+    logical, intent(in) :: qFocusing
+    real(kind=wp), intent(out) :: kbxSq, kbySq
+
+    type(tAvgFocusing) :: foc
+    real(kind=wp) :: cRef
+
+    call getAvgFocusCoef(0.5_wp, und, frame, qFocusing, foc)
+
+    cRef = 2.0_wp * frame%rho * frame%kappa / sqrt(frame%eta)
+
+    kbxSq = cRef * (foc%cNatX + foc%cSFX)
+    kbySq = cRef * (foc%cNatY + foc%cSFY)
+
+  end subroutine kBetaSqFromFocus
 
 
   !> Trapezoidal average of f over the grid.
@@ -289,6 +327,134 @@ contains
   end subroutine testPlanarJJIsTextbook
 
 
+  !> The averaged natural focusing has to reproduce the betatron wavenumbers
+  !! the unaveraged solver has - the sKBetaX_G / sKBetaY_G that calcScaling
+  !! derives from the same undulator field.  Helical focuses equally in both
+  !! planes at kappa/sqrt(2); a plane-pole undulator focuses only in y, at the
+  !! same strength; and canting the poles (the curved type) splits that
+  !! equally, kappa/2 in each plane, by moving focusing out of y and into x.
+  @test
+  subroutine testAvgFocusingMatchesKBeta()
+    type(tUndulator) :: und
+    type(tFELFrame) :: frame
+    real(kind=wp) :: kbxSq, kbySq, kapSq, tol
+
+    call makeUnd(und, frame, "helical", 1.0_wp, 1.0_wp)
+    kapSq = frame%kappa**2
+    tol = 1.0e-12_wp * kapSq
+
+    call kBetaSqFromFocus(und, frame, .false., kbxSq, kbySq)
+    @assertEqual(kapSq / 2.0_wp, kbxSq, tol)
+    @assertEqual(kapSq / 2.0_wp, kbySq, tol)
+
+    call makeUnd(und, frame, "planepole", 1.0_wp, 1.0_wp)
+    kapSq = frame%kappa**2
+    tol = 1.0e-12_wp * kapSq
+
+    call kBetaSqFromFocus(und, frame, .false., kbxSq, kbySq)
+    @assertEqual(0.0_wp, kbxSq, tol)
+    @assertEqual(kapSq / 2.0_wp, kbySq, tol)
+
+    call makeUnd(und, frame, "curved", 1.0_wp, 1.0_wp)
+    kapSq = frame%kappa**2
+    tol = 1.0e-12_wp * kapSq
+
+    call kBetaSqFromFocus(und, frame, .false., kbxSq, kbySq)
+    @assertEqual(kapSq / 4.0_wp, kbxSq, tol)
+    @assertEqual(kapSq / 4.0_wp, kbySq, tol)
+
+!   Focusing is quadratic in the undulator field, so the taper carries through
+!   squared, and the end ramps switch it off with the coupling.
+
+    call makeUnd(und, frame, "helical", 1.0_wp, 1.0_wp)
+    und%n2col = 0.5_wp
+    und%n2col_initial = 0.5_wp
+    kapSq = frame%kappa**2
+
+    call kBetaSqFromFocus(und, frame, .false., kbxSq, kbySq)
+    @assertEqual(0.25_wp * kapSq / 2.0_wp, kbxSq, 1.0e-12_wp * kapSq)
+
+  end subroutine testAvgFocusingMatchesKBeta
+
+
+  !> The non-physical strong-focusing channel is already slow, so averaged mode
+  !! carries it unchanged: it must give back exactly the kbetax_SF, kbetay_SF
+  !! that were asked for, on top of the natural focusing.
+  @test
+  subroutine testAvgFocusingStrongChannel()
+    type(tUndulator) :: und
+    type(tFELFrame) :: frame
+    real(kind=wp) :: kbxSq, kbySq, kapSq, sfx, sfy
+
+    call makeUnd(und, frame, "planepole", 1.0_wp, 1.0_wp)
+    kapSq = frame%kappa**2
+
+    sfx = 0.3_wp * frame%kappa
+    sfy = 0.7_wp * frame%kappa
+    und%k_beta_x_sf = sfx
+    und%k_beta_y_sf = sfy
+
+!   Off, the channel contributes nothing
+
+    call kBetaSqFromFocus(und, frame, .false., kbxSq, kbySq)
+    @assertEqual(0.0_wp, kbxSq, 1.0e-12_wp * kapSq)
+
+    call kBetaSqFromFocus(und, frame, .true., kbxSq, kbySq)
+    @assertEqual(sfx**2, kbxSq, 1.0e-12_wp * kapSq)
+    @assertEqual(kapSq / 2.0_wp + sfy**2, kbySq, 1.0e-12_wp * kapSq)
+
+  end subroutine testAvgFocusingStrongChannel
+
+
+  !> getAvgFocusing has to apply those coefficients with the right sign in each
+  !! plane.  spi is -py and dy/dz goes as -spi, so a focusing y needs a
+  !! positive sdpi where a focusing x needs a negative sdpr.
+  @test
+  subroutine testAvgFocusingSigns()
+    type(tUndulator) :: und
+    type(tFELFrame) :: frame
+    type(tAvgFocusing) :: foc
+    integer, parameter :: ne = 3
+    real(kind=wp), dimension(ne) :: sx, sy, sgam, sp2, sdpr, sdpi
+    integer :: j
+
+    call makeUnd(und, frame, "helical", 1.0_wp, 1.0_wp)
+    call getAvgFocusCoef(0.5_wp, und, frame, .false., foc)
+
+    sx = [0.4_wp, -0.2_wp, 0.0_wp]
+    sy = [-0.3_wp, 0.5_wp, 0.0_wp]
+    sgam = [1.0_wp, 1.1_wp, 0.9_wp]
+    sp2 = [1.0_wp, 0.8_wp, 1.2_wp]
+
+    call getAvgFocusing(sx, sy, sgam, sp2, frame%eta, foc, sdpr, sdpi)
+
+    do j = 1, 2
+      @assertTrue(sdpr(j) * sx(j) < 0.0_wp)
+      @assertTrue(sdpi(j) * sy(j) > 0.0_wp)
+    end do
+
+!   On axis, no force
+
+    @assertEqual(0.0_wp, sdpr(3), 0.0_wp)
+    @assertEqual(0.0_wp, sdpi(3), 0.0_wp)
+
+!   And it scales as (1 + eta p2)/Gamma per particle
+
+    @assertEqual(-foc%cNatX * (1.0_wp + frame%eta * sp2(1)) / sgam(1) * sx(1), &
+                 sdpr(1), 1.0e-14_wp * abs(sdpr(1)))
+
+  end subroutine testAvgFocusingSigns
+
+
+  !> The stored envelope sits on the exp(-i z2/2rho) carrier, so a mode at
+  !! envelope kz2 is physically at kz2 - 1/2rho, and the envelope's own kz2 = 0
+  !! mode is the carrier itself.
+  @test
+  subroutine testCarrierOffset()
+    @assertEqual(-100.0_wp, getAvgCarrierKz2(0.005_wp), 1.0e-12_wp)
+  end subroutine testCarrierOffset
+
+
   @test
   subroutine testPolarisationSupport()
     ! helical, planar in x, planar in y
@@ -343,25 +509,26 @@ contains
   !! holds exactly for the discrete system: linear interpolation and linear
   !! deposition share their weights, and the source and the energy equation
   !! share ptilde.
-  subroutine checkRhsEnergyBalance(undType, fx, fy, grad, qEnds, sZ)
+  subroutine checkRhsEnergyBalance(undType, fx, fy, grad, qEnds, sZ, qOneD)
 
     use Globals, only: sLengthOfElmX_G, sLengthOfElmY_G, sLengthOfElmZ2_G, NX_G, NY_G, &
-                       NZ2_G, nspinDX, nspinDY, fieldMesh, iTemporal, qElectronsEvolve_G, &
-                       qFieldEvolve_G, qElectronFieldCoupling_G, iNumberElectrons_G, &
-                       procelectrons_G, s_chi_bar_G, dadz_w
+                       NZ2_G, nspinDX, nspinDY, ntrndsi_G, fieldMesh, iTemporal, &
+                       qElectronsEvolve_G, qFieldEvolve_G, qElectronFieldCoupling_G, &
+                       iNumberElectrons_G, procelectrons_G, s_chi_bar_G, dadz_w
     use ParaField, only: fz2, bz2, tTransInfo_G
     use rhs, only: getrhs
 
     character(*), intent(in) :: undType
     real(kind=wp), intent(in) :: fx, fy, grad, sZ
-    logical, intent(in) :: qEnds
+    logical, intent(in) :: qEnds, qOneD
 
     type(tSimulationContext) :: ctx
-    integer, parameter :: ne = 7, nz = 16
-    real(kind=wp) :: sAr(nz), sAi(nz), dAr(nz), dAi(nz)
+    integer, parameter :: ne = 7, nz = 16, ntr = 25
+    real(kind=wp), allocatable :: sAr(:), sAi(:), dAr(:), dAi(:)
     real(kind=wp), dimension(ne) :: sx, sy, sz2, spr, spi, sgam, &
                                     sdx, sdy, sdz2, sdpr, sdpi, sdgam
-    real(kind=wp) :: dz2v, fieldRate, beamRate
+    real(kind=wp) :: dz2v, dxv, dyv, dV3v, fieldRate, beamRate
+    integer :: nf
     logical :: qOK
     integer :: j
 
@@ -377,28 +544,55 @@ contains
     ctx%flags%parallel_arrays_ok = .true.
     ctx%flags%inner_xy_ok = .true.
 
-!   A 1D envelope mesh 1.5 resonant wavelengths per cell
+!   An envelope mesh 1.5 resonant wavelengths per cell.  In 3D, a 5x5
+!   transverse inner mesh alongside it, with the macroparticles well inside.
 
     dz2v = 1.5_wp * 4.0_wp * pi * ctx%frame%rho
 
-    sLengthOfElmX_G = 1.0_wp
-    sLengthOfElmY_G = 1.0_wp
+    if (qOneD) then
+      dxv = 1.0_wp
+      dyv = 1.0_wp
+      nspinDX = 1
+      nspinDY = 1
+      NX_G = 1
+      NY_G = 1
+      ntrndsi_G = 1
+    else
+      dxv = 0.4_wp
+      dyv = 0.4_wp
+      nspinDX = 5
+      nspinDY = 5
+      NX_G = 5
+      NY_G = 5
+      ntrndsi_G = ntr
+    end if
+
+    sLengthOfElmX_G = dxv
+    sLengthOfElmY_G = dyv
     sLengthOfElmZ2_G = dz2v
-    NX_G = 1
-    NY_G = 1
+    dV3v = dxv * dyv * dz2v
     NZ2_G = nz
-    nspinDX = 1
-    nspinDY = 1
     fieldMesh = iTemporal
-    tTransInfo_G%qOneD = .true.
+    tTransInfo_G%qOneD = qOneD
     fz2 = 1
     bz2 = nz
+
+    nf = ntrndsi_G * nz
+    allocate(sAr(nf), sAi(nf), dAr(nf), dAi(nf))
 
     qElectronsEvolve_G = .true.
     qFieldEvolve_G = .true.
     qElectronFieldCoupling_G = .true.
 
     iNumberElectrons_G = ne
+
+!   A failed assertion returns from the test before the deallocate below, so
+!   clear these first rather than letting the next test die on re-allocation.
+
+    if (allocated(procelectrons_G)) deallocate(procelectrons_G)
+    if (allocated(s_chi_bar_G)) deallocate(s_chi_bar_G)
+    if (allocated(dadz_w)) deallocate(dadz_w)
+
     allocate(procelectrons_G(1), s_chi_bar_G(ne), dadz_w(ne))
     procelectrons_G(1) = ne
 
@@ -413,7 +607,14 @@ contains
     sx = 0.0_wp
     sy = 0.0_wp
 
-    do j = 1, nz
+    if (.not. qOneD) then
+      do j = 1, ne
+        sx(j) = 0.35_wp * cos(0.9_wp * j)
+        sy(j) = 0.35_wp * sin(1.3_wp * j)
+      end do
+    end if
+
+    do j = 1, nf
       sAr(j) = 0.1_wp * cos(0.7_wp * j)
       sAi(j) = 0.1_wp * sin(0.3_wp * j + 1.0_wp)
     end do
@@ -428,7 +629,7 @@ contains
 
     @assertTrue(qOK)
 
-    fieldRate = sum(sAr * dAr + sAi * dAi) * dz2v
+    fieldRate = sum(sAr * dAr + sAi * dAi) * dV3v
     beamRate = sum(s_chi_bar_G * sdgam) / (2.0_wp * ctx%frame%rho)
 
 !   Non-trivial, and balanced to round-off
@@ -436,11 +637,36 @@ contains
     @assertTrue(abs(fieldRate) > 1.0e-4_wp)
     @assertEqual(0.0_wp, fieldRate + beamRate, 1.0e-13_wp * (abs(fieldRate) + abs(beamRate)))
 
-!   pperp holds only its slow part, and in 1D nothing drives it
+    if (qOneD) then
 
-    @assertEqual(0.0_wp, maxval(abs(sdpr)), 0.0_wp)
-    @assertEqual(0.0_wp, maxval(abs(sdpi)), 0.0_wp)
+!     pperp holds only its slow part, and in 1D nothing drives it
 
+      @assertEqual(0.0_wp, maxval(abs(sdpr)), 0.0_wp)
+      @assertEqual(0.0_wp, maxval(abs(sdpi)), 0.0_wp)
+
+    else
+
+!     In 3D the averaged natural focusing does, and it does no work on the
+!     field - the balance above still holds exactly.  Every type here focuses
+!     in y; only a plane-pole undulator has no focusing in x, and there sdpr
+!     is identically zero rather than merely small.
+
+      @assertTrue(maxval(abs(sdpi)) > 0.0_wp)
+
+      if (undType == "planepole") then
+        @assertEqual(0.0_wp, maxval(abs(sdpr)), 0.0_wp)
+      else
+        @assertTrue(maxval(abs(sdpr)) > 0.0_wp)
+      end if
+
+      do j = 1, ne
+        @assertTrue(sdpr(j) * sx(j) <= 0.0_wp)
+        @assertTrue(sdpi(j) * sy(j) >= 0.0_wp)
+      end do
+
+    end if
+
+    deallocate(sAr, sAi, dAr, dAi)
     deallocate(procelectrons_G, s_chi_bar_G, dadz_w)
 
   end subroutine checkRhsEnergyBalance
@@ -448,21 +674,43 @@ contains
 
   @test
   subroutine testRhsConservesEnergyHelical()
-    call checkRhsEnergyBalance("helical", 1.0_wp, 1.0_wp, 0.0_wp, .false., 0.37_wp)
+    call checkRhsEnergyBalance("helical", 1.0_wp, 1.0_wp, 0.0_wp, .false., 0.37_wp, .true.)
   end subroutine testRhsConservesEnergyHelical
 
 
   @test
   subroutine testRhsConservesEnergyPlanepole()
-    call checkRhsEnergyBalance("planepole", 1.0_wp, 1.0_wp, 0.0_wp, .false., 0.37_wp)
+    call checkRhsEnergyBalance("planepole", 1.0_wp, 1.0_wp, 0.0_wp, .false., 0.37_wp, .true.)
   end subroutine testRhsConservesEnergyPlanepole
 
 
   !> Taper and end ramp change alpha - it has to change in both equations at once.
   @test
   subroutine testRhsConservesEnergyTaperedRamp()
-    call checkRhsEnergyBalance("planepole", 1.0_wp, 1.0_wp, -0.05_wp, .true., 0.05_wp)
-    call checkRhsEnergyBalance("planepole", 1.0_wp, 1.0_wp, -0.05_wp, .true., 0.6_wp)
+    call checkRhsEnergyBalance("planepole", 1.0_wp, 1.0_wp, -0.05_wp, .true., 0.05_wp, .true.)
+    call checkRhsEnergyBalance("planepole", 1.0_wp, 1.0_wp, -0.05_wp, .true., 0.6_wp, .true.)
   end subroutine testRhsConservesEnergyTaperedRamp
+
+
+  !> The same balance through the 3D path - getInterps_3D, getFFelecs_3D and
+  !! getSource_3D - where the averaged focusing is also live.  Beam and field
+  !! still have to balance exactly: focusing moves transverse momentum, not
+  !! energy.
+  @test
+  subroutine testRhsConservesEnergy3DHelical()
+    call checkRhsEnergyBalance("helical", 1.0_wp, 1.0_wp, 0.0_wp, .false., 0.37_wp, .false.)
+  end subroutine testRhsConservesEnergy3DHelical
+
+
+  @test
+  subroutine testRhsConservesEnergy3DPlanepole()
+    call checkRhsEnergyBalance("planepole", 1.0_wp, 1.0_wp, 0.0_wp, .false., 0.37_wp, .false.)
+  end subroutine testRhsConservesEnergy3DPlanepole
+
+
+  @test
+  subroutine testRhsConservesEnergy3DCurved()
+    call checkRhsEnergyBalance("curved", 1.0_wp, 1.0_wp, 0.0_wp, .false., 0.37_wp, .false.)
+  end subroutine testRhsConservesEnergy3DCurved
 
 end module testAveraging

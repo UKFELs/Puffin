@@ -24,6 +24,7 @@ use Globals, only: NX_G, NBX_G, NY_G, NBY_G, NZ2_G, NBZ2_G, sLengthOfElmX_G, sLe
 use IO, only: tErrorLog_G, log_error
 use parafield, only: tre_fft, tim_fft, redist2fftwlt, redistbackfft
 use GlobalTypes, only: tSimulationContext
+use averaging, only: getAvgCarrierKz2
 use ParallelSetUp, only: Get_time
 use mpi, only: MPI_ALLREDUCE, MPI_COMM_WORLD, MPI_DOUBLE_PRECISION, MPI_MAX
 
@@ -117,11 +118,21 @@ end subroutine diffractIM
 !> @param[in] h Diffraction step size \f$ \Delta \bar{z} \f$
 !> @param[out] qOK Error flag.
 
-subroutine multiplyexp(h,qOK)
+subroutine multiplyexp(h, kz2Carrier, qOK)
 
   implicit none (type, external)
 
   real(kind=wp), intent(in) :: h
+
+! Offset from the stored field's z2 wavenumber to the physical one: zero
+! normally, and -1/2rho in averaged mode, where the arrays hold an envelope
+! about the exp(-i z2/2rho) carrier (see getAvgCarrierKz2). Diffraction is
+! frequency dependent, so it has to act on the physical wavenumber - offsetting
+! it rather than freezing it at the carrier keeps diffraction correct across
+! the band, and leaves the envelope's own kz2 = 0 mode diffracting exactly as
+! the carrier did on a resolved mesh.
+
+  real(kind=wp), intent(in) :: kz2Carrier
 
   logical, intent(out) :: qOK
 
@@ -135,7 +146,8 @@ subroutine multiplyexp(h,qOK)
   integer(kind=IP) :: loc_nz2         !< Local number of z2 nodes
 
   real(kind=wp) :: cutoff, &          !< Frequency cutoff for high pass filter
-                   delz2              !< Mesh spacing in z2
+                   delz2, &           !< Mesh spacing in z2
+                   kz2p               !< Physical z2 wavenumber of this mode
 
 !------------------------------------------------------
 !                      Begin
@@ -156,15 +168,22 @@ subroutine multiplyexp(h,qOK)
 
            !ind=x_inc+y_inc*NX_G+z2_inc*NX_G*NY_G
 
-           if ((kz2_loc_G(z2_inc)>cutoff) .or. &
-                (kz2_loc_G(z2_inc)<-cutoff)) then
+           kz2p = kz2_loc_G(z2_inc) + kz2Carrier
 
-              if (kz2_loc_G(z2_inc)/=0.0_WP) then
+!          The high-pass filter's cutoff is defined on the physical wavenumber.
+!          In averaged mode every mode the envelope mesh can hold is within
+!          ~1/(2 lambdarPerCell) of the carrier, far above any sensible sfilt,
+!          so the filter is inert there - which is the right answer, not a
+!          special case: a cut at envelope kz2 = 0 would delete the carrier.
+
+           if ((kz2p>cutoff) .or. (kz2p<-cutoff)) then
+
+              if (kz2p/=0.0_WP) then
 
                 Afftw(x_inc+1,y_inc+1,z2_inc+1) = &
                            exp(posI*h*(kx_G(x_inc)**2 + &
                                      ky_G(y_inc)**2) / &
-                                (2.0_WP*kz2_loc_G(z2_inc))) * &
+                                (2.0_WP*kz2p)) * &
                            Afftw(x_inc+1,y_inc+1,z2_inc+1)
 
               end if
@@ -230,11 +249,20 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, ctx, qOK)
   logical, intent(out)  ::  qOK
 
   integer(kind=ip) :: ntrh, ix, iy, iz
+  real(kind=wp) :: kz2Carrier
   logical :: qOKL
 
 !                      Begin
 
   qOK = .false.
+
+!     In averaged mode the field arrays hold an envelope about the
+!     exp(-i z2/2rho) carrier, so the physical z2 wavenumber of a mode is its
+!     own kz2 plus this offset. Zero otherwise, leaving the unaveraged path
+!     arithmetically identical.
+
+  kz2Carrier = 0.0_wp
+  if (ctx%flags%period_averaged) kz2Carrier = getAvgCarrierKz2(ctx%frame%rho)
 
 !     Allocate arrays and get distributed FT of field.
 !     Transforming from A(x,y,z2,zbar) to A(kx,ky,kz2,zbar)
@@ -291,7 +319,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, ctx, qOK)
 
 !    Multiply field by the exp factor to obtain A(kx,ky,kz2,zbar+h)
 
-  call MultiplyExp(h,qOKL)
+  call MultiplyExp(h, kz2Carrier, qOKL)
 
 
   call Get_time(tr_time_e)
@@ -321,7 +349,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, ctx, qOK)
 
 !      Now solve for the absorbing boundary layer
 
-  call AbsorptionStep(Afftw, h, ffact)
+  call AbsorptionStep(Afftw, h, kz2Carrier, ffact)
 
   call Get_time(tr_time_e)
 
@@ -373,7 +401,7 @@ END SUBROUTINE DiffractionStep
 !> @param[in] h Diffraction step size \f$ \Delta \bar{z} \f$
 !> @param[in] ffact Absorption coefficient
 
-SUBROUTINE AbsorptionStep(sAl,h,ffact)
+SUBROUTINE AbsorptionStep(sAl,h,kz2Carrier,ffact)
 
 ! This subroutine implements a boundary region
 ! in the x, y and z2 directions. The method used
@@ -416,6 +444,11 @@ SUBROUTINE AbsorptionStep(sAl,h,ffact)
 
   REAL(KIND=WP), INTENT(IN) :: h,ffact
 
+! Offset from the stored field's z2 wavenumber to the physical one - zero
+! normally, -1/2rho in averaged mode. See multiplyexp.
+
+  REAL(KIND=WP), INTENT(IN) :: kz2Carrier
+
 !               LOCAL ARGS
 
   REAL(KIND=WP), allocatable :: mask(:), mask_z2(:)
@@ -423,6 +456,7 @@ SUBROUTINE AbsorptionStep(sAl,h,ffact)
   COMPLEX(KIND=WP) :: posI
   INTEGER(KIND=IP) :: iz2, x_inc, y_inc, z2_inc, ix, iy
   INTEGER(KIND=IP) :: loc_nz2
+  REAL(KIND=WP) :: kz2p
   LOGICAL :: qOKL
 
 ! ############################
@@ -490,7 +524,9 @@ SUBROUTINE AbsorptionStep(sAl,h,ffact)
     do y_inc=0,NY_G-1_IP
       do x_inc=0,NX_G-1_IP
 
-        if (kz2_loc_G(z2_inc)/=0.0_WP) then
+        kz2p = kz2_loc_G(z2_inc) + kz2Carrier
+
+        if (kz2p/=0.0_WP) then
 
               !  sAl(ind)=exp(-posI*h*(kx_G(x_inc)**2 + &
               !             ky_G(y_inc)**2) / &
@@ -498,7 +534,7 @@ SUBROUTINE AbsorptionStep(sAl,h,ffact)
 
            sAl(x_inc+1,y_inc+1,z2_inc+1) = exp(-h*sBeta_G*(abs(kx_G(x_inc)) + &
                           abs(ky_G(y_inc))) / &
-                          (sqrt(abs(2.0_WP * kz2_loc_G(z2_inc))))) * &
+                          (sqrt(abs(2.0_WP * kz2p)))) * &
                           sAl(x_inc+1,y_inc+1,z2_inc+1)
 
 !          sAl(ind) = exp(-h*sBeta_G) * sAl(ind)

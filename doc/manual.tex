@@ -824,9 +824,29 @@ where $\xi_j$ is the phase amplitude of the figure-of-eight excursion in $\bar{z
 \frac{\partial \tilde{A}}{\partial \bar{z}} &= \frac{1}{\bar{n}_p}\sum_{j} \frac{\tilde{p}_j}{\Gamma_j} (1+\eta p_{2j}) \delta(\bar{z}_2 - \bar{z}_{2j}) \quad \text{(1D)}, \\
 \frac{d \Gamma_{j}}{d \bar{z}} &= - \rho \frac{(1 + \eta p_{2j})}{\Gamma_j} (\tilde{p}_j \tilde{A}^*_j + c.c.),
 \end{align}
-which is what makes the averaged system conserve beam plus field energy exactly. $p_{2j}$ is evaluated with $|\bar{p}_\bot|^2 + \alpha^2 f_p$ in place of $|\bar{p}_\bot|^2$ - the $\bar{a}_u \rightarrow \bar{a}_{u,rms}$ substitution - and in 1D the slow transverse momentum is constant. The radiation-driven quiver, the $\eta p_2 A_\bot / \kappa^2$ term of equation \eqref{pperpeqn2}, is dropped; its slow effect on $p_2$ is $O(\rho)$ relative to the pendulum dynamics.
+which is what makes the averaged system conserve beam plus field energy exactly. $p_{2j}$ is evaluated with $|\bar{p}_\bot|^2 + \alpha^2 f_p$ in place of $|\bar{p}_\bot|^2$ - the $\bar{a}_u \rightarrow \bar{a}_{u,rms}$ substitution. The radiation-driven quiver, the $\eta p_2 A_\bot / \kappa^2$ term of equation \eqref{pperpeqn2}, is dropped; its slow effect on $p_2$ is $O(\rho)$ relative to the pendulum dynamics.
+
+\subsubsection{Transverse motion}
+
+In 1D $b_z = 0$ and the slow transverse momentum is constant. In 3D the natural focusing survives averaging, but only through products of two fast quantities, so it has to be restored explicitly. Off axis, to first order, every undulator type in Section~\ref{puff-undfields} has
+\begin{align}
+b_z = \frac{\sqrt{\eta}}{2\rho}\left(-u_x \bar{x} \sin(\bar{z}/2\rho) + u_y \bar{y} \cos(\bar{z}/2\rho)\right),
+\end{align}
+whose period average against the slow momentum vanishes. Beating it against the quiver instead gives $\langle b_z \bar{p}_{\bot w}\rangle = -\alpha \sqrt{\eta} (u_y^2 \bar{y} + i u_x^2 \bar{x})/4\rho$, using $u_- + u_+ = u_y$ and $u_- - u_+ = u_x$. A curved-pole undulator adds a second contribution: its $b_x$ and $b_y$ have no term linear in $\bar{x}$ or $\bar{y}$, but sampled along the quiver excursion $\bar{x}_w$ they leave $\langle \partial_{\bar{x}} b_y\, \bar{x}_w \rangle$ and $\langle b_x \rangle$ terms in $k_x^2$, focusing in $\bar{x}$ and defocusing in $\bar{y}$ - which is what canting the poles is for. Together,
+\begin{align}
+\frac{d \bar{p}_{\bot j}}{d\bar{z}} = -\kappa \alpha^2 \frac{(1 + \eta p_{2j})}{\Gamma_j}
+  \left[ \left( \frac{\sqrt{\eta}\, u_x^2}{4\rho} + \frac{\rho\, u_y^2 k_x^2}{\sqrt{\eta}} \right) \bar{x}_j
+  - i \left( \frac{\sqrt{\eta}\, u_y^2}{4\rho} - \frac{\rho\, u_y k_x^2}{\sqrt{\eta}} \right) \bar{y}_j \right],
+\end{align}
+which reproduces the betatron wavenumbers of the unaveraged solver: $\kappa/\sqrt{2}$ in both planes for a helical undulator, $0$ and $\kappa/\sqrt{2}$ for plane-pole, and $\kappa/2$ in each for curved-pole. The strong-focusing channel of {\bf qFocussing} is already slow and carries through unchanged.
+
+\subsubsection{Diffraction}
+
+The field arrays hold the envelope, so an array Fourier mode at $k_{\bar{z}_2}$ is physically at $k_{\bar{z}_2} - 1/2\rho$, and it is that physical wavenumber which enters the diffraction phase $\exp(i h (k_{\bar{x}}^2 + k_{\bar{y}}^2)/2k_{\bar{z}_2})$, the absorbing boundary, and the {\bf sFiltFrac} high-pass cutoff. Offsetting rather than freezing $k_{\bar{z}_2}$ at the carrier keeps diffraction frequency dependent across the envelope's band. The envelope's own $k_{\bar{z}_2} = 0$ mode is the carrier, and diffracts exactly as it would on a mesh that resolved it. The high-pass filter is then inert in averaged mode, since every representable mode lies within roughly $1/(2\times${\bf lambdarPerCell}$)$ of the carrier and so far above any sensible cutoff; that is the correct behaviour rather than a special case, as a cut placed at envelope $k_{\bar{z}_2} = 0$ would delete the carrier itself.
 
 \subsection{Full Magnetic Undulator Field Analytic Description}
+
+\label{puff-undfields}
 
 The analytic description of the undulator fields are based on those discussed in \cite{scharlemann1}, which in the scaled notation here are:-
 
@@ -1156,7 +1176,7 @@ Logical turning on/off the filtering of low frequency content during the siffrac
 
 {\bf qAveraged}
 
-Logical turning on/off the period-averaged (SVEA) solver mode, described in Section~\ref{puff-avg}. When {\bf .true.}, the field mesh holds the slowly varying envelope of the radiation about the resonant carrier rather than the resolved field, and the electron equations are averaged over an undulator period, with the quiver carried analytically. The mesh no longer has to resolve the resonant wavelength, and is set by {\bf lambdarPerCell}; the step no longer has to resolve the undulator period either, and {\bf stepsPerPeriod} $=1$ or $2$ is usually enough. It is an opt-in alternative to the unaveraged solver for regimes where averaging is valid: it discards coherent spontaneous emission from sharp current gradients, bandwidth beyond the envelope mesh's roughly $\pm 1/(2\times${\bf lambdarPerCell}$)$ of the resonant frequency, harmonics, and electrons far from resonance, for which the ponderomotive phase is no longer slow. Two-colour and strongly tapered cases fall in that last class. Currently 1D only, and for helical or linearly polarised undulators; the undulator ends, if modelled, only ramp the coupling. [.false.]
+Logical turning on/off the period-averaged (SVEA) solver mode, described in Section~\ref{puff-avg}. When {\bf .true.}, the field mesh holds the slowly varying envelope of the radiation about the resonant carrier rather than the resolved field, and the electron equations are averaged over an undulator period, with the quiver carried analytically. The mesh no longer has to resolve the resonant wavelength, and is set by {\bf lambdarPerCell}; the step no longer has to resolve the undulator period either, and {\bf stepsPerPeriod} $=1$ or $2$ is usually enough. It is an opt-in alternative to the unaveraged solver for regimes where averaging is valid: it discards coherent spontaneous emission from sharp current gradients, bandwidth beyond the envelope mesh's roughly $\pm 1/(2\times${\bf lambdarPerCell}$)$ of the resonant frequency, harmonics, and electrons far from resonance, for which the ponderomotive phase is no longer slow. Two-colour and strongly tapered cases fall in that last class. 1D and 3D, for helical or linearly polarised undulators; the undulator ends, if modelled, only ramp the coupling. [.false.]
 
 {\bf ioutinfo}
 
