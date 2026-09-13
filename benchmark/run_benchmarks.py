@@ -78,14 +78,17 @@ def stage_inputs(workdir: Path) -> None:
     shutil.copytree(HERE / "inputs", dest, dirs_exist_ok=True)
 
 
-def run_once(puffin: Path, workdir: Path, deck: str, ranks: int, mpirun: str):
+def run_once(puffin: Path, workdir: Path, deck: str, ranks: int, mpirun: str,
+             omp_threads: int = 1):
     """Run one repetition; return (wall_s, undulator_s)."""
     cmd = [mpirun, "-n", str(ranks), str(puffin), deck]
     env = dict(os.environ)
     # Puffin is built with OpenMP.  Left unset, the OpenMP runtime spawns one
     # thread per core *per MPI rank*, which oversubscribes the machine and makes
-    # timings meaningless (and much slower).  Pin to one thread per rank.
-    env["OMP_NUM_THREADS"] = "1"
+    # timings meaningless (and much slower).  Pin the thread count explicitly.
+    # Note ranks * omp_threads must stay within the physical core count, or the
+    # oversubscription this guards against comes straight back.
+    env["OMP_NUM_THREADS"] = str(omp_threads)
 
     t0 = time.perf_counter()
     proc = subprocess.run(
@@ -132,6 +135,9 @@ def main() -> int:
     ap.add_argument("--label", default="", help="label for this result set, e.g. a git sha")
     ap.add_argument("--workdir", help="scratch dir to run in (default: a temp dir)")
     ap.add_argument("--list", action="store_true", help="list cases and exit")
+    ap.add_argument("--omp-threads", type=int, default=1, metavar="N",
+                    help="OMP_NUM_THREADS per MPI rank (default 1). ranks*N must "
+                         "fit in the physical core count")
     args = ap.parse_args()
 
     if args.list:
@@ -166,7 +172,7 @@ def main() -> int:
             print(f"[{name}] {case['desc']}", flush=True)
             for i in range(args.reps):
                 wall, und = run_once(puffin, workdir, case["deck"], case["ranks"],
-                                     args.mpirun)
+                                     args.mpirun, args.omp_threads)
                 walls.append(wall)
                 unds.append(und)
                 print(f"  rep {i + 1}/{args.reps}: wall {wall:7.3f} s   "
@@ -176,6 +182,7 @@ def main() -> int:
                 "deck": case["deck"],
                 "ranks": case["ranks"],
                 "reps": args.reps,
+                "omp_threads": args.omp_threads,
                 "wall_s": walls,
                 "undulator_s": unds,
                 "wall_min": min(walls),

@@ -9,7 +9,7 @@ use puffin_kinds, only: WP, IPL, IP
 implicit none (type, external)
 private
 
-public :: bxu, byu, bzu, dV3, dx, dy, dz2, econst, halfx, halfy, iOutside, IP, IPL, lis_GR, maxEl, &
+public :: bxu, byu, bzu, dV3, dx, dy, dz2, econst, halfx, halfy, iOutside, IP, IPL, lis_GR, &
            nb, nc, ntrans, p_nodes, qoutside, retim, salphaSq, sField4ElecImag, sField4ElecReal, &
            sInv2rho, sp2, un, WP, ZOver2rho
 
@@ -23,7 +23,6 @@ public :: bxu, byu, bzu, dV3, dx, dy, dz2, econst, halfx, halfy, iOutside, IP, I
 
 !     Loop counters
 
-  integer(kind=ipl) :: maxEl
 
 !    For index referencing
 

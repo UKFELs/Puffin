@@ -142,12 +142,6 @@ contains
 
 !$OMP PARALLEL
 
-! !$OMP SIMD
-!     do i = 1, iNumberElectrons_G
-!       tmp1(i) = sz2(i) * 4.2_wp ! + 1_IP - (fz2-1)
-!     end do
-! !$OMP END SIMD
-
   call getP2(sp2, sgam, spr, spi, ctx%frame%eta, ctx%frame%gamma_ref, ctx%frame%aw)
 
 
@@ -157,21 +151,11 @@ contains
 
 
 
-    p_nodes = int(sz2 / dz2, kind=ip) + 1_IP - (fz2-1)
-! !$OMP WORKSHARE
-!!$OMP SIMD
-!    do i = 1, iNumberElectrons_G
-!      tmp1(i) = sz2(i) * 4.2_wp ! + 1_IP - (fz2-1)
-!    end do
-!!$OMP END SIMD
-!    tmp1 = sz2 * 4.2_wp
-    !!$OMP SIMD
-!    do i = 1, iNumberElectrons_G
-!      p_nodes(i) = int(sz2(i) / dz2, kind=ip) + 1_IP - (fz2-1)
-!    end do
-    !!$OMP END SIMD
+!$OMP WORKSHARE
 
-! !$OMP END WORKSHARE
+    p_nodes = int(sz2 / dz2, kind=ip) + 1_IP - (fz2-1)
+
+!$OMP END WORKSHARE
 
   else
 
@@ -354,7 +338,7 @@ contains
 
 subroutine rhs_tmsavers(sz, und, frame)
 
-use rhs_vars, only: iOutside, maxEl, retim, ntrans, halfx, halfy, nc, nb, ZOver2rho, salphaSq, &
+use rhs_vars, only: iOutside, retim, ntrans, halfx, halfy, nc, nb, ZOver2rho, salphaSq, &
   sInv2rho, econst, un, dV3, dx, dy, dz2, qoutside, WP
 
 real(kind=wp), intent(in) :: sz
@@ -397,7 +381,6 @@ type(tFELFrame), intent(in) :: frame
 
   nb = 2.0_WP * frame%rho / ((und%fx**2.0_WP+und%fy**2.0_WP)*frame%eta)
 
-  maxEl = maxval(procelectrons_G)
   qoutside=.FALSE.
   iOutside=0_IP
 
