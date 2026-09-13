@@ -16,7 +16,9 @@ use puffin_kinds, only: long, WP, IP
 use IO, only: tErrorLog_G, log_error
 use puffin_constants, only: pi, iX_CG, iY_CG, iZ2_CG, iPX_CG, iPY_CG, iDiffraction_CG, &
   iFocussing_CG, iOneD_CG
-use Globals, only: qRndFj_G, sSigFj_G, qRndEj_G, sSigEj_G, gExtEj_G, sStepSize, nSteps
+use Globals, only: qRndFj_G, sSigFj_G, qRndEj_G, sSigEj_G, gExtEj_G, sStepSize, nSteps, &
+                   qAveraged_G, sLambdarPerCell_G
+use averaging, only: getAvgUndAmps, qAvgPolarisationOK
 use particleFunctions, only: iTopHatDistribution_CG, gaussian
 use grids, only: getinttypes
 use ParallelSetUp, only: stopcode
@@ -89,6 +91,9 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
   end do
 
   call stpFSampleLens(iNodes,sWigglerLength,sLengthOfElm,qSwitches(iOneD_CG),qOKL)
+
+  call chkAveraged(qSwitches(iOneD_CG), f_x, f_y, qOKL)
+  if (.NOT. qOKL) goto 1000
 
   if (qSimple) then
 
@@ -475,6 +480,44 @@ end subroutine checkRndEjLens
 
 
 
+!> Checks specific to the period-averaged mode (qAveraged).  f_x, f_y are the
+!> polarisation after calcScaling, which sets them from the undulator type.
+
+subroutine chkAveraged(qOneD, f_x, f_y, qOK)
+
+  logical, intent(in) :: qOneD
+  real(kind=wp), intent(in) :: f_x, f_y
+  logical, intent(out) :: qOK
+
+  real(kind=wp) :: cx, cy
+
+  qOK = .true.
+
+  if (.not. qAveraged_G) return
+
+  if (.not. qOneD) then
+    call log_error('Averaged mode (qAveraged) supports 1D only so far.', tErrorLog_G)
+    qOK = .false.
+  end if
+
+  call getAvgUndAmps("", f_x, f_y, cx, cy)
+
+  if (.not. qAvgPolarisationOK(cx, cy)) then
+    call log_error('Averaged mode (qAveraged) needs a helical or linearly '// &
+                   'polarised undulator: one field envelope cannot represent '// &
+                   'elliptical polarisation.', tErrorLog_G)
+    qOK = .false.
+  end if
+
+  if (sLambdarPerCell_G <= 0.0_wp) then
+    call log_error('lambdarPerCell must be > 0 in averaged mode.', tErrorLog_G)
+    qOK = .false.
+  end if
+
+end subroutine chkAveraged
+
+
+
 SUBROUTINE chkFSampleLens(iNodes,sWigglerLength,sLengthOfElm,rho,qOK)
 
 !                  ARGUMENTS
@@ -513,7 +556,10 @@ SUBROUTINE chkFSampleLens(iNodes,sWigglerLength,sLengthOfElm,rho,qOK)
       GOTO 1000
     END IF
 
-    IF (sLengthOfElm(iZ2_CG) > maxspcing) THEN
+!     Averaged mode stores an envelope rather than the carrier, so the mesh
+!     need not resolve the resonant wavelength - coarsening it is the point.
+
+    IF ((sLengthOfElm(iZ2_CG) > maxspcing) .and. (.not. qAveraged_G)) THEN
       CALL log_error("Length of field elements > 1/8th of resonant wavelength in z2.",tErrorLog_G)
       GOTO 1000
     END IF

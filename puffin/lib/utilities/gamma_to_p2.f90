@@ -18,7 +18,7 @@ use puffin_kinds, only: WP, IP
 implicit none (type, external)
 private
 
-public :: getp2
+public :: getp2, getp2avg
 
 
 contains
@@ -113,6 +113,38 @@ contains
 !$OMP END DO
 
   end subroutine getP2
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!> getP2 for the period-averaged mode, where px, py hold only the slow part
+!> of pperp.  The undulator quiver is added back through its period average
+!> pqSq = <|pperp_w|^2> (see getAvgCoupling) - the aw -> aw_rms substitution.
+!> The quiver's cross term with the slow part averages to zero over a period.
+!> Same cancellation-free form and same !$OMP DO structure as getP2.
+
+  subroutine getP2Avg(p2, gamma, px, py, eta, gamma0, aw, pqSq)
+
+  implicit none (type, external)
+
+    real(kind=wp), contiguous, intent(in) :: px(:), py(:), gamma(:)
+    real(kind=wp), intent(in) :: eta, gamma0, aw, pqSq
+
+    real(kind=wp), contiguous, intent(out) :: p2(:)
+
+    integer(kind=ip) :: i
+    real(kind=wp) :: u, rt
+
+!$OMP DO PRIVATE(u, rt)
+
+    do i = 1, size(p2, kind=ip)
+      u = ( 1.0_wp + aw**2*(px(i)**2 + py(i)**2 + pqSq) ) / (gamma0**2 * gamma(i)**2)
+      rt = sqrt(1.0_wp - u)
+      p2(i) = u / (eta * rt * (1.0_wp + rt))
+    end do
+
+!$OMP END DO
+
+  end subroutine getP2Avg
 
 
 

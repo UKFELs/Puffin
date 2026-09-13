@@ -1,0 +1,47 @@
+! Averaged-vs-unaveraged comparison deck (see README.md).
+! Seeded, noise-free, single undulator, no lattice file, no undulator ends:
+! everything that could add run-to-run variance is off, so the only thing
+! that changes between runs is what run_compare.py sets: the solver mode,
+! mesh, step, undulator type and aw.
+
+&MDATA
+ qOneD                  = .true.
+ qFieldEvolve           = .true.
+ qElectronsEvolve       = .true.
+ qElectronFieldCoupling = .true.
+ qFocussing             = .false.
+ qDiffraction           = .false.
+ qFilter                = .true.
+ q_noise                = .false.
+ qUndEnds               = .false.
+ beam_file              = 'beam_file.in'
+ sElectronThreshold     = 0.05
+ iNumNodesX             = 1
+ iNumNodesY             = 1
+ nodesPerLambdar        = 12
+ sFModelLengthX         = 4.0
+ sFModelLengthY         = 4.0
+ sFModelLengthZ2        = 60.0
+ iRedNodesX             = 1
+ iRedNodesY             = 1
+ sFiltFrac              = 0.3
+ sDiffFrac              = 1.0
+ sBeta                  = 1.0
+ seed_file              = 'seed_file.in'
+ srho                   = 0.005
+ sux                    = 1.0
+ suy                    = 1.0
+ saw                    = 1.0121809
+ sgamma_r               = 456.40
+ lambda_w               = 0.0275
+ Dfact                  = 0.0
+ zundType               = 'planepole'
+ taper                  = 0.0
+ lattFile               = ''
+ stepsPerPeriod         = 30
+ nPeriods               = 60
+ sZ0                    = 0.0
+ iWriteNthSteps         = 1000000
+ iWriteIntNthSteps      = 1000000
+ sPEOut                 = 0.0
+ /

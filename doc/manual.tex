@@ -803,6 +803,29 @@ The formalism for including a variation in the magnetic undulator field, so that
 
 
 
+\subsection{Period-Averaged Mode}
+
+\label{puff-avg}
+
+With {\bf qAveraged} set, Puffin solves a period-averaged form of the equations above. Both fast phases carry the same $1/2\rho$ in the scaled variables: the undulator phase is $\bar{z}/2\rho$ and the radiation phase $\bar{z}_2/2\rho$, so the ponderomotive phase of electron $j$ is
+\begin{align}
+\theta_j = \frac{\bar{z} - \bar{z}_{2j}}{2\rho}, \qquad \frac{d\theta_j}{d\bar{z}} = \frac{1 - p_{2j}}{2\rho},
+\end{align}
+slow exactly at Puffin's resonance condition $p_2 = 1$. With the on-axis undulator field $b_x = u_x \cos(\bar{z}/2\rho)$, $b_y = u_y \sin(\bar{z}/2\rho)$, the quiver is $\bar{p}_{\bot w} = -\alpha[u_+ e^{i\bar{z}/2\rho} + u_- e^{-i\bar{z}/2\rho}]$ with $u_\mp = (u_y \pm u_x)/2$, and the resonant component of the field is the one at $e^{-i\bar{z}_2/2\rho}$. The field is written in terms of a slowly varying envelope $\tilde{A}$,
+\begin{align}
+A_\bot = \frac{u_-}{\sqrt{f_p}} \tilde{A}\, e^{-i\bar{z}_2/2\rho} + \frac{u_+}{\sqrt{f_p}} \tilde{A}^*\, e^{+i\bar{z}_2/2\rho}, \qquad f_p = \frac{u_x^2 + u_y^2}{2},
+\end{align}
+which is exact for a helical ($u_+ = 0$) or linearly polarised ($|u_+| = |u_-|$) undulator, and normalised so that $|\tilde{A}|^2$ is the period average of $|A_\bot|^2$. The transverse momentum $\bar{p}_\bot$ holds only its slow part. Averaging over an undulator period, the coupling is carried by an effective resonant momentum
+\begin{align}
+\tilde{p}_j = -\alpha \sqrt{f_p}\, JJ_j\, e^{-i\theta_j}, \qquad JJ_j = J_0(\xi_j) - \frac{u_+}{u_-} J_1(\xi_j), \qquad \xi_j = \frac{(1 + \eta p_{2j})^3 \bar{a}_u^2 \alpha^2 (u_y^2 - u_x^2)}{8 \eta \gamma_r^2 \Gamma_j^2},
+\end{align}
+where $\xi_j$ is the phase amplitude of the figure-of-eight excursion in $\bar{z}_2$ that a planar undulator imposes through the $2\bar{z}/2\rho$ ripple in $|\bar{p}_{\bot w}|^2$. $\tilde{p}_j$ replaces $\bar{p}_{\bot j}$ in both the field source and the energy equation,
+\begin{align}
+\frac{\partial \tilde{A}}{\partial \bar{z}} &= \frac{1}{\bar{n}_p}\sum_{j} \frac{\tilde{p}_j}{\Gamma_j} (1+\eta p_{2j}) \delta(\bar{z}_2 - \bar{z}_{2j}) \quad \text{(1D)}, \\
+\frac{d \Gamma_{j}}{d \bar{z}} &= - \rho \frac{(1 + \eta p_{2j})}{\Gamma_j} (\tilde{p}_j \tilde{A}^*_j + c.c.),
+\end{align}
+which is what makes the averaged system conserve beam plus field energy exactly. $p_{2j}$ is evaluated with $|\bar{p}_\bot|^2 + \alpha^2 f_p$ in place of $|\bar{p}_\bot|^2$ - the $\bar{a}_u \rightarrow \bar{a}_{u,rms}$ substitution - and in 1D the slow transverse momentum is constant. The radiation-driven quiver, the $\eta p_2 A_\bot / \kappa^2$ term of equation \eqref{pperpeqn2}, is dropped; its slow effect on $p_2$ is $O(\rho)$ relative to the pendulum dynamics.
+
 \subsection{Full Magnetic Undulator Field Analytic Description}
 
 The analytic description of the undulator fields are based on those discussed in \cite{scharlemann1}, which in the scaled notation here are:-
@@ -990,7 +1013,11 @@ Length of the periodic mesh, expressed as the number of reference resonant wavel
 
 {\bf nodesPerLambdar}
 
-Number of nodes in the field mesh to use in the longitudinal dimension per reference resonant wavelength. The reference resonant wavelength is defined from the reference energy {\bf sgamma\_r}, the undulator period {\bf lambda\_w} and the base or reference undulator parameter {\bf saw} in the usual way. [17]
+Number of nodes in the field mesh to use in the longitudinal dimension per reference resonant wavelength. The reference resonant wavelength is defined from the reference energy {\bf sgamma\_r}, the undulator period {\bf lambda\_w} and the base or reference undulator parameter {\bf saw} in the usual way. Ignored in the period-averaged mode ({\bf qAveraged}), which uses {\bf lambdarPerCell} instead. [17]
+
+{\bf lambdarPerCell}
+
+Longitudinal field mesh spacing in reference resonant wavelengths, used in place of {\bf nodesPerLambdar} in the period-averaged mode ({\bf qAveraged} $=$ .true.), where the mesh holds an envelope and need not resolve the resonant wavelength. The envelope bandwidth it can represent is roughly $\pm 1/(2\times${\bf lambdarPerCell}$)$ of the resonant frequency. Values of $1$--$2$ are typical. Ignored when {\bf qAveraged} is .false. [1.0]
 
 {\bf sFModelLengthZ2}
 
@@ -1126,6 +1153,10 @@ Logical turning on/off the input of scaled units into Puffin. If {\bf .true.}, i
 {\bf qFilter}
 
 Logical turning on/off the filtering of low frequency content during the siffraction step. The high-pass filter cut-off is defined by {\bf sFiltFrac}. If true, the low frequency content is set $=0$. If false, the low frequency content is not manipulated/diffracted. [.true.]
+
+{\bf qAveraged}
+
+Logical turning on/off the period-averaged (SVEA) solver mode, described in Section~\ref{puff-avg}. When {\bf .true.}, the field mesh holds the slowly varying envelope of the radiation about the resonant carrier rather than the resolved field, and the electron equations are averaged over an undulator period, with the quiver carried analytically. The mesh no longer has to resolve the resonant wavelength, and is set by {\bf lambdarPerCell}; the step no longer has to resolve the undulator period either, and {\bf stepsPerPeriod} $=1$ or $2$ is usually enough. It is an opt-in alternative to the unaveraged solver for regimes where averaging is valid: it discards coherent spontaneous emission from sharp current gradients, bandwidth beyond the envelope mesh's roughly $\pm 1/(2\times${\bf lambdarPerCell}$)$ of the resonant frequency, harmonics, and electrons far from resonance, for which the ponderomotive phase is no longer slow. Two-colour and strongly tapered cases fall in that last class. Currently 1D only, and for helical or linearly polarised undulators; the undulator ends, if modelled, only ramp the coupling. [.false.]
 
 {\bf ioutinfo}
 

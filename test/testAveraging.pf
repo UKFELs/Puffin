@@ -1,0 +1,468 @@
+!> Unit tests for the period-averaged (SVEA) mode - see averaging.f90.
+!!
+!! Two kinds of test.
+!!
+!! The first checks the averaging itself against brute force.  A single
+!! electron's exact quiver motion is followed over one undulator period, with
+!! p2 from the unaveraged getP2 so that the planar figure-of-eight excursion in
+!! z2 is included, and the period average of its coupling to the field - in
+!! the field source and in the energy equation - is compared with what the
+!! averaged model puts in its place.  That pins down JJ, the polarisation
+!! factor and the carrier sign independently of the solver.
+!!
+!! The second calls getrhs in averaged mode and checks that beam plus field
+!! energy is conserved to round-off in a single RHS evaluation.  The source and
+!! the energy equation share one coupling array by construction; this is the
+!! guard that stops them drifting apart (a mismatched JJ, alpha or phase
+!! factor between getSource_1D and dgamdz_f leaks energy while looking
+!! perfectly plausible).
+!!
+!! No MPI.
+
+module testAveraging
+
+  use pFUnit
+  use puffin_kinds
+  use puffin_constants, only: pi
+  use GlobalTypes, only: tUndulator, tFELFrame, tSimulationContext
+  use averaging, only: tAvgCoupling, getAvgUndAmps, getAvgPolarisation, qAvgPolarisationOK, &
+                       getAvgEnvelope, getAvgCoupling, avgJJ, getAvgSeedFactor
+  use gtop2, only: getP2, getP2Avg
+
+  implicit none
+
+contains
+
+  !> A frame and undulator loosely modelled on the 1D CLARA deck.  eta is set
+  !! so that a Gamma = 1 particle is exactly resonant (p2 = 1) in the averaged
+  !! model for this polarisation.
+  subroutine makeUnd(und, frame, undType, fx, fy)
+    type(tUndulator), intent(out) :: und
+    type(tFELFrame), intent(out) :: frame
+    character(*), intent(in) :: undType
+    real(kind=wp), intent(in) :: fx, fy
+
+    real(kind=wp) :: cx, cy, uMinus, uPlus, fp
+
+    frame%rho = 0.005_wp
+    frame%aw = 1.0121809_wp
+    frame%gamma_ref = 456.40_wp
+    frame%kappa = frame%aw / (2.0_wp * frame%rho * frame%gamma_ref)
+
+    und%undulator_type = undType
+    und%fx = fx
+    und%fy = fy
+    und%model_undulator_ends = .false.
+    und%z_start_undulator = 0.0_wp
+    und%z_end_undulator = 100.0_wp
+    und%n2col = 1.0_wp
+    und%n2col_initial = 1.0_wp
+    und%undulator_gradient = 0.0_wp
+    und%z_taper_start = 0.0_wp
+
+    call getAvgUndAmps(undType, fx, fy, cx, cy)
+    call getAvgPolarisation(cx, cy, uMinus, uPlus, fp)
+
+    frame%eta = 1.0_wp / sqrt(1.0_wp - (1.0_wp + frame%aw**2 * fp) &
+                                        / frame%gamma_ref**2) - 1.0_wp
+
+  end subroutine makeUnd
+
+
+  !> Trapezoidal average of f over the grid.
+  complex(kind=wp) function avgC(f)
+    complex(kind=wp), intent(in) :: f(0:)
+    integer :: n
+    n = ubound(f, 1)
+    avgC = (sum(f) - 0.5_wp * (f(0) + f(n))) / real(n, kind=wp)
+  end function avgC
+
+
+  !> Windowed average of f over the grid, weight sin^4(pi i/n).  Off
+  !! resonance the fast terms do not complete a whole number of cycles in any
+  !! fixed length, so a plain average leaks them in at O(1 - p2); the window's
+  !! sidelobes fall off fast enough that over several periods they vanish.
+  !! Brute force and model are averaged with the same weights, so the slow
+  !! drift of theta is common to both.
+  complex(kind=wp) function avgW(f)
+    complex(kind=wp), intent(in) :: f(0:)
+    real(kind=wp), allocatable :: wt(:)
+    integer :: n, i
+    n = ubound(f, 1)
+    allocate(wt(0:n))
+    do i = 0, n
+      wt(i) = sin(pi * real(i, kind=wp) / real(n, kind=wp))**4
+    end do
+    avgW = sum(wt * f) / sum(wt)
+  end function avgW
+
+
+  !> Period averages of the exact coupling, by brute force, and the averaged
+  !! model's prediction for the same quantities.
+  !!
+  !! srcPlus  = < w pperp exp(+i z2/2rho) >, the drive of the exp(-i z2/2rho)
+  !!            field component A+ (w = (1 + eta p2)/Gamma)
+  !! srcMinus = < w pperp exp(-i z2/2rho) >, the drive of the other helicity A-
+  !! eng      = < w Re(pperp conj(A_perp(z2))) >, the energy-equation coupling,
+  !!            for A_perp built from the envelope Atil as averaging.f90 defines
+  subroutine bruteForce(und, frame, gam, Atil, &
+                        srcPlus, srcMinus, eng, &
+                        srcPlusM, srcMinusM, engM, p2Mean, p2Model)
+    type(tUndulator), intent(in) :: und
+    type(tFELFrame), intent(in) :: frame
+    real(kind=wp), intent(in) :: gam
+    complex(kind=wp), intent(in) :: Atil
+    complex(kind=wp), intent(out) :: srcPlus, srcMinus, srcPlusM, srcMinusM
+    real(kind=wp), intent(out) :: eng, engM, p2Mean, p2Model
+
+    integer, parameter :: nPer = 8, n = 4000 * nPer
+    real(kind=wp), parameter :: z0 = 0.3_wp, z2start = 1.7_wp
+    real(kind=wp), allocatable, dimension(:) :: z, px, py, g, p2, z2, zc, w
+    complex(kind=wp), allocatable, dimension(:) :: pp, Aperp, ptil, f
+    real(kind=wp) :: cx, cy, uMinus, uPlus, fp, lamw, h, inv2rho, centre
+    type(tAvgCoupling) :: cpl
+    real(kind=wp) :: coup, wbar, p2m(1), gm(1), zero(1)
+    complex(kind=wp), parameter :: iu = (0.0_wp, 1.0_wp)
+    integer :: i
+
+    allocate(z(0:n), px(0:n), py(0:n), g(0:n), p2(0:n), z2(0:n), zc(0:n), w(0:n))
+    allocate(pp(0:n), Aperp(0:n), ptil(0:n), f(0:n))
+
+    call getAvgUndAmps(und%undulator_type, und%fx, und%fy, cx, cy)
+    call getAvgPolarisation(cx, cy, uMinus, uPlus, fp)
+
+    lamw = 4.0_wp * pi * frame%rho
+    h = nPer * lamw / real(n, kind=wp)
+    inv2rho = 1.0_wp / (2.0_wp * frame%rho)
+
+    do i = 0, n
+      z(i) = z0 + real(i, kind=wp) * h
+    end do
+
+!   Exact quiver: pperp = -alpha cy cos(zbar/2rho) + i alpha cx sin(zbar/2rho)
+
+    px = -und%n2col * cy * cos(z * inv2rho)
+    py = und%n2col * cx * sin(z * inv2rho)
+    pp = cmplx(px, py, kind=wp)
+    g = gam
+
+    call getP2(p2, g, px, py, frame%eta, frame%gamma_ref, frame%aw)
+
+!   z2 by trapezoidal integration of p2, then its guiding centre: the linear
+!   trend through the period mean, which is what the averaged model tracks.
+
+    z2(0) = z2start
+    do i = 1, n
+      z2(i) = z2(i-1) + 0.5_wp * h * (p2(i-1) + p2(i))
+    end do
+
+!   The z2 ripple is exactly periodic over whole undulator periods, so a plain
+!   average finds the guiding centre
+
+    p2Mean = (z2(n) - z2(0)) / (nPer * lamw)
+    centre = real(avgC(cmplx(z2 - p2Mean * (z - z0), 0.0_wp, kind=wp)), kind=wp)
+    zc = centre + p2Mean * (z - z0)
+
+    w = (1.0_wp + frame%eta * p2) / g
+
+!   The physical field seen at the particle's true position
+
+    Aperp = (uMinus / sqrt(fp)) * Atil * exp(-iu * z2 * inv2rho) &
+          + (uPlus / sqrt(fp)) * conjg(Atil) * exp(iu * z2 * inv2rho)
+
+    f = w * pp * exp(iu * z2 * inv2rho)
+    srcPlus = avgW(f)
+    f = w * pp * exp(-iu * z2 * inv2rho)
+    srcMinus = avgW(f)
+    f = cmplx(w * real(pp * conjg(Aperp), kind=wp), 0.0_wp, kind=wp)
+    eng = real(avgW(f), kind=wp)
+
+!   The averaged model: ptilde = -coup exp(-i (zbar - z2c)/2rho), with p2 and
+!   w from the period-averaged |pperp|^2
+
+    call getAvgCoupling(z0, und, frame, cpl)
+
+    gm = gam
+    zero = 0.0_wp
+    call getP2Avg(p2m, gm, zero, zero, frame%eta, frame%gamma_ref, frame%aw, cpl%pqSq)
+    p2Model = p2m(1)
+    wbar = (1.0_wp + frame%eta * p2Model) / gam
+
+!   JJ for this particle's own energy - the figure-of-eight goes as 1/Gamma^2
+
+    coup = cpl%amp * avgJJ(cpl, 1.0_wp + frame%eta * p2Model, gam)
+
+    ptil = -coup * exp(-iu * (z - zc) * inv2rho)
+
+    srcPlusM = (uMinus / sqrt(fp)) * wbar * avgW(ptil)
+    srcMinusM = (uPlus / sqrt(fp)) * wbar * conjg(avgW(ptil))
+    f = cmplx(wbar * real(ptil * conjg(Atil), kind=wp), 0.0_wp, kind=wp)
+    engM = real(avgW(f), kind=wp)
+
+  end subroutine bruteForce
+
+
+  !> Compare brute force and model for one undulator and energy.  The model
+  !! drops the O(eta) ripple in (1 + eta p2), so 1e-5 relative is as close as
+  !! it can be expected to get; any error in JJ, fp or the carrier sign is
+  !! O(1e-1) or O(1).
+  subroutine checkAgainstBruteForce(undType, fx, fy, gam)
+    character(*), intent(in) :: undType
+    real(kind=wp), intent(in) :: fx, fy, gam
+
+    type(tUndulator) :: und
+    type(tFELFrame) :: frame
+    complex(kind=wp) :: srcPlus, srcMinus, srcPlusM, srcMinusM
+    real(kind=wp) :: eng, engM, p2Mean, p2Model, scale
+    complex(kind=wp), parameter :: Atil = (0.3_wp, 0.7_wp)
+    real(kind=wp), parameter :: tol = 1.0e-5_wp
+
+    call makeUnd(und, frame, undType, fx, fy)
+    call bruteForce(und, frame, gam, Atil, srcPlus, srcMinus, eng, &
+                    srcPlusM, srcMinusM, engM, p2Mean, p2Model)
+
+    scale = abs(srcPlusM)
+
+    @assertEqual(real(srcPlusM, kind=wp), real(srcPlus, kind=wp), tol * scale)
+    @assertEqual(aimag(srcPlusM), aimag(srcPlus), tol * scale)
+    @assertEqual(real(srcMinusM, kind=wp), real(srcMinus, kind=wp), tol * scale)
+    @assertEqual(aimag(srcMinusM), aimag(srcMinus), tol * scale)
+    @assertEqual(engM, eng, tol * scale * abs(Atil))
+
+!   Period-averaged p2 against the true mean velocity.  They differ at second
+!   order in the |pperp|^2 ripple, ~1e-7 here - far below the rho = 5e-3
+!   scale on which it would detune the interaction.
+
+    @assertEqual(p2Mean, p2Model, 1.0e-5_wp)
+
+  end subroutine checkAgainstBruteForce
+
+
+  @test
+  subroutine testHelicalMatchesBruteForce()
+    call checkAgainstBruteForce("helical", 1.0_wp, 1.0_wp, 1.0_wp)
+    call checkAgainstBruteForce("helical", 1.0_wp, 1.0_wp, 1.004_wp)
+  end subroutine testHelicalMatchesBruteForce
+
+
+  @test
+  subroutine testPlanepoleMatchesBruteForce()
+    call checkAgainstBruteForce("planepole", 1.0_wp, 1.0_wp, 1.0_wp)
+    call checkAgainstBruteForce("planepole", 1.0_wp, 1.0_wp, 0.996_wp)
+  end subroutine testPlanepoleMatchesBruteForce
+
+
+  !> Linearly polarised along y, through the variably-polarised default type:
+  !! u+ = -u-, and the figure-of-eight has the opposite sign.
+  @test
+  subroutine testVerticalPlanarMatchesBruteForce()
+    call checkAgainstBruteForce("", 1.0_wp, 0.0_wp, 1.0_wp)
+  end subroutine testVerticalPlanarMatchesBruteForce
+
+
+  !> For planepole JJ must reduce to the textbook J0(xi) - J1(xi) with
+  !! xi = K^2/(4 + 2K^2), K the peak undulator parameter.  They differ only
+  !! through O(eta) terms in the exact resonance condition.
+  @test
+  subroutine testPlanarJJIsTextbook()
+    type(tUndulator) :: und
+    type(tFELFrame) :: frame
+    type(tAvgCoupling) :: cpl
+    real(kind=wp) :: xi
+
+    call makeUnd(und, frame, "planepole", 1.0_wp, 1.0_wp)
+    call getAvgCoupling(1.0_wp, und, frame, cpl)
+
+    xi = frame%aw**2 / (4.0_wp + 2.0_wp * frame%aw**2)
+
+    @assertEqual(bessel_j0(xi) - bessel_j1(xi), cpl%jjRef, 1.0e-4_wp)
+    @assertEqual(0.5_wp, cpl%pqSq, 1.0e-14_wp)
+    @assertEqual(sqrt(0.5_wp), cpl%amp, 1.0e-14_wp)
+
+    call makeUnd(und, frame, "helical", 1.0_wp, 1.0_wp)
+    call getAvgCoupling(1.0_wp, und, frame, cpl)
+
+    @assertEqual(1.0_wp, cpl%jjRef, 1.0e-14_wp)
+    @assertEqual(1.0_wp, cpl%amp, 1.0e-14_wp)
+    @assertEqual(0.0_wp, cpl%xiCoef, 0.0_wp)
+
+  end subroutine testPlanarJJIsTextbook
+
+
+  @test
+  subroutine testPolarisationSupport()
+    ! helical, planar in x, planar in y
+    @assertTrue(qAvgPolarisationOK(1.0_wp, 1.0_wp))
+    @assertTrue(qAvgPolarisationOK(0.0_wp, 1.0_wp))
+    @assertTrue(qAvgPolarisationOK(1.0_wp, 0.0_wp))
+    ! elliptical, and the opposite helicity
+    @assertFalse(qAvgPolarisationOK(0.6_wp, 0.8_wp))
+    @assertFalse(qAvgPolarisationOK(-1.0_wp, 1.0_wp))
+  end subroutine testPolarisationSupport
+
+
+  !> The seed factor takes the exp(-i z2/2rho) field component to the stored
+  !! envelope, whose |.|^2 is the period-averaged |A_perp|^2.
+  @test
+  subroutine testSeedFactor()
+    @assertEqual(1.0_wp, getAvgSeedFactor("helical", 1.0_wp, 1.0_wp), 1e-14_wp)
+    @assertEqual(sqrt(2.0_wp), getAvgSeedFactor("planepole", 1.0_wp, 1.0_wp), 1e-14_wp)
+  end subroutine testSeedFactor
+
+
+  !> Coupling ramps linearly over the 2-period end sections, as the by field does.
+  @test
+  subroutine testEnvelopeRamps()
+    type(tUndulator) :: und
+    type(tFELFrame) :: frame
+    real(kind=wp) :: ramp
+
+    call makeUnd(und, frame, "planepole", 1.0_wp, 1.0_wp)
+    ramp = 8.0_wp * pi * frame%rho
+
+    @assertEqual(1.0_wp, getAvgEnvelope(0.01_wp, und, frame), 1e-14_wp)
+
+    und%model_undulator_ends = .true.
+    und%z_start_undulator = ramp
+    und%z_end_undulator = 1.0_wp
+
+    @assertEqual(0.25_wp, getAvgEnvelope(0.25_wp * ramp, und, frame), 1e-14_wp)
+    @assertEqual(1.0_wp, getAvgEnvelope(0.5_wp, und, frame), 1e-14_wp)
+    @assertEqual(0.75_wp, getAvgEnvelope(1.0_wp + 0.25_wp * ramp, und, frame), 1e-14_wp)
+    @assertEqual(0.0_wp, getAvgEnvelope(1.0_wp + 2.0_wp * ramp, und, frame), 1e-14_wp)
+
+  end subroutine testEnvelopeRamps
+
+
+  !> One RHS evaluation of the averaged 1D system, with the real getrhs.  In
+  !! scaled units the field energy is sum_nodes |A|^2 dV3 and the beam energy
+  !! sum_j chi_j Gamma_j / (2 rho), so
+  !!
+  !!     sum_nodes (Ar dAr/dz + Ai dAi/dz) dV3 + sum_j chi_j dGamma_j/dz / (2 rho) = 0
+  !!
+  !! holds exactly for the discrete system: linear interpolation and linear
+  !! deposition share their weights, and the source and the energy equation
+  !! share ptilde.
+  subroutine checkRhsEnergyBalance(undType, fx, fy, grad, qEnds, sZ)
+
+    use Globals, only: sLengthOfElmX_G, sLengthOfElmY_G, sLengthOfElmZ2_G, NX_G, NY_G, &
+                       NZ2_G, nspinDX, nspinDY, fieldMesh, iTemporal, qElectronsEvolve_G, &
+                       qFieldEvolve_G, qElectronFieldCoupling_G, iNumberElectrons_G, &
+                       procelectrons_G, s_chi_bar_G, dadz_w
+    use ParaField, only: fz2, bz2, tTransInfo_G
+    use rhs, only: getrhs
+
+    character(*), intent(in) :: undType
+    real(kind=wp), intent(in) :: fx, fy, grad, sZ
+    logical, intent(in) :: qEnds
+
+    type(tSimulationContext) :: ctx
+    integer, parameter :: ne = 7, nz = 16
+    real(kind=wp) :: sAr(nz), sAi(nz), dAr(nz), dAi(nz)
+    real(kind=wp), dimension(ne) :: sx, sy, sz2, spr, spi, sgam, &
+                                    sdx, sdy, sdz2, sdpr, sdpi, sdgam
+    real(kind=wp) :: dz2v, fieldRate, beamRate
+    logical :: qOK
+    integer :: j
+
+    call makeUnd(ctx%und, ctx%frame, undType, fx, fy)
+    ctx%und%undulator_gradient = grad
+    ctx%und%model_undulator_ends = qEnds
+    if (qEnds) then
+      ctx%und%z_start_undulator = 8.0_wp * pi * ctx%frame%rho
+      ctx%und%z_end_undulator = 1.0_wp
+    end if
+
+    ctx%flags%period_averaged = .true.
+    ctx%flags%parallel_arrays_ok = .true.
+    ctx%flags%inner_xy_ok = .true.
+
+!   A 1D envelope mesh 1.5 resonant wavelengths per cell
+
+    dz2v = 1.5_wp * 4.0_wp * pi * ctx%frame%rho
+
+    sLengthOfElmX_G = 1.0_wp
+    sLengthOfElmY_G = 1.0_wp
+    sLengthOfElmZ2_G = dz2v
+    NX_G = 1
+    NY_G = 1
+    NZ2_G = nz
+    nspinDX = 1
+    nspinDY = 1
+    fieldMesh = iTemporal
+    tTransInfo_G%qOneD = .true.
+    fz2 = 1
+    bz2 = nz
+
+    qElectronsEvolve_G = .true.
+    qFieldEvolve_G = .true.
+    qElectronFieldCoupling_G = .true.
+
+    iNumberElectrons_G = ne
+    allocate(procelectrons_G(1), s_chi_bar_G(ne), dadz_w(ne))
+    procelectrons_G(1) = ne
+
+    do j = 1, ne
+      s_chi_bar_G(j) = 0.8_wp + 0.05_wp * j
+      sz2(j) = dz2v * (0.37_wp + 1.9_wp * j)
+      sgam(j) = 1.0_wp + 0.01_wp * sin(real(j, kind=wp))
+      spr(j) = 0.01_wp * cos(real(j, kind=wp))
+      spi(j) = -0.02_wp * sin(real(j, kind=wp))
+    end do
+
+    sx = 0.0_wp
+    sy = 0.0_wp
+
+    do j = 1, nz
+      sAr(j) = 0.1_wp * cos(0.7_wp * j)
+      sAi(j) = 0.1_wp * sin(0.3_wp * j + 1.0_wp)
+    end do
+
+    dAr = 0.0_wp
+    dAi = 0.0_wp
+    sdx = 0.0_wp; sdy = 0.0_wp; sdz2 = 0.0_wp
+    sdpr = 0.0_wp; sdpi = 0.0_wp; sdgam = 0.0_wp
+
+    call getrhs(sZ, sAr, sAi, sx, sy, sz2, spr, spi, sgam, &
+                sdx, sdy, sdz2, sdpr, sdpi, sdgam, dAr, dAi, qOK, ctx)
+
+    @assertTrue(qOK)
+
+    fieldRate = sum(sAr * dAr + sAi * dAi) * dz2v
+    beamRate = sum(s_chi_bar_G * sdgam) / (2.0_wp * ctx%frame%rho)
+
+!   Non-trivial, and balanced to round-off
+
+    @assertTrue(abs(fieldRate) > 1.0e-4_wp)
+    @assertEqual(0.0_wp, fieldRate + beamRate, 1.0e-13_wp * (abs(fieldRate) + abs(beamRate)))
+
+!   pperp holds only its slow part, and in 1D nothing drives it
+
+    @assertEqual(0.0_wp, maxval(abs(sdpr)), 0.0_wp)
+    @assertEqual(0.0_wp, maxval(abs(sdpi)), 0.0_wp)
+
+    deallocate(procelectrons_G, s_chi_bar_G, dadz_w)
+
+  end subroutine checkRhsEnergyBalance
+
+
+  @test
+  subroutine testRhsConservesEnergyHelical()
+    call checkRhsEnergyBalance("helical", 1.0_wp, 1.0_wp, 0.0_wp, .false., 0.37_wp)
+  end subroutine testRhsConservesEnergyHelical
+
+
+  @test
+  subroutine testRhsConservesEnergyPlanepole()
+    call checkRhsEnergyBalance("planepole", 1.0_wp, 1.0_wp, 0.0_wp, .false., 0.37_wp)
+  end subroutine testRhsConservesEnergyPlanepole
+
+
+  !> Taper and end ramp change alpha - it has to change in both equations at once.
+  @test
+  subroutine testRhsConservesEnergyTaperedRamp()
+    call checkRhsEnergyBalance("planepole", 1.0_wp, 1.0_wp, -0.05_wp, .true., 0.05_wp)
+    call checkRhsEnergyBalance("planepole", 1.0_wp, 1.0_wp, -0.05_wp, .true., 0.6_wp)
+  end subroutine testRhsConservesEnergyTaperedRamp
+
+end module testAveraging

@@ -22,6 +22,7 @@ use RK4int, only: ac_rfield_in, ac_ifield_in, rk4par, allact_rk4_arrs, deallact_
 use write_adapter, only: writeim, qwriteq, iStep
 use ParaField, only: getlocalfieldindices, inner2outer, outer2inner, getinnode
 use GlobalTypes, only: tSimulationContext
+use averaging, only: getAvgUndAmps, qAvgPolarisationOK, getAvgBufferPqSq
 use AdapterGlobals, only: PopulateIntegrationStateFromGlobals, UpdateGlobalsFromIntegrationState, &
   PopulateUndulatorFromGlobals, UpdateGlobalsFromUndulator
 use Globals, only: qResume_G
@@ -78,6 +79,7 @@ contains
     logical :: qDWrDone
     integer :: error
     logical :: qResuming
+    real(kind=wp) :: cx, cy, pqSqBuff
 
   call Get_time(locTimeSt)
 
@@ -92,6 +94,30 @@ contains
 ! Populate per-element undulator parameters from globals set by initUndulator
 
   call PopulateUndulatorFromGlobals(ctx%und)
+
+! Averaged mode carries one field envelope, which is exact only for a helical
+! or linearly polarised undulator. Setup checks the main input file; this
+! catches a lattice file that switches polarisation module by module.
+! pqSqBuff is the quiver |pperp|^2 the field buffers must allow for, since in
+! averaged mode it is not in the stored pperp (see calcBuff) - zero otherwise.
+
+  pqSqBuff = 0.0_wp
+
+  if (ctx%flags%period_averaged) then
+
+    pqSqBuff = getAvgBufferPqSq(ctx%und)
+
+    call getAvgUndAmps(ctx%und%undulator_type, ctx%und%fx, ctx%und%fy, cx, cy)
+
+    if (.not. qAvgPolarisationOK(cx, cy)) then
+      if (tProcInfo_G%qRoot) print*, 'Averaged mode (qAveraged) needs a helical or ', &
+                                     'linearly polarised undulator - module ', iM, &
+                                     ' has ux, uy = ', cx, cy
+      call mpi_finalize(error)
+      stop
+    end if
+
+  end if
 
   qResuming = qResume_G
 
@@ -108,7 +134,11 @@ contains
 
     ctx%integration%start_step = 0_ip  ! ...TEMP...
 
-    if (.not. ctx%und%model_undulator_ends) call matchIn(szl, ctx%frame, ctx%und%n2col)
+!   In averaged mode pperp holds only its slow part, so the beam is not given
+!   the undulator's quiver momentum on entry (nor has it removed on exit).
+
+    if ((.not. ctx%und%model_undulator_ends) .and. (.not. ctx%flags%period_averaged)) &
+      call matchIn(szl, ctx%frame, ctx%und%n2col)
 
   end if
 
@@ -126,7 +156,7 @@ contains
   end if
 
 
-  call getLocalFieldIndices(ctx%integration%redistribution_length*2.0_wp, ctx%flags, ctx%frame)
+  call layoutField(ctx%integration%redistribution_length*2.0_wp)
 
 
   iSteps4Diff = nint(ctx%integration%diffraction_step_size / ctx%integration%step_size)
@@ -230,7 +260,7 @@ end if
             call getInNode(ctx%flags)
             ctx%flags%inner_xy_ok = .true.
           end if
-          call getLocalFieldIndices(ctx%integration%redistribution_length, ctx%flags, ctx%frame)
+          call layoutField(ctx%integration%redistribution_length)
           ctx%flags%parallel_arrays_ok = .true.
           call allact_rk4_arrs()
           ctx%flags%inner_xy_ok = .true.
@@ -357,7 +387,7 @@ end if
   if (mod(ctx%lattice%cumulative_steps, ctx%integration%redistribution_step) == 0) then
 
     call deallact_rk4_arrs()
-    call getLocalFieldIndices(ctx%integration%redistribution_length, ctx%flags, ctx%frame)
+    call layoutField(ctx%integration%redistribution_length)
     call allact_rk4_arrs()
 
   end if
@@ -376,7 +406,8 @@ end if
 
   end if
 
-  if (.not. ctx%und%model_undulator_ends) call matchOut(sZ, ctx%frame, ctx%und%n2col)
+  if ((.not. ctx%und%model_undulator_ends) .and. (.not. ctx%flags%period_averaged)) &
+    call matchOut(sZ, ctx%frame, ctx%und%n2col)
 
   call correctTrans()  ! correct transverse motion at undulator exit
 
@@ -389,6 +420,24 @@ end if
 
   call UpdateGlobalsFromIntegrationState(ctx%integration)
   call UpdateGlobalsFromUndulator(ctx%und)
+
+contains
+
+! Lay out the parallel field for the next stretch of integration. In averaged
+! mode the buffers must allow for the quiver |pperp|^2 that pperp no longer
+! holds; otherwise the call is exactly the unaveraged one.
+
+  subroutine layoutField(sdz)
+
+    real(kind=wp), intent(in) :: sdz
+
+    if (ctx%flags%period_averaged) then
+      call getLocalFieldIndices(sdz, ctx%flags, ctx%frame, pqSqBuff)
+    else
+      call getLocalFieldIndices(sdz, ctx%flags, ctx%frame)
+    end if
+
+  end subroutine layoutField
 
 end subroutine UndSection
 
