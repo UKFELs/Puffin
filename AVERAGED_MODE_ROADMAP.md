@@ -39,7 +39,7 @@ Raised by this work and not yet filed:
 
 | what | where | who owns it |
 |---|---|---|
-| The `qUnique = .false.` duplicated-mesh path is broken, in both solver modes — fails to integrate, and corrupts `/power` | W4 | `dev` — pre-existing |
+| Periodic meshes with under 2 active nodes per rank fail, and corrupt `/power`, in both solver modes; temporal meshes are exact | W4 | `dev` — pre-existing |
 | `NBZ2_G` sizes the z2 absorbing boundary in nodes, not length | W2, W7 | with W7 |
 | A failed field rearrangement exits with status 0 | W7 | with W7 |
 
@@ -279,74 +279,66 @@ wants the beam back in phase after a drift has to put the remainder in deliberat
 CLARA lattice in `test/inputs/1D/osc_taper.latt` does exactly that, with a dispersionless
 `CH` used as a phase shifter after each drift.
 
-### Open, and pre-existing on `dev`: the duplicated-mesh path
+### Open, and pre-existing on `dev`: periodic meshes on the duplicated-mesh path
 
 When the active field region is too small to give every rank a slab, `getFStEnd` sets
-`qUnique = .false.` and the whole region is meant to be duplicated on every rank with the
-particles still distributed. **That path does not work, in either solver mode.** It is not
-about nodes per wavelength: holding the mesh fixed and varying only the rank count,
+`qUnique = .false.` and the region is duplicated on every rank with the particles still
+distributed. **That path is correct on a temporal mesh and broken on a periodic one.** It
+takes both conditions, and neither alone.
 
-| | 1 rank | 2 | 3 | 4 | 6 | 7 | 8 |
-|---|---|---|---|---|---|---|---|
-| averaged, nz2 = 7 | ok | ok | ok | **fail** | **fail** | | |
-| unaveraged, nz2 = 12 | ok | | | ok | ok | **fail** | **fail** |
+**Condition 1 - fewer than two active-region nodes per rank.** `qUnique` is false exactly
+when `n_act_g < 2 * nprocs`. Mapped by varying mesh size and rank count independently, on a
+periodic mesh at `lambdarPerCell = 1`:
 
-`qUnique` is false exactly when `n_act_g < 2*nprocs`, which is the boundary in both rows. The
-unaveraged solver reaches it too, just at more ranks, because it never coarsens. The failure
-is `getInterps` finding particles past `bz2`, three failed emergency redistributes, then
-`stop` — **with exit status 0**, the silent failure already noted in W7.
+| nz2, down / ranks, across | 1 | 2 | 3 | 4 | 5 | 6 |
+|---|---|---|---|---|---|---|
+| 2 | ok | fail | fail | fail | fail | fail |
+| 3 | ok | fail | fail | fail | fail | fail |
+| 4 | ok | ok | fail | fail | fail | fail |
+| 5 | ok | ok | fail | fail | fail | fail |
+| 6 | ok | ok | ok | fail | fail | fail |
+| 7 | ok | ok | ok | fail | fail | fail |
+| 8 | ok | ok | ok | ok | fail | fail |
+| 9 | ok | ok | ok | ok | fail | fail |
+| 10 | ok | ok | ok | ok | ok | fail |
+| 12 | ok | ok | ok | ok | ok | ok |
 
-**Root defect.** `getFStEnd`'s field-based branch (`para_field.f90` ~2241), which is the
-branch a periodic mesh takes, sets
+Exactly `nz2 >= 2 * nprocs`, boundary inclusive. One rank never fails. The unaveraged solver
+reaches the same line, just at more ranks, because it never coarsens: on the same periodic
+deck it needs 7 ranks at `nodesPerLambdar = 12` where averaged mode needs 4 at `nz2 = 7`.
 
-```fortran
-fz2_act = 1_ip
-ez2_act = NZ2_G      ! the active region is the whole mesh - correct
-fz2_GGG = 1
-ez2_GGG = 1          ! should be ez2_act
-```
+**Condition 2 - a periodic mesh.** On a temporal mesh the duplicated path is not merely
+non-fatal, it is exact. A 1 to 4 lambda_r beam on a 60 lambda_r mesh gives `n_act_g = 2`, so
+`qUnique` is false from 2 ranks up, and `/power` at 2, 3, 4 and 6 ranks is **bit-identical**
+to the single-rank run in every case.
 
-The electron-based branch immediately above sets `fz2_GGG = fz2_act` and `ez2_GGG = ez2_act`.
-Here the first line happens to be right and the second is not.
+**Why.** The one defect is `ez2_GGG = 1` in `getFStEnd`'s field-based branch, where
+`ez2_act = NZ2_G`; the electron-based branch above it correctly writes `ez2_GGG = ez2_act`.
+The non-unique branch then takes `ez2 = ez2_GGG`, and what happens next depends on the mesh,
+because `calcBuff` treats the two differently:
 
-**Where it bites, and where it does not.** `ez2_GGG` is reassigned later, at
-`para_field.f90:1940` (`ez2_GGG = ac_ar(tProcInfo_G%size, 3)`) inside `calcBuff`, after the
-buffer work. So it is only the window *before* that which matters, and the damage is done
-entirely inside `getFStEnd` itself:
+- **Periodic:** the last rank does `bz2 = ez2 + bz2PB`, so the buffer is derived *from* the
+  bad `ez2` and stays short. Measured on a 7-node mesh at 4 ranks: `fz2 = 1, ez2 = 5,
+  bz2 = 5` with particles legitimately at node 6, flagged out of bounds. Every retry
+  re-derives the same region, the three emergency rearrangements fail, and it stops - with
+  exit status 0. The output is wrong too: the initial `/power` has 3 of 7 nodes nonzero and
+  sums to 43% of the 2-rank value.
+- **Temporal:** that block is skipped. `bz2` keeps its particle-derived value, and the
+  `.not. qUnique` block then sets `ez2 = bz2`, repairing the bad value before anything reads
+  it. Hence bit-exact.
 
-- The non-unique branch takes `fz2 = fz2_GGG`, `ez2 = ez2_GGG`, `mainlen = n_act_g` — so the
-  rank is told it owns node 1 only, while `mainlen` says it owns the whole mesh.
-- `calcBuff` then derives the buffer from that `ez2`: on a periodic mesh the last rank does
-  `bz2 = ez2 + bz2PB`, which is computed from 1 instead of `NZ2_G`.
+So `ez2_GGG = 1` is a genuine defect with a narrow blast radius: periodic meshes, at fewer
+than two nodes per rank. It is also not the whole story - setting `ez2_GGG = ez2_act` turns
+the clean stop into a segfault inside `free()`, and that site was not isolated.
 
-Measured, instrumenting the bound check on a 7-node periodic mesh at 4 ranks:
-`fz2 = 1, ez2 = 5, bz2 = 5, nz2_G = 7`, with particles sitting at node 6 — legitimately inside
-a periodic mesh, flagged out of bounds because the region stops short. Every retry re-derives
-the same region, so the three emergency rearrangements cannot help, and it stops.
+**What it costs.** A single-cycle periodic run is `nz2 = 2`, so it works on one rank and
+fails on any more. That is the case this most obviously blocks. Until it is fixed, periodic
+runs need `nz2 >= 2 * nprocs` - use fewer ranks, a smaller `lambdarPerCell`, or more
+`sperwaves`. Temporal meshes are unaffected at any rank count.
 
-**The output is wrong too, not just the run.** On the same 4-rank run, the initial `/power`
-has only 3 of its 7 nodes nonzero and sums to 43% of what the same deck gives at 2 ranks
-(1.885e15 against 4.398e15). So the duplicated-mesh path produces corrupt diagnostics as well
-as failing to integrate.
-
-**Two earlier claims here were wrong and are withdrawn.** (i) There is no live heap overflow in
-`UpdateGlobalPow`: by the time it runs, `ez2_GGG` has been repaired, and on the working path it
-is `1..NZ2_G` with `powi` correctly sized — verified by instrumenting the allocation. (ii) The
-reversed gather counts at `:615` and `:725` — `(fz2_GGG - ez2_GGG + 1)` against `:622` and
-`:697`, which have it the right way round — are latent, not live: `MPI_ALLGATHERV` places data
-by `recvcounts`/`displs` rather than by the length of the section handed to it, and `powi` is
-correctly sized, so a negative section length is inert. `:615` is in `UpdateGlobalField`, which
-is neither public nor called from anywhere — dead code. Both are still worth fixing, but
-neither is doing damage today.
-
-What is left, then: one root defect with a measured consequence, corrupted power output on the
-same path, and an unidentified further problem — setting `ez2_GGG = ez2_act` turns the clean
-stop into a segfault inside `free()`, and that site was not isolated. The path has evidently
-never run with `ez2_GGG /= 1`. That is a piece of work on the parallel decomposition, not a
-one-liner, and it belongs to `dev` rather than to this branch — it is what stands between
-averaged mode and a single-cycle periodic run on more than a few ranks. Until then, periodic
-averaged runs need `nz2 >= 2 * nprocs`. Left here rather than fixed because it changes shared
-parallel code the unaveraged e2e goldens depend on.
+Fixing it is work on the parallel decomposition rather than a one-liner, and it belongs to
+`dev` rather than to this branch, since it changes shared code the unaveraged e2e goldens
+depend on.
 
 ## W5 — Diagnostics, metadata and viz
 

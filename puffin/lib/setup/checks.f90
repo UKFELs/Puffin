@@ -18,7 +18,7 @@ use puffin_constants, only: pi, iX_CG, iY_CG, iZ2_CG, iPX_CG, iPY_CG, iGam_CG, &
   iDiffraction_CG, iFocussing_CG, iOneD_CG, iResume_CG
 use Globals, only: qRndFj_G, sSigFj_G, qRndEj_G, sSigEj_G, gExtEj_G, sStepSize, nSteps, &
                    qAveraged_G, sLambdarPerCell_G, iInputType_G, iReadH5_G, iReadMASP_G, &
-                   iFieldSeedType_G, iReadH5Field_G
+                   iFieldSeedType_G, iReadH5Field_G, fieldMesh, iPeriodic
 use puffin_mpiInfo, only: tProcInfo_G
 use averaging, only: getAvgUndAmps, qAvgPolarisationOK
 use particleFunctions, only: iTopHatDistribution_CG, gaussian
@@ -581,12 +581,15 @@ subroutine chkAveraged(f_x, f_y, qResume, nz2, freqf, sSigE, mag, qOK)
 !   more ranks to reach.  Warn rather than reject: on few enough ranks the run
 !   is fine, and it is the only way to model a single periodic cycle.
 
-  if (nz2 < 2_ip * int(tProcInfo_G%size, kind=ip)) then
-    print*, 'WARNING: the averaged field mesh has', nz2, 'nodes in z2, fewer ', &
-            'than 2 per rank, so Puffin will try to duplicate it on every ', &
-            'rank rather than slab-decompose it. That path is known to fail ', &
-            '(it fails unaveraged too, at more ranks). Use fewer ranks, or a ', &
-            'smaller lambdarPerCell, or - on a periodic mesh - more sperwaves.'
+  if ((fieldMesh == iPeriodic) .and. &
+      (nz2 < 2_ip * int(tProcInfo_G%size, kind=ip))) then
+    print*, 'WARNING: this periodic field mesh has', nz2, 'nodes in z2, fewer ', &
+            'than 2 per rank, so Puffin duplicates it on every rank rather ', &
+            'than slab-decomposing it. On a PERIODIC mesh that path is known ', &
+            'to fail, and to corrupt the power output before it does; it ', &
+            'fails unaveraged too, just at more ranks. Use fewer ranks, a ', &
+            'smaller lambdarPerCell, or more sperwaves. Temporal meshes take ', &
+            'the same path correctly and are not affected.'
   end if
 
   do i = 1, size(mag)
