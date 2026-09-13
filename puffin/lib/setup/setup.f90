@@ -313,7 +313,7 @@ contains
 
          qStart_new = .true.
 
-         call getLocalFieldIndices(sRedistLen_G, ctx%flags, ctx%frame)
+         call getLocalFieldIndices(sRedistLen_G, ctx%flags, ctx%frame, ctx%field)
 
          CALL SetUpInitialValues(nseeds, freqf, &
             ph_sh, SmeanZ2, &
@@ -330,7 +330,7 @@ contains
 
       else if (iFieldSeedType_G==iReadH5Field_G) then
 
-         call readH5FieldfileSingleDump(field_file(1), sFiltFrac, ctx%frame, ctx%flags)
+         call readH5FieldfileSingleDump(field_file(1), sFiltFrac, ctx%frame, ctx%flags, ctx%field)
          call initPowerCalc()
 
          sFieldModelLength(iX_CG) = sLengthOfElmX_G * real((NX_G-1_ip),kind=wp)

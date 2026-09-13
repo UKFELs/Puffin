@@ -20,7 +20,7 @@ use ParallelSetUp, only: MPI_INT_HIGH, stopcode, gather1a, getgatharrs
 use puffin_mpiInfo, only: tProcInfo_G
 use puffin_fftwInfo, only: tTransInfo_G
 use gtop2, only: getp2, getp2avg
-use GlobalTypes, only: tSimulationFlags, tFELFrame
+use GlobalTypes, only: tSimulationFlags, tFELFrame, tFieldValues
 use mpi, only: MPI_ALLGATHER, mpi_allreduce, mpi_alltoallv, mpi_barrier, MPI_Bcast, &
   mpi_double_precision, MPI_IN_PLACE, mpi_integer, MPI_ISSEND, mpi_max, mpi_min, MPI_RECV, &
   mpi_reduce, mpi_scatter, MPI_STATUS_SIZE, mpi_sum, MPI_WAIT, MPI_WAITALL
@@ -94,7 +94,7 @@ logical :: qStart_new
 contains
 
 
-        subroutine getLocalFieldIndices(sdz, flags, frame, pqSq)
+        subroutine getLocalFieldIndices(sdz, flags, frame, field, pqSq)
 
     implicit none (type, external)
 
@@ -114,6 +114,7 @@ contains
     real(kind=wp), intent(in) :: sdz
     type(tSimulationFlags), intent(inout) :: flags
     type(tFELFrame), intent(in) :: frame
+    type(tFieldValues), intent(inout) :: field
     real(kind=wp), intent(in), optional :: pqSq   ! passed in averaged mode only - see calcBuff
 
     real(kind=wp), allocatable :: fr_rfield_old(:), &
@@ -540,7 +541,64 @@ contains
 
       flags%parallel_arrays_ok = .true.
 
+      call syncFieldValues(field)
+
     end subroutine getLocalFieldIndices
+
+
+!  ###################################################
+
+!> @brief
+!> Copy the decomposition state out of the module variables and into the
+!> tFieldValues object. Transitional: while the module variables are still the
+!> storage, this keeps ctx%field truthful for consumers already converted to
+!> read it. Removed once ownership flips (UKFELs/Puffin#107).
+
+    subroutine syncFieldValues(field)
+
+      implicit none (type, external)
+
+      type(tFieldValues), intent(inout) :: field
+
+      field%fz2 = fz2
+      field%ez2 = ez2
+      field%bz2 = bz2
+      field%lTr = lTr
+      field%bz2PB = bz2PB
+      field%mainlen = mainlen
+      field%tllen = tllen
+      field%fbuffLen = fbuffLen
+      field%fbuffLenM = fbuffLenM
+
+      field%ffs = ffs
+      field%ffe = ffe
+      field%tlflen = tlflen
+      field%tlflen_glob = tlflen_glob
+      field%tlflen4arr = tlflen4arr
+
+      field%ees = ees
+      field%eee = eee
+      field%tlelen = tlelen
+      field%tlelen_glob = tlelen_glob
+      field%tlelen4arr = tlelen4arr
+
+      field%fz2_GGG = fz2_GGG
+      field%ez2_GGG = ez2_GGG
+      field%ffs_GGG = ffs_GGG
+      field%ffe_GGG = ffe_GGG
+      field%ees_GGG = ees_GGG
+      field%eee_GGG = eee_GGG
+
+      if (allocated(ac_ar)) field%ac_ar = ac_ar
+      if (allocated(ff_ar)) field%ff_ar = ff_ar
+      if (allocated(ee_ar)) field%ee_ar = ee_ar
+      if (allocated(ft_ar)) field%ft_ar = ft_ar
+
+      field%iParaBas = iParaBas
+      field%qUnique = qUnique
+      field%qStart_new = qStart_new
+
+    end subroutine syncFieldValues
 
 
 !  ###################################################

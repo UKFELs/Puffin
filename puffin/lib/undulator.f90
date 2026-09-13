@@ -434,9 +434,9 @@ contains
     real(kind=wp), intent(in) :: sdz
 
     if (ctx%flags%period_averaged) then
-      call getLocalFieldIndices(sdz, ctx%flags, ctx%frame, pqSqBuff)
+      call getLocalFieldIndices(sdz, ctx%flags, ctx%frame, ctx%field, pqSqBuff)
     else
-      call getLocalFieldIndices(sdz, ctx%flags, ctx%frame)
+      call getLocalFieldIndices(sdz, ctx%flags, ctx%frame, ctx%field)
     end if
 
   end subroutine layoutField

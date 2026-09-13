@@ -21,8 +21,8 @@ implicit none (type, external)
 private
 
 public :: iDiffraction_CG, iX_CG, iY_CG, iZ2_CG, tElectronCloud, tFELFrame, tFieldMesh, &
-           tIntegrationState, tLatticeElements, tOutputConfig, tSimulationContext, &
-           tSimulationFlags, tUndulator
+           tFieldValues, tIntegrationState, tLatticeElements, tOutputConfig, &
+           tSimulationContext, tSimulationFlags, tUndulator
 
 
 ! ============================================================================
@@ -61,6 +61,63 @@ type :: tFieldMesh
     logical :: is_1d
     logical :: equal_xy_spacing
 end type tFieldMesh
+
+! ============================================================================
+! 1b. FIELD VALUES TYPE - The field data itself, and the decomposition that
+!     gives it meaning.
+!
+!     Sibling to tFieldMesh, not nested in it: tFieldMesh is the global, static
+!     grid, identical on every rank and fixed after init. This is the opposite -
+!     per-rank, and re-partitioned every step by getLocalFieldIndices.
+!
+!     The arrays are three spatial regions of the parallel decomposition along
+!     z2, each split into real and imaginary parts (Puffin does not use complex):
+!
+!       z2 ->  [ front ]  [ ------ active ------ ][ buffer ]  [ back ]
+!                fr_*       ac_*  (fz2 ... ez2)    (...bz2)     bk_*
+!                ffs..ffe                                       ees..eee
+!
+!     Flat 1D indexing throughout: (iz - fz2)*ntrnds_G + transverse_index.
+! ============================================================================
+type :: tFieldValues
+    ! --- Active slab: the region this rank integrates ---------------------
+    ! Length tllen*ntrnds_G, where tllen = bz2 - fz2 + 1 includes a slippage
+    ! buffer past ez2. mainlen is the buffer-free part the rank owns for output.
+    real(kind=wp), allocatable :: ac_r(:), ac_i(:)      ! ac_rfield, ac_ifield
+
+    ! --- Carried regions: field ahead of / behind the bunch ----------------
+    ! Not integrated, only transported. Lengths tlflen, tlelen; often zero.
+    real(kind=wp), allocatable :: fr_r(:), fr_i(:)      ! fr_rfield, fr_ifield
+    real(kind=wp), allocatable :: bk_r(:), bk_i(:)      ! bk_rfield, bk_ifield
+
+    ! --- Transposition buffers in FFTW slab layout -------------------------
+    ! Hold all three regions. Filled by redist2FFTWlt, scattered back by
+    ! redistbackFFT, consumed by diffraction.f90.
+    real(kind=wp), allocatable :: tre_fft(:), tim_fft(:)
+
+    ! --- Decomposition: inseparable from the arrays above ------------------
+    ! Active slab bounds and lengths
+    integer(kind=ip) :: fz2, ez2, bz2, lTr, bz2PB
+    integer(kind=ip) :: mainlen, tllen, fbuffLen, fbuffLenM
+
+    ! Front region bounds and lengths
+    integer(kind=ip) :: ffs, ffe, tlflen, tlflen_glob, tlflen4arr
+
+    ! Back region bounds and lengths
+    integer(kind=ip) :: ees, eee, tlelen, tlelen_glob, tlelen4arr
+
+    ! Global (rank-0 gathered) counterparts of the bounds above, used when the
+    ! whole field is collected onto one rank
+    integer(kind=ip) :: fz2_GGG, ez2_GGG, ffs_GGG, ffe_GGG, ees_GGG, eee_GGG
+
+    ! Per-rank layout tables: (region start, end) for every rank
+    integer(kind=ip), allocatable :: ac_ar(:,:), ff_ar(:,:), ee_ar(:,:), ft_ar(:,:)
+
+    ! --- Decomposition state ----------------------------------------------
+    integer(kind=ip) :: iParaBas    ! basis for parallelism: electron/field/FFTW
+    logical :: qUnique              ! .false. when every rank holds all nodes
+    logical :: qStart_new
+end type tFieldValues
 
 ! ============================================================================
 ! 2. ELECTRON PHASE SPACE TYPE - 6D particle data and metadata
@@ -329,7 +386,8 @@ end type tSimulationFlags
 ! ============================================================================
 type :: tSimulationContext
     ! Major data objects
-    type(tFieldMesh) :: mesh
+    type(tFieldMesh) :: mesh         ! Global static grid
+    type(tFieldValues) :: field      ! Per-rank field data + its decomposition
     type(tElectronCloud) :: electrons
     type(tFELFrame) :: frame         ! Simulation-lifetime scaling frame
     type(tUndulator) :: und          ! Current undulator element state

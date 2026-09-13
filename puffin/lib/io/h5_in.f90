@@ -22,7 +22,7 @@ use HDF5, only: h5aclose_f, h5aopen_f, H5Aopen_name_f, h5aread_f, h5close_f, h5d
   h5Sget_simple_extent_ndims_f, h5sselect_hyperslab_f, H5T_FLOAT_F, H5T_NATIVE_DOUBLE, &
   H5T_NATIVE_INTEGER, h5tclose_f, h5tcopy_f, h5tget_class_f, HID_T, HSIZE_T
 use puffin_h5_par, only: H5FD_MPIO_COLLECTIVE_F, h5pset_dxpl_mpio_f, h5pset_fapl_mpio_f
-use GlobalTypes, only: tSimulationFlags, tFELFrame
+use GlobalTypes, only: tSimulationFlags, tFELFrame, tFieldValues
 use mpi, only: MPI_ALLREDUCE, mpi_barrier, MPI_COMM_WORLD, MPI_INFO_NULL, MPI_INTEGER, MPI_SUM
 
 implicit none (type, external)
@@ -885,12 +885,13 @@ contains
 
   end subroutine readH5Beamfile
 
-  subroutine readH5FieldfileSingleDump(zFile, sFiltFrac, frame, flags)
+  subroutine readH5FieldfileSingleDump(zFile, sFiltFrac, frame, flags, field)
 
     character(*), intent(in) :: zFile
     real(kind=wp), intent(in) :: sFiltFrac
     type(tFELFrame), intent(in) :: frame
     type(tSimulationFlags), intent(inout) :: flags
+    type(tFieldValues), intent(inout) :: field
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier
     INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
@@ -993,7 +994,7 @@ contains
 
       qStart_new = .true.
 
-      call getLocalFieldIndices(sRedistLen_G, flags, frame)
+      call getLocalFieldIndices(sRedistLen_G, flags, frame, field)
 
 !     Close runInfo group
 
