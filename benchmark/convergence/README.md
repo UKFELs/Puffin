@@ -34,6 +34,33 @@ lambda_w = 27.5 mm, gamma_r = 456.4).
 Needs `mpirun` and `h5dump`; standard library Python only. `PUFFIN=<path>`
 overrides which binary is run; the default is the in-tree `build/`.
 
+## How the error is measured
+
+One number per run: the relative L2 difference of the final radiation field
+against the reference,
+
+    err  =  || A - A_ref ||_2  /  || A_ref ||_2
+
+taken over the final `_aperp_` dump in full - every z2 node, real and imaginary
+parts both (21012 doubles for this deck) - rather than over a reduction like
+power or bunching. It is an aggregate that mixes amplitude and phase error: a
+pure phase slip shows up here as a large error, and these scans do not separate
+the two.
+
+The reference is not the exact solution, so it is worth knowing how far the
+measurement can be trusted. Re-running the smallest errors against a 480
+step/period reference as well as the 240 one:
+
+| | the two references differ by | error at 30 steps/period moves |
+| --- | --- | --- |
+| planepole, cubic + split | 4.3e-7 | 0.3% |
+| helical, cubic + split | 6.1e-7 | 0.8% |
+
+So the floor of this measurement is a few times 1e-7. The smallest number quoted
+anywhere below is 6.4e-6, an order of magnitude above it and stable to under a
+percent when the reference is refined, so even the largest ratios in section 3
+are measuring the scheme rather than the reference.
+
 ## What the scans showed
 
 ### 1. Linear deposition, and the cells-per-step floor
