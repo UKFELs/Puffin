@@ -39,7 +39,7 @@ Raised by this work and not yet filed:
 
 | what | where | who owns it |
 |---|---|---|
-| Periodic meshes with under 2 active nodes per rank fail, and corrupt `/power`, in both solver modes; temporal meshes are exact | W4 | `dev` — pre-existing |
+| Periodic meshes with under 2 active nodes per rank fail, and corrupt `/power`, in both solver modes; temporal meshes are exact | W4 | `dev` — filed as #132 |
 | `NBZ2_G` sizes the z2 absorbing boundary in nodes, not length | W2, W7 | with W7 |
 | A failed field rearrangement exits with status 0 | W7 | with W7 |
 
@@ -279,7 +279,7 @@ wants the beam back in phase after a drift has to put the remainder in deliberat
 CLARA lattice in `test/inputs/1D/osc_taper.latt` does exactly that, with a dispersionless
 `CH` used as a phase shifter after each drift.
 
-### Open, and pre-existing on `dev`: periodic meshes on the duplicated-mesh path
+### Open, and pre-existing on `dev`: periodic meshes on the duplicated-mesh path (#132)
 
 When the active field region is too small to give every rank a slab, `getFStEnd` sets
 `qUnique = .false.` and the region is duplicated on every rank with the particles still
@@ -338,7 +338,9 @@ runs need `nz2 >= 2 * nprocs` - use fewer ranks, a smaller `lambdarPerCell`, or 
 
 Fixing it is work on the parallel decomposition rather than a one-liner, and it belongs to
 `dev` rather than to this branch, since it changes shared code the unaveraged e2e goldens
-depend on.
+depend on. Filed upstream as UKFELs/Puffin#132, with a reproduction on the committed
+`inputs/simple/3D/CLARA/single-slice` deck: `nz2 = 21` there, so it runs at 10 ranks and
+fails at 11.
 
 ## W5 — Diagnostics, metadata and viz
 
@@ -438,8 +440,8 @@ fixed in passing.
   finished one except by its last write's `zbarTotal` — which is how one bogus comparison
   got made during W4 before it was caught. `benchmark/averaged/compare3d.py` now refuses to
   compare runs that ended at different zbar; the real fix is to exit non-zero.
-- **The `qUnique = .false.` path** — see W4. Pre-existing, affects both solver modes, and
-  bigger than the rest of this list; probably its own issue against `dev`.
+- **The `qUnique = .false.` path on a periodic mesh** — see W4. Pre-existing, affects both
+  solver modes, and bigger than the rest of this list. Filed as UKFELs/Puffin#132.
 - **Benchmarks and defaults.** Add an averaged case to the benchmark suite. The cheapest
   converged setting on the 1D validation deck is `stepsPerPeriod = 1`, `lambdarPerCell = 1`;
   the 3D deck converges at `stepsPerPeriod = 2`, `lambdarPerCell = 1`.
@@ -468,10 +470,10 @@ Not done, in suggested order:
    then harmonic bands.
 7. **W6** — close out the accuracy map, once W3 makes the harmonic question answerable.
 
-Separately, and not part of this programme: **the `qUnique = .false.` duplicated-mesh path
-is broken on `dev`** (see W4). It affects the unaveraged solver too, and it is what stands
-between averaged mode and a single-cycle periodic run on more than a few ranks. Best raised
-as its own issue against `dev` rather than carried here, since fixing it means changing
+Separately, and not part of this programme: **periodic meshes with fewer than two z2 nodes
+per rank fail on `dev`** (see W4) — filed as UKFELs/Puffin#132. It affects the unaveraged
+solver too, and it is what stands between averaged mode and a single-cycle periodic run on
+more than one rank. Left to `dev` rather than carried here, since fixing it means changing
 shared parallel code that the unaveraged e2e goldens depend on.
 
 ## What would change the picture
