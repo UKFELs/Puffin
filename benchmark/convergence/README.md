@@ -65,7 +65,11 @@ three kernels changes the picture in a way the original write-up got half right.
 out of the way as well.** At the shipped operating point (`nodesPerLambdar = 12`,
 30 steps/period, 0.4 cells/step), relative L2 error in the final field:
 
-| configuration | error | gain over default |
+Throughout this document a factor like "100x" means *error reduced by* that
+factor at the same step count — the default's error divided by this row's. It
+has nothing to do with FEL gain.
+
+| configuration | error | error reduced by |
 | --- | --- | --- |
 | linear, unsplit (the shipped default) | 2.14e-3 | - |
 | linear, `qQuiverSplit` | 9.96e-4 | 2.1x |
