@@ -143,7 +143,7 @@ def main():
     print("  kernel = %s, nodesPerLambdar = %s" % (kern, nodes))
     print("  %-10s  %-9s  %-10s  %-12s  %-12s  %-12s  %s" %
           ("und", "steps/pd", "cells/step", "plain L2", "split L2",
-           "improvement", "runtime (s)"))
+           "err x lower", "runtime (s)"))
     print("  " + "-" * 88)
     plain = dict((s, (e, d, t)) for sp, s, e, d, t in rows if not sp)
     split = dict((s, (e, d, t)) for sp, s, e, d, t in rows if sp)
