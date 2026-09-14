@@ -29,7 +29,7 @@ section of `doc/manual.tex`. The accuracy map and its harness are in `benchmark/
 |---|------------|--------|-----------|-------|
 | W1 | Land the 1D mode on `dev` | **In review** — PR #131 open against `dev` | — | #131 |
 | W2 | 3D | **Done** — validated against the unaveraged solver | — | — |
-| W3 | Multiple field arrays (elliptical + harmonics) | Not started | #107 (ideally) | #129 |
+| W3 | Multiple field arrays (elliptical + harmonics) | Not started — **unblocked**, #107 done | #107 ✅ | #129 |
 | W4 | Compatibility: periodic mesh, lattices, restart | **Done** — guards in, one `dev` bug left open | — | — |
 | W5 | Diagnostics, dump metadata and viz tools | **Done** | — | — |
 | W6 | Finish the accuracy map | Partly done | W3 for harmonics | #130 |
@@ -167,9 +167,22 @@ envelope. Doing them as one generalisation is much cheaper than twice.
   coupling `JJ_h = J_((h-1)/2)(h xi) - J_((h+1)/2)(h xi)`, reducing to today's `J0 - J1` at
   `h = 1`. Recovers both the missing harmonic output (~2% of radiated power at aw ~ 1) and
   the harmonics' drive on `dGamma/dz`.
-- **Sequencing:** both want the field storage to be an object rather than loose module
-  arrays, which is exactly #107 (`tFieldValues`). Doing #107 first will make this much less
-  invasive.
+- **Sequencing:** both wanted the field storage to be an object rather than loose module
+  arrays, which was #107. **That is now done**, so the storage a second envelope needs
+  already exists in both places it has to:
+  - `ctx%field` (`tFieldValues`) holds the mesh-resident arrays and the decomposition.
+  - `work%env(:)` (`tRK4Workspace`) holds the integrator's stage arrays and the inner-mesh
+    field, already indexed by envelope. `nEnv` is set in one place, `allact_rk4_arrs`.
+- **Where the envelope loop goes:** inside `getrhs`, not around it. Two reasons, and both
+  are load-bearing. Locating each macroparticle's nodes and computing its interpolation
+  weights is identical for every envelope, so one pass scattering to N envelopes is strictly
+  cheaper than N passes. And invariant 2 needs every envelope's contribution summed into
+  `dGamma/dz` through the same per-particle `ptilde`, which `testAveraging.pf` checks to
+  1e-13 — looping outside `getrhs` would break that balance.
+- **The signature work this implies:** `derivs` and `getrhs` still take the stage arrays
+  positionally, 18 arguments each, which is why they cannot currently loop. Collapsing them
+  to `(sz, istage, work, ctx)` is the enabling change and belongs with this workstream
+  rather than with #107, which had no second envelope to justify it.
 - **Acceptance:** energy balance summed over components; elliptical reproduces helical and
   planar as limiting cases; harmonic power compares like-for-like against an unaveraged run.
 
@@ -466,8 +479,9 @@ Not done, in suggested order:
 
 5. **W7** — housekeeping. On hold pending a decision on the `calcBuff` rounding; the
    `NBZ2_G` and exit-status items found during W2 and W4 are parked with it.
-6. **#107, then W3** — multiple field arrays: elliptical first (simpler, two components),
-   then harmonic bands.
+6. **W3** — multiple field arrays: elliptical first (simpler, two components), then harmonic
+   bands. #107 is done, so the storage exists; what remains is the physics and the `getrhs`
+   signature change that lets it loop over envelopes.
 7. **W6** — close out the accuracy map, once W3 makes the harmonic question answerable.
 
 Separately, and not part of this programme: **periodic meshes with fewer than two z2 nodes

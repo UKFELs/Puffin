@@ -6,9 +6,12 @@ This document outlines the refactoring of global variables in `EDerivGlobals.f90
 organized Fortran derived types. The goal is to improve code maintainability, reduce global
 namespace pollution, and make data dependencies explicit.
 
-**Current State:** Phases 0–10 complete. `tSimulationContext` adopted; ctx threaded through RK4
-chain, HDF5/write chain, and init path; element-counter and flag globals removed.
-**Target State:** All remaining globals eliminated (init-only physics globals, HDF5 timing globals).
+**Current State:** Phases 0–13 complete. `tSimulationContext` adopted and threaded throughout;
+the physics frame, the field data with its parallel decomposition, and the RK4 scratch have all
+moved into types. `ParaField` and `RK4int` hold no simulation data.
+**Target State:** The macroparticle arrays (`sElX_G` … `sElGam_G`) and the mesh dimension
+globals move into the `tElectronCloud` and `tFieldMesh` that already exist, leaving only
+infrastructure handles (`tProcInfo_G`, `tTransInfo_G`, `tErrorLog_G`) global.
 
 ---
 
@@ -28,7 +31,9 @@ chain, HDF5/write chain, and init path; element-counter and flag globals removed
 | 8 | ✅ DONE | Architectural lift | Types owned by `puffin_main`, passed to all element routines |
 | 9 | ✅ DONE | RK4 chain threading | `tUndulator`/`tFELFrame`/`tSimulationFlags` threaded through full RK4 chain; dead `m2col` removed |
 | 10 | ✅ DONE | tSimulationContext + init path | ctx adopted; threaded through write chain, flags chain, init; dead globals removed |
-| 11 | 🔜 NEXT | Remove remaining globals | Remove `iCsteps`, `igwr`, `sZi_G`, physics globals (`sRho_G` etc.) |
+| 11 | ✅ DONE | Thread `ctx%frame` | Cluster B/C globals deleted; `tFELFrame` threaded through init and runtime |
+| 12 | ✅ DONE | Remove Cluster D globals | `sRho_G`, `sAw_G`, `sGammaR_G`, `sEta_G`, `sKappa_G`, `lam_w_G`, `lam_r_G`, `lg_G`, `lc_G`, `cf1_G` deleted |
+| 13 | ✅ DONE | Field data & RK4 scratch | `tFieldValues` + `tRK4Workspace`; `ParaField` and `RK4int` hold no field state (#107) |
 
 ---
 
@@ -294,18 +299,62 @@ and flag globals.
 
 ---
 
-## Phase 11: Remove Remaining Globals
+## Phase 11: Thread ctx%frame ✅ DONE
 
-### Remaining globals that cannot be removed yet
+Cluster B/C globals (`iCsteps`, `sZi_G`, `igwr`, `start_time`, `end_time`) deleted from
+`deriv_globals.f90`. `tFELFrame` threaded through the init pipeline (`scaleParams`,
+`calcSamples`, `calcCharge`, `PopMacroElectrons`, `SetUpInitialValues`, `setupMods`) and the
+runtime paths (`getLocalFieldIndices`, `calcBuff`, `matchIn`/`matchOut`/`initUndulator`,
+`readH5FieldfileSingleDump`). `diffraction.f90` takes `ctx`; `puffin_module` holds the start
+time in `ctx`.
 
-| Variable | Why it remains | Blocker |
-|----------|----------------|---------|
-| `iCsteps` | Still written in `acc_lattice.f90:setupMods` and sync'd in `undulator.f90`; HDF5 writers now use ctx | Need to remove sync writes |
-| `igwr` | Set in `undulator.f90` resume path; HDF5 writers now use ctx | Need to remove sync writes |
-| `sZi_G` | Set in `undulator.f90` resume path; HDF5 writers now use ctx | Need to remove sync writes |
-| `sRho_G`, `sAw_G`, `sGammaR_G`, `sEta_G`, `sKappa_G` | Written by `calcScaling`/`setup_calcs.f90`; read by `init_conds.f90`, `gen_macros.f90`, `MPfDists.f90` | Thread ctx through init/generation path |
-| `lam_w_G`, `lam_r_G`, `lg_G`, `lc_G`, `cf1_G` | Written by `calcScaling`; read throughout init | Thread ctx through init |
-| `end_time`, `start_time` | Timing globals read by `diffraction.f90` | Minor; move to local vars |
+## Phase 12: Remove Cluster D Globals ✅ DONE
+
+`sRho_G`, `sAw_G`, `sGammaR_G`, `sEta_G`, `sKappa_G`, `lam_w_G`, `lam_r_G`, `lg_G`, `lc_G`
+and `cf1_G` deleted from `deriv_globals.f90`; every consumer reads `ctx%frame` or a threaded
+`frame`. `PopulateFELFrameFromGlobals` and `UpdateGlobalsFromFELFrame` removed from
+`adapter_globals.f90` — the frame needs no adapter because nothing writes globals any more.
+
+## Phase 13: Field Data and RK4 Scratch ✅ DONE (UKFELs/Puffin#107)
+
+The last large blocks of global state were the field itself and the integrator's scratch.
+
+**`tFieldValues`** (in `ctx%field`) owns the six field arrays, the two FFTW transposition
+buffers, and the decomposition that gives them meaning — `fz2`, `ez2`, `bz2`, `mainlen`,
+`tllen`, the front/back bounds, the global gather bounds, and the per-rank layout tables.
+It is a sibling of `tFieldMesh`, not nested in it: the mesh is the global static grid, fixed
+after init and identical on every rank, while this is per-rank and repartitioned every step
+by `getLocalFieldIndices`. `ParaField`'s public list is now routines only; what remains
+module state there is MPI scratch belonging to the transfers.
+
+**`tRK4Workspace`** replaced `RK4int`'s 31 module arrays, which now has no module variables
+at all. Its field half is indexed by envelope and stage — `work%env(ie)%A_r(node, 0:3)`,
+`dadz_r(node, 0:2)`, and `in_r(node)` for the inner-mesh field carried between steps. The
+beam scratch stays named rather than stage-indexed: one bunch however many envelopes, and
+the roles are irregular (`d*t` holds k2 then k4, `d*m` accumulates k2+k3).
+
+Two decisions worth knowing before extending this:
+
+- **The workspace is deliberately not in `ctx`.** Its lifetime is the field layout, not the
+  simulation — `UndSection` reallocates it on every relayout. And `upd8a` takes a field array
+  and the field object in the same call; at `ctx%rk4` that would pass a subobject of `ctx`
+  alongside another part of `ctx`, which a compiler may assume cannot happen. The same shape
+  forced `pupd8` to take the field object instead of its two arrays.
+- **`in_r`/`in_i` live in the workspace, not in `tFieldValues`**, despite being field data.
+  The outer mesh is authoritative: `inner2Outer` writes back before every dump and every
+  diffraction step, `outer2Inner` re-seeds afterwards. The inner mesh is a working copy whose
+  lifetime is exactly the workspace's.
+
+`nEnv` is fixed at 1 and the allocation loops over it, so an elliptical undulator or a
+harmonic band is `env(2)` rather than a second set of arrays — see W3 in
+`AVERAGED_MODE_ROADMAP.md` and #129.
+
+Not done here, and left for W3: `derivs` and `getrhs` still take the stage arrays
+positionally (18 arguments each). Collapsing them to `(sz, istage, work, ctx)` is what lets
+the envelope loop live *inside* `getrhs`, which is where it belongs — node location and
+interpolation weights are shared across envelopes, and the energy balance needs every
+envelope summed into `dGamma/dz` in the same pass. With one envelope there is no loop to
+justify the change, so it belongs with the physics that needs it.
 
 ---
 
@@ -334,15 +383,33 @@ The e2e test verifies numerical results to 1e-10 tolerance.
 
 ---
 
-## Remaining Globals Audit (after Phase 10)
+## Globals Audit (after Phase 13)
 
-| Variable | Why it remains | Phase that removes it |
-|----------|----------------|-----------------------|
-| `iCsteps` | written by `setupMods`; sync write in `undulator.f90`; HDF5 writers already use ctx | 11 |
-| `igwr` | set in `undulator.f90` resume path; HDF5 writers already use ctx | 11 |
-| `sZi_G` | set in `undulator.f90` resume path; HDF5 writers already use ctx | 11 |
-| `end_time`, `start_time` | timing globals read by `diffraction.f90` | 11 |
-| `sRho_G`, `sAw_G`, `sGammaR_G`, `sEta_G`, `sKappa_G` | written by `calcScaling`; read by `init_conds.f90`, `gen_macros.f90`, `MPfDists.f90` | 11 |
-| `lam_w_G`, `lam_r_G`, `lg_G`, `lc_G`, `cf1_G` | written by `calcScaling`; read throughout init | 11 |
-| `qPArrOK_G`, `qInnerXYOK_G` | ✅ Deleted in Phase 10 | — |
-| `iUnd_cr`, `iChic_cr`, `iDrift_cr`, `iQuad_cr`, `iModulation_cr` | ✅ Deleted in Phase 10 | — |
+Everything the earlier phases tracked has now gone:
+
+| Variable | Removed in |
+|----------|-----------|
+| `qPArrOK_G`, `qInnerXYOK_G` | Phase 10 |
+| `iUnd_cr`, `iChic_cr`, `iDrift_cr`, `iQuad_cr`, `iModulation_cr` | Phase 10 |
+| `iCsteps`, `igwr`, `sZi_G`, `end_time`, `start_time` | Phase 11 |
+| `sRho_G`, `sAw_G`, `sGammaR_G`, `sEta_G`, `sKappa_G` | Phase 12 |
+| `lam_w_G`, `lam_r_G`, `lg_G`, `lc_G`, `cf1_G` | Phase 12 |
+| field arrays, FFT buffers, decomposition indices (`ParaField`) | Phase 13 |
+| RK4 stage and beam scratch (`RK4int`) | Phase 13 |
+
+### What is still global, and why
+
+Not everything remaining is debt. These are deliberate:
+
+| Variable | Why it stays |
+|----------|--------------|
+| `tProcInfo_G` | MPI communicator and rank; infrastructure, read in 67+ places |
+| `tTransInfo_G` | FFTW plan and slab geometry; owned by the transform layer |
+| `tErrorLog_G` | Error log handle |
+| `NX_G`, `NY_G`, `NZ2_G`, `sLengthOfElm*_G`, `ntrnds_G`, … | Mesh dimensions — duplicated in `ctx%mesh`, which is what new code should read. Removing the globals means threading `ctx` through the macroparticle generation and MASP/dist input paths |
+| `sElX_G` … `sElGam_G` | The macroparticle arrays. Duplicated in `ctx%electrons`; the same threading job, and the larger half of it |
+| MPI transfer scratch in `ParaField` | `recvs_*`/`displs_*`, `lrank_v`, `tmp_A` — belongs to the transfers, not to the field |
+
+The beam arrays are the obvious next target if this migration continues: they are the last
+large block of simulation data still reached through `use Globals`, and `tElectronCloud`
+already exists to hold them.
