@@ -9,7 +9,7 @@ module RK4int
      sElPX_G, sElPY_G, sElGam_G, dadz_w, WP
    use Derivative, only: derivs
    use IO, only: tErrorLog_G, log_error
-   use ParaField, only: tllen, upd8a, inner2outer, outer2inner
+   use ParaField, only: upd8a, inner2outer, outer2inner
    use GlobalTypes, only: tSimulationContext, tFieldValues
 
    implicit none (type, external)
@@ -206,7 +206,7 @@ contains
 !    Update large field array with new values
 !  call local2globalA(A_localt,sA,recvs,displs,tTransInfo_G%qOneD)
 
-         call upd8a(A_localtr1, A_localti1)
+         call upd8a(A_localtr1, A_localti1, ctx%field)
 
       end if
 
@@ -244,7 +244,7 @@ contains
 
 !  call local2globalA(A_localt,sA,recvs,displs,tTransInfo_G%qOneD)
 
-         call upd8a(A_localtr2, A_localti2)
+         call upd8a(A_localtr2, A_localti2, ctx%field)
 
       end if
 
@@ -275,7 +275,7 @@ contains
 !$OMP END PARALLEL WORKSHARE
 !  call local2globalA(A_localt, sA, recvs, displs, tTransInfo_G%qOneD)
 
-         call upd8a(A_localtr3, A_localti3)
+         call upd8a(A_localtr3, A_localti3, ctx%field)
 
 !$OMP PARALLEL WORKSHARE
          dxm = dxt + dxm
@@ -333,7 +333,7 @@ contains
 
 
 
-         call upd8a(ac_rfield_in, ac_ifield_in)
+         call upd8a(ac_rfield_in, ac_ifield_in, ctx%field)
 
       end if
 
@@ -385,7 +385,7 @@ contains
 
       integer(kind=ip) :: tllen43D
 
-      tllen43D = tllen * ntrndsi_G
+      tllen43D = field%tllen * ntrndsi_G
 
       allocate(DxDx(iNumberElectrons_G))
       allocate(DyDx(iNumberElectrons_G))

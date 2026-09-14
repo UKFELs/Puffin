@@ -32,7 +32,6 @@ use hdf5PuffLow, only: addh5stringattribute, addh5derivedvariable, write3dlimgrp
   write3duniformmesh, write1duniformmesh, writecommonatts, writeh5timegroup, writeh5runinfo, &
   integertostring
 use GlobalTypes, only: tSimulationContext
-use ParaField, only: qUnique
 use puffin_h5_par, only: H5FD_MPIO_COLLECTIVE_F, H5FD_MPIO_INDEPENDENT_F, &
   h5pset_dxpl_mpio_f, h5pset_fapl_mpio_f
 use mpi, only: MPI_INFO_NULL
@@ -828,7 +827,7 @@ contains
         CALL h5pclose_f(plist_id, error)
       end if
 
-      if ((qUnique) .or. (.not. chkactiveflag)) then
+      if ((ctx%field%qUnique) .or. (.not. chkactiveflag)) then
 
         CALL h5screate_simple_f(rank, dims, dspace_id, error)
 
@@ -1252,7 +1251,7 @@ contains
 
       end if
 
-      if ((qUnique) .or. (.not. chkactiveflag)) then
+      if ((ctx%field%qUnique) .or. (.not. chkactiveflag)) then
 
         call h5screate_simple_f(rank, dims, dspace_id, error)
 

@@ -98,7 +98,7 @@ contains
 
 !    update fields in buffers
 
-      call upd8da(sdAr, sdAi)
+      call upd8da(sdAr, sdAi, ctx%field)
 
 
 

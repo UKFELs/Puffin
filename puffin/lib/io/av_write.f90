@@ -20,8 +20,7 @@ module avwrite
      qOneD_G, pi, c, q_e
    use functions, only: linspace
    use ParallelSetUp, only: sum2rootarr
-   use parafield, only: &
-     mainlen, tlflen, tlelen, tlflen4arr, tlelen4arr, ffe_GGG, ees_GGG, updateglobalpow
+   use parafield, only: updateglobalpow
    use GlobalTypes, only: tFELFrame, tFieldValues
    use mpi, only: mpi_barrier
 
@@ -29,8 +28,7 @@ module avwrite
    implicit none (type, external)
 private
 
-public :: getcurr, getcurrnpts, &
-           getslicetwiss, gpowerp, initPowerCalc, linspace, mainlen, tlelen, tlflen
+public :: getcurr, getcurrnpts, getslicetwiss, gpowerp, initPowerCalc, linspace
 
 
 contains
@@ -57,19 +55,19 @@ contains
          bk_power(:), &  !< Power in 'back' field section
          ac_power(:)     !< Power in 'active' field section
 
-      allocate(ac_power(mainlen), fr_power(tlflen4arr), bk_power(tlelen4arr))
+      allocate(ac_power(field%mainlen), fr_power(field%tlflen4arr), bk_power(field%tlelen4arr))
 
-      if ((ffe_GGG > 0) .and. (tlflen > 0) ) then
+      if ((field%ffe_GGG > 0) .and. (field%tlflen > 0) ) then
          call gPower(field%fr_r, field%fr_i, fr_power)
       end if
 
-      call gPower(field%ac_r(1:mainlen*ntrnds_G), field%ac_i(1:mainlen*ntrnds_G), ac_power)
+      call gPower(field%ac_r(1:field%mainlen*ntrnds_G), field%ac_i(1:field%mainlen*ntrnds_G), ac_power)
 
-      if ((ees_GGG < nz2_G) .and. (tlelen > 0) ) then
+      if ((field%ees_GGG < nz2_G) .and. (field%tlelen > 0) ) then
          call gPower(field%bk_r, field%bk_i, bk_power)
       end if
 
-      call UpdateGlobalPow(fr_power, ac_power, bk_power, power)
+      call UpdateGlobalPow(fr_power, ac_power, bk_power, power, field)
 
       deallocate(fr_power, ac_power, bk_power)
    end subroutine gPowerP

@@ -25,7 +25,7 @@ use FiElec, only: getinterps_3d, getffelecs_3d, getsource_3d
 use gtop2, only: getp2, getp2avg
 use averaging, only: tAvgCoupling, getAvgCoupling, getResonantMomentum, &
   tAvgFocusing, getAvgFocusCoef, getAvgFocusing
-use ParaField, only: fz2, tTransInfo_G
+use ParaField, only: tTransInfo_G
 use bfields, only: getbfields
 use GlobalTypes, only: tUndulator, tFELFrame, tSimulationContext
 
@@ -180,7 +180,7 @@ contains
 
 
 
-    p_nodes = int(sz2 / dz2, kind=ip) + 1_IP - (fz2-1)
+    p_nodes = int(sz2 / dz2, kind=ip) + 1_IP - (ctx%field%fz2-1)
 ! !$OMP WORKSHARE
 !!$OMP SIMD
 !    do i = 1, iNumberElectrons_G
@@ -210,7 +210,7 @@ contains
               (int( (sy+halfy)  / dy, kind=ip) * nspinDX )  + &   !  y 'slices' before primary node
               (nspinDX * nspinDY * &
                               int(sz2  / dz2, kind=ip) ) - &
-                              (fz2-1)*ntrndsi_G  ! transverse slices before primary node
+                              (ctx%field%fz2-1)*ntrndsi_G  ! transverse slices before primary node
 
 !$OMP END WORKSHARE
 
@@ -221,7 +221,7 @@ contains
 
   if (tTransInfo_G%qOneD) then
 
-    call getInterps_1D(sz2, ctx%flags)
+    call getInterps_1D(sz2, ctx%flags, ctx%field)
     if (ctx%flags%parallel_arrays_ok) then
       call getFFelecs_1D(sAr, sAi)
       if (ctx%flags%period_averaged) then
@@ -233,7 +233,7 @@ contains
 
   else
 
-    call getInterps_3D(sx, sy, sz2, ctx%flags)
+    call getInterps_3D(sx, sy, sz2, ctx%flags, ctx%field)
     if ((ctx%flags%parallel_arrays_ok) .and. (ctx%flags%inner_xy_ok)) then
       call getFFelecs_3D(sAr, sAi)
       if (ctx%flags%period_averaged) then

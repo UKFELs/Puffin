@@ -7,14 +7,12 @@ module hdf5_puff
 use ArrayFunctions, only: cArraySegment, tProcInfo_G, tErrorLog_G, log_error
 USE puffin_constants, only: pi, c, e_0, m_e, q_e
 USE Globals, only: NZ2_G, npts_I_G, dz2_I_G, ata_G, tArrayE, tArrayA, tArrayZ, qOneD_G
-use avWrite, only: gpowerp, getcurr, getslicetwiss, &
-  mainlen, tlflen, tlelen
+use avWrite, only: gpowerp, getcurr, getslicetwiss
 use puffin_kinds, only: WP, IP
 use hdf5PuffID, only: outputh5beamfilesid, outputh5field3did
 use hdf5PuffColl, only: outputh5beamfilessd, outputh5field3dsd, outputh5field1d2compsd, &
   createintegrated1dfloat, addh5field1dfloat
 use GlobalTypes, only: tSimulationContext
-use ParaField, only: fz2, ez2, ffs, ffe, ees, eee
 
 !use MPI
 use hdf5PuffLow, only: iStep
@@ -94,18 +92,18 @@ contains
 !      print *,'2 component 1D field output not currently supported'
 !        print *, "But trying anyway - Dumping all fields together"
         call cpu_time(stime)
-        call outputH5Field1D2CompSD(time, sz_loc, iL, error, tlflen, ctx%field%fr_r, &
-                                     ffs, ffe, 0, 1, .false., ctx)
-        call outputH5Field1D2CompSD(time, sz_loc, iL, error, tlflen, ctx%field%fr_i, &
-                                     ffs, ffe, 1, 2, .false., ctx)
-        call outputH5Field1D2CompSD(time, sz_loc, iL, error, mainlen, ctx%field%ac_r, &
-                                     fz2, ez2, 0, 2, .true., ctx)
-        call outputH5Field1D2CompSD(time, sz_loc, iL, error, mainlen, ctx%field%ac_i, &
-                                     fz2, ez2, 1, 2, .true., ctx)
-        call outputH5Field1D2CompSD(time, sz_loc, iL, error, tlelen, ctx%field%bk_r, &
-                                     ees, eee, 0, 2, .false., ctx)
-        call outputH5Field1D2CompSD(time, sz_loc, iL, error, tlelen, ctx%field%bk_i, &
-                                     ees, eee, 1, 2, .false., ctx)
+        call outputH5Field1D2CompSD(time, sz_loc, iL, error, ctx%field%tlflen, ctx%field%fr_r, &
+                                     ctx%field%ffs, ctx%field%ffe, 0, 1, .false., ctx)
+        call outputH5Field1D2CompSD(time, sz_loc, iL, error, ctx%field%tlflen, ctx%field%fr_i, &
+                                     ctx%field%ffs, ctx%field%ffe, 1, 2, .false., ctx)
+        call outputH5Field1D2CompSD(time, sz_loc, iL, error, ctx%field%mainlen, ctx%field%ac_r, &
+                                     ctx%field%fz2, ctx%field%ez2, 0, 2, .true., ctx)
+        call outputH5Field1D2CompSD(time, sz_loc, iL, error, ctx%field%mainlen, ctx%field%ac_i, &
+                                     ctx%field%fz2, ctx%field%ez2, 1, 2, .true., ctx)
+        call outputH5Field1D2CompSD(time, sz_loc, iL, error, ctx%field%tlelen, ctx%field%bk_r, &
+                                     ctx%field%ees, ctx%field%eee, 0, 2, .false., ctx)
+        call outputH5Field1D2CompSD(time, sz_loc, iL, error, ctx%field%tlelen, ctx%field%bk_i, &
+                                     ctx%field%ees, ctx%field%eee, 1, 2, .false., ctx)
         call cpu_time(ftime)
 
 !        print '("Dumped fields together. Took time = ",f6.3," secs on rank ",i5)' &
@@ -117,12 +115,12 @@ contains
 ! is (probably) the same
 
 ! signature: nlonglength, dsetname, data, nlo, nhi, chkactiveflag
-! tlflen, 'aperp_front_real', ctx%field%fr_r, [ffs,ffe], .false.
-! tlflen, 'aperp_front_imag', ctx%field%fr_i, [ffs,ffe], .false.
-! mainlen, 'aperp_active_real', ctx%field%ac_r, [fz2,ez2], .true.
-! mainlen, 'aperp_active_imag', ctx%field%ac_i, [fz2,ez2], .true.
-! tlelen, 'aperp_back_real', ctx%field%bk_r, [ees,eee], .false.
-! tlelen, 'aperp_back_imag', ctx%field%bk_i, [ees,eee], .false.
+! ctx%field%tlflen, 'aperp_front_real', ctx%field%fr_r, [ctx%field%ffs,ctx%field%ffe], .false.
+! ctx%field%tlflen, 'aperp_front_imag', ctx%field%fr_i, [ctx%field%ffs,ctx%field%ffe], .false.
+! ctx%field%mainlen, 'aperp_active_real', ctx%field%ac_r, [ctx%field%fz2,ctx%field%ez2], .true.
+! ctx%field%mainlen, 'aperp_active_imag', ctx%field%ac_i, [ctx%field%fz2,ctx%field%ez2], .true.
+! ctx%field%tlelen, 'aperp_back_real', ctx%field%bk_r, [ctx%field%ees,ctx%field%eee], .false.
+! ctx%field%tlelen, 'aperp_back_imag', ctx%field%bk_i, [ctx%field%ees,ctx%field%eee], .false.
 ! final argument  checks for all active field on single root node ...
 ! should say if qUnique or rank=0...
 
@@ -140,18 +138,18 @@ contains
 !        print *, "Dumping separate fields"
 
           call cpu_time(stime)
-          call outputH5Field3DID(time, sz_loc, iL, error, tlflen, "aperp_front_real", &
-                                  ctx%field%fr_r,  ffs, ffe, .false., ctx)
-          call outputH5Field3DID(time, sz_loc, iL, error, tlflen, "aperp_front_imag", &
-                                  ctx%field%fr_i,  ffs, ffe, .false., ctx)
-          call outputH5Field3DID(time, sz_loc, iL, error, mainlen, "aperp_active_real", &
-                                  ctx%field%ac_r,  fz2, ez2, .true., ctx)
-          call outputH5Field3DID(time, sz_loc, iL, error, mainlen, "aperp_active_imag", &
-                                  ctx%field%ac_i,  fz2, ez2, .true., ctx)
-          call outputH5Field3DID(time, sz_loc, iL, error, tlelen, "aperp_back_real", &
-                                  ctx%field%bk_r,  ees, eee, .false., ctx)
-          call outputH5Field3DID(time, sz_loc, iL, error, tlelen, "aperp_back_imag", &
-                                  ctx%field%bk_i,  ees, eee, .false., ctx)
+          call outputH5Field3DID(time, sz_loc, iL, error, ctx%field%tlflen, "aperp_front_real", &
+                                  ctx%field%fr_r,  ctx%field%ffs, ctx%field%ffe, .false., ctx)
+          call outputH5Field3DID(time, sz_loc, iL, error, ctx%field%tlflen, "aperp_front_imag", &
+                                  ctx%field%fr_i,  ctx%field%ffs, ctx%field%ffe, .false., ctx)
+          call outputH5Field3DID(time, sz_loc, iL, error, ctx%field%mainlen, "aperp_active_real", &
+                                  ctx%field%ac_r,  ctx%field%fz2, ctx%field%ez2, .true., ctx)
+          call outputH5Field3DID(time, sz_loc, iL, error, ctx%field%mainlen, "aperp_active_imag", &
+                                  ctx%field%ac_i,  ctx%field%fz2, ctx%field%ez2, .true., ctx)
+          call outputH5Field3DID(time, sz_loc, iL, error, ctx%field%tlelen, "aperp_back_real", &
+                                  ctx%field%bk_r,  ctx%field%ees, ctx%field%eee, .false., ctx)
+          call outputH5Field3DID(time, sz_loc, iL, error, ctx%field%tlelen, "aperp_back_imag", &
+                                  ctx%field%bk_i,  ctx%field%ees, ctx%field%eee, .false., ctx)
           call cpu_time(ftime)
 !        print '("Dumped separate fields. Took time = ",f6.3," secs on rank ",i5)' &
 !          ,ftime-stime,tprocinfo_g%rank
@@ -160,23 +158,23 @@ contains
 
 !        print *, "Dumping all fields together"
           call cpu_time(stime)
-          call outputH5Field3DSD(time, sz_loc, iL, error, tlflen, ctx%field%fr_r, &
-                                  ffs, ffe, 0, 1, .false., ctx)
-          call outputH5Field3DSD(time, sz_loc, iL, error, tlflen, ctx%field%fr_i, &
-                                  ffs, ffe, 1, 2, .false., ctx)
-          call outputH5Field3DSD(time, sz_loc, iL, error, mainlen, ctx%field%ac_r, &
-                                  fz2, ez2, 0, 2, .true., ctx)
-          call outputH5Field3DSD(time, sz_loc, iL, error, mainlen, ctx%field%ac_i, &
-                                  fz2, ez2, 1, 2, .true., ctx)
-          call outputH5Field3DSD(time, sz_loc, iL, error, tlelen, ctx%field%bk_r, &
-                                  ees, eee, 0, 2, .false., ctx)
-          call outputH5Field3DSD(time, sz_loc, iL, error, tlelen, ctx%field%bk_i, &
-                                  ees, eee, 1, 2, .false., ctx)
+          call outputH5Field3DSD(time, sz_loc, iL, error, ctx%field%tlflen, ctx%field%fr_r, &
+                                  ctx%field%ffs, ctx%field%ffe, 0, 1, .false., ctx)
+          call outputH5Field3DSD(time, sz_loc, iL, error, ctx%field%tlflen, ctx%field%fr_i, &
+                                  ctx%field%ffs, ctx%field%ffe, 1, 2, .false., ctx)
+          call outputH5Field3DSD(time, sz_loc, iL, error, ctx%field%mainlen, ctx%field%ac_r, &
+                                  ctx%field%fz2, ctx%field%ez2, 0, 2, .true., ctx)
+          call outputH5Field3DSD(time, sz_loc, iL, error, ctx%field%mainlen, ctx%field%ac_i, &
+                                  ctx%field%fz2, ctx%field%ez2, 1, 2, .true., ctx)
+          call outputH5Field3DSD(time, sz_loc, iL, error, ctx%field%tlelen, ctx%field%bk_r, &
+                                  ctx%field%ees, ctx%field%eee, 0, 2, .false., ctx)
+          call outputH5Field3DSD(time, sz_loc, iL, error, ctx%field%tlelen, ctx%field%bk_i, &
+                                  ctx%field%ees, ctx%field%eee, 1, 2, .false., ctx)
           call cpu_time(ftime)
 !        print '("Dumped fields together. Took time = ",f6.3," secs on rank ",i5)' &
 !          ,ftime-stime,tprocinfo_g%rank
         end if
-!      call outputH5Field3DSDattrs(time, error, tlflen, ctx%field%fr_r,  ffs, ffe, 0, .false.)
+!      call outputH5Field3DSDattrs(time, error, ctx%field%tlflen, ctx%field%fr_r,  ctx%field%ffs, ctx%field%ffe, 0, .false.)
         if (error /= 0) goto 1000
 
       end if

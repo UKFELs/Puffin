@@ -37,8 +37,7 @@ USE gMPsFromDists, only: getmps
 use avwrite, only: getcurrnpts, linspace
 use MASPin, only: readmaspfile
 use h5in, only: readh5beamfile
-use parafield, only: fz2, ez2, &
-  ffs, ffe, ees, eee, ffe_GGG, eee_GGG, getinnode, tTransInfo_G
+use parafield, only: getinnode, tTransInfo_G
 use scale, only: scaleX, scalePx, scaleT, scaleIntensity, scaleemit
 use GlobalTypes, only: tSimulationFlags, tSimulationContext, tFELFrame, tFieldValues
 use Functions, only: gaussian
@@ -1365,10 +1364,10 @@ subroutine getPaSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
 
 
 
-  if ((ffe_GGG > 0) .and. (ffe-ffs+1 > 0) ) then
+  if ((field%ffe_GGG > 0) .and. (field%ffe-field%ffs+1 > 0) ) then
 
     call getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
-                  frs,ph_sh,nSeeds,dels,ffs, ffe, &
+                  frs,ph_sh,nSeeds,dels,field%ffs, field%ffe, &
                   field%fr_r,field%fr_i)
 
   end if
@@ -1382,7 +1381,7 @@ subroutine getPaSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
 
 
   call getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
-                frs,ph_sh,nSeeds,dels,fz2, ez2, &
+                frs,ph_sh,nSeeds,dels,field%fz2, field%ez2, &
                 field%ac_r,field%ac_i)
 
 
@@ -1391,10 +1390,10 @@ subroutine getPaSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
 !  3rd gen back seed section if present
 
 
-  if ((eee_GGG > 0) .and. (eee-ees+1 > 0) ) then
+  if ((field%eee_GGG > 0) .and. (field%eee-field%ees+1 > 0) ) then
 
     call getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
-                  frs,ph_sh,nSeeds,dels,ees, eee, &
+                  frs,ph_sh,nSeeds,dels,field%ees, field%eee, &
                   field%bk_r,field%bk_i)
 
   end if

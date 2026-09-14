@@ -606,7 +606,7 @@ contains
                        NZ2_G, nspinDX, nspinDY, ntrndsi_G, fieldMesh, iTemporal, &
                        qElectronsEvolve_G, qFieldEvolve_G, qElectronFieldCoupling_G, &
                        iNumberElectrons_G, procelectrons_G, s_chi_bar_G, dadz_w
-    use ParaField, only: fz2, bz2, tTransInfo_G
+    use ParaField, only: tTransInfo_G
     use rhs, only: getrhs
 
     character(*), intent(in) :: undType
@@ -665,8 +665,8 @@ contains
     NZ2_G = nz
     fieldMesh = iTemporal
     tTransInfo_G%qOneD = qOneD
-    fz2 = 1
-    bz2 = nz
+    ctx%field%fz2 = 1
+    ctx%field%bz2 = nz
 
     nf = ntrndsi_G * nz
     allocate(sAr(nf), sAi(nf), dAr(nf), dAi(nf))
