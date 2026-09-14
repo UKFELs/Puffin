@@ -22,7 +22,7 @@ private
 
 public :: iDiffraction_CG, iX_CG, iY_CG, iZ2_CG, tElectronCloud, tFELFrame, tFieldMesh, &
            tFieldValues, tIntegrationState, tLatticeElements, tOutputConfig, &
-           tRK4Field, tRK4Workspace, tSimulationContext, tSimulationFlags, tUndulator
+           tRK4Workspace, tSimulationContext, tSimulationFlags, tUndulator
 
 
 ! ============================================================================
@@ -138,16 +138,19 @@ end type tFieldValues
 !     every dump and every diffraction step, outer2Inner re-seeds afterwards.
 !     It is a working copy whose lifetime is exactly this workspace's.
 ! ============================================================================
-type :: tRK4Field
-    ! One radiation envelope. Today there is one; an elliptical undulator or a
-    ! harmonic band adds another, which is the point of the env(:) array below.
-    real(kind=wp), allocatable :: A_r(:,:), A_i(:,:)        ! (node, 0:3) stage values
-    real(kind=wp), allocatable :: dadz_r(:,:), dadz_i(:,:)  ! (node, 0:2) stage derivatives
-    real(kind=wp), allocatable :: in_r(:), in_i(:)          ! inner-mesh field, carried
-end type tRK4Field
-
 type :: tRK4Workspace
-    type(tRK4Field), allocatable :: env(:)
+    ! Field scratch, indexed (node, envelope, stage). One envelope today; an
+    ! elliptical undulator or a harmonic band adds another.
+    !
+    ! The envelope index sits in the middle so that a whole stage across every
+    ! envelope, A_r(:,:,istage), is one contiguous rank-2 slice: that is what
+    ! derivs and getrhs receive, and it is what lets the envelope loop live
+    ! inside getrhs where the interpolation weights are shared. A single
+    ! envelope's mesh array, A_r(:,ie,istage), is contiguous too, so it still
+    ! passes to upd8a unchanged.
+    real(kind=wp), allocatable :: A_r(:,:,:), A_i(:,:,:)        ! stage 0:3
+    real(kind=wp), allocatable :: dadz_r(:,:,:), dadz_i(:,:,:)  ! stage 0:2
+    real(kind=wp), allocatable :: in_r(:,:), in_i(:,:)          ! inner-mesh field, carried
 
     ! Beam scratch. One bunch however many envelopes there are, so unlike the
     ! field arrays these do not multiply - and their roles are irregular

@@ -17,7 +17,7 @@ module undulator
 use pdiff, only: diffractim, WP, IP, tProcInfo_G
 !use sddsPuffin
 use lattice, only: correcttrans, matchout, matchin, initundulator
-use RK4int, only: rk4par, allact_rk4_arrs, deallact_rk4_arrs
+use RK4int, only: rk4par, allact_rk4_arrs, deallact_rk4_arrs, inner2outerenv, outer2innerenv
 !use dumpFiles
 use write_adapter, only: writeim, qwriteq, iStep
 use ParaField, only: getlocalfieldindices, inner2outer, outer2inner, getinnode
@@ -297,7 +297,7 @@ end if
 
 !        call deallact_rk4_arrs(ctx%field, work)
 
-        call inner2Outer(work%env(1)%in_r, work%env(1)%in_i, ctx%field)
+        call inner2OuterEnv(work%in_r, work%in_i, ctx%field)
 
         dzdF = dzdS  ! Finishing last diffraction step
                      ! - must be indentical size
@@ -335,7 +335,7 @@ end if
           dzd = dzdF + dzdS
 
           call diffractIM(dzd, qDiffrctd, qOKL, ctx)
-          call outer2Inner(work%env(1)%in_r, work%env(1)%in_i, ctx%field)
+          call outer2InnerEnv(work%in_r, work%in_i, ctx%field)
         else
 
         ! If writing in this step, then we need to first
@@ -346,7 +346,7 @@ end if
           call writeIM(sZ, sZl, ctx, iM, qOKL)   ! Write data
           ! Start new diffraction step
           if (dzdS > 0.0_wp) call diffractIM(dzdS, qDiffrctd, qOKL, ctx)
-          call outer2Inner(work%env(1)%in_r, work%env(1)%in_i, ctx%field)
+          call outer2InnerEnv(work%in_r, work%in_i, ctx%field)
           qDWrDone = .true.
 
         end if
@@ -365,7 +365,7 @@ end if
 
         ! if not already written in diffraction step
 
-        call inner2Outer(work%env(1)%in_r, work%env(1)%in_i, ctx%field)
+        call inner2OuterEnv(work%in_r, work%in_i, ctx%field)
 
         call writeIM(sZ, sZl, ctx, iM, qOKL)
 

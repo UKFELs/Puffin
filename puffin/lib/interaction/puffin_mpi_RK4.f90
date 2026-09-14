@@ -15,15 +15,62 @@ module RK4int
    implicit none (type, external)
 private
 
-public :: allact_rk4_arrs, deallact_rk4_arrs, rk4par
+public :: allact_rk4_arrs, deallact_rk4_arrs, inner2outerenv, outer2innerenv, rk4par
 
 !  The integration scratch that used to sit here as module arrays now lives in
-!  a tRK4Workspace, passed in by UndSection. The field half of it is indexed by
-!  envelope, so a second polarisation is another element of work%env rather than
-!  another set of module arrays. See UKFELs/Puffin#107 and the W3 section of
-!  AVERAGED_MODE_ROADMAP.md.
+!  a tRK4Workspace, passed in by UndSection. Its field arrays are indexed
+!  (node, envelope, stage), so a second polarisation or a harmonic band is one
+!  more value of nEnv in allact_rk4_arrs rather than another set of module
+!  arrays. See UKFELs/Puffin#107 and the W3 section of AVERAGED_MODE_ROADMAP.md.
 
 contains
+
+!> upd8a, inner2Outer and outer2Inner each act on one envelope's mesh array.
+!> These three wrappers apply them across every envelope, so the integrator
+!> itself never has to spell the loop out. A_r(:,ie) is contiguous, so the
+!> callees take it unchanged.
+
+   subroutine upd8aEnv(Ar, Ai, field)
+
+      real(kind=wp), contiguous, intent(inout) :: Ar(:,:), Ai(:,:)
+      type(tFieldValues), intent(inout) :: field
+
+      integer(kind=ip) :: ie
+
+      do ie = 1, size(Ar, 2)
+        call upd8a(Ar(:,ie), Ai(:,ie), field)
+      end do
+
+   end subroutine upd8aEnv
+
+
+   subroutine inner2OuterEnv(inner_r, inner_i, field)
+
+      real(kind=wp), contiguous, intent(in) :: inner_r(:,:), inner_i(:,:)
+      type(tFieldValues), intent(inout) :: field
+
+      integer(kind=ip) :: ie
+
+      do ie = 1, size(inner_r, 2)
+        call inner2Outer(inner_r(:,ie), inner_i(:,ie), field)
+      end do
+
+   end subroutine inner2OuterEnv
+
+
+   subroutine outer2InnerEnv(inner_r, inner_i, field)
+
+      real(kind=wp), contiguous, intent(out) :: inner_r(:,:), inner_i(:,:)
+      type(tFieldValues), intent(in) :: field
+
+      integer(kind=ip) :: ie
+
+      do ie = 1, size(inner_r, 2)
+        call outer2Inner(inner_r(:,ie), inner_i(:,ie), field)
+      end do
+
+   end subroutine outer2InnerEnv
+
 
    subroutine rk4par(sZ, h, qD, ctx, work)
 
@@ -55,14 +102,14 @@ contains
 ! h6         Step size divided by 6
 ! hh         Half of the step size
 ! xh         x position incremented by half a step
-! work%dym        Intermediate derivatives
-! work%dyt        Intermediate derivatives
-! work%yt         Incremental solution
+! dym        Intermediate derivatives
+! dyt        Intermediate derivatives
+! yt         Incremental solution
 ! dAdx       Field derivative
-! work%dydx       Electron derivatives
+! dydx       Electron derivatives
 
       REAL(KIND=WP)    :: h6, hh, szh
-      !REAL(KIND=WP), DIMENSION(size(y)) :: work%dym, work%dyt, work%yt
+      !REAL(KIND=WP), DIMENSION(size(y)) :: dym, dyt, yt
 
 
 
@@ -81,21 +128,21 @@ contains
 
 
 
-      work%env(1)%dadz_r(:,0) = 0_wp
-      work%env(1)%dadz_r(:,1) = 0_wp
-      work%env(1)%dadz_r(:,2) = 0_wp
-      work%env(1)%dadz_i(:,0) = 0_wp
-      work%env(1)%dadz_i(:,1) = 0_wp
-      work%env(1)%dadz_i(:,2) = 0_wp
+      work%dadz_r(:,:,0) = 0_wp
+      work%dadz_r(:,:,1) = 0_wp
+      work%dadz_r(:,:,2) = 0_wp
+      work%dadz_i(:,:,0) = 0_wp
+      work%dadz_i(:,:,1) = 0_wp
+      work%dadz_i(:,:,2) = 0_wp
 
-      work%env(1)%A_r(:,0) = 0_wp
-      work%env(1)%A_r(:,1) = 0_wp
-      work%env(1)%A_r(:,2) = 0_wp
-      work%env(1)%A_r(:,3) = 0_wp
-      work%env(1)%A_i(:,0) = 0_wp
-      work%env(1)%A_i(:,1) = 0_wp
-      work%env(1)%A_i(:,2) = 0_wp
-      work%env(1)%A_i(:,3) = 0_wp
+      work%A_r(:,:,0) = 0_wp
+      work%A_r(:,:,1) = 0_wp
+      work%A_r(:,:,2) = 0_wp
+      work%A_r(:,:,3) = 0_wp
+      work%A_i(:,:,0) = 0_wp
+      work%A_i(:,:,1) = 0_wp
+      work%A_i(:,:,2) = 0_wp
+      work%A_i(:,:,3) = 0_wp
 
 
 
@@ -128,8 +175,8 @@ contains
 
 
 
-      work%env(1)%A_r(:,0) = work%env(1)%in_r
-      work%env(1)%A_i(:,0) = work%env(1)%in_i
+      work%A_r(:,:,0) = work%in_r
+      work%A_i(:,:,0) = work%in_i
 
 
 !if (count(abs(ac_rfield) > 1.0E2) > 0) print*, 'HELP IM RUBBUSH AT START I habve ', &
@@ -156,20 +203,20 @@ contains
 
 !    First step
 !  iy = size(sElX_G)
-!  idydx = size(work%dxdx)
+!  idydx = size(dxdx)
 
 !    Get derivatives
 
-      call derivs(sZ, work%env(1)%A_r(:,0), work%env(1)%A_i(:,0), &
+      call derivs(sZ, work%A_r(:,:,0), work%A_i(:,:,0), &
          sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, &
          work%dxdx, work%dydx, work%dz2dx, work%dpxdx, work%dpydx, work%dpz2dx, &
-         work%env(1)%dadz_r(:,0), work%env(1)%dadz_i(:,0), ctx)
+         work%dadz_r(:,:,0), work%dadz_i(:,:,0), ctx)
 
 !call mpi_finalize(error)
 !stop
 
 !  allocate(dAm(2*local_rows),dAt(2*local_rows))
-      !print*, work%dpydx
+      !print*, dpydx
 
 !    Increment local electron and field values
 
@@ -183,14 +230,14 @@ contains
          work%pyt = sElPY_G    +  hh*work%dpydx
          work%pz2t = sElGam_G  +  hh*work%dpz2dx
 
-         work%env(1)%A_r(:,1) = work%env(1)%A_r(:,0) + hh * work%env(1)%dadz_r(:,0)
-         work%env(1)%A_i(:,1) = work%env(1)%A_i(:,0) + hh * work%env(1)%dadz_i(:,0)
+         work%A_r(:,:,1) = work%A_r(:,:,0) + hh * work%dadz_r(:,:,0)
+         work%A_i(:,:,1) = work%A_i(:,:,0) + hh * work%dadz_i(:,:,0)
 !$OMP END PARALLEL WORKSHARE
 
 !    Update large field array with new values
 !  call local2globalA(A_localt,sA,recvs,displs,tTransInfo_G%qOneD)
 
-         call upd8a(work%env(1)%A_r(:,1), work%env(1)%A_i(:,1), ctx%field)
+         call upd8aEnv(work%A_r(:,:,1), work%A_i(:,:,1), ctx%field)
 
       end if
 
@@ -200,10 +247,10 @@ contains
 !    Get derivatives
 
       if (ctx%flags%parallel_arrays_ok) then
-        call derivs(szh, work%env(1)%A_r(:,1), work%env(1)%A_i(:,1), &
+        call derivs(szh, work%A_r(:,:,1), work%A_i(:,:,1), &
          work%xt, work%yt, work%z2t, work%pxt, work%pyt, work%pz2t, &
          work%dxt, work%dyt, work%dz2t, work%dpxt, work%dpyt, work%dpz2t, &
-         work%env(1)%dadz_r(:,1), work%env(1)%dadz_i(:,1), ctx)
+         work%dadz_r(:,:,1), work%dadz_i(:,:,1), ctx)
       end if
 
 
@@ -221,14 +268,14 @@ contains
          work%pyt = sElPY_G    +  hh*work%dpyt
          work%pz2t = sElGam_G  +  hh*work%dpz2t
 
-         work%env(1)%A_r(:,2) = work%env(1)%A_r(:,0) + hh * work%env(1)%dadz_r(:,1)
-         work%env(1)%A_i(:,2) = work%env(1)%A_i(:,0) + hh * work%env(1)%dadz_i(:,1)
+         work%A_r(:,:,2) = work%A_r(:,:,0) + hh * work%dadz_r(:,:,1)
+         work%A_i(:,:,2) = work%A_i(:,:,0) + hh * work%dadz_i(:,:,1)
 !$OMP END PARALLEL WORKSHARE
 !    Update full field array
 
 !  call local2globalA(A_localt,sA,recvs,displs,tTransInfo_G%qOneD)
 
-         call upd8a(work%env(1)%A_r(:,2), work%env(1)%A_i(:,2), ctx%field)
+         call upd8aEnv(work%A_r(:,:,2), work%A_i(:,:,2), ctx%field)
 
       end if
 
@@ -237,10 +284,10 @@ contains
 
 
       if (ctx%flags%parallel_arrays_ok) then
-        call derivs(szh, work%env(1)%A_r(:,2), work%env(1)%A_i(:,2), &
+        call derivs(szh, work%A_r(:,:,2), work%A_i(:,:,2), &
          work%xt, work%yt, work%z2t, work%pxt, work%pyt, work%pz2t, &
          work%dxm, work%dym, work%dz2m, work%dpxm, work%dpym, work%dpz2m, &
-         work%env(1)%dadz_r(:,2), work%env(1)%dadz_i(:,2), ctx)
+         work%dadz_r(:,:,2), work%dadz_i(:,:,2), ctx)
       end if
 
 !    Incrementing
@@ -254,12 +301,12 @@ contains
          work%pyt = sElPY_G    +  h * work%dpym
          work%pz2t = sElGam_G  +  h * work%dpz2m
 
-         work%env(1)%A_r(:,3) = work%env(1)%A_r(:,0) + h * work%env(1)%dadz_r(:,2)
-         work%env(1)%A_i(:,3) = work%env(1)%A_i(:,0) + h * work%env(1)%dadz_i(:,2)
+         work%A_r(:,:,3) = work%A_r(:,:,0) + h * work%dadz_r(:,:,2)
+         work%A_i(:,:,3) = work%A_i(:,:,0) + h * work%dadz_i(:,:,2)
 !$OMP END PARALLEL WORKSHARE
 !  call local2globalA(A_localt, sA, recvs, displs, tTransInfo_G%qOneD)
 
-         call upd8a(work%env(1)%A_r(:,3), work%env(1)%A_i(:,3), ctx%field)
+         call upd8aEnv(work%A_r(:,:,3), work%A_i(:,:,3), ctx%field)
 
 !$OMP PARALLEL WORKSHARE
          work%dxm = work%dxt + work%dxm
@@ -269,11 +316,11 @@ contains
          work%dpym = work%dpyt + work%dpym
          work%dpz2m = work%dpz2t + work%dpz2m
 
-         work%env(1)%dadz_r(:,2) = work%env(1)%dadz_r(:,1) + work%env(1)%dadz_r(:,2)
-         work%env(1)%dadz_i(:,2) = work%env(1)%dadz_i(:,1) + work%env(1)%dadz_i(:,2)
+         work%dadz_r(:,:,2) = work%dadz_r(:,:,1) + work%dadz_r(:,:,2)
+         work%dadz_i(:,:,2) = work%dadz_i(:,:,1) + work%dadz_i(:,:,2)
 
-         work%env(1)%dadz_r(:,1) = 0_wp
-         work%env(1)%dadz_i(:,1) = 0_wp
+         work%dadz_r(:,:,1) = 0_wp
+         work%dadz_i(:,:,1) = 0_wp
 !$OMP END PARALLEL WORKSHARE
       end if
 
@@ -285,10 +332,10 @@ contains
 !    Get derivatives
 
       if (ctx%flags%parallel_arrays_ok) then
-        call derivs(szh, work%env(1)%A_r(:,3), work%env(1)%A_i(:,3), &
+        call derivs(szh, work%A_r(:,:,3), work%A_i(:,:,3), &
          work%xt, work%yt, work%z2t, work%pxt, work%pyt, work%pz2t, &
          work%dxt, work%dyt, work%dz2t, work%dpxt, work%dpyt, work%dpz2t, &
-         work%env(1)%dadz_r(:,1), work%env(1)%dadz_i(:,1), ctx)
+         work%dadz_r(:,:,1), work%dadz_i(:,:,1), ctx)
       end if
 
 
@@ -303,10 +350,10 @@ contains
          sElPY_G   = sElPY_G  + h6 * ( work%dpydx  + work%dpyt  + 2.0_WP * work%dpym )
          sElGam_G  = sElGam_G + h6 * ( work%dpz2dx + work%dpz2t + 2.0_WP * work%dpz2m)
 
-         work%env(1)%in_r = work%env(1)%in_r + h6 * (work%env(1)%dadz_r(:,0) + work%env(1)%dadz_r(:,1) + 2.0_WP * work%env(1)%dadz_r(:,2))
-         work%env(1)%in_i = work%env(1)%in_i + h6 * (work%env(1)%dadz_i(:,0) + work%env(1)%dadz_i(:,1) + 2.0_WP * work%env(1)%dadz_i(:,2))
+         work%in_r = work%in_r + h6 * (work%dadz_r(:,:,0) + work%dadz_r(:,:,1) + 2.0_WP * work%dadz_r(:,:,2))
+         work%in_i = work%in_i + h6 * (work%dadz_i(:,:,0) + work%dadz_i(:,:,1) + 2.0_WP * work%dadz_i(:,:,2))
 !$OMP END PARALLEL WORKSHARE
-!  if (count(abs(work%env(1)%dadz_r(:,0)) > 0.0_wp) <= 0) print*, 'HELP IM TOO RUBBUSH'
+!  if (count(abs(work%dadz_r(:,:,0)) > 0.0_wp) <= 0) print*, 'HELP IM TOO RUBBUSH'
 
 !  if (count(abs(ac_rfield) > 0.0_wp) <= 0) print*, 'HELP IM RUBBUSH'
 
@@ -317,7 +364,7 @@ contains
 
 
 
-         call upd8a(work%env(1)%in_r, work%env(1)%in_i, ctx%field)
+         call upd8aEnv(work%in_r, work%in_i, ctx%field)
 
       end if
 
@@ -329,14 +376,14 @@ contains
 
 !  deallocate(DADx)
 
-!  deallocate(work%env(1)%dadz_r(:,0), work%env(1)%dadz_i(:,0))
-!  deallocate(work%env(1)%dadz_r(:,1), work%env(1)%dadz_i(:,1))
-!  deallocate(work%env(1)%dadz_r(:,2), work%env(1)%dadz_i(:,2))
+!  deallocate(work%dadz_r(:,:,0), work%dadz_i(:,:,0))
+!  deallocate(work%dadz_r(:,:,1), work%dadz_i(:,:,1))
+!  deallocate(work%dadz_r(:,:,2), work%dadz_i(:,:,2))
 !
-!  deallocate(work%env(1)%A_r(:,0), work%env(1)%A_i(:,0))
-!  deallocate(work%env(1)%A_r(:,1), work%env(1)%A_i(:,1))
-!  deallocate(work%env(1)%A_r(:,2), work%env(1)%A_i(:,2))
-!  deallocate(work%env(1)%A_r(:,3), work%env(1)%A_i(:,3))
+!  deallocate(work%A_r(:,:,0), work%A_i(:,:,0))
+!  deallocate(work%A_r(:,:,1), work%A_i(:,:,1))
+!  deallocate(work%A_r(:,:,2), work%A_i(:,:,2))
+!  deallocate(work%A_r(:,:,3), work%A_i(:,:,3))
 !
 !  deallocate(DxDx)
 !  deallocate(DyDx)
@@ -368,22 +415,18 @@ contains
       type(tFieldValues), intent(in) :: field
       type(tRK4Workspace), intent(inout) :: work
 
-      integer(kind=ip) :: tllen43D, nEnv, ie
+      integer(kind=ip) :: tllen43D, nEnv
 
       tllen43D = field%tllen * ntrndsi_G
 
 !     One radiation envelope. An elliptical undulator or a harmonic band makes
-!     this 2 or more, and nothing below changes except this count (W3, #129).
+!     this 2 or more, and this is the only place the count is set (W3, #129).
 
       nEnv = 1_ip
 
-      allocate(work%env(nEnv))
-
-      do ie = 1, nEnv
-        allocate(work%env(ie)%dadz_r(tllen43D, 0:2), work%env(ie)%dadz_i(tllen43D, 0:2))
-        allocate(work%env(ie)%A_r(tllen43D, 0:3), work%env(ie)%A_i(tllen43D, 0:3))
-        allocate(work%env(ie)%in_r(tllen43D), work%env(ie)%in_i(tllen43D))
-      end do
+      allocate(work%dadz_r(tllen43D, nEnv, 0:2), work%dadz_i(tllen43D, nEnv, 0:2))
+      allocate(work%A_r(tllen43D, nEnv, 0:3), work%A_i(tllen43D, nEnv, 0:3))
+      allocate(work%in_r(tllen43D, nEnv), work%in_i(tllen43D, nEnv))
 
       allocate(work%dxdx(iNumberElectrons_G))
       allocate(work%dydx(iNumberElectrons_G))
@@ -407,7 +450,7 @@ contains
 
       allocate(dadz_w(iNumberElectrons_G))
 
-      call outer2Inner(work%env(1)%in_r, work%env(1)%in_i, field)
+      call outer2InnerEnv(work%in_r, work%in_i, field)
 
    end subroutine allact_rk4_arrs
 
@@ -419,19 +462,14 @@ contains
       type(tFieldValues), intent(inout) :: field
       type(tRK4Workspace), intent(inout) :: work
 
-      integer(kind=ip) :: ie
-
 !     The inner mesh is a working copy; write it back to the authoritative
 !     outer mesh before letting it go.
 
-      do ie = 1, size(work%env)
-        call inner2Outer(work%env(ie)%in_r, work%env(ie)%in_i, field)
-        deallocate(work%env(ie)%in_r, work%env(ie)%in_i)
-        deallocate(work%env(ie)%dadz_r, work%env(ie)%dadz_i)
-        deallocate(work%env(ie)%A_r, work%env(ie)%A_i)
-      end do
+      call inner2OuterEnv(work%in_r, work%in_i, field)
 
-      deallocate(work%env)
+      deallocate(work%in_r, work%in_i)
+      deallocate(work%dadz_r, work%dadz_i)
+      deallocate(work%A_r, work%A_i)
 
       deallocate(work%dxdx)
       deallocate(work%dydx)

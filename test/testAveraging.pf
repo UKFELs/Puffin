@@ -615,7 +615,7 @@ contains
 
     type(tSimulationContext) :: ctx
     integer, parameter :: ne = 7, nz = 16, ntr = 25
-    real(kind=wp), allocatable :: sAr(:), sAi(:), dAr(:), dAi(:)
+    real(kind=wp), allocatable :: sAr(:,:), sAi(:,:), dAr(:,:), dAi(:,:)   ! (node, envelope)
     real(kind=wp), dimension(ne) :: sx, sy, sz2, spr, spi, sgam, &
                                     sdx, sdy, sdz2, sdpr, sdpi, sdgam
     real(kind=wp) :: dz2v, dxv, dyv, dV3v, fieldRate, beamRate
@@ -669,7 +669,7 @@ contains
     ctx%field%bz2 = nz
 
     nf = ntrndsi_G * nz
-    allocate(sAr(nf), sAi(nf), dAr(nf), dAi(nf))
+    allocate(sAr(nf,1), sAi(nf,1), dAr(nf,1), dAi(nf,1))
 
     qElectronsEvolve_G = .true.
     qFieldEvolve_G = .true.
@@ -706,8 +706,8 @@ contains
     end if
 
     do j = 1, nf
-      sAr(j) = 0.1_wp * cos(0.7_wp * j)
-      sAi(j) = 0.1_wp * sin(0.3_wp * j + 1.0_wp)
+      sAr(j,1) = 0.1_wp * cos(0.7_wp * j)
+      sAi(j,1) = 0.1_wp * sin(0.3_wp * j + 1.0_wp)
     end do
 
     dAr = 0.0_wp
@@ -719,6 +719,9 @@ contains
                 sdx, sdy, sdz2, sdpr, sdpi, sdgam, dAr, dAi, qOK, ctx)
 
     @assertTrue(qOK)
+
+!   sum over the whole rank-2 array, so this is already the balance summed over
+!   every envelope - which is what W3 needs to assert for elliptical (#129).
 
     fieldRate = sum(sAr * dAr + sAi * dAi) * dV3v
     beamRate = sum(s_chi_bar_G * sdgam) / (2.0_wp * ctx%frame%rho)
