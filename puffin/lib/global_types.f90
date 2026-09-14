@@ -22,7 +22,7 @@ private
 
 public :: iDiffraction_CG, iX_CG, iY_CG, iZ2_CG, tElectronCloud, tFELFrame, tFieldMesh, &
            tFieldValues, tIntegrationState, tLatticeElements, tOutputConfig, &
-           tSimulationContext, tSimulationFlags, tUndulator
+           tRK4Field, tRK4Workspace, tSimulationContext, tSimulationFlags, tUndulator
 
 
 ! ============================================================================
@@ -118,6 +118,46 @@ type :: tFieldValues
     logical :: qUnique              ! .false. when every rank holds all nodes
     logical :: qStart_new
 end type tFieldValues
+
+! ============================================================================
+! 1c. RK4 WORKSPACE - scratch for one integration step, plus the inner-mesh
+!     field carried between steps.
+!
+!     Deliberately NOT part of tSimulationContext. Two reasons:
+!
+!     - Lifetime. It is allocated and freed with the field layout (see
+!       allocRK4/freeRK4, called from UndSection), not with the simulation.
+!     - Aliasing. Routines such as upd8a take a field array and the field
+!       object in the same call. If this lived at ctx%rk4, those calls would
+!       pass a subobject of ctx alongside another part of ctx, which is the
+!       pattern a compiler may assume cannot happen. As a sibling of ctx the
+!       two are unrelated objects.
+!
+!     The inner-mesh field (in_r/in_i) lives here rather than in tFieldValues
+!     because the outer mesh is authoritative: inner2Outer writes back before
+!     every dump and every diffraction step, outer2Inner re-seeds afterwards.
+!     It is a working copy whose lifetime is exactly this workspace's.
+! ============================================================================
+type :: tRK4Field
+    ! One radiation envelope. Today there is one; an elliptical undulator or a
+    ! harmonic band adds another, which is the point of the env(:) array below.
+    real(kind=wp), allocatable :: A_r(:,:), A_i(:,:)        ! (node, 0:3) stage values
+    real(kind=wp), allocatable :: dadz_r(:,:), dadz_i(:,:)  ! (node, 0:2) stage derivatives
+    real(kind=wp), allocatable :: in_r(:), in_i(:)          ! inner-mesh field, carried
+end type tRK4Field
+
+type :: tRK4Workspace
+    type(tRK4Field), allocatable :: env(:)
+
+    ! Beam scratch. One bunch however many envelopes there are, so unlike the
+    ! field arrays these do not multiply - and their roles are irregular
+    ! (d*t holds k2 then k4, d*m accumulates k2+k3), so they stay named rather
+    ! than indexed by stage.
+    real(kind=wp), allocatable :: xt(:), yt(:), z2t(:), pxt(:), pyt(:), pz2t(:)
+    real(kind=wp), allocatable :: dxdx(:), dydx(:), dz2dx(:), dpxdx(:), dpydx(:), dpz2dx(:)
+    real(kind=wp), allocatable :: dxt(:), dyt(:), dz2t(:), dpxt(:), dpyt(:), dpz2t(:)
+    real(kind=wp), allocatable :: dxm(:), dym(:), dz2m(:), dpxm(:), dpym(:), dpz2m(:)
+end type tRK4Workspace
 
 ! ============================================================================
 ! 2. ELECTRON PHASE SPACE TYPE - 6D particle data and metadata

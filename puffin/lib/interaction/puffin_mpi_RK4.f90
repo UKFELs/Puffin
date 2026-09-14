@@ -10,39 +10,22 @@ module RK4int
    use Derivative, only: derivs
    use IO, only: tErrorLog_G, log_error
    use ParaField, only: upd8a, inner2outer, outer2inner
-   use GlobalTypes, only: tSimulationContext, tFieldValues
+   use GlobalTypes, only: tSimulationContext, tFieldValues, tRK4Workspace
 
    implicit none (type, external)
 private
 
-public :: ac_ifield_in, ac_rfield_in, allact_rk4_arrs, deallact_rk4_arrs, rk4par
+public :: allact_rk4_arrs, deallact_rk4_arrs, rk4par
 
-
-   REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dadz_r0, dadz_i0
-   REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dadz_r1, dadz_i1
-   REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dadz_r2, dadz_i2
-
-   REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localtr0, A_localti0
-   REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localtr1, A_localti1
-   REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localtr2, A_localti2
-   REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: A_localtr3, A_localti3
-
-   REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: ac_rfield_in, ac_ifield_in
-
-   REAL(KIND=WP), DIMENSION(:),ALLOCATABLE :: dxdx, dydx, dz2dx, dpxdx, dpydx, dpz2dx
-
-
-   ! *t is 'temp', for use in next rhs call...
-   REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dxm, dxt, xt
-   REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dym, dyt, yt
-   REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dpxm, dpxt, pxt
-   REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dpym, dpyt, pyt
-   REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dz2m, dz2t, z2t
-   REAL(KIND=WP), DIMENSION(:), ALLOCATABLE :: dpz2m, dpz2t, pz2t
+!  The integration scratch that used to sit here as module arrays now lives in
+!  a tRK4Workspace, passed in by UndSection. The field half of it is indexed by
+!  envelope, so a second polarisation is another element of work%env rather than
+!  another set of module arrays. See UKFELs/Puffin#107 and the W3 section of
+!  AVERAGED_MODE_ROADMAP.md.
 
 contains
 
-   subroutine rk4par(sZ, h, qD, ctx)
+   subroutine rk4par(sZ, h, qD, ctx, work)
 
       implicit none (type, external)
 !
@@ -65,20 +48,21 @@ contains
       REAL(KIND=WP),                INTENT(IN)  :: h
       LOGICAL, INTENT(INOUT) :: qD
       type(tSimulationContext), intent(inout) :: ctx
+      type(tRK4Workspace), intent(inout) :: work
 
 !               LOCAL ARGS
 !
 ! h6         Step size divided by 6
 ! hh         Half of the step size
 ! xh         x position incremented by half a step
-! dym        Intermediate derivatives
-! dyt        Intermediate derivatives
-! yt         Incremental solution
+! work%dym        Intermediate derivatives
+! work%dyt        Intermediate derivatives
+! work%yt         Incremental solution
 ! dAdx       Field derivative
-! dydx       Electron derivatives
+! work%dydx       Electron derivatives
 
       REAL(KIND=WP)    :: h6, hh, szh
-      !REAL(KIND=WP), DIMENSION(size(y)) :: dym, dyt, yt
+      !REAL(KIND=WP), DIMENSION(size(y)) :: work%dym, work%dyt, work%yt
 
 
 
@@ -97,55 +81,55 @@ contains
 
 
 
-      dadz_r0 = 0_wp
-      dadz_r1 = 0_wp
-      dadz_r2 = 0_wp
-      dadz_i0 = 0_wp
-      dadz_i1 = 0_wp
-      dadz_i2 = 0_wp
+      work%env(1)%dadz_r(:,0) = 0_wp
+      work%env(1)%dadz_r(:,1) = 0_wp
+      work%env(1)%dadz_r(:,2) = 0_wp
+      work%env(1)%dadz_i(:,0) = 0_wp
+      work%env(1)%dadz_i(:,1) = 0_wp
+      work%env(1)%dadz_i(:,2) = 0_wp
 
-      A_localtr0 = 0_wp
-      A_localtr1 = 0_wp
-      A_localtr2 = 0_wp
-      A_localtr3 = 0_wp
-      A_localti0 = 0_wp
-      A_localti1 = 0_wp
-      A_localti2 = 0_wp
-      A_localti3 = 0_wp
-
-
-
-      xt = 0_wp
-      yt = 0_wp
-      z2t = 0_wp
-      pxt = 0_wp
-      pyt = 0_wp
-      pz2t = 0_wp
-
-      dxdx = 0.0_wp
-      dydx = 0.0_wp
-      dz2dx = 0.0_wp
-      dpxdx = 0.0_wp
-      dpydx = 0.0_wp
-      dpz2dx = 0.0_wp
-
-      dxm = 0.0_wp
-      dxt = 0.0_wp
-      dym = 0.0_wp
-      dyt = 0.0_wp
-      dpxm = 0.0_wp
-      dpxt = 0.0_wp
-      dpym = 0.0_wp
-      dpyt = 0.0_wp
-      dz2m = 0.0_wp
-      dz2t = 0.0_wp
-      dpz2m = 0.0_wp
-      dpz2t = 0.0_wp
+      work%env(1)%A_r(:,0) = 0_wp
+      work%env(1)%A_r(:,1) = 0_wp
+      work%env(1)%A_r(:,2) = 0_wp
+      work%env(1)%A_r(:,3) = 0_wp
+      work%env(1)%A_i(:,0) = 0_wp
+      work%env(1)%A_i(:,1) = 0_wp
+      work%env(1)%A_i(:,2) = 0_wp
+      work%env(1)%A_i(:,3) = 0_wp
 
 
 
-      A_localtr0 = ac_rfield_in
-      A_localti0 = ac_ifield_in
+      work%xt = 0_wp
+      work%yt = 0_wp
+      work%z2t = 0_wp
+      work%pxt = 0_wp
+      work%pyt = 0_wp
+      work%pz2t = 0_wp
+
+      work%dxdx = 0.0_wp
+      work%dydx = 0.0_wp
+      work%dz2dx = 0.0_wp
+      work%dpxdx = 0.0_wp
+      work%dpydx = 0.0_wp
+      work%dpz2dx = 0.0_wp
+
+      work%dxm = 0.0_wp
+      work%dxt = 0.0_wp
+      work%dym = 0.0_wp
+      work%dyt = 0.0_wp
+      work%dpxm = 0.0_wp
+      work%dpxt = 0.0_wp
+      work%dpym = 0.0_wp
+      work%dpyt = 0.0_wp
+      work%dz2m = 0.0_wp
+      work%dz2t = 0.0_wp
+      work%dpz2m = 0.0_wp
+      work%dpz2t = 0.0_wp
+
+
+
+      work%env(1)%A_r(:,0) = work%env(1)%in_r
+      work%env(1)%A_i(:,0) = work%env(1)%in_i
 
 
 !if (count(abs(ac_rfield) > 1.0E2) > 0) print*, 'HELP IM RUBBUSH AT START I habve ', &
@@ -172,41 +156,41 @@ contains
 
 !    First step
 !  iy = size(sElX_G)
-!  idydx = size(dxdx)
+!  idydx = size(work%dxdx)
 
 !    Get derivatives
 
-      call derivs(sZ, A_localtr0, A_localti0, &
+      call derivs(sZ, work%env(1)%A_r(:,0), work%env(1)%A_i(:,0), &
          sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, &
-         dxdx, dydx, dz2dx, dpxdx, dpydx, dpz2dx, &
-         dadz_r0, dadz_i0, ctx)
+         work%dxdx, work%dydx, work%dz2dx, work%dpxdx, work%dpydx, work%dpz2dx, &
+         work%env(1)%dadz_r(:,0), work%env(1)%dadz_i(:,0), ctx)
 
 !call mpi_finalize(error)
 !stop
 
 !  allocate(dAm(2*local_rows),dAt(2*local_rows))
-      !print*, dpydx
+      !print*, work%dpydx
 
 !    Increment local electron and field values
 
       if (ctx%flags%parallel_arrays_ok) then
 
 !$OMP PARALLEL WORKSHARE
-         xt = sElX_G      +  hh*dxdx
-         yt = sElY_G      +  hh*dydx
-         z2t = sElZ2_G    +  hh*dz2dx
-         pxt = sElPX_G    +  hh*dpxdx
-         pyt = sElPY_G    +  hh*dpydx
-         pz2t = sElGam_G  +  hh*dpz2dx
+         work%xt = sElX_G      +  hh*work%dxdx
+         work%yt = sElY_G      +  hh*work%dydx
+         work%z2t = sElZ2_G    +  hh*work%dz2dx
+         work%pxt = sElPX_G    +  hh*work%dpxdx
+         work%pyt = sElPY_G    +  hh*work%dpydx
+         work%pz2t = sElGam_G  +  hh*work%dpz2dx
 
-         A_localtr1 = A_localtr0 + hh * dadz_r0
-         A_localti1 = A_localti0 + hh * dadz_i0
+         work%env(1)%A_r(:,1) = work%env(1)%A_r(:,0) + hh * work%env(1)%dadz_r(:,0)
+         work%env(1)%A_i(:,1) = work%env(1)%A_i(:,0) + hh * work%env(1)%dadz_i(:,0)
 !$OMP END PARALLEL WORKSHARE
 
 !    Update large field array with new values
 !  call local2globalA(A_localt,sA,recvs,displs,tTransInfo_G%qOneD)
 
-         call upd8a(A_localtr1, A_localti1, ctx%field)
+         call upd8a(work%env(1)%A_r(:,1), work%env(1)%A_i(:,1), ctx%field)
 
       end if
 
@@ -216,10 +200,10 @@ contains
 !    Get derivatives
 
       if (ctx%flags%parallel_arrays_ok) then
-        call derivs(szh, A_localtr1, A_localti1, &
-         xt, yt, z2t, pxt, pyt, pz2t, &
-         dxt, dyt, dz2t, dpxt, dpyt, dpz2t, &
-         dadz_r1, dadz_i1, ctx)
+        call derivs(szh, work%env(1)%A_r(:,1), work%env(1)%A_i(:,1), &
+         work%xt, work%yt, work%z2t, work%pxt, work%pyt, work%pz2t, &
+         work%dxt, work%dyt, work%dz2t, work%dpxt, work%dpyt, work%dpz2t, &
+         work%env(1)%dadz_r(:,1), work%env(1)%dadz_i(:,1), ctx)
       end if
 
 
@@ -230,21 +214,21 @@ contains
 
       if (ctx%flags%parallel_arrays_ok) then
 !$OMP PARALLEL WORKSHARE
-         xt = sElX_G      +  hh*dxt
-         yt = sElY_G      +  hh*dyt
-         z2t = sElZ2_G    +  hh*dz2t
-         pxt = sElPX_G    +  hh*dpxt
-         pyt = sElPY_G    +  hh*dpyt
-         pz2t = sElGam_G  +  hh*dpz2t
+         work%xt = sElX_G      +  hh*work%dxt
+         work%yt = sElY_G      +  hh*work%dyt
+         work%z2t = sElZ2_G    +  hh*work%dz2t
+         work%pxt = sElPX_G    +  hh*work%dpxt
+         work%pyt = sElPY_G    +  hh*work%dpyt
+         work%pz2t = sElGam_G  +  hh*work%dpz2t
 
-         A_localtr2 = A_localtr0 + hh * dadz_r1
-         A_localti2 = A_localti0 + hh * dadz_i1
+         work%env(1)%A_r(:,2) = work%env(1)%A_r(:,0) + hh * work%env(1)%dadz_r(:,1)
+         work%env(1)%A_i(:,2) = work%env(1)%A_i(:,0) + hh * work%env(1)%dadz_i(:,1)
 !$OMP END PARALLEL WORKSHARE
 !    Update full field array
 
 !  call local2globalA(A_localt,sA,recvs,displs,tTransInfo_G%qOneD)
 
-         call upd8a(A_localtr2, A_localti2, ctx%field)
+         call upd8a(work%env(1)%A_r(:,2), work%env(1)%A_i(:,2), ctx%field)
 
       end if
 
@@ -253,43 +237,43 @@ contains
 
 
       if (ctx%flags%parallel_arrays_ok) then
-        call derivs(szh, A_localtr2, A_localti2, &
-         xt, yt, z2t, pxt, pyt, pz2t, &
-         dxm, dym, dz2m, dpxm, dpym, dpz2m, &
-         dadz_r2, dadz_i2, ctx)
+        call derivs(szh, work%env(1)%A_r(:,2), work%env(1)%A_i(:,2), &
+         work%xt, work%yt, work%z2t, work%pxt, work%pyt, work%pz2t, &
+         work%dxm, work%dym, work%dz2m, work%dpxm, work%dpym, work%dpz2m, &
+         work%env(1)%dadz_r(:,2), work%env(1)%dadz_i(:,2), ctx)
       end if
 
 !    Incrementing
 
       if (ctx%flags%parallel_arrays_ok) then
 !$OMP PARALLEL WORKSHARE
-         xt = sElX_G      +  h * dxm
-         yt = sElY_G      +  h * dym
-         z2t = sElZ2_G    +  h * dz2m
-         pxt = sElPX_G    +  h * dpxm
-         pyt = sElPY_G    +  h * dpym
-         pz2t = sElGam_G  +  h * dpz2m
+         work%xt = sElX_G      +  h * work%dxm
+         work%yt = sElY_G      +  h * work%dym
+         work%z2t = sElZ2_G    +  h * work%dz2m
+         work%pxt = sElPX_G    +  h * work%dpxm
+         work%pyt = sElPY_G    +  h * work%dpym
+         work%pz2t = sElGam_G  +  h * work%dpz2m
 
-         A_localtr3 = A_localtr0 + h * dadz_r2
-         A_localti3 = A_localti0 + h * dadz_i2
+         work%env(1)%A_r(:,3) = work%env(1)%A_r(:,0) + h * work%env(1)%dadz_r(:,2)
+         work%env(1)%A_i(:,3) = work%env(1)%A_i(:,0) + h * work%env(1)%dadz_i(:,2)
 !$OMP END PARALLEL WORKSHARE
 !  call local2globalA(A_localt, sA, recvs, displs, tTransInfo_G%qOneD)
 
-         call upd8a(A_localtr3, A_localti3, ctx%field)
+         call upd8a(work%env(1)%A_r(:,3), work%env(1)%A_i(:,3), ctx%field)
 
 !$OMP PARALLEL WORKSHARE
-         dxm = dxt + dxm
-         dym = dyt + dym
-         dz2m = dz2t + dz2m
-         dpxm = dpxt + dpxm
-         dpym = dpyt + dpym
-         dpz2m = dpz2t + dpz2m
+         work%dxm = work%dxt + work%dxm
+         work%dym = work%dyt + work%dym
+         work%dz2m = work%dz2t + work%dz2m
+         work%dpxm = work%dpxt + work%dpxm
+         work%dpym = work%dpyt + work%dpym
+         work%dpz2m = work%dpz2t + work%dpz2m
 
-         dadz_r2 = dadz_r1 + dadz_r2
-         dadz_i2 = dadz_i1 + dadz_i2
+         work%env(1)%dadz_r(:,2) = work%env(1)%dadz_r(:,1) + work%env(1)%dadz_r(:,2)
+         work%env(1)%dadz_i(:,2) = work%env(1)%dadz_i(:,1) + work%env(1)%dadz_i(:,2)
 
-         dadz_r1 = 0_wp
-         dadz_i1 = 0_wp
+         work%env(1)%dadz_r(:,1) = 0_wp
+         work%env(1)%dadz_i(:,1) = 0_wp
 !$OMP END PARALLEL WORKSHARE
       end if
 
@@ -301,10 +285,10 @@ contains
 !    Get derivatives
 
       if (ctx%flags%parallel_arrays_ok) then
-        call derivs(szh, A_localtr3, A_localti3, &
-         xt, yt, z2t, pxt, pyt, pz2t, &
-         dxt, dyt, dz2t, dpxt, dpyt, dpz2t, &
-         dadz_r1, dadz_i1, ctx)
+        call derivs(szh, work%env(1)%A_r(:,3), work%env(1)%A_i(:,3), &
+         work%xt, work%yt, work%z2t, work%pxt, work%pyt, work%pz2t, &
+         work%dxt, work%dyt, work%dz2t, work%dpxt, work%dpyt, work%dpz2t, &
+         work%env(1)%dadz_r(:,1), work%env(1)%dadz_i(:,1), ctx)
       end if
 
 
@@ -312,17 +296,17 @@ contains
 
       if (ctx%flags%parallel_arrays_ok) then
 !$OMP PARALLEL WORKSHARE
-         sElX_G    = sElX_G   + h6 * ( dxdx   + dxt   + 2.0_WP * dxm  )
-         sElY_G    = sElY_G   + h6 * ( dydx   + dyt   + 2.0_WP * dym  )
-         sElZ2_G   = sElZ2_G  + h6 * ( dz2dx  + dz2t  + 2.0_WP * dz2m )
-         sElPX_G   = sElPX_G  + h6 * ( dpxdx  + dpxt  + 2.0_WP * dpxm )
-         sElPY_G   = sElPY_G  + h6 * ( dpydx  + dpyt  + 2.0_WP * dpym )
-         sElGam_G  = sElGam_G + h6 * ( dpz2dx + dpz2t + 2.0_WP * dpz2m)
+         sElX_G    = sElX_G   + h6 * ( work%dxdx   + work%dxt   + 2.0_WP * work%dxm  )
+         sElY_G    = sElY_G   + h6 * ( work%dydx   + work%dyt   + 2.0_WP * work%dym  )
+         sElZ2_G   = sElZ2_G  + h6 * ( work%dz2dx  + work%dz2t  + 2.0_WP * work%dz2m )
+         sElPX_G   = sElPX_G  + h6 * ( work%dpxdx  + work%dpxt  + 2.0_WP * work%dpxm )
+         sElPY_G   = sElPY_G  + h6 * ( work%dpydx  + work%dpyt  + 2.0_WP * work%dpym )
+         sElGam_G  = sElGam_G + h6 * ( work%dpz2dx + work%dpz2t + 2.0_WP * work%dpz2m)
 
-         ac_rfield_in = ac_rfield_in + h6 * (dadz_r0 + dadz_r1 + 2.0_WP * dadz_r2)
-         ac_ifield_in = ac_ifield_in + h6 * (dadz_i0 + dadz_i1 + 2.0_WP * dadz_i2)
+         work%env(1)%in_r = work%env(1)%in_r + h6 * (work%env(1)%dadz_r(:,0) + work%env(1)%dadz_r(:,1) + 2.0_WP * work%env(1)%dadz_r(:,2))
+         work%env(1)%in_i = work%env(1)%in_i + h6 * (work%env(1)%dadz_i(:,0) + work%env(1)%dadz_i(:,1) + 2.0_WP * work%env(1)%dadz_i(:,2))
 !$OMP END PARALLEL WORKSHARE
-!  if (count(abs(dadz_r0) > 0.0_wp) <= 0) print*, 'HELP IM TOO RUBBUSH'
+!  if (count(abs(work%env(1)%dadz_r(:,0)) > 0.0_wp) <= 0) print*, 'HELP IM TOO RUBBUSH'
 
 !  if (count(abs(ac_rfield) > 0.0_wp) <= 0) print*, 'HELP IM RUBBUSH'
 
@@ -333,7 +317,7 @@ contains
 
 
 
-         call upd8a(ac_rfield_in, ac_ifield_in, ctx%field)
+         call upd8a(work%env(1)%in_r, work%env(1)%in_i, ctx%field)
 
       end if
 
@@ -345,14 +329,14 @@ contains
 
 !  deallocate(DADx)
 
-!  deallocate(dadz_r0, dadz_i0)
-!  deallocate(dadz_r1, dadz_i1)
-!  deallocate(dadz_r2, dadz_i2)
+!  deallocate(work%env(1)%dadz_r(:,0), work%env(1)%dadz_i(:,0))
+!  deallocate(work%env(1)%dadz_r(:,1), work%env(1)%dadz_i(:,1))
+!  deallocate(work%env(1)%dadz_r(:,2), work%env(1)%dadz_i(:,2))
 !
-!  deallocate(A_localtr0, A_localti0)
-!  deallocate(A_localtr1, A_localti1)
-!  deallocate(A_localtr2, A_localti2)
-!  deallocate(A_localtr3, A_localti3)
+!  deallocate(work%env(1)%A_r(:,0), work%env(1)%A_i(:,0))
+!  deallocate(work%env(1)%A_r(:,1), work%env(1)%A_i(:,1))
+!  deallocate(work%env(1)%A_r(:,2), work%env(1)%A_i(:,2))
+!  deallocate(work%env(1)%A_r(:,3), work%env(1)%A_i(:,3))
 !
 !  deallocate(DxDx)
 !  deallocate(DyDx)
@@ -379,91 +363,95 @@ contains
 
 
 
-   subroutine allact_rk4_arrs(field)
+   subroutine allact_rk4_arrs(field, work)
 
       type(tFieldValues), intent(in) :: field
+      type(tRK4Workspace), intent(inout) :: work
 
-      integer(kind=ip) :: tllen43D
+      integer(kind=ip) :: tllen43D, nEnv, ie
 
       tllen43D = field%tllen * ntrndsi_G
 
-      allocate(DxDx(iNumberElectrons_G))
-      allocate(DyDx(iNumberElectrons_G))
-      allocate(DpxDx(iNumberElectrons_G))
-      allocate(DpyDx(iNumberElectrons_G))
-      allocate(Dz2Dx(iNumberElectrons_G))
-      allocate(Dpz2Dx(iNumberElectrons_G))
+!     One radiation envelope. An elliptical undulator or a harmonic band makes
+!     this 2 or more, and nothing below changes except this count (W3, #129).
 
+      nEnv = 1_ip
 
-      allocate(dadz_r0(tllen43D), dadz_i0(tllen43D))
-      allocate(dadz_r1(tllen43D), dadz_i1(tllen43D))
-      allocate(dadz_r2(tllen43D), dadz_i2(tllen43D))
+      allocate(work%env(nEnv))
 
-      allocate(A_localtr0(tllen43D), A_localti0(tllen43D))
-      allocate(A_localtr1(tllen43D), A_localti1(tllen43D))
-      allocate(A_localtr2(tllen43D), A_localti2(tllen43D))
-      allocate(A_localtr3(tllen43D), A_localti3(tllen43D))
+      do ie = 1, nEnv
+        allocate(work%env(ie)%dadz_r(tllen43D, 0:2), work%env(ie)%dadz_i(tllen43D, 0:2))
+        allocate(work%env(ie)%A_r(tllen43D, 0:3), work%env(ie)%A_i(tllen43D, 0:3))
+        allocate(work%env(ie)%in_r(tllen43D), work%env(ie)%in_i(tllen43D))
+      end do
 
-      allocate(ac_rfield_in(tllen43D), ac_ifield_in(tllen43D))
+      allocate(work%dxdx(iNumberElectrons_G))
+      allocate(work%dydx(iNumberElectrons_G))
+      allocate(work%dpxdx(iNumberElectrons_G))
+      allocate(work%dpydx(iNumberElectrons_G))
+      allocate(work%dz2dx(iNumberElectrons_G))
+      allocate(work%dpz2dx(iNumberElectrons_G))
 
-      allocate(dxm(iNumberElectrons_G), &
-         dxt(iNumberElectrons_G), xt(iNumberElectrons_G))
-      allocate(dym(iNumberElectrons_G), &
-         dyt(iNumberElectrons_G), yt(iNumberElectrons_G))
-      allocate(dpxm(iNumberElectrons_G), &
-         dpxt(iNumberElectrons_G), pxt(iNumberElectrons_G))
-      allocate(dpym(iNumberElectrons_G), &
-         dpyt(iNumberElectrons_G), pyt(iNumberElectrons_G))
-      allocate(dz2m(iNumberElectrons_G), &
-         dz2t(iNumberElectrons_G), z2t(iNumberElectrons_G))
-      allocate(dpz2m(iNumberElectrons_G), &
-         dpz2t(iNumberElectrons_G), pz2t(iNumberElectrons_G))
+      allocate(work%dxm(iNumberElectrons_G), &
+         work%dxt(iNumberElectrons_G), work%xt(iNumberElectrons_G))
+      allocate(work%dym(iNumberElectrons_G), &
+         work%dyt(iNumberElectrons_G), work%yt(iNumberElectrons_G))
+      allocate(work%dpxm(iNumberElectrons_G), &
+         work%dpxt(iNumberElectrons_G), work%pxt(iNumberElectrons_G))
+      allocate(work%dpym(iNumberElectrons_G), &
+         work%dpyt(iNumberElectrons_G), work%pyt(iNumberElectrons_G))
+      allocate(work%dz2m(iNumberElectrons_G), &
+         work%dz2t(iNumberElectrons_G), work%z2t(iNumberElectrons_G))
+      allocate(work%dpz2m(iNumberElectrons_G), &
+         work%dpz2t(iNumberElectrons_G), work%pz2t(iNumberElectrons_G))
 
       allocate(dadz_w(iNumberElectrons_G))
 
-      call outer2Inner(ac_rfield_in, ac_ifield_in, field)
+      call outer2Inner(work%env(1)%in_r, work%env(1)%in_i, field)
 
    end subroutine allact_rk4_arrs
 
 
 
 
-   subroutine deallact_rk4_arrs(field)
+   subroutine deallact_rk4_arrs(field, work)
 
       type(tFieldValues), intent(inout) :: field
+      type(tRK4Workspace), intent(inout) :: work
 
-      call inner2Outer(ac_rfield_in, ac_ifield_in, field)
+      integer(kind=ip) :: ie
 
-      deallocate(ac_rfield_in, ac_ifield_in)
+!     The inner mesh is a working copy; write it back to the authoritative
+!     outer mesh before letting it go.
 
-      deallocate(dadz_r0, dadz_i0)
-      deallocate(dadz_r1, dadz_i1)
-      deallocate(dadz_r2, dadz_i2)
+      do ie = 1, size(work%env)
+        call inner2Outer(work%env(ie)%in_r, work%env(ie)%in_i, field)
+        deallocate(work%env(ie)%in_r, work%env(ie)%in_i)
+        deallocate(work%env(ie)%dadz_r, work%env(ie)%dadz_i)
+        deallocate(work%env(ie)%A_r, work%env(ie)%A_i)
+      end do
 
-      deallocate(A_localtr0, A_localti0)
-      deallocate(A_localtr1, A_localti1)
-      deallocate(A_localtr2, A_localti2)
-      deallocate(A_localtr3, A_localti3)
+      deallocate(work%env)
 
-      deallocate(DxDx)
-      deallocate(DyDx)
-      deallocate(DpxDx)
-      deallocate(DpyDx)
-      deallocate(Dz2Dx)
-      deallocate(Dpz2Dx)
+      deallocate(work%dxdx)
+      deallocate(work%dydx)
+      deallocate(work%dpxdx)
+      deallocate(work%dpydx)
+      deallocate(work%dz2dx)
+      deallocate(work%dpz2dx)
 
-      deallocate(dxm, &
-         dxt, xt)
-      deallocate(dym, &
-         dyt, yt)
-      deallocate(dpxm, &
-         dpxt, pxt)
-      deallocate(dpym, &
-         dpyt, pyt)
-      deallocate(dz2m, &
-         dz2t, z2t)
-      deallocate(dpz2m, &
-         dpz2t, pz2t)
+      deallocate(work%dxm, &
+         work%dxt, work%xt)
+      deallocate(work%dym, &
+         work%dyt, work%yt)
+      deallocate(work%dpxm, &
+         work%dpxt, work%pxt)
+      deallocate(work%dpym, &
+         work%dpyt, work%pyt)
+      deallocate(work%dz2m, &
+         work%dz2t, work%z2t)
+      deallocate(work%dpz2m, &
+         work%dpz2t, work%pz2t)
 
       deallocate(dadz_w)
 
