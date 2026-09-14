@@ -30,7 +30,7 @@ module Setup
    use Read_data, only: read_in, filenamenoextension, initializeprocessors, &
      readh5fieldfilesingledump
    use checks, only: checkparameters
-   use ParaField, only: ac_rfield, ac_ifield, qStart_new, getlocalfieldindices, pupd8
+   use ParaField, only: qStart_new, getlocalfieldindices, pupd8
    use write_adapter, only: writeim
    use avwrite, only: initPowerCalc
    use mpi, only: mpi_barrier
@@ -322,11 +322,12 @@ contains
             sA0_Re,&
             sA0_Im,&
             ctx%frame%rho, &
+            ctx%field, &
             qOKL)
 
 !  send init'd seed field to periodic buffer
 
-         call pupd8(ac_rfield, ac_ifield)
+         call pupd8(ctx%field%ac_r, ctx%field%ac_i)
 
       else if (iFieldSeedType_G==iReadH5Field_G) then
 

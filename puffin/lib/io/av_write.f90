@@ -20,16 +20,16 @@ module avwrite
      qOneD_G, pi, c, q_e
    use functions, only: linspace
    use ParallelSetUp, only: sum2rootarr
-   use parafield, only: fr_rfield, bk_rfield, ac_rfield, fr_ifield, bk_ifield, ac_ifield, &
+   use parafield, only: &
      mainlen, tlflen, tlelen, tlflen4arr, tlelen4arr, ffe_GGG, ees_GGG, updateglobalpow
-   use GlobalTypes, only: tFELFrame
+   use GlobalTypes, only: tFELFrame, tFieldValues
    use mpi, only: mpi_barrier
 
 
    implicit none (type, external)
 private
 
-public :: ac_ifield, ac_rfield, bk_ifield, bk_rfield, fr_ifield, fr_rfield, getcurr, getcurrnpts, &
+public :: getcurr, getcurrnpts, &
            getslicetwiss, gpowerp, initPowerCalc, linspace, mainlen, tlelen, tlflen
 
 
@@ -47,11 +47,12 @@ contains
 !> 1D mesh at nodes equal to the nodes in z2 of the radiation field mesh.
 !> So e.g. the power node separation is sLengthOfElmZ2_G.
 
-   subroutine gPowerP(power)
+   subroutine gPowerP(power, field)
 
       implicit none (type, external)
 
       real(kind=wp), intent(out) :: power(:)  !< Returned power array
+      type(tFieldValues), intent(in) :: field  !< Field data and its decomposition
       real(kind=wp), allocatable :: fr_power(:), &  !< Power in 'front' field section
          bk_power(:), &  !< Power in 'back' field section
          ac_power(:)     !< Power in 'active' field section
@@ -59,13 +60,13 @@ contains
       allocate(ac_power(mainlen), fr_power(tlflen4arr), bk_power(tlelen4arr))
 
       if ((ffe_GGG > 0) .and. (tlflen > 0) ) then
-         call gPower(fr_rfield, fr_ifield, fr_power)
+         call gPower(field%fr_r, field%fr_i, fr_power)
       end if
 
-      call gPower(ac_rfield(1:mainlen*ntrnds_G), ac_ifield(1:mainlen*ntrnds_G), ac_power)
+      call gPower(field%ac_r(1:mainlen*ntrnds_G), field%ac_i(1:mainlen*ntrnds_G), ac_power)
 
       if ((ees_GGG < nz2_G) .and. (tlelen > 0) ) then
-         call gPower(bk_rfield, bk_ifield, bk_power)
+         call gPower(field%bk_r, field%bk_i, bk_power)
       end if
 
       call UpdateGlobalPow(fr_power, ac_power, bk_power, power)

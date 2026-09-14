@@ -37,10 +37,10 @@ USE gMPsFromDists, only: getmps
 use avwrite, only: getcurrnpts, linspace
 use MASPin, only: readmaspfile
 use h5in, only: readh5beamfile
-use parafield, only: fr_rfield, bk_rfield, ac_rfield, fr_ifield, bk_ifield, ac_ifield, fz2, ez2, &
+use parafield, only: fz2, ez2, &
   ffs, ffe, ees, eee, ffe_GGG, eee_GGG, getinnode, tTransInfo_G
 use scale, only: scaleX, scalePx, scaleT, scaleIntensity, scaleemit
-use GlobalTypes, only: tSimulationFlags, tSimulationContext, tFELFrame
+use GlobalTypes, only: tSimulationFlags, tSimulationContext, tFELFrame, tFieldValues
 use Functions, only: gaussian
 use mpi, only: MPI_ALLREDUCE, MPI_COMM_WORLD, MPI_DOUBLE_PRECISION, MPI_ISSEND, MPI_RECV, &
   MPI_STATUS_SIZE, MPI_SUM, MPI_WAIT
@@ -547,7 +547,7 @@ end subroutine getQFmNpk
 
 SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, sFiltFrac, &
                               qFlatTopS, sSigmaF, &
-                              sA0_x, sA0_y, sRho, qOK)
+                              sA0_x, sA0_y, sRho, field, qOK)
 
     IMPLICIT NONE (type, external)
 !
@@ -574,6 +574,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, sFiltFrac, &
     REAL(KIND=WP), INTENT(IN)    :: sA0_y(:)
     real(kind=wp), intent(in)    :: sFiltFrac
     real(kind=wp), intent(in)    :: sRho
+    type(tFieldValues), intent(inout) :: field
 !    REAL(KIND=WP), INTENT(INOUT) :: sA(:)
     LOGICAL,       INTENT(OUT)   :: qOK
 
@@ -616,7 +617,7 @@ SUBROUTINE SetUpInitialValues(nseeds, freqf, ph_sh, SmeanZ2, sFiltFrac, &
 
 
     call getPaSeeds(NN,sSigmaF,SmeanZ2,sA0_x,sA0_y,qFlatTopS,sRho,&
-                    freqf,ph_sh,nseeds,sLengthOfElm)
+                    freqf,ph_sh,nseeds,sLengthOfElm,field)
 
 !    sA(1:iXY*iZ2) = sAreal
 !    sA(iXY*iZ2 + 1:2*iXY*iZ2) = sAimag
@@ -1346,7 +1347,7 @@ END SUBROUTINE PopMacroElectrons
 
 
 subroutine getPaSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
-                    frs,ph_sh,nSeeds,dels)
+                    frs,ph_sh,nSeeds,dels,field)
 
 
 
@@ -1357,6 +1358,7 @@ subroutine getPaSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
                                ph_sh(:), magxs(:), magys(:), dels(:)
   LOGICAL, INTENT(IN) :: qFTs(:)
   INTEGER(KIND=IP), INTENT(IN) :: nSeeds
+  type(tFieldValues), intent(inout) :: field
 
 
 !  1st gen front seed if present
@@ -1367,7 +1369,7 @@ subroutine getPaSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
 
     call getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
                   frs,ph_sh,nSeeds,dels,ffs, ffe, &
-                  fr_rfield,fr_ifield)
+                  field%fr_r,field%fr_i)
 
   end if
 
@@ -1381,7 +1383,7 @@ subroutine getPaSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
 
   call getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
                 frs,ph_sh,nSeeds,dels,fz2, ez2, &
-                ac_rfield,ac_ifield)
+                field%ac_r,field%ac_i)
 
 
 
@@ -1393,7 +1395,7 @@ subroutine getPaSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
 
     call getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
                   frs,ph_sh,nSeeds,dels,ees, eee, &
-                  bk_rfield,bk_ifield)
+                  field%bk_r,field%bk_i)
 
   end if
 

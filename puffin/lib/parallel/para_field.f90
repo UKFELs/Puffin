@@ -28,16 +28,15 @@ use mpi, only: MPI_ALLGATHER, mpi_allreduce, mpi_alltoallv, mpi_barrier, MPI_Bca
 implicit none (type, external)
 private
 
-public :: ac_ifield, ac_rfield, bk_ifield, bk_rfield, bz2, eee, eee_GGG, ees, ees_GGG, ez2, ffe, &
-           ffe_GGG, ffs, fr_ifield, fr_rfield, fz2, getinnode, getlocalfieldindices, inner2outer, &
+public :: bz2, eee, eee_GGG, ees, ees_GGG, ez2, ffe, &
+           ffe_GGG, ffs, fz2, getinnode, getlocalfieldindices, inner2outer, &
            ioutInfo_G, iTemporal, mainlen, outer2inner, pupd8, qStart_new, qUnique, redist2fftwlt, &
-           redistbackfft, tim_fft, tlelen, tlelen4arr, tlflen, tlflen4arr, tllen, tre_fft, &
+           redistbackfft, tlelen, tlelen4arr, tlflen, tlflen4arr, tllen, &
            tTransInfo_G, upd8a, upd8da, updateglobalpow
 
 
-real(kind=wp), allocatable :: fr_rfield(:), bk_rfield(:), ac_rfield(:), &
-                              fr_ifield(:), bk_ifield(:), ac_ifield(:), &
-                              tre_fft(:), tim_fft(:)
+!  The field arrays themselves now live in ctx%field (type tFieldValues), and
+!  are passed in to the routines below. See UKFELs/Puffin#107.
 
 real(kind=wp), allocatable :: tmp_A(:)
 
@@ -68,7 +67,7 @@ logical :: qUnique
 ! No, fz2 to ez2 will only overlap if less nodes than procs...
 ! in which case, we share ALL nodes...but do this later...
 ! and can use MPI_ALLGATHER or whatever as before (but on
-! ac_rfield and ac_ifield rather than sA)
+! field%ac_r and field%ac_i rather than sA)
 
 ! if boundary overlaps next process, then process will send
 ! buffer to more than one process...so loop around lrank_v
@@ -184,22 +183,22 @@ contains
       call setupLayoutArrs(tlelen, ees, eee, ee_ar)
 
 
-      allocate(fr_rfield(tlflen4arr*ntrnds_G), &
-                 fr_ifield(tlflen4arr*ntrnds_G))
-      allocate(bk_rfield(tlelen4arr*ntrnds_G), &
-               bk_ifield(tlelen4arr*ntrnds_G))
+      allocate(field%fr_r(tlflen4arr*ntrnds_G), &
+                 field%fr_i(tlflen4arr*ntrnds_G))
+      allocate(field%bk_r(tlelen4arr*ntrnds_G), &
+               field%bk_i(tlelen4arr*ntrnds_G))
 
-      allocate(ac_rfield(mainlen*ntrnds_G), &
-               ac_ifield(mainlen*ntrnds_G))
+      allocate(field%ac_r(mainlen*ntrnds_G), &
+               field%ac_i(mainlen*ntrnds_G))
 
 
-      ac_rfield = 0_wp
-      ac_ifield = 0_wp
+      field%ac_r = 0_wp
+      field%ac_i = 0_wp
 
-      fr_rfield = 0_wp
-      fr_ifield = 0_wp
-      bk_rfield = 0_wp
-      bk_ifield = 0_wp
+      field%fr_r = 0_wp
+      field%fr_i = 0_wp
+      field%bk_r = 0_wp
+      field%bk_i = 0_wp
 
       qStart_new = .false.
 
@@ -270,59 +269,59 @@ contains
 
 
 
-  allocate(fr_rfield_old(size(fr_rfield)), fr_ifield_old(size(fr_ifield)))
-  allocate(bk_rfield_old(size(bk_rfield)), bk_ifield_old(size(bk_ifield)))
-  allocate(ac_rfield_old(size(ac_rfield)), ac_ifield_old(size(ac_ifield)))
+  allocate(fr_rfield_old(size(field%fr_r)), fr_ifield_old(size(field%fr_i)))
+  allocate(bk_rfield_old(size(field%bk_r)), bk_ifield_old(size(field%bk_i)))
+  allocate(ac_rfield_old(size(field%ac_r)), ac_ifield_old(size(field%ac_i)))
 
-  fr_rfield_old = fr_rfield
-  fr_ifield_old = fr_ifield
-  bk_rfield_old = bk_rfield
-  bk_ifield_old = bk_ifield
-  ac_rfield_old = ac_rfield
-  ac_ifield_old = ac_ifield
+  fr_rfield_old = field%fr_r
+  fr_ifield_old = field%fr_i
+  bk_rfield_old = field%bk_r
+  bk_ifield_old = field%bk_i
+  ac_rfield_old = field%ac_r
+  ac_ifield_old = field%ac_i
 
-  deallocate(ac_rfield, ac_ifield)
-  deallocate(fr_rfield, fr_ifield)
-  deallocate(bk_rfield, bk_ifield)
+  deallocate(field%ac_r, field%ac_i)
+  deallocate(field%fr_r, field%fr_i)
+  deallocate(field%bk_r, field%bk_i)
 
-  allocate(fr_rfield(tlflen4arr*ntrnds_G), &
-           fr_ifield(tlflen4arr*ntrnds_G))
-  allocate(bk_rfield(tlelen4arr*ntrnds_G), &
-           bk_ifield(tlelen4arr*ntrnds_G))
-  allocate(ac_rfield(tllen*ntrnds_G), &
-           ac_ifield(tllen*ntrnds_G))
+  allocate(field%fr_r(tlflen4arr*ntrnds_G), &
+           field%fr_i(tlflen4arr*ntrnds_G))
+  allocate(field%bk_r(tlelen4arr*ntrnds_G), &
+           field%bk_i(tlelen4arr*ntrnds_G))
+  allocate(field%ac_r(tllen*ntrnds_G), &
+           field%ac_i(tllen*ntrnds_G))
 
-  ac_rfield = 0_wp
-  ac_ifield = 0_wp
+  field%ac_r = 0_wp
+  field%ac_i = 0_wp
 
-  bk_rfield = 0_wp
-  bk_ifield = 0_wp
-  fr_rfield = 0_wp
-  fr_ifield = 0_wp
-
-
-  call redist2new2(ff_ar_old, ff_ar, fr_rfield_old, fr_rfield)
-  call redist2new2(ff_ar_old, ff_ar, fr_ifield_old, fr_ifield)
-
-  call redist2new2(ee_ar_old, ff_ar, bk_rfield_old, fr_rfield)
-  call redist2new2(ee_ar_old, ff_ar, bk_ifield_old, fr_ifield)
-
-  call redist2new2(ac_ar_old, ff_ar, ac_rfield_old, fr_rfield)
-  call redist2new2(ac_ar_old, ff_ar, ac_ifield_old, fr_ifield)
+  field%bk_r = 0_wp
+  field%bk_i = 0_wp
+  field%fr_r = 0_wp
+  field%fr_i = 0_wp
 
 
+  call redist2new2(ff_ar_old, ff_ar, fr_rfield_old, field%fr_r)
+  call redist2new2(ff_ar_old, ff_ar, fr_ifield_old, field%fr_i)
+
+  call redist2new2(ee_ar_old, ff_ar, bk_rfield_old, field%fr_r)
+  call redist2new2(ee_ar_old, ff_ar, bk_ifield_old, field%fr_i)
+
+  call redist2new2(ac_ar_old, ff_ar, ac_rfield_old, field%fr_r)
+  call redist2new2(ac_ar_old, ff_ar, ac_ifield_old, field%fr_i)
 
 
 
-  call redist2new2(ff_ar_old, ee_ar, fr_rfield_old, bk_rfield)
-  call redist2new2(ff_ar_old, ee_ar, fr_ifield_old, bk_ifield)
-
-  call redist2new2(ee_ar_old, ee_ar, bk_rfield_old, bk_rfield)
-  call redist2new2(ee_ar_old, ee_ar, bk_ifield_old, bk_ifield)
 
 
-  call redist2new2(ac_ar_old, ee_ar, ac_rfield_old, bk_rfield)
-  call redist2new2(ac_ar_old, ee_ar, ac_ifield_old, bk_ifield)
+  call redist2new2(ff_ar_old, ee_ar, fr_rfield_old, field%bk_r)
+  call redist2new2(ff_ar_old, ee_ar, fr_ifield_old, field%bk_i)
+
+  call redist2new2(ee_ar_old, ee_ar, bk_rfield_old, field%bk_r)
+  call redist2new2(ee_ar_old, ee_ar, bk_ifield_old, field%bk_i)
+
+
+  call redist2new2(ac_ar_old, ee_ar, ac_rfield_old, field%bk_r)
+  call redist2new2(ac_ar_old, ee_ar, ac_ifield_old, field%bk_i)
 
 !  call mpi_finalize(error)
 !  stop
@@ -331,14 +330,14 @@ contains
 
 
 
-  call redist2new2(ff_ar_old, ac_ar, fr_rfield_old, ac_rfield)
-  call redist2new2(ff_ar_old, ac_ar, fr_ifield_old, ac_ifield)
+  call redist2new2(ff_ar_old, ac_ar, fr_rfield_old, field%ac_r)
+  call redist2new2(ff_ar_old, ac_ar, fr_ifield_old, field%ac_i)
 
-  call redist2new2(ee_ar_old, ac_ar, bk_rfield_old, ac_rfield)
-  call redist2new2(ee_ar_old, ac_ar, bk_ifield_old, ac_ifield)
+  call redist2new2(ee_ar_old, ac_ar, bk_rfield_old, field%ac_r)
+  call redist2new2(ee_ar_old, ac_ar, bk_ifield_old, field%ac_i)
 
-  call redist2new2(ac_ar_old, ac_ar, ac_rfield_old, ac_rfield)
-  call redist2new2(ac_ar_old, ac_ar, ac_ifield_old, ac_ifield)
+  call redist2new2(ac_ar_old, ac_ar, ac_rfield_old, field%ac_r)
+  call redist2new2(ac_ar_old, ac_ar, ac_ifield_old, field%ac_i)
 
 
 
@@ -355,11 +354,11 @@ contains
 
   if (.not. qUnique) then
 
-    call MPI_Bcast(ac_rfield, tllen*ntrnds_G, &
+    call MPI_Bcast(field%ac_r, tllen*ntrnds_G, &
                    mpi_double_precision, 0, &
                    tProcInfo_G%comm, error)
 
-    call MPI_Bcast(ac_ifield, tllen*ntrnds_G, &
+    call MPI_Bcast(field%ac_i, tllen*ntrnds_G, &
                    mpi_double_precision, 0, &
                    tProcInfo_G%comm, error)
   end if
@@ -478,14 +477,14 @@ contains
       ! Allocate back, front and active fields....commented out!
       ! ONLY USING ACTIVE FIELD FOR NOW TO CHECK SCALING...TO SEE
       ! IF IT'S WORTH PERSUING THIS METHOD
-!      allocate(fr_rfield(tlflen), bk_rfield(tlelen), &
-!               fr_ifield(tlflen), bk_ifield(tlelen))
+!      allocate(field%fr_r(tlflen), field%bk_r(tlelen), &
+!               field%fr_i(tlflen), field%bk_i(tlelen))
 
-!      allocate(ac_rfield(tllen), &
-!               ac_ifield(tllen))
+!      allocate(field%ac_r(tllen), &
+!               field%ac_i(tllen))
 
-!      ac_rfield = sA(fz2:bz2)
-!      ac_ifield = sA(fz2 + NZ2_G:bz2 + NZ2_G)
+!      field%ac_r = sA(fz2:bz2)
+!      field%ac_i = sA(fz2 + NZ2_G:bz2 + NZ2_G)
 
 !      print*, 'INSIDE GETLOCALFIELDINDICES, SIZE OF SA AT 5 IS ', size(sA), &
 !              ' FOR PROCESSOR ', tProcInfo_G%rank
@@ -537,7 +536,7 @@ contains
      tmp_A = 0_wp
 
 
-      call pupd8(ac_rfield, ac_ifield)
+      call pupd8(field%ac_r, field%ac_i)
 
       flags%parallel_arrays_ok = .true.
 
@@ -604,9 +603,10 @@ contains
 !  ###################################################
 
 
-    subroutine UpdateGlobalField(sA)
+    subroutine UpdateGlobalField(sA, field)
 
       real(kind=wp), intent(inout) :: sA(:)
+      type(tFieldValues), intent(in) :: field
 
       real(kind=wp), allocatable :: A_local(:)
 
@@ -629,7 +629,7 @@ contains
 
         A_local = 0_wp
 
-        A_local(1:gath_v) = fr_rfield(1:gath_v)
+        A_local(1:gath_v) = field%fr_r(1:gath_v)
 
         call gather1A(A_local, sA((ffs_GGG-1)*ntrnds_G + 1:ffe_GGG*ntrnds_G), &
                 gath_v, (ffe_GGG - ffs_GGG + 1) * ntrnds_G, &
@@ -637,7 +637,7 @@ contains
 
 
 
-        A_local(1:gath_v) = fr_ifield(1:gath_v)
+        A_local(1:gath_v) = field%fr_i(1:gath_v)
 
         call gather1A(A_local, sA((ffs_GGG-1)*ntrnds_G + 1 + NZ2_G*ntrnds_G: &
                                     ffe_GGG*ntrnds_G + NZ2_G*ntrnds_G), &
@@ -669,13 +669,13 @@ contains
 
       A_local = 0_wp
 
-      A_local(1:gath_v) = ac_rfield(1:gath_v)
+      A_local(1:gath_v) = field%ac_r(1:gath_v)
 
       call gather1A(A_local, sA((fz2_GGG-1)*ntrnds_G + 1:ez2_GGG*ntrnds_G), &
                        gath_v, (fz2_GGG - ez2_GGG + 1) * ntrnds_G, &
                        recvs_pf, displs_pf)
 
-      A_local(1:gath_v) = ac_ifield(1:gath_v)
+      A_local(1:gath_v) = field%ac_i(1:gath_v)
 
       call gather1A(A_local, sA((fz2_GGG-1)*ntrnds_G + 1 + NZ2_G*ntrnds_G: &
                                  ez2_GGG*ntrnds_G + NZ2_G*ntrnds_G), &
@@ -702,13 +702,13 @@ contains
 
           A_local = 0_wp
 
-          A_local(1:gath_v) = fr_rfield(1:gath_v)
+          A_local(1:gath_v) = field%fr_r(1:gath_v)
 
         call gather1A(A_local, sA((ees_GGG - 1)*ntrnds_G + 1:eee_GGG*ntrnds_G), &
                        gath_v, (eee_GGG - ees_GGG + 1), recvs_ef, displs_ef)
 
 
-        A_local(1:gath_v) = fr_ifield(1:gath_v)
+        A_local(1:gath_v) = field%fr_i(1:gath_v)
 
         call gather1A(A_local, sA((ees_GGG - 1)*ntrnds_G + 1 + NZ2_G*ntrnds_G: &
                        eee_GGG*ntrnds_G + nz2_G*ntrnds_G), &
@@ -1459,12 +1459,13 @@ contains
 
 
 
-  subroutine inner2Outer(inner_ra, inner_ia)
+  subroutine inner2Outer(inner_ra, inner_ia, field)
 
 
     implicit none (type, external)
 
     real(kind=wp), contiguous, intent(in) :: inner_ra(:), inner_ia(:)
+    type(tFieldValues), intent(inout) :: field
 
     integer(kind=ip) :: iz, ssti, ssei, iy, sst, sse
     integer(kind=ip) :: nxout, nyout ! should be made global and calculated
@@ -1487,8 +1488,8 @@ contains
                          nspinDX*(iy-1) + 1
         ssei = ssti + nspinDX - 1
 
-        ac_rfield(sst:sse) = inner_ra(ssti:ssei)
-        ac_ifield(sst:sse) = inner_ia(ssti:ssei)
+        field%ac_r(sst:sse) = inner_ra(ssti:ssei)
+        field%ac_i(sst:sse) = inner_ia(ssti:ssei)
 
       end do
 
@@ -1501,12 +1502,13 @@ contains
 
 
 
-  subroutine outer2Inner(inner_ra, inner_ia)
+  subroutine outer2Inner(inner_ra, inner_ia, field)
 
 
     implicit none (type, external)
 
     real(kind=wp), contiguous, intent(out) :: inner_ra(:), inner_ia(:)
+    type(tFieldValues), intent(in) :: field
 
     integer(kind=ip) :: iz, sst, sse, ssti, ssei
     integer(kind=ip) :: nxout, nyout, iy ! should be made global and calculated
@@ -1528,8 +1530,8 @@ contains
                          nspinDX*(iy-1) + 1
         ssei = ssti + nspinDX - 1
 
-        inner_ra(ssti:ssei) = ac_rfield(sst:sse)
-        inner_ia(ssti:ssei) = ac_ifield(sst:sse)
+        inner_ra(ssti:ssei) = field%ac_r(sst:sse)
+        inner_ia(ssti:ssei) = field%ac_i(sst:sse)
 
       end do
 
@@ -3255,9 +3257,11 @@ contains
 
 
 
-  subroutine redist2FFTWlt()
+  subroutine redist2FFTWlt(field)
 
     implicit none (type, external)
+
+    type(tFieldValues), intent(inout) :: field
 
     integer(kind=ip) :: tmpfz2, tmpez2, tmpmainlen, &
                         tmpbz2, tmptllen, tmpfz2_act, &
@@ -3279,12 +3283,12 @@ contains
     tmpez2_act = nz2_G
 
 
-    allocate(tre_fft(tmpmainlen*ntrnds_G), &
-             tim_fft(tmpmainlen*ntrnds_G))
+    allocate(field%tre_fft(tmpmainlen*ntrnds_G), &
+             field%tim_fft(tmpmainlen*ntrnds_G))
 
 
-    tre_fft = 0_wp
-    tim_fft = 0_wp
+    field%tre_fft = 0_wp
+    field%tim_fft = 0_wp
 
 
     allocate(ft_ar(tProcInfo_G%size, 3))
@@ -3293,17 +3297,17 @@ contains
 !    print*, 'fft array layout is ', ft_ar
 
 
-    call redist2new2(ff_ar, ft_ar, fr_rfield, tre_fft)
-    call redist2new2(ff_ar, ft_ar, fr_ifield, tim_fft)
+    call redist2new2(ff_ar, ft_ar, field%fr_r, field%tre_fft)
+    call redist2new2(ff_ar, ft_ar, field%fr_i, field%tim_fft)
 
 
-    call redist2new2(ee_ar, ft_ar, bk_rfield, tre_fft)
-    call redist2new2(ee_ar, ft_ar, bk_ifield, tim_fft)
+    call redist2new2(ee_ar, ft_ar, field%bk_r, field%tre_fft)
+    call redist2new2(ee_ar, ft_ar, field%bk_i, field%tim_fft)
 
 
 
-    call redist2new2(ac_ar, ft_ar, ac_rfield, tre_fft)
-    call redist2new2(ac_ar, ft_ar, ac_ifield, tim_fft)
+    call redist2new2(ac_ar, ft_ar, field%ac_r, field%tre_fft)
+    call redist2new2(ac_ar, ft_ar, field%ac_i, field%tim_fft)
 
 
   end subroutine redist2FFTWlt
@@ -3313,29 +3317,31 @@ contains
 
 
 
-  subroutine redistbackFFT()
+  subroutine redistbackFFT(field)
 
     implicit none (type, external)
+
+    type(tFieldValues), intent(inout) :: field
 
     integer :: req, error
     integer(kind=ip) :: si, sst, sse
     integer :: statr(MPI_STATUS_SIZE)
     integer :: sendstat(MPI_STATUS_SIZE)
 
-    call redist2new2(ft_ar, ff_ar, tre_fft, fr_rfield)
-    call redist2new2(ft_ar, ff_ar, tim_fft, fr_ifield)
+    call redist2new2(ft_ar, ff_ar, field%tre_fft, field%fr_r)
+    call redist2new2(ft_ar, ff_ar, field%tim_fft, field%fr_i)
 
 
-    call redist2new2(ft_ar, ee_ar, tre_fft, bk_rfield)
-    call redist2new2(ft_ar, ee_ar, tim_fft, bk_ifield)
+    call redist2new2(ft_ar, ee_ar, field%tre_fft, field%bk_r)
+    call redist2new2(ft_ar, ee_ar, field%tim_fft, field%bk_i)
 
 
 
-    call redist2new2(ft_ar, ac_ar, tre_fft, ac_rfield)
-    call redist2new2(ft_ar, ac_ar, tim_fft, ac_ifield)
+    call redist2new2(ft_ar, ac_ar, field%tre_fft, field%ac_r)
+    call redist2new2(ft_ar, ac_ar, field%tim_fft, field%ac_i)
 
 
-    deallocate(tre_fft, tim_fft)
+    deallocate(field%tre_fft, field%tim_fft)
     deallocate(ft_ar)
 
 
@@ -3347,7 +3353,7 @@ contains
 
       if (tProcInfo_G%rank == 0_ip) then
 
-        call mpi_issend(ac_rfield(1:si), &
+        call mpi_issend(field%ac_r(1:si), &
                         si, &
                         mpi_double_precision, &
                         tProcInfo_G%size-1_ip, 0, &
@@ -3359,7 +3365,7 @@ contains
 
       if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
 
-        call mpi_recv( ac_rfield(sst:sse), &
+        call mpi_recv( field%ac_r(sst:sse), &
                  si, mpi_double_precision, &
                  0, 0, tProcInfo_G%comm, &
                  statr, error )
@@ -3370,7 +3376,7 @@ contains
       if (tProcInfo_G%rank == 0_ip) then
 
         call mpi_wait( req,sendstat,error )
-        call mpi_issend(ac_ifield(1:si), &
+        call mpi_issend(field%ac_i(1:si), &
                         si, &
                         mpi_double_precision, &
                         tProcInfo_G%size-1_ip, 0, &
@@ -3383,7 +3389,7 @@ contains
 
       if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
 
-        call mpi_recv( ac_ifield(sst:sse), &
+        call mpi_recv( field%ac_i(sst:sse), &
                  si, mpi_double_precision, &
                  0, 0, tProcInfo_G%comm, &
                  statr, error )

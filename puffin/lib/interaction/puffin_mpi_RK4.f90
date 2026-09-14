@@ -10,7 +10,7 @@ module RK4int
    use Derivative, only: derivs
    use IO, only: tErrorLog_G, log_error
    use ParaField, only: tllen, upd8a, inner2outer, outer2inner
-   use GlobalTypes, only: tSimulationContext
+   use GlobalTypes, only: tSimulationContext, tFieldValues
 
    implicit none (type, external)
 private
@@ -379,7 +379,9 @@ contains
 
 
 
-   subroutine allact_rk4_arrs()
+   subroutine allact_rk4_arrs(field)
+
+      type(tFieldValues), intent(in) :: field
 
       integer(kind=ip) :: tllen43D
 
@@ -419,16 +421,18 @@ contains
 
       allocate(dadz_w(iNumberElectrons_G))
 
-      call outer2Inner(ac_rfield_in, ac_ifield_in)
+      call outer2Inner(ac_rfield_in, ac_ifield_in, field)
 
    end subroutine allact_rk4_arrs
 
 
 
 
-   subroutine deallact_rk4_arrs()
+   subroutine deallact_rk4_arrs(field)
 
-      call inner2Outer(ac_rfield_in, ac_ifield_in)
+      type(tFieldValues), intent(inout) :: field
+
+      call inner2Outer(ac_rfield_in, ac_ifield_in, field)
 
       deallocate(ac_rfield_in, ac_ifield_in)
 

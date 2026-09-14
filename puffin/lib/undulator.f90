@@ -226,7 +226,7 @@ end if
 
   call mpi_barrier(tProcInfo_G%comm, error)
 
-  call allact_rk4_arrs()
+  call allact_rk4_arrs(ctx%field)
 
 
   igoes = 0_ip
@@ -256,14 +256,14 @@ end if
         call rk4par(sZl, ctx%integration%step_size, qDiffrctd, ctx)
         if (igoes>3_ip) exit
         if (.not. ctx%flags%parallel_arrays_ok) then
-          call deallact_rk4_arrs()
+          call deallact_rk4_arrs(ctx%field)
           if (.not. ctx%flags%inner_xy_ok) then
             call getInNode(ctx%flags)
             ctx%flags%inner_xy_ok = .true.
           end if
           call layoutField(ctx%integration%redistribution_length)
           ctx%flags%parallel_arrays_ok = .true.
-          call allact_rk4_arrs()
+          call allact_rk4_arrs(ctx%field)
           ctx%flags%inner_xy_ok = .true.
         else
           exit
@@ -291,9 +291,9 @@ end if
       if ((mod(ctx%integration%current_step,isteps4diff) == 0_ip) .or. &
           (ctx%integration%current_step == ctx%integration%total_steps))  then
 
-!        call deallact_rk4_arrs()
+!        call deallact_rk4_arrs(ctx%field)
 
-        call inner2Outer(ac_rfield_in, ac_ifield_in)
+        call inner2Outer(ac_rfield_in, ac_ifield_in, ctx%field)
 
         dzdF = dzdS  ! Finishing last diffraction step
                      ! - must be indentical size
@@ -331,7 +331,7 @@ end if
           dzd = dzdF + dzdS
 
           call diffractIM(dzd, qDiffrctd, qOKL, ctx)
-          call outer2Inner(ac_rfield_in, ac_ifield_in)
+          call outer2Inner(ac_rfield_in, ac_ifield_in, ctx%field)
         else
 
         ! If writing in this step, then we need to first
@@ -342,7 +342,7 @@ end if
           call writeIM(sZ, sZl, ctx, iM, qOKL)   ! Write data
           ! Start new diffraction step
           if (dzdS > 0.0_wp) call diffractIM(dzdS, qDiffrctd, qOKL, ctx)
-          call outer2Inner(ac_rfield_in, ac_ifield_in)
+          call outer2Inner(ac_rfield_in, ac_ifield_in, ctx%field)
           qDWrDone = .true.
 
         end if
@@ -361,7 +361,7 @@ end if
 
         ! if not already written in diffraction step
 
-        call inner2Outer(ac_rfield_in, ac_ifield_in)
+        call inner2Outer(ac_rfield_in, ac_ifield_in, ctx%field)
 
         call writeIM(sZ, sZl, ctx, iM, qOKL)
 
@@ -387,15 +387,15 @@ end if
 
   if (mod(ctx%lattice%cumulative_steps, ctx%integration%redistribution_step) == 0) then
 
-    call deallact_rk4_arrs()
+    call deallact_rk4_arrs(ctx%field)
     call layoutField(ctx%integration%redistribution_length)
-    call allact_rk4_arrs()
+    call allact_rk4_arrs(ctx%field)
 
   end if
 
   end do
 
-  call deallact_rk4_arrs()
+  call deallact_rk4_arrs(ctx%field)
 
 
   if (igoes>3_ip) then
