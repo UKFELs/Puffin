@@ -11,3 +11,9 @@ dependencies:
   - git
   - python=3.11
   - zlib
+# Post-processing and the field viewers in utilities/pyPlotting.  h5py is
+# pinned to the openmpi build so it resolves against the same hdf5 as the
+# solver rather than dragging in a serial one.
+  - numpy
+  - h5py=*=mpi_openmpi*
+  - bokeh

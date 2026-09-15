@@ -1,0 +1,26 @@
+! Beam for deck3d.in.  Matched to the undulator's natural focusing, so the
+! transverse envelope is constant and any error in the averaged focusing shows
+! up directly as a breathing beam.  Ipk is well above a physical CLARA current
+! so that 120 periods reach clear exponential growth.
+
+&NBLIST
+nbeams = 1
+dtype = 'simple'
+/
+
+&BLIST
+sSigmaE = 1.0, 1.0, 1E8, 1.0, 1.0, 0.001
+sLenE = 1E-6, 1E-6, 1.5, 1E-6, 1E-6, 0.006
+emitx = 1.0
+emity = 1.0
+Ipk = 4000
+bcenter = 0.0
+gammaf = 1.0
+iMPsZ2PerWave = 8
+TrLdMeth = 2
+nseqparts = 61
+qRndEj_G = .true.
+sSigEj_G = 0.1
+qFixCharge = .false.
+qMatched_A = .true.
+/

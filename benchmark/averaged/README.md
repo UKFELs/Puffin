@@ -1,5 +1,6 @@
 # Averaged vs unaveraged
 
+
 `run_compare.py` runs the period-averaged mode (`qAveraged`, see
 `puffin/lib/undulator/averaging.f90` and the "Period-Averaged Mode" section of
 `doc/manual.tex`) and the ordinary unaveraged solver on the same 1D deck, and
@@ -26,6 +27,65 @@ The deck is the CLARA-like 1D one used for `benchmark/convergence` (rho =
 0.005, aw = 1.012, gamma_r = 456.4), seeded, noise-free, 60 periods - about
 3.8 gain lengths, still in the exponential regime. Needs `mpirun` and
 `h5dump`; standard library Python only.
+
+## 3D
+
+`run_compare3d.py` is the 3D counterpart of `run_compare.py`, on `deck3d.in` /
+`beam_file3d.in` / `seed_file3d.in`:
+
+```sh
+python3 run_compare3d.py helical                 # defaults: --plain 12:30 24:60 --avg 1:2
+python3 run_compare3d.py helical --plain 12:30 24:60 48:120
+python3 compare3d.py <plain_dir> <avg_dir>       # full tables
+```
+
+It compares mesh-independent observables - total power, current-weighted bunching, the
+field's transverse RMS and profile, and the beam envelope - rather than differencing
+fields node by node, because the two runs' z2 meshes differ by an order of magnitude.
+The deck runs 120 periods to reach clear exponential growth (power x29), which means
+the last write is beginning to roll over towards saturation; read the ratio partway up
+the table as well as at the end, since averaged and unaveraged are expected to diverge
+once saturation sets in. `sBeta = 0` there on purpose - see the comment in `deck3d.in`.
+
+`compare3d.py` refuses to compare two runs that ended at different `zbar`: Puffin exits
+with status 0 when it gives up rearranging its parallel field, so a run that stopped
+early otherwise looks finished. It also reports the power ratio at the first write and
+warns if it is not 1 - any deviation there means the two runs did not start from the
+same field, and nothing after it is a comparison of the physics.
+
+The usual cause of that is the seed polarisation. One averaged-mode envelope fixes the
+ratio of the field's two helicity components at `u+/u-`, so a helical undulator needs
+`sA0_X = sA0_Y` (the resonant helicity) and a planar one needs a linear seed. Get it
+wrong on a helical undulator and the averaged run starts with exactly half the seed
+power - and the ratio then climbs from 0.5 towards 1 as the field grows, which is easy
+to mistake for a physics result. `run_compare3d.py` sets it from the undulator type, and
+Puffin itself warns at setup.
+
+Note neither `compare3d.py` nor the tables below filter power to the fundamental band, as
+the 1D `compare.py`'s `demod` does. For a planar undulator that makes total power a
+like-for-unlike comparison, since the unaveraged run radiates harmonics the averaged mode
+cannot carry; the 3D deck is helical, which has no harmonic content.
+
+### What the 3D comparison showed (2026-09-12)
+
+Helical, averaged at `lambdarPerCell = 1` and 2 steps per period, on 4 ranks:
+
+| unaveraged | runtime | P ratio | bunching ratio | field sigma_x | beam sigma_x |
+| --- | --- | --- | --- | --- | --- |
+| n = 12, 30 steps | 245 s | 1.0698 | 0.9743 | 1.0055 | 1.0007 |
+| n = 24, 60 steps | 613 s | 0.9976 | 0.9904 | 1.0030 | 1.0007 |
+| n = 48, 120 steps | 1795 s | 0.9830 | 0.9947 | 1.0022 | 1.0007 |
+| averaged | 14.2 s | | | | |
+
+As in 1D, the gap at the unaveraged solver's default mesh is the unaveraged solver's:
+bunching converges monotonically towards 1 as its mesh refines. The transverse
+observables hardly move - the beam envelope is 1.0007 at every mesh, and the field's
+transverse profile agrees to an L2 of 7e-3 in x, 1.3e-2 in y.
+
+Against n48, the power ratio holds 0.999 through the exponential phase and only drifts
+to 0.983 past zbar ~ 4.5 as the run rolls over towards saturation, which is why the
+series table matters as much as the final row.
+
 
 ## What the comparison showed (2026-09-11)
 

@@ -67,6 +67,14 @@ Installing dependencies via conda-forge is simple and fast, and consistent acros
 conda create -y -n puffin compilers openmpi hdf5=*=mpi_openmpi* fftw=*=mpi_openmpi* cmake doxygen
 conda activate puffin
 ```
+Or, equivalently, and including the Python packages the post-processing and the
+field viewers in `utilities/pyPlotting` need:
+```
+conda env create -f environment.yml
+conda activate puffin
+```
+Note that `h5py` is pinned to the `mpi_openmpi` build so that it resolves against the same parallel HDF5 as the solver; letting conda pick freely can pull in a serial HDF5 and replace the one the build links against. When adding the Python packages to an environment that already builds, `--freeze-installed` stops the solver touching the toolchain.
+
 Unfortunately, PFUnit is not (yet) distributed on conda-forge, so you'll still have to build it yourself if you want tests to run.
 
 

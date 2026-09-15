@@ -317,15 +317,17 @@ src_intens = ColumnDataSource(dict(image=[ii0], x=[xmin], y=[ymin],
 # readers of an FEL transverse profile expect.
 # toolbar above, not overlaid: these panels carry a colorbar on the right,
 # and the default in-frame toolbar sits straight on top of its tick labels.
-p_field = figure(title='Field magnitude' + _xy_suffix(_i0),
+p_field = figure(title=('Envelope magnitude' if pvd.is_averaged(attrs0)
+                        else 'Field magnitude') + _xy_suffix(_i0),
                  x_axis_label=UNITS.x_label, y_axis_label=UNITS.y_label,
                  width=IW, height=IH, tools=TOOLS, toolbar_location='above')
 _r = p_field.image('image', source=src_field, x='x', y='y', dw='dw', dh='dh',
                    color_mapper=mapper_f)
 p_field.add_tools(HoverTool(renderers=[_r], tooltips=[
     ('x', '$x{0.00} mm'), ('y', '$y{0.00} mm'), ('|A⊥|', '@image{0.000}')]))
+_amp_label = '|Ã⊥|' if pvd.is_averaged(attrs0) else '|A⊥|'
 p_field.add_layout(ColorBar(color_mapper=mapper_f, label_standoff=8,
-                             width=12, title='|A⊥|',
+                             width=12, title=_amp_label,
                              formatter=CB_FMT), 'right')
 
 p_intens = figure(title='Intensity' + _xy_suffix(_i0),
@@ -424,7 +426,7 @@ else:
     _tx0, _ty0 = np.array([0.0]), np.array([0.0])
 src_tprof = ColumnDataSource(dict(x=_tx0.tolist(), y=_ty0.tolist()))
 
-p_tprof = figure(title='Temporal profile  (at this z)',
+p_tprof = figure(title='Temporal profile  (at this z, %s)' % pvd.mode_label(attrs0),
                  x_axis_label=UNITS.z2_label, y_axis_label=UNITS.power_label,
                  width=PW, height=250, tools=TOOLS)
 _r = p_tprof.line('x', 'y', source=src_tprof, color=T['field'], line_width=2)

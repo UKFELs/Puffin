@@ -23,7 +23,8 @@ use wigglerVar, only: getalpha
 use FiElec1D, only: getinterps_1d, getffelecs_1d, getsource_1d
 use FiElec, only: getinterps_3d, getffelecs_3d, getsource_3d
 use gtop2, only: getp2, getp2avg
-use averaging, only: tAvgCoupling, getAvgCoupling, getResonantMomentum
+use averaging, only: tAvgCoupling, getAvgCoupling, getResonantMomentum, &
+  tAvgFocusing, getAvgFocusCoef, getAvgFocusing
 use ParaField, only: fz2, tTransInfo_G
 use bfields, only: getbfields
 use GlobalTypes, only: tUndulator, tFELFrame, tSimulationContext
@@ -112,6 +113,7 @@ contains
 
   real(kind=wp), allocatable :: sprRes(:), spiRes(:)
   type(tAvgCoupling) :: cpl
+  type(tAvgFocusing) :: foc
 
 !     Begin
 
@@ -149,6 +151,7 @@ contains
 
   if (ctx%flags%period_averaged) then
     call getAvgCoupling(sZ, ctx%und, ctx%frame, cpl)
+    call getAvgFocusCoef(sZ, ctx%und, ctx%frame, ctx%flags%focusing, foc)
     allocate(sprRes(iNumberElectrons_G), spiRes(iNumberElectrons_G))
   end if
 
@@ -287,13 +290,22 @@ contains
 !     Averaged mode: pperp holds only its slow part. The undulator quiver is
 !     carried analytically, and the radiation-driven quiver (the A term in
 !     dppdz) rotates against the carrier and averages out. What is left is
-!     focusing, which is zero in 1D - the only geometry averaged mode
-!     supports so far; setup rejects 3D.
+!     focusing - zero in 1D, where bz = 0 and there is no transverse dynamics,
+!     and in 3D the period average of the bz beat against the quiver, plus the
+!     strong-focusing channel. See getAvgFocusCoef.
+
+          if (tTransInfo_G%qOneD) then
 
 !$OMP WORKSHARE
-          sdpr = 0.0_wp
-          sdpi = 0.0_wp
+            sdpr = 0.0_wp
+            sdpi = 0.0_wp
 !$OMP END WORKSHARE
+
+          else
+
+            call getAvgFocusing(sx, sy, sgam, sp2, ctx%frame%eta, foc, sdpr, sdpi)
+
+          end if
 
 !     Energy exchange with the envelope, through the same ptilde as the source
 

@@ -14,10 +14,12 @@ module checks
 
 use puffin_kinds, only: long, WP, IP
 use IO, only: tErrorLog_G, log_error
-use puffin_constants, only: pi, iX_CG, iY_CG, iZ2_CG, iPX_CG, iPY_CG, iDiffraction_CG, &
-  iFocussing_CG, iOneD_CG
+use puffin_constants, only: pi, iX_CG, iY_CG, iZ2_CG, iPX_CG, iPY_CG, iGam_CG, &
+  iDiffraction_CG, iFocussing_CG, iOneD_CG, iResume_CG
 use Globals, only: qRndFj_G, sSigFj_G, qRndEj_G, sSigEj_G, gExtEj_G, sStepSize, nSteps, &
-                   qAveraged_G, sLambdarPerCell_G
+                   qAveraged_G, sLambdarPerCell_G, iInputType_G, iReadH5_G, iReadMASP_G, &
+                   iFieldSeedType_G, iReadH5Field_G, fieldMesh, iPeriodic
+use puffin_mpiInfo, only: tProcInfo_G
 use averaging, only: getAvgUndAmps, qAvgPolarisationOK
 use particleFunctions, only: iTopHatDistribution_CG, gaussian
 use grids, only: getinttypes
@@ -27,7 +29,7 @@ use mpi, only: MPI_FINALIZE
 implicit none (type, external)
 private
 
-public :: checkparameters
+public :: checkparameters, chkAveraged
 
 
 contains
@@ -92,7 +94,7 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
   call stpFSampleLens(iNodes,sWigglerLength,sLengthOfElm,qSwitches(iOneD_CG),qOKL)
 
-  call chkAveraged(qSwitches(iOneD_CG), f_x, f_y, qOKL)
+  call chkAveraged(f_x, f_y, qSwitches(iResume_CG), iNodes(iZ2_CG), freqf, sSigE, mag, qOKL)
   if (.NOT. qOKL) goto 1000
 
   if (qSimple) then
@@ -482,23 +484,33 @@ end subroutine checkRndEjLens
 
 !> Checks specific to the period-averaged mode (qAveraged).  f_x, f_y are the
 !> polarisation after calcScaling, which sets them from the undulator type.
+!>
+!> Two kinds of check.  The first rejects inputs the mode cannot represent at
+!> all - a resolved field read into an envelope array, or a pperp that still
+!> carries the quiver.  Those would be silently wrong rather than obviously
+!> wrong, which is the worst failure mode there is, so they are refused rather
+!> than converted; converting them needs the dump metadata that would say which
+!> mode wrote the file in the first place.
+!>
+!> The second warns where the mode's premise - that the ponderomotive phase
+!> dtheta/dzbar = (1 - p2)/2rho is slow - is being stretched.  The envelope mesh
+!> can hold roughly +/- 1/(2 lambdarPerCell) of the resonant frequency, so
+!> anything detuned by more than that is outside the band the run can carry.
 
-subroutine chkAveraged(qOneD, f_x, f_y, qOK)
+subroutine chkAveraged(f_x, f_y, qResume, nz2, freqf, sSigE, mag, qOK)
 
-  logical, intent(in) :: qOneD
   real(kind=wp), intent(in) :: f_x, f_y
+  logical, intent(in) :: qResume
+  integer(kind=ip), intent(in) :: nz2
+  real(kind=wp), intent(in) :: freqf(:), sSigE(:,:), mag(:)
   logical, intent(out) :: qOK
 
-  real(kind=wp) :: cx, cy
+  real(kind=wp) :: cx, cy, band
+  integer(kind=ip) :: i
 
   qOK = .true.
 
   if (.not. qAveraged_G) return
-
-  if (.not. qOneD) then
-    call log_error('Averaged mode (qAveraged) supports 1D only so far.', tErrorLog_G)
-    qOK = .false.
-  end if
 
   call getAvgUndAmps("", f_x, f_y, cx, cy)
 
@@ -512,7 +524,91 @@ subroutine chkAveraged(qOneD, f_x, f_y, qOK)
   if (sLambdarPerCell_G <= 0.0_wp) then
     call log_error('lambdarPerCell must be > 0 in averaged mode.', tErrorLog_G)
     qOK = .false.
+    return          ! band below is meaningless without it
   end if
+
+!     Inputs the mode cannot represent
+
+  if (qResume) then
+    call log_error('Averaged mode (qAveraged) cannot resume from a dump '// &
+                   '(qResume): the dumps carry no record of which solver mode '// &
+                   'wrote them, so a resolved field and a quiver-carrying '// &
+                   'pperp would be read back as an envelope and a slow '// &
+                   'momentum.', tErrorLog_G)
+    qOK = .false.
+  end if
+
+  if (iFieldSeedType_G == iReadH5Field_G) then
+    call log_error('Averaged mode (qAveraged) cannot read a field from HDF5 '// &
+                   '(field_file): the stored field resolves the carrier, and '// &
+                   'the averaged mesh holds the envelope about it. Use a '// &
+                   'seed_file, or demodulate the field first.', tErrorLog_G)
+    qOK = .false.
+  end if
+
+  if ((iInputType_G == iReadH5_G) .or. (iInputType_G == iReadMASP_G)) then
+    call log_error('Averaged mode (qAveraged) cannot read macroparticles from '// &
+                   'HDF5 or MASP: their pperp still carries the undulator '// &
+                   'quiver, and averaged mode expects only its slow part.', &
+                   tErrorLog_G)
+    qOK = .false.
+  end if
+
+!     Detuning beyond the envelope mesh's band
+
+  band = 0.5_wp / sLambdarPerCell_G
+
+  do i = 1, size(freqf)
+    if (abs(freqf(i) - 1.0_wp) > band) then
+      call log_error('A seed frequency (freqf) lies outside the band the '// &
+                     'averaged field mesh can represent, roughly '// &
+                     '1 +/- 1/(2 lambdarPerCell). Lower lambdarPerCell, or '// &
+                     'do not use averaged mode for this seed.', tErrorLog_G)
+      qOK = .false.
+    end if
+  end do
+
+  if (.not. tProcInfo_G%qRoot) return
+
+!     Warnings.  A beam spread over more than the band, or swinging across it,
+!     has particles the single carrier does not describe well - it does not
+!     make the run wrong so much as partly out of band.
+
+!   Coarsening the mesh is the point of the mode, but it can be taken far
+!   enough that the z2 mesh no longer gives every rank a slab.  Puffin is then
+!   meant to duplicate the active region on every rank and carry on, and that
+!   path is currently broken - for the unaveraged solver too, it just needs
+!   more ranks to reach.  Warn rather than reject: on few enough ranks the run
+!   is fine, and it is the only way to model a single periodic cycle.
+
+  if ((fieldMesh == iPeriodic) .and. &
+      (nz2 < 2_ip * int(tProcInfo_G%size, kind=ip))) then
+    print*, 'WARNING: this periodic field mesh has', nz2, 'nodes in z2, fewer ', &
+            'than 2 per rank, so Puffin duplicates it on every rank rather ', &
+            'than slab-decomposing it. On a PERIODIC mesh that path is known ', &
+            'to fail, and to corrupt the power output before it does; it ', &
+            'fails unaveraged too, just at more ranks. Use fewer ranks, a ', &
+            'smaller lambdarPerCell, or more sperwaves. Temporal meshes take ', &
+            'the same path correctly and are not affected.'
+  end if
+
+  do i = 1, size(mag)
+
+!   The resonant wavelength goes as 1/gamma^2, so a relative energy offset of
+!   e detunes the radiation by 2e.
+
+    if (2.0_wp * abs(mag(i)) > band) then
+      print*, 'WARNING: beam ', i, ' has an energy oscillation (mag) that ', &
+              'detunes it by more than the averaged mesh band - a two-colour ', &
+              'case needs more than the one carrier averaged mode has.'
+    end if
+
+    if (2.0_wp * abs(sSigE(i, iGam_CG)) > band) then
+      print*, 'WARNING: beam ', i, ' has an energy spread wider than the ', &
+              'averaged mesh band; its tails are out of band.'
+    end if
+
+  end do
 
 end subroutine chkAveraged
 
