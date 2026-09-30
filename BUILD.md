@@ -77,6 +77,22 @@ in `test/testMPIIntegration3DBig.pf`. Its memory per rank scales as roughly 1/N,
 so lowering the rank count raises the per-rank footprint: at 2 ranks it needs
 1.8 GB each and takes some 40 minutes.
 
+#### Linting
+
+Two checks, both opt-in locally and both run on every pull request:
+
+- `-DENABLE_LINT=ON` adds `-Wall -Wextra` to the compile. The warnings it
+  deliberately leaves off are explained in [doc/LINT_NOTES.md](doc/LINT_NOTES.md).
+  The PR build reports the warnings (a count in the job summary, and inline
+  annotations in the files the PR changes) but does not fail on them, because
+  the tree still carries legacy ones.
+- `make lint` runs the [fortitude](https://github.com/PlasmaFAIR/fortitude)
+  static analyser over `puffin/`, with the settings in `fortitude.toml`. Install
+  it with `pip install fortitude-lint` before running cmake. The PR build pins the
+  version it uses (`FORTITUDE_VERSION` in `.github/workflows/build.yml`) and
+  **fails on any violation**. Many of them can be fixed with
+  `fortitude check --fix puffin`.
+
 ### Install dependencies using conda-forge
 
 Installing dependencies via conda-forge is simple and fast, and consistent across different systems. First create the puffin environment, installing compilers and libs, and then activate it:
