@@ -9,10 +9,11 @@ project (puffin)
 
 enable_language (Fortran)
 
-# The version number.
+# The version number. Keep this in step with the release tag (vMAJOR.MINOR.PATCH):
+# bump it on dev before tagging, so the tag and the built version agree.
 set (Puffin_VERSION_MAJOR 2)
-set (Puffin_VERSION_MINOR 1)
-set (Puffin_VERSION_PATCH 0a)
+set (Puffin_VERSION_MINOR 0)
+set (Puffin_VERSION_PATCH 0)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules")
 
