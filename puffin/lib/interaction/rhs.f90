@@ -22,7 +22,9 @@ use Equations, only: dppdz_r_f, dppdz_i_f, dgamdz_f, dxdz_f, dydz_f, dz2dz_f, al
 use wigglerVar, only: getalpha
 use FiElec1D, only: getinterps_1d, getffelecs_1d, getsource_1d
 use FiElec, only: getinterps_3d, getffelecs_3d, getsource_3d
-use gtop2, only: getp2
+use gtop2, only: getp2, getp2avg
+use averaging, only: tAvgCoupling, getAvgCoupling, getResonantMomentum, &
+  tAvgFocusing, getAvgFocusCoef, getAvgFocusing
 use ParaField, only: fz2, tTransInfo_G
 use bfields, only: getbfields
 use GlobalTypes, only: tUndulator, tFELFrame, tSimulationContext
@@ -104,6 +106,15 @@ contains
 
   logical :: qOKL
 
+! Averaged mode only - see averaging.f90. sprRes, spiRes hold the resonant
+! momentum ptilde_j, which replaces spr, spi wherever the electrons couple to
+! the field. One array for both the source and the energy equation is what
+! keeps the averaged system energy-conserving.
+
+  real(kind=wp), allocatable :: sprRes(:), spiRes(:)
+  type(tAvgCoupling) :: cpl
+  type(tAvgFocusing) :: foc
+
 !     Begin
 
   qOK = .false.
@@ -138,6 +149,11 @@ contains
   call getAlpha(sZ, ctx%und)
   call adjUndPlace(sZ, ctx%und)
 
+  if (ctx%flags%period_averaged) then
+    call getAvgCoupling(sZ, ctx%und, ctx%frame, cpl)
+    call getAvgFocusCoef(sZ, ctx%und, ctx%frame, ctx%flags%focusing, foc)
+    allocate(sprRes(iNumberElectrons_G), spiRes(iNumberElectrons_G))
+  end if
 
 
 !$OMP PARALLEL
@@ -148,7 +164,14 @@ contains
 !     end do
 ! !$OMP END SIMD
 
-  call getP2(sp2, sgam, spr, spi, ctx%frame%eta, ctx%frame%gamma_ref, ctx%frame%aw)
+  if (ctx%flags%period_averaged) then
+    call getP2Avg(sp2, sgam, spr, spi, ctx%frame%eta, ctx%frame%gamma_ref, &
+                  ctx%frame%aw, cpl%pqSq)
+    call getResonantMomentum(sZ, sz2, sgam, sp2, ctx%frame%eta, ctx%frame%rho, cpl, &
+                             sprRes, spiRes)
+  else
+    call getP2(sp2, sgam, spr, spi, ctx%frame%eta, ctx%frame%gamma_ref, ctx%frame%aw)
+  end if
 
 
 
@@ -201,7 +224,11 @@ contains
     call getInterps_1D(sz2, ctx%flags)
     if (ctx%flags%parallel_arrays_ok) then
       call getFFelecs_1D(sAr, sAi)
-      call getSource_1D(sDADzr, sDADzi, spr, spi, sgam, ctx%frame%eta)
+      if (ctx%flags%period_averaged) then
+        call getSource_1D(sDADzr, sDADzi, sprRes, spiRes, sgam, ctx%frame%eta)
+      else
+        call getSource_1D(sDADzr, sDADzi, spr, spi, sgam, ctx%frame%eta)
+      end if
     end if
 
   else
@@ -209,7 +236,11 @@ contains
     call getInterps_3D(sx, sy, sz2, ctx%flags)
     if ((ctx%flags%parallel_arrays_ok) .and. (ctx%flags%inner_xy_ok)) then
       call getFFelecs_3D(sAr, sAi)
-      call getSource_3D(sDADzr, sDADzi, spr, spi, sgam, ctx%frame%eta)
+      if (ctx%flags%period_averaged) then
+        call getSource_3D(sDADzr, sDADzi, sprRes, spiRes, sgam, ctx%frame%eta)
+      else
+        call getSource_3D(sDADzr, sDADzi, spr, spi, sgam, ctx%frame%eta)
+      end if
     end if
 
   end if
@@ -233,8 +264,10 @@ contains
 
     if (qElectronsEvolve_G) then
 
-        call getBFields(sx, sy, sz, &
-                        bxu, byu, bzu, ctx%und, ctx%frame)
+        if (.not. ctx%flags%period_averaged) then
+          call getBFields(sx, sy, sz, &
+                          bxu, byu, bzu, ctx%und, ctx%frame)
+        end if
 
 !     z2
 
@@ -252,20 +285,51 @@ contains
                     sdy, ctx%frame)
 
 
+        if (ctx%flags%period_averaged) then
+
+!     Averaged mode: pperp holds only its slow part. The undulator quiver is
+!     carried analytically, and the radiation-driven quiver (the A term in
+!     dppdz) rotates against the carrier and averages out. What is left is
+!     focusing - zero in 1D, where bz = 0 and there is no transverse dynamics,
+!     and in 3D the period average of the bz beat against the quiver, plus the
+!     strong-focusing channel. See getAvgFocusCoef.
+
+          if (tTransInfo_G%qOneD) then
+
+!$OMP WORKSHARE
+            sdpr = 0.0_wp
+            sdpi = 0.0_wp
+!$OMP END WORKSHARE
+
+          else
+
+            call getAvgFocusing(sx, sy, sgam, sp2, ctx%frame%eta, foc, sdpr, sdpi)
+
+          end if
+
+!     Energy exchange with the envelope, through the same ptilde as the source
+
+          call dgamdz_f(sx, sy, sz2, sprRes, spiRes, sgam, &
+                        sdgam, ctx%frame)
+
+        else
+
 !     PX (Real pperp)
 
-        call dppdz_r_f(sx, sy, sz2, spr, spi, sgam, sZ, &
-                       sdpr, ctx%und, ctx%frame)
+          call dppdz_r_f(sx, sy, sz2, spr, spi, sgam, sZ, &
+                         sdpr, ctx%und, ctx%frame)
 
 !     -PY (Imaginary pperp)
 
-        call dppdz_i_f(sx, sy, sz2, spr, spi, sgam, sz, &
-                       sdpi, ctx%und, ctx%frame)
+          call dppdz_i_f(sx, sy, sz2, spr, spi, sgam, sz, &
+                         sdpi, ctx%und, ctx%frame)
 
 !     P2
 
-        call dgamdz_f(sx, sy, sz2, spr, spi, sgam, &
-                     sdgam, ctx%frame)
+          call dgamdz_f(sx, sy, sz2, spr, spi, sgam, &
+                       sdgam, ctx%frame)
+
+        end if
 
     end if
 

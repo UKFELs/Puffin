@@ -16,6 +16,8 @@ module hdf5PuffLow
 use puffin_kinds, only: WP, IP
 use globals, only: fieldMesh, npk_bar_G, ata_G, iStep, sStepSize, nSteps, zFileName_G, zBFile_G, &
   zSFile_G
+use puffin_constants, only: pi
+use averaging, only: getAvgCarrierKz2
 use lattice, only: log_error, tErrorLog_G
 use hdf5, only: h5aclose_f, h5acreate_f, h5awrite_f, h5gclose_f, h5gcreate_f, H5S_SCALAR_F, &
   h5sclose_f, h5screate_f, h5screate_simple_f, H5T_NATIVE_CHARACTER, H5T_NATIVE_DOUBLE, &
@@ -527,6 +529,42 @@ contains
     call addH5FloatAttribute(dset_id, "lambda_r", ctx%frame%lambda_r, aspace_id)
     call addH5IntegerAttribute(dset_id, "fieldMesh", fieldMesh, aspace_id)
     call addH5IntegerAttribute(dset_id, "iScale", 1, aspace_id)
+
+!   Which solver mode wrote this file, and what the arrays in it therefore mean.
+!   Downstream tools cannot tell an envelope from a resolved field by looking, and
+!   nor can Puffin itself on the way back in - which is why averaged mode currently
+!   refuses qResume and HDF5 input rather than converting.  These three attributes
+!   are what would let it, and what lets the viz tools stop guessing.
+!
+!   qAveraged      0 or 1, the solver mode.
+!   lambdarPerCell z2 cell size in resonant wavelengths, MEASURED from the mesh
+!                  rather than copied from the input of the same name.  In
+!                  averaged mode the two agree by construction; unaveraged the
+!                  input is meaningless and the mesh is 1/(nodesPerLambdar - 1)
+!                  wavelengths per cell, which is what a reader wants to be told.
+!   kz2Carrier     the carrier the stored field is an envelope about: a field array
+!                  value is A_perp = aperp * exp(i kz2Carrier z2) (times the
+!                  polarisation factor).  Zero unaveraged, where aperp already
+!                  resolves the carrier, so applying it is a no-op there.
+!   pperpMeaning   whether electron px, py carry the undulator quiver or only their
+!                  slow (betatron) part.
+
+    if (ctx%flags%period_averaged) then
+      call addH5IntegerAttribute(dset_id, "qAveraged", 1_ip, aspace_id)
+      call addH5FloatAttribute(dset_id, "kz2Carrier", &
+                                getAvgCarrierKz2(ctx%frame%rho), aspace_id)
+      call addH5StringAttribute(dset_id, "pperpMeaning", &
+                                "slow part only, undulator quiver carried analytically", &
+                                aspace_id)
+    else
+      call addH5IntegerAttribute(dset_id, "qAveraged", 0_ip, aspace_id)
+      call addH5FloatAttribute(dset_id, "kz2Carrier", 0.0_wp, aspace_id)
+      call addH5StringAttribute(dset_id, "pperpMeaning", &
+                                "includes undulator quiver", aspace_id)
+    end if
+
+    call addH5FloatAttribute(dset_id, "lambdarPerCell", &
+                              ctx%mesh%dz2 / (4.0_wp * pi * ctx%frame%rho), aspace_id)
     call addH5FloatAttribute(dset_id, "transArea", ata_G, aspace_id)
     call addH5FloatAttribute(dset_id, "transAreaSI", &
                               ata_G * ctx%frame%gain_length * ctx%frame%cooperation_length, &

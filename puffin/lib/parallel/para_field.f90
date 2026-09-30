@@ -19,7 +19,7 @@ use globals, only: NX_G, NY_G, NZ2_G, ntrnds_G, ntrndsi_G, nspinDX, nspinDY, sLe
 use ParallelSetUp, only: MPI_INT_HIGH, stopcode, gather1a, getgatharrs
 use puffin_mpiInfo, only: tProcInfo_G
 use puffin_fftwInfo, only: tTransInfo_G
-use gtop2, only: getp2
+use gtop2, only: getp2, getp2avg
 use GlobalTypes, only: tSimulationFlags, tFELFrame
 use mpi, only: MPI_ALLGATHER, mpi_allreduce, mpi_alltoallv, mpi_barrier, MPI_Bcast, &
   mpi_double_precision, MPI_IN_PLACE, mpi_integer, MPI_ISSEND, mpi_max, mpi_min, MPI_RECV, &
@@ -94,7 +94,7 @@ logical :: qStart_new
 contains
 
 
-        subroutine getLocalFieldIndices(sdz, flags, frame)
+        subroutine getLocalFieldIndices(sdz, flags, frame, pqSq)
 
     implicit none (type, external)
 
@@ -114,6 +114,7 @@ contains
     real(kind=wp), intent(in) :: sdz
     type(tSimulationFlags), intent(inout) :: flags
     type(tFELFrame), intent(in) :: frame
+    real(kind=wp), intent(in), optional :: pqSq   ! passed in averaged mode only - see calcBuff
 
     real(kind=wp), allocatable :: fr_rfield_old(:), &
                                   fr_ifield_old(:), &
@@ -240,7 +241,14 @@ contains
 
   if (qUnique) call rearrElecs()   ! Rearrange electrons
 
-  call calcBuff(4 * pi * frame%rho * sdz, frame%eta, frame%gamma_ref, frame%aw)  ! Calculate buffers
+! Branch on the argument, not on flags%period_averaged: init calls this
+! before the flags are populated.
+
+  if (present(pqSq)) then
+    call calcBuff(4 * pi * frame%rho * sdz, frame%eta, frame%gamma_ref, frame%aw, pqSq)  ! Calculate buffers
+  else
+    call calcBuff(4 * pi * frame%rho * sdz, frame%eta, frame%gamma_ref, frame%aw)  ! Calculate buffers
+  end if
 
   call getFrBk()  ! Get surrounding nodes
 
@@ -1703,7 +1711,7 @@ contains
 
 
 
-  subroutine calcBuff(dz, sEta, sGammaR, sAw)
+  subroutine calcBuff(dz, sEta, sGammaR, sAw, pqSq)
 
 ! Subroutine to setup the 'buffer' region
 ! at the end of the parallel field section
@@ -1717,6 +1725,14 @@ contains
 ! dz through the undulator.
 
     real(kind=wp), intent(in) :: dz, sEta, sGammaR, sAw
+
+! Present only in the averaged mode: the period average of the undulator
+! quiver |pperp|^2.  There sElPX_G/sElPY_G hold only the slow part of pperp,
+! and would otherwise predict the drift-space p2 - roughly half the
+! in-undulator value - and so too small a buffer.  Absent, this routine is
+! exactly as it was, so the unaveraged path is untouched.
+
+    real(kind=wp), intent(in), optional :: pqSq
     real(kind=wp), allocatable :: sp2(:)
 
     real(kind=wp) :: bz2_len
@@ -1740,7 +1756,11 @@ contains
 
       allocate(sp2(iNumberElectrons_G))
 
-      call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, sEta, sGammaR, sAw)
+      if (present(pqSq)) then
+        call getP2Avg(sp2, sElGam_G, sElPX_G, sElPY_G, sEta, sGammaR, sAw, pqSq)
+      else
+        call getP2(sp2, sElGam_G, sElPX_G, sElPY_G, sEta, sGammaR, sAw)
+      end if
 
       bz2_len = dz  ! distance in zbar until next rearrangement
       ! predicted length in z2 needed needed in buffer for beam
@@ -1762,7 +1782,23 @@ contains
 !    bz2 = ez2 + nint(4 * 4 * pi * sRho_G / sLengthOfElmZ2_G)
 !    Boundary only 4 lambda_r long - so can only go ~ 3 periods
 
-    bz2 = nint(bz2_len / sLengthOfElmZ2_G)  ! node index of final node in boundary
+!   Node index of the final node in the boundary. The furthest particle
+!   interpolates onto nodes floor(z2/dz2) + 1 and + 2, and getInterps_* need
+!   its lower node to lie below bz2, so bz2 must reach floor(z2/dz2) + 2.
+!   Rounding to the nearest node leaves the buffer up to 1.5 cells short.
+!   That is harmless while the slippage over a redistribution interval spans
+!   many cells, as on a mesh resolving the carrier, but on the coarse envelope
+!   mesh of the averaged mode it is a fraction of a cell and the
+!   rearrangement fails outright - so the averaged mode uses the exact bound.
+!   The unaveraged path keeps nint: changing the buffer there changes the
+!   parallel layout, and with it the summation order, so the e2e goldens
+!   would no longer match at 1e-10.
+
+    if (present(pqSq)) then
+      bz2 = floor(bz2_len / sLengthOfElmZ2_G, kind=ip) + 2_ip
+    else
+      bz2 = nint(bz2_len / sLengthOfElmZ2_G)
+    end if
 
     if (fieldMesh == iPeriodic) then
 

@@ -33,12 +33,13 @@ public :: ata_G, c, chic_disp, chic_slip, chic_zbar, cmd_call_G, dadz_w, delmz, 
            outnodey_G, pi, procelectrons_G, q_e, qDiffraction_G, qDump_G, qDumpEnd_G, &
            qElectronFieldCoupling_G, qElectronsEvolve_G, qEquiXY_G, qFieldEvolve_G, qFilter, &
            qFixCharge_G, qFMesh_G, qFocussing_G, qhdf5_G, qInitWrLat_G, qMatchS_G, qMod_G, &
-           qOneD_G, qResume, qResume_G, qRndEj_G, qRndFj_G, qscaled_G, qsdds_G, &
+           qAveraged_G, qOneD_G, qResume, qResume_G, qRndEj_G, qRndFj_G, qscaled_G, qsdds_G, &
            qSeparateStepFiles_G, &
            quad_fx, quad_fy, qUndEnds_G, qUseEmit_G, qWrite, s_chi_bar_G, s_Normalised_chi_G, &
            sBeta_G, seedend, sElGam_G, sElPX_G, sElPY_G, sElX_G, sElY_G, sElZ2_G, sfilt, &
            sFocusfactor_G, sFocusfactor_save_G, sKBeta_G, sKBetaX_G, sKBetaXSF_G, sKBetaY_G, &
-           sKBetaYSF_G, sLengthOfElmX_G, sLengthOfElmY_G, sLengthOfElmZ2_G, sMNum_G, sperwaves_G, &
+           sKBetaYSF_G, sLambdarPerCell_G, sLengthOfElmX_G, sLengthOfElmY_G, sLengthOfElmZ2_G, &
+           sMNum_G, sperwaves_G, &
            sRedistLen_G, sSigEj_G, sSigFj_G, sStep, sStepSize, start_step, sZFE, sZFS, sZlSt_G, &
            tapers, tArrayA, tArrayE, tArrayZ, time1, time2, tInitData_G, totUndLineLength, &
            TrLdMeth_G, ux_arr, uy_arr, WP, x_ax_G, y_ax_G, zBFile_G, zFileName_G, zMod, zSFile_G, &
@@ -389,6 +390,15 @@ logical   ::  qFocussing_G       ! Provide Focusing for electron beam?
 logical   ::  qFilter            ! High pass filter for radiation field
                                  ! during diffraction? If not, the frequencies
                                  ! below the cutoff are simply not diffracted.
+
+
+logical   ::  qAveraged_G        ! Period-averaged (SVEA) mode? The field
+                                 ! arrays hold the envelope about the resonant
+                                 ! carrier. See averaging.f90. Off by default.
+
+real(kind=wp) :: sLambdarPerCell_G  ! z2 mesh spacing in resonant wavelengths,
+                                    ! averaged mode only (replaces
+                                    ! nodesPerLambdar there)
 
 
 logical   ::  qDump_G            ! Dump data in case of crash?

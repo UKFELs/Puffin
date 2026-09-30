@@ -1,0 +1,18 @@
+! Seed for deck3d.in.  qMatchS_G defaults to .true., so the transverse sigmas
+! below are replaced by the beam's - the seed is matched to the beam, and
+! sSigmaF only sets z2 (flat top here, so it is unused there too).
+
+&NSLIST
+nseeds = 1
+/
+
+&SLIST
+freqf = 1.0
+sA0_X = 0.001
+sA0_Y = 0.001
+sSigmaF = 1E8, 1E8, 1E8
+qFlatTop = .true.
+meanZ2 = 0.0
+qRndFj_G = .false.
+sSigFj_G = 0.1
+/

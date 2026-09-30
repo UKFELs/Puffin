@@ -281,6 +281,11 @@ type :: tSimulationFlags
     logical :: one_dimensional               ! qOneD_G
     logical :: using_modules                 ! qMod_G
 
+    ! Solver mode
+    logical :: period_averaged               ! qAveraged_G - field held as a
+                                             ! slowly varying envelope, quiver
+                                             ! averaged out (see averaging.f90)
+
     ! Mesh properties
     logical :: fixed_mesh                    ! qFMesh_G
     logical :: fixed_charge                  ! qFixCharge_G

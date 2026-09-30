@@ -29,7 +29,9 @@ USE Globals, only: NX_G, NBX_G, NY_G, NBY_G, NZ2_G, NBZ2_G, ntrnds_G, ntrndsi_G,
   sKBeta_G, fx_G, fy_G, zUndType_G, kx_und_G, ky_und_G, sKBetaX_G, sKBetaY_G, sKBetaXSF_G, &
   sKBetaYSF_G, mf, diffStep, sStepSize, nSteps, sRedistLen_G, iRedistStp_G, tArrayE, tArrayA, &
   tArrayZ, ioutInfo_G, qElectronsEvolve_G, qFieldEvolve_G, qElectronFieldCoupling_G, &
-  qDiffraction_G, qFocussing_G, qDump_G, qResume_G, qMod_G, qOneD_G
+  qDiffraction_G, qFocussing_G, qDump_G, qResume_G, qMod_G, qOneD_G, qAveraged_G, &
+  sLambdarPerCell_G
+use averaging, only: getAvgSeedFactor, getAvgUndAmps, getAvgPolarisation
 USE simple_electron_gen, only: generate_simple_beam, shuntbeam
 USE gMPsFromDists, only: getmps
 use avwrite, only: getcurrnpts, linspace
@@ -868,7 +870,11 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
   integer(kind=ip) :: ib
 
 
-  dz2 = 4.0_WP * pi * frame%rho / real(nodesperlambda-1_IP,kind=wp)
+  if (qAveraged_G) then
+    dz2 = 4.0_WP * pi * frame%rho * sLambdarPerCell_G  ! envelope mesh, see averaging.f90
+  else
+    dz2 = 4.0_WP * pi * frame%rho / real(nodesperlambda-1_IP,kind=wp)
+  end if
 
   iNumNodes(iZ2_CG) = ceiling(sFieldModelLength(iZ2_CG) / dz2) + 1_IP
 
@@ -1058,7 +1064,11 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
   end if
 
-  dz2 = 4.0_WP * pi * frame%rho / real(nodesperlambda-1_IP,kind=wp)
+  if (qAveraged_G) then
+    dz2 = 4.0_WP * pi * frame%rho * sLambdarPerCell_G  ! envelope mesh, see averaging.f90
+  else
+    dz2 = 4.0_WP * pi * frame%rho / real(nodesperlambda-1_IP,kind=wp)
+  end if
 
   iNumNodes(iZ2_CG) = ceiling(sFieldModelLength(iZ2_CG) / dz2) + 1_IP
 
@@ -1469,6 +1479,8 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
                    oscy(:)
 
   REAL(KIND=WP) :: lx, ly, z2sl, z2el
+  REAL(KIND=WP) :: magxl, magyl, resFrac, cxs, cys, uMinusS, uPlusS, fpS
+  REAL(KIND=WP) :: aPlusSq, aMinusSq
 
   INTEGER(KIND=IP) :: ind1, ind2, ind3, gind, nz2l
 
@@ -1563,8 +1575,72 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
 
 !     x and y polarized fields in z2
 
-  oscx = z2env * sin(fr * z2nds / (2.0_WP * rho) - ph_sh)! + 4.0_wp*(cos(10_wp * z2nds)))
-  oscy = z2env * cos(fr * z2nds / (2.0_WP * rho) - ph_sh)!+ 4.0_wp*(cos(10_wp * z2nds)))
+  if (qAveraged_G) then
+
+!     Averaged mode stores only the envelope of the resonant exp(-i z2/2rho)
+!     component.  Of A_perp = magx sin(psi) + i magy cos(psi) that is
+!     (i/2)(magx + magy) exp(-i psi); with psi' = psi - z2/2rho the carrier
+!     removed, i exp(-i psi') = sin(psi') + i cos(psi'), so the envelope has
+!     the same form as the resolved seed with fr -> fr - 1 and one common
+!     amplitude, scaled to the stored normalisation (see averaging.f90).
+!     The exp(+i psi) component is far outside the envelope band and dropped.
+
+    oscx = z2env * sin((fr - 1.0_wp) * z2nds / (2.0_WP * rho) - ph_sh)
+    oscy = z2env * cos((fr - 1.0_wp) * z2nds / (2.0_WP * rho) - ph_sh)
+
+    magxl = 0.5_wp * (magx + magy) * getAvgSeedFactor("", fx_G, fy_G)
+    magyl = magxl
+
+!     Warn if the seed's polarisation is not one the single envelope can hold.
+!
+!     One envelope fixes the ratio of the two helicity components of the field:
+!     A_perp = (u-/sqrt(fp)) Atilde exp(-i psi) + (u+/sqrt(fp)) Atilde* exp(+i psi),
+!     so |A-|/|A+| is pinned at u+/u-.  The seed decomposes as
+!     A+ = (i/2)(magx + magy), A- = (i/2)(magy - magx), and only its A+ is read.
+!
+!     For a planar undulator u+ = u- and the envelope carries both helicities,
+!     so a linearly polarised seed is reproduced exactly - nothing is lost.  For
+!     a helical undulator u+ = 0 and the opposite helicity cannot be represented
+!     at all: a linear seed then loses half its power, silently, which later
+!     looks like the averaged run simply having less field than the unaveraged
+!     one.  A circular seed on a planar undulator is wrong the other way, and
+!     would double the stored power.  reproduced below is what the envelope
+!     puts back as a fraction of what was asked for.
+
+    if ((abs(magx) + abs(magy)) > 0.0_wp) then
+
+      call getAvgUndAmps("", fx_G, fy_G, cxs, cys)
+      call getAvgPolarisation(cxs, cys, uMinusS, uPlusS, fpS)
+
+      aPlusSq = (0.5_wp * (magx + magy))**2
+      aMinusSq = (0.5_wp * (magy - magx))**2
+
+      if ((aPlusSq + aMinusSq) > 0.0_wp) then
+
+        resFrac = aPlusSq * (1.0_wp + (uPlusS / uMinusS)**2) &
+                  / (aPlusSq + aMinusSq)
+
+        if ((abs(resFrac - 1.0_wp) > 0.01_wp) .and. (tProcInfo_G%qRoot)) then
+          print*, "WARNING: this seed's polarisation is not one a single ", &
+                  "averaged-mode envelope can represent - it reproduces", &
+                  resFrac * 100.0_wp, "% of the seed power. A helical ", &
+                  "undulator wants sA0_X = sA0_Y (the resonant helicity); a ", &
+                  "planar one wants a linear seed, one of them zero."
+        end if
+
+      end if
+
+    end if
+
+  else
+
+    oscx = z2env * sin(fr * z2nds / (2.0_WP * rho) - ph_sh)! + 4.0_wp*(cos(10_wp * z2nds)))
+    oscy = z2env * cos(fr * z2nds / (2.0_WP * rho) - ph_sh)!+ 4.0_wp*(cos(10_wp * z2nds)))
+
+    magxl = magx
+    magyl = magy
+
+  end if
 
 !     Full 3D field
 
@@ -1573,8 +1649,8 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
       do ind3 = 1,NN(iX_CG)
 
         gind = ind3 + NN(iX_CG)*(ind2-1) + NN(iX_CG)*NN(iY_CG)*(ind1-1)
-        xfield(gind) = magx * xenv(ind3) * yenv(ind2) * oscx(ind1)
-        yfield(gind) = magy * xenv(ind3) * yenv(ind2) * oscy(ind1)
+        xfield(gind) = magxl * xenv(ind3) * yenv(ind2) * oscx(ind1)
+        yfield(gind) = magyl * xenv(ind3) * yenv(ind2) * oscy(ind1)
 
       end do
     end do

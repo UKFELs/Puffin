@@ -172,7 +172,7 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/expected/3D/clara_expected_integrated.h5"
 endif()
 
 add_pfunit_ctest (puffin_basic_tests
-  TEST_SOURCES testTests.pf testFFunctions.pf testLatticeElements.pf
+  TEST_SOURCES testTests.pf testFFunctions.pf testLatticeElements.pf testAveraging.pf
   LINK_LIBRARIES puffin_mpi
 )
 

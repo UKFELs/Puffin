@@ -803,7 +803,101 @@ The formalism for including a variation in the magnetic undulator field, so that
 
 
 
+\subsection{Period-Averaged Mode}
+
+\label{puff-avg}
+
+With {\bf qAveraged} set, Puffin solves a period-averaged form of the equations above. Both fast phases carry the same $1/2\rho$ in the scaled variables: the undulator phase is $\bar{z}/2\rho$ and the radiation phase $\bar{z}_2/2\rho$, so the ponderomotive phase of electron $j$ is
+\begin{align}
+\theta_j = \frac{\bar{z} - \bar{z}_{2j}}{2\rho}, \qquad \frac{d\theta_j}{d\bar{z}} = \frac{1 - p_{2j}}{2\rho},
+\end{align}
+slow exactly at Puffin's resonance condition $p_2 = 1$. With the on-axis undulator field $b_x = u_x \cos(\bar{z}/2\rho)$, $b_y = u_y \sin(\bar{z}/2\rho)$, the quiver is $\bar{p}_{\bot w} = -\alpha[u_+ e^{i\bar{z}/2\rho} + u_- e^{-i\bar{z}/2\rho}]$ with $u_\mp = (u_y \pm u_x)/2$, and the resonant component of the field is the one at $e^{-i\bar{z}_2/2\rho}$. The field is written in terms of a slowly varying envelope $\tilde{A}$,
+\begin{align}
+A_\bot = \frac{u_-}{\sqrt{f_p}} \tilde{A}\, e^{-i\bar{z}_2/2\rho} + \frac{u_+}{\sqrt{f_p}} \tilde{A}^*\, e^{+i\bar{z}_2/2\rho}, \qquad f_p = \frac{u_x^2 + u_y^2}{2},
+\end{align}
+which is exact for a helical ($u_+ = 0$) or linearly polarised ($|u_+| = |u_-|$) undulator, and normalised so that $|\tilde{A}|^2$ is the period average of $|A_\bot|^2$. The transverse momentum $\bar{p}_\bot$ holds only its slow part. Averaging over an undulator period, the coupling is carried by an effective resonant momentum
+\begin{align}
+\tilde{p}_j = -\alpha \sqrt{f_p}\, JJ_j\, e^{-i\theta_j}, \qquad JJ_j = J_0(\xi_j) - \frac{u_+}{u_-} J_1(\xi_j), \qquad \xi_j = \frac{(1 + \eta p_{2j})^3 \bar{a}_u^2 \alpha^2 (u_y^2 - u_x^2)}{8 \eta \gamma_r^2 \Gamma_j^2},
+\end{align}
+where $\xi_j$ is the phase amplitude of the figure-of-eight excursion in $\bar{z}_2$ that a planar undulator imposes through the $2\bar{z}/2\rho$ ripple in $|\bar{p}_{\bot w}|^2$. $\tilde{p}_j$ replaces $\bar{p}_{\bot j}$ in both the field source and the energy equation,
+\begin{align}
+\frac{\partial \tilde{A}}{\partial \bar{z}} &= \frac{1}{\bar{n}_p}\sum_{j} \frac{\tilde{p}_j}{\Gamma_j} (1+\eta p_{2j}) \delta(\bar{z}_2 - \bar{z}_{2j}) \quad \text{(1D)}, \\
+\frac{d \Gamma_{j}}{d \bar{z}} &= - \rho \frac{(1 + \eta p_{2j})}{\Gamma_j} (\tilde{p}_j \tilde{A}^*_j + c.c.),
+\end{align}
+which is what makes the averaged system conserve beam plus field energy exactly. $p_{2j}$ is evaluated with $|\bar{p}_\bot|^2 + \alpha^2 f_p$ in place of $|\bar{p}_\bot|^2$ - the $\bar{a}_u \rightarrow \bar{a}_{u,rms}$ substitution. The radiation-driven quiver, the $\eta p_2 A_\bot / \kappa^2$ term of equation \eqref{pperpeqn2}, is dropped; its slow effect on $p_2$ is $O(\rho)$ relative to the pendulum dynamics.
+
+\subsubsection{Transverse motion}
+
+In 1D $b_z = 0$ and the slow transverse momentum is constant. In 3D the natural focusing survives averaging, but only through products of two fast quantities, so it has to be restored explicitly. Off axis, to first order, every undulator type in Section~\ref{puff-undfields} has
+\begin{align}
+b_z = \frac{\sqrt{\eta}}{2\rho}\left(-u_x \bar{x} \sin(\bar{z}/2\rho) + u_y \bar{y} \cos(\bar{z}/2\rho)\right),
+\end{align}
+whose period average against the slow momentum vanishes. Beating it against the quiver instead gives $\langle b_z \bar{p}_{\bot w}\rangle = -\alpha \sqrt{\eta} (u_y^2 \bar{y} + i u_x^2 \bar{x})/4\rho$, using $u_- + u_+ = u_y$ and $u_- - u_+ = u_x$. A curved-pole undulator adds a second contribution: its $b_x$ and $b_y$ have no term linear in $\bar{x}$ or $\bar{y}$, but sampled along the quiver excursion $\bar{x}_w$ they leave $\langle \partial_{\bar{x}} b_y\, \bar{x}_w \rangle$ and $\langle b_x \rangle$ terms in $k_x^2$, focusing in $\bar{x}$ and defocusing in $\bar{y}$ - which is what canting the poles is for. Together,
+\begin{align}
+\frac{d \bar{p}_{\bot j}}{d\bar{z}} = -\kappa \alpha^2 \frac{(1 + \eta p_{2j})}{\Gamma_j}
+  \left[ \left( \frac{\sqrt{\eta}\, u_x^2}{4\rho} + \frac{\rho\, u_y^2 k_x^2}{\sqrt{\eta}} \right) \bar{x}_j
+  - i \left( \frac{\sqrt{\eta}\, u_y^2}{4\rho} - \frac{\rho\, u_y k_x^2}{\sqrt{\eta}} \right) \bar{y}_j \right],
+\end{align}
+which reproduces the betatron wavenumbers of the unaveraged solver: $\kappa/\sqrt{2}$ in both planes for a helical undulator, $0$ and $\kappa/\sqrt{2}$ for plane-pole, and $\kappa/2$ in each for curved-pole. The strong-focusing channel of {\bf qFocussing} is already slow and carries through unchanged.
+
+\subsubsection{Diffraction}
+
+The field arrays hold the envelope, so an array Fourier mode at $k_{\bar{z}_2}$ is physically at $k_{\bar{z}_2} - 1/2\rho$, and it is that physical wavenumber which enters the diffraction phase $\exp(i h (k_{\bar{x}}^2 + k_{\bar{y}}^2)/2k_{\bar{z}_2})$, the absorbing boundary, and the {\bf sFiltFrac} high-pass cutoff. Offsetting rather than freezing $k_{\bar{z}_2}$ at the carrier keeps diffraction frequency dependent across the envelope's band. The envelope's own $k_{\bar{z}_2} = 0$ mode is the carrier, and diffracts exactly as it would on a mesh that resolved it. The high-pass filter is then inert in averaged mode, since every representable mode lies within roughly $1/(2\times${\bf lambdarPerCell}$)$ of the carrier and so far above any sensible cutoff; that is the correct behaviour rather than a special case, as a cut placed at envelope $k_{\bar{z}_2} = 0$ would delete the carrier itself.
+
+\subsubsection{What averaged mode refuses}
+
+\label{puff-avg-refuses}
+
+Averaged mode is checked at setup and stops on the inputs it cannot represent, rather than running on them and being quietly wrong. Everything below is enforced in {\tt chkAveraged} ({\tt puffin/lib/setup/checks.f90}) and asserted in {\tt test/testAveraging.pf}.
+
+Rejected outright:
+
+\begin{itemize}
+
+\item {\bf An elliptical undulator.} One envelope is exact only for a helical ($u_+ = 0$) or linearly polarised ($|u_+| = |u_-|$) undulator. A lattice file that switches polarisation between modules is caught separately, in {\tt UndSection}, so a run cannot become elliptical part way through.
+
+\item {\bf lambdarPerCell $\le 0$.}
+
+\item {\bf Resuming from a dump} ({\bf qResume}). A dump written by the unaveraged solver holds a field that resolves the carrier and a $\bar{p}_\bot$ that still contains the quiver; read back in averaged mode those become an envelope and a slow momentum, silently. Nothing in the dump currently records which mode wrote it, so the two cannot be told apart and both are refused - including resuming an averaged run from its own averaged dump, which would itself be valid.
+
+\item {\bf Reading a field from HDF5} ({\bf field\_file}, seed {\bf dtype} $=$ {\it h5}). The stored field resolves the carrier; the averaged mesh holds the envelope about it. Use a {\bf seed\_file}, or demodulate the field first.
+
+\item {\bf Reading macroparticles from HDF5 or MASP} (beam {\bf dtype} $=$ {\it h5}, or MASP input). Their $\bar{p}_\bot$ still carries the undulator quiver, which averaged mode supplies analytically and would therefore double count. Note {\it dist} input is not affected: it supplies distribution moments rather than a quiver-bearing $\bar{p}_\bot$.
+
+\item {\bf A seed frequency outside the envelope band.} The mesh holds roughly $1 \pm 1/(2\times${\bf lambdarPerCell}$)$ of the resonant frequency, so a {\bf freqf} further off than that cannot be stored at all.
+
+\end{itemize}
+
+Warned about, but allowed to run:
+
+\begin{itemize}
+
+\item {\bf A beam energy oscillation} ({\bf mag}) {\bf or energy spread wider than the band.} The resonant wavelength goes as $1/\gamma^2$, so a relative energy offset $\epsilon$ detunes the radiation by $2\epsilon$; beyond the band, part of the beam is outside the single carrier the mode carries. A two-colour case needs more than one carrier and is better run unaveraged.
+
+\item {\bf Fewer than two z2 nodes per MPI rank.} Puffin then tries to duplicate the active field region on every rank instead of slab-decomposing it, and that path is currently broken - for the unaveraged solver too, it simply needs more ranks to reach. Use fewer ranks, a smaller {\bf lambdarPerCell}, or, on a periodic mesh, more {\bf sperwaves}.
+
+\end{itemize}
+
+One further limit is not checked, because it cannot be detected from the input: averaged and unaveraged results are not expected to agree once a run saturates.
+
+A seed's polarisation, on the other hand, does need care. One envelope fixes the ratio of the radiation's two helicity components at $u_+/u_-$, so the seed must be a polarisation the envelope can hold. For a planar undulator $u_+ = u_-$ and a linearly polarised seed is reproduced exactly; for a helical one $u_+ = 0$, the opposite helicity cannot be represented at all, and a linear seed silently loses half its power - correctly, in that the dropped component does not couple to the beam, but surprisingly if one is comparing total field energy against an unaveraged run. Puffin warns at setup when the seed's polarisation is not one the envelope can reproduce, naming the fraction of the seed power that survives.
+
+\subsubsection{What the output files say about the mode}
+
+Every Puffin dump - field, electron and integrated - records in its {\tt /runInfo} group which solver mode wrote it and what its arrays therefore mean, in both modes, so a reader never has to guess or branch on whether the attributes are present:
+
+\begin{itemize}
+\item {\tt qAveraged} - $0$ or $1$.
+\item {\tt kz2Carrier} - the carrier the stored field is an envelope about, so that $A_\bot =$ {\tt aperp}$\,e^{i\,{\tt kz2Carrier}\,\bar{z}_2}$ holds in both modes. It is zero for an unaveraged run, where {\tt aperp} already resolves the carrier and applying the factor is a no-op.
+\item {\tt lambdarPerCell} - the $\bar{z}_2$ cell size in resonant wavelengths, measured from the mesh rather than copied from the input parameter of the same name. Unaveraged that input is meaningless and the true figure is 1/({\bf nodesPerLambdar} $-$ 1); in averaged mode the mesh is rounded to a whole number of nodes, so a deck asking for $2.0$ may get $1.99776$. The attribute is always true about the file it sits in.
+\item {\tt pperpMeaning} - whether the electron $p_x$, $p_y$ columns carry the undulator quiver or only their slow, betatron part.
+\end{itemize}
+
+The plotting utilities in {\tt utilities/pyPlotting/} read these. In averaged mode they label the field as an envelope, plot spectra about the carrier rather than absolutely, and mark the band the envelope mesh can represent; power and intensity are numerically unchanged, since $|\tilde{A}|^2$ is by construction the period average of $|A_\bot|^2$.
+
 \subsection{Full Magnetic Undulator Field Analytic Description}
+
+\label{puff-undfields}
 
 The analytic description of the undulator fields are based on those discussed in \cite{scharlemann1}, which in the scaled notation here are:-
 
@@ -990,7 +1084,11 @@ Length of the periodic mesh, expressed as the number of reference resonant wavel
 
 {\bf nodesPerLambdar}
 
-Number of nodes in the field mesh to use in the longitudinal dimension per reference resonant wavelength. The reference resonant wavelength is defined from the reference energy {\bf sgamma\_r}, the undulator period {\bf lambda\_w} and the base or reference undulator parameter {\bf saw} in the usual way. [17]
+Number of nodes in the field mesh to use in the longitudinal dimension per reference resonant wavelength. The reference resonant wavelength is defined from the reference energy {\bf sgamma\_r}, the undulator period {\bf lambda\_w} and the base or reference undulator parameter {\bf saw} in the usual way. Ignored in the period-averaged mode ({\bf qAveraged}), which uses {\bf lambdarPerCell} instead. [17]
+
+{\bf lambdarPerCell}
+
+Longitudinal field mesh spacing in reference resonant wavelengths, used in place of {\bf nodesPerLambdar} in the period-averaged mode ({\bf qAveraged} $=$ .true.), where the mesh holds an envelope and need not resolve the resonant wavelength. The envelope bandwidth it can represent is roughly $\pm 1/(2\times${\bf lambdarPerCell}$)$ of the resonant frequency. Values of $1$--$2$ are typical. Ignored when {\bf qAveraged} is .false. [1.0]
 
 {\bf sFModelLengthZ2}
 
@@ -1127,6 +1225,10 @@ Logical turning on/off the input of scaled units into Puffin. If {\bf .true.}, i
 
 Logical turning on/off the filtering of low frequency content during the siffraction step. The high-pass filter cut-off is defined by {\bf sFiltFrac}. If true, the low frequency content is set $=0$. If false, the low frequency content is not manipulated/diffracted. [.true.]
 
+{\bf qAveraged}
+
+Logical turning on/off the period-averaged (SVEA) solver mode, described in Section~\ref{puff-avg}. When {\bf .true.}, the field mesh holds the slowly varying envelope of the radiation about the resonant carrier rather than the resolved field, and the electron equations are averaged over an undulator period, with the quiver carried analytically. The mesh no longer has to resolve the resonant wavelength, and is set by {\bf lambdarPerCell}; the step no longer has to resolve the undulator period either, and {\bf stepsPerPeriod} $=1$ or $2$ is usually enough. It is an opt-in alternative to the unaveraged solver for regimes where averaging is valid: it discards coherent spontaneous emission from sharp current gradients, bandwidth beyond the envelope mesh's roughly $\pm 1/(2\times${\bf lambdarPerCell}$)$ of the resonant frequency, harmonics, and electrons far from resonance, for which the ponderomotive phase is no longer slow. Two-colour and strongly tapered cases fall in that last class. 1D and 3D, for helical or linearly polarised undulators; the undulator ends, if modelled, only ramp the coupling. Several inputs are rejected or warned about at setup in this mode, including HDF5 and MASP macroparticle input, HDF5 field input and {\bf qResume} - see Section~\ref{puff-avg-refuses} for the full list and the reasons. [.false.]
+
 {\bf ioutinfo}
 
 Integer. Controls the verbosity of information on the simulation progress written to stdout, from levels $0$ to $3$. $=0$ results in no information being written to standard out, and $3$ gives updates after every single integration step, and some more additional info helful for debugging.
@@ -1178,7 +1280,7 @@ The beam file must contain $2$ namelists. One to choose the method, and the othe
 
 {\bf dtype}
 
-String, specifying type of beam input. Can be either {\it simple}, {\it dist} or {\it h5} (for particle input type)
+String, specifying type of beam input. Can be either {\it simple}, {\it dist} or {\it h5} (for particle input type). In the period-averaged mode ({\bf qAveraged}), {\it h5} and MASP input are rejected, because their $\bar{p}_\bot$ still carries the undulator quiver - see Section~\ref{puff-avg-refuses}.
 
 {\bf nbeams}
 
@@ -1337,7 +1439,7 @@ Please note that the mesh is only imported as is. It is unfortunately not proces
 
 {\bf dtype}
 
-String, specifying type of radiation input. Can be either {\it simple} or {\it h5} (for importing a full mesh)
+String, specifying type of radiation input. Can be either {\it simple} or {\it h5} (for importing a full mesh). In the period-averaged mode ({\bf qAveraged}), {\it h5} is rejected, because the stored field resolves the carrier the averaged mesh holds an envelope about - see Section~\ref{puff-avg-refuses}.
 
 {\bf nseeds}
 
