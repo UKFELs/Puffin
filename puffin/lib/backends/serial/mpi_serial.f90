@@ -131,7 +131,7 @@ contains
     case (MPI_DOUBLE_PRECISION)
       dt_size = 8
     case default
-      write (error_unit, '(a,i0)') &
+      write (error_unit, "(a,i0)") &
         "serial MPI stub: unknown datatype handle ", datatype
       error stop 1
     end select
@@ -149,8 +149,8 @@ contains
 
     character(len=*), intent(in) :: what
 
-    write (error_unit, '(a)') "serial MPI stub: " // trim(what)
-    write (error_unit, '(a)') &
+    write (error_unit, "(a)") "serial MPI stub: " // trim(what)
+    write (error_unit, "(a)") &
       "This build has MPI disabled (-DENABLE_PARALLEL=OFF) and runs on one rank."
     error stop 1
 
