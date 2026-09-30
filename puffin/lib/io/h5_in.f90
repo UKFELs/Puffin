@@ -16,11 +16,12 @@ use paraField, only: fr_rfield, bk_rfield, ac_rfield, fr_ifield, bk_ifield, ac_i
   mainlen, ffs, tlflen, ees, tlelen, qStart_new, getlocalfieldindices
 use HDF5, only: h5aclose_f, h5aopen_f, H5Aopen_name_f, h5aread_f, h5close_f, h5dclose_f, &
   h5Dget_space_f, h5dget_type_f, h5dopen_f, h5dread_f, H5F_ACC_RDONLY_F, h5fclose_F, &
-  H5FD_MPIO_COLLECTIVE_F, h5fopen_f, h5gclose_f, h5gopen_f, h5open_f, H5P_DATASET_XFER_F, &
-  H5P_FILE_ACCESS_F, h5pclose_f, h5pcreate_f, h5pset_dxpl_mpio_f, h5pset_fapl_mpio_f, &
+  h5fopen_f, h5gclose_f, h5gopen_f, h5open_f, H5P_DATASET_XFER_F, H5P_FILE_ACCESS_F, &
+  h5pclose_f, h5pcreate_f, &
   H5S_SELECT_SET_F, h5sclose_f, h5screate_simple_f, h5Sget_simple_extent_dims_f, &
   h5Sget_simple_extent_ndims_f, h5sselect_hyperslab_f, H5T_FLOAT_F, H5T_NATIVE_DOUBLE, &
   H5T_NATIVE_INTEGER, h5tclose_f, h5tcopy_f, h5tget_class_f, HID_T, HSIZE_T
+use puffin_h5_par, only: H5FD_MPIO_COLLECTIVE_F, h5pset_dxpl_mpio_f, h5pset_fapl_mpio_f
 use GlobalTypes, only: tSimulationFlags, tFELFrame
 use mpi, only: MPI_ALLREDUCE, mpi_barrier, MPI_COMM_WORLD, MPI_INFO_NULL, MPI_INTEGER, MPI_SUM
 

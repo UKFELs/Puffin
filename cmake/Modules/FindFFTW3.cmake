@@ -13,6 +13,15 @@
 # ``FFTW3_LIBRARIES``
 #   List of libraries when using FFTW3.
 #
+# Components
+# ^^^^^^^^^^
+#
+# ``MPI``
+#   The distributed-memory transforms, libfftw3_mpi. Request it with
+#   ``find_package(FFTW3 REQUIRED COMPONENTS MPI)``; only then is the
+#   library added to ``FFTW3_LIBRARIES``. A serial Puffin build must not
+#   request it, since linking it would drag MPI back in.
+#
 # Hints
 # ^^^^^
 #
@@ -36,6 +45,12 @@ find_library(FFTW3_MPI_LIBRARY
   PATH_SUFFIXES lib
 )
 
+if(FFTW3_MPI_LIBRARY)
+  set(FFTW3_MPI_FOUND TRUE)
+else()
+  set(FFTW3_MPI_FOUND FALSE)
+endif()
+
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(FFTW3
   REQUIRED_VARS FFTW3_LIBRARY FFTW3_INCLUDE_DIR
@@ -45,7 +60,7 @@ find_package_handle_standard_args(FFTW3
 if(FFTW3_FOUND)
   set(FFTW3_INCLUDE_DIRS ${FFTW3_INCLUDE_DIR})
   set(FFTW3_LIBRARIES ${FFTW3_LIBRARY})
-  if(FFTW3_MPI_LIBRARY)
+  if(FFTW3_MPI_LIBRARY AND "MPI" IN_LIST FFTW3_FIND_COMPONENTS)
     list(APPEND FFTW3_LIBRARIES ${FFTW3_MPI_LIBRARY})
   endif()
 endif()

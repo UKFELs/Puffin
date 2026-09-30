@@ -10,6 +10,22 @@ FILE(GLOB F_LIB_SOURCES lib/*.f90 lib/*/*.f90 ${PROJECT_BINARY_DIR}/puffin/lib/c
 FILE(GLOB F_EXE_SOURCES app/*.f90)
 
 #
+# Exactly one parallelism backend is compiled in. The two directories define
+# the same module names with the same public interfaces - the MPI module
+# Puffin's `use mpi` statements resolve against, the FFTW3 bindings, and the
+# parallel-HDF5 property calls - so which one is chosen is invisible to every
+# other source file. They sit two levels below lib/ so the globs above never
+# pick up both. See doc/SERIAL_BUILD.md.
+#
+if (ENABLE_PARALLEL)
+  FILE(GLOB F_BACKEND_SOURCES lib/backends/mpi/*.f90)
+else()
+  FILE(GLOB F_BACKEND_SOURCES lib/backends/serial/*.f90)
+endif()
+
+list(APPEND F_LIB_SOURCES ${F_BACKEND_SOURCES})
+
+#
 # USE_MKL to be set by user, but actually a flag not just for MKL but for other openMP options
 # Should probably break into USE_MKL and USE_OPENMP
 # Also need to figure out if we gain from ilp64 lib instead of lp64, (also would be ilp64 blacs...)

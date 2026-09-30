@@ -79,8 +79,16 @@ def stage_inputs(workdir: Path) -> None:
 
 
 def run_once(puffin: Path, workdir: Path, deck: str, ranks: int, mpirun: str):
-    """Run one repetition; return (wall_s, undulator_s)."""
-    cmd = [mpirun, "-n", str(ranks), str(puffin), deck]
+    """Run one repetition; return (wall_s, undulator_s).
+
+    ``mpirun`` empty means the executable is a serial build (ENABLE_PARALLEL=OFF)
+    and is launched directly - there is no launcher to go through, and the
+    binary is not linked against MPI at all.
+    """
+    if mpirun:
+        cmd = [mpirun, "-n", str(ranks), str(puffin), deck]
+    else:
+        cmd = [str(puffin), deck]
     env = dict(os.environ)
     # Puffin is built with OpenMP.  Left unset, the OpenMP runtime spawns one
     # thread per core *per MPI rank*, which oversubscribes the machine and makes
@@ -124,6 +132,10 @@ def main() -> int:
     ap.add_argument("--puffin", default=str(SRC_ROOT / "build" / "puffin" / "puffin"),
                     help="path to the puffin executable to benchmark")
     ap.add_argument("--mpirun", default="mpirun", help="MPI launcher to use")
+    ap.add_argument("--serial", action="store_true",
+                    help="the executable is a serial build (ENABLE_PARALLEL=OFF): "
+                         "run it directly rather than through a launcher, and "
+                         "refuse the multi-rank cases")
     ap.add_argument("--reps", type=int, default=3,
                     help="repetitions per case (the minimum is reported)")
     ap.add_argument("--case", action="append", dest="cases", metavar="NAME",
@@ -133,6 +145,10 @@ def main() -> int:
     ap.add_argument("--workdir", help="scratch dir to run in (default: a temp dir)")
     ap.add_argument("--list", action="store_true", help="list cases and exit")
     args = ap.parse_args()
+
+    # An empty launcher is the signal to run_once that there is nothing to
+    # launch through.
+    launcher = "" if args.serial else args.mpirun
 
     if args.list:
         for name, c in CASES.items():
@@ -147,6 +163,11 @@ def main() -> int:
     for name in selected:
         if name not in CASES:
             ap.error(f"unknown case {name!r}; use --list to see the available cases")
+        if not launcher and CASES[name]["ranks"] > 1:
+            ap.error(f"case {name!r} wants {CASES[name]['ranks']} ranks, but no MPI "
+                     f"launcher was given. A serial build can only run the "
+                     f"single-rank cases: "
+                     f"{', '.join(n for n, c in CASES.items() if c['ranks'] == 1)}.")
 
     tmp = None
     if args.workdir:
@@ -166,7 +187,7 @@ def main() -> int:
             print(f"[{name}] {case['desc']}", flush=True)
             for i in range(args.reps):
                 wall, und = run_once(puffin, workdir, case["deck"], case["ranks"],
-                                     args.mpirun)
+                                     launcher)
                 walls.append(wall)
                 unds.append(und)
                 print(f"  rep {i + 1}/{args.reps}: wall {wall:7.3f} s   "

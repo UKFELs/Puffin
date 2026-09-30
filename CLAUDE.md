@@ -34,6 +34,21 @@ HDF5 dumps), and the big tests use an 85x85x5780 field mesh (~9–12GB RAM and
 ~9 min at 6 ranks). Both default to OFF — leave them that way, and only
 configure with them ON when the user explicitly asks for them.
 
+### Serial (non-MPI) builds
+
+`-DENABLE_PARALLEL=OFF` builds an executable that runs directly, with no
+`mpirun` and no MPI, FFTW3-MPI or parallel-HDF5 dependency. It is numerically
+identical to `mpirun -n 1` of the parallel build. The switch works by compiling
+one of `puffin/lib/backends/mpi/` or `puffin/lib/backends/serial/`, which define
+the same module names (`mpi`, `puffin_fftw3`, `puffin_h5_par`) with one-rank
+semantics — no call site in the physics, setup or IO code differs between the
+two modes, and there are no preprocessor conditionals. When adding a new MPI
+call, add its one-rank meaning to `backends/serial/mpi_serial.f90` too, or the
+serial build stops compiling. See `doc/SERIAL_BUILD.md`.
+
+A serial build runs `puffin_basic_tests` and `puffin_e2e_tests_serial`; the
+`@mpitest` suites are built only for a parallel configure.
+
 ### Sandboxed test runs
 
 The MPI-based e2e test targets can spuriously segfault or report "insufficient

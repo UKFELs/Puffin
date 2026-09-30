@@ -176,33 +176,47 @@ add_pfunit_ctest (puffin_basic_tests
   LINK_LIBRARIES puffin_mpi
 )
 
+# The integration suites below are declared @mpitest(npes=[2]), so they need a
+# real MPI to launch under. A serial build (-DENABLE_PARALLEL=OFF) gets
+# puffin_e2e_tests_serial instead, which drives the same 1D deck in-process on
+# one rank. See doc/SERIAL_BUILD.md.
+if (ENABLE_PARALLEL)
 
-add_pfunit_ctest (puffin_e2e_tests
-  TEST_SOURCES testMPIIntegration.pf
-  LINK_LIBRARIES puffin_mpi
-  MAX_PES 2
-)
+  add_pfunit_ctest (puffin_e2e_tests
+    TEST_SOURCES testMPIIntegration.pf
+    LINK_LIBRARIES puffin_mpi
+    MAX_PES 2
+  )
 
-# As with the 3D test, its own binary so puffin's global allocatables are clean
-add_pfunit_ctest (puffin_e2e_tests_1d_taper
-  TEST_SOURCES testMPIIntegration1DTaper.pf
-  LINK_LIBRARIES puffin_mpi
-  MAX_PES 2
-)
+  # As with the 3D test, its own binary so puffin's global allocatables are clean
+  add_pfunit_ctest (puffin_e2e_tests_1d_taper
+    TEST_SOURCES testMPIIntegration1DTaper.pf
+    LINK_LIBRARIES puffin_mpi
+    MAX_PES 2
+  )
 
-# 3D test gets its own binary so puffin's global allocatables are clean
-add_pfunit_ctest (puffin_e2e_tests_3d
-  TEST_SOURCES testMPIIntegration3D.pf
-  LINK_LIBRARIES puffin_mpi
-  MAX_PES 2
-)
+  # 3D test gets its own binary so puffin's global allocatables are clean
+  add_pfunit_ctest (puffin_e2e_tests_3d
+    TEST_SOURCES testMPIIntegration3D.pf
+    LINK_LIBRARIES puffin_mpi
+    MAX_PES 2
+  )
+
+else()
+
+  add_pfunit_ctest (puffin_e2e_tests_serial
+    TEST_SOURCES testSerialIntegration.pf
+    LINK_LIBRARIES puffin_mpi
+  )
+
+endif()
 
 
 
 # Slow full-lattice 3D test — gated by CMake option, not run by default
 option(PUFFIN_SLOW_TESTS "Build slow integration tests (full CLARA 17-module lattice, ~30s and ~750 HDF5 dumps)" OFF)
 
-if(PUFFIN_SLOW_TESTS)
+if(PUFFIN_SLOW_TESTS AND ENABLE_PARALLEL)
 
   configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/inputs/3D/clara_full.in"
@@ -285,7 +299,7 @@ endif()
 option(PUFFIN_BIG_TESTS "Build big integration tests (85x85x5780 field mesh, ~9-12GB RAM and ~9 min at 6 ranks)" OFF)
 set(PUFFIN_BIG_TEST_PES 6 CACHE STRING "MPI ranks used by the big 3D integration test")
 
-if(PUFFIN_BIG_TESTS)
+if(PUFFIN_BIG_TESTS AND ENABLE_PARALLEL)
 
   configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/inputs/3D/shcse_big.in"
@@ -350,6 +364,17 @@ if(PUFFIN_BIG_TESTS)
   add_executable(harvest_big_reference harvest_big_reference.f90)
   target_link_libraries(harvest_big_reference puffin_mpi)
 
+endif()
+
+# Both gated suites are declared @mpitest, so a serial build cannot run them
+# even when the option is on. Say so rather than silently building nothing.
+if (NOT ENABLE_PARALLEL)
+  if (PUFFIN_SLOW_TESTS)
+    message(STATUS "PUFFIN_SLOW_TESTS ignored: the slow suite is @mpitest and needs ENABLE_PARALLEL=ON")
+  endif()
+  if (PUFFIN_BIG_TESTS)
+    message(STATUS "PUFFIN_BIG_TESTS ignored: the big suite is @mpitest and needs ENABLE_PARALLEL=ON")
+  endif()
 endif()
 
 # ^^ For examples of adding more tests, see:

@@ -5,17 +5,19 @@
 module puffin_fftwInfo
 
    use puffin_kinds, only: ip
-   use, intrinsic :: iso_c_binding, only: C_CHAR, C_DOUBLE, C_DOUBLE_COMPLEX, &
-     C_FLOAT, C_FLOAT_COMPLEX, C_FUNPTR, C_INT, C_INT32_T, C_INTPTR_T, C_PTR, C_SIZE_T
+!  The FFTW3 bindings come from a build-mode-specific backend: the real
+!  FFTW3-MPI interface for a parallel build, or plain FFTW3 plus one-rank
+!  fftw_mpi_* shims for a serial one. See puffin/lib/backends.
+   use puffin_fftw3, only: fftw_alloc_complex, FFTW_BACKWARD, fftw_destroy_plan, &
+     FFTW_ESTIMATE, FFTW_FORWARD, fftw_free, FFTW_MEASURE, fftw_mpi_execute_dft, &
+     fftw_mpi_init, fftw_mpi_local_size_3d, fftw_mpi_plan_dft_3d
+   use, intrinsic :: iso_c_binding, only: C_INTPTR_T, C_PTR
    implicit none (type, external)
 private
 
 public :: fftw_alloc_complex, FFTW_BACKWARD, fftw_destroy_plan, FFTW_ESTIMATE, FFTW_FORWARD, &
            fftw_free, FFTW_MEASURE, fftw_mpi_execute_dft, fftw_mpi_init, fftw_mpi_local_size_3d, &
            fftw_mpi_plan_dft_3d, tTransInfo_G
-
-
-   include 'fftw3-mpi.f03'
 
 !-----------------------------------------------------------------
 ! Author - Lawrence Campbell
