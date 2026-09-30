@@ -535,7 +535,7 @@ contains
       CALL h5open_f(error)
       CALL h5fopen_f(filename, H5F_ACC_RDONLY_F, file_id, error)
       CALL h5dopen_f(file_id, dsetName, dset_id, error)
-      dsize = (/INT(nLen, HSIZE_T)/)
+      dsize = [INT(nLen, HSIZE_T)]
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, data, dsize, error)
       CALL h5dclose_f(dset_id, error)
       CALL h5fclose_f(file_id, error)

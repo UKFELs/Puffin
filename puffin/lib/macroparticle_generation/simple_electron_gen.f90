@@ -683,8 +683,9 @@ SUBROUTINE genBeam(iNMP, iNMP_loc, sigE, alphax, betax, alphay, betay, &
       deallocate(nktemp, z2base)
 
       ! add noise in z2
-      if (q_noise .and. (iNMP_loc(iZ2_CG) > 0_ip)) &
+      if (q_noise .and. (iNMP_loc(iZ2_CG) > 0_ip)) then
         call applyNoise(z2_tmpcoord, sz2_grid(2) - sz2_grid(1), s_tmp_macro)
+      end if
 
   end if
 

@@ -110,9 +110,9 @@ contains
     call getAvgUndAmps(ctx%und%undulator_type, ctx%und%fx, ctx%und%fy, cx, cy)
 
     if (.not. qAvgPolarisationOK(cx, cy)) then
-      if (tProcInfo_G%qRoot) print*, 'Averaged mode (qAveraged) needs a helical or ', &
-                                     'linearly polarised undulator - module ', iM, &
-                                     ' has ux, uy = ', cx, cy
+      if (tProcInfo_G%qRoot) print*, "Averaged mode (qAveraged) needs a helical or ", &
+                                     "linearly polarised undulator - module ", iM, &
+                                     " has ux, uy = ", cx, cy
       call mpi_finalize(error)
       stop
     end if
@@ -137,8 +137,9 @@ contains
 !   In averaged mode pperp holds only its slow part, so the beam is not given
 !   the undulator's quiver momentum on entry (nor has it removed on exit).
 
-    if ((.not. ctx%und%model_undulator_ends) .and. (.not. ctx%flags%period_averaged)) &
+    if ((.not. ctx%und%model_undulator_ends) .and. (.not. ctx%flags%period_averaged)) then
       call matchIn(szl, ctx%frame, ctx%und%n2col)
+    end if
 
   end if
 
@@ -406,8 +407,9 @@ end if
 
   end if
 
-  if ((.not. ctx%und%model_undulator_ends) .and. (.not. ctx%flags%period_averaged)) &
+  if ((.not. ctx%und%model_undulator_ends) .and. (.not. ctx%flags%period_averaged)) then
     call matchOut(sZ, ctx%frame, ctx%und%n2col)
+  end if
 
   call correctTrans()  ! correct transverse motion at undulator exit
 

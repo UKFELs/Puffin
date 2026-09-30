@@ -245,9 +245,11 @@ contains
 ! before the flags are populated.
 
   if (present(pqSq)) then
-    call calcBuff(4 * pi * frame%rho * sdz, frame%eta, frame%gamma_ref, frame%aw, pqSq)  ! Calculate buffers
+    call calcBuff(4 * pi * frame%rho * sdz, frame%eta, frame%gamma_ref, &
+                  frame%aw, pqSq)  ! Calculate buffers
   else
-    call calcBuff(4 * pi * frame%rho * sdz, frame%eta, frame%gamma_ref, frame%aw)  ! Calculate buffers
+    call calcBuff(4 * pi * frame%rho * sdz, frame%eta, frame%gamma_ref, &
+                  frame%aw)  ! Calculate buffers
   end if
 
   call getFrBk()  ! Get surrounding nodes

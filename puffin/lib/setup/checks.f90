@@ -515,14 +515,14 @@ subroutine chkAveraged(f_x, f_y, qResume, nz2, freqf, sSigE, mag, qOK)
   call getAvgUndAmps("", f_x, f_y, cx, cy)
 
   if (.not. qAvgPolarisationOK(cx, cy)) then
-    call log_error('Averaged mode (qAveraged) needs a helical or linearly '// &
-                   'polarised undulator: one field envelope cannot represent '// &
-                   'elliptical polarisation.', tErrorLog_G)
+    call log_error("Averaged mode (qAveraged) needs a helical or linearly "// &
+                   "polarised undulator: one field envelope cannot represent "// &
+                   "elliptical polarisation.", tErrorLog_G)
     qOK = .false.
   end if
 
   if (sLambdarPerCell_G <= 0.0_wp) then
-    call log_error('lambdarPerCell must be > 0 in averaged mode.', tErrorLog_G)
+    call log_error("lambdarPerCell must be > 0 in averaged mode.", tErrorLog_G)
     qOK = .false.
     return          ! band below is meaningless without it
   end if
@@ -530,26 +530,26 @@ subroutine chkAveraged(f_x, f_y, qResume, nz2, freqf, sSigE, mag, qOK)
 !     Inputs the mode cannot represent
 
   if (qResume) then
-    call log_error('Averaged mode (qAveraged) cannot resume from a dump '// &
-                   '(qResume): the dumps carry no record of which solver mode '// &
-                   'wrote them, so a resolved field and a quiver-carrying '// &
-                   'pperp would be read back as an envelope and a slow '// &
-                   'momentum.', tErrorLog_G)
+    call log_error("Averaged mode (qAveraged) cannot resume from a dump "// &
+                   "(qResume): the dumps carry no record of which solver mode "// &
+                   "wrote them, so a resolved field and a quiver-carrying "// &
+                   "pperp would be read back as an envelope and a slow "// &
+                   "momentum.", tErrorLog_G)
     qOK = .false.
   end if
 
   if (iFieldSeedType_G == iReadH5Field_G) then
-    call log_error('Averaged mode (qAveraged) cannot read a field from HDF5 '// &
-                   '(field_file): the stored field resolves the carrier, and '// &
-                   'the averaged mesh holds the envelope about it. Use a '// &
-                   'seed_file, or demodulate the field first.', tErrorLog_G)
+    call log_error("Averaged mode (qAveraged) cannot read a field from HDF5 "// &
+                   "(field_file): the stored field resolves the carrier, and "// &
+                   "the averaged mesh holds the envelope about it. Use a "// &
+                   "seed_file, or demodulate the field first.", tErrorLog_G)
     qOK = .false.
   end if
 
   if ((iInputType_G == iReadH5_G) .or. (iInputType_G == iReadMASP_G)) then
-    call log_error('Averaged mode (qAveraged) cannot read macroparticles from '// &
-                   'HDF5 or MASP: their pperp still carries the undulator '// &
-                   'quiver, and averaged mode expects only its slow part.', &
+    call log_error("Averaged mode (qAveraged) cannot read macroparticles from "// &
+                   "HDF5 or MASP: their pperp still carries the undulator "// &
+                   "quiver, and averaged mode expects only its slow part.", &
                    tErrorLog_G)
     qOK = .false.
   end if
@@ -560,10 +560,10 @@ subroutine chkAveraged(f_x, f_y, qResume, nz2, freqf, sSigE, mag, qOK)
 
   do i = 1, size(freqf)
     if (abs(freqf(i) - 1.0_wp) > band) then
-      call log_error('A seed frequency (freqf) lies outside the band the '// &
-                     'averaged field mesh can represent, roughly '// &
-                     '1 +/- 1/(2 lambdarPerCell). Lower lambdarPerCell, or '// &
-                     'do not use averaged mode for this seed.', tErrorLog_G)
+      call log_error("A seed frequency (freqf) lies outside the band the "// &
+                     "averaged field mesh can represent, roughly "// &
+                     "1 +/- 1/(2 lambdarPerCell). Lower lambdarPerCell, or "// &
+                     "do not use averaged mode for this seed.", tErrorLog_G)
       qOK = .false.
     end if
   end do
@@ -583,13 +583,13 @@ subroutine chkAveraged(f_x, f_y, qResume, nz2, freqf, sSigE, mag, qOK)
 
   if ((fieldMesh == iPeriodic) .and. &
       (nz2 < 2_ip * int(tProcInfo_G%size, kind=ip))) then
-    print*, 'WARNING: this periodic field mesh has', nz2, 'nodes in z2, fewer ', &
-            'than 2 per rank, so Puffin duplicates it on every rank rather ', &
-            'than slab-decomposing it. On a PERIODIC mesh that path is known ', &
-            'to fail, and to corrupt the power output before it does; it ', &
-            'fails unaveraged too, just at more ranks. Use fewer ranks, a ', &
-            'smaller lambdarPerCell, or more sperwaves. Temporal meshes take ', &
-            'the same path correctly and are not affected.'
+    print*, "WARNING: this periodic field mesh has", nz2, "nodes in z2, fewer ", &
+            "than 2 per rank, so Puffin duplicates it on every rank rather ", &
+            "than slab-decomposing it. On a PERIODIC mesh that path is known ", &
+            "to fail, and to corrupt the power output before it does; it ", &
+            "fails unaveraged too, just at more ranks. Use fewer ranks, a ", &
+            "smaller lambdarPerCell, or more sperwaves. Temporal meshes take ", &
+            "the same path correctly and are not affected."
   end if
 
   do i = 1, size(mag)
@@ -598,14 +598,14 @@ subroutine chkAveraged(f_x, f_y, qResume, nz2, freqf, sSigE, mag, qOK)
 !   e detunes the radiation by 2e.
 
     if (2.0_wp * abs(mag(i)) > band) then
-      print*, 'WARNING: beam ', i, ' has an energy oscillation (mag) that ', &
-              'detunes it by more than the averaged mesh band - a two-colour ', &
-              'case needs more than the one carrier averaged mode has.'
+      print*, "WARNING: beam ", i, " has an energy oscillation (mag) that ", &
+              "detunes it by more than the averaged mesh band - a two-colour ", &
+              "case needs more than the one carrier averaged mode has."
     end if
 
     if (2.0_wp * abs(sSigE(i, iGam_CG)) > band) then
-      print*, 'WARNING: beam ', i, ' has an energy spread wider than the ', &
-              'averaged mesh band; its tails are out of band.'
+      print*, "WARNING: beam ", i, " has an energy spread wider than the ", &
+              "averaged mesh band; its tails are out of band."
     end if
 
   end do
