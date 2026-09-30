@@ -31,12 +31,16 @@ committed test decks:
 | `test/inputs/f1main.in` (1D) | field, electrons and integrated data bit-exact |
 | `test/inputs/1D/osc_taper.in` (1D, periodic mesh, 5 modules) | field and electrons bit-exact |
 | `test/inputs/3D/clara_test.in` (3D, periodic mesh, diffraction) | electrons bit-exact; field agrees to 4e-15 relative |
+| `benchmark/averaged/deck.in` (1D, period-averaged) | field and electrons bit-exact |
+| `benchmark/averaged/deck3d.in` (3D, period-averaged, diffraction) | field and electrons agree to 1e-15 |
 
-The 3D field is not bit-exact because FFTW's serial planner and its MPI planner
-pick different codelets for the same transform, and so sum in a different order.
-The residual is a few ULP - max absolute difference 5.3e-18 against a field
-maximum of 1.3e-3 - which is four orders of magnitude inside the 1e-10 tolerance
-the E2E tests use.
+Wherever a 3D field is not bit-exact it is because FFTW's serial planner and its
+MPI planner pick different codelets for the same transform, and so sum in a
+different order. The residual is a few ULP - on `clara_test.in`, a maximum
+absolute difference of 5.3e-18 against a field maximum of 1.3e-3 - which is four
+orders of magnitude inside the 1e-10 tolerance the E2E tests use. In a 3D run
+long enough for diffraction to feed that back into the beam, the electrons pick
+up a difference of the same order, as they do on `deck3d.in` above.
 
 Note that a one-rank run is not in general bit-identical to a two-rank run of
 the same deck, in either build mode: reductions sum in a different order, and
@@ -126,7 +130,8 @@ if that matters. CMake says so at configure time.
 
 `ctest` on a serial build runs:
 
-- `puffin_basic_tests` - the same unit tests as the parallel build.
+- `puffin_basic_tests` - the same unit tests as the parallel build, all 28 of
+  them, including the period-averaged mode's `testAveraging.pf`.
 - `puffin_e2e_tests_serial` - `test/testSerialIntegration.pf`, which runs the
   full 1D `f1main` deck in-process and checks it against the same golden files
   the parallel integration test uses. Those references were captured from a
