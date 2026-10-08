@@ -80,20 +80,30 @@ end type tFieldMesh
 !     Flat 1D indexing throughout: (iz - fz2)*ntrnds_G + transverse_index.
 ! ============================================================================
 type :: tFieldValues
+    ! --- How many field components the arrays below carry ------------------
+    ! 1 unaveraged, where the single complex pair (ac_r, ac_i) already means
+    ! (A_x, -A_y) and so holds both polarisations. In averaged mode a complex
+    ! pair is one envelope of one polarisation state, so polarisation needs a
+    ! component per linear axis: nComp = 2, component 1 = x, component 2 = y.
+    ! Set once at setup; every allocation below uses it.
+    integer(kind=ip) :: nComp = 1_ip
+
     ! --- Active slab: the region this rank integrates ---------------------
-    ! Length tllen*ntrnds_G, where tllen = bz2 - fz2 + 1 includes a slippage
-    ! buffer past ez2. mainlen is the buffer-free part the rank owns for output.
-    real(kind=wp), allocatable :: ac_r(:), ac_i(:)      ! ac_rfield, ac_ifield
+    ! Indexed (node, component). Node extent tllen*ntrnds_G, where
+    ! tllen = bz2 - fz2 + 1 includes a slippage buffer past ez2. mainlen is the
+    ! buffer-free part the rank owns for output.
+    real(kind=wp), allocatable :: ac_r(:,:), ac_i(:,:)      ! ac_rfield, ac_ifield
 
     ! --- Carried regions: field ahead of / behind the bunch ----------------
-    ! Not integrated, only transported. Lengths tlflen, tlelen; often zero.
-    real(kind=wp), allocatable :: fr_r(:), fr_i(:)      ! fr_rfield, fr_ifield
-    real(kind=wp), allocatable :: bk_r(:), bk_i(:)      ! bk_rfield, bk_ifield
+    ! Not integrated, only transported. Node extents tlflen, tlelen; often zero.
+    real(kind=wp), allocatable :: fr_r(:,:), fr_i(:,:)      ! fr_rfield, fr_ifield
+    real(kind=wp), allocatable :: bk_r(:,:), bk_i(:,:)      ! bk_rfield, bk_ifield
 
     ! --- Transposition buffers in FFTW slab layout -------------------------
     ! Hold all three regions. Filled by redist2FFTWlt, scattered back by
-    ! redistbackFFT, consumed by diffraction.f90.
-    real(kind=wp), allocatable :: tre_fft(:), tim_fft(:)
+    ! redistbackFFT, consumed by diffraction.f90. Each component diffracts
+    ! independently under the same operator.
+    real(kind=wp), allocatable :: tre_fft(:,:), tim_fft(:,:)
 
     ! --- Decomposition: inseparable from the arrays above ------------------
     ! Active slab bounds and lengths

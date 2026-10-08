@@ -53,19 +53,43 @@ contains
       type(tFieldValues), intent(in) :: field  !< Field data and its decomposition
       real(kind=wp), allocatable :: fr_power(:), &  !< Power in 'front' field section
          bk_power(:), &  !< Power in 'back' field section
-         ac_power(:)     !< Power in 'active' field section
+         ac_power(:), &  !< Power in 'active' field section
+         pow_c(:)        !< One component's contribution
+
+      integer(kind=ip) :: ic
 
       allocate(ac_power(field%mainlen), fr_power(field%tlflen4arr), bk_power(field%tlelen4arr))
 
-      if ((field%ffe_GGG > 0) .and. (field%tlflen > 0) ) then
-         call gPower(field%fr_r, field%fr_i, fr_power)
-      end if
+!     Total power is summed over field components: |A_x|^2 + |A_y|^2. With one
+!     component this adds an exact zero and is bit-identical to assigning.
 
-      call gPower(field%ac_r(1:field%mainlen*ntrnds_G), field%ac_i(1:field%mainlen*ntrnds_G), ac_power)
+      fr_power = 0.0_wp
+      ac_power = 0.0_wp
+      bk_power = 0.0_wp
 
-      if ((field%ees_GGG < nz2_G) .and. (field%tlelen > 0) ) then
-         call gPower(field%bk_r, field%bk_i, bk_power)
-      end if
+      do ic = 1, field%nComp
+
+        if ((field%ffe_GGG > 0) .and. (field%tlflen > 0) ) then
+           allocate(pow_c(field%tlflen4arr))
+           call gPower(field%fr_r(:,ic), field%fr_i(:,ic), pow_c)
+           fr_power = fr_power + pow_c
+           deallocate(pow_c)
+        end if
+
+        allocate(pow_c(field%mainlen))
+        call gPower(field%ac_r(1:field%mainlen*ntrnds_G, ic), &
+                    field%ac_i(1:field%mainlen*ntrnds_G, ic), pow_c)
+        ac_power = ac_power + pow_c
+        deallocate(pow_c)
+
+        if ((field%ees_GGG < nz2_G) .and. (field%tlelen > 0) ) then
+           allocate(pow_c(field%tlelen4arr))
+           call gPower(field%bk_r(:,ic), field%bk_i(:,ic), pow_c)
+           bk_power = bk_power + pow_c
+           deallocate(pow_c)
+        end if
+
+      end do
 
       call UpdateGlobalPow(fr_power, ac_power, bk_power, power, field)
 

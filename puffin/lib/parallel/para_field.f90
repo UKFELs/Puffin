@@ -98,12 +98,14 @@ contains
     type(tFieldValues), intent(inout) :: field
     real(kind=wp), intent(in), optional :: pqSq   ! passed in averaged mode only - see calcBuff
 
-    real(kind=wp), allocatable :: fr_rfield_old(:), &
-                                  fr_ifield_old(:), &
-                                  bk_rfield_old(:), &
-                                  bk_ifield_old(:), &
-                                  ac_rfield_old(:), &
-                                  ac_ifield_old(:)
+    real(kind=wp), allocatable :: fr_rfield_old(:,:), &
+                                  fr_ifield_old(:,:), &
+                                  bk_rfield_old(:,:), &
+                                  bk_ifield_old(:,:), &
+                                  ac_rfield_old(:,:), &
+                                  ac_ifield_old(:,:)
+
+    integer(kind=ip) :: ic   ! field component
 
     integer(kind=ip) :: ij
     integer(kind=ip) :: gath_v
@@ -165,13 +167,13 @@ contains
       call setupLayoutArrs(field%tlelen, field%ees, field%eee, field%ee_ar)
 
 
-      allocate(field%fr_r(field%tlflen4arr*ntrnds_G), &
-                 field%fr_i(field%tlflen4arr*ntrnds_G))
-      allocate(field%bk_r(field%tlelen4arr*ntrnds_G), &
-               field%bk_i(field%tlelen4arr*ntrnds_G))
+      allocate(field%fr_r(field%tlflen4arr*ntrnds_G, field%nComp), &
+                 field%fr_i(field%tlflen4arr*ntrnds_G, field%nComp))
+      allocate(field%bk_r(field%tlelen4arr*ntrnds_G, field%nComp), &
+               field%bk_i(field%tlelen4arr*ntrnds_G, field%nComp))
 
-      allocate(field%ac_r(field%mainlen*ntrnds_G), &
-               field%ac_i(field%mainlen*ntrnds_G))
+      allocate(field%ac_r(field%mainlen*ntrnds_G, field%nComp), &
+               field%ac_i(field%mainlen*ntrnds_G, field%nComp))
 
 
       field%ac_r = 0_wp
@@ -251,9 +253,12 @@ contains
 
 
 
-  allocate(fr_rfield_old(size(field%fr_r)), fr_ifield_old(size(field%fr_i)))
-  allocate(bk_rfield_old(size(field%bk_r)), bk_ifield_old(size(field%bk_i)))
-  allocate(ac_rfield_old(size(field%ac_r)), ac_ifield_old(size(field%ac_i)))
+  allocate(fr_rfield_old(size(field%fr_r,1), field%nComp), &
+           fr_ifield_old(size(field%fr_i,1), field%nComp))
+  allocate(bk_rfield_old(size(field%bk_r,1), field%nComp), &
+           bk_ifield_old(size(field%bk_i,1), field%nComp))
+  allocate(ac_rfield_old(size(field%ac_r,1), field%nComp), &
+           ac_ifield_old(size(field%ac_i,1), field%nComp))
 
   fr_rfield_old = field%fr_r
   fr_ifield_old = field%fr_i
@@ -266,12 +271,12 @@ contains
   deallocate(field%fr_r, field%fr_i)
   deallocate(field%bk_r, field%bk_i)
 
-  allocate(field%fr_r(field%tlflen4arr*ntrnds_G), &
-           field%fr_i(field%tlflen4arr*ntrnds_G))
-  allocate(field%bk_r(field%tlelen4arr*ntrnds_G), &
-           field%bk_i(field%tlelen4arr*ntrnds_G))
-  allocate(field%ac_r(field%tllen*ntrnds_G), &
-           field%ac_i(field%tllen*ntrnds_G))
+  allocate(field%fr_r(field%tlflen4arr*ntrnds_G, field%nComp), &
+           field%fr_i(field%tlflen4arr*ntrnds_G, field%nComp))
+  allocate(field%bk_r(field%tlelen4arr*ntrnds_G, field%nComp), &
+           field%bk_i(field%tlelen4arr*ntrnds_G, field%nComp))
+  allocate(field%ac_r(field%tllen*ntrnds_G, field%nComp), &
+           field%ac_i(field%tllen*ntrnds_G, field%nComp))
 
   field%ac_r = 0_wp
   field%ac_i = 0_wp
@@ -282,28 +287,32 @@ contains
   field%fr_i = 0_wp
 
 
-  call redist2new2(ff_ar_old, field%ff_ar, fr_rfield_old, field%fr_r)
-  call redist2new2(ff_ar_old, field%ff_ar, fr_ifield_old, field%fr_i)
+! Each component redistributes independently, under the same layout tables.
 
-  call redist2new2(ee_ar_old, field%ff_ar, bk_rfield_old, field%fr_r)
-  call redist2new2(ee_ar_old, field%ff_ar, bk_ifield_old, field%fr_i)
+  do ic = 1, field%nComp
 
-  call redist2new2(ac_ar_old, field%ff_ar, ac_rfield_old, field%fr_r)
-  call redist2new2(ac_ar_old, field%ff_ar, ac_ifield_old, field%fr_i)
+  call redist2new2(ff_ar_old, field%ff_ar, fr_rfield_old(:,ic), field%fr_r(:,ic))
+  call redist2new2(ff_ar_old, field%ff_ar, fr_ifield_old(:,ic), field%fr_i(:,ic))
 
+  call redist2new2(ee_ar_old, field%ff_ar, bk_rfield_old(:,ic), field%fr_r(:,ic))
+  call redist2new2(ee_ar_old, field%ff_ar, bk_ifield_old(:,ic), field%fr_i(:,ic))
 
-
-
-
-  call redist2new2(ff_ar_old, field%ee_ar, fr_rfield_old, field%bk_r)
-  call redist2new2(ff_ar_old, field%ee_ar, fr_ifield_old, field%bk_i)
-
-  call redist2new2(ee_ar_old, field%ee_ar, bk_rfield_old, field%bk_r)
-  call redist2new2(ee_ar_old, field%ee_ar, bk_ifield_old, field%bk_i)
+  call redist2new2(ac_ar_old, field%ff_ar, ac_rfield_old(:,ic), field%fr_r(:,ic))
+  call redist2new2(ac_ar_old, field%ff_ar, ac_ifield_old(:,ic), field%fr_i(:,ic))
 
 
-  call redist2new2(ac_ar_old, field%ee_ar, ac_rfield_old, field%bk_r)
-  call redist2new2(ac_ar_old, field%ee_ar, ac_ifield_old, field%bk_i)
+
+
+
+  call redist2new2(ff_ar_old, field%ee_ar, fr_rfield_old(:,ic), field%bk_r(:,ic))
+  call redist2new2(ff_ar_old, field%ee_ar, fr_ifield_old(:,ic), field%bk_i(:,ic))
+
+  call redist2new2(ee_ar_old, field%ee_ar, bk_rfield_old(:,ic), field%bk_r(:,ic))
+  call redist2new2(ee_ar_old, field%ee_ar, bk_ifield_old(:,ic), field%bk_i(:,ic))
+
+
+  call redist2new2(ac_ar_old, field%ee_ar, ac_rfield_old(:,ic), field%bk_r(:,ic))
+  call redist2new2(ac_ar_old, field%ee_ar, ac_ifield_old(:,ic), field%bk_i(:,ic))
 
 !  call mpi_finalize(error)
 !  stop
@@ -312,14 +321,16 @@ contains
 
 
 
-  call redist2new2(ff_ar_old, field%ac_ar, fr_rfield_old, field%ac_r)
-  call redist2new2(ff_ar_old, field%ac_ar, fr_ifield_old, field%ac_i)
+  call redist2new2(ff_ar_old, field%ac_ar, fr_rfield_old(:,ic), field%ac_r(:,ic))
+  call redist2new2(ff_ar_old, field%ac_ar, fr_ifield_old(:,ic), field%ac_i(:,ic))
 
-  call redist2new2(ee_ar_old, field%ac_ar, bk_rfield_old, field%ac_r)
-  call redist2new2(ee_ar_old, field%ac_ar, bk_ifield_old, field%ac_i)
+  call redist2new2(ee_ar_old, field%ac_ar, bk_rfield_old(:,ic), field%ac_r(:,ic))
+  call redist2new2(ee_ar_old, field%ac_ar, bk_ifield_old(:,ic), field%ac_i(:,ic))
 
-  call redist2new2(ac_ar_old, field%ac_ar, ac_rfield_old, field%ac_r)
-  call redist2new2(ac_ar_old, field%ac_ar, ac_ifield_old, field%ac_i)
+  call redist2new2(ac_ar_old, field%ac_ar, ac_rfield_old(:,ic), field%ac_r(:,ic))
+  call redist2new2(ac_ar_old, field%ac_ar, ac_ifield_old(:,ic), field%ac_i(:,ic))
+
+  end do
 
 
 
@@ -973,7 +984,7 @@ contains
       type(tFieldValues), intent(inout) :: field
 
       integer :: req, error
-      integer(kind=ip) :: si, sst, sse
+      integer(kind=ip) :: si, sst, sse, ic
       integer :: statr(MPI_STATUS_SIZE)
       integer :: sendstat(MPI_STATUS_SIZE)
 
@@ -985,9 +996,13 @@ contains
           sst = ((field%tllen - (field%bz2PB + 1_ip) ) * ntrnds_G) + 1_ip
           sse = field%tllen * ntrnds_G
 
+!         One wraparound exchange per field component.
+
+          do ic = 1, field%nComp
+
           if (tProcInfo_G%rank == 0_ip) then
 
-            call mpi_issend(field%ac_r(1:si), si, mpi_double_precision, &
+            call mpi_issend(field%ac_r(1:si,ic), si, mpi_double_precision, &
                             tProcInfo_G%size-1_ip, 0, &
                             tProcInfo_G%comm, req, error)
 
@@ -997,7 +1012,7 @@ contains
 
           if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
 
-            call mpi_recv( field%ac_r(sst:sse), si, mpi_double_precision, &
+            call mpi_recv( field%ac_r(sst:sse,ic), si, mpi_double_precision, &
                      0, 0, tProcInfo_G%comm, statr, error )
 
           end if
@@ -1006,7 +1021,7 @@ contains
           if (tProcInfo_G%rank == 0_ip) then
 
             call mpi_wait( req,sendstat,error )
-            call mpi_issend(field%ac_i(1:si), si, mpi_double_precision, &
+            call mpi_issend(field%ac_i(1:si,ic), si, mpi_double_precision, &
                             tProcInfo_G%size-1_ip, 0, &
                             tProcInfo_G%comm, req, error)
 
@@ -1015,7 +1030,7 @@ contains
 
           if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
 
-            call mpi_recv( field%ac_i(sst:sse), si, mpi_double_precision, &
+            call mpi_recv( field%ac_i(sst:sse,ic), si, mpi_double_precision, &
                      0, 0, tProcInfo_G%comm, statr, error )
 
           end if
@@ -1026,6 +1041,8 @@ contains
             call mpi_wait( req,sendstat,error )
 
           end if
+
+          end do
 
         end if
 
@@ -1262,13 +1279,14 @@ contains
 
 
 
-  subroutine inner2Outer(inner_ra, inner_ia, field)
+  subroutine inner2Outer(inner_ra, inner_ia, field, ic)
 
 
     implicit none (type, external)
 
     real(kind=wp), contiguous, intent(in) :: inner_ra(:), inner_ia(:)
     type(tFieldValues), intent(inout) :: field
+    integer(kind=ip), intent(in) :: ic   ! which field component
 
     integer(kind=ip) :: iz, ssti, ssei, iy, sst, sse
     integer(kind=ip) :: nxout, nyout ! should be made global and calculated
@@ -1291,8 +1309,8 @@ contains
                          nspinDX*(iy-1) + 1
         ssei = ssti + nspinDX - 1
 
-        field%ac_r(sst:sse) = inner_ra(ssti:ssei)
-        field%ac_i(sst:sse) = inner_ia(ssti:ssei)
+        field%ac_r(sst:sse,ic) = inner_ra(ssti:ssei)
+        field%ac_i(sst:sse,ic) = inner_ia(ssti:ssei)
 
       end do
 
@@ -1305,13 +1323,14 @@ contains
 
 
 
-  subroutine outer2Inner(inner_ra, inner_ia, field)
+  subroutine outer2Inner(inner_ra, inner_ia, field, ic)
 
 
     implicit none (type, external)
 
     real(kind=wp), contiguous, intent(out) :: inner_ra(:), inner_ia(:)
     type(tFieldValues), intent(in) :: field
+    integer(kind=ip), intent(in) :: ic   ! which field component
 
     integer(kind=ip) :: iz, sst, sse, ssti, ssei
     integer(kind=ip) :: nxout, nyout, iy ! should be made global and calculated
@@ -1333,8 +1352,8 @@ contains
                          nspinDX*(iy-1) + 1
         ssei = ssti + nspinDX - 1
 
-        inner_ra(ssti:ssei) = field%ac_r(sst:sse)
-        inner_ia(ssti:ssei) = field%ac_i(sst:sse)
+        inner_ra(ssti:ssei) = field%ac_r(sst:sse,ic)
+        inner_ia(ssti:ssei) = field%ac_i(sst:sse,ic)
 
       end do
 
@@ -3072,6 +3091,7 @@ contains
 
     type(tFieldValues), intent(inout) :: field
 
+    integer(kind=ip) :: ic
     integer(kind=ip) :: tmpfz2, tmpez2, tmpmainlen, &
                         tmpbz2, tmptllen, tmpfz2_act, &
                         tmpez2_act
@@ -3092,8 +3112,8 @@ contains
     tmpez2_act = nz2_G
 
 
-    allocate(field%tre_fft(tmpmainlen*ntrnds_G), &
-             field%tim_fft(tmpmainlen*ntrnds_G))
+    allocate(field%tre_fft(tmpmainlen*ntrnds_G, field%nComp), &
+             field%tim_fft(tmpmainlen*ntrnds_G, field%nComp))
 
 
     field%tre_fft = 0_wp
@@ -3106,18 +3126,21 @@ contains
 !    print*, 'fft array layout is ', field%ft_ar
 
 
-    call redist2new2(field%ff_ar, field%ft_ar, field%fr_r, field%tre_fft)
-    call redist2new2(field%ff_ar, field%ft_ar, field%fr_i, field%tim_fft)
+    do ic = 1, field%nComp
+
+    call redist2new2(field%ff_ar, field%ft_ar, field%fr_r(:,ic), field%tre_fft(:,ic))
+    call redist2new2(field%ff_ar, field%ft_ar, field%fr_i(:,ic), field%tim_fft(:,ic))
 
 
-    call redist2new2(field%ee_ar, field%ft_ar, field%bk_r, field%tre_fft)
-    call redist2new2(field%ee_ar, field%ft_ar, field%bk_i, field%tim_fft)
+    call redist2new2(field%ee_ar, field%ft_ar, field%bk_r(:,ic), field%tre_fft(:,ic))
+    call redist2new2(field%ee_ar, field%ft_ar, field%bk_i(:,ic), field%tim_fft(:,ic))
 
 
 
-    call redist2new2(field%ac_ar, field%ft_ar, field%ac_r, field%tre_fft)
-    call redist2new2(field%ac_ar, field%ft_ar, field%ac_i, field%tim_fft)
+    call redist2new2(field%ac_ar, field%ft_ar, field%ac_r(:,ic), field%tre_fft(:,ic))
+    call redist2new2(field%ac_ar, field%ft_ar, field%ac_i(:,ic), field%tim_fft(:,ic))
 
+    end do
 
   end subroutine redist2FFTWlt
 
@@ -3133,22 +3156,25 @@ contains
     type(tFieldValues), intent(inout) :: field
 
     integer :: req, error
-    integer(kind=ip) :: si, sst, sse
+    integer(kind=ip) :: si, sst, sse, ic
     integer :: statr(MPI_STATUS_SIZE)
     integer :: sendstat(MPI_STATUS_SIZE)
 
-    call redist2new2(field%ft_ar, field%ff_ar, field%tre_fft, field%fr_r)
-    call redist2new2(field%ft_ar, field%ff_ar, field%tim_fft, field%fr_i)
+    do ic = 1, field%nComp
+
+    call redist2new2(field%ft_ar, field%ff_ar, field%tre_fft(:,ic), field%fr_r(:,ic))
+    call redist2new2(field%ft_ar, field%ff_ar, field%tim_fft(:,ic), field%fr_i(:,ic))
 
 
-    call redist2new2(field%ft_ar, field%ee_ar, field%tre_fft, field%bk_r)
-    call redist2new2(field%ft_ar, field%ee_ar, field%tim_fft, field%bk_i)
+    call redist2new2(field%ft_ar, field%ee_ar, field%tre_fft(:,ic), field%bk_r(:,ic))
+    call redist2new2(field%ft_ar, field%ee_ar, field%tim_fft(:,ic), field%bk_i(:,ic))
 
 
 
-    call redist2new2(field%ft_ar, field%ac_ar, field%tre_fft, field%ac_r)
-    call redist2new2(field%ft_ar, field%ac_ar, field%tim_fft, field%ac_i)
+    call redist2new2(field%ft_ar, field%ac_ar, field%tre_fft(:,ic), field%ac_r(:,ic))
+    call redist2new2(field%ft_ar, field%ac_ar, field%tim_fft(:,ic), field%ac_i(:,ic))
 
+    end do
 
     deallocate(field%tre_fft, field%tim_fft)
     deallocate(field%ft_ar)
@@ -3160,9 +3186,13 @@ contains
       sst = ((field%tllen - (field%bz2PB+1_ip) ) * (nx_g * ny_g)) + 1_ip
       sse = field%tllen * (nx_g * ny_g)
 
+!     One wraparound exchange per field component.
+
+      do ic = 1, field%nComp
+
       if (tProcInfo_G%rank == 0_ip) then
 
-        call mpi_issend(field%ac_r(1:si), &
+        call mpi_issend(field%ac_r(1:si,ic), &
                         si, &
                         mpi_double_precision, &
                         tProcInfo_G%size-1_ip, 0, &
@@ -3174,7 +3204,7 @@ contains
 
       if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
 
-        call mpi_recv( field%ac_r(sst:sse), &
+        call mpi_recv( field%ac_r(sst:sse,ic), &
                  si, mpi_double_precision, &
                  0, 0, tProcInfo_G%comm, &
                  statr, error )
@@ -3185,7 +3215,7 @@ contains
       if (tProcInfo_G%rank == 0_ip) then
 
         call mpi_wait( req,sendstat,error )
-        call mpi_issend(field%ac_i(1:si), &
+        call mpi_issend(field%ac_i(1:si,ic), &
                         si, &
                         mpi_double_precision, &
                         tProcInfo_G%size-1_ip, 0, &
@@ -3198,7 +3228,7 @@ contains
 
       if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
 
-        call mpi_recv( field%ac_i(sst:sse), &
+        call mpi_recv( field%ac_i(sst:sse,ic), &
                  si, mpi_double_precision, &
                  0, 0, tProcInfo_G%comm, &
                  statr, error )
@@ -3212,6 +3242,8 @@ contains
         call mpi_wait( req,sendstat,error )
 
       end if
+
+      end do
 
     end if
 

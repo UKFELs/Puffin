@@ -62,6 +62,7 @@ subroutine diffractIM(sStep, &
   type(tSimulationContext), intent(inout) :: ctx
 
   logical :: qOKL
+  integer(kind=ip) :: ic
 
 
   qOK = .false.
@@ -72,11 +73,16 @@ subroutine diffractIM(sStep, &
   call redist2FFTWlt(ctx%field)
 
 
+!    Each field component diffracts independently, under the same operator.
 
-  CALL DiffractionStep(sStep,&
-       ctx%field%tre_fft, ctx%field%tim_fft,&
-       ctx, qOKL)
-  if (.not. qOKL) goto 1000
+  do ic = 1, ctx%field%nComp
+
+    CALL DiffractionStep(sStep,&
+         ctx%field%tre_fft(:,ic), ctx%field%tim_fft(:,ic),&
+         ctx, qOKL)
+    if (.not. qOKL) goto 1000
+
+  end do
 
   qDiffrctd = .true.
 

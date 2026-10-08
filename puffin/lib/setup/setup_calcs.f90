@@ -1368,7 +1368,7 @@ subroutine getPaSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
 
     call getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
                   frs,ph_sh,nSeeds,dels,field%ffs, field%ffe, &
-                  field%fr_r,field%fr_i)
+                  field%fr_r(:,1),field%fr_i(:,1))
 
   end if
 
@@ -1378,11 +1378,15 @@ subroutine getPaSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
 
 
 !  2nd gen active field seed
+!
+!  The seed is laid into component 1 only. For a planar undulator component 2
+!  is identically zero and for a helical one it is slaved to component 1, so
+!  nothing else is needed here; see setAvgSlavedComp.
 
 
   call getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
                 frs,ph_sh,nSeeds,dels,field%fz2, field%ez2, &
-                field%ac_r,field%ac_i)
+                field%ac_r(:,1),field%ac_i(:,1))
 
 
 
@@ -1394,7 +1398,7 @@ subroutine getPaSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
 
     call getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
                   frs,ph_sh,nSeeds,dels,field%ees, field%eee, &
-                  field%bk_r,field%bk_i)
+                  field%bk_r(:,1),field%bk_i(:,1))
 
   end if
 

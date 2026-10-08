@@ -52,7 +52,7 @@ contains
       integer(kind=ip) :: ie
 
       do ie = 1, size(inner_r, 2)
-        call inner2Outer(inner_r(:,ie), inner_i(:,ie), field)
+        call inner2Outer(inner_r(:,ie), inner_i(:,ie), field, ie)
       end do
 
    end subroutine inner2OuterEnv
@@ -66,7 +66,7 @@ contains
       integer(kind=ip) :: ie
 
       do ie = 1, size(inner_r, 2)
-        call outer2Inner(inner_r(:,ie), inner_i(:,ie), field)
+        call outer2Inner(inner_r(:,ie), inner_i(:,ie), field, ie)
       end do
 
    end subroutine outer2InnerEnv
