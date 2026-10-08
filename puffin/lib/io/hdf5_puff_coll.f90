@@ -755,13 +755,13 @@ contains
       if (qONED_G) then
         numSpatialDims=1
         dims = [1,1,nlonglength,1] ! Dataset dimensions
-        fdims = [2,2,NZ2_G,2] ! Dataset dimensions
+        fdims = [2,2,NZ2_G,2*ctx%field%nComp] ! Dataset dimensions
         doffset = [0,0,(nlo-1),component]
         dsize = [1,1,nhi-nlo+1,1]
       else
         numSpatialDims=3
         dims = [nx_g,ny_g,nlonglength,1] ! Dataset dimensions
-        fdims = [nx_g,ny_g,NZ2_G,2] ! Dataset dimensions
+        fdims = [nx_g,ny_g,NZ2_G,2*ctx%field%nComp] ! Dataset dimensions
         doffset = [0,0,(nlo-1),component]
 !      dsize = (/nx_g,ny_g,nhi-nlo+1,1/)
         dsize = [nx_g,ny_g,nlonglength,1]
@@ -1191,7 +1191,7 @@ contains
 
         numSpatialDims=1
         dims = [nlonglength,1] ! Dataset dimensions (portion of single comp.)
-        fdims = [NZ2_G,2]      ! File Dataset dimensions
+        fdims = [NZ2_G,2*ctx%field%nComp]      ! File Dataset dimensions
         doffset = [(nlo-1),component]
         dsize = [nhi-nlo+1,1]
 

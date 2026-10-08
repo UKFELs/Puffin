@@ -26,7 +26,7 @@ module Setup
      sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, sZlSt_G, tInitData_G, sKBetaXSF_G, &
      sKBetaYSF_G, ffact, start_step, sStepSize, nSteps, sRedistLen_G, tArrayE, tArrayA, tArrayZ, &
      iWriteNthSteps, iIntWriteNthSteps, zFileName_G, ioutInfo_G, frecvs, fdispls, qDiffraction_G, &
-     qResume_G, qResume, qWrite, qOneD_G, qscaled_G
+     qResume_G, qResume, qWrite, qOneD_G, qscaled_G, qAveraged_G
    use Read_data, only: read_in, filenamenoextension, initializeprocessors, &
      readh5fieldfilesingledump
    use checks, only: checkparameters
@@ -307,6 +307,19 @@ contains
          nbeams, ctx%frame, ctx%flags, ctx%und%n2col, qOK)
 
       IF (.NOT. qOKL) GOTO 1000
+
+
+!     How many field components the mesh arrays carry. Unaveraged, one complex
+!     pair already means (A_x, -A_y) and so holds both polarisations. Averaged,
+!     a complex pair is one envelope of one polarisation state, so polarisation
+!     needs one component per linear axis. Read from the global rather than
+!     ctx%flags because the flags are populated after the first field layout.
+
+      if (qAveraged_G) then
+        ctx%field%nComp = 2_ip
+      else
+        ctx%field%nComp = 1_ip
+      end if
 
 
       if (iFieldSeedType_G==iSimpleSeed_G) then
