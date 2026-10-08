@@ -7,6 +7,8 @@ dependencies:
   - hdf5=*=mpi_openmpi*
   - fftw=*=mpi_openmpi*
   - cmake
+# GNU make >= 4.0 for --output-sync; macOS still ships 3.81.
+  - make
   - doxygen
   - git
   - python=3.11
