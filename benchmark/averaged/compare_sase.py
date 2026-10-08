@@ -35,6 +35,16 @@ comparing is the statistics of the amplification:
                lethargy and below the roll-over.  The one number that says
                whether the two solvers amplify at the same rate.
   saturation   the largest power reached and the zbar it is reached at.
+  band power   the integral of |A|^2 over z2 at each common /aperp write, total
+               and restricted to the band the envelope mesh can hold.  The
+               band column is the like-for-like power comparison: early in a
+               SASE run most of the unaveraged field is spontaneous emission
+               spread over every frequency its mesh resolves, which the
+               averaged mode is not carrying and never claimed to.  Alongside
+               it, the normalised overlap of the averaged envelope with the
+               demodulated unaveraged field: 1 while the two runs are still
+               the same shot, falling towards 0 as the gain amplifies whatever
+               they disagree about into two different shots.
   spectrum     from the last common /aperp write.  Unaveraged, the transform
                of the resolved field, whose bin m is at w/wr = |4 pi rho f_m|.
                Averaged, the transform of the envelope, whose bin is an offset
@@ -61,9 +71,10 @@ import math
 import os
 import sys
 
-from compare import attr, field_comps, last_index, read_ds
+from compare import attr, demod, field_comps, last_index, pol, read_ds
 
 RHO = 0.005
+UND = "planepole"    # sase.in's undulator, for the demodulation normalisation
 ZTOL = 1e-6          # relative zbar agreement required of the two runs
 FITLO, FITHI = 1e-4, 1e-2    # fit window, as fractions of saturation power
 
@@ -120,6 +131,43 @@ def bands(d, k, rho):
 #   Resolved field: real, so the +k and -k bins are the same physical
 #   frequency and both are kept.
     return [(abs(4.0 * math.pi * rho * f), w) for f, w in sp], False
+
+
+def correlation(plain, kp, avg, ka, rho, undtype=UND):
+    """(|correlation|, relative L2) of the two runs' envelopes at one write.
+
+    The unaveraged field is demodulated onto the averaged envelope's
+    normalisation exactly as compare.py does it, and sampled at the averaged
+    run's nodes.  The correlation is the normalised complex overlap, whose
+    MAGNITUDE is taken, and the L2 is taken with the same global phase removed.
+    shuntBeam leaves the two beams a fixed fraction of a wavelength apart (see
+    noise_match), which is a constant carrier phase between the two envelopes
+    and no physical difference at all - here 0.0909 of a wavelength, 33
+    degrees, which left in would put 0.58 into a relative L2 whose real content
+    is 0.1.  compare.py can difference the seeded runs' envelopes directly
+    because there the seed pins the phase; with no seed nothing does.
+
+    Correlation 1 means the two runs are still the same shot; 0 means the gain
+    has amplified whatever they disagree about into two different shots with
+    the same statistics.  The L2, with the phase removed, still counts
+    amplitude and shape, so it is the one that sees a gain-length difference.
+    """
+    Ap, dzp, _ = field_comps(plain, kp)
+    Aa, dza, _ = field_comps(avg, ka)
+    env = demod(Ap[0], dzp, rho, int(round(4.0 * math.pi * rho / dzp)), pol(undtype))
+    num, da, de = 0j, 0.0, 0.0
+    for j, a in enumerate(Aa[0]):
+        i = int(round(j * dza / dzp))
+        if i >= len(env) or env[i] is None:
+            continue
+        e = env[i]
+        num += a * e.conjugate()
+        da += abs(a) ** 2
+        de += abs(e) ** 2
+    if da <= 0.0 or de <= 0.0:
+        return float("nan"), float("nan")
+#   sum|a - e exp(i phi)|^2 at phi = arg(num) is da + de - 2|num|.
+    return abs(num) / math.sqrt(da * de), math.sqrt(max(da + de - 2 * abs(num), 0.0) / de)
 
 
 def moments(sp, lo, hi):
@@ -334,6 +382,29 @@ def main():
         raise SystemExit("%s is not an averaged-mode run" % avg)
     lpc = attr(os.path.join(avg, "run_aperp_%d.h5" % kfa), "lambdarPerCell")
     half = min(0.5 / lpc, 0.5)
+
+#   The power table above is total power.  Early on, before the fundamental
+#   runs away, most of the unaveraged run's field is spontaneous emission
+#   spread over every frequency its mesh resolves, and the averaged mode is
+#   only ever carrying the band about the carrier - so the total-power ratio
+#   there is a like-for-unlike comparison.  This is the like-for-like one.
+    print()
+    print("  int |A|^2 against zbar, total and inside the envelope band, and how")
+    print("  far the two runs are still the same shot")
+    print("  %-8s %-11s %-11s %-8s %-11s %-11s %-8s %-7s %-6s %s"
+          % ("zbar", "tot unavg", "tot avg", "ratio", "band unavg", "band avg",
+             "ratio", "band sh", "corr", "rel L2"))
+    for z, kp, ka in fpairs:
+        bp, _ = bands(plain, kp, rho)
+        ba, _ = bands(avg, ka, rho)
+        tp_, ta_ = sum(w for _, w in bp), sum(w for _, w in ba)
+        ep_ = moments(bp, 1.0 - half, 1.0 + half)[0]
+        ea_ = moments(ba, 1.0 - half, 1.0 + half)[0]
+        c, l2 = correlation(plain, kp, avg, ka, rho)
+        print("  %-8.3f %-11.4e %-11.4e %-8.4f %-11.4e %-11.4e %-8.4f %-7.5f %-6.4f %.4f"
+              % (z, tp_, ta_, ta_ / tp_ if tp_ else float("nan"), ep_, ea_,
+                 ea_ / ep_ if ep_ else float("nan"),
+                 ep_ / tp_ if tp_ else float("nan"), c, l2), flush=True)
 
     print()
     print("  spectrum at zbar = %.3f (/aperp writes %d and %d)" % (zf, kfp, kfa))

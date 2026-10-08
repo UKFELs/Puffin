@@ -62,9 +62,17 @@ from run_compare import PUFFIN, RHO, sub
 HERE = os.path.dirname(os.path.abspath(__file__))
 WRITE_PERIODS = 4        # integrated writes, in undulator periods
 FIELD_PERIODS = 20       # /aperp writes, in undulator periods
+PERIODS, SIGEJ, MPS = "340", "0.1", "8"   # the deck's own values; see sase.in
 
 
 def run(tag, averaged, mesh, steps, seed, periods, sigej, mps, nproc, reuse):
+#   Anything that changes the beam or the length of the run goes in the
+#   directory name, so a --sigej or --periods scan does not quietly overwrite,
+#   or --reuse, a run made at a different setting.
+    for value, default, letter in ((periods, PERIODS, "p"), (sigej, SIGEJ, "e"),
+                                   (mps, MPS, "m")):
+        if value != default:
+            tag += "_%s%s" % (letter, value)
     workdir = os.path.join(HERE, "run_sase_%s" % tag)
 
     if reuse and os.path.isdir(workdir):
@@ -143,7 +151,8 @@ COLS = ("run", "runtime", "Lg(zbar)", "P_sat", "zbar_sat", "centre w/wr", "rms w
 
 def main():
     args = sys.argv[1:]
-    nproc, seeds, periods, sigej, mps, reuse = 4, ["1"], "340", "0.1", "8", False
+    nproc, seeds, reuse = 4, ["1"], False
+    periods, sigej, mps = PERIODS, SIGEJ, MPS
     plains, avgs, which = [], [], None
     while args:
         a = args.pop(0)
