@@ -29,7 +29,8 @@ section of `doc/manual.tex`. The accuracy map and its harness are in `benchmark/
 |---|------------|--------|-----------|-------|
 | W1 | Land the 1D mode on `dev` | **In review** — PR #131 open against `dev` | — | #131 |
 | W2 | 3D | **Done** — validated against the unaveraged solver | — | — |
-| W3 | Multiple field arrays (elliptical + harmonics) | Not started — **unblocked**, #107 done | #107 ✅ | #129 |
+| W3a | Polarisation field grids, planar + helical only | **Done** — nComp = 2, second component slaved | #107 ✅ | #129 |
+| W3b | General polarisation coupling (elliptical + harmonics) | Not started — needs the per-component couplings derived | W3a ✅ | #129 |
 | W4 | Compatibility: periodic mesh, lattices, restart | **Done** — guards in, one `dev` bug left open | — | — |
 | W5 | Diagnostics, dump metadata and viz tools | **Done** | — | — |
 | W6 | Finish the accuracy map | Partly done | W3 for harmonics | #130 |
@@ -156,6 +157,60 @@ is parked with W7 rather than fixed here. Until then, 3D averaged runs should se
 mesh does not coarsen.
 
 ## W3 — Multiple field arrays
+
+Split in two, because the storage and the physics are independent and the
+storage unblocks viz work while the coupling derivation is outstanding.
+
+### W3a — the polarisation grids. Done.
+
+Averaged mode carries one envelope per linear polarisation: `nComp = 2`,
+component 1 = x, component 2 = y. Unaveraged stays at 1, where a complex pair
+already means `(A_x, -A_y)`.
+
+**No new physics was needed**, which is why this could land first. For both
+undulator types averaged mode supports, the y envelope is fixed by the x one
+exactly and at every `zbar`:
+
+| undulator | relation | why |
+|---|---|---|
+| planar | `Atilde_y = 0` | `A_perp = sqrt(2) Re[Atilde e]` is purely real — linear along x |
+| helical | `Atilde_y = i Atilde_x` | `A_perp = Atilde e` unconstrained, so `A_y = -Im[Atilde e]` |
+
+`setAvgSlavedComp` derives component 2 from component 1 before each dump. Only
+component 1 is integrated. The `aperp` dataset's 4th dimension is `2*nComp`,
+and `/runInfo` carries `nFieldComp` and `fieldCompMeaning`.
+
+Verified by running the 1D averaged deck planar and helical on 2 ranks and
+reading the dumps back — component 2 exact in both cases. Worth knowing:
+**no e2e suite enables averaged mode**, so the four ctest suites only prove the
+unaveraged path is untouched. `testAveraging.pf::testSlavedComponent` is the
+only automated guard on the slaving.
+
+### W3b — the general coupling. Not started.
+
+What remains is the physics: per-component couplings so component 2 evolves
+independently, which is what elliptical needs. The constraints any derivation
+has to satisfy, two of them already pinned:
+
+- **Planar**: `ptilde_y = 0` and `ptilde_x = -alpha (u_y/2)(J0 - J1) e^{-i theta}`.
+  Derived by matching the shipped coupling through the field normalisation, not
+  assumed — this is where the familiar difference of Bessel functions lives once
+  the basis is Cartesian.
+- **Helical**: `xi = 0`, `Atilde_y = i Atilde_x`, and
+  `ptilde_x - i ptilde_y = -alpha u_y e^{-i theta}`.
+- **Against the circular basis**: under `Atilde_mp = (Atilde_x mp i Atilde_y)/2`
+  the combination must reproduce today's `alpha (u_- J0 - u_+ J1)`. Note that a
+  naive symmetry guess does *not* — see the design note; the two carriers and the
+  conjugation on the `+` component mean the coupling transform is not the plain
+  linear map the field transform is.
+- **Energy**: balance summed over components, 1e-13, through the real `getrhs`.
+
+Then: `sField4ElecReal/Imag` gain a component dimension, `dgamdz_f` sums over
+components, the loop goes inside `getrhs` (shared interpolation weights), and
+`chkAveraged`/`UndSection` lift the elliptical rejection. Harmonics extend the
+same component axis with carrier `exp(-i h z2/2rho)` and `JJ_h`.
+
+### Original notes
 
 Elliptical undulators and harmonic bands are the same structural problem: more than one
 envelope. Doing them as one generalisation is much cheaper than twice.
