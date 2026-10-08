@@ -1,0 +1,12 @@
+# fortitude static-analysis settings, read by `make lint` (see CMakeLists.txt)
+# and by the lint step of the PR build (.github/workflows/build.yml).
+
+[check.per-file-ignores]
+# C071 (assumed-size): the serial backend stands in for MPI and FFTW3-MPI, so
+# its dummy arguments copy the interfaces it replaces - recvcounts(*),
+# statuses(MPI_STATUS_SIZE, *), FFTW's dimension(*). Assumed-shape would not
+# be a drop-in: it rejects the array-element actual arguments those
+# interfaces accept, and would let the compiler hand the FFTW planner a
+# temporary copy, whose address the plan would then keep.
+"puffin/lib/backends/serial/mpi_serial.f90" = ["C071"]
+"puffin/lib/backends/serial/puffin_fftw3.f90" = ["C071"]
