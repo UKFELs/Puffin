@@ -1,0 +1,41 @@
+name: HPC test evidence
+
+# The big 3D test needs ~12 GB and ~9 minutes on 6 ranks, more than a hosted
+# runner has, so for a pull request into master it is run by hand on an HPC
+# machine and the result posted to the PR as a comment (UKFELs/Puffin#116).
+# This checks that comment: it fails until there is one, from someone with
+# write access, showing every slow and big test passing at the PR's current
+# head commit. Pushing anything new makes it fail again until the tests are
+# re-run. See scripts/hpc-tests/README.md.
+#
+# A comment is not a pull_request event, so posting one does not re-trigger
+# this; `hpc_evidence.py submit` re-runs it, or use "Re-run jobs" on the PR.
+# The check takes seconds, so make it a required status check on master.
+
+on:
+  pull_request:
+    branches: [ main, master ]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  hpc-evidence:
+    name: hpc-evidence (slow + big tests)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        # The head, not the merge commit: the evidence is for the commit the
+        # HPC run built, and its golden constants are the ones to check.
+        ref: ${{ github.event.pull_request.head.sha }}
+
+    - name: Verify the evidence comment
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        python3 scripts/hpc-tests/hpc_evidence.py verify \
+          --repo "${{ github.repository }}" \
+          --pr "${{ github.event.pull_request.number }}" \
+          --head-sha "${{ github.event.pull_request.head.sha }}"
