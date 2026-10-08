@@ -49,15 +49,10 @@ else()
 endif ()
 
 
-if (USE_MKL)
-  add_definitions(${MPI_C_COMPILE_FLAGS} ${OpenMP_C_FLAGS})
-else()
-  add_definitions(${MPI_C_COMPILE_FLAGS} ${OpenMP_C_FLAGS})
-endif()
-
-#C definitions are not needed for Fortran apps.
-#remove_definitions(${MPI_C_COMPILE_FLAGS} ${OpenMP_C_FLAGS})
-
+# No C flags here: add_definitions applies to every language, Fortran
+# included, and puffin has no C sources. When the C compiler is clang (as
+# with conda's compilers on macOS) OpenMP_C_FLAGS is -fopenmp=libomp, which
+# gfortran rejects.
 if (USE_MKL)
   add_definitions(${OpenMP_Fortran_FLAGS} ${MPI_Fortran_COMPILE_FLAGS})
 else()
