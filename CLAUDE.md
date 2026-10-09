@@ -34,6 +34,11 @@ HDF5 dumps), and the big tests use an 85x85x5780 field mesh (~9–12GB RAM and
 ~9 min at 6 ranks). Both default to OFF — leave them that way, and only
 configure with them ON when the user explicitly asks for them.
 
+Pull requests into `master` (releases from `dev`) are the exception: CI runs
+the slow test itself, and the `hpc-evidence` check requires the big test to
+have been run on an HPC machine and posted to the PR. See
+`scripts/hpc-tests/README.md`.
+
 ### Serial (non-MPI) builds
 
 `-DENABLE_PARALLEL=OFF` builds an executable that runs directly, with no

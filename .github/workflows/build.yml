@@ -100,11 +100,19 @@ jobs:
       id: configure
       shell: bash -l {0}
       working-directory: build
+      # The slow test (full CLARA lattice, ~30 s on 2 ranks) is added for
+      # anything headed for master: release PRs from dev, and master itself.
+      # It is @mpitest, so a serial configure ignores the option. The big test
+      # is too large for a hosted runner; it is run on an HPC machine and
+      # checked by hpc-evidence.yml instead.
+      env:
+        SLOW_TESTS: ${{ (github.base_ref == 'master' || github.ref == 'refs/heads/master') && 'TRUE' || 'FALSE' }}
       run: |
         cmake .. \
           -DCMAKE_BUILD_TYPE=Release \
           -DENABLE_PARALLEL:BOOL=${{ matrix.enable_parallel }} \
           -DENABLE_TESTING:BOOL=TRUE \
+          -DPUFFIN_SLOW_TESTS:BOOL=$SLOW_TESTS \
           -DENABLE_LINT:BOOL=TRUE \
           -DCMAKE_PREFIX_PATH='${{ github.workspace }}/pfunit-install' \
           -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
