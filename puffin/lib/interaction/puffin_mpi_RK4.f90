@@ -350,8 +350,10 @@ contains
          sElPY_G   = sElPY_G  + h6 * ( work%dpydx  + work%dpyt  + 2.0_WP * work%dpym )
          sElGam_G  = sElGam_G + h6 * ( work%dpz2dx + work%dpz2t + 2.0_WP * work%dpz2m)
 
-         work%in_r = work%in_r + h6 * (work%dadz_r(:,:,0) + work%dadz_r(:,:,1) + 2.0_WP * work%dadz_r(:,:,2))
-         work%in_i = work%in_i + h6 * (work%dadz_i(:,:,0) + work%dadz_i(:,:,1) + 2.0_WP * work%dadz_i(:,:,2))
+         work%in_r = work%in_r + h6 * (work%dadz_r(:,:,0) + work%dadz_r(:,:,1) &
+                                       + 2.0_WP * work%dadz_r(:,:,2))
+         work%in_i = work%in_i + h6 * (work%dadz_i(:,:,0) + work%dadz_i(:,:,1) &
+                                       + 2.0_WP * work%dadz_i(:,:,2))
 !$OMP END PARALLEL WORKSHARE
 !  if (count(abs(work%dadz_r(:,:,0)) > 0.0_wp) <= 0) print*, 'HELP IM TOO RUBBUSH'
 

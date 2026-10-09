@@ -1122,7 +1122,8 @@ contains
             sse = (sse-(field%fz2-1))*ntrndsi_G
             si = si*ntrndsi_G
 
-  !          call mpi_issend(dadz_r((field%ez2+1)-(field%fz2-1) + ofst :field%bz2-(field%fz2-1)), si, &
+  !          call mpi_issend(dadz_r((field%ez2+1)-(field%fz2-1) + ofst &
+  !                    :field%bz2-(field%fz2-1)), si, &
   !                    mpi_double_precision, &
   !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
 
@@ -1180,7 +1181,8 @@ contains
             sse = (sse-(field%fz2-1))*ntrndsi_G
             si = si*ntrndsi_G
 
-  !          call mpi_issend(dadz_r((field%ez2+1)-(field%fz2-1) + ofst :field%bz2-(field%fz2-1)), si, &
+  !          call mpi_issend(dadz_r((field%ez2+1)-(field%fz2-1) + ofst &
+  !                    :field%bz2-(field%fz2-1)), si, &
   !                    mpi_double_precision, &
   !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
 
@@ -1235,7 +1237,8 @@ contains
 !
 !!       rec from rank+1
 !
-!        CALL mpi_recv( ac_rl((field%ez2+1)-(field%fz2-1):field%bz2-(field%fz2-1)), field%fbuffLen, mpi_double_precision, &
+!        CALL mpi_recv( ac_rl((field%ez2+1)-(field%fz2-1):field%bz2-(field%fz2-1)), &
+!                    field%fbuffLen, mpi_double_precision, &
 !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, statr, error )
 !
 !      end if
@@ -1261,7 +1264,8 @@ contains
 !
 !!       rec from rank+1
 !
-!        CALL mpi_recv( ac_il((field%ez2+1)-(field%fz2-1):field%bz2-(field%fz2-1)), field%fbuffLen, mpi_double_precision, &
+!        CALL mpi_recv( ac_il((field%ez2+1)-(field%fz2-1):field%bz2-(field%fz2-1)), &
+!                    field%fbuffLen, mpi_double_precision, &
 !               tProcInfo_G%rank+1, 0, tProcInfo_G%comm, statr, error )
 !
 !      end if
@@ -1658,7 +1662,8 @@ contains
 
     else
 
-      bz2_len = (field%ez2 + 2_ip) * sLengthOfElmZ2_G  ! Just have 2 node boundary for no macroparticles
+      ! Just have 2 node boundary for no macroparticles
+      bz2_len = (field%ez2 + 2_ip) * sLengthOfElmZ2_G
 
     end if
 
@@ -1786,7 +1791,8 @@ contains
 
     else
 
-      field%fbuffLen = field%bz2 - (field%ez2+1) + 1  ! Local buffer length, NOT including the field%ez2 node
+      ! Local buffer length, NOT including the field%ez2 node
+      field%fbuffLen = field%bz2 - (field%ez2+1) + 1
       field%tllen = field%bz2 - field%fz2 + 1     ! local total length, including buffer
 
 
@@ -2051,7 +2057,9 @@ contains
 !
 !    call mpi_barrier(tProcInfo_G%comm, error)
 !
-!    print* , tProcInfo_G%rank, 'is inside calcBuff, with field%fz2, field%ez2, field%bz2 of = ', field%fz2, field%ez2, field%bz2, &
+!    print* , tProcInfo_G%rank, &
+!    'is inside calcBuff, with field%fz2, field%ez2, field%bz2 of = ', &
+!    field%fz2, field%ez2, field%bz2, &
 !    'and lens of ', field%mainlen, field%tllen, field%fbuffLen, field%fbuffLenM
 !    -----    OLD
 
@@ -2125,7 +2133,7 @@ contains
 
 !print*, 'ez2_act = ', ez2_act
 
-    else if (field%iParaBas == iFieldBased) then    !    FIELD based - also used for initial steps...
+    else if (field%iParaBas == iFieldBased) then  ! FIELD based - also for initial steps
 
       fz2_act = 1_ip
       ez2_act = NZ2_G

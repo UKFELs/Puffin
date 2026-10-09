@@ -118,17 +118,23 @@ contains
             inew = 2_ip
           end if
 
-          call outputH5Field1D2CompSD(time, sz_loc, iL, error, ctx%field%tlflen, ctx%field%fr_r(:,ic), &
+          call outputH5Field1D2CompSD(time, sz_loc, iL, error, &
+                                       ctx%field%tlflen, ctx%field%fr_r(:,ic), &
                                        ctx%field%ffs, ctx%field%ffe, icr, inew, .false., ctx)
-          call outputH5Field1D2CompSD(time, sz_loc, iL, error, ctx%field%tlflen, ctx%field%fr_i(:,ic), &
+          call outputH5Field1D2CompSD(time, sz_loc, iL, error, &
+                                       ctx%field%tlflen, ctx%field%fr_i(:,ic), &
                                        ctx%field%ffs, ctx%field%ffe, ici, 2, .false., ctx)
-          call outputH5Field1D2CompSD(time, sz_loc, iL, error, ctx%field%mainlen, ctx%field%ac_r(:,ic), &
+          call outputH5Field1D2CompSD(time, sz_loc, iL, error, &
+                                       ctx%field%mainlen, ctx%field%ac_r(:,ic), &
                                        ctx%field%fz2, ctx%field%ez2, icr, 2, .true., ctx)
-          call outputH5Field1D2CompSD(time, sz_loc, iL, error, ctx%field%mainlen, ctx%field%ac_i(:,ic), &
+          call outputH5Field1D2CompSD(time, sz_loc, iL, error, &
+                                       ctx%field%mainlen, ctx%field%ac_i(:,ic), &
                                        ctx%field%fz2, ctx%field%ez2, ici, 2, .true., ctx)
-          call outputH5Field1D2CompSD(time, sz_loc, iL, error, ctx%field%tlelen, ctx%field%bk_r(:,ic), &
+          call outputH5Field1D2CompSD(time, sz_loc, iL, error, &
+                                       ctx%field%tlelen, ctx%field%bk_r(:,ic), &
                                        ctx%field%ees, ctx%field%eee, icr, 2, .false., ctx)
-          call outputH5Field1D2CompSD(time, sz_loc, iL, error, ctx%field%tlelen, ctx%field%bk_i(:,ic), &
+          call outputH5Field1D2CompSD(time, sz_loc, iL, error, &
+                                       ctx%field%tlelen, ctx%field%bk_i(:,ic), &
                                        ctx%field%ees, ctx%field%eee, ici, 2, .false., ctx)
 
         end do
@@ -183,22 +189,28 @@ contains
 
             call outputH5Field3DID(time, sz_loc, iL, error, ctx%field%tlflen, &
                                     "aperp_front_real"//trim(cSfx), &
-                                    ctx%field%fr_r(:,ic),  ctx%field%ffs, ctx%field%ffe, .false., ctx)
+                                    ctx%field%fr_r(:,ic), &
+                                    ctx%field%ffs, ctx%field%ffe, .false., ctx)
             call outputH5Field3DID(time, sz_loc, iL, error, ctx%field%tlflen, &
                                     "aperp_front_imag"//trim(cSfx), &
-                                    ctx%field%fr_i(:,ic),  ctx%field%ffs, ctx%field%ffe, .false., ctx)
+                                    ctx%field%fr_i(:,ic), &
+                                    ctx%field%ffs, ctx%field%ffe, .false., ctx)
             call outputH5Field3DID(time, sz_loc, iL, error, ctx%field%mainlen, &
                                     "aperp_active_real"//trim(cSfx), &
-                                    ctx%field%ac_r(:,ic),  ctx%field%fz2, ctx%field%ez2, .true., ctx)
+                                    ctx%field%ac_r(:,ic), &
+                                    ctx%field%fz2, ctx%field%ez2, .true., ctx)
             call outputH5Field3DID(time, sz_loc, iL, error, ctx%field%mainlen, &
                                     "aperp_active_imag"//trim(cSfx), &
-                                    ctx%field%ac_i(:,ic),  ctx%field%fz2, ctx%field%ez2, .true., ctx)
+                                    ctx%field%ac_i(:,ic), &
+                                    ctx%field%fz2, ctx%field%ez2, .true., ctx)
             call outputH5Field3DID(time, sz_loc, iL, error, ctx%field%tlelen, &
                                     "aperp_back_real"//trim(cSfx), &
-                                    ctx%field%bk_r(:,ic),  ctx%field%ees, ctx%field%eee, .false., ctx)
+                                    ctx%field%bk_r(:,ic), &
+                                    ctx%field%ees, ctx%field%eee, .false., ctx)
             call outputH5Field3DID(time, sz_loc, iL, error, ctx%field%tlelen, &
                                     "aperp_back_imag"//trim(cSfx), &
-                                    ctx%field%bk_i(:,ic),  ctx%field%ees, ctx%field%eee, .false., ctx)
+                                    ctx%field%bk_i(:,ic), &
+                                    ctx%field%ees, ctx%field%eee, .false., ctx)
 
           end do
 
@@ -221,17 +233,23 @@ contains
               inew = 2_ip
             end if
 
-            call outputH5Field3DSD(time, sz_loc, iL, error, ctx%field%tlflen, ctx%field%fr_r(:,ic), &
+            call outputH5Field3DSD(time, sz_loc, iL, error, &
+                                    ctx%field%tlflen, ctx%field%fr_r(:,ic), &
                                     ctx%field%ffs, ctx%field%ffe, icr, inew, .false., ctx)
-            call outputH5Field3DSD(time, sz_loc, iL, error, ctx%field%tlflen, ctx%field%fr_i(:,ic), &
+            call outputH5Field3DSD(time, sz_loc, iL, error, &
+                                    ctx%field%tlflen, ctx%field%fr_i(:,ic), &
                                     ctx%field%ffs, ctx%field%ffe, ici, 2, .false., ctx)
-            call outputH5Field3DSD(time, sz_loc, iL, error, ctx%field%mainlen, ctx%field%ac_r(:,ic), &
+            call outputH5Field3DSD(time, sz_loc, iL, error, &
+                                    ctx%field%mainlen, ctx%field%ac_r(:,ic), &
                                     ctx%field%fz2, ctx%field%ez2, icr, 2, .true., ctx)
-            call outputH5Field3DSD(time, sz_loc, iL, error, ctx%field%mainlen, ctx%field%ac_i(:,ic), &
+            call outputH5Field3DSD(time, sz_loc, iL, error, &
+                                    ctx%field%mainlen, ctx%field%ac_i(:,ic), &
                                     ctx%field%fz2, ctx%field%ez2, ici, 2, .true., ctx)
-            call outputH5Field3DSD(time, sz_loc, iL, error, ctx%field%tlelen, ctx%field%bk_r(:,ic), &
+            call outputH5Field3DSD(time, sz_loc, iL, error, &
+                                    ctx%field%tlelen, ctx%field%bk_r(:,ic), &
                                     ctx%field%ees, ctx%field%eee, icr, 2, .false., ctx)
-            call outputH5Field3DSD(time, sz_loc, iL, error, ctx%field%tlelen, ctx%field%bk_i(:,ic), &
+            call outputH5Field3DSD(time, sz_loc, iL, error, &
+                                    ctx%field%tlelen, ctx%field%bk_i(:,ic), &
                                     ctx%field%ees, ctx%field%eee, ici, 2, .false., ctx)
 
           end do
@@ -240,7 +258,9 @@ contains
 !        print '("Dumped fields together. Took time = ",f6.3," secs on rank ",i5)' &
 !          ,ftime-stime,tprocinfo_g%rank
         end if
-!      call outputH5Field3DSDattrs(time, error, ctx%field%tlflen, ctx%field%fr_r(:,1),  ctx%field%ffs, ctx%field%ffe, 0, .false.)
+!      call outputH5Field3DSDattrs(time, error, ctx%field%tlflen, &
+!                                  ctx%field%fr_r(:,1), ctx%field%ffs, &
+!                                  ctx%field%ffe, 0, .false.)
         if (error /= 0) goto 1000
 
       end if
