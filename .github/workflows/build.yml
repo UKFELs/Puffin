@@ -47,7 +47,7 @@ jobs:
       # finish and report rather than cancelling its sibling.
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, macos-latest]
         # parallel: the usual MPI build.
         # serial:   -DENABLE_PARALLEL=OFF, which compiles
         #           puffin/lib/backends/serial in place of backends/mpi and
@@ -56,6 +56,8 @@ jobs:
         include:
           - os: ubuntu-latest
             compiler: gcc-11
+          - os: macos-latest
+            compiler: gcc-15
           - mode: parallel
             enable_parallel: 'TRUE'
           - mode: serial
@@ -114,7 +116,7 @@ jobs:
       # below; --output-sync keeps each file's diagnostics together under -j.
       run: |
         set -o pipefail
-        make -j$(nproc) --output-sync=target 2>&1 | tee build.log
+        make -j$(getconf _NPROCESSORS_ONLN) --output-sync=target 2>&1 | tee build.log
 
     - name: Report compiler warnings
       if: ${{ !cancelled() && steps.configure.outcome == 'success' }}
@@ -141,8 +143,9 @@ jobs:
       # libmpi is not checked, because it still arrives transitively whenever
       # the HDF5 in the environment is a parallel one - as it is here.
       run: |
-        ldd puffin/puffin
-        if ldd puffin/puffin | grep -q libfftw3_mpi; then
+        if [ "$RUNNER_OS" = macOS ]; then deps="otool -L"; else deps=ldd; fi
+        $deps puffin/puffin
+        if $deps puffin/puffin | grep -q libfftw3_mpi; then
           echo "::error::serial build linked libfftw3_mpi"
           exit 1
         fi
