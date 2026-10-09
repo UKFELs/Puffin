@@ -10,7 +10,7 @@ import matplotlib.gridspec as gridspec
 def readFieldLayout(h5):
     """How the aperp dataset's component axis is laid out.
 
-    Returns (nFieldComp, qAveraged).
+    Returns (nFieldComp, qAveraged, kz2Carrier).
 
     Unaveraged, one complex pair holds both polarisations: the real and
     imaginary parts are (A_x, -A_y), so nFieldComp is 1 and the two
@@ -28,7 +28,7 @@ def readFieldLayout(h5):
     try:
         attrs = h5.root.runInfo._v_attrs
     except Exception:
-        return 1, False
+        return 1, False, 0.
     try:
         nFieldComp = int(attrs.nFieldComp)
     except AttributeError:
@@ -36,10 +36,10 @@ def readFieldLayout(h5):
     try:
         # kz2Carrier is the carrier the stored field is an envelope about,
         # and is written as exactly zero in unaveraged mode.
-        qAveraged = numpy.double(attrs.kz2Carrier) != 0.
+        kz2Carrier = numpy.double(attrs.kz2Carrier)
     except AttributeError:
-        qAveraged = False
-    return nFieldComp, qAveraged
+        kz2Carrier = 0.
+    return nFieldComp, kz2Carrier != 0., kz2Carrier
 
 def getMagPhaseEnvelope(h5,xi,yi,iEnv,qNegate=False):
     """Amplitude and carrier phase of envelope iEnv, read straight off the dump.
@@ -167,7 +167,7 @@ if len(sys.argv) == 4 or len(sys.argv) == 3:
     stokesLength=200
   h5=tables.open_file(inputFilename)
   (nx,ny,nz,nComponents)=h5.root.aperp.shape
-  nFieldComp,qAveraged=readFieldLayout(h5)
+  nFieldComp,qAveraged,kz2Carrier=readFieldLayout(h5)
   print("rho " + str(rho))
   print("stokes averaging length " + str(stokesLength))
   print("nx: " + str(nx))
