@@ -1,0 +1,33 @@
+{
+  "label": "cd82415 (field-values refactor, 4 threads)",
+  "generated": "2026-10-10 10:27:16",
+  "toolchain": {
+    "host": "tyrell",
+    "platform": "Linux-7.0.0-29-generic-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "cpu_count": 4,
+    "puffin": "/tmp/claude-1000/-home-mightylorenzo-src-github-mightylorenzo-puffin-puffin-puffin-src/754efd1c-1ac8-406e-a10b-c69d0a59e6f1/scratchpad/bench-branch/puffin/puffin",
+    "puffin_mtime": "2026-10-10 09:57:13"
+  },
+  "results": {
+    "1d_serial": {
+      "desc": "1D flat-top CSE, single rank (isolates serial integration cost)",
+      "deck": "inputs/bench_1d.in",
+      "ranks": 1,
+      "reps": 3,
+      "wall_s": [
+        74.04382278599951,
+        74.07116635800048,
+        74.0014666920033
+      ],
+      "undulator_s": [
+        71.896873503,
+        71.920546993,
+        71.85271271299999
+      ],
+      "wall_min": 74.0014666920033,
+      "undulator_min": 71.85271271299999
+    }
+  },
+  "note": "OMP_NUM_THREADS=4, OMP_WAIT_POLICY=active. 1d_serial only: one rank, so no rank/thread mapping has to be right for the number to mean anything."
+}
