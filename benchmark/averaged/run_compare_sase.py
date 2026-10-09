@@ -79,7 +79,7 @@ def run(tag, averaged, mesh, steps, seed, periods, sigej, mps, nproc, reuse):
         ks = last_index(workdir, "integrated")
         if ks:
             p = os.path.join(workdir, "run_integrated_%d.h5" % ks[-1])
-            if abs(attr(p, "zbarTotal") - periods * 4.0 * math.pi * RHO) < 1e-6:
+            if abs(attr(p, "zbarTotal") - int(periods) * 4.0 * math.pi * RHO) < 1e-4:
                 return workdir, float("nan")
         sys.stderr.write("  %s: no finished run to reuse, re-running\n" % tag)
 
