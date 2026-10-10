@@ -17,7 +17,11 @@ provides it.
 
 Recorded results live in `results/`, and write-ups alongside them —
 see [RESULTS-2026-08-07-globals-refactor.md](RESULTS-2026-08-07-globals-refactor.md)
-for the pre- vs post-refactor comparison.
+for the pre- vs post-refactor comparison, and
+[RESULTS-2026-10-10-field-values-refactor.md](RESULTS-2026-10-10-field-values-refactor.md)
+for the `tFieldValues` one. Each write-up names the machine it was measured on:
+result sets from different hosts are not comparable, so compare within a pair,
+not across them.
 
 ## The cases
 

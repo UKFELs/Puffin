@@ -28,7 +28,6 @@ USE puffin_constants, only: m_e, q_e
 use hdf5PuffLow, only: addh5stringattribute, addh5derivedvariable, write3dlimgrp, &
   write3duniformmesh, writecommonatts, writeh5timegroup, writeh5runinfo, integertostring
 use GlobalTypes, only: tSimulationContext
-use ParaField, only: qUnique
 use mpi, only: MPI_INFO_NULL
 
 implicit none (type, external)
@@ -506,7 +505,7 @@ contains
 ! final argument  checks for all active field on single root node ...
 ! should say if qUnique or rank=0...
 
-    if (qUnique .OR. (tProcInfo_G%qRoot)) then
+    if (ctx%field%qUnique .OR. (tProcInfo_G%qRoot)) then
     if (nlonglength>0) then
     if (qONED_G) then
       numSpatialDims=1

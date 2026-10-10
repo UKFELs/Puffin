@@ -377,5 +377,73 @@ if (NOT ENABLE_PARALLEL)
   endif()
 endif()
 
+# Python checks for the polarisation helpers in utilities/pyPlotting.
+#
+# Plain scripts rather than pFUnit tests, and fast (well under a second each):
+# they import the plotting scripts' helper functions and check them against
+# fields whose polarisation is known analytically. See the tests' README.
+#
+# Registered only when an interpreter that can actually run them is on hand.
+# Nothing in the build needs python, and the solver's own tests must not start
+# depending on it, so a missing numpy skips these with a note instead of
+# failing to configure. They carry the label "python", so `ctest -LE python`
+# excludes them and `ctest -L python` runs only them.
+set(PYPLOTTING_TESTS_DIR "${CMAKE_SOURCE_DIR}/utilities/pyPlotting/tests")
+
+# Take the first interpreter on PATH, not the newest one on the machine.
+# CMake's default is to prefer the highest version it can find anywhere, so a
+# conda environment holding python 3.11 as environment.yml asks for loses to
+# a 3.13 sitting in the base installation, and the dependencies are in the
+# environment. An activated environment is preferred over PATH either way.
+# To pin it by hand, configure with -DPython3_EXECUTABLE=/path/to/python.
+set(Python3_FIND_STRATEGY LOCATION)
+find_package(Python3 COMPONENTS Interpreter QUIET)
+
+if(NOT Python3_Interpreter_FOUND)
+
+  message(STATUS "No python3 interpreter found: not registering the "
+                 "pyPlotting polarisation tests")
+
+else()
+
+  execute_process(COMMAND ${Python3_EXECUTABLE} -c "import numpy"
+    RESULT_VARIABLE PYPLOTTING_NUMPY OUTPUT_QUIET ERROR_QUIET)
+  execute_process(COMMAND ${Python3_EXECUTABLE} -c "import scipy.signal"
+    RESULT_VARIABLE PYPLOTTING_SCIPY OUTPUT_QUIET ERROR_QUIET)
+
+  if(NOT PYPLOTTING_NUMPY EQUAL 0)
+
+    message(STATUS "numpy not importable by ${Python3_EXECUTABLE}: not "
+                   "registering the pyPlotting polarisation tests")
+
+  else()
+
+    add_test(NAME pyPlotting_polarization
+      COMMAND ${Python3_EXECUTABLE} "${PYPLOTTING_TESTS_DIR}/testPolarization.py"
+    )
+    set_tests_properties(pyPlotting_polarization PROPERTIES LABELS "python")
+
+    # The Hilbert test cross-validates the averaged path against the resolved
+    # one, which calls scipy's transform as its reference.
+    if(PYPLOTTING_SCIPY EQUAL 0)
+
+      add_test(NAME pyPlotting_polarizationHilbert
+        COMMAND ${Python3_EXECUTABLE}
+                "${PYPLOTTING_TESTS_DIR}/testPolarizationHilbert.py"
+      )
+      set_tests_properties(pyPlotting_polarizationHilbert PROPERTIES
+                           LABELS "python")
+
+    else()
+
+      message(STATUS "scipy not importable by ${Python3_EXECUTABLE}: not "
+                     "registering pyPlotting_polarizationHilbert")
+
+    endif()
+
+  endif()
+
+endif()
+
 # ^^ For examples of adding more tests, see:
 # https://github.com/Goddard-Fortran-Ecosystem/pFUnit_demos/blob/main/Basic/tests/CMakeLists.txt

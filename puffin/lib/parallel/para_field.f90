@@ -20,7 +20,7 @@ use ParallelSetUp, only: MPI_INT_HIGH, stopcode, gather1a, getgatharrs
 use puffin_mpiInfo, only: tProcInfo_G
 use puffin_fftwInfo, only: tTransInfo_G
 use gtop2, only: getp2, getp2avg
-use GlobalTypes, only: tSimulationFlags, tFELFrame
+use GlobalTypes, only: tSimulationFlags, tFELFrame, tFieldValues
 use mpi, only: MPI_ALLGATHER, mpi_allreduce, mpi_alltoallv, mpi_barrier, MPI_Bcast, &
   mpi_double_precision, MPI_IN_PLACE, mpi_integer, MPI_ISSEND, mpi_max, mpi_min, MPI_RECV, &
   mpi_reduce, mpi_scatter, MPI_STATUS_SIZE, mpi_sum, MPI_WAIT, MPI_WAITALL
@@ -28,16 +28,15 @@ use mpi, only: MPI_ALLGATHER, mpi_allreduce, mpi_alltoallv, mpi_barrier, MPI_Bca
 implicit none (type, external)
 private
 
-public :: ac_ifield, ac_rfield, bk_ifield, bk_rfield, bz2, eee, eee_GGG, ees, ees_GGG, ez2, ffe, &
-           ffe_GGG, ffs, fr_ifield, fr_rfield, fz2, getinnode, getlocalfieldindices, inner2outer, &
-           ioutInfo_G, iTemporal, mainlen, outer2inner, pupd8, qStart_new, qUnique, redist2fftwlt, &
-           redistbackfft, tim_fft, tlelen, tlelen4arr, tlflen, tlflen4arr, tllen, tre_fft, &
-           tTransInfo_G, upd8a, upd8da, updateglobalpow
+public :: getinnode, getlocalfieldindices, inner2outer, &
+           ioutInfo_G, iTemporal, outer2inner, pupd8, redist2fftwlt, &
+           redistbackfft, tTransInfo_G, upd8a, upd8da, updateglobalpow
 
 
-real(kind=wp), allocatable :: fr_rfield(:), bk_rfield(:), ac_rfield(:), &
-                              fr_ifield(:), bk_ifield(:), ac_ifield(:), &
-                              tre_fft(:), tim_fft(:)
+!  The field data, and the decomposition indices that give it meaning, now live
+!  in ctx%field (type tFieldValues) and are passed in to the routines below.
+!  What remains module state here is MPI scratch belonging to the transfers
+!  themselves, not to the field. See UKFELs/Puffin#107.
 
 real(kind=wp), allocatable :: tmp_A(:)
 
@@ -47,14 +46,6 @@ integer(kind=ip), allocatable :: recvs_pf(:), displs_pf(:), recvs_ff(:), &
 integer(kind=ip), allocatable :: recvs_ppf(:), displs_ppf(:), recvs_fpf(:), &
                                  displs_fpf(:), recvs_epf(:), displs_epf(:)
 
-integer(kind=ip) :: fz2, ez2, lTr, bz2, fbuffLen, fbuffLenM, tllen, mainlen, &
-                    fz2_GGG, ez2_GGG, bz2PB
-
-integer(kind=ip) :: ffs, ffe, tlflen, ees, eee, tlelen, tlflen_glob, tlelen_glob, &
-                    tlflen4arr, tlelen4arr, ffs_GGG, ffe_GGG, ees_GGG, eee_GGG
-
-
-
 !!!   For parallel algorithm to deal with over-compression...
 
 integer(kind=ip), allocatable :: lrank_v(:), rrank_v(:,:), &
@@ -62,13 +53,11 @@ integer(kind=ip), allocatable :: lrank_v(:), rrank_v(:,:), &
 
 integer(kind=ip) :: nsnds_bf, nrecvs_bf
 
-logical :: qUnique
-
 ! if fz2 to ez2 overlaps, give warning - but not fail...
 ! No, fz2 to ez2 will only overlap if less nodes than procs...
 ! in which case, we share ALL nodes...but do this later...
 ! and can use MPI_ALLGATHER or whatever as before (but on
-! ac_rfield and ac_ifield rather than sA)
+! field%ac_r and field%ac_i rather than sA)
 
 ! if boundary overlaps next process, then process will send
 ! buffer to more than one process...so loop around lrank_v
@@ -77,24 +66,16 @@ logical :: qUnique
 
 
 
-integer(kind=ip), allocatable :: ac_ar(:,:), ff_ar(:,:), ee_ar(:,:), &
-                                 ft_ar(:,:)
-
-
-integer(kind=ip) :: iParaBas   ! Basis for parallelism - options:
+! Options for field%iParaBas, the basis for the parallel decomposition
 
 integer(kind=ip), parameter :: iElectronBased=1, &
                                iFieldBased = 2, &
                                iFFTW_based = 3
 
-
-
-logical :: qStart_new
-
 contains
 
 
-        subroutine getLocalFieldIndices(sdz, flags, frame, pqSq)
+        subroutine getLocalFieldIndices(sdz, flags, frame, field, pqSq)
 
     implicit none (type, external)
 
@@ -114,14 +95,17 @@ contains
     real(kind=wp), intent(in) :: sdz
     type(tSimulationFlags), intent(inout) :: flags
     type(tFELFrame), intent(in) :: frame
+    type(tFieldValues), intent(inout) :: field
     real(kind=wp), intent(in), optional :: pqSq   ! passed in averaged mode only - see calcBuff
 
-    real(kind=wp), allocatable :: fr_rfield_old(:), &
-                                  fr_ifield_old(:), &
-                                  bk_rfield_old(:), &
-                                  bk_ifield_old(:), &
-                                  ac_rfield_old(:), &
-                                  ac_ifield_old(:)
+    real(kind=wp), allocatable :: fr_rfield_old(:,:), &
+                                  fr_ifield_old(:,:), &
+                                  bk_rfield_old(:,:), &
+                                  bk_ifield_old(:,:), &
+                                  ac_rfield_old(:,:), &
+                                  ac_ifield_old(:,:)
+
+    integer(kind=ip) :: ic   ! field component
 
     integer(kind=ip) :: ij
     integer(kind=ip) :: gath_v
@@ -152,58 +136,58 @@ contains
 !!!!!!&&*(&*(&CD*(S)))  INITIALIZING ONLY FOR TESTING!!!! WILL ONLY
 !                       WORK WITH TEST CASE!!!!!
 
-    if (qStart_new) then
+    if (field%qStart_new) then
 
-      iParaBas = iFieldBased
+      field%iParaBas = iFieldBased
 
-      call getFStEnd()
+      call getFStEnd(field)
 
-      bz2 = ez2
+      field%bz2 = field%ez2
 
-      tlflen_glob = 0
-      tlflen = 0
-      tlflen4arr = 1
-      ffs = 0
-      ffe = 0
-
-
-      tlelen_glob = 0
-      tlelen = 0
-      tlelen4arr = 1
-      ees = 0
-      eee = 0
-
-      allocate(ee_ar(tProcInfo_G%size, 3))
-      allocate(ff_ar(tProcInfo_G%size, 3))
-      allocate(ac_ar(tProcInfo_G%size, 3))
+      field%tlflen_glob = 0
+      field%tlflen = 0
+      field%tlflen4arr = 1
+      field%ffs = 0
+      field%ffe = 0
 
 
-      call setupLayoutArrs(mainlen, fz2, ez2, ac_ar)
-      call setupLayoutArrs(tlflen, ffs, ffe, ff_ar)
-      call setupLayoutArrs(tlelen, ees, eee, ee_ar)
+      field%tlelen_glob = 0
+      field%tlelen = 0
+      field%tlelen4arr = 1
+      field%ees = 0
+      field%eee = 0
+
+      allocate(field%ee_ar(tProcInfo_G%size, 3))
+      allocate(field%ff_ar(tProcInfo_G%size, 3))
+      allocate(field%ac_ar(tProcInfo_G%size, 3))
 
 
-      allocate(fr_rfield(tlflen4arr*ntrnds_G), &
-                 fr_ifield(tlflen4arr*ntrnds_G))
-      allocate(bk_rfield(tlelen4arr*ntrnds_G), &
-               bk_ifield(tlelen4arr*ntrnds_G))
-
-      allocate(ac_rfield(mainlen*ntrnds_G), &
-               ac_ifield(mainlen*ntrnds_G))
+      call setupLayoutArrs(field%mainlen, field%fz2, field%ez2, field%ac_ar)
+      call setupLayoutArrs(field%tlflen, field%ffs, field%ffe, field%ff_ar)
+      call setupLayoutArrs(field%tlelen, field%ees, field%eee, field%ee_ar)
 
 
-      ac_rfield = 0_wp
-      ac_ifield = 0_wp
+      allocate(field%fr_r(field%tlflen4arr*ntrnds_G, field%nComp), &
+                 field%fr_i(field%tlflen4arr*ntrnds_G, field%nComp))
+      allocate(field%bk_r(field%tlelen4arr*ntrnds_G, field%nComp), &
+               field%bk_i(field%tlelen4arr*ntrnds_G, field%nComp))
 
-      fr_rfield = 0_wp
-      fr_ifield = 0_wp
-      bk_rfield = 0_wp
-      bk_ifield = 0_wp
+      allocate(field%ac_r(field%mainlen*ntrnds_G, field%nComp), &
+               field%ac_i(field%mainlen*ntrnds_G, field%nComp))
 
-      qStart_new = .false.
 
-      if (fieldMesh == iTemporal) iParaBas = iElectronBased
-      qUnique = .true.
+      field%ac_r = 0_wp
+      field%ac_i = 0_wp
+
+      field%fr_r = 0_wp
+      field%fr_i = 0_wp
+      field%bk_r = 0_wp
+      field%bk_i = 0_wp
+
+      field%qStart_new = .false.
+
+      if (fieldMesh == iTemporal) field%iParaBas = iElectronBased
+      field%qUnique = .true.
 
     else
 
@@ -229,99 +213,106 @@ contains
   allocate(ff_ar_old(tProcInfo_G%size, 3))
   allocate(ac_ar_old(tProcInfo_G%size, 3))
 
-  ee_ar_old = ee_ar
-  ff_ar_old = ff_ar
-  ac_ar_old = ac_ar
+  ee_ar_old = field%ee_ar
+  ff_ar_old = field%ff_ar
+  ac_ar_old = field%ac_ar
 
 
 
-  call getFStEnd()    ! Define new 'active' region
+  call getFStEnd(field)    ! Define new 'active' region
 
-  call setupLayoutArrs(mainlen, fz2, ez2, ac_ar)
+  call setupLayoutArrs(field%mainlen, field%fz2, field%ez2, field%ac_ar)
 
-  if (qUnique) call rearrElecs()   ! Rearrange electrons
+  if (field%qUnique) call rearrElecs(field)   ! Rearrange electrons
 
 ! Branch on the argument, not on flags%period_averaged: init calls this
 ! before the flags are populated.
 
   if (present(pqSq)) then
     call calcBuff(4 * pi * frame%rho * sdz, frame%eta, frame%gamma_ref, &
-                  frame%aw, pqSq)  ! Calculate buffers
+                  frame%aw, field, pqSq)  ! Calculate buffers
   else
     call calcBuff(4 * pi * frame%rho * sdz, frame%eta, frame%gamma_ref, &
-                  frame%aw)  ! Calculate buffers
+                  frame%aw, field)  ! Calculate buffers
   end if
 
-  call getFrBk()  ! Get surrounding nodes
+  call getFrBk(field)  ! Get surrounding nodes
 
-  call setupLayoutArrs(tlflen, ffs, ffe, ff_ar)
-  call setupLayoutArrs(tlelen, ees, eee, ee_ar)
+  call setupLayoutArrs(field%tlflen, field%ffs, field%ffe, field%ff_ar)
+  call setupLayoutArrs(field%tlelen, field%ees, field%eee, field%ee_ar)
 
 
-  if (.not. qUnique) then
+  if (.not. field%qUnique) then
 
-    ac_ar(1,1) = mainlen
-    ac_ar(1,2) = fz2
-    ac_ar(1,3) = ez2
-    ac_ar(2:tProcInfo_G%size,:) = 0
+    field%ac_ar(1,1) = field%mainlen
+    field%ac_ar(1,2) = field%fz2
+    field%ac_ar(1,3) = field%ez2
+    field%ac_ar(2:tProcInfo_G%size,:) = 0
 
   end if
 
 
 
-  allocate(fr_rfield_old(size(fr_rfield)), fr_ifield_old(size(fr_ifield)))
-  allocate(bk_rfield_old(size(bk_rfield)), bk_ifield_old(size(bk_ifield)))
-  allocate(ac_rfield_old(size(ac_rfield)), ac_ifield_old(size(ac_ifield)))
+  allocate(fr_rfield_old(size(field%fr_r,1), field%nComp), &
+           fr_ifield_old(size(field%fr_i,1), field%nComp))
+  allocate(bk_rfield_old(size(field%bk_r,1), field%nComp), &
+           bk_ifield_old(size(field%bk_i,1), field%nComp))
+  allocate(ac_rfield_old(size(field%ac_r,1), field%nComp), &
+           ac_ifield_old(size(field%ac_i,1), field%nComp))
 
-  fr_rfield_old = fr_rfield
-  fr_ifield_old = fr_ifield
-  bk_rfield_old = bk_rfield
-  bk_ifield_old = bk_ifield
-  ac_rfield_old = ac_rfield
-  ac_ifield_old = ac_ifield
+  fr_rfield_old = field%fr_r
+  fr_ifield_old = field%fr_i
+  bk_rfield_old = field%bk_r
+  bk_ifield_old = field%bk_i
+  ac_rfield_old = field%ac_r
+  ac_ifield_old = field%ac_i
 
-  deallocate(ac_rfield, ac_ifield)
-  deallocate(fr_rfield, fr_ifield)
-  deallocate(bk_rfield, bk_ifield)
+  deallocate(field%ac_r, field%ac_i)
+  deallocate(field%fr_r, field%fr_i)
+  deallocate(field%bk_r, field%bk_i)
 
-  allocate(fr_rfield(tlflen4arr*ntrnds_G), &
-           fr_ifield(tlflen4arr*ntrnds_G))
-  allocate(bk_rfield(tlelen4arr*ntrnds_G), &
-           bk_ifield(tlelen4arr*ntrnds_G))
-  allocate(ac_rfield(tllen*ntrnds_G), &
-           ac_ifield(tllen*ntrnds_G))
+  allocate(field%fr_r(field%tlflen4arr*ntrnds_G, field%nComp), &
+           field%fr_i(field%tlflen4arr*ntrnds_G, field%nComp))
+  allocate(field%bk_r(field%tlelen4arr*ntrnds_G, field%nComp), &
+           field%bk_i(field%tlelen4arr*ntrnds_G, field%nComp))
+  allocate(field%ac_r(field%tllen*ntrnds_G, field%nComp), &
+           field%ac_i(field%tllen*ntrnds_G, field%nComp))
 
-  ac_rfield = 0_wp
-  ac_ifield = 0_wp
+  field%ac_r = 0_wp
+  field%ac_i = 0_wp
 
-  bk_rfield = 0_wp
-  bk_ifield = 0_wp
-  fr_rfield = 0_wp
-  fr_ifield = 0_wp
-
-
-  call redist2new2(ff_ar_old, ff_ar, fr_rfield_old, fr_rfield)
-  call redist2new2(ff_ar_old, ff_ar, fr_ifield_old, fr_ifield)
-
-  call redist2new2(ee_ar_old, ff_ar, bk_rfield_old, fr_rfield)
-  call redist2new2(ee_ar_old, ff_ar, bk_ifield_old, fr_ifield)
-
-  call redist2new2(ac_ar_old, ff_ar, ac_rfield_old, fr_rfield)
-  call redist2new2(ac_ar_old, ff_ar, ac_ifield_old, fr_ifield)
+  field%bk_r = 0_wp
+  field%bk_i = 0_wp
+  field%fr_r = 0_wp
+  field%fr_i = 0_wp
 
 
+! Each component redistributes independently, under the same layout tables.
+
+  do ic = 1, field%nComp
+
+  call redist2new2(ff_ar_old, field%ff_ar, fr_rfield_old(:,ic), field%fr_r(:,ic))
+  call redist2new2(ff_ar_old, field%ff_ar, fr_ifield_old(:,ic), field%fr_i(:,ic))
+
+  call redist2new2(ee_ar_old, field%ff_ar, bk_rfield_old(:,ic), field%fr_r(:,ic))
+  call redist2new2(ee_ar_old, field%ff_ar, bk_ifield_old(:,ic), field%fr_i(:,ic))
+
+  call redist2new2(ac_ar_old, field%ff_ar, ac_rfield_old(:,ic), field%fr_r(:,ic))
+  call redist2new2(ac_ar_old, field%ff_ar, ac_ifield_old(:,ic), field%fr_i(:,ic))
 
 
 
-  call redist2new2(ff_ar_old, ee_ar, fr_rfield_old, bk_rfield)
-  call redist2new2(ff_ar_old, ee_ar, fr_ifield_old, bk_ifield)
-
-  call redist2new2(ee_ar_old, ee_ar, bk_rfield_old, bk_rfield)
-  call redist2new2(ee_ar_old, ee_ar, bk_ifield_old, bk_ifield)
 
 
-  call redist2new2(ac_ar_old, ee_ar, ac_rfield_old, bk_rfield)
-  call redist2new2(ac_ar_old, ee_ar, ac_ifield_old, bk_ifield)
+  call redist2new2(ff_ar_old, field%ee_ar, fr_rfield_old(:,ic), field%bk_r(:,ic))
+  call redist2new2(ff_ar_old, field%ee_ar, fr_ifield_old(:,ic), field%bk_i(:,ic))
+
+  call redist2new2(ee_ar_old, field%ee_ar, bk_rfield_old(:,ic), field%bk_r(:,ic))
+  call redist2new2(ee_ar_old, field%ee_ar, bk_ifield_old(:,ic), field%bk_i(:,ic))
+
+
+  call redist2new2(ac_ar_old, field%ee_ar, ac_rfield_old(:,ic), field%bk_r(:,ic))
+  call redist2new2(ac_ar_old, field%ee_ar, ac_ifield_old(:,ic), field%bk_i(:,ic))
 
 !  call mpi_finalize(error)
 !  stop
@@ -330,14 +321,16 @@ contains
 
 
 
-  call redist2new2(ff_ar_old, ac_ar, fr_rfield_old, ac_rfield)
-  call redist2new2(ff_ar_old, ac_ar, fr_ifield_old, ac_ifield)
+  call redist2new2(ff_ar_old, field%ac_ar, fr_rfield_old(:,ic), field%ac_r(:,ic))
+  call redist2new2(ff_ar_old, field%ac_ar, fr_ifield_old(:,ic), field%ac_i(:,ic))
 
-  call redist2new2(ee_ar_old, ac_ar, bk_rfield_old, ac_rfield)
-  call redist2new2(ee_ar_old, ac_ar, bk_ifield_old, ac_ifield)
+  call redist2new2(ee_ar_old, field%ac_ar, bk_rfield_old(:,ic), field%ac_r(:,ic))
+  call redist2new2(ee_ar_old, field%ac_ar, bk_ifield_old(:,ic), field%ac_i(:,ic))
 
-  call redist2new2(ac_ar_old, ac_ar, ac_rfield_old, ac_rfield)
-  call redist2new2(ac_ar_old, ac_ar, ac_ifield_old, ac_ifield)
+  call redist2new2(ac_ar_old, field%ac_ar, ac_rfield_old(:,ic), field%ac_r(:,ic))
+  call redist2new2(ac_ar_old, field%ac_ar, ac_ifield_old(:,ic), field%ac_i(:,ic))
+
+  end do
 
 
 
@@ -352,13 +345,13 @@ contains
   deallocate(bk_rfield_old, bk_ifield_old)
 
 
-  if (.not. qUnique) then
+  if (.not. field%qUnique) then
 
-    call MPI_Bcast(ac_rfield, tllen*ntrnds_G, &
+    call MPI_Bcast(field%ac_r, field%tllen*ntrnds_G, &
                    mpi_double_precision, 0, &
                    tProcInfo_G%comm, error)
 
-    call MPI_Bcast(ac_ifield, tllen*ntrnds_G, &
+    call MPI_Bcast(field%ac_i, field%tllen*ntrnds_G, &
                    mpi_double_precision, 0, &
                    tProcInfo_G%comm, error)
   end if
@@ -380,9 +373,9 @@ contains
 
 
       if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-        gath_v = tlflen*ntrnds_G !-1
+        gath_v = field%tlflen*ntrnds_G !-1
       else
-        gath_v = tlflen*ntrnds_G
+        gath_v = field%tlflen*ntrnds_G
       end if
 
 
@@ -394,9 +387,9 @@ contains
 
 
       if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-        gath_v = mainlen*ntrnds_G ! -1
+        gath_v = field%mainlen*ntrnds_G ! -1
       else
-        gath_v = mainlen*ntrnds_G
+        gath_v = field%mainlen*ntrnds_G
       end if
 
       allocate(recvs_pf(tProcInfo_G%size), displs_pf(tProcInfo_G%size))
@@ -405,9 +398,9 @@ contains
 
 
       if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-        gath_v = tlelen*ntrnds_G !-1
+        gath_v = field%tlelen*ntrnds_G !-1
       else
-        gath_v = tlelen*ntrnds_G
+        gath_v = field%tlelen*ntrnds_G
       end if
 
       allocate(recvs_ef(tProcInfo_G%size), displs_ef(tProcInfo_G%size))
@@ -428,9 +421,9 @@ contains
 
 
       if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-        gath_v = tlflen !-1
+        gath_v = field%tlflen !-1
       else
-        gath_v = tlflen
+        gath_v = field%tlflen
       end if
 
 
@@ -444,9 +437,9 @@ contains
 
 
       if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-        gath_v = mainlen ! -1
+        gath_v = field%mainlen ! -1
       else
-        gath_v = mainlen
+        gath_v = field%mainlen
       end if
 
       allocate(recvs_ppf(tProcInfo_G%size), displs_ppf(tProcInfo_G%size))
@@ -457,9 +450,9 @@ contains
 
 
       if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-        gath_v = tlelen !-1
+        gath_v = field%tlelen !-1
       else
-        gath_v = tlelen
+        gath_v = field%tlelen
       end if
 
       allocate(recvs_epf(tProcInfo_G%size), displs_epf(tProcInfo_G%size))
@@ -477,14 +470,14 @@ contains
       ! Allocate back, front and active fields....commented out!
       ! ONLY USING ACTIVE FIELD FOR NOW TO CHECK SCALING...TO SEE
       ! IF IT'S WORTH PERSUING THIS METHOD
-!      allocate(fr_rfield(tlflen), bk_rfield(tlelen), &
-!               fr_ifield(tlflen), bk_ifield(tlelen))
+!      allocate(field%fr_r(field%tlflen), field%bk_r(field%tlelen), &
+!               field%fr_i(field%tlflen), field%bk_i(field%tlelen))
 
-!      allocate(ac_rfield(tllen), &
-!               ac_ifield(tllen))
+!      allocate(field%ac_r(field%tllen), &
+!               field%ac_i(field%tllen))
 
-!      ac_rfield = sA(fz2:bz2)
-!      ac_ifield = sA(fz2 + NZ2_G:bz2 + NZ2_G)
+!      field%ac_r = sA(field%fz2:field%bz2)
+!      field%ac_i = sA(field%fz2 + NZ2_G:field%bz2 + NZ2_G)
 
 !      print*, 'INSIDE GETLOCALFIELDINDICES, SIZE OF SA AT 5 IS ', size(sA), &
 !              ' FOR PROCESSOR ', tProcInfo_G%rank
@@ -525,18 +518,18 @@ contains
 
 
 
-    if (qUnique) then
+    if (field%qUnique) then
 
       allocate(tmp_A(maxval(lrank_v)*ntrndsi_G))
 
     else
-      allocate(tmp_A(tllen*ntrndsi_G))
+      allocate(tmp_A(field%tllen*ntrndsi_G))
     end if
 
      tmp_A = 0_wp
 
 
-      call pupd8(ac_rfield, ac_ifield)
+      call pupd8(field)
 
       flags%parallel_arrays_ok = .true.
 
@@ -546,129 +539,10 @@ contains
 !  ###################################################
 
 
-    subroutine UpdateGlobalField(sA)
-
-      real(kind=wp), intent(inout) :: sA(:)
-
-      real(kind=wp), allocatable :: A_local(:)
-
-      integer(kind=ip) :: gath_v
-
-
-
-      if (ffe_GGG > 0) then
-
-        if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-          gath_v = tlflen*ntrnds_G  !-1
-        else
-          gath_v = tlflen*ntrnds_G
-        end if
-
-
-
-
-        allocate(A_local(gath_v))
-
-        A_local = 0_wp
-
-        A_local(1:gath_v) = fr_rfield(1:gath_v)
-
-        call gather1A(A_local, sA((ffs_GGG-1)*ntrnds_G + 1:ffe_GGG*ntrnds_G), &
-                gath_v, (ffe_GGG - ffs_GGG + 1) * ntrnds_G, &
-                  recvs_ff, displs_ff)
-
-
-
-        A_local(1:gath_v) = fr_ifield(1:gath_v)
-
-        call gather1A(A_local, sA((ffs_GGG-1)*ntrnds_G + 1 + NZ2_G*ntrnds_G: &
-                                    ffe_GGG*ntrnds_G + NZ2_G*ntrnds_G), &
-                gath_v, (ffe_GGG - ffs_GGG + 1) * ntrnds_G, &
-                 recvs_ff, displs_ff)
-
-
-
-
-
-        deallocate(A_local)
-
-      end if
-
-
-
-
-
-      if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-        gath_v = mainlen * ntrnds_G !-1
-      else
-        gath_v = mainlen * ntrnds_G
-      end if
-
-
-
-
-      allocate(A_local(gath_v))
-
-      A_local = 0_wp
-
-      A_local(1:gath_v) = ac_rfield(1:gath_v)
-
-      call gather1A(A_local, sA((fz2_GGG-1)*ntrnds_G + 1:ez2_GGG*ntrnds_G), &
-                       gath_v, (fz2_GGG - ez2_GGG + 1) * ntrnds_G, &
-                       recvs_pf, displs_pf)
-
-      A_local(1:gath_v) = ac_ifield(1:gath_v)
-
-      call gather1A(A_local, sA((fz2_GGG-1)*ntrnds_G + 1 + NZ2_G*ntrnds_G: &
-                                 ez2_GGG*ntrnds_G + NZ2_G*ntrnds_G), &
-                       gath_v, (ez2_GGG - fz2_GGG + 1) * ntrnds_G, &
-                       recvs_pf, displs_pf)
-
-
-
-      deallocate(A_local)
-
-
-      if (eee_GGG < nz2_G) then
-
-        if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-          gath_v = tlelen * ntrnds_G !-1
-        else
-          gath_v = tlelen * ntrnds_G
-        end if
-
-
-
-
-        allocate(A_local(gath_v))
-
-          A_local = 0_wp
-
-          A_local(1:gath_v) = fr_rfield(1:gath_v)
-
-        call gather1A(A_local, sA((ees_GGG - 1)*ntrnds_G + 1:eee_GGG*ntrnds_G), &
-                       gath_v, (eee_GGG - ees_GGG + 1), recvs_ef, displs_ef)
-
-
-        A_local(1:gath_v) = fr_ifield(1:gath_v)
-
-        call gather1A(A_local, sA((ees_GGG - 1)*ntrnds_G + 1 + NZ2_G*ntrnds_G: &
-                       eee_GGG*ntrnds_G + nz2_G*ntrnds_G), &
-                       gath_v, (eee_GGG - ees_GGG + 1), recvs_ef, displs_ef)
-
-
-
-        deallocate(A_local)
-
-      end if
-
-    end subroutine UpdateGlobalField
-
-
-
-    subroutine UpdateGlobalPow(fpow, apow, bpow, gpow)
+    subroutine UpdateGlobalPow(fpow, apow, bpow, gpow, field)
 
       real(kind=wp), intent(inout) :: fpow(:), apow(:), bpow(:), gpow(:)
+      type(tFieldValues), intent(in) :: field
 
       integer(kind=ip) :: gath_v
 
@@ -677,12 +551,12 @@ contains
 
       gpow=0.0_wp
 
-      if ((ffe_GGG - ffs_GGG) > 0) then
+      if ((field%ffe_GGG - field%ffs_GGG) > 0) then
 
         if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-          gath_v = tlflen  !-1
+          gath_v = field%tlflen  !-1
         else
-          gath_v = tlflen
+          gath_v = field%tlflen
         end if
 
 
@@ -694,8 +568,8 @@ contains
 
         A_local(1:gath_v) = fpow(1:gath_v)
 
-        call gather1A(A_local, gpow(ffs_GGG:ffe_GGG), &
-                gath_v, ffe_GGG - ffs_GGG + 1, &
+        call gather1A(A_local, gpow(field%ffs_GGG:field%ffe_GGG), &
+                gath_v, field%ffe_GGG - field%ffs_GGG + 1, &
                   recvs_fpf, displs_fpf)
 
 
@@ -706,49 +580,49 @@ contains
 
 
       if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-        gath_v = mainlen !-1
+        gath_v = field%mainlen !-1
       else
-        gath_v = mainlen
+        gath_v = field%mainlen
       end if
 
 
 
 
       allocate(A_local(gath_v))
-      allocate(powi(ez2_GGG - fz2_GGG + 1))
+      allocate(powi(field%ez2_GGG - field%fz2_GGG + 1))
 
       A_local = 0_wp
       powi = 0_wp
 
       A_local(1:gath_v) = apow(1:gath_v)
 
-      if (qUnique) then
+      if (field%qUnique) then
         call gather1A(A_local, powi, &
-                       gath_v, fz2_GGG - ez2_GGG + 1, &
+                       gath_v, field%fz2_GGG - field%ez2_GGG + 1, &
                        recvs_ppf, displs_ppf)
       else
         powi = A_local
       end if
 
 
-      gpow(fz2_GGG:ez2_GGG) = powi(:)
+      gpow(field%fz2_GGG:field%ez2_GGG) = powi(:)
       deallocate(A_local)
       deallocate(powi)
 
 
-      if ( (eee_GGG - ees_GGG) > 0) then
+      if ( (field%eee_GGG - field%ees_GGG) > 0) then
 
         if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-          gath_v = tlelen !-1
+          gath_v = field%tlelen !-1
         else
-          gath_v = tlelen
+          gath_v = field%tlelen
         end if
 
 
 
 
         allocate(A_local(gath_v))
-        allocate(powi(eee_GGG - ees_GGG + 1))
+        allocate(powi(field%eee_GGG - field%ees_GGG + 1))
 
 
           A_local = 0_wp
@@ -757,10 +631,10 @@ contains
           A_local(1:gath_v) = bpow(1:gath_v)
 
           call gather1A(A_local, powi, &
-                         gath_v, eee_GGG - ees_GGG + 1, recvs_epf, displs_epf)
+                         gath_v, field%eee_GGG - field%ees_GGG + 1, recvs_epf, displs_epf)
 
 
-          gpow(ees_GGG:eee_GGG) = powi(:)
+          gpow(field%ees_GGG:field%eee_GGG) = powi(:)
 
           deallocate(A_local)
           deallocate(powi)
@@ -773,24 +647,16 @@ contains
 !  ###################################################
 
 
-    subroutine alloc_paraf_inds()
-
-      allocate(ac_ar(tProcInfo_G%size, 3))
-      allocate(ff_ar(tProcInfo_G%size, 3))
-      allocate(ee_ar(tProcInfo_G%size, 3))
-
-    end subroutine alloc_paraf_inds
 
 
-
-
-    subroutine upd8da(dadz_r, dadz_i)
+    subroutine upd8da(dadz_r, dadz_i, field)
 
     ! Send dadz from buffer to MPI process on the right
     ! Data is added to array in next process, not
     ! written over.
 
       real(kind=wp), contiguous, intent(inout) :: dadz_r(:), dadz_i(:)
+      type(tFieldValues), intent(in) :: field
 
       integer :: req, error
       integer(kind=ip) :: ij, si, sst, sse
@@ -804,7 +670,7 @@ contains
 
       real(kind=wp), allocatable :: Abounds(:)
 
-      if (qUnique) then
+      if (field%qUnique) then
 
         if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
           allocate(reqs(nsnds_bf), sendstats(MPI_STATUS_SIZE, nsnds_bf))
@@ -824,8 +690,8 @@ contains
             sst = rrank_v(ij, 2)
             sse = rrank_v(ij, 3)
 
-            sst = (sst - (fz2-1)-1)*ntrndsi_G + 1
-            sse = (sse-(fz2-1))*ntrndsi_G
+            sst = (sst - (field%fz2-1)-1)*ntrndsi_G + 1
+            sse = (sse-(field%fz2-1))*ntrndsi_G
             si = si*ntrndsi_G
 
 
@@ -881,8 +747,8 @@ contains
             sse = rrank_v(ij, 3)
 
 
-            sst = (sst - (fz2-1)-1)*ntrndsi_G + 1
-            sse = (sse-(fz2-1))*ntrndsi_G
+            sst = (sst - (field%fz2-1)-1)*ntrndsi_G + 1
+            sse = (sse-(field%fz2-1))*ntrndsi_G
             si = si*ntrndsi_G
 
             call mpi_issend(dadz_i(sst:sse), &
@@ -925,7 +791,7 @@ contains
       else
 
 
-        call mpi_reduce(dadz_r, tmp_A, mainlen*ntrndsi_G, &
+        call mpi_reduce(dadz_r, tmp_A, field%mainlen*ntrndsi_G, &
                         mpi_double_precision, &
                         mpi_sum, 0, tProcInfo_G%comm, &
                         error)
@@ -933,7 +799,7 @@ contains
         dadz_r = tmp_A
 
 
-        call mpi_reduce(dadz_i, tmp_A, mainlen*ntrndsi_G, &
+        call mpi_reduce(dadz_i, tmp_A, field%mainlen*ntrndsi_G, &
                         mpi_double_precision, &
                         mpi_sum, 0, tProcInfo_G%comm, &
                         error)
@@ -954,14 +820,14 @@ contains
 
       if (FieldMesh == iPeriodic) then
 
-        if (.not. qUnique) then
+        if (.not. field%qUnique) then
 
 !!!! IF PERIODIC
 
-          si = ntrndsi_G * (bz2PB + 1_ip)
-          sst = ((tllen - (bz2PB+1_ip) ) * ntrndsi_G) + 1_ip
-          sse = tllen * ntrndsi_G
-          if (ioutInfo_G > 0) print*, size(dadz_r), tllen, mainlen
+          si = ntrndsi_G * (field%bz2PB + 1_ip)
+          sst = ((field%tllen - (field%bz2PB+1_ip) ) * ntrndsi_G) + 1_ip
+          sse = field%tllen * ntrndsi_G
+          if (ioutInfo_G > 0) print*, size(dadz_r), field%tllen, field%mainlen
 
           if (ioutInfo_G > 0) print*, "IM NOT UNIQUE"
 
@@ -973,9 +839,9 @@ contains
 
 
 
-          si = ntrndsi_G * (bz2PB + 1_ip)
-          sst = ((tllen - (bz2PB + 1_ip) ) * ntrndsi_G) + 1_ip
-          sse = tllen * ntrndsi_G
+          si = ntrndsi_G * (field%bz2PB + 1_ip)
+          sst = ((field%tllen - (field%bz2PB + 1_ip) ) * ntrndsi_G) + 1_ip
+          sse = field%tllen * ntrndsi_G
 
           if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
 
@@ -1092,7 +958,7 @@ contains
 
           end if
 
-        end if  ! end periodic mesh for qUnique
+        end if  ! end periodic mesh for field%qUnique
 
       end if   ! End synch'ing for periodic mesh...
 
@@ -1108,26 +974,35 @@ contains
 !> @brief
 !> Update the periodic boundary buffer for the periodic case
 
-    subroutine pupd8(ar, ai)
+!> Periodic-mesh wraparound of the active slab. Takes the field object rather
+!> than the two arrays: it is only ever called on ac_r/ac_i, and passing those
+!> alongside the object they belong to would alias an intent(inout) dummy
+!> against part of the same object.
 
-      real(kind=wp), intent(inout) :: ar(:), ai(:)
+    subroutine pupd8(field)
+
+      type(tFieldValues), intent(inout) :: field
 
       integer :: req, error
-      integer(kind=ip) :: si, sst, sse
+      integer(kind=ip) :: si, sst, sse, ic
       integer :: statr(MPI_STATUS_SIZE)
       integer :: sendstat(MPI_STATUS_SIZE)
 
       if (FieldMesh == iPeriodic) then
 
-        if (qUnique) then
+        if (field%qUnique) then
 
-          si = ntrnds_G * (bz2PB + 1_ip)
-          sst = ((tllen - (bz2PB + 1_ip) ) * ntrnds_G) + 1_ip
-          sse = tllen * ntrnds_G
+          si = ntrnds_G * (field%bz2PB + 1_ip)
+          sst = ((field%tllen - (field%bz2PB + 1_ip) ) * ntrnds_G) + 1_ip
+          sse = field%tllen * ntrnds_G
+
+!         One wraparound exchange per field component.
+
+          do ic = 1, field%nComp
 
           if (tProcInfo_G%rank == 0_ip) then
 
-            call mpi_issend(ar(1:si), si, mpi_double_precision, &
+            call mpi_issend(field%ac_r(1:si,ic), si, mpi_double_precision, &
                             tProcInfo_G%size-1_ip, 0, &
                             tProcInfo_G%comm, req, error)
 
@@ -1137,7 +1012,7 @@ contains
 
           if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
 
-            call mpi_recv( ar(sst:sse), si, mpi_double_precision, &
+            call mpi_recv( field%ac_r(sst:sse,ic), si, mpi_double_precision, &
                      0, 0, tProcInfo_G%comm, statr, error )
 
           end if
@@ -1146,7 +1021,7 @@ contains
           if (tProcInfo_G%rank == 0_ip) then
 
             call mpi_wait( req,sendstat,error )
-            call mpi_issend(ai(1:si), si, mpi_double_precision, &
+            call mpi_issend(field%ac_i(1:si,ic), si, mpi_double_precision, &
                             tProcInfo_G%size-1_ip, 0, &
                             tProcInfo_G%comm, req, error)
 
@@ -1155,7 +1030,7 @@ contains
 
           if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
 
-            call mpi_recv( ai(sst:sse), si, mpi_double_precision, &
+            call mpi_recv( field%ac_i(sst:sse,ic), si, mpi_double_precision, &
                      0, 0, tProcInfo_G%comm, statr, error )
 
           end if
@@ -1166,6 +1041,8 @@ contains
             call mpi_wait( req,sendstat,error )
 
           end if
+
+          end do
 
         end if
 
@@ -1179,7 +1056,7 @@ contains
 
 
 
-    subroutine upd8a(ac_rl, ac_il)
+    subroutine upd8a(ac_rl, ac_il, field)
 
       implicit none (type, external)
 
@@ -1187,6 +1064,7 @@ contains
     ! Data in 'buffer' on the left is overwritten.
 
       real(kind=wp), contiguous, intent(inout) :: ac_rl(:), ac_il(:)
+      type(tFieldValues), intent(in) :: field
 
       integer(kind=ip) :: req, error, ij, si, sst, sse
       integer :: statr(MPI_STATUS_SIZE)
@@ -1201,7 +1079,7 @@ contains
 
 
 
-      if (qUnique) then
+      if (field%qUnique) then
 
         if (tProcInfo_G%rank /= 0) then
           allocate(reqs(nrecvs_bf), sendstats(MPI_STATUS_SIZE, nrecvs_bf))
@@ -1240,11 +1118,12 @@ contains
             sst = rrank_v(ij, 2)
             sse = rrank_v(ij, 3)
 
-            sst = (sst - (fz2-1)-1)*ntrndsi_G + 1
-            sse = (sse-(fz2-1))*ntrndsi_G
+            sst = (sst - (field%fz2-1)-1)*ntrndsi_G + 1
+            sse = (sse-(field%fz2-1))*ntrndsi_G
             si = si*ntrndsi_G
 
-  !          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
+  !          call mpi_issend(dadz_r((field%ez2+1)-(field%fz2-1) + ofst &
+  !                    :field%bz2-(field%fz2-1)), si, &
   !                    mpi_double_precision, &
   !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
 
@@ -1298,11 +1177,12 @@ contains
             sst = rrank_v(ij, 2)
             sse = rrank_v(ij, 3)
 
-            sst = (sst - (fz2-1)-1)*ntrndsi_G + 1
-            sse = (sse-(fz2-1))*ntrndsi_G
+            sst = (sst - (field%fz2-1)-1)*ntrndsi_G + 1
+            sse = (sse-(field%fz2-1))*ntrndsi_G
             si = si*ntrndsi_G
 
-  !          call mpi_issend(dadz_r((ez2+1)-(fz2-1) + ofst :bz2-(fz2-1)), si, &
+  !          call mpi_issend(dadz_r((field%ez2+1)-(field%fz2-1) + ofst &
+  !                    :field%bz2-(field%fz2-1)), si, &
   !                    mpi_double_precision, &
   !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, req, error)
 
@@ -1328,11 +1208,11 @@ contains
       else
 
 
-        call MPI_Bcast(ac_rl, tllen*ntrndsi_G, &
+        call MPI_Bcast(ac_rl, field%tllen*ntrndsi_G, &
                        mpi_double_precision, 0, &
                        tProcInfo_G%comm, error)
 
-        call MPI_Bcast(ac_il, tllen*ntrndsi_G, &
+        call MPI_Bcast(ac_il, field%tllen*ntrndsi_G, &
                        mpi_double_precision, 0, &
                        tProcInfo_G%comm, error)
 
@@ -1346,7 +1226,7 @@ contains
 !
 !!        send to rank-1
 !
-!        call mpi_issend(ac_rl(1:fbuffLenM), fbuffLenM, mpi_double_precision, &
+!        call mpi_issend(ac_rl(1:field%fbuffLenM), field%fbuffLenM, mpi_double_precision, &
 !                           tProcInfo_G%rank-1, 0, tProcInfo_G%comm, req, error)
 !
 !      end if
@@ -1357,7 +1237,8 @@ contains
 !
 !!       rec from rank+1
 !
-!        CALL mpi_recv( ac_rl((ez2+1)-(fz2-1):bz2-(fz2-1)), fbuffLen, mpi_double_precision, &
+!        CALL mpi_recv( ac_rl((field%ez2+1)-(field%fz2-1):field%bz2-(field%fz2-1)), &
+!                    field%fbuffLen, mpi_double_precision, &
 !                    tProcInfo_G%rank+1, 0, tProcInfo_G%comm, statr, error )
 !
 !      end if
@@ -1374,7 +1255,7 @@ contains
 !
 !!        send to rank-1
 !
-!        call mpi_issend(ac_il(1:fbuffLenM), fbuffLenM, mpi_double_precision, &
+!        call mpi_issend(ac_il(1:field%fbuffLenM), field%fbuffLenM, mpi_double_precision, &
 !                tProcInfo_G%rank-1, 0, tProcInfo_G%comm, req, error)
 !
 !      end if
@@ -1383,7 +1264,8 @@ contains
 !
 !!       rec from rank+1
 !
-!        CALL mpi_recv( ac_il((ez2+1)-(fz2-1):bz2-(fz2-1)), fbuffLen, mpi_double_precision, &
+!        CALL mpi_recv( ac_il((field%ez2+1)-(field%fz2-1):field%bz2-(field%fz2-1)), &
+!                    field%fbuffLen, mpi_double_precision, &
 !               tProcInfo_G%rank+1, 0, tProcInfo_G%comm, statr, error )
 !
 !      end if
@@ -1401,12 +1283,14 @@ contains
 
 
 
-  subroutine inner2Outer(inner_ra, inner_ia)
+  subroutine inner2Outer(inner_ra, inner_ia, field, ic)
 
 
     implicit none (type, external)
 
     real(kind=wp), contiguous, intent(in) :: inner_ra(:), inner_ia(:)
+    type(tFieldValues), intent(inout) :: field
+    integer(kind=ip), intent(in) :: ic   ! which field component
 
     integer(kind=ip) :: iz, ssti, ssei, iy, sst, sse
     integer(kind=ip) :: nxout, nyout ! should be made global and calculated
@@ -1415,22 +1299,22 @@ contains
     nyout = (ny_g - nspindy)/2
 
 
-    do iz = fz2, bz2
+    do iz = field%fz2, field%bz2
 
       do iy = 1, nspinDY
 
-        sst = (iz - (fz2-1)-1)*ntrnds_G + &
+        sst = (iz - (field%fz2-1)-1)*ntrnds_G + &
                          nx_G*(nyout+(iy-1)) + &
                          nxout + 1
 
         sse = sst + nspinDX - 1
 
-        ssti = (iz - (fz2-1)-1)*ntrndsi_G + &
+        ssti = (iz - (field%fz2-1)-1)*ntrndsi_G + &
                          nspinDX*(iy-1) + 1
         ssei = ssti + nspinDX - 1
 
-        ac_rfield(sst:sse) = inner_ra(ssti:ssei)
-        ac_ifield(sst:sse) = inner_ia(ssti:ssei)
+        field%ac_r(sst:sse,ic) = inner_ra(ssti:ssei)
+        field%ac_i(sst:sse,ic) = inner_ia(ssti:ssei)
 
       end do
 
@@ -1443,12 +1327,14 @@ contains
 
 
 
-  subroutine outer2Inner(inner_ra, inner_ia)
+  subroutine outer2Inner(inner_ra, inner_ia, field, ic)
 
 
     implicit none (type, external)
 
     real(kind=wp), contiguous, intent(out) :: inner_ra(:), inner_ia(:)
+    type(tFieldValues), intent(in) :: field
+    integer(kind=ip), intent(in) :: ic   ! which field component
 
     integer(kind=ip) :: iz, sst, sse, ssti, ssei
     integer(kind=ip) :: nxout, nyout, iy ! should be made global and calculated
@@ -1456,22 +1342,22 @@ contains
     nxout = (nx_g - nspindx)/2
     nyout = (ny_g - nspindy)/2
 
-    do iz = fz2, bz2
+    do iz = field%fz2, field%bz2
 
       do iy = 1, nspinDY
 
-        sst = (iz - (fz2-1)-1)*ntrnds_G + &
+        sst = (iz - (field%fz2-1)-1)*ntrnds_G + &
                          nx_G*(nyout+(iy-1)) + &
                          nxout + 1
 
         sse = sst + nspinDX - 1
 
-        ssti = (iz - (fz2-1)-1)*ntrndsi_G + &
+        ssti = (iz - (field%fz2-1)-1)*ntrndsi_G + &
                          nspinDX*(iy-1) + 1
         ssei = ssti + nspinDX - 1
 
-        inner_ra(ssti:ssei) = ac_rfield(sst:sse)
-        inner_ia(ssti:ssei) = ac_ifield(sst:sse)
+        inner_ra(ssti:ssei) = field%ac_r(sst:sse,ic)
+        inner_ia(ssti:ssei) = field%ac_i(sst:sse,ic)
 
       end do
 
@@ -1713,7 +1599,7 @@ contains
 
 
 
-  subroutine calcBuff(dz, sEta, sGammaR, sAw, pqSq)
+  subroutine calcBuff(dz, sEta, sGammaR, sAw, field, pqSq)
 
 ! Subroutine to setup the 'buffer' region
 ! at the end of the parallel field section
@@ -1727,6 +1613,7 @@ contains
 ! dz through the undulator.
 
     real(kind=wp), intent(in) :: dz, sEta, sGammaR, sAw
+    type(tFieldValues), intent(inout) :: field
 
 ! Present only in the averaged mode: the period average of the undulator
 ! quiver |pperp|^2.  There sElPX_G/sElPY_G hold only the slow part of pperp,
@@ -1768,20 +1655,21 @@ contains
       ! predicted length in z2 needed needed in buffer for beam
       bz2_len = maxval(sElZ2_G + bz2_len * sp2)
 
-!    print*, 'bz2 length is...', bz2_len
+!    print*, 'field%bz2 length is...', bz2_len
 !    print*, 'max p2 is ', maxval(sp2)
 
       deallocate(sp2)
 
     else
 
-      bz2_len = (ez2 + 2_ip) * sLengthOfElmZ2_G  ! Just have 2 node boundary for no macroparticles
+      ! Just have 2 node boundary for no macroparticles
+      bz2_len = (field%ez2 + 2_ip) * sLengthOfElmZ2_G
 
     end if
 
 !    print*, tProcInfo_G%rank, 'is inside calcBuff, with buffer length', bz2_len
 
-!    bz2 = ez2 + nint(4 * 4 * pi * sRho_G / sLengthOfElmZ2_G)
+!    field%bz2 = field%ez2 + nint(4 * 4 * pi * sRho_G / sLengthOfElmZ2_G)
 !    Boundary only 4 lambda_r long - so can only go ~ 3 periods
 
 !   Node index of the final node in the boundary. The furthest particle
@@ -1797,92 +1685,92 @@ contains
 !   would no longer match at 1e-10.
 
     if (present(pqSq)) then
-      bz2 = floor(bz2_len / sLengthOfElmZ2_G, kind=ip) + 2_ip
+      field%bz2 = floor(bz2_len / sLengthOfElmZ2_G, kind=ip) + 2_ip
     else
-      bz2 = nint(bz2_len / sLengthOfElmZ2_G)
+      field%bz2 = nint(bz2_len / sLengthOfElmZ2_G)
     end if
 
     if (fieldMesh == iPeriodic) then
 
-      bz2PB = 0_ip
+      field%bz2PB = 0_ip
 
-      if (bz2 > nz2_G) then
+      if (field%bz2 > nz2_G) then
 
-        bz2PB = bz2 - nz2_G
-!        if (bz2PB >= fz2) qUnique = .false.
-        !bz2 = nz2_G
+        field%bz2PB = field%bz2 - nz2_G
+!        if (field%bz2PB >= field%fz2) field%qUnique = .false.
+        !field%bz2 = nz2_G
 
       end if
 
     else
 
-      if (bz2 > nz2_G) bz2 = nz2_G
-      bz2PB = 0_ip
+      if (field%bz2 > nz2_G) field%bz2 = nz2_G
+      field%bz2PB = 0_ip
 
     end if
 
 
 ! Find global bz2...
 
-    call mpi_allreduce(bz2, bz2_globm, 1, mpi_integer, mpi_max, &
+    call mpi_allreduce(field%bz2, bz2_globm, 1, mpi_integer, mpi_max, &
                     tProcInfo_G%comm, error)
 
     if (tProcInfo_G%rank == tProcInfo_G%size-1) then
 
-!      print*, bz2, bz2PB
-      bz2 = bz2_globm
+!      print*, field%bz2, field%bz2PB
+      field%bz2 = bz2_globm
 
     else
 
-      if (bz2 <= ez2) bz2 = ez2 + 1  ! For sparse beam!!
+      if (field%bz2 <= field%ez2) field%bz2 = field%ez2 + 1  ! For sparse beam!!
 
     end if
 
 
     if (fieldMesh == iPeriodic) then
 
-!      print*, '1', bz2
+!      print*, '1', field%bz2
 
       if (bz2_globm > nz2_G) then
-        bz2PB = bz2_globm - nz2_G
+        field%bz2PB = bz2_globm - nz2_G
       else
-        bz2PB = 3_ip
+        field%bz2PB = 3_ip
       end if
 
 ! tell last process what the max periodic boundary is...
 
 !      maxbz2PB = 1_ip
 
-      if (tProcInfo_G%qRoot) maxbz2PB = mainlen - 1_ip
+      if (tProcInfo_G%qRoot) maxbz2PB = field%mainlen - 1_ip
 
-!      print*, 'bz2PB', bz2PB
+!      print*, 'field%bz2PB', field%bz2PB
 
       call mpi_bcast(maxbz2PB, 1, mpi_integer, 0, tProcInfo_G%comm, error)
 
 !      maxbz2PB = 10
 
-      if (bz2PB > maxbz2PB) then
+      if (field%bz2PB > maxbz2PB) then
 
-        bz2PB = maxbz2PB
+        field%bz2PB = maxbz2PB
 
       end if
 
 ! if, for any other process, bz2 goes bigger than bz2 on the last process,
 ! then it will have to reduce its own bz2 to be OK
 
-      if (tProcInfo_G%rank == tProcInfo_G%size-1) bz2 = ez2 + bz2PB
+      if (tProcInfo_G%rank == tProcInfo_G%size-1) field%bz2 = field%ez2 + field%bz2PB
 
-!      print*, 'bz2 = ', bz2
-!      print*, 'bz2PB = ', bz2PB
-!      print*, 'ez2 = ', ez2
+!      print*, 'field%bz2 = ', field%bz2
+!      print*, 'field%bz2PB = ', field%bz2PB
+!      print*, 'field%ez2 = ', field%ez2
 
-      bz2last = bz2
+      bz2last = field%bz2
 
       call mpi_bcast(bz2last, 1, mpi_integer, tProcInfo_G%size-1, tProcInfo_G%comm, error)
 
       if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
-        if (bz2 > nz2_g) then
-          bz2 = nz2_g
+        if (field%bz2 > nz2_g) then
+          field%bz2 = nz2_g
         end if
       end if
 
@@ -1891,20 +1779,21 @@ contains
     end if
 
 
-    if (.not. qUnique) then
+    if (.not. field%qUnique) then
 
-      bz2 = bz2_globm
-      ez2 = bz2
-      mainlen = ez2-fz2+1
-      fbufflen = 0
-      tllen = mainlen
+      field%bz2 = bz2_globm
+      field%ez2 = field%bz2
+      field%mainlen = field%ez2-field%fz2+1
+      field%fbuffLen = 0
+      field%tllen = field%mainlen
 
       allocate(lrank_v(1), rrank_v(1,1), lrfromwhere(1))
 
     else
 
-      fbuffLen = bz2 - (ez2+1) + 1  ! Local buffer length, NOT including the ez2 node
-      tllen = bz2 - fz2 + 1     ! local total length, including buffer
+      ! Local buffer length, NOT including the field%ez2 node
+      field%fbuffLen = field%bz2 - (field%ez2+1) + 1
+      field%tllen = field%bz2 - field%fz2 + 1     ! local total length, including buffer
 
 
 
@@ -1914,21 +1803,21 @@ contains
 
         if (fieldMesh == iPeriodic) then
 
-          !mainlen = tllen
-!          print*, 'mainlen', mainlen
-!          print*, 'tllen', tllen
+          !field%mainlen = field%tllen
+!          print*, 'field%mainlen', field%mainlen
+!          print*, 'field%tllen', field%tllen
 !          print*, 'nz2_g', nz2_g
-!          print*, 'bz2PB', bz2PB
-!          print*, 'bz2', bz2
-          tllen = mainlen + bz2PB
-          fbuffLen = bz2PB
-          ez2 = nz2_g !bz2
+!          print*, 'field%bz2PB', field%bz2PB
+!          print*, 'field%bz2', field%bz2
+          field%tllen = field%mainlen + field%bz2PB
+          field%fbuffLen = field%bz2PB
+          field%ez2 = nz2_g !field%bz2
 
         else
 
-          mainlen = tllen
-          fbuffLen = 0
-          ez2 = bz2
+          field%mainlen = field%tllen
+          field%fbuffLen = 0
+          field%ez2 = field%bz2
 
         end if
 
@@ -1936,10 +1825,11 @@ contains
 
 
 
-      call setupLayoutArrs(mainlen, fz2, ez2, ac_ar)  ! readjust ac_ar with new ez2 for last process
+      ! readjust ac_ar with new ez2 for last process
+      call setupLayoutArrs(field%mainlen, field%fz2, field%ez2, field%ac_ar)
 
 
-      ez2_GGG = ac_ar(tProcInfo_G%size, 3)
+      field%ez2_GGG = field%ac_ar(tProcInfo_G%size, 3)
 
 
       ! count overlap over how many processes....
@@ -1952,7 +1842,7 @@ contains
 
       do ij = 0,tProcInfo_G%size-1
 
-        if  ( (ij > tProcInfo_G%rank) .and. (bz2 >= ac_ar(ij+1, 2)) ) then
+        if  ( (ij > tProcInfo_G%rank) .and. (field%bz2 >= field%ac_ar(ij+1, 2)) ) then
 
           cpolap = cpolap + 1
 
@@ -1984,22 +1874,22 @@ contains
 
         do ij = 0,tProcInfo_G%size-1
   !print*, ij
-          if  (   (ij > tProcInfo_G%rank) .and. (bz2 >= ac_ar(ij+1, 2)) ) then
+          if  (   (ij > tProcInfo_G%rank) .and. (field%bz2 >= field%ac_ar(ij+1, 2)) ) then
 
             yip = yip + 1
 
-            rrank_v(yip,2) = ac_ar(ij+1, 2)
+            rrank_v(yip,2) = field%ac_ar(ij+1, 2)
 
             if ((fieldMesh == iPeriodic) .and.  (ij == tProcInfo_G%size-1_ip)) then
 
-              rrank_v(yip,3) = bz2
+              rrank_v(yip,3) = field%bz2
 
             else
 
-              if (bz2 > ac_ar(ij+1, 3)) then
-                rrank_v(yip,3) = ac_ar(ij+1, 3)
+              if (field%bz2 > field%ac_ar(ij+1, 3)) then
+                rrank_v(yip,3) = field%ac_ar(ij+1, 3)
               else
-                rrank_v(yip,3) = bz2
+                rrank_v(yip,3) = field%bz2
               end if
 
             end if
@@ -2138,13 +2028,13 @@ contains
 !     Send buffer length to process on the right - as the right process
 !     will be updating out local 'buffer' region
 
-!    fbuffLenM = 1
+!    field%fbuffLenM = 1
 !
 !    if (tProcInfo_G%rank /= tProcInfo_G%size-1) then
 !
 !!        send to rank+1
 !
-!      call mpi_issend(fbuffLen, 1, mpi_integer, tProcInfo_G%rank+1, 4, &
+!      call mpi_issend(field%fbuffLen, 1, mpi_integer, tProcInfo_G%rank+1, 4, &
 !             tProcInfo_G%comm, req, error)
 !
 !    end if
@@ -2153,7 +2043,7 @@ contains
 !
 !!       rec from rank-1
 !
-!      CALL mpi_recv( fbuffLenM,1,MPI_INTEGER,tProcInfo_G%rank-1,4, &
+!      CALL mpi_recv( field%fbuffLenM,1,MPI_INTEGER,tProcInfo_G%rank-1,4, &
 !             tProcInfo_G%comm,statr,error )
 !
 !!      call mpi_wait( statr,sendstat,error )
@@ -2167,8 +2057,10 @@ contains
 !
 !    call mpi_barrier(tProcInfo_G%comm, error)
 !
-!    print* , tProcInfo_G%rank, 'is inside calcBuff, with fz2, ez2, bz2 of = ', fz2, ez2, bz2, &
-!    'and lens of ', mainlen, tllen, fbuffLen, fbuffLenM
+!    print* , tProcInfo_G%rank, &
+!    'is inside calcBuff, with field%fz2, field%ez2, field%bz2 of = ', &
+!    field%fz2, field%ez2, field%bz2, &
+!    'and lens of ', field%mainlen, field%tllen, field%fbuffLen, field%fbuffLenM
 !    -----    OLD
 
 !    call mpi_finalize(error)
@@ -2186,8 +2078,9 @@ contains
 
 
 
-  subroutine getFStEnd()
+  subroutine getFStEnd(field)
 
+    type(tFieldValues), intent(inout) :: field
 
     integer(kind=ip) :: fz2_act, ez2_act
 
@@ -2208,7 +2101,7 @@ contains
     fz2_act = 0_ip
     ez2_act = 0_ip
 
-    if (iParaBas == iElectronBased) then
+    if (field%iParaBas == iElectronBased) then
 
       fz2_act = minval(ceiling(sElZ2_G / sLengthOfElmZ2_G))   ! front z2 node in 'active' region
 
@@ -2222,7 +2115,7 @@ contains
 
 
       fz2_act = rbuff
-      fz2_GGG = fz2_act
+      field%fz2_GGG = fz2_act
 
 !print*, tProcInfo_G%rank, 'and so my fz2_act remains = ', fz2_act
 
@@ -2236,16 +2129,16 @@ contains
                mpi_max, tProcInfo_G%comm, error)
 
       ez2_act = rbuff
-      ez2_GGG = ez2_act
+      field%ez2_GGG = ez2_act
 
 !print*, 'ez2_act = ', ez2_act
 
-    else if (iParaBas == iFieldBased) then    !    FIELD based - also used for initial steps...
+    else if (field%iParaBas == iFieldBased) then  ! FIELD based - also for initial steps
 
       fz2_act = 1_ip
       ez2_act = NZ2_G
-      fz2_GGG = 1
-      ez2_GGG = 1
+      field%fz2_GGG = 1
+      field%ez2_GGG = 1
 
     else
 
@@ -2268,7 +2161,7 @@ contains
 
     if (n_act_g < 2*tProcInfo_G%size) then ! If too many nodes
 
-      qUnique = .false.
+      field%qUnique = .false.
 
       if (ioutInfo_G > 0) then
         print*, "So WHY AM I HERE, WITH nz2 = ", nz2_G
@@ -2278,27 +2171,27 @@ contains
       end if
 
 
-      fz2 = fz2_GGG
-      ez2 = ez2_GGG
+      field%fz2 = field%fz2_GGG
+      field%ez2 = field%ez2_GGG
 
-      mainlen = n_act_g
+      field%mainlen = n_act_g
 
     else
 
-      qUnique = .true.
+      field%qUnique = .true.
 
       call divNodes(n_act_g, tProcInfo_G%size, tProcInfo_G%rank, &
-                    tllen, fz2, ez2)
+                    field%tllen, field%fz2, field%ez2)
 
-      fz2 = fz2 + fz2_act - 1
-      ez2 = ez2 + fz2_act - 1
+      field%fz2 = field%fz2 + fz2_act - 1
+      field%ez2 = field%ez2 + fz2_act - 1
 
-      mainlen = ez2 - fz2 + 1     ! local length, NOT including buffer
+      field%mainlen = field%ez2 - field%fz2 + 1     ! local length, NOT including buffer
 
     end if
 
 !    print*, 'n_act_g was ', n_act_g
-!    print*, 'local now ', tllen, fz2, ez2, fz2_act
+!    print*, 'local now ', field%tllen, field%fz2, field%ez2, fz2_act
 
 
 
@@ -2308,16 +2201,17 @@ contains
 
 
 
-  subroutine getFrBk()
+  subroutine getFrBk(field)
 
 ! Get array indices of front and back nodes
 ! depending on active region nodes
 
+    type(tFieldValues), intent(inout) :: field
 
     integer(kind=ip) :: efz2_MG, ebz2_MG
     integer :: error
 
-      if (tProcInfo_G%qRoot) efz2_MG = fz2 - 1
+      if (tProcInfo_G%qRoot) efz2_MG = field%fz2 - 1
 
       call MPI_BCAST(efz2_MG,1, mpi_integer, 0, &
                       tProcInfo_G%comm,error)
@@ -2326,13 +2220,13 @@ contains
 
       if (fieldMesh == iPeriodic) then
 
-        tlflen_glob = 0
-        tlflen = 0
-        tlflen4arr = 1
-        ffs = 0
-        ffe = 0
-        ffs_GGG = 0
-        ffe_GGG = 0
+        field%tlflen_glob = 0
+        field%tlflen = 0
+        field%tlflen4arr = 1
+        field%ffs = 0
+        field%ffe = 0
+        field%ffs_GGG = 0
+        field%ffe_GGG = 0
 
       else
 
@@ -2340,48 +2234,48 @@ contains
 
 !     then there is no front section of the field...
 
-          tlflen_glob = 0
-          tlflen = 0
-          tlflen4arr = 1
-          ffs = 0
-          ffe = 0
-          ffs_GGG = 0
-          ffe_GGG = 0
+          field%tlflen_glob = 0
+          field%tlflen = 0
+          field%tlflen4arr = 1
+          field%ffs = 0
+          field%ffe = 0
+          field%ffs_GGG = 0
+          field%ffe_GGG = 0
 
         else if (efz2_MG > 0) then
 
-          tlflen_glob = efz2_MG
+          field%tlflen_glob = efz2_MG
 
           call divNodes(efz2_MG,tProcInfo_G%size, &
                         tProcInfo_G%rank, &
-                        tlflen, ffs, ffe)
+                        field%tlflen, field%ffs, field%ffe)
 
-          tlflen4arr = tlflen
+          field%tlflen4arr = field%tlflen
 
-          ffs_GGG = 1
-          ffe_GGG = efz2_MG
+          field%ffs_GGG = 1
+          field%ffe_GGG = efz2_MG
 
 
         end if
 
       end if
 
-      CALL MPI_ALLGATHER(tlflen, 1, MPI_INTEGER, &
-              ff_ar(:,1), 1, MPI_INTEGER, &
+      CALL MPI_ALLGATHER(field%tlflen, 1, MPI_INTEGER, &
+              field%ff_ar(:,1), 1, MPI_INTEGER, &
               tProcInfo_G%comm, error)
 
-      CALL MPI_ALLGATHER(ffs, 1, MPI_INTEGER, &
-              ff_ar(:,2), 1, MPI_INTEGER, &
+      CALL MPI_ALLGATHER(field%ffs, 1, MPI_INTEGER, &
+              field%ff_ar(:,2), 1, MPI_INTEGER, &
               tProcInfo_G%comm, error)
 
-      CALL MPI_ALLGATHER(ffe, 1, MPI_INTEGER, &
-              ff_ar(:,3), 1, MPI_INTEGER, &
+      CALL MPI_ALLGATHER(field%ffe, 1, MPI_INTEGER, &
+              field%ff_ar(:,3), 1, MPI_INTEGER, &
               tProcInfo_G%comm, error)
 
 
 
 
-!    print*, 'FRONT ARRAY IS ', ff_ar
+!    print*, 'FRONT ARRAY IS ', field%ff_ar
 
 
 
@@ -2389,7 +2283,7 @@ contains
       ! get rightmost bz2 ...(last process)
       ! ebz2_MG - extreme back z2 node of active region plus 1
 
-      if (tProcInfo_G%rank == tProcInfo_G%size-1) ebz2_MG = bz2 + 1
+      if (tProcInfo_G%rank == tProcInfo_G%size-1) ebz2_MG = field%bz2 + 1
 
 
       call MPI_BCAST(ebz2_MG,1, mpi_integer, tProcInfo_G%size-1, &
@@ -2399,13 +2293,13 @@ contains
 
       if (fieldMesh == iPeriodic) then
 
-        tlelen_glob = 0
-        tlelen = 0
-        tlelen4arr = 1
-        ees = 0
-        eee = 0
-        ees_GGG = 0
-        eee_GGG = 0
+        field%tlelen_glob = 0
+        field%tlelen = 0
+        field%tlelen4arr = 1
+        field%ees = 0
+        field%eee = 0
+        field%ees_GGG = 0
+        field%eee_GGG = 0
 
       else
 
@@ -2413,49 +2307,49 @@ contains
 
 !     then there is no back section of the field...
 
-          tlelen_glob = 0
-          tlelen = 0
-          tlelen4arr = 1
-          ees = 0
-          eee = 0
+          field%tlelen_glob = 0
+          field%tlelen = 0
+          field%tlelen4arr = 1
+          field%ees = 0
+          field%eee = 0
 
         else if (ebz2_MG < nz2_G + 1) then
 
-          tlelen_glob = nz2_G - ebz2_MG + 1
+          field%tlelen_glob = nz2_G - ebz2_MG + 1
 
-!        print*, 'I get the tlelen_glob to be ', tlelen_glob
+!        print*, 'I get the field%tlelen_glob to be ', field%tlelen_glob
 
-          call divNodes(tlelen_glob,tProcInfo_G%size, &
+          call divNodes(field%tlelen_glob,tProcInfo_G%size, &
                         tProcInfo_G%rank, &
-                        tlelen, ees, eee)
+                        field%tlelen, field%ees, field%eee)
 
-          ees = ees + ebz2_MG - 1
-          eee = eee + ebz2_MG - 1
+          field%ees = field%ees + ebz2_MG - 1
+          field%eee = field%eee + ebz2_MG - 1
 
-          ees_GGG = ebz2_MG
-          eee_GGG = NZ2_G
+          field%ees_GGG = ebz2_MG
+          field%eee_GGG = NZ2_G
 
-          tlelen4arr = tlelen
+          field%tlelen4arr = field%tlelen
 
-!        print*, '...and the start nd end of the back to be', ees, eee
+!        print*, '...and the start nd end of the back to be', field%ees, field%eee
 
         end if
 
       end if
 
-      CALL MPI_ALLGATHER(tlelen, 1, MPI_INTEGER, &
-              ee_ar(:,1), 1, MPI_INTEGER, &
+      CALL MPI_ALLGATHER(field%tlelen, 1, MPI_INTEGER, &
+              field%ee_ar(:,1), 1, MPI_INTEGER, &
               tProcInfo_G%comm, error)
 
-      CALL MPI_ALLGATHER(ees, 1, MPI_INTEGER, &
-              ee_ar(:,2), 1, MPI_INTEGER, &
+      CALL MPI_ALLGATHER(field%ees, 1, MPI_INTEGER, &
+              field%ee_ar(:,2), 1, MPI_INTEGER, &
               tProcInfo_G%comm, error)
 
-      CALL MPI_ALLGATHER(eee, 1, MPI_INTEGER, &
-              ee_ar(:,3), 1, MPI_INTEGER, &
+      CALL MPI_ALLGATHER(field%eee, 1, MPI_INTEGER, &
+              field%ee_ar(:,3), 1, MPI_INTEGER, &
               tProcInfo_G%comm, error)
 
-!        print*, '...so back array = ', ee_ar
+!        print*, '...so back array = ', field%ee_ar
 
 
 
@@ -2780,9 +2674,11 @@ contains
 
 
 
-  subroutine rearrElecs()
+  subroutine rearrElecs(field)
 
   implicit none (type, external)
+
+  type(tFieldValues), intent(in) :: field
 
   integer :: error
   integer(kind=ip) :: iproc, iproc_r, iproc_s
@@ -2810,8 +2706,8 @@ contains
 
 !    do imp = 1,iNumberElectrons_G
 
-!      where ( (sElZ2_G(imp) >= (sLengthOfElmZ2_G * (ac_ar(:,2)-1))) .and. &
-!                  (sElZ2_G(imp) >= (sLengthOfElmZ2_G * (ac_ar(:,3)-1) )) )
+!      where ( (sElZ2_G(imp) >= (sLengthOfElmZ2_G * (field%ac_ar(:,2)-1))) .and. &
+!                  (sElZ2_G(imp) >= (sLengthOfElmZ2_G * (field%ac_ar(:,3)-1) )) )
 
 !        cnt2proc = cnt2proc + 1
 
@@ -2822,8 +2718,8 @@ contains
 ! OR
     do iproc = 0, tProcInfo_G%size-1
 
-      icds = count(sElZ2_G > (sLengthOfElmZ2_G * (ac_ar(iproc+1, 2)-1)) .and. &
-                    (sElZ2_G <= (sLengthOfElmZ2_G * ac_ar(iproc+1, 3))) )
+      icds = count(sElZ2_G > (sLengthOfElmZ2_G * (field%ac_ar(iproc+1, 2)-1)) .and. &
+                    (sElZ2_G <= (sLengthOfElmZ2_G * field%ac_ar(iproc+1, 3))) )
 
       cnt2proc(iproc+1) = icds   ! amount I'm sending to iproc
 
@@ -2957,8 +2853,8 @@ contains
 
               call getinds(inds4sending(1:cnt2proc(iproc_r+1)), &
                     sElZ2_OLD, &
-                    (sLengthOfElmZ2_G * (ac_ar(iproc_r+1,2)-1)), &
-                    (sLengthOfElmZ2_G * ac_ar(iproc_r+1,3)) )
+                    (sLengthOfElmZ2_G * (field%ac_ar(iproc_r+1,2)-1)), &
+                    (sLengthOfElmZ2_G * field%ac_ar(iproc_r+1,3)) )
 
               !print*, inds4sending(1:cnt2proc(iproc_r+1))
               !print*, 'cnt2proc again:', cnt2proc(iproc_r+1)
@@ -2979,8 +2875,8 @@ contains
 
               call getinds(inds4sending(1:cnt2proc(iproc_r+1)), &
                     sElZ2_OLD, &
-                    (sLengthOfElmZ2_G * (ac_ar(iproc_r+1,2)-1) ), &
-                    (sLengthOfElmZ2_G * ac_ar(iproc_r+1,3)) )
+                    (sLengthOfElmZ2_G * (field%ac_ar(iproc_r+1,2)-1) ), &
+                    (sLengthOfElmZ2_G * field%ac_ar(iproc_r+1,3)) )
 
 !              tmp4sending(1:cnt2proc(iproc_r+1)) = sElZ2_OLD((1:cnt2proc(iproc_r+1)))
 
@@ -3015,7 +2911,7 @@ contains
                                cnt2proc(iproc_r+1), &
                                tmp4sending, iproc_r)
 
-                !       call mpi_issend(fz2, 1, mpi_integer, tProcInfo_G%rank-1, 0, &
+                !       call mpi_issend(field%fz2, 1, mpi_integer, tProcInfo_G%rank-1, 0, &
 !            tProcInfo_G%comm, req, error)
 
 
@@ -3197,10 +3093,13 @@ contains
 
 
 
-  subroutine redist2FFTWlt()
+  subroutine redist2FFTWlt(field)
 
     implicit none (type, external)
 
+    type(tFieldValues), intent(inout) :: field
+
+    integer(kind=ip) :: ic
     integer(kind=ip) :: tmpfz2, tmpez2, tmpmainlen, &
                         tmpbz2, tmptllen, tmpfz2_act, &
                         tmpez2_act
@@ -3221,32 +3120,35 @@ contains
     tmpez2_act = nz2_G
 
 
-    allocate(tre_fft(tmpmainlen*ntrnds_G), &
-             tim_fft(tmpmainlen*ntrnds_G))
+    allocate(field%tre_fft(tmpmainlen*ntrnds_G, field%nComp), &
+             field%tim_fft(tmpmainlen*ntrnds_G, field%nComp))
 
 
-    tre_fft = 0_wp
-    tim_fft = 0_wp
+    field%tre_fft = 0_wp
+    field%tim_fft = 0_wp
 
 
-    allocate(ft_ar(tProcInfo_G%size, 3))
-    call setupLayoutArrs(tmpmainlen, tmpfz2, tmpez2, ft_ar)
+    allocate(field%ft_ar(tProcInfo_G%size, 3))
+    call setupLayoutArrs(tmpmainlen, tmpfz2, tmpez2, field%ft_ar)
 
-!    print*, 'fft array layout is ', ft_ar
-
-
-    call redist2new2(ff_ar, ft_ar, fr_rfield, tre_fft)
-    call redist2new2(ff_ar, ft_ar, fr_ifield, tim_fft)
+!    print*, 'fft array layout is ', field%ft_ar
 
 
-    call redist2new2(ee_ar, ft_ar, bk_rfield, tre_fft)
-    call redist2new2(ee_ar, ft_ar, bk_ifield, tim_fft)
+    do ic = 1, field%nComp
+
+    call redist2new2(field%ff_ar, field%ft_ar, field%fr_r(:,ic), field%tre_fft(:,ic))
+    call redist2new2(field%ff_ar, field%ft_ar, field%fr_i(:,ic), field%tim_fft(:,ic))
+
+
+    call redist2new2(field%ee_ar, field%ft_ar, field%bk_r(:,ic), field%tre_fft(:,ic))
+    call redist2new2(field%ee_ar, field%ft_ar, field%bk_i(:,ic), field%tim_fft(:,ic))
 
 
 
-    call redist2new2(ac_ar, ft_ar, ac_rfield, tre_fft)
-    call redist2new2(ac_ar, ft_ar, ac_ifield, tim_fft)
+    call redist2new2(field%ac_ar, field%ft_ar, field%ac_r(:,ic), field%tre_fft(:,ic))
+    call redist2new2(field%ac_ar, field%ft_ar, field%ac_i(:,ic), field%tim_fft(:,ic))
 
+    end do
 
   end subroutine redist2FFTWlt
 
@@ -3255,41 +3157,50 @@ contains
 
 
 
-  subroutine redistbackFFT()
+  subroutine redistbackFFT(field)
 
     implicit none (type, external)
 
+    type(tFieldValues), intent(inout) :: field
+
     integer :: req, error
-    integer(kind=ip) :: si, sst, sse
+    integer(kind=ip) :: si, sst, sse, ic
     integer :: statr(MPI_STATUS_SIZE)
     integer :: sendstat(MPI_STATUS_SIZE)
 
-    call redist2new2(ft_ar, ff_ar, tre_fft, fr_rfield)
-    call redist2new2(ft_ar, ff_ar, tim_fft, fr_ifield)
+    do ic = 1, field%nComp
+
+    call redist2new2(field%ft_ar, field%ff_ar, field%tre_fft(:,ic), field%fr_r(:,ic))
+    call redist2new2(field%ft_ar, field%ff_ar, field%tim_fft(:,ic), field%fr_i(:,ic))
 
 
-    call redist2new2(ft_ar, ee_ar, tre_fft, bk_rfield)
-    call redist2new2(ft_ar, ee_ar, tim_fft, bk_ifield)
+    call redist2new2(field%ft_ar, field%ee_ar, field%tre_fft(:,ic), field%bk_r(:,ic))
+    call redist2new2(field%ft_ar, field%ee_ar, field%tim_fft(:,ic), field%bk_i(:,ic))
 
 
 
-    call redist2new2(ft_ar, ac_ar, tre_fft, ac_rfield)
-    call redist2new2(ft_ar, ac_ar, tim_fft, ac_ifield)
+    call redist2new2(field%ft_ar, field%ac_ar, field%tre_fft(:,ic), field%ac_r(:,ic))
+    call redist2new2(field%ft_ar, field%ac_ar, field%tim_fft(:,ic), field%ac_i(:,ic))
 
+    end do
 
-    deallocate(tre_fft, tim_fft)
-    deallocate(ft_ar)
+    deallocate(field%tre_fft, field%tim_fft)
+    deallocate(field%ft_ar)
 
 
     if (fieldMesh == iPeriodic) then
 
-      si = (nx_g * ny_g) * (bz2PB + 1_ip)
-      sst = ((tllen - (bz2PB+1_ip) ) * (nx_g * ny_g)) + 1_ip
-      sse = tllen * (nx_g * ny_g)
+      si = (nx_g * ny_g) * (field%bz2PB + 1_ip)
+      sst = ((field%tllen - (field%bz2PB+1_ip) ) * (nx_g * ny_g)) + 1_ip
+      sse = field%tllen * (nx_g * ny_g)
+
+!     One wraparound exchange per field component.
+
+      do ic = 1, field%nComp
 
       if (tProcInfo_G%rank == 0_ip) then
 
-        call mpi_issend(ac_rfield(1:si), &
+        call mpi_issend(field%ac_r(1:si,ic), &
                         si, &
                         mpi_double_precision, &
                         tProcInfo_G%size-1_ip, 0, &
@@ -3301,7 +3212,7 @@ contains
 
       if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
 
-        call mpi_recv( ac_rfield(sst:sse), &
+        call mpi_recv( field%ac_r(sst:sse,ic), &
                  si, mpi_double_precision, &
                  0, 0, tProcInfo_G%comm, &
                  statr, error )
@@ -3312,7 +3223,7 @@ contains
       if (tProcInfo_G%rank == 0_ip) then
 
         call mpi_wait( req,sendstat,error )
-        call mpi_issend(ac_ifield(1:si), &
+        call mpi_issend(field%ac_i(1:si,ic), &
                         si, &
                         mpi_double_precision, &
                         tProcInfo_G%size-1_ip, 0, &
@@ -3325,7 +3236,7 @@ contains
 
       if (tProcInfo_G%rank == tProcInfo_G%size-1_ip) then
 
-        call mpi_recv( ac_ifield(sst:sse), &
+        call mpi_recv( field%ac_i(sst:sse,ic), &
                  si, mpi_double_precision, &
                  0, 0, tProcInfo_G%comm, &
                  statr, error )
@@ -3339,6 +3250,8 @@ contains
         call mpi_wait( req,sendstat,error )
 
       end if
+
+      end do
 
     end if
 

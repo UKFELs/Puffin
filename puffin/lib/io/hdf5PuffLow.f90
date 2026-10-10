@@ -563,6 +563,33 @@ contains
                                 "includes undulator quiver", aspace_id)
     end if
 
+!   How many field components the aperp dataset's 4th dimension holds, and what
+!   they are. Written in both modes so a reader never has to branch on whether
+!   the attribute is present.
+!
+!   nFieldComp     number of field components; the 4th dimension is 2*nFieldComp,
+!                  ordered (component 1 real, component 1 imag, component 2 ...).
+!   fieldCompMeaning  what a component is. Unaveraged, one complex pair already
+!                  holds both polarisations as (A_x, -A_y). Averaged, a complex
+!                  pair is one envelope of one polarisation state, so there is
+!                  one component per linear axis.
+
+    call addH5IntegerAttribute(dset_id, "nFieldComp", ctx%field%nComp, aspace_id)
+
+    if (ctx%field%nComp > 1_ip) then
+      call addH5StringAttribute(dset_id, "fieldCompMeaning", &
+                                "one envelope per linear polarisation: 1 = x, 2 = y", &
+                                aspace_id)
+    else if (ctx%flags%period_averaged) then
+      call addH5StringAttribute(dset_id, "fieldCompMeaning", &
+                                "single envelope, polarisation fixed by the undulator", &
+                                aspace_id)
+    else
+      call addH5StringAttribute(dset_id, "fieldCompMeaning", &
+                                "resolved field, real and imag parts are A_x and -A_y", &
+                                aspace_id)
+    end if
+
     call addH5FloatAttribute(dset_id, "lambdarPerCell", &
                               ctx%mesh%dz2 / (4.0_wp * pi * ctx%frame%rho), aspace_id)
     call addH5FloatAttribute(dset_id, "transArea", ata_G, aspace_id)

@@ -26,11 +26,11 @@ module Setup
      sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, sZlSt_G, tInitData_G, sKBetaXSF_G, &
      sKBetaYSF_G, ffact, start_step, sStepSize, nSteps, sRedistLen_G, tArrayE, tArrayA, tArrayZ, &
      iWriteNthSteps, iIntWriteNthSteps, zFileName_G, ioutInfo_G, frecvs, fdispls, qDiffraction_G, &
-     qResume_G, qResume, qWrite, qOneD_G, qscaled_G
+     qResume_G, qResume, qWrite, qOneD_G, qscaled_G, qAveraged_G
    use Read_data, only: read_in, filenamenoextension, initializeprocessors, &
      readh5fieldfilesingledump
    use checks, only: checkparameters
-   use ParaField, only: ac_rfield, ac_ifield, qStart_new, getlocalfieldindices, pupd8
+   use ParaField, only: getlocalfieldindices, pupd8
    use write_adapter, only: writeim
    use avwrite, only: initPowerCalc
    use mpi, only: mpi_barrier
@@ -309,11 +309,24 @@ contains
       IF (.NOT. qOKL) GOTO 1000
 
 
+!     How many field components the mesh arrays carry. Unaveraged, one complex
+!     pair already means (A_x, -A_y) and so holds both polarisations. Averaged,
+!     a complex pair is one envelope of one polarisation state, so polarisation
+!     needs one component per linear axis. Read from the global rather than
+!     ctx%flags because the flags are populated after the first field layout.
+
+      if (qAveraged_G) then
+        ctx%field%nComp = 2_ip
+      else
+        ctx%field%nComp = 1_ip
+      end if
+
+
       if (iFieldSeedType_G==iSimpleSeed_G) then
 
-         qStart_new = .true.
+         ctx%field%qStart_new = .true.
 
-         call getLocalFieldIndices(sRedistLen_G, ctx%flags, ctx%frame)
+         call getLocalFieldIndices(sRedistLen_G, ctx%flags, ctx%frame, ctx%field)
 
          CALL SetUpInitialValues(nseeds, freqf, &
             ph_sh, SmeanZ2, &
@@ -322,15 +335,16 @@ contains
             sA0_Re,&
             sA0_Im,&
             ctx%frame%rho, &
+            ctx%field, &
             qOKL)
 
 !  send init'd seed field to periodic buffer
 
-         call pupd8(ac_rfield, ac_ifield)
+         call pupd8(ctx%field)
 
       else if (iFieldSeedType_G==iReadH5Field_G) then
 
-         call readH5FieldfileSingleDump(field_file(1), sFiltFrac, ctx%frame, ctx%flags)
+         call readH5FieldfileSingleDump(field_file(1), sFiltFrac, ctx%frame, ctx%flags, ctx%field)
          call initPowerCalc()
 
          sFieldModelLength(iX_CG) = sLengthOfElmX_G * real((NX_G-1_ip),kind=wp)

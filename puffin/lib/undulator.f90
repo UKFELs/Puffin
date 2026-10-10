@@ -17,11 +17,11 @@ module undulator
 use pdiff, only: diffractim, WP, IP, tProcInfo_G
 !use sddsPuffin
 use lattice, only: correcttrans, matchout, matchin, initundulator
-use RK4int, only: ac_rfield_in, ac_ifield_in, rk4par, allact_rk4_arrs, deallact_rk4_arrs
+use RK4int, only: rk4par, allact_rk4_arrs, deallact_rk4_arrs, inner2outerenv, outer2innerenv
 !use dumpFiles
 use write_adapter, only: writeim, qwriteq, iStep
 use ParaField, only: getlocalfieldindices, inner2outer, outer2inner, getinnode
-use GlobalTypes, only: tSimulationContext
+use GlobalTypes, only: tSimulationContext, tRK4Workspace
 use averaging, only: getAvgUndAmps, qAvgPolarisationOK, getAvgBufferPqSq
 use AdapterGlobals, only: PopulateIntegrationStateFromGlobals, UpdateGlobalsFromIntegrationState, &
   PopulateUndulatorFromGlobals, UpdateGlobalsFromUndulator
@@ -53,8 +53,6 @@ contains
 !
 ! Infrastructure globals (not candidates for migration):
 ! tProcInfo_G     | MPI communicator/rank info, used in 67+ locations
-! ac_rfield_in    | Module-level RK4 work arrays, managed by RK4int
-! ac_ifield_in    | Module-level RK4 work arrays, managed by RK4int
 ! -----------------------------------------------------------------------
 
     implicit none (type, external)
@@ -80,6 +78,12 @@ contains
     integer :: error
     logical :: qResuming
     real(kind=wp) :: cx, cy, pqSqBuff
+
+!   RK4 scratch, plus the inner-mesh copy of the field. Local rather than part
+!   of ctx: its lifetime is the field layout, and keeping it a sibling of ctx
+!   means calls such as upd8a never pass a subobject of ctx alongside ctx.
+
+    type(tRK4Workspace) :: work
 
   call Get_time(locTimeSt)
 
@@ -226,7 +230,7 @@ end if
 
   call mpi_barrier(tProcInfo_G%comm, error)
 
-  call allact_rk4_arrs()
+  call allact_rk4_arrs(ctx%field, work)
 
 
   igoes = 0_ip
@@ -253,17 +257,17 @@ end if
 
       igoes = 1_ip
       do
-        call rk4par(sZl, ctx%integration%step_size, qDiffrctd, ctx)
+        call rk4par(sZl, ctx%integration%step_size, qDiffrctd, ctx, work)
         if (igoes>3_ip) exit
         if (.not. ctx%flags%parallel_arrays_ok) then
-          call deallact_rk4_arrs()
+          call deallact_rk4_arrs(ctx%field, work)
           if (.not. ctx%flags%inner_xy_ok) then
             call getInNode(ctx%flags)
             ctx%flags%inner_xy_ok = .true.
           end if
           call layoutField(ctx%integration%redistribution_length)
           ctx%flags%parallel_arrays_ok = .true.
-          call allact_rk4_arrs()
+          call allact_rk4_arrs(ctx%field, work)
           ctx%flags%inner_xy_ok = .true.
         else
           exit
@@ -291,9 +295,9 @@ end if
       if ((mod(ctx%integration%current_step,isteps4diff) == 0_ip) .or. &
           (ctx%integration%current_step == ctx%integration%total_steps))  then
 
-!        call deallact_rk4_arrs()
+!        call deallact_rk4_arrs(ctx%field, work)
 
-        call inner2Outer(ac_rfield_in, ac_ifield_in)
+        call inner2OuterEnv(work%in_r, work%in_i, ctx%field)
 
         dzdF = dzdS  ! Finishing last diffraction step
                      ! - must be indentical size
@@ -331,7 +335,7 @@ end if
           dzd = dzdF + dzdS
 
           call diffractIM(dzd, qDiffrctd, qOKL, ctx)
-          call outer2Inner(ac_rfield_in, ac_ifield_in)
+          call outer2InnerEnv(work%in_r, work%in_i, ctx%field)
         else
 
         ! If writing in this step, then we need to first
@@ -342,7 +346,7 @@ end if
           call writeIM(sZ, sZl, ctx, iM, qOKL)   ! Write data
           ! Start new diffraction step
           if (dzdS > 0.0_wp) call diffractIM(dzdS, qDiffrctd, qOKL, ctx)
-          call outer2Inner(ac_rfield_in, ac_ifield_in)
+          call outer2InnerEnv(work%in_r, work%in_i, ctx%field)
           qDWrDone = .true.
 
         end if
@@ -361,7 +365,7 @@ end if
 
         ! if not already written in diffraction step
 
-        call inner2Outer(ac_rfield_in, ac_ifield_in)
+        call inner2OuterEnv(work%in_r, work%in_i, ctx%field)
 
         call writeIM(sZ, sZl, ctx, iM, qOKL)
 
@@ -387,15 +391,15 @@ end if
 
   if (mod(ctx%lattice%cumulative_steps, ctx%integration%redistribution_step) == 0) then
 
-    call deallact_rk4_arrs()
+    call deallact_rk4_arrs(ctx%field, work)
     call layoutField(ctx%integration%redistribution_length)
-    call allact_rk4_arrs()
+    call allact_rk4_arrs(ctx%field, work)
 
   end if
 
   end do
 
-  call deallact_rk4_arrs()
+  call deallact_rk4_arrs(ctx%field, work)
 
 
   if (igoes>3_ip) then
@@ -434,9 +438,9 @@ contains
     real(kind=wp), intent(in) :: sdz
 
     if (ctx%flags%period_averaged) then
-      call getLocalFieldIndices(sdz, ctx%flags, ctx%frame, pqSqBuff)
+      call getLocalFieldIndices(sdz, ctx%flags, ctx%frame, ctx%field, pqSqBuff)
     else
-      call getLocalFieldIndices(sdz, ctx%flags, ctx%frame)
+      call getLocalFieldIndices(sdz, ctx%flags, ctx%frame, ctx%field)
     end if
 
   end subroutine layoutField

@@ -20,17 +20,15 @@ module avwrite
      qOneD_G, pi, c, q_e
    use functions, only: linspace
    use ParallelSetUp, only: sum2rootarr
-   use parafield, only: fr_rfield, bk_rfield, ac_rfield, fr_ifield, bk_ifield, ac_ifield, &
-     mainlen, tlflen, tlelen, tlflen4arr, tlelen4arr, ffe_GGG, ees_GGG, updateglobalpow
-   use GlobalTypes, only: tFELFrame
+   use parafield, only: updateglobalpow
+   use GlobalTypes, only: tFELFrame, tFieldValues
    use mpi, only: mpi_barrier
 
 
    implicit none (type, external)
 private
 
-public :: ac_ifield, ac_rfield, bk_ifield, bk_rfield, fr_ifield, fr_rfield, getcurr, getcurrnpts, &
-           getslicetwiss, gpowerp, initPowerCalc, linspace, mainlen, tlelen, tlflen
+public :: getcurr, getcurrnpts, getslicetwiss, gpowerp, initPowerCalc, linspace
 
 
 contains
@@ -47,28 +45,53 @@ contains
 !> 1D mesh at nodes equal to the nodes in z2 of the radiation field mesh.
 !> So e.g. the power node separation is sLengthOfElmZ2_G.
 
-   subroutine gPowerP(power)
+   subroutine gPowerP(power, field)
 
       implicit none (type, external)
 
       real(kind=wp), intent(out) :: power(:)  !< Returned power array
+      type(tFieldValues), intent(in) :: field  !< Field data and its decomposition
       real(kind=wp), allocatable :: fr_power(:), &  !< Power in 'front' field section
          bk_power(:), &  !< Power in 'back' field section
-         ac_power(:)     !< Power in 'active' field section
+         ac_power(:), &  !< Power in 'active' field section
+         pow_c(:)        !< One component's contribution
 
-      allocate(ac_power(mainlen), fr_power(tlflen4arr), bk_power(tlelen4arr))
+      integer(kind=ip) :: ic
 
-      if ((ffe_GGG > 0) .and. (tlflen > 0) ) then
-         call gPower(fr_rfield, fr_ifield, fr_power)
-      end if
+      allocate(ac_power(field%mainlen), fr_power(field%tlflen4arr), bk_power(field%tlelen4arr))
 
-      call gPower(ac_rfield(1:mainlen*ntrnds_G), ac_ifield(1:mainlen*ntrnds_G), ac_power)
+!     Total power is summed over field components: |A_x|^2 + |A_y|^2. With one
+!     component this adds an exact zero and is bit-identical to assigning.
 
-      if ((ees_GGG < nz2_G) .and. (tlelen > 0) ) then
-         call gPower(bk_rfield, bk_ifield, bk_power)
-      end if
+      fr_power = 0.0_wp
+      ac_power = 0.0_wp
+      bk_power = 0.0_wp
 
-      call UpdateGlobalPow(fr_power, ac_power, bk_power, power)
+      do ic = 1, field%nComp
+
+        if ((field%ffe_GGG > 0) .and. (field%tlflen > 0) ) then
+           allocate(pow_c(field%tlflen4arr))
+           call gPower(field%fr_r(:,ic), field%fr_i(:,ic), pow_c)
+           fr_power = fr_power + pow_c
+           deallocate(pow_c)
+        end if
+
+        allocate(pow_c(field%mainlen))
+        call gPower(field%ac_r(1:field%mainlen*ntrnds_G, ic), &
+                    field%ac_i(1:field%mainlen*ntrnds_G, ic), pow_c)
+        ac_power = ac_power + pow_c
+        deallocate(pow_c)
+
+        if ((field%ees_GGG < nz2_G) .and. (field%tlelen > 0) ) then
+           allocate(pow_c(field%tlelen4arr))
+           call gPower(field%bk_r(:,ic), field%bk_i(:,ic), pow_c)
+           bk_power = bk_power + pow_c
+           deallocate(pow_c)
+        end if
+
+      end do
+
+      call UpdateGlobalPow(fr_power, ac_power, bk_power, power, field)
 
       deallocate(fr_power, ac_power, bk_power)
    end subroutine gPowerP

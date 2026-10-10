@@ -12,8 +12,7 @@ use globals, only: NX_G, NY_G, NZ2_G, ntrnds_G, sLengthOfElmX_G, sLengthOfElmY_G
   tInitData_G, iStep, sRedistLen_G, qResume_G, qOneD_G, pi
 use ParallelSetUp, only: tErrorLog_G, log_error
 use parBeam, only: divmps
-use paraField, only: fr_rfield, bk_rfield, ac_rfield, fr_ifield, bk_ifield, ac_ifield, fz2, &
-  mainlen, ffs, tlflen, ees, tlelen, qStart_new, getlocalfieldindices
+use paraField, only: getlocalfieldindices
 use HDF5, only: h5aclose_f, h5aopen_f, H5Aopen_name_f, h5aread_f, h5close_f, h5dclose_f, &
   h5Dget_space_f, h5dget_type_f, h5dopen_f, h5dread_f, H5F_ACC_RDONLY_F, h5fclose_F, &
   h5fopen_f, h5gclose_f, h5gopen_f, h5open_f, H5P_DATASET_XFER_F, H5P_FILE_ACCESS_F, &
@@ -22,7 +21,7 @@ use HDF5, only: h5aclose_f, h5aopen_f, H5Aopen_name_f, h5aread_f, h5close_f, h5d
   h5Sget_simple_extent_ndims_f, h5sselect_hyperslab_f, H5T_FLOAT_F, H5T_NATIVE_DOUBLE, &
   H5T_NATIVE_INTEGER, h5tclose_f, h5tcopy_f, h5tget_class_f, HID_T, HSIZE_T
 use puffin_h5_par, only: H5FD_MPIO_COLLECTIVE_F, h5pset_dxpl_mpio_f, h5pset_fapl_mpio_f
-use GlobalTypes, only: tSimulationFlags, tFELFrame
+use GlobalTypes, only: tSimulationFlags, tFELFrame, tFieldValues
 use mpi, only: MPI_ALLREDUCE, mpi_barrier, MPI_COMM_WORLD, MPI_INFO_NULL, MPI_INTEGER, MPI_SUM
 
 implicit none (type, external)
@@ -885,12 +884,13 @@ contains
 
   end subroutine readH5Beamfile
 
-  subroutine readH5FieldfileSingleDump(zFile, sFiltFrac, frame, flags)
+  subroutine readH5FieldfileSingleDump(zFile, sFiltFrac, frame, flags, field)
 
     character(*), intent(in) :: zFile
     real(kind=wp), intent(in) :: sFiltFrac
     type(tFELFrame), intent(in) :: frame
     type(tSimulationFlags), intent(inout) :: flags
+    type(tFieldValues), intent(inout) :: field
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier
     INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
@@ -991,9 +991,9 @@ contains
 
 !       Initialize parallel field mesh
 
-      qStart_new = .true.
+      field%qStart_new = .true.
 
-      call getLocalFieldIndices(sRedistLen_G, flags, frame)
+      call getLocalFieldIndices(sRedistLen_G, flags, frame, field)
 
 !     Close runInfo group
 
@@ -1045,8 +1045,8 @@ contains
           CALL h5pclose_f(plist_id, error)
 
           ! Do some reading
-          doffset1d=[(ffs-1),0]
-          dsize1d=[tlflen,1]
+          doffset1d=[(field%ffs-1),0]
+          dsize1d=[field%tlflen,1]
 
           CALL h5screate_simple_f(rank, dsize1d, memspace, error)
     !      print*,error,tprocinfo_g%rank,"h5s fr  memspace created"
@@ -1059,25 +1059,25 @@ contains
           call h5pcreate_f(H5P_DATASET_XFER_F, plist_id, error)
           CALL h5pset_dxpl_mpio_f(plist_id, H5FD_MPIO_COLLECTIVE_F, error)
 
-          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, fr_rfield, dsize1d, error, &
+          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, field%fr_r(:,1), dsize1d, error, &
            xfer_prp = plist_id, file_space_id = dspace_id, mem_space_id = memspace)
     !      print*,error,tprocinfo_g%rank,"h5d slab fr_rfield read"
 
 ! use same memspace again
-          doffset1d=[(ffs-1),1]
+          doffset1d=[(field%ffs-1),1]
           CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset1d, &
             dsize1d, error)
     !      print*,error,tprocinfo_g%rank,"h5s slab fr_ifield selected"
 
-          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, fr_ifield, dsize1d, error, &
+          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, field%fr_i(:,1), dsize1d, error, &
            xfer_prp = plist_id, file_space_id = dspace_id, mem_space_id = memspace)
     !      print*,error,tprocinfo_g%rank,"h5d slab fr_ifield read"
 
           call h5sclose_f(memspace,error)
     !      print*,error,tprocinfo_g%rank,"h5s fr memspace closed"
 
-          doffset1d=[(fz2-1),0]
-          dsize1d=[mainlen,1]
+          doffset1d=[(field%fz2-1),0]
+          dsize1d=[field%mainlen,1]
 
           CALL h5screate_simple_f(rank, dsize1d, memspace, error)
     !      print*,error,tprocinfo_g%rank,"h5s ac memspace created"
@@ -1086,25 +1086,25 @@ contains
             dsize1d, error)
     !      print*,error,tprocinfo_g%rank,"h5s slab ac_rfield selected"
 
-          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, ac_rfield, dsize1d, error, &
+          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, field%ac_r(:,1), dsize1d, error, &
            xfer_prp = plist_id, file_space_id = dspace_id, mem_space_id = memspace)
     !      print*,error,tprocinfo_g%rank,"h5d slab ac_rfield read"
 
 ! use same memspace again
-          doffset1d=[(fz2-1),1]
+          doffset1d=[(field%fz2-1),1]
           CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset1d, &
             dsize1d, error)
     !      print*,error,tprocinfo_g%rank,"h5s slab ac_ifield selected"
 
-          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, ac_ifield, dsize1d, error, &
+          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, field%ac_i(:,1), dsize1d, error, &
            xfer_prp = plist_id, file_space_id = dspace_id, mem_space_id = memspace)
     !      print*,error,tprocinfo_g%rank,"h5d slab ac_ifield read"
 
           call h5sclose_f(memspace,error)
     !      print*,error,tprocinfo_g%rank,"h5s ac memspace closed"
 
-          doffset1d=[(ees-1),0]
-          dsize1d=[tlelen,1]
+          doffset1d=[(field%ees-1),0]
+          dsize1d=[field%tlelen,1]
           CALL h5screate_simple_f(rank, dsize1d, memspace, error)
     !      print*,error,tprocinfo_g%rank,"h5s back memspace created"
 
@@ -1112,17 +1112,17 @@ contains
             dsize1d, error)
     !      print*,error,tprocinfo_g%rank,"h5s slab bk_rfield selected"
 
-          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, bk_rfield, dsize1d, error, &
+          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, field%bk_r(:,1), dsize1d, error, &
            xfer_prp = plist_id, file_space_id = dspace_id, mem_space_id = memspace)
     !      print*,error,tprocinfo_g%rank,"h5d slab bk_rfield read"
 
 ! use same memspace again
-          doffset1d=[(ees-1),1]
+          doffset1d=[(field%ees-1),1]
           CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset1d, &
             dsize1d, error)
     !      print*,error,tprocinfo_g%rank,"h5s slab bk_ifield selected"
 
-          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, bk_ifield, dsize1d, error, &
+          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, field%bk_i(:,1), dsize1d, error, &
            xfer_prp = plist_id, file_space_id = dspace_id, mem_space_id = memspace)
     !      print*,error,tprocinfo_g%rank,"h5d slab bk_ifield read"
 
@@ -1181,8 +1181,8 @@ contains
           CALL h5pclose_f(plist_id, error)
 
 
-          doffset3d=[0,0,(ffs-1),0]
-          dsize3d=[NX_G,NY_G,tlflen,1]
+          doffset3d=[0,0,(field%ffs-1),0]
+          dsize3d=[NX_G,NY_G,field%tlflen,1]
 
           CALL h5screate_simple_f(rank, dsize3d, memspace, error)
     !      print*,error,tprocinfo_g%rank,"h5s memspace 3d created"
@@ -1194,26 +1194,26 @@ contains
           call h5pcreate_f(H5P_DATASET_XFER_F, plist_id, error)
           CALL h5pset_dxpl_mpio_f(plist_id, H5FD_MPIO_COLLECTIVE_F, error)
 
-          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, fr_rfield, dsize3d, error, &
+          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, field%fr_r(:,1), dsize3d, error, &
            xfer_prp = plist_id, file_space_id = dspace_id, mem_space_id = memspace)
     !      print*,error,tprocinfo_g%rank,"h5d slab fr_rfield 3d read"
 
 ! keep memspace
-          doffset3d=[0,0,(ffs-1),1]
+          doffset3d=[0,0,(field%ffs-1),1]
 
           CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset3d, &
             dsize3d, error)
       !    print*,error,tprocinfo_g%rank,"h5s slab fr_ifield 3d selected"
 
-          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, fr_ifield, dsize3d, error, &
+          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, field%fr_i(:,1), dsize3d, error, &
            xfer_prp = plist_id, file_space_id = dspace_id, mem_space_id = memspace)
       !    print*,error,tprocinfo_g%rank,"h5d slab fr_ifield 3d read"
 
           call h5sclose_f(memspace,error)
       !    print*,error,tprocinfo_g%rank,"h5s memspace 3d closed"
 
-          doffset3d=[0,0,(fz2-1),0]
-          dsize3d=[NX_G,NY_G,mainlen,1]
+          doffset3d=[0,0,(field%fz2-1),0]
+          dsize3d=[NX_G,NY_G,field%mainlen,1]
           CALL h5screate_simple_f(rank, dsize3d, memspace, error)
       !    print*,error,tprocinfo_g%rank,"h5s memspace 3d created"
 
@@ -1221,26 +1221,26 @@ contains
             dsize3d, error)
       !    print*,error,tprocinfo_g%rank,"h5s slab ac_rfield 3d selected"
 
-          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, ac_rfield, dsize3d, error, &
+          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, field%ac_r(:,1), dsize3d, error, &
            xfer_prp = plist_id, file_space_id = dspace_id, mem_space_id = memspace)
       !    print*,error,tprocinfo_g%rank,"h5d slab ac_rfield 3d read"
 
 ! keep memspace
-          doffset3d=[0,0,(fz2-1),1]
+          doffset3d=[0,0,(field%fz2-1),1]
 
           CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset3d, &
             dsize3d, error)
       !    print*,error,tprocinfo_g%rank,"h5s slab ac_rfield 3d selected"
 
-          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, ac_ifield, dsize3d, error, &
+          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, field%ac_i(:,1), dsize3d, error, &
            xfer_prp = plist_id, file_space_id = dspace_id, mem_space_id = memspace)
       !    print*,error,tprocinfo_g%rank,"h5d slab ac_rfield 3d read"
 
           call h5sclose_f(memspace,error)
       !    print*,error,tprocinfo_g%rank,"h5s memspace 3d closed"
 
-          doffset3d=[0,0,(ees-1),0]
-          dsize3d=[NX_G,NY_G,tlelen,1]
+          doffset3d=[0,0,(field%ees-1),0]
+          dsize3d=[NX_G,NY_G,field%tlelen,1]
           CALL h5screate_simple_f(rank, dsize3d, memspace, error)
       !    print*,error,tprocinfo_g%rank,"h5s back memspace 3d created"
 
@@ -1248,18 +1248,18 @@ contains
             dsize3d, error)
       !    print*,error,tprocinfo_g%rank,"h5s slab bk_rfield 3d selected"
 
-          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, bk_rfield, dsize3d, error, &
+          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, field%bk_r(:,1), dsize3d, error, &
            xfer_prp = plist_id, file_space_id = dspace_id, mem_space_id = memspace)
       !    print*,error,tprocinfo_g%rank,"h5d slab bk_rfield 3d read"
 
 ! keep memspace
-          doffset3d=[0,0,(ees-1),1]
+          doffset3d=[0,0,(field%ees-1),1]
 
           CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset3d, &
             dsize3d, error)
       !    print*,error,tprocinfo_g%rank,"h5s slab bk_rfield 3d selected"
 
-          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, bk_ifield, dsize3d, error, &
+          CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, field%bk_i(:,1), dsize3d, error, &
            xfer_prp = plist_id, file_space_id = dspace_id, mem_space_id = memspace)
       !    print*,error,tprocinfo_g%rank,"h5d slab bkrfield 3d read"
 

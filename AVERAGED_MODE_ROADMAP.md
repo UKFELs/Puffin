@@ -29,10 +29,11 @@ section of `doc/manual.tex`. The accuracy map and its harness are in `benchmark/
 |---|------------|--------|-----------|-------|
 | W1 | Land the 1D mode on `dev` | **In review** — PR #131 open against `dev` | — | #131 |
 | W2 | 3D | **Done** — validated against the unaveraged solver | — | — |
-| W3 | Multiple field arrays (elliptical + harmonics) | Not started | #107 (ideally) | #129 |
+| W3a | Polarisation field grids, planar + helical only | **Done** — nComp = 2, second component slaved | #107 ✅ | #129 |
+| W3b | General polarisation coupling (elliptical + harmonics) | Not started — needs the per-component couplings derived | W3a ✅ | #129 |
 | W4 | Compatibility: periodic mesh, lattices, restart | **Done** — guards in, one `dev` bug left open | — | — |
 | W5 | Diagnostics, dump metadata and viz tools | **Done** | — | — |
-| W6 | Finish the accuracy map | Partly done | W3 for harmonics | #130 |
+| W6 | Finish the accuracy map | Partly done — 1D SASE validated; rho scan and harmonics left | W3 for harmonics | #130 |
 | W7 | Housekeeping: buffer bug, benchmarks, defaults | Partly done — on hold | — | #128 |
 
 Raised by this work and not yet filed:
@@ -42,6 +43,7 @@ Raised by this work and not yet filed:
 | Periodic meshes with under 2 active nodes per rank fail, and corrupt `/power`, in both solver modes; temporal meshes are exact | W4 | `dev` — filed as #132 |
 | `NBZ2_G` sizes the z2 absorbing boundary in nodes, not length | W2, W7 | with W7 |
 | A failed field rearrangement exits with status 0 | W7 | with W7 |
+| `shuntBeam` places the beam a tenth of a *field* cell from the mesh start, so the same beam sits at a different z2 origin in the two modes | W6 | benign; documented in `compare_sase.py` |
 
 ---
 
@@ -157,6 +159,60 @@ mesh does not coarsen.
 
 ## W3 — Multiple field arrays
 
+Split in two, because the storage and the physics are independent and the
+storage unblocks viz work while the coupling derivation is outstanding.
+
+### W3a — the polarisation grids. Done.
+
+Averaged mode carries one envelope per linear polarisation: `nComp = 2`,
+component 1 = x, component 2 = y. Unaveraged stays at 1, where a complex pair
+already means `(A_x, -A_y)`.
+
+**No new physics was needed**, which is why this could land first. For both
+undulator types averaged mode supports, the y envelope is fixed by the x one
+exactly and at every `zbar`:
+
+| undulator | relation | why |
+|---|---|---|
+| planar | `Atilde_y = 0` | `A_perp = sqrt(2) Re[Atilde e]` is purely real — linear along x |
+| helical | `Atilde_y = i Atilde_x` | `A_perp = Atilde e` unconstrained, so `A_y = -Im[Atilde e]` |
+
+`setAvgSlavedComp` derives component 2 from component 1 before each dump. Only
+component 1 is integrated. The `aperp` dataset's 4th dimension is `2*nComp`,
+and `/runInfo` carries `nFieldComp` and `fieldCompMeaning`.
+
+Verified by running the 1D averaged deck planar and helical on 2 ranks and
+reading the dumps back — component 2 exact in both cases. Worth knowing:
+**no e2e suite enables averaged mode**, so the four ctest suites only prove the
+unaveraged path is untouched. `testAveraging.pf::testSlavedComponent` is the
+only automated guard on the slaving.
+
+### W3b — the general coupling. Not started.
+
+What remains is the physics: per-component couplings so component 2 evolves
+independently, which is what elliptical needs. The constraints any derivation
+has to satisfy, two of them already pinned:
+
+- **Planar**: `ptilde_y = 0` and `ptilde_x = -alpha (u_y/2)(J0 - J1) e^{-i theta}`.
+  Derived by matching the shipped coupling through the field normalisation, not
+  assumed — this is where the familiar difference of Bessel functions lives once
+  the basis is Cartesian.
+- **Helical**: `xi = 0`, `Atilde_y = i Atilde_x`, and
+  `ptilde_x - i ptilde_y = -alpha u_y e^{-i theta}`.
+- **Against the circular basis**: under `Atilde_mp = (Atilde_x mp i Atilde_y)/2`
+  the combination must reproduce today's `alpha (u_- J0 - u_+ J1)`. Note that a
+  naive symmetry guess does *not* — see the design note; the two carriers and the
+  conjugation on the `+` component mean the coupling transform is not the plain
+  linear map the field transform is.
+- **Energy**: balance summed over components, 1e-13, through the real `getrhs`.
+
+Then: `sField4ElecReal/Imag` gain a component dimension, `dgamdz_f` sums over
+components, the loop goes inside `getrhs` (shared interpolation weights), and
+`chkAveraged`/`UndSection` lift the elliptical rejection. Harmonics extend the
+same component axis with carrier `exp(-i h z2/2rho)` and `JJ_h`.
+
+### Original notes
+
 Elliptical undulators and harmonic bands are the same structural problem: more than one
 envelope. Doing them as one generalisation is much cheaper than twice.
 
@@ -167,9 +223,22 @@ envelope. Doing them as one generalisation is much cheaper than twice.
   coupling `JJ_h = J_((h-1)/2)(h xi) - J_((h+1)/2)(h xi)`, reducing to today's `J0 - J1` at
   `h = 1`. Recovers both the missing harmonic output (~2% of radiated power at aw ~ 1) and
   the harmonics' drive on `dGamma/dz`.
-- **Sequencing:** both want the field storage to be an object rather than loose module
-  arrays, which is exactly #107 (`tFieldValues`). Doing #107 first will make this much less
-  invasive.
+- **Sequencing:** both wanted the field storage to be an object rather than loose module
+  arrays, which was #107. **That is now done**, so the storage a second envelope needs
+  already exists in both places it has to:
+  - `ctx%field` (`tFieldValues`) holds the mesh-resident arrays and the decomposition.
+  - `work%env(:)` (`tRK4Workspace`) holds the integrator's stage arrays and the inner-mesh
+    field, already indexed by envelope. `nEnv` is set in one place, `allact_rk4_arrs`.
+- **Where the envelope loop goes:** inside `getrhs`, not around it. Two reasons, and both
+  are load-bearing. Locating each macroparticle's nodes and computing its interpolation
+  weights is identical for every envelope, so one pass scattering to N envelopes is strictly
+  cheaper than N passes. And invariant 2 needs every envelope's contribution summed into
+  `dGamma/dz` through the same per-particle `ptilde`, which `testAveraging.pf` checks to
+  1e-13 — looping outside `getrhs` would break that balance.
+- **The signature work this implies:** `derivs` and `getrhs` still take the stage arrays
+  positionally, 18 arguments each, which is why they cannot currently loop. Collapsing them
+  to `(sz, istage, work, ctx)` is the enabling change and belongs with this workstream
+  rather than with #107, which had no second envelope to justify it.
 - **Acceptance:** energy balance summed over components; elliptical reproduces helical and
   planar as limiting cases; harmonic power compares like-for-like against an unaveraged run.
 
@@ -419,9 +488,84 @@ appearing, which is the point of it.
 - **Model the dropped A-term.** The radiation-driven transverse momentum accounts for ~0.55%
   in both polarisations. Its slow effect on p2 can be added analytically, removing a known
   error rather than documenting it.
-- **A deck that can discriminate cell size.** The current deck is seeded, narrow band and flat
-  top, so it cannot justify cells coarser than 1-2 wavelengths. SASE, or sharp current
-  gradients, would also exercise what averaging gives up (coherent spontaneous emission).
+- **A deck that can discriminate cell size.** Done in 1D — `benchmark/averaged/sase.in`,
+  `run_compare_sase.py`, `compare_sase.py`. See below.
+
+### SASE, 1D. Done
+
+The one case every earlier validation was missing: shot noise instead of a seed, run 340
+periods to zbar 21.4 (~24 gain lengths) through seven orders of magnitude of growth and
+past saturation. Planar, rho = 0.005, the `deck.in` beam with the z2 sampling raised to 8
+macroparticles per wavelength and the bunch ends rounded over three resonant wavelengths.
+Numbers and tables in `benchmark/averaged/README.md`.
+
+**The averaged mode reproduces SASE.** Against the unaveraged solver at `nodesPerLambdar =
+48`, 120 steps: gain length 0.16% (~0.3% against the Richardson limit), saturation power
+1.2% low, saturation position identical, in-band field energy 0.5% low at saturation and
+within 2% through the exponential regime, spectral centre 1e-5 in `w/wr`, spectral width
+0.5% narrow, bunching within 1.6%. 17 s against 756 s — 44x, and 12x against the
+unaveraged solver's own default mesh.
+
+**The mesh-refinement series is what makes that a statement about the model.** At the
+unaveraged solver's default mesh the averaged gain length is 1.8% short, which compounds
+over thirteen gain lengths into an in-band energy ratio of 1.39. Refining the mesh
+collapses it: 0.9816, 0.9980, 1.0016 in gain-length ratio over n = 12, 24, 48, with the
+spectral centre and width and the bunching converging onto the averaged values in step. A
+single-mesh comparison would have charged the unaveraged solver's own discretisation error
+to the averaged model, in every observable at once — exactly the trap W2 and the 1D study
+already found for power, now confirmed to apply to the growth rate.
+
+**The two runs stay the same shot.** The surprise. With identical shot noise the
+normalised overlap of the averaged envelope with the demodulated unaveraged field is
+0.9958 at zbar 1.3 and 0.9999 or 1.0000 at every write from zbar 3.8 to saturation. SASE
+is chaotic and the expectation was that any difference in the coupling would be amplified
+through the gain until the two were different shots with the same statistics. They are
+not: the averaged solver reproduces the unaveraged one spike by spike, so the comparison
+is pointwise after all and the five-shot ensemble (below) only confirmed it.
+
+**The ensemble puts the bias in context.** Five realisations: the shot-to-shot spread in
+gain length is 1.4%, seven times the 0.2% mean difference between the modes, and the two
+modes' spreads agree to 1%. The difference is systematic and the same sign every shot,
+which is what a paired comparison should give — a small reproducible bias, not scatter.
+
+**Coherent spontaneous emission is not the residual, and averaging keeps more of it than
+this programme assumed.** Scanning `sSigEj_G` 40x moves the gain-length and
+saturation-power ratios not at all (0.9984/0.9980/0.9981 and 0.9922/0.9931/0.9934 at 0.01,
+0.1, 0.4). Sharpening the ends to `sSigEj_G = 0.01` raises the in-band startup energy 31x
+— that is CSE at the resonant wavelength — and the averaged mode reproduces it to 0.5%.
+The claim "averaged mode discards CSE" needs narrowing: the in-band coherent start is the
+fundamental bunching and the envelope equation carries it. What one envelope cannot carry
+is the out-of-band part of the edge radiation, 2% of the total at `sSigEj_G = 0.01`. A
+square-ended bunch is still untested.
+
+**Early total power is meaningless, and how meaningless depends on the unaveraged mesh.**
+The unaveraged field's in-band share at zbar 1.3 is 0.87, 0.70, 0.41 at n = 12, 24, 48 —
+a finer mesh resolves more broadband spontaneous emission — so the total-power ratio reads
+0.91, 0.70, 0.41 where the in-band ratio reads 1.05, 1.005, 0.996. The out-of-band share
+is the unaveraged mesh's resolved bandwidth, not physics. Any SASE comparison has to be
+band-limited, which is what `compare_sase.py` does.
+
+**Cell size: the growth rate is insensitive, the saturated field is not.** Gain length
+holds to 0.3% out to 8 wavelengths per cell, because the SASE bandwidth is only a few rho
+and the spikes are ~200 wavelengths long. But the saturated in-band energy falls 0.8%,
+1.0%, 2.1%, 5.8% at 1, 2, 4, 8 λr/cell and the spectral width 0.5%, 0.7%, 1.9%, 5.9%, the
+loss being past saturation where the spectrum broadens. So 1-2 λr/cell stays the
+recommendation; 4 is tolerable before saturation; 8 is not. One step per period is
+converged, as for the seeded deck.
+
+**Two mode-dependent beam differences found and characterised**, both benign and both
+previously undocumented. `shuntBeam` (`macroparticle_generation/simple_electron_gen.f90`)
+slides the beam to a tenth of a *field* cell above the mesh start, so the two modes put
+the same realisation at z2 origins a fixed fraction of a wavelength apart — 0.0909 for
+`lambdarPerCell = 1` against `nodesPerLambdar = 12`. Invisible to a seedless temporal-mesh
+run, but it is 33 degrees of carrier phase, which alone puts 0.58 into a node-by-node
+relative L2 whose real content is 0.09; `compare_sase.py` removes the global phase. And
+the macroparticles are reordered to follow each mode's own field decomposition, so on more
+than one rank the gathered dumps hold the same particles in a different order. Everything
+else — count, weights, energies, relative z2 — is bit-identical at equal `iRandSeed` and
+equal rank count, verified at 1 and 4 ranks.
+
+Still open: 3D SASE, a second rho, helical SASE, square bunch ends.
 
 ## W7 — Housekeeping
 
@@ -461,14 +605,21 @@ Done, in order of landing:
    multi-module lattices, drifts and chicanes each checked against the unaveraged solver.
 4. **W5** — dump metadata saying which mode wrote a file and what its arrays mean, and viz
    tools that read it instead of guessing.
+5. **W6, in part** — 1D SASE, the case every earlier validation was missing. Validated from
+   shot noise past saturation against a mesh-refinement series: gain length to 0.16%,
+   saturation power to 1.2%, spectral centre to 1e-5, bunching to 1.6%, at 44x the speed.
+   The rho scan and the harmonic question are still open and still waiting on W3.
 
 Not done, in suggested order:
 
-5. **W7** — housekeeping. On hold pending a decision on the `calcBuff` rounding; the
+6. **W7** — housekeeping. On hold pending a decision on the `calcBuff` rounding; the
    `NBZ2_G` and exit-status items found during W2 and W4 are parked with it.
-6. **#107, then W3** — multiple field arrays: elliptical first (simpler, two components),
-   then harmonic bands.
-7. **W6** — close out the accuracy map, once W3 makes the harmonic question answerable.
+7. **W3** — multiple field arrays: elliptical first (simpler, two components), then harmonic
+   bands. #107 is done, so the storage exists; what remains is the physics and the `getrhs`
+   signature change that lets it loop over envelopes.
+8. **W6** — close out the accuracy map: the rho scan, the A-term, and the harmonic question
+   once W3 makes it answerable. 3D SASE and helical SASE are now the cheapest additions,
+   since the 1D harness and its guard rails exist.
 
 Separately, and not part of this programme: **periodic meshes with fewer than two z2 nodes
 per rank fail on `dev`** (see W4) — filed as UKFELs/Puffin#132. It affects the unaveraged
@@ -480,10 +631,28 @@ shared parallel code that the unaveraged e2e goldens depend on.
 
 Honest limits of what has been shown, rather than open tasks:
 
-- **Every 3D validation is helical or plane-pole, seeded, noise-free, and flat-top.** The
-  1D README already warns that such a deck cannot discriminate cell sizes; the same applies
-  to the 3D one. SASE, sharp current gradients or a short bunch would be far more demanding,
-  and would exercise the coherent spontaneous emission that averaging discards.
+- **SASE is validated in 1D, and that changed the picture rather than confirming it.**
+  Planar, from shot noise, past saturation: gain length to 0.16%, saturation power to 1.2%,
+  spectral centre to 1e-5, bunching to 1.6% against the unaveraged solver at
+  `nodesPerLambdar = 48` — see W6. Three things in this list were wrong. The two solvers do
+  not merely agree statistically, they stay the *same shot* (overlap 0.9999 through the
+  exponential regime), so the ensemble was a check rather than the measurement. Averaging
+  does not discard coherent spontaneous emission wholesale: the in-band coherent start is
+  the fundamental bunching and the envelope equation has it, verified where sharpening the
+  bunch ends raised the startup energy 31x and the two modes tracked it to 0.5%. And SASE
+  is *less* cell-size sensitive than the seeded deck, not more — its bandwidth is a few rho
+  and its spikes are hundreds of wavelengths long, so the growth rate holds to 0.3% even at
+  8 wavelengths per cell. What SASE did expose is that the saturated field, not the growth
+  rate, is what a coarse envelope mesh loses.
+- **Every 3D validation is helical or plane-pole, seeded, noise-free, and flat-top**, and so
+  is every 1D validation but the SASE one. 3D SASE has not been run, nor has a second rho,
+  nor helical SASE, nor a bunch with ends sharp on the carrier scale. The `sSigEj_G` scan
+  shows the residual does not track the edge length over a 40x range, not that a square end
+  would be carried.
+- **The unaveraged reference is itself still drifting** wherever these residuals are quoted.
+  At `nodesPerLambdar = 48` the SASE gain length still moves 0.4% per mesh halving, so the
+  0.16% is a limit approached, not a converged value — the same caveat the seeded study's
+  ~1% planar remainder carries, and the two are the same size.
 - **The seed has to be a polarisation one envelope can hold.** Not a limit so much as a trap,
   and the one that produced the only wrong finding in this programme: a linear seed on a
   helical undulator silently loses half its power, because `u+ = 0` there and the opposite

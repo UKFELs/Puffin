@@ -21,8 +21,8 @@ implicit none (type, external)
 private
 
 public :: iDiffraction_CG, iX_CG, iY_CG, iZ2_CG, tElectronCloud, tFELFrame, tFieldMesh, &
-           tIntegrationState, tLatticeElements, tOutputConfig, tSimulationContext, &
-           tSimulationFlags, tUndulator
+           tFieldValues, tIntegrationState, tLatticeElements, tOutputConfig, &
+           tRK4Workspace, tSimulationContext, tSimulationFlags, tUndulator
 
 
 ! ============================================================================
@@ -61,6 +61,116 @@ type :: tFieldMesh
     logical :: is_1d
     logical :: equal_xy_spacing
 end type tFieldMesh
+
+! ============================================================================
+! 1b. FIELD VALUES TYPE - The field data itself, and the decomposition that
+!     gives it meaning.
+!
+!     Sibling to tFieldMesh, not nested in it: tFieldMesh is the global, static
+!     grid, identical on every rank and fixed after init. This is the opposite -
+!     per-rank, and re-partitioned every step by getLocalFieldIndices.
+!
+!     The arrays are three spatial regions of the parallel decomposition along
+!     z2, each split into real and imaginary parts (Puffin does not use complex):
+!
+!       z2 ->  [ front ]  [ ------ active ------ ][ buffer ]  [ back ]
+!                fr_*       ac_*  (fz2 ... ez2)    (...bz2)     bk_*
+!                ffs..ffe                                       ees..eee
+!
+!     Flat 1D indexing throughout: (iz - fz2)*ntrnds_G + transverse_index.
+! ============================================================================
+type :: tFieldValues
+    ! --- How many field components the arrays below carry ------------------
+    ! 1 unaveraged, where the single complex pair (ac_r, ac_i) already means
+    ! (A_x, -A_y) and so holds both polarisations. In averaged mode a complex
+    ! pair is one envelope of one polarisation state, so polarisation needs a
+    ! component per linear axis: nComp = 2, component 1 = x, component 2 = y.
+    ! Set once at setup; every allocation below uses it.
+    integer(kind=ip) :: nComp = 1_ip
+
+    ! --- Active slab: the region this rank integrates ---------------------
+    ! Indexed (node, component). Node extent tllen*ntrnds_G, where
+    ! tllen = bz2 - fz2 + 1 includes a slippage buffer past ez2. mainlen is the
+    ! buffer-free part the rank owns for output.
+    real(kind=wp), allocatable :: ac_r(:,:), ac_i(:,:)      ! ac_rfield, ac_ifield
+
+    ! --- Carried regions: field ahead of / behind the bunch ----------------
+    ! Not integrated, only transported. Node extents tlflen, tlelen; often zero.
+    real(kind=wp), allocatable :: fr_r(:,:), fr_i(:,:)      ! fr_rfield, fr_ifield
+    real(kind=wp), allocatable :: bk_r(:,:), bk_i(:,:)      ! bk_rfield, bk_ifield
+
+    ! --- Transposition buffers in FFTW slab layout -------------------------
+    ! Hold all three regions. Filled by redist2FFTWlt, scattered back by
+    ! redistbackFFT, consumed by diffraction.f90. Each component diffracts
+    ! independently under the same operator.
+    real(kind=wp), allocatable :: tre_fft(:,:), tim_fft(:,:)
+
+    ! --- Decomposition: inseparable from the arrays above ------------------
+    ! Active slab bounds and lengths
+    integer(kind=ip) :: fz2, ez2, bz2, lTr, bz2PB
+    integer(kind=ip) :: mainlen, tllen, fbuffLen, fbuffLenM
+
+    ! Front region bounds and lengths
+    integer(kind=ip) :: ffs, ffe, tlflen, tlflen_glob, tlflen4arr
+
+    ! Back region bounds and lengths
+    integer(kind=ip) :: ees, eee, tlelen, tlelen_glob, tlelen4arr
+
+    ! Global (rank-0 gathered) counterparts of the bounds above, used when the
+    ! whole field is collected onto one rank
+    integer(kind=ip) :: fz2_GGG, ez2_GGG, ffs_GGG, ffe_GGG, ees_GGG, eee_GGG
+
+    ! Per-rank layout tables: (region start, end) for every rank
+    integer(kind=ip), allocatable :: ac_ar(:,:), ff_ar(:,:), ee_ar(:,:), ft_ar(:,:)
+
+    ! --- Decomposition state ----------------------------------------------
+    integer(kind=ip) :: iParaBas    ! basis for parallelism: electron/field/FFTW
+    logical :: qUnique              ! .false. when every rank holds all nodes
+    logical :: qStart_new
+end type tFieldValues
+
+! ============================================================================
+! 1c. RK4 WORKSPACE - scratch for one integration step, plus the inner-mesh
+!     field carried between steps.
+!
+!     Deliberately NOT part of tSimulationContext. Two reasons:
+!
+!     - Lifetime. It is allocated and freed with the field layout (see
+!       allocRK4/freeRK4, called from UndSection), not with the simulation.
+!     - Aliasing. Routines such as upd8a take a field array and the field
+!       object in the same call. If this lived at ctx%rk4, those calls would
+!       pass a subobject of ctx alongside another part of ctx, which is the
+!       pattern a compiler may assume cannot happen. As a sibling of ctx the
+!       two are unrelated objects.
+!
+!     The inner-mesh field (in_r/in_i) lives here rather than in tFieldValues
+!     because the outer mesh is authoritative: inner2Outer writes back before
+!     every dump and every diffraction step, outer2Inner re-seeds afterwards.
+!     It is a working copy whose lifetime is exactly this workspace's.
+! ============================================================================
+type :: tRK4Workspace
+    ! Field scratch, indexed (node, envelope, stage). One envelope today; an
+    ! elliptical undulator or a harmonic band adds another.
+    !
+    ! The envelope index sits in the middle so that a whole stage across every
+    ! envelope, A_r(:,:,istage), is one contiguous rank-2 slice: that is what
+    ! derivs and getrhs receive, and it is what lets the envelope loop live
+    ! inside getrhs where the interpolation weights are shared. A single
+    ! envelope's mesh array, A_r(:,ie,istage), is contiguous too, so it still
+    ! passes to upd8a unchanged.
+    real(kind=wp), allocatable :: A_r(:,:,:), A_i(:,:,:)        ! stage 0:3
+    real(kind=wp), allocatable :: dadz_r(:,:,:), dadz_i(:,:,:)  ! stage 0:2
+    real(kind=wp), allocatable :: in_r(:,:), in_i(:,:)          ! inner-mesh field, carried
+
+    ! Beam scratch. One bunch however many envelopes there are, so unlike the
+    ! field arrays these do not multiply - and their roles are irregular
+    ! (d*t holds k2 then k4, d*m accumulates k2+k3), so they stay named rather
+    ! than indexed by stage.
+    real(kind=wp), allocatable :: xt(:), yt(:), z2t(:), pxt(:), pyt(:), pz2t(:)
+    real(kind=wp), allocatable :: dxdx(:), dydx(:), dz2dx(:), dpxdx(:), dpydx(:), dpz2dx(:)
+    real(kind=wp), allocatable :: dxt(:), dyt(:), dz2t(:), dpxt(:), dpyt(:), dpz2t(:)
+    real(kind=wp), allocatable :: dxm(:), dym(:), dz2m(:), dpxm(:), dpym(:), dpz2m(:)
+end type tRK4Workspace
 
 ! ============================================================================
 ! 2. ELECTRON PHASE SPACE TYPE - 6D particle data and metadata
@@ -329,7 +439,8 @@ end type tSimulationFlags
 ! ============================================================================
 type :: tSimulationContext
     ! Major data objects
-    type(tFieldMesh) :: mesh
+    type(tFieldMesh) :: mesh         ! Global static grid
+    type(tFieldValues) :: field      ! Per-rank field data + its decomposition
     type(tElectronCloud) :: electrons
     type(tFELFrame) :: frame         ! Simulation-lifetime scaling frame
     type(tUndulator) :: und          ! Current undulator element state

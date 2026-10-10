@@ -1,0 +1,87 @@
+{
+  "label": "d2c7511 (dev baseline)",
+  "generated": "2026-10-10 10:06:54",
+  "toolchain": {
+    "host": "tyrell",
+    "platform": "Linux-7.0.0-29-generic-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "cpu_count": 4,
+    "puffin": "/tmp/claude-1000/-home-mightylorenzo-src-github-mightylorenzo-puffin-puffin-puffin-src/754efd1c-1ac8-406e-a10b-c69d0a59e6f1/scratchpad/bench-dev/puffin/puffin",
+    "puffin_mtime": "2026-10-10 09:57:03"
+  },
+  "results": {
+    "1d_mpi": {
+      "desc": "1D flat-top CSE, 2 ranks (adds parallel field/beam exchange)",
+      "deck": "inputs/bench_1d.in",
+      "ranks": 2,
+      "reps": 3,
+      "wall_s": [
+        40.163751389001845,
+        40.26969777001068,
+        40.17428191599902
+      ],
+      "undulator_s": [
+        38.3766179,
+        38.468035221,
+        38.37351612
+      ],
+      "wall_min": 40.163751389001845,
+      "undulator_min": 38.37351612
+    },
+    "1d_serial": {
+      "desc": "1D flat-top CSE, single rank (isolates serial integration cost)",
+      "deck": "inputs/bench_1d.in",
+      "ranks": 1,
+      "reps": 3,
+      "wall_s": [
+        74.5231353190029,
+        74.12827857599768,
+        74.11698953999439
+      ],
+      "undulator_s": [
+        72.37872987099999,
+        71.977769957,
+        71.96716801699999
+      ],
+      "wall_min": 74.11698953999439,
+      "undulator_min": 71.96716801699999
+    },
+    "3d_lattice": {
+      "desc": "3D CLARA, full 17-module lattice with quads/drifts/chicanes, 2 ranks",
+      "deck": "inputs/3D/clara_full.in",
+      "ranks": 2,
+      "reps": 3,
+      "wall_s": [
+        79.2582216180017,
+        79.52428306400543,
+        78.478819439988
+      ],
+      "undulator_s": [
+        75.12359755300001,
+        75.36591244199998,
+        74.36076651199998
+      ],
+      "wall_min": 78.478819439988,
+      "undulator_min": 74.36076651199998
+    },
+    "3d_single": {
+      "desc": "3D CLARA, single undulator module, 85x85 mesh, 2 ranks",
+      "deck": "inputs/3D/bench_3d.in",
+      "ranks": 2,
+      "reps": 3,
+      "wall_s": [
+        25.207561983988853,
+        24.873728653008584,
+        25.05178673400951
+      ],
+      "undulator_s": [
+        23.772885738,
+        23.434265993,
+        23.615846481
+      ],
+      "wall_min": 24.873728653008584,
+      "undulator_min": 23.434265993
+    }
+  },
+  "note": "OMP_NUM_THREADS=1. Cases run one per invocation, alternating this build with the other, so drift over the run hits both alike. 3 reps each, minimum reported."
+}
