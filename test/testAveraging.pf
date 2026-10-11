@@ -340,6 +340,21 @@ contains
     @assertEqual(0.0_wp, maxval(abs(field%ac_r(:,1) - keep_r)), 0.0_wp)
     @assertEqual(0.0_wp, maxval(abs(field%ac_i(:,1) - keep_i)), 0.0_wp)
 
+!   The polarisation comes from cx, cy, not from the undulator type string.
+!   The default 'puffin' type passes fx, fy straight through, which is how the
+!   two could disagree: this deck is linear, and the cx == 0 test that used to
+!   choose the branch here would have written it out as circular.
+
+    field%ac_r(:,2) = 99.0_wp
+    field%ac_i(:,2) = 99.0_wp
+    call setAvgSlavedComp(field, "puffin", 0.0_wp, 1.0_wp)   ! cx = 0: linear
+    @assertEqual(0.0_wp, maxval(abs(field%ac_r(:,2))), 0.0_wp)
+    @assertEqual(0.0_wp, maxval(abs(field%ac_i(:,2))), 0.0_wp)
+
+    call setAvgSlavedComp(field, "puffin", 1.0_wp, 1.0_wp)   ! cx = cy: helical
+    @assertEqual(0.0_wp, maxval(abs(field%ac_r(:,2) + field%ac_i(:,1))), 0.0_wp)
+    @assertEqual(0.0_wp, maxval(abs(field%ac_i(:,2) - field%ac_r(:,1))), 0.0_wp)
+
 !   One component: a no-op, and it must not touch anything.
 
     field%nComp = 1_ip
@@ -624,13 +639,18 @@ contains
 
   @test
   subroutine testPolarisationSupport()
-    ! helical, planar in x, planar in y
+    ! helical, planar in x
     @assertTrue(qAvgPolarisationOK(1.0_wp, 1.0_wp))
     @assertTrue(qAvgPolarisationOK(0.0_wp, 1.0_wp))
-    @assertTrue(qAvgPolarisationOK(1.0_wp, 0.0_wp))
     ! elliptical, and the opposite helicity
     @assertFalse(qAvgPolarisationOK(0.6_wp, 0.8_wp))
     @assertFalse(qAvgPolarisationOK(-1.0_wp, 1.0_wp))
+!   Planar in y: linear, so it passes the helicity condition on |u+| = |u-|,
+!   but cy = 0 means no x field, and component 1 - the x envelope - is the only
+!   one driven. Rejected rather than run with an identically zero envelope.
+!   Accepted here once, while setAvgSlavedComp tested cx == 0 for "linear" and
+!   so sent this down the helical branch: it ran, and reported circular light.
+    @assertFalse(qAvgPolarisationOK(1.0_wp, 0.0_wp))
   end subroutine testPolarisationSupport
 
 

@@ -164,7 +164,17 @@ contains
 
     tol = 1.0e-12_wp * max(abs(uMinus), abs(uPlus), tiny(1.0_wp))
 
+!   cy = uMinus + uPlus must be nonzero too, not just the helicity condition.
+!   Component 1 is the x envelope and it is the only one driven, so a
+!   polarisation with no x field at all - cy = 0, light linear along y - leaves
+!   it carrying nothing and puts the whole field in the slaved component. A
+!   real undulator, just not one a single driven envelope can represent, so it
+!   belongs with elliptical on the rejected side. It used to be accepted here
+!   while setAvgSlavedComp's cx == 0 test sent it down the helical branch, so
+!   it ran and reported circular light.
+
     qAvgPolarisationOK = (abs(uMinus) > tol) .and. &
+                         (abs(uMinus + uPlus) > tol) .and. &
                          ((abs(uPlus) <= tol) .or. &
                           (abs(abs(uPlus) - abs(uMinus)) <= tol))
 
@@ -475,14 +485,15 @@ contains
 !> Fill the slaved field components from component 1.
 !>
 !> Averaged mode carries one envelope per linear polarisation: component 1 is
-!> x, component 2 is y.  For the two undulator types the mode supports, the y
-!> envelope is not independent - it is fixed by the x one, exactly and at all
-!> zbar:
+!> x, component 2 is y.  For the polarisations the mode accepts the y envelope
+!> is not independent - it is fixed by the x one, exactly and at all zbar, by
+!> Atilde_y = i (cx/cy) Atilde_x, a quarter-period rotation scaled by the ratio
+!> of the undulator's two field amplitudes.  Only two values of that ratio get
+!> here, since qAvgPolarisationOK accepts only two polarisations:
 !>
 !>   planar (cx = 0)   the radiated field is linear along x, so Atilde_y = 0
-!>   helical (cx = cy) A_perp = Atilde exp(-i z2/2rho) with no constraint, so
-!>                     A_x = Re[Atilde e], A_y = -Im[Atilde e], which is
-!>                     Atilde_y = i Atilde_x: Re -> -Im, Im -> Re
+!>   helical (cx = cy) the full quarter turn, Atilde_y = i Atilde_x, which is
+!>                     Re -> -Im, Im -> Re, and circular light
 !>
 !> So the second grid exists and carries the right physical A_y without any
 !> second set of equations.  That is what makes the polarisation layout
@@ -504,6 +515,13 @@ contains
     if (field%nComp < 2) return
 
     call getAvgUndAmps(undType, fx, fy, cx, cy)
+
+!   cx == 0 separates the two cases exactly, but only because the accepted set
+!   is exactly those two: qAvgPolarisationOK passes cx = 0 and cx = cy and
+!   nothing else. It has to reject cy = 0 for that to hold - (cx, cy) = (1, 0)
+!   is linear and passes the helicity condition, and reaching here it would
+!   fail cx == 0 and be written out as circular. The test below and the gate
+!   are one decision in two places; change either and check the other.
 
     do ic = 2, field%nComp
 
