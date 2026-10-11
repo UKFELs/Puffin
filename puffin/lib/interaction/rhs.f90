@@ -25,7 +25,7 @@ use FiElec, only: getinterps_3d, getffelecs_3d, getsource_3d
 use gtop2, only: getp2, getp2avg
 use averaging, only: tAvgCoupling, getAvgCoupling, getResonantMomentum, &
   tAvgFocusing, getAvgFocusCoef, getAvgFocusing
-use ParaField, only: fz2, tTransInfo_G
+use ParaField, only: tTransInfo_G
 use bfields, only: getbfields
 use GlobalTypes, only: tUndulator, tFELFrame, tSimulationContext
 
@@ -92,7 +92,7 @@ contains
 ! sDADz - RHS of field source term
 
   real(kind=wp), intent(in) :: sz
-  real(kind=wp), contiguous, intent(in) :: sAr(:), sAi(:)
+  real(kind=wp), contiguous, intent(in) :: sAr(:,:), sAi(:,:)      ! (node, envelope)
   real(kind=wp), contiguous, intent(in)  :: sx(:), sy(:), sz2(:), &
                                             spr(:), spi(:), sgam(:)
 
@@ -100,7 +100,7 @@ contains
   real(kind=wp), contiguous, intent(inout)  :: sdx(:), sdy(:), sdz2(:), &
                                    sdpr(:), sdpi(:), sdgam(:)
 
-  real(kind=wp), contiguous,  intent(inout) :: sDADzr(:), sDADzi(:) !!!!!!!
+  real(kind=wp), contiguous,  intent(inout) :: sDADzr(:,:), sDADzi(:,:)  ! (node, envelope)
   logical, intent(inout) :: qOK
   type(tSimulationContext), intent(inout) :: ctx
 
@@ -180,7 +180,7 @@ contains
 
 
 
-    p_nodes = int(sz2 / dz2, kind=ip) + 1_IP - (fz2-1)
+    p_nodes = int(sz2 / dz2, kind=ip) + 1_IP - (ctx%field%fz2-1)
 ! !$OMP WORKSHARE
 !!$OMP SIMD
 !    do i = 1, iNumberElectrons_G
@@ -210,7 +210,7 @@ contains
               (int( (sy+halfy)  / dy, kind=ip) * nspinDX )  + &   !  y 'slices' before primary node
               (nspinDX * nspinDY * &
                               int(sz2  / dz2, kind=ip) ) - &
-                              (fz2-1)*ntrndsi_G  ! transverse slices before primary node
+                              (ctx%field%fz2-1)*ntrndsi_G  ! transverse slices before primary node
 
 !$OMP END WORKSHARE
 
@@ -219,27 +219,40 @@ contains
 
 
 
+! The field arrays carry an envelope index, and getInterps_* above has already
+! done the part that is shared between envelopes - locating each macroparticle's
+! nodes and computing its interpolation weights into rhs_vars. Only the gather
+! and scatter below are per-envelope, which is why the envelope loop belongs
+! here rather than around getrhs.
+!
+! It is not written as a loop yet because two things inside it are still
+! single-envelope: sField4ElecReal/Imag in rhs_vars hold one envelope's field
+! at each macroparticle, and dgamdz_f sums one envelope's contribution. Both
+! need the per-envelope coupling coefficients, which is W3's physics (#129).
+! Until then nEnv is 1 and this reads envelope 1 explicitly, so that a second
+! envelope fails to compile rather than being silently dropped from dGamma/dz.
+
   if (tTransInfo_G%qOneD) then
 
-    call getInterps_1D(sz2, ctx%flags)
+    call getInterps_1D(sz2, ctx%flags, ctx%field)
     if (ctx%flags%parallel_arrays_ok) then
-      call getFFelecs_1D(sAr, sAi)
+      call getFFelecs_1D(sAr(:,1), sAi(:,1))
       if (ctx%flags%period_averaged) then
-        call getSource_1D(sDADzr, sDADzi, sprRes, spiRes, sgam, ctx%frame%eta)
+        call getSource_1D(sDADzr(:,1), sDADzi(:,1), sprRes, spiRes, sgam, ctx%frame%eta)
       else
-        call getSource_1D(sDADzr, sDADzi, spr, spi, sgam, ctx%frame%eta)
+        call getSource_1D(sDADzr(:,1), sDADzi(:,1), spr, spi, sgam, ctx%frame%eta)
       end if
     end if
 
   else
 
-    call getInterps_3D(sx, sy, sz2, ctx%flags)
+    call getInterps_3D(sx, sy, sz2, ctx%flags, ctx%field)
     if ((ctx%flags%parallel_arrays_ok) .and. (ctx%flags%inner_xy_ok)) then
-      call getFFelecs_3D(sAr, sAi)
+      call getFFelecs_3D(sAr(:,1), sAi(:,1))
       if (ctx%flags%period_averaged) then
-        call getSource_3D(sDADzr, sDADzi, sprRes, spiRes, sgam, ctx%frame%eta)
+        call getSource_3D(sDADzr(:,1), sDADzi(:,1), sprRes, spiRes, sgam, ctx%frame%eta)
       else
-        call getSource_3D(sDADzr, sDADzi, spr, spi, sgam, ctx%frame%eta)
+        call getSource_3D(sDADzr(:,1), sDADzi(:,1), spr, spi, sgam, ctx%frame%eta)
       end if
     end if
 

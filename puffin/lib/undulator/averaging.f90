@@ -62,7 +62,7 @@ module averaging
 
 use puffin_kinds, only: WP
 use puffin_constants, only: pi
-use GlobalTypes, only: tUndulator, tFELFrame
+use GlobalTypes, only: tUndulator, tFELFrame, tFieldValues
 use wigglerVar, only: getAlpha
 
 implicit none (type, external)
@@ -71,7 +71,8 @@ private
 public :: tAvgCoupling, getAvgUndAmps, getAvgPolarisation, qAvgPolarisationOK, &
           getAvgEnvelope, getAvgCoupling, avgJJ, getResonantMomentum, &
           getAvgSeedFactor, getAvgBufferPqSq, getAvgAlpha, &
-          tAvgFocusing, getAvgFocusCoef, getAvgFocusing, getAvgCarrierKz2
+          tAvgFocusing, getAvgFocusCoef, getAvgFocusing, getAvgCarrierKz2, &
+          setAvgSlavedComp
 
 
 !> The period-averaged coupling at one zbar, common to every macroparticle.
@@ -469,6 +470,70 @@ contains
     getAvgBufferPqSq = fp * max(alpha0**2, alpha1**2)
 
   end function getAvgBufferPqSq
+
+
+!> Fill the slaved field components from component 1.
+!>
+!> Averaged mode carries one envelope per linear polarisation: component 1 is
+!> x, component 2 is y.  For the two undulator types the mode supports, the y
+!> envelope is not independent - it is fixed by the x one, exactly and at all
+!> zbar:
+!>
+!>   planar (cx = 0)   the radiated field is linear along x, so Atilde_y = 0
+!>   helical (cx = cy) A_perp = Atilde exp(-i z2/2rho) with no constraint, so
+!>                     A_x = Re[Atilde e], A_y = -Im[Atilde e], which is
+!>                     Atilde_y = i Atilde_x: Re -> -Im, Im -> Re
+!>
+!> So the second grid exists and carries the right physical A_y without any
+!> second set of equations.  That is what makes the polarisation layout
+!> landable ahead of the general elliptical coupling (#129): only component 1
+!> is integrated, and this derives the rest before anything reads them.
+!>
+!> An elliptical undulator is still rejected at setup, because there the y
+!> envelope *is* independent and this relation does not hold.
+
+  subroutine setAvgSlavedComp(field, undType, fx, fy)
+
+    type(tFieldValues), intent(inout) :: field
+    character(*), intent(in) :: undType
+    real(kind=wp), intent(in) :: fx, fy
+
+    real(kind=wp) :: cx, cy
+    integer :: ic
+
+    if (field%nComp < 2) return
+
+    call getAvgUndAmps(undType, fx, fy, cx, cy)
+
+    do ic = 2, field%nComp
+
+      if (cx == 0.0_wp) then
+
+!       Linear along x - nothing in y.
+
+        field%ac_r(:,ic) = 0.0_wp
+        field%ac_i(:,ic) = 0.0_wp
+        field%fr_r(:,ic) = 0.0_wp
+        field%fr_i(:,ic) = 0.0_wp
+        field%bk_r(:,ic) = 0.0_wp
+        field%bk_i(:,ic) = 0.0_wp
+
+      else
+
+!       Helical - y leads x by a quarter period.
+
+        field%ac_r(:,ic) = -field%ac_i(:,1)
+        field%ac_i(:,ic) =  field%ac_r(:,1)
+        field%fr_r(:,ic) = -field%fr_i(:,1)
+        field%fr_i(:,ic) =  field%fr_r(:,1)
+        field%bk_r(:,ic) = -field%bk_i(:,1)
+        field%bk_i(:,ic) =  field%bk_r(:,1)
+
+      end if
+
+    end do
+
+  end subroutine setAvgSlavedComp
 
 
 !> Factor taking the exp(-i z2/2rho) component of a seed field to the stored

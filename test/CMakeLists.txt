@@ -173,6 +173,7 @@ endif()
 
 add_pfunit_ctest (puffin_basic_tests
   TEST_SOURCES testTests.pf testFFunctions.pf testLatticeElements.pf testAveraging.pf
+               testPower.pf
   LINK_LIBRARIES puffin_mpi
 )
 

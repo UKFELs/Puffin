@@ -16,8 +16,7 @@ module FiElec
 use puffin_kinds, only: WP, IPL, IP
 use globals, only: NZ2_G, ntrndsi_G, nspinDX, nspinDY, fieldMesh, iTemporal, s_chi_bar_G, &
   procelectrons_G
-use parafield, only: bz2
-use GlobalTypes, only: tSimulationFlags
+use GlobalTypes, only: tSimulationFlags, tFieldValues
 
 implicit none (type, external)
 private
@@ -28,12 +27,13 @@ public :: getffelecs_3d, getinterps_3d, getsource_3d
 contains
 
 
-subroutine getInterps_3D(sx, sy, sz2, flags)
+subroutine getInterps_3D(sx, sy, sz2, flags, field)
 
 use rhs_vars, only: maxEl, halfx, halfy, lis_GR, dx, dy, dz2, WP, IPL, IP
 
 real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:)
 type(tSimulationFlags), intent(inout) :: flags
+type(tFieldValues), intent(in) :: field
 
 integer(kind=ip) :: xnode, ynode, z2node
 integer(kind=ipl) :: i
@@ -82,7 +82,7 @@ real(kind=wp) :: locx, locy, locz2, &
         end if
       end if
 
-      if (z2node >= bz2) then
+      if (z2node >= field%bz2) then
         flags%parallel_arrays_ok = .false.
       end if
 

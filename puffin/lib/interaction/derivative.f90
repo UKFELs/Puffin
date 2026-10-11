@@ -54,14 +54,14 @@ contains
 ! sdydz   OUTPUT    Derivative of z and y
 
     real(kind=wp), intent(in)  :: sz
-    real(kind=wp), contiguous, intent(in)  :: sAr(:), sAi(:)
+    real(kind=wp), contiguous, intent(in)  :: sAr(:,:), sAi(:,:)   ! (node, envelope)
     real(kind=wp), contiguous, intent(in)  :: sx(:), sy(:), sz2(:), &
                                   spr(:), spi(:), sp2(:)
 
     real(kind=wp), contiguous, intent(inout)  :: sdx(:), sdy(:), sdz2(:), &
                                   sdpr(:), sdpi(:), sdp2(:)
 
-    real(kind=wp), contiguous, intent(inout) :: sdAr(:), sdAi(:)
+    real(kind=wp), contiguous, intent(inout) :: sdAr(:,:), sdAi(:,:) ! (node, envelope)
     type(tSimulationContext), intent(inout) :: ctx
 
 !                 LOCAL ARGS
@@ -70,7 +70,7 @@ contains
 ! sb        Vector holding the right hand sides
 
 !    real(kind=wp), allocatable :: ldadz(:)
-    integer(kind=ip) :: error, iArEr
+    integer(kind=ip) :: error, iArEr, ie
     logical :: qOKL
 
 !    allocate(LDADz(ReducedNX_G*ReducedNY_G*NZ2_G*2))
@@ -96,9 +96,11 @@ contains
 
 
 
-!    update fields in buffers
+!    update fields in buffers - one exchange per envelope
 
-      call upd8da(sdAr, sdAi)
+      do ie = 1, size(sdAr, 2)
+        call upd8da(sdAr(:,ie), sdAi(:,ie), ctx%field)
+      end do
 
 
 

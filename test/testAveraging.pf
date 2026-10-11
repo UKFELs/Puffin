@@ -276,6 +276,82 @@ contains
   end subroutine checkAgainstBruteForce
 
 
+  !> The slaved field component. Averaged mode carries one envelope per linear
+  !! polarisation, but only component 1 is integrated: for the undulator types
+  !! it supports, component 2 is fixed by component 1 and setAvgSlavedComp
+  !! derives it. Planar radiates along x alone, so the y envelope is zero.
+  !! Helical has A_perp = Atilde exp(-i z2/2rho) with no constraint, which is
+  !! Atilde_y = i Atilde_x: real part -> -imag, imag part -> real.
+  !!
+  !! No e2e suite runs averaged mode, so this is the only automated guard on it.
+  @test
+  subroutine testSlavedComponent()
+
+    use GlobalTypes, only: tFieldValues
+    use averaging, only: setAvgSlavedComp
+
+    type(tFieldValues) :: field
+    integer, parameter :: nn = 9
+    integer :: j
+    real(kind=wp) :: keep_r(nn), keep_i(nn)
+
+    field%nComp = 2_ip
+
+    allocate(field%ac_r(nn,2), field%ac_i(nn,2))
+    allocate(field%fr_r(nn,2), field%fr_i(nn,2))
+    allocate(field%bk_r(nn,2), field%bk_i(nn,2))
+
+    do j = 1, nn
+      field%ac_r(j,1) = 0.3_wp * cos(0.7_wp * j)
+      field%ac_i(j,1) = 0.3_wp * sin(0.4_wp * j + 0.5_wp)
+    end do
+    field%fr_r(:,1) = field%ac_r(:,1)
+    field%fr_i(:,1) = field%ac_i(:,1)
+    field%bk_r(:,1) = field%ac_r(:,1)
+    field%bk_i(:,1) = field%ac_i(:,1)
+
+    keep_r = field%ac_r(:,1)
+    keep_i = field%ac_i(:,1)
+
+!   Planar: nothing in y.
+
+    field%ac_r(:,2) = 99.0_wp
+    field%ac_i(:,2) = 99.0_wp
+
+    call setAvgSlavedComp(field, "planepole", 1.0_wp, 1.0_wp)
+
+    @assertEqual(0.0_wp, maxval(abs(field%ac_r(:,2))), 0.0_wp)
+    @assertEqual(0.0_wp, maxval(abs(field%ac_i(:,2))), 0.0_wp)
+    @assertEqual(0.0_wp, maxval(abs(field%fr_r(:,2))), 0.0_wp)
+    @assertEqual(0.0_wp, maxval(abs(field%bk_i(:,2))), 0.0_wp)
+
+!   Helical: y is x rotated a quarter period. Exact, not approximate.
+
+    call setAvgSlavedComp(field, "helical", 1.0_wp, 1.0_wp)
+
+    @assertEqual(0.0_wp, maxval(abs(field%ac_r(:,2) + field%ac_i(:,1))), 0.0_wp)
+    @assertEqual(0.0_wp, maxval(abs(field%ac_i(:,2) - field%ac_r(:,1))), 0.0_wp)
+    @assertEqual(0.0_wp, maxval(abs(field%bk_r(:,2) + field%bk_i(:,1))), 0.0_wp)
+    @assertEqual(0.0_wp, maxval(abs(field%bk_i(:,2) - field%bk_r(:,1))), 0.0_wp)
+
+!   Component 1 is never touched. Compared against a snapshot rather than a
+!   recomputed expression, which the compiler need not evaluate identically.
+
+    @assertEqual(0.0_wp, maxval(abs(field%ac_r(:,1) - keep_r)), 0.0_wp)
+    @assertEqual(0.0_wp, maxval(abs(field%ac_i(:,1) - keep_i)), 0.0_wp)
+
+!   One component: a no-op, and it must not touch anything.
+
+    field%nComp = 1_ip
+    field%ac_r(:,2) = 7.0_wp
+    call setAvgSlavedComp(field, "helical", 1.0_wp, 1.0_wp)
+    @assertEqual(7.0_wp, maxval(abs(field%ac_r(:,2))), 0.0_wp)
+
+    deallocate(field%ac_r, field%ac_i, field%fr_r, field%fr_i, field%bk_r, field%bk_i)
+
+  end subroutine testSlavedComponent
+
+
   @test
   subroutine testHelicalMatchesBruteForce()
     call checkAgainstBruteForce("helical", 1.0_wp, 1.0_wp, 1.0_wp)
@@ -606,7 +682,7 @@ contains
                        NZ2_G, nspinDX, nspinDY, ntrndsi_G, fieldMesh, iTemporal, &
                        qElectronsEvolve_G, qFieldEvolve_G, qElectronFieldCoupling_G, &
                        iNumberElectrons_G, procelectrons_G, s_chi_bar_G, dadz_w
-    use ParaField, only: fz2, bz2, tTransInfo_G
+    use ParaField, only: tTransInfo_G
     use rhs, only: getrhs
 
     character(*), intent(in) :: undType
@@ -615,7 +691,7 @@ contains
 
     type(tSimulationContext) :: ctx
     integer, parameter :: ne = 7, nz = 16, ntr = 25
-    real(kind=wp), allocatable :: sAr(:), sAi(:), dAr(:), dAi(:)
+    real(kind=wp), allocatable :: sAr(:,:), sAi(:,:), dAr(:,:), dAi(:,:)   ! (node, envelope)
     real(kind=wp), dimension(ne) :: sx, sy, sz2, spr, spi, sgam, &
                                     sdx, sdy, sdz2, sdpr, sdpi, sdgam
     real(kind=wp) :: dz2v, dxv, dyv, dV3v, fieldRate, beamRate
@@ -665,11 +741,11 @@ contains
     NZ2_G = nz
     fieldMesh = iTemporal
     tTransInfo_G%qOneD = qOneD
-    fz2 = 1
-    bz2 = nz
+    ctx%field%fz2 = 1
+    ctx%field%bz2 = nz
 
     nf = ntrndsi_G * nz
-    allocate(sAr(nf), sAi(nf), dAr(nf), dAi(nf))
+    allocate(sAr(nf,1), sAi(nf,1), dAr(nf,1), dAi(nf,1))
 
     qElectronsEvolve_G = .true.
     qFieldEvolve_G = .true.
@@ -706,8 +782,8 @@ contains
     end if
 
     do j = 1, nf
-      sAr(j) = 0.1_wp * cos(0.7_wp * j)
-      sAi(j) = 0.1_wp * sin(0.3_wp * j + 1.0_wp)
+      sAr(j,1) = 0.1_wp * cos(0.7_wp * j)
+      sAi(j,1) = 0.1_wp * sin(0.3_wp * j + 1.0_wp)
     end do
 
     dAr = 0.0_wp
@@ -719,6 +795,9 @@ contains
                 sdx, sdy, sdz2, sdpr, sdpi, sdgam, dAr, dAi, qOK, ctx)
 
     @assertTrue(qOK)
+
+!   sum over the whole rank-2 array, so this is already the balance summed over
+!   every envelope - which is what W3 needs to assert for elliptical (#129).
 
     fieldRate = sum(sAr * dAr + sAi * dAi) * dV3v
     beamRate = sum(s_chi_bar_G * sdgam) / (2.0_wp * ctx%frame%rho)
