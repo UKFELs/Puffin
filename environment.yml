@@ -19,3 +19,15 @@ dependencies:
   - numpy
   - h5py=*=mpi_openmpi*
   - bokeh
+  - scipy
+  - matplotlib
+# pytables has no mpi build string of its own, so it takes whatever hdf5 the
+# solve lands on.  Installed on its own into an existing environment it will
+# pull in a nompi hdf5 and replace the solver's, taking collective writes and
+# the e2e tests with it; solved together with the pin above it resolves
+# against the openmpi build instead.  So add it here rather than by hand, and
+# if you do install it by hand, repeat the pin:
+#
+#   mamba install pytables 'hdf5=*=mpi_openmpi*'
+#
+  - pytables

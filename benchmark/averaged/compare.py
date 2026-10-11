@@ -34,10 +34,18 @@ def read_ds(path, ds):
     return list(vals)
 
 
-def attr(path, name):
-    out = subprocess.run(["h5dump", "-A", path], check=True,
-                         stdout=subprocess.PIPE).stdout.decode()
-    m = re.search(r'ATTRIBUTE "%s" \{.*?\(0\): ([^\s]+)' % name, out, re.S)
+_ATTRS = {}
+
+
+def attr(path, name, default=None):
+    if path not in _ATTRS:
+        _ATTRS[path] = subprocess.run(["h5dump", "-A", path], check=True,
+                                      stdout=subprocess.PIPE).stdout.decode()
+    m = re.search(r'ATTRIBUTE "%s" \{.*?\(0\): ([^\s]+)' % name, _ATTRS[path], re.S)
+    if m is None:
+        if default is None:
+            raise KeyError("%s has no attribute %s" % (path, name))
+        return default
     return float(m.group(1))
 
 
@@ -47,12 +55,38 @@ def last_index(d, stem):
     return sorted(ks)
 
 
-def field(d, k):
+def field_comps(d, k):
+    """All field components of write k: ([[complex]], dz2, zbarTotal).
+
+    The slowest dimension of /aperp is 2*nFieldComp, ordered (component 1 real,
+    component 1 imaginary, component 2 real, ...) - see writeRunAtts in
+    io/hdf5PuffLow.f90.  Unaveraged there is one component, whose real and
+    imaginary parts are A_x and -A_y.  Averaged mode carries one envelope per
+    linear polarisation; component 2 is slaved to component 1 (zero for a
+    planar undulator, a quarter period ahead for a helical one), so component 1
+    is the one to compare.  Files written before nFieldComp existed are read as
+    single-component, which is what they were.
+    """
     p = os.path.join(d, "run_aperp_%d.h5" % k)
     vals = read_ds(p, "/aperp")
-    n = len(vals) // 2
-    dz2 = attr(p, "vsUpperBounds") / int(attr(p, "vsNumCells"))
-    return [complex(vals[i], vals[n + i]) for i in range(n)], dz2, attr(p, "zbarTotal")
+    nc = int(attr(p, "nFieldComp", 1))
+    n = len(vals) // (2 * nc)
+    comps = [[complex(vals[2 * c * n + i], vals[(2 * c + 1) * n + i]) for i in range(n)]
+             for c in range(nc)]
+
+#   /runInfo/sLengthOfElmZ2 is the cell size the solver used.  The Vs mesh
+#   group's bounds are not: vsUpperBounds is nZ2 * dz2 while vsNumCells is
+#   nZ2 - 1, so their ratio is 0.06% high on this mesh.  Keep the ratio as the
+#   fallback for dumps written before runInfo carried the cell size.
+
+    dz2 = attr(p, "sLengthOfElmZ2",
+               attr(p, "vsUpperBounds") / int(attr(p, "vsNumCells")))
+    return comps, dz2, attr(p, "zbarTotal")
+
+
+def field(d, k):
+    comps, dz2, zbar = field_comps(d, k)
+    return comps[0], dz2, zbar
 
 
 def pol(undtype):
