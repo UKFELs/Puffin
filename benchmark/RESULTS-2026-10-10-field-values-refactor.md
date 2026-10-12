@@ -15,10 +15,29 @@ identical to `dev` on every case.
 | | Commit | Subject |
 |---|---|---|
 | Before | `d2c7511` | `dev` head — merge of UKFELs/Puffin#138 |
-| After | `cd82415` | branch's last code commit — "Wrap the long lines the lint gate rejects" |
+| After | `cd82415` | branch's last code commit at the time — "Wrap the long lines the lint gate rejects" |
 
-`cd82415` rather than the branch tip because the tip is the commit that adds
-this write-up, and it touches no code.
+`cd82415` rather than the branch tip because the tip was then the commit that
+adds this write-up, and it touches no code.
+
+**`cd82415` is no longer reachable.** The branch's 21 commits were squashed
+into four after these numbers were taken, so the SHA in the table and in the
+JSON filenames below names a commit that no longer exists in this history, and
+the run cannot be reproduced by checking it out. The code it measured is the
+refactor and the second field component, now inside `18af4d4` and `e358fa6`.
+
+What changed in the solver after it was measured, and so is *not* covered by
+these timings:
+
+- `gPowerP` sums to `field%nEnv` rather than `field%nComp` — a loop bound on
+  the output path, reached once per integrated write.
+- One line in `qAvgPolarisationOK`, a setup-time check.
+- Two multiplications dropped from `getAvgFocusCoef`, which runs once per RHS
+  evaluation, not per macroparticle.
+
+None of the three is per-particle or per-node, so none is in a position to move
+these numbers; the suite was not re-run for them. Re-run it against the current
+tip if that assumption needs to be checked rather than taken.
 
 Two fresh out-of-tree builds, configured identically and built from clean
 trees: `-DCMAKE_BUILD_TYPE=Release` (`-O3`), `-DENABLE_PARALLEL=ON`,
