@@ -227,6 +227,32 @@ has to satisfy, two of them already pinned:
   there. So the half, the Cartesian units and the independent driving are one
   change, not three.
 
+- **Focusing**: `getAvgFocusCoef`'s curvature term needs re-deriving, and the
+  `cx`/`cy` factors it used to carry put back — correctly this time. Today
+  `cNatX` and `cNatY` both read `+/- rho kxu^2 / sqrt(eta)` with no
+  polarisation factor, which is right only because `kxu^2` is nonzero for the
+  curved-pole type alone, where `cx = 0, cy = 1`. It previously read `cy^2` in
+  `cNatX` and `cy` in `cNatY`; both were dropped precisely because nothing
+  could distinguish `cy^2`, `cy` and `1` there: the curved branches of
+  `getBXfield`/`getBYfield`/`getBZfield` carry no `fx` or `fy` at all, the
+  polarisation being baked into the sinh/cosh expressions, and `calcScaling`
+  leaves `kx_undulator` untouched for every other type.
+
+  So the moment the general coupling admits off-axis structure on a type whose
+  polarisation is a free parameter — or `calcScaling` stops setting
+  `kx_undulator == ky_undulator` ("giving equal focusing for now"), which is
+  what lets the `bz` beat keep its on-axis form in that routine — the term is
+  unconstrained and must be worked through from the period average of the real
+  `dppdz_r_f`/`dppdz_i_f`, not guessed from either of the forms that stood
+  here. The quiver terms `sqrt(eta) cx^2/4rho` and `sqrt(eta) cy^2/4rho` are
+  already general and transpose properly; it is only the curvature term that is
+  pinned to one undulator type.
+
+  Note also that a curved pole is *not* `x <-> y` symmetric — the electron
+  wiggles in `x` alone and both planes are focused by that one quiver, which is
+  the sign difference between `cNatX` and `cNatY`. A general derivation should
+  not expect the curvature term to come out as a transposed pair.
+
 Then: `sField4ElecReal/Imag` gain a component dimension, `dgamdz_f` sums over
 components, the loop goes inside `getrhs` (shared interpolation weights), and
 `chkAveraged`/`UndSection` lift the elliptical rejection. Harmonics extend the

@@ -393,13 +393,35 @@ contains
     kxuSq = 0.0_wp
     if (trim(und%undulator_type) == "curved") kxuSq = und%kx_undulator**2
 
+!   The two parts come from different places, which is why only the first
+!   transposes between the planes.
+!
+!   The 1/4rho terms are each plane's own quiver beating against the on-axis
+!   gradient of bz.  With pperp_w = (-cy cos psi, -cx sin psi) and
+!   bz = sqrt(eta)/2rho (-fx x sin psi + fy y cos psi), the x force picks up
+!   <sin^2> = 1/2 off cx fx and the y force <cos^2> = 1/2 off cy fy, giving
+!   cx^2 in x and cy^2 in y.  Genuinely symmetric under x <-> y.
+!
+!   The kxuSq terms come from the curvature of the pole faces, which is
+!   geometry and not a polarisation amplitude, so there is no cx or cy in them
+!   to transpose - and a curved pole is not an x <-> y symmetric configuration
+!   anyway: the electron wiggles in x alone and both planes are focused by that
+!   one quiver, hence the sign difference rather than a swap.  They used to
+!   carry cy^2 and cy respectively, which was decoration: kxuSq is nonzero only
+!   for "curved", where getAvgUndAmps gives cx = 0, cy = 1 and the field
+!   expressions in bfields.f90 contain no fx or fy at all, so cy^2, cy and 1
+!   could not be told apart.  Should kx_undulator ever reach another type, or
+!   calcScaling stop setting kx == ky, this term needs deriving from the period
+!   average of dppdz_r_f/dppdz_i_f rather than trusting either form - see the
+!   focusing note in the W3b section of AVERAGED_MODE_ROADMAP.md.
+
     foc%cNatX = frame%kappa * alphaEff**2 * &
                 ( sqrtEta * cx**2 / (4.0_wp * frame%rho) &
-                  + frame%rho * cy**2 * kxuSq / sqrtEta )
+                  + frame%rho * kxuSq / sqrtEta )
 
     foc%cNatY = frame%kappa * alphaEff**2 * &
                 ( sqrtEta * cy**2 / (4.0_wp * frame%rho) &
-                  - frame%rho * cy * kxuSq / sqrtEta )
+                  - frame%rho * kxuSq / sqrtEta )
 
     foc%cSFX = 0.0_wp
     foc%cSFY = 0.0_wp
