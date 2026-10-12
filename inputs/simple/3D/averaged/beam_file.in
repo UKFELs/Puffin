@@ -1,0 +1,34 @@
+! Beam for the 3D averaged example.
+!
+! qMatched_A = .true. matches the transverse beam to the undulator's natural
+! focusing, which averaged mode period-averages rather than drops, so the
+! envelope stays put: over the 120 periods of this deck the macroparticle RMS
+! goes 0.1640 -> 0.1664 in x and 0.1670 -> 0.1628 in y, a couple of per cent.
+! A beam that visibly breathes here is a sign the averaged focusing coefficient
+! is wrong, which makes this the deck to run after touching getAvgFocusCoef.
+!
+! sSigmaE's gamma entry is 0.1% energy spread - well inside the envelope mesh's
+! band, so chkAveraged stays quiet.  Ipk is deliberately unphysical; see the
+! note in averaged.in.
+
+&NBLIST
+nbeams = 1
+dtype = 'simple'
+/
+
+&BLIST
+sSigmaE = 1.0, 1.0, 1E8, 1.0, 1.0, 0.001
+sLenE = 1E-6, 1E-6, 1.5, 1E-6, 1E-6, 0.006
+emitx = 1.0
+emity = 1.0
+Ipk = 4000
+bcenter = 0.0
+gammaf = 1.0
+iMPsZ2PerWave = 8
+TrLdMeth = 2
+nseqparts = 61
+qRndEj_G = .true.
+sSigEj_G = 0.1
+qFixCharge = .false.
+qMatched_A = .true.
+/

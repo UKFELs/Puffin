@@ -1,0 +1,27 @@
+! Seed for the 3D averaged example.
+!
+! freqf = 1.0 is on resonance - an averaged run's envelope mesh holds roughly
+! 1 +/- 1/(2 lambdarPerCell), and chkAveraged refuses a seed outside it.
+!
+! sA0_X and sA0_Y are both set, because zundType is 'helical': the two
+! polarisation envelopes carry equal magnitude there.  A planar undulator wants
+! sA0_X alone, as in the 1D example.
+!
+! qMatchS_G defaults to .true., so the transverse sigmas below are replaced by
+! the beam's - the seed is matched to the beam - and sSigmaF only sets z2,
+! which qFlatTop then makes unused as well.
+
+&NSLIST
+nseeds = 1
+/
+
+&SLIST
+freqf = 1.0
+sA0_X = 0.001
+sA0_Y = 0.001
+sSigmaF = 1E8, 1E8, 1E8
+qFlatTop = .true.
+meanZ2 = 0.0
+qRndFj_G = .false.
+sSigFj_G = 0.1
+/
