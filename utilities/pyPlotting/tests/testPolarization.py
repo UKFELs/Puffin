@@ -14,6 +14,12 @@ distinguishes P2 from P3.
 The unaveraged path is checked to read its two components verbatim, since
 this script's fix has to leave unaveraged output alone.
 
+A last section takes one physical circular field, expresses it in both dump
+layouts, and checks that the two branches report the same handedness. The
+magnitude checks above cannot see that: |P3| = 1 says circular, not which way
+round. Note that both could still be consistently backwards - nothing here
+pins the sign against the undulator field that produces it. See #143.
+
 Run it directly; it needs only numpy. See README.md.
 """
 
@@ -105,5 +111,58 @@ ax, ay = pp.polarisationSamples(fakeDump.resolvedDump(comp0, comp1),
                                 0, 0, NZ, 1)
 ck.check('component 0 read verbatim', ax, comp0, tol=0)
 ck.check('component 1 read verbatim', ay, comp1, tol=0)
+
+print('the two layouts agree on handedness')
+# One physical field, expressed both ways, through both of the script's
+# branches. The sign of P3 is the handedness, and the magnitude checks above
+# cannot see it: |P3| = 1 says circular, not which way round.
+#
+# A_x = cos(psi), A_y = sin(psi) with psi = z2/(2 rho) the carrier. Averaged
+# that is Atilde = (1, i), since Re[i e^{-i psi}] = sin psi. Unaveraged it is
+# the resolved pair (A_x, -A_y).
+RHO = 0.005
+LAMR = 4.0 * numpy.pi * RHO
+NPERWAVE, NWAVE = 24, 8
+NZH = NPERWAVE * NWAVE + 1
+z2 = numpy.linspace(0.0, NWAVE * LAMR, NZH)
+carrier = z2 / (2.0 * RHO)
+
+avgDump = fakeDump.envelopeDump(numpy.ones(NZH, dtype=complex),
+                                numpy.full(NZH, 1j), z2=z2)
+_, _, s1a, s2a, s3a = stokes(avgDump)
+ck.check('averaged: s1/s0 = 0', s1a, 0.0)
+ck.check('averaged: s2/s0 = 0', s2a, 0.0)
+# Signed, not |.|: this is the handedness the averaged reader reports, and it
+# is the same at every node.
+ck.check('averaged: s3/s0 = -1 everywhere (one handedness)', s3a, -1.0)
+
+unavgDump = fakeDump.resolvedDump(numpy.cos(carrier), -numpy.sin(carrier),
+                                  z2=z2)
+pp.nz = NZH          # getMagPhase reads the node count from module scope
+magxu, phasexu = pp.getMagPhase(unavgDump, RHO, 0, 0, 0)
+magyu, phaseyu = pp.getMagPhase(unavgDump, RHO, 0, 0, 1)
+s0u = numpy.maximum(magxu**2 + magyu**2, 1e-99)
+s3u = 2 * magxu * magyu * numpy.sin(phasexu - phaseyu) / s0u
+
+# Everything below is on the interior: getMagPhase's amplitude is a running
+# RMS over one resonant wavelength, and its window clamps at both ends of the
+# array, so the outermost wavelength is not a fair comparison. Inside that the
+# demodulation is exact to machine precision.
+interior = slice(NPERWAVE, -NPERWAVE)
+ck.check('unaveraged: |Atilde_x| recovered', magxu[interior], 1.0)
+ck.check('unaveraged: |Atilde_y| recovered', magyu[interior], 1.0)
+ck.check('unaveraged: |s3/s0| = 1 (fully circular)',
+         numpy.abs(s3u[interior]), 1.0)
+
+# The handedness agrees, which is what this check is for. It is asserted on
+# the median rather than pointwise because getMagPhase reflects a negative
+# phase where it should wrap it (#142), which flips the reported sign on about
+# a quarter of the nodes.
+ck.check('unaveraged: same handedness as averaged',
+         numpy.median(s3u[interior]), -1.0, tol=0)
+# Pin how bad #142 is, so that fixing it fails this line and says so. Tighten
+# the line above to pointwise and delete this one at that point.
+ck.check('#142: a quarter of nodes report the opposite sign',
+         numpy.mean(numpy.sign(s3u[interior]) != -1.0), 0.248, tol=5e-3)
 
 sys.exit(ck.report())

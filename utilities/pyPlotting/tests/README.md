@@ -42,6 +42,17 @@ only one of the three that tells P2 from P3. `testPolarization.py` also checks
 the reconstructed ellipse, and that the unaveraged path still reads its two
 components verbatim.
 
+`testPolarization.py` ends by cross-checking the two layouts against each
+other on **handedness**: one physical circular field, expressed as an averaged
+envelope pair and as a resolved `(A_x, -A_y)` pair, has to come back with the
+same sign of P3. The state checks above cannot see this, since they assert
+`|P3| = 1` — circular, but not which way round. The averaged branch gives
+`P3 = -1` at every node; the unaveraged branch agrees on the median but flips
+on about a quarter of them, which is the phase-wrap defect #142, pinned by a
+check of its own so that fixing it fails loudly. Note that this is a
+*relative* check: both branches could still be consistently backwards, as
+nothing yet ties the sign to the undulator field that produces it (#143).
+
 `testPolarizationHilbert.py` additionally cross-validates: one physical field
 is built, the resolved version handed to the existing Hilbert path and the
 envelope version to the averaged analytic path, and the two are required to
