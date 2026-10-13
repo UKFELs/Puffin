@@ -33,13 +33,14 @@ contains
       use GlobalTypes, only: tSimulationContext
       use write_adapter, only: wr_cho
       use ParallelSetUp, only: Get_time
+      use mpi, only: mpi_barrier
 
       implicit none (type, external)
 
       character(1024_IP), intent(in) :: input_file_name
       logical, intent(out) :: qOK
       real(kind=wp)    :: sZ, szl
-      integer(kind=ip) :: iL, iLst
+      integer(kind=ip) :: iL, iLst, error
       logical          :: qOKL
 
       ! Single simulation context — owns all types, passed to all element routines
@@ -110,6 +111,13 @@ contains
       call cleanup(sZ)   !     Clear arrays and stucts used during integration
 
       close(UNIT=137,STATUS="KEEP")
+
+!     Don't return until every rank's output is on disk. The integrated file is
+!     written by rank 0 alone, after the collective part of the dump, so without
+!     this the other ranks can return - and a caller such as the e2e tests can
+!     look for that file - while rank 0 is still writing it.
+
+      call mpi_barrier(tProcInfo_G%comm, error)
 
       qOK = .true.
       goto 2000     !       Exit
