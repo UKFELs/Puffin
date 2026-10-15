@@ -1,0 +1,117 @@
+!
+! Period-averaged (SVEA) 1D example.  Seeded, planar undulator, no lattice.
+!
+! The options below are the ordinary ones - see any other example in
+! inputs/simple/ for the full annotated list, or the user manual in $PUFFIN/doc/
+! - so this header only covers what makes this deck an averaged one.
+!
+!--------------------------------------------------------------------------------------------------!
+!                      PERIOD-AVERAGED MODE
+!--------------------------------------------------------------------------------------------------!
+!
+! qAveraged          .true. integrates the field as a slowly varying envelope
+!                    about the resonant carrier exp(-i z2 / 2 rho) instead of
+!                    resolving the carrier on the mesh.  The undulator period
+!                    is averaged over, so neither the mesh nor the step has to
+!                    resolve it, which is where the speed comes from.
+!
+! lambdarPerCell     z2 mesh spacing, in resonant wavelengths.  This REPLACES
+!                    nodesPerLambdar, which sizes the z2 mesh only when
+!                    qAveraged is .false. and is ignored here.  1.0 is the
+!                    recommendation; 2 is fine, 4 is tolerable before
+!                    saturation, 8 is not.  See benchmark/averaged/README.md.
+!
+! What the two together buy on this deck: dz2 = 4 pi rho lambdarPerCell, so at
+! rho = 0.005 and lambdarPerCell = 1 the 60-unit z2 model takes 956 nodes,
+! where nodesPerLambdar = 12 unaveraged takes 10506 - 11x fewer - and the step
+! below is 2 per undulator period rather than 30.
+!
+!
+!                      WHAT AVERAGED MODE WILL NOT DO
+!
+! Checked at setup (chkAveraged, puffin/lib/setup/checks.f90) and refused
+! rather than silently approximated:
+!
+!   - Elliptical polarisation.  One envelope can represent a helical or a
+!     linearly polarised undulator and nothing in between, so zundType must be
+!     'helical', 'planepole' or 'curved', or fx/fy must give one of those.
+!   - qResume, field_file (an HDF5 field) and HDF5/MASP macroparticle input.
+!     A resolved field read into an envelope array, or a pperp that still
+!     carries the quiver, would be wrong rather than obviously wrong.
+!   - A seed detuned past the envelope mesh's band, roughly
+!     1 +/- 1/(2 lambdarPerCell).  freqf = 1.0 below is on resonance.
+!
+! A beam whose energy spread or oscillation reaches past that band warns rather
+! than stops: its tails are out of band, which makes the run partly wrong, not
+! invalid.
+!
+!
+!                      COST AND ACCURACY
+!
+! These are the parameters of the averaged-vs-unaveraged comparison deck in
+! benchmark/averaged/, so the accuracy here is measured rather than asserted:
+! a CLARA-like 1D case, seeded and noise-free, 60 periods, about 3.8 gain
+! lengths and still exponential.
+!
+! Cost, measured on this deck at 2 ranks: 6.2 s as it stands, against 27.4 s
+! with qAveraged = .false. and the unaveraged mesh and step (nodesPerLambdar
+! = 12, stepsPerPeriod = 30).  The field mesh shrinks 11x but the 1D cost is
+! largely the macroparticles, so the run gets 4.5x faster rather than 11x.
+! Bigger wins are in benchmark/averaged/README.md - 9.3x on the seeded helical
+! case, and 12x on a SASE run to saturation against the unaveraged solver's own
+! default mesh, 44x against a converged one.
+!
+! Accuracy on a PLANAR undulator, which is what this deck is, carries a ~1%
+! power remainder that helical does not: a planar undulator radiates harmonics
+! and a single averaged envelope cannot hold them.  See #130 and the harmonic
+! decomposition in benchmark/averaged/README.md.  Helical is tighter - 0.2% at
+! this cell size, limited by the cell and not the step.  The SASE study's gain
+! length comes within 0.2% of a converged unaveraged reference.
+!
+! Known remainders and what is not modelled yet are in
+! AVERAGED_MODE_ROADMAP.md.
+!
+!
+! Begin input:-
+
+&MDATA
+ qOneD                  = .true.
+ qFieldEvolve           = .true.
+ qElectronsEvolve       = .true.
+ qElectronFieldCoupling = .true.
+ qFocussing             = .false.
+ qDiffraction           = .false.
+ qFilter                = .true.
+ q_noise                = .false.
+ qUndEnds               = .false.
+ qAveraged              = .true.
+ lambdarPerCell         = 1.0
+ beam_file              = 'beam_file.in'
+ sElectronThreshold     = 0.05
+ iNumNodesX             = 1
+ iNumNodesY             = 1
+ nodesPerLambdar        = 12        ! ignored: qAveraged uses lambdarPerCell
+ sFModelLengthX         = 4.0
+ sFModelLengthY         = 4.0
+ sFModelLengthZ2        = 60.0
+ iRedNodesX             = 1
+ iRedNodesY             = 1
+ sFiltFrac              = 0.3
+ sDiffFrac              = 1.0
+ sBeta                  = 1.0
+ seed_file              = 'seed_file.in'
+ srho                   = 0.005
+ sux                    = 1.0
+ suy                    = 1.0
+ saw                    = 1.0121809
+ sgamma_r               = 456.40
+ lambda_w               = 0.0275
+ zundType               = 'planepole'
+ taper                  = 0.0
+ lattFile               = ''
+ stepsPerPeriod         = 2         ! 1 is converged too; 30 is usual unaveraged
+ nPeriods               = 60
+ sZ0                    = 0.0
+ iWriteNthSteps         = 20
+ iWriteIntNthSteps      = 2         ! one integrated write per undulator period
+ /

@@ -22,7 +22,7 @@ use Globals, only: NX_G, NBX_G, NY_G, NBY_G, NZ2_G, NBZ2_G, sLengthOfElmX_G, sLe
   sLengthOfElmZ2_G, seedend, kx_G, ky_G, kz2_loc_G, sBeta_G, sfilt, fieldMesh, iPeriodic, &
   sperwaves_G, sElZ2_G, ffact, sStep, ioutInfo_G, qFilter
 use IO, only: tErrorLog_G, log_error
-use parafield, only: tre_fft, tim_fft, redist2fftwlt, redistbackfft
+use parafield, only: redist2fftwlt, redistbackfft
 use GlobalTypes, only: tSimulationContext
 use averaging, only: getAvgCarrierKz2
 use ParallelSetUp, only: Get_time
@@ -62,6 +62,7 @@ subroutine diffractIM(sStep, &
   type(tSimulationContext), intent(inout) :: ctx
 
   logical :: qOKL
+  integer(kind=ip) :: ic
 
 
   qOK = .false.
@@ -69,14 +70,19 @@ subroutine diffractIM(sStep, &
 
 !      Change data layout to FFTW -
 
-  call redist2FFTWlt()
+  call redist2FFTWlt(ctx%field)
 
 
+!    Each field component diffracts independently, under the same operator.
 
-  CALL DiffractionStep(sStep,&
-       tre_fft, tim_fft,&
-       ctx, qOKL)
-  if (.not. qOKL) goto 1000
+  do ic = 1, ctx%field%nComp
+
+    CALL DiffractionStep(sStep,&
+         ctx%field%tre_fft(:,ic), ctx%field%tim_fft(:,ic),&
+         ctx, qOKL)
+    if (.not. qOKL) goto 1000
+
+  end do
 
   qDiffrctd = .true.
 
@@ -84,7 +90,7 @@ subroutine diffractIM(sStep, &
 
 !    Change back to wiggler data layout
 
-  call redistbackFFT()
+  call redistbackFFT(ctx%field)
 
 
 !              Set error flag and exit

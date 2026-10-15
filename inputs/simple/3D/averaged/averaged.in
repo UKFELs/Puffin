@@ -1,0 +1,103 @@
+!
+! Period-averaged (SVEA) 3D example.  Seeded, helical undulator, diffraction
+! on, beam matched to the undulator's natural focusing, no lattice.
+!
+! See inputs/simple/1D/averaged/averaged.in for what qAveraged and
+! lambdarPerCell do and what the mode refuses at setup; this header covers only
+! what is different in 3D.  The ordinary options are annotated in any other
+! example in inputs/simple/, and in the user manual in $PUFFIN/doc/.
+!
+!--------------------------------------------------------------------------------------------------!
+!                      3D IN AVERAGED MODE
+!--------------------------------------------------------------------------------------------------!
+!
+! Only the z2 mesh is averaged.  x and y are unchanged - iNumNodesX/Y,
+! sFModelLengthX/Y, iRedNodesX/Y and the diffraction step all mean exactly what
+! they mean unaveraged, and diffraction still runs every sDiffFrac of a period.
+! lambdarPerCell coarsens z2 and nothing else.
+!
+! sBeta = 0.0, deliberately.  THIS IS THE ONE THAT WILL CATCH YOU.  The z2
+! absorbing boundary is sized in NODES, not in z2 - NBZ2_G = 37
+! (puffin/lib/setup/setup_calcs.f90) - and an averaged z2 mesh has far fewer
+! nodes for the same physical length.  dz2 = 4 pi rho lambdarPerCell, so this
+! 20-unit model is 320 nodes here and the absorber is ~12% of it, where
+! unaveraged at nodesPerLambdar = 12 the same length is 11x more nodes and the
+! absorber is ~1%.  Coarsen further - lambdarPerCell = 4 gives 81 nodes - and
+! the absorber is approaching half the mesh.  So leave sBeta at 0 as here, or
+! check the node count first; it is the absolute count that matters, not the
+! length.  See the W2 and W7 notes in
+! AVERAGED_MODE_ROADMAP.md.
+!
+! qFocussing = .false. with a matched beam.  The undulator's natural focusing
+! is always on - averaged mode period-averages it into cNatX/cNatY
+! (getAvgFocusCoef) rather than dropping it - and qMatched_A = .true. in the
+! beam file matches the beam to it, so the transverse envelope is constant.
+! qFocussing adds a separate strong-focusing channel on top; it is off here so
+! that any error in the averaged focusing shows up directly as a breathing
+! beam rather than being masked.
+!
+! zundType = 'helical', so BOTH polarisation envelopes are in play: component 1
+! is the x envelope, component 2 the y, and for a helical undulator the second
+! is slaved to the first at Atilde_y = i Atilde_x.  The seed file sets sA0_X and
+! sA0_Y together to match.  Averaged dumps carry both components, which is a
+! layout change from unaveraged - see the nFieldComp dispatch in
+! utilities/pyPlotting/plotPolarization.py.
+!
+!
+!                      SIZE AND RANKS
+!
+! 41 x 41 x 320 nodes.  Puffin slab-decomposes z2 across ranks, so the z2 node
+! count is what limits useful ranks; 319 is comfortable for the handful this
+! deck needs.  It runs in 46 s on 2 ranks.  Coarsening z2 with
+! lambdarPerCell is what makes an averaged run cheap, so watch that the mesh
+! does not end up with fewer than a couple of nodes per rank - on a periodic
+! mesh Puffin warns about that at setup, and that path is known to be broken.
+!
+! Ipk = 4000 in the beam file is well above a physical CLARA current, so that
+! 120 periods reach clear exponential growth rather than seed-dominated
+! lethargy.  It is a demonstration, not a machine.
+!
+!
+! Begin input:-
+
+&MDATA
+ qOneD                  = .false.
+ qFieldEvolve           = .true.
+ qElectronsEvolve       = .true.
+ qElectronFieldCoupling = .true.
+ qFocussing             = .false.
+ qDiffraction           = .true.
+ qFilter                = .true.
+ q_noise                = .false.
+ qUndEnds               = .false.
+ qAveraged              = .true.
+ lambdarPerCell         = 1.0
+ beam_file              = 'beam_file.in'
+ sElectronThreshold     = 0.05
+ iNumNodesX             = 41
+ iNumNodesY             = 41
+ nodesPerLambdar        = 12        ! ignored: qAveraged uses lambdarPerCell
+ sFModelLengthX         = 8.0
+ sFModelLengthY         = 8.0
+ sFModelLengthZ2        = 20.0      ! the beam needs ~19; a shorter value is extended
+ iRedNodesX             = 21
+ iRedNodesY             = 21
+ sFiltFrac              = 0.3
+ sDiffFrac              = 1.0
+ sBeta                  = 0.0       ! see the note above before changing
+ seed_file              = 'seed_file.in'
+ srho                   = 0.005
+ sux                    = 1.0
+ suy                    = 1.0
+ saw                    = 1.0121809
+ sgamma_r               = 456.40
+ lambda_w               = 0.0275
+ zundType               = 'helical'
+ taper                  = 0.0
+ lattFile               = ''
+ stepsPerPeriod         = 2         ! 1 is converged too; 30 is usual unaveraged
+ nPeriods               = 120
+ sZ0                    = 0.0
+ iWriteNthSteps         = 40
+ iWriteIntNthSteps      = 2         ! one integrated write per undulator period
+ /

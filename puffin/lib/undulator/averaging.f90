@@ -62,7 +62,7 @@ module averaging
 
 use puffin_kinds, only: WP
 use puffin_constants, only: pi
-use GlobalTypes, only: tUndulator, tFELFrame
+use GlobalTypes, only: tUndulator, tFELFrame, tFieldValues
 use wigglerVar, only: getAlpha
 
 implicit none (type, external)
@@ -71,7 +71,8 @@ private
 public :: tAvgCoupling, getAvgUndAmps, getAvgPolarisation, qAvgPolarisationOK, &
           getAvgEnvelope, getAvgCoupling, avgJJ, getResonantMomentum, &
           getAvgSeedFactor, getAvgBufferPqSq, getAvgAlpha, &
-          tAvgFocusing, getAvgFocusCoef, getAvgFocusing, getAvgCarrierKz2
+          tAvgFocusing, getAvgFocusCoef, getAvgFocusing, getAvgCarrierKz2, &
+          setAvgSlavedComp
 
 
 !> The period-averaged coupling at one zbar, common to every macroparticle.
@@ -163,7 +164,17 @@ contains
 
     tol = 1.0e-12_wp * max(abs(uMinus), abs(uPlus), tiny(1.0_wp))
 
+!   cy = uMinus + uPlus must be nonzero too, not just the helicity condition.
+!   Component 1 is the x envelope and it is the only one driven, so a
+!   polarisation with no x field at all - cy = 0, light linear along y - leaves
+!   it carrying nothing and puts the whole field in the slaved component. A
+!   real undulator, just not one a single driven envelope can represent, so it
+!   belongs with elliptical on the rejected side. It used to be accepted here
+!   while setAvgSlavedComp's cx == 0 test sent it down the helical branch, so
+!   it ran and reported circular light.
+
     qAvgPolarisationOK = (abs(uMinus) > tol) .and. &
+                         (abs(uMinus + uPlus) > tol) .and. &
                          ((abs(uPlus) <= tol) .or. &
                           (abs(abs(uPlus) - abs(uMinus)) <= tol))
 
@@ -382,13 +393,35 @@ contains
     kxuSq = 0.0_wp
     if (trim(und%undulator_type) == "curved") kxuSq = und%kx_undulator**2
 
+!   The two parts come from different places, which is why only the first
+!   transposes between the planes.
+!
+!   The 1/4rho terms are each plane's own quiver beating against the on-axis
+!   gradient of bz.  With pperp_w = (-cy cos psi, -cx sin psi) and
+!   bz = sqrt(eta)/2rho (-fx x sin psi + fy y cos psi), the x force picks up
+!   <sin^2> = 1/2 off cx fx and the y force <cos^2> = 1/2 off cy fy, giving
+!   cx^2 in x and cy^2 in y.  Genuinely symmetric under x <-> y.
+!
+!   The kxuSq terms come from the curvature of the pole faces, which is
+!   geometry and not a polarisation amplitude, so there is no cx or cy in them
+!   to transpose - and a curved pole is not an x <-> y symmetric configuration
+!   anyway: the electron wiggles in x alone and both planes are focused by that
+!   one quiver, hence the sign difference rather than a swap.  They used to
+!   carry cy^2 and cy respectively, which was decoration: kxuSq is nonzero only
+!   for "curved", where getAvgUndAmps gives cx = 0, cy = 1 and the field
+!   expressions in bfields.f90 contain no fx or fy at all, so cy^2, cy and 1
+!   could not be told apart.  Should kx_undulator ever reach another type, or
+!   calcScaling stop setting kx == ky, this term needs deriving from the period
+!   average of dppdz_r_f/dppdz_i_f rather than trusting either form - see the
+!   focusing note in the W3b section of AVERAGED_MODE_ROADMAP.md.
+
     foc%cNatX = frame%kappa * alphaEff**2 * &
                 ( sqrtEta * cx**2 / (4.0_wp * frame%rho) &
-                  + frame%rho * cy**2 * kxuSq / sqrtEta )
+                  + frame%rho * kxuSq / sqrtEta )
 
     foc%cNatY = frame%kappa * alphaEff**2 * &
                 ( sqrtEta * cy**2 / (4.0_wp * frame%rho) &
-                  - frame%rho * cy * kxuSq / sqrtEta )
+                  - frame%rho * kxuSq / sqrtEta )
 
     foc%cSFX = 0.0_wp
     foc%cSFY = 0.0_wp
@@ -469,6 +502,78 @@ contains
     getAvgBufferPqSq = fp * max(alpha0**2, alpha1**2)
 
   end function getAvgBufferPqSq
+
+
+!> Fill the slaved field components from component 1.
+!>
+!> Averaged mode carries one envelope per linear polarisation: component 1 is
+!> x, component 2 is y.  For the polarisations the mode accepts the y envelope
+!> is not independent - it is fixed by the x one, exactly and at all zbar, by
+!> Atilde_y = i (cx/cy) Atilde_x, a quarter-period rotation scaled by the ratio
+!> of the undulator's two field amplitudes.  Only two values of that ratio get
+!> here, since qAvgPolarisationOK accepts only two polarisations:
+!>
+!>   planar (cx = 0)   the radiated field is linear along x, so Atilde_y = 0
+!>   helical (cx = cy) the full quarter turn, Atilde_y = i Atilde_x, which is
+!>                     Re -> -Im, Im -> Re, and circular light
+!>
+!> So the second grid exists and carries the right physical A_y without any
+!> second set of equations.  That is what makes the polarisation layout
+!> landable ahead of the general elliptical coupling (#129): only component 1
+!> is integrated, and this derives the rest before anything reads them.
+!>
+!> An elliptical undulator is still rejected at setup, because there the y
+!> envelope *is* independent and this relation does not hold.
+
+  subroutine setAvgSlavedComp(field, undType, fx, fy)
+
+    type(tFieldValues), intent(inout) :: field
+    character(*), intent(in) :: undType
+    real(kind=wp), intent(in) :: fx, fy
+
+    real(kind=wp) :: cx, cy
+    integer :: ic
+
+    if (field%nComp < 2) return
+
+    call getAvgUndAmps(undType, fx, fy, cx, cy)
+
+!   cx == 0 separates the two cases exactly, but only because the accepted set
+!   is exactly those two: qAvgPolarisationOK passes cx = 0 and cx = cy and
+!   nothing else. It has to reject cy = 0 for that to hold - (cx, cy) = (1, 0)
+!   is linear and passes the helicity condition, and reaching here it would
+!   fail cx == 0 and be written out as circular. The test below and the gate
+!   are one decision in two places; change either and check the other.
+
+    do ic = 2, field%nComp
+
+      if (cx == 0.0_wp) then
+
+!       Linear along x - nothing in y.
+
+        field%ac_r(:,ic) = 0.0_wp
+        field%ac_i(:,ic) = 0.0_wp
+        field%fr_r(:,ic) = 0.0_wp
+        field%fr_i(:,ic) = 0.0_wp
+        field%bk_r(:,ic) = 0.0_wp
+        field%bk_i(:,ic) = 0.0_wp
+
+      else
+
+!       Helical - y leads x by a quarter period.
+
+        field%ac_r(:,ic) = -field%ac_i(:,1)
+        field%ac_i(:,ic) =  field%ac_r(:,1)
+        field%fr_r(:,ic) = -field%fr_i(:,1)
+        field%fr_i(:,ic) =  field%fr_r(:,1)
+        field%bk_r(:,ic) = -field%bk_i(:,1)
+        field%bk_i(:,ic) =  field%bk_r(:,1)
+
+      end if
+
+    end do
+
+  end subroutine setAvgSlavedComp
 
 
 !> Factor taking the exp(-i z2/2rho) component of a seed field to the stored

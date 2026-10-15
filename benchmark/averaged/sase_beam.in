@@ -1,0 +1,34 @@
+&NBLIST
+nbeams = 1
+dtype = 'simple'
+/
+
+! Same beam as beam_file.in, with the z2 sampling raised from 4 to 8
+! macroparticles per resonant wavelength.  SASE is built out of the shot
+! noise this sampling carries, and 4 per wavelength puts the beam's own
+! Nyquist barely above the fundamental; 8 leaves room for the SASE
+! bandwidth and for the third harmonic the unaveraged run radiates.
+!
+! qRndEj_G / sSigEj_G round the bunch ends over a 0.1-long Gaussian.  That
+! is load bearing, not cosmetic: a sharp current edge radiates coherent
+! spontaneous emission, which the period-averaged model discards
+! completely, so with square ends the two solvers are not comparable at
+! all.  run_compare_sase.py --sigej scans this to show the comparison does
+! not depend on it.
+
+&BLIST
+sSigmaE = 0.084, 0.084, 1E8, 1.0, 1.0, 0.001
+sLenE = 1E-6, 1E-6, 50.0, 1E-6, 1E-6, 0.006
+emitx = 1.0
+emity = 1.0
+Ipk = 400
+bcenter = 0.0
+gammaf = 1.0
+iMPsZ2PerWave = 8
+TrLdMeth = 2
+nseqparts = 19
+qRndEj_G = .true.
+sSigEj_G = 0.1
+qFixCharge = .false.
+qMatched_A = .true.
+/

@@ -1,0 +1,75 @@
+! SASE averaged-vs-unaveraged comparison deck (see README.md, "SASE").
+!
+! Same 1D CLARA-like beam and undulator as deck.in - rho = 0.005,
+! aw = 1.012, gamma_r = 456.4, planepole - but started from shot noise
+! instead of a seed, and run far enough to saturate.  Everything that
+! run_compare_sase.py does not set is fixed here, so the only differences
+! between a pair of runs are the solver mode, the mesh and the step.
+!
+! q_noise = .true. and no seed file: the field starts at zero and grows
+! out of the beam's own shot noise.  That is the point of the deck - a
+! seeded flat-top cannot discriminate cell size or exercise what
+! averaging gives up (bandwidth, harmonics, coherent spontaneous
+! emission), and every averaged validation before this one was seeded.
+!
+! iRandSeed fixes the shot-noise realisation.  The default (-1) seeds the
+! RNG from the system clock, which would make an averaged-vs-unaveraged
+! comparison meaningless.  init_random_seed (random.f90) folds
+! tProcInfo_G%rank into the seed, so a fixed iRandSeed only reproduces the
+! realisation at a fixed number of MPI ranks - run_compare_sase.py asserts
+! that the two runs used the same rank count.
+!
+! sFModelLengthZ2 = 110 holds the 50-long bunch plus the ~21 of slippage
+! over 340 periods plus headroom, so the radiation never reaches the mesh
+! end and setup_calcs never has to extend the mesh for us.  sBeta is inert
+! here (the absorber lives in the diffraction step, which qDiffraction =
+! .false. switches off), so the NBZ2_G node-count problem of the 3D deck
+! does not arise.
+!
+! qFilter is likewise inert without diffraction, so the unaveraged run
+! carries its full resolved spectrum - harmonics included - while the
+! averaged run carries one band about the carrier.  Compare the
+! fundamental band, not total power.
+
+&MDATA
+ qOneD                  = .true.
+ qFieldEvolve           = .true.
+ qElectronsEvolve       = .true.
+ qElectronFieldCoupling = .true.
+ qFocussing             = .false.
+ qDiffraction           = .false.
+ qFilter                = .true.
+ q_noise                = .true.
+ qUndEnds               = .false.
+ beam_file              = 'sase_beam.in'
+ sElectronThreshold     = 0.05
+ iNumNodesX             = 1
+ iNumNodesY             = 1
+ nodesPerLambdar        = 12
+ sFModelLengthX         = 4.0
+ sFModelLengthY         = 4.0
+ sFModelLengthZ2        = 110.0
+ iRedNodesX             = 1
+ iRedNodesY             = 1
+ sFiltFrac              = 0.3
+ sDiffFrac              = 1.0
+ sBeta                  = 0.0
+ seed_file              = ''
+ srho                   = 0.005
+ sux                    = 1.0
+ suy                    = 1.0
+ saw                    = 1.0121809
+ sgamma_r               = 456.40
+ lambda_w               = 0.0275
+ Dfact                  = 0.0
+ zundType               = 'planepole'
+ taper                  = 0.0
+ lattFile               = ''
+ iRandSeed              = 1
+ stepsPerPeriod         = 30
+ nPeriods               = 340
+ sZ0                    = 0.0
+ iWriteNthSteps         = 1000000
+ iWriteIntNthSteps      = 1000000
+ sPEOut                 = 0.0
+ /

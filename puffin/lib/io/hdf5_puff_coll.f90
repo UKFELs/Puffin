@@ -32,7 +32,6 @@ use hdf5PuffLow, only: addh5stringattribute, addh5derivedvariable, write3dlimgrp
   write3duniformmesh, write1duniformmesh, writecommonatts, writeh5timegroup, writeh5runinfo, &
   integertostring
 use GlobalTypes, only: tSimulationContext
-use ParaField, only: qUnique
 use puffin_h5_par, only: H5FD_MPIO_COLLECTIVE_F, H5FD_MPIO_INDEPENDENT_F, &
   h5pset_dxpl_mpio_f, h5pset_fapl_mpio_f
 use mpi, only: MPI_INFO_NULL
@@ -756,13 +755,13 @@ contains
       if (qONED_G) then
         numSpatialDims=1
         dims = [1,1,nlonglength,1] ! Dataset dimensions
-        fdims = [2,2,NZ2_G,2] ! Dataset dimensions
+        fdims = [2,2,NZ2_G,2*ctx%field%nComp] ! Dataset dimensions
         doffset = [0,0,(nlo-1),component]
         dsize = [1,1,nhi-nlo+1,1]
       else
         numSpatialDims=3
         dims = [nx_g,ny_g,nlonglength,1] ! Dataset dimensions
-        fdims = [nx_g,ny_g,NZ2_G,2] ! Dataset dimensions
+        fdims = [nx_g,ny_g,NZ2_G,2*ctx%field%nComp] ! Dataset dimensions
         doffset = [0,0,(nlo-1),component]
 !      dsize = (/nx_g,ny_g,nhi-nlo+1,1/)
         dsize = [nx_g,ny_g,nlonglength,1]
@@ -828,7 +827,7 @@ contains
         CALL h5pclose_f(plist_id, error)
       end if
 
-      if ((qUnique) .or. (.not. chkactiveflag)) then
+      if ((ctx%field%qUnique) .or. (.not. chkactiveflag)) then
 
         CALL h5screate_simple_f(rank, dims, dspace_id, error)
 
@@ -1192,7 +1191,7 @@ contains
 
         numSpatialDims=1
         dims = [nlonglength,1] ! Dataset dimensions (portion of single comp.)
-        fdims = [NZ2_G,2]      ! File Dataset dimensions
+        fdims = [NZ2_G,2*ctx%field%nComp]      ! File Dataset dimensions
         doffset = [(nlo-1),component]
         dsize = [nhi-nlo+1,1]
 
@@ -1252,7 +1251,7 @@ contains
 
       end if
 
-      if ((qUnique) .or. (.not. chkactiveflag)) then
+      if ((ctx%field%qUnique) .or. (.not. chkactiveflag)) then
 
         call h5screate_simple_f(rank, dims, dspace_id, error)
 

@@ -1,0 +1,31 @@
+! Beam for the 1D averaged example.  Flat-top in z2, noise-free, and long
+! enough (50 z2 units against the 60-unit field model) that the ends stay off
+! the absorbing boundary.
+!
+! sSigmaE's gamma entry, 0.001, is 0.1% energy spread.  Averaged mode carries a
+! spread up to about the envelope mesh band, 1/(2 lambdarPerCell) detuning, and
+! an energy offset e detunes by 2e - so 0.1% is comfortably inside it and
+! chkAveraged stays quiet.  Widen it past ~25% here and it will warn that the
+! tails are out of band.
+
+&NBLIST
+nbeams = 1
+dtype = 'simple'
+/
+
+&BLIST
+sSigmaE = 0.084, 0.084, 1E8, 1.0, 1.0, 0.001
+sLenE = 1E-6, 1E-6, 50.0, 1E-6, 1E-6, 0.006
+emitx = 1.0
+emity = 1.0
+Ipk = 400
+bcenter = 0.0
+gammaf = 1.0
+iMPsZ2PerWave = 4
+TrLdMeth = 2
+nseqparts = 19
+qRndEj_G = .true.
+sSigEj_G = 0.1
+qFixCharge = .false.
+qMatched_A = .true.
+/

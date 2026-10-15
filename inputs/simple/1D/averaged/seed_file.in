@@ -1,0 +1,25 @@
+! Seed for the 1D averaged example.
+!
+! freqf = 1.0 is on resonance, which is where an averaged run wants its seed:
+! the envelope mesh holds roughly 1 +/- 1/(2 lambdarPerCell) of the resonant
+! frequency, and chkAveraged refuses a seed outside that band rather than
+! aliasing it.
+!
+! sA0_X only, because zundType is 'planepole' - a planar undulator's second
+! polarisation envelope is zero and is filled from the first at output time.
+! For a helical undulator seed both, as the 3D example does.
+
+&NSLIST
+nseeds = 1
+/
+
+&SLIST
+freqf = 1.0
+sA0_X = 0.01
+sA0_Y = 0.0
+sSigmaF = 1E8, 1E8, 1E8
+qFlatTop = .true.
+meanZ2 = 0.0
+qRndFj_G = .false.
+sSigFj_G = 0.1
+/
