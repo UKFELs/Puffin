@@ -236,5 +236,16 @@ The wider stencil reaches one node further left and right than the linear one,
 which the parallel field layout has to account for: `rearrElecs` shifts which
 macroparticles a rank owns so the stencil stays inside the rank's slice,
 `calcBuff` widens the right-hand halo, and the periodic wrap leaves a cell of
-room at the front of the mesh. All three are no-ops at `iShapeOrder = 1`. Runs
-on 1, 2 and 3 ranks agree to the same 1e-5 that the linear kernel agrees to.
+room at the front of the mesh. All three are no-ops at `iShapeOrder = 1`.
+
+Results stay rank-independent at the level the code already is, but not better,
+and the wider stencil costs something here. On the temporal scan deck, 1, 2 and
+3 ranks agree to 6e-6 - 1.4e-5. On the periodic 1D taper deck, which is far more
+rank-sensitive to begin with, 2 ranks differ from 1 by 7.9e-5 with the linear
+kernel and 2.6e-4 with the cubic - about three times worse. More nodes touched
+per particle means more of the source crossing a rank boundary and being summed
+in a different order, on top of the shifted ownership moving different particles
+between ranks. Neither figure is roundoff, and the linear one is not either, so
+this is an existing property of the parallel layout that a wider stencil
+amplifies rather than something the kernel introduces. Worth knowing before
+trusting a multi-rank run at this level.
