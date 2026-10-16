@@ -2758,8 +2758,9 @@ contains
 !   z2 bounds of each rank's slice.  Shifted right by ishft cells so the stencil
 !   stays inside the slice - except at the front of the mesh, where there is no
 !   rank to the left to take those particles and getFStEnd has already pulled
-!   the active region back far enough (or hit node 1, where getInterps folds the
-!   overhanging weight onto the first node instead).
+!   the active region back far enough.  A beam sitting hard against node 1 has
+!   nowhere to go and getInterps_*_bspline stops the run; the deck has to leave
+!   the first few nodes empty.
 
     allocate(zlo(tProcInfo_G%size), zhi(tProcInfo_G%size))
 

@@ -50,7 +50,9 @@ def write_deck(path, und_type, steps, split, order):
 
 
 def run(tag, und_type, steps, split=False, order=1, nproc=1):
-    workdir = os.path.join(HERE, "run_%s" % tag)
+    # Under runs/, not HERE: a "run_*" directory alongside the script makes
+    # rm -rf run_* eat run_scan.py itself. It has happened twice.
+    workdir = os.path.join(HERE, "runs", tag)
     shutil.rmtree(workdir, ignore_errors=True)
     os.makedirs(workdir)
     for f in ("beam_file.in", "seed_file.in"):

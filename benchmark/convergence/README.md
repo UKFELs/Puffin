@@ -98,10 +98,10 @@ has nothing to do with FEL gain.
 
 | configuration | error | error reduced by |
 | --- | --- | --- |
-| linear, unsplit (the shipped default) | 2.14e-3 | - |
-| linear, `qQuiverSplit` | 9.96e-4 | 2.1x |
-| cubic, unsplit | 1.87e-3 | 1.1x |
-| cubic + `qQuiverSplit` | 2.13e-5 | **100x** |
+| linear, unsplit (the shipped default) | 2.19e-3 | - |
+| linear, `qQuiverSplit` | 1.04e-3 | 2.1x |
+| cubic, unsplit | 1.87e-3 | 1.2x |
+| cubic + `qQuiverSplit` | 2.13e-5 | **103x** |
 
 Neither change alone is worth much; together they are worth two orders of
 magnitude. The two error sources — quiver truncation and the deposition kink —
@@ -131,9 +131,9 @@ Same runs, split column, all three kernels:
 
 | cells/step | 0.4 | 0.6 | 0.8 | 1.0 | 1.2 | 2.0 |
 | --- | --- | --- | --- | --- | --- | --- |
-| linear | 1.0e-3 | 1.0e-2 | 2.5e-3 | 2.3e-2 | 3.2e-2 | 1.8e-1 |
-| quadratic | 9.4e-5 | 2.1e-3 | 4.1e-4 | 8.4e-3 | 1.3e-2 | 1.4e-1 |
-| cubic | 2.1e-5 | 4.7e-4 | 8.4e-5 | 3.7e-3 | 5.8e-3 | 1.1e-1 |
+| linear | 1.0e-3 | 9.9e-3 | 2.6e-3 | 2.3e-2 | 3.2e-2 | 1.8e-1 |
+| quadratic | 9.4e-5 | 2.1e-3 | 4.3e-4 | 8.4e-3 | 1.3e-2 | 1.4e-1 |
+| cubic | 2.1e-5 | 4.7e-4 | 8.7e-5 | 3.8e-3 | 5.8e-3 | 1.1e-1 |
 
 The linear row is monotonic in cells/step; the cubic row is not — 0.6 cells/step
 (12 nodes, 20 steps) is *worse* than 0.8 (24 nodes, 30 steps). With the cubic
@@ -143,7 +143,7 @@ should be, and the mesh density is a second-order effect.
 **But the floor only moves where the step resolves the crossing.** Answering the
 question the kernel was built to answer:
 
-- at 1.0 cells/step the split error drops 6.3x (2.3e-2 to 3.7e-3), and 21x
+- at 1.0 cells/step the split error drops 6.2x (2.3e-2 to 3.8e-3), and 21x
   against the unsplit default;
 - at 2.0 cells/step it drops 1.7x, from 1.8e-1 to 1.1e-1, which is no use to
   anyone — the error is still enormous. At two cells per step the source varies
@@ -164,35 +164,88 @@ worth what it should be. Error reduction from turning `qQuiverSplit` on, at
 
 | steps/period | planepole, linear | planepole, cubic | helical, linear | helical, cubic |
 | --- | --- | --- | --- | --- |
-| 12 | 3.4x | 19x | 33x | 1594x |
-| 20 | 1.4x | 20x | 6.2x | 389x |
-| 30 | 2.1x | 88x | 3.4x | 416x |
+| 12 | 3.4x | 19x | 33x | 1591x |
+| 20 | 1.4x | 20x | 6.4x | 405x |
+| 30 | 2.1x | 88x | 3.3x | 393x |
 
-### 4. What it costs, and whether it is worth turning on
+### 4. In 3D, where it matters more
 
-Measured in an optimised build (`-DCMAKE_BUILD_TYPE=Release`), 1D planepole,
-`nodesPerLambdar = 12`, best of three runs. The Debug build the scans run in
-exaggerates the stencil cost (1.7x there, 1.4x here), so these are the numbers
-to quote:
+Everything above is 1D. The 3D path is a tensor product of the same splines, and
+the node indices stride by `nspinDX` and `ntrndsi_G` as well as by one, so it is
+worth measuring rather than assuming. Scanned on the 3D e2e deck
+(`test/inputs/3D/clara_test.in`: 85x85 transverse, 21 nodes per resonant
+wavelength, periodic, diffraction on, beam read from HDF5 so the realisation is
+fixed), each kernel against its own 240 step/period reference, and with
+`qQuiverSplit` **off** throughout:
 
-| configuration | steps/period | error | wall clock |
+| steps/period | cells/step | linear | quadratic | cubic |
+| --- | --- | --- | --- | --- |
+| 12 | 1.8 | 6.2e-1 | 3.1e-1 | 2.0e-1 |
+| 20 | 1.1 | 3.1e-1 | 6.0e-2 | 1.4e-2 |
+| 30 | 0.7 | 1.5e-1 | 2.2e-2 | 4.1e-3 |
+
+| observed order p, 12 to 20 | linear | quadratic | cubic |
 | --- | --- | --- | --- |
-| linear, unsplit (default) | 30 | 2.14e-3 | 5.75 s |
-| cubic + split | 30 | 2.13e-5 | 8.18 s |
-| cubic + split | 14 | 8.83e-4 | 4.43 s |
-| cubic + split | 12 | 3.75e-3 | 3.93 s |
+| 3D | 1.4 | 3.2 | 5.2 |
 
-Cubic deposition costs about 1.4x per step in 1D (four nodes touched instead of
-two, per gather and per scatter); `qQuiverSplit` is free. Two ways to spend that:
+The degree-to-order relationship reproduces, and the kernel is worth *more* here
+than in 1D: 38x less error at 30 steps/period, 22x at 20, with no help from the
+split at all - where in 1D the unsplit kernel was worth 1.2x.
 
-- **same step, better answer**: 100x less error for 1.4x the wall clock;
-- **same answer, less time**: the default's 2.14e-3 is reached at roughly 13
-  steps/period, so about 2.3x fewer steps, or ~1.4x less wall clock end to end.
+That is not a contradiction, it is the cells-per-step picture again. This deck
+samples 21 nodes per wavelength and runs at 0.7 to 1.8 cells per step, where
+deposition dominates; the 1D default sits at 0.4, where the quiver does. Which
+also says something practical: CLARA-style 3D decks sample finely in z2 and sit
+exactly where the kernel pays, so the 1D figures understate what it is worth to
+them.
 
-The first is the interesting one. A 100x accuracy margin at 1.4x cost is the
-kind of headroom that makes a result trustworthy rather than merely fast.
+### 5. What it costs, and whether it is worth turning on
 
-### 5. What the smoothing costs: a real change to the discretisation
+Measured in an optimised build (`-DCMAKE_BUILD_TYPE=Release`), best of three,
+timed on the undulator module alone so that setup and IO are out of it. The
+Debug build the scans run in exaggerates the stencil cost, so these are the
+numbers to quote.
+
+1D, planepole, `nodesPerLambdar = 12`:
+
+| configuration | steps/period | error | module time |
+| --- | --- | --- | --- |
+| linear, unsplit (default) | 30 | 2.19e-3 | 4.66 s |
+| cubic + split | 30 | 2.13e-5 | 7.04 s |
+| cubic + split | 14 | 8.89e-4 | 3.32 s |
+| cubic + split | 12 | 3.76e-3 | 2.83 s |
+
+Cubic costs about 1.5x per step in 1D - four nodes touched instead of two, per
+gather and per scatter, diluted by the rest of the step. `qQuiverSplit` is free.
+So in 1D it pays whichever way you spend it: 100x less error for 1.5x the time
+at the same step, or the default's own accuracy at about 13 steps/period, which
+is 1.4x less wall clock end to end.
+
+**3D is a different trade, and this is the number that was missing.** Same deck
+as section 4, 40 periods, no dumps:
+
+| kernel | module time | per step |
+| --- | --- | --- |
+| linear | 0.73 s | - |
+| quadratic | 1.60 s | 2.2x |
+| cubic | 2.91 s | 4.0x |
+
+A cubic stencil touches 64 nodes per particle rather than 8, for the gather and
+again for the scatter, and every scatter is an `!$OMP ATOMIC` into
+`getSource_3D` - already the memory-bound routine where an unrelated commit once
+cost 48% by moving symbols around (see `benchmark/RESULTS-2026-08-07-globals-refactor.md`).
+Four times per step is what that costs.
+
+Which means in 3D the kernel buys accuracy and not speed. At equal accuracy it
+is a loss: cubic reaches linear's 30-step error at about 13 steps/period, 2.3x
+fewer steps at 4.0x the cost per step, so about 1.7x *slower* for the same
+answer. Quadratic at ~15 steps/period comes out roughly even on time. What 3D
+gets is headroom - 38x less error for 4x the time at a fixed step, or 7x for
+2.2x with the quadratic - which is worth having when the question is whether a
+result is converged, and not worth having when the question is how many shots
+fit in a night.
+
+### 6. What the smoothing costs: a real change to the discretisation
 
 A B-spline filters the source in space as well as smoothing it in time, so at a
 fixed mesh the coupling to the radiation is slightly weaker. This is a
@@ -221,6 +274,43 @@ and 44% lower with cubic. That is expected rather than wrong — the shot-noise
 source has content right up to the mesh Nyquist — but it does mean the kernel is
 not a free knob on a SASE startup run.
 
+How much of that 44% is physics is an open question, and the number above
+probably overstates it. The averaged-mode SASE work (`benchmark/averaged/README.md`)
+found that the unaveraged field's out-of-band share at a fine mesh is largely
+the mesh's own resolved bandwidth rather than radiation anyone cares about — the
+in-band share at zbar = 1.3 falls from 0.87 to 0.41 as the mesh goes from 12 to
+48 nodes per wavelength. A band-limited comparison would be the honest
+measurement here, and has not been done.
+
+## Open: the beam has to start inside the mesh
+
+A kernel wider than the linear one reaches one node behind the particle, and
+there is no node behind the first one. There are two honest things to do about a
+macroparticle in the first cell, and this code now does the second:
+
+- fold the overhanging weight onto the first node. Charge-conserving, and it was
+  what the first version of this did - but it quietly imposes a boundary
+  condition (the field held constant off the end of the mesh) at the one place
+  in the run where the source is already least trustworthy. Removed on
+  2026-10-16, because a boundary treatment nobody asked for is worse than an
+  error message.
+- stop, and say so. `getInterps_*_bspline` prints `Z2 coord is too small for the
+  deposition stencil` and halts.
+
+Which makes deck setup the user's problem, and that is not where it belongs.
+Every standard Puffin deck trips it: `getOffsets` in `init_conds.f90` replaces
+any `bcenter` below half the beam length with exactly half the beam length,
+putting the beam front on `z2 = 0` by construction. Both decks here therefore
+write `bcenter` as half the beam length plus the offset wanted - 25.03 for the
+50-long scan beam, 1.04 for the 2.0-long e2e beam - which is obscure enough to
+be worth the comments it carries in those files.
+
+**The fix belongs in the macroparticle generation**: it should leave the first
+few nodes of the mesh empty of macroparticles on its own, sized from the
+deposition stencil, rather than placing the beam front hard against node 1 and
+making every wide-stencil deck work around it. Until then the error message is
+the contract. Periodic meshes are already fine, since the wrap leaves the room.
+
 ## Using it
 
 `iShapeOrder` goes in `&MDATA`, defaults to 1, and 1 is the historical linear
@@ -228,9 +318,17 @@ deposition, on the original arithmetic: all four e2e suites still match their
 goldens bit-for-bit. 2 and 3 select the quadratic and cubic B-splines, in 1D and
 3D, and work on both the temporal and periodic meshes.
 
-Recommended, on this evidence: `iShapeOrder = 3` together with
-`qQuiverSplit = .true.`, and do not expect either to rescue a run taking more
-than about one cell per step.
+Recommended, on this evidence:
+
+- **1D**: `iShapeOrder = 3` with `qQuiverSplit = .true.`. It is better and
+  faster than the default, so there is little reason not to.
+- **3D**: the same pair when the question is whether a result is converged - 38x
+  the accuracy margin for 4x the time. Keep `iShapeOrder = 1` when the question
+  is throughput, because at equal accuracy cubic is about 1.7x slower in 3D.
+  `iShapeOrder = 2` is the middle: roughly break-even on time, 7x on error.
+- **Either**: do not expect any of it to rescue a run taking more than about one
+  cell per step, and do not change `iShapeOrder` on a deck whose numbers you are
+  comparing against older runs (see section 6).
 
 The wider stencil reaches one node further left and right than the linear one,
 which the parallel field layout has to account for: `rearrElecs` shifts which

@@ -239,7 +239,7 @@ real(kind=wp), intent(in) :: sz2(:)
 type(tSimulationFlags), intent(inout) :: flags
 type(tFieldValues), intent(in) :: field
 
-integer(kind=ip) :: n0, nwid, iOrder, k
+integer(kind=ip) :: n0, nwid, iOrder
 integer(kind=ipl) :: i
 
 real(kind=wp) :: w(iShapeMaxWidth)
@@ -247,27 +247,25 @@ real(kind=wp) :: w(iShapeMaxWidth)
   iOrder = flags%shape_order
   nwid = shapeStencilWidth(iOrder)
 
-!$OMP DO PRIVATE(n0, w, k)
+!$OMP DO PRIVATE(n0, w)
   do i = 1, procelectrons_G(1)
 
     call getShapeWeights(iOrder, sz2(i) / dz2, n0, w)
 
-!   Front of the mesh: the node before it does not exist, so fold its weight
-!   onto the first node.  That keeps the deposited charge exact and makes the
-!   gather see the field held constant off the end.  At most one node is ever
-!   folded, since no supported degree reaches further than one cell to the left.
+!   The stencil reaches in front of the mesh.  There is no node there to take
+!   the weight, and inventing one - folding it onto the first node, which this
+!   did until 2026-10-16 - silently changes the boundary condition rather than
+!   saying so.  The real fix belongs in the macroparticle generation, which
+!   should leave the first few nodes of the mesh empty; until it does, a deck
+!   using a wider kernel has to start its beam a little way into the mesh.
+!   See the open question in benchmark/convergence/README.md.
 
     if (n0 < 1_ip) then
-
-      w(2) = w(2) + w(1)
-
-      do k = 1_ip, nwid - 1_ip
-        w(k) = w(k+1_ip)
-      end do
-
-      w(nwid) = 0.0_wp
-      n0 = n0 + 1_ip
-
+      print*, "Z2 coord is too small for the deposition stencil, with node:", &
+              n0, " and pos ", sz2(i)
+      print*, "iShapeOrder > 1 reaches one node behind the particle. Start the"
+      print*, "beam a few nodes into the mesh, or use iShapeOrder = 1."
+      STOP
     end if
 
     if (fieldMesh == itemporal) then
