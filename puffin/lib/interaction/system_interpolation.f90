@@ -312,7 +312,7 @@ end subroutine getSource_3D_kernel
 
 subroutine getInterps_3D_bspline(sx, sy, sz2, flags, field)
 
-use rhs_vars, only: maxEl, halfx, halfy, lis_GR, p_nodes, dx, dy, dz2, WP, IPL, IP
+use rhs_vars, only: halfx, halfy, lis_GR, p_nodes, dx, dy, dz2, WP, IPL, IP
 
 real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:)
 type(tSimulationFlags), intent(inout) :: flags
@@ -327,8 +327,7 @@ real(kind=wp) :: wx(iShapeMaxWidth), wy(iShapeMaxWidth), wz(iShapeMaxWidth)
   nwid = shapeStencilWidth(iOrder)
 
 !$OMP DO PRIVATE(xn0, yn0, zn0, wx, wy, wz)
-  do i = 1, maxEl
-    if (i<=procelectrons_G(1)) then
+  do i = 1, procelectrons_G(1)
 
       call getShapeWeights(iOrder, (sx(i) + halfx) / dx, xn0, wx)
       call getShapeWeights(iOrder, (sy(i) + halfy) / dy, yn0, wy)
@@ -377,7 +376,6 @@ real(kind=wp) :: wx(iShapeMaxWidth), wy(iShapeMaxWidth), wz(iShapeMaxWidth)
       lis_GR(nwid+1_ip:2_ip*nwid, i) = wy(1_ip:nwid)
       lis_GR(2_ip*nwid+1_ip:3_ip*nwid, i) = wz(1_ip:nwid)
 
-    end if
   end do
 !$OMP END DO
 
@@ -439,7 +437,7 @@ end subroutine getFFelecs_3D_bspline
 subroutine getSource_3D_bspline(sDADzr, sDADzi, spr, spi, sgam, seta, nwid)
 
 
-use rhs_vars, only: maxEl, p_nodes, lis_GR, dV3, sp2, WP, IPL
+use rhs_vars, only: p_nodes, lis_GR, dV3, sp2, WP, IPL
 
 real(kind=wp), contiguous, intent(inout) :: sDADzr(:), sDADzi(:)
 real(kind=wp), contiguous, intent(in) :: spr(:), spi(:)
@@ -449,7 +447,7 @@ integer(kind=ip), intent(in) :: nwid
 
   call getSource_3D_bspline_kernel(sDADzr, sDADzi, spr, spi, sgam, seta, &
                                    s_chi_bar_G, sp2, p_nodes, lis_GR, dV3, &
-                                   nspinDX, ntrndsi_G, nwid, maxEl, &
+                                   nspinDX, ntrndsi_G, nwid, &
                                    procelectrons_G(1))
 
 end subroutine getSource_3D_bspline
@@ -458,7 +456,7 @@ end subroutine getSource_3D_bspline
 
 subroutine getSource_3D_bspline_kernel(sDADzr, sDADzi, spr, spi, sgam, seta, &
                                        s_chi_bar_G, sp2, p_nodes, lis_GR, dV3, &
-                                       nspinDX, ntrndsi_G, nwid, maxEl, &
+                                       nspinDX, ntrndsi_G, nwid, &
                                        nLocalElecs)
 
 real(kind=wp), contiguous, intent(inout) :: sDADzr(:), sDADzi(:)
@@ -470,16 +468,14 @@ integer(kind=ip), contiguous, intent(in) :: p_nodes(:)
 real(kind=wp), contiguous, intent(in) :: lis_GR(:,:)
 real(kind=wp), intent(in) :: dV3
 integer(kind=ip), intent(in) :: nspinDX, ntrndsi_G, nwid
-integer(kind=ipl), intent(in) :: maxEl, nLocalElecs
+integer(kind=ipl), intent(in) :: nLocalElecs
 
 integer(kind=ipl) :: i
 integer(kind=ip) :: kx, ky, kz, ibase, inode
 real(kind=wp) :: dadzRInst, dadzIInst, wyz, wxyz
 
 !$OMP DO PRIVATE(dadzRInst, dadzIInst, kx, ky, kz, ibase, inode, wyz, wxyz)
-  do i = 1, maxEl
-
-    if (i<=nLocalElecs) then
+  do i = 1, nLocalElecs
 
 !                  Get 'instantaneous' dAdz
 
@@ -512,8 +508,6 @@ real(kind=wp) :: dadzRInst, dadzIInst, wyz, wxyz
 
         end do
       end do
-
-    end if
 
   end do
 !$OMP END DO
