@@ -1238,7 +1238,20 @@ What it is worth depends on what else is limiting the step. With the default lin
 
 Integer. Degree of the B-spline shape function used to deposit the macroparticles onto the field mesh, and to gather the field back onto them. $=1$ is the linear (hat) deposition Puffin has always used, and is the default; $=2$ and $=3$ select the quadratic and cubic B-splines, in 1D and 3D and on either mesh type.
 
-The linear kernel is only C$^0$: as a macroparticle crosses a node the source term it scatters gains a kink, and Runge-Kutta cannot integrate through a kink at fourth order. The quadratic and cubic kernels are C$^1$ and C$^2$, and the degree shows up directly as the observed order of convergence in the step - measured at $1.7$, $2.7$ and $4.1$ respectively. Used together with {\bf qQuiverSplit}, the cubic kernel reduces the error at {\bf nodesPerLambdar} $=12$, {\bf stepsPerPeriod} $=30$ by a factor of $100$, for about $1.4\times$ the cost per step; either on its own is worth only about a factor of two. Neither helps a run taking more than about one mesh cell per step.
+The linear kernel is only C$^0$: as a macroparticle crosses a node the source term it scatters gains a kink, and Runge-Kutta cannot integrate through a kink at fourth order. The quadratic and cubic kernels are C$^1$ and C$^2$, and the degree shows up directly as the observed order of convergence in the step - measured at $1.7$, $2.7$ and $4.1$ respectively. Used together with {\bf qQuiverSplit}, the cubic kernel reduces the error at {\bf nodesPerLambdar} $=12$, {\bf stepsPerPeriod} $=30$ by a factor of $100$; either on its own is worth only about a factor of two. Neither helps a run taking more than about one mesh cell per step.
+
+The cost depends strongly on dimensionality, because the stencil is a tensor product: a cubic kernel touches $4$ nodes per macroparticle in 1D but $64$ in 3D, for the gather and again for the scatter. Measured in an optimised build, that is about $1.5\times$ per step in 1D and $4\times$ in 3D. In 1D the kernel is therefore both more accurate and faster than the default at equal accuracy; in 3D it buys accuracy at a real cost and is about $1.7\times$ slower than the linear kernel for the same answer, with $=2$ roughly break-even. See {\tt benchmark/convergence/README.md}.
+
+A deck using a wider kernel must leave the first few mesh nodes empty of
+macroparticles. The kernel reaches one node behind the particle, and there is no
+node behind the first, so a run whose beam front sits on $\bar{z}_2 = 0$ stops
+with ``Z2 coord is too small for the deposition stencil''. That is the common
+case rather than an unusual one: {\tt getOffsets} in {\tt init\_conds.f90}
+replaces any {\bf bcenter} below half the beam length with exactly half the beam
+length, which places the beam front on $\bar{z}_2 = 0$. To move it, set {\bf
+bcenter} to half the beam length plus the offset wanted. Periodic meshes need no
+such care: the wrap already leaves the room. Making the macroparticle generation
+leave that gap by itself is open work.
 
 Note that this changes the spatial discretisation and not only its smoothness: the kernel filters the source, so a higher degree couples slightly more weakly at a fixed mesh. The converged field is $4.8\%$ lower with the cubic kernel at {\bf nodesPerLambdar} $=12$, falling to $1.2\%$ at $24$, and the difference is considerably larger for a run starting from shot noise, whose drive is broadband. It is therefore not a drop-in refinement of an existing deck's numbers. Not supported in the averaged mode ({\bf qAveraged}), which rejects it at setup. [1]
 

@@ -318,7 +318,7 @@ real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:)
 type(tSimulationFlags), intent(inout) :: flags
 type(tFieldValues), intent(in) :: field
 
-integer(kind=ip) :: xn0, yn0, zn0, nwid, iOrder, k
+integer(kind=ip) :: xn0, yn0, zn0, nwid, iOrder
 integer(kind=ipl) :: i
 
 real(kind=wp) :: wx(iShapeMaxWidth), wy(iShapeMaxWidth), wz(iShapeMaxWidth)
@@ -326,7 +326,7 @@ real(kind=wp) :: wx(iShapeMaxWidth), wy(iShapeMaxWidth), wz(iShapeMaxWidth)
   iOrder = flags%shape_order
   nwid = shapeStencilWidth(iOrder)
 
-!$OMP DO PRIVATE(xn0, yn0, zn0, wx, wy, wz, k)
+!$OMP DO PRIVATE(xn0, yn0, zn0, wx, wy, wz)
   do i = 1, maxEl
     if (i<=procelectrons_G(1)) then
 
@@ -347,19 +347,15 @@ real(kind=wp) :: wx(iShapeMaxWidth), wy(iShapeMaxWidth), wz(iShapeMaxWidth)
         flags%parallel_arrays_ok = .false.
       end if
 
-!     Front of the z2 mesh - fold the missing node onto the first one, as in 1D.
+!     Front of the z2 mesh - as in 1D, this is the deck's to fix and not ours
+!     to paper over.  See the comment in getInterps_1D_bspline.
 
       if (zn0 < 1_ip) then
-
-        wz(2) = wz(2) + wz(1)
-
-        do k = 1_ip, nwid - 1_ip
-          wz(k) = wz(k+1_ip)
-        end do
-
-        wz(nwid) = 0.0_wp
-        zn0 = zn0 + 1_ip
-
+        print*, "Z2 coord is too small for the deposition stencil, with node:", &
+                zn0, " and pos ", sz2(i)
+        print*, "iShapeOrder > 1 reaches one node behind the particle. Start the"
+        print*, "beam a few nodes into the mesh, or use iShapeOrder = 1."
+        STOP
       end if
 
       if (fieldMesh == itemporal) then
