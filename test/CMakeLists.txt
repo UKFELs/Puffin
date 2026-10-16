@@ -53,6 +53,27 @@ configure_file(
   COPYONLY
 )
 
+# Cubic-deposition e2e: its own deck, its own beam (moved off node 1) and its
+# own golden field.
+
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/inputs/f1main_bspline.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/inputs/f1main_bspline.in"
+  COPYONLY
+)
+
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/inputs/beam_file_bspline.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/inputs/beam_file_bspline.in"
+  COPYONLY
+)
+
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/expected/f1main_bspline_expected_field.h5"
+  "${CMAKE_CURRENT_BINARY_DIR}/expected/f1main_bspline_expected_field.h5"
+  COPYONLY
+)
+
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/expected/f1main_expected_electrons.h5"
   "${CMAKE_CURRENT_BINARY_DIR}/expected/f1main_expected_electrons.h5"
@@ -173,7 +194,7 @@ endif()
 
 add_pfunit_ctest (puffin_basic_tests
   TEST_SOURCES testTests.pf testFFunctions.pf testLatticeElements.pf testAveraging.pf
-               testPower.pf
+               testPower.pf testQuiver.pf testShapeFunctions.pf testShapeDeposition.pf
   LINK_LIBRARIES puffin_mpi
 )
 
@@ -199,6 +220,14 @@ if (ENABLE_PARALLEL)
   # 3D test gets its own binary so puffin's global allocatables are clean
   add_pfunit_ctest (puffin_e2e_tests_3d
     TEST_SOURCES testMPIIntegration3D.pf
+    LINK_LIBRARIES puffin_mpi
+    MAX_PES 2
+  )
+
+  # Cubic B-spline deposition - the only CI coverage of iShapeOrder > 1 on more
+  # than one rank. Own binary, as above.
+  add_pfunit_ctest (puffin_e2e_tests_bspline
+    TEST_SOURCES testMPIIntegrationBspline.pf
     LINK_LIBRARIES puffin_mpi
     MAX_PES 2
   )

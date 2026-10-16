@@ -1,0 +1,284 @@
+!> Unit tests for the B-spline deposition shape functions.
+!!
+!! The deposition relies on four properties of these weights, and all four are
+!! pinned down here because breaking any of them fails quietly rather than
+!! loudly: the run keeps going and the physics is just wrong.
+!!
+!!   - they sum to one, so charge is conserved;
+!!   - they are non-negative, so a macroparticle never deposits negative charge;
+!!   - they reproduce a linear function, so the deposited first moment sits at
+!!     the particle rather than at the node it happens to be nearest;
+!!   - as a particle crosses a node the deposited source is continuous, and for
+!!     the higher degrees so is its slope.  That last one is the whole point of
+!!     the exercise: the linear kernel is only C0, and the kink it puts in the
+!!     source is what caps the integration step (benchmark/convergence).
+!!
+!! No MPI, no mesh, no globals.
+
+module testShapeFunctions
+
+  use pFUnit
+  use puffin_kinds
+  use shape_functions, only: getShapeWeights, shapeStencilWidth, shapeLeftReach, &
+                             shapeBuffExtra, qShapeOrderOK, iShapeMaxWidth
+
+  implicit none
+
+contains
+
+  !> Weight this particle puts on one absolute node, zero outside its stencil.
+  !!
+  !! Node indices are 1-based, so node n sits at u = n-1.  Going through
+  !! absolute node numbers is what makes the continuity tests below meaningful:
+  !! either side of a crossing the stencil starts on a different node, and only
+  !! an absolute index can compare like with like.
+  function wAtNode(iOrder, u, nAbs) result(w)
+
+    integer(kind=ip), intent(in) :: iOrder, nAbs
+    real(kind=wp), intent(in) :: u
+    real(kind=wp) :: w
+
+    real(kind=wp) :: wl(iShapeMaxWidth)
+    integer(kind=ip) :: n0, k
+
+    call getShapeWeights(iOrder, u, n0, wl)
+
+    w = 0.0_wp
+
+    do k = 1_ip, shapeStencilWidth(iOrder)
+      if (n0 + k - 1_ip == nAbs) w = wl(k)
+    end do
+
+  end function wAtNode
+
+
+  @test
+  subroutine testWeightsSumToOne()
+
+    integer(kind=ip) :: iOrder, n0, ij
+    real(kind=wp) :: w(iShapeMaxWidth), u, sumw
+
+    do iOrder = 1_ip, 3_ip
+      do ij = 0_ip, 40_ip
+
+        u = 3.0_wp + real(ij, kind=wp) / 40.0_wp   ! across one whole cell
+
+        call getShapeWeights(iOrder, u, n0, w)
+        sumw = sum(w(1_ip:shapeStencilWidth(iOrder)))
+
+        @assertEqual(1.0_wp, sumw, 1.0e-14_wp)
+
+      end do
+    end do
+
+  end subroutine testWeightsSumToOne
+
+
+  @test
+  subroutine testWeightsNonNegative()
+
+    integer(kind=ip) :: iOrder, n0, ij, k
+    real(kind=wp) :: w(iShapeMaxWidth), u
+
+    do iOrder = 1_ip, 3_ip
+      do ij = 0_ip, 40_ip
+
+        u = 7.0_wp + real(ij, kind=wp) / 40.0_wp
+
+        call getShapeWeights(iOrder, u, n0, w)
+
+        do k = 1_ip, shapeStencilWidth(iOrder)
+          @assertGreaterThanOrEqual(w(k), -1.0e-15_wp)
+        end do
+
+      end do
+    end do
+
+  end subroutine testWeightsNonNegative
+
+
+  !> The weighted mean node position must be the particle position.  B-splines
+  !! of every degree reproduce linear functions exactly, so this holds for all
+  !! three - it is what stops the deposition biasing the source towards nodes.
+  @test
+  subroutine testFirstMomentIsParticlePosition()
+
+    integer(kind=ip) :: iOrder, n0, ij, k
+    real(kind=wp) :: w(iShapeMaxWidth), u, umean
+
+    do iOrder = 1_ip, 3_ip
+      do ij = 0_ip, 40_ip
+
+        u = 5.0_wp + real(ij, kind=wp) / 40.0_wp
+
+        call getShapeWeights(iOrder, u, n0, w)
+
+        umean = 0.0_wp
+        do k = 1_ip, shapeStencilWidth(iOrder)
+          umean = umean + w(k) * real(n0 + k - 2_ip, kind=wp)  ! node n is at u = n-1
+        end do
+
+        @assertEqual(u, umean, 1.0e-13_wp)
+
+      end do
+    end do
+
+  end subroutine testFirstMomentIsParticlePosition
+
+
+  !> Crossing a node must not step the deposited source.  True for all three
+  !! degrees - the linear kernel is continuous, it is only its slope that is not.
+  @test
+  subroutine testDepositionContinuousAcrossNode()
+
+    integer(kind=ip) :: iOrder, nAbs
+    real(kind=wp) :: wminus, wplus
+    real(kind=wp), parameter :: eps = 1.0e-9_wp
+    real(kind=wp), parameter :: uc = 6.0_wp   ! a node
+
+    do iOrder = 1_ip, 3_ip
+      do nAbs = 3_ip, 11_ip
+
+        wminus = wAtNode(iOrder, uc - eps, nAbs)
+        wplus = wAtNode(iOrder, uc + eps, nAbs)
+
+        @assertEqual(wminus, wplus, 1.0e-7_wp)
+
+      end do
+    end do
+
+  end subroutine testDepositionContinuousAcrossNode
+
+
+  !> The reason for the higher degrees: the SLOPE of the deposited source is
+  !! continuous across a node for degree 2 and 3, and is not for degree 1.
+  !! A one-sided difference either side of the crossing picks that up.
+  @test
+  subroutine testSlopeContinuityDistinguishesDegrees()
+
+    integer(kind=ip) :: iOrder, nAbs
+    real(kind=wp) :: dwm, dwp, worstJump
+    real(kind=wp), parameter :: h = 1.0e-6_wp
+    real(kind=wp), parameter :: uc = 6.0_wp
+
+    do iOrder = 2_ip, 3_ip
+
+      worstJump = 0.0_wp
+
+      do nAbs = 3_ip, 11_ip
+
+        dwm = (wAtNode(iOrder, uc - h, nAbs) - wAtNode(iOrder, uc - 2.0_wp*h, nAbs)) / h
+        dwp = (wAtNode(iOrder, uc + 2.0_wp*h, nAbs) - wAtNode(iOrder, uc + h, nAbs)) / h
+
+        worstJump = max(worstJump, abs(dwp - dwm))
+
+      end do
+
+!     Smooth: the one-sided slopes agree to within the difference error.
+
+      @assertLessThan(worstJump, 1.0e-4_wp)
+
+    end do
+
+!   Linear, for contrast: the slope jumps by O(1) at the node, which is the
+!   kink RK4 cannot integrate through.
+
+    worstJump = 0.0_wp
+
+    do nAbs = 3_ip, 11_ip
+
+      dwm = (wAtNode(1_ip, uc - h, nAbs) - wAtNode(1_ip, uc - 2.0_wp*h, nAbs)) / h
+      dwp = (wAtNode(1_ip, uc + 2.0_wp*h, nAbs) - wAtNode(1_ip, uc + h, nAbs)) / h
+
+      worstJump = max(worstJump, abs(dwp - dwm))
+
+    end do
+
+    @assertGreaterThan(worstJump, 0.5_wp)
+
+  end subroutine testSlopeContinuityDistinguishesDegrees
+
+
+  !> Degree 1 has to keep reproducing the hat function the solver has always
+  !! used, since that path stays on the original inline arithmetic.
+  @test
+  subroutine testLinearMatchesHatFunction()
+
+    integer(kind=ip) :: n0, ij
+    real(kind=wp) :: w(iShapeMaxWidth), u, t
+
+!   Stays inside the cell: at t = 1 the particle is on the next node, and the
+!   stencil has stepped on with it.
+
+    do ij = 0_ip, 19_ip
+
+      t = real(ij, kind=wp) / 20.0_wp
+      u = 9.0_wp + t
+
+      call getShapeWeights(1_ip, u, n0, w)
+
+!     Starts on node floor(u)+1
+
+      @assertEqual(10_ip, n0)
+      @assertEqual(1.0_wp - t, w(1), 1.0e-14_wp)
+      @assertEqual(t, w(2), 1.0e-14_wp)
+
+    end do
+
+  end subroutine testLinearMatchesHatFunction
+
+
+  !> Where each stencil starts, relative to the cell the particle is in.  The
+  !! parallel layout is shifted by exactly this, so it has to be right: a
+  !! stencil reaching further left than shapeLeftReach says would write outside
+  !! the field section its rank owns.
+  @test
+  subroutine testStencilPlacementMatchesReach()
+
+    integer(kind=ip) :: iOrder, n0, ij
+    real(kind=wp) :: w(iShapeMaxWidth), u
+    integer(kind=ip) :: nfloor
+
+    do iOrder = 1_ip, 3_ip
+      do ij = 0_ip, 40_ip
+
+        u = 12.0_wp + real(ij, kind=wp) / 40.0_wp
+        nfloor = int(floor(u), kind=ip) + 1_ip    ! node the linear stencil starts on
+
+        call getShapeWeights(iOrder, u, n0, w)
+
+        @assertGreaterThanOrEqual(n0, nfloor - shapeLeftReach(iOrder))
+        @assertLessThanOrEqual(n0, nfloor)
+
+!       And the halo allowance has to cover how far right it reaches.
+
+        @assertLessThanOrEqual(n0 + shapeStencilWidth(iOrder) - 1_ip, &
+                               nfloor + 1_ip + shapeBuffExtra(iOrder))
+
+      end do
+    end do
+
+  end subroutine testStencilPlacementMatchesReach
+
+
+  @test
+  subroutine testSupportedOrders()
+
+    @assertFalse(qShapeOrderOK(0_ip))
+    @assertTrue(qShapeOrderOK(1_ip))
+    @assertTrue(qShapeOrderOK(2_ip))
+    @assertTrue(qShapeOrderOK(3_ip))
+    @assertFalse(qShapeOrderOK(4_ip))
+
+    @assertEqual(2_ip, shapeStencilWidth(1_ip))
+    @assertEqual(3_ip, shapeStencilWidth(2_ip))
+    @assertEqual(4_ip, shapeStencilWidth(3_ip))
+
+!   The linear path must not move the parallel layout at all.
+
+    @assertEqual(0_ip, shapeLeftReach(1_ip))
+    @assertEqual(0_ip, shapeBuffExtra(1_ip))
+
+  end subroutine testSupportedOrders
+
+end module testShapeFunctions

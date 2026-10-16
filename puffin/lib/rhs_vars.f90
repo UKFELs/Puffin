@@ -10,8 +10,8 @@ implicit none (type, external)
 private
 
 public :: bxu, byu, bzu, dV3, dx, dy, dz2, econst, halfx, halfy, iOutside, IP, IPL, lis_GR, maxEl, &
-           nb, nc, ntrans, p_nodes, qoutside, retim, salphaSq, sField4ElecImag, sField4ElecReal, &
-           sInv2rho, sp2, un, WP, ZOver2rho
+           nb, nc, ntrans, p_nodes, qoutside, quiverDriveI, quiverDriveR, retim, salphaSq, &
+           sField4ElecImag, sField4ElecReal, sInv2rho, sp2, un, WP, ZOver2rho
 
 
 !!!!!!!!!!!
@@ -41,6 +41,13 @@ public :: bxu, byu, bzu, dV3, dx, dy, dz2, econst, halfx, halfy, iOutside, IP, I
 
   real(kind=wp) :: nc, nb, ZOver2rho, &
                    salphaSq, sInv2rho, econst, un
+
+!    Analytic undulator drive removed from the pperp equations when the split
+!    integrator is active (see quiver.f90); zero when it is not, so the
+!    unsplit path is untouched.
+
+  real(kind=wp) :: quiverDriveR, quiverDriveI
+
   real(kind=wp), allocatable :: lis_GR(:,:)
   real(kind=wp) :: dV3, dx, dy, dz2
 
