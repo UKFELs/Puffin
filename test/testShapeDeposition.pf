@@ -71,7 +71,8 @@ contains
   !! leave the stencil's width at the back: the kernel reaches a node behind the
   !! particle and two ahead, and running off either end is a hard stop rather
   !! than something to be papered over.
-  subroutine rhsRates(undType, iOrder, qOneD, fieldRate, beamRate, srcNorm)
+  subroutine rhsRates(undType, iOrder, qOneD, fieldRate, beamRate, srcNorm, &
+                      xPut, innerXYOK)
 
     use Globals, only: sLengthOfElmX_G, sLengthOfElmY_G, sLengthOfElmZ2_G, NX_G, NY_G, &
                        NZ2_G, nspinDX, nspinDY, ntrndsi_G, fieldMesh, iTemporal, &
@@ -84,6 +85,12 @@ contains
     integer(kind=ip), intent(in) :: iOrder
     logical, intent(in) :: qOneD
     real(kind=wp), intent(out) :: fieldRate, beamRate, srcNorm
+
+!   Optional: put macroparticle 1 at this x, and report whether its stencil
+!   stayed inside the inner transverse mesh.
+
+    real(kind=wp), intent(in), optional :: xPut
+    logical, intent(out), optional :: innerXYOK
 
     type(tSimulationContext) :: ctx
     integer, parameter :: ne = 7, nz = 20, ntr = 49
@@ -174,6 +181,8 @@ contains
       end do
     end if
 
+    if (present(xPut)) sx(1) = xPut
+
     do j = 1, nf
       sAr(j,1) = 0.1_wp * cos(0.7_wp * j)
       sAi(j,1) = 0.1_wp * sin(0.3_wp * j + 1.0_wp)
@@ -192,6 +201,8 @@ contains
     fieldRate = sum(sAr * dAr + sAi * dAi) * dV3v
     beamRate = sum(s_chi_bar_G * sdgam) / (2.0_wp * ctx%frame%rho)
     srcNorm = sqrt(sum(dAr*dAr + dAi*dAi))
+
+    if (present(innerXYOK)) innerXYOK = ctx%flags%inner_xy_ok
 
     deallocate(sAr, sAi, dAr, dAi)
     deallocate(procelectrons_G, s_chi_bar_G, dadz_w)
@@ -290,5 +301,35 @@ contains
     @assertTrue(n3 > 0.5_wp * n1)
 
   end subroutine testHigherDegreesSpreadTheSource
+
+  !> A stencil that would reach outside the inner transverse mesh has to set
+  !! inner_xy_ok, not write past the end of the field arrays. getInNode then
+  !! grows the mesh and the step is retaken - that is the contract the wider
+  !! stencil relies on, and the reason getInNode's margin now scales with the
+  !! stencil rather than staying at the linear kernel's three cells.
+  !!
+  !! dx = 0.4 and nspinDX = 7 here, so halfx = 1.2 and a particle at x = 0.9
+  !! sits at u = 5.25: a cubic stencil starting at node 5 would want node 8 of
+  !! 7. At x = 0.35, where the rest of the beam sits, it fits.
+  @test
+  subroutine testStencilOverrunIsCaught()
+
+    real(kind=wp) :: fieldRate, beamRate, srcNorm
+    logical :: innerOK
+
+    call rhsRates("helical", 3_ip, .false., fieldRate, beamRate, srcNorm, &
+                  0.35_wp, innerOK)
+    @assertTrue(innerOK)
+
+    call rhsRates("helical", 3_ip, .false., fieldRate, beamRate, srcNorm, &
+                  0.9_wp, innerOK)
+    @assertFalse(innerOK)
+
+!   and with the coupling skipped there is nothing deposited, rather than
+!   something deposited in the wrong place
+
+    @assertEqual(0.0_wp, srcNorm, 0.0_wp)
+
+  end subroutine testStencilOverrunIsCaught
 
 end module testShapeDeposition

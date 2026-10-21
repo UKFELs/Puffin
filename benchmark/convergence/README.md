@@ -321,6 +321,30 @@ in-band share at zbar = 1.3 falls from 0.87 to 0.41 as the mesh goes from 12 to
 48 nodes per wavelength. A band-limited comparison would be the honest
 measurement here, and has not been done.
 
+## The inner transverse mesh, and its margin
+
+`getInNode` sizes the inner transverse mesh - the reduced x, y region the
+field/electron interaction actually runs on, a memory-saving measure - from the
+outermost macroparticle plus a margin, `inBuf`. That margin was 3 cells for
+every case. It is what absorbs betatron motion between calls, and running out of
+it costs a rebuild of the parallel layout, or an early exit from the undulator
+section if three rebuilds in a row do not fix it (`igoes > 3` in
+`undulator.f90`).
+
+Three cells leaves the linear stencil two nodes spare at each transverse edge
+and a cubic one node, since the wider stencil reaches further for the same
+particle. So `inBuf` now grows with the stencil - `3 + shapeLeftReach(order)`,
+which is the historical 3 at `iShapeOrder = 1` - rather than letting a wider
+kernel spend headroom that exists for a different purpose.
+
+Worth being clear about what that fix rests on: the arithmetic above, and a unit
+test (`testStencilOverrunIsCaught`) that a stencil reaching past the inner mesh
+sets `inner_xy_ok` and deposits nothing, rather than writing outside the field
+arrays. It is not a fix for an observed failure - none of the 3D runs here ever
+tripped the regrow path, because `getInNode` is only called again on demand and
+these decks' beams do not move far enough. A beam filling more of the inner mesh
+is the case that would have found it.
+
 ## Open: the beam has to start inside the mesh
 
 A kernel wider than the linear one reaches one node behind the particle, and

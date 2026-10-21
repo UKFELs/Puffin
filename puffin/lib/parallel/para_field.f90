@@ -1394,7 +1394,18 @@ contains
 
   integer :: error
 
-  inBuf = 3_ip
+!   Cells of margin left between the outermost macroparticle and the edge of
+!   the inner transverse mesh.  Three for the linear stencil, which needs one
+!   node beyond the particle and leaves two spare; a wider stencil reaches
+!   further and would otherwise eat into that spare.  The margin is what
+!   absorbs betatron motion between calls here, and running out of it costs a
+!   rebuild of the whole parallel layout - or, if three rebuilds in a row do not
+!   fix it, an early exit from the undulator section in undulator.f90.  So it
+!   grows with the stencil rather than being spent.
+!
+!   shapeLeftReach is zero at iShapeOrder = 1, leaving the historical 3.
+
+  inBuf = 3_ip + shapeLeftReach(flags%shape_order)
 
   if (iNumberElectrons_G > 0_ipl) then
 
