@@ -199,6 +199,45 @@ also says something practical: CLARA-style 3D decks sample finely in z2 and sit
 exactly where the kernel pays, so the 1D figures understate what it is worth to
 them.
 
+### 4b. And where the quiver split stops paying
+
+The 3D scan above has `qQuiverSplit` off, which turned out to be the right way
+round: **in 3D the split is worth nothing.** Same deck, end ramps off so the
+split is live for the whole run, 20 periods, each kernel against its own
+unsplit 240 step/period reference:
+
+| steps/period | cells/step | linear | quadratic | cubic |
+| --- | --- | --- | --- | --- |
+| 12 | 1.75 | 1.0x | 1.1x | 1.0x |
+| 20 | 1.05 | 1.0x | 1.0x | 1.0x |
+| 30 | 0.70 | 1.0x | 1.0x | 1.0x |
+
+In 1D at a comparable 0.8 cells/step the same comparison is worth 23x. Turning
+diffraction off changes the error by 4x but not the ratio - still 1.0x - so the
+split-step field advance is not what is hiding it either.
+
+The reason is structural, and it is the same lesson as the abandoned z2
+figure-of-eight experiment. The split only quietens `pperp`. `dxdz_f` and
+`dydz_f` are proportional to the *full* `pperp`, which `rk4par` reconstructs as
+`u + Pw` at every stage, so x and y still carry the transverse wiggle at the
+quiver frequency and RK4 still has to resolve it. 1D has no transverse
+coordinates to carry it, and that is the entire difference between 23x and 1.0x.
+Moving a fast motion out of one integrated variable does not help while another
+integrated variable still has it.
+
+(The transverse-dependent part of the quiver drive that the split does *not*
+remove - the natural-focusing `bzu` term, which is at the quiver frequency - is
+a red herring here. It is of order `kappa sqrt(eta) |pperp| y / 2rho` against a
+removed drive of `1/2rho`, some 1e-4 of it at typical amplitudes.)
+
+Splitting x and y as well would be the fix. Their excursion is the integral of
+`Pw` again, but carries a particle-dependent prefactor,
+`2 rho kappa / sqrt(eta) * (1 + eta p2) / Gamma`, so it is not a pure function
+of zbar: the transformation would be exact only to the order that prefactor is
+held constant over a step. Untried. Until then `qQuiverSplit` is a 1D
+optimisation, and the 3D case for the B-spline kernel stands on its own - which,
+from section 4, it does.
+
 ### 5. What it costs, and whether it is worth turning on
 
 Measured in an optimised build (`-DCMAKE_BUILD_TYPE=Release`), best of three,
@@ -322,10 +361,12 @@ Recommended, on this evidence:
 
 - **1D**: `iShapeOrder = 3` with `qQuiverSplit = .true.`. It is better and
   faster than the default, so there is little reason not to.
-- **3D**: the same pair when the question is whether a result is converged - 38x
-  the accuracy margin for 4x the time. Keep `iShapeOrder = 1` when the question
-  is throughput, because at equal accuracy cubic is about 1.7x slower in 3D.
-  `iShapeOrder = 2` is the middle: roughly break-even on time, 7x on error.
+- **3D**: `iShapeOrder = 3` alone when the question is whether a result is
+  converged - 38x the accuracy margin for 4x the time. `qQuiverSplit` adds
+  nothing in 3D (section 4b), so leave it off there. Keep `iShapeOrder = 1` when
+  the question is throughput, because at equal accuracy cubic is about 1.7x
+  slower in 3D. `iShapeOrder = 2` is the middle: roughly break-even on time, 7x
+  on error.
 - **Either**: do not expect any of it to rescue a run taking more than about one
   cell per step, and do not change `iShapeOrder` on a deck whose numbers you are
   comparing against older runs (see section 6).
