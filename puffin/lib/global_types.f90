@@ -411,6 +411,24 @@ type :: tSimulationFlags
     logical :: period_averaged               ! qAveraged_G - field held as a
                                              ! slowly varying envelope, quiver
                                              ! averaged out (see averaging.f90)
+    ! Integrator
+    logical :: quiver_split                  ! qQuiverSplit - split the analytic
+                                             ! undulator quiver out of pperp
+                                             ! before the RK4 step (see quiver.f90)
+    logical :: quiver_split_active           ! whether the step now being taken is
+                                             ! actually split - set per step by
+                                             ! rk4par, false in the end ramps
+
+    ! Deposition
+    ! Defaulted, not merely documented: a type whose zero value would divert
+    ! getrhs onto the B-spline path is a trap for anything that builds a
+    ! tSimulationFlags directly rather than through the adapters - the unit
+    ! tests do exactly that.
+    integer(kind=ip) :: shape_order = 1_ip   ! iShapeOrder - B-spline degree used
+                                             ! to scatter the source onto the mesh
+                                             ! and gather the field back. 1 is the
+                                             ! historical linear deposition
+                                             ! (see shape_functions.f90)
 
     ! Mesh properties
     logical :: fixed_mesh                    ! qFMesh_G

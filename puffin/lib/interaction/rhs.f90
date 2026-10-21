@@ -20,8 +20,12 @@ use Globals, only: NX_G, NY_G, NZ2_G, ntrndsi_G, nspinDX, nspinDY, sLengthOfElmX
 use Equations, only: dppdz_r_f, dppdz_i_f, dgamdz_f, dxdz_f, dydz_f, dz2dz_f, alct_e_srtcts, &
   dalct_e_srtcts, adjundplace, sInv2rho, sp2, sField4ElecReal, sField4ElecImag, bxu, byu, bzu
 use wigglerVar, only: getalpha
-use FiElec1D, only: getinterps_1d, getffelecs_1d, getsource_1d
-use FiElec, only: getinterps_3d, getffelecs_3d, getsource_3d
+use quiver, only: getQuiverDrive
+use FiElec1D, only: getinterps_1d, getffelecs_1d, getsource_1d, &
+  getinterps_1d_bspline, getffelecs_1d_bspline, getsource_1d_bspline
+use FiElec, only: getinterps_3d, getffelecs_3d, getsource_3d, &
+  getinterps_3d_bspline, getffelecs_3d_bspline, getsource_3d_bspline
+use shape_functions, only: shapeStencilWidth
 use gtop2, only: getp2, getp2avg
 use averaging, only: tAvgCoupling, getAvgCoupling, getResonantMomentum, &
   tAvgFocusing, getAvgFocusCoef, getAvgFocusing
@@ -77,7 +81,7 @@ contains
                     qOK, ctx)
 
   use rhs_vars, only: p_nodes, halfx, halfy, lis_GR, dx, dy, dz2, sp2, sField4ElecReal, &
-    sField4ElecImag, bxu, byu, bzu, WP, IP
+    sField4ElecImag, bxu, byu, bzu, quiverDriveR, quiverDriveI, WP, IP
 
   implicit none (type, external)
 
@@ -114,6 +118,7 @@ contains
   real(kind=wp), allocatable :: sprRes(:), spiRes(:)
   type(tAvgCoupling) :: cpl
   type(tAvgFocusing) :: foc
+  integer(kind=ip) :: nShapeWid   ! nodes per dimension in the deposition stencil
 
 !     Begin
 
@@ -131,10 +136,24 @@ contains
 
   call alct_e_srtcts(iNumberElectrons_G)
 
+  nShapeWid = shapeStencilWidth(ctx%flags%shape_order)
+
   if (tTransInfo_G%qOneD) then
-    allocate(lis_GR(2,iNumberElectrons_G))
+    if (ctx%flags%shape_order == 1_ip) then
+      allocate(lis_GR(2,iNumberElectrons_G))
+    else
+      allocate(lis_GR(nShapeWid,iNumberElectrons_G))
+    end if
   else
-    allocate(lis_GR(8,iNumberElectrons_G))
+    if (ctx%flags%shape_order == 1_ip) then
+      allocate(lis_GR(8,iNumberElectrons_G))
+    else
+
+!     One set of 1D weights per dimension, rather than one weight per node of
+!     the tensor product - see the comment on getInterps_3D_bspline.
+
+      allocate(lis_GR(3_ip*nShapeWid,iNumberElectrons_G))
+    end if
   end if
 
 !     Initialise right hand side to zero
@@ -154,6 +173,17 @@ contains
     call getAvgFocusCoef(sZ, ctx%und, ctx%frame, ctx%flags%focusing, foc)
     allocate(sprRes(iNumberElectrons_G), spiRes(iNumberElectrons_G))
   end if
+!     Undulator drive already carried analytically by the split integrator.
+!     Zero unless rk4par has flagged this step as split, so the standard path
+!     is unaffected.
+
+  if (ctx%flags%quiver_split_active) then
+    call getQuiverDrive(sZ, ctx%und, ctx%frame, quiverDriveR, quiverDriveI)
+  else
+    quiverDriveR = 0.0_wp
+    quiverDriveI = 0.0_wp
+  end if
+
 
 
 !$OMP PARALLEL
@@ -176,7 +206,14 @@ contains
 
 
 
-  if (tTransInfo_G%qOneD) then
+! p_nodes for the B-spline kernels is built in getInterps_*_bspline instead,
+! alongside the weights - where the stencil starts depends on the degree.
+
+  if (ctx%flags%shape_order > 1_ip) then
+
+!   Nothing to do here.
+
+  else if (tTransInfo_G%qOneD) then
 
 
 
@@ -234,26 +271,56 @@ contains
 
   if (tTransInfo_G%qOneD) then
 
-    call getInterps_1D(sz2, ctx%flags, ctx%field)
-    if (ctx%flags%parallel_arrays_ok) then
-      call getFFelecs_1D(sAr(:,1), sAi(:,1))
-      if (ctx%flags%period_averaged) then
-        call getSource_1D(sDADzr(:,1), sDADzi(:,1), sprRes, spiRes, sgam, ctx%frame%eta)
-      else
-        call getSource_1D(sDADzr(:,1), sDADzi(:,1), spr, spi, sgam, ctx%frame%eta)
+    if (ctx%flags%shape_order == 1_ip) then
+
+      call getInterps_1D(sz2, ctx%flags, ctx%field)
+      if (ctx%flags%parallel_arrays_ok) then
+        call getFFelecs_1D(sAr(:,1), sAi(:,1))
+        if (ctx%flags%period_averaged) then
+          call getSource_1D(sDADzr(:,1), sDADzi(:,1), sprRes, spiRes, sgam, ctx%frame%eta)
+        else
+          call getSource_1D(sDADzr(:,1), sDADzi(:,1), spr, spi, sgam, ctx%frame%eta)
+        end if
       end if
+
+    else
+
+!     A higher-order kernel together with the averaged mode is refused at
+!     setup - see checkAveraged in checks.f90 - so the resonant momentum
+!     cannot arise on this path.
+
+      call getInterps_1D_bspline(sz2, ctx%flags, ctx%field)
+      if (ctx%flags%parallel_arrays_ok) then
+        call getFFelecs_1D_bspline(sAr(:,1), sAi(:,1), nShapeWid)
+        call getSource_1D_bspline(sDADzr(:,1), sDADzi(:,1), spr, spi, sgam, &
+                                  ctx%frame%eta, nShapeWid)
+      end if
+
     end if
 
   else
 
-    call getInterps_3D(sx, sy, sz2, ctx%flags, ctx%field)
-    if ((ctx%flags%parallel_arrays_ok) .and. (ctx%flags%inner_xy_ok)) then
-      call getFFelecs_3D(sAr(:,1), sAi(:,1))
-      if (ctx%flags%period_averaged) then
-        call getSource_3D(sDADzr(:,1), sDADzi(:,1), sprRes, spiRes, sgam, ctx%frame%eta)
-      else
-        call getSource_3D(sDADzr(:,1), sDADzi(:,1), spr, spi, sgam, ctx%frame%eta)
+    if (ctx%flags%shape_order == 1_ip) then
+
+      call getInterps_3D(sx, sy, sz2, ctx%flags, ctx%field)
+      if ((ctx%flags%parallel_arrays_ok) .and. (ctx%flags%inner_xy_ok)) then
+        call getFFelecs_3D(sAr(:,1), sAi(:,1))
+        if (ctx%flags%period_averaged) then
+          call getSource_3D(sDADzr(:,1), sDADzi(:,1), sprRes, spiRes, sgam, ctx%frame%eta)
+        else
+          call getSource_3D(sDADzr(:,1), sDADzi(:,1), spr, spi, sgam, ctx%frame%eta)
+        end if
       end if
+
+    else
+
+      call getInterps_3D_bspline(sx, sy, sz2, ctx%flags, ctx%field)
+      if ((ctx%flags%parallel_arrays_ok) .and. (ctx%flags%inner_xy_ok)) then
+        call getFFelecs_3D_bspline(sAr(:,1), sAi(:,1), nShapeWid)
+        call getSource_3D_bspline(sDADzr(:,1), sDADzi(:,1), spr, spi, sgam, &
+                                  ctx%frame%eta, nShapeWid)
+      end if
+
     end if
 
   end if

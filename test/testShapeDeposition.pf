@@ -1,0 +1,335 @@
+!> Unit tests for the B-spline deposition kernels (iShapeOrder > 1) driving the
+!! real unaveraged RHS.
+!!
+!! testShapeFunctions.pf covers the weight functions themselves - partition of
+!! unity, the moments, the continuity that is the point of them. What it cannot
+!! see is whether getrhs uses them consistently: the gather in getFFelecs_* and
+!! the scatter in getSource_* have to touch the same nodes with the same
+!! weights, and the node indices are built in a third place again
+!! (getInterps_*_bspline). A wider stencil gives those three more room to
+!! disagree, and an off-by-one between gather and scatter is exactly the kind of
+!! mistake that leaves the field looking plausible.
+!!
+!! Energy conservation catches it. In scaled units the field energy is
+!! sum_nodes |A|^2 dV3 and the beam energy sum_j chi_j Gamma_j / (2 rho), so
+!!
+!!     sum_nodes (Ar dAr/dz + Ai dAi/dz) dV3
+!!         + sum_j chi_j dGamma_j/dz / (2 rho)  =  0
+!!
+!! holds for the discrete system whatever the kernel degree, because the
+!! interpolation and the deposition share their weights. Mismatch them and the
+!! balance breaks immediately. No reference solution and no goldens, so this
+!! says nothing about which answer is right - only that the gather and the
+!! scatter are the same operator transposed, which is what makes the coupling
+!! free of self-force.
+!!
+!! The same balance is asserted for the averaged solver in testAveraging.pf; the
+!! structure here is deliberately the same.
+
+module testShapeDeposition
+
+  use pFUnit
+  use puffin_kinds
+  use puffin_constants, only: pi
+  use GlobalTypes, only: tUndulator, tFELFrame, tSimulationContext
+
+  implicit none
+
+contains
+
+  !> A frame and undulator from the 1D CLARA deck, as in testQuiver.pf.
+  subroutine makeUnd(und, frame, undType)
+    type(tUndulator), intent(out) :: und
+    type(tFELFrame), intent(out) :: frame
+    character(*), intent(in) :: undType
+
+    frame%rho = 0.005_wp
+    frame%eta = 3.6296e-6_wp
+    frame%aw = 1.0121809_wp
+    frame%gamma_ref = 456.40_wp
+    frame%kappa = 0.22177_wp
+
+    und%undulator_type = undType
+    und%fx = 1.0_wp
+    und%fy = 1.0_wp
+    und%model_undulator_ends = .false.
+    und%z_start_undulator = 0.0_wp
+    und%z_end_undulator = 100.0_wp
+    und%n2col = 1.0_wp
+    und%n2col_initial = 1.0_wp
+    und%undulator_gradient = 0.0_wp
+    und%z_taper_start = 0.0_wp
+
+  end subroutine makeUnd
+
+
+  !> One RHS evaluation of the unaveraged system at a given kernel degree,
+  !! returning the two energy rates that have to cancel and the size of the
+  !! deposited source.
+  !!
+  !! The macroparticles sit at least one cell inside the front of the mesh and
+  !! leave the stencil's width at the back: the kernel reaches a node behind the
+  !! particle and two ahead, and running off either end is a hard stop rather
+  !! than something to be papered over.
+  subroutine rhsRates(undType, iOrder, qOneD, fieldRate, beamRate, srcNorm, &
+                      xPut, innerXYOK)
+
+    use Globals, only: sLengthOfElmX_G, sLengthOfElmY_G, sLengthOfElmZ2_G, NX_G, NY_G, &
+                       NZ2_G, nspinDX, nspinDY, ntrndsi_G, fieldMesh, iTemporal, &
+                       qElectronsEvolve_G, qFieldEvolve_G, qElectronFieldCoupling_G, &
+                       iNumberElectrons_G, procelectrons_G, s_chi_bar_G, dadz_w
+    use ParaField, only: tTransInfo_G
+    use rhs, only: getrhs
+
+    character(*), intent(in) :: undType
+    integer(kind=ip), intent(in) :: iOrder
+    logical, intent(in) :: qOneD
+    real(kind=wp), intent(out) :: fieldRate, beamRate, srcNorm
+
+!   Optional: put macroparticle 1 at this x, and report whether its stencil
+!   stayed inside the inner transverse mesh.
+
+    real(kind=wp), intent(in), optional :: xPut
+    logical, intent(out), optional :: innerXYOK
+
+    type(tSimulationContext) :: ctx
+    integer, parameter :: ne = 7, nz = 20, ntr = 49
+    real(kind=wp), allocatable :: sAr(:,:), sAi(:,:), dAr(:,:), dAi(:,:)
+    real(kind=wp), dimension(ne) :: sx, sy, sz2, spr, spi, sgam, &
+                                    sdx, sdy, sdz2, sdpr, sdpi, sdgam
+    real(kind=wp) :: dz2v, dxv, dyv, dV3v
+    integer :: nf, j
+    logical :: qOK
+
+    call makeUnd(ctx%und, ctx%frame, undType)
+
+    ctx%flags%period_averaged = .false.
+    ctx%flags%quiver_split = .false.
+    ctx%flags%quiver_split_active = .false.
+    ctx%flags%focusing = .false.
+    ctx%flags%parallel_arrays_ok = .true.
+    ctx%flags%inner_xy_ok = .true.
+    ctx%flags%shape_order = iOrder
+
+!   A mesh resolving the carrier, 12 nodes per resonant wavelength, and in 3D a
+!   7x7 transverse inner mesh with the macroparticles well inside it.
+
+    dz2v = 4.0_wp * pi * ctx%frame%rho / 11.0_wp
+
+    if (qOneD) then
+      dxv = 1.0_wp
+      dyv = 1.0_wp
+      nspinDX = 1
+      nspinDY = 1
+      NX_G = 1
+      NY_G = 1
+      ntrndsi_G = 1
+    else
+      dxv = 0.4_wp
+      dyv = 0.4_wp
+      nspinDX = 7
+      nspinDY = 7
+      NX_G = 7
+      NY_G = 7
+      ntrndsi_G = ntr
+    end if
+
+    sLengthOfElmX_G = dxv
+    sLengthOfElmY_G = dyv
+    sLengthOfElmZ2_G = dz2v
+    dV3v = dxv * dyv * dz2v
+    NZ2_G = nz
+    fieldMesh = iTemporal
+    tTransInfo_G%qOneD = qOneD
+    ctx%field%fz2 = 1
+    ctx%field%bz2 = nz
+
+    nf = ntrndsi_G * nz
+    allocate(sAr(nf,1), sAi(nf,1), dAr(nf,1), dAi(nf,1))
+
+    qElectronsEvolve_G = .true.
+    qFieldEvolve_G = .true.
+    qElectronFieldCoupling_G = .true.
+
+    iNumberElectrons_G = ne
+
+!   A failed assertion returns before the deallocate below, so clear these
+!   first rather than letting the next test die on re-allocation.
+
+    if (allocated(procelectrons_G)) deallocate(procelectrons_G)
+    if (allocated(s_chi_bar_G)) deallocate(s_chi_bar_G)
+    if (allocated(dadz_w)) deallocate(dadz_w)
+
+    allocate(procelectrons_G(1), s_chi_bar_G(ne), dadz_w(ne))
+    procelectrons_G(1) = ne
+
+    do j = 1, ne
+      s_chi_bar_G(j) = 0.8_wp + 0.05_wp * j
+      sz2(j) = dz2v * (1.43_wp + 2.1_wp * j)
+      sgam(j) = 1.0_wp + 0.01_wp * sin(real(j, kind=wp))
+      spr(j) = 0.01_wp * cos(real(j, kind=wp))
+      spi(j) = -0.02_wp * sin(real(j, kind=wp))
+    end do
+
+    sx = 0.0_wp
+    sy = 0.0_wp
+
+    if (.not. qOneD) then
+      do j = 1, ne
+        sx(j) = 0.35_wp * cos(0.9_wp * j)
+        sy(j) = 0.35_wp * sin(1.3_wp * j)
+      end do
+    end if
+
+    if (present(xPut)) sx(1) = xPut
+
+    do j = 1, nf
+      sAr(j,1) = 0.1_wp * cos(0.7_wp * j)
+      sAi(j,1) = 0.1_wp * sin(0.3_wp * j + 1.0_wp)
+    end do
+
+    dAr = 0.0_wp
+    dAi = 0.0_wp
+    sdx = 0.0_wp; sdy = 0.0_wp; sdz2 = 0.0_wp
+    sdpr = 0.0_wp; sdpi = 0.0_wp; sdgam = 0.0_wp
+
+    call getrhs(0.37_wp, sAr, sAi, sx, sy, sz2, spr, spi, sgam, &
+                sdx, sdy, sdz2, sdpr, sdpi, sdgam, dAr, dAi, qOK, ctx)
+
+    @assertTrue(qOK)
+
+    fieldRate = sum(sAr * dAr + sAi * dAi) * dV3v
+    beamRate = sum(s_chi_bar_G * sdgam) / (2.0_wp * ctx%frame%rho)
+    srcNorm = sqrt(sum(dAr*dAr + dAi*dAi))
+
+    if (present(innerXYOK)) innerXYOK = ctx%flags%inner_xy_ok
+
+    deallocate(sAr, sAi, dAr, dAi)
+    deallocate(procelectrons_G, s_chi_bar_G, dadz_w)
+
+  end subroutine rhsRates
+
+
+  !> Gather and scatter agree, at every supported degree.
+  subroutine checkBalance(undType, iOrder, qOneD)
+
+    character(*), intent(in) :: undType
+    integer(kind=ip), intent(in) :: iOrder
+    logical, intent(in) :: qOneD
+
+    real(kind=wp) :: fieldRate, beamRate, srcNorm
+
+    call rhsRates(undType, iOrder, qOneD, fieldRate, beamRate, srcNorm)
+
+!   Non-trivial - a kernel that deposited nothing would balance perfectly
+
+    @assertTrue(abs(fieldRate) > 1.0e-6_wp)
+    @assertTrue(srcNorm > 0.0_wp)
+
+!   and balanced to round-off
+
+    @assertEqual(0.0_wp, fieldRate + beamRate, &
+                 1.0e-12_wp * (abs(fieldRate) + abs(beamRate)))
+
+  end subroutine checkBalance
+
+
+  @test
+  subroutine testLinearConservesEnergy1D()
+    call checkBalance("helical", 1_ip, .true.)
+    call checkBalance("planepole", 1_ip, .true.)
+  end subroutine testLinearConservesEnergy1D
+
+
+  @test
+  subroutine testQuadraticConservesEnergy1D()
+    call checkBalance("helical", 2_ip, .true.)
+    call checkBalance("planepole", 2_ip, .true.)
+  end subroutine testQuadraticConservesEnergy1D
+
+
+  @test
+  subroutine testCubicConservesEnergy1D()
+    call checkBalance("helical", 3_ip, .true.)
+    call checkBalance("planepole", 3_ip, .true.)
+  end subroutine testCubicConservesEnergy1D
+
+
+  !> The 3D path, where the stencil is a tensor product and the node indices
+  !! stride by nspinDX and ntrndsi_G as well as by one. Far more room for an
+  !! index to go astray than in 1D, and nothing else here tests it.
+  @test
+  subroutine testQuadraticConservesEnergy3D()
+    call checkBalance("helical", 2_ip, .false.)
+    call checkBalance("planepole", 2_ip, .false.)
+  end subroutine testQuadraticConservesEnergy3D
+
+
+  @test
+  subroutine testCubicConservesEnergy3D()
+    call checkBalance("helical", 3_ip, .false.)
+    call checkBalance("planepole", 3_ip, .false.)
+  end subroutine testCubicConservesEnergy3D
+
+
+  @test
+  subroutine testLinearConservesEnergy3D()
+    call checkBalance("helical", 1_ip, .false.)
+  end subroutine testLinearConservesEnergy3D
+
+
+  !> A smoother kernel spreads the same charge over more nodes, so the source
+  !! it deposits is smaller in norm than the linear one's for the same beam -
+  !! the spatial filtering that makes a cubic run couple slightly more weakly
+  !! at a fixed mesh. Cheap, and it fails if a degree silently falls back to
+  !! the linear path.
+  @test
+  subroutine testHigherDegreesSpreadTheSource()
+
+    real(kind=wp) :: f1, b1, n1, f2, b2, n2, f3, b3, n3
+
+    call rhsRates("helical", 1_ip, .true., f1, b1, n1)
+    call rhsRates("helical", 2_ip, .true., f2, b2, n2)
+    call rhsRates("helical", 3_ip, .true., f3, b3, n3)
+
+    @assertTrue(n2 < n1)
+    @assertTrue(n3 < n2)
+
+!   and not by so much that something has gone wrong - these are the same
+!   particles depositing the same charge, just over 2, 3 and 4 nodes
+
+    @assertTrue(n3 > 0.5_wp * n1)
+
+  end subroutine testHigherDegreesSpreadTheSource
+
+  !> A stencil that would reach outside the inner transverse mesh has to set
+  !! inner_xy_ok, not write past the end of the field arrays. getInNode then
+  !! grows the mesh and the step is retaken - that is the contract the wider
+  !! stencil relies on, and the reason getInNode's margin now scales with the
+  !! stencil rather than staying at the linear kernel's three cells.
+  !!
+  !! dx = 0.4 and nspinDX = 7 here, so halfx = 1.2 and a particle at x = 0.9
+  !! sits at u = 5.25: a cubic stencil starting at node 5 would want node 8 of
+  !! 7. At x = 0.35, where the rest of the beam sits, it fits.
+  @test
+  subroutine testStencilOverrunIsCaught()
+
+    real(kind=wp) :: fieldRate, beamRate, srcNorm
+    logical :: innerOK
+
+    call rhsRates("helical", 3_ip, .false., fieldRate, beamRate, srcNorm, &
+                  0.35_wp, innerOK)
+    @assertTrue(innerOK)
+
+    call rhsRates("helical", 3_ip, .false., fieldRate, beamRate, srcNorm, &
+                  0.9_wp, innerOK)
+    @assertFalse(innerOK)
+
+!   and with the coupling skipped there is nothing deposited, rather than
+!   something deposited in the wrong place
+
+    @assertEqual(0.0_wp, srcNorm, 0.0_wp)
+
+  end subroutine testStencilOverrunIsCaught
+
+end module testShapeDeposition

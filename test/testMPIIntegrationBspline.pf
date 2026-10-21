@@ -1,0 +1,93 @@
+!> End-to-end test of cubic B-spline deposition (iShapeOrder = 3) on two ranks.
+!!
+!! The other e2e suites all run at the default iShapeOrder = 1, so without this
+!! one nothing in CI drives the B-spline path at all, let alone its parallel
+!! parts: the shifted macroparticle ownership in rearrElecs, the widened halo in
+!! calcBuff, and the node bookkeeping in getInterps_*_bspline. Those only come
+!! into play on more than one rank, so a serial unit test cannot reach them.
+!!
+!! This is a regression guard, and the field it compares against was generated
+!! by this implementation rather than derived independently - so it pins the
+!! answer down, but says nothing about whether the answer is right.
+!! testShapeDeposition.pf is the other half of that pair: it asserts, with no
+!! reference at all, that the gather and the scatter are consistent, which is
+!! the property a wide stencil can plausibly get wrong.
+!!
+!! The deck is f1main with the kernel switched and the beam moved a few nodes
+!! into the mesh - a wider stencil reaches a node behind the particle, and the
+!! stock beam sits on node 1. See inputs/beam_file_bspline.in.
+
+module testMPIIntegrationBspline
+
+  use pFUnit
+  use MPI
+  use puffin_kinds
+  use puffin_mod, only: puffin_main
+  use H5in, only: readH5FieldDataOntoRootProcess, getNZ2
+  use globals
+  use puffin_mpiInfo, only: tProcInfo_G
+  implicit none
+
+  character(len=1024_ip) :: test_file = 'inputs/f1main_bspline.in'
+  character(len=1024_ip) :: output_base = 'inputs/f1main_bspline'
+
+contains
+
+  @mpitest(npes=[2])
+  subroutine testCubicDepositionRunMatches(this)
+
+    class(MpiTestMethod), intent(inout) :: this
+
+    logical :: file_exists, qOK
+    character(len=1024_ip) :: final_field_file, expected_field_file
+    integer(kind=ip) :: nZ2nodes
+    real(kind=WP), allocatable :: rfield(:), ifield(:)
+    real(kind=WP) :: expected_rfield(511), expected_ifield(511)
+
+    print *, 'Testing cubic B-spline deposition, 2 ranks...'
+
+    call puffin_main(test_file, qOK)
+    @assertTrue(qOK)
+
+!   Same dump sequence as the f1main suite: the final full dump is index 2.
+
+    final_field_file = trim(output_base) // '_aperp_2.h5'
+    expected_field_file = 'expected/f1main_bspline_expected_field.h5'
+
+    inquire(file=final_field_file, exist=file_exists)
+    @assertTrue(file_exists)
+
+    nZ2nodes = getNZ2(trim(final_field_file))
+
+    if (tProcInfo_G%qRoot) then
+      @assertEqual(nZ2nodes, 511_ip)
+    end if
+
+    allocate(rfield(nZ2nodes), ifield(nZ2nodes))
+    call readH5FieldDataOntoRootProcess(trim(final_field_file), rfield, ifield, nZ2nodes)
+    call readH5FieldDataOntoRootProcess(trim(expected_field_file), &
+                                        expected_rfield, expected_ifield, nZ2nodes)
+
+    if (tProcInfo_G%qRoot) then
+
+      @assertEqual(rfield, expected_rfield, 1e-10_WP)
+      @assertEqual(ifield, expected_ifield, 1e-10_WP)
+
+!     A kernel that deposited nothing, or a field left at the seed, would pass
+!     an equality test against a golden recorded from the same mistake, so
+!     assert the run actually did something as well.
+
+      @assertTrue(maxval(abs(rfield)) > 1.0e-8_WP)
+
+!     NaN is not equal to itself, so this is a finiteness check
+
+      @assertTrue(all(rfield == rfield))
+      @assertTrue(all(ifield == ifield))
+
+    end if
+
+    deallocate(rfield, ifield)
+
+  end subroutine testCubicDepositionRunMatches
+
+end module testMPIIntegrationBspline

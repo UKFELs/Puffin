@@ -21,6 +21,7 @@ use puffin_mpiInfo, only: tProcInfo_G
 use puffin_fftwInfo, only: tTransInfo_G
 use gtop2, only: getp2, getp2avg
 use GlobalTypes, only: tSimulationFlags, tFELFrame, tFieldValues
+use shape_functions, only: shapeLeftReach, shapeBuffExtra
 use mpi, only: MPI_ALLGATHER, mpi_allreduce, mpi_alltoallv, mpi_barrier, MPI_Bcast, &
   mpi_double_precision, MPI_IN_PLACE, mpi_integer, MPI_ISSEND, mpi_max, mpi_min, MPI_RECV, &
   mpi_reduce, mpi_scatter, MPI_STATUS_SIZE, mpi_sum, MPI_WAIT, MPI_WAITALL
@@ -129,8 +130,16 @@ contains
 
     real(kind=wp) :: lenz2
 
+!   How far the deposition stencil reaches outside the linear one, in cells.
+!   Both are zero for the default linear deposition, which leaves the layout
+!   below exactly as it was.
+
+    integer(kind=ip) :: ishft, nextra
+
 !    print*, 'INSIDE GETLOCALFIELDINDICES, SIZE OF SA IS ', size(sA)
 
+    ishft = shapeLeftReach(flags%shape_order)
+    nextra = shapeBuffExtra(flags%shape_order)
 
 
 !!!!!!&&*(&*(&CD*(S)))  INITIALIZING ONLY FOR TESTING!!!! WILL ONLY
@@ -140,7 +149,7 @@ contains
 
       field%iParaBas = iFieldBased
 
-      call getFStEnd(field)
+      call getFStEnd(field, ishft)
 
       field%bz2 = field%ez2
 
@@ -204,9 +213,17 @@ contains
 
 !!!   APPLY PERIODIC BOUNDS - PROBABLY A BETTER PLACE FOR THIS....
 
+!   Wrapped into [ishft*dz2, ishft*dz2 + lenz2) rather than [0, lenz2), so that
+!   a wider stencil still has a node to its left inside the mesh.  The nodes it
+!   reaches past nz2 at the other end are the periodic buffer, which upd8da
+!   already folds back onto the front.  ishft is zero for linear deposition, and
+!   then this is the original expression, bit for bit.
+
     if (FieldMesh == iPeriodic) then
       lenz2 = sLengthOfElmZ2_G * real((nz2_G - 1_ip), kind=wp )
-      sElZ2_G = sElZ2_G - (real(floor(sElZ2_G / lenz2), kind=wp) * lenz2 )
+      sElZ2_G = sElZ2_G - (real(floor((sElZ2_G - &
+                  (real(ishft, kind=wp) * sLengthOfElmZ2_G)) / lenz2), &
+                  kind=wp) * lenz2 )
     end if
 
   allocate(ee_ar_old(tProcInfo_G%size, 3))
@@ -219,21 +236,21 @@ contains
 
 
 
-  call getFStEnd(field)    ! Define new 'active' region
+  call getFStEnd(field, ishft)    ! Define new 'active' region
 
   call setupLayoutArrs(field%mainlen, field%fz2, field%ez2, field%ac_ar)
 
-  if (field%qUnique) call rearrElecs(field)   ! Rearrange electrons
+  if (field%qUnique) call rearrElecs(field, ishft)   ! Rearrange electrons
 
 ! Branch on the argument, not on flags%period_averaged: init calls this
 ! before the flags are populated.
 
   if (present(pqSq)) then
     call calcBuff(4 * pi * frame%rho * sdz, frame%eta, frame%gamma_ref, &
-                  frame%aw, field, pqSq)  ! Calculate buffers
+                  frame%aw, field, nextra, pqSq)  ! Calculate buffers
   else
     call calcBuff(4 * pi * frame%rho * sdz, frame%eta, frame%gamma_ref, &
-                  frame%aw, field)  ! Calculate buffers
+                  frame%aw, field, nextra)  ! Calculate buffers
   end if
 
   call getFrBk(field)  ! Get surrounding nodes
@@ -1377,7 +1394,18 @@ contains
 
   integer :: error
 
-  inBuf = 3_ip
+!   Cells of margin left between the outermost macroparticle and the edge of
+!   the inner transverse mesh.  Three for the linear stencil, which needs one
+!   node beyond the particle and leaves two spare; a wider stencil reaches
+!   further and would otherwise eat into that spare.  The margin is what
+!   absorbs betatron motion between calls here, and running out of it costs a
+!   rebuild of the whole parallel layout - or, if three rebuilds in a row do not
+!   fix it, an early exit from the undulator section in undulator.f90.  So it
+!   grows with the stencil rather than being spent.
+!
+!   shapeLeftReach is zero at iShapeOrder = 1, leaving the historical 3.
+
+  inBuf = 3_ip + shapeLeftReach(flags%shape_order)
 
   if (iNumberElectrons_G > 0_ipl) then
 
@@ -1599,7 +1627,7 @@ contains
 
 
 
-  subroutine calcBuff(dz, sEta, sGammaR, sAw, field, pqSq)
+  subroutine calcBuff(dz, sEta, sGammaR, sAw, field, nextra, pqSq)
 
 ! Subroutine to setup the 'buffer' region
 ! at the end of the parallel field section
@@ -1614,6 +1642,13 @@ contains
 
     real(kind=wp), intent(in) :: dz, sEta, sGammaR, sAw
     type(tFieldValues), intent(inout) :: field
+
+!>  @param[in] nextra Nodes to add to the halo for a wider deposition stencil.
+!>  The estimate below rounds the predicted drift to the nearest node, which can
+!>  land below it, so this is deliberately a node wider than the stencil itself
+!>  needs.  Zero for linear deposition, leaving the halo as it was.
+
+    integer(kind=ip), intent(in) :: nextra
 
 ! Present only in the averaged mode: the period average of the undulator
 ! quiver |pperp|^2.  There sElPX_G/sElPY_G hold only the slow part of pperp,
@@ -1683,11 +1718,14 @@ contains
 !   The unaveraged path keeps nint: changing the buffer there changes the
 !   parallel layout, and with it the summation order, so the e2e goldens
 !   would no longer match at 1e-10.
+!
+!   nextra widens this for a deposition stencil wider than the linear one,
+!   and is zero for linear deposition.
 
     if (present(pqSq)) then
-      field%bz2 = floor(bz2_len / sLengthOfElmZ2_G, kind=ip) + 2_ip
+      field%bz2 = floor(bz2_len / sLengthOfElmZ2_G, kind=ip) + 2_ip + nextra
     else
-      field%bz2 = nint(bz2_len / sLengthOfElmZ2_G)
+      field%bz2 = nint(bz2_len / sLengthOfElmZ2_G) + nextra
     end if
 
     if (fieldMesh == iPeriodic) then
@@ -2078,9 +2116,16 @@ contains
 
 
 
-  subroutine getFStEnd(field)
+  subroutine getFStEnd(field, ishft)
 
     type(tFieldValues), intent(inout) :: field
+
+!>  @param[in] ishft How many cells further left than the linear stencil the
+!>  deposition reaches.  The active region has to start that much earlier, or a
+!>  macroparticle in the very first cell of the beam would deposit onto a node
+!>  in front of the mesh section any rank holds.  Zero for linear deposition.
+
+    integer(kind=ip), intent(in) :: ishft
 
     integer(kind=ip) :: fz2_act, ez2_act
 
@@ -2105,6 +2150,8 @@ contains
 
       fz2_act = minval(ceiling(sElZ2_G / sLengthOfElmZ2_G))   ! front z2 node in 'active' region
 
+      if (ishft > 0_ip) fz2_act = max(1_ip, fz2_act - ishft)
+
 !      print*, tProcInfo_G%rank, 'and I have fz2_act = ', fz2_act
 
       CALL mpi_allreduce(fz2_act, rbuff, 1, mpi_integer, &
@@ -2122,6 +2169,8 @@ contains
 !print*, 'fz2_act = ', fz2_act
 
       ez2_act = maxval(ceiling(sElZ2_G / sLengthOfElmZ2_G) + 1)
+
+      if (ishft > 0_ip) ez2_act = min(NZ2_G, ez2_act + ishft)
 
 !      print*, tProcInfo_G%rank, 'and I have ez2_act = ', ez2_act
 
@@ -2674,11 +2723,21 @@ contains
 
 
 
-  subroutine rearrElecs(field)
+  subroutine rearrElecs(field, ishft)
 
   implicit none (type, external)
 
   type(tFieldValues), intent(in) :: field
+
+!>  @param[in] ishft Cells the deposition reaches left of the linear stencil.
+!>  Ownership is shifted right by that much, so that every node a rank's
+!>  macroparticles touch is one the rank actually holds.  A particle sitting a
+!>  hair inside node fz2 reaches node fz2-1 with a quadratic or cubic kernel,
+!>  and there is no halo on the left-hand side to catch it - the buffers only
+!>  run forwards, because particles only ever drift forwards in z2.  Zero for
+!>  linear deposition, which leaves the bounds below unchanged.
+
+  integer(kind=ip), intent(in) :: ishft
 
   integer :: error
   integer(kind=ip) :: iproc, iproc_r, iproc_s
@@ -2689,6 +2748,9 @@ contains
                                 sElPX_OLD(:), sElPY_OLD(:), &
                                 s_chi_bar_OLD(:), &
                                 tmp4sending(:)
+
+  real(kind=wp), allocatable :: zlo(:), zhi(:)
+  integer(kind=ip) :: ifirst
 
   integer(kind=ip) :: icds, new_sum, offe, offs, frmroot
 
@@ -2704,6 +2766,31 @@ contains
     allocate(cnt2proc(tProcInfo_G%size))
     cnt2proc = 0
 
+!   z2 bounds of each rank's slice.  Shifted right by ishft cells so the stencil
+!   stays inside the slice - except at the front of the mesh, where there is no
+!   rank to the left to take those particles and getFStEnd has already pulled
+!   the active region back far enough.  A beam sitting hard against node 1 has
+!   nowhere to go and getInterps_*_bspline stops the run; the deck has to leave
+!   the first few nodes empty.
+
+    allocate(zlo(tProcInfo_G%size), zhi(tProcInfo_G%size))
+
+    ifirst = minval(field%ac_ar(:,2))
+
+    do iproc = 0, tProcInfo_G%size-1
+
+      if (field%ac_ar(iproc+1, 2) == ifirst) then
+        zlo(iproc+1) = sLengthOfElmZ2_G * real(field%ac_ar(iproc+1, 2) - 1_ip, kind=wp)
+      else
+        zlo(iproc+1) = sLengthOfElmZ2_G * &
+                         real(field%ac_ar(iproc+1, 2) - 1_ip + ishft, kind=wp)
+      end if
+
+      zhi(iproc+1) = sLengthOfElmZ2_G * &
+                       real(field%ac_ar(iproc+1, 3) + ishft, kind=wp)
+
+    end do
+
 !    do imp = 1,iNumberElectrons_G
 
 !      where ( (sElZ2_G(imp) >= (sLengthOfElmZ2_G * (field%ac_ar(:,2)-1))) .and. &
@@ -2718,8 +2805,8 @@ contains
 ! OR
     do iproc = 0, tProcInfo_G%size-1
 
-      icds = count(sElZ2_G > (sLengthOfElmZ2_G * (field%ac_ar(iproc+1, 2)-1)) .and. &
-                    (sElZ2_G <= (sLengthOfElmZ2_G * field%ac_ar(iproc+1, 3))) )
+      icds = count(sElZ2_G > zlo(iproc+1) .and. &
+                    (sElZ2_G <= zhi(iproc+1)) )
 
       cnt2proc(iproc+1) = icds   ! amount I'm sending to iproc
 
@@ -2853,8 +2940,7 @@ contains
 
               call getinds(inds4sending(1:cnt2proc(iproc_r+1)), &
                     sElZ2_OLD, &
-                    (sLengthOfElmZ2_G * (field%ac_ar(iproc_r+1,2)-1)), &
-                    (sLengthOfElmZ2_G * field%ac_ar(iproc_r+1,3)) )
+                    zlo(iproc_r+1), zhi(iproc_r+1) )
 
               !print*, inds4sending(1:cnt2proc(iproc_r+1))
               !print*, 'cnt2proc again:', cnt2proc(iproc_r+1)
@@ -2875,8 +2961,7 @@ contains
 
               call getinds(inds4sending(1:cnt2proc(iproc_r+1)), &
                     sElZ2_OLD, &
-                    (sLengthOfElmZ2_G * (field%ac_ar(iproc_r+1,2)-1) ), &
-                    (sLengthOfElmZ2_G * field%ac_ar(iproc_r+1,3)) )
+                    zlo(iproc_r+1), zhi(iproc_r+1) )
 
 !              tmp4sending(1:cnt2proc(iproc_r+1)) = sElZ2_OLD((1:cnt2proc(iproc_r+1)))
 
@@ -2978,6 +3063,7 @@ contains
 
 
     deallocate(cnt2proc)
+    deallocate(zlo, zhi)
     deallocate(tmp4sending)
     deallocate(inds4sending)
 !    deallocate(frmroot)
