@@ -37,6 +37,31 @@
 !> factor and the off-axis remainder stays in u, where RK4 still integrates it -
 !> correct, but a smaller gain for that undulator type.
 !>
+!> ---------------------------------------------------------------------------
+!> In 3D this currently buys nothing.  Measured on the 3D e2e deck (planepole,
+!> ends off, 20 periods): 1.0x at 12, 20 and 30 steps/period, with every kernel
+!> degree, and with diffraction on or off.  In 1D the same comparison is worth
+!> 23x.  See benchmark/convergence/README.md.
+!>
+!> The reason is not the field model, and not the small transverse-dependent
+!> piece of the quiver drive hiding in bzu (the natural-focusing term in
+!> dppdz_*_f, which is at the quiver frequency, is not removed, and is of order
+!> kappa sqrt(eta) |pperp| y / 2rho against a removed drive of 1/2rho - some
+!> 1e-4 of it for typical amplitudes).  It is that the split only quietens
+!> pperp.  dxdz_f and dydz_f are proportional to the *full* pperp, which rk4par
+!> reconstructs as u + Pw at every stage, so x and y still carry the transverse
+!> wiggle at the quiver frequency and RK4 must still resolve it.  In 1D there
+!> are no transverse coordinates to carry it, which is the whole of the
+!> difference.
+!>
+!> Fixing that means splitting x and y too.  Their excursion is the integral of
+!> Pw again, but with a particle-dependent prefactor - 2 rho kappa / sqrt(eta)
+!> times (1 + eta p2) / Gamma - so it is not a pure function of zbar and the
+!> transformation would be exact only to the order that prefactor is held
+!> constant across a step.  That is the standard exponential-integrator
+!> trade-off, and it is untried.  Until then qQuiverSplit is a 1D optimisation.
+!> ---------------------------------------------------------------------------
+!>
 !> The undulator end ramps are not split: their field envelope varies over the
 !> ramp, and adjUndPlace switches the field description at the section
 !> boundaries.  qQuiverStepOK below reports whether a whole RK4 step lies inside
