@@ -571,14 +571,16 @@ contains
 !                  ordered (component 1 real, component 1 imag, component 2 ...).
 !   fieldCompMeaning  what a component is. Unaveraged, one complex pair already
 !                  holds both polarisations as (A_x, -A_y). Averaged, a complex
-!                  pair is one envelope of one polarisation state, so there is
-!                  one component per linear axis.
+!                  pair is the rms envelope B_c of one Cartesian component,
+!                  A_c = sqrt(2) Re[B_c exp(-i z2/2rho)], so there is one
+!                  component per linear axis.
 
     call addH5IntegerAttribute(dset_id, "nFieldComp", ctx%field%nComp, aspace_id)
 
     if (ctx%field%nComp > 1_ip) then
       call addH5StringAttribute(dset_id, "fieldCompMeaning", &
-                                "one envelope per linear polarisation: 1 = x, 2 = y", &
+                                "rms envelope per Cartesian axis, "// &
+                                "A_c = sqrt(2) Re[B_c exp(-i z2/2rho)]: 1 = x, 2 = y", &
                                 aspace_id)
     else if (ctx%flags%period_averaged) then
       call addH5StringAttribute(dset_id, "fieldCompMeaning", &

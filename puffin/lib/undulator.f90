@@ -22,7 +22,7 @@ use RK4int, only: rk4par, allact_rk4_arrs, deallact_rk4_arrs, inner2outerenv, ou
 use write_adapter, only: writeim, qwriteq, iStep
 use ParaField, only: getlocalfieldindices, inner2outer, outer2inner, getinnode
 use GlobalTypes, only: tSimulationContext, tRK4Workspace
-use averaging, only: getAvgUndAmps, qAvgPolarisationOK, getAvgBufferPqSq
+use averaging, only: getAvgBufferPqSq
 use AdapterGlobals, only: PopulateIntegrationStateFromGlobals, UpdateGlobalsFromIntegrationState, &
   PopulateUndulatorFromGlobals, UpdateGlobalsFromUndulator
 use Globals, only: qResume_G
@@ -77,7 +77,7 @@ contains
     logical :: qDWrDone
     integer :: error
     logical :: qResuming
-    real(kind=wp) :: cx, cy, pqSqBuff
+    real(kind=wp) :: pqSqBuff
 
 !   RK4 scratch, plus the inner-mesh copy of the field. Local rather than part
 !   of ctx: its lifetime is the field layout, and keeping it a sibling of ctx
@@ -99,29 +99,12 @@ contains
 
   call PopulateUndulatorFromGlobals(ctx%und)
 
-! Averaged mode carries one field envelope, which is exact only for a helical
-! or linearly polarised undulator. Setup checks the main input file; this
-! catches a lattice file that switches polarisation module by module.
 ! pqSqBuff is the quiver |pperp|^2 the field buffers must allow for, since in
 ! averaged mode it is not in the stored pperp (see calcBuff) - zero otherwise.
 
   pqSqBuff = 0.0_wp
 
-  if (ctx%flags%period_averaged) then
-
-    pqSqBuff = getAvgBufferPqSq(ctx%und)
-
-    call getAvgUndAmps(ctx%und%undulator_type, ctx%und%fx, ctx%und%fy, cx, cy)
-
-    if (.not. qAvgPolarisationOK(cx, cy)) then
-      if (tProcInfo_G%qRoot) print*, "Averaged mode (qAveraged) needs a helical or ", &
-                                     "linearly polarised undulator - module ", iM, &
-                                     " has ux, uy = ", cx, cy
-      call mpi_finalize(error)
-      stop
-    end if
-
-  end if
+  if (ctx%flags%period_averaged) pqSqBuff = getAvgBufferPqSq(ctx%und)
 
   qResuming = qResume_G
 
