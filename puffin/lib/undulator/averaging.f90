@@ -65,10 +65,47 @@
 !> xi is evaluated per macroparticle: it goes as 1/Gamma^2, and taking it at
 !> the reference energy alone, as Genesis does, would put an error of
 !> ~0.2 (Gamma_j - 1) into the planar coupling.
+!>
+!> Odd harmonics.  The same figure-of-eight couples the beam to the odd
+!> harmonics of the resonant frequency, and averaged mode can carry them as
+!> further bands on the component axis (avgHarmonics in the input file).
+!> Band h, h odd, holds
+!>
+!>     A_c^(h) = sqrt(2) Re[ B_c^(h) exp(-i h z2/2rho) ],
+!>
+!> and its drive is the period average of sqrt(2) w p_c exp(+i h z2/2rho).
+!> With z2/2rho = theta_w - thetabar + xi sin(2 theta_w), Jacobi-Anger gives
+!> exp(i h xi sin(2 theta_w)) = sum_n J_n(h xi) exp(2 i n theta_w), and the
+!> exp(+-i theta_w) of the quiver leaves a slow term only for n = -(h+-1)/2.
+!> With m = (h-1)/2 and J_(-n) = (-1)^n J_n,
+!>
+!>     q_x^(h) = -(alpha cy / sqrt(2)) (-1)^m [J_m(h xi) - J_(m+1)(h xi)] exp(-i h thetabar),
+!>     q_y^(h) = -i (alpha cx / sqrt(2)) (-1)^m [J_m(h xi) + J_(m+1)(h xi)] exp(-i h thetabar),
+!>
+!> which are q_x, q_y above at h = 1.  Even h has no slow term, because the
+!> quiver's exp(+-i theta_w) needs h +- 1 even; that holds on axis, and the
+!> off-axis harmonic coupling a 3D beam has is not carried either.  A helical
+!> undulator has xi = 0 and J_m(0) = 0 for m >= 1, so no on-axis harmonic
+!> coupling at all.  Products of two bands at different carriers average to
+!> zero, so each band couples on its own: one q^(h) per component serves the
+!> band's source and its share of dGamma/dz, energy is conserved summed over
+!> every component, and |A_perp|^2 averages to the sum of |B|^2 over all of
+!> them.  Each band diffracts at its own physical wavenumber, its envelope's
+!> kz2 less h/2rho (getAvgCarrierKz2).
+!>
+!> The mesh is shared, so every band has the same envelope band in absolute
+!> frequency, h +- 1/(2 lambdarPerCell) in units of the resonant frequency.
+!> A detuning that moves the fundamental by d moves harmonic h by h d, so the
+!> harmonics leave the band first: an energy spread or offset e is in band for
+!> harmonic h while 2 h |e| < 1/(2 lambdarPerCell).
+!>
+!> Against the unaveraged solver on the 1D seeded planar deck the 3rd harmonic
+!> agrees to 0.5%, and the 5th is 16% low, for reasons only partly understood;
+!> see W3c in AVERAGED_MODE_ROADMAP.md.
 
 module averaging
 
-use puffin_kinds, only: WP
+use puffin_kinds, only: WP, IP
 use puffin_constants, only: pi
 use GlobalTypes, only: tUndulator, tFELFrame
 use wigglerVar, only: getAlpha
@@ -77,8 +114,8 @@ implicit none (type, external)
 private
 
 public :: tAvgCoupling, getAvgUndAmps, getAvgPolarisation, &
-          getAvgEnvelope, getAvgCoupling, avgJJ, getResonantMomentum, &
-          getAvgBufferPqSq, getAvgAlpha, &
+          getAvgEnvelope, getAvgCoupling, avgJJ, avgJJh, getResonantMomentum, &
+          getAvgBufferPqSq, getAvgAlpha, getAvgBands, &
           tAvgFocusing, getAvgFocusCoef, getAvgFocusing, getAvgCarrierKz2
 
 
@@ -268,6 +305,39 @@ contains
   end subroutine avgJJ
 
 
+!> The Bessel factors of harmonic h's couplings, h odd and m = (h-1)/2:
+!> jjX = (-1)^m [J_m(h xi) - J_(m+1)(h xi)], jjY = (-1)^m [J_m(h xi) + J_(m+1)(h xi)].
+!> At h = 1 these are avgJJ's factors.  The fundamental band keeps avgJJ, whose
+!> bessel_j0/bessel_j1 need not agree with bessel_jn to the last bit, so that
+!> path is unchanged by the harmonics.
+
+  elemental subroutine avgJJh(cpl, h, onePlusEtaP2, gam, jjX, jjY)
+
+    type(tAvgCoupling), intent(in) :: cpl
+    integer(kind=ip), intent(in) :: h
+    real(kind=wp), intent(in) :: onePlusEtaP2, gam
+    real(kind=wp), intent(out) :: jjX, jjY
+
+    real(kind=wp) :: hxi, jm, jm1
+    integer :: m
+
+    hxi = real(h, kind=wp) * cpl%xiCoef * onePlusEtaP2**3 / gam**2
+    m = int((h - 1_ip) / 2_ip)
+
+    jm = bessel_jn(m, hxi)
+    jm1 = bessel_jn(m + 1, hxi)
+
+    jjX = jm - jm1
+    jjY = jm + jm1
+
+    if (mod(m, 2) == 1) then
+      jjX = -jjX
+      jjY = -jjY
+    end if
+
+  end subroutine avgJJh
+
+
 !> The resonant momenta q_x, q_y of every macroparticle, theta_j = (zbar - z2_j)/2rho,
 !>
 !>     q_x = -ampX jjX exp(-i theta),     q_y = -i ampY jjY exp(-i theta),
@@ -278,16 +348,22 @@ contains
 !> inside the !$OMP PARALLEL region in getrhs, so it is an orphaned !$OMP DO
 !> over private scalars, as getP2 is.  A helical undulator has xi = 0, both
 !> Bessel factors 1, and skips the Bessel functions.
+!>
+!> With bandHarm (the field's bandHarm), band b >= 2 fills columns 2b-1 and 2b
+!> the same way for its harmonic h, with theta -> h theta and avgJJh's Bessel
+!> factors.  Without it, or with the fundamental alone, only columns 1 and 2
+!> are touched.
 
-  subroutine getResonantMomentum(sZ, sz2, sgam, sp2, eta, rho, cpl, sprRes, spiRes)
+  subroutine getResonantMomentum(sZ, sz2, sgam, sp2, eta, rho, cpl, sprRes, spiRes, bandHarm)
 
     real(kind=wp), intent(in) :: sZ, eta, rho
     real(kind=wp), contiguous, intent(in) :: sz2(:), sgam(:), sp2(:)
     type(tAvgCoupling), intent(in) :: cpl
     real(kind=wp), contiguous, intent(out) :: sprRes(:,:), spiRes(:,:)
+    integer(kind=ip), intent(in), optional :: bandHarm(:)
 
-    integer :: i
-    real(kind=wp) :: inv2rho, theta, cth, sth, jjX, jjY, magX, magY
+    integer :: i, ib, nBand
+    real(kind=wp) :: inv2rho, theta, cth, sth, jjX, jjY, magX, magY, hth
 
     inv2rho = 1.0_wp / (2.0_wp * rho)
 
@@ -319,6 +395,31 @@ contains
         spiRes(i,1) = magX * sth
         sprRes(i,2) = -magY * sth
         spiRes(i,2) = -magY * cth
+      end do
+!$OMP END DO
+
+    end if
+
+    nBand = 1
+    if (present(bandHarm)) nBand = size(bandHarm)
+
+    if (nBand > 1) then
+
+!$OMP DO PRIVATE(ib, theta, hth, cth, sth, jjX, jjY, magX, magY)
+      do i = 1, size(sz2)
+        theta = (sZ - sz2(i)) * inv2rho
+        do ib = 2, nBand
+          hth = real(bandHarm(ib), kind=wp) * theta
+          cth = cos(hth)
+          sth = sin(hth)
+          call avgJJh(cpl, bandHarm(ib), 1.0_wp + eta * sp2(i), sgam(i), jjX, jjY)
+          magX = cpl%ampX * jjX
+          magY = cpl%ampY * jjY
+          sprRes(i,2*ib-1) = -magX * cth
+          spiRes(i,2*ib-1) = magX * sth
+          sprRes(i,2*ib) = -magY * sth
+          spiRes(i,2*ib) = -magY * cth
+        end do
       end do
 !$OMP END DO
 
@@ -464,20 +565,57 @@ contains
   end subroutine getAvgFocusing
 
 
-!> Offset from the stored envelope's z2 wavenumber to the physical one.  The
-!> field is A_c = sqrt(2) Re[B_c exp(-i z2 / 2rho)], so an envelope Fourier
-!> mode at kz2 is physically at kz2 - 1/2rho.  Diffraction, and
-!> the absorbing boundary, are frequency dependent and must use the physical
-!> wavenumber; the envelope's own kz2 = 0 mode is the carrier.  Zero outside
+!> Offset from the stored envelope's z2 wavenumber to the physical one, for
+!> the band at harmonic h (1 for the fundamental).  The field is
+!> A_c = sqrt(2) Re[B_c exp(-i h z2 / 2rho)], so an envelope Fourier mode at
+!> kz2 is physically at kz2 - h/2rho.  Diffraction, and the absorbing
+!> boundary, are frequency dependent and must use the physical wavenumber;
+!> the envelope's own kz2 = 0 mode is the carrier.  Not applied outside
 !> averaged mode, where the mesh already resolves the carrier.
 
-  real(kind=wp) function getAvgCarrierKz2(rho)
+  real(kind=wp) function getAvgCarrierKz2(rho, h)
 
     real(kind=wp), intent(in) :: rho
+    integer(kind=ip), intent(in) :: h
 
-    getAvgCarrierKz2 = -1.0_wp / (2.0_wp * rho)
+    getAvgCarrierKz2 = -real(h, kind=wp) / (2.0_wp * rho)
 
   end function getAvgCarrierKz2
+
+
+!> The harmonic of each averaged-mode field band, from the avgHarmonics input:
+!> the fundamental first, then the nonzero entries in ascending order.
+!> chkAveraged has already rejected anything but distinct odd harmonics >= 3.
+
+  subroutine getAvgBands(harmIn, bandHarm)
+
+    integer(kind=ip), intent(in) :: harmIn(:)
+    integer(kind=ip), allocatable, intent(out) :: bandHarm(:)
+
+    integer(kind=ip), allocatable :: extra(:)
+    integer(kind=ip) :: t
+    integer :: i, j
+
+    extra = pack(harmIn, harmIn /= 0_ip)
+
+!   Insertion sort - there are at most a handful
+
+    do i = 2, size(extra)
+      t = extra(i)
+      j = i - 1
+      do while (j >= 1)
+        if (extra(j) <= t) exit
+        extra(j+1) = extra(j)
+        j = j - 1
+      end do
+      extra(j+1) = t
+    end do
+
+    allocate(bandHarm(size(extra) + 1))
+    bandHarm(1) = 1_ip
+    bandHarm(2:) = extra
+
+  end subroutine getAvgBands
 
 
 !> Upper bound over the module on the period-averaged quiver |pperp|^2, for

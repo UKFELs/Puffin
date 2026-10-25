@@ -839,6 +839,33 @@ which is what makes the averaged system conserve beam plus field energy exactly.
 
 In the helicity basis, with $u_\mp = (u_y \pm u_x)/2$, the same couplings read $(q_x \mp i q_y)/\sqrt{2} = -\alpha (u_\mp J_0 - u_\pm J_1)\, e^{-i\bar{\theta}}$: $J_0$ and $J_1$ swap partners between the two helicities, so they are driven in a ratio that equals $u_+/u_-$ only for a helical ($u_+ = 0$) or linearly polarised ($|u_+| = |u_-|$) undulator. Those are the cases a single envelope can carry, and for them the two-component system reduces exactly to one: a planar undulator drives $B_x$ alone, and a helical one keeps $B_y = i B_x$. For a general elliptical undulator both components are needed. The unit tests in {\tt test/testAveraging.pf} check $q_x$ and $q_y$ against a brute-force period average of a single electron's exact quiver motion, including the figure-of-eight, for planar, helical, elliptical, linear-along-$y$ and opposite-helicity undulators.
 
+\subsubsection{Harmonics}
+
+\label{puff-avg-harm}
+
+The figure-of-eight also couples the beam to the odd harmonics of the resonant frequency, and the envelopes above carry only the fundamental. With {\bf avgHarmonics} set, averaged mode carries chosen odd harmonics as further bands, each one more Cartesian pair on the same footing as the fundamental,
+\begin{align}
+A_c^{(h)} = \sqrt{2}\,\mathrm{Re}\left[B_c^{(h)}\, e^{-i h\bar{z}_2/2\rho}\right], \qquad c = x, y, \quad h = 3, 5, \ldots
+\end{align}
+The drive of band $h$ is the period average of $\sqrt{2}\,\bar{p}_c\, e^{+i h \bar{z}_2/2\rho}$. Writing $\bar{z}_{2j}/2\rho = \bar{z}/2\rho - \bar{\theta}_j + \xi_j \sin(2\bar{z}/2\rho)$ and expanding $e^{i h \xi_j \sin(2\bar{z}/2\rho)} = \sum_n J_n(h\xi_j)\, e^{2 i n \bar{z}/2\rho}$, the $e^{\pm i\bar{z}/2\rho}$ of the quiver leaves a slow term only for $n = -(h \pm 1)/2$. With $m = (h-1)/2$ and $J_{-n} = (-1)^n J_n$,
+\begin{align}
+q^{(h)}_{x,j} &= -\frac{\alpha u_y}{\sqrt{2}} (-1)^m \left[J_m(h\xi_j) - J_{m+1}(h\xi_j)\right] e^{-i h\bar{\theta}_j}, \\
+q^{(h)}_{y,j} &= -i\,\frac{\alpha u_x}{\sqrt{2}} (-1)^m \left[J_m(h\xi_j) + J_{m+1}(h\xi_j)\right] e^{-i h\bar{\theta}_j},
+\end{align}
+which are $q_{x,j}$ and $q_{y,j}$ above at $h = 1$. Products of two bands at different carriers average to zero, so each band couples on its own: $q^{(h)}_{c,j}$ takes the place of $q_{c,j}$ in the field source of $B^{(h)}_c$ and contributes its own $\mathrm{Re}[q^{(h)}_{c,j} B^{(h)*}_c]$ to $d\Gamma_j/d\bar{z}$, so the harmonics take their share of the beam's energy and beam plus field energy is still conserved exactly, summed over every band. $|A_\bot|^2$ averages to $\sum_{h,c} |B^{(h)}_c|^2$, which is what {\tt /power} reports. The unit tests check $q^{(h)}$ for $h = 3, 5$ against the same brute-force period average, projected onto $e^{+i h \bar{z}_2/2\rho}$, for planar, helical, elliptical and linear-along-$y$ undulators, and the energy balance through the real {\tt getrhs} with every band carrying an unrelated field.
+
+What is not carried:
+
+\begin{itemize}
+\item {\bf Even harmonics.} The quiver's $e^{\pm i\bar{z}/2\rho}$ needs $h \pm 1$ even, so an even harmonic has no slow term on axis. Off axis a 3D beam does couple to the even harmonics, and to the odd ones through more than the on-axis factor above; neither off-axis coupling is carried.
+\item {\bf Anything from a helical undulator.} $\xi = 0$ and $J_m(0) = 0$ for $m \ge 1$, so every harmonic coupling vanishes on axis; a helical run with harmonic bands carries them at zero.
+\item {\bf Harmonic seeds.} The seed is laid into the fundamental band only; the harmonic bands start at zero and are driven by the beam.
+\end{itemize}
+
+The bands share the $\bar{z}_2$ mesh, so each holds the same absolute band, $h \pm 1/(2\times${\bf lambdarPerCell}$)$ in units of the resonant frequency, but a detuning that moves the fundamental by $\delta$ moves harmonic $h$ by $h\delta$. An energy spread or offset $\epsilon$ is therefore in band for harmonic $h$ only while $2h|\epsilon| < 1/(2\times${\bf lambdarPerCell}$)$, a factor $h$ tighter than for the fundamental; a finer mesh is the remedy. The beam also has to resolve the harmonic it drives: with $N$ macroparticles per resonant wavelength, the bunching at harmonic $h$ aliases onto $h \bmod N$, so that at the default $N = 4$ the third and fifth harmonics see the fundamental's bunching. {\bf iMPsZ2PerWave} must exceed $2h$ for the highest band. The unaveraged solver needs the same of its beam to radiate harmonics correctly.
+
+On the 1D seeded planar validation deck ({\tt benchmark/averaged}, section ``Harmonic bands'' of its README) the third harmonic agrees with the unaveraged solver to 0.5\% once the unaveraged mesh is fine enough to resolve it, at {\bf nodesPerLambdar} $= 192$. The fifth is 16\% low against a converged unaveraged result; part of that is the fundamental's own small deficit, amplified because late in the run the harmonics grow from the fundamental's bunching, and the rest is not yet understood. Harmonic power from averaged mode is therefore quantitative for the third harmonic and an estimate for the fifth.
+
 \subsubsection{Transverse motion}
 
 In 1D $b_z = 0$ and the slow transverse momentum is constant. In 3D the natural focusing survives averaging, but only through products of two fast quantities, so it has to be restored explicitly. Off axis, to first order, every undulator type in Section~\ref{puff-undfields} has
@@ -855,7 +882,7 @@ which reproduces the betatron wavenumbers of the unaveraged solver: $\kappa/\sqr
 
 \subsubsection{Diffraction}
 
-The field arrays hold the envelope, so an array Fourier mode at $k_{\bar{z}_2}$ is physically at $k_{\bar{z}_2} - 1/2\rho$, and it is that physical wavenumber which enters the diffraction phase $\exp(i h (k_{\bar{x}}^2 + k_{\bar{y}}^2)/2k_{\bar{z}_2})$, the absorbing boundary, and the {\bf sFiltFrac} high-pass cutoff. Offsetting rather than freezing $k_{\bar{z}_2}$ at the carrier keeps diffraction frequency dependent across the envelope's band. The envelope's own $k_{\bar{z}_2} = 0$ mode is the carrier, and diffracts exactly as it would on a mesh that resolved it. The high-pass filter is then inert in averaged mode, since every representable mode lies within roughly $1/(2\times${\bf lambdarPerCell}$)$ of the carrier and so far above any sensible cutoff; that is the correct behaviour rather than a special case, as a cut placed at envelope $k_{\bar{z}_2} = 0$ would delete the carrier itself.
+The field arrays hold the envelope, so an array Fourier mode at $k_{\bar{z}_2}$ is physically at $k_{\bar{z}_2} - 1/2\rho$ - at $k_{\bar{z}_2} - h/2\rho$ in harmonic band $h$ - and it is that physical wavenumber which enters the diffraction phase $\exp(i h (k_{\bar{x}}^2 + k_{\bar{y}}^2)/2k_{\bar{z}_2})$, the absorbing boundary, and the {\bf sFiltFrac} high-pass cutoff. Offsetting rather than freezing $k_{\bar{z}_2}$ at the carrier keeps diffraction frequency dependent across the envelope's band. The envelope's own $k_{\bar{z}_2} = 0$ mode is the carrier, and diffracts exactly as it would on a mesh that resolved it. The high-pass filter is then inert in averaged mode, since every representable mode lies within roughly $1/(2\times${\bf lambdarPerCell}$)$ of the carrier and so far above any sensible cutoff; that is the correct behaviour rather than a special case, as a cut placed at envelope $k_{\bar{z}_2} = 0$ would delete the carrier itself.
 
 \subsubsection{What averaged mode refuses}
 
@@ -877,13 +904,17 @@ Rejected outright:
 
 \item {\bf A seed frequency outside the envelope band.} The mesh holds roughly $1 \pm 1/(2\times${\bf lambdarPerCell}$)$ of the resonant frequency, so a {\bf freqf} further off than that cannot be stored at all.
 
+\item {\bf avgHarmonics holding anything but distinct odd harmonics of 3 or more}: an even harmonic (no on-axis coupling to carry), $1$ (the fundamental is always carried) or anything below it, or the same harmonic twice. And {\bf avgHarmonics} set without {\bf qAveraged}: the unaveraged solver resolves harmonics on its mesh already.
+
 \end{itemize}
 
 Warned about, but allowed to run:
 
 \begin{itemize}
 
-\item {\bf A beam energy oscillation} ({\bf mag}) {\bf or energy spread wider than the band.} The resonant wavelength goes as $1/\gamma^2$, so a relative energy offset $\epsilon$ detunes the radiation by $2\epsilon$; beyond the band, part of the beam is outside the single carrier the mode carries. A two-colour case needs more than one carrier and is better run unaveraged.
+\item {\bf A beam energy oscillation} ({\bf mag}) {\bf or energy spread wider than the band.} The resonant wavelength goes as $1/\gamma^2$, so a relative energy offset $\epsilon$ detunes the radiation by $2\epsilon$; beyond the band, part of the beam is outside the single carrier the mode carries. A two-colour case needs more than one carrier and is better run unaveraged. With harmonic bands the same warning is given when $2h\epsilon$ leaves the band at the highest harmonic $h$ (Section~\ref{puff-avg-harm}).
+
+\item {\bf Too few macroparticles per wavelength for the highest harmonic band}, {\bf iMPsZ2PerWave} $\le 2h$: the band would be driven by the aliased bunching of a lower harmonic.
 
 \item {\bf Fewer than two z2 nodes per MPI rank.} Puffin then tries to duplicate the active field region on every rank instead of slab-decomposing it, and that path is currently broken - for the unaveraged solver too, it simply needs more ranks to reach. Use fewer ranks, a smaller {\bf lambdarPerCell}, or, on a periodic mesh, more {\bf sperwaves}.
 
@@ -899,13 +930,14 @@ Every Puffin dump - field, electron and integrated - records in its {\tt /runInf
 
 \begin{itemize}
 \item {\tt qAveraged} - $0$ or $1$.
-\item {\tt kz2Carrier} - the carrier the stored field is an envelope about. In averaged mode $A_c = \sqrt{2}\,\mathrm{Re}[B_c\, e^{i\,{\tt kz2Carrier}\,\bar{z}_2}]$, with $B_x$ and $B_y$ the two components of {\tt aperp}. It is zero for an unaveraged run, where {\tt aperp} already resolves the carrier.
-\item {\tt nFieldComp}, {\tt fieldCompMeaning} - how many complex components {\tt aperp} holds and what they are: one, $(A_x, -A_y)$, unaveraged; two, the rms envelopes $B_x$ and $B_y$, averaged.
+\item {\tt kz2Carrier} - the carrier the stored field is an envelope about. In averaged mode $A_c = \sqrt{2}\,\mathrm{Re}[B_c\, e^{i\,{\tt kz2Carrier}\,\bar{z}_2}]$, with $B_x$ and $B_y$ the first two components of {\tt aperp}; a harmonic band's carrier is $h$ times it. It is zero for an unaveraged run, where {\tt aperp} already resolves the carrier.
+\item {\tt nFieldComp}, {\tt fieldCompMeaning} - how many complex components {\tt aperp} holds and what they are: one, $(A_x, -A_y)$, unaveraged; averaged, the rms envelopes $B_x$ and $B_y$ of the fundamental, then $B^{(h)}_x$ and $B^{(h)}_y$ of each harmonic band in ascending order - two components without {\bf avgHarmonics}, six with {\bf avgHarmonics} $= 3, 5$.
+\item {\tt fieldCompHarmonic} - an integer array, one entry per component: the harmonic $h$ whose carrier $e^{-ih\bar{z}_2/2\rho}$ that component is an envelope about, so $1, 1, 3, 3, 5, 5$ for {\bf avgHarmonics} $= 3, 5$. A single $0$ unaveraged, where the one resolved component holds every harmonic the mesh can.
 \item {\tt lambdarPerCell} - the $\bar{z}_2$ cell size in resonant wavelengths, measured from the mesh rather than copied from the input parameter of the same name. Unaveraged that input is meaningless and the true figure is 1/({\bf nodesPerLambdar} $-$ 1); in averaged mode the mesh is rounded to a whole number of nodes, so a deck asking for $2.0$ may get $1.99776$. The attribute is always true about the file it sits in.
 \item {\tt pperpMeaning} - whether the electron $p_x$, $p_y$ columns carry the undulator quiver or only their slow, betatron part.
 \end{itemize}
 
-The plotting utilities in {\tt utilities/pyPlotting/} read these. In averaged mode they label the field as an envelope, plot spectra about the carrier rather than absolutely, and mark the band the envelope mesh can represent; power and intensity are numerically unchanged, since $|B_x|^2 + |B_y|^2$ is by construction the period average of $|A_\bot|^2$.
+The plotting utilities in {\tt utilities/pyPlotting/} read these. In averaged mode they label the field as an envelope, plot spectra about the carrier rather than absolutely, and mark the band the envelope mesh can represent; power and intensity are numerically unchanged, since $|B_x|^2 + |B_y|^2$ is by construction the period average of $|A_\bot|^2$. They do not yet separate the harmonic bands: {\tt /power} and {\tt /Intensity} sum every band, and the field viewers show the fundamental.
 
 \subsection{Full Magnetic Undulator Field Analytic Description}
 
@@ -1102,6 +1134,10 @@ Number of nodes in the field mesh to use in the longitudinal dimension per refer
 
 Longitudinal field mesh spacing in reference resonant wavelengths, used in place of {\bf nodesPerLambdar} in the period-averaged mode ({\bf qAveraged} $=$ .true.), where the mesh holds an envelope and need not resolve the resonant wavelength. The envelope bandwidth it can represent is roughly $\pm 1/(2\times${\bf lambdarPerCell}$)$ of the resonant frequency. Values of $1$--$2$ are typical. Ignored when {\bf qAveraged} is .false. [1.0]
 
+{\bf avgHarmonics}
+
+Integer list of up to 8 odd harmonics to carry in the period-averaged mode ({\bf qAveraged} $=$ .true.) as extra field bands beside the fundamental, for example {\bf avgHarmonics} $= 3, 5$. Each is an envelope about its own carrier, coupled through the on-axis harmonic coupling of Section~\ref{puff-avg-harm}, and adds two field components to the dumps. Entries must be distinct odd integers of 3 or more, in any order; unset entries are $0$ and ignored. Without it, the default, averaged mode carries the fundamental alone and reproduces earlier versions exactly. Rejected when {\bf qAveraged} is .false. {\bf iMPsZ2PerWave} must exceed twice the highest harmonic. Each band costs about as much computation again as the fundamental: on the 1D validation deck in {\tt benchmark/averaged} the 3rd and 5th bands together took the integration from 5.6\,s to 16.3\,s with output off, and the whole run, with an integrated write every period, from 33\,s to 45\,s. [none]
+
 {\bf sFModelLengthZ2}
 
 The full length of the field mesh in the longitudinal or temporal dimension. This must be long enough to contain the entire beam as it propagates through the undulator. It is auto-checked at the start of the simulation for the simple beam case only, and the check is only an estimate. [4.0]
@@ -1239,7 +1275,7 @@ Logical turning on/off the filtering of low frequency content during the siffrac
 
 {\bf qAveraged}
 
-Logical turning on/off the period-averaged (SVEA) solver mode, described in Section~\ref{puff-avg}. When {\bf .true.}, the field mesh holds the slowly varying envelope of the radiation about the resonant carrier rather than the resolved field, and the electron equations are averaged over an undulator period, with the quiver carried analytically. The mesh no longer has to resolve the resonant wavelength, and is set by {\bf lambdarPerCell}; the step no longer has to resolve the undulator period either, and {\bf stepsPerPeriod} $=1$ or $2$ is usually enough. It is an opt-in alternative to the unaveraged solver for regimes where averaging is valid: it discards coherent spontaneous emission from sharp current gradients, bandwidth beyond the envelope mesh's roughly $\pm 1/(2\times${\bf lambdarPerCell}$)$ of the resonant frequency, harmonics, and electrons far from resonance, for which the ponderomotive phase is no longer slow. Two-colour and strongly tapered cases fall in that last class. 1D and 3D, for any undulator polarisation; the undulator ends, if modelled, only ramp the coupling. Several inputs are rejected or warned about at setup in this mode, including HDF5 and MASP macroparticle input, HDF5 field input and {\bf qResume} - see Section~\ref{puff-avg-refuses} for the full list and the reasons. [.false.]
+Logical turning on/off the period-averaged (SVEA) solver mode, described in Section~\ref{puff-avg}. When {\bf .true.}, the field mesh holds the slowly varying envelope of the radiation about the resonant carrier rather than the resolved field, and the electron equations are averaged over an undulator period, with the quiver carried analytically. The mesh no longer has to resolve the resonant wavelength, and is set by {\bf lambdarPerCell}; the step no longer has to resolve the undulator period either, and {\bf stepsPerPeriod} $=1$ or $2$ is usually enough. It is an opt-in alternative to the unaveraged solver for regimes where averaging is valid: it discards coherent spontaneous emission from sharp current gradients, bandwidth beyond the envelope mesh's roughly $\pm 1/(2\times${\bf lambdarPerCell}$)$ of the resonant frequency, harmonics other than the odd ones asked for with {\bf avgHarmonics}, and electrons far from resonance, for which the ponderomotive phase is no longer slow. Two-colour and strongly tapered cases fall in that last class. 1D and 3D, for any undulator polarisation; the undulator ends, if modelled, only ramp the coupling. Several inputs are rejected or warned about at setup in this mode, including HDF5 and MASP macroparticle input, HDF5 field input and {\bf qResume} - see Section~\ref{puff-avg-refuses} for the full list and the reasons. [.false.]
 
 {\bf ioutinfo}
 
@@ -1378,7 +1414,7 @@ Array of integers of size {\bf nbeams}. This chooses the beam loading algorithm.
 
 {\bf iMPsZ2PerWave}
 
-Array of integers of size {\bf nbeams}, describing the number of macroparticle `slices' per resonant wavelength to use for each beam. In the case of {\bf TrLdMeth} $= 0$ (equispaced loading method), the resultant total number of macroparticles will overwrite the value in the $\bar{z}_2$ segment of iNumMPs. [$4$]
+Array of integers of size {\bf nbeams}, describing the number of macroparticle `slices' per resonant wavelength to use for each beam. In the case of {\bf TrLdMeth} $= 0$ (equispaced loading method), the resultant total number of macroparticles will overwrite the value in the $\bar{z}_2$ segment of iNumMPs. To resolve harmonic $h$ - radiated by the unaveraged solver, or carried by {\bf avgHarmonics} in averaged mode - it must exceed $2h$. [$4$]
 
 {\bf nseqparts}
 

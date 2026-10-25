@@ -7,9 +7,16 @@ The unaveraged field A_perp = A_x - i A_y is demodulated onto the averaged
 mode's two rms Cartesian envelopes (see puffin/lib/undulator/averaging.f90):
 A_c = sqrt(2) Re[B_c exp(-i z2/2rho)], so B_c = sqrt(2) <A_c exp(+i z2/2rho)>,
 averaged over exactly one resonant wavelength.  Both are compared node by node
-with the averaged run's stored envelopes, whatever the undulator polarisation.  Power vs z is compared through the integrated
-files, as the mean of /power over the middle 30% of the mesh (the flat top);
-in the unaveraged planar case |A|^2 ripples at 2k_r, which that mean removes.
+with the averaged run's stored envelopes, whatever the undulator polarisation.
+Power vs z is compared through the integrated files, as the mean of /power
+over the middle 30% of the mesh (the flat top); in the unaveraged planar case
+|A|^2 ripples at 2k_r, which that mean removes.
+
+If the averaged run carries harmonic bands (avgHarmonics; /runInfo
+fieldCompHarmonic), each is compared at every /aperp write the two runs share
+against the unaveraged field demodulated the same way at exp(+i h z2/2rho):
+B_c^(h) = sqrt(2) <A_c exp(+i h z2/2rho)>.  The one-wavelength window has
+exact nulls at every other harmonic, so each band is isolated.
 
 Pure standard library: fields are pulled out with `h5dump -b LE`.
 """
@@ -47,6 +54,29 @@ def attr(path, name, default=None):
             raise KeyError("%s has no attribute %s" % (path, name))
         return default
     return float(m.group(1))
+
+
+def attr_list(path, name):
+    """An array attribute, as a list of numbers, or None if it is absent."""
+    attr(path, "zbarTotal")      # fills the cache
+    m = re.search(r'ATTRIBUTE "%s" \{.*?DATA \{\s*\(0\): ([^}]*)\}' % name,
+                  _ATTRS[path], re.S)
+    if m is None:
+        return None
+    return [float(v) for v in re.sub(r"\(\d+\):", "", m.group(1)).replace(",", " ").split()]
+
+
+def comp_harmonics(d, k):
+    """The harmonic of each field component of write k: 0 for a resolved field,
+    [1, 1] for an averaged run without harmonic bands, [1, 1, 3, 3, ...] with.
+    Dumps written before fieldCompHarmonic existed carry the fundamental only.
+    """
+    p = os.path.join(d, "run_aperp_%d.h5" % k)
+    h = attr_list(p, "fieldCompHarmonic")
+    if h is None:
+        nc = int(attr(p, "nFieldComp", 1))
+        return [1] * nc if attr(p, "qAveraged", 0.0) > 0.5 else [0] * nc
+    return [int(x) for x in h]
 
 
 def last_index(d, stem):
@@ -97,13 +127,23 @@ def cart_env(Ap, dzp, rho):
             demod(ay, dzp, rho, nper, math.sqrt(2.0))]
 
 
-def demod(A, dz2, rho, nper, fac):
-    """Envelope of the exp(-i z2/2rho) component, trapezoid over one wavelength.
+def cart_env_h(Ap, dzp, rho, h):
+    """[B_x^(h), B_y^(h)], harmonic band h of an unaveraged A_perp."""
+    nper = int(round(4 * math.pi * rho / dzp))
+    ax = [a.real for a in Ap]
+    ay = [-a.imag for a in Ap]
+    return [demod(ax, dzp, rho, nper, math.sqrt(2.0), h),
+            demod(ay, dzp, rho, nper, math.sqrt(2.0), h)]
+
+
+def demod(A, dz2, rho, nper, fac, h=1):
+    """Envelope of the exp(-i h z2/2rho) component, trapezoid over one wavelength.
 
     The window must span exactly one wavelength (nper cells), or the 2k term
-    of a linearly polarised field does not cancel.
+    of a linearly polarised field does not cancel; over one wavelength every
+    other harmonic, and every image, averages out too.
     """
-    env = [fac * a * cmath.exp(1j * i * dz2 / (2 * rho)) for i, a in enumerate(A)]
+    env = [fac * a * cmath.exp(1j * h * i * dz2 / (2 * rho)) for i, a in enumerate(A)]
     h = nper // 2
     out = []
     for c in range(len(env)):
@@ -155,6 +195,37 @@ def metrics(plain, avg, rho):
     return math.sqrt(num / den), rows, power
 
 
+def harmonic_power(plain, avg, rho):
+    """Mid-bunch |B^(h)|^2 against zbar, per band of the averaged run.
+
+    Returns (harmonics, rows), rows (k, zbar, {h: (plain, avg)}) for every
+    /aperp write the two runs share.  |B^(h)|^2 is summed over x and y and
+    averaged over the middle 30% of the averaged mesh's z2 extent; the same z2
+    window is used for the unaveraged field.  Empty if the averaged run
+    carries the fundamental alone.
+    """
+    ks = sorted(set(last_index(plain, "aperp")) & set(last_index(avg, "aperp")))
+    harm = sorted(set(comp_harmonics(avg, ks[-1])))
+    rows = []
+    for k in ks:
+        Ap, dzp, zb = field_comps(plain, k)
+        Aa, dza, _ = field_comps(avg, k)
+        ha = comp_harmonics(avg, k)
+        lo, hi = 0.35 * len(Aa[0]) * dza, 0.65 * len(Aa[0]) * dza
+        out = {}
+        for h in harm:
+            env = cart_env_h(Ap[0], dzp, rho, h)
+            pp = [sum(abs(env[c][i]) ** 2 for c in range(2))
+                  for i in range(len(env[0]))
+                  if lo <= i * dzp <= hi and env[0][i] is not None]
+            cs = [c for c in range(len(ha)) if ha[c] == h]
+            pa = [sum(abs(Aa[c][j]) ** 2 for c in cs)
+                  for j in range(len(Aa[0])) if lo <= j * dza <= hi]
+            out[h] = (sum(pp) / len(pp), sum(pa) / len(pa))
+        rows.append((k, zb, out))
+    return harm, rows
+
+
 def main():
     plain, avg, rho = sys.argv[1], sys.argv[2], float(sys.argv[3])
 
@@ -169,6 +240,22 @@ def main():
     print("  write   P plain      P avg      avg/plain")
     for k, pp, pa in power:
         print("  %4d  %11.4e  %11.4e  %8.4f" % (k, pp, pa, pa / pp if pp else float("nan")))
+
+    harm, rows = harmonic_power(plain, avg, rho)
+    if len(harm) > 1:
+        print()
+        print_harmonics(harm, rows)
+
+
+def print_harmonics(harm, rows):
+    """Band power table, |B^(h)|^2 mid-bunch, unaveraged and averaged."""
+    print("  zbar   " + "".join("   h=%d plain     h=%d avg   ratio " % (h, h) for h in harm))
+    for k, zb, out in rows:
+        line = "  %5.2f " % zb
+        for h in harm:
+            pp, pa = out[h]
+            line += "  %10.4e  %10.4e  %6.4f" % (pp, pa, pa / pp if pp else float("nan"))
+        print(line)
 
 
 if __name__ == "__main__":

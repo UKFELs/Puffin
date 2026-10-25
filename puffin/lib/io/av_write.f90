@@ -69,7 +69,9 @@ contains
 !     Averaged it is both Cartesian envelopes. They are normalised so that
 !     |B_c|^2 is the period average of A_c^2 (A_c = sqrt(2) Re[B_c exp(-i psi)],
 !     see averaging.f90), so |B_x|^2 + |B_y|^2 is the cycle-averaged |A_perp|^2
-!     with no further factor.
+!     with no further factor. Harmonic bands, if carried, are summed in too:
+!     products of bands at different carriers average to zero, so the total is
+!     the cycle-averaged |A_perp|^2 of all of them together.
 
       fr_power = 0.0_wp
       ac_power = 0.0_wp

@@ -54,7 +54,7 @@ contains
     real(kind=wp) :: time,stime,ftime !<Simulation time, calcualted here
     real(kind=wp) :: PowScale !< Scaling factor for power
     integer(kind=ip) :: ic, icr, ici, inew !< field component, its two dataset slots, create flag
-    character(2) :: cSfx !< per-component dataset-name suffix, empty with one component
+    character(8) :: cSfx !< per-component dataset-name suffix, empty with one component
     error = 0
     slicetrim=(4*pi*ctx%frame%rho*nslices)-ctx%mesh%dz2*ctx%mesh%nz2
 
@@ -167,16 +167,21 @@ contains
           call cpu_time(stime)
 
 !         With one component the dataset names are unchanged, so existing
-!         readers are unaffected. With two they gain _x and _y.
+!         readers are unaffected. With two they gain _x and _y, and averaged
+!         mode's harmonic bands _h3x, _h3y and so on.
 
           do ic = 1, ctx%field%nComp
 
             if (ctx%field%nComp == 1_ip) then
-              cSfx = "  "
+              cSfx = " "
             else if (ic == 1_ip) then
               cSfx = "_x"
-            else
+            else if (ic == 2_ip) then
               cSfx = "_y"
+            else if (mod(ic, 2_ip) == 1_ip) then
+              write(cSfx, '("_h", i0, "x")') ctx%field%bandHarm((ic + 1_ip) / 2_ip)
+            else
+              write(cSfx, '("_h", i0, "y")') ctx%field%bandHarm((ic + 1_ip) / 2_ip)
             end if
 
             call outputH5Field3DID(time, sz_loc, iL, error, ctx%field%tlflen, &

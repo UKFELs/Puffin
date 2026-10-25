@@ -18,6 +18,9 @@
 !! mismatched JJ, alpha or phase factor between getSource_1D and dgamdz_f
 !! leaks energy while looking perfectly plausible).
 !!
+!! Both kinds are run for the odd-harmonic bands as well, which brute force
+!! checks by projecting onto exp(+i h z2/2rho) instead.
+!!
 !! No MPI.
 
 module testAveraging
@@ -27,8 +30,9 @@ module testAveraging
   use puffin_constants, only: pi
   use GlobalTypes, only: tUndulator, tFELFrame, tSimulationContext
   use averaging, only: tAvgCoupling, getAvgUndAmps, getAvgPolarisation, &
-                       getAvgEnvelope, getAvgCoupling, avgJJ, getResonantMomentum, &
-                       tAvgFocusing, getAvgFocusCoef, getAvgFocusing, getAvgCarrierKz2
+                       getAvgEnvelope, getAvgCoupling, avgJJ, avgJJh, getResonantMomentum, &
+                       tAvgFocusing, getAvgFocusCoef, getAvgFocusing, getAvgCarrierKz2, &
+                       getAvgBands
   use gtop2, only: getP2, getP2Avg
 
   implicit none
@@ -137,22 +141,26 @@ contains
 
 
   !> Period averages of the exact coupling, by brute force, and the averaged
-  !! model's prediction for the same quantities, per Cartesian component.
+  !! model's prediction for the same quantities, per Cartesian component, for
+  !! the band at harmonic h = iH.
   !!
-  !! srcX, srcY = sqrt(2) < w p_c exp(+i z2/2rho) >, the drive of the stored
-  !!              envelope B_c of A_c = sqrt(2) Re[B_c exp(-i z2/2rho)]
+  !! srcX, srcY = sqrt(2) < w p_c exp(+i h z2/2rho) >, the drive of the stored
+  !!              envelope B_c of A_c = sqrt(2) Re[B_c exp(-i h z2/2rho)]
   !!              (w = (1 + eta p2)/Gamma)
   !! eng        = < w (p_x A_x + p_y A_y) > = < w Re(pperp conj(A_perp)) >, the
   !!              energy-equation coupling, for the field built from Bx, By
   !!
   !! The model side calls getResonantMomentum itself, so the solver's own
   !! q_x, q_y - phase, sign and Bessel factors - are what is being checked.
-  subroutine bruteForce(und, frame, gam, Bx, By, &
+  !! At h = 1 that is the fundamental's own path, with no band list, and
+  !! otherwise the band's columns of a [1, h] layout.
+  subroutine bruteForce(und, frame, gam, iH, Bx, By, &
                         srcX, srcY, eng, &
                         srcXM, srcYM, engM, p2Mean, p2Model)
     type(tUndulator), intent(in) :: und
     type(tFELFrame), intent(in) :: frame
     real(kind=wp), intent(in) :: gam
+    integer(kind=ip), intent(in) :: iH
     complex(kind=wp), intent(in) :: Bx, By
     complex(kind=wp), intent(out) :: srcX, srcY, srcXM, srcYM
     real(kind=wp), intent(out) :: eng, engM, p2Mean, p2Model
@@ -163,10 +171,10 @@ contains
     complex(kind=wp), allocatable, dimension(:) :: qx, qy, f
     real(kind=wp) :: cx, cy, lamw, h, inv2rho, centre
     type(tAvgCoupling) :: cpl
-    real(kind=wp) :: wbar, p2m(1), gm(1), zero(1), zc1(1)
-    real(kind=wp) :: qr(1,2), qi(1,2)
+    real(kind=wp) :: wbar, p2m(1), gm(1), zero(1), zc1(1), hr
+    real(kind=wp) :: qr(1,4), qi(1,4)
     complex(kind=wp), parameter :: iu = (0.0_wp, 1.0_wp)
-    integer :: i
+    integer :: i, icx
 
     allocate(z(0:n), px(0:n), py(0:n), g(0:n), p2(0:n), z2(0:n), zc(0:n), w(0:n))
     allocate(ax(0:n), ay(0:n), qx(0:n), qy(0:n), f(0:n))
@@ -209,12 +217,14 @@ contains
 
 !   The physical field seen at the particle's true position
 
-    ax = sqrt(2.0_wp) * real(Bx * exp(-iu * z2 * inv2rho), kind=wp)
-    ay = sqrt(2.0_wp) * real(By * exp(-iu * z2 * inv2rho), kind=wp)
+    hr = real(iH, kind=wp)
 
-    f = sqrt(2.0_wp) * w * px * exp(iu * z2 * inv2rho)
+    ax = sqrt(2.0_wp) * real(Bx * exp(-iu * hr * z2 * inv2rho), kind=wp)
+    ay = sqrt(2.0_wp) * real(By * exp(-iu * hr * z2 * inv2rho), kind=wp)
+
+    f = sqrt(2.0_wp) * w * px * exp(iu * hr * z2 * inv2rho)
     srcX = avgW(f)
-    f = sqrt(2.0_wp) * w * py * exp(iu * z2 * inv2rho)
+    f = sqrt(2.0_wp) * w * py * exp(iu * hr * z2 * inv2rho)
     srcY = avgW(f)
     f = cmplx(w * (px * ax + py * ay), 0.0_wp, kind=wp)
     eng = real(avgW(f), kind=wp)
@@ -230,11 +240,20 @@ contains
     p2Model = p2m(1)
     wbar = (1.0_wp + frame%eta * p2Model) / gam
 
+    icx = 1
+    if (iH > 1_ip) icx = 3
+
     do i = 0, n
       zc1 = zc(i)
-      call getResonantMomentum(z(i), zc1, gm, p2m, frame%eta, frame%rho, cpl, qr, qi)
-      qx(i) = cmplx(qr(1,1), qi(1,1), kind=wp)
-      qy(i) = cmplx(qr(1,2), qi(1,2), kind=wp)
+      if (iH == 1_ip) then
+        call getResonantMomentum(z(i), zc1, gm, p2m, frame%eta, frame%rho, cpl, &
+                                 qr(:,1:2), qi(:,1:2))
+      else
+        call getResonantMomentum(z(i), zc1, gm, p2m, frame%eta, frame%rho, cpl, &
+                                 qr, qi, [1_ip, iH])
+      end if
+      qx(i) = cmplx(qr(1,icx), qi(1,icx), kind=wp)
+      qy(i) = cmplx(qr(1,icx+1), qi(1,icx+1), kind=wp)
     end do
 
     srcXM = wbar * avgW(qx)
@@ -245,27 +264,45 @@ contains
   end subroutine bruteForce
 
 
-  !> Compare brute force and model for one undulator and energy.  The model
-  !! drops the O(eta) ripple in (1 + eta p2), so 1e-5 relative is as close as
-  !! it can be expected to get; any error in a Bessel factor, an amplitude or
-  !! the carrier sign is O(1e-1) or O(1).  The two field components are
-  !! deliberately unrelated, so the energy check sees both couplings at once.
-  subroutine checkAgainstBruteForce(undType, fx, fy, gam)
+  !> Compare brute force and model for one undulator and energy, at harmonic
+  !! h (1 if absent).  The model drops the O(eta) ripple in (1 + eta p2), so
+  !! 1e-5 relative is as close as it can be expected to get; any error in a
+  !! Bessel factor, an amplitude or the carrier sign is O(1e-1) or O(1).  The
+  !! two field components are deliberately unrelated, so the energy check
+  !! sees both couplings at once.
+  !!
+  !! The scale is the fundamental's, so a harmonic coupling that should vanish
+  !! (any harmonic of a helical undulator) is checked to be small against what
+  !! the fundamental would be, rather than against itself.
+  subroutine checkAgainstBruteForce(undType, fx, fy, gam, h)
     character(*), intent(in) :: undType
     real(kind=wp), intent(in) :: fx, fy, gam
+    integer(kind=ip), intent(in), optional :: h
 
     type(tUndulator) :: und
     type(tFELFrame) :: frame
-    complex(kind=wp) :: srcX, srcY, srcXM, srcYM
-    real(kind=wp) :: eng, engM, p2Mean, p2Model, scale
+    complex(kind=wp) :: srcX, srcY, srcXM, srcYM, s1x, s1y, s1xM, s1yM
+    real(kind=wp) :: eng, engM, p2Mean, p2Model, scale, e1, e1M
     complex(kind=wp), parameter :: Bx = (0.3_wp, 0.7_wp), By = (-0.5_wp, 0.2_wp)
     real(kind=wp), parameter :: tol = 1.0e-5_wp
+    integer(kind=ip) :: hh
+
+    hh = 1_ip
+    if (present(h)) hh = h
 
     call makeUnd(und, frame, undType, fx, fy)
-    call bruteForce(und, frame, gam, Bx, By, srcX, srcY, eng, &
-                    srcXM, srcYM, engM, p2Mean, p2Model)
+    call bruteForce(und, frame, gam, 1_ip, Bx, By, s1x, s1y, e1, &
+                    s1xM, s1yM, e1M, p2Mean, p2Model)
 
-    scale = max(abs(srcXM), abs(srcYM))
+    scale = max(abs(s1xM), abs(s1yM))
+
+    if (hh == 1_ip) then
+      srcX = s1x; srcY = s1y; eng = e1
+      srcXM = s1xM; srcYM = s1yM; engM = e1M
+    else
+      call bruteForce(und, frame, gam, hh, Bx, By, srcX, srcY, eng, &
+                      srcXM, srcYM, engM, p2Mean, p2Model)
+    end if
 
     @assertEqual(real(srcXM, kind=wp), real(srcX, kind=wp), tol * scale)
     @assertEqual(aimag(srcXM), aimag(srcX), tol * scale)
@@ -405,6 +442,145 @@ contains
   subroutine testOppositeHelicityMatchesBruteForce()
     call checkAgainstBruteForce("", -1.0_wp, 1.0_wp, 1.0_wp)
   end subroutine testOppositeHelicityMatchesBruteForce
+
+
+  !> The odd-harmonic bands, h = 3 and 5, against the same brute force
+  !! projected onto exp(+i h z2/2rho).  Planar and linear-along-y drive one
+  !! component each, through (-1)^m [J_m(h xi) -+ J_(m+1)(h xi)], m = (h-1)/2;
+  !! elliptical drives both with different factors; helical has xi = 0 and no
+  !! on-axis harmonic coupling, which the brute force has to agree with too.
+  @test
+  subroutine testPlanarHarmonicsMatchBruteForce()
+    call checkAgainstBruteForce("planepole", 1.0_wp, 1.0_wp, 1.0_wp, 3_ip)
+    call checkAgainstBruteForce("planepole", 1.0_wp, 1.0_wp, 0.996_wp, 3_ip)
+    call checkAgainstBruteForce("planepole", 1.0_wp, 1.0_wp, 1.0_wp, 5_ip)
+    call checkAgainstBruteForce("planepole", 1.0_wp, 1.0_wp, 1.004_wp, 5_ip)
+  end subroutine testPlanarHarmonicsMatchBruteForce
+
+
+  @test
+  subroutine testVerticalPlanarHarmonicsMatchBruteForce()
+    call checkAgainstBruteForce("", 1.0_wp, 0.0_wp, 1.0_wp, 3_ip)
+    call checkAgainstBruteForce("", 1.0_wp, 0.0_wp, 1.004_wp, 5_ip)
+  end subroutine testVerticalPlanarHarmonicsMatchBruteForce
+
+
+  @test
+  subroutine testEllipticalHarmonicsMatchBruteForce()
+    call checkAgainstBruteForce("", 0.5_wp, 1.0_wp, 1.0_wp, 3_ip)
+    call checkAgainstBruteForce("", 0.5_wp, 1.0_wp, 0.996_wp, 5_ip)
+    call checkAgainstBruteForce("", 1.0_wp, 0.6_wp, 1.0_wp, 3_ip)
+    call checkAgainstBruteForce("", 1.0_wp, 0.6_wp, 1.004_wp, 5_ip)
+  end subroutine testEllipticalHarmonicsMatchBruteForce
+
+
+  @test
+  subroutine testHelicalHarmonicsMatchBruteForce()
+    call checkAgainstBruteForce("helical", 1.0_wp, 1.0_wp, 1.0_wp, 3_ip)
+    call checkAgainstBruteForce("helical", 1.0_wp, 1.0_wp, 1.004_wp, 5_ip)
+    call checkAgainstBruteForce("", -1.0_wp, 1.0_wp, 1.0_wp, 3_ip)
+  end subroutine testHelicalHarmonicsMatchBruteForce
+
+
+  !> For planepole the harmonic Bessel factors must reduce to the textbook
+  !! JJ_h = J_m(h xi) - J_(m+1)(h xi), xi = K^2/(4 + 2K^2), up to the (-1)^m
+  !! sign, and the harmonic couplings must not be trivially small - the
+  !! brute-force checks above would pass a band that was zero everywhere for
+  !! helical only.
+  @test
+  subroutine testPlanarHarmonicJJIsTextbook()
+    type(tUndulator) :: und
+    type(tFELFrame) :: frame
+    type(tAvgCoupling) :: cpl
+    real(kind=wp) :: xi, onePlusEtaP2, jjX, jjY
+    integer(kind=ip) :: h
+
+    call makeUnd(und, frame, "planepole", 1.0_wp, 1.0_wp)
+    call getAvgCoupling(1.0_wp, und, frame, cpl)
+
+    xi = frame%aw**2 / (4.0_wp + 2.0_wp * frame%aw**2)
+    onePlusEtaP2 = 1.0_wp + frame%eta
+
+    h = 3_ip
+    call avgJJh(cpl, h, onePlusEtaP2, 1.0_wp, jjX, jjY)
+    @assertEqual(-(bessel_jn(1, 3.0_wp * xi) - bessel_jn(2, 3.0_wp * xi)), jjX, 1.0e-4_wp)
+    @assertTrue(abs(jjX) > 0.15_wp)
+
+    h = 5_ip
+    call avgJJh(cpl, h, onePlusEtaP2, 1.0_wp, jjX, jjY)
+    @assertEqual(bessel_jn(2, 5.0_wp * xi) - bessel_jn(3, 5.0_wp * xi), jjX, 1.0e-4_wp)
+    @assertTrue(abs(jjX) > 0.05_wp)
+
+  end subroutine testPlanarHarmonicJJIsTextbook
+
+
+  !> Asking for harmonic bands must leave the fundamental exactly as it was:
+  !! getResonantMomentum's columns 1 and 2 bit for bit, and avgJJh at h = 1
+  !! equal to avgJJ (to round-off, since bessel_jn and bessel_j0/j1 are
+  !! different routines, which is why the fundamental keeps avgJJ).  And the
+  !! band layout puts the fundamental first and the rest in ascending order.
+  @test
+  subroutine testHarmonicsLeaveFundamental()
+    type(tUndulator) :: und
+    type(tFELFrame) :: frame
+    type(tAvgCoupling) :: cpl
+    real(kind=wp), dimension(3) :: sz2, sgam, sp2
+    real(kind=wp) :: qr(3,2), qi(3,2), qrH(3,6), qiH(3,6)
+    real(kind=wp) :: jx, jy, jxh, jyh
+    integer(kind=ip), allocatable :: bands(:)
+    integer(kind=ip) :: harmIn(8)
+    character(len=9), parameter :: types(3) = ["planepole", "helical  ", "         "]
+    integer :: k
+
+    sz2 = [0.11_wp, 0.52_wp, 0.93_wp]
+    sgam = [1.0_wp, 1.003_wp, 0.996_wp]
+    sp2 = [1.0_wp, 0.98_wp, 1.01_wp]
+
+    do k = 1, 3
+
+      call makeUnd(und, frame, trim(types(k)), 0.5_wp, 1.0_wp)
+      call getAvgCoupling(0.4_wp, und, frame, cpl)
+
+      call getResonantMomentum(0.4_wp, sz2, sgam, sp2, frame%eta, frame%rho, cpl, qr, qi)
+      call getResonantMomentum(0.4_wp, sz2, sgam, sp2, frame%eta, frame%rho, cpl, &
+                               qrH, qiH, [1_ip, 3_ip, 5_ip])
+
+      @assertEqual(0.0_wp, maxval(abs(qrH(:,1:2) - qr)), 0.0_wp)
+      @assertEqual(0.0_wp, maxval(abs(qiH(:,1:2) - qi)), 0.0_wp)
+
+      call avgJJ(cpl, 1.02_wp, 0.99_wp, jx, jy)
+      call avgJJh(cpl, 1_ip, 1.02_wp, 0.99_wp, jxh, jyh)
+      @assertEqual(jx, jxh, 1.0e-15_wp)
+      @assertEqual(jy, jyh, 1.0e-15_wp)
+
+      if (k == 2) then
+
+!       Helical: no on-axis harmonic coupling, exactly
+
+        @assertEqual(0.0_wp, maxval(abs(qrH(:,3:6))), 0.0_wp)
+        @assertEqual(0.0_wp, maxval(abs(qiH(:,3:6))), 0.0_wp)
+
+      else
+
+        @assertTrue(maxval(abs(qrH(:,3:6))) > 0.01_wp)
+
+      end if
+
+    end do
+
+    harmIn = 0_ip
+    call getAvgBands(harmIn, bands)
+    @assertEqual(1, size(bands))
+    @assertEqual(1, bands(1))
+
+    harmIn(2) = 5_ip
+    harmIn(5) = 3_ip
+    harmIn(6) = 9_ip
+    call getAvgBands(harmIn, bands)
+    @assertEqual(4, size(bands))
+    @assertEqual([1, 3, 5, 9], bands)
+
+  end subroutine testHarmonicsLeaveFundamental
 
 
   !> For planepole JJ must reduce to the textbook J0(xi) - J1(xi) with
@@ -562,7 +738,9 @@ contains
   !! mode is the carrier itself.
   @test
   subroutine testCarrierOffset()
-    @assertEqual(-100.0_wp, getAvgCarrierKz2(0.005_wp), 1.0e-12_wp)
+    @assertEqual(-100.0_wp, getAvgCarrierKz2(0.005_wp, 1_ip), 1.0e-12_wp)
+    @assertEqual(-300.0_wp, getAvgCarrierKz2(0.005_wp, 3_ip), 1.0e-12_wp)
+    @assertEqual(-500.0_wp, getAvgCarrierKz2(0.005_wp, 5_ip), 1.0e-12_wp)
   end subroutine testCarrierOffset
 
 
@@ -576,7 +754,7 @@ contains
 
     use Globals, only: qAveraged_G, sLambdarPerCell_G, iInputType_G, iGenHom_G, &
                        iReadH5_G, iReadMASP_G, iFieldSeedType_G, iSimpleSeed_G, &
-                       iReadH5Field_G
+                       iReadH5Field_G, iAvgHarmonics_G
     use checks, only: chkAveraged
 
     real(kind=wp) :: freqf(1), sSigE(1, 6), mag(1)
@@ -586,6 +764,7 @@ contains
     sSigE = 0.0_wp
     mag = 0.0_wp
 
+    iAvgHarmonics_G = 0_ip
     qAveraged_G = .true.
     sLambdarPerCell_G = 1.0_wp
     iInputType_G = iGenHom_G
@@ -652,6 +831,81 @@ contains
   end subroutine testAveragedGuards
 
 
+  !> avgHarmonics: distinct odd harmonics of 3 or more, in any order, and
+  !! only with the mode on.  Each wrong form is rejected on its own.
+  @test
+  subroutine testAveragedHarmonicGuards()
+
+    use Globals, only: qAveraged_G, sLambdarPerCell_G, iInputType_G, iGenHom_G, &
+                       iFieldSeedType_G, iSimpleSeed_G, iAvgHarmonics_G
+    use checks, only: chkAveraged
+
+    real(kind=wp) :: freqf(1), sSigE(1, 6), mag(1)
+    logical :: qOK
+
+    freqf = 1.0_wp
+    sSigE = 0.0_wp
+    mag = 0.0_wp
+
+    qAveraged_G = .true.
+    sLambdarPerCell_G = 1.0_wp
+    iInputType_G = iGenHom_G
+    iFieldSeedType_G = iSimpleSeed_G
+
+!   Valid: none, the 3rd and 5th in either order, unused entries anywhere
+
+    iAvgHarmonics_G = 0_ip
+    call chkAveraged(.false., 64_ip, freqf, sSigE, mag, qOK)
+    @assertTrue(qOK)
+
+    iAvgHarmonics_G(1:2) = [3_ip, 5_ip]
+    call chkAveraged(.false., 64_ip, freqf, sSigE, mag, qOK)
+    @assertTrue(qOK)
+
+    iAvgHarmonics_G = 0_ip
+    iAvgHarmonics_G(2) = 5_ip
+    iAvgHarmonics_G(4) = 3_ip
+    call chkAveraged(.false., 64_ip, freqf, sSigE, mag, qOK)
+    @assertTrue(qOK)
+
+!   Even
+
+    iAvgHarmonics_G = 0_ip
+    iAvgHarmonics_G(1:2) = [3_ip, 4_ip]
+    call chkAveraged(.false., 64_ip, freqf, sSigE, mag, qOK)
+    @assertFalse(qOK)
+
+!   Below 3: the fundamental itself, and nonsense
+
+    iAvgHarmonics_G(1:2) = [1_ip, 3_ip]
+    call chkAveraged(.false., 64_ip, freqf, sSigE, mag, qOK)
+    @assertFalse(qOK)
+
+    iAvgHarmonics_G(1:2) = [-3_ip, 5_ip]
+    call chkAveraged(.false., 64_ip, freqf, sSigE, mag, qOK)
+    @assertFalse(qOK)
+
+!   Duplicates
+
+    iAvgHarmonics_G(1:3) = [3_ip, 5_ip, 3_ip]
+    call chkAveraged(.false., 64_ip, freqf, sSigE, mag, qOK)
+    @assertFalse(qOK)
+
+!   Valid harmonics, but the mode is off
+
+    iAvgHarmonics_G = 0_ip
+    iAvgHarmonics_G(1:2) = [3_ip, 5_ip]
+    qAveraged_G = .false.
+    call chkAveraged(.false., 64_ip, freqf, sSigE, mag, qOK)
+    @assertFalse(qOK)
+
+    iAvgHarmonics_G = 0_ip
+    call chkAveraged(.false., 64_ip, freqf, sSigE, mag, qOK)
+    @assertTrue(qOK)
+
+  end subroutine testAveragedHarmonicGuards
+
+
   !> Coupling ramps linearly over the 2-period end sections, as the by field does.
   @test
   subroutine testEnvelopeRamps()
@@ -686,7 +940,12 @@ contains
   !! deposition share their weights, and the source and the energy equation
   !! share q_c, for each of the two Cartesian envelopes.  The two are given
   !! unrelated fields, so a coupling that leaks between them shows up.
-  subroutine checkRhsEnergyBalance(undType, fx, fy, grad, qEnds, sZ, qOneD)
+  !!
+  !! With harm, the field carries harmonic bands as well, [1, harm], every
+  !! component with its own unrelated field, and the balance is summed over
+  !! all of them; the harmonic bands' own source is checked to be non-trivial
+  !! wherever the undulator has on-axis harmonic coupling, and zero for helical.
+  subroutine checkRhsEnergyBalance(undType, fx, fy, grad, qEnds, sZ, qOneD, harm)
 
     use Globals, only: sLengthOfElmX_G, sLengthOfElmY_G, sLengthOfElmZ2_G, NX_G, NY_G, &
                        NZ2_G, nspinDX, nspinDY, ntrndsi_G, fieldMesh, iTemporal, &
@@ -698,16 +957,17 @@ contains
     character(*), intent(in) :: undType
     real(kind=wp), intent(in) :: fx, fy, grad, sZ
     logical, intent(in) :: qEnds, qOneD
+    integer(kind=ip), intent(in), optional :: harm(:)
 
     type(tSimulationContext) :: ctx
     integer, parameter :: ne = 7, nz = 16, ntr = 25
     real(kind=wp), allocatable :: sAr(:,:), sAi(:,:), dAr(:,:), dAi(:,:)   ! (node, envelope)
     real(kind=wp), dimension(ne) :: sx, sy, sz2, spr, spi, sgam, &
                                     sdx, sdy, sdz2, sdpr, sdpi, sdgam
-    real(kind=wp) :: dz2v, dxv, dyv, dV3v, fieldRate, beamRate
-    integer :: nf
+    real(kind=wp) :: dz2v, dxv, dyv, dV3v, fieldRate, beamRate, harmSrc
+    integer :: nf, nc
     logical :: qOK
-    integer :: j
+    integer :: j, ic
 
     call makeUnd(ctx%und, ctx%frame, undType, fx, fy)
     ctx%und%undulator_gradient = grad
@@ -755,9 +1015,14 @@ contains
     ctx%field%bz2 = nz
 
     nf = ntrndsi_G * nz
-    ctx%field%nComp = 2
-    ctx%field%nEnv = 2
-    allocate(sAr(nf,2), sAi(nf,2), dAr(nf,2), dAi(nf,2))
+    nc = 2
+    if (present(harm)) then
+      ctx%field%bandHarm = [1_ip, harm]
+      nc = 2 * size(ctx%field%bandHarm)
+    end if
+    ctx%field%nComp = nc
+    ctx%field%nEnv = nc
+    allocate(sAr(nf,nc), sAi(nf,nc), dAr(nf,nc), dAi(nf,nc))
 
     qElectronsEvolve_G = .true.
     qFieldEvolve_G = .true.
@@ -798,6 +1063,10 @@ contains
       sAi(j,1) = 0.1_wp * sin(0.3_wp * j + 1.0_wp)
       sAr(j,2) = 0.07_wp * sin(1.1_wp * j + 0.2_wp)
       sAi(j,2) = -0.12_wp * cos(0.5_wp * j)
+      do ic = 3, nc
+        sAr(j,ic) = 0.05_wp * cos(0.4_wp * ic * j + 0.3_wp * ic)
+        sAi(j,ic) = 0.06_wp * sin(0.9_wp * j - 0.7_wp * ic)
+      end do
     end do
 
     dAr = 0.0_wp
@@ -820,6 +1089,18 @@ contains
 
     @assertTrue(abs(fieldRate) > 1.0e-4_wp)
     @assertEqual(0.0_wp, fieldRate + beamRate, 1.0e-13_wp * (abs(fieldRate) + abs(beamRate)))
+
+!   The harmonic bands' source has to be there - measured on the source
+!   itself, since its exchange with an arbitrary field can cancel by accident.
+
+    if (nc > 2) then
+      harmSrc = sum(abs(dAr(:,3:)) + abs(dAi(:,3:)))
+      if (undType == "helical") then
+        @assertEqual(0.0_wp, harmSrc, 0.0_wp)
+      else
+        @assertTrue(harmSrc > 1.0e-2_wp * sum(abs(dAr(:,1:2)) + abs(dAi(:,1:2))))
+      end if
+    end if
 
     if (qOneD) then
 
@@ -912,5 +1193,32 @@ contains
   subroutine testRhsConservesEnergy3DElliptical()
     call checkRhsEnergyBalance("", 0.5_wp, 1.0_wp, 0.0_wp, .false., 0.37_wp, .false.)
   end subroutine testRhsConservesEnergy3DElliptical
+
+
+  !> Harmonic bands 3 and 5 alongside the fundamental, six components with
+  !! unrelated fields: the balance has to hold summed over all of them, in 1D
+  !! and through the 3D path, with taper and ramps, for every polarisation.
+  @test
+  subroutine testRhsConservesEnergyHarmonics()
+    call checkRhsEnergyBalance("planepole", 1.0_wp, 1.0_wp, 0.0_wp, .false., 0.37_wp, .true., &
+                               [3_ip, 5_ip])
+    call checkRhsEnergyBalance("planepole", 1.0_wp, 1.0_wp, -0.05_wp, .true., 0.05_wp, .true., &
+                               [3_ip, 5_ip])
+    call checkRhsEnergyBalance("", 0.5_wp, 1.0_wp, 0.0_wp, .false., 0.37_wp, .true., &
+                               [5_ip, 3_ip])
+    call checkRhsEnergyBalance("", 1.0_wp, 0.0_wp, -0.05_wp, .true., 0.6_wp, .true., &
+                               [3_ip])
+    call checkRhsEnergyBalance("helical", 1.0_wp, 1.0_wp, 0.0_wp, .false., 0.37_wp, .true., &
+                               [3_ip, 5_ip])
+  end subroutine testRhsConservesEnergyHarmonics
+
+
+  @test
+  subroutine testRhsConservesEnergy3DHarmonics()
+    call checkRhsEnergyBalance("planepole", 1.0_wp, 1.0_wp, 0.0_wp, .false., 0.37_wp, .false., &
+                               [3_ip, 5_ip])
+    call checkRhsEnergyBalance("", 1.0_wp, 0.6_wp, 0.0_wp, .false., 0.37_wp, .false., &
+                               [3_ip, 5_ip])
+  end subroutine testRhsConservesEnergy3DHarmonics
 
 end module testAveraging
