@@ -28,7 +28,8 @@ module testAveraging
   use GlobalTypes, only: tUndulator, tFELFrame, tSimulationContext
   use averaging, only: tAvgCoupling, getAvgUndAmps, getAvgPolarisation, &
                        getAvgEnvelope, getAvgCoupling, avgJJ, getResonantMomentum, &
-                       tAvgFocusing, getAvgFocusCoef, getAvgFocusing, getAvgCarrierKz2
+                       tAvgFocusing, getAvgFocusCoef, getAvgFocusing, getAvgCarrierKz2, &
+                       getAvgResonanceShift
   use gtop2, only: getP2, getP2Avg
 
   implicit none
@@ -650,6 +651,125 @@ contains
     sLambdarPerCell_G = 1.0_wp
 
   end subroutine testAveragedGuards
+
+
+  !> A module's resonance relative to the carrier.  It has to be the solver's
+  !! own: the frequency a reference electron is resonant with is 1/p2 of the
+  !! carrier, with p2 from getP2Avg, so that is what it is pinned to.  The
+  !! main-input undulator is the carrier, and in the ultra-relativistic limit
+  !! the shift is the textbook (1 + aw^2 fp)/(1 + aw^2 alpha^2 fp) - 1.
+  @test
+  subroutine testResonanceShift()
+    type(tUndulator) :: und
+    type(tFELFrame) :: frame
+    real(kind=wp) :: p2(1), gam(1), px(1), py(1), fp, alpha, textbook
+    integer :: i
+    character(16), parameter :: types(2) = [character(16) :: "planepole", "helical"]
+
+    gam = 1.0_wp
+    px = 0.0_wp
+    py = 0.0_wp
+
+    do i = 1, 2
+
+      call makeUnd(und, frame, trim(types(i)), 1.0_wp, 1.0_wp)
+      fp = merge(0.5_wp, 1.0_wp, i == 1)
+
+!     Not to 1e-16: eta = 1/beta_z - 1 is ~4e-6 here, so it carries ~3e-11
+!     relative rounding, as calcScaling's does
+
+      @assertEqual(0.0_wp, getAvgResonanceShift(1.0_wp, fp, frame), 1.0e-9_wp)
+
+      alpha = 0.9_wp
+      call getP2Avg(p2, gam, px, py, frame%eta, frame%gamma_ref, frame%aw, alpha**2 * fp)
+      @assertEqual(1.0_wp / p2(1) - 1.0_wp, getAvgResonanceShift(alpha, fp, frame), 1.0e-12_wp)
+
+      textbook = (1.0_wp + frame%aw**2 * fp) / (1.0_wp + frame%aw**2 * alpha**2 * fp) - 1.0_wp
+      @assertEqual(textbook, getAvgResonanceShift(alpha, fp, frame), 1.0e-4_wp)
+
+!     A weaker undulator is resonant at a higher frequency
+
+      @assertTrue(getAvgResonanceShift(0.9_wp, fp, frame) > 0.0_wp)
+      @assertTrue(getAvgResonanceShift(1.1_wp, fp, frame) < 0.0_wp)
+
+    end do
+
+!   An undulator too strong for the electron to move forward
+
+    @assertEqual(huge(1.0_wp), getAvgResonanceShift(1.0e3_wp, 1.0_wp, frame))
+
+  end subroutine testResonanceShift
+
+
+  !> The lattice band warning: a module, or any part of its taper, resonant
+  !! outside 1 +/- 1/(2 lambdarPerCell) of the carrier.  It only warns, so
+  !! what is pinned is the count of modules it warns about.
+  @test
+  subroutine testAvgLatticeBand()
+
+    use Globals, only: qAveraged_G, sLambdarPerCell_G
+    use GlobalTypes, only: tLatticeElements
+    use checks, only: chkAvgLattice
+
+    type(tUndulator) :: und
+    type(tFELFrame) :: frame
+    type(tLatticeElements) :: latt
+    integer(kind=ip) :: nOut
+    real(kind=wp) :: aBlue, aEdge, modLen
+
+    call makeUnd(und, frame, "planepole", 0.0_wp, 1.0_wp)
+
+!   aBlue and aEdge put a planar module at 1.3 and 1.25 of the carrier
+!   frequency (to the textbook form, which is good to ~1e-5 here)
+
+    aBlue = sqrt(((1.0_wp + 0.5_wp * frame%aw**2) / 1.3_wp - 1.0_wp) / (0.5_wp * frame%aw**2))
+    aEdge = sqrt(((1.0_wp + 0.5_wp * frame%aw**2) / 1.25_wp - 1.0_wp) / (0.5_wp * frame%aw**2))
+
+    allocate(latt%und_field(3), latt%und_taper(3), latt%und_ux(3), latt%und_uy(3), &
+             latt%und_delta_z(3), latt%und_nsteps(3), latt%und_type(3))
+    latt%und_type = "planepole"
+    latt%und_ux = 0.0_wp
+    latt%und_uy = 1.0_wp
+    latt%und_delta_z = 4.0_wp * pi * frame%rho / 10.0_wp
+    latt%und_nsteps = 500_ip                               ! 50 periods each
+    modLen = 50.0_wp * 4.0_wp * pi * frame%rho
+    latt%und_field = [1.0_wp, aBlue, 1.0_wp]
+    latt%und_taper = 0.0_wp
+
+    qAveraged_G = .true.
+
+!   At 1 wavelength per cell the band is +/- 0.5: all three are in
+
+    sLambdarPerCell_G = 1.0_wp
+    call chkAvgLattice(latt, frame, .false., nOut)
+    @assertEqual(0_ip, nOut)
+
+!   At 2 it is +/- 0.25, and the module at 1.3 is out
+
+    sLambdarPerCell_G = 2.0_wp
+    call chkAvgLattice(latt, frame, .false., nOut)
+    @assertEqual(1_ip, nOut)
+
+!   A taper on the third module that runs 1% past aEdge over the module takes
+!   it out too.  With end ramps the taper runs over 46 of the 50 periods, so
+!   it stops short of aEdge and the module is back in.
+
+    latt%und_taper(3) = 1.01_wp * (aEdge - 1.0_wp) / modLen
+    call chkAvgLattice(latt, frame, .false., nOut)
+    @assertEqual(2_ip, nOut)
+
+    call chkAvgLattice(latt, frame, .true., nOut)
+    @assertEqual(1_ip, nOut)
+
+!   None of it with the mode off
+
+    qAveraged_G = .false.
+    call chkAvgLattice(latt, frame, .false., nOut)
+    @assertEqual(0_ip, nOut)
+
+    sLambdarPerCell_G = 1.0_wp
+
+  end subroutine testAvgLatticeBand
 
 
   !> Coupling ramps linearly over the 2-period end sections, as the by field does.

@@ -861,7 +861,7 @@ The field arrays hold the envelope, so an array Fourier mode at $k_{\bar{z}_2}$ 
 
 \label{puff-avg-refuses}
 
-Averaged mode is checked at setup and stops on the inputs it cannot represent, rather than running on them and being quietly wrong. Everything below is enforced in {\tt chkAveraged} ({\tt puffin/lib/setup/checks.f90}) and asserted in {\tt test/testAveraging.pf}.
+Averaged mode is checked at setup and stops on the inputs it cannot represent, rather than running on them and being quietly wrong. Everything below is enforced in {\tt chkAveraged} and {\tt chkAvgLattice} ({\tt puffin/lib/setup/checks.f90}) and asserted in {\tt test/testAveraging.pf}.
 
 Rejected outright:
 
@@ -884,6 +884,8 @@ Warned about, but allowed to run:
 \begin{itemize}
 
 \item {\bf A beam energy oscillation} ({\bf mag}) {\bf or energy spread wider than the band.} The resonant wavelength goes as $1/\gamma^2$, so a relative energy offset $\epsilon$ detunes the radiation by $2\epsilon$; beyond the band, part of the beam is outside the single carrier the mode carries. A two-colour case needs more than one carrier and is better run unaveraged.
+
+\item {\bf An undulator module resonant outside the band.} The carrier is the resonance of the main-input undulator, and a lattice module with a different $\alpha$, or a taper, has its own: for an electron at the reference energy it slips $p_2$ resonant wavelengths per period and is resonant with $1/p_2$ of the carrier frequency. For each module, over the $\alpha$ range its taper sweeps in the main section, Puffin warns when that lies outside $1 \pm 1/(2\times${\bf lambdarPerCell}$)$ and says which {\bf lambdarPerCell} would hold it. This check is {\tt chkAvgLattice}, run once the lattice file has been read, which happens after {\tt chkAveraged}. It warns rather than stops because a module only puts radiation at its own resonance if something seeds or amplifies it there. Accuracy degrades well inside the band edge: linear deposition and interpolation each attenuate a mode at $\delta$ cycles per cell by $\mathrm{sinc}^2(\pi\delta)$.
 
 \item {\bf Fewer than two z2 nodes per MPI rank.} Puffin then tries to duplicate the active field region on every rank instead of slab-decomposing it, and that path is currently broken - for the unaveraged solver too, it simply needs more ranks to reach. Use fewer ranks, a smaller {\bf lambdarPerCell}, or, on a periodic mesh, more {\bf sperwaves}.
 

@@ -78,7 +78,7 @@ private
 
 public :: tAvgCoupling, getAvgUndAmps, getAvgPolarisation, &
           getAvgEnvelope, getAvgCoupling, avgJJ, getResonantMomentum, &
-          getAvgBufferPqSq, getAvgAlpha, &
+          getAvgBufferPqSq, getAvgAlpha, getAvgResonanceShift, &
           tAvgFocusing, getAvgFocusCoef, getAvgFocusing, getAvgCarrierKz2
 
 
@@ -501,6 +501,37 @@ contains
     getAvgBufferPqSq = fp * max(alpha0**2, alpha1**2)
 
   end function getAvgBufferPqSq
+
+
+!> Resonant frequency, relative to the carrier, minus 1, of a reference
+!> electron (Gamma = 1, no slow pperp) in an undulator of strength alpha and
+!> polarisation factor fp.  Such an electron slips p2 resonant wavelengths per
+!> period (getP2Avg with pqSq = alpha^2 fp), so it is resonant with 1/p2 of
+!> the carrier frequency.  The carrier is the resonance of the main-input
+!> undulator, which fixes frame%eta, so this is zero to rounding for alpha = 1
+!> and that undulator's fp.  A lattice module detuned through alpha, or a
+!> taper, moves it; the envelope mesh holds roughly +/- 1/(2 lambdarPerCell).
+!> Returns huge() if the undulator is too strong for the electron to move
+!> forward at all.
+
+  pure real(kind=wp) function getAvgResonanceShift(alpha, fp, frame)
+
+    real(kind=wp), intent(in) :: alpha, fp
+    type(tFELFrame), intent(in) :: frame
+
+    real(kind=wp) :: u, rt
+
+    u = (1.0_wp + frame%aw**2 * alpha**2 * fp) / frame%gamma_ref**2
+
+    if (u >= 1.0_wp) then
+      getAvgResonanceShift = huge(1.0_wp)
+      return
+    end if
+
+    rt = sqrt(1.0_wp - u)
+    getAvgResonanceShift = frame%eta * rt * (1.0_wp + rt) / u - 1.0_wp
+
+  end function getAvgResonanceShift
 
 
 end module averaging
