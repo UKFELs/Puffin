@@ -185,10 +185,9 @@ def metrics(plain, avg):
         # The first write, before either run has done anything. This has to be
         # 1.0: if it is not, the two runs did not start from the same field and
         # every other number here is measuring that instead of the physics.
-        # The way to get it wrong is a seed whose polarisation does not match
-        # the undulator - averaged mode carries only the resonant helicity, so
-        # a linear seed on a helical undulator starts it at exactly half the
-        # power, and the ratio then drifts from 0.5 to 1 as the field grows.
+        # Averaged mode lays any seed polarisation exactly, so a mismatch here
+        # now points at the seed setup or the envelope normalisation, not at
+        # the seed's polarisation.
         "power at z=0": (total_power(plain, k0p), total_power(avg, k0a)),
         "power": (total_power(plain, kp), total_power(avg, ka)),
         "bunching": (weighted(plain, kp, "/bunchingFundamental"),

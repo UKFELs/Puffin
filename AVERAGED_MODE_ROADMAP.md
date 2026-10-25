@@ -241,10 +241,20 @@ the manual; the short form:
   helical to every printed digit in both solvers, as the x -> -x mirror says it
   must.
 
-  In 3D (`run_compare3d.py 0.5,1`, the `deck3d.in` beam with diffraction,
-  4 ranks), against the unaveraged solver at n12 / n24: power ratio 1.1080 /
-  1.0052, bunching 1.0246 / 0.9985, field rms size 0.9958 / 1.0038, beam rms
-  size 1.0006 / 1.0006 - the same convergence pattern as the helical 3D study.
+  In 3D (`deck3d.in`, diffraction and a matched beam, 4 ranks), power ratio
+  at n12 / n24 / n48 and bunching at n48 - full tables, and the per-write
+  series, in `benchmark/averaged/README.md`:
+
+  | undulator (ux, uy) | P ratio | bunching |
+  |---|---|---|
+  | elliptical (0.5, 1) | 1.1080 / 1.0052 / 0.9836 | 0.9933 |
+  | elliptical (1, 0.6) | 1.0820 / 0.9880 / 0.9686 | 0.9969 |
+  | planar (0, 1) | 1.1152 / 0.9983 / 0.9709 | 0.9932 |
+  | linear along y (1, 0) | 1.0643 / 0.9541 / 0.9290 | 0.9831 |
+
+  Elliptical and planar follow the helical 3D study's pattern, with field and
+  beam sizes within 0.8%. Linear along y is 4% further off, and the next
+  bullet but one says why that looks like the unaveraged solver.
 
 **Found on the way, not ours.**
 
@@ -252,10 +262,14 @@ the manual; the short form:
   Averaged mode gives identical power for `planepole` and `(ux, uy) = (1, 0)`
   with a y seed, as it must; the unaveraged solver gives (1, 0) 2.0% less, at
   n12 and at n48 alike, while `'puffin'` at (0, 1) reproduces `planepole`
-  exactly. So it is x against y, not the type. Likely cause, not verified: the
-  x-driving field is `by ~ sin` and the y-driving one `bx ~ cos`, so the two
-  undulators start a quarter period apart in phase and the unaveraged entry
-  transient differs, where averaged mode has none.
+  exactly. So it is x against y, not the type. In 3D the gap is 4%, and the
+  mean momenta locate it: for the x wiggle both solvers' slow `<p_x>`, `<p_y>`
+  agree to ~1e-5, but for the y wiggle the unaveraged `<p_y>` drifts steadily
+  (-3.72e-3 to -2.86e-3) where the averaged one stays put, as a pure `bx`
+  undulator with no y dependence says it should. Not traced to a cause; one
+  candidate is that the x-driving field is `by ~ sin` and the y-driving one
+  `bx ~ cos`, so the two undulators start a quarter period apart in phase and
+  the unaveraged entry differs.
 - *A negative `sA0_X` or `sA0_Y` crashes Puffin* with `MPI_ERR_TRUNCATE` in
   `MPI_Alltoallv` on one rank, in both modes and on `dev`'s binary. A seed of
   the opposite helicity needs one; two seeds with `ph_sh` differing by `pi` work
