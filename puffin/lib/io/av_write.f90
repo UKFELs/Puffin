@@ -813,11 +813,5 @@ contains
 
    end subroutine getSliceTwiss
 
-   subroutine getBunchingFundamental(nslices,bunching)
-      integer(kind=ip), intent(in) :: nslices
-      real(kind=wp), intent(out) :: bunching(:)
-      bunching = 0.0_wp    ! initialize
-   end subroutine getBunchingFundamental
-
 
 end module avwrite

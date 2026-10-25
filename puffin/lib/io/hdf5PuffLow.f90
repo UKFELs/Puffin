@@ -169,35 +169,6 @@ contains
 
   end subroutine addH5derivedVariable
 
-!> addH5derivedVariable() add vizschema derived variable
-  subroutine addH5derivedVariableSI(location,varName,expression,meshname,error)
-
-    implicit none (type, external)
-
-    integer(HID_T), intent(in) :: location !< h5 handle of write location
-    character(len=*), intent(in) :: varName !<derived var name
-    character(len=*), intent(in) :: expression !<expression value
-    character(len=*), intent(in) :: meshname !<expression value
-
-    ! Local vars
-
-    integer(HID_T) :: group_id      !< Group identifier
-    integer(HID_T) :: aspace_id     !< Attribute Dataspace identifier
-    integer, intent(out) :: error ! Error flag
-
-!               We make a new group
-
-    call h5gcreate_f(location, varName, group_id, error)
-    call h5screate_f(H5S_SCALAR_F, aspace_id, error)
-    call addH5StringAttribute(group_id,"vsType","vsVars",aspace_id)
-    call addH5StringAttribute(group_id,"vsMesh",trim(adjustl(meshname // "SI")),aspace_id)
-!    call addH5StringAttribute(group_id,"vsLimits","globalLimitsSI",aspace_id)
-    call addH5StringAttribute(group_id,varName,expression,aspace_id)
-    call h5sclose_f(aspace_id, error)
-    call h5gclose_f(group_id, error)
-
-  end subroutine addH5derivedVariableSI
-
 
 
 

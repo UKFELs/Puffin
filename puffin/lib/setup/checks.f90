@@ -720,33 +720,6 @@ END SUBROUTINE checkIntSampling
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE getElmLengths(sLenEPulse,sWigglerLength,iNodes,qOneD,sLengthOfElm)
-
-  REAL(KIND=WP), INTENT(IN) :: sLenEPulse(3), sWigglerLength(3)
-  INTEGER(KIND=IP), INTENT(IN) :: iNodes(3)
-  LOGICAL, INTENT(IN) :: qOneD
-  REAL(KIND=WP), INTENT(OUT) :: sLengthOfElm(3)
-
-!     Calculate field element lengths, dx dy dz2
-
-  IF (qOneD) THEN
-
-    sLengthOfElm(iX_CG:iY_CG) = 1.0_WP
-
-  ELSE
-
-    sLengthOfElm(iX_CG:iY_CG) = sWigglerLength(iX_CG:iY_CG)&
-                      / REAL(iNodes(iX_CG:iY_CG)-1,KIND=WP)
-
-  END IF
-
-  sLengthOfElm(iZ2_CG) = (sLenEPulse(iZ2_CG) + &
-                          sWigglerLength(iZ2_CG)) / &
-                          REAL(iNodes(iZ2_CG)-1,KIND=WP)
-
-END SUBROUTINE getElmLengths
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 SUBROUTINE checkFreeParams(srho,saw,sgammar,f_x,f_y,qOK)
 
