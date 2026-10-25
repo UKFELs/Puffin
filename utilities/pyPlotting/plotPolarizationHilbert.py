@@ -54,12 +54,12 @@ def getMagPhaseEnvelope(h5,xi,yi,iEnv,kz2Carrier,qNegate=False):
     to recover. Transforming it would treat an envelope as a carrier.
 
     All three returned quantities keep their unaveraged meanings, by putting
-    the carrier back analytically. For A = Re[Atilde exp(i kz2Carrier z2)],
-    which is the relation the dump documents, the analytic signal is
-    |Atilde| exp(i(phi - arg Atilde)) with carrier phase phi = -kz2Carrier z2.
-    So the amplitude is |Atilde| and the instantaneous phase is
-    phi - arg Atilde. That is exact here, where the transform is only
-    narrowband-accurate and has edge artefacts.
+    the carrier back analytically. For A = sqrt(2) Re[B exp(i kz2Carrier z2)],
+    which is the relation the dump documents (the stored envelopes are rms),
+    the analytic signal is sqrt(2) |B| exp(i(phi - arg B)) with carrier phase
+    phi = -kz2Carrier z2. So the amplitude is sqrt(2) |B| and the
+    instantaneous phase is phi - arg B. That is exact here, where the
+    transform is only narrowband-accurate and has edge artefacts.
 
     Sign convention: as in plotPolarization.py. The unaveraged pair is
     (A_x, -A_y), so the phase getMagPhase recovers for its second component
@@ -80,7 +80,7 @@ def getMagPhaseEnvelope(h5,xi,yi,iEnv,kz2Carrier,qNegate=False):
     if zMesh.size!=reA.size:
       raise ValueError("z2 mesh has %d nodes but the field has %d"
                        % (zMesh.size,reA.size))
-    amplitude_envelope=numpy.hypot(reA,imA)
+    amplitude_envelope=numpy.sqrt(2.)*numpy.hypot(reA,imA)
   # Only the envelope's own argument is unwrapped: the carrier phase is
   # continuous by construction, and unwrapping their sum would fail outright,
   # since at one resonant wavelength per cell the carrier advances 2 pi per
@@ -134,11 +134,6 @@ if len(sys.argv) == 2:
     print("two-envelope field (nFieldComp = 2) and try again.")
     h5.close()
     sys.exit(1)
-
-  # Note on normalisation in averaged mode: for a planar undulator the stored
-  # envelope is the single-envelope Atilde rather than Atilde_x = sqrt(2)
-  # Atilde, so magx is low by sqrt(2). Atilde_y is zero in that case, so the
-  # normalised P1, P2 and P3 are unaffected by it; s0 is not.
 
 #  plt.figure(figsize=(35,35))
 #  gs = gridspec.GridSpec(7,7)

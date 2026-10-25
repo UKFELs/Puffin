@@ -96,13 +96,20 @@ def last_index(d, stem):
 
 
 def transverse(d, k):
-    """(sigma_x, sigma_y, x profile, y profile) of |A|^2 summed over z2."""
+    """(sigma_x, sigma_y, x profile, y profile) of |A|^2 summed over z2.
+
+    /aperp holds 2 * nFieldComp reals per node: one complex pair (A_x, -A_y)
+    unaveraged, the rms envelopes B_x and B_y averaged.  Summing the squares of
+    all of them is the intensity in both modes.
+    """
     p = os.path.join(d, "run_aperp_%d.h5" % k)
     v = read_ds(p, "/aperp")
     nx, ny, nz2, dx, dy, _ = mesh3d(p)
     n = nx * ny * nz2
-    if len(v) != 2 * n:
-        raise SystemExit("%s: /aperp is %d values, mesh says %d" % (p, len(v), 2 * n))
+    if len(v) % (2 * n):
+        raise SystemExit("%s: /aperp is %d values, not a multiple of 2 x %d nodes"
+                         % (p, len(v), n))
+    nreal = len(v) // n
 
     px, py = [0.0] * nx, [0.0] * ny
     for iz in range(nz2):
@@ -111,7 +118,7 @@ def transverse(d, k):
             row = base + iy * nx
             for ix in range(nx):
                 j = row + ix
-                w = v[j] * v[j] + v[n + j] * v[n + j]
+                w = sum(v[c * n + j] ** 2 for c in range(nreal))
                 px[ix] += w
                 py[iy] += w
 
@@ -178,10 +185,9 @@ def metrics(plain, avg):
         # The first write, before either run has done anything. This has to be
         # 1.0: if it is not, the two runs did not start from the same field and
         # every other number here is measuring that instead of the physics.
-        # The way to get it wrong is a seed whose polarisation does not match
-        # the undulator - averaged mode carries only the resonant helicity, so
-        # a linear seed on a helical undulator starts it at exactly half the
-        # power, and the ratio then drifts from 0.5 to 1 as the field grows.
+        # Averaged mode lays any seed polarisation exactly, so a mismatch here
+        # now points at the seed setup or the envelope normalisation, not at
+        # the seed's polarisation.
         "power at z=0": (total_power(plain, k0p), total_power(avg, k0a)),
         "power": (total_power(plain, kp), total_power(avg, ka)),
         "bunching": (weighted(plain, kp, "/bunchingFundamental"),

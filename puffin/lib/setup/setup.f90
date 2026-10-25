@@ -321,11 +321,11 @@ contains
         ctx%field%nComp = 1_ip
       end if
 
-!     Only ever one of them is integrated: averaged mode's second component is
-!     slaved to the first, not driven. Set explicitly rather than left to the
-!     type's default so that W3b has one place to raise it.
+!     Every component is integrated with its own source. Averaged mode drives
+!     x and y independently through q_x and q_y (see averaging.f90), which is
+!     what lets it carry an elliptical undulator and any seed polarisation.
 
-      ctx%field%nEnv = 1_ip
+      ctx%field%nEnv = ctx%field%nComp
 
 
       if (iFieldSeedType_G==iSimpleSeed_G) then

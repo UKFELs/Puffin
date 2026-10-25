@@ -421,10 +421,10 @@ contains
 
       tllen43D = field%tllen * ntrndsi_G
 
-!     One radiation envelope. An elliptical undulator or a harmonic band makes
-!     this 2 or more, and this is the only place the count is set (W3, #129).
+!     One stage array per driven field component: 1 unaveraged, 2 averaged
+!     (x and y). Set once at setup, in field%nEnv.
 
-      nEnv = 1_ip
+      nEnv = field%nEnv
 
       allocate(work%dadz_r(tllen43D, nEnv, 0:2), work%dadz_i(tllen43D, nEnv, 0:2))
       allocate(work%A_r(tllen43D, nEnv, 0:3), work%A_i(tllen43D, nEnv, 0:3))

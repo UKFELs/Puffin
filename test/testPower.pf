@@ -120,8 +120,8 @@ contains
     call gPowerP(power, field)
     @assertEqual(0.0_wp, maxval(abs(power - expected)), 1.0e-14_wp)
 
-!   A real field with nothing in y is just A_x^2 - no half anywhere, which is
-!   what separates this mode from the averaged one below.
+!   A real field with nothing in y is just A_x^2 - the instantaneous value, not
+!   a period average as in the averaged mode below.
 
     field%ac_i(:,1) = 0.0_wp
     call gPowerP(power, field)
@@ -132,79 +132,70 @@ contains
   end subroutine testUnaveragedPowerIsInstantaneousIntensity
 
 
-  !> Averaged: the slaved component must not add power.
+  !> Averaged: power is |B_x|^2 + |B_y|^2, with no further factor.
   !!
-  !! It re-expresses the field component 1 already carries - it is not a second
-  !! beam of radiation - so the power reported with the slaved component present
-  !! must equal the power reported without it.
+  !! The two driven components are rms Cartesian envelopes,
+  !! A_c = sqrt(2) Re[B_c exp(-i psi)], so |B_c|^2 is the period average of A_c^2
+  !! and their sum is the cycle-averaged |A_perp|^2.  That is the same quantity
+  !! the single envelope Atilde used to report as |Atilde|^2, and the two
+  !! polarisations that envelope could carry pin the normalisation: helical has
+  !! B_x = Atilde/sqrt(2), B_y = i B_x; planar has B_x = Atilde, B_y = 0.  Both
+  !! must report |Atilde|^2.  Checking only planar would miss a factor of two in
+  !! the helical case - the asymmetry that once let a helical run report twice
+  !! the unaveraged power while planar agreed.
   !!
-  !! The reference value is set by the envelope's normalisation, not chosen
-  !! here.  A_perp reconstructs from the stored envelope as
-  !!
-  !!   A_perp = (u-/sqrt(fp)) Atilde exp(-i psi) + (u+/sqrt(fp)) Atilde* exp(+i psi)
-  !!
-  !! (setup_calcs.f90, the 2nd-gen seed).  The single envelope is normalised so
-  !! that |Atilde|^2 is the whole cycle-averaged transverse intensity whatever
-  !! the polarisation - what getAvgSeedFactor's sqrt(fp)/u- arranges, and what
-  !! lets one envelope carry the field at all.
-  !!
-  !! Summing over every component instead of over the driven ones gives a
-  !! helical undulator, where slaving sets |Atilde_y| = |Atilde_x|, exactly
-  !! twice the right answer, and leaves planar - whose slaved component is zero
-  !! - correct.  Both are checked here because that asymmetry is the signature:
-  !! it is why averaged and unaveraged runs agreed on a planar undulator and
-  !! disagreed by a factor of two on a helical one, and why checking one
-  !! polarisation would have missed it.
+  !! A component beyond nEnv is not driven and must not be counted.
 
   @test
-  subroutine testAvgPowerIgnoresSlavedComponent()
-
-    use averaging, only: setAvgSlavedComp
+  subroutine testAvgPowerSumsCartesianComponents()
 
     type(tFieldValues) :: field
     integer(kind=ip) :: j
     real(kind=wp) :: power(nn), envSq(nn)
 
     call makeField(field, 2_ip)
-    field%nEnv = 1_ip            ! only component 1 is integrated
+    field%nEnv = 2_ip
 
     do j = 1, nn
       field%ac_r(j,1) = 0.3_wp * cos(0.7_wp * j)
       field%ac_i(j,1) = 0.3_wp * sin(0.4_wp * j + 0.5_wp)
     end do
 
-    envSq = field%ac_r(:,1)**2 + field%ac_i(:,1)**2
+    envSq = field%ac_r(:,1)**2 + field%ac_i(:,1)**2   ! |Atilde|^2
 
-!   Helical: Atilde_y = i Atilde_x, equal in magnitude to component 1.
+!   Helical: B_x = Atilde/sqrt(2), B_y = i B_x.
 
-    call setAvgSlavedComp(field, "helical", 1.0_wp, 1.0_wp)
+    field%ac_r(:,1) = field%ac_r(:,1) * sqrt(0.5_wp)
+    field%ac_i(:,1) = field%ac_i(:,1) * sqrt(0.5_wp)
+    field%ac_r(:,2) = -field%ac_i(:,1)
+    field%ac_i(:,2) = field%ac_r(:,1)
     call gPowerP(power, field)
     @assertEqual(0.0_wp, maxval(abs(power - envSq)), 1.0e-14_wp)
 
-!   Planar: the slaved component is zero.
+!   Planar: B_x = Atilde, B_y = 0.
 
-    call setAvgSlavedComp(field, "planepole", 1.0_wp, 1.0_wp)
+    field%ac_r(:,1) = field%ac_r(:,1) * sqrt(2.0_wp)
+    field%ac_i(:,1) = field%ac_i(:,1) * sqrt(2.0_wp)
+    field%ac_r(:,2) = 0.0_wp
+    field%ac_i(:,2) = 0.0_wp
     call gPowerP(power, field)
     @assertEqual(0.0_wp, maxval(abs(power - envSq)), 1.0e-14_wp)
 
-!   The slaved component is filled with something arbitrary, as it is between
-!   dumps, and the answer must not move: nothing outside setAvgSlavedComp and
-!   the writers has any business reading it.
+!   An unrelated y field adds its own |B_y|^2.
 
-    field%ac_r(:,2) = 5.0_wp
-    field%ac_i(:,2) = -3.0_wp
+    field%ac_r(:,2) = 0.2_wp
+    field%ac_i(:,2) = -0.1_wp
     call gPowerP(power, field)
-    @assertEqual(0.0_wp, maxval(abs(power - envSq)), 1.0e-14_wp)
+    @assertEqual(0.0_wp, maxval(abs(power - envSq - 0.05_wp)), 1.0e-14_wp)
 
-!   And with the second grid absent altogether, which is the layout the
-!   unaveraged mode and dev both have: the same value again.
+!   ...unless it is not driven.
 
-    field%nComp = 1_ip
+    field%nEnv = 1_ip
     call gPowerP(power, field)
     @assertEqual(0.0_wp, maxval(abs(power - envSq)), 1.0e-14_wp)
 
     call freeField(field)
 
-  end subroutine testAvgPowerIgnoresSlavedComponent
+  end subroutine testAvgPowerSumsCartesianComponents
 
 end module testPower

@@ -1,0 +1,44 @@
+!!!!!!!!!!!!!!  Polarisation e2e deck: elliptical, unaveraged  !!!!!!!!!!!!!!
+!!
+!!  One of five small 1D decks run by testMPIIntegrationPolarisation.pf.
+!!  The other 1D goldens are a 'puffin' (1, 1) undulator with no ends
+!!  (f1main) and plane-pole with ends (osc_taper), and none ran averaged
+!!  mode; these add the 'helical' and elliptical field branches, their
+!!  entry and exit ramps, and the averaged solver.
+!!
+!!  Built on f1main: the same cold, noise-free beam (inputs/beam_file.in,
+!!  319 macroparticles, no RNG), rho = 0.01, gamma_r = 100, aw = 1. Six
+!!  periods with undulator ends - two of ramp in, two of main section, two
+!!  of ramp out - and a seed, so the beam and field both move: zbar = 0.75,
+!!  0.75 gain lengths, the power moving by 1-2%, far from saturation.
+!!
+!!  'puffin' type at sux = 0.5, suy = 1. Its bx ramp is the one in
+!!  UKFELs/Puffin#147; fixing that will move this golden, deliberately.
+!!
+!!  Goldens: see the regeneration note in testMPIIntegrationPolarisation.pf.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+&MDATA
+ qOneD                  = .true.
+ beam_file              = 'inputs/beam_file.in'
+ seed_file              = 'inputs/1D/pol_seed_circ.in'
+ q_noise                = .false.
+ qUndEnds               = .true.
+ sElectronThreshold     = 0.05
+ nodesPerLambdar        = 17
+ sFModelLengthZ2        = 4.0
+ srho                   = 0.01
+ sux                    = 0.5
+ suy                    = 1.0
+ saw                    = 1.0
+ sgamma_r               = 100.0
+ lambda_w               = 0.04
+ zundType               = ''
+ taper                  = 0.0
+ lattFile               = ''
+ stepsPerPeriod         = 30
+ nPeriods               = 6
+ iWriteNthSteps         = 100000
+ iWriteIntNthSteps      = 100000
+ /

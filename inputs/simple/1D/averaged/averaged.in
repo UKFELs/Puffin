@@ -32,9 +32,6 @@
 ! Checked at setup (chkAveraged, puffin/lib/setup/checks.f90) and refused
 ! rather than silently approximated:
 !
-!   - Elliptical polarisation.  One envelope can represent a helical or a
-!     linearly polarised undulator and nothing in between, so zundType must be
-!     'helical', 'planepole' or 'curved', or fx/fy must give one of those.
 !   - qResume, field_file (an HDF5 field) and HDF5/MASP macroparticle input.
 !     A resolved field read into an envelope array, or a pperp that still
 !     carries the quiver, would be wrong rather than obviously wrong.

@@ -169,35 +169,6 @@ contains
 
   end subroutine addH5derivedVariable
 
-!> addH5derivedVariable() add vizschema derived variable
-  subroutine addH5derivedVariableSI(location,varName,expression,meshname,error)
-
-    implicit none (type, external)
-
-    integer(HID_T), intent(in) :: location !< h5 handle of write location
-    character(len=*), intent(in) :: varName !<derived var name
-    character(len=*), intent(in) :: expression !<expression value
-    character(len=*), intent(in) :: meshname !<expression value
-
-    ! Local vars
-
-    integer(HID_T) :: group_id      !< Group identifier
-    integer(HID_T) :: aspace_id     !< Attribute Dataspace identifier
-    integer, intent(out) :: error ! Error flag
-
-!               We make a new group
-
-    call h5gcreate_f(location, varName, group_id, error)
-    call h5screate_f(H5S_SCALAR_F, aspace_id, error)
-    call addH5StringAttribute(group_id,"vsType","vsVars",aspace_id)
-    call addH5StringAttribute(group_id,"vsMesh",trim(adjustl(meshname // "SI")),aspace_id)
-!    call addH5StringAttribute(group_id,"vsLimits","globalLimitsSI",aspace_id)
-    call addH5StringAttribute(group_id,varName,expression,aspace_id)
-    call h5sclose_f(aspace_id, error)
-    call h5gclose_f(group_id, error)
-
-  end subroutine addH5derivedVariableSI
-
 
 
 
@@ -571,14 +542,16 @@ contains
 !                  ordered (component 1 real, component 1 imag, component 2 ...).
 !   fieldCompMeaning  what a component is. Unaveraged, one complex pair already
 !                  holds both polarisations as (A_x, -A_y). Averaged, a complex
-!                  pair is one envelope of one polarisation state, so there is
-!                  one component per linear axis.
+!                  pair is the rms envelope B_c of one Cartesian component,
+!                  A_c = sqrt(2) Re[B_c exp(-i z2/2rho)], so there is one
+!                  component per linear axis.
 
     call addH5IntegerAttribute(dset_id, "nFieldComp", ctx%field%nComp, aspace_id)
 
     if (ctx%field%nComp > 1_ip) then
       call addH5StringAttribute(dset_id, "fieldCompMeaning", &
-                                "one envelope per linear polarisation: 1 = x, 2 = y", &
+                                "rms envelope per Cartesian axis, "// &
+                                "A_c = sqrt(2) Re[B_c exp(-i z2/2rho)]: 1 = x, 2 = y", &
                                 aspace_id)
     else if (ctx%flags%period_averaged) then
       call addH5StringAttribute(dset_id, "fieldCompMeaning", &

@@ -2,8 +2,15 @@
 """Run the averaged and unaveraged solvers on the same 1D deck and compare.
 
 Usage:
-  python3 run_compare.py <helical|planepole> [--aw AW]
+  python3 run_compare.py <helical|planepole|UX,UY> [--aw AW] [--seed AX,AY]
                          [--plain NODES:STEPS ...] [--avg CELLS:STEPS ...]
+
+  UX,UY                 the variably polarised 'puffin' undulator, sux = UX,
+                        suy = UY (one of them 1) - elliptical, or linear along y
+                        with 1,0
+  --seed AX,AY          seed sA0_X, sA0_Y.  Default: linear along x for
+                        planepole, the resonant helicity (equal) otherwise.
+                        Averaged mode carries any seed polarisation.
 
   --plain NODES:STEPS   unaveraged run, nodesPerLambdar = NODES,
                         stepsPerPeriod = STEPS     [default 12:30 24:60 48:120]
@@ -11,7 +18,8 @@ Usage:
                         stepsPerPeriod = STEPS     [default 1:2]
 
 The first --avg run is compared against every --plain run: envelope relative L2
-difference, and mid-bunch power ratio at the last write.  Keep NODES/STEPS at
+difference over both Cartesian envelopes, mid-bunch power ratio at the last
+write, and the fraction of that power in y for each.  Keep NODES/STEPS at
 0.4 cells per step or finer for the unaveraged runs, or they are measuring
 their own step error (see benchmark/convergence).  Needs mpirun and h5dump;
 standard library Python only.  PUFFIN overrides the executable path.
@@ -35,7 +43,7 @@ def sub(text, name, value):
     return re.sub(r"(?m)^(\s*%s\s*=\s*)[^\n]*$" % name, r"\g<1>%s" % value, text)
 
 
-def run(tag, und, aw, averaged, mesh, steps):
+def run(tag, und, aw, seed_xy, averaged, mesh, steps):
     workdir = os.path.join(HERE, "run_%s" % tag)
     shutil.rmtree(workdir, ignore_errors=True)
     os.makedirs(workdir)
@@ -43,14 +51,20 @@ def run(tag, und, aw, averaged, mesh, steps):
 
     with open(os.path.join(HERE, "seed_file.in")) as fh:
         seed = fh.read()
-    if und == "helical":            # the resonant helicity, circularly polarised
-        seed = sub(seed, "sA0_Y", "0.01")
+    seed = sub(seed, "sA0_X", seed_xy[0])
+    seed = sub(seed, "sA0_Y", seed_xy[1])
     with open(os.path.join(workdir, "seed_file.in"), "w") as fh:
         fh.write(seed)
 
     with open(os.path.join(HERE, "deck.in")) as fh:
         deck = fh.read()
-    deck = sub(deck, "zundType", "'%s'" % und)
+    if "," in und:
+        ux, uy = und.split(",")
+        deck = sub(deck, "zundType", "'puffin'")
+        deck = sub(deck, "sux", ux)
+        deck = sub(deck, "suy", uy)
+    else:
+        deck = sub(deck, "zundType", "'%s'" % und)
     deck = sub(deck, "saw", aw)
     deck = sub(deck, "stepsPerPeriod", steps)
     deck = sub(deck, "iWriteIntNthSteps", steps)     # one integrated write per period
@@ -74,14 +88,21 @@ def run(tag, und, aw, averaged, mesh, steps):
     return workdir, float(m.group(1)) if m else float("nan")
 
 
+def tag_of(und):
+    return "u" + und.replace(",", "_") if "," in und else und
+
+
 def main():
     args = sys.argv[1:]
     und, aw = args.pop(0), "1.0121809"
+    seed_xy = ("0.01", "0.0") if und == "planepole" else ("0.01", "0.01")
     plains, avgs, which = [], [], None
     while args:
         a = args.pop(0)
         if a == "--aw":
             aw = args.pop(0)
+        elif a == "--seed":
+            seed_xy = tuple(args.pop(0).split(","))
         elif a in ("--plain", "--avg"):
             which = plains if a == "--plain" else avgs
         else:
@@ -91,21 +112,24 @@ def main():
 
     avg_runs = []
     for cells, steps in avgs:
-        wd, secs = run("%s_avg_c%s_s%s" % (und, cells, steps), und, aw, True, cells, steps)
+        wd, secs = run("%s_avg_c%s_s%s" % (tag_of(und), cells, steps), und, aw, seed_xy,
+                       True, cells, steps)
         avg_runs.append((cells, steps, wd, secs))
         print("  averaged   lambdarPerCell=%-5s steps=%-4s %7.1f s" % (cells, steps, secs),
               flush=True)
 
     ref_avg = avg_runs[0][2]
     print()
-    print("  %-10s %-16s %-9s %-12s %s" % ("und", "unaveraged", "runtime", "env rel L2",
-                                          "P_avg/P_unavg (last write)"))
+    print("  %-10s %-16s %-9s %-12s %-10s %s" % ("und", "unaveraged", "runtime", "env rel L2",
+                                                "P_avg/P_un", "y frac unavg / avg (mid-bunch)"))
     for nodes, steps in plains:
-        wd, secs = run("%s_plain_n%s_s%s" % (und, nodes, steps), und, aw, False, nodes, steps)
-        l2, _, power = metrics(wd, ref_avg, RHO, und)
+        wd, secs = run("%s_plain_n%s_s%s" % (tag_of(und), nodes, steps), und, aw, seed_xy,
+                       False, nodes, steps)
+        l2, rows, power = metrics(wd, ref_avg, RHO)
         k, pp, pa = power[-1]
-        print("  %-10s n=%-4s s=%-8s %7.1f s %-12.4e %.4f" % (und, nodes, steps, secs, l2, pa / pp),
-              flush=True)
+        mid = rows[len(rows) // 2]
+        print("  %-10s n=%-4s s=%-8s %7.1f s %-12.4e %-10.4f %.4f / %.4f"
+              % (und, nodes, steps, secs, l2, pa / pp, mid[3], mid[4]), flush=True)
 
 
 if __name__ == "__main__":

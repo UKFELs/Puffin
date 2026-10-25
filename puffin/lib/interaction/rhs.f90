@@ -107,13 +107,15 @@ contains
   logical :: qOKL
 
 ! Averaged mode only - see averaging.f90. sprRes, spiRes hold the resonant
-! momentum ptilde_j, which replaces spr, spi wherever the electrons couple to
-! the field. One array for both the source and the energy equation is what
-! keeps the averaged system energy-conserving.
+! momenta q_x, q_y (column per field component), which replace spr, spi
+! wherever the electrons couple to that component. One array for both the
+! source and the energy equation is what keeps the averaged system
+! energy-conserving. sdgamC is one component's share of dGamma/dz.
 
-  real(kind=wp), allocatable :: sprRes(:), spiRes(:)
+  real(kind=wp), allocatable :: sprRes(:,:), spiRes(:,:), sdgamC(:)
   type(tAvgCoupling) :: cpl
   type(tAvgFocusing) :: foc
+  integer(kind=ip) :: ie
 
 !     Begin
 
@@ -152,7 +154,8 @@ contains
   if (ctx%flags%period_averaged) then
     call getAvgCoupling(sZ, ctx%und, ctx%frame, cpl)
     call getAvgFocusCoef(sZ, ctx%und, ctx%frame, ctx%flags%focusing, foc)
-    allocate(sprRes(iNumberElectrons_G), spiRes(iNumberElectrons_G))
+    allocate(sprRes(iNumberElectrons_G, 2), spiRes(iNumberElectrons_G, 2))
+    allocate(sdgamC(size(sdgam)))
   end if
 
 
@@ -219,39 +222,75 @@ contains
 
 
 
-! The field arrays carry an envelope index, and getInterps_* above has already
-! done the part that is shared between envelopes - locating each macroparticle's
+! The field arrays carry an envelope index, and getInterps_* has already done
+! the part that is shared between envelopes - locating each macroparticle's
 ! nodes and computing its interpolation weights into rhs_vars. Only the gather
-! and scatter below are per-envelope, which is why the envelope loop belongs
-! here rather than around getrhs.
-!
-! It is not written as a loop yet because two things inside it are still
-! single-envelope: sField4ElecReal/Imag in rhs_vars hold one envelope's field
-! at each macroparticle, and dgamdz_f sums one envelope's contribution. Both
-! need the per-envelope coupling coefficients, which is W3's physics (#129).
-! Until then nEnv is 1 and this reads envelope 1 explicitly, so that a second
-! envelope fails to compile rather than being silently dropped from dGamma/dz.
+! and scatter are per-envelope, which is why the envelope loop belongs here
+! rather than around getrhs.
 
   if (tTransInfo_G%qOneD) then
-
     call getInterps_1D(sz2, ctx%flags, ctx%field)
-    if (ctx%flags%parallel_arrays_ok) then
-      call getFFelecs_1D(sAr(:,1), sAi(:,1))
-      if (ctx%flags%period_averaged) then
-        call getSource_1D(sDADzr(:,1), sDADzi(:,1), sprRes, spiRes, sgam, ctx%frame%eta)
-      else
-        call getSource_1D(sDADzr(:,1), sDADzi(:,1), spr, spi, sgam, ctx%frame%eta)
+  else
+    call getInterps_3D(sx, sy, sz2, ctx%flags, ctx%field)
+  end if
+
+  if (ctx%flags%period_averaged) then
+
+!   Averaged mode drives both Cartesian components, each through its own q_c.
+!   sField4ElecReal/Imag hold one component's field at a time, so the energy
+!   exchange is summed here, component by component, rather than in the
+!   electron block below. Skipped with the coupling off, as zeroing the
+!   gathered field does on the unaveraged path.
+
+!$OMP WORKSHARE
+    sdgam = 0.0_wp
+!$OMP END WORKSHARE
+
+    do ie = 1, ctx%field%nEnv
+
+      if (ie > 1) then
+!$OMP WORKSHARE
+        sField4ElecReal = 0.0_wp
+        sField4ElecImag = 0.0_wp
+!$OMP END WORKSHARE
       end if
-    end if
+
+      if (tTransInfo_G%qOneD) then
+        if (ctx%flags%parallel_arrays_ok) then
+          call getFFelecs_1D(sAr(:,ie), sAi(:,ie))
+          call getSource_1D(sDADzr(:,ie), sDADzi(:,ie), sprRes(:,ie), spiRes(:,ie), &
+                            sgam, ctx%frame%eta)
+        end if
+      else
+        if ((ctx%flags%parallel_arrays_ok) .and. (ctx%flags%inner_xy_ok)) then
+          call getFFelecs_3D(sAr(:,ie), sAi(:,ie))
+          call getSource_3D(sDADzr(:,ie), sDADzi(:,ie), sprRes(:,ie), spiRes(:,ie), &
+                            sgam, ctx%frame%eta)
+        end if
+      end if
+
+      if (qElectronFieldCoupling_G) then
+        call dgamdz_f(sx, sy, sz2, sprRes(:,ie), spiRes(:,ie), sgam, &
+                      sdgamC, ctx%frame)
+!$OMP WORKSHARE
+        sdgam = sdgam + sdgamC
+!$OMP END WORKSHARE
+      end if
+
+    end do
 
   else
 
-    call getInterps_3D(sx, sy, sz2, ctx%flags, ctx%field)
-    if ((ctx%flags%parallel_arrays_ok) .and. (ctx%flags%inner_xy_ok)) then
-      call getFFelecs_3D(sAr(:,1), sAi(:,1))
-      if (ctx%flags%period_averaged) then
-        call getSource_3D(sDADzr(:,1), sDADzi(:,1), sprRes, spiRes, sgam, ctx%frame%eta)
-      else
+!   Unaveraged: one envelope, the resolved A_perp.
+
+    if (tTransInfo_G%qOneD) then
+      if (ctx%flags%parallel_arrays_ok) then
+        call getFFelecs_1D(sAr(:,1), sAi(:,1))
+        call getSource_1D(sDADzr(:,1), sDADzi(:,1), spr, spi, sgam, ctx%frame%eta)
+      end if
+    else
+      if ((ctx%flags%parallel_arrays_ok) .and. (ctx%flags%inner_xy_ok)) then
+        call getFFelecs_3D(sAr(:,1), sAi(:,1))
         call getSource_3D(sDADzr(:,1), sDADzi(:,1), spr, spi, sgam, ctx%frame%eta)
       end if
     end if
@@ -320,10 +359,7 @@ contains
 
           end if
 
-!     Energy exchange with the envelope, through the same ptilde as the source
-
-          call dgamdz_f(sx, sy, sz2, sprRes, spiRes, sgam, &
-                        sdgam, ctx%frame)
+!     The energy exchange was summed over the field components above.
 
         else
 

@@ -811,20 +811,33 @@ With {\bf qAveraged} set, Puffin solves a period-averaged form of the equations 
 \begin{align}
 \theta_j = \frac{\bar{z} - \bar{z}_{2j}}{2\rho}, \qquad \frac{d\theta_j}{d\bar{z}} = \frac{1 - p_{2j}}{2\rho},
 \end{align}
-slow exactly at Puffin's resonance condition $p_2 = 1$. With the on-axis undulator field $b_x = u_x \cos(\bar{z}/2\rho)$, $b_y = u_y \sin(\bar{z}/2\rho)$, the quiver is $\bar{p}_{\bot w} = -\alpha[u_+ e^{i\bar{z}/2\rho} + u_- e^{-i\bar{z}/2\rho}]$ with $u_\mp = (u_y \pm u_x)/2$, and the resonant component of the field is the one at $e^{-i\bar{z}_2/2\rho}$. The field is written in terms of a slowly varying envelope $\tilde{A}$,
+slow exactly at Puffin's resonance condition $p_2 = 1$. With the on-axis undulator field $b_x = u_x \cos(\bar{z}/2\rho)$, $b_y = u_y \sin(\bar{z}/2\rho)$, the quiver is
 \begin{align}
-A_\bot = \frac{u_-}{\sqrt{f_p}} \tilde{A}\, e^{-i\bar{z}_2/2\rho} + \frac{u_+}{\sqrt{f_p}} \tilde{A}^*\, e^{+i\bar{z}_2/2\rho}, \qquad f_p = \frac{u_x^2 + u_y^2}{2},
+\bar{p}_{x w} = -\alpha u_y \cos(\bar{z}/2\rho), \qquad \bar{p}_{y w} = -\alpha u_x \sin(\bar{z}/2\rho).
 \end{align}
-which is exact for a helical ($u_+ = 0$) or linearly polarised ($|u_+| = |u_-|$) undulator, and normalised so that $|\tilde{A}|^2$ is the period average of $|A_\bot|^2$. The transverse momentum $\bar{p}_\bot$ holds only its slow part. Averaging over an undulator period, the coupling is carried by an effective resonant momentum
+The electrons couple to the field only through $\mathrm{Re}[\bar{p}_\bot A_\bot^*] = \bar{p}_x A_x + \bar{p}_y A_y$, which does not mix the two Cartesian components, so the field is written as a slowly varying envelope for each,
 \begin{align}
-\tilde{p}_j = -\alpha \sqrt{f_p}\, JJ_j\, e^{-i\theta_j}, \qquad JJ_j = J_0(\xi_j) - \frac{u_+}{u_-} J_1(\xi_j), \qquad \xi_j = \frac{(1 + \eta p_{2j})^3 \bar{a}_u^2 \alpha^2 (u_y^2 - u_x^2)}{8 \eta \gamma_r^2 \Gamma_j^2},
+A_c = \sqrt{2}\,\mathrm{Re}\left[B_c\, e^{-i\bar{z}_2/2\rho}\right], \qquad c = x, y,
 \end{align}
-where $\xi_j$ is the phase amplitude of the figure-of-eight excursion in $\bar{z}_2$ that a planar undulator imposes through the $2\bar{z}/2\rho$ ripple in $|\bar{p}_{\bot w}|^2$. $\tilde{p}_j$ replaces $\bar{p}_{\bot j}$ in both the field source and the energy equation,
+normalised so that $|B_c|^2$ is the period average of $A_c^2$ and $|B_x|^2 + |B_y|^2$ that of $|A_\bot|^2$. Both helicities of the resonant radiation live at the same carrier in this basis, so any undulator polarisation and any seed polarisation is represented. The transverse momentum $\bar{p}_\bot$ holds only its slow part.
+
+The phase of electron $j$ carries a figure-of-eight ripple, $\theta_j = \bar{\theta}_j - \xi_j \sin(2\bar{z}/2\rho)$, from the $2\bar{z}/2\rho$ ripple in $|\bar{p}_{\bot w}|^2 = \alpha^2[f_p + \tfrac12(u_y^2 - u_x^2)\cos(2\bar{z}/2\rho)]$, $f_p = (u_x^2 + u_y^2)/2$, through $d\bar{z}_2/d\bar{z} = p_2$:
 \begin{align}
-\frac{\partial \tilde{A}}{\partial \bar{z}} &= \frac{1}{\bar{n}_p}\sum_{j} \frac{\tilde{p}_j}{\Gamma_j} (1+\eta p_{2j}) \delta(\bar{z}_2 - \bar{z}_{2j}) \quad \text{(1D)}, \\
-\frac{d \Gamma_{j}}{d \bar{z}} &= - \rho \frac{(1 + \eta p_{2j})}{\Gamma_j} (\tilde{p}_j \tilde{A}^*_j + c.c.),
+\xi_j = \frac{(1 + \eta p_{2j})^3 \bar{a}_u^2 \alpha^2 (u_y^2 - u_x^2)}{8 \eta \gamma_r^2 \Gamma_j^2}.
+\end{align}
+$\xi_j$ is signed. Expanding $e^{\pm i\xi_j \sin(2\bar{z}/2\rho)}$ in Bessel functions and averaging over a period, the coupling of each component is carried by an effective resonant momentum,
+\begin{align}
+q_{x,j} = -\frac{\alpha u_y}{\sqrt{2}} \left[J_0(\xi_j) - J_1(\xi_j)\right] e^{-i\bar{\theta}_j}, \qquad
+q_{y,j} = -i\,\frac{\alpha u_x}{\sqrt{2}} \left[J_0(\xi_j) + J_1(\xi_j)\right] e^{-i\bar{\theta}_j},
+\end{align}
+for which $\langle \bar{p}_x A_x + \bar{p}_y A_y \rangle = \mathrm{Re}\sum_c q_{c,j} B_c^*$. The period average of the field source $\bar{p}_c\, e^{+i\bar{z}_2/2\rho}$ projects onto the same $q_{c,j}$, so $q_{c,j}$ replaces $\bar{p}_c$ in both the field source and the energy equation, component by component,
+\begin{align}
+\frac{\partial B_c}{\partial \bar{z}} &= \frac{1}{\bar{n}_p}\sum_{j} \frac{q_{c,j}}{\Gamma_j} (1+\eta p_{2j}) \delta(\bar{z}_2 - \bar{z}_{2j}) \quad \text{(1D)}, \\
+\frac{d \Gamma_{j}}{d \bar{z}} &= - \rho \frac{(1 + \eta p_{2j})}{\Gamma_j} \sum_c (q_{c,j} B^*_{c,j} + c.c.),
 \end{align}
 which is what makes the averaged system conserve beam plus field energy exactly. $p_{2j}$ is evaluated with $|\bar{p}_\bot|^2 + \alpha^2 f_p$ in place of $|\bar{p}_\bot|^2$ - the $\bar{a}_u \rightarrow \bar{a}_{u,rms}$ substitution. The radiation-driven quiver, the $\eta p_2 A_\bot / \kappa^2$ term of equation \eqref{pperpeqn2}, is dropped; its slow effect on $p_2$ is $O(\rho)$ relative to the pendulum dynamics.
+
+In the helicity basis, with $u_\mp = (u_y \pm u_x)/2$, the same couplings read $(q_x \mp i q_y)/\sqrt{2} = -\alpha (u_\mp J_0 - u_\pm J_1)\, e^{-i\bar{\theta}}$: $J_0$ and $J_1$ swap partners between the two helicities, so they are driven in a ratio that equals $u_+/u_-$ only for a helical ($u_+ = 0$) or linearly polarised ($|u_+| = |u_-|$) undulator. Those are the cases a single envelope can carry, and for them the two-component system reduces exactly to one: a planar undulator drives $B_x$ alone, and a helical one keeps $B_y = i B_x$. For a general elliptical undulator both components are needed. The unit tests in {\tt test/testAveraging.pf} check $q_x$ and $q_y$ against a brute-force period average of a single electron's exact quiver motion, including the figure-of-eight, for planar, helical, elliptical, linear-along-$y$ and opposite-helicity undulators.
 
 \subsubsection{Transverse motion}
 
@@ -854,8 +867,6 @@ Rejected outright:
 
 \begin{itemize}
 
-\item {\bf An elliptical undulator.} One envelope is exact only for a helical ($u_+ = 0$) or linearly polarised ($|u_+| = |u_-|$) undulator. A lattice file that switches polarisation between modules is caught separately, in {\tt UndSection}, so a run cannot become elliptical part way through.
-
 \item {\bf lambdarPerCell $\le 0$.}
 
 \item {\bf Resuming from a dump} ({\bf qResume}). A dump written by the unaveraged solver holds a field that resolves the carrier and a $\bar{p}_\bot$ that still contains the quiver; read back in averaged mode those become an envelope and a slow momentum, silently. Nothing in the dump currently records which mode wrote it, so the two cannot be told apart and both are refused - including resuming an averaged run from its own averaged dump, which would itself be valid.
@@ -880,7 +891,7 @@ Warned about, but allowed to run:
 
 One further limit is not checked, because it cannot be detected from the input: averaged and unaveraged results are not expected to agree once a run saturates.
 
-A seed's polarisation, on the other hand, does need care. One envelope fixes the ratio of the radiation's two helicity components at $u_+/u_-$, so the seed must be a polarisation the envelope can hold. For a planar undulator $u_+ = u_-$ and a linearly polarised seed is reproduced exactly; for a helical one $u_+ = 0$, the opposite helicity cannot be represented at all, and a linear seed silently loses half its power - correctly, in that the dropped component does not couple to the beam, but surprisingly if one is comparing total field energy against an unaveraged run. Puffin warns at setup when the seed's polarisation is not one the envelope can reproduce, naming the fraction of the seed power that survives.
+Any undulator polarisation is accepted, including elliptical ones and a lattice that changes polarisation between modules, and any seed polarisation is laid exactly: the two Cartesian envelopes hold both helicities. A field component the undulator does not drive - the $y$ polarisation of a planar undulator, the opposite helicity of a helical one - still propagates and diffracts; it simply does not couple to the beam.
 
 \subsubsection{What the output files say about the mode}
 
@@ -888,12 +899,13 @@ Every Puffin dump - field, electron and integrated - records in its {\tt /runInf
 
 \begin{itemize}
 \item {\tt qAveraged} - $0$ or $1$.
-\item {\tt kz2Carrier} - the carrier the stored field is an envelope about, so that $A_\bot =$ {\tt aperp}$\,e^{i\,{\tt kz2Carrier}\,\bar{z}_2}$ holds in both modes. It is zero for an unaveraged run, where {\tt aperp} already resolves the carrier and applying the factor is a no-op.
+\item {\tt kz2Carrier} - the carrier the stored field is an envelope about. In averaged mode $A_c = \sqrt{2}\,\mathrm{Re}[B_c\, e^{i\,{\tt kz2Carrier}\,\bar{z}_2}]$, with $B_x$ and $B_y$ the two components of {\tt aperp}. It is zero for an unaveraged run, where {\tt aperp} already resolves the carrier.
+\item {\tt nFieldComp}, {\tt fieldCompMeaning} - how many complex components {\tt aperp} holds and what they are: one, $(A_x, -A_y)$, unaveraged; two, the rms envelopes $B_x$ and $B_y$, averaged.
 \item {\tt lambdarPerCell} - the $\bar{z}_2$ cell size in resonant wavelengths, measured from the mesh rather than copied from the input parameter of the same name. Unaveraged that input is meaningless and the true figure is 1/({\bf nodesPerLambdar} $-$ 1); in averaged mode the mesh is rounded to a whole number of nodes, so a deck asking for $2.0$ may get $1.99776$. The attribute is always true about the file it sits in.
 \item {\tt pperpMeaning} - whether the electron $p_x$, $p_y$ columns carry the undulator quiver or only their slow, betatron part.
 \end{itemize}
 
-The plotting utilities in {\tt utilities/pyPlotting/} read these. In averaged mode they label the field as an envelope, plot spectra about the carrier rather than absolutely, and mark the band the envelope mesh can represent; power and intensity are numerically unchanged, since $|\tilde{A}|^2$ is by construction the period average of $|A_\bot|^2$.
+The plotting utilities in {\tt utilities/pyPlotting/} read these. In averaged mode they label the field as an envelope, plot spectra about the carrier rather than absolutely, and mark the band the envelope mesh can represent; power and intensity are numerically unchanged, since $|B_x|^2 + |B_y|^2$ is by construction the period average of $|A_\bot|^2$.
 
 \subsection{Full Magnetic Undulator Field Analytic Description}
 
@@ -1227,7 +1239,7 @@ Logical turning on/off the filtering of low frequency content during the siffrac
 
 {\bf qAveraged}
 
-Logical turning on/off the period-averaged (SVEA) solver mode, described in Section~\ref{puff-avg}. When {\bf .true.}, the field mesh holds the slowly varying envelope of the radiation about the resonant carrier rather than the resolved field, and the electron equations are averaged over an undulator period, with the quiver carried analytically. The mesh no longer has to resolve the resonant wavelength, and is set by {\bf lambdarPerCell}; the step no longer has to resolve the undulator period either, and {\bf stepsPerPeriod} $=1$ or $2$ is usually enough. It is an opt-in alternative to the unaveraged solver for regimes where averaging is valid: it discards coherent spontaneous emission from sharp current gradients, bandwidth beyond the envelope mesh's roughly $\pm 1/(2\times${\bf lambdarPerCell}$)$ of the resonant frequency, harmonics, and electrons far from resonance, for which the ponderomotive phase is no longer slow. Two-colour and strongly tapered cases fall in that last class. 1D and 3D, for helical or linearly polarised undulators; the undulator ends, if modelled, only ramp the coupling. Several inputs are rejected or warned about at setup in this mode, including HDF5 and MASP macroparticle input, HDF5 field input and {\bf qResume} - see Section~\ref{puff-avg-refuses} for the full list and the reasons. [.false.]
+Logical turning on/off the period-averaged (SVEA) solver mode, described in Section~\ref{puff-avg}. When {\bf .true.}, the field mesh holds the slowly varying envelope of the radiation about the resonant carrier rather than the resolved field, and the electron equations are averaged over an undulator period, with the quiver carried analytically. The mesh no longer has to resolve the resonant wavelength, and is set by {\bf lambdarPerCell}; the step no longer has to resolve the undulator period either, and {\bf stepsPerPeriod} $=1$ or $2$ is usually enough. It is an opt-in alternative to the unaveraged solver for regimes where averaging is valid: it discards coherent spontaneous emission from sharp current gradients, bandwidth beyond the envelope mesh's roughly $\pm 1/(2\times${\bf lambdarPerCell}$)$ of the resonant frequency, harmonics, and electrons far from resonance, for which the ponderomotive phase is no longer slow. Two-colour and strongly tapered cases fall in that last class. 1D and 3D, for any undulator polarisation; the undulator ends, if modelled, only ramp the coupling. Several inputs are rejected or warned about at setup in this mode, including HDF5 and MASP macroparticle input, HDF5 field input and {\bf qResume} - see Section~\ref{puff-avg-refuses} for the full list and the reasons. [.false.]
 
 {\bf ioutinfo}
 

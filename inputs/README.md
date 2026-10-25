@@ -21,9 +21,8 @@ with diffraction and a matched beam, and takes about 46 s. Both are seeded and
 noise-free.
 
 Each deck's header documents `qAveraged` and `lambdarPerCell`, what the mode
-refuses at setup rather than approximate (elliptical polarisation, resuming
-from a dump, reading a resolved field, a seed detuned outside the envelope
-mesh's band), and — in the 3D deck — the absorbing-boundary trap, which is
+refuses at setup rather than approximate (resuming from a dump, reading a
+resolved field, a seed detuned outside the envelope mesh's band), and — in the 3D deck — the absorbing-boundary trap, which is
 sized in nodes and so is a much larger fraction of a coarse envelope mesh.
 
 The measured accuracy of this mode, against the unaveraged solver on these

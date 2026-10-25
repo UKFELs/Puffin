@@ -44,12 +44,13 @@ python3 compare_sase.py <plain_dir> <avg_dir> 0.005 helical   # full tables
 
 **Run both polarisations.** `--und` defaults to `planepole`, the deck's own
 undulator, and for a long time that was the only one this comparison ever ran.
-A planar undulator's slaved `Atilde_y` is zero, so it is blind to anything that
-goes wrong with the second polarisation component: the averaged helical power
-was reported at exactly twice the unaveraged value while this comparison, run
+A planar undulator never drives `B_y`, so it is blind to anything that goes
+wrong with the second polarisation component: the averaged helical power was
+once reported at exactly twice the unaveraged value while this comparison, run
 planar, agreed to ~1%. Its seeded sibling `run_compare.py` has taken `helical`
 all along — nobody passed it. A change to averaged mode is not checked until
-both have been run.
+both have been run, and, since it drives `B_x` and `B_y` with different
+couplings, an elliptical one (`run_compare.py 0.5,1`).
 
 The deck is `deck.in`'s beam and undulator - 1D, planar, rho = 0.005,
 aw = 1.012, gamma_r = 456.4 - with `q_noise = .true.`, no seed file, and 340
@@ -295,6 +296,8 @@ recommendation, 4 is tolerable before saturation, 8 is not.
 ```sh
 python3 run_compare3d.py helical                 # defaults: --plain 12:30 24:60 --avg 1:2
 python3 run_compare3d.py helical --plain 12:30 24:60 48:120
+python3 run_compare3d.py 0.5,1 --plain 12:30 24:60 48:120     # elliptical, 'puffin' type
+python3 run_compare3d.py 1,0 --seed 0.0,0.001                 # linear along y, y seed
 python3 compare3d.py <plain_dir> <avg_dir>       # full tables
 ```
 
@@ -312,18 +315,18 @@ early otherwise looks finished. It also reports the power ratio at the first wri
 warns if it is not 1 - any deviation there means the two runs did not start from the
 same field, and nothing after it is a comparison of the physics.
 
-The usual cause of that is the seed polarisation. One averaged-mode envelope fixes the
-ratio of the field's two helicity components at `u+/u-`, so a helical undulator needs
-`sA0_X = sA0_Y` (the resonant helicity) and a planar one needs a linear seed. Get it
-wrong on a helical undulator and the averaged run starts with exactly half the seed
-power - and the ratio then climbs from 0.5 towards 1 as the field grows, which is easy
-to mistake for a physics result. `run_compare3d.py` sets it from the undulator type, and
-Puffin itself warns at setup.
+That used to happen whenever the seed's polarisation did not match the undulator, when
+averaged mode carried a single envelope and so only the resonant helicity. It now carries
+both Cartesian envelopes and lays any seed polarisation exactly. `run_compare3d.py` still
+defaults to the polarisation that gains (the resonant helicity for helical and `UX,UY`
+undulators, linear along x otherwise), since a component the undulator does not drive
+only propagates; `--seed AX,AY` overrides it.
 
 Note neither `compare3d.py` nor the tables below filter power to the fundamental band, as
 the 1D `compare.py`'s `demod` does. For a planar undulator that makes total power a
 like-for-unlike comparison, since the unaveraged run radiates harmonics the averaged mode
-cannot carry; the 3D deck is helical, which has no harmonic content.
+cannot carry; the 3D deck is helical, which has no harmonic content. Run planar or
+elliptical, compare bunching as well as power.
 
 ### What the 3D comparison showed (2026-09-12)
 
@@ -344,6 +347,46 @@ transverse profile agrees to an L2 of 7e-3 in x, 1.3e-2 in y.
 Against n48, the power ratio holds 0.999 through the exponential phase and only drifts
 to 0.983 past zbar ~ 4.5 as the run rolls over towards saturation, which is why the
 series table matters as much as the final row.
+
+These runs predate the two-envelope coupling, but a helical undulator is bit-identical
+under it (W3b in `AVERAGED_MODE_ROADMAP.md`), so they stand.
+
+### Other polarisations in 3D (2026-10-25)
+
+After averaged mode gained independent x and y envelopes, the same deck on 4 ranks, four
+cases at once on an 18-core laptop. Averaged runs take 8 s; unaveraged 63, 177 and 420 s
+at n12, n24 and n48. Ratios are averaged / unaveraged at the last write:
+
+| undulator (ux, uy) | P ratio n12 / n24 / n48 | bunching at n48 | field sigma_x, y at n48 | beam sigma_x, y at n48 |
+| --- | --- | --- | --- | --- |
+| elliptical (0.5, 1) | 1.1080 / 1.0052 / 0.9836 | 0.9933 | 1.0055, 1.0067 | 1.0006, 1.0013 |
+| elliptical (1, 0.6) | 1.0820 / 0.9880 / 0.9686 | 0.9969 | 0.9977, 1.0027 | 1.0007, 1.0019 |
+| planar, `planepole` (0, 1) | 1.1152 / 0.9983 / 0.9709 | 0.9932 | 1.0077, 1.0068 | 1.0005, 1.0006 |
+| linear along y (1, 0) | 1.0643 / 0.9541 / 0.9290 | 0.9831 | 1.0000, 1.0034 | 1.0006, 1.0017 |
+
+`'puffin'` at (0, 1) gives exactly the `planepole` numbers here, so the planar row is also
+the `'puffin'` type's own.
+
+The elliptical and planar cases follow the helical pattern: the power gap at n12 is the
+unaveraged solver's and closes as it refines, bunching is within 0.7% at n48, and the
+transverse sizes within 0.8%. Through the exponential phase against n48 the power ratio
+is 0.995 at zbar 3.8 for (0.5, 1) and 0.996 for (1, 0.6), and drifts down as the runs roll
+over. Planar's falls from 1.000 to 0.977 already by zbar 3.8, before there is much gain:
+that is the unaveraged run's harmonic radiation, which `/power` here does not filter out.
+Its bunching ratio, 0.997 at the same point, is the cleaner measure.
+
+**Linear along y is the outlier, and the evidence puts it in the unaveraged solver.** It is
+the mirror of planar, and the two solvers' mean transverse momenta show where they part.
+For planar (x wiggle) the slow `<p_x>` and `<p_y>` agree between solvers to about 1e-5
+throughout.
+For linear along y (y wiggle) `<p_x>` agrees just as well, but the unaveraged `<p_y>` drifts
+steadily, from -3.72e-3 to -2.86e-3 over the run, while the averaged one stays at -3.75e-3.
+A pure `b_x` undulator has no y dependence and should put no net force on the centroid in
+y, which is what the averaged run shows; the unaveraged one keeps its centroid nearer the
+axis (`<y>` -0.027 against -0.043 at the end) and so overlaps the field better. Together with
+the 2% x/y asymmetry the unaveraged solver shows in 1D, where averaged mode gives planar and
+linear-along-y identical power, this points at the unaveraged y-wiggle path. It is not
+traced to a cause.
 
 
 ## What the comparison showed (2026-09-11)

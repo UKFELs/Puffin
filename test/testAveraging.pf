@@ -7,15 +7,16 @@
 !! p2 from the unaveraged getP2 so that the planar figure-of-eight excursion in
 !! z2 is included, and the period average of its coupling to the field - in
 !! the field source and in the energy equation - is compared with what the
-!! averaged model puts in its place.  That pins down JJ, the polarisation
-!! factor and the carrier sign independently of the solver.
+!! averaged model puts in its place, for each Cartesian field component.  That
+!! pins down the Bessel factors, the polarisation amplitudes and the carrier
+!! sign independently of the solver, for any undulator polarisation.
 !!
 !! The second calls getrhs in averaged mode and checks that beam plus field
 !! energy is conserved to round-off in a single RHS evaluation.  The source and
-!! the energy equation share one coupling array by construction; this is the
-!! guard that stops them drifting apart (a mismatched JJ, alpha or phase
-!! factor between getSource_1D and dgamdz_f leaks energy while looking
-!! perfectly plausible).
+!! the energy equation share one coupling array per field component by
+!! construction; this is the guard that stops them drifting apart (a
+!! mismatched JJ, alpha or phase factor between getSource_1D and dgamdz_f
+!! leaks energy while looking perfectly plausible).
 !!
 !! No MPI.
 
@@ -25,8 +26,8 @@ module testAveraging
   use puffin_kinds
   use puffin_constants, only: pi
   use GlobalTypes, only: tUndulator, tFELFrame, tSimulationContext
-  use averaging, only: tAvgCoupling, getAvgUndAmps, getAvgPolarisation, qAvgPolarisationOK, &
-                       getAvgEnvelope, getAvgCoupling, avgJJ, getAvgSeedFactor, &
+  use averaging, only: tAvgCoupling, getAvgUndAmps, getAvgPolarisation, &
+                       getAvgEnvelope, getAvgCoupling, avgJJ, getResonantMomentum, &
                        tAvgFocusing, getAvgFocusCoef, getAvgFocusing, getAvgCarrierKz2
   use gtop2, only: getP2, getP2Avg
 
@@ -136,38 +137,41 @@ contains
 
 
   !> Period averages of the exact coupling, by brute force, and the averaged
-  !! model's prediction for the same quantities.
+  !! model's prediction for the same quantities, per Cartesian component.
   !!
-  !! srcPlus  = < w pperp exp(+i z2/2rho) >, the drive of the exp(-i z2/2rho)
-  !!            field component A+ (w = (1 + eta p2)/Gamma)
-  !! srcMinus = < w pperp exp(-i z2/2rho) >, the drive of the other helicity A-
-  !! eng      = < w Re(pperp conj(A_perp(z2))) >, the energy-equation coupling,
-  !!            for A_perp built from the envelope Atil as averaging.f90 defines
-  subroutine bruteForce(und, frame, gam, Atil, &
-                        srcPlus, srcMinus, eng, &
-                        srcPlusM, srcMinusM, engM, p2Mean, p2Model)
+  !! srcX, srcY = sqrt(2) < w p_c exp(+i z2/2rho) >, the drive of the stored
+  !!              envelope B_c of A_c = sqrt(2) Re[B_c exp(-i z2/2rho)]
+  !!              (w = (1 + eta p2)/Gamma)
+  !! eng        = < w (p_x A_x + p_y A_y) > = < w Re(pperp conj(A_perp)) >, the
+  !!              energy-equation coupling, for the field built from Bx, By
+  !!
+  !! The model side calls getResonantMomentum itself, so the solver's own
+  !! q_x, q_y - phase, sign and Bessel factors - are what is being checked.
+  subroutine bruteForce(und, frame, gam, Bx, By, &
+                        srcX, srcY, eng, &
+                        srcXM, srcYM, engM, p2Mean, p2Model)
     type(tUndulator), intent(in) :: und
     type(tFELFrame), intent(in) :: frame
     real(kind=wp), intent(in) :: gam
-    complex(kind=wp), intent(in) :: Atil
-    complex(kind=wp), intent(out) :: srcPlus, srcMinus, srcPlusM, srcMinusM
+    complex(kind=wp), intent(in) :: Bx, By
+    complex(kind=wp), intent(out) :: srcX, srcY, srcXM, srcYM
     real(kind=wp), intent(out) :: eng, engM, p2Mean, p2Model
 
     integer, parameter :: nPer = 8, n = 4000 * nPer
     real(kind=wp), parameter :: z0 = 0.3_wp, z2start = 1.7_wp
-    real(kind=wp), allocatable, dimension(:) :: z, px, py, g, p2, z2, zc, w
-    complex(kind=wp), allocatable, dimension(:) :: pp, Aperp, ptil, f
-    real(kind=wp) :: cx, cy, uMinus, uPlus, fp, lamw, h, inv2rho, centre
+    real(kind=wp), allocatable, dimension(:) :: z, px, py, g, p2, z2, zc, w, ax, ay
+    complex(kind=wp), allocatable, dimension(:) :: qx, qy, f
+    real(kind=wp) :: cx, cy, lamw, h, inv2rho, centre
     type(tAvgCoupling) :: cpl
-    real(kind=wp) :: coup, wbar, p2m(1), gm(1), zero(1)
+    real(kind=wp) :: wbar, p2m(1), gm(1), zero(1), zc1(1)
+    real(kind=wp) :: qr(1,2), qi(1,2)
     complex(kind=wp), parameter :: iu = (0.0_wp, 1.0_wp)
     integer :: i
 
     allocate(z(0:n), px(0:n), py(0:n), g(0:n), p2(0:n), z2(0:n), zc(0:n), w(0:n))
-    allocate(pp(0:n), Aperp(0:n), ptil(0:n), f(0:n))
+    allocate(ax(0:n), ay(0:n), qx(0:n), qy(0:n), f(0:n))
 
     call getAvgUndAmps(und%undulator_type, und%fx, und%fy, cx, cy)
-    call getAvgPolarisation(cx, cy, uMinus, uPlus, fp)
 
     lamw = 4.0_wp * pi * frame%rho
     h = nPer * lamw / real(n, kind=wp)
@@ -177,14 +181,14 @@ contains
       z(i) = z0 + real(i, kind=wp) * h
     end do
 
-!   Exact quiver: pperp = -alpha cy cos(zbar/2rho) + i alpha cx sin(zbar/2rho)
+!   Exact quiver, physical components: px = -alpha cy cos(zbar/2rho),
+!   py = -alpha cx sin(zbar/2rho).  getP2 takes spr = px, spi = -py.
 
     px = -und%n2col * cy * cos(z * inv2rho)
-    py = und%n2col * cx * sin(z * inv2rho)
-    pp = cmplx(px, py, kind=wp)
+    py = -und%n2col * cx * sin(z * inv2rho)
     g = gam
 
-    call getP2(p2, g, px, py, frame%eta, frame%gamma_ref, frame%aw)
+    call getP2(p2, g, px, -py, frame%eta, frame%gamma_ref, frame%aw)
 
 !   z2 by trapezoidal integration of p2, then its guiding centre: the linear
 !   trend through the period mean, which is what the averaged model tracks.
@@ -205,18 +209,18 @@ contains
 
 !   The physical field seen at the particle's true position
 
-    Aperp = (uMinus / sqrt(fp)) * Atil * exp(-iu * z2 * inv2rho) &
-          + (uPlus / sqrt(fp)) * conjg(Atil) * exp(iu * z2 * inv2rho)
+    ax = sqrt(2.0_wp) * real(Bx * exp(-iu * z2 * inv2rho), kind=wp)
+    ay = sqrt(2.0_wp) * real(By * exp(-iu * z2 * inv2rho), kind=wp)
 
-    f = w * pp * exp(iu * z2 * inv2rho)
-    srcPlus = avgW(f)
-    f = w * pp * exp(-iu * z2 * inv2rho)
-    srcMinus = avgW(f)
-    f = cmplx(w * real(pp * conjg(Aperp), kind=wp), 0.0_wp, kind=wp)
+    f = sqrt(2.0_wp) * w * px * exp(iu * z2 * inv2rho)
+    srcX = avgW(f)
+    f = sqrt(2.0_wp) * w * py * exp(iu * z2 * inv2rho)
+    srcY = avgW(f)
+    f = cmplx(w * (px * ax + py * ay), 0.0_wp, kind=wp)
     eng = real(avgW(f), kind=wp)
 
-!   The averaged model: ptilde = -coup exp(-i (zbar - z2c)/2rho), with p2 and
-!   w from the period-averaged |pperp|^2
+!   The averaged model, with p2 and w from the period-averaged |pperp|^2 and
+!   q_x, q_y from the solver's own routine at each zbar along the guiding centre
 
     call getAvgCoupling(z0, und, frame, cpl)
 
@@ -226,15 +230,16 @@ contains
     p2Model = p2m(1)
     wbar = (1.0_wp + frame%eta * p2Model) / gam
 
-!   JJ for this particle's own energy - the figure-of-eight goes as 1/Gamma^2
+    do i = 0, n
+      zc1 = zc(i)
+      call getResonantMomentum(z(i), zc1, gm, p2m, frame%eta, frame%rho, cpl, qr, qi)
+      qx(i) = cmplx(qr(1,1), qi(1,1), kind=wp)
+      qy(i) = cmplx(qr(1,2), qi(1,2), kind=wp)
+    end do
 
-    coup = cpl%amp * avgJJ(cpl, 1.0_wp + frame%eta * p2Model, gam)
-
-    ptil = -coup * exp(-iu * (z - zc) * inv2rho)
-
-    srcPlusM = (uMinus / sqrt(fp)) * wbar * avgW(ptil)
-    srcMinusM = (uPlus / sqrt(fp)) * wbar * conjg(avgW(ptil))
-    f = cmplx(wbar * real(ptil * conjg(Atil), kind=wp), 0.0_wp, kind=wp)
+    srcXM = wbar * avgW(qx)
+    srcYM = wbar * avgW(qy)
+    f = cmplx(wbar * real(qx * conjg(Bx) + qy * conjg(By), kind=wp), 0.0_wp, kind=wp)
     engM = real(avgW(f), kind=wp)
 
   end subroutine bruteForce
@@ -242,30 +247,31 @@ contains
 
   !> Compare brute force and model for one undulator and energy.  The model
   !! drops the O(eta) ripple in (1 + eta p2), so 1e-5 relative is as close as
-  !! it can be expected to get; any error in JJ, fp or the carrier sign is
-  !! O(1e-1) or O(1).
+  !! it can be expected to get; any error in a Bessel factor, an amplitude or
+  !! the carrier sign is O(1e-1) or O(1).  The two field components are
+  !! deliberately unrelated, so the energy check sees both couplings at once.
   subroutine checkAgainstBruteForce(undType, fx, fy, gam)
     character(*), intent(in) :: undType
     real(kind=wp), intent(in) :: fx, fy, gam
 
     type(tUndulator) :: und
     type(tFELFrame) :: frame
-    complex(kind=wp) :: srcPlus, srcMinus, srcPlusM, srcMinusM
+    complex(kind=wp) :: srcX, srcY, srcXM, srcYM
     real(kind=wp) :: eng, engM, p2Mean, p2Model, scale
-    complex(kind=wp), parameter :: Atil = (0.3_wp, 0.7_wp)
+    complex(kind=wp), parameter :: Bx = (0.3_wp, 0.7_wp), By = (-0.5_wp, 0.2_wp)
     real(kind=wp), parameter :: tol = 1.0e-5_wp
 
     call makeUnd(und, frame, undType, fx, fy)
-    call bruteForce(und, frame, gam, Atil, srcPlus, srcMinus, eng, &
-                    srcPlusM, srcMinusM, engM, p2Mean, p2Model)
+    call bruteForce(und, frame, gam, Bx, By, srcX, srcY, eng, &
+                    srcXM, srcYM, engM, p2Mean, p2Model)
 
-    scale = abs(srcPlusM)
+    scale = max(abs(srcXM), abs(srcYM))
 
-    @assertEqual(real(srcPlusM, kind=wp), real(srcPlus, kind=wp), tol * scale)
-    @assertEqual(aimag(srcPlusM), aimag(srcPlus), tol * scale)
-    @assertEqual(real(srcMinusM, kind=wp), real(srcMinus, kind=wp), tol * scale)
-    @assertEqual(aimag(srcMinusM), aimag(srcMinus), tol * scale)
-    @assertEqual(engM, eng, tol * scale * abs(Atil))
+    @assertEqual(real(srcXM, kind=wp), real(srcX, kind=wp), tol * scale)
+    @assertEqual(aimag(srcXM), aimag(srcX), tol * scale)
+    @assertEqual(real(srcYM, kind=wp), real(srcY, kind=wp), tol * scale)
+    @assertEqual(aimag(srcYM), aimag(srcY), tol * scale)
+    @assertEqual(engM, eng, tol * scale * max(abs(Bx), abs(By)))
 
 !   Period-averaged p2 against the true mean velocity.  They differ at second
 !   order in the |pperp|^2 ripple, ~1e-7 here - far below the rho = 5e-3
@@ -276,95 +282,85 @@ contains
   end subroutine checkAgainstBruteForce
 
 
-  !> The slaved field component. Averaged mode carries one envelope per linear
-  !! polarisation, but only component 1 is integrated: for the undulator types
-  !! it supports, component 2 is fixed by component 1 and setAvgSlavedComp
-  !! derives it. Planar radiates along x alone, so the y envelope is zero.
-  !! Helical has A_perp = Atilde exp(-i z2/2rho) with no constraint, which is
-  !! Atilde_y = i Atilde_x: real part -> -imag, imag part -> real.
-  !!
-  !! No e2e suite runs averaged mode, so this is the only automated guard on it.
+  !> The limits the Cartesian couplings must reduce to.  Planar drives x alone,
+  !! with the single-envelope amplitude alpha sqrt(fp); helical drives y a
+  !! quarter period ahead of x, exactly, which used to be imposed by slaving
+  !! component 2 and now has to come out of the equations; linear along y
+  !! mirrors planar, which needs xi to keep its sign; and in the helicity basis
+  !! an elliptical undulator gives the old alpha (u- J0 - u+ J1) on the
+  !! resonant helicity.
   @test
-  subroutine testSlavedComponent()
-
-    use GlobalTypes, only: tFieldValues
-    use averaging, only: setAvgSlavedComp
-
-    type(tFieldValues) :: field
-    integer, parameter :: nn = 9
+  subroutine testCartesianLimits()
+    type(tUndulator) :: und
+    type(tFELFrame) :: frame
+    type(tAvgCoupling) :: cplP, cplV, cpl
+    real(kind=wp), dimension(3) :: sz2, sgam, sp2
+    real(kind=wp) :: qr(3,2), qi(3,2)
+    real(kind=wp) :: jxP, jyP, jxV, jyV, cx, cy, uMinus, uPlus, fp, xi, theta
+    complex(kind=wp) :: qMinus, expect
+    complex(kind=wp), parameter :: iu = (0.0_wp, 1.0_wp)
     integer :: j
-    real(kind=wp) :: keep_r(nn), keep_i(nn)
 
-    field%nComp = 2_ip
+    sz2 = [0.11_wp, 0.52_wp, 0.93_wp]
+    sgam = [1.0_wp, 1.003_wp, 0.996_wp]
 
-    allocate(field%ac_r(nn,2), field%ac_i(nn,2))
-    allocate(field%fr_r(nn,2), field%fr_i(nn,2))
-    allocate(field%bk_r(nn,2), field%bk_i(nn,2))
+!   Planar: x alone, at the single-envelope amplitude
 
-    do j = 1, nn
-      field%ac_r(j,1) = 0.3_wp * cos(0.7_wp * j)
-      field%ac_i(j,1) = 0.3_wp * sin(0.4_wp * j + 0.5_wp)
+    call makeUnd(und, frame, "planepole", 1.0_wp, 1.0_wp)
+    call getAvgCoupling(0.4_wp, und, frame, cplP)
+    @assertEqual(0.0_wp, cplP%ampY, 0.0_wp)
+    @assertEqual(sqrt(0.5_wp), cplP%ampX, 0.0_wp)
+
+    sp2 = 1.0_wp
+    call getResonantMomentum(0.4_wp, sz2, sgam, sp2, frame%eta, frame%rho, cplP, qr, qi)
+    @assertEqual(0.0_wp, maxval(abs(qr(:,2))), 0.0_wp)
+    @assertEqual(0.0_wp, maxval(abs(qi(:,2))), 0.0_wp)
+
+!   Helical: q_y = i q_x exactly - Re q_y = -Im q_x, Im q_y = Re q_x
+
+    call makeUnd(und, frame, "helical", 1.0_wp, 1.0_wp)
+    call getAvgCoupling(0.4_wp, und, frame, cpl)
+    call getResonantMomentum(0.4_wp, sz2, sgam, sp2, frame%eta, frame%rho, cpl, qr, qi)
+    @assertEqual(0.0_wp, maxval(abs(qr(:,2) + qi(:,1))), 0.0_wp)
+    @assertEqual(0.0_wp, maxval(abs(qi(:,2) - qr(:,1))), 0.0_wp)
+    @assertTrue(maxval(abs(qr(:,1))) > 0.1_wp)
+
+!   Linear along y: drives y alone, with planar's J0 - J1 at the same |xi|
+
+    call makeUnd(und, frame, "", 1.0_wp, 0.0_wp)
+    call getAvgCoupling(0.4_wp, und, frame, cplV)
+    @assertEqual(0.0_wp, cplV%ampX, 0.0_wp)
+    @assertEqual(sqrt(0.5_wp), cplV%ampY, 0.0_wp)
+    @assertEqual(-cplP%xiCoef, cplV%xiCoef, 0.0_wp)
+
+    call avgJJ(cplP, 1.02_wp, 0.99_wp, jxP, jyP)
+    call avgJJ(cplV, 1.02_wp, 0.99_wp, jxV, jyV)
+    @assertEqual(jxP, jyV, 1.0e-15_wp)
+    @assertEqual(jyP, jxV, 1.0e-15_wp)
+    @assertTrue(abs(jxP - 1.0_wp) > 0.05_wp)
+
+!   Elliptical, in the helicity basis: (q_x - i q_y)/sqrt(2) is the resonant
+!   helicity's coupling, -alpha (u- J0 - u+ J1) exp(-i theta)
+
+    call makeUnd(und, frame, "", 0.5_wp, 1.0_wp)
+    call getAvgCoupling(0.4_wp, und, frame, cpl)
+    call getAvgUndAmps("", 0.5_wp, 1.0_wp, cx, cy)
+    call getAvgPolarisation(cx, cy, uMinus, uPlus, fp)
+
+    sp2 = [1.0_wp, 0.98_wp, 1.01_wp]
+    call getResonantMomentum(0.4_wp, sz2, sgam, sp2, frame%eta, frame%rho, cpl, qr, qi)
+
+    do j = 1, 3
+      xi = cpl%xiCoef * (1.0_wp + frame%eta * sp2(j))**3 / sgam(j)**2
+      theta = (0.4_wp - sz2(j)) / (2.0_wp * frame%rho)
+      expect = -(uMinus * bessel_j0(xi) - uPlus * bessel_j1(xi)) * exp(-iu * theta)
+      qMinus = (cmplx(qr(j,1), qi(j,1), kind=wp) - iu * cmplx(qr(j,2), qi(j,2), kind=wp)) &
+               / sqrt(2.0_wp)
+      @assertEqual(real(expect, kind=wp), real(qMinus, kind=wp), 1.0e-14_wp)
+      @assertEqual(aimag(expect), aimag(qMinus), 1.0e-14_wp)
     end do
-    field%fr_r(:,1) = field%ac_r(:,1)
-    field%fr_i(:,1) = field%ac_i(:,1)
-    field%bk_r(:,1) = field%ac_r(:,1)
-    field%bk_i(:,1) = field%ac_i(:,1)
 
-    keep_r = field%ac_r(:,1)
-    keep_i = field%ac_i(:,1)
-
-!   Planar: nothing in y.
-
-    field%ac_r(:,2) = 99.0_wp
-    field%ac_i(:,2) = 99.0_wp
-
-    call setAvgSlavedComp(field, "planepole", 1.0_wp, 1.0_wp)
-
-    @assertEqual(0.0_wp, maxval(abs(field%ac_r(:,2))), 0.0_wp)
-    @assertEqual(0.0_wp, maxval(abs(field%ac_i(:,2))), 0.0_wp)
-    @assertEqual(0.0_wp, maxval(abs(field%fr_r(:,2))), 0.0_wp)
-    @assertEqual(0.0_wp, maxval(abs(field%bk_i(:,2))), 0.0_wp)
-
-!   Helical: y is x rotated a quarter period. Exact, not approximate.
-
-    call setAvgSlavedComp(field, "helical", 1.0_wp, 1.0_wp)
-
-    @assertEqual(0.0_wp, maxval(abs(field%ac_r(:,2) + field%ac_i(:,1))), 0.0_wp)
-    @assertEqual(0.0_wp, maxval(abs(field%ac_i(:,2) - field%ac_r(:,1))), 0.0_wp)
-    @assertEqual(0.0_wp, maxval(abs(field%bk_r(:,2) + field%bk_i(:,1))), 0.0_wp)
-    @assertEqual(0.0_wp, maxval(abs(field%bk_i(:,2) - field%bk_r(:,1))), 0.0_wp)
-
-!   Component 1 is never touched. Compared against a snapshot rather than a
-!   recomputed expression, which the compiler need not evaluate identically.
-
-    @assertEqual(0.0_wp, maxval(abs(field%ac_r(:,1) - keep_r)), 0.0_wp)
-    @assertEqual(0.0_wp, maxval(abs(field%ac_i(:,1) - keep_i)), 0.0_wp)
-
-!   The polarisation comes from cx, cy, not from the undulator type string.
-!   The default 'puffin' type passes fx, fy straight through, which is how the
-!   two could disagree: this deck is linear, and the cx == 0 test that used to
-!   choose the branch here would have written it out as circular.
-
-    field%ac_r(:,2) = 99.0_wp
-    field%ac_i(:,2) = 99.0_wp
-    call setAvgSlavedComp(field, "puffin", 0.0_wp, 1.0_wp)   ! cx = 0: linear
-    @assertEqual(0.0_wp, maxval(abs(field%ac_r(:,2))), 0.0_wp)
-    @assertEqual(0.0_wp, maxval(abs(field%ac_i(:,2))), 0.0_wp)
-
-    call setAvgSlavedComp(field, "puffin", 1.0_wp, 1.0_wp)   ! cx = cy: helical
-    @assertEqual(0.0_wp, maxval(abs(field%ac_r(:,2) + field%ac_i(:,1))), 0.0_wp)
-    @assertEqual(0.0_wp, maxval(abs(field%ac_i(:,2) - field%ac_r(:,1))), 0.0_wp)
-
-!   One component: a no-op, and it must not touch anything.
-
-    field%nComp = 1_ip
-    field%ac_r(:,2) = 7.0_wp
-    call setAvgSlavedComp(field, "helical", 1.0_wp, 1.0_wp)
-    @assertEqual(7.0_wp, maxval(abs(field%ac_r(:,2))), 0.0_wp)
-
-    deallocate(field%ac_r, field%ac_i, field%fr_r, field%fr_i, field%bk_r, field%bk_i)
-
-  end subroutine testSlavedComponent
+  end subroutine testCartesianLimits
 
 
   @test
@@ -386,7 +382,29 @@ contains
   @test
   subroutine testVerticalPlanarMatchesBruteForce()
     call checkAgainstBruteForce("", 1.0_wp, 0.0_wp, 1.0_wp)
+    call checkAgainstBruteForce("", 1.0_wp, 0.0_wp, 1.004_wp)
   end subroutine testVerticalPlanarMatchesBruteForce
+
+
+  !> Genuinely elliptical undulators, which a single envelope could not carry:
+  !! the two components have different Bessel factors and amplitudes, and the
+  !! figure-of-eight is weaker than planar but nonzero, of either sign.
+  @test
+  subroutine testEllipticalMatchesBruteForce()
+    call checkAgainstBruteForce("", 0.5_wp, 1.0_wp, 1.0_wp)
+    call checkAgainstBruteForce("", 0.5_wp, 1.0_wp, 0.996_wp)
+    call checkAgainstBruteForce("", 1.0_wp, 0.6_wp, 1.0_wp)
+    call checkAgainstBruteForce("", 1.0_wp, 0.6_wp, 1.004_wp)
+  end subroutine testEllipticalMatchesBruteForce
+
+
+  !> The opposite helicity, cx = -cy: resonant with the exp(+i z2/2rho) image
+  !! in the old helicity basis, and so impossible for one envelope.  In the
+  !! Cartesian basis it is just q_y = -i q_x.
+  @test
+  subroutine testOppositeHelicityMatchesBruteForce()
+    call checkAgainstBruteForce("", -1.0_wp, 1.0_wp, 1.0_wp)
+  end subroutine testOppositeHelicityMatchesBruteForce
 
 
   !> For planepole JJ must reduce to the textbook J0(xi) - J1(xi) with
@@ -406,13 +424,15 @@ contains
 
     @assertEqual(bessel_j0(xi) - bessel_j1(xi), cpl%jjRef, 1.0e-4_wp)
     @assertEqual(0.5_wp, cpl%pqSq, 1.0e-14_wp)
-    @assertEqual(sqrt(0.5_wp), cpl%amp, 1.0e-14_wp)
+    @assertEqual(sqrt(0.5_wp), cpl%ampX, 1.0e-14_wp)
+    @assertEqual(0.0_wp, cpl%ampY, 0.0_wp)
 
     call makeUnd(und, frame, "helical", 1.0_wp, 1.0_wp)
     call getAvgCoupling(1.0_wp, und, frame, cpl)
 
     @assertEqual(1.0_wp, cpl%jjRef, 1.0e-14_wp)
-    @assertEqual(1.0_wp, cpl%amp, 1.0e-14_wp)
+    @assertEqual(sqrt(0.5_wp), cpl%ampX, 1.0e-14_wp)
+    @assertEqual(sqrt(0.5_wp), cpl%ampY, 1.0e-14_wp)
     @assertEqual(0.0_wp, cpl%xiCoef, 0.0_wp)
 
   end subroutine testPlanarJJIsTextbook
@@ -571,45 +591,40 @@ contains
     iInputType_G = iGenHom_G
     iFieldSeedType_G = iSimpleSeed_G
 
-!   A plain helical setup passes
+!   A plain setup passes - any undulator polarisation does
 
-    call chkAveraged(1.0_wp, 1.0_wp, .false., 64_ip, freqf, sSigE, mag, qOK)
+    call chkAveraged(.false., 64_ip, freqf, sSigE, mag, qOK)
     @assertTrue(qOK)
 
 !   ...and every guard rejects on its own
 
-    call chkAveraged(1.0_wp, 1.0_wp, .true., 64_ip, freqf, sSigE, mag, qOK)
+    call chkAveraged(.true., 64_ip, freqf, sSigE, mag, qOK)
     @assertFalse(qOK)
 
 !   A tiny z2 mesh only warns - it is the one way to model a single periodic
 !   cycle, and on few enough ranks it runs.
 
-    call chkAveraged(1.0_wp, 1.0_wp, .false., 2_ip, freqf, sSigE, mag, qOK)
+    call chkAveraged(.false., 2_ip, freqf, sSigE, mag, qOK)
     @assertTrue(qOK)
 
     iFieldSeedType_G = iReadH5Field_G
-    call chkAveraged(1.0_wp, 1.0_wp, .false., 64_ip, freqf, sSigE, mag, qOK)
+    call chkAveraged(.false., 64_ip, freqf, sSigE, mag, qOK)
     @assertFalse(qOK)
     iFieldSeedType_G = iSimpleSeed_G
 
     iInputType_G = iReadH5_G
-    call chkAveraged(1.0_wp, 1.0_wp, .false., 64_ip, freqf, sSigE, mag, qOK)
+    call chkAveraged(.false., 64_ip, freqf, sSigE, mag, qOK)
     @assertFalse(qOK)
 
     iInputType_G = iReadMASP_G
-    call chkAveraged(1.0_wp, 1.0_wp, .false., 64_ip, freqf, sSigE, mag, qOK)
+    call chkAveraged(.false., 64_ip, freqf, sSigE, mag, qOK)
     @assertFalse(qOK)
     iInputType_G = iGenHom_G
-
-!   Elliptical polarisation needs two envelopes
-
-    call chkAveraged(0.6_wp, 0.8_wp, .false., 64_ip, freqf, sSigE, mag, qOK)
-    @assertFalse(qOK)
 
 !   lambdarPerCell must be positive, and sets the band
 
     sLambdarPerCell_G = 0.0_wp
-    call chkAveraged(1.0_wp, 1.0_wp, .false., 64_ip, freqf, sSigE, mag, qOK)
+    call chkAveraged(.false., 64_ip, freqf, sSigE, mag, qOK)
     @assertFalse(qOK)
 
 !   Band is 1 +/- 1/(2 lambdarPerCell): at 4 cells per wavelength that is
@@ -618,49 +633,23 @@ contains
     sLambdarPerCell_G = 4.0_wp
 
     freqf = 1.3_wp
-    call chkAveraged(1.0_wp, 1.0_wp, .false., 64_ip, freqf, sSigE, mag, qOK)
+    call chkAveraged(.false., 64_ip, freqf, sSigE, mag, qOK)
     @assertFalse(qOK)
 
     freqf = 1.1_wp
-    call chkAveraged(1.0_wp, 1.0_wp, .false., 64_ip, freqf, sSigE, mag, qOK)
+    call chkAveraged(.false., 64_ip, freqf, sSigE, mag, qOK)
     @assertTrue(qOK)
 
 !   And none of it applies when the mode is off
 
     freqf = 1.3_wp
     qAveraged_G = .false.
-    call chkAveraged(0.6_wp, 0.8_wp, .true., 2_ip, freqf, sSigE, mag, qOK)
+    call chkAveraged(.true., 2_ip, freqf, sSigE, mag, qOK)
     @assertTrue(qOK)
 
     sLambdarPerCell_G = 1.0_wp
 
   end subroutine testAveragedGuards
-
-
-  @test
-  subroutine testPolarisationSupport()
-    ! helical, planar in x
-    @assertTrue(qAvgPolarisationOK(1.0_wp, 1.0_wp))
-    @assertTrue(qAvgPolarisationOK(0.0_wp, 1.0_wp))
-    ! elliptical, and the opposite helicity
-    @assertFalse(qAvgPolarisationOK(0.6_wp, 0.8_wp))
-    @assertFalse(qAvgPolarisationOK(-1.0_wp, 1.0_wp))
-!   Planar in y: linear, so it passes the helicity condition on |u+| = |u-|,
-!   but cy = 0 means no x field, and component 1 - the x envelope - is the only
-!   one driven. Rejected rather than run with an identically zero envelope.
-!   Accepted here once, while setAvgSlavedComp tested cx == 0 for "linear" and
-!   so sent this down the helical branch: it ran, and reported circular light.
-    @assertFalse(qAvgPolarisationOK(1.0_wp, 0.0_wp))
-  end subroutine testPolarisationSupport
-
-
-  !> The seed factor takes the exp(-i z2/2rho) field component to the stored
-  !! envelope, whose |.|^2 is the period-averaged |A_perp|^2.
-  @test
-  subroutine testSeedFactor()
-    @assertEqual(1.0_wp, getAvgSeedFactor("helical", 1.0_wp, 1.0_wp), 1e-14_wp)
-    @assertEqual(sqrt(2.0_wp), getAvgSeedFactor("planepole", 1.0_wp, 1.0_wp), 1e-14_wp)
-  end subroutine testSeedFactor
 
 
   !> Coupling ramps linearly over the 2-period end sections, as the by field does.
@@ -695,7 +684,8 @@ contains
   !!
   !! holds exactly for the discrete system: linear interpolation and linear
   !! deposition share their weights, and the source and the energy equation
-  !! share ptilde.
+  !! share q_c, for each of the two Cartesian envelopes.  The two are given
+  !! unrelated fields, so a coupling that leaks between them shows up.
   subroutine checkRhsEnergyBalance(undType, fx, fy, grad, qEnds, sZ, qOneD)
 
     use Globals, only: sLengthOfElmX_G, sLengthOfElmY_G, sLengthOfElmZ2_G, NX_G, NY_G, &
@@ -765,7 +755,9 @@ contains
     ctx%field%bz2 = nz
 
     nf = ntrndsi_G * nz
-    allocate(sAr(nf,1), sAi(nf,1), dAr(nf,1), dAi(nf,1))
+    ctx%field%nComp = 2
+    ctx%field%nEnv = 2
+    allocate(sAr(nf,2), sAi(nf,2), dAr(nf,2), dAi(nf,2))
 
     qElectronsEvolve_G = .true.
     qFieldEvolve_G = .true.
@@ -804,6 +796,8 @@ contains
     do j = 1, nf
       sAr(j,1) = 0.1_wp * cos(0.7_wp * j)
       sAi(j,1) = 0.1_wp * sin(0.3_wp * j + 1.0_wp)
+      sAr(j,2) = 0.07_wp * sin(1.1_wp * j + 0.2_wp)
+      sAi(j,2) = -0.12_wp * cos(0.5_wp * j)
     end do
 
     dAr = 0.0_wp
@@ -816,8 +810,8 @@ contains
 
     @assertTrue(qOK)
 
-!   sum over the whole rank-2 array, so this is already the balance summed over
-!   every envelope - which is what W3 needs to assert for elliptical (#129).
+!   sum over the whole rank-2 array, so this is the balance summed over both
+!   envelopes.
 
     fieldRate = sum(sAr * dAr + sAi * dAi) * dV3v
     beamRate = sum(s_chi_bar_G * sdgam) / (2.0_wp * ctx%frame%rho)
@@ -902,5 +896,21 @@ contains
   subroutine testRhsConservesEnergy3DCurved()
     call checkRhsEnergyBalance("curved", 1.0_wp, 1.0_wp, 0.0_wp, .false., 0.37_wp, .false.)
   end subroutine testRhsConservesEnergy3DCurved
+
+
+  !> Elliptical and linear-along-y undulators, which drive both envelopes or
+  !! the second alone, in 1D and through the 3D path.
+  @test
+  subroutine testRhsConservesEnergyElliptical()
+    call checkRhsEnergyBalance("", 0.5_wp, 1.0_wp, 0.0_wp, .false., 0.37_wp, .true.)
+    call checkRhsEnergyBalance("", 1.0_wp, 0.6_wp, -0.05_wp, .true., 0.6_wp, .true.)
+    call checkRhsEnergyBalance("", 1.0_wp, 0.0_wp, 0.0_wp, .false., 0.37_wp, .true.)
+  end subroutine testRhsConservesEnergyElliptical
+
+
+  @test
+  subroutine testRhsConservesEnergy3DElliptical()
+    call checkRhsEnergyBalance("", 0.5_wp, 1.0_wp, 0.0_wp, .false., 0.37_wp, .false.)
+  end subroutine testRhsConservesEnergy3DElliptical
 
 end module testAveraging

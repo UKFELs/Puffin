@@ -31,7 +31,6 @@ USE Globals, only: NX_G, NBX_G, NY_G, NBY_G, NZ2_G, NBZ2_G, ntrnds_G, ntrndsi_G,
   tArrayZ, ioutInfo_G, qElectronsEvolve_G, qFieldEvolve_G, qElectronFieldCoupling_G, &
   qDiffraction_G, qFocussing_G, qDump_G, qResume_G, qMod_G, qOneD_G, qAveraged_G, &
   sLambdarPerCell_G
-use averaging, only: getAvgSeedFactor, getAvgUndAmps, getAvgPolarisation
 USE simple_electron_gen, only: generate_simple_beam, shuntbeam
 USE gMPsFromDists, only: getmps
 use avwrite, only: getcurrnpts, linspace
@@ -1359,50 +1358,40 @@ subroutine getPaSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
   INTEGER(KIND=IP), INTENT(IN) :: nSeeds
   type(tFieldValues), intent(inout) :: field
 
+  integer(kind=ip) :: ic
+
+!  One pass per field component: the single resolved A_perp unaveraged, the
+!  x and y envelopes averaged (getSeed lays the one it is asked for).
+
+  do ic = 1, field%nComp
 
 !  1st gen front seed if present
 
+    if ((field%ffe_GGG > 0) .and. (field%ffe-field%ffs+1 > 0) ) then
 
+      call getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
+                    frs,ph_sh,nSeeds,dels,field%ffs, field%ffe, &
+                    field%fr_r(:,ic),field%fr_i(:,ic), ic)
 
-  if ((field%ffe_GGG > 0) .and. (field%ffe-field%ffs+1 > 0) ) then
-
-    call getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
-                  frs,ph_sh,nSeeds,dels,field%ffs, field%ffe, &
-                  field%fr_r(:,1),field%fr_i(:,1))
-
-  end if
-
-!  CALL MPI_BARRIER(tProcInfo_G%comm,error)
-!  call mpi_finalize(error)
-!  stop
-
+    end if
 
 !  2nd gen active field seed
-!
-!  The seed is laid into component 1 only. For a planar undulator component 2
-!  is identically zero and for a helical one it is slaved to component 1, so
-!  nothing else is needed here; see setAvgSlavedComp.
 
-
-  call getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
-                frs,ph_sh,nSeeds,dels,field%fz2, field%ez2, &
-                field%ac_r(:,1),field%ac_i(:,1))
-
-
-
+    call getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
+                  frs,ph_sh,nSeeds,dels,field%fz2, field%ez2, &
+                  field%ac_r(:,ic),field%ac_i(:,ic), ic)
 
 !  3rd gen back seed section if present
 
+    if ((field%eee_GGG > 0) .and. (field%eee-field%ees+1 > 0) ) then
 
-  if ((field%eee_GGG > 0) .and. (field%eee-field%ees+1 > 0) ) then
+      call getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
+                    frs,ph_sh,nSeeds,dels,field%ees, field%eee, &
+                    field%bk_r(:,ic),field%bk_i(:,ic), ic)
 
-    call getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
-                  frs,ph_sh,nSeeds,dels,field%ees, field%eee, &
-                  field%bk_r(:,1),field%bk_i(:,1))
+    end if
 
-  end if
-
-
+  end do
 
 end subroutine getPaSeeds
 
@@ -1414,7 +1403,7 @@ end subroutine getPaSeeds
 
 SUBROUTINE getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
                     frs,ph_sh,nSeeds,dels,iz2_s, iz2_e, &
-                    xfieldt,yfieldt)
+                    xfieldt,yfieldt,iComp)
 
 !             ARGUMENTS
 
@@ -1424,6 +1413,7 @@ SUBROUTINE getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
   LOGICAL, INTENT(IN) :: qFTs(:)
   INTEGER(KIND=IP), INTENT(IN) :: nSeeds
   REAL(KIND=WP), INTENT(OUT) :: xfieldt(:), yfieldt(:)
+  INTEGER(KIND=IP), INTENT(IN) :: iComp
 
 !            LOCAL ARGS
 
@@ -1448,7 +1438,7 @@ SUBROUTINE getSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
 
     CALL getSeed(NN(:),sigs(ind,:),cens(ind),magxs(ind),magys(ind),qFTs(ind), &
                  qRndFj_G(ind), sSigFj_G(ind), rho,frs(ind), ph_sh(ind), &
-                 dels,iz2_s, iz2_e,xfield,yfield)
+                 dels,iz2_s, iz2_e,xfield,yfield,iComp)
 
     xfieldt = xfieldt + xfield
     yfieldt = yfieldt + yfield
@@ -1463,7 +1453,7 @@ END SUBROUTINE getSeeds
 
 SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
                    sSigR, rho,fr,ph_sh, &
-                   dels,iz2_s, iz2_e, xfield,yfield)
+                   dels,iz2_s, iz2_e, xfield,yfield,iComp)
 
   IMPLICIT NONE (type, external)
 
@@ -1474,6 +1464,7 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
                                magx, magy, dels(:)
   LOGICAL, INTENT(IN) :: qFT, qRnd
   REAL(KIND=WP), INTENT(OUT) :: xfield(:), yfield(:)
+  INTEGER(KIND=IP), INTENT(IN) :: iComp
 
 !             LOCAL ARGS
 
@@ -1484,8 +1475,7 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
                    oscy(:)
 
   REAL(KIND=WP) :: lx, ly, z2sl, z2el
-  REAL(KIND=WP) :: magxl, magyl, resFrac, cxs, cys, uMinusS, uPlusS, fpS
-  REAL(KIND=WP) :: aPlusSq, aMinusSq
+  REAL(KIND=WP) :: magxl, magyl
 
   INTEGER(KIND=IP) :: ind1, ind2, ind3, gind, nz2l
 
@@ -1582,58 +1572,35 @@ SUBROUTINE getSeed(NN,sig,cen,magx,magy,qFT,qRnd, &
 
   if (qAveraged_G) then
 
-!     Averaged mode stores only the envelope of the resonant exp(-i z2/2rho)
-!     component.  Of A_perp = magx sin(psi) + i magy cos(psi) that is
-!     (i/2)(magx + magy) exp(-i psi); with psi' = psi - z2/2rho the carrier
-!     removed, i exp(-i psi') = sin(psi') + i cos(psi'), so the envelope has
-!     the same form as the resolved seed with fr -> fr - 1 and one common
-!     amplitude, scaled to the stored normalisation (see averaging.f90).
-!     The exp(+i psi) component is far outside the envelope band and dropped.
-
-    oscx = z2env * sin((fr - 1.0_wp) * z2nds / (2.0_WP * rho) - ph_sh)
-    oscy = z2env * cos((fr - 1.0_wp) * z2nds / (2.0_WP * rho) - ph_sh)
-
-    magxl = 0.5_wp * (magx + magy) * getAvgSeedFactor("", fx_G, fy_G)
-    magyl = magxl
-
-!     Warn if the seed's polarisation is not one the single envelope can hold.
+!     Averaged mode stores the rms envelope B_c of each Cartesian component,
+!     A_c = sqrt(2) Re[B_c exp(-i psi)], psi = z2/2rho (see averaging.f90).  The
+!     resolved seed below is A_x = magx sin(phi), A_y = -magy cos(phi), with
+!     phi = psi + psiSlow and psiSlow = (fr - 1) z2/2rho - ph_sh the part left
+!     once the carrier is removed.  Reading off the exp(-i psi) components,
 !
-!     One envelope fixes the ratio of the two helicity components of the field:
-!     A_perp = (u-/sqrt(fp)) Atilde exp(-i psi) + (u+/sqrt(fp)) Atilde* exp(+i psi),
-!     so |A-|/|A+| is pinned at u+/u-.  The seed decomposes as
-!     A+ = (i/2)(magx + magy), A- = (i/2)(magy - magx), and only its A+ is read.
+!       B_x = (magx/sqrt2) (sin psiSlow + i cos psiSlow)
+!       B_y = (magy/sqrt2) (-cos psiSlow + i sin psiSlow)
 !
-!     For a planar undulator u+ = u- and the envelope carries both helicities,
-!     so a linearly polarised seed is reproduced exactly - nothing is lost.  For
-!     a helical undulator u+ = 0 and the opposite helicity cannot be represented
-!     at all: a linear seed then loses half its power, silently, which later
-!     looks like the averaged run simply having less field than the unaveraged
-!     one.  A circular seed on a planar undulator is wrong the other way, and
-!     would double the stored power.  reproduced below is what the envelope
-!     puts back as a fraction of what was asked for.
+!     xfield and yfield are the real and imaginary parts of the component
+!     asked for.  Both helicities are kept, so any seed polarisation is laid
+!     exactly; only the exp(+i psi) carrier image, far outside the envelope
+!     band, is dropped.
 
-    if ((abs(magx) + abs(magy)) > 0.0_wp) then
+    if (iComp == 1_ip) then
 
-      call getAvgUndAmps("", fx_G, fy_G, cxs, cys)
-      call getAvgPolarisation(cxs, cys, uMinusS, uPlusS, fpS)
+      oscx = z2env * sin((fr - 1.0_wp) * z2nds / (2.0_WP * rho) - ph_sh)
+      oscy = z2env * cos((fr - 1.0_wp) * z2nds / (2.0_WP * rho) - ph_sh)
 
-      aPlusSq = (0.5_wp * (magx + magy))**2
-      aMinusSq = (0.5_wp * (magy - magx))**2
+      magxl = magx * sqrt(0.5_wp)
+      magyl = magxl
 
-      if ((aPlusSq + aMinusSq) > 0.0_wp) then
+    else
 
-        resFrac = aPlusSq * (1.0_wp + (uPlusS / uMinusS)**2) &
-                  / (aPlusSq + aMinusSq)
+      oscx = z2env * cos((fr - 1.0_wp) * z2nds / (2.0_WP * rho) - ph_sh)
+      oscy = z2env * sin((fr - 1.0_wp) * z2nds / (2.0_WP * rho) - ph_sh)
 
-        if ((abs(resFrac - 1.0_wp) > 0.01_wp) .and. (tProcInfo_G%qRoot)) then
-          print*, "WARNING: this seed's polarisation is not one a single ", &
-                  "averaged-mode envelope can represent - it reproduces", &
-                  resFrac * 100.0_wp, "% of the seed power. A helical ", &
-                  "undulator wants sA0_X = sA0_Y (the resonant helicity); a ", &
-                  "planar one wants a linear seed, one of them zero."
-        end if
-
-      end if
+      magxl = -magy * sqrt(0.5_wp)
+      magyl = magy * sqrt(0.5_wp)
 
     end if
 

@@ -1,0 +1,159 @@
+!> End-to-end tests across undulator polarisations, in both solver modes.
+!!
+!! The other e2e goldens are a 'puffin' (1, 1) undulator with no ends
+!! (f1main) and plane-pole with ends (osc_taper, clara), all unaveraged. These
+!! five small 1D decks add what those never reach:
+!!
+!!   pol_helical_ends     'helical' type, unaveraged
+!!   pol_elliptical_ends  'puffin' type at sux = 0.5, suy = 1, unaveraged
+!!   avg_planar_ends      plane-pole, averaged mode
+!!   avg_helical_ends     helical, averaged mode
+!!   avg_elliptical_ends  elliptical, averaged mode
+!!
+!! all with undulator ends, so the bx and by entry and exit ramps of each field
+!! branch are in the golden too. Averaged dumps carry two field components,
+!! B_x and B_y, and both are compared.
+!!
+!! Every deck uses f1main's cold, noise-free beam, so nothing draws from the
+!! compiler's RNG, and runs 6 periods (0.75 gain lengths) from a seed.
+!! The unaveraged 'helical' and elliptical goldens include the bx entry ramp
+!! that UKFELs/Puffin#147 is about; fixing that moves them, deliberately.
+!!
+!! The goldens were generated at 2 ranks on macOS/arm64 with Homebrew gfortran
+!! 16; two runs came back bit-identical. To regenerate them, from build/test/:
+!!
+!!   mpiexec -n 2 <build>/puffin/puffin inputs/1D/<case>.in
+!!   cp inputs/1D/<case>_aperp_2.h5      ../../test/expected/1D/<case>_expected_field.h5
+!!   cp inputs/1D/<case>_electrons_2.h5  ../../test/expected/1D/<case>_expected_electrons.h5
+!!   cp inputs/1D/<case>_integrated_2.h5 ../../test/expected/1D/<case>_expected_integrated.h5
+!!
+!! then re-run cmake to pick them up, and rebuild.
+!!
+!! This file is a template. test/CMakeLists.txt configures one copy per case,
+!! testPol_<case>.pf, each built into its own test binary: puffin_main is run
+!! once per process, as in the other e2e suites, so the global allocatables
+!! start clean. This copy runs @POL_CASE@.
+
+module @POL_MODULE@
+
+  use pFUnit
+  use MPI
+  use puffin_kinds
+  use puffin_mod, only: puffin_main
+  use H5in, only: getMacroparticleCount, readH5BeamDataOntoRootProcess, &
+                  readH5FieldDataOntoRootProcess, getNZ2, getWriteStep
+  use globals
+  use puffin_mpiInfo, only: tProcInfo_G
+  implicit none
+
+  real(kind=wp), parameter :: tol = 1e-10_wp
+
+contains
+
+  !> Run one deck and compare its final dumps with the golden files.
+  !! nComp is the number of field components the dumps carry, nStepsFinal the
+  !! step the run ends on.  As in f1main, a single module dumps at index 0, at
+  !! the end of the module, and for qDumpEnd, so the final full dumps are at 2.
+  subroutine checkCase(caseName, nComp, nStepsFinal)
+
+    character(*), intent(in) :: caseName
+    integer(kind=ip), intent(in) :: nComp, nStepsFinal
+
+    character(len=1024_ip) :: deck, base, fieldOut, elecOut, intOut, &
+                              fieldExp, elecExp, intExp
+    logical :: qOK, file_exists
+    integer(kind=ip) :: nMPs, nMPsExp, nZ2, nZ2Exp, ic, i
+    real(kind=wp), allocatable, dimension(:) :: x, y, z2, px, py, gam, chi, &
+                                                xe, ye, z2e, pxe, pye, game, chie
+    real(kind=wp), allocatable, dimension(:) :: rf, imf, rfe, imfe
+
+    deck = 'inputs/1D/' // caseName // '.in'
+    base = 'inputs/1D/' // caseName
+
+    fieldOut = trim(base) // '_aperp_2.h5'
+    elecOut = trim(base) // '_electrons_2.h5'
+    intOut = trim(base) // '_integrated_2.h5'
+    fieldExp = 'expected/1D/' // caseName // '_expected_field.h5'
+    elecExp = 'expected/1D/' // caseName // '_expected_electrons.h5'
+    intExp = 'expected/1D/' // caseName // '_expected_integrated.h5'
+
+    call puffin_main(deck, qOK)
+    @assertTrue(qOK)
+
+    inquire(file=fieldOut, exist=file_exists)
+    @assertTrue(file_exists)
+    inquire(file=elecOut, exist=file_exists)
+    @assertTrue(file_exists)
+    inquire(file=intOut, exist=file_exists)
+    @assertTrue(file_exists)
+    if (anyExceptions()) return
+
+!   Electrons.  The ordering in the dump depends on the rank layout, so each
+!   value is matched against any expected value rather than by position.
+
+    nMPs = getMacroparticleCount(trim(elecOut))
+    nMPsExp = getMacroparticleCount(trim(elecExp))
+    if (.not. tProcInfo_G%qRoot) then
+      nMPs = 0_ip
+      nMPsExp = 0_ip
+    end if
+
+    if (tProcInfo_G%qRoot) then
+      @assertEqual(nMPsExp, nMPs)
+    end if
+    if (anyExceptions()) return
+
+    allocate(x(nMPs), y(nMPs), z2(nMPs), px(nMPs), py(nMPs), gam(nMPs), chi(nMPs))
+    allocate(xe(nMPs), ye(nMPs), z2e(nMPs), pxe(nMPs), pye(nMPs), game(nMPs), chie(nMPs))
+    call readH5BeamDataOntoRootProcess(trim(elecOut), x, y, z2, px, py, gam, chi, nMPs)
+    call readH5BeamDataOntoRootProcess(trim(elecExp), xe, ye, z2e, pxe, pye, game, chie, nMPs)
+
+    if (tProcInfo_G%qRoot) then
+      do i = 1, nMPs
+        @assertTrue(any(abs(xe - x(i)) <= tol))
+        @assertTrue(any(abs(ye - y(i)) <= tol))
+        @assertTrue(any(abs(z2e - z2(i)) <= tol))
+        @assertTrue(any(abs(pxe - px(i)) <= tol))
+        @assertTrue(any(abs(pye - py(i)) <= tol))
+        @assertTrue(any(abs(game - gam(i)) <= tol))
+      end do
+    end if
+
+!   Every field component, node by node
+
+    nZ2 = getNZ2(trim(fieldOut))
+    nZ2Exp = getNZ2(trim(fieldExp))
+    if (tProcInfo_G%qRoot) then
+      @assertEqual(nZ2Exp, nZ2)
+    end if
+    if (anyExceptions()) return
+
+    allocate(rf(nZ2), imf(nZ2), rfe(nZ2), imfe(nZ2))
+
+    do ic = 1_ip, nComp
+      call readH5FieldDataOntoRootProcess(trim(fieldOut), rf, imf, nZ2, ic)
+      call readH5FieldDataOntoRootProcess(trim(fieldExp), rfe, imfe, nZ2, ic)
+      if (tProcInfo_G%qRoot) then
+        @assertEqual(rfe, rf, tol)
+        @assertEqual(imfe, imf, tol)
+      end if
+    end do
+
+!   The final dumps are at the step they claim
+
+    if (tProcInfo_G%qRoot) then
+      @assertEqual(nStepsFinal, getWriteStep(trim(fieldOut)))
+      @assertEqual(nStepsFinal, getWriteStep(trim(elecOut)))
+      @assertEqual(nStepsFinal, getWriteStep(trim(intOut)))
+    end if
+
+  end subroutine checkCase
+
+
+  @mpitest(npes=[2])
+  subroutine testPolarisationCase(this)
+    class(MpiTestMethod), intent(inout) :: this
+    call checkCase('@POL_CASE@', @POL_NCOMP@_ip, @POL_NSTEPS@_ip)
+  end subroutine testPolarisationCase
+
+end module @POL_MODULE@

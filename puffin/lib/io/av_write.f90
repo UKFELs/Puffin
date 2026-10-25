@@ -66,19 +66,10 @@ contains
 !     Unaveraged that is the one complex pair, whose two reals are A_x and
 !     -A_y, so the sum is the instantaneous |A_perp|^2.
 !
-!     Averaged it is component 1 alone. The envelope is normalised so that
-!     |Atilde|^2 is the whole cycle-averaged transverse intensity whatever the
-!     polarisation - getAvgSeedFactor's sqrt(fp)/u- arranges that, and it is
-!     what lets one envelope carry the field. Component 2 re-expresses the same
-!     radiation in the other Cartesian axis rather than adding any, so
-!     including it double counts: for a helical undulator, where
-!     |Atilde_y| = |Atilde_x|, it reported exactly twice the power, while
-!     planar, whose slaved component is zero, was unaffected.
-!
-!     When W3b drives both components, nEnv becomes 2 and this sum needs a
-!     factor of a half, the envelopes then being true Cartesian ones. See the
-!     power note in AVERAGED_MODE_ROADMAP.md: the half cannot be added on its
-!     own.
+!     Averaged it is both Cartesian envelopes. They are normalised so that
+!     |B_c|^2 is the period average of A_c^2 (A_c = sqrt(2) Re[B_c exp(-i psi)],
+!     see averaging.f90), so |B_x|^2 + |B_y|^2 is the cycle-averaged |A_perp|^2
+!     with no further factor.
 
       fr_power = 0.0_wp
       ac_power = 0.0_wp
@@ -821,12 +812,6 @@ contains
       call mpi_barrier(tProcInfo_G%comm, error)
 
    end subroutine getSliceTwiss
-
-   subroutine getBunchingFundamental(nslices,bunching)
-      integer(kind=ip), intent(in) :: nslices
-      real(kind=wp), intent(out) :: bunching(:)
-      bunching = 0.0_wp    ! initialize
-   end subroutine getBunchingFundamental
 
 
 end module avwrite

@@ -13,7 +13,6 @@ use hdf5PuffID, only: outputh5beamfilesid, outputh5field3did
 use hdf5PuffColl, only: outputh5beamfilessd, outputh5field3dsd, outputh5field1d2compsd, &
   createintegrated1dfloat, addh5field1dfloat
 use GlobalTypes, only: tSimulationContext
-use averaging, only: setAvgSlavedComp
 
 !use MPI
 use hdf5PuffLow, only: iStep
@@ -87,13 +86,6 @@ contains
       end if
 
       if (error /= 0) goto 1000
-
-!     Only component 1 is integrated; the rest are fixed by it for the
-!     undulator types averaged mode supports. Derive them before writing, so a
-!     dump always carries the full polarisation state. No-op with one
-!     component. See setAvgSlavedComp.
-
-      call setAvgSlavedComp(ctx%field, ctx%und%undulator_type, ctx%und%fx, ctx%und%fy)
 
       if (qONED_G) then
 

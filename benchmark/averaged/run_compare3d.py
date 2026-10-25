@@ -2,9 +2,14 @@
 """Run the averaged and unaveraged solvers on the same 3D deck and compare.
 
 Usage:
-  python3 run_compare3d.py <helical|planepole|curved> [--aw AW] [--np N]
-                           [--periods N] [--writes N]
+  python3 run_compare3d.py <helical|planepole|curved|UX,UY> [--aw AW] [--np N]
+                           [--periods N] [--writes N] [--seed AX,AY]
                            [--plain NODES:STEPS ...] [--avg CELLS:STEPS ...]
+
+  UX,UY                 the variably polarised 'puffin' undulator, sux = UX,
+                        suy = UY (one of them 1)
+  --seed AX,AY          seed sA0_X, sA0_Y.  Default: the resonant helicity
+                        (equal) for helical or UX,UY, linear along x otherwise
 
   --plain NODES:STEPS   unaveraged run, nodesPerLambdar = NODES,
                         stepsPerPeriod = STEPS             [default 12:30 24:60]
@@ -43,27 +48,31 @@ def sub(text, name, value):
     return re.sub(r"(?m)^(\s*%s\s*=\s*)[^\n!]*" % name, r"\g<1>%s " % value, text)
 
 
-def run(tag, und, aw, averaged, mesh, steps, nranks, periods, writes):
+def run(tag, und, aw, seed_xy, averaged, mesh, steps, nranks, periods, writes):
     workdir = os.path.join(HERE, "run3d_%s" % tag)
     shutil.rmtree(workdir, ignore_errors=True)
     os.makedirs(workdir)
     shutil.copy(os.path.join(HERE, "beam_file3d.in"),
                 os.path.join(workdir, "beam_file.in"))
-    # The seed polarisation has to match the undulator, or the averaged run
-    # starts from a different field: it carries only the resonant helicity, so
-    # a linear seed on a helical undulator gives it exactly half the seed
-    # power, and every comparison downstream is measuring that.  Helical wants
-    # sA0_X = sA0_Y (circular, the resonant helicity); a planar undulator wants
-    # one of them zero.
+    # Averaged mode lays any seed polarisation exactly, but a component the
+    # undulator does not drive only propagates, so the default seed is the
+    # one that gains: the resonant helicity for helical, linear for planar.
     with open(os.path.join(HERE, "seed_file3d.in")) as fh:
         seed = fh.read()
-    seed = sub(seed, "sA0_Y", "0.001" if und == "helical" else "0.0")
+    seed = sub(seed, "sA0_X", seed_xy[0])
+    seed = sub(seed, "sA0_Y", seed_xy[1])
     with open(os.path.join(workdir, "seed_file.in"), "w") as fh:
         fh.write(seed)
 
     with open(os.path.join(HERE, "deck3d.in")) as fh:
         deck = fh.read()
-    deck = sub(deck, "zundType", "'%s'" % und)
+    if "," in und:
+        ux, uy = und.split(",")
+        deck = sub(deck, "zundType", "'puffin'")
+        deck = sub(deck, "sux", ux)
+        deck = sub(deck, "suy", uy)
+    else:
+        deck = sub(deck, "zundType", "'%s'" % und)
     deck = sub(deck, "saw", aw)
     deck = sub(deck, "nPeriods", periods)
     deck = sub(deck, "stepsPerPeriod", steps)
@@ -96,6 +105,8 @@ def main():
         raise SystemExit(__doc__)
     und, aw = args.pop(0), "1.0121809"
     nranks, periods, writes = 4, 120, 20
+    seed_xy = ("0.001", "0.001") if (und == "helical" or "," in und) else ("0.001", "0.0")
+    tag = "u" + und.replace(",", "_") if "," in und else und
     plains, avgs, which = [], [], None
     while args:
         a = args.pop(0)
@@ -107,6 +118,8 @@ def main():
             periods = int(args.pop(0))
         elif a == "--writes":
             writes = int(args.pop(0))
+        elif a == "--seed":
+            seed_xy = tuple(args.pop(0).split(","))
         elif a in ("--plain", "--avg"):
             which = plains if a == "--plain" else avgs
         elif which is None:
@@ -118,7 +131,7 @@ def main():
 
     avg_runs = []
     for cells, steps in avgs:
-        wd, secs = run("%s_avg_c%s_s%s" % (und, cells, steps), und, aw, True,
+        wd, secs = run("%s_avg_c%s_s%s" % (tag, cells, steps), und, aw, seed_xy, True,
                        cells, steps, nranks, periods, writes)
         avg_runs.append((cells, steps, wd, secs))
         print("  averaged   lambdarPerCell=%-5s steps=%-4s %8.1f s" % (cells, steps, secs),
@@ -129,7 +142,7 @@ def main():
     print("  %-8s %-18s %-10s %-9s %-9s %-9s %s"
           % ("und", "unaveraged", "runtime", "P ratio", "b ratio", "fld sig", "beam sig"))
     for nodes, steps in plains:
-        wd, secs = run("%s_plain_n%s_s%s" % (und, nodes, steps), und, aw, False,
+        wd, secs = run("%s_plain_n%s_s%s" % (tag, nodes, steps), und, aw, seed_xy, False,
                        nodes, steps, nranks, periods, writes)
         res, _ = metrics(wd, ref_avg)
 

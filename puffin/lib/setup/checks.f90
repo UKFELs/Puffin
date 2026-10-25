@@ -20,7 +20,6 @@ use Globals, only: qRndFj_G, sSigFj_G, qRndEj_G, sSigEj_G, gExtEj_G, sStepSize, 
                    qAveraged_G, sLambdarPerCell_G, iInputType_G, iReadH5_G, iReadMASP_G, &
                    iFieldSeedType_G, iReadH5Field_G, fieldMesh, iPeriodic
 use puffin_mpiInfo, only: tProcInfo_G
-use averaging, only: getAvgUndAmps, qAvgPolarisationOK
 use particleFunctions, only: iTopHatDistribution_CG, gaussian
 use grids, only: getinttypes
 use ParallelSetUp, only: stopcode
@@ -94,7 +93,7 @@ subroutine CheckParameters(sLenEPulse,iNumElectrons,nbeams,&
 
   call stpFSampleLens(iNodes,sWigglerLength,sLengthOfElm,qSwitches(iOneD_CG),qOKL)
 
-  call chkAveraged(f_x, f_y, qSwitches(iResume_CG), iNodes(iZ2_CG), freqf, sSigE, mag, qOKL)
+  call chkAveraged(qSwitches(iResume_CG), iNodes(iZ2_CG), freqf, sSigE, mag, qOKL)
   if (.NOT. qOKL) goto 1000
 
   if (qSimple) then
@@ -482,8 +481,8 @@ end subroutine checkRndEjLens
 
 
 
-!> Checks specific to the period-averaged mode (qAveraged).  f_x, f_y are the
-!> polarisation after calcScaling, which sets them from the undulator type.
+!> Checks specific to the period-averaged mode (qAveraged).  Any undulator
+!> polarisation is accepted: the two Cartesian envelopes carry both helicities.
 !>
 !> Two kinds of check.  The first rejects inputs the mode cannot represent at
 !> all - a resolved field read into an envelope array, or a pperp that still
@@ -497,29 +496,19 @@ end subroutine checkRndEjLens
 !> can hold roughly +/- 1/(2 lambdarPerCell) of the resonant frequency, so
 !> anything detuned by more than that is outside the band the run can carry.
 
-subroutine chkAveraged(f_x, f_y, qResume, nz2, freqf, sSigE, mag, qOK)
+subroutine chkAveraged(qResume, nz2, freqf, sSigE, mag, qOK)
 
-  real(kind=wp), intent(in) :: f_x, f_y
   logical, intent(in) :: qResume
   integer(kind=ip), intent(in) :: nz2
   real(kind=wp), intent(in) :: freqf(:), sSigE(:,:), mag(:)
   logical, intent(out) :: qOK
 
-  real(kind=wp) :: cx, cy, band
+  real(kind=wp) :: band
   integer(kind=ip) :: i
 
   qOK = .true.
 
   if (.not. qAveraged_G) return
-
-  call getAvgUndAmps("", f_x, f_y, cx, cy)
-
-  if (.not. qAvgPolarisationOK(cx, cy)) then
-    call log_error("Averaged mode (qAveraged) needs a helical or linearly "// &
-                   "polarised undulator: one field envelope cannot represent "// &
-                   "elliptical polarisation.", tErrorLog_G)
-    qOK = .false.
-  end if
 
   if (sLambdarPerCell_G <= 0.0_wp) then
     call log_error("lambdarPerCell must be > 0 in averaged mode.", tErrorLog_G)
@@ -731,33 +720,6 @@ END SUBROUTINE checkIntSampling
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE getElmLengths(sLenEPulse,sWigglerLength,iNodes,qOneD,sLengthOfElm)
-
-  REAL(KIND=WP), INTENT(IN) :: sLenEPulse(3), sWigglerLength(3)
-  INTEGER(KIND=IP), INTENT(IN) :: iNodes(3)
-  LOGICAL, INTENT(IN) :: qOneD
-  REAL(KIND=WP), INTENT(OUT) :: sLengthOfElm(3)
-
-!     Calculate field element lengths, dx dy dz2
-
-  IF (qOneD) THEN
-
-    sLengthOfElm(iX_CG:iY_CG) = 1.0_WP
-
-  ELSE
-
-    sLengthOfElm(iX_CG:iY_CG) = sWigglerLength(iX_CG:iY_CG)&
-                      / REAL(iNodes(iX_CG:iY_CG)-1,KIND=WP)
-
-  END IF
-
-  sLengthOfElm(iZ2_CG) = (sLenEPulse(iZ2_CG) + &
-                          sWigglerLength(iZ2_CG)) / &
-                          REAL(iNodes(iZ2_CG)-1,KIND=WP)
-
-END SUBROUTINE getElmLengths
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 SUBROUTINE checkFreeParams(srho,saw,sgammar,f_x,f_y,qOK)
 

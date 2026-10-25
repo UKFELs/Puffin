@@ -89,19 +89,12 @@ type :: tFieldValues
     integer(kind=ip) :: nComp = 1_ip
 
     ! How many of those components are independently driven - integrated with
-    ! their own source - as opposed to derived from another at output time.
-    !
-    ! 1 everywhere today. Unaveraged the single pair is driven. Averaged, only
-    ! component 1 is integrated and component 2 is fixed by it and filled just
-    ! before a dump (setAvgSlavedComp), so it carries no energy of its own: it
-    ! re-expresses component 1's field in the other Cartesian axis. Anything
-    ! totalling a quantity over the field must therefore sum to nEnv, not
-    ! nComp, or the slaved component is counted twice - see gPowerP.
-    !
-    ! W3b (#129) drives both, which makes this 2 and brings a factor of a half
-    ! with it, the stored envelopes then being true Cartesian ones. The half
-    ! and the independent driving cannot land separately; see the power note in
-    ! AVERAGED_MODE_ROADMAP.md.
+    ! their own source. Equal to nComp in both modes: unaveraged the single
+    ! pair, averaged both Cartesian envelopes, each with its own coupling (see
+    ! averaging.f90). Kept separate from nComp so that a component derived at
+    ! output time, rather than integrated, can be added without counting it in
+    ! the field's energy: anything totalling a quantity over the field sums to
+    ! nEnv - see gPowerP.
     integer(kind=ip) :: nEnv = 1_ip
 
     ! --- Active slab: the region this rank integrates ---------------------

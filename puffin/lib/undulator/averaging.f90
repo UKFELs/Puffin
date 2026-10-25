@@ -12,78 +12,86 @@
 !>
 !> Puffin normally resolves the radiation carrier on the z2 mesh and the
 !> undulator quiver in the electron equations.  In averaged mode the field
-!> arrays hold a slowly varying envelope instead,
+!> arrays hold slowly varying envelopes instead, one per Cartesian component,
 !>
-!>     A_perp = (u-/sqrt(fp)) Atilde exp(-i z2/2rho)  +  (u+/sqrt(fp)) conj(Atilde) exp(+i z2/2rho)
+!>     A_x = sqrt(2) Re[ B_x exp(-i z2/2rho) ],    A_y = sqrt(2) Re[ B_y exp(-i z2/2rho) ],
 !>
-!> and pperp holds only its slow part: the quiver is carried analytically and
-!> averaged over an undulator period.  The carrier sign is fixed by Puffin's
-!> own conventions - with bx = cx cos(zbar/2rho), by = cy sin(zbar/2rho) the
+!> component 1 = B_x, component 2 = B_y, and pperp holds only its slow part:
+!> the quiver is carried analytically and averaged over an undulator period.
+!> The sqrt(2) makes |B_c|^2 the period average of A_c^2, so |B_x|^2 + |B_y|^2
+!> is the period-averaged |A_perp|^2 and the power diagnostics need no factor.
+!> Both helicities of the resonant field live at the same carrier in this
+!> basis - A_perp = A_x - i A_y holds (B_x - i B_y)/sqrt(2) at exp(-i z2/2rho)
+!> and the conjugate of (B_x + i B_y)/sqrt(2) at exp(+i z2/2rho) - so any
+!> undulator and any seed polarisation is represented.
+!>
+!> With bx = cx cos(theta_w), by = cy sin(theta_w), theta_w = zbar/2rho, the
 !> quiver is
 !>
-!>     pperp_w = -alpha [ u+ exp(+i zbar/2rho) + u- exp(-i zbar/2rho) ],
-!>     u- = (cy + cx)/2,   u+ = (cy - cx)/2,
+!>     px = -alpha cy cos(theta_w),    py = -alpha cx sin(theta_w),
 !>
-!> and the resonant field component is the one at exp(-i z2/2rho).  (The
-!> seed Puffin builds for sA0_X = sA0_Y is exactly that helicity.)
+!> and the electrons couple to the field only through Re[pperp conj(A_perp)]
+!> = px A_x + py A_y, which does not mix x and y.  That is why the Cartesian
+!> basis is the one to integrate in: each component has its own coupling.
 !>
-!> Averaging the coupling over a period turns the quiver into a single
-!> effective 'resonant momentum' per macroparticle,
+!> Averaging over a period, including the figure-of-eight ripple of the phase
+!> theta_j = (zbar - z2_j)/2rho = thetabar_j - xi_j sin(2 theta_w), with
 !>
-!>     ptilde_j = -alpha sqrt(fp) JJ_j exp(-i theta_j),
-!>     theta_j  = (zbar - z2_j) / 2rho,
+!>     xi_j = (1 + eta p2_j)^3 aw^2 alpha^2 (cy^2 - cx^2)/2 / (4 eta gamma_r^2 Gamma_j^2)
 !>
-!> and the averaged system is the unaveraged one with pperp replaced by
-!> ptilde in BOTH places it couples to the field - the field source in
-!> getSource_* and the energy equation in dgamdz_f.  Using one array for both
-!> is what makes the averaged system conserve beam plus field energy exactly:
-!> alpha, fp and JJ cannot drift apart because they are only computed here.
+!> (signed: it follows cy^2 - cx^2), turns the quiver into one effective
+!> resonant momentum per macroparticle and component,
 !>
-!> The normalisation by sqrt(fp), fp = (cx^2 + cy^2)/2, makes |Atilde|^2 the
-!> period-averaged |A_perp|^2, so the power diagnostics need no change.
+!>     q_x = -(alpha cy / sqrt(2)) [J0(xi) - J1(xi)] exp(-i thetabar),
+!>     q_y = -i (alpha cx / sqrt(2)) [J0(xi) + J1(xi)] exp(-i thetabar),
 !>
-!> JJ comes from the 2 theta_w ripple in |pperp_w|^2 for a planar undulator:
-!> p2 ripples, so z2 carries a figure-of-eight excursion of phase amplitude
+!> and <p . A> = Re sum_c q_c conj(B_c).  The averaged system is the
+!> unaveraged one with pperp replaced by q_c and A_perp by B_c, component by
+!> component, in BOTH places they couple - the field source in getSource_*
+!> and the energy equation in dgamdz_f.  The period average of the source
+!> p_c exp(+i psi) projects to the same q_c, so one array per component serves
+!> both, which is what makes the averaged system conserve beam plus field
+!> energy exactly.
 !>
-!>     xi_j = (1 + eta p2_j)^3 aw^2 alpha^2 (cy^2 - cx^2)/2 / (4 eta gamma_r^2 Gamma_j^2),
+!> In the helicity basis the same couplings are q_- = -alpha (u- J0 - u+ J1)
+!> and q_+ = -alpha (u+ J0 - u- J1), u-+ = (cy +- cx)/2: J0 and J1 swap
+!> partners between the two, so the helicities are driven in a ratio that is
+!> u+/u- only for helical (u+ = 0) or linear (|u+| = |u-|) undulators.  Those
+!> were the two polarisations a single envelope could carry.  For them this
+!> reduces exactly to the single-envelope coupling, alpha sqrt(fp) JJ with
+!> JJ = J0 - (u+/u-) J1: planar is bit-identical, helical has B_x = Atilde/sqrt(2)
+!> and B_y = i B_x.  The derivation is in doc/manual.tex.
 !>
-!> and expanding exp(i xi sin(2 theta_w)) in Bessel functions against the two
-!> quiver components leaves JJ = J0(xi) - (u+/u-) J1(xi).  For a helical
-!> undulator |pperp_w| is constant, xi = 0 and JJ = 1.  xi is evaluated per
-!> macroparticle: it goes as 1/Gamma^2, and taking it at the reference energy
-!> alone, as Genesis does, would put an error of ~0.2 (Gamma_j - 1) into the
-!> planar coupling.
-!>
-!> A single envelope is exact only when the two helicity components of the
-!> resonant field stay proportional: helical (u+ = 0) or linear (|u+| = |u-|).
-!> A general elliptical undulator needs two envelopes, and is rejected.
+!> xi is evaluated per macroparticle: it goes as 1/Gamma^2, and taking it at
+!> the reference energy alone, as Genesis does, would put an error of
+!> ~0.2 (Gamma_j - 1) into the planar coupling.
 
 module averaging
 
 use puffin_kinds, only: WP
 use puffin_constants, only: pi
-use GlobalTypes, only: tUndulator, tFELFrame, tFieldValues
+use GlobalTypes, only: tUndulator, tFELFrame
 use wigglerVar, only: getAlpha
 
 implicit none (type, external)
 private
 
-public :: tAvgCoupling, getAvgUndAmps, getAvgPolarisation, qAvgPolarisationOK, &
+public :: tAvgCoupling, getAvgUndAmps, getAvgPolarisation, &
           getAvgEnvelope, getAvgCoupling, avgJJ, getResonantMomentum, &
-          getAvgSeedFactor, getAvgBufferPqSq, getAvgAlpha, &
-          tAvgFocusing, getAvgFocusCoef, getAvgFocusing, getAvgCarrierKz2, &
-          setAvgSlavedComp
+          getAvgBufferPqSq, getAvgAlpha, &
+          tAvgFocusing, getAvgFocusCoef, getAvgFocusing, getAvgCarrierKz2
 
 
 !> The period-averaged coupling at one zbar, common to every macroparticle.
-!> The per-particle part (JJ_j and the phase) is added by getResonantMomentum.
+!> The per-particle part (the Bessel factors and the phase) is added by
+!> getResonantMomentum.
 
 type :: tAvgCoupling
-  real(kind=wp) :: amp      ! alpha sqrt(fp) - |ptilde| before JJ
+  real(kind=wp) :: ampX     ! alpha cy / sqrt(2) - |q_x| before its Bessel factor
+  real(kind=wp) :: ampY     ! alpha cx / sqrt(2) - |q_y| before its Bessel factor
   real(kind=wp) :: xiCoef   ! xi_j = xiCoef (1 + eta p2_j)^3 / Gamma_j^2
-  real(kind=wp) :: uRatio   ! u+/u-
   real(kind=wp) :: pqSq     ! period average of |pperp_w|^2 = alpha^2 fp, for getP2Avg
-  real(kind=wp) :: jjRef    ! JJ for the reference particle, for diagnostics
+  real(kind=wp) :: jjRef    ! J0 - J1 (the x factor) for the reference particle, for diagnostics
 end type tAvgCoupling
 
 
@@ -150,37 +158,6 @@ contains
   end subroutine getAvgPolarisation
 
 
-!> Whether a single envelope represents the resonant field exactly - helical
-!> (u+ = 0) or linearly polarised (|u+| = |u-|).  u- = 0 is the opposite
-!> helicity, resonant with the exp(+i z2/2rho) carrier instead.
-
-  logical function qAvgPolarisationOK(cx, cy)
-
-    real(kind=wp), intent(in) :: cx, cy
-
-    real(kind=wp) :: uMinus, uPlus, fp, tol
-
-    call getAvgPolarisation(cx, cy, uMinus, uPlus, fp)
-
-    tol = 1.0e-12_wp * max(abs(uMinus), abs(uPlus), tiny(1.0_wp))
-
-!   cy = uMinus + uPlus must be nonzero too, not just the helicity condition.
-!   Component 1 is the x envelope and it is the only one driven, so a
-!   polarisation with no x field at all - cy = 0, light linear along y - leaves
-!   it carrying nothing and puts the whole field in the slaved component. A
-!   real undulator, just not one a single driven envelope can represent, so it
-!   belongs with elliptical on the rejected side. It used to be accepted here
-!   while setAvgSlavedComp's cx == 0 test sent it down the helical branch, so
-!   it ran and reported circular light.
-
-    qAvgPolarisationOK = (abs(uMinus) > tol) .and. &
-                         (abs(uMinus + uPlus) > tol) .and. &
-                         ((abs(uPlus) <= tol) .or. &
-                          (abs(abs(uPlus) - abs(uMinus)) <= tol))
-
-  end function qAvgPolarisationOK
-
-
 !> Period-averaged envelope of the undulator field, 0 to 1.  In the main
 !> section it is 1; over the end ramps it follows the linear ramp of the by
 !> field in bfields.f90, which rises over 2 periods (8 pi rho).  The helical
@@ -243,15 +220,15 @@ contains
     type(tFELFrame), intent(in) :: frame
     type(tAvgCoupling), intent(out) :: cpl
 
-    real(kind=wp) :: cx, cy, uMinus, uPlus, fp, alphaEff, onePlusEtaP2
+    real(kind=wp) :: cx, cy, uMinus, uPlus, fp, alphaEff, onePlusEtaP2, jjY
 
     alphaEff = getAvgAlpha(sZ, und, frame)
 
     call getAvgUndAmps(und%undulator_type, und%fx, und%fy, cx, cy)
     call getAvgPolarisation(cx, cy, uMinus, uPlus, fp)
 
-    cpl%amp = alphaEff * sqrt(fp)
-    cpl%uRatio = uPlus / uMinus
+    cpl%ampX = alphaEff * cy * sqrt(0.5_wp)
+    cpl%ampY = alphaEff * cx * sqrt(0.5_wp)
     cpl%pqSq = alphaEff**2 * fp
 
     cpl%xiCoef = frame%aw**2 * alphaEff**2 * 0.5_wp * (cy**2 - cx**2) &
@@ -262,64 +239,86 @@ contains
     onePlusEtaP2 = 1.0_wp / sqrt(1.0_wp - (1.0_wp + frame%aw**2 * cpl%pqSq) &
                                           / frame%gamma_ref**2)
 
-    cpl%jjRef = avgJJ(cpl, onePlusEtaP2, 1.0_wp)
+    call avgJJ(cpl, onePlusEtaP2, 1.0_wp, cpl%jjRef, jjY)
 
   end subroutine getAvgCoupling
 
 
-!> JJ for a macroparticle with the given (1 + eta p2) and Gamma.
+!> The Bessel factors of the two Cartesian couplings for a macroparticle with
+!> the given (1 + eta p2) and Gamma: jjX = J0(xi) - J1(xi), jjY = J0(xi) + J1(xi).
+!> xi is signed, so a linear undulator along either axis gets J0(|xi|) - J1(|xi|)
+!> on the component it drives.
 
-  elemental real(kind=wp) function avgJJ(cpl, onePlusEtaP2, gam)
+  elemental subroutine avgJJ(cpl, onePlusEtaP2, gam, jjX, jjY)
 
     type(tAvgCoupling), intent(in) :: cpl
     real(kind=wp), intent(in) :: onePlusEtaP2, gam
+    real(kind=wp), intent(out) :: jjX, jjY
 
-    real(kind=wp) :: xi
+    real(kind=wp) :: xi, j0, j1
 
     xi = cpl%xiCoef * onePlusEtaP2**3 / gam**2
 
-    avgJJ = bessel_j0(xi) - cpl%uRatio * bessel_j1(xi)
+    j0 = bessel_j0(xi)
+    j1 = bessel_j1(xi)
 
-  end function avgJJ
+    jjX = j0 - j1
+    jjY = j0 + j1
+
+  end subroutine avgJJ
 
 
-!> ptilde_j = -alpha sqrt(fp) JJ_j exp(-i theta_j), theta_j = (zbar - z2_j)/2rho,
-!> split into real and imaginary parts.  These stand in for spr, spi wherever
-!> the electrons couple to the field.  sp2 must already hold the averaged p2
-!> (getP2Avg).  Called from inside the !$OMP PARALLEL region in getrhs, so it
-!> is an orphaned !$OMP DO over private scalars, as getP2 is.  A helical
-!> undulator has xi = 0, JJ = 1, and skips the Bessel functions.
+!> The resonant momenta q_x, q_y of every macroparticle, theta_j = (zbar - z2_j)/2rho,
+!>
+!>     q_x = -ampX jjX exp(-i theta),     q_y = -i ampY jjY exp(-i theta),
+!>
+!> split into real (column 1 = x, 2 = y) and imaginary parts.  Each column
+!> stands in for spr, spi wherever the electrons couple to that field
+!> component.  sp2 must already hold the averaged p2 (getP2Avg).  Called from
+!> inside the !$OMP PARALLEL region in getrhs, so it is an orphaned !$OMP DO
+!> over private scalars, as getP2 is.  A helical undulator has xi = 0, both
+!> Bessel factors 1, and skips the Bessel functions.
 
   subroutine getResonantMomentum(sZ, sz2, sgam, sp2, eta, rho, cpl, sprRes, spiRes)
 
     real(kind=wp), intent(in) :: sZ, eta, rho
     real(kind=wp), contiguous, intent(in) :: sz2(:), sgam(:), sp2(:)
     type(tAvgCoupling), intent(in) :: cpl
-    real(kind=wp), contiguous, intent(out) :: sprRes(:), spiRes(:)
+    real(kind=wp), contiguous, intent(out) :: sprRes(:,:), spiRes(:,:)
 
     integer :: i
-    real(kind=wp) :: inv2rho, theta, mag
+    real(kind=wp) :: inv2rho, theta, cth, sth, jjX, jjY, magX, magY
 
     inv2rho = 1.0_wp / (2.0_wp * rho)
 
     if (cpl%xiCoef == 0.0_wp) then
 
-!$OMP DO PRIVATE(theta)
+!$OMP DO PRIVATE(theta, cth, sth)
       do i = 1, size(sz2)
         theta = (sZ - sz2(i)) * inv2rho
-        sprRes(i) = -cpl%amp * cos(theta)
-        spiRes(i) = cpl%amp * sin(theta)
+        cth = cos(theta)
+        sth = sin(theta)
+        sprRes(i,1) = -cpl%ampX * cth
+        spiRes(i,1) = cpl%ampX * sth
+        sprRes(i,2) = -cpl%ampY * sth
+        spiRes(i,2) = -cpl%ampY * cth
       end do
 !$OMP END DO
 
     else
 
-!$OMP DO PRIVATE(theta, mag)
+!$OMP DO PRIVATE(theta, cth, sth, jjX, jjY, magX, magY)
       do i = 1, size(sz2)
         theta = (sZ - sz2(i)) * inv2rho
-        mag = cpl%amp * avgJJ(cpl, 1.0_wp + eta * sp2(i), sgam(i))
-        sprRes(i) = -mag * cos(theta)
-        spiRes(i) = mag * sin(theta)
+        cth = cos(theta)
+        sth = sin(theta)
+        call avgJJ(cpl, 1.0_wp + eta * sp2(i), sgam(i), jjX, jjY)
+        magX = cpl%ampX * jjX
+        magY = cpl%ampY * jjY
+        sprRes(i,1) = -magX * cth
+        spiRes(i,1) = magX * sth
+        sprRes(i,2) = -magY * sth
+        spiRes(i,2) = -magY * cth
       end do
 !$OMP END DO
 
@@ -466,8 +465,8 @@ contains
 
 
 !> Offset from the stored envelope's z2 wavenumber to the physical one.  The
-!> field is A = Atilde exp(-i z2 / 2rho) (times the polarisation factor), so an
-!> envelope Fourier mode at kz2 is physically at kz2 - 1/2rho.  Diffraction, and
+!> field is A_c = sqrt(2) Re[B_c exp(-i z2 / 2rho)], so an envelope Fourier
+!> mode at kz2 is physically at kz2 - 1/2rho.  Diffraction, and
 !> the absorbing boundary, are frequency dependent and must use the physical
 !> wavenumber; the envelope's own kz2 = 0 mode is the carrier.  Zero outside
 !> averaged mode, where the mesh already resolves the carrier.
@@ -503,94 +502,5 @@ contains
 
   end function getAvgBufferPqSq
 
-
-!> Fill the slaved field components from component 1.
-!>
-!> Averaged mode carries one envelope per linear polarisation: component 1 is
-!> x, component 2 is y.  For the polarisations the mode accepts the y envelope
-!> is not independent - it is fixed by the x one, exactly and at all zbar, by
-!> Atilde_y = i (cx/cy) Atilde_x, a quarter-period rotation scaled by the ratio
-!> of the undulator's two field amplitudes.  Only two values of that ratio get
-!> here, since qAvgPolarisationOK accepts only two polarisations:
-!>
-!>   planar (cx = 0)   the radiated field is linear along x, so Atilde_y = 0
-!>   helical (cx = cy) the full quarter turn, Atilde_y = i Atilde_x, which is
-!>                     Re -> -Im, Im -> Re, and circular light
-!>
-!> So the second grid exists and carries the right physical A_y without any
-!> second set of equations.  That is what makes the polarisation layout
-!> landable ahead of the general elliptical coupling (#129): only component 1
-!> is integrated, and this derives the rest before anything reads them.
-!>
-!> An elliptical undulator is still rejected at setup, because there the y
-!> envelope *is* independent and this relation does not hold.
-
-  subroutine setAvgSlavedComp(field, undType, fx, fy)
-
-    type(tFieldValues), intent(inout) :: field
-    character(*), intent(in) :: undType
-    real(kind=wp), intent(in) :: fx, fy
-
-    real(kind=wp) :: cx, cy
-    integer :: ic
-
-    if (field%nComp < 2) return
-
-    call getAvgUndAmps(undType, fx, fy, cx, cy)
-
-!   cx == 0 separates the two cases exactly, but only because the accepted set
-!   is exactly those two: qAvgPolarisationOK passes cx = 0 and cx = cy and
-!   nothing else. It has to reject cy = 0 for that to hold - (cx, cy) = (1, 0)
-!   is linear and passes the helicity condition, and reaching here it would
-!   fail cx == 0 and be written out as circular. The test below and the gate
-!   are one decision in two places; change either and check the other.
-
-    do ic = 2, field%nComp
-
-      if (cx == 0.0_wp) then
-
-!       Linear along x - nothing in y.
-
-        field%ac_r(:,ic) = 0.0_wp
-        field%ac_i(:,ic) = 0.0_wp
-        field%fr_r(:,ic) = 0.0_wp
-        field%fr_i(:,ic) = 0.0_wp
-        field%bk_r(:,ic) = 0.0_wp
-        field%bk_i(:,ic) = 0.0_wp
-
-      else
-
-!       Helical - y leads x by a quarter period.
-
-        field%ac_r(:,ic) = -field%ac_i(:,1)
-        field%ac_i(:,ic) =  field%ac_r(:,1)
-        field%fr_r(:,ic) = -field%fr_i(:,1)
-        field%fr_i(:,ic) =  field%fr_r(:,1)
-        field%bk_r(:,ic) = -field%bk_i(:,1)
-        field%bk_i(:,ic) =  field%bk_r(:,1)
-
-      end if
-
-    end do
-
-  end subroutine setAvgSlavedComp
-
-
-!> Factor taking the exp(-i z2/2rho) component of a seed field to the stored
-!> envelope: Atilde = sqrt(fp)/u- * A+.
-
-  real(kind=wp) function getAvgSeedFactor(undType, fx, fy)
-
-    character(*), intent(in) :: undType
-    real(kind=wp), intent(in) :: fx, fy
-
-    real(kind=wp) :: cx, cy, uMinus, uPlus, fp
-
-    call getAvgUndAmps(undType, fx, fy, cx, cy)
-    call getAvgPolarisation(cx, cy, uMinus, uPlus, fp)
-
-    getAvgSeedFactor = sqrt(fp) / uMinus
-
-  end function getAvgSeedFactor
 
 end module averaging
