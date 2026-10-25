@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Compare a period-averaged Puffin run against an unaveraged one (1D).
 
-Usage: python3 compare.py <plain_dir> <avg_dir> <rho> [<undtype>]
+Usage: python3 compare.py <plain_dir> <avg_dir> <rho>
 
-The unaveraged field A_perp is demodulated onto the averaged envelope's
-normalisation (see puffin/lib/undulator/averaging.f90):
-A+ = <A_perp exp(+i z2/2rho)>, averaged over exactly one resonant wavelength,
-and Atilde = sqrt(fp)/u- * A+.  That is compared node by node with the
-averaged run's stored envelope.  Power vs z is compared through the integrated
+The unaveraged field A_perp = A_x - i A_y is demodulated onto the averaged
+mode's two rms Cartesian envelopes (see puffin/lib/undulator/averaging.f90):
+A_c = sqrt(2) Re[B_c exp(-i z2/2rho)], so B_c = sqrt(2) <A_c exp(+i z2/2rho)>,
+averaged over exactly one resonant wavelength.  Both are compared node by node
+with the averaged run's stored envelopes, whatever the undulator polarisation.  Power vs z is compared through the integrated
 files, as the mean of /power over the middle 30% of the mesh (the flat top);
 in the unaveraged planar case |A|^2 ripples at 2k_r, which that mean removes.
 
@@ -61,11 +61,10 @@ def field_comps(d, k):
     The slowest dimension of /aperp is 2*nFieldComp, ordered (component 1 real,
     component 1 imaginary, component 2 real, ...) - see writeRunAtts in
     io/hdf5PuffLow.f90.  Unaveraged there is one component, whose real and
-    imaginary parts are A_x and -A_y.  Averaged mode carries one envelope per
-    linear polarisation; component 2 is slaved to component 1 (zero for a
-    planar undulator, a quarter period ahead for a helical one), so component 1
-    is the one to compare.  Files written before nFieldComp existed are read as
-    single-component, which is what they were.
+    imaginary parts are A_x and -A_y.  Averaged mode carries the rms envelope
+    of each Cartesian component, B_x then B_y, both driven.  Files written
+    before nFieldComp existed are read as single-component, which is what they
+    were.
     """
     p = os.path.join(d, "run_aperp_%d.h5" % k)
     vals = read_ds(p, "/aperp")
@@ -84,16 +83,18 @@ def field_comps(d, k):
     return comps, dz2, attr(p, "zbarTotal")
 
 
-def field(d, k):
-    comps, dz2, zbar = field_comps(d, k)
-    return comps[0], dz2, zbar
+def cart_env(Ap, dzp, rho):
+    """[B_x, B_y], the averaged mode's envelopes, from an unaveraged A_perp.
 
-
-def pol(undtype):
-    """sqrt(fp)/u-, taking the exp(-i z2/2rho) component to the stored envelope."""
-    cx, cy = {"helical": (1.0, 1.0), "planepole": (0.0, 1.0)}[undtype]
-    um, fp = 0.5 * (cy + cx), 0.5 * (cx * cx + cy * cy)
-    return math.sqrt(fp) / um
+    The unaveraged pair is (A_x, -A_y).  A_c = sqrt(2) Re[B_c exp(-i z2/2rho)]
+    gives B_c = sqrt(2) <A_c exp(+i z2/2rho)>; the exp(-i z2/2rho) image of the
+    real A_c averages out over the one-wavelength window.
+    """
+    nper = int(round(4 * math.pi * rho / dzp))
+    ax = [a.real for a in Ap]
+    ay = [-a.imag for a in Ap]
+    return [demod(ax, dzp, rho, nper, math.sqrt(2.0)),
+            demod(ay, dzp, rho, nper, math.sqrt(2.0))]
 
 
 def demod(A, dz2, rho, nper, fac):
@@ -121,23 +122,32 @@ def mid_power(d, k):
     return sum(p[lo:hi]) / (hi - lo)
 
 
-def metrics(plain, avg, rho, undtype):
-    """(envelope rel L2 difference, rows, power table) for avg against plain."""
-    lamr = 4 * math.pi * rho
-    Ap, dzp, _ = field(plain, last_index(plain, "aperp")[-1])
-    Aa, dza, _ = field(avg, last_index(avg, "aperp")[-1])
-    env = demod(Ap, dzp, rho, int(round(lamr / dzp)), pol(undtype))
+def metrics(plain, avg, rho):
+    """(envelope rel L2 difference, rows, power table) for avg against plain.
+
+    The L2 is over both Cartesian envelopes together.  Each row is
+    (z2, |B|^2 plain, |B|^2 avg, |B_y|^2/|B|^2 plain, the same avg), |B|^2
+    summed over the components, so the polarisation is compared as well as the
+    intensity.
+    """
+    Ap, dzp, _ = field_comps(plain, last_index(plain, "aperp")[-1])
+    Aa, dza, _ = field_comps(avg, last_index(avg, "aperp")[-1])
+    env = cart_env(Ap[0], dzp, rho)
 
     num = den = 0.0
     rows = []
-    for j, a in enumerate(Aa):
+    for j in range(len(Aa[0])):
         i = int(round(j * dza / dzp))
-        if i >= len(env) or env[i] is None:
+        if i >= len(env[0]) or env[0][i] is None:
             continue
-        e = env[i]
-        num += abs(a - e) ** 2
-        den += abs(e) ** 2
-        rows.append((j * dza, abs(e) ** 2, abs(a) ** 2, cmath.phase(e), cmath.phase(a)))
+        e = [env[c][i] for c in range(2)]
+        a = [Aa[c][j] for c in range(2)]
+        num += sum(abs(a[c] - e[c]) ** 2 for c in range(2))
+        den += sum(abs(e[c]) ** 2 for c in range(2))
+        pe = sum(abs(x) ** 2 for x in e)
+        pa = sum(abs(x) ** 2 for x in a)
+        rows.append((j * dza, pe, pa, abs(e[1]) ** 2 / pe if pe else 0.0,
+                     abs(a[1]) ** 2 / pa if pa else 0.0))
 
     ks = sorted(set(last_index(plain, "integrated")) & set(last_index(avg, "integrated")))
     power = [(k, mid_power(plain, k), mid_power(avg, k))
@@ -147,12 +157,11 @@ def metrics(plain, avg, rho, undtype):
 
 def main():
     plain, avg, rho = sys.argv[1], sys.argv[2], float(sys.argv[3])
-    undtype = sys.argv[4] if len(sys.argv) > 4 else "helical"
 
-    l2, rows, power = metrics(plain, avg, rho, undtype)
+    l2, rows, power = metrics(plain, avg, rho)
     print("envelope rel L2 difference (avg vs demodulated plain): %.4e" % l2)
 
-    print("   z2      |A|^2 plain   |A|^2 avg    phase plain  phase avg")
+    print("   z2      |B|^2 plain   |B|^2 avg    y frac plain  y frac avg")
     for r in rows[:: max(1, len(rows) // 12)]:
         print("  %6.2f  %11.4e  %11.4e  %9.4f  %9.4f" % r)
 

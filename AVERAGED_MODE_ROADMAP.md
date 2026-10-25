@@ -10,7 +10,7 @@ the 3D one 17x — rising to 126x against the mesh the unaveraged solver actuall
 converge. In both cases it is also closer to the converged answer than the unaveraged
 solver is at its own defaults.
 
-**Current state:** 1D and 3D, helical or linearly polarised undulators only, single band.
+**Current state:** 1D and 3D, any undulator polarisation (W3b, `feature/elliptical-averaged`), single band.
 The 1D mode is on `feature/period-averaged` and in review as UKFELs/Puffin#131; 3D and the
 compatibility guards are on `feature/averaged-3d`, branched from it. The default
 (unaveraged) path is byte-identical to `dev` throughout.
@@ -30,7 +30,7 @@ section of `doc/manual.tex`. The accuracy map and its harness are in `benchmark/
 | W1 | Land the 1D mode on `dev` | **In review** — PR #131 open against `dev` | — | #131 |
 | W2 | 3D | **Done** — validated against the unaveraged solver | — | — |
 | W3a | Polarisation field grids, planar + helical only | **Done** — nComp = 2, second component slaved | #107 ✅ | #129 |
-| W3b | General polarisation coupling (elliptical + harmonics) | Not started — needs the per-component couplings derived | W3a ✅ | #129 |
+| W3b | General polarisation coupling (elliptical + harmonics) | **Elliptical done** on `feature/elliptical-averaged`, validated 1D + 3D; harmonics not started | W3a ✅ | #129 |
 | W4 | Compatibility: periodic mesh, lattices, restart | **Done** — guards in, one `dev` bug left open | — | — |
 | W5 | Diagnostics, dump metadata and viz tools | **Done** | — | — |
 | W6 | Finish the accuracy map | Partly done — 1D SASE validated; rho scan and harmonics left | W3 for harmonics | #130 |
@@ -166,97 +166,118 @@ storage unblocks viz work while the coupling derivation is outstanding.
 
 Averaged mode carries one envelope per linear polarisation: `nComp = 2`,
 component 1 = x, component 2 = y. Unaveraged stays at 1, where a complex pair
-already means `(A_x, -A_y)`.
+already means `(A_x, -A_y)`. The `aperp` dataset's 4th dimension is
+`2*nComp`, and `/runInfo` carries `nFieldComp` and `fieldCompMeaning`. Until
+W3b, component 2 was slaved to component 1 (`setAvgSlavedComp`, now removed).
 
-**No new physics was needed**, which is why this could land first. For both
-undulator types averaged mode supports, the y envelope is fixed by the x one
-exactly and at every `zbar`:
+### W3b — the general coupling. Done, on `feature/elliptical-averaged`.
 
-| undulator | relation | why |
-|---|---|---|
-| planar | `Atilde_y = 0` | `A_perp = sqrt(2) Re[Atilde e]` is purely real — linear along x |
-| helical | `Atilde_y = i Atilde_x` | `A_perp = Atilde e` unconstrained, so `A_y = -Im[Atilde e]` |
+Both components are driven, each with its own coupling, so any undulator
+polarisation and any seed polarisation runs. The guard in `chkAveraged` and
+`UndSection` is gone. The derivation is in the `averaging.f90` design note and
+the manual; the short form:
 
-`setAvgSlavedComp` derives component 2 from component 1 before each dump. Only
-component 1 is integrated. The `aperp` dataset's 4th dimension is `2*nComp`,
-and `/runInfo` carries `nFieldComp` and `fieldCompMeaning`.
+- **Normalisation.** The stored envelopes are rms Cartesian ones,
+  `A_c = sqrt(2) Re[B_c exp(-i psi)]`, so `|B_c|^2` is the period average of
+  `A_c^2`. This is the roadmap's earlier `Atilde_c` divided by `sqrt(2)`, and it
+  is what removes the "factor of a half" this section used to predict: with it,
+  the source, the energy equation and `gPowerP` keep exactly their single-
+  envelope form, so nothing in `getSource_*`, `dgamdz_f` or the power path
+  changed. Planar has `B_x = Atilde`, `B_y = 0`; helical `B_x = Atilde/sqrt(2)`,
+  `B_y = i B_x`.
+- **Coupling.** The electrons see the field only through `p_x A_x + p_y A_y`,
+  which does not mix the components. Averaging over a period with the signed
+  figure-of-eight `xi`:
 
-Verified by running the 1D averaged deck planar and helical on 2 ranks and
-reading the dumps back — component 2 exact in both cases. Worth knowing:
-**no e2e suite enables averaged mode**, so the four ctest suites only prove the
-unaveraged path is untouched. `testAveraging.pf::testSlavedComponent` is the
-only automated guard on the slaving.
+      q_x = -(alpha cy / sqrt(2)) [J0(xi) - J1(xi)] exp(-i theta)
+      q_y = -i (alpha cx / sqrt(2)) [J0(xi) + J1(xi)] exp(-i theta)
 
-### W3b — the general coupling. Not started.
+  `q_c` replaces `pperp` for component `c` in both the source and the energy
+  equation. In the helicity basis `(q_x -+ i q_y)/sqrt(2) = -alpha (u-+ J0 - u+- J1)`:
+  today's `alpha (u- J0 - u+ J1)` on the resonant helicity, and `J0`, `J1` swapping
+  partners on the other, which is why one envelope could only carry helical
+  and linear undulators.
+- **Code.** `getResonantMomentum` fills one column per component; `getrhs`
+  interpolates once, then gathers, deposits and sums `dGamma/dz` per component;
+  `nEnv = nComp`. The seed is laid into both Cartesian envelopes, so the old
+  "seed polarisation not representable" warning is gone too.
+- **Focusing.** Unchanged and still correct here: the quiver terms are general,
+  and the curvature term is nonzero only for the curved pole, which has no
+  polarisation parameter. The caveat below still applies if that ever changes.
 
-What remains is the physics: per-component couplings so component 2 evolves
-independently, which is what elliptical needs. The constraints any derivation
-has to satisfy, two of them already pinned:
+**Validated.**
 
-- **Planar**: `ptilde_y = 0` and `ptilde_x = -alpha (u_y/2)(J0 - J1) e^{-i theta}`.
-  Derived by matching the shipped coupling through the field normalisation, not
-  assumed — this is where the familiar difference of Bessel functions lives once
-  the basis is Cartesian.
-- **Helical**: `xi = 0`, `Atilde_y = i Atilde_x`, and
-  `ptilde_x - i ptilde_y = -alpha u_y e^{-i theta}`.
-- **Against the circular basis**: under `Atilde_mp = (Atilde_x mp i Atilde_y)/2`
-  the combination must reproduce today's `alpha (u_- J0 - u_+ J1)`. Note that a
-  naive symmetry guess does *not* — see the design note; the two carriers and the
-  conjugation on the `+` component mean the coupling transform is not the plain
-  linear map the field transform is.
-- **Energy**: balance summed over components, 1e-13, through the real `getrhs`.
-- **Power**: `gPowerP` must sum over `field%nEnv`, the driven components, and
-  **gain a factor of a half when W3b makes that 2**. The two go together.
+- *Regression.* Planar is bit-identical to `dev` in 1D and 3D (`/power` and
+  `B_x`, `B_y` exactly zero). Helical `/power` matches to 3e-15 (1D) and
+  bit-identically (3D), with `B_x` = old envelope `/ sqrt(2)` to 1e-14 and
+  `B_y = i B_x` exactly. All four ctest suites pass.
+- *Unit tests.* The brute-force averaging test now checks `q_x` and `q_y`
+  separately, through `getResonantMomentum` itself, for planar, helical,
+  linear-along-y, two elliptical cases and the opposite helicity, at two
+  energies each. Energy balance through `getrhs` holds to 1e-13 with unrelated
+  fields in the two components, for elliptical and linear-along-y in 1D and 3D.
+  A deliberate error in the y Bessel factor fails three tests independently.
+- *Against the unaveraged solver*, 1D seeded deck, averaged at
+  `lambdarPerCell = 1`, `stepsPerPeriod = 2`; power ratio and envelope L2 over
+  both components at the last write, y fraction of the mid-bunch power:
 
-  Summing over `nComp` instead counted the slaved component as a second beam of
-  radiation, reporting 2x the power on a helical undulator — where
-  `|Atilde_y| = |Atilde_x|` — while leaving planar, whose slaved component is
-  zero, correct. Measured before the fix: `P_avg/P_unavg` 2.1725 helical
-  against dev's 1.0863, planar 1.0721 either way. Fixed by summing to `nEnv`;
-  `testPower.pf` guards both modes, and `run_compare.py` now reproduces dev's
-  1.0863 and 1.0721 exactly.
+  | undulator (ux, uy) | seed | P ratio n12 / n24 / n48 | env L2 at n48 | y fraction unavg / avg |
+  |---|---|---|---|---|
+  | planepole (0, 1) | x | 1.0721 / 0.9858 / 0.9668 | 1.29e-2 | 0 / 0 |
+  | helical (1, 1) | resonant | 1.0863 / 1.0126 / 0.9973 | 5.6e-3 | 0.4974 / 0.5000 |
+  | elliptical (0.5, 1) | circular | 1.0854 / 1.0046 / 0.9875 | 8.4e-3 | 0.2346 / 0.2361 |
+  | elliptical (1, 0.6) | circular | 1.0943 / 1.0137 / 0.9968 | 4.4e-3 | 0.6999 / 0.7020 |
+  | linear along y (1, 0) | y | 1.0938 / 1.0050 / 0.9858 | 7.6e-3 | 1 / 1 |
+  | linear along y (1, 0) | circular | 1.0849 / 1.0045 / 0.9871 | 7.3e-3 | 0.9116 / 0.9122 |
+  | opposite helicity (-1, 1) | its resonant helicity | 1.0863 / 1.0126 / 0.9973 | 5.6e-3 | 0.4974 / 0.5000 |
 
-  The half cannot be added on its own, and neither can the Cartesian
-  normalisation that would make it uniformly right. Rescaling the stored field
-  to `A_c = Re[Atilde_c e^{-i psi}]` is the normalisation this section needs
-  anyway, but with only component 1 driven it breaks the energy balance above:
-  the driven component then holds only `cy^2/2fp` of the field energy — half,
-  for helical — so a source into it alone cannot account for the beam's loss.
-  Attempted and reverted; every planar `testRhsConservesEnergy*` failed by the
-  factor `cy/sqrt(fp)` while the helical ones passed, that factor being 1
-  there. So the half, the Cartesian units and the independent driving are one
-  change, not three.
+  Planar and helical at n12 reproduce `dev`'s 1.0721 and 1.0863 exactly. Every
+  case converges towards 1 as the unaveraged mesh refines, and the elliptical
+  cases sit between planar (whose `/power` includes harmonics the averaged mode
+  cannot carry) and helical (which has none), as their harmonic content says
+  they should. The polarisation of the output tracks to 0.2-0.3%.
 
-- **Focusing**: `getAvgFocusCoef`'s curvature term needs re-deriving, and the
-  `cx`/`cy` factors it used to carry put back — correctly this time. Today
-  `cNatX` and `cNatY` both read `+/- rho kxu^2 / sqrt(eta)` with no
-  polarisation factor, which is right only because `kxu^2` is nonzero for the
-  curved-pole type alone, where `cx = 0, cy = 1`. It previously read `cy^2` in
-  `cNatX` and `cy` in `cNatY`; both were dropped precisely because nothing
-  could distinguish `cy^2`, `cy` and `1` there: the curved branches of
-  `getBXfield`/`getBYfield`/`getBZfield` carry no `fx` or `fy` at all, the
-  polarisation being baked into the sinh/cosh expressions, and `calcScaling`
-  leaves `kx_undulator` untouched for every other type.
+  The opposite helicity, seeded with its own resonant helicity, reproduces
+  helical to every printed digit in both solvers, as the x -> -x mirror says it
+  must.
 
-  So the moment the general coupling admits off-axis structure on a type whose
-  polarisation is a free parameter — or `calcScaling` stops setting
-  `kx_undulator == ky_undulator` ("giving equal focusing for now"), which is
-  what lets the `bz` beat keep its on-axis form in that routine — the term is
-  unconstrained and must be worked through from the period average of the real
-  `dppdz_r_f`/`dppdz_i_f`, not guessed from either of the forms that stood
-  here. The quiver terms `sqrt(eta) cx^2/4rho` and `sqrt(eta) cy^2/4rho` are
-  already general and transpose properly; it is only the curvature term that is
-  pinned to one undulator type.
+  In 3D (`run_compare3d.py 0.5,1`, the `deck3d.in` beam with diffraction,
+  4 ranks), against the unaveraged solver at n12 / n24: power ratio 1.1080 /
+  1.0052, bunching 1.0246 / 0.9985, field rms size 0.9958 / 1.0038, beam rms
+  size 1.0006 / 1.0006 - the same convergence pattern as the helical 3D study.
 
-  Note also that a curved pole is *not* `x <-> y` symmetric — the electron
-  wiggles in `x` alone and both planes are focused by that one quiver, which is
-  the sign difference between `cNatX` and `cNatY`. A general derivation should
-  not expect the curvature term to come out as a transposed pair.
+**Found on the way, not ours.**
 
-Then: `sField4ElecReal/Imag` gain a component dimension, `dgamdz_f` sums over
-components, the loop goes inside `getrhs` (shared interpolation weights), and
-`chkAveraged`/`UndSection` lift the elliptical rejection. Harmonics extend the
-same component axis with carrier `exp(-i h z2/2rho)` and `JJ_h`.
+- *Linear-along-y is not the mirror of planar in the unaveraged solver.*
+  Averaged mode gives identical power for `planepole` and `(ux, uy) = (1, 0)`
+  with a y seed, as it must; the unaveraged solver gives (1, 0) 2.0% less, at
+  n12 and at n48 alike, while `'puffin'` at (0, 1) reproduces `planepole`
+  exactly. So it is x against y, not the type. Likely cause, not verified: the
+  x-driving field is `by ~ sin` and the y-driving one `bx ~ cos`, so the two
+  undulators start a quarter period apart in phase and the unaveraged entry
+  transient differs, where averaged mode has none.
+- *A negative `sA0_X` or `sA0_Y` crashes Puffin* with `MPI_ERR_TRUNCATE` in
+  `MPI_Alltoallv` on one rank, in both modes and on `dev`'s binary. A seed of
+  the opposite helicity needs one; two seeds with `ph_sh` differing by `pi` work
+  around it.
+- *`compare3d.py` could not read any averaged dump written since W3a*: it
+  assumed one complex pair per node. Fixed here.
+
+**Still open from the original W3b notes:** harmonic bands (same component
+axis, carrier `exp(-i h z2/2rho)`; the odd-harmonic couplings are written out in
+the derivation note) and non-harmonic bands for two-colour and multi-energy
+beams. Neither is started.
+
+- **Focusing**, kept for when the curved pole gains a polarisation parameter:
+  `getAvgFocusCoef`'s curvature term is pinned to the curved-pole type, where
+  `cx = 0, cy = 1`. It previously read `cy^2` in `cNatX` and `cy` in `cNatY`;
+  both were dropped because nothing could distinguish `cy^2`, `cy` and `1`
+  there: the curved branches of `getBXfield`/`getBYfield`/`getBZfield` carry no
+  `fx` or `fy` at all, and `calcScaling` leaves `kx_undulator` untouched for
+  every other type. If either changes, the term must be worked through from the
+  period average of the real `dppdz_r_f`/`dppdz_i_f`. A curved pole is not
+  `x <-> y` symmetric, so it should not be expected to come out as a transposed
+  pair.
 
 ### Original notes
 
@@ -265,7 +286,8 @@ envelope. Doing them as one generalisation is much cheaper than twice.
 
 - **General elliptical.** A single envelope is exact only for helical (`u+ = 0`) or linear
   (`|u+| = |u-|`); elliptical needs the two helicity components as independent envelopes,
-  since their coupling ratios differ. Currently rejected at setup and in `UndSection`.
+  since their coupling ratios differ. Done in W3b above, with Cartesian rather
+  than helicity envelopes, which keep the two couplings separate.
 - **Harmonic bands (#129).** An extra envelope per odd harmonic, carrier `exp(-i h z2/2rho)`,
   coupling `JJ_h = J_((h-1)/2)(h xi) - J_((h+1)/2)(h xi)`, reducing to today's `J0 - J1` at
   `h = 1`. Recovers both the missing harmonic output (~2% of radiated power at aw ~ 1) and

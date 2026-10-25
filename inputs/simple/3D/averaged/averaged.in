@@ -37,10 +37,12 @@
 ! beam rather than being masked.
 !
 ! zundType = 'helical', so BOTH polarisation envelopes are in play: component 1
-! is the x envelope, component 2 the y, and for a helical undulator the second
-! is slaved to the first at Atilde_y = i Atilde_x.  The seed file sets sA0_X and
-! sA0_Y together to match.  Averaged dumps carry both components, which is a
-! layout change from unaveraged - see the nFieldComp dispatch in
+! is the x envelope, component 2 the y, each driven with its own coupling, and
+! for a helical undulator they come out at B_y = i B_x.  The seed file sets
+! sA0_X and sA0_Y together, the resonant helicity; any other seed polarisation
+! is laid exactly too, but the opposite helicity does not couple to the beam.
+! Averaged dumps carry both components, which is a layout change from
+! unaveraged - see the nFieldComp dispatch in
 ! utilities/pyPlotting/plotPolarization.py.
 !
 !

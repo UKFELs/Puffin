@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Compare a period-averaged SASE run against an unaveraged one (1D).
 
-Usage: python3 compare_sase.py <plain_dir> <avg_dir> [<rho>] [<undtype>]
+Usage: python3 compare_sase.py <plain_dir> <avg_dir> [<rho>]
 
 The seeded 1D harness (compare.py) differences the two fields node by node.
 That is the wrong expectation here.  SASE starts from shot noise and amplifies
@@ -71,10 +71,9 @@ import math
 import os
 import sys
 
-from compare import attr, demod, field_comps, last_index, pol, read_ds
+from compare import attr, cart_env, field_comps, last_index, read_ds
 
 RHO = 0.005
-UND = "planepole"    # sase.in's undulator, for the demodulation normalisation
 ZTOL = 1e-6          # relative zbar agreement required of the two runs
 FITLO, FITHI = 1e-4, 1e-2    # fit window, as fractions of saturation power
 
@@ -133,7 +132,7 @@ def bands(d, k, rho):
     return [(abs(4.0 * math.pi * rho * f), w) for f, w in sp], False
 
 
-def correlation(plain, kp, avg, ka, rho, undtype=UND):
+def correlation(plain, kp, avg, ka, rho):
     """(|correlation|, relative L2) of the two runs' envelopes at one write.
 
     The unaveraged field is demodulated onto the averaged envelope's
@@ -154,16 +153,17 @@ def correlation(plain, kp, avg, ka, rho, undtype=UND):
     """
     Ap, dzp, _ = field_comps(plain, kp)
     Aa, dza, _ = field_comps(avg, ka)
-    env = demod(Ap[0], dzp, rho, int(round(4.0 * math.pi * rho / dzp)), pol(undtype))
+    env = cart_env(Ap[0], dzp, rho)
     num, da, de = 0j, 0.0, 0.0
-    for j, a in enumerate(Aa[0]):
-        i = int(round(j * dza / dzp))
-        if i >= len(env) or env[i] is None:
-            continue
-        e = env[i]
-        num += a * e.conjugate()
-        da += abs(a) ** 2
-        de += abs(e) ** 2
+    for c in range(2):
+        for j, a in enumerate(Aa[c]):
+            i = int(round(j * dza / dzp))
+            if i >= len(env[c]) or env[c][i] is None:
+                continue
+            e = env[c][i]
+            num += a * e.conjugate()
+            da += abs(a) ** 2
+            de += abs(e) ** 2
     if da <= 0.0 or de <= 0.0:
         return float("nan"), float("nan")
 #   sum|a - e exp(i phi)|^2 at phi = arg(num) is da + de - 2|num|.

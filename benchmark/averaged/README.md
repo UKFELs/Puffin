@@ -44,12 +44,13 @@ python3 compare_sase.py <plain_dir> <avg_dir> 0.005 helical   # full tables
 
 **Run both polarisations.** `--und` defaults to `planepole`, the deck's own
 undulator, and for a long time that was the only one this comparison ever ran.
-A planar undulator's slaved `Atilde_y` is zero, so it is blind to anything that
-goes wrong with the second polarisation component: the averaged helical power
-was reported at exactly twice the unaveraged value while this comparison, run
+A planar undulator never drives `B_y`, so it is blind to anything that goes
+wrong with the second polarisation component: the averaged helical power was
+once reported at exactly twice the unaveraged value while this comparison, run
 planar, agreed to ~1%. Its seeded sibling `run_compare.py` has taken `helical`
 all along — nobody passed it. A change to averaged mode is not checked until
-both have been run.
+both have been run, and, since it drives `B_x` and `B_y` with different
+couplings, an elliptical one (`run_compare.py 0.5,1`).
 
 The deck is `deck.in`'s beam and undulator - 1D, planar, rho = 0.005,
 aw = 1.012, gamma_r = 456.4 - with `q_noise = .true.`, no seed file, and 340

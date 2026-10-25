@@ -61,9 +61,11 @@ def getMagPhaseEnvelope(h5,xi,yi,iEnv,qNegate=False):
     imA=numpy.asarray(h5.root.aperp[xi,yi,:,2*iEnv+1])
     if qNegate:
       reA,imA=-reA,-imA
-    mag=numpy.hypot(reA,imA)
-    # A = Re[Atilde exp(-i phi)] = mag cos(phi - arg Atilde), against
-    # getMagPhase's A = mag cos(phi + phase), so phase = -arg Atilde.
+    # The stored envelopes are rms, A = sqrt(2) Re[B exp(-i phi)], so the
+    # amplitude getMagPhase would find is sqrt(2) |B|.
+    mag=numpy.sqrt(2.)*numpy.hypot(reA,imA)
+    # A = sqrt(2) Re[B exp(-i phi)] = mag cos(phi - arg B), against
+    # getMagPhase's A = mag cos(phi + phase), so phase = -arg B.
     phase=numpy.mod(-numpy.arctan2(imA,reA),2.*numpy.pi)
     return mag, phase
 
@@ -77,8 +79,9 @@ def polarisationSamples(h5,xi,yi,izHi,nFieldComp,nPhase=24):
     Averaged, the carrier has been divided out and a single z2 node can span
     a whole resonant wavelength, so advancing through z2 no longer sweeps the
     carrier phase and would trace nothing. The ellipse is recovered instead
-    by putting the carrier back analytically, A_x = Re[Atilde_x exp(-i phi)]
-    and likewise for y, sampled at nPhase phases per node.
+    by putting the carrier back analytically, A_x = sqrt(2) Re[B_x exp(-i phi)]
+    and likewise for y - the stored envelopes are rms - sampled at nPhase
+    phases per node.
 
     Both branches return the stored (A_x, -A_y) convention, so the averaged
     plot is laid out the same way round as the unaveraged one.
@@ -95,8 +98,8 @@ def polarisationSamples(h5,xi,yi,izHi,nFieldComp,nPhase=24):
     imY=-numpy.asarray(h5.root.aperp[xi,yi,:izHi,3])
     phi=numpy.linspace(0.,2.*numpy.pi,nPhase,endpoint=False)
     cosPhi,sinPhi=numpy.cos(phi),numpy.sin(phi)
-    ax=numpy.outer(reX,cosPhi)+numpy.outer(imX,sinPhi)
-    ay=numpy.outer(reY,cosPhi)+numpy.outer(imY,sinPhi)
+    ax=numpy.sqrt(2.)*(numpy.outer(reX,cosPhi)+numpy.outer(imX,sinPhi))
+    ay=numpy.sqrt(2.)*(numpy.outer(reY,cosPhi)+numpy.outer(imY,sinPhi))
     return ax.ravel(), ay.ravel()
 
 def getMagPhase(h5,rho,xi,yi,component):
@@ -191,12 +194,6 @@ if len(sys.argv) == 4 or len(sys.argv) == 3:
     print("two-envelope field (nFieldComp = 2) and try again.")
     h5.close()
     sys.exit(1)
-
-  # Note on normalisation in averaged mode: for a planar undulator the stored
-  # envelope is the single-envelope Atilde rather than Atilde_x = sqrt(2)
-  # Atilde, so |Atilde_x| read here is low by sqrt(2). Atilde_y is zero in
-  # that case, so neither the ellipse (normalised below) nor the normalised
-  # Stokes parameters are affected by it.
 
   plt.figure(figsize=(35,35))
   gs = gridspec.GridSpec(7,7)
