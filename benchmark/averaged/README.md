@@ -10,6 +10,8 @@ compares them.
 python3 run_compare.py helical                        # defaults: --plain 12:30 24:60 48:120 --avg 1:2
 python3 run_compare.py planepole --plain 48:120 96:240
 python3 run_compare.py planepole --aw 0.5
+python3 run_compare.py planepole --mpw 16 --every 5 --avg 1:2 1:2:3,5 --plain 24:60 48:120
+                                                      # harmonic bands 3 and 5, see below
 python3 compare.py <plain_dir> <avg_dir> 0.005 helical   # full envelope and power tables
 python3 compare_avg.py <avg_ref_dir> <avg_dir> ...       # averaged against averaged
 ```
@@ -21,7 +23,8 @@ Note that `/power` sums every frequency the mesh resolves, so for a planar
 undulator it includes harmonic radiation that the averaged mode cannot carry -
 see the harmonic decomposition below. The one-wavelength box used for the
 demodulation has exact nulls at every harmonic, so `demod` isolates the
-fundamental band.
+fundamental band - or, demodulating at `exp(+i h z2/2rho)`, band h, which is
+how an averaged run with `avgHarmonics` is compared band by band.
 
 The deck is the CLARA-like 1D one used for `benchmark/convergence` (rho =
 0.005, aw = 1.012, gamma_r = 456.4), seeded, noise-free, 60 periods - about
@@ -485,6 +488,18 @@ wavelength bunch the beam perfectly at the 4th harmonic, but the 4th does not
 couple and no power appears there. Helical shows no harmonic content at any
 mesh, which is why its total- and fundamental-power comparisons agree.
 
+**Correction (2026-10-25): the 3rd and 5th harmonic rows above are mostly a
+beam-sampling artefact.** `deck.in`'s beam has 4 macroparticles per wavelength,
+and a beam laid that way aliases harmonic h onto h mod 4: the 3rd reads the
+conjugate of the fundamental's bunching and the 5th the fundamental's own,
+from the first step. Rerun at 16 per wavelength (converged: 32 changes the
+band powers by under 0.3%), the 3rd harmonic is 0.09% of the fundamental's
+power on this deck, not 1.7%, and the 5th 0.0002%, not 0.3%. The argument above
+only shows the 4th has no coupling to alias into. So the "3rd + 5th harmonic"
+column below is ~20x too large, and the conclusion drawn from it - that the
+planar remainder is not harmonic - is right for a stronger reason: there is
+almost no harmonic power to account for. See "Harmonic bands" at the end.
+
 Comparing the fundamental band alone, at n96, final dump:
 
 | | gap | A-term share | remainder | 3rd + 5th harmonic |
@@ -517,3 +532,97 @@ size ~rho which beats back against the quiver in the energy equation, leaving a
 slow term. A helical source has no such component - its projection onto the
 carrier is purely slow. That predicts the remainder scales linearly with rho,
 halving at rho = 0.0025, which is the next diagnostic (UKFELs/Puffin#130).
+
+
+## Harmonic bands (2026-10-25)
+
+`avgHarmonics` lets the averaged mode carry odd harmonics as extra bands
+(`averaging.f90`, and the Harmonics subsection of the manual's Period-Averaged
+Mode section). `compare.harmonic_power` compares them with the unaveraged field
+demodulated at `exp(+i h z2/2rho)` over one fundamental wavelength, which nulls
+every other harmonic, at every `/aperp` write the two runs share:
+
+```sh
+python3 run_compare.py planepole --mpw 16 --every 5 --avg 1:2 1:2:3,5 --plain 24:60 48:120 96:240
+```
+
+All runs are the seeded 60-period deck, planar, `aw = 1.012`, Release build, 1
+rank, with `iMPsZ2PerWave = 16`, more than twice the 5th harmonic (see the
+correction above; the averaged run warns below that). Averaged at
+`lambdarPerCell = 1`, 2 steps per period. Mid-bunch band power at the last
+write, zbar 3.77, as averaged / unaveraged:
+
+| unaveraged nodesPerLambdar | 24 | 48 | 96 | 192 |
+| --- | --- | --- | --- | --- |
+| total `/power`, fundamental only | 1.0030 | 0.9857 | 0.9817 | 0.9807 |
+| total `/power`, with bands 3, 5 | 1.0039 | 0.9866 | 0.9826 | 0.9816 |
+| h = 3 | 1.1450 | 1.0284 | 1.0015 | 0.9952 |
+| h = 5 | 1.0305 | 0.9184 | 0.8513 | 0.8381 |
+| unaveraged h = 5 power | 1.345e-7 | 1.509e-7 | 1.628e-7 | 1.653e-7 |
+
+(The fundamental-only row at n96 and n192 is the with-bands ratio divided by
+1.0009: the bands change the averaged fundamental by -6e-6, so the two averaged
+runs differ in total power by exactly the harmonic power.) Averaged h = 5
+power is 1.386e-7 throughout.
+
+**The 3rd harmonic agrees.** The unaveraged solver converges onto the averaged
+answer, 14.5% high at n24 and 0.5% at n192, while the averaged side is already
+converged: 4 steps per period changes it in the fifth digit, and
+`lambdarPerCell = 0.5` by 0.15%.
+
+**The 5th harmonic does not: it is 16% low against a converged reference.**
+The unaveraged h = 5 power moves 1.5% between n96 and n192, so the reference is
+settled to a few per cent, and the averaged one moves 0.4% at
+`lambdarPerCell = 0.5`, not at all at 4 steps per period, and 0.2% at 32
+macroparticles per wavelength. The gap is not there from the start: it opens as
+the field grows, 0.93 at zbar 2.2 (n192) falling steadily to 0.84 at the end.
+
+What is known about the cause:
+
+- *The dropped A-term is about a fifth of it.* With the radiation-driven
+  quiver (`eta p2 A / kappa^2` in `dppdz`) zeroed in the unaveraged solver, the
+  h = 5 ratio at n96 is 0.877 instead of 0.851, and h = 3 1.016 instead of
+  1.002; the fundamental moves from 0.983 to 0.989, as before.
+- *Late on the harmonics are nonlinear, so they inherit the fundamental's
+  error with a lever.* Between those two runs ln(P_5) moved 4.9 times as far as
+  ln(P_1), and ln(P_3) 2.4 times, which is what harmonic generation from
+  fundamental bunching (P_h ~ P_1^h) predicts. The averaged fundamental is
+  1.8% low at n192 - the planar remainder plus the A-term, documented above -
+  and with those levers that alone is worth about 9% on h = 5 and 4% on
+  h = 3. Taken out, h = 5 would be ~8% low and h = 3 ~4% high, so h = 3
+  agreeing to 0.5% is partly a cancellation, not only a property of the band.
+  The levers come from one pair of runs and are an estimate.
+- *Not the single-particle coupling.* The brute-force tests in
+  `test/testAveraging.pf` check q^(3) and q^(5) against an electron's exact
+  orbit to ~1e-4 of the band's own coupling, for every polarisation.
+
+What is left once the fundamental's lever is taken out, ~8% low on the 5th
+harmonic and ~4% high on the 3rd, is not identified. Candidates not yet tested are terms of second
+order in the figure-of-eight, which are h^2 larger for the 5th than the
+fundamental, and coupling of the fundamental field to the 5th harmonic through
+the even-harmonic bunching that the averaged model drops along with the
+A-term.
+
+At the default 4 macroparticles per wavelength the comparison is with the
+aliased harmonics, and the two solvers alias the same way: at n48 the
+unaveraged 3rd harmonic is 1.73% of the fundamental and the 5th 0.28%, and
+the averaged bands reproduce them to 3.2% and 12%. The averaged run warns that
+its beam is too coarse for the bands it was asked for.
+
+**What the bands do to the fundamental comparison: almost nothing, because
+there is almost nothing there.** Total `/power` moves 0.09% towards the
+unaveraged solver (0.9857 to 0.9866 at n48). The ~1.8% planar gap is not
+harmonic content, and with the bands carried it is still there.
+
+Elliptical, `(ux, uy) = (0.5, 1)` with a circular seed, n48 only: total
+`/power` 0.9902 without bands and 0.9921 with; h = 3 1.059 and h = 5 0.835 at
+the last write, the same pattern as planar at the same mesh; the y fraction of
+the fundamental 0.2359 unaveraged, 0.2372 averaged, unchanged by the bands. The
+3rd harmonic is 0.18% of the fundamental there.
+
+Cost: the bands' gather, deposit and Bessel functions make each about as
+expensive as the fundamental. With output off, the averaged integration takes
+5.6 s fundamental-only and 16.3 s with bands 3 and 5; with this harness's
+integrated write every period, 33 s and 45 s. The unaveraged runs took 66, 106,
+218 and 364 s at n24 to n192 (some were sharing the machine with each other).
+

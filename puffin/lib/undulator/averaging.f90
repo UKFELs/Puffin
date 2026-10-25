@@ -98,6 +98,10 @@
 !> A detuning that moves the fundamental by d moves harmonic h by h d, so the
 !> harmonics leave the band first: an energy spread or offset e is in band for
 !> harmonic h while 2 h |e| < 1/(2 lambdarPerCell).
+!>
+!> Against the unaveraged solver on the 1D seeded planar deck the 3rd harmonic
+!> agrees to 0.5%, and the 5th is 16% low, for reasons only partly understood;
+!> see W3c in AVERAGED_MODE_ROADMAP.md.
 
 module averaging
 

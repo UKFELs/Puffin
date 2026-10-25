@@ -91,8 +91,8 @@ type :: tFieldValues
 
     ! How many of those components are independently driven - integrated with
     ! their own source. Equal to nComp in both modes: unaveraged the single
-    ! pair, averaged both Cartesian envelopes, each with its own coupling (see
-    ! averaging.f90). Kept separate from nComp so that a component derived at
+    ! pair, averaged both Cartesian envelopes of every band, each with its own
+    ! coupling (see averaging.f90). Kept separate from nComp so that a component derived at
     ! output time, rather than integrated, can be added without counting it in
     ! the field's energy: anything totalling a quantity over the field sums to
     ! nEnv - see gPowerP.

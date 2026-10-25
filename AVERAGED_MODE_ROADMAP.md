@@ -10,7 +10,7 @@ the 3D one 17x — rising to 126x against the mesh the unaveraged solver actuall
 converge. In both cases it is also closer to the converged answer than the unaveraged
 solver is at its own defaults.
 
-**Current state:** 1D and 3D, any undulator polarisation (W3b, `feature/elliptical-averaged`), single band.
+**Current state:** 1D and 3D, any undulator polarisation (W3b, merged in #146), and optional odd-harmonic bands (W3c, `feature/avg-harmonics`).
 The 1D mode is on `feature/period-averaged` and in review as UKFELs/Puffin#131; 3D and the
 compatibility guards are on `feature/averaged-3d`, branched from it. The default
 (unaveraged) path is byte-identical to `dev` throughout.
@@ -30,10 +30,11 @@ section of `doc/manual.tex`. The accuracy map and its harness are in `benchmark/
 | W1 | Land the 1D mode on `dev` | **In review** — PR #131 open against `dev` | — | #131 |
 | W2 | 3D | **Done** — validated against the unaveraged solver | — | — |
 | W3a | Polarisation field grids, planar + helical only | **Done** — nComp = 2, second component slaved | #107 ✅ | #129 |
-| W3b | General polarisation coupling (elliptical + harmonics) | **Elliptical done** on `feature/elliptical-averaged`, validated 1D + 3D; harmonics not started | W3a ✅ | #129 |
+| W3b | General polarisation coupling (elliptical) | **Done**, merged in #146, validated 1D + 3D | W3a ✅ | #129 |
+| W3c | Odd-harmonic bands (`avgHarmonics`) | **Done** on `feature/avg-harmonics`; 3rd validated to 0.5% in 1D, 5th 16% low and not understood | W3b ✅ | #129 |
 | W4 | Compatibility: periodic mesh, lattices, restart | **Done** — guards in, one `dev` bug left open | — | — |
 | W5 | Diagnostics, dump metadata and viz tools | **Done** | — | — |
-| W6 | Finish the accuracy map | Partly done — 1D SASE validated; rho scan and harmonics left | W3 for harmonics | #130 |
+| W6 | Finish the accuracy map | Partly done — 1D SASE validated, harmonic back-action measured (negligible); rho scan and the 5th-harmonic gap left | — | #130 |
 | W7 | Housekeeping: buffer bug, benchmarks, defaults | Partly done — on hold | — | #128 |
 
 Raised by this work and not yet filed:
@@ -284,10 +285,8 @@ the manual; the short form:
 - *`compare3d.py` could not read any averaged dump written since W3a*: it
   assumed one complex pair per node. Fixed here.
 
-**Still open from the original W3b notes:** harmonic bands (same component
-axis, carrier `exp(-i h z2/2rho)`; the odd-harmonic couplings are written out in
-the derivation note) and non-harmonic bands for two-colour and multi-energy
-beams. Neither is started.
+**Still open from the original W3b notes:** non-harmonic bands for two-colour
+and multi-energy beams. Not started. Harmonic bands are W3c, below.
 
 - **Focusing**, kept for when the curved pole gains a polarisation parameter:
   `getAvgFocusCoef`'s curvature term is pinned to the curved-pole type, where
@@ -300,6 +299,91 @@ beams. Neither is started.
   `x <-> y` symmetric, so it should not be expected to come out as a transposed
   pair.
 
+### W3c — harmonic bands. Done, on `feature/avg-harmonics`.
+
+`avgHarmonics = 3, 5` in `&MDATA` carries those odd harmonics as extra bands,
+one Cartesian pair each on the same component axis: `nComp = 2 * nBands`,
+fundamental first, then ascending, recorded per component in `/runInfo`
+`fieldCompHarmonic`. Default is the fundamental alone.
+
+- **Coupling.** Band h holds `A_c = sqrt(2) Re[B_c^(h) exp(-i h z2/2rho)]` and
+  couples through
+
+      q_x^(h) = -(alpha cy / sqrt(2)) (-1)^m [J_m(h xi) - J_(m+1)(h xi)] exp(-i h theta)
+      q_y^(h) = -i (alpha cx / sqrt(2)) (-1)^m [J_m(h xi) + J_(m+1)(h xi)] exp(-i h theta)
+
+  `m = (h-1)/2`, derived again in the `averaging.f90` design note and the manual
+  (Jacobi-Anger on the figure-of-eight; the slow term needs `n = -(h +- 1)/2`).
+  At h = 1 these are the fundamental's couplings, which keep their own code
+  path (`avgJJ`, `bessel_j0/j1`) so nothing about a run without bands changes.
+  The original notes' `JJ_h` was right up to the `(-1)^m`.
+- **Code.** `getResonantMomentum` fills two more columns per band;
+  `getrhs` already looped over `nEnv`, so the source and `dGamma/dz` pick the
+  bands up with no change to their structure, and invariant 2 holds summed over
+  every component. `diffractIM` passes each component's harmonic to
+  `DiffractionStep`, so the carrier offset, the absorber and the filter use
+  `-h/2rho`. `gPowerP` already summed `nEnv`. Seeds are fundamental-only; the
+  bands start at zero.
+- **Guards.** `chkAveraged` rejects even harmonics, values below 3, duplicates,
+  and `avgHarmonics` without `qAveraged`, and repeats its energy-spread and
+  `mag` band warnings at `h` times the detuning for the highest band.
+  `calcSamples` warns when the beam has `iMPsZ2PerWave <= 2h`.
+- **Not carried.** Even harmonics and the off-axis harmonic coupling (both zero
+  on axis), any helical harmonic (`xi = 0`), harmonic seeds.
+
+**Validated.**
+
+- *Regression.* The default path is byte-identical to `upstream/dev`: every
+  dataset of every dump, 1D averaged planar and elliptical, 1D unaveraged, 3D
+  averaged helical with diffraction, and all nine pre-existing ctest suites.
+- *Unit tests.* Brute force for q^(3), q^(5) through `getResonantMomentum` for
+  planar, linear-along-y, two elliptical cases, helical and the opposite
+  helicity (the last two must vanish); the planar factors against the textbook
+  `J_m(h xi) - J_(m+1)(h xi)`; columns 1-2 bit-identical with bands on; energy
+  balance through `getrhs` to 1e-13 with six components carrying unrelated
+  fields, 1D and 3D, taper and ramps; every `avgHarmonics` rejection. Dropping
+  the `(-1)^m`, or flipping the sign of `J_(m+1)` in the x factor, fails four
+  tests each.
+- *End to end.* `avg_planar_harm_ends`, six components compared to 1e-10; a
+  0.1% error in `J_(m+1)` fails it.
+- *Against the unaveraged solver*, 1D seeded planar deck, 16 macroparticles per
+  wavelength (full tables in `benchmark/averaged/README.md`, "Harmonic bands"):
+  at the last write the 3rd harmonic converges onto the averaged result as the
+  unaveraged mesh refines, 1.145 / 1.028 / 1.0015 / 0.995 at n24 / 48 / 96 /
+  192. The 5th does not: 1.03 / 0.92 / 0.85 / 0.84, against an unaveraged
+  reference that has settled to ~1.5%. The averaged side is converged in step,
+  cell size and beam sampling. The dropped A-term accounts for about 3 points
+  of the 5th's gap. Late in the run the harmonics come from nonlinear harmonic
+  generation, so they inherit the fundamental's 1.8% deficit with levers of
+  ~2.4 (h = 3) and ~5 (h = 5). Taking that out leaves ~8% low on the 5th and
+  ~4% high on the 3rd, cause not identified. Elliptical (0.5, 1) shows the same
+  pattern.
+- *Back-action, the W6 question.* The bands change the averaged fundamental by
+  -6e-6 at the end of the deck, and total `/power` moves 0.09% towards the
+  unaveraged solver. The planar fundamental gap is not harmonic.
+
+**Found on the way.** The harmonic content recorded in W3b's earlier
+decomposition (~2% at aw ~ 1, and the "3rd + 5th harmonic" column in the
+benchmark README) was a beam-sampling artefact: at `deck.in`'s 4 macroparticles
+per wavelength the 3rd and 5th harmonics alias onto the fundamental's
+bunching. At 16 per wavelength the 3rd is 0.09% of the fundamental and the 5th
+0.0002%. Both solvers alias identically, so the averaged bands reproduce the
+aliased values too (3% and 12%).
+
+**Open.**
+
+- The 5th-harmonic gap. Next candidates: terms second order in the
+  figure-of-eight (h^2 larger at the 5th), and the fundamental field's coupling
+  to the 5th through the even-harmonic bunching that goes with the A-term.
+- The viz tools and `compare_sase.py` / `compare3d.py` read only the
+  fundamental's two components; `/power` and `/Intensity` sum every band. No
+  per-band integrated output exists yet; band powers come from `/aperp`.
+- The separate-dataset field writer (`hdf5_puff.f90`, `qSep`) names harmonic
+  datasets `_h3x`, `_h3y`, ..., but nothing sets `qSeparateStepFiles_G` from the
+  input, so that path is unreachable and untested.
+- 3D: runs (2 ranks, diffraction per band, B_y of each harmonic band exactly
+  zero for planar) but is not validated against the unaveraged solver.
+
 ### Original notes
 
 Elliptical undulators and harmonic bands are the same structural problem: more than one
@@ -311,7 +395,8 @@ envelope. Doing them as one generalisation is much cheaper than twice.
   than helicity envelopes, which keep the two couplings separate.
 - **Harmonic bands (#129).** An extra envelope per odd harmonic, carrier `exp(-i h z2/2rho)`,
   coupling `JJ_h = J_((h-1)/2)(h xi) - J_((h+1)/2)(h xi)`, reducing to today's `J0 - J1` at
-  `h = 1`. Recovers both the missing harmonic output (~2% of radiated power at aw ~ 1) and
+  `h = 1`. Recovers both the missing harmonic output (~2% of radiated power at aw ~ 1 - an
+  aliasing artefact, it turned out; ~0.09% at a beam that resolves the 5th, see W3c) and
   the harmonics' drive on `dGamma/dz`.
 - **Sequencing:** both wanted the field storage to be an object rather than loose module
   arrays, which was #107. **That is now done**, so the storage a second envelope needs
@@ -574,7 +659,9 @@ appearing, which is the point of it.
 ## W6 — Finish the accuracy map
 
 - **rho scan (#130)** — deferred; characterises the ~1% planar remainder.
-- **Harmonic back-action** — needs W3 before it can be separated from the above.
+- **Harmonic back-action** — measured in W3c: -6e-6 on the fundamental, and the harmonic
+  content itself 0.09%. Not the planar remainder. The 5th-harmonic gap W3c found is the
+  new open item.
 - **Model the dropped A-term.** The radiation-driven transverse momentum accounts for ~0.55%
   in both polarisations. Its slow effect on p2 can be added analytically, removing a known
   error rather than documenting it.
@@ -698,17 +785,16 @@ Done, in order of landing:
 5. **W6, in part** — 1D SASE, the case every earlier validation was missing. Validated from
    shot noise past saturation against a mesh-refinement series: gain length to 0.16%,
    saturation power to 1.2%, spectral centre to 1e-5, bunching to 1.6%, at 44x the speed.
-   The rho scan and the harmonic question are still open and still waiting on W3.
+   The rho scan is still open; the harmonic question is answered by W3c.
 
 Not done, in suggested order:
 
 6. **W7** — housekeeping. On hold pending a decision on the `calcBuff` rounding; the
    `NBZ2_G` and exit-status items found during W2 and W4 are parked with it.
-7. **W3** — multiple field arrays: elliptical first (simpler, two components), then harmonic
-   bands. #107 is done, so the storage exists; what remains is the physics and the `getrhs`
-   signature change that lets it loop over envelopes.
-8. **W6** — close out the accuracy map: the rho scan, the A-term, and the harmonic question
-   once W3 makes it answerable. 3D SASE and helical SASE are now the cheapest additions,
+7. **W3** — done: elliptical (W3b, #146) and odd-harmonic bands (W3c,
+   `feature/avg-harmonics`). Two-colour bands remain.
+8. **W6** — close out the accuracy map: the rho scan, the A-term, and the 5th-harmonic gap
+   W3c found. 3D SASE and helical SASE are now the cheapest additions,
    since the 1D harness and its guard rails exist.
 
 Separately, and not part of this programme: **periodic meshes with fewer than two z2 nodes
