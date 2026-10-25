@@ -203,6 +203,49 @@ if (ENABLE_PARALLEL)
     MAX_PES 2
   )
 
+  # Undulator polarisations and averaged mode, 1D. One small deck per case
+  # (see testMPIIntegrationPolarisation.pf.in), each configured from the same
+  # template into its own test file and binary, again so puffin_main starts
+  # from clean globals. Entries are case|field components|final step.
+  set(PUFFIN_POL_CASES
+    "pol_helical_ends|1|180"
+    "pol_elliptical_ends|1|180"
+    "avg_planar_ends|2|24"
+    "avg_helical_ends|2|24"
+    "avg_elliptical_ends|2|24"
+  )
+
+  foreach(f pol_seed_circ.in pol_seed_x.in)
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/inputs/1D/${f}"
+                   "${CMAKE_CURRENT_BINARY_DIR}/inputs/1D/${f}" COPYONLY)
+  endforeach()
+
+  foreach(entry IN LISTS PUFFIN_POL_CASES)
+    string(REPLACE "|" ";" entry "${entry}")
+    list(GET entry 0 POL_CASE)
+    list(GET entry 1 POL_NCOMP)
+    list(GET entry 2 POL_NSTEPS)
+    set(POL_MODULE "testPol_${POL_CASE}")
+
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/inputs/1D/${POL_CASE}.in"
+                   "${CMAKE_CURRENT_BINARY_DIR}/inputs/1D/${POL_CASE}.in" COPYONLY)
+    foreach(kind field electrons integrated)
+      configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/expected/1D/${POL_CASE}_expected_${kind}.h5"
+        "${CMAKE_CURRENT_BINARY_DIR}/expected/1D/${POL_CASE}_expected_${kind}.h5"
+        COPYONLY)
+    endforeach()
+
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/testMPIIntegrationPolarisation.pf.in"
+                   "${CMAKE_CURRENT_BINARY_DIR}/${POL_MODULE}.pf" @ONLY)
+
+    add_pfunit_ctest (puffin_e2e_tests_${POL_CASE}
+      TEST_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/${POL_MODULE}.pf"
+      LINK_LIBRARIES puffin_mpi
+      MAX_PES 2
+    )
+  endforeach()
+
 else()
 
   add_pfunit_ctest (puffin_e2e_tests_serial

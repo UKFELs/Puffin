@@ -317,11 +317,15 @@ contains
   end function getWriteStep
 
 
-  subroutine readH5FieldDataOntoRootProcess(zFile, rfield, ifield, nZ2)
+  subroutine readH5FieldDataOntoRootProcess(zFile, rfield, ifield, nZ2, iComp)
 
     character(*), intent(in) :: zFile
     integer(kind=ip), intent(in) :: nZ2
     REAL(kind=WP), intent(out) :: rfield(:), ifield(:)
+    !> Field component to read, 1 (default) to nFieldComp: the real and
+    !> imaginary parts of component c are the slowest index's 2(c-1) and 2c-1.
+    !> Unaveraged dumps hold one, averaged ones two (B_x, B_y).
+    integer(kind=ip), intent(in), optional :: iComp
     INTEGER(HID_T) :: file_id       !< File identifier
     INTEGER(HID_T) :: dset_id       !< Dataset identifier
     INTEGER(HID_T) :: dspace_id     !< Dataspace identifier in memory
@@ -334,9 +338,13 @@ contains
     INTEGER(HSIZE_T), DIMENSION(2) :: count  !< Count for hyperslab
     integer :: error ! Error flag
     integer(kind=ip) :: mpiinfo
+    integer(HSIZE_T) :: icr
 
     mpiinfo=MPI_INFO_NULL
     filename = zfile
+
+    icr = 0_HSIZE_T
+    if (present(iComp)) icr = 2_HSIZE_T * int(iComp - 1_ip, HSIZE_T)
 
     if (tProcInfo_G%qRoot) then
       CALL h5open_f(error)
@@ -344,14 +352,14 @@ contains
       CALL h5dopen_f (file_id, dsetname, dset_id, error)
       dims = [nZ2, 2]
       dsize = [nZ2]
-      doffset = [0, 0]
+      doffset = [0_HSIZE_T, icr]
       count = [INT(nZ2, HSIZE_T), 1_HSIZE_T]
       CALL h5screate_simple_f(1, dsize, memspace, error)
       CALL h5Dget_space_f(dset_id,dspace_id,error)
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, count, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, rfield, dsize, error, &
        file_space_id = dspace_id, mem_space_id = memspace)
-      doffset = [0, 1]
+      doffset = [0_HSIZE_T, icr + 1_HSIZE_T]
       CALL h5sselect_hyperslab_f(dspace_id, H5S_SELECT_SET_F, doffset, count, error)
       CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, ifield, dsize, error, &
        file_space_id = dspace_id, mem_space_id = memspace)

@@ -1,0 +1,15 @@
+!! Seed for the polarisation e2e decks: linear along x.
+&NSLIST
+nseeds = 1
+/
+
+&SLIST
+freqf = 1.0
+sA0_X = 0.1
+sA0_Y = 0.0
+sSigmaF = 2.0, 2.0, 2.0
+qFlatTop = .true.
+meanZ2 = 0.0
+qRndFj_G = .false.
+sSigFj_G = 1.0
+/

@@ -217,6 +217,13 @@ the manual; the short form:
   energies each. Energy balance through `getrhs` holds to 1e-13 with unrelated
   fields in the two components, for elliptical and linear-along-y in 1D and 3D.
   A deliberate error in the y Bessel factor fails three tests independently.
+- *End to end.* Averaged mode had no e2e coverage at all, and every unaveraged
+  golden was plane-pole or the `'puffin'` (1, 1) type without ends. Five small
+  1D suites now pin averaged planar, helical and elliptical, and unaveraged
+  `'helical'` and elliptical, all with undulator ends, both field components
+  compared to 1e-10 (`test/testMPIIntegrationPolarisation.pf.in`). The same
+  Bessel-factor error fails the averaged elliptical one, and the #147 ramp
+  change fails both unaveraged ones.
 - *Against the unaveraged solver*, 1D seeded deck, averaged at
   `lambdarPerCell = 1`, `stepsPerPeriod = 2`; power ratio and envelope L2 over
   both components at the last write, y fraction of the mid-bunch power:

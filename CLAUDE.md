@@ -23,6 +23,7 @@ it, target it, or sync to it for normal work.
 - Build: `make -j4 -C build/`
 - Tests: `ctest --output-on-failure --test-dir build/`
 - Two test suites: `puffin_basic_tests` (unit) and `puffin_e2e_tests`/`puffin_e2e_tests_1d_taper`/`puffin_e2e_tests_3d`/`puffin_e2e_tests_3d_slow` (MPI integration tests)
+- Polarisation and averaged-mode e2e: `puffin_e2e_tests_{pol_helical,pol_elliptical,avg_planar,avg_helical,avg_elliptical}_ends`, one small 1D deck each, all configured from `test/testMPIIntegrationPolarisation.pf.in` (regeneration note there)
 - E2E tests verify numerical results to 1e-10 tolerance (bit-exact)
 
 ### Slow and big tests — off by default
