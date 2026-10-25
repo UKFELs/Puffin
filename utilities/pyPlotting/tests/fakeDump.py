@@ -131,18 +131,23 @@ class Dump(object):
 def envelopeDump(Ax, Ay=None, kz2Carrier=-100., z2=None):
     """One transverse point of an averaged dump, from complex envelopes.
 
-    Components are laid out (Re Ax, Im Ax, Re Ay, Im Ay). With Ay omitted the
-    dump carries the single envelope a planar run writes (nFieldComp = 1),
-    which has no polarisation of its own. The default carrier is the one
-    rho = 0.005 gives, kz2Carrier = -1/(2 rho).
+    Ax, Ay are peak envelopes, A_c = Re[Ax exp(i kz2Carrier z2)]. The dump
+    stores them as the solver writes them, rms: B_c = A_c / sqrt(2), so that
+    A_c = sqrt(2) Re[B_c exp(i kz2Carrier z2)] (see averaging.f90). Expected
+    amplitudes in the tests are therefore |Ax|, |Ay| directly.
+
+    Components are laid out (Re Bx, Im Bx, Re By, Im By). With Ay omitted the
+    dump carries a single envelope (nFieldComp = 1), which has no
+    polarisation of its own. The default carrier is the one rho = 0.005
+    gives, kz2Carrier = -1/(2 rho).
     """
-    Ax = numpy.asarray(Ax, dtype=complex)
+    Ax = numpy.asarray(Ax, dtype=complex) / numpy.sqrt(2.)
     nFieldComp = 1 if Ay is None else 2
     aperp = numpy.zeros((1, 1, Ax.size, 2 * nFieldComp))
     aperp[0, 0, :, 0] = Ax.real
     aperp[0, 0, :, 1] = Ax.imag
     if Ay is not None:
-        Ay = numpy.asarray(Ay, dtype=complex)
+        Ay = numpy.asarray(Ay, dtype=complex) / numpy.sqrt(2.)
         aperp[0, 0, :, 2] = Ay.real
         aperp[0, 0, :, 3] = Ay.imag
     return Dump(aperp, nFieldComp=nFieldComp, kz2Carrier=kz2Carrier, z2=z2)
