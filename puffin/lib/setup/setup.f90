@@ -26,7 +26,8 @@ module Setup
      sElX_G, sElY_G, sElZ2_G, sElPX_G, sElPY_G, sElGam_G, sZlSt_G, tInitData_G, sKBetaXSF_G, &
      sKBetaYSF_G, ffact, start_step, sStepSize, nSteps, sRedistLen_G, tArrayE, tArrayA, tArrayZ, &
      iWriteNthSteps, iIntWriteNthSteps, zFileName_G, ioutInfo_G, frecvs, fdispls, qDiffraction_G, &
-     qResume_G, qResume, qWrite, qOneD_G, qscaled_G, qAveraged_G
+     qResume_G, qResume, qWrite, qOneD_G, qscaled_G, qAveraged_G, iAvgHarmonics_G
+   use averaging, only: getAvgBands
    use Read_data, only: read_in, filenamenoextension, initializeprocessors, &
      readh5fieldfilesingledump
    use checks, only: checkparameters
@@ -315,15 +316,20 @@ contains
 !     needs one component per linear axis. Read from the global rather than
 !     ctx%flags because the flags are populated after the first field layout.
 
+!     Averaged mode can carry odd harmonics as further (x, y) pairs, one band
+!     each, about their own carriers exp(-i h z2/2rho) - see averaging.f90.
+
       if (qAveraged_G) then
-        ctx%field%nComp = 2_ip
+        call getAvgBands(iAvgHarmonics_G, ctx%field%bandHarm)
+        ctx%field%nComp = 2_ip * size(ctx%field%bandHarm, kind=ip)
       else
         ctx%field%nComp = 1_ip
       end if
 
 !     Every component is integrated with its own source. Averaged mode drives
 !     x and y independently through q_x and q_y (see averaging.f90), which is
-!     what lets it carry an elliptical undulator and any seed polarisation.
+!     what lets it carry an elliptical undulator and any seed polarisation,
+!     and each harmonic band through its own q_x, q_y.
 
       ctx%field%nEnv = ctx%field%nComp
 

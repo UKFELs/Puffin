@@ -18,7 +18,7 @@ use puffin_constants, only: pi, iX_CG, iY_CG, iZ2_CG, iPX_CG, iPY_CG, iGam_CG, &
   iDiffraction_CG, iFocussing_CG, iOneD_CG, iResume_CG
 use Globals, only: qRndFj_G, sSigFj_G, qRndEj_G, sSigEj_G, gExtEj_G, sStepSize, nSteps, &
                    qAveraged_G, sLambdarPerCell_G, iInputType_G, iReadH5_G, iReadMASP_G, &
-                   iFieldSeedType_G, iReadH5Field_G, fieldMesh, iPeriodic
+                   iFieldSeedType_G, iReadH5Field_G, fieldMesh, iPeriodic, iAvgHarmonics_G
 use puffin_mpiInfo, only: tProcInfo_G
 use particleFunctions, only: iTopHatDistribution_CG, gaussian
 use grids, only: getinttypes
@@ -504,11 +504,26 @@ subroutine chkAveraged(qResume, nz2, freqf, sSigE, mag, qOK)
   logical, intent(out) :: qOK
 
   real(kind=wp) :: band
-  integer(kind=ip) :: i
+  integer(kind=ip) :: i, hMax
 
   qOK = .true.
 
+!     Harmonic bands (avgHarmonics) exist only in averaged mode, where each is
+!     an envelope about its own carrier. Unaveraged, the mesh already resolves
+!     every harmonic it can, so asking for them there means the input is not
+!     doing what its author thinks.
+
+  if (any(iAvgHarmonics_G /= 0_ip) .and. (.not. qAveraged_G)) then
+    call log_error("avgHarmonics is only for averaged mode (qAveraged). The "// &
+                   "unaveraged solver resolves the harmonics on its mesh "// &
+                   "already; remove avgHarmonics, or set qAveraged.", tErrorLog_G)
+    qOK = .false.
+    return
+  end if
+
   if (.not. qAveraged_G) return
+
+  call chkAvgHarmonics(iAvgHarmonics_G, hMax, qOK)
 
   if (sLambdarPerCell_G <= 0.0_wp) then
     call log_error("lambdarPerCell must be > 0 in averaged mode.", tErrorLog_G)
@@ -590,16 +605,67 @@ subroutine chkAveraged(qResume, nz2, freqf, sSigE, mag, qOK)
       print*, "WARNING: beam ", i, " has an energy oscillation (mag) that ", &
               "detunes it by more than the averaged mesh band - a two-colour ", &
               "case needs more than the one carrier averaged mode has."
+    else if (2.0_wp * real(hMax, kind=wp) * abs(mag(i)) > band) then
+      print*, "WARNING: beam ", i, " has an energy oscillation (mag) that ", &
+              "moves harmonic", hMax, " out of the averaged mesh band. The band ", &
+              "is the same width for every harmonic, and a detuning grows with ", &
+              "h; lower lambdarPerCell to carry it."
     end if
 
     if (2.0_wp * abs(sSigE(i, iGam_CG)) > band) then
       print*, "WARNING: beam ", i, " has an energy spread wider than the ", &
               "averaged mesh band; its tails are out of band."
+    else if (2.0_wp * real(hMax, kind=wp) * abs(sSigE(i, iGam_CG)) > band) then
+      print*, "WARNING: beam ", i, " has an energy spread wider than the ", &
+              "averaged mesh band at harmonic", hMax, "; its tails are out ", &
+              "of band there. Lower lambdarPerCell to carry them."
     end if
 
   end do
 
 end subroutine chkAveraged
+
+
+!> The harmonic bands asked for with avgHarmonics: distinct odd harmonics of
+!> 3 or more, zero entries unused. The fundamental is always carried, so 1 is
+!> rejected rather than silently dropped, and even harmonics have no on-axis
+!> coupling to carry (see averaging.f90). hMax is the highest band, 1 with
+!> none.
+
+subroutine chkAvgHarmonics(harm, hMax, qOK)
+
+  integer(kind=ip), intent(in) :: harm(:)
+  integer(kind=ip), intent(out) :: hMax
+  logical, intent(inout) :: qOK
+
+  integer(kind=ip) :: i
+
+  hMax = 1_ip
+
+  do i = 1, size(harm)
+
+    if (harm(i) == 0_ip) cycle
+
+    if (harm(i) < 3_ip) then
+      call log_error("avgHarmonics lists the harmonics carried beside the "// &
+                     "fundamental, so each must be 3 or more. The "// &
+                     "fundamental is always carried.", tErrorLog_G)
+      qOK = .false.
+    else if (mod(harm(i), 2_ip) == 0_ip) then
+      call log_error("avgHarmonics must hold odd harmonics only: an even "// &
+                     "harmonic has no on-axis coupling to the beam, and "// &
+                     "averaged mode does not carry the off-axis one.", tErrorLog_G)
+      qOK = .false.
+    else if (count(harm(:i-1) == harm(i)) > 0) then
+      call log_error("avgHarmonics lists the same harmonic twice.", tErrorLog_G)
+      qOK = .false.
+    else
+      hMax = max(hMax, harm(i))
+    end if
+
+  end do
+
+end subroutine chkAvgHarmonics
 
 
 

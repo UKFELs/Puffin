@@ -85,7 +85,8 @@ type :: tFieldValues
     ! (A_x, -A_y) and so holds both polarisations. In averaged mode a complex
     ! pair is one envelope of one polarisation state, so polarisation needs a
     ! component per linear axis: nComp = 2, component 1 = x, component 2 = y.
-    ! Set once at setup; every allocation below uses it.
+    ! Averaged mode can also carry odd harmonics, one more (x, y) pair each -
+    ! see bandHarm. Set once at setup; every allocation below uses it.
     integer(kind=ip) :: nComp = 1_ip
 
     ! How many of those components are independently driven - integrated with
@@ -96,6 +97,14 @@ type :: tFieldValues
     ! the field's energy: anything totalling a quantity over the field sums to
     ! nEnv - see gPowerP.
     integer(kind=ip) :: nEnv = 1_ip
+
+    ! Averaged mode only: the harmonic h carried by each band. Band b is the
+    ! Cartesian pair at components 2b-1 (x) and 2b (y), held as envelopes about
+    ! the carrier exp(-i h z2/2rho). Band 1 is the fundamental, h = 1; the rest
+    ! are the odd harmonics asked for with avgHarmonics, in ascending order, so
+    ! nComp = 2*size(bandHarm). Unallocated unaveraged, where the one resolved
+    ! component holds every frequency the mesh can.
+    integer(kind=ip), allocatable :: bandHarm(:)
 
     ! --- Active slab: the region this rank integrates ---------------------
     ! Indexed (node, component). Node extent tllen*ntrnds_G, where
