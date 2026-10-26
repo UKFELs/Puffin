@@ -37,7 +37,7 @@
 !> Averaging over a period, including the figure-of-eight ripple of the phase
 !> theta_j = (zbar - z2_j)/2rho = thetabar_j - xi_j sin(2 theta_w), with
 !>
-!>     xi_j = (1 + eta p2_j)^3 aw^2 alpha^2 (cy^2 - cx^2)/2 / (4 eta gamma_r^2 Gamma_j^2)
+!>     xi_j = (1 + eta p2_j)^3 aw^2 alpha^2 (cy^2 - cx^2)/2 / (4 eta gamma_r^2 Gamma_j^2 p2_j)
 !>
 !> (signed: it follows cy^2 - cx^2), turns the quiver into one effective
 !> resonant momentum per macroparticle and component,
@@ -65,6 +65,20 @@
 !> xi is evaluated per macroparticle: it goes as 1/Gamma^2, and taking it at
 !> the reference energy alone, as Genesis does, would put an error of
 !> ~0.2 (Gamma_j - 1) into the planar coupling.
+!>
+!> The ripple is in z2, so radiation at frequency f of the carrier sees it as
+!> a phase ripple f times that against the carrier, and couples through
+!> J(f xi).  One envelope holds every frequency in its band, so there is no
+!> single f; each macroparticle takes the one it is resonant with, f = 1/p2_j,
+!> which is the content it exchanges energy with on the slow scale - hence the
+!> 1/p2_j above.  For a resonant beam p2_j = 1 to O(rho), and the factor moves
+!> the coupling by under ~1e-3.  It matters for a lattice module detuned
+!> through alpha, whose electrons sit at p2 = 1/f and amplify radiation at f:
+!> evaluated against the carrier instead, a planar module at f = 0.75
+!> under-couples its own radiation by 6% and is left at a quarter less power
+!> at any mesh.  Carrier content seen by an off-resonant electron gets J(xi/p2)
+!> where J(xi) would be exact, an error of the same size, but that coupling is
+!> off resonance and so weak.
 
 module averaging
 
@@ -78,7 +92,7 @@ private
 
 public :: tAvgCoupling, getAvgUndAmps, getAvgPolarisation, &
           getAvgEnvelope, getAvgCoupling, avgJJ, getResonantMomentum, &
-          getAvgBufferPqSq, getAvgAlpha, &
+          getAvgBufferPqSq, getAvgAlpha, getAvgResonanceShift, &
           tAvgFocusing, getAvgFocusCoef, getAvgFocusing, getAvgCarrierKz2
 
 
@@ -89,7 +103,7 @@ public :: tAvgCoupling, getAvgUndAmps, getAvgPolarisation, &
 type :: tAvgCoupling
   real(kind=wp) :: ampX     ! alpha cy / sqrt(2) - |q_x| before its Bessel factor
   real(kind=wp) :: ampY     ! alpha cx / sqrt(2) - |q_y| before its Bessel factor
-  real(kind=wp) :: xiCoef   ! xi_j = xiCoef (1 + eta p2_j)^3 / Gamma_j^2
+  real(kind=wp) :: xiCoef   ! xi_j = xiCoef (1 + eta p2_j)^3 / (Gamma_j^2 p2_j)
   real(kind=wp) :: pqSq     ! period average of |pperp_w|^2 = alpha^2 fp, for getP2Avg
   real(kind=wp) :: jjRef    ! J0 - J1 (the x factor) for the reference particle, for diagnostics
 end type tAvgCoupling
@@ -220,7 +234,7 @@ contains
     type(tFELFrame), intent(in) :: frame
     type(tAvgCoupling), intent(out) :: cpl
 
-    real(kind=wp) :: cx, cy, uMinus, uPlus, fp, alphaEff, onePlusEtaP2, jjY
+    real(kind=wp) :: cx, cy, uMinus, uPlus, fp, alphaEff, p2Ref, jjY
 
     alphaEff = getAvgAlpha(sZ, und, frame)
 
@@ -236,28 +250,28 @@ contains
 
 !   Reference particle: Gamma = 1, no slow transverse momentum
 
-    onePlusEtaP2 = 1.0_wp / sqrt(1.0_wp - (1.0_wp + frame%aw**2 * cpl%pqSq) &
-                                          / frame%gamma_ref**2)
+    p2Ref = 1.0_wp / (1.0_wp + getAvgResonanceShift(alphaEff, fp, frame))
 
-    call avgJJ(cpl, onePlusEtaP2, 1.0_wp, cpl%jjRef, jjY)
+    call avgJJ(cpl, p2Ref, frame%eta, 1.0_wp, cpl%jjRef, jjY)
 
   end subroutine getAvgCoupling
 
 
 !> The Bessel factors of the two Cartesian couplings for a macroparticle with
-!> the given (1 + eta p2) and Gamma: jjX = J0(xi) - J1(xi), jjY = J0(xi) + J1(xi).
+!> the given p2 and Gamma: jjX = J0(xi) - J1(xi), jjY = J0(xi) + J1(xi), with xi
+!> taken at the frequency the particle is resonant with, 1/p2 of the carrier.
 !> xi is signed, so a linear undulator along either axis gets J0(|xi|) - J1(|xi|)
 !> on the component it drives.
 
-  elemental subroutine avgJJ(cpl, onePlusEtaP2, gam, jjX, jjY)
+  elemental subroutine avgJJ(cpl, p2, eta, gam, jjX, jjY)
 
     type(tAvgCoupling), intent(in) :: cpl
-    real(kind=wp), intent(in) :: onePlusEtaP2, gam
+    real(kind=wp), intent(in) :: p2, eta, gam
     real(kind=wp), intent(out) :: jjX, jjY
 
     real(kind=wp) :: xi, j0, j1
 
-    xi = cpl%xiCoef * onePlusEtaP2**3 / gam**2
+    xi = cpl%xiCoef * (1.0_wp + eta * p2)**3 / (gam**2 * p2)
 
     j0 = bessel_j0(xi)
     j1 = bessel_j1(xi)
@@ -312,7 +326,7 @@ contains
         theta = (sZ - sz2(i)) * inv2rho
         cth = cos(theta)
         sth = sin(theta)
-        call avgJJ(cpl, 1.0_wp + eta * sp2(i), sgam(i), jjX, jjY)
+        call avgJJ(cpl, sp2(i), eta, sgam(i), jjX, jjY)
         magX = cpl%ampX * jjX
         magY = cpl%ampY * jjY
         sprRes(i,1) = -magX * cth
@@ -501,6 +515,37 @@ contains
     getAvgBufferPqSq = fp * max(alpha0**2, alpha1**2)
 
   end function getAvgBufferPqSq
+
+
+!> Resonant frequency, relative to the carrier, minus 1, of a reference
+!> electron (Gamma = 1, no slow pperp) in an undulator of strength alpha and
+!> polarisation factor fp.  Such an electron slips p2 resonant wavelengths per
+!> period (getP2Avg with pqSq = alpha^2 fp), so it is resonant with 1/p2 of
+!> the carrier frequency.  The carrier is the resonance of the main-input
+!> undulator, which fixes frame%eta, so this is zero to rounding for alpha = 1
+!> and that undulator's fp.  A lattice module detuned through alpha, or a
+!> taper, moves it; the envelope mesh holds roughly +/- 1/(2 lambdarPerCell).
+!> Returns huge() if the undulator is too strong for the electron to move
+!> forward at all.
+
+  pure real(kind=wp) function getAvgResonanceShift(alpha, fp, frame)
+
+    real(kind=wp), intent(in) :: alpha, fp
+    type(tFELFrame), intent(in) :: frame
+
+    real(kind=wp) :: u, rt
+
+    u = (1.0_wp + frame%aw**2 * alpha**2 * fp) / frame%gamma_ref**2
+
+    if (u >= 1.0_wp) then
+      getAvgResonanceShift = huge(1.0_wp)
+      return
+    end if
+
+    rt = sqrt(1.0_wp - u)
+    getAvgResonanceShift = frame%eta * rt * (1.0_wp + rt) / u - 1.0_wp
+
+  end function getAvgResonanceShift
 
 
 end module averaging

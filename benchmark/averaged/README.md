@@ -288,6 +288,204 @@ recommendation, 4 is tolerable before saturation, 8 is not.
   against it are limits approached, not converged values - the same caveat the
   seeded study's planar remainder carries.
 
+## Lattices: detuned modules and tapers
+
+`run_compare_latt.py` is `run_compare.py` with a lattice, a taper and a second
+seed:
+
+```sh
+python3 run_compare_latt.py planepole --latt "UN 60 1.0 0.0; DR 2; UN 60 f0.9 0.0"
+python3 run_compare_latt.py planepole --latt "UN 60 f0.75 0.0" --seed 0,0 \
+        --seed2 0.75:0.01,0.0 --z2len 72 --avg 1:2 0.5:2 0.25:2 0.125:2
+python3 run_compare_latt.py planepole --latt "UN 105 1.0 0.0; UN 150 1.0 -0.02" --z2len 80
+```
+
+An undulator module's `ALPHA` can be given as `fF`, the frequency its
+reference-energy electron is resonant with relative to the carrier, and alpha is
+solved for (`getAvgResonanceShift` in `averaging.f90` is the same relation).
+The undulator period is fixed, so a module is detuned through alpha only:
+`f1.1` is alpha 0.855 and `f0.6` is alpha 1.723 on the planar deck. Power, bunching
+and mean energy are compared write by write on the flat top, and the field at
+the last write is Fourier transformed over the same region for the spectral
+centre and, with `--seed2`, the power in each colour. `compare.py`'s
+one-wavelength demodulation is not used, since it attenuates content at a
+frequency offset df by sinc(df).
+
+A red-detuned module slips the beam 1/f wavelengths per period, so long or
+strongly red lattices need `--z2len` above the deck's 60, or the run stops with
+"Z2 coord is too large". Everything below is 1D, seeded, noise-free, rho =
+0.005, averaged at 2 steps per period, against the unaveraged solver at
+`nodesPerLambdar` 24, 48 and 96. Raw tables were kept out of the repository.
+
+### What it showed (2026-10-26)
+
+**A detuned module with only the carrier seeded is modelled as well as an
+undetuned one.** Module 1 is alpha = 1 for 60 periods, then a 2-period drift,
+then 60 periods detuned to f. With no seed or noise at the module's own
+resonance, it acts on the carrier field off resonance, which is exactly
+where the averaged mesh holds content. Power ratio avg/unavg at the end of the
+lattice (zbar 7.67), `lambdarPerCell` 1, against n = 96:
+
+| f | 0.6 | 0.9 | 0.97 | 0.995 | 1 (none) | 1.005 | 1.03 | 1.1 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| planar | 0.965 | 0.955 | 0.980 | 0.985 | 0.988 | 1.001 | 0.987 | 0.974 |
+| helical | | 0.993 | 1.002 | | 0.978 | | | 0.993 |
+
+The planar row was measured before the Bessel-factor fix described below. Rerun
+with it, f = 0.6, 0.9 and 1.1 give 0.965, 0.958 and 0.975. Helical is not
+affected by the fix.
+
+The planar end of module 1 is 0.960-0.962 on every row, the known planar
+remainder at zbar 3.8. Planar bunching agrees to 1.1% except at f = 0.6 (+6%),
+and helical to 1.1% except at f = 0.9 and 1.1 (-3.6%, +3.5%), all three where it
+has fallen to 0.07-0.11. Mean energy agrees to 5e-5 and the spectral centre to
+1e-5. n = 48 to 96 moves the ratios by 0.2-0.4%. Helical shows nothing that
+grows with detuning. Planar f = 0.9 is 3% below the undetuned row, which is the
+one planar entry here that may be detuning-dependent; it is not explained.
+
+**Radiation at a detuned module's own resonance is where the band matters, and
+it exposed a second, larger error in the planar coupling, now fixed.** One module detuned to f and
+seeded only at f (`--seed 0,0 --seed2 f:...`), the cleanest test of the band.
+Power ratio avg/unavg at the module end against n = 48, which agrees with n = 24
+to ~1%:
+
+| f | 1.4 | 1.25 | 1.1 | 0.9 | 0.75 | 0.6 |
+| --- | --- | --- | --- | --- | --- | --- |
+| helical, `lambdarPerCell` 1 | 0.249 | 0.504 | 0.894 | 0.903 | 0.568 | 0.249 |
+| 0.5 | 0.663 | 0.843 | 0.972 | 0.972 | 0.884 | 0.825 |
+| 0.25 | 0.904 | 0.960 | 0.992 | 0.988 | 0.960 | 0.942 |
+| 0.125 | 0.973 | 0.984 | 0.990 | 0.980 | 0.955 | 0.915 |
+| planar, `lambdarPerCell` 1 | 0.793 | 0.610 | 0.883 | 0.871 | 0.448 | 0.126 |
+| 0.5 | 0.895 | 0.865 | 0.962 | 0.956 | 0.810 | 0.598 |
+| 0.25 | 0.962 | 0.957 | 0.984 | 0.979 | 0.937 | 0.869 |
+| 0.125 | 0.982 | 0.979 | 0.984 | 0.983 | 0.967 | 0.950 |
+| planar before the fix, 1 | 0.794 | 0.621 | 0.905 | 0.822 | 0.354 | 0.070 |
+| 0.5 | 0.898 | 0.886 | 0.986 | 0.902 | 0.636 | 0.307 |
+| 0.25 | 0.967 | 0.982 | 1.008 | 0.923 | 0.736 | 0.446 |
+| 0.125 | 0.987 | 1.004 | 1.009 | 0.927 | 0.758 | 0.488 |
+| elliptical (0.5, 1), 0.125 | | 0.983 | | 0.984 | 0.966 | 0.939 |
+| before the fix, 0.125 | | 0.995 | | 0.968 | 0.912 | 0.840 |
+
+Helical is the band and nothing else. Linear deposition and linear
+interpolation each scale a mode at delta = |f - 1| `lambdarPerCell` cycles per
+cell by sinc^2(pi delta), so the growth rate goes as sinc^(4/3) and the error
+grows with the module's gain: at the band edge it is large long before the
+nominal +/- 1/(2 `lambdarPerCell`) is reached. f = 0.6 at 1 wavelength per cell
+is 0.4 of the way to the Nyquist edge, and the module amplifies a quarter as
+much as it should. Refining the cells takes every row to within a few per cent.
+The helical red rows fall again slightly at 0.125, where the beam crosses ~7
+cells per step; that was not chased.
+
+Before the fix, planar converged on the blue side and **stalled on the red
+side**: f = 0.75 sat at 0.74-0.76 and f = 0.6 at 0.45-0.49 from 0.25
+wavelengths per cell down. Neither the step nor the cell size was the cause: 8
+steps per period, or 0.125 wavelengths per cell, moved the two-colour f = 0.75
+case from 0.717 to 0.724 and 0.699. The cause was the figure-of-eight Bessel
+factor. `xi` was evaluated against the carrier, but the ripple is in z2, so
+radiation at frequency f sees it as a phase ripple f times larger, and its
+coupling needs JJ(f xi). xi grows with alpha^2, so the error was large only on
+the red (alpha > 1) side, where JJ(xi)/JJ(f xi) is 0.985, 0.938 and 0.838 at
+f = 0.9, 0.75 and 0.6. On the blue side it over-coupled by under 1%, which is
+why the blue rows sat 1-2% above their helical counterparts.
+
+The fix (`avgJJ` in `averaging.f90`) evaluates xi per macroparticle at the
+frequency that particle is resonant with, `xi_j / p2_j`. That is the content
+it exchanges energy with on the slow scale. It is exact for that content, and
+it leaves trapped electrons in a taper, which stay at p2 = 1, on the carrier
+value. Carrier radiation seen by an off-resonant electron now gets JJ(xi/p2)
+where JJ(xi) would be exact. That coupling is off resonance and weak, and the
+single-seed detuned rows above move by under 0.3%. A scratch build that scaled
+`xiCoef` by the module's resonant frequency instead gave the same red-side
+numbers, to 0.5%. It was rejected because it would give the trapped electrons
+of a tapered module the module's frequency, not the carrier's. With the fix,
+planar converges as helical does, and elliptical, whose xi is smaller but
+nonzero, is recovered the same way. `testDetunedMatchesBruteForce` in
+`test/testAveraging.pf` pins it against a brute-force period average of a
+detuned planar, elliptical and linear-y quiver.
+
+On resonance the fix is O(rho), and it moves the resonant comparisons by about
+0.1%, towards the unaveraged solver:
+
+| | before | after | unaveraged reference |
+| --- | --- | --- | --- |
+| planar, P ratio at zbar 3.77 | 0.9624 | 0.9639 | n = 96 |
+| elliptical (0.5, 1), P ratio at zbar 3.77 | 0.9835 | 0.9841 | n = 96 |
+| SASE planar, gain length | 0.8858 | 0.8855 | 0.8874 at n = 24 |
+| SASE planar, saturation power | 1.6901 | 1.6916 | 1.7007 at n = 24 |
+
+The averaged planar and elliptical e2e goldens moved, by up to 2e-4 relative in
+the field and 4e-4 in power, through the undulator end ramps, where alpha and so
+p2 leave 1. They were regenerated. Helical and every unaveraged golden are
+unchanged.
+
+**Two colours in one lattice** - module 1 at the carrier, module 2 detuned to f,
+seeds at both. Second-colour power avg/unavg at the end, against n = 48,
+planar:
+
+| f | 1.1 | 0.97 | 0.9 | 0.75 | 0.6 |
+| --- | --- | --- | --- | --- | --- |
+| `lambdarPerCell` 1, before the fix | 0.927 | 0.982 | 0.824 | 0.348 | 0.070 |
+| 0.5, before | 0.996 | 0.997 | 0.910 | 0.626 | 0.281 |
+| 0.25, before | 1.002 | 0.985 | 0.925 | 0.717 | 0.413 |
+| 1, with the fix | | | 0.871 | 0.438 | 0.117 |
+| 0.25, with the fix | | | 0.978 | 0.920 | 0.849 |
+
+The carrier colour agrees to 2-3% in every case. The helical version of this
+lattice is a poor test, because module 1 saturates the beam enough that module 2
+barely amplifies the second colour: it carries 1-7% of the power, and its ratio
+is not resolvable from the carrier's.
+
+**Tapers: power and mean energy agree, and the bunching of detrapped electrons
+is what goes.** Planar, untapered to zbar 5.65 (gentle) or 6.6 (saturation),
+then 150 periods tapered at d(alpha)/d(zbar) as below: 240 periods (zbar 15.1)
+for the gentle taper, 255 (zbar 16.0) for the rest. `--z2len 80`. Against
+n = 96, `lambdarPerCell` 1:
+
+| taper from | dalpha/dzbar | alpha at end | P ratio, range over the taper | P ratio at end | b ratio at end | <gamma> diff at end | detrapped phase advance per period |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| none | 0 | 1 | 0.92-1.00 | 0.966 | 0.990 | 4e-5 | median 0.03 rad |
+| 5.65 | -0.005 | 0.953 | 0.976-0.992 | 0.986 | 0.995 | 1.8e-4 | median 0.04 rad |
+| 6.6 | -0.02 | 0.812 | 0.983-0.997 | 0.987 | 0.945 | 1.9e-4 | 0.6 rad, 76% of the beam |
+| 6.6 | -0.05 | 0.529 | 0.984-0.998 | 0.996 | 0.830 | 3.5e-5 | 1.46 rad, all of it |
+
+These are before the Bessel-factor fix. With it, the end ratios are 0.962,
+0.986, 0.983 and 0.995 for power and 0.989, 0.994, 0.954 and 0.825 for
+bunching: changes of at most 0.4% in power and 0.9% in bunching.
+
+The phase advance is 2 pi (1 - p2_j) per period at the last averaged dump. The
+gentle taper keeps the beam trapped, it gives ~3x the untapered saturation
+power, and the
+two modes agree as well as they do untapered. The strong taper detraps three
+quarters of the beam, and the very strong one all of it, so the field stops
+growing: power is then easy to get right, since the detrapped electrons barely
+exchange energy. Their bunching is not. At 0.6 rad per period, a tenth of a
+cycle, it is 5% low averaged; at 1.46 rad, a quarter of a cycle, it is 17% low,
+and the unaveraged bunching is converging (n = 24, 48 and 96 agree to 4%).
+That fits the averaging assumption failing for those electrons: the period
+average treats the ponderomotive phase as fixed over a period, and theirs moves
+a noticeable fraction of 2 pi. Power is not where a strong taper shows it. The
+untapered run's post-saturation synchrotron oscillation drifts to 0.92-0.97 at
+the deepest minima, as the 1D seeded study found before.
+
+None of these tapers moves a reference-energy electron's resonance outside the
+band (the very strong one reaches 1.32 of the carrier), so none of them sets off
+the setup warning. In a taper the trapped electrons keep radiating at the
+carrier, and only the detrapped ones go off resonance.
+
+### What this does not show
+
+- **1D, seeded, one rho.** No diffraction, which is frequency dependent and
+  which the averaged mode offsets about the carrier, and no SASE in a detuned
+  module.
+- **The planar f = 0.9 single-seed gap**, the 2-5% left in the red rows at
+  fine cells (helical, and planar and elliptical after the fix), and the
+  bunching gap under a strong taper are measured, not explained.
+- **The Bessel-factor fix is right for the content each electron is resonant
+  with.** A field holding two well-separated colours, both strong, gives each
+  electron the factor for its own colour only. The two-colour rows above are
+  the test of that, and they converge with the cells as the single-colour ones
+  do.
+
 ## 3D
 
 `run_compare3d.py` is the 3D counterpart of `run_compare.py`, on `deck3d.in` /
