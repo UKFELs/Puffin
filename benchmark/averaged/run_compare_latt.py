@@ -28,8 +28,8 @@ Each --plain run is compared with each --avg run, write by write, on the
 flat-top mean (middle 30% of the mesh) of /power, |/bunchingFundamental| and
 /meanGamma, and at the last write on the spectral centre of the middle 30% of
 the field and, with --seed2, the power in each colour.  Every --avg run is
-compared, so a band-edge scan over lambdarPerCell shares the unaveraged runs.  The
-spectra are taken from the fields themselves, not from compare.py's
+compared, so a band-edge scan over lambdarPerCell shares the unaveraged runs.
+The spectra are taken from the fields themselves, not from compare.py's
 one-wavelength demodulation, which attenuates off-carrier content (by sinc(df)
 at a frequency offset df) and so cannot be used to compare a detuned module's
 radiation node by node.  Needs mpirun and h5dump; standard library Python.
