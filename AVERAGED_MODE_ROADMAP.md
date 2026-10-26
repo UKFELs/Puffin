@@ -44,8 +44,8 @@ Raised by this work and not yet filed:
 | `NBZ2_G` sizes the z2 absorbing boundary in nodes, not length | W2, W7 | with W7 |
 | A failed field rearrangement exits with status 0 | W7 | with W7 |
 | `shuntBeam` places the beam a tenth of a *field* cell from the mesh start, so the same beam sits at a different z2 origin in the two modes | W6 | benign; documented in `compare_sase.py` |
-| Planar Bessel factor evaluated for the carrier: radiation at a red-detuned module's own resonance f is under-coupled (needs JJ(f xi)); f = 0.75 stalls at 0.76 of unaveraged at any cell size | W4, W6 | open — fix would change planar goldens |
-| With no lattice file `zundtype_arr(1)` is never set, so `initUndulator` makes `zUndType_G` 32 NULs and the main-input type runs as `'puffin'` with fx, fy | — | `dev`, both modes; not filed |
+| Planar and elliptical Bessel factor evaluated for the carrier: radiation at a red-detuned module's own resonance f was under-coupled (needs JJ(f xi)) | W4, W6 | **fixed** — xi per particle at its own resonance, `xi_j / p2_j`; planar and elliptical goldens regenerated |
+| With no lattice file `zundtype_arr(1)` is never set, so `initUndulator` makes `zUndType_G` 32 NULs and the main-input type runs as `'puffin'` with fx, fy | — | `dev`, both modes; filed as UKFELs/Puffin#150 |
 
 ---
 
@@ -455,12 +455,14 @@ README's "Lattices: detuned modules and tapers". In short:
   0.125-0.25 wavelengths per cell brings every case within a few per cent. The loss is
   linear deposition and interpolation, sinc^2 each, and with the module's gain it is
   large well inside the nominal band.
-- **Planar has a second error on the red side**, at any cell size: f = 0.75 stalls at 0.76
-  and f = 0.6 at 0.49. The figure-of-eight `xi` is evaluated for the carrier, and radiation
-  at f needs `f xi`. Scaling `xiCoef` by the module's resonant frequency, in a scratch build,
-  brings them to 0.96 and 0.95. Not committed, because it moves every planar run's bits.
-  The general form is per macroparticle, `xi_j / p2_j`. It needs its own validation and
-  regenerated goldens.
+- **Planar and elliptical had a second error on the red side, now fixed.** f = 0.75
+  stalled at 0.76 and f = 0.6 at 0.49 at any cell size, because the figure-of-eight `xi`
+  was evaluated against the carrier and radiation at f needs `f xi`. `avgJJ` now takes
+  `xi_j / p2_j`, the frequency each particle is resonant with. Planar then converges as
+  helical does (0.967 and 0.950 at 0.125 wavelengths per cell). On resonance it is
+  O(rho): resonant planar power moves 0.9624 to 0.9639 of unaveraged, and SASE gain length
+  and saturation power by 0.03% and 0.1%. The averaged planar and elliptical goldens were
+  regenerated.
 - **Tapers keep power and mean energy, and lose the detrapped electrons' bunching.** Gentle
   through very strong post-saturation tapers: power to 1-2% throughout, mean energy to
   2e-4. Bunching is 5% low when three quarters of the beam advances 0.6 rad per period off
@@ -608,10 +610,8 @@ appearing, which is the point of it.
 
 - **rho scan (#130)** — deferred; characterises the ~1% planar remainder.
 - **Harmonic back-action** — needs W3 before it can be separated from the above.
-- **Planar coupling off the carrier.** The Bessel factor is the carrier's for all envelope
-  content (see W4, detuned modules). Evaluate `xi` at each macroparticle's own resonance,
-  `xi_j / p2_j`, validate on `run_compare_latt.py`'s red-detuned single-module cases, and
-  regenerate the planar goldens.
+- **Planar coupling off the carrier.** Done: the Bessel factor is taken at each
+  macroparticle's own resonance, `xi_j / p2_j` (see W4, detuned modules).
 - **Model the dropped A-term.** The radiation-driven transverse momentum accounts for ~0.55%
   in both polarisations. Its slow effect on p2 can be added analytically, removing a known
   error rather than documenting it.

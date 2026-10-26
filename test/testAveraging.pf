@@ -140,9 +140,13 @@ contains
   !> Period averages of the exact coupling, by brute force, and the averaged
   !! model's prediction for the same quantities, per Cartesian component.
   !!
-  !! srcX, srcY = sqrt(2) < w p_c exp(+i z2/2rho) >, the drive of the stored
-  !!              envelope B_c of A_c = sqrt(2) Re[B_c exp(-i z2/2rho)]
-  !!              (w = (1 + eta p2)/Gamma)
+  !! The field is at the frequency the particle is resonant with, f = 1/p2 of
+  !! the carrier: A_c = sqrt(2) Re[B_c exp(-i f z2/2rho)], which the envelope
+  !! holds as B_c exp(-i (f - 1) z2/2rho).  That is the content the model's
+  !! Bessel factor is exact for.  For a resonant particle f = 1.
+  !!
+  !! srcX, srcY = sqrt(2) < w p_c exp(+i f z2/2rho) >, the drive of that
+  !!              content (w = (1 + eta p2)/Gamma)
   !! eng        = < w (p_x A_x + p_y A_y) > = < w Re(pperp conj(A_perp)) >, the
   !!              energy-equation coupling, for the field built from Bx, By
   !!
@@ -162,7 +166,7 @@ contains
     real(kind=wp), parameter :: z0 = 0.3_wp, z2start = 1.7_wp
     real(kind=wp), allocatable, dimension(:) :: z, px, py, g, p2, z2, zc, w, ax, ay
     complex(kind=wp), allocatable, dimension(:) :: qx, qy, f
-    real(kind=wp) :: cx, cy, lamw, h, inv2rho, centre
+    real(kind=wp) :: cx, cy, lamw, h, inv2rho, centre, fRad
     type(tAvgCoupling) :: cpl
     real(kind=wp) :: wbar, p2m(1), gm(1), zero(1), zc1(1)
     real(kind=wp) :: qr(1,2), qi(1,2)
@@ -191,6 +195,16 @@ contains
 
     call getP2(p2, g, px, -py, frame%eta, frame%gamma_ref, frame%aw)
 
+!   The model's p2, and so the radiation frequency the particle is resonant with
+
+    call getAvgCoupling(z0, und, frame, cpl)
+
+    gm = gam
+    zero = 0.0_wp
+    call getP2Avg(p2m, gm, zero, zero, frame%eta, frame%gamma_ref, frame%aw, cpl%pqSq)
+    p2Model = p2m(1)
+    fRad = 1.0_wp / p2Model
+
 !   z2 by trapezoidal integration of p2, then its guiding centre: the linear
 !   trend through the period mean, which is what the averaged model tracks.
 
@@ -210,25 +224,21 @@ contains
 
 !   The physical field seen at the particle's true position
 
-    ax = sqrt(2.0_wp) * real(Bx * exp(-iu * z2 * inv2rho), kind=wp)
-    ay = sqrt(2.0_wp) * real(By * exp(-iu * z2 * inv2rho), kind=wp)
+    ax = sqrt(2.0_wp) * real(Bx * exp(-iu * fRad * z2 * inv2rho), kind=wp)
+    ay = sqrt(2.0_wp) * real(By * exp(-iu * fRad * z2 * inv2rho), kind=wp)
 
-    f = sqrt(2.0_wp) * w * px * exp(iu * z2 * inv2rho)
+    f = sqrt(2.0_wp) * w * px * exp(iu * fRad * z2 * inv2rho)
     srcX = avgW(f)
-    f = sqrt(2.0_wp) * w * py * exp(iu * z2 * inv2rho)
+    f = sqrt(2.0_wp) * w * py * exp(iu * fRad * z2 * inv2rho)
     srcY = avgW(f)
     f = cmplx(w * (px * ax + py * ay), 0.0_wp, kind=wp)
     eng = real(avgW(f), kind=wp)
 
 !   The averaged model, with p2 and w from the period-averaged |pperp|^2 and
-!   q_x, q_y from the solver's own routine at each zbar along the guiding centre
+!   q_x, q_y from the solver's own routine at each zbar along the guiding
+!   centre.  The envelope content at f is B_c exp(-i (f - 1) z2/2rho) there, and
+!   the source drives it through the conjugate phase.
 
-    call getAvgCoupling(z0, und, frame, cpl)
-
-    gm = gam
-    zero = 0.0_wp
-    call getP2Avg(p2m, gm, zero, zero, frame%eta, frame%gamma_ref, frame%aw, cpl%pqSq)
-    p2Model = p2m(1)
     wbar = (1.0_wp + frame%eta * p2Model) / gam
 
     do i = 0, n
@@ -238,9 +248,11 @@ contains
       qy(i) = cmplx(qr(1,2), qi(1,2), kind=wp)
     end do
 
-    srcXM = wbar * avgW(qx)
-    srcYM = wbar * avgW(qy)
-    f = cmplx(wbar * real(qx * conjg(Bx) + qy * conjg(By), kind=wp), 0.0_wp, kind=wp)
+    f = exp(iu * (fRad - 1.0_wp) * zc * inv2rho)
+    srcXM = wbar * avgW(qx * f)
+    srcYM = wbar * avgW(qy * f)
+    f = cmplx(wbar * real(qx * conjg(Bx * conjg(f)) + qy * conjg(By * conjg(f)), kind=wp), &
+              0.0_wp, kind=wp)
     engM = real(avgW(f), kind=wp)
 
   end subroutine bruteForce
@@ -251,9 +263,10 @@ contains
   !! it can be expected to get; any error in a Bessel factor, an amplitude or
   !! the carrier sign is O(1e-1) or O(1).  The two field components are
   !! deliberately unrelated, so the energy check sees both couplings at once.
-  subroutine checkAgainstBruteForce(undType, fx, fy, gam)
+  subroutine checkAgainstBruteForce(undType, fx, fy, gam, alpha)
     character(*), intent(in) :: undType
     real(kind=wp), intent(in) :: fx, fy, gam
+    real(kind=wp), intent(in), optional :: alpha
 
     type(tUndulator) :: und
     type(tFELFrame) :: frame
@@ -263,6 +276,10 @@ contains
     real(kind=wp), parameter :: tol = 1.0e-5_wp
 
     call makeUnd(und, frame, undType, fx, fy)
+    if (present(alpha)) then
+      und%n2col = alpha
+      und%n2col_initial = alpha
+    end if
     call bruteForce(und, frame, gam, Bx, By, srcX, srcY, eng, &
                     srcXM, srcYM, engM, p2Mean, p2Model)
 
@@ -334,8 +351,8 @@ contains
     @assertEqual(sqrt(0.5_wp), cplV%ampY, 0.0_wp)
     @assertEqual(-cplP%xiCoef, cplV%xiCoef, 0.0_wp)
 
-    call avgJJ(cplP, 1.02_wp, 0.99_wp, jxP, jyP)
-    call avgJJ(cplV, 1.02_wp, 0.99_wp, jxV, jyV)
+    call avgJJ(cplP, 0.98_wp, frame%eta, 0.99_wp, jxP, jyP)
+    call avgJJ(cplV, 0.98_wp, frame%eta, 0.99_wp, jxV, jyV)
     @assertEqual(jxP, jyV, 1.0e-15_wp)
     @assertEqual(jyP, jxV, 1.0e-15_wp)
     @assertTrue(abs(jxP - 1.0_wp) > 0.05_wp)
@@ -352,7 +369,7 @@ contains
     call getResonantMomentum(0.4_wp, sz2, sgam, sp2, frame%eta, frame%rho, cpl, qr, qi)
 
     do j = 1, 3
-      xi = cpl%xiCoef * (1.0_wp + frame%eta * sp2(j))**3 / sgam(j)**2
+      xi = cpl%xiCoef * (1.0_wp + frame%eta * sp2(j))**3 / (sgam(j)**2 * sp2(j))
       theta = (0.4_wp - sz2(j)) / (2.0_wp * frame%rho)
       expect = -(uMinus * bessel_j0(xi) - uPlus * bessel_j1(xi)) * exp(-iu * theta)
       qMinus = (cmplx(qr(j,1), qi(j,1), kind=wp) - iu * cmplx(qr(j,2), qi(j,2), kind=wp)) &
@@ -397,6 +414,22 @@ contains
     call checkAgainstBruteForce("", 1.0_wp, 0.6_wp, 1.0_wp)
     call checkAgainstBruteForce("", 1.0_wp, 0.6_wp, 1.004_wp)
   end subroutine testEllipticalMatchesBruteForce
+
+
+  !> A module detuned through alpha, the particle resonant with radiation well
+  !! off the carrier: alpha 1.4 puts a planar module at ~0.76 of the carrier
+  !! frequency, 0.85 at ~1.1.  This is where the Bessel factor must be taken
+  !! at the radiation's frequency rather than the carrier's: at 1.4 the
+  !! carrier's J0(xi) - J1(xi) is 6% low, sixty times the tolerance.
+  @test
+  subroutine testDetunedMatchesBruteForce()
+    call checkAgainstBruteForce("planepole", 1.0_wp, 1.0_wp, 1.0_wp, 1.4_wp)
+    call checkAgainstBruteForce("planepole", 1.0_wp, 1.0_wp, 0.996_wp, 1.4_wp)
+    call checkAgainstBruteForce("planepole", 1.0_wp, 1.0_wp, 1.0_wp, 0.85_wp)
+    call checkAgainstBruteForce("", 0.5_wp, 1.0_wp, 1.0_wp, 1.4_wp)
+    call checkAgainstBruteForce("", 1.0_wp, 0.0_wp, 1.004_wp, 1.4_wp)
+    call checkAgainstBruteForce("helical", 1.0_wp, 1.0_wp, 1.0_wp, 1.4_wp)
+  end subroutine testDetunedMatchesBruteForce
 
 
   !> The opposite helicity, cx = -cy: resonant with the exp(+i z2/2rho) image
