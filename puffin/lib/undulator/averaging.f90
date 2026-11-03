@@ -62,23 +62,28 @@
 !> JJ = J0 - (u+/u-) J1: planar is bit-identical, helical has B_x = Atilde/sqrt(2)
 !> and B_y = i B_x.  The derivation is in doc/manual.tex.
 !>
-!> xi is evaluated per macroparticle: it goes as 1/Gamma^2, and taking it at
-!> the reference energy alone, as Genesis does, would put an error of
-!> ~0.2 (Gamma_j - 1) into the planar coupling.
-!>
-!> The ripple is in z2, so radiation at frequency f of the carrier sees it as
-!> a phase ripple f times that against the carrier, and couples through
+!> xi is evaluated per macroparticle.  Measured against the carrier it goes as
+!> 1/Gamma_j^2, but the ripple is in z2, so radiation at frequency f of the
+!> carrier sees it as a phase ripple f times that, and couples through
 !> J(f xi).  One envelope holds every frequency in its band, so there is no
 !> single f; each macroparticle takes the one it is resonant with, f = 1/p2_j,
 !> which is the content it exchanges energy with on the slow scale - hence the
-!> 1/p2_j above.  For a resonant beam p2_j = 1 to O(rho), and the factor moves
-!> the coupling by under ~1e-3.  It matters for a lattice module detuned
-!> through alpha, whose electrons sit at p2 = 1/f and amplify radiation at f:
-!> evaluated against the carrier instead, a planar module at f = 0.75
-!> under-couples its own radiation by 6% and is left at a quarter less power
-!> at any mesh.  Carrier content seen by an off-resonant electron gets J(xi/p2)
-!> where J(xi) would be exact, an error of the same size, but that coupling is
-!> off resonance and so weak.
+!> 1/p2_j above.  p2_j goes as 1/Gamma_j^2 too, so xi_j barely depends on the
+!> electron's energy: up to O(eta) and O(1/gamma^2) it is the textbook
+!> aw^2 alpha^2 (cy^2 - cx^2)/4 / (1 + aw^2 alpha^2 fp), K^2/(4 + 2 K^2) for
+!> planar, and what varies it from particle to particle is the module's alpha
+!> and taper, not the energy spread.
+!>
+!> That is what a lattice module detuned through alpha needs: its electrons sit
+!> at p2 = 1/f and amplify radiation at f, and xi measured against the carrier
+!> instead under-couples a planar module at f = 0.75 by 6%, leaving it a
+!> quarter short of the unaveraged power at any mesh.  The cost is content off
+!> an electron's own resonance.  Carrier content seen by an electron at
+!> Gamma_j gets J(xi/p2_j) where J(xi) would be exact, an error of about
+!> 2 |Gamma_j - 1| xi |J'| (~0.2 (Gamma_j - 1) in the planar coupling, which
+!> taking xi against the carrier per particle used to remove).  That coupling
+!> is off resonance and so weak, and for a beam resonant with the carrier both
+!> choices agree to O(rho).
 
 module averaging
 
