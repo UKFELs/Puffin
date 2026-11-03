@@ -213,7 +213,7 @@ contains
       z2(i) = z2(i-1) + 0.5_wp * h * (p2(i-1) + p2(i))
     end do
 
-!   The z2 ripple is exactly periodic over whole undulator periods, so a plain
+!   The z2 jitter is exactly periodic over whole undulator periods, so a plain
 !   average finds the guiding centre
 
     p2Mean = (z2(n) - z2(0)) / (nPer * lamw)

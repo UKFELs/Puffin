@@ -34,8 +34,8 @@
 !> = px A_x + py A_y, which does not mix x and y.  That is why the Cartesian
 !> basis is the one to integrate in: each component has its own coupling.
 !>
-!> Averaging over a period, including the figure-of-eight ripple of the phase
-!> theta_j = (zbar - z2_j)/2rho = thetabar_j - xi_j sin(2 theta_w), with
+!> Averaging over a period, including the figure-of-eight jitter in z2 and so
+!> in the phase theta_j = (zbar - z2_j)/2rho = thetabar_j - xi_j sin(2 theta_w), with
 !>
 !>     xi_j = (1 + eta p2_j)^3 aw^2 alpha^2 (cy^2 - cx^2)/2 / (4 eta gamma_r^2 Gamma_j^2 p2_j)
 !>
@@ -63,8 +63,8 @@
 !> and B_y = i B_x.  The derivation is in doc/manual.tex.
 !>
 !> xi is evaluated per macroparticle.  Measured against the carrier it goes as
-!> 1/Gamma_j^2, but the ripple is in z2, so radiation at frequency f of the
-!> carrier sees it as a phase ripple f times that, and couples through
+!> 1/Gamma_j^2, but the jitter is in z2, so radiation at frequency f of the
+!> carrier sees it as a phase jitter f times that, and couples through
 !> J(f xi).  One envelope holds every frequency in its band, so there is no
 !> single f; each macroparticle takes the one it is resonant with, f = 1/p2_j,
 !> which is the content it exchanges energy with on the slow scale - hence the

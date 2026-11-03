@@ -381,8 +381,8 @@ side**: f = 0.75 sat at 0.74-0.76 and f = 0.6 at 0.45-0.49 from 0.25
 wavelengths per cell down. Neither the step nor the cell size was the cause: 8
 steps per period, or 0.125 wavelengths per cell, moved the two-colour f = 0.75
 case from 0.717 to 0.724 and 0.699. The cause was the figure-of-eight Bessel
-factor. `xi` was evaluated against the carrier, but the ripple is in z2, so
-radiation at frequency f sees it as a phase ripple f times larger, and its
+factor. `xi` was evaluated against the carrier, but the jitter is in z2, so
+radiation at frequency f sees it as a phase jitter f times larger, and its
 coupling needs JJ(f xi). xi grows with alpha^2, so the error was large only on
 the red (alpha > 1) side, where JJ(xi)/JJ(f xi) is 0.985, 0.938 and 0.838 at
 f = 0.9, 0.75 and 0.6. On the blue side it over-coupled by under 1%, which is
