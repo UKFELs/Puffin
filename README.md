@@ -25,6 +25,12 @@ approximations. It does not utilize a 'slicing' model of the beam phase space
 and radiation field, and instead utilizes an algorithm which is much more
 similar to a Particle-In-Cell (PIC) code methodology.
 
+An opt-in period-averaged (SVEA) mode, `qAveraged`, is also available. It is
+**experimental**: it has been validated against the unaveraged solver only
+for the cases in `benchmark/averaged/README.md`, its inputs and outputs may
+change between versions, and its results should be confirmed against an
+unaveraged run before they are relied on.
+
 In addition, some accelerator components are included for simulation of the
 'realistic' undulator line, and together with the lack of restrictions,
 means it may model:
@@ -94,8 +100,9 @@ than `upstream/master`.
 ## Release Notes
 
 2.0.0
-  - Added an opt-in period-averaged (SVEA) solver mode, `qAveraged`, in 1D and
-    3D, for helical and linearly polarised undulators. The radiation field is
+  - Added an experimental, opt-in period-averaged (SVEA) solver mode,
+    `qAveraged`, in 1D and 3D, for helical and linearly polarised undulators.
+    The radiation field is
     held as a slowly varying envelope on a coarse mesh (`lambdarPerCell`), and
     the undulator quiver is carried analytically. Example decks are in
     `inputs/simple/1D/averaged` and `inputs/simple/3D/averaged`; accuracy

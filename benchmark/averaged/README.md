@@ -1,5 +1,9 @@
 # Averaged vs unaveraged
 
+> **The averaged mode is experimental.** The comparisons below are the cases it
+> has been validated on; outside them, confirm its results against an
+> unaveraged run. Its inputs, outputs and defaults may change between versions.
+
 
 `run_compare.py` runs the period-averaged mode (`qAveraged`, see
 `puffin/lib/undulator/averaging.f90` and the "Period-Averaged Mode" section of
