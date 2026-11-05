@@ -476,6 +476,32 @@ band (the very strong one reaches 1.32 of the carrier), so none of them sets off
 the setup warning. In a taper the trapped electrons keep radiating at the
 carrier, and only the detrapped ones go off resonance.
 
+### Figures
+
+`figures/latt_*.png` overlay the two solvers for one case from each of the
+first, second and taper studies above: peak power, pulse energy, mean beam
+energy and bunching along the undulator, and at the end the power profile, the
+spectrum and the longitudinal phase space. Each figure states its lattice, seed
+and resolutions, and gives the `run_compare_latt.py` command at its foot.
+`plot_compare_latt.py` draws one figure from a pair of run directories, and
+`figures/make_figures.sh` redraws all three. The averaged runs in them were
+made after the Bessel-factor fix.
+
+Two things they show that the tables do not:
+
+- **An image at -f.** At fine cells the averaged field picks up a mirror image
+  of off-carrier radiation at -f: 9.5% of the field energy in the f = 0.75
+  figure at 0.125 wavelengths per cell. The image is absent from the seed and
+  builds up during the run. It also appears in helical runs, and it is
+  2-11% at 0.125 wavelengths per cell and up to ~4.5% at 0.25 across the
+  own-resonance runs above. No real field has content there, so it inflates
+  the averaged `/power` (1.068 of unaveraged in that figure, against 0.967 in
+  the 0.75 colour). The tables measure the colour from the spectrum and so
+  exclude it. Its cause has not been traced.
+- **Narrower spectral wings.** In the f = 0.9 figure, below ~1e-3 of the
+  peak, the unaveraged spectrum has wings out to +/-2.5% that the averaged one
+  lacks. This has not been investigated.
+
 ### What this does not show
 
 - **1D, seeded, one rho.** No diffraction, which is frequency dependent and
