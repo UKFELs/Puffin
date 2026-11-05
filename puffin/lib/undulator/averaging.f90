@@ -8,7 +8,9 @@
 !> Glasgow, UK
 !> @brief
 !> Period-averaged (SVEA) electron-field coupling, for the opt-in averaged
-!> solver mode (qAveraged).
+!> solver mode (qAveraged).  The mode is experimental: it has been validated
+!> against the unaveraged solver only for the cases in
+!> benchmark/averaged/README.md.
 !>
 !> Puffin normally resolves the radiation carrier on the z2 mesh and the
 !> undulator quiver in the electron equations.  In averaged mode the field

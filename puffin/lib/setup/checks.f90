@@ -497,6 +497,7 @@ end subroutine checkRndEjLens
 !> dtheta/dzbar = (1 - p2)/2rho is slow - is being stretched.  The envelope mesh
 !> can hold roughly +/- 1/(2 lambdarPerCell) of the resonant frequency, so
 !> anything detuned by more than that is outside the band the run can carry.
+!> Every averaged run also gets a warning that the mode is experimental.
 
 subroutine chkAveraged(qResume, nz2, freqf, sSigE, mag, qOK)
 
@@ -560,6 +561,16 @@ subroutine chkAveraged(qResume, nz2, freqf, sSigE, mag, qOK)
   end do
 
   if (.not. tProcInfo_G%qRoot) return
+
+!   The mode itself is experimental: validated against the unaveraged solver
+!   only for the cases in benchmark/averaged/README.md.  Said at every run,
+!   since the source and the manual are not where most users would see it.
+
+  print*, "WARNING: the period-averaged mode (qAveraged) is experimental. It ", &
+          "has been validated against the unaveraged solver only for the ", &
+          "cases in benchmark/averaged/README.md, and its inputs and outputs ", &
+          "may change between versions. Confirm results against an ", &
+          "unaveraged run before relying on them."
 
 !     Warnings.  A beam spread over more than the band, or swinging across it,
 !     has particles the single carrier does not describe well - it does not

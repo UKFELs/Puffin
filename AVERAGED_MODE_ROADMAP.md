@@ -10,6 +10,11 @@ the 3D one 17x — rising to 126x against the mesh the unaveraged solver actuall
 converge. In both cases it is also closer to the converged answer than the unaveraged
 solver is at its own defaults.
 
+**Status: experimental.** It is validated against the unaveraged solver only for the
+cases in `benchmark/averaged/README.md`, its inputs and outputs may still change, and
+every averaged run prints a warning saying so (`chkAveraged`). The docs and READMEs say
+the same.
+
 **Current state:** 1D and 3D, any undulator polarisation (W3b, `feature/elliptical-averaged`), single band.
 The 1D mode is on `feature/period-averaged` and in review as UKFELs/Puffin#131; 3D and the
 compatibility guards are on `feature/averaged-3d`, branched from it. The default
