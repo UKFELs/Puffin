@@ -102,11 +102,11 @@ than `upstream/master`.
 2.0.0
   - Added an experimental, opt-in period-averaged (SVEA) solver mode,
     `qAveraged`, in 1D and 3D, for helical and linearly polarised undulators.
-    The radiation field is
-    held as a slowly varying envelope on a coarse mesh (`lambdarPerCell`), and
-    the undulator quiver is carried analytically. Example decks are in
-    `inputs/simple/1D/averaged` and `inputs/simple/3D/averaged`; accuracy
-    against the unaveraged solver is in `benchmark/averaged/README.md`
+    The radiation field is held as a slowly varying envelope on a coarse mesh
+    (`lambdarPerCell`), and the undulator quiver is carried analytically.
+    Example decks are in `inputs/simple/1D/averaged` and
+    `inputs/simple/3D/averaged`; accuracy against the unaveraged solver is in
+    `benchmark/averaged/README.md`
   - Added a serial (non-MPI) build mode, `-DENABLE_PARALLEL=OFF`, which runs
     directly without `mpirun` and needs no MPI, FFTW3-MPI or parallel HDF5. It
     is numerically identical to `mpirun -n 1`. See `doc/SERIAL_BUILD.md`
