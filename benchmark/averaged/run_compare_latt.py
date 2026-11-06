@@ -6,6 +6,7 @@ Usage:
         [--latt "UN NW ALPHA TAPER; DR NW; ..."]  [--nperiods N] [--taper T]
         [--seed AX,AY] [--seed2 F:AX,AY] [--z2len L]
         [--plain NODES:STEPS ...] [--avg CELLS:STEPS ...] [--every K]
+        [--3d [--blen L] [--np N]] [--set NAME=VALUE ...]
 
   --latt SPEC      a lattice, elements separated by ';'.  'UN NW ALPHA TAPER'
                    is an undulator module of NW periods with alpha = aw/aw0
@@ -23,6 +24,15 @@ Usage:
                    needs a longer mesh.
   --plain, --avg   as run_compare.py [defaults 24:60 48:120 and 1:2].
   --every K        print every Kth period's write in the table [default 10].
+  --3d             run on deck3d.in / beam_file3d.in / seed_file3d.in instead
+                   (diffraction, a matched beam; seed amplitude 0.001).  Only
+                   the per-write table is printed: the spectral and by-colour
+                   lines are 1D only.  --blen L sets the beam's z2 length
+                   [beam_file3d.in's 1.5], --np the MPI ranks [4].  Give
+                   --z2len too: the mesh must hold the beam plus its slippage.
+  --set NAME=VALUE override any main-input variable, e.g. a wider transverse
+                   mesh, sFModelLengthX=12.0 iNumNodesX=61.  Repeatable.
+  --plain none     run no unaveraged case (only the averaged runs).
 
 Each --plain run is compared with each --avg run, write by write, on the
 flat-top mean (middle 30% of the mesh) of /power, |/bunchingFundamental| and
@@ -115,9 +125,15 @@ def run(tag, und, opts, averaged, mesh, steps):
     workdir = os.path.join(HERE, "run_%s" % tag)
     shutil.rmtree(workdir, ignore_errors=True)
     os.makedirs(workdir)
-    shutil.copy(os.path.join(HERE, "beam_file.in"), workdir)
+    suffix = "3d" if opts["3d"] else ""
+    with open(os.path.join(HERE, "beam_file%s.in" % suffix)) as fh:
+        beam = fh.read()
+    if opts["blen"]:
+        beam = re.sub(r"(?m)^(sLenE\s*=\s*[^,]*,[^,]*,\s*)[^,]*", r"\g<1>%s" % opts["blen"], beam)
+    with open(os.path.join(workdir, "beam_file.in"), "w") as fh:
+        fh.write(beam)
 
-    with open(os.path.join(HERE, "seed_file.in")) as fh:
+    with open(os.path.join(HERE, "seed_file%s.in" % suffix)) as fh:
         seed = fh.read()
     seed = sub(seed, "sA0_X", opts["seed"][0])
     seed = sub(seed, "sA0_Y", opts["seed"][1])
@@ -134,7 +150,7 @@ def run(tag, und, opts, averaged, mesh, steps):
     with open(os.path.join(workdir, "seed_file.in"), "w") as fh:
         fh.write(seed)
 
-    with open(os.path.join(HERE, "deck.in")) as fh:
+    with open(os.path.join(HERE, "deck%s.in" % suffix)) as fh:
         deck = fh.read()
     if "," in und:
         ux, uy = und.split(",")
@@ -148,6 +164,8 @@ def run(tag, und, opts, averaged, mesh, steps):
     deck = sub(deck, "nPeriods", opts["nperiods"])
     deck = sub(deck, "taper", opts["taper"])
     deck = sub(deck, "sFModelLengthZ2", opts["z2len"])
+    for name, val in opts["set"]:
+        deck = sub(deck, name, val)
     if opts["latt"]:
         with open(os.path.join(workdir, "run.latt"), "w") as fh:
             fh.write(lattice_lines(opts["latt"], und, steps))
@@ -162,12 +180,13 @@ def run(tag, und, opts, averaged, mesh, steps):
         fh.write(deck)
 
     env = dict(os.environ, OMP_NUM_THREADS="1")
-    proc = subprocess.run(["mpirun", "-np", "1", PUFFIN, "run.in"], cwd=workdir, env=env,
+    proc = subprocess.run(["mpirun", "-np", opts["np"], PUFFIN, "run.in"], cwd=workdir, env=env,
                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     out = proc.stdout.decode(errors="replace")
     with open(os.path.join(workdir, "stdout.txt"), "w") as fh:
+        fh.write("# mpirun -np %s, OMP_NUM_THREADS=1\n" % opts["np"])   # read by plot_compare_latt.py
         fh.write(out)
-    if proc.returncode != 0 or "Tried rearranging" in out:
+    if proc.returncode != 0 or "Tried rearranging" in out or "not large enough" in out:
         sys.stderr.write(out[-2000:])
         raise SystemExit("puffin failed for %s" % tag)
     secs = sum(float(s) for s in re.findall(r"Finished undulator module in\s+([0-9.E+-]+)", out))
@@ -230,12 +249,16 @@ def main():
     args = sys.argv[1:]
     und = args.pop(0)
     opts = {"latt": "", "nperiods": "60", "taper": "0.0", "seed2": None, "z2len": "60.0",
-            "seed": ("0.01", "0.0") if und == "planepole" else ("0.01", "0.01")}
+            "seed": None, "3d": False, "blen": None, "np": "1", "set": []}
     plains, avgs, which, every = [], [], None, 10
     while args:
         a = args.pop(0)
-        if a in ("--latt", "--nperiods", "--taper", "--z2len"):
+        if a in ("--latt", "--nperiods", "--taper", "--z2len", "--blen", "--np"):
             opts[a[2:]] = args.pop(0)
+        elif a == "--3d":
+            opts["3d"] = True
+        elif a == "--set":
+            opts["set"].append(tuple(args.pop(0).split("=", 1)))
         elif a == "--seed":
             opts["seed"] = tuple(args.pop(0).split(","))
         elif a == "--seed2":
@@ -247,7 +270,11 @@ def main():
             which = plains if a == "--plain" else avgs
         else:
             which.append(tuple(a.split(":")))
-    plains = plains or [("24", "60"), ("48", "120")]
+    plains = [p for p in plains if p != ("none",)] if plains else [("24", "60"), ("48", "120")]
+    amp = "0.001" if opts["3d"] else "0.01"
+    if opts["3d"] and opts["np"] == "1":
+        opts["np"] = "4"
+    opts["seed"] = opts["seed"] or ((amp, "0.0") if und == "planepole" else (amp, amp))
     avgs = avgs or [("1", "2")]
 
     if opts["latt"]:
@@ -255,6 +282,9 @@ def main():
     tag = re.sub(r"[^A-Za-z0-9]+", "_", "%s %s %s %s %s %s" % (
         und, opts["latt"], opts["nperiods"], opts["taper"], opts["seed2"],
         opts["z2len"])).strip("_")[-90:]
+    if opts["3d"]:
+        tag = "3d_%s_b%s%s" % (tag[-80:], opts["blen"] or "",
+                               "".join("_%s%s" % nv for nv in opts["set"]))
 
     if opts["seed2"]:
         f2 = float(opts["seed2"][0])
@@ -276,13 +306,14 @@ def main():
                               cells, steps)
         print("averaged lambdarPerCell=%s steps=%s  %.1f s%s"
               % (cells, steps, secs, "  [band WARNING printed]" if warned else ""))
-        avg_runs.append(("c%s s%s" % (cells, steps), history(d), spectrum(d, True, freqs)))
+        avg_runs.append(("c%s s%s" % (cells, steps), history(d),
+                         None if opts["3d"] else spectrum(d, True, freqs)))
 
     for nodes, steps in plains:
         wd, secs, _ = run("L_%s_plain_n%s_s%s" % (tag, nodes, steps), und, opts, False,
                           nodes, steps)
         hp = history(wd)
-        sp = spectrum(wd, False, freqs)
+        sp = None if opts["3d"] else spectrum(wd, False, freqs)
         for name, ha, sa in avg_runs:
             zs = sorted(set(ha) & set(hp))
             print()
@@ -298,6 +329,9 @@ def main():
                 print("  %6.3f  %10.4e %10.4e %6.4f | %7.4f %7.4f %6.4f | %10.6f %10.6f %9.2e"
                       % (z, pp, pa, pa / pp, bp, ba, ba / bp if bp else float("nan"),
                          gp, ga, ga - gp))
+            if opts["3d"]:
+                sys.stdout.flush()
+                continue
             print("  spectral centre, middle 30%%: plain %.5f  avg %.5f   (diff %.2e)"
                   % (centre(freqs, sp), centre(freqs, sa),
                      centre(freqs, sa) - centre(freqs, sp)))

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Overlay an averaged and an unaveraged 1D run on the same axes.
+"""Overlay an averaged and an unaveraged run, 1D or 3D, on the same axes.
 
 Usage:
   python3 plot_compare_latt.py OUT.png --unavg DIR --avg DIR [--before DIR]
@@ -24,7 +24,10 @@ of the beam, both runs overlaid.  Bunching, <gamma> and sigma_gamma are means
 over the middle 30% of the pulse (the flat top), as run_compare_latt.py takes
 them.  SI units throughout, using the datasets
 Puffin writes (powerSI, Lc, Lg), via utilities/pyPlotting/puffin_viz_data.
-Needs numpy, h5py and matplotlib.
+Each run's legend entry carries its solver time and MPI ranks, from the
+stdout.txt run_compare_latt.py keeps, and the ratio box the speed-up.  Time
+the two runs on the same ranks and an otherwise idle machine for the ratio
+to mean anything.  Needs numpy, h5py and matplotlib.
 """
 
 import argparse
@@ -77,6 +80,24 @@ def window_nodes(attrs, n, fold):
     return round(lam / (span / max(n - 1, 1)))
 
 
+def runtime(d):
+    """(seconds, MPI ranks): the solver time Puffin reports, summed over the
+    lattice's modules, from the stdout.txt run_compare_latt.py keeps.  It
+    excludes start-up and the initial writes."""
+    with open(os.path.join(d, "stdout.txt")) as fh:
+        out = fh.read()
+    m = re.match(r"# mpirun -np (\d+)", out)
+    secs = sum(float(v) for v in re.findall(r"Finished undulator module in\s+([0-9.E+-]+)", out))
+    return secs, int(m.group(1)) if m else None
+
+
+def fmt_time(secs, ranks):
+    t = "%.0f s" % secs if secs >= 10 else "%.1f s" % secs
+    if secs >= 600:
+        t = "%.0f min" % (secs / 60)
+    return t + ("" if ranks is None else ", %d rank%s" % (ranks, "" if ranks == 1 else "s"))
+
+
 def history(d, fold):
     z, ppk, en, g, sg, b = [], [], [], [], [], []
     for f in files(d, "integrated"):
@@ -105,23 +126,37 @@ def profile(d, fold):
 def spectrum(d):
     """Normalised |FT|^2 of the middle 30% of the field, Hann windowed,
     against w/wr.  Every stored component is used: the unaveraged pair
-    (A_x, -A_y), or each averaged Cartesian envelope (B_x, B_y)."""
+    (A_x, -A_y), or each averaged Cartesian envelope (B_x, B_y).  In 3D the
+    spectrum of each transverse node is taken and summed over the mesh, so
+    it is the spectrum of the transversely integrated power."""
     with h5py.File(files(d, "aperp")[-1], "r") as h:
         f = h["aperp"][()]
         a = dict(h["runInfo"].attrs)
     n = f.shape[1]
     lo, hi = int(0.35 * n), int(0.65 * n)
-    w = np.hanning(hi - lo)
+    w = np.hanning(hi - lo).reshape((-1,) + (1,) * (f.ndim - 2))
+    rho, dz2 = float(a["rho"]), float(a["sLengthOfElmZ2"])
+    trans = tuple(range(1, f.ndim - 1))
+
+    def power(sig):
+        return (np.abs(np.fft.fft(sig * w, axis=0)) ** 2).sum(axis=trans)
+
     if pvd.is_averaged(a):
-        rho, dz2 = float(a["rho"]), float(a["sLengthOfElmZ2"])
-        tot = 0.0
-        for c in range(f.shape[0] // 2):
-            tot = tot + np.abs(np.fft.fft((f[2 * c, lo:hi] + 1j * f[2 * c + 1, lo:hi]) * w)) ** 2
+        tot = sum(power(f[2 * c, lo:hi] + 1j * f[2 * c + 1, lo:hi])
+                  for c in range(f.shape[0] // 2))
         om = 1.0 - 4.0 * np.pi * rho * np.fft.fftfreq(hi - lo, d=dz2)
         o = np.argsort(om)
         return om[o], tot[o] / tot.max(), a
-    om, s = pvd.spectrum(f[0, lo:hi] * w, f[1, lo:hi] * w, dict(a, nZ2=hi - lo))
-    return om, s, a
+    if f.ndim == 2:
+        om, s = pvd.spectrum(f[0, lo:hi] * w, f[1, lo:hi] * w,
+                             dict(a, nZ2=hi - lo))
+        return om, s, a
+    tot = sum(power(f[c, lo:hi]) for c in range(f.shape[0]))
+    om = 4.0 * np.pi * rho * np.fft.fftfreq(hi - lo, d=dz2)
+    keep = om > 0                     # a real field: the negative half mirrors it
+    om, tot = om[keep], tot[keep]
+    o = np.argsort(om)
+    return om[o], tot[o] / tot.max(), a
 
 
 def phase_space(d, fold, nmax=20000):
@@ -160,12 +195,14 @@ def main():
         with open(os.path.join(d, "run.in")) as fh:
             deck = fh.read()
         if re.search(r"qAveraged\s*=\s*\.true\.", deck, re.I):
-            v = re.search(r"lambdarPerCell\s*=\s*([^\s,]+)", deck).group(1)
+            v = re.search(r"(?m)^\s*lambdarPerCell\s*=\s*([^\s,]+)", deck).group(1)
             return "averaged, %s λr/cell" % v
-        v = re.search(r"nodesPerLambdar\s*=\s*([^\s,]+)", deck).group(1)
+        v = re.search(r"(?m)^\s*nodesPerLambdar\s*=\s*([^\s,]+)", deck).group(1)
         return "unaveraged, %s nodes/λr" % v
 
-    runs = [(label(o.unavg), o.unavg, C_UN, "-"), (label(o.avg), o.avg, C_AV, "--")]
+    T = {d: runtime(d) for d in (o.unavg, o.avg)}
+    runs = [("%s (%s)" % (label(d), fmt_time(*T[d])), d, c, ls)
+            for d, c, ls in ((o.unavg, C_UN, "-"), (o.avg, C_AV, "--"))]
     if o.before:
         runs.append((label(o.before) + ", before Bessel fix", o.before, C_PRE, ":"))
 
@@ -209,8 +246,12 @@ def main():
 
     lu, la = runs[0][0], runs[1][0]
     r = lambda i: H[la][1][i][-1] / H[lu][1][i][-1]  # noqa: E731
+    (tu, nu), (ta, na) = T[o.unavg], T[o.avg]
+    speed = "\n\nsolver time, unaveraged / averaged\n %.0fx" % (tu / ta)
+    if nu != na:
+        speed += " (on %s and %s ranks)" % (nu, na)
     ax["P"].text(0.98, 0.03, "at end, averaged / unaveraged\n peak power %.3f\n pulse energy %.3f"
-                 "\n bunching %.3f" % (r(1), r(2), r(5)),
+                 "\n bunching %.3f%s" % (r(1), r(2), r(5), speed),
                  transform=ax["P"].transAxes, ha="right", va="bottom", fontsize=8,
                  family="monospace", bbox=dict(fc="white", ec="#ced4da", alpha=0.9))
 

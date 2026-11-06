@@ -502,11 +502,50 @@ Two things they show that the tables do not:
   peak, the unaveraged spectrum has wings out to +/-2.5% that the averaged one
   lacks. This has not been investigated.
 
+`figures/latt3d_*.png` are the same three cases in 3D, on `deck3d.in`
+(diffraction, a matched beam, Ipk = 4 kA), made with `run_compare_latt.py --3d`.
+Each beam is about three slippage lengths long so that the middle 30% is in
+steady state, as in 1D. The 3D beam saturates later (~150 periods), so the 3D
+taper case runs 150 periods untapered and then 100 tapered at the same rate;
+its x mesh is widened (`--set`), because a planar undulator gives no focusing
+in x and the beam outgrows the standard mesh by ~170 periods. Averaged /
+unaveraged at the end:
+
+| case | unaveraged | peak power | pulse energy | bunching |
+| --- | --- | --- | --- | --- |
+| 3D A, f = 0.9, carrier seeded | n48 | 0.951 | 0.951 | 0.995 |
+| 3D B, f = 0.75 own resonance | n48 | 1.107 (0.75 colour ~1.01) | 1.106 | 1.024 |
+| 3D C, taper -0.05 after saturation | n24 | 0.994 | 0.999 | 0.895, at a level of ~0.01 |
+
+They repeat the 1D picture: the -f image appears in 3D too (8.7% of the field
+energy in 3D B), and the 0.75 colour alone agrees to ~1%. Unlike 1D, the 3D
+taper first extracts ~1.7x more power before the beam detraps; both solvers
+follow that to 0.6%.
+
+**Solver time.** Each figure's legend gives Puffin's solver time (start-up
+excluded) and MPI ranks for both runs, same ranks for both:
+
+| case | ranks | unaveraged | averaged | speed-up |
+| --- | --- | --- | --- | --- |
+| 1D A (n96 / 1 λr per cell) | 1 | 243 s | 6.1 s | 40x |
+| 1D B (n48 / 0.125) | 1 | 58 s | 2.8 s | 21x |
+| 1D C (n96 / 1) | 1 | 510 s | 13.0 s | 39x |
+| 3D A (n48 / 1) | 4 | 2052 s | 49 s | 42x |
+| 3D B (n48 / 0.125) | 4 | 596 s | 114 s | 5x |
+| 3D C (n24 / 1) | 8 | 2537 s | 117 s | 22x |
+
+The 1D runs were timed one at a time, the 3D ones alongside each other, on an
+18-core Apple M5 Pro carrying other load; treat them as +/-30%. The speed-up
+falls with the cells per wavelength the averaged run needs: a colour 25% off
+the carrier needs 0.125 wavelengths per cell, 8 cells per wavelength, which
+in 3D, where each cell carries a transverse mesh, leaves only 5x over n48.
+Against n24 the 3D A speed-up is 14x (707 s).
+
 ### What this does not show
 
-- **1D, seeded, one rho.** No diffraction, which is frequency dependent and
-  which the averaged mode offsets about the carrier, and no SASE in a detuned
-  module.
+- **Seeded, one rho, mostly 1D.** Only the three 3D figures include
+  diffraction, which is frequency dependent and which the averaged mode
+  offsets about the carrier, and there is no SASE in a detuned module.
 - **The planar f = 0.9 single-seed gap**, the 2-5% left in the red rows at
   fine cells (helical, and planar and elliptical after the fix), and the
   bunching gap under a strong taper are measured, not explained.
