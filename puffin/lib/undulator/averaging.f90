@@ -125,7 +125,7 @@
 !> harmonic h while 2 h |e| < 1/(2 lambdarPerCell).
 !>
 !> Against the unaveraged solver on the 1D seeded planar deck the 3rd harmonic
-!> agrees to 0.5%, and the 5th is 16% low, for reasons only partly understood;
+!> agrees to 0.6%, and the 5th is 17% low, for reasons only partly understood;
 !> see W3c in AVERAGED_MODE_ROADMAP.md.
 
 module averaging

@@ -36,7 +36,7 @@ section of `doc/manual.tex`. The accuracy map and its harness are in `benchmark/
 | W2 | 3D | **Done** — validated against the unaveraged solver | — | — |
 | W3a | Polarisation field grids, planar + helical only | **Done** — nComp = 2, second component slaved | #107 ✅ | #129 |
 | W3b | General polarisation coupling (elliptical) | **Done**, merged in #146, validated 1D + 3D | W3a ✅ | #129 |
-| W3c | Odd-harmonic bands (`avgHarmonics`) | **Done** on `feature/avg-harmonics`; 3rd validated to 0.5% in 1D, 5th 16% low and not understood | W3b ✅ | #129 |
+| W3c | Odd-harmonic bands (`avgHarmonics`) | **Done** on `feature/avg-harmonics`; 3rd validated to 0.6% in 1D, 5th 17% low and not understood | W3b ✅ | #129 |
 | W4 | Compatibility: periodic mesh, lattices, restart | **Done** — guards in, one `dev` bug left open | — | — |
 | W5 | Diagnostics, dump metadata and viz tools | **Done** | — | — |
 | W6 | Finish the accuracy map | Partly done — 1D SASE validated, harmonic back-action measured (negligible); rho scan and the 5th-harmonic gap left | — | #130 |
@@ -356,15 +356,16 @@ fundamental first, then ascending, recorded per component in `/runInfo`
 - *Against the unaveraged solver*, 1D seeded planar deck, 16 macroparticles per
   wavelength (full tables in `benchmark/averaged/README.md`, "Harmonic bands"):
   at the last write the 3rd harmonic converges onto the averaged result as the
-  unaveraged mesh refines, 1.145 / 1.028 / 1.0015 / 0.995 at n24 / 48 / 96 /
-  192. The 5th does not: 1.03 / 0.92 / 0.85 / 0.84, against an unaveraged
+  unaveraged mesh refines, 1.143 / 1.027 / 1.000 / 0.994 at n24 / 48 / 96 /
+  192. The 5th does not: 1.03 / 0.91 / 0.85 / 0.83, against an unaveraged
   reference that has settled to ~1.5%. The averaged side is converged in step,
   cell size and beam sampling. The dropped A-term accounts for about 3 points
   of the 5th's gap. Late in the run the harmonics come from nonlinear harmonic
-  generation, so they inherit the fundamental's 1.8% deficit with levers of
-  ~2.4 (h = 3) and ~5 (h = 5). Taking that out leaves ~8% low on the 5th and
+  generation, so they inherit the fundamental's 1.7% deficit with levers of
+  ~2.4 (h = 3) and ~5 (h = 5). Taking that out leaves ~9% low on the 5th and
   ~4% high on the 3rd, cause not identified. Elliptical (0.5, 1) shows the same
-  pattern.
+  pattern. These ratios were rerun after #149's per-particle xi; the
+  supporting runs (convergence, A-term, sampling, elliptical) predate it.
 - *Back-action, the W6 question.* The bands change the averaged fundamental by
   -6e-6 at the end of the deck, and total `/power` moves 0.09% towards the
   unaveraged solver. The planar fundamental gap is not harmonic.
