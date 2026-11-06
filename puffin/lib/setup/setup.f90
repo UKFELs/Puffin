@@ -30,7 +30,7 @@ module Setup
    use averaging, only: getAvgBands
    use Read_data, only: read_in, filenamenoextension, initializeprocessors, &
      readh5fieldfilesingledump
-   use checks, only: checkparameters
+   use checks, only: checkparameters, chkAvgLattice
    use ParaField, only: getlocalfieldindices, pupd8
    use write_adapter, only: writeim
    use avwrite, only: initPowerCalc
@@ -79,6 +79,8 @@ contains
       real(kind=wp), intent(out) :: sZ
       type(tSimulationContext), intent(inout) :: ctx
       logical, intent(out) :: qOK
+
+      integer(kind=ip) :: nOutOfBand
 
 !     Set error flag
 
@@ -448,6 +450,11 @@ contains
       call PopulateIntegrationStateFromGlobals(ctx%integration)
       call PopulateUndulatorFromGlobals(ctx%und)
       ctx%init_data = tInitData_G
+
+!     Averaged mode: warn for lattice modules resonant outside the envelope
+!     mesh's band.  Needs the lattice file, which is read after chkAveraged.
+      if (qAveraged_G) call chkAvgLattice(ctx%lattice, ctx%frame, &
+                                          ctx%und%model_undulator_ends, nOutOfBand)
 
 !     Start-of-run zeroing of the accumulated interaction length (old sZi_G).
 !     This is the ONLY place it may be zeroed - it must accumulate across all

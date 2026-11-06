@@ -8,7 +8,9 @@
 !> Glasgow, UK
 !> @brief
 !> Period-averaged (SVEA) electron-field coupling, for the opt-in averaged
-!> solver mode (qAveraged).
+!> solver mode (qAveraged).  The mode is experimental: it has been validated
+!> against the unaveraged solver only for the cases in
+!> benchmark/averaged/README.md.
 !>
 !> Puffin normally resolves the radiation carrier on the z2 mesh and the
 !> undulator quiver in the electron equations.  In averaged mode the field
@@ -34,10 +36,10 @@
 !> = px A_x + py A_y, which does not mix x and y.  That is why the Cartesian
 !> basis is the one to integrate in: each component has its own coupling.
 !>
-!> Averaging over a period, including the figure-of-eight ripple of the phase
-!> theta_j = (zbar - z2_j)/2rho = thetabar_j - xi_j sin(2 theta_w), with
+!> Averaging over a period, including the figure-of-eight jitter in z2 and so
+!> in the phase theta_j = (zbar - z2_j)/2rho = thetabar_j - xi_j sin(2 theta_w), with
 !>
-!>     xi_j = (1 + eta p2_j)^3 aw^2 alpha^2 (cy^2 - cx^2)/2 / (4 eta gamma_r^2 Gamma_j^2)
+!>     xi_j = (1 + eta p2_j)^3 aw^2 alpha^2 (cy^2 - cx^2)/2 / (4 eta gamma_r^2 Gamma_j^2 p2_j)
 !>
 !> (signed: it follows cy^2 - cx^2), turns the quiver into one effective
 !> resonant momentum per macroparticle and component,
@@ -62,9 +64,28 @@
 !> JJ = J0 - (u+/u-) J1: planar is bit-identical, helical has B_x = Atilde/sqrt(2)
 !> and B_y = i B_x.  The derivation is in doc/manual.tex.
 !>
-!> xi is evaluated per macroparticle: it goes as 1/Gamma^2, and taking it at
-!> the reference energy alone, as Genesis does, would put an error of
-!> ~0.2 (Gamma_j - 1) into the planar coupling.
+!> xi is evaluated per macroparticle.  Measured against the carrier it goes as
+!> 1/Gamma_j^2, but the jitter is in z2, so radiation at frequency f of the
+!> carrier sees it as a phase jitter f times that, and couples through
+!> J(f xi).  One envelope holds every frequency in its band, so there is no
+!> single f; each macroparticle takes the one it is resonant with, f = 1/p2_j,
+!> which is the content it exchanges energy with on the slow scale - hence the
+!> 1/p2_j above.  p2_j goes as 1/Gamma_j^2 too, so xi_j barely depends on the
+!> electron's energy: up to O(eta) and O(1/gamma^2) it is the textbook
+!> aw^2 alpha^2 (cy^2 - cx^2)/4 / (1 + aw^2 alpha^2 fp), K^2/(4 + 2 K^2) for
+!> planar, and what varies it from particle to particle is the module's alpha
+!> and taper, not the energy spread.
+!>
+!> That is what a lattice module detuned through alpha needs: its electrons sit
+!> at p2 = 1/f and amplify radiation at f, and xi measured against the carrier
+!> instead under-couples a planar module at f = 0.75 by 6%, leaving it a
+!> quarter short of the unaveraged power at any mesh.  The cost is content off
+!> an electron's own resonance.  Carrier content seen by an electron at
+!> Gamma_j gets J(xi/p2_j) where J(xi) would be exact, an error of about
+!> 2 |Gamma_j - 1| xi |J'| (~0.2 (Gamma_j - 1) in the planar coupling, which
+!> taking xi against the carrier per particle used to remove).  That coupling
+!> is off resonance and so weak, and for a beam resonant with the carrier both
+!> choices agree to O(rho).
 !>
 !> Odd harmonics.  The same figure-of-eight couples the beam to the odd
 !> harmonics of the resonant frequency, and averaged mode can carry them as
@@ -74,7 +95,8 @@
 !>     A_c^(h) = sqrt(2) Re[ B_c^(h) exp(-i h z2/2rho) ],
 !>
 !> and its drive is the period average of sqrt(2) w p_c exp(+i h z2/2rho).
-!> With z2/2rho = theta_w - thetabar + xi sin(2 theta_w), Jacobi-Anger gives
+!> With z2/2rho = theta_w - thetabar + xi sin(2 theta_w), xi measured against
+!> the carrier, Jacobi-Anger gives
 !> exp(i h xi sin(2 theta_w)) = sum_n J_n(h xi) exp(2 i n theta_w), and the
 !> exp(+-i theta_w) of the quiver leaves a slow term only for n = -(h+-1)/2.
 !> With m = (h-1)/2 and J_(-n) = (-1)^n J_n,
@@ -82,7 +104,10 @@
 !>     q_x^(h) = -(alpha cy / sqrt(2)) (-1)^m [J_m(h xi) - J_(m+1)(h xi)] exp(-i h thetabar),
 !>     q_y^(h) = -i (alpha cx / sqrt(2)) (-1)^m [J_m(h xi) + J_(m+1)(h xi)] exp(-i h thetabar),
 !>
-!> which are q_x, q_y above at h = 1.  Even h has no slow term, because the
+!> which are q_x, q_y above at h = 1.  As for the fundamental, each
+!> macroparticle takes xi at its own resonance: it radiates band h at h/p2_j
+!> of the carrier, where the jitter is h xi_j with xi_j as above, 1/p2_j and
+!> all.  Even h has no slow term, because the
 !> quiver's exp(+-i theta_w) needs h +- 1 even; that holds on axis, and the
 !> off-axis harmonic coupling a 3D beam has is not carried either.  A helical
 !> undulator has xi = 0 and J_m(0) = 0 for m >= 1, so no on-axis harmonic
@@ -115,7 +140,7 @@ private
 
 public :: tAvgCoupling, getAvgUndAmps, getAvgPolarisation, &
           getAvgEnvelope, getAvgCoupling, avgJJ, avgJJh, getResonantMomentum, &
-          getAvgBufferPqSq, getAvgAlpha, getAvgBands, &
+          getAvgBufferPqSq, getAvgAlpha, getAvgResonanceShift, getAvgBands, &
           tAvgFocusing, getAvgFocusCoef, getAvgFocusing, getAvgCarrierKz2
 
 
@@ -126,7 +151,7 @@ public :: tAvgCoupling, getAvgUndAmps, getAvgPolarisation, &
 type :: tAvgCoupling
   real(kind=wp) :: ampX     ! alpha cy / sqrt(2) - |q_x| before its Bessel factor
   real(kind=wp) :: ampY     ! alpha cx / sqrt(2) - |q_y| before its Bessel factor
-  real(kind=wp) :: xiCoef   ! xi_j = xiCoef (1 + eta p2_j)^3 / Gamma_j^2
+  real(kind=wp) :: xiCoef   ! xi_j = xiCoef (1 + eta p2_j)^3 / (Gamma_j^2 p2_j)
   real(kind=wp) :: pqSq     ! period average of |pperp_w|^2 = alpha^2 fp, for getP2Avg
   real(kind=wp) :: jjRef    ! J0 - J1 (the x factor) for the reference particle, for diagnostics
 end type tAvgCoupling
@@ -257,7 +282,7 @@ contains
     type(tFELFrame), intent(in) :: frame
     type(tAvgCoupling), intent(out) :: cpl
 
-    real(kind=wp) :: cx, cy, uMinus, uPlus, fp, alphaEff, onePlusEtaP2, jjY
+    real(kind=wp) :: cx, cy, uMinus, uPlus, fp, alphaEff, p2Ref, jjY
 
     alphaEff = getAvgAlpha(sZ, und, frame)
 
@@ -273,28 +298,28 @@ contains
 
 !   Reference particle: Gamma = 1, no slow transverse momentum
 
-    onePlusEtaP2 = 1.0_wp / sqrt(1.0_wp - (1.0_wp + frame%aw**2 * cpl%pqSq) &
-                                          / frame%gamma_ref**2)
+    p2Ref = 1.0_wp / (1.0_wp + getAvgResonanceShift(alphaEff, fp, frame))
 
-    call avgJJ(cpl, onePlusEtaP2, 1.0_wp, cpl%jjRef, jjY)
+    call avgJJ(cpl, p2Ref, frame%eta, 1.0_wp, cpl%jjRef, jjY)
 
   end subroutine getAvgCoupling
 
 
 !> The Bessel factors of the two Cartesian couplings for a macroparticle with
-!> the given (1 + eta p2) and Gamma: jjX = J0(xi) - J1(xi), jjY = J0(xi) + J1(xi).
+!> the given p2 and Gamma: jjX = J0(xi) - J1(xi), jjY = J0(xi) + J1(xi), with xi
+!> taken at the frequency the particle is resonant with, 1/p2 of the carrier.
 !> xi is signed, so a linear undulator along either axis gets J0(|xi|) - J1(|xi|)
 !> on the component it drives.
 
-  elemental subroutine avgJJ(cpl, onePlusEtaP2, gam, jjX, jjY)
+  elemental subroutine avgJJ(cpl, p2, eta, gam, jjX, jjY)
 
     type(tAvgCoupling), intent(in) :: cpl
-    real(kind=wp), intent(in) :: onePlusEtaP2, gam
+    real(kind=wp), intent(in) :: p2, eta, gam
     real(kind=wp), intent(out) :: jjX, jjY
 
     real(kind=wp) :: xi, j0, j1
 
-    xi = cpl%xiCoef * onePlusEtaP2**3 / gam**2
+    xi = cpl%xiCoef * (1.0_wp + eta * p2)**3 / (gam**2 * p2)
 
     j0 = bessel_j0(xi)
     j1 = bessel_j1(xi)
@@ -306,22 +331,23 @@ contains
 
 
 !> The Bessel factors of harmonic h's couplings, h odd and m = (h-1)/2:
-!> jjX = (-1)^m [J_m(h xi) - J_(m+1)(h xi)], jjY = (-1)^m [J_m(h xi) + J_(m+1)(h xi)].
-!> At h = 1 these are avgJJ's factors.  The fundamental band keeps avgJJ, whose
-!> bessel_j0/bessel_j1 need not agree with bessel_jn to the last bit, so that
-!> path is unchanged by the harmonics.
+!> jjX = (-1)^m [J_m(h xi) - J_(m+1)(h xi)], jjY = (-1)^m [J_m(h xi) + J_(m+1)(h xi)],
+!> with xi at the particle's own resonance as in avgJJ, which these are at
+!> h = 1.  The fundamental band keeps avgJJ, whose bessel_j0/bessel_j1 need not
+!> agree with bessel_jn to the last bit, so that path is unchanged by the
+!> harmonics.
 
-  elemental subroutine avgJJh(cpl, h, onePlusEtaP2, gam, jjX, jjY)
+  elemental subroutine avgJJh(cpl, h, p2, eta, gam, jjX, jjY)
 
     type(tAvgCoupling), intent(in) :: cpl
     integer(kind=ip), intent(in) :: h
-    real(kind=wp), intent(in) :: onePlusEtaP2, gam
+    real(kind=wp), intent(in) :: p2, eta, gam
     real(kind=wp), intent(out) :: jjX, jjY
 
     real(kind=wp) :: hxi, jm, jm1
     integer :: m
 
-    hxi = real(h, kind=wp) * cpl%xiCoef * onePlusEtaP2**3 / gam**2
+    hxi = real(h, kind=wp) * cpl%xiCoef * (1.0_wp + eta * p2)**3 / (gam**2 * p2)
     m = int((h - 1_ip) / 2_ip)
 
     jm = bessel_jn(m, hxi)
@@ -388,7 +414,7 @@ contains
         theta = (sZ - sz2(i)) * inv2rho
         cth = cos(theta)
         sth = sin(theta)
-        call avgJJ(cpl, 1.0_wp + eta * sp2(i), sgam(i), jjX, jjY)
+        call avgJJ(cpl, sp2(i), eta, sgam(i), jjX, jjY)
         magX = cpl%ampX * jjX
         magY = cpl%ampY * jjY
         sprRes(i,1) = -magX * cth
@@ -412,7 +438,7 @@ contains
           hth = real(bandHarm(ib), kind=wp) * theta
           cth = cos(hth)
           sth = sin(hth)
-          call avgJJh(cpl, bandHarm(ib), 1.0_wp + eta * sp2(i), sgam(i), jjX, jjY)
+          call avgJJh(cpl, bandHarm(ib), sp2(i), eta, sgam(i), jjX, jjY)
           magX = cpl%ampX * jjX
           magY = cpl%ampY * jjY
           sprRes(i,2*ib-1) = -magX * cth
@@ -639,6 +665,37 @@ contains
     getAvgBufferPqSq = fp * max(alpha0**2, alpha1**2)
 
   end function getAvgBufferPqSq
+
+
+!> Resonant frequency, relative to the carrier, minus 1, of a reference
+!> electron (Gamma = 1, no slow pperp) in an undulator of strength alpha and
+!> polarisation factor fp.  Such an electron slips p2 resonant wavelengths per
+!> period (getP2Avg with pqSq = alpha^2 fp), so it is resonant with 1/p2 of
+!> the carrier frequency.  The carrier is the resonance of the main-input
+!> undulator, which fixes frame%eta, so this is zero to rounding for alpha = 1
+!> and that undulator's fp.  A lattice module detuned through alpha, or a
+!> taper, moves it; the envelope mesh holds roughly +/- 1/(2 lambdarPerCell).
+!> Returns huge() if the undulator is too strong for the electron to move
+!> forward at all.
+
+  pure real(kind=wp) function getAvgResonanceShift(alpha, fp, frame)
+
+    real(kind=wp), intent(in) :: alpha, fp
+    type(tFELFrame), intent(in) :: frame
+
+    real(kind=wp) :: u, rt
+
+    u = (1.0_wp + frame%aw**2 * alpha**2 * fp) / frame%gamma_ref**2
+
+    if (u >= 1.0_wp) then
+      getAvgResonanceShift = huge(1.0_wp)
+      return
+    end if
+
+    rt = sqrt(1.0_wp - u)
+    getAvgResonanceShift = frame%eta * rt * (1.0_wp + rt) / u - 1.0_wp
+
+  end function getAvgResonanceShift
 
 
 end module averaging

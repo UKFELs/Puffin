@@ -32,7 +32,7 @@ module testAveraging
   use averaging, only: tAvgCoupling, getAvgUndAmps, getAvgPolarisation, &
                        getAvgEnvelope, getAvgCoupling, avgJJ, avgJJh, getResonantMomentum, &
                        tAvgFocusing, getAvgFocusCoef, getAvgFocusing, getAvgCarrierKz2, &
-                       getAvgBands
+                       getAvgBands, getAvgResonanceShift
   use gtop2, only: getP2, getP2Avg
 
   implicit none
@@ -144,9 +144,13 @@ contains
   !! model's prediction for the same quantities, per Cartesian component, for
   !! the band at harmonic h = iH.
   !!
-  !! srcX, srcY = sqrt(2) < w p_c exp(+i h z2/2rho) >, the drive of the stored
-  !!              envelope B_c of A_c = sqrt(2) Re[B_c exp(-i h z2/2rho)]
-  !!              (w = (1 + eta p2)/Gamma)
+  !! The field is at h times the frequency the particle is resonant with,
+  !! f = 1/p2 of the carrier: A_c = sqrt(2) Re[B_c exp(-i h f z2/2rho)], which
+  !! band h holds as B_c exp(-i h (f - 1) z2/2rho).  That is the content the
+  !! model's Bessel factor is exact for.  For a resonant particle f = 1.
+  !!
+  !! srcX, srcY = sqrt(2) < w p_c exp(+i h f z2/2rho) >, the drive of that
+  !!              content (w = (1 + eta p2)/Gamma)
   !! eng        = < w (p_x A_x + p_y A_y) > = < w Re(pperp conj(A_perp)) >, the
   !!              energy-equation coupling, for the field built from Bx, By
   !!
@@ -169,9 +173,9 @@ contains
     real(kind=wp), parameter :: z0 = 0.3_wp, z2start = 1.7_wp
     real(kind=wp), allocatable, dimension(:) :: z, px, py, g, p2, z2, zc, w, ax, ay
     complex(kind=wp), allocatable, dimension(:) :: qx, qy, f
-    real(kind=wp) :: cx, cy, lamw, h, inv2rho, centre
+    real(kind=wp) :: cx, cy, lamw, h, inv2rho, centre, fRad, hf
     type(tAvgCoupling) :: cpl
-    real(kind=wp) :: wbar, p2m(1), gm(1), zero(1), zc1(1), hr
+    real(kind=wp) :: wbar, p2m(1), gm(1), zero(1), zc1(1)
     real(kind=wp) :: qr(1,4), qi(1,4)
     complex(kind=wp), parameter :: iu = (0.0_wp, 1.0_wp)
     integer :: i, icx
@@ -198,6 +202,17 @@ contains
 
     call getP2(p2, g, px, -py, frame%eta, frame%gamma_ref, frame%aw)
 
+!   The model's p2, and so the radiation frequency the particle is resonant with
+
+    call getAvgCoupling(z0, und, frame, cpl)
+
+    gm = gam
+    zero = 0.0_wp
+    call getP2Avg(p2m, gm, zero, zero, frame%eta, frame%gamma_ref, frame%aw, cpl%pqSq)
+    p2Model = p2m(1)
+    fRad = 1.0_wp / p2Model
+    hf = real(iH, kind=wp) * fRad
+
 !   z2 by trapezoidal integration of p2, then its guiding centre: the linear
 !   trend through the period mean, which is what the averaged model tracks.
 
@@ -206,7 +221,7 @@ contains
       z2(i) = z2(i-1) + 0.5_wp * h * (p2(i-1) + p2(i))
     end do
 
-!   The z2 ripple is exactly periodic over whole undulator periods, so a plain
+!   The z2 jitter is exactly periodic over whole undulator periods, so a plain
 !   average finds the guiding centre
 
     p2Mean = (z2(n) - z2(0)) / (nPer * lamw)
@@ -217,27 +232,21 @@ contains
 
 !   The physical field seen at the particle's true position
 
-    hr = real(iH, kind=wp)
+    ax = sqrt(2.0_wp) * real(Bx * exp(-iu * hf * z2 * inv2rho), kind=wp)
+    ay = sqrt(2.0_wp) * real(By * exp(-iu * hf * z2 * inv2rho), kind=wp)
 
-    ax = sqrt(2.0_wp) * real(Bx * exp(-iu * hr * z2 * inv2rho), kind=wp)
-    ay = sqrt(2.0_wp) * real(By * exp(-iu * hr * z2 * inv2rho), kind=wp)
-
-    f = sqrt(2.0_wp) * w * px * exp(iu * hr * z2 * inv2rho)
+    f = sqrt(2.0_wp) * w * px * exp(iu * hf * z2 * inv2rho)
     srcX = avgW(f)
-    f = sqrt(2.0_wp) * w * py * exp(iu * hr * z2 * inv2rho)
+    f = sqrt(2.0_wp) * w * py * exp(iu * hf * z2 * inv2rho)
     srcY = avgW(f)
     f = cmplx(w * (px * ax + py * ay), 0.0_wp, kind=wp)
     eng = real(avgW(f), kind=wp)
 
 !   The averaged model, with p2 and w from the period-averaged |pperp|^2 and
-!   q_x, q_y from the solver's own routine at each zbar along the guiding centre
+!   q_x, q_y from the solver's own routine at each zbar along the guiding
+!   centre.  The envelope content at h f is B_c exp(-i h (f - 1) z2/2rho)
+!   there, and the source drives it through the conjugate phase.
 
-    call getAvgCoupling(z0, und, frame, cpl)
-
-    gm = gam
-    zero = 0.0_wp
-    call getP2Avg(p2m, gm, zero, zero, frame%eta, frame%gamma_ref, frame%aw, cpl%pqSq)
-    p2Model = p2m(1)
     wbar = (1.0_wp + frame%eta * p2Model) / gam
 
     icx = 1
@@ -256,9 +265,11 @@ contains
       qy(i) = cmplx(qr(1,icx+1), qi(1,icx+1), kind=wp)
     end do
 
-    srcXM = wbar * avgW(qx)
-    srcYM = wbar * avgW(qy)
-    f = cmplx(wbar * real(qx * conjg(Bx) + qy * conjg(By), kind=wp), 0.0_wp, kind=wp)
+    f = exp(iu * (hf - real(iH, kind=wp)) * zc * inv2rho)
+    srcXM = wbar * avgW(qx * f)
+    srcYM = wbar * avgW(qy * f)
+    f = cmplx(wbar * real(qx * conjg(Bx * conjg(f)) + qy * conjg(By * conjg(f)), kind=wp), &
+              0.0_wp, kind=wp)
     engM = real(avgW(f), kind=wp)
 
   end subroutine bruteForce
@@ -274,9 +285,10 @@ contains
   !! The scale is the fundamental's, so a harmonic coupling that should vanish
   !! (any harmonic of a helical undulator) is checked to be small against what
   !! the fundamental would be, rather than against itself.
-  subroutine checkAgainstBruteForce(undType, fx, fy, gam, h)
+  subroutine checkAgainstBruteForce(undType, fx, fy, gam, alpha, h)
     character(*), intent(in) :: undType
     real(kind=wp), intent(in) :: fx, fy, gam
+    real(kind=wp), intent(in), optional :: alpha
     integer(kind=ip), intent(in), optional :: h
 
     type(tUndulator) :: und
@@ -291,6 +303,10 @@ contains
     if (present(h)) hh = h
 
     call makeUnd(und, frame, undType, fx, fy)
+    if (present(alpha)) then
+      und%n2col = alpha
+      und%n2col_initial = alpha
+    end if
     call bruteForce(und, frame, gam, 1_ip, Bx, By, s1x, s1y, e1, &
                     s1xM, s1yM, e1M, p2Mean, p2Model)
 
@@ -370,8 +386,8 @@ contains
     @assertEqual(sqrt(0.5_wp), cplV%ampY, 0.0_wp)
     @assertEqual(-cplP%xiCoef, cplV%xiCoef, 0.0_wp)
 
-    call avgJJ(cplP, 1.02_wp, 0.99_wp, jxP, jyP)
-    call avgJJ(cplV, 1.02_wp, 0.99_wp, jxV, jyV)
+    call avgJJ(cplP, 0.98_wp, frame%eta, 0.99_wp, jxP, jyP)
+    call avgJJ(cplV, 0.98_wp, frame%eta, 0.99_wp, jxV, jyV)
     @assertEqual(jxP, jyV, 1.0e-15_wp)
     @assertEqual(jyP, jxV, 1.0e-15_wp)
     @assertTrue(abs(jxP - 1.0_wp) > 0.05_wp)
@@ -388,7 +404,7 @@ contains
     call getResonantMomentum(0.4_wp, sz2, sgam, sp2, frame%eta, frame%rho, cpl, qr, qi)
 
     do j = 1, 3
-      xi = cpl%xiCoef * (1.0_wp + frame%eta * sp2(j))**3 / sgam(j)**2
+      xi = cpl%xiCoef * (1.0_wp + frame%eta * sp2(j))**3 / (sgam(j)**2 * sp2(j))
       theta = (0.4_wp - sz2(j)) / (2.0_wp * frame%rho)
       expect = -(uMinus * bessel_j0(xi) - uPlus * bessel_j1(xi)) * exp(-iu * theta)
       qMinus = (cmplx(qr(j,1), qi(j,1), kind=wp) - iu * cmplx(qr(j,2), qi(j,2), kind=wp)) &
@@ -435,6 +451,22 @@ contains
   end subroutine testEllipticalMatchesBruteForce
 
 
+  !> A module detuned through alpha, the particle resonant with radiation well
+  !! off the carrier: alpha 1.4 puts a planar module at ~0.76 of the carrier
+  !! frequency, 0.85 at ~1.1.  This is where the Bessel factor must be taken
+  !! at the radiation's frequency rather than the carrier's: at 1.4 the
+  !! carrier's J0(xi) - J1(xi) is 6% low, sixty times the tolerance.
+  @test
+  subroutine testDetunedMatchesBruteForce()
+    call checkAgainstBruteForce("planepole", 1.0_wp, 1.0_wp, 1.0_wp, 1.4_wp)
+    call checkAgainstBruteForce("planepole", 1.0_wp, 1.0_wp, 0.996_wp, 1.4_wp)
+    call checkAgainstBruteForce("planepole", 1.0_wp, 1.0_wp, 1.0_wp, 0.85_wp)
+    call checkAgainstBruteForce("", 0.5_wp, 1.0_wp, 1.0_wp, 1.4_wp)
+    call checkAgainstBruteForce("", 1.0_wp, 0.0_wp, 1.004_wp, 1.4_wp)
+    call checkAgainstBruteForce("helical", 1.0_wp, 1.0_wp, 1.0_wp, 1.4_wp)
+  end subroutine testDetunedMatchesBruteForce
+
+
   !> The opposite helicity, cx = -cy: resonant with the exp(+i z2/2rho) image
   !! in the old helicity basis, and so impossible for one envelope.  In the
   !! Cartesian basis it is just q_y = -i q_x.
@@ -451,34 +483,41 @@ contains
   !! on-axis harmonic coupling, which the brute force has to agree with too.
   @test
   subroutine testPlanarHarmonicsMatchBruteForce()
-    call checkAgainstBruteForce("planepole", 1.0_wp, 1.0_wp, 1.0_wp, 3_ip)
-    call checkAgainstBruteForce("planepole", 1.0_wp, 1.0_wp, 0.996_wp, 3_ip)
-    call checkAgainstBruteForce("planepole", 1.0_wp, 1.0_wp, 1.0_wp, 5_ip)
-    call checkAgainstBruteForce("planepole", 1.0_wp, 1.0_wp, 1.004_wp, 5_ip)
+    call checkAgainstBruteForce("planepole", 1.0_wp, 1.0_wp, 1.0_wp, h=3_ip)
+    call checkAgainstBruteForce("planepole", 1.0_wp, 1.0_wp, 0.996_wp, h=3_ip)
+    call checkAgainstBruteForce("planepole", 1.0_wp, 1.0_wp, 1.0_wp, h=5_ip)
+    call checkAgainstBruteForce("planepole", 1.0_wp, 1.0_wp, 1.004_wp, h=5_ip)
+
+!   A module detuned through alpha: its electrons are resonant at 1/p2 of the
+!   carrier and radiate band h at h/p2, where the jitter is h xi_j
+
+    call checkAgainstBruteForce("planepole", 1.0_wp, 1.0_wp, 1.0_wp, alpha=1.4_wp, h=3_ip)
+    call checkAgainstBruteForce("planepole", 1.0_wp, 1.0_wp, 0.996_wp, alpha=0.85_wp, h=5_ip)
+    call checkAgainstBruteForce("", 0.5_wp, 1.0_wp, 1.0_wp, alpha=1.4_wp, h=5_ip)
   end subroutine testPlanarHarmonicsMatchBruteForce
 
 
   @test
   subroutine testVerticalPlanarHarmonicsMatchBruteForce()
-    call checkAgainstBruteForce("", 1.0_wp, 0.0_wp, 1.0_wp, 3_ip)
-    call checkAgainstBruteForce("", 1.0_wp, 0.0_wp, 1.004_wp, 5_ip)
+    call checkAgainstBruteForce("", 1.0_wp, 0.0_wp, 1.0_wp, h=3_ip)
+    call checkAgainstBruteForce("", 1.0_wp, 0.0_wp, 1.004_wp, h=5_ip)
   end subroutine testVerticalPlanarHarmonicsMatchBruteForce
 
 
   @test
   subroutine testEllipticalHarmonicsMatchBruteForce()
-    call checkAgainstBruteForce("", 0.5_wp, 1.0_wp, 1.0_wp, 3_ip)
-    call checkAgainstBruteForce("", 0.5_wp, 1.0_wp, 0.996_wp, 5_ip)
-    call checkAgainstBruteForce("", 1.0_wp, 0.6_wp, 1.0_wp, 3_ip)
-    call checkAgainstBruteForce("", 1.0_wp, 0.6_wp, 1.004_wp, 5_ip)
+    call checkAgainstBruteForce("", 0.5_wp, 1.0_wp, 1.0_wp, h=3_ip)
+    call checkAgainstBruteForce("", 0.5_wp, 1.0_wp, 0.996_wp, h=5_ip)
+    call checkAgainstBruteForce("", 1.0_wp, 0.6_wp, 1.0_wp, h=3_ip)
+    call checkAgainstBruteForce("", 1.0_wp, 0.6_wp, 1.004_wp, h=5_ip)
   end subroutine testEllipticalHarmonicsMatchBruteForce
 
 
   @test
   subroutine testHelicalHarmonicsMatchBruteForce()
-    call checkAgainstBruteForce("helical", 1.0_wp, 1.0_wp, 1.0_wp, 3_ip)
-    call checkAgainstBruteForce("helical", 1.0_wp, 1.0_wp, 1.004_wp, 5_ip)
-    call checkAgainstBruteForce("", -1.0_wp, 1.0_wp, 1.0_wp, 3_ip)
+    call checkAgainstBruteForce("helical", 1.0_wp, 1.0_wp, 1.0_wp, h=3_ip)
+    call checkAgainstBruteForce("helical", 1.0_wp, 1.0_wp, 1.004_wp, h=5_ip)
+    call checkAgainstBruteForce("", -1.0_wp, 1.0_wp, 1.0_wp, h=3_ip)
   end subroutine testHelicalHarmonicsMatchBruteForce
 
 
@@ -492,22 +531,23 @@ contains
     type(tUndulator) :: und
     type(tFELFrame) :: frame
     type(tAvgCoupling) :: cpl
-    real(kind=wp) :: xi, onePlusEtaP2, jjX, jjY
+    real(kind=wp) :: xi, jjX, jjY
     integer(kind=ip) :: h
 
     call makeUnd(und, frame, "planepole", 1.0_wp, 1.0_wp)
     call getAvgCoupling(1.0_wp, und, frame, cpl)
 
     xi = frame%aw**2 / (4.0_wp + 2.0_wp * frame%aw**2)
-    onePlusEtaP2 = 1.0_wp + frame%eta
+
+!   A reference particle, resonant with the carrier: p2 = 1
 
     h = 3_ip
-    call avgJJh(cpl, h, onePlusEtaP2, 1.0_wp, jjX, jjY)
+    call avgJJh(cpl, h, 1.0_wp, frame%eta, 1.0_wp, jjX, jjY)
     @assertEqual(-(bessel_jn(1, 3.0_wp * xi) - bessel_jn(2, 3.0_wp * xi)), jjX, 1.0e-4_wp)
     @assertTrue(abs(jjX) > 0.15_wp)
 
     h = 5_ip
-    call avgJJh(cpl, h, onePlusEtaP2, 1.0_wp, jjX, jjY)
+    call avgJJh(cpl, h, 1.0_wp, frame%eta, 1.0_wp, jjX, jjY)
     @assertEqual(bessel_jn(2, 5.0_wp * xi) - bessel_jn(3, 5.0_wp * xi), jjX, 1.0e-4_wp)
     @assertTrue(abs(jjX) > 0.05_wp)
 
@@ -548,8 +588,8 @@ contains
       @assertEqual(0.0_wp, maxval(abs(qrH(:,1:2) - qr)), 0.0_wp)
       @assertEqual(0.0_wp, maxval(abs(qiH(:,1:2) - qi)), 0.0_wp)
 
-      call avgJJ(cpl, 1.02_wp, 0.99_wp, jx, jy)
-      call avgJJh(cpl, 1_ip, 1.02_wp, 0.99_wp, jxh, jyh)
+      call avgJJ(cpl, 0.98_wp, frame%eta, 0.99_wp, jx, jy)
+      call avgJJh(cpl, 1_ip, 0.98_wp, frame%eta, 0.99_wp, jxh, jyh)
       @assertEqual(jx, jxh, 1.0e-15_wp)
       @assertEqual(jy, jyh, 1.0e-15_wp)
 
@@ -904,6 +944,125 @@ contains
     @assertTrue(qOK)
 
   end subroutine testAveragedHarmonicGuards
+
+
+  !> A module's resonance relative to the carrier.  It has to be the solver's
+  !! own: the frequency a reference electron is resonant with is 1/p2 of the
+  !! carrier, with p2 from getP2Avg, so that is what it is pinned to.  The
+  !! main-input undulator is the carrier, and in the ultra-relativistic limit
+  !! the shift is the textbook (1 + aw^2 fp)/(1 + aw^2 alpha^2 fp) - 1.
+  @test
+  subroutine testResonanceShift()
+    type(tUndulator) :: und
+    type(tFELFrame) :: frame
+    real(kind=wp) :: p2(1), gam(1), px(1), py(1), fp, alpha, textbook
+    integer :: i
+    character(16), parameter :: types(2) = [character(16) :: "planepole", "helical"]
+
+    gam = 1.0_wp
+    px = 0.0_wp
+    py = 0.0_wp
+
+    do i = 1, 2
+
+      call makeUnd(und, frame, trim(types(i)), 1.0_wp, 1.0_wp)
+      fp = merge(0.5_wp, 1.0_wp, i == 1)
+
+!     Not to 1e-16: eta = 1/beta_z - 1 is ~4e-6 here, so it carries ~3e-11
+!     relative rounding, as calcScaling's does
+
+      @assertEqual(0.0_wp, getAvgResonanceShift(1.0_wp, fp, frame), 1.0e-9_wp)
+
+      alpha = 0.9_wp
+      call getP2Avg(p2, gam, px, py, frame%eta, frame%gamma_ref, frame%aw, alpha**2 * fp)
+      @assertEqual(1.0_wp / p2(1) - 1.0_wp, getAvgResonanceShift(alpha, fp, frame), 1.0e-12_wp)
+
+      textbook = (1.0_wp + frame%aw**2 * fp) / (1.0_wp + frame%aw**2 * alpha**2 * fp) - 1.0_wp
+      @assertEqual(textbook, getAvgResonanceShift(alpha, fp, frame), 1.0e-4_wp)
+
+!     A weaker undulator is resonant at a higher frequency
+
+      @assertTrue(getAvgResonanceShift(0.9_wp, fp, frame) > 0.0_wp)
+      @assertTrue(getAvgResonanceShift(1.1_wp, fp, frame) < 0.0_wp)
+
+    end do
+
+!   An undulator too strong for the electron to move forward
+
+    @assertEqual(huge(1.0_wp), getAvgResonanceShift(1.0e3_wp, 1.0_wp, frame))
+
+  end subroutine testResonanceShift
+
+
+  !> The lattice band warning: a module, or any part of its taper, resonant
+  !! outside 1 +/- 1/(2 lambdarPerCell) of the carrier.  It only warns, so
+  !! what is pinned is the count of modules it warns about.
+  @test
+  subroutine testAvgLatticeBand()
+
+    use Globals, only: qAveraged_G, sLambdarPerCell_G
+    use GlobalTypes, only: tLatticeElements
+    use checks, only: chkAvgLattice
+
+    type(tUndulator) :: und
+    type(tFELFrame) :: frame
+    type(tLatticeElements) :: latt
+    integer(kind=ip) :: nOut
+    real(kind=wp) :: aBlue, aEdge, modLen
+
+    call makeUnd(und, frame, "planepole", 0.0_wp, 1.0_wp)
+
+!   aBlue and aEdge put a planar module at 1.3 and 1.25 of the carrier
+!   frequency (to the textbook form, which is good to ~1e-5 here)
+
+    aBlue = sqrt(((1.0_wp + 0.5_wp * frame%aw**2) / 1.3_wp - 1.0_wp) / (0.5_wp * frame%aw**2))
+    aEdge = sqrt(((1.0_wp + 0.5_wp * frame%aw**2) / 1.25_wp - 1.0_wp) / (0.5_wp * frame%aw**2))
+
+    allocate(latt%und_field(3), latt%und_taper(3), latt%und_ux(3), latt%und_uy(3), &
+             latt%und_delta_z(3), latt%und_nsteps(3), latt%und_type(3))
+    latt%und_type = "planepole"
+    latt%und_ux = 0.0_wp
+    latt%und_uy = 1.0_wp
+    latt%und_delta_z = 4.0_wp * pi * frame%rho / 10.0_wp
+    latt%und_nsteps = 500_ip                               ! 50 periods each
+    modLen = 50.0_wp * 4.0_wp * pi * frame%rho
+    latt%und_field = [1.0_wp, aBlue, 1.0_wp]
+    latt%und_taper = 0.0_wp
+
+    qAveraged_G = .true.
+
+!   At 1 wavelength per cell the band is +/- 0.5: all three are in
+
+    sLambdarPerCell_G = 1.0_wp
+    call chkAvgLattice(latt, frame, .false., nOut)
+    @assertEqual(0_ip, nOut)
+
+!   At 2 it is +/- 0.25, and the module at 1.3 is out
+
+    sLambdarPerCell_G = 2.0_wp
+    call chkAvgLattice(latt, frame, .false., nOut)
+    @assertEqual(1_ip, nOut)
+
+!   A taper on the third module that runs 1% past aEdge over the module takes
+!   it out too.  With end ramps the taper runs over 46 of the 50 periods, so
+!   it stops short of aEdge and the module is back in.
+
+    latt%und_taper(3) = 1.01_wp * (aEdge - 1.0_wp) / modLen
+    call chkAvgLattice(latt, frame, .false., nOut)
+    @assertEqual(2_ip, nOut)
+
+    call chkAvgLattice(latt, frame, .true., nOut)
+    @assertEqual(1_ip, nOut)
+
+!   None of it with the mode off
+
+    qAveraged_G = .false.
+    call chkAvgLattice(latt, frame, .false., nOut)
+    @assertEqual(0_ip, nOut)
+
+    sLambdarPerCell_G = 1.0_wp
+
+  end subroutine testAvgLatticeBand
 
 
   !> Coupling ramps linearly over the 2-period end sections, as the by field does.

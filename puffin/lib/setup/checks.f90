@@ -24,11 +24,13 @@ use particleFunctions, only: iTopHatDistribution_CG, gaussian
 use grids, only: getinttypes
 use ParallelSetUp, only: stopcode
 use mpi, only: MPI_FINALIZE
+use GlobalTypes, only: tLatticeElements, tFELFrame
+use averaging, only: getAvgUndAmps, getAvgPolarisation, getAvgResonanceShift
 
 implicit none (type, external)
 private
 
-public :: checkparameters, chkAveraged
+public :: checkparameters, chkAveraged, chkAvgLattice
 
 
 contains
@@ -495,6 +497,7 @@ end subroutine checkRndEjLens
 !> dtheta/dzbar = (1 - p2)/2rho is slow - is being stretched.  The envelope mesh
 !> can hold roughly +/- 1/(2 lambdarPerCell) of the resonant frequency, so
 !> anything detuned by more than that is outside the band the run can carry.
+!> Every averaged run also gets a warning that the mode is experimental.
 
 subroutine chkAveraged(qResume, nz2, freqf, sSigE, mag, qOK)
 
@@ -573,6 +576,16 @@ subroutine chkAveraged(qResume, nz2, freqf, sSigE, mag, qOK)
   end do
 
   if (.not. tProcInfo_G%qRoot) return
+
+!   The mode itself is experimental: validated against the unaveraged solver
+!   only for the cases in benchmark/averaged/README.md.  Said at every run,
+!   since the source and the manual are not where most users would see it.
+
+  print*, "WARNING: the period-averaged mode (qAveraged) is experimental. It ", &
+          "has been validated against the unaveraged solver only for the ", &
+          "cases in benchmark/averaged/README.md, and its inputs and outputs ", &
+          "may change between versions. Confirm results against an ", &
+          "unaveraged run before relying on them."
 
 !     Warnings.  A beam spread over more than the band, or swinging across it,
 !     has particles the single carrier does not describe well - it does not
@@ -666,6 +679,78 @@ subroutine chkAvgHarmonics(harm, hMax, qOK)
   end do
 
 end subroutine chkAvgHarmonics
+
+
+!> Averaged mode: warn for each undulator module whose resonance leaves the
+!> band the envelope mesh can hold, roughly 1 +/- 1/(2 lambdarPerCell) of the
+!> carrier.  The carrier is fixed by the main-input undulator; a module
+!> detuned through alpha, or tapered, moves its own resonance (that of an
+!> electron at the reference energy, getAvgResonanceShift) off it, and
+!> radiation there is attenuated, then aliased, by the coarse mesh.  The
+!> alpha range is the taper's over the module's main section, as initUndulator
+!> sets it up; the end ramps take alpha to 0 but only switch the coupling on
+!> and off.  Only warns - a seed or the beam can still put the radiation
+!> where the mesh holds it.  Runs after the lattice file is read, which
+!> chkAveraged does not.  nOut is the number of modules warned about.
+
+subroutine chkAvgLattice(lattice, frame, qUndEnds, nOut)
+
+  type(tLatticeElements), intent(in) :: lattice
+  type(tFELFrame), intent(in) :: frame
+  logical, intent(in) :: qUndEnds
+  integer(kind=ip), intent(out) :: nOut
+
+  real(kind=wp) :: band, modLen, alpha0, alpha1, s0, s1, sMax
+  real(kind=wp) :: cx, cy, uMinus, uPlus, fp
+  integer(kind=ip) :: i
+
+  nOut = 0_ip
+
+  if (.not. qAveraged_G) return
+  if (sLambdarPerCell_G <= 0.0_wp) return     ! chkAveraged has rejected it
+
+  band = 0.5_wp / sLambdarPerCell_G
+
+  do i = 1, size(lattice%und_field)
+
+    call getAvgUndAmps(lattice%und_type(i), lattice%und_ux(i), lattice%und_uy(i), &
+                       cx, cy)
+    call getAvgPolarisation(cx, cy, uMinus, uPlus, fp)
+
+    modLen = real(lattice%und_nsteps(i), kind=wp) * lattice%und_delta_z(i)
+    if (qUndEnds) modLen = modLen - 16.0_wp * pi * frame%rho
+
+    alpha0 = lattice%und_field(i)
+    alpha1 = alpha0 + lattice%und_taper(i) * max(modLen, 0.0_wp)
+
+    s0 = getAvgResonanceShift(alpha0, fp, frame)
+    s1 = getAvgResonanceShift(alpha1, fp, frame)
+
+!   The shift falls monotonically with alpha^2, so it is largest at an end of
+!   the taper, or at alpha = 0 if the taper passes through it.
+
+    sMax = max(abs(s0), abs(s1))
+    if (alpha0 * alpha1 < 0.0_wp) sMax = max(sMax, abs(getAvgResonanceShift(0.0_wp, fp, frame)))
+
+    if (sMax > band) then
+
+      nOut = nOut + 1_ip
+
+      if (tProcInfo_G%qRoot) then
+        print*, "WARNING: undulator module ", i, " (alpha ", alpha0, " to ", alpha1, &
+                ") is resonant at ", 1.0_wp + s0, " to ", 1.0_wp + s1, &
+                " of the averaged carrier frequency, outside the band ", &
+                "1 +/- 1/(2 lambdarPerCell) = 1 +/- ", band, " that the ", &
+                "averaged field mesh can hold. Radiation at its own resonance ", &
+                "will be attenuated and aliased. Use lambdarPerCell below ", &
+                0.5_wp / sMax, ", or run unaveraged."
+      end if
+
+    end if
+
+  end do
+
+end subroutine chkAvgLattice
 
 
 

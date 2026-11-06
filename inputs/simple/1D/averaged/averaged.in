@@ -1,6 +1,11 @@
 !
 ! Period-averaged (SVEA) 1D example.  Seeded, planar undulator, no lattice.
 !
+! The averaged mode is EXPERIMENTAL: it has been validated against the
+! unaveraged solver only for the cases in benchmark/averaged/README.md, and
+! its inputs and outputs may change between versions.  Confirm results
+! against an unaveraged run before relying on them.
+!
 ! The options below are the ordinary ones - see any other example in
 ! inputs/simple/ for the full annotated list, or the user manual in $PUFFIN/doc/
 ! - so this header only covers what makes this deck an averaged one.
