@@ -515,7 +515,7 @@ unaveraged at the end:
 | --- | --- | --- | --- | --- |
 | 3D A, f = 0.9, carrier seeded | n48 | 0.951 | 0.951 | 0.995 |
 | 3D B, f = 0.75 own resonance | n48 | 1.107 (0.75 colour ~1.01) | 1.106 | 1.024 |
-| 3D C, taper -0.05 after saturation | n24 | 0.994 | 0.999 | 0.895, at a level of ~0.01 |
+| 3D C, taper -0.05 after saturation | n24 | 0.994 | 0.999 | 1.008, at a level of ~0.01 |
 
 They repeat the 1D picture: the -f image appears in 3D too (8.7% of the field
 energy in 3D B), and the 0.75 colour alone agrees to ~1%. Unlike 1D, the 3D
@@ -540,6 +540,32 @@ falls with the cells per wavelength the averaged run needs: a colour 25% off
 the carrier needs 0.125 wavelengths per cell, 8 cells per wavelength, which
 in 3D, where each cell carries a transverse mesh, leaves only 5x over n48.
 Against n24 the 3D A speed-up is 14x (707 s).
+
+**Helical.** `figures/hel_*.png` and `figures/hel3d_*.png` repeat all six with a
+helical undulator, which radiates no on-axis harmonics, so the unaveraged field
+holds nothing the averaged mode cannot carry. The seed is the amplified
+helicity. Helical couples more strongly and saturates sooner (~75 periods in
+1D, ~105 in 3D), so C runs untapered to there and then applies the same taper
+as its planar counterpart. 3D C keeps the standard mesh (focusing in both
+planes) and is at n48. Averaged / unaveraged at the end, with planar alongside:
+
+| case | peak power | pulse energy | bunching | speed-up | planar peak power |
+| --- | --- | --- | --- | --- | --- |
+| 1D A | 0.992 | 0.993 | 0.952 | 52x | 0.956 |
+| 1D B | 1.068 (0.75 colour 0.955) | 1.067 | 1.000 | 23x | 1.070 (0.967) |
+| 1D C | 0.996 | 0.996 | 0.999 | 38x | 0.998 |
+| 3D A | 0.983 | 0.993 | 0.994 | 53x | 0.951 |
+| 3D B | 1.182 (0.75 colour 1.055) | 1.178 | 1.038 | 9x | 1.107 (1.01) |
+| 3D C | 0.999 | 1.008 | 1.24, at a level of ~0.015 | 53x | 0.994 |
+
+Without harmonics, A closes from 4-5% to under 2% in both 1D and 3D: most of the
+planar A gap was harmonic power the averaged mode does not carry. B does not
+change that way. The -f image is there at the same size (8.8% of the
+averaged field energy in 1D, 7.9% in 3D), and the 0.75 colour is 0.955 in 1D,
+close to planar's 0.967, so that shortfall is not harmonic either. 3D helical B
+is the case that agrees least well, 5.5% high in the colour, and it is not
+traced. The helical runs ran alongside each other (1D one at a time, 3D three
+at once), so the same +/-30% applies to the speed-ups.
 
 ### What this does not show
 

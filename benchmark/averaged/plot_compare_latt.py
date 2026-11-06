@@ -21,8 +21,7 @@ Panels: peak power, pulse energy, beam mean energy and |bunching| along the
 undulator; and at the last dump, power along the pulse, the spectrum of the
 middle 30% of the pulse, and the longitudinal phase space of the middle 30%
 of the beam, both runs overlaid.  Bunching, <gamma> and sigma_gamma are means
-over the middle 30% of the pulse (the flat top), as run_compare_latt.py takes
-them.  SI units throughout, using the datasets
+over the middle 30% of the slices holding beam (the flat top).  SI units throughout, using the datasets
 Puffin writes (powerSI, Lc, Lg), via utilities/pyPlotting/puffin_viz_data.
 Each run's legend entry carries its solver time and MPI ranks, from the
 stdout.txt run_compare_latt.py keeps, and the ratio box the speed-up.  Time
@@ -98,6 +97,19 @@ def fmt_time(secs, ranks):
     return t + ("" if ranks is None else ", %d rank%s" % (ranks, "" if ranks == 1 else "s"))
 
 
+def beam_slices(h):
+    """A reader of a slice dataset restricted to the slices that hold beam.  The z2 mesh can be longer than the beam, so
+    the middle 30% of the whole mesh may take in empty slices, whose mean
+    gamma is written as 0; the beam averages use the middle 30% of these."""
+    cur = h["beamCurrent"][()]
+    occ = cur > 0.5 * cur.max()
+
+    def on(name):           # the slice datasets need not share beamCurrent's mesh
+        n = len(h[name])
+        return h[name][()][occ[np.round(np.linspace(0, len(occ) - 1, n)).astype(int)]]
+    return on
+
+
 def history(d, fold):
     z, ppk, en, g, sg, b = [], [], [], [], [], []
     for f in files(d, "integrated"):
@@ -107,9 +119,10 @@ def history(d, fold):
             z.append(float(a["zTotal"]))
             ppk.append(np.max(smooth(p, window_nodes(a, len(p), fold))))
             en.append(pvd.pulse_energy(p, a))
-            g.append(np.mean(mid(h["meanGamma"][()])))
-            sg.append(np.mean(mid(h["meanSigmaGamma"][()])))
-            b.append(abs(np.mean(mid(h["bunchingFundamental"][()]))))
+            on = beam_slices(h)
+            g.append(np.mean(mid(on("meanGamma"))))
+            sg.append(np.mean(mid(on("meanSigmaGamma"))))
+            b.append(abs(np.mean(mid(on("bunchingFundamental")))))
     return a, [np.array(v) for v in (z, ppk, en, g, sg, b)]
 
 
