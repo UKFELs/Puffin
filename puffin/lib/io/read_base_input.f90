@@ -26,7 +26,7 @@ use Globals, only: nspinDX, nspinDY, iRedNodesX_G, iRedNodesY_G, fieldMesh, sper
   iFieldSeedType_G, iSimpleSeed_G, iReadH5Field_G, TrLdMeth_G, sKBetaXSF_G, sKBetaYSF_G, &
   qUndEnds_G, qhdf5_G, sRedistLen_G, iRedistStp_G, tArrayA, tArrayZ, iWriteNthSteps, cmd_call_G, &
   zBFile_G, zSFile_G, ioutInfo_G, qDiffraction_G, qFilter, qResume, qWrite, qscaled_G, &
-  qInitWrLat_G, qDumpEnd_G, qAveraged_G, sLambdarPerCell_G
+  qInitWrLat_G, qDumpEnd_G, qAveraged_G, sLambdarPerCell_G, iAvgHarmonics_G, nAvgHarmMax_CG
 use MASPin, only: nMPs4MASP_G
 use cwrites, only: qWrArray_G, getwrarray
 use randomGauss, only: setRandomSeed
@@ -273,6 +273,7 @@ subroutine read_in(zfilename, &
   integer(kind=ip) :: iNumNodesX, iNumNodesY, nodesPerLambdar
   real(kind=wp) :: sFModelLengthX, sFModelLengthY, sFModelLengthZ2
   real(kind=wp) :: lambdarPerCell
+  integer(kind=ip) :: avgHarmonics(nAvgHarmMax_CG)
 
   real(kind=wp) :: sKBetaXSF, sKBetaYSF
 
@@ -313,7 +314,8 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  qFMesh_G, sKBetaXSF, sKBetaYSF, sRedistLen, &
                  iRedistStp, qscaled, nspinDX, nspinDY, qInitWrLat, qDumpEnd, &
                  wr_file, qMeasure, DFact, iDumpNthSteps, speout, meshType, &
-                 sPerWaves, ioutInfo, iRandSeed, qAveraged, lambdarPerCell
+                 sPerWaves, ioutInfo, iRandSeed, qAveraged, lambdarPerCell, &
+                 avgHarmonics
 
 
 ! Begin subroutine:
@@ -335,6 +337,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qFilter = .true.
   qAveraged = .false.
   lambdarPerCell = 1.0_wp
+  avgHarmonics = 0_ip
   q_noise = .true.
   qUndEnds = .false.
   qDump = .false.
@@ -428,6 +431,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qUndEnds_G = qUndEnds
   qAveraged_G = qAveraged
   sLambdarPerCell_G = lambdarPerCell
+  iAvgHarmonics_G = avgHarmonics
   qhdf5_G = qhdf5
   qscaled_G = qscaled
   qInitWrLat_G = qInitWrLat

@@ -107,10 +107,11 @@ contains
   logical :: qOKL
 
 ! Averaged mode only - see averaging.f90. sprRes, spiRes hold the resonant
-! momenta q_x, q_y (column per field component), which replace spr, spi
-! wherever the electrons couple to that component. One array for both the
-! source and the energy equation is what keeps the averaged system
-! energy-conserving. sdgamC is one component's share of dGamma/dz.
+! momenta q_x, q_y of every band (column per field component, x and y of the
+! fundamental first, then each harmonic band), which replace spr, spi wherever
+! the electrons couple to that component. One array for both the source and
+! the energy equation is what keeps the averaged system energy-conserving.
+! sdgamC is one component's share of dGamma/dz.
 
   real(kind=wp), allocatable :: sprRes(:,:), spiRes(:,:), sdgamC(:)
   type(tAvgCoupling) :: cpl
@@ -154,7 +155,8 @@ contains
   if (ctx%flags%period_averaged) then
     call getAvgCoupling(sZ, ctx%und, ctx%frame, cpl)
     call getAvgFocusCoef(sZ, ctx%und, ctx%frame, ctx%flags%focusing, foc)
-    allocate(sprRes(iNumberElectrons_G, 2), spiRes(iNumberElectrons_G, 2))
+    allocate(sprRes(iNumberElectrons_G, ctx%field%nEnv), &
+             spiRes(iNumberElectrons_G, ctx%field%nEnv))
     allocate(sdgamC(size(sdgam)))
   end if
 
@@ -171,7 +173,7 @@ contains
     call getP2Avg(sp2, sgam, spr, spi, ctx%frame%eta, ctx%frame%gamma_ref, &
                   ctx%frame%aw, cpl%pqSq)
     call getResonantMomentum(sZ, sz2, sgam, sp2, ctx%frame%eta, ctx%frame%rho, cpl, &
-                             sprRes, spiRes)
+                             sprRes, spiRes, ctx%field%bandHarm)
   else
     call getP2(sp2, sgam, spr, spi, ctx%frame%eta, ctx%frame%gamma_ref, ctx%frame%aw)
   end if
@@ -236,11 +238,11 @@ contains
 
   if (ctx%flags%period_averaged) then
 
-!   Averaged mode drives both Cartesian components, each through its own q_c.
-!   sField4ElecReal/Imag hold one component's field at a time, so the energy
-!   exchange is summed here, component by component, rather than in the
-!   electron block below. Skipped with the coupling off, as zeroing the
-!   gathered field does on the unaveraged path.
+!   Averaged mode drives both Cartesian components of every band, each
+!   through its own q_c. sField4ElecReal/Imag hold one component's field at a
+!   time, so the energy exchange is summed here, component by component,
+!   rather than in the electron block below. Skipped with the coupling off, as
+!   zeroing the gathered field does on the unaveraged path.
 
 !$OMP WORKSHARE
     sdgam = 0.0_wp

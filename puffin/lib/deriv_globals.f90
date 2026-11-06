@@ -22,12 +22,14 @@ private
 public :: ata_G, c, chic_disp, chic_slip, chic_zbar, cmd_call_G, dadz_w, delmz, delta_G, diffStep, &
            drift_zbar, dz2_I_G, enmod_mag, enmod_wavenum, fdispls, ffact, fieldMesh, fillFact_G, &
            frecvs, fx_G, fy_G, gExtEj_G, iCount, iFieldSeedType_G, iGam_CG, iGenHom_G, &
-           iGloNumElectrons_G, iInputType_G, iIntWriteNthSteps, iNodesPerElement_G, &
+           iAvgHarmonics_G, iGloNumElectrons_G, iInputType_G, iIntWriteNthSteps, &
+           iNodesPerElement_G, &
            iNumberElectrons_G, iNumberNodes_G, ioutInfo_G, iPeriodic, iPX_CG, iPY_CG, iReadDist_G, &
            iReadH5_G, iReadH5Field_G, iReadMASP_G, iRedistStp_G, iRedNodesX_G, iRedNodesY_G, &
            iSimpleSeed_G, iStep, iTemporal, iUndEnd_G, iUndMain_G, iUndPlace_G, iUndStart_G, &
            iWriteNthSteps, iX_CG, iY_CG, iZ2_CG, kbnx_arr, kbny_arr, kx_G, kx_und_G, ky_G, &
-           ky_und_G, kz2_loc_G, mf, ModCount, ModNum, NBX_G, NBY_G, NBZ2_G, npk_bar_G, npts_I_G, &
+           ky_und_G, kz2_loc_G, mf, ModCount, ModNum, nAvgHarmMax_CG, NBX_G, NBY_G, NBZ2_G, &
+           npk_bar_G, npts_I_G, &
            nseqparts_G, nspinDX, nspinDY, nSteps, nSteps_arr, ntrnds_G, ntrndsi_G, numOfChics, &
            numOfDrifts, numOfModulations, numOfQuads, numOfUnds, NX_G, NY_G, NZ2_G, outnodex_G, &
            outnodey_G, pi, procelectrons_G, q_e, qDiffraction_G, qDump_G, qDumpEnd_G, &
@@ -399,6 +401,15 @@ logical   ::  qAveraged_G        ! Period-averaged (SVEA) mode? The field
 real(kind=wp) :: sLambdarPerCell_G  ! z2 mesh spacing in resonant wavelengths,
                                     ! averaged mode only (replaces
                                     ! nodesPerLambdar there)
+
+integer(kind=ip), parameter :: nAvgHarmMax_CG = 8_ip
+
+integer(kind=ip) :: iAvgHarmonics_G(nAvgHarmMax_CG) = 0_ip
+                                    ! Odd harmonics carried in averaged mode
+                                    ! as extra field bands, beside the
+                                    ! fundamental (avgHarmonics in the input
+                                    ! file). Zero entries are unused; all
+                                    ! zero, the default, is fundamental only.
 
 
 logical   ::  qDump_G            ! Dump data in case of crash?

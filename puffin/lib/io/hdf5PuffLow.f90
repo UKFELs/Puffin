@@ -142,6 +142,33 @@ contains
   end subroutine addH5IntegerAttribute
 
 
+!> One-dimensional integer array attribute, on its own simple dataspace.
+
+  subroutine addH5IntegerArrayAttribute(locHandle, attrName, attrValue)
+
+    implicit none (type, external)
+
+    integer(HID_T), intent(in) :: locHandle      !< h5 handle of write location
+    character(LEN=*), intent(in) :: attrName     !< attrib name
+    integer(kind=IP), intent(in) :: attrValue(:) !< attrib values
+
+    integer(HID_T) :: attr_id, atype_id, space_id
+    integer(HSIZE_T), dimension(1) :: adims
+    integer :: error
+
+    adims(1) = size(attrValue, kind=HSIZE_T)
+
+    call h5screate_simple_f(1, adims, space_id, error)
+    call h5tcopy_f(H5T_NATIVE_INTEGER, atype_id, error)
+    call h5acreate_f(locHandle, attrName, atype_id, space_id, attr_id, error)
+    call h5awrite_f(attr_id, atype_id, attrValue, adims, error)
+    call h5aclose_f(attr_id, error)
+    call h5tclose_f(atype_id, error)
+    call h5sclose_f(space_id, error)
+
+  end subroutine addH5IntegerArrayAttribute
+
+
 
 !> addH5derivedVariable() add vizschema derived variable
   subroutine addH5derivedVariable(location,varName,expression,error)
@@ -455,6 +482,8 @@ contains
     integer(HID_T), intent(in) :: aspace_id   !< h5 handle of write location
     type(tSimulationContext), intent(in) :: ctx
 
+    integer(kind=ip) :: ic
+
     CALL addH5FloatAttribute(dset_id, "time", simtime, aspace_id)
 
     call addH5FloatAttribute(dset_id, "zbarTotal", simtime, aspace_id)
@@ -516,14 +545,16 @@ contains
 !   kz2Carrier     the carrier the stored field is an envelope about: a field array
 !                  value is A_perp = aperp * exp(i kz2Carrier z2) (times the
 !                  polarisation factor).  Zero unaveraged, where aperp already
-!                  resolves the carrier, so applying it is a no-op there.
+!                  resolves the carrier, so applying it is a no-op there.  The
+!                  fundamental's; a harmonic band's is h times it (see
+!                  fieldCompHarmonic below).
 !   pperpMeaning   whether electron px, py carry the undulator quiver or only their
 !                  slow (betatron) part.
 
     if (ctx%flags%period_averaged) then
       call addH5IntegerAttribute(dset_id, "qAveraged", 1_ip, aspace_id)
       call addH5FloatAttribute(dset_id, "kz2Carrier", &
-                                getAvgCarrierKz2(ctx%frame%rho), aspace_id)
+                                getAvgCarrierKz2(ctx%frame%rho, 1_ip), aspace_id)
       call addH5StringAttribute(dset_id, "pperpMeaning", &
                                 "slow part only, undulator quiver carried analytically", &
                                 aspace_id)
@@ -543,12 +574,34 @@ contains
 !   fieldCompMeaning  what a component is. Unaveraged, one complex pair already
 !                  holds both polarisations as (A_x, -A_y). Averaged, a complex
 !                  pair is the rms envelope B_c of one Cartesian component,
-!                  A_c = sqrt(2) Re[B_c exp(-i z2/2rho)], so there is one
-!                  component per linear axis.
+!                  A_c = sqrt(2) Re[B_c exp(-i h z2/2rho)], so there is one
+!                  component per linear axis and harmonic band.
+!   fieldCompHarmonic  one entry per component: the harmonic h whose carrier
+!                  exp(-i h z2/2rho) that component is an envelope about, so
+!                  its carrier wavenumber is h * kz2Carrier. Averaged, the
+!                  components come in (x, y) pairs, fundamental first:
+!                  1, 1, then 3, 3 and so on for each band avgHarmonics asked
+!                  for. Unaveraged the one entry is 0, a resolved field with
+!                  every harmonic in it.
 
     call addH5IntegerAttribute(dset_id, "nFieldComp", ctx%field%nComp, aspace_id)
 
-    if (ctx%field%nComp > 1_ip) then
+    if (ctx%flags%period_averaged .and. allocated(ctx%field%bandHarm)) then
+      call addH5IntegerArrayAttribute(dset_id, "fieldCompHarmonic", &
+                                      [(ctx%field%bandHarm((ic + 1_ip) / 2_ip), &
+                                        ic = 1_ip, ctx%field%nComp)])
+    else
+      call addH5IntegerArrayAttribute(dset_id, "fieldCompHarmonic", &
+                                      [(0_ip, ic = 1_ip, ctx%field%nComp)])
+    end if
+
+    if (ctx%field%nComp > 2_ip) then
+      call addH5StringAttribute(dset_id, "fieldCompMeaning", &
+                                "rms envelope per Cartesian axis and harmonic band, "// &
+                                "A_c = sqrt(2) Re[B_c exp(-i h z2/2rho)]: (x, y) "// &
+                                "pairs, h per component in fieldCompHarmonic", &
+                                aspace_id)
+    else if (ctx%field%nComp > 1_ip) then
       call addH5StringAttribute(dset_id, "fieldCompMeaning", &
                                 "rms envelope per Cartesian axis, "// &
                                 "A_c = sqrt(2) Re[B_c exp(-i z2/2rho)]: 1 = x, 2 = y", &

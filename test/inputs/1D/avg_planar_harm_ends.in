@@ -1,0 +1,44 @@
+!!!!!!!!!!!!!!  Averaged e2e deck: plane-pole, harmonics 3 and 5  !!!!!!!!!!!!!!
+!!
+!!  avg_planar_ends with the 3rd and 5th harmonic bands switched on
+!!  (avgHarmonics = 3, 5), so the dumps carry six field components: B_x and
+!!  B_y of the fundamental, then of h = 3, then of h = 5. B_y stays exactly
+!!  zero in every band, as plane-pole never drives it; the x components of
+!!  the harmonic bands are driven from zero by the beam alone, since the
+!!  seed is at the fundamental.
+!!
+!!  Same beam and seed as avg_planar_ends: f1main's cold, noise-free beam,
+!!  20 macroparticles per resonant wavelength - more than twice the 5th
+!!  harmonic, so the beam resolves its bunching - rho = 0.01,
+!!  gamma_r = 100, aw = 1, undulator ends.
+!!
+!!  Goldens: see the regeneration note in testMPIIntegrationPolarisation.pf.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+&MDATA
+ qOneD                  = .true.
+ beam_file              = 'inputs/beam_file.in'
+ seed_file              = 'inputs/1D/pol_seed_x.in'
+ q_noise                = .false.
+ qUndEnds               = .true.
+ sElectronThreshold     = 0.05
+ nodesPerLambdar        = 17
+ sFModelLengthZ2        = 4.0
+ srho                   = 0.01
+ sux                    = 1.0
+ suy                    = 1.0
+ saw                    = 1.0
+ sgamma_r               = 100.0
+ lambda_w               = 0.04
+ zundType               = 'planepole'
+ taper                  = 0.0
+ lattFile               = ''
+ stepsPerPeriod         = 4
+ nPeriods               = 6
+ iWriteNthSteps         = 100000
+ iWriteIntNthSteps      = 100000
+ qAveraged              = .true.
+ lambdarPerCell         = 1.0
+ avgHarmonics           = 3, 5
+ /

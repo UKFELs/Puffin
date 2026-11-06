@@ -213,6 +213,7 @@ if (ENABLE_PARALLEL)
     "avg_planar_ends|2|24"
     "avg_helical_ends|2|24"
     "avg_elliptical_ends|2|24"
+    "avg_planar_harm_ends|6|24"
   )
 
   foreach(f pol_seed_circ.in pol_seed_x.in)

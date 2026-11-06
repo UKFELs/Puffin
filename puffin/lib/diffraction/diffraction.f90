@@ -62,7 +62,7 @@ subroutine diffractIM(sStep, &
   type(tSimulationContext), intent(inout) :: ctx
 
   logical :: qOKL
-  integer(kind=ip) :: ic
+  integer(kind=ip) :: ic, iHarm
 
 
   qOK = .false.
@@ -73,13 +73,18 @@ subroutine diffractIM(sStep, &
   call redist2FFTWlt(ctx%field)
 
 
-!    Each field component diffracts independently, under the same operator.
+!    Each field component diffracts independently, under the same operator
+!    except for its carrier: in averaged mode a harmonic band's envelope sits
+!    on exp(-i h z2/2rho), and diffracts at that band's physical wavenumber.
 
   do ic = 1, ctx%field%nComp
 
+    iHarm = 1_ip
+    if (ctx%flags%period_averaged) iHarm = ctx%field%bandHarm((ic + 1_ip) / 2_ip)
+
     CALL DiffractionStep(sStep,&
          ctx%field%tre_fft(:,ic), ctx%field%tim_fft(:,ic),&
-         ctx, qOKL)
+         iHarm, ctx, qOKL)
     if (.not. qOKL) goto 1000
 
   end do
@@ -131,8 +136,8 @@ subroutine multiplyexp(h, kz2Carrier, qOK)
   real(kind=wp), intent(in) :: h
 
 ! Offset from the stored field's z2 wavenumber to the physical one: zero
-! normally, and -1/2rho in averaged mode, where the arrays hold an envelope
-! about the exp(-i z2/2rho) carrier (see getAvgCarrierKz2). Diffraction is
+! normally, and -h/2rho in averaged mode, where the arrays hold an envelope
+! about the exp(-i h z2/2rho) carrier of band h (see getAvgCarrierKz2). Diffraction is
 ! frequency dependent, so it has to act on the physical wavenumber - offsetting
 ! it rather than freezing it at the carrier keeps diffraction correct across
 ! the band, and leaves the envelope's own kz2 = 0 mode diffracting exactly as
@@ -178,9 +183,9 @@ subroutine multiplyexp(h, kz2Carrier, qOK)
 
 !          The high-pass filter's cutoff is defined on the physical wavenumber.
 !          In averaged mode every mode the envelope mesh can hold is within
-!          ~1/(2 lambdarPerCell) of the carrier, far above any sensible sfilt,
-!          so the filter is inert there - which is the right answer, not a
-!          special case: a cut at envelope kz2 = 0 would delete the carrier.
+!          ~1/(2 lambdarPerCell) of its band's carrier, far above any sensible
+!          sfilt, so the filter is inert there - which is the right answer, not
+!          a special case: a cut at envelope kz2 = 0 would delete the carrier.
 
            if ((kz2p>cutoff) .or. (kz2p<-cutoff)) then
 
@@ -232,6 +237,8 @@ end subroutine multiplyexp
 !> @param[in] h Diffraction step size \f$ \Delta \bar{z} \f$
 !> @param[inout] sAr Real part of \f$ A_\bot \f$
 !> @param[inout] sAi Imaginary part of \f$ A_\bot \f$
+!> @param[in] iHarm Harmonic of the band this component belongs to - averaged
+!> mode only, 1 for the fundamental.
 !> @param[out] qOK Error flag.
 !> @param ntrh Number of nodes in transverse mesh = nx * ny
 !> @param ix Counter for mesh nodes in x
@@ -240,7 +247,7 @@ end subroutine multiplyexp
 !> @param qOKL local error flag
 !> @param error Error integer for MPI calls
 
-SUBROUTINE DiffractionStep(h, sAr, sAi, ctx, qOK)
+SUBROUTINE DiffractionStep(h, sAr, sAi, iHarm, ctx, qOK)
 
   IMPLICIT NONE (type, external)
 !
@@ -251,6 +258,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, ctx, qOK)
 
   real(kind=wp), intent(in)      ::   h
   real(kind=wp), dimension(:), intent(inout)  :: sAr, sAi
+  integer(kind=ip), intent(in) :: iHarm
   type(tSimulationContext), intent(inout) :: ctx
   logical, intent(out)  ::  qOK
 
@@ -263,12 +271,12 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, ctx, qOK)
   qOK = .false.
 
 !     In averaged mode the field arrays hold an envelope about the
-!     exp(-i z2/2rho) carrier, so the physical z2 wavenumber of a mode is its
-!     own kz2 plus this offset. Zero otherwise, leaving the unaveraged path
-!     arithmetically identical.
+!     exp(-i h z2/2rho) carrier of their band, so the physical z2 wavenumber of
+!     a mode is its own kz2 plus this offset. Zero otherwise, leaving the
+!     unaveraged path arithmetically identical.
 
   kz2Carrier = 0.0_wp
-  if (ctx%flags%period_averaged) kz2Carrier = getAvgCarrierKz2(ctx%frame%rho)
+  if (ctx%flags%period_averaged) kz2Carrier = getAvgCarrierKz2(ctx%frame%rho, iHarm)
 
 !     Allocate arrays and get distributed FT of field.
 !     Transforming from A(x,y,z2,zbar) to A(kx,ky,kz2,zbar)
@@ -451,7 +459,7 @@ SUBROUTINE AbsorptionStep(sAl,h,kz2Carrier,ffact)
   REAL(KIND=WP), INTENT(IN) :: h,ffact
 
 ! Offset from the stored field's z2 wavenumber to the physical one - zero
-! normally, -1/2rho in averaged mode. See multiplyexp.
+! normally, -h/2rho for band h in averaged mode. See multiplyexp.
 
   REAL(KIND=WP), INTENT(IN) :: kz2Carrier
 
