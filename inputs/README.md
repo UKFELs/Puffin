@@ -7,6 +7,11 @@ These subdirectories contain example input decks in the simple format (in subdir
 
 ### Period-averaged (SVEA) mode
 
+> **Experimental.** The averaged mode has been validated against the
+> unaveraged solver only for the cases in `benchmark/averaged/README.md`, and
+> its inputs and outputs may change between versions. Confirm results against
+> an unaveraged run before relying on them.
+
 `simple/1D/averaged/` and `simple/3D/averaged/` are starting points for a
 period-averaged run — the field integrated as a slowly varying envelope about
 the resonant carrier, so that neither the z2 mesh nor the step has to resolve

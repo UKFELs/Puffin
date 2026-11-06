@@ -2,6 +2,11 @@
 ! Period-averaged (SVEA) 3D example.  Seeded, helical undulator, diffraction
 ! on, beam matched to the undulator's natural focusing, no lattice.
 !
+! The averaged mode is EXPERIMENTAL: it has been validated against the
+! unaveraged solver only for the cases in benchmark/averaged/README.md, and
+! its inputs and outputs may change between versions.  Confirm results
+! against an unaveraged run before relying on them.
+!
 ! See inputs/simple/1D/averaged/averaged.in for what qAveraged and
 ! lambdarPerCell do and what the mode refuses at setup; this header covers only
 ! what is different in 3D.  The ordinary options are annotated in any other
