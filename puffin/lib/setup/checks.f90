@@ -17,7 +17,7 @@ use IO, only: tErrorLog_G, log_error
 use puffin_constants, only: pi, iX_CG, iY_CG, iZ2_CG, iPX_CG, iPY_CG, iGam_CG, &
   iDiffraction_CG, iFocussing_CG, iOneD_CG, iResume_CG
 use Globals, only: qRndFj_G, sSigFj_G, qRndEj_G, sSigEj_G, gExtEj_G, sStepSize, nSteps, &
-                   qAveraged_G, sLambdarPerCell_G, iShapeOrder_G, iInputType_G, iReadH5_G, &
+                   qAveraged_G, sLambdarPerCell_G, iShapeOrder_G, qQuiverSplit_G, iInputType_G, iReadH5_G, &
                    iReadMASP_G, iFieldSeedType_G, iReadH5Field_G, fieldMesh, iPeriodic, &
                    iAvgHarmonics_G
 use puffin_mpiInfo, only: tProcInfo_G
@@ -568,6 +568,15 @@ subroutine chkAveraged(qResume, nz2, freqf, sSigE, mag, qOK)
                    "the source in space, and that has only been characterised "// &
                    "against a mesh resolving the carrier, not against the "// &
                    "coarse envelope mesh. Use iShapeOrder = 1 here.", tErrorLog_G)
+    qOK = .false.
+  end if
+
+  if (qQuiverSplit_G) then
+    call log_error("Averaged mode (qAveraged) does not support qQuiverSplit: "// &
+                   "the averaged pperp already holds only its slow part, with "// &
+                   "the quiver carried analytically, so splitting the quiver "// &
+                   "out again would remove it twice. Set qQuiverSplit = .false.", &
+                   tErrorLog_G)
     qOK = .false.
   end if
 

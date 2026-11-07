@@ -920,6 +920,10 @@ Rejected outright:
 
 \item {\bf avgHarmonics holding anything but distinct odd harmonics of 3 or more}: an even harmonic (no on-axis coupling to carry), $1$ (the fundamental is always carried) or anything below it, or the same harmonic twice. And {\bf avgHarmonics} set without {\bf qAveraged}: the unaveraged solver resolves harmonics on its mesh already.
 
+\item {\bf A higher-order deposition kernel} ({\bf iShapeOrder} $> 1$). The kernel filters the source in space, and that has only been characterised against a mesh that resolves the carrier, not against the coarse envelope mesh.
+
+\item {\bf The split quiver integrator} ({\bf qQuiverSplit}). The averaged $\bar{p}_\bot$ already holds only its slow part, with the quiver carried analytically, so splitting the quiver out again would remove it twice.
+
 \end{itemize}
 
 Warned about, but allowed to run:
@@ -1294,6 +1298,7 @@ Logical turning on/off the filtering of low frequency content during the siffrac
 {\bf qAveraged}
 
 Logical turning on/off the period-averaged (SVEA) solver mode, described in Section~\ref{puff-avg}. {\bf Experimental:} see that section before relying on its results. When {\bf .true.}, the field mesh holds the slowly varying envelope of the radiation about the resonant carrier rather than the resolved field, and the electron equations are averaged over an undulator period, with the quiver carried analytically. The mesh no longer has to resolve the resonant wavelength, and is set by {\bf lambdarPerCell}; the step no longer has to resolve the undulator period either, and {\bf stepsPerPeriod} $=1$ or $2$ is usually enough. It is an opt-in alternative to the unaveraged solver for regimes where averaging is valid: it discards coherent spontaneous emission from sharp current gradients, bandwidth beyond the envelope mesh's roughly $\pm 1/(2\times${\bf lambdarPerCell}$)$ of the resonant frequency, harmonics other than the odd ones asked for with {\bf avgHarmonics}, and electrons far from resonance, for which the ponderomotive phase is no longer slow. Detuned lattice modules, two-colour cases and strongly tapered undulators are limited by the band and by these electrons; see Section~\ref{puff-avg-latt}. 1D and 3D, for any undulator polarisation; the undulator ends, if modelled, only ramp the coupling. Several inputs are rejected or warned about at setup in this mode, including HDF5 and MASP macroparticle input, HDF5 field input and {\bf qResume} - see Section~\ref{puff-avg-refuses} for the full list and the reasons. [.false.]
+
 {\bf qQuiverSplit}
 
 Logical turning on/off the split (Lawson-type) integrator for the transverse momentum. When {\bf .true.}, the undulator quiver is removed from $\bar{p}_\bot$ before each Runge-Kutta step and added back analytically at each stage, so that only the slow remainder is integrated numerically and the quiver carries no truncation error. The physics is unchanged - it is the same system of equations, integrated differently - so results differ from the unsplit scheme only at the level of the truncation error, and converge to the same solution.
