@@ -17,9 +17,9 @@ use IO, only: tErrorLog_G, log_error
 use puffin_constants, only: pi, iX_CG, iY_CG, iZ2_CG, iPX_CG, iPY_CG, iGam_CG, &
   iDiffraction_CG, iFocussing_CG, iOneD_CG, iResume_CG
 use Globals, only: qRndFj_G, sSigFj_G, qRndEj_G, sSigEj_G, gExtEj_G, sStepSize, nSteps, &
-                   qAveraged_G, sLambdarPerCell_G, iShapeOrder_G, qQuiverSplit_G, iInputType_G, iReadH5_G, &
-                   iReadMASP_G, iFieldSeedType_G, iReadH5Field_G, fieldMesh, iPeriodic, &
-                   iAvgHarmonics_G
+                   qAveraged_G, sLambdarPerCell_G, iShapeOrder_G, qQuiverSplit_G, &
+                   iInputType_G, iReadH5_G, iReadMASP_G, iFieldSeedType_G, iReadH5Field_G, &
+                   fieldMesh, iPeriodic, iAvgHarmonics_G
 use puffin_mpiInfo, only: tProcInfo_G
 use particleFunctions, only: iTopHatDistribution_CG, gaussian
 use grids, only: getinttypes
