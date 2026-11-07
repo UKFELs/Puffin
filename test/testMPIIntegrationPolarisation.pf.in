@@ -2,17 +2,19 @@
 !!
 !! The other e2e goldens are a 'puffin' (1, 1) undulator with no ends
 !! (f1main) and plane-pole with ends (osc_taper, clara), all unaveraged. These
-!! five small 1D decks add what those never reach:
+!! six small 1D decks add what those never reach:
 !!
-!!   pol_helical_ends     'helical' type, unaveraged
-!!   pol_elliptical_ends  'puffin' type at sux = 0.5, suy = 1, unaveraged
-!!   avg_planar_ends      plane-pole, averaged mode
-!!   avg_helical_ends     helical, averaged mode
-!!   avg_elliptical_ends  elliptical, averaged mode
+!!   pol_helical_ends      'helical' type, unaveraged
+!!   pol_elliptical_ends   'puffin' type at sux = 0.5, suy = 1, unaveraged
+!!   avg_planar_ends       plane-pole, averaged mode
+!!   avg_helical_ends      helical, averaged mode
+!!   avg_elliptical_ends   elliptical, averaged mode
+!!   avg_planar_harm_ends  plane-pole, averaged mode with the 3rd and 5th
+!!                         harmonic bands (avgHarmonics = 3, 5)
 !!
 !! all with undulator ends, so the bx and by entry and exit ramps of each field
 !! branch are in the golden too. Averaged dumps carry two field components,
-!! B_x and B_y, and both are compared.
+!! B_x and B_y, per band, six with the harmonics, and all are compared.
 !!
 !! Every deck uses f1main's cold, noise-free beam, so nothing draws from the
 !! compiler's RNG, and runs 6 periods (0.75 gain lengths) from a seed.

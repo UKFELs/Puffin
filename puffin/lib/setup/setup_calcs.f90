@@ -30,7 +30,7 @@ USE Globals, only: NX_G, NBX_G, NY_G, NBY_G, NZ2_G, NBZ2_G, ntrnds_G, ntrndsi_G,
   sKBetaYSF_G, mf, diffStep, sStepSize, nSteps, sRedistLen_G, iRedistStp_G, tArrayE, tArrayA, &
   tArrayZ, ioutInfo_G, qElectronsEvolve_G, qFieldEvolve_G, qElectronFieldCoupling_G, &
   qDiffraction_G, qFocussing_G, qDump_G, qResume_G, qMod_G, qOneD_G, qAveraged_G, &
-  sLambdarPerCell_G
+  sLambdarPerCell_G, iAvgHarmonics_G
 USE simple_electron_gen, only: generate_simple_beam, shuntbeam
 USE gMPsFromDists, only: getmps
 use avwrite, only: getcurrnpts, linspace
@@ -1019,6 +1019,29 @@ subroutine calcSamples(sFieldModelLength, iNumNodes, sLengthOfElm, &
 
     end do
 
+!   Averaged mode's harmonic bands are driven by the beam's bunching at h, and
+!   a beam laid with N macroparticles per wavelength aliases harmonic h onto
+!   h mod N: at N = 4 the 3rd and 5th read the fundamental's bunching back.
+!   Above 2h per wavelength the beam resolves it.  The unaveraged solver needs
+!   the same of its beam to radiate the harmonics, but nothing there asks for
+!   them by name.
+
+    if (qAveraged_G .and. (tProcInfo_G%qRoot)) then
+
+      do ib = 1, size(sGamFrac)
+
+        if (real(iNumElectrons(ib,iZ2_CG), kind=wp) * slamr / sLenEPulse(ib,iZ2_CG) &
+            <= 2.0_wp * real(maxval(iAvgHarmonics_G), kind=wp)) then
+          print*, "WARNING: beam ", ib, " has too few macroparticles per ", &
+                  "resonant wavelength in z2 for harmonic", maxval(iAvgHarmonics_G), &
+                  "(avgHarmonics) - it needs more than twice the harmonic, or ", &
+                  "the band is driven by the aliased fundamental. Raise iMPsZ2PerWave."
+        end if
+
+      end do
+
+    end if
+
     deallocate(minENum, minESample)
 
 
@@ -1361,9 +1384,11 @@ subroutine getPaSeeds(NN,sigs,cens,magxs,magys,qFTs,rho,&
   integer(kind=ip) :: ic
 
 !  One pass per field component: the single resolved A_perp unaveraged, the
-!  x and y envelopes averaged (getSeed lays the one it is asked for).
+!  x and y envelopes averaged (getSeed lays the one it is asked for).  Seeds
+!  are at the fundamental, so averaged mode's harmonic bands, components 3
+!  onwards, keep the zero they were allocated with.
 
-  do ic = 1, field%nComp
+  do ic = 1, min(field%nComp, 2_ip)
 
 !  1st gen front seed if present
 
