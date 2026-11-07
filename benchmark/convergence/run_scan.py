@@ -9,12 +9,29 @@ HDF5 dump with `h5dump -b LE`, which writes the raw little-endian doubles.
 Usage:  python3 run_scan.py <undulator-type> <ref-steps> <steps> [<steps> ...]
 
 Environment:
-  SCAN_NODES  nodesPerLambdar to use instead of the deck's 12
-  SCAN_ORDER  iShapeOrder: 1 linear (default), 2 quadratic, 3 cubic
-  PUFFIN      path to the puffin binary, if not the in-tree build
+  SCAN_NODES   nodesPerLambdar to use instead of the deck's
+  SCAN_ORDER   iShapeOrder: 1 linear (default), 2 quadratic, 3 cubic
+  SCAN_SPLIT   "both" (default) runs every step count unsplit and split;
+               "off" unsplit only, "on" split only
+  SCAN_DECK    the deck to scan instead of scan.in, e.g. the 3D e2e deck
+               test/inputs/3D/clara_test.in
+  SCAN_INPUTS  a directory whose entries are linked into every run directory,
+               for the files the deck reads [this directory: beam_file.in,
+               seed_file.in].  For the 3D deck, test/, which holds inputs/3D/.
+  SCAN_RUNS    where the run directories go [runs/ here]
+  SCAN_WRITE   write the field, beam and integrated data every this many
+               undulator periods, for plotting; off by default, when only the
+               start and the end are written.  Writes do not change the result.
+  SCAN_JSON    also write the results to this file, for plot_convergence.py
+  PUFFIN       path to the puffin binary, if not the in-tree build
+
+The undulator type argument replaces the deck's zundType.
+Each run directory keeps Puffin's stdout as stdout.txt, headed by the mpirun
+line, which is what ../averaged/plot_compare_latt.py reads solver times from.
 """
 
 import array
+import json
 import math
 import os
 import re
@@ -29,18 +46,27 @@ PUFFIN = os.environ.get(
 
 NODES_PER_LAMBDAR = os.environ.get("SCAN_NODES")
 SHAPE_ORDER = int(os.environ.get("SCAN_ORDER", "1"))
+SPLIT = os.environ.get("SCAN_SPLIT", "both")
+DECK = os.path.abspath(os.environ.get("SCAN_DECK", os.path.join(HERE, "scan.in")))
+INPUTS = os.path.abspath(os.environ.get("SCAN_INPUTS", HERE))
+RUNS = os.path.abspath(os.environ.get("SCAN_RUNS", os.path.join(HERE, "runs")))
+WRITE_PERIODS = os.environ.get("SCAN_WRITE")
+JSON_OUT = os.environ.get("SCAN_JSON")
 
 KERNEL_NAME = {1: "linear", 2: "quadratic", 3: "cubic"}
 
 
 def write_deck(path, und_type, steps, split, order):
-    with open(os.path.join(HERE, "scan.in")) as fh:
+    with open(DECK) as fh:
         text = fh.read()
     if NODES_PER_LAMBDAR:
         text = re.sub(r"nodesPerLambdar\s*=\s*\d+",
                       "nodesPerLambdar        = %s" % NODES_PER_LAMBDAR, text)
     text = re.sub(r"zundType\s*=\s*'[^']*'", "zundType               = '%s'" % und_type, text)
     text = re.sub(r"stepsPerPeriod\s*=\s*\d+", "stepsPerPeriod         = %d" % steps, text)
+    every = steps * int(WRITE_PERIODS) if WRITE_PERIODS else 1000000
+    for key in ("iWriteNthSteps", "iWriteIntNthSteps"):
+        text = re.sub(r"\b%s\s*=\s*\d+" % key, "%-22s = %d" % (key, every), text)
     text = text.replace(
         "&MDATA\n",
         "&MDATA\n qQuiverSplit           = .%s.\n iShapeOrder            = %d\n"
@@ -52,17 +78,24 @@ def write_deck(path, und_type, steps, split, order):
 def run(tag, und_type, steps, split=False, order=1, nproc=1):
     # Under runs/, not HERE: a "run_*" directory alongside the script makes
     # rm -rf run_* eat run_scan.py itself. It has happened twice.
-    workdir = os.path.join(HERE, "runs", tag)
+    workdir = os.path.join(RUNS, tag)
     shutil.rmtree(workdir, ignore_errors=True)
     os.makedirs(workdir)
-    for f in ("beam_file.in", "seed_file.in"):
-        shutil.copy(os.path.join(HERE, f), workdir)
+    if INPUTS == HERE:
+        for f in ("beam_file.in", "seed_file.in"):
+            shutil.copy(os.path.join(HERE, f), workdir)
+    else:
+        for f in os.listdir(INPUTS):
+            os.symlink(os.path.join(INPUTS, f), os.path.join(workdir, f))
     write_deck(os.path.join(workdir, "run.in"), und_type, steps, split, order)
 
     env = dict(os.environ, OMP_NUM_THREADS="1")
-    proc = subprocess.run(["mpirun", "-np", str(nproc), PUFFIN, "run.in"],
-                          cwd=workdir, env=env,
+    cmd = ["mpirun", "-np", str(nproc), PUFFIN, "run.in"]
+    proc = subprocess.run(cmd, cwd=workdir, env=env,
                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    with open(os.path.join(workdir, "stdout.txt"), "w") as fh:
+        fh.write("# " + " ".join(cmd) + "\n")
+        fh.write(proc.stdout.decode(errors="replace"))
     if proc.returncode != 0:
         sys.stderr.write(proc.stdout.decode(errors="replace")[-2000:])
         raise SystemExit("puffin failed for %s steps=%d order=%d"
@@ -116,7 +149,9 @@ def main():
 
     order = SHAPE_ORDER
     kern = KERNEL_NAME.get(order, str(order))
-    nodes = NODES_PER_LAMBDAR or "12"
+    with open(DECK) as fh:
+        deck_nodes = re.search(r"nodesPerLambdar\s*=\s*(\d+)", fh.read()).group(1)
+    nodes = NODES_PER_LAMBDAR or deck_nodes
 
     print("  kernel: %s (iShapeOrder=%d), nodesPerLambdar=%s"
           % (kern, order, nodes), flush=True)
@@ -130,7 +165,8 @@ def main():
           % (kern, ref_steps, secs), flush=True)
 
     rows = []
-    for split in (False, True):
+    splits = {"both": (False, True), "off": (False,), "on": (True,)}[SPLIT]
+    for split in splits:
         for s in steps:
             tag = "%s_%d_o%d_%s" % (und_type, s, order, "split" if split else "plain")
             wd, secs = run(tag, und_type, s, split=split, order=order)
@@ -149,12 +185,22 @@ def main():
     print("  " + "-" * 88)
     plain = dict((s, (e, d, t)) for sp, s, e, d, t in rows if not sp)
     split = dict((s, (e, d, t)) for sp, s, e, d, t in rows if sp)
+    nan = (float("nan"), float("nan"), float("nan"))
     for s in steps:
-        pe = plain[s][0]
-        se = split[s][0]
+        pe = plain.get(s, nan)[0]
+        se = split.get(s, nan)[0]
         print("  %-10s  %-9d  %-10.2f  %-12.4e  %-12.4e  %-12s  %6.2f" %
               (und_type, s, float(nodes) / s, pe, se,
-               ("%.1fx" % (pe / se)) if se > 0 else "-", split[s][2]))
+               ("%.1fx" % (pe / se)) if se > 0 else "-",
+               split.get(s, plain.get(s, nan))[2]))
+
+    if JSON_OUT:
+        with open(JSON_OUT, "w") as fh:
+            json.dump({"und": und_type, "order": order, "nodes": float(nodes),
+                       "deck": os.path.basename(DECK), "ref_steps": ref_steps,
+                       "runs": [{"split": sp, "steps": s, "err": e, "energy_err": d,
+                                 "secs": t} for sp, s, e, d, t in rows]},
+                      fh, indent=1)
 
 
 if __name__ == "__main__":
