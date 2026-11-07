@@ -32,7 +32,31 @@ else. The physical parameters are those of the 1D CLARA deck (rho = 0.005,
 lambda_w = 27.5 mm, gamma_r = 456.4).
 
 Needs `mpirun` and `h5dump`; standard library Python only. `PUFFIN=<path>`
-overrides which binary is run; the default is the in-tree `build/`.
+overrides which binary is run; the default is the in-tree `build/`. Further
+`SCAN_*` variables, listed at the top of the script, pick the deck (the 3D one
+below is `SCAN_DECK=test/inputs/3D/clara_test.in SCAN_INPUTS=test`), the split
+setting, where the runs go, a dump every N periods, and a JSON copy of the
+results.
+
+## Figures
+
+`figures/make_figures.sh SCANS` runs every scan the figures need, all at once,
+and draws them; `plot_convergence.py` draws the first, and
+`../averaged/plot_compare_latt.py` - the averaged-mode overlay plotter, which
+takes `--labels` and `--ratio` to compare any two runs - the other three.
+
+- [`figures/convergence.png`](figures/convergence.png): error against steps per
+  period for every kernel, split and unsplit, in 1D planar, 1D helical and 3D;
+  the observed order against the kernel's degree; the cells-per-step collapse
+  and where it breaks; and what the split is worth. Sections 1 to 4 in one
+  picture.
+- [`figures/overlay_linear.png`](figures/overlay_linear.png) and
+  [`figures/overlay_cubic_split.png`](figures/overlay_cubic_split.png): power,
+  energy, bunching, profile, spectrum and phase space for the shipped default
+  and for cubic + split, each at 30 and 12 steps/period against its own
+  240-step reference - what the error numbers look like in the observables.
+- [`figures/overlay_kernels.png`](figures/overlay_kernels.png): linear against
+  cubic, both converged in the step - the kernel's form factor of section 6.
 
 ## How the error is measured
 
@@ -111,7 +135,7 @@ deposition, not the quiver" was drawn from the split column alone, where that is
 true; for a default run, both matter about equally.
 
 **The kernel's continuity class shows up directly as the observed order of
-convergence.** Fitting `error ~ (1/steps)^p` over 12 to 20 steps/period, with
+convergence.** Taking `error ~ (1/steps)^p` as the slope from 12 to 20 steps/period, with
 `qQuiverSplit` on, at `nodesPerLambdar = 12`:
 
 | kernel | continuity | observed p |
@@ -126,8 +150,8 @@ steeper still, 5.7 to 7.6, so this is not a single clean power law over the whol
 range — the numbers above are the coarse-step slope, which is the regime that
 matters for choosing a step.)
 
-**The cells-per-step collapse is an artefact of the C0 kernel, and it breaks.**
-Same runs, split column, all three kernels:
+**Cells per step stays the main variable for every kernel, with the mesh a
+smaller second one.** Same runs, split column, all three kernels:
 
 | cells/step | 0.4 | 0.6 | 0.8 | 1.0 | 1.2 | 2.0 |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -135,10 +159,25 @@ Same runs, split column, all three kernels:
 | quadratic | 9.4e-5 | 2.1e-3 | 4.3e-4 | 8.4e-3 | 1.3e-2 | 1.4e-1 |
 | cubic | 2.1e-5 | 4.7e-4 | 8.7e-5 | 3.8e-3 | 5.8e-3 | 1.1e-1 |
 
-The linear row is monotonic in cells/step; the cubic row is not — 0.6 cells/step
-(12 nodes, 20 steps) is *worse* than 0.8 (24 nodes, 30 steps). With the cubic
-kernel the error is governed mainly by the step, as an ODE integrator's error
-should be, and the mesh density is a second-order effect.
+An earlier version of this section said the linear row was monotonic in
+cells/step and the cubic row was not, and that a smoother kernel hands control
+of the error from the mesh to the step. The table does not bear that out: 0.6
+cells/step is worse than 0.8 in every row, linear included, because every 0.6
+entry is a 12-node run at 20 steps/period and every 0.8 entry a 24-node run.
+The denser scans behind [`figures/convergence.png`](figures/convergence.png)
+separate the two meshes. At the same cells/step the 24-node mesh has less
+error than the 12-node one by:
+
+| cells/step | 0.4 | 0.6 | 1.0 | 1.2 |
+| --- | --- | --- | --- | --- |
+| linear | 1.4x | 2.9x | 2.1x | 2.0x |
+| quadratic | 1.3x | 3.4x | 2.6x | 2.1x |
+| cubic | 2.4x | 3.8x | 3.4x | 2.3x |
+
+So the mesh matters a little more with the smoother kernel, not categorically
+differently, and for all three kernels the error is set mostly by cells per
+step. Part of the 12-node shortfall at 0.6 is the split integrator's bump
+between 12 and 20 steps/period, described in section 3.
 
 **But the floor only moves where the step resolves the crossing.** Answering the
 question the kernel was built to answer:
@@ -167,6 +206,20 @@ worth what it should be. Error reduction from turning `qQuiverSplit` on, at
 | 12 | 3.4x | 19x | 33x | 1591x |
 | 20 | 1.4x | 20x | 6.4x | 405x |
 | 30 | 2.1x | 88x | 3.3x | 393x |
+
+**The split's error is not monotonic in the step.** The denser scan in
+[`figures/convergence.png`](figures/convergence.png) (10 to 60 steps/period,
+every kernel) shows a bump between 12 and 20. On planepole 16 steps/period is
+more accurate than 20 for every kernel (cubic: 4.0e-4 against 4.7e-4). On
+helical 14 and 16 are 3-6x *less* accurate than either 12 or 20 (cubic: 3.3e-4
+and 4.2e-4, against 6.5e-5 at 12 and 3.4e-5 at 20). The unsplit runs show no
+such feature, and it sits at the same step counts whatever the kernel, so it
+belongs to the split integrator, not to the deposition. Its cause is not yet
+understood. Two consequences for the numbers here: the ratios in the table above
+depend on which step counts are picked (helical cubic is worth 1591x at 12 but
+78x at 16), and the observed orders in section 2 are two-point slopes from 12 to
+20, which a fit through 14 and 16 would not reproduce. They are not quoted for
+helical.
 
 ### 4. In 3D, where it matters more
 
