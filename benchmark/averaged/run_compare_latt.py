@@ -5,7 +5,8 @@ Usage:
   python3 run_compare_latt.py <helical|planepole|UX,UY>
         [--latt "UN NW ALPHA TAPER; DR NW; ..."]  [--nperiods N] [--taper T]
         [--seed AX,AY] [--seed2 F:AX,AY] [--z2len L]
-        [--plain NODES:STEPS ...] [--avg CELLS:STEPS ...] [--every K]
+        [--plain NODES:STEPS ...] [--avg CELLS:STEPS[:H,H] ...] [--every K]
+        [--mpw N] [--fieldevery K]
         [--3d [--blen L] [--np N]] [--set NAME=VALUE ...]
 
   --latt SPEC      a lattice, elements separated by ';'.  'UN NW ALPHA TAPER'
@@ -22,7 +23,16 @@ Usage:
   --z2len L        sFModelLengthZ2 [deck.in's 60].  A red-detuned module
                    slips the beam 1/f wavelengths per period, so a long one
                    needs a longer mesh.
-  --plain, --avg   as run_compare.py [defaults 24:60 48:120 and 1:2].
+  --plain, --avg   as run_compare.py [defaults 24:60 48:120 and 1:2].  An
+                   --avg run's optional third field is its avgHarmonics,
+                   e.g. 1:2:3,5.
+  --mpw N          iMPsZ2PerWave for every run [the beam file's: 4 in 1D, 8
+                   in 3D].  A harmonic band h needs more than 2h, in both
+                   solvers: below that the beam aliases harmonic h.
+  --fieldevery K   write /aperp every K undulator periods [first and last
+                   only], for the harmonic table and plot_compare_latt.py's
+                   harmonic panels.  1D only in practice: a 3D unaveraged
+                   dump is hundreds of MB.
   --every K        print every Kth period's write in the table [default 10].
   --3d             run on deck3d.in / beam_file3d.in / seed_file3d.in instead
                    (diffraction, a matched beam; seed amplitude 0.001).  Only
@@ -36,7 +46,8 @@ Usage:
 
 Each --plain run is compared with each --avg run, write by write, on the
 flat-top mean (middle 30% of the mesh) of /power, |/bunchingFundamental| and
-/meanGamma, and at the last write on the spectral centre of the middle 30% of
+/meanGamma, and, in 1D, on each harmonic band's mid-bunch power at every
+/aperp write (compare.harmonic_power), and at the last write on the spectral centre of the middle 30% of
 the field and, with --seed2, the power in each colour.  Every --avg run is
 compared, so a band-edge scan over lambdarPerCell shares the unaveraged runs.
 The spectra are taken from the fields themselves, not from compare.py's
@@ -53,7 +64,7 @@ import shutil
 import subprocess
 import sys
 
-from compare import attr, field_comps, last_index, read_ds
+from compare import attr, field_comps, harmonic_power, last_index, print_harmonics, read_ds
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PUFFIN = os.environ.get("PUFFIN",
@@ -121,7 +132,7 @@ def lattice_lines(spec, und, steps):
     return "\n".join(out) + "\n"
 
 
-def run(tag, und, opts, averaged, mesh, steps):
+def run(tag, und, opts, averaged, mesh, steps, harm=""):
     workdir = os.path.join(HERE, "run_%s" % tag)
     shutil.rmtree(workdir, ignore_errors=True)
     os.makedirs(workdir)
@@ -130,6 +141,8 @@ def run(tag, und, opts, averaged, mesh, steps):
         beam = fh.read()
     if opts["blen"]:
         beam = re.sub(r"(?m)^(sLenE\s*=\s*[^,]*,[^,]*,\s*)[^,]*", r"\g<1>%s" % opts["blen"], beam)
+    if opts["mpw"]:
+        beam = sub(beam, "iMPsZ2PerWave", opts["mpw"])
     with open(os.path.join(workdir, "beam_file.in"), "w") as fh:
         fh.write(beam)
 
@@ -161,6 +174,8 @@ def run(tag, und, opts, averaged, mesh, steps):
         deck = sub(deck, "zundType", "'%s'" % und)
     deck = sub(deck, "stepsPerPeriod", steps)
     deck = sub(deck, "iWriteIntNthSteps", steps)     # one integrated write per period
+    if opts["fieldevery"]:
+        deck = sub(deck, "iWriteNthSteps", int(opts["fieldevery"]) * int(steps))
     deck = sub(deck, "nPeriods", opts["nperiods"])
     deck = sub(deck, "taper", opts["taper"])
     deck = sub(deck, "sFModelLengthZ2", opts["z2len"])
@@ -172,6 +187,8 @@ def run(tag, und, opts, averaged, mesh, steps):
         deck = sub(deck, "lattFile", "'run.latt'")
     if averaged:
         mode = " qAveraged = .true.\n lambdarPerCell = %s\n" % mesh
+        if harm:
+            mode += " avgHarmonics = %s\n" % harm
     else:
         deck = sub(deck, "nodesPerLambdar", mesh)
         mode = " qAveraged = .false.\n"
@@ -249,11 +266,13 @@ def main():
     args = sys.argv[1:]
     und = args.pop(0)
     opts = {"latt": "", "nperiods": "60", "taper": "0.0", "seed2": None, "z2len": "60.0",
-            "seed": None, "3d": False, "blen": None, "np": "1", "set": []}
+            "seed": None, "3d": False, "blen": None, "np": "1", "set": [],
+            "mpw": None, "fieldevery": None}
     plains, avgs, which, every = [], [], None, 10
     while args:
         a = args.pop(0)
-        if a in ("--latt", "--nperiods", "--taper", "--z2len", "--blen", "--np"):
+        if a in ("--latt", "--nperiods", "--taper", "--z2len", "--blen", "--np", "--mpw",
+                 "--fieldevery"):
             opts[a[2:]] = args.pop(0)
         elif a == "--3d":
             opts["3d"] = True
@@ -285,6 +304,8 @@ def main():
     if opts["3d"]:
         tag = "3d_%s_b%s%s" % (tag[-80:], opts["blen"] or "",
                                "".join("_%s%s" % nv for nv in opts["set"]))
+    if opts["mpw"]:
+        tag += "_mpw%s" % opts["mpw"]
 
     if opts["seed2"]:
         f2 = float(opts["seed2"][0])
@@ -301,20 +322,24 @@ def main():
         return sum(s) - two, two
 
     avg_runs = []
-    for cells, steps in avgs:
-        d, secs, warned = run("L_%s_avg_c%s_s%s" % (tag, cells, steps), und, opts, True,
-                              cells, steps)
-        print("averaged lambdarPerCell=%s steps=%s  %.1f s%s"
-              % (cells, steps, secs, "  [band WARNING printed]" if warned else ""))
-        avg_runs.append(("c%s s%s" % (cells, steps), history(d),
-                         None if opts["3d"] else spectrum(d, True, freqs)))
+    for av in avgs:
+        cells, steps, harm = (tuple(av) + ("",))[:3]
+        hs = "_h" + harm.replace(",", "_") if harm else ""
+        d, secs, warned = run("L_%s_avg_c%s_s%s%s" % (tag, cells, steps, hs), und, opts, True,
+                              cells, steps, harm)
+        name = "c%s s%s%s" % (cells, steps, " h%s" % harm if harm else "")
+        print("averaged lambdarPerCell=%s steps=%s%s  %.1f s%s"
+              % (cells, steps, " avgHarmonics=%s" % harm if harm else "", secs,
+                 "  [band WARNING printed]" if warned else ""))
+        avg_runs.append((name, history(d),
+                         None if opts["3d"] else spectrum(d, True, freqs), d, harm))
 
     for nodes, steps in plains:
         wd, secs, _ = run("L_%s_plain_n%s_s%s" % (tag, nodes, steps), und, opts, False,
                           nodes, steps)
         hp = history(wd)
         sp = None if opts["3d"] else spectrum(wd, False, freqs)
-        for name, ha, sa in avg_runs:
+        for name, ha, sa, da, hb in avg_runs:
             zs = sorted(set(ha) & set(hp))
             print()
             print("unaveraged nodesPerLambdar=%s steps=%s  %.1f s, against averaged %s"
@@ -335,6 +360,8 @@ def main():
             print("  spectral centre, middle 30%%: plain %.5f  avg %.5f   (diff %.2e)"
                   % (centre(freqs, sp), centre(freqs, sa),
                      centre(freqs, sa) - centre(freqs, sp)))
+            if hb:
+                print_harmonics(*harmonic_power(wd, da, RHO))
             if opts["seed2"]:
                 (p1, p2), (a1, a2) = colours(sp), colours(sa)
                 print("  by colour, middle 30%%: carrier avg/plain %.4f, second colour %.3f "

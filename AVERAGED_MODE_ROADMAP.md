@@ -363,8 +363,8 @@ fundamental first, then ascending, recorded per component in `/runInfo`
   of the 5th's gap. Late in the run the harmonics come from nonlinear harmonic
   generation, so they inherit the fundamental's 1.7% deficit with levers of
   ~2.4 (h = 3) and ~5 (h = 5). Taking that out leaves ~9% low on the 5th and
-  ~4% high on the 3rd, cause not identified. Elliptical (0.5, 1) shows the same
-  pattern. These ratios were rerun after #149's per-particle xi; the
+  ~4% high on the 3rd, cause not identified. Elliptical (0.5, 1) at n48 is
+  further off on both (1.054, 0.827, against planar's 1.027, 0.914). These ratios were rerun after #149's per-particle xi; the
   supporting runs (convergence, A-term, sampling, elliptical) predate it.
 - *Back-action, the W6 question.* The bands change the averaged fundamental by
   -6e-6 at the end of the deck, and total `/power` moves 0.09% towards the
@@ -389,8 +389,26 @@ aliased values too (3% and 12%).
 - The separate-dataset field writer (`hdf5_puff.f90`, `qSep`) names harmonic
   datasets `_h3x`, `_h3y`, ..., but nothing sets `qSeparateStepFiles_G` from the
   input, so that path is unreachable and untested.
+- **Bands overlap below `lambdarPerCell = 0.5`.** Each band's mesh then holds
+  more than +/-1 carrier frequency about its harmonic, and radiates everything
+  there with its own coupling: on #149's case B (0.125, a module at 0.75 of
+  the carrier) the bands add 3.7% (1D) and 5% (3D) of spurious power at the
+  0.75 colour and its images. `chkAveraged` should refuse or warn on
+  `avgHarmonics` there. Benchmark README, "The bands on #149's lattice cases".
+- **`chkAvgLattice` checks the fundamental band only.** A module detuned by
+  delta moves harmonic h by h delta; the check should use the highest band, as
+  the energy-spread warning already does.
 - 3D: runs (2 ranks, diffraction per band, B_y of each harmonic band exactly
-  zero for planar) but is not validated against the unaveraged solver.
+  zero for planar). On #149's 3D lattice cases at 12 macroparticles per
+  wavelength the bands move the fundamental by under 0.1% (A) and ~1% (C),
+  and at saturation (C) the 3rd harmonic agrees to 11%. Before saturation (A)
+  the unaveraged 3D spectrum has 5th and 6th harmonics above the 3rd and a 2nd
+  15x the 1D one, which looks numerical; its convergence with the transverse
+  mesh is the next step before it can serve as a reference.
+- #149's lattice figures ran at 4 macroparticles per wavelength (1D), which
+  aliases the harmonics in both solvers. At 16, 1D A's gap is 2.6% not 4.4%,
+  and 1D C's end bunching 0.941 not 0.880; the manual's taper bunching figures
+  (5% and 17% low) were measured at 4 and may move too.
 
 ### Original notes
 

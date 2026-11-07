@@ -911,11 +911,12 @@ there is almost nothing there.** Total `/power` moves 0.09% towards the
 unaveraged solver (0.9871 to 0.9880 at n48). The ~1.7% planar gap is not
 harmonic content, and with the bands carried it is still there.
 
-Elliptical, `(ux, uy) = (0.5, 1)` with a circular seed, n48 only: total
-`/power` 0.9902 without bands and 0.9921 with; h = 3 1.059 and h = 5 0.835 at
-the last write, the same pattern as planar at the same mesh; the y fraction of
-the fundamental 0.2359 unaveraged, 0.2372 averaged, unchanged by the bands. The
-3rd harmonic is 0.18% of the fundamental there.
+Elliptical, `(ux, uy) = (0.5, 1)` with a circular seed, n48 only, rerun after
+#149: total `/power` 0.9908 without bands and 0.9926 with; h = 3 1.054 and
+h = 5 0.827 at the last write, both further off than planar at the same mesh
+(1.027 and 0.914). Before #149 the y fraction of the fundamental was 0.2359
+unaveraged and 0.2372 averaged, unchanged by the bands. The 3rd harmonic is
+0.18% of the fundamental there.
 
 Cost: the bands' gather, deposit and Bessel functions make each about as
 expensive as the fundamental. With output off, the averaged integration takes
@@ -923,3 +924,99 @@ expensive as the fundamental. With output off, the averaged integration takes
 integrated write every period, 33 s and 44 s. The unaveraged runs took 64,
 100, 169 and 315 s at n24 to n192.
 
+
+### The bands on #149's lattice cases (2026-11-07)
+
+`run_compare_latt.py` takes the bands too: an `--avg` run's third field is its
+`avgHarmonics` (`--avg 1:2:3,5`), `--mpw N` sets `iMPsZ2PerWave`, and
+`--fieldevery K` writes `/aperp` every K periods for the harmonic table and
+the harmonic panels of `plot_compare_latt.py --harmonics 3,5`. All six planar
+lattice cases of #149 (A, B, C in 1D and 3D, above) were rerun with
+`avgHarmonics = 3, 5`.
+
+**At #149's own settings the bands appear to change the planar results, but
+that is beam-sampling aliasing.** Against #149's unaveraged runs, averaged /
+unaveraged at the end, peak power, pulse energy and bunching, without bands
+-> with:
+
+| case | peak power | pulse energy | bunching |
+| --- | --- | --- | --- |
+| 1D A | 0.956 -> 0.979 | 0.962 -> 0.981 | 0.985 -> 1.005 |
+| 1D B | 1.070 -> 1.109 | 1.068 -> 1.107 | 1.003 -> 1.010 |
+| 1D C | 0.998 -> 0.989 | 0.997 -> 0.998 | 0.880 -> 1.003 |
+| 3D A | 0.951 -> 0.951 | 0.951 -> 0.951 | 0.995 -> 0.995 |
+| 3D B | 1.107 -> 1.167 | 1.106 -> 1.162 | 1.024 -> 1.041 |
+| 3D C | 0.994 -> 1.003 | 0.999 -> 1.010 | 1.008 -> 1.018 |
+
+#149 ran at the beam files' 4 macroparticles per wavelength in 1D and 8 in 3D.
+At 4 the 3rd and 5th harmonics alias onto the fundamental (h mod 4), so both
+solvers carry ~20x the real harmonic power, and those harmonics act back on
+the beam; the bands reproduce that, which is why 1D A and C move towards the
+unaveraged solver. At 8 the 5th aliases onto the 3rd. So the cases were rerun
+at 16 per wavelength in 1D and 12 in 3D, for both solvers, at #149's meshes:
+
+| case | peak power | pulse energy | bunching | h = 3 | h = 5 |
+| --- | --- | --- | --- | --- | --- |
+| 1D A, n96 | 0.974 -> 0.975 | 0.981 -> 0.982 | 1.005 -> 1.007 | 0.929 | 0.556 |
+| 1D B, n48, 0.125 cells | 1.073 -> 1.113 | 1.071 -> 1.110 | 1.005 -> 1.012 | 1.000 | 0.913 |
+| 1D C, n96 | 0.991 -> 0.993 | 0.998 -> 0.999 | 0.941 -> 0.938 | 0.980 | 1.024 |
+| 3D A, n48 | 0.976 -> 0.976 | 0.977 -> 0.977 | 0.995 -> 0.995 | (5.7) | (0.20) |
+| 3D B, n48, 0.125 cells | 1.171 -> 1.231 | 1.160 -> 1.217 | 1.028 -> 1.044 | (1.9) | (7.5) |
+| 3D C, n24 | 1.007 -> 1.016 | 1.002 -> 1.012 | 1.096 -> 1.069 | 1.113 | (1.72) |
+
+(h = 3 and h = 5: the band's power at the end, from the spectrum of the
+middle 30% within half a carrier frequency of the harmonic (of 0.75 h for B),
+averaged / unaveraged. Bracketed values are not a test of the band; see
+below.)
+
+What that shows:
+
+- **Where the bands are used as intended (1 wavelength per cell) they leave
+  the fundamental alone**, as on the plain deck: 0.1% or less in power and
+  bunching in 1D A and C and 3D A, and ~1% in 3D C. The planar A gap #149 put down to harmonic
+  power is mostly sampling: at 16 per wavelength it is 2.6% without bands, not
+  4.4%, and the bands close 0.1% of it.
+- **1D C's bunching gap is not harmonic.** It is 0.941 at 16 per wavelength,
+  with or without bands; at 4 it was 0.880, and the bands' 1.003 there came
+  from the aliased harmonics. The harmonics themselves agree to 2%.
+- **The bands break down at fine cells (B).** At 0.125 wavelengths per cell
+  each band's envelope mesh holds +/-4 carrier frequencies about its own
+  harmonic, so the bands overlap: band 3 radiates at the 0.75 colour and its
+  -0.75 image (~2.9% of the field energy in 1D), band 5 an image near 8.75,
+  and the fundamental band already holds the 2.25 harmonic. Each band couples
+  to all of it with its own harmonic's factor, so the bands add 3.7% (1D) and
+  5% (3D) to the averaged power that no real field has. Bands need each mesh
+  to stay inside its own harmonic, `lambdarPerCell >= 0.5`; Puffin does not
+  enforce that yet.
+- **Puffin's lattice band check ignores the harmonics.** 1D C's taper moves
+  the resonance 32% (inside the fundamental's +/-50%), and so ~1 and ~1.6
+  carrier frequencies relative to bands 3 and 5, with no warning. The
+  harmonics agreed anyway, because they were radiated before the taper moved
+  far, but the check should scale the shift by the highest band.
+- **In 3D the harmonics are checked only at saturation.** In 3D C the
+  unaveraged field's odd harmonics dominate as they should (3rd 8.4e-3 of the
+  field energy, 2nd 7.7e-3, 5th 3.0e-4), and the averaged 3rd agrees to 11%.
+  Its 5th is 1.7x, against an unaveraged run at n24, under 5 nodes per
+  5th-harmonic wavelength, so not a reference. Before saturation, in 3D A,
+  the unaveraged spectrum has a 2nd harmonic at ~2e-3 of the field energy
+  (15x 1D) and 5th and 6th harmonics above the 3rd (in 1D the 3rd is 200x the
+  5th). That ordering looks numerical, for instance electrons' transverse
+  wiggle across the deposition mesh, and until it is shown to converge with
+  the transverse mesh it is not a reference either. The averaged 3D 3rd
+  harmonic there, 3.7e-4 of the field energy, is half its 1D value. In 3D C the
+  bands move the fundamental by ~1% (bunching, at a level of ~0.01, by 2.7%).
+- **The detuned module costs the 5th harmonic's agreement.** 1D A's 5th is
+  44% low (at ~4e-6 of the field energy) against 15% low on the plain deck at
+  the same mesh; not traced.
+- 3D B without bands moves from 1.107 at 8 per wavelength to 1.171 at 12:
+  that case is sensitive to the sampling of the fundamental too, which is
+  outside this comparison.
+
+**Figures.** `figures/harm_*.png` and `figures/harm3d_*.png`, drawn by
+`figures/make_harm_figures.sh`, are #149's layout with a third row: the power
+in bands 3 and 5 along the undulator and the spectrum out to the 5th harmonic.
+Blue is unaveraged, orange averaged with bands, grey dotted averaged without.
+`harm_planar`, `harm_elliptical` and `harm_planar_mpw4` are the plain-deck
+runs of the section above (192, 48 and 48 nodes per wavelength), the rest the
+lattice cases in the second table. They give no solver times: these runs wrote
+the field and beam every 5 periods and shared the machine.

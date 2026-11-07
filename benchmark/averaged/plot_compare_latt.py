@@ -4,11 +4,23 @@
 Usage:
   python3 plot_compare_latt.py OUT.png --unavg DIR --avg DIR [--before DIR]
         [--fold F] [--modules "A:B:label;..."] [--title T] [--scenario TEXT]
-        [--specx LO,HI] [--command TEXT]
+        [--specx LO,HI] [--command TEXT] [--before-label TEXT]
+        [--harmonics H,H]
 
   DIR         a run directory written by run_compare_latt.py (run_*_aperp_*,
               run_integrated_*, run_electrons_*).
-  --before    a second averaged run to draw dotted, e.g. one made before a fix.
+  --before    a second averaged run to draw dotted, e.g. one made before a fix,
+              or one without harmonic bands.  --before-label says which
+              [before Bessel fix].
+  --harmonics a third row for these harmonics: each band's power along the
+              undulator, from every /aperp write, and the spectrum out to
+              the highest of them.  A band's power is the spectral energy
+              of the middle 30% of the field within fold/2 of h*fold, which
+              stops short of the even harmonics either side, as a share of the whole spectrum's, times the
+              mid-pulse powerSI, so it is in W for both solvers; an averaged
+              band's share comes from its own envelope only.  The
+              unaveraged history has a point per /aperp write
+              (run_compare_latt.py --fieldevery), 3D usually only the last.
   --fold F    the frequency, relative to the carrier, that the radiation and
               bunching sit at [1].  The phase space is folded at that
               wavelength, and the profiles along the pulse are averaged over
@@ -136,6 +148,98 @@ def profile(d, fold):
     return np.linspace(lo, hi, len(p)) * 1e6, smooth(p, window_nodes(a, len(p), fold))
 
 
+def comp_harmonics(a, ncomp):
+    """Harmonic of each averaged field component, from /runInfo; [1, 1] for
+    a run without bands or written before fieldCompHarmonic existed."""
+    h = a.get("fieldCompHarmonic")
+    if h is None:
+        return [1] * ncomp
+    return [int(v) for v in np.ravel(h)]
+
+
+def raw_spectra(f, a):
+    """|FT|^2 of the middle 30% of field f, Hann windowed, summed over the
+    transverse mesh: a list of (h, w/wr, power) per band, unnormalised.  An
+    unaveraged field is one band, h = 0, w > 0.  An averaged band's envelope
+    B exp(-i h z2/2rho) puts envelope frequency fe at w/wr = h - 4 pi rho fe."""
+    n = f.shape[1]
+    lo, hi = int(0.35 * n), int(0.65 * n)
+    w = np.hanning(hi - lo).reshape((-1,) + (1,) * (f.ndim - 2))
+    rho, dz2 = float(a["rho"]), float(a["sLengthOfElmZ2"])
+    trans = tuple(range(1, f.ndim - 1))
+    fe = np.fft.fftfreq(hi - lo, d=dz2)
+
+    def power(sig):
+        return (np.abs(np.fft.fft(sig * w, axis=0)) ** 2).sum(axis=trans)
+
+    if not pvd.is_averaged(a):
+        om = 4.0 * np.pi * rho * fe
+        keep = om > 0
+        tot = power(f[0, lo:hi]) + power(f[1, lo:hi])
+        return [(0, om[keep], tot[keep])]
+    hc = comp_harmonics(a, f.shape[0] // 2)
+    out = []
+    for h in sorted(set(hc)):
+        tot = sum(power(f[2 * c, lo:hi] + 1j * f[2 * c + 1, lo:hi])
+                  for c in range(f.shape[0] // 2) if hc[c] == h)
+        om = h - 4.0 * np.pi * rho * fe
+        o = np.argsort(om)
+        out.append((h, om[o], tot[o]))
+    return out
+
+
+def band_shares(f, a, harms, fold):
+    """{h: share of the spectral energy within fold/2 of h*fold}.  The window
+    must stop short of h +/- 1: off axis a planar field has even harmonics, in
+    3D stronger than the odd ones, which no averaged band carries."""
+    sp = raw_spectra(f, a)
+    total = sum(p.sum() for _, _, p in sp)
+    out = {}
+    for h in harms:
+        e = 0.0
+        for hb, om, p in sp:
+            if hb in (0, h):
+                e += p[np.abs(om - h * fold) < 0.5 * fold].sum()
+        out[h] = e / total
+    return out
+
+
+def band_history(d, harms, fold):
+    """(z, {h: W}) at every /aperp write: band share times mid-pulse powerSI."""
+    ints = {}
+    for fi in files(d, "integrated"):
+        with h5py.File(fi, "r") as h:
+            ints[round(float(h["runInfo"].attrs["zTotal"]), 6)] = np.mean(mid(h["powerSI"][()]))
+    z, P = [], {h: [] for h in harms}
+    for fa in files(d, "aperp"):
+        with h5py.File(fa, "r") as h:
+            a = dict(h["runInfo"].attrs)
+            zt = round(float(a["zTotal"]), 6)
+            if zt not in ints or zt == 0.0:
+                continue
+            sh = band_shares(h["aperp"][()], a, harms, fold)
+        z.append(zt)
+        for k in harms:
+            P[k].append(sh[k] * ints[zt])
+    return np.array(z), {k: np.array(v) for k, v in P.items()}
+
+
+def wide_spectrum(d):
+    """Spectrum of the last write for the wide panel: (w/wr, normalised), bands
+    joined with NaN gaps, each averaged band clipped to within one carrier
+    frequency of its harmonic (the fundamental's to below 2) so the bands of
+    a fine averaged mesh do not overlap."""
+    with h5py.File(files(d, "aperp")[-1], "r") as h:
+        sp = raw_spectra(h["aperp"][()], dict(h["runInfo"].attrs))
+    pk = max(p.max() for _, _, p in sp)
+    oms, ps = [], []
+    for h, om, p in sp:
+        keep = (om < 2.0) if h == 1 else (np.abs(om - h) < 1.0) if h > 1 else np.ones_like(om, bool)
+        oms += [om[keep], [np.nan]]
+        ps += [p[keep] / pk, [np.nan]]
+    return np.concatenate(oms), np.concatenate(ps)
+
+
 def spectrum(d):
     """Normalised |FT|^2 of the middle 30% of the field, Hann windowed,
     against w/wr.  Every stored component is used: the unaveraged pair
@@ -155,8 +259,9 @@ def spectrum(d):
         return (np.abs(np.fft.fft(sig * w, axis=0)) ** 2).sum(axis=trans)
 
     if pvd.is_averaged(a):
+        hc = comp_harmonics(a, f.shape[0] // 2)     # the fundamental band only
         tot = sum(power(f[2 * c, lo:hi] + 1j * f[2 * c + 1, lo:hi])
-                  for c in range(f.shape[0] // 2))
+                  for c in range(f.shape[0] // 2) if hc[c] == 1)
         om = 1.0 - 4.0 * np.pi * rho * np.fft.fftfreq(hi - lo, d=dz2)
         o = np.argsort(om)
         return om[o], tot[o] / tot.max(), a
@@ -200,6 +305,11 @@ def main():
     ap.add_argument("--scenario", default="")
     ap.add_argument("--specx", default="", help="lo,hi of the spectrum axis")
     ap.add_argument("--command", default="", help="the run_compare_latt.py command, printed")
+    ap.add_argument("--before-label", default="before Bessel fix")
+    ap.add_argument("--no-times", action="store_true",
+                    help="leave solver times out, for runs not timed fairly (e.g. with "
+                         "frequent dumps, or alongside other jobs)")
+    ap.add_argument("--harmonics", default="", help="H,H: add the harmonic-band row")
     o = ap.parse_args()
 
     def label(d):
@@ -209,22 +319,26 @@ def main():
             deck = fh.read()
         if re.search(r"qAveraged\s*=\s*\.true\.", deck, re.I):
             v = re.search(r"(?m)^\s*lambdarPerCell\s*=\s*([^\s,]+)", deck).group(1)
-            return "averaged, %s λr/cell" % v
+            hb = re.search(r"(?m)^\s*avgHarmonics\s*=\s*([^\n]+)", deck)
+            hb = ", bands 1, %s" % hb.group(1).strip() if hb else ""
+            return "averaged, %s λr/cell%s" % (v, hb)
         v = re.search(r"(?m)^\s*nodesPerLambdar\s*=\s*([^\s,]+)", deck).group(1)
         return "unaveraged, %s nodes/λr" % v
 
     T = {d: runtime(d) for d in (o.unavg, o.avg)}
-    runs = [("%s (%s)" % (label(d), fmt_time(*T[d])), d, c, ls)
+    runs = [(label(d) if o.no_times else "%s (%s)" % (label(d), fmt_time(*T[d])), d, c, ls)
             for d, c, ls in ((o.unavg, C_UN, "-"), (o.avg, C_AV, "--"))]
     if o.before:
-        runs.append((label(o.before) + ", before Bessel fix", o.before, C_PRE, ":"))
+        runs.append((label(o.before) + ", " + o.before_label, o.before, C_PRE, ":"))
 
     text = "\n".join(textwrap.fill(" ".join(par.split()), 200)
                      for par in o.scenario.split("\n\n"))
     nlines = text.count("\n") + 1 if text else 0
-    fig = plt.figure(figsize=(18, 11 + 0.18 * nlines))
+    harms = [int(v) for v in o.harmonics.split(",") if v.strip()]
+    nrow = 3 if harms else 2
+    fig = plt.figure(figsize=(18, 11 + (5.2 if harms else 0) + 0.18 * nlines))
     top_in = 0.75 + 0.18 * nlines + 0.45          # title, caption, gap (inches)
-    gs = fig.add_gridspec(2, 4, hspace=0.42, wspace=0.32,
+    gs = fig.add_gridspec(nrow, 4, hspace=0.42, wspace=0.32,
                           top=1 - top_in / fig.get_figheight())
     ax = {
         "P": fig.add_subplot(gs[0, 0]), "E": fig.add_subplot(gs[0, 1]),
@@ -263,6 +377,8 @@ def main():
     speed = "\n\nsolver time, unaveraged / averaged\n %.0fx" % (tu / ta)
     if nu != na:
         speed += " (on %s and %s ranks)" % (nu, na)
+    if o.no_times:
+        speed = ""
     ax["P"].text(0.98, 0.03, "at end, averaged / unaveraged\n peak power %.3f\n pulse energy %.3f"
                  "\n bunching %.3f%s" % (r(1), r(2), r(5), speed),
                  transform=ax["P"].transAxes, ha="right", va="bottom", fontsize=8,
@@ -287,6 +403,49 @@ def main():
     else:
         span = max(0.15, 1.6 * abs(1 - o.fold))
         ax["spec"].set_xlim(min(1, o.fold) - span / 2 - 0.05, max(1, o.fold) + span / 2 + 0.05)
+
+    if harms:
+        nh = min(len(harms), 3)
+        hax = [fig.add_subplot(gs[2, i]) for i in range(nh)]
+        ax["wide"] = fig.add_subplot(gs[2, nh:])
+        ends = {}
+        for lab, d, c, ls in runs:
+            om, sw = wide_spectrum(d)
+            ax["wide"].semilogy(om, sw, ls, color=c, lw=1.1, label=lab)
+            if "bands" not in lab and pvd.is_averaged(H[lab][0]):
+                continue                    # an averaged run without bands has none
+            zh, Ph = band_history(d, harms[:nh], o.fold)
+            few = len(zh) < 6               # 3D: usually the last write only
+            for i, h in enumerate(harms[:nh]):
+                hax[i].semilogy(zh, Ph[h], ls, color=c, lw=1.5, label=lab,
+                                marker=("o" if d == o.unavg else "x") if few else None,
+                                ms=9 if d == o.unavg else 7, mfc="none", mew=1.6)
+                ends.setdefault(h, {})[d] = Ph[h][-1] if len(Ph[h]) else np.nan
+                if few:
+                    pos = [v for v in ends[h].values() if v > 0]
+                    if pos:
+                        hax[i].set_ylim(min(pos) / 10, max(pos) * 10)
+        for i, h in enumerate(harms[:nh]):
+            k = ("h = %d" % h) if o.fold == 1 else ("h = %d (%g ωr)" % (h, h * o.fold))
+            hax[i].set_title("Harmonic %s power" % k, loc="left")
+            hax[i].set_xlabel("z (m)")
+            hax[i].set_ylabel("W (middle 30%)")
+            e = ends.get(h, {})
+            if o.unavg in e and o.avg in e:
+                hax[i].text(0.98, 0.03, "at end, averaged / unaveraged\n %.3f" % (e[o.avg] / e[o.unavg]),
+                            transform=hax[i].transAxes, ha="right", va="bottom", fontsize=8,
+                            family="monospace", bbox=dict(fc="white", ec="#ced4da", alpha=0.9))
+            for j, (s0, s1, lab) in enumerate(mods):
+                hax[i].axvspan(float(s0) * per, float(s1) * per,
+                               color="#e9ecef" if j % 2 else "#f8f9fa", zorder=0)
+            ax["h%d" % h] = hax[i]
+        ax["wide"].set_title("Spectrum to the %s harmonic, end (mid 30%%)"
+                             % {3: "3rd"}.get(max(harms), "%dth" % max(harms)), loc="left")
+        ax["wide"].set_xlabel("ω/ωr")
+        ax["wide"].set_ylabel("normalised")
+        ax["wide"].set_xlim(0, (max(harms) + 1) * max(o.fold, 1.0) if o.fold >= 1 else max(harms) + 1)
+        ax["wide"].set_ylim(1e-12, 2)
+        ax["wide"].legend(fontsize=8, loc="upper right")
 
     for lab, d, c, _ in runs[:2][::-1]:
         th, gm = phase_space(d, o.fold)
