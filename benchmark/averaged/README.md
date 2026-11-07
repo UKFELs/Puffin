@@ -986,13 +986,15 @@ What that shows:
   and the fundamental band already holds the 2.25 harmonic. Each band couples
   to all of it with its own harmonic's factor, so the bands add 3.7% (1D) and
   5% (3D) to the averaged power that no real field has. Bands need each mesh
-  to stay inside its own harmonic, `lambdarPerCell >= 0.5`; Puffin does not
-  enforce that yet.
-- **Puffin's lattice band check ignores the harmonics.** 1D C's taper moves
+  to stay inside its own harmonic, `lambdarPerCell >= 0.5`; `chkAveraged`
+  now warns below that.
+- **Puffin's lattice band check ignored the harmonics.** 1D C's taper moves
   the resonance 32% (inside the fundamental's +/-50%), and so ~1 and ~1.6
   carrier frequencies relative to bands 3 and 5, with no warning. The
   harmonics agreed anyway, because they were radiated before the taper moved
-  far, but the check should scale the shift by the highest band.
+  far. `chkAvgLattice` now scales the shift by the highest band and warns
+  here, saying no `lambdarPerCell` holds band 5 without the bands
+  overlapping.
 - **In 3D the harmonics are checked only at saturation.** In 3D C the
   unaveraged field's odd harmonics dominate as they should (3rd 8.4e-3 of the
   field energy, 2nd 7.7e-3, 5th 3.0e-4), and the averaged 3rd agrees to 11%.

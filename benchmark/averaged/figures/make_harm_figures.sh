@@ -75,7 +75,7 @@ plot harm_B_ownres_f0.75.png B_ownres_f0.75 0.75 "0:60:module resonant at 0.75 �
   "Harmonic bands 5. #149's case B: at 0.125 λr/cell the bands overlap, and count radiation twice" \
   "#149's case B (latt_B_ownres_f0.75.png) at 16 macroparticles per wavelength: one 60-period module resonant at 0.75 ωr, seeded there only, |A| = 0.01 along x. Averaged at 0.125 λr/cell against unaveraged at 48 nodes/λr, 120 steps/period. Harmonic panels at 2.25 and 3.75 ωr.
 
-Not a valid use of the bands. At 0.125 λr/cell every band's envelope mesh holds ±4 ωr about its own harmonic, so the bands overlap: band 3 radiates at the 0.75 ωr colour and its mirror image at −0.75 (~2.9% of the field energy), band 5 an image near 8.75 ωr, and the fundamental band already carries the 2.25 ωr harmonic itself. Each band couples to all of it with its own harmonic's factor, so the bands add ~3.7% to the averaged power that no real field has. The bands are only meaningful while each band's mesh stays within its own harmonic, λr/cell ≥ 0.5.
+Not a valid use of the bands. At 0.125 λr/cell every band's envelope mesh holds ±4 ωr about its own harmonic, so the bands overlap: band 3 radiates at the 0.75 ωr colour and its mirror image at −0.75 (~2.9% of the field energy), band 5 an image near 8.75 ωr, and the fundamental band already carries the 2.25 ωr harmonic itself. Each band couples to all of it with its own harmonic's factor, so the bands add ~3.7% to the averaged power that no real field has. The bands are only meaningful while each band's mesh stays within its own harmonic, λr/cell ≥ 0.5, and Puffin now warns below that.
 
 $BANDS
 
@@ -85,7 +85,7 @@ $COMMON" \
 
 plot harm_C_taper_-0.05.png C_taper_-0.05 1 "0:105:module 1, α = 1;105:255:module 2, tapered α 1 → 0.53" \
   "Harmonic bands 6. #149's case C: strong taper after saturation, with bands" \
-  "#149's case C (latt_C_taper_-0.05.png) at 16 macroparticles per wavelength: 105 periods at α = 1 to saturation, then 150 periods tapered at dα/dz̄ = −0.05; seeded at ωr, |A| = 0.01 along x. Against the unaveraged solver at 96 nodes/λr, 240 steps/period. As α falls to 0.53 the module's resonance moves up by 32%, inside the fundamental band (±50% at 1 λr/cell), so Puffin prints no band warning; but it moves h times as far relative to band h, out of bands 3 and 5, which Puffin's lattice check does not test. The harmonics agree regardless (3rd 2% low, 5th 2% high at the end), because they are radiated before the taper has moved far. At this sampling the bands do not change the end bunching (0.941 without, 0.938 with); at #149's 4 macroparticles per wavelength they took it from 0.880 to 1.003, which was the aliased harmonics acting back on the beam.
+  "#149's case C (latt_C_taper_-0.05.png) at 16 macroparticles per wavelength: 105 periods at α = 1 to saturation, then 150 periods tapered at dα/dz̄ = −0.05; seeded at ωr, |A| = 0.01 along x. Against the unaveraged solver at 96 nodes/λr, 240 steps/period. As α falls to 0.53 the module's resonance moves up by 32%, inside the fundamental band (±50% at 1 λr/cell); but it moves h times as far relative to band h, out of bands 3 and 5. Puffin's lattice check now warns about that (these runs predate it). The harmonics agree regardless (3rd 2% low, 5th 2% high at the end), because they are radiated before the taper has moved far. At this sampling the bands do not change the end bunching (0.941 without, 0.938 with); at #149's 4 macroparticles per wavelength they took it from 0.880 to 1.003, which was the aliased harmonics acting back on the beam.
 
 $BANDS
 

@@ -943,7 +943,54 @@ contains
     call chkAveraged(.false., 64_ip, freqf, sSigE, mag, qOK)
     @assertTrue(qOK)
 
+!   Bands that overlap - below lambdarPerCell 0.5 for 3 and 5 - only warn
+
+    qAveraged_G = .true.
+    iAvgHarmonics_G(1:2) = [3_ip, 5_ip]
+    sLambdarPerCell_G = 0.125_wp
+    call chkAveraged(.false., 64_ip, freqf, sSigE, mag, qOK)
+    @assertTrue(qOK)
+
+    iAvgHarmonics_G = 0_ip
+    qAveraged_G = .false.
+    sLambdarPerCell_G = 1.0_wp
+
   end subroutine testAveragedHarmonicGuards
+
+
+  !> The spacing the band-overlap warning compares against: the smallest gap
+  !! between any two carried bands, the fundamental included, whatever order
+  !! or slots avgHarmonics uses.  The bands overlap once 1/(2 lambdarPerCell)
+  !! is more than half of it.
+  @test
+  subroutine testAvgBandGap()
+
+    use checks, only: getAvgBandGap
+
+    integer(kind=ip) :: harm(4)
+
+    harm = 0_ip
+    @assertEqual(huge(1.0_wp), getAvgBandGap(harm))
+
+    harm(1:2) = [3_ip, 5_ip]
+    @assertEqual(2.0_wp, getAvgBandGap(harm))
+
+!   The 5th alone is 4 from the fundamental, so its band only meets the
+!   fundamental's below lambdarPerCell 0.25
+
+    harm = 0_ip
+    harm(3) = 5_ip
+    @assertEqual(4.0_wp, getAvgBandGap(harm))
+
+!   The closest pair need not involve the fundamental, nor be adjacent
+
+    harm = [0_ip, 9_ip, 0_ip, 5_ip]
+    @assertEqual(4.0_wp, getAvgBandGap(harm))
+
+    harm = [7_ip, 0_ip, 3_ip, 0_ip]
+    @assertEqual(2.0_wp, getAvgBandGap(harm))
+
+  end subroutine testAvgBandGap
 
 
   !> A module's resonance relative to the carrier.  It has to be the solver's
@@ -1000,7 +1047,7 @@ contains
   @test
   subroutine testAvgLatticeBand()
 
-    use Globals, only: qAveraged_G, sLambdarPerCell_G
+    use Globals, only: qAveraged_G, sLambdarPerCell_G, iAvgHarmonics_G
     use GlobalTypes, only: tLatticeElements
     use checks, only: chkAvgLattice
 
@@ -1030,12 +1077,32 @@ contains
     latt%und_taper = 0.0_wp
 
     qAveraged_G = .true.
+    iAvgHarmonics_G = 0_ip
 
 !   At 1 wavelength per cell the band is +/- 0.5: all three are in
 
     sLambdarPerCell_G = 1.0_wp
     call chkAvgLattice(latt, frame, .false., nOut)
     @assertEqual(0_ip, nOut)
+
+!   ...but a band at the 3rd harmonic is no wider, and the module at 1.3 moves
+!   it by 0.9 of the carrier, so that takes it out.  At 0.5 wavelengths per
+!   cell the band is +/- 1: the 3rd is back in, and a 5th, moved by 1.5, is
+!   out.  The highest band is the one that counts.
+
+    iAvgHarmonics_G(1) = 3_ip
+    call chkAvgLattice(latt, frame, .false., nOut)
+    @assertEqual(1_ip, nOut)
+
+    sLambdarPerCell_G = 0.5_wp
+    call chkAvgLattice(latt, frame, .false., nOut)
+    @assertEqual(0_ip, nOut)
+
+    iAvgHarmonics_G(3) = 5_ip
+    call chkAvgLattice(latt, frame, .false., nOut)
+    @assertEqual(1_ip, nOut)
+
+    iAvgHarmonics_G = 0_ip
 
 !   At 2 it is +/- 0.25, and the module at 1.3 is out
 

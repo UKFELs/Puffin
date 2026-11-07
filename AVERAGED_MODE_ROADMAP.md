@@ -393,11 +393,15 @@ aliased values too (3% and 12%).
   more than +/-1 carrier frequency about its harmonic, and radiates everything
   there with its own coupling: on #149's case B (0.125, a module at 0.75 of
   the carrier) the bands add 3.7% (1D) and 5% (3D) of spurious power at the
-  0.75 colour and its images. `chkAveraged` should refuse or warn on
-  `avgHarmonics` there. Benchmark README, "The bands on #149's lattice cases".
-- **`chkAvgLattice` checks the fundamental band only.** A module detuned by
-  delta moves harmonic h by h delta; the check should use the highest band, as
-  the energy-spread warning already does.
+  0.75 colour and its images. `chkAveraged` now warns when the band
+  half-width exceeds half the smallest spacing between carried bands
+  (`getAvgBandGap`); it does not refuse, and the bands still overlap if the
+  user runs anyway. Benchmark README, "The bands on #149's lattice cases".
+- `chkAvgLattice` now scales a module's resonance shift by the highest band,
+  as the energy-spread warning does, so a taper or detuning that keeps the
+  fundamental in band but takes band h out is warned about. When h times the
+  shift exceeds 1 carrier frequency no `lambdarPerCell` can hold that band
+  without the bands overlapping, and the warning says so.
 - 3D: runs (2 ranks, diffraction per band, B_y of each harmonic band exactly
   zero for planar). On #149's 3D lattice cases at 12 macroparticles per
   wavelength the bands move the fundamental by under 0.1% (A) and ~1% (C),

@@ -30,7 +30,7 @@ use averaging, only: getAvgUndAmps, getAvgPolarisation, getAvgResonanceShift
 implicit none (type, external)
 private
 
-public :: checkparameters, chkAveraged, chkAvgLattice
+public :: checkparameters, chkAveraged, chkAvgLattice, getAvgBandGap
 
 
 contains
@@ -506,7 +506,7 @@ subroutine chkAveraged(qResume, nz2, freqf, sSigE, mag, qOK)
   real(kind=wp), intent(in) :: freqf(:), sSigE(:,:), mag(:)
   logical, intent(out) :: qOK
 
-  real(kind=wp) :: band
+  real(kind=wp) :: band, gap
   integer(kind=ip) :: i, hMax
 
   qOK = .true.
@@ -636,7 +636,60 @@ subroutine chkAveraged(qResume, nz2, freqf, sSigE, mag, qOK)
 
   end do
 
+!   Each harmonic band's mesh holds h +/- band, the same absolute width for
+!   every band, so once band is more than half the spacing between two carried
+!   harmonics their meshes overlap.  Each band then radiates everything its
+!   mesh holds with its own harmonic's coupling, and radiation in the overlap
+!   is generated and counted in both.  For the odd bands 1, 3, 5 that is any
+!   lambdarPerCell below 0.5.  Warn rather than stop: a run whose radiation
+!   stays near the harmonics themselves puts little there, but nothing then
+!   keeps it from doing so.
+
+  if (qOK) then
+    gap = getAvgBandGap(iAvgHarmonics_G)
+    if (band > 0.5_wp * gap) then
+      print*, "WARNING: the avgHarmonics bands overlap at this lambdarPerCell. ", &
+              "Each band's mesh holds its harmonic +/- 1/(2 lambdarPerCell) = +/-", &
+              band, " of the resonant frequency, more than half the spacing ", &
+              gap, " between carried bands, so radiation in the overlap is ", &
+              "generated and counted in more than one band. Use lambdarPerCell ", &
+              "of at least", 1.0_wp / gap, ", or remove avgHarmonics."
+    end if
+  end if
+
 end subroutine chkAveraged
+
+
+!> The smallest spacing, in harmonic number, between the bands averaged mode
+!> carries: the fundamental and each harmonic in harm (zero entries unused,
+!> the rest already checked by chkAvgHarmonics to be distinct odd harmonics of
+!> 3 or more).  Each band's mesh holds h +/- 1/(2 lambdarPerCell), so the
+!> bands overlap once that half-width exceeds half of this.  huge with no
+!> harmonic bands, when there is nothing to overlap.
+
+pure function getAvgBandGap(harm) result(gap)
+
+  integer(kind=ip), intent(in) :: harm(:)
+  real(kind=wp) :: gap
+
+  integer(kind=ip) :: i, j
+
+  gap = huge(1.0_wp)
+
+  do i = 1, size(harm)
+
+    if (harm(i) == 0_ip) cycle
+
+    gap = min(gap, real(abs(harm(i) - 1_ip), kind=wp))
+
+    do j = i + 1, size(harm)
+      if (harm(j) == 0_ip) cycle
+      gap = min(gap, real(abs(harm(i) - harm(j)), kind=wp))
+    end do
+
+  end do
+
+end function getAvgBandGap
 
 
 !> The harmonic bands asked for with avgHarmonics: distinct odd harmonics of
@@ -690,8 +743,11 @@ end subroutine chkAvgHarmonics
 !> alpha range is the taper's over the module's main section, as initUndulator
 !> sets it up; the end ramps take alpha to 0 but only switch the coupling on
 !> and off.  Only warns - a seed or the beam can still put the radiation
-!> where the mesh holds it.  Runs after the lattice file is read, which
-!> chkAveraged does not.  nOut is the number of modules warned about.
+!> where the mesh holds it.  With harmonic bands (avgHarmonics) a shift s
+!> moves harmonic h by h s while its band is no wider, so a module whose
+!> fundamental is in band can still take the highest band out; that is warned
+!> about too.  Runs after the lattice file is read, which chkAveraged does
+!> not.  nOut is the number of modules warned about, for either reason.
 
 subroutine chkAvgLattice(lattice, frame, qUndEnds, nOut)
 
@@ -702,7 +758,7 @@ subroutine chkAvgLattice(lattice, frame, qUndEnds, nOut)
 
   real(kind=wp) :: band, modLen, alpha0, alpha1, s0, s1, sMax
   real(kind=wp) :: cx, cy, uMinus, uPlus, fp
-  integer(kind=ip) :: i
+  integer(kind=ip) :: i, hMax
 
   nOut = 0_ip
 
@@ -710,6 +766,7 @@ subroutine chkAvgLattice(lattice, frame, qUndEnds, nOut)
   if (sLambdarPerCell_G <= 0.0_wp) return     ! chkAveraged has rejected it
 
   band = 0.5_wp / sLambdarPerCell_G
+  hMax = max(1_ip, maxval(iAvgHarmonics_G))   ! chkAveraged has checked them
 
   do i = 1, size(lattice%und_field)
 
@@ -744,6 +801,29 @@ subroutine chkAvgLattice(lattice, frame, qUndEnds, nOut)
                 "averaged field mesh can hold. Radiation at its own resonance ", &
                 "will be attenuated and aliased. Use lambdarPerCell below ", &
                 0.5_wp / sMax, ", or run unaveraged."
+      end if
+
+    else if (real(hMax, kind=wp) * sMax > band) then
+
+      nOut = nOut + 1_ip
+
+      if (tProcInfo_G%qRoot) then
+        print*, "WARNING: undulator module ", i, " (alpha ", alpha0, " to ", alpha1, &
+                ") is resonant at ", 1.0_wp + s0, " to ", 1.0_wp + s1, &
+                " of the averaged carrier frequency. That is inside the ", &
+                "fundamental's band, but moves harmonic", hMax, " by up to", &
+                real(hMax, kind=wp) * sMax, " of the carrier, outside its band of ", &
+                "+/-", band, ". Its radiation at its own resonance there will be ", &
+                "attenuated and aliased."
+        if (real(hMax, kind=wp) * sMax > 1.0_wp) then
+          print*, "No lambdarPerCell holds it: that needs one below ", &
+                  0.5_wp / (real(hMax, kind=wp) * sMax), ", and the bands ", &
+                  "overlap below 0.5. Drop that harmonic from avgHarmonics, or ", &
+                  "run unaveraged."
+        else
+          print*, "Use lambdarPerCell below ", 0.5_wp / (real(hMax, kind=wp) * sMax), &
+                  ", drop that harmonic from avgHarmonics, or run unaveraged."
+        end if
       end if
 
     end if
