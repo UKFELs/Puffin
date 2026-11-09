@@ -25,9 +25,9 @@ use Globals, only: nspinDX, nspinDY, iRedNodesX_G, iRedNodesY_G, fieldMesh, sper
   qRndEj_G, sSigEj_G, iInputType_G, iGenHom_G, iReadDist_G, iReadMASP_G, iReadH5_G, &
   iFieldSeedType_G, iSimpleSeed_G, iReadH5Field_G, TrLdMeth_G, sKBetaXSF_G, sKBetaYSF_G, &
   qUndEnds_G, qhdf5_G, sRedistLen_G, iRedistStp_G, tArrayA, tArrayZ, iWriteNthSteps, cmd_call_G, &
-  zBFile_G, zSFile_G, ioutInfo_G, qDiffraction_G, qFilter, qQuiverSplit_G, qResume, qWrite, &
-  qscaled_G, qInitWrLat_G, qDumpEnd_G, qAveraged_G, sLambdarPerCell_G, iAvgHarmonics_G, &
-  nAvgHarmMax_CG, iShapeOrder_G
+  zBFile_G, zSFile_G, ioutInfo_G, qDiffraction_G, qFilter, qResume, qWrite, qscaled_G, &
+  qInitWrLat_G, qDumpEnd_G, qAveraged_G, sLambdarPerCell_G, iAvgHarmonics_G, nAvgHarmMax_CG, &
+  iShapeOrder_G
 use shape_functions, only: qShapeOrderOK
 use MASPin, only: nMPs4MASP_G
 use cwrites, only: qWrArray_G, getwrarray
@@ -270,7 +270,7 @@ subroutine read_in(zfilename, &
   logical :: qOneD, qFieldEvolve, qElectronsEvolve, &
              qElectronFieldCoupling, qFocussing, &
              qDiffraction, qDump, qUndEnds, qhdf5, qsdds, &
-             qscaled, qInitWrLat, qDumpEnd, qAveraged, qQuiverSplit
+             qscaled, qInitWrLat, qDumpEnd, qAveraged
 
   integer(kind=ip) :: iNumNodesX, iNumNodesY, nodesPerLambdar
   real(kind=wp) :: sFModelLengthX, sFModelLengthY, sFModelLengthZ2
@@ -298,7 +298,7 @@ subroutine read_in(zfilename, &
 
 namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  qElectronFieldCoupling, qFocussing, &
-                 qDiffraction, qFilter, qUndEnds, qQuiverSplit, &
+                 qDiffraction, qFilter, qUndEnds, &
                  q_noise, qDump, qResume, qSeparateFiles, &
                  qFormattedFiles, qWriteZ, qWriteA, &
                  qWritePperp, qWriteP2, qWriteZ2, &
@@ -341,7 +341,6 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qAveraged = .false.
   lambdarPerCell = 1.0_wp
   avgHarmonics = 0_ip
-  qQuiverSplit = .false.
   q_noise = .true.
   qUndEnds = .false.
   qDump = .false.
@@ -443,7 +442,6 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   qAveraged_G = qAveraged
   sLambdarPerCell_G = lambdarPerCell
   iAvgHarmonics_G = avgHarmonics
-  qQuiverSplit_G = qQuiverSplit
 
   if (.not. qShapeOrderOK(iShapeOrder)) then
     print*, "ERROR: iShapeOrder = ", iShapeOrder, " is not supported."

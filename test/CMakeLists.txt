@@ -194,7 +194,7 @@ endif()
 
 add_pfunit_ctest (puffin_basic_tests
   TEST_SOURCES testTests.pf testFFunctions.pf testLatticeElements.pf testAveraging.pf
-               testPower.pf testQuiver.pf testShapeFunctions.pf testShapeDeposition.pf
+               testPower.pf testShapeFunctions.pf testShapeDeposition.pf
   LINK_LIBRARIES puffin_mpi
 )
 

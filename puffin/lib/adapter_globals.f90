@@ -35,7 +35,7 @@ use Globals, only: NX_G, NBX_G, NY_G, NBY_G, NZ2_G, NBZ2_G, nspinDX, nspinDY, sL
   totUndLineLength, iWriteNthSteps, iIntWriteNthSteps, cmd_call_G, zFileName_G, zBFile_G, &
   zSFile_G, ioutInfo_G, frecvs, fdispls, qElectronsEvolve_G, qFieldEvolve_G, &
   qElectronFieldCoupling_G, qDiffraction_G, qFocussing_G, qFilter, qDump_G, qSeparateStepFiles_G, &
-  qMod_G, qResume, qWrite, qOneD_G, qAveraged_G, qQuiverSplit_G, iShapeOrder_G, qscaled_G, &
+  qMod_G, qResume, qWrite, qOneD_G, qAveraged_G, iShapeOrder_G, qscaled_G, &
   qInitWrLat_G, &
   qDumpEnd_G
 
@@ -784,9 +784,6 @@ subroutine PopulateSimulationFlagsFromGlobals(flags)
 
     ! Solver mode
     flags%period_averaged = qAveraged_G
-    ! Integrator (quiver_split_active is set per step by rk4par)
-    flags%quiver_split = qQuiverSplit_G
-    flags%quiver_split_active = .false.
 
     ! Deposition
     flags%shape_order = iShapeOrder_G
@@ -871,7 +868,6 @@ subroutine UpdateGlobalsFromSimulationFlags(flags)
 
     ! Simulation type
     qOneD_G = flags%one_dimensional
-    qQuiverSplit_G = flags%quiver_split
     iShapeOrder_G = flags%shape_order
     qMod_G = flags%using_modules
     qAveraged_G = flags%period_averaged

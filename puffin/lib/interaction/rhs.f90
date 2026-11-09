@@ -20,7 +20,6 @@ use Globals, only: NX_G, NY_G, NZ2_G, ntrndsi_G, nspinDX, nspinDY, sLengthOfElmX
 use Equations, only: dppdz_r_f, dppdz_i_f, dgamdz_f, dxdz_f, dydz_f, dz2dz_f, alct_e_srtcts, &
   dalct_e_srtcts, adjundplace, sInv2rho, sp2, sField4ElecReal, sField4ElecImag, bxu, byu, bzu
 use wigglerVar, only: getalpha
-use quiver, only: getQuiverDrive
 use FiElec1D, only: getinterps_1d, getffelecs_1d, getsource_1d, &
   getinterps_1d_bspline, getffelecs_1d_bspline, getsource_1d_bspline
 use FiElec, only: getinterps_3d, getffelecs_3d, getsource_3d, &
@@ -81,7 +80,7 @@ contains
                     qOK, ctx)
 
   use rhs_vars, only: p_nodes, halfx, halfy, lis_GR, dx, dy, dz2, sp2, sField4ElecReal, &
-    sField4ElecImag, bxu, byu, bzu, quiverDriveR, quiverDriveI, WP, IP
+    sField4ElecImag, bxu, byu, bzu, WP, IP
 
   implicit none (type, external)
 
@@ -178,17 +177,6 @@ contains
              spiRes(iNumberElectrons_G, ctx%field%nEnv))
     allocate(sdgamC(size(sdgam)))
   end if
-!     Undulator drive already carried analytically by the split integrator.
-!     Zero unless rk4par has flagged this step as split, so the standard path
-!     is unaffected.
-
-  if (ctx%flags%quiver_split_active) then
-    call getQuiverDrive(sZ, ctx%und, ctx%frame, quiverDriveR, quiverDriveI)
-  else
-    quiverDriveR = 0.0_wp
-    quiverDriveI = 0.0_wp
-  end if
-
 
 
 !$OMP PARALLEL

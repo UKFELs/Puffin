@@ -11,7 +11,6 @@ module RK4int
    use IO, only: tErrorLog_G, log_error
    use ParaField, only: upd8a, inner2outer, outer2inner
    use GlobalTypes, only: tSimulationContext, tFieldValues, tRK4Workspace
-   use quiver, only: getQuiverMomentum, qQuiverStepOK
 
    implicit none (type, external)
 private
@@ -112,16 +111,6 @@ contains
       REAL(KIND=WP)    :: h6, hh, szh
       !REAL(KIND=WP), DIMENSION(size(y)) :: dym, dyt, yt
 
-!    Analytic quiver offsets for the split integrator - see quiver.f90.
-!    dPw*_h is Pw(sz + h/2) - Pw(sz), dPw*_f is Pw(sz + h) - Pw(sz). The
-!    integrated variable is the slow remainder u = pperp - Pw(zbar), and pperp
-!    is rebuilt at each stage by adding the offset for that stage's zbar. All
-!    four are exactly zero when the step is not split, leaving the arithmetic
-!    below bit-identical to the unsplit scheme.
-
-      REAL(KIND=WP)    :: Pwr0, Pwi0, Pwr, Pwi
-      REAL(KIND=WP)    :: dPwr_h, dPwi_h, dPwr_f, dPwi_f
-
 
 
 
@@ -136,30 +125,6 @@ contains
       hh = h * 0.5_WP
       h6 = h / 6.0_WP
       szh = sz + hh
-
-!    Decide whether this step is split, and precompute the stage offsets
-
-      ctx%flags%quiver_split_active = ctx%flags%quiver_split .and. &
-                                      qQuiverStepOK(sz, h, ctx%und)
-
-      dPwr_h = 0.0_wp
-      dPwi_h = 0.0_wp
-      dPwr_f = 0.0_wp
-      dPwi_f = 0.0_wp
-
-      if (ctx%flags%quiver_split_active) then
-
-         call getQuiverMomentum(sz, ctx%und, ctx%frame, Pwr0, Pwi0)
-
-         call getQuiverMomentum(sz + hh, ctx%und, ctx%frame, Pwr, Pwi)
-         dPwr_h = Pwr - Pwr0
-         dPwi_h = Pwi - Pwi0
-
-         call getQuiverMomentum(sz + h, ctx%und, ctx%frame, Pwr, Pwi)
-         dPwr_f = Pwr - Pwr0
-         dPwi_f = Pwi - Pwi0
-
-      end if
 
 
 
@@ -261,8 +226,8 @@ contains
          work%xt = sElX_G      +  hh*work%dxdx
          work%yt = sElY_G      +  hh*work%dydx
          work%z2t = sElZ2_G    +  hh*work%dz2dx
-         work%pxt = sElPX_G    +  hh*work%dpxdx  +  dPwr_h
-         work%pyt = sElPY_G    +  hh*work%dpydx  +  dPwi_h
+         work%pxt = sElPX_G    +  hh*work%dpxdx
+         work%pyt = sElPY_G    +  hh*work%dpydx
          work%pz2t = sElGam_G  +  hh*work%dpz2dx
 
          work%A_r(:,:,1) = work%A_r(:,:,0) + hh * work%dadz_r(:,:,0)
@@ -299,8 +264,8 @@ contains
          work%xt = sElX_G      +  hh*work%dxt
          work%yt = sElY_G      +  hh*work%dyt
          work%z2t = sElZ2_G    +  hh*work%dz2t
-         work%pxt = sElPX_G    +  hh*work%dpxt  +  dPwr_h
-         work%pyt = sElPY_G    +  hh*work%dpyt  +  dPwi_h
+         work%pxt = sElPX_G    +  hh*work%dpxt
+         work%pyt = sElPY_G    +  hh*work%dpyt
          work%pz2t = sElGam_G  +  hh*work%dpz2t
 
          work%A_r(:,:,2) = work%A_r(:,:,0) + hh * work%dadz_r(:,:,1)
@@ -332,8 +297,8 @@ contains
          work%xt = sElX_G      +  h * work%dxm
          work%yt = sElY_G      +  h * work%dym
          work%z2t = sElZ2_G    +  h * work%dz2m
-         work%pxt = sElPX_G    +  h * work%dpxm  +  dPwr_f
-         work%pyt = sElPY_G    +  h * work%dpym  +  dPwi_f
+         work%pxt = sElPX_G    +  h * work%dpxm
+         work%pyt = sElPY_G    +  h * work%dpym
          work%pz2t = sElGam_G  +  h * work%dpz2m
 
          work%A_r(:,:,3) = work%A_r(:,:,0) + h * work%dadz_r(:,:,2)
@@ -381,8 +346,8 @@ contains
          sElX_G    = sElX_G   + h6 * ( work%dxdx   + work%dxt   + 2.0_WP * work%dxm  )
          sElY_G    = sElY_G   + h6 * ( work%dydx   + work%dyt   + 2.0_WP * work%dym  )
          sElZ2_G   = sElZ2_G  + h6 * ( work%dz2dx  + work%dz2t  + 2.0_WP * work%dz2m )
-         sElPX_G   = sElPX_G  + h6 * ( work%dpxdx  + work%dpxt  + 2.0_WP * work%dpxm ) + dPwr_f
-         sElPY_G   = sElPY_G  + h6 * ( work%dpydx  + work%dpyt  + 2.0_WP * work%dpym ) + dPwi_f
+         sElPX_G   = sElPX_G  + h6 * ( work%dpxdx  + work%dpxt  + 2.0_WP * work%dpxm )
+         sElPY_G   = sElPY_G  + h6 * ( work%dpydx  + work%dpyt  + 2.0_WP * work%dpym )
          sElGam_G  = sElGam_G + h6 * ( work%dpz2dx + work%dpz2t + 2.0_WP * work%dpz2m)
 
          work%in_r = work%in_r + h6 * (work%dadz_r(:,:,0) + work%dadz_r(:,:,1) &

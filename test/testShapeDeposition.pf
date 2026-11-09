@@ -104,8 +104,6 @@ contains
     call makeUnd(ctx%und, ctx%frame, undType)
 
     ctx%flags%period_averaged = .false.
-    ctx%flags%quiver_split = .false.
-    ctx%flags%quiver_split_active = .false.
     ctx%flags%focusing = .false.
     ctx%flags%parallel_arrays_ok = .true.
     ctx%flags%inner_xy_ok = .true.
