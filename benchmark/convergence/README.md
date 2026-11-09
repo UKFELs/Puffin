@@ -2,7 +2,8 @@
 
 `run_scan.py` measures how the final radiation field depends on the integration
 step, so that a change to the integrator can be judged on accuracy-per-step
-rather than on wall clock alone.
+rather than on wall clock alone. It was built to judge the B-spline deposition
+kernels (`iShapeOrder`), which is what this document reports.
 
 ```sh
 python3 run_scan.py <undulator-type> <reference-steps> <steps> [<steps> ...]
@@ -10,13 +11,8 @@ SCAN_NODES=24 python3 run_scan.py planepole 240 12 20 30   # override nodesPerLa
 SCAN_ORDER=3 python3 run_scan.py planepole 240 12 20 30    # cubic deposition
 ```
 
-Every value in `<steps>` is run twice, once with `qQuiverSplit = .false.` and
-once with `.true.`, and both are compared against a single unsplit run at
-`<reference-steps>`, which stands in for the exact solution. Using the *same*
-reference for both is what makes the two columns comparable, and it doubles as
-the correctness check on the split scheme: it solves the same ODE, so at a fine
-step it has to converge to the same answer. It does — split and unsplit at 240
-steps/period agree to 6.6e-7, inside the reference's own truncation error.
+Every value in `<steps>` is compared against a run at `<reference-steps>`,
+which stands in for the exact solution.
 
 `SCAN_ORDER` sets `iShapeOrder`, the B-spline degree of the deposition kernel
 (1 linear, 2 quadratic, 3 cubic). The reference is run with the *same* kernel as
@@ -34,9 +30,8 @@ lambda_w = 27.5 mm, gamma_r = 456.4).
 Needs `mpirun` and `h5dump`; standard library Python only. `PUFFIN=<path>`
 overrides which binary is run; the default is the in-tree `build/`. Further
 `SCAN_*` variables, listed at the top of the script, pick the deck (the 3D one
-below is `SCAN_DECK=test/inputs/3D/clara_test.in SCAN_INPUTS=test`), the split
-setting, where the runs go, a dump every N periods, and a JSON copy of the
-results.
+below is `SCAN_DECK=test/inputs/3D/clara_test.in SCAN_INPUTS=test`), where the
+runs go, a dump every N periods, and a JSON copy of the results.
 
 ## Figures
 
@@ -46,17 +41,17 @@ and draws them; `plot_convergence.py` draws the first, and
 takes `--labels` and `--ratio` to compare any two runs - the other three.
 
 - [`figures/convergence.png`](figures/convergence.png): error against steps per
-  period for every kernel, split and unsplit, in 1D planar, 1D helical and 3D;
-  the observed order against the kernel's degree; the cells-per-step collapse
-  and where it breaks; and what the split is worth. Sections 1 to 4 in one
-  picture.
+  period for every kernel in 1D planar, 1D helical and 3D; the observed order
+  against the kernel's degree; what the kernel is worth against steps per period
+  in each case; and the error against cells crossed per step at two mesh
+  densities. Sections 1 to 3 in one picture.
 - [`figures/overlay_linear.png`](figures/overlay_linear.png) and
-  [`figures/overlay_cubic_split.png`](figures/overlay_cubic_split.png): power,
-  energy, bunching, profile, spectrum and phase space for the shipped default
-  and for cubic + split, each at 30 and 12 steps/period against its own
-  240-step reference - what the error numbers look like in the observables.
+  [`figures/overlay_cubic.png`](figures/overlay_cubic.png): power, energy,
+  bunching, profile, spectrum and phase space for the linear and cubic kernels,
+  each at 30 and 12 steps/period against its own 240-step reference - what the
+  error numbers look like in the observables.
 - [`figures/overlay_kernels.png`](figures/overlay_kernels.png): linear against
-  cubic, both converged in the step - the kernel's form factor of section 6.
+  cubic, both converged in the step - the kernel's form factor of section 5.
 
 ## How the error is measured
 
@@ -75,246 +70,117 @@ The reference is not the exact solution, so it is worth knowing how far the
 measurement can be trusted. Re-running the smallest errors against a 480
 step/period reference as well as the 240 one:
 
-| | the two references differ by | error at 30 steps/period moves |
-| --- | --- | --- |
-| planepole, cubic + split | 4.3e-7 | 0.3% |
-| helical, cubic + split | 6.1e-7 | 0.8% |
+| | the two references differ by |
+| --- | --- |
+| planepole, cubic | 4.3e-7 |
+| helical, cubic | 6.1e-7 |
 
-So the floor of this measurement is a few times 1e-7. The smallest number quoted
-anywhere below is 6.4e-6, an order of magnitude above it and stable to under a
-percent when the reference is refined, so even the largest ratios in section 3
-are measuring the scheme rather than the reference.
+So the floor of this measurement is a few times 1e-7. The smallest error quoted
+anywhere below is 1.2e-4, more than two orders of magnitude above it, so every
+ratio here is measuring the scheme rather than the reference.
 
 ## What the scans showed
 
-### 1. Linear deposition, and the cells-per-step floor
+Throughout, a factor like "38x" means *error reduced by* that factor at the same
+step count - the linear kernel's error divided by this one's. It has nothing to
+do with FEL gain. All runs are on one MPI rank, in the Debug build.
 
-The first round of scans found that with the shipped linear deposition the
-accuracy floor is set by macroparticles crossing field-mesh cells rather than by
-resolving the undulator quiver. Sorting the runs by cells crossed per step —
-`nodesPerLambdar / stepsPerPeriod` — the error collapses onto that one number:
+### 1. Two sources of step error, and which one the kernel can touch
 
-| cells/step | 0.4 | 0.6 | 0.8 | 1.0 | 1.2 | 2.0 |
-| --- | --- | --- | --- | --- | --- | --- |
-| rel. L2 error, linear + split | 1.0e-3 | 1.0e-2 | 2.5e-3 | 2.3e-2 | 3.2e-2 | 1.8e-1 |
+Puffin resolves the undulator period, so its step error has two sources:
 
-Doubling `nodesPerLambdar` from 12 to 24 at a fixed 12 steps/period makes the
-error 8x worse even though the integration step is unchanged. The deposition is
-linear, so a particle crossing a node puts a kink in the source, and RK4 cannot
-integrate through a kink at fourth order.
+- **the quiver** - RK4 tracking the fast transverse oscillation, at a fixed
+  number of steps per undulator period;
+- **node crossings** - the linear (hat) deposition is only C0, so every time a
+  macroparticle crosses a field-mesh node the source it scatters gains a kink,
+  and RK4 cannot integrate through a kink at fourth order.
 
-That diagnosis predicted a fix — a smoother kernel — and it is now implemented
-and measured, which is the rest of this document.
+The second is visible directly with the linear kernel: at a fixed step, a finer
+mesh - more nodes to cross - is *less* accurate. 1D planepole, linear:
 
-### 2. The smoother kernel, and a correction to the diagnosis
+| steps/period | 12 nodes/λr | 24 nodes/λr | finer mesh is worse by |
+| --- | --- | --- | --- |
+| 12 | 7.98e-2 | 2.05e-1 | 2.6x |
+| 20 | 1.41e-2 | 3.40e-2 | 2.4x |
+| 30 | 2.19e-3 | 3.32e-3 | 1.5x |
+
+A smoother kernel removes the kink and nothing else. So what it is worth depends
+entirely on how much of the error the node crossings account for - which is set
+by how many cells a macroparticle sweeps through per step, and that is mostly
+the figure-of-eight: on a planar undulator the z2 motion oscillates at twice the
+quiver frequency and drags each particle back and forth across nodes. A helical
+undulator has no figure-of-eight, and there the kernel is worth nothing in 1D.
+
+### 2. The smoother kernel, in 1D
 
 `iShapeOrder = 2` or `3` replaces the linear (C0) weights with a quadratic (C1)
-or cubic (C2) B-spline, in `shape_functions.f90`. Rerunning the scans across all
-three kernels changes the picture in a way the original write-up got half right.
+or cubic (C2) B-spline, in `shape_functions.f90`. Error in the final field, 1D:
 
-**The kink is real, and smoothing removes it — but only once the quiver error is
-out of the way as well.** At the shipped operating point (`nodesPerLambdar = 12`,
-30 steps/period, 0.4 cells/step), relative L2 error in the final field:
+| steps/period | planepole 12 nodes/λr: linear / cubic | gain | planepole 24 nodes/λr: linear / cubic | gain | helical 12 nodes/λr: gain |
+| --- | --- | --- | --- | --- | --- |
+| 12 | 7.98e-2 / 7.26e-2 | 1.1x | 2.05e-1 / 1.38e-1 | 1.5x | 1.0x |
+| 20 | 1.41e-2 / 9.47e-3 | 1.5x | 3.40e-2 / 1.18e-2 | 2.9x | 1.0x |
+| 30 | 2.19e-3 / 1.87e-3 | 1.2x | 3.32e-3 / 2.03e-3 | 1.6x | 1.1x |
+| 40 | 8.82e-4 / 5.91e-4 | 1.5x | 3.42e-3 / 6.54e-4 | 5.2x | 1.2x |
+| 60 | 3.15e-4 / 1.17e-4 | 2.7x | 7.57e-4 / 1.27e-4 | 6.0x | 1.7x |
 
-Throughout this document a factor like "100x" means *error reduced by* that
-factor at the same step count — the default's error divided by this row's. It
-has nothing to do with FEL gain.
+At the shipped operating point - 12 nodes/λr, 30 steps/period, 0.4 cells per
+step - the quiver dominates and the kernel is worth 1.2x. The slope from 12 to
+20 steps/period is about 4 for every kernel (3.4 / 4.0 / 4.0), RK4's own order:
+the step error there is the quiver's, and the deposition is a minor part of it.
+On the finer 24-node mesh the crossings matter more and the kernel is worth
+1.5-6x, with the slope now ordered by degree (3.5 / 4.5 / 4.8). Quadratic sits
+close to cubic throughout.
 
-| configuration | error | error reduced by |
-| --- | --- | --- |
-| linear, unsplit (the shipped default) | 2.19e-3 | - |
-| linear, `qQuiverSplit` | 1.04e-3 | 2.1x |
-| cubic, unsplit | 1.87e-3 | 1.2x |
-| cubic + `qQuiverSplit` | 2.13e-5 | **103x** |
+### 3. In 3D, where it matters
 
-Neither change alone is worth much; together they are worth two orders of
-magnitude. The two error sources — quiver truncation and the deposition kink —
-are comparable in size at this operating point, so removing either one leaves
-the other in charge. The original conclusion that "the floor is set by
-deposition, not the quiver" was drawn from the split column alone, where that is
-true; for a default run, both matter about equally.
+The 3D path is a tensor product of the same splines, and the node indices stride
+by `nspinDX` and `ntrndsi_G` as well as by one, so it is worth measuring rather
+than assuming. Scanned on the 3D e2e deck (`test/inputs/3D/clara_test.in`: 85x85
+transverse, 21 nodes per resonant wavelength, periodic, diffraction on, beam
+read from HDF5 so the realisation is fixed, undulator ends on), each kernel
+against its own 240 step/period reference:
 
-**The kernel's continuity class shows up directly as the observed order of
-convergence.** Taking `error ~ (1/steps)^p` as the slope from 12 to 20 steps/period, with
-`qQuiverSplit` on, at `nodesPerLambdar = 12`:
-
-| kernel | continuity | observed p |
-| --- | --- | --- |
-| linear | C0 | 1.7 |
-| quadratic | C1 | 2.7 |
-| cubic | C2 | 4.1 |
-
-That is the cleanest confirmation of the diagnosis: with a C2 source, RK4 gets
-its design order back. (Over the finer 20 to 30 interval the measured slopes are
-steeper still, 5.7 to 7.6, so this is not a single clean power law over the whole
-range — the numbers above are the coarse-step slope, which is the regime that
-matters for choosing a step.)
-
-**Cells per step stays the main variable for every kernel, with the mesh a
-smaller second one.** Same runs, split column, all three kernels:
-
-| cells/step | 0.4 | 0.6 | 0.8 | 1.0 | 1.2 | 2.0 |
-| --- | --- | --- | --- | --- | --- | --- |
-| linear | 1.0e-3 | 9.9e-3 | 2.6e-3 | 2.3e-2 | 3.2e-2 | 1.8e-1 |
-| quadratic | 9.4e-5 | 2.1e-3 | 4.3e-4 | 8.4e-3 | 1.3e-2 | 1.4e-1 |
-| cubic | 2.1e-5 | 4.7e-4 | 8.7e-5 | 3.8e-3 | 5.8e-3 | 1.1e-1 |
-
-An earlier version of this section said the linear row was monotonic in
-cells/step and the cubic row was not, and that a smoother kernel hands control
-of the error from the mesh to the step. The table does not bear that out: 0.6
-cells/step is worse than 0.8 in every row, linear included, because every 0.6
-entry is a 12-node run at 20 steps/period and every 0.8 entry a 24-node run.
-The denser scans behind [`figures/convergence.png`](figures/convergence.png)
-separate the two meshes. At the same cells/step the 24-node mesh has less
-error than the 12-node one by:
-
-| cells/step | 0.4 | 0.6 | 1.0 | 1.2 |
-| --- | --- | --- | --- | --- |
-| linear | 1.4x | 2.9x | 2.1x | 2.0x |
-| quadratic | 1.3x | 3.4x | 2.6x | 2.1x |
-| cubic | 2.4x | 3.8x | 3.4x | 2.3x |
-
-So the mesh matters a little more with the smoother kernel, not categorically
-differently, and for all three kernels the error is set mostly by cells per
-step. Part of the 12-node shortfall at 0.6 is the split integrator's bump
-between 12 and 20 steps/period, described in section 3.
-
-**But the floor only moves where the step resolves the crossing.** Answering the
-question the kernel was built to answer:
-
-- at 1.0 cells/step the split error drops 6.2x (2.3e-2 to 3.8e-3), and 21x
-  against the unsplit default;
-- at 2.0 cells/step it drops 1.7x, from 1.8e-1 to 1.1e-1, which is no use to
-  anyone — the error is still enormous. At two cells per step the source varies
-  on the scale of the step itself and no amount of kernel smoothness fixes that.
-
-So: a smoother kernel buys one to two orders of magnitude below about one cell
-per step, and nothing at two.
-
-### 3. The quiver split now pays off on planepole
-
-The secondary check, and it confirms the diagnosis from the other direction.
-`qQuiverSplit` was worth about 2x on `planepole` against linear deposition,
-versus far more on `helical`, because the planar figure-of-eight excursion drags
-the macroparticles back and forth across node boundaries and the resulting kinks
-dominated whatever the split saved. With the kink smoothed away, the split is
-worth what it should be. Error reduction from turning `qQuiverSplit` on, at
-`nodesPerLambdar = 12`:
-
-| steps/period | planepole, linear | planepole, cubic | helical, linear | helical, cubic |
-| --- | --- | --- | --- | --- |
-| 12 | 3.4x | 19x | 33x | 1591x |
-| 20 | 1.4x | 20x | 6.4x | 405x |
-| 30 | 2.1x | 88x | 3.3x | 393x |
-
-**The split's error is not monotonic in the step.** The denser scan in
-[`figures/convergence.png`](figures/convergence.png) (10 to 60 steps/period,
-every kernel) shows a bump between 12 and 20. On planepole 16 steps/period is
-more accurate than 20 for every kernel (cubic: 4.0e-4 against 4.7e-4). On
-helical 14 and 16 are 3-6x *less* accurate than either 12 or 20 (cubic: 3.3e-4
-and 4.2e-4, against 6.5e-5 at 12 and 3.4e-5 at 20). The unsplit runs show no
-such feature, and it sits at the same step counts whatever the kernel, so it
-belongs to the split integrator, not to the deposition. Its cause is not yet
-understood. Two consequences for the numbers here: the ratios in the table above
-depend on which step counts are picked (helical cubic is worth 1591x at 12 but
-78x at 16), and the observed orders in section 2 are two-point slopes from 12 to
-20, which a fit through 14 and 16 would not reproduce. They are not quoted for
-helical.
-
-### 4. In 3D, where it matters more
-
-Everything above is 1D. The 3D path is a tensor product of the same splines, and
-the node indices stride by `nspinDX` and `ntrndsi_G` as well as by one, so it is
-worth measuring rather than assuming. Scanned on the 3D e2e deck
-(`test/inputs/3D/clara_test.in`: 85x85 transverse, 21 nodes per resonant
-wavelength, periodic, diffraction on, beam read from HDF5 so the realisation is
-fixed), each kernel against its own 240 step/period reference, and with
-`qQuiverSplit` **off** throughout:
-
-| steps/period | cells/step | linear | quadratic | cubic |
-| --- | --- | --- | --- | --- |
-| 12 | 1.8 | 6.2e-1 | 3.1e-1 | 2.0e-1 |
-| 20 | 1.1 | 3.1e-1 | 6.0e-2 | 1.4e-2 |
-| 30 | 0.7 | 1.5e-1 | 2.2e-2 | 4.1e-3 |
+| steps/period | cells/step | linear | quadratic | cubic | cubic gain |
+| --- | --- | --- | --- | --- | --- |
+| 12 | 1.8 | 6.2e-1 | 3.1e-1 | 2.0e-1 | 3.1x |
+| 16 | 1.3 | 3.9e-1 | 1.2e-1 | 5.7e-2 | 6.8x |
+| 20 | 1.1 | 3.1e-1 | 6.0e-2 | 1.4e-2 | 22x |
+| 24 | 0.9 | 1.5e-1 | 1.9e-2 | 3.7e-3 | 39x |
+| 30 | 0.7 | 1.5e-1 | 2.2e-2 | 4.1e-3 | 38x |
+| 40 | 0.5 | 9.1e-2 | 1.5e-2 | 3.0e-3 | 31x |
 
 | observed order p, 12 to 20 | linear | quadratic | cubic |
 | --- | --- | --- | --- |
 | 3D | 1.4 | 3.2 | 5.2 |
 
-The degree-to-order relationship reproduces, and the kernel is worth *more* here
-than in 1D: 38x less error at 30 steps/period, 22x at 20, with no help from the
-split at all - where in 1D the unsplit kernel was worth 1.2x.
+Here the deposition dominates, and the kernel's continuity class shows up
+directly as the observed order of convergence. This deck samples 21 nodes per
+wavelength and runs at 0.5 to 1.8 cells per step, where the crossings set the
+error; the 1D default sits at 0.4 with half the mesh density, where the quiver
+does. CLARA-style 3D decks sample finely in z2 and sit exactly where the kernel
+pays, so the 1D figures understate what it is worth to them.
 
-That is not a contradiction, it is the cells-per-step picture again. This deck
-samples 21 nodes per wavelength and runs at 0.7 to 1.8 cells per step, where
-deposition dominates; the 1D default sits at 0.4, where the quiver does. Which
-also says something practical: CLARA-style 3D decks sample finely in z2 and sit
-exactly where the kernel pays, so the 1D figures understate what it is worth to
-them.
+Beyond about 24 steps/period the 3D error stops falling - cubic is 3.7e-3 at 24,
+4.1e-3 at 30, 3.0e-3 at 40, and linear is flat between 24 and 30 too. Some other
+error source takes over there, the same for every kernel, and it has not been
+examined; the split-step diffraction advance is the obvious candidate.
 
-### 4b. And where the quiver split stops paying
-
-The 3D scan above has `qQuiverSplit` off, which turned out to be the right way
-round: **in 3D the split is worth nothing.** Same deck, end ramps off so the
-split is live for the whole run, 20 periods, each kernel against its own
-unsplit 240 step/period reference:
-
-| steps/period | cells/step | linear | quadratic | cubic |
-| --- | --- | --- | --- | --- |
-| 12 | 1.75 | 1.0x | 1.1x | 1.0x |
-| 20 | 1.05 | 1.0x | 1.0x | 1.0x |
-| 30 | 0.70 | 1.0x | 1.0x | 1.0x |
-
-In 1D at a comparable 0.8 cells/step the same comparison is worth 23x. Turning
-diffraction off changes the error by 4x but not the ratio - still 1.0x - so the
-split-step field advance is not what is hiding it either.
-
-The reason is structural, and it is the same lesson as the abandoned z2
-figure-of-eight experiment. The split only quietens `pperp`. `dxdz_f` and
-`dydz_f` are proportional to the *full* `pperp`, which `rk4par` reconstructs as
-`u + Pw` at every stage, so x and y still carry the transverse wiggle at the
-quiver frequency and RK4 still has to resolve it. 1D has no transverse
-coordinates to carry it, and that is the entire difference between 23x and 1.0x.
-Moving a fast motion out of one integrated variable does not help while another
-integrated variable still has it.
-
-(The transverse-dependent part of the quiver drive that the split does *not*
-remove - the natural-focusing `bzu` term, which is at the quiver frequency - is
-a red herring here. It is of order `kappa sqrt(eta) |pperp| y / 2rho` against a
-removed drive of `1/2rho`, some 1e-4 of it at typical amplitudes.)
-
-Splitting x and y as well would be the fix. Their excursion is the integral of
-`Pw` again, but carries a particle-dependent prefactor,
-`2 rho kappa / sqrt(eta) * (1 + eta p2) / Gamma`, so it is not a pure function
-of zbar: the transformation would be exact only to the order that prefactor is
-held constant over a step. Untried. Until then `qQuiverSplit` is a 1D
-optimisation, and the 3D case for the B-spline kernel stands on its own - which,
-from section 4, it does.
-
-### 5. What it costs, and whether it is worth turning on
+### 4. What it costs, and whether it is worth turning on
 
 Measured in an optimised build (`-DCMAKE_BUILD_TYPE=Release`), best of three,
 timed on the undulator module alone so that setup and IO are out of it. The
 Debug build the scans run in exaggerates the stencil cost, so these are the
 numbers to quote.
 
-1D, planepole, `nodesPerLambdar = 12`:
+**1D**: cubic costs about 1.5x per step - four nodes touched instead of two,
+per gather and per scatter, diluted by the rest of the step (planepole, 12
+nodes/λr, 30 steps/period: 4.66 s linear, 7.04 s cubic - the cubic timing taken with the since-removed quiver split on, which cost nothing measurable). At the default mesh it
+buys 1.1-1.5x in accuracy for that, so it is a net loss there; on a finer mesh,
+or at many steps per period, where it is worth 3-6x, it pays. On a helical
+undulator it buys nothing in 1D.
 
-| configuration | steps/period | error | module time |
-| --- | --- | --- | --- |
-| linear, unsplit (default) | 30 | 2.19e-3 | 4.66 s |
-| cubic + split | 30 | 2.13e-5 | 7.04 s |
-| cubic + split | 14 | 8.89e-4 | 3.32 s |
-| cubic + split | 12 | 3.76e-3 | 2.83 s |
-
-Cubic costs about 1.5x per step in 1D - four nodes touched instead of two, per
-gather and per scatter, diluted by the rest of the step. `qQuiverSplit` is free.
-So in 1D it pays whichever way you spend it: 100x less error for 1.5x the time
-at the same step, or the default's own accuracy at about 13 steps/period, which
-is 1.4x less wall clock end to end.
-
-**3D is a different trade, and this is the number that was missing.** Same deck
-as section 4, 40 periods, no dumps:
+**3D** is a different trade. Same deck as section 3, 40 periods, no dumps:
 
 | kernel | module time | per step |
 | --- | --- | --- |
@@ -337,7 +203,7 @@ gets is headroom - 38x less error for 4x the time at a fixed step, or 7x for
 result is converged, and not worth having when the question is how many shots
 fit in a night.
 
-### 6. What the smoothing costs: a real change to the discretisation
+### 5. What the smoothing costs: a real change to the discretisation
 
 A B-spline filters the source in space as well as smoothing it in time, so at a
 fixed mesh the coupling to the radiation is slightly weaker. This is a
@@ -373,6 +239,20 @@ the mesh's own resolved bandwidth rather than radiation anyone cares about — t
 in-band share at zbar = 1.3 falls from 0.87 to 0.41 as the mesh goes from 12 to
 48 nodes per wavelength. A band-limited comparison would be the honest
 measurement here, and has not been done.
+
+### Tried and removed: splitting out the quiver
+
+The other half of the 1D step error - the quiver - was attacked alongside this
+work with an analytic split: subtract the closed-form undulator quiver from
+pperp for each RK4 step and integrate only the slow remainder. In 1D, together
+with the cubic kernel, it cut the error 100x at the default operating point. It
+was removed before merging. It needs the undulator field across each step to be
+a closed-form function of zbar, so end ramps, tapers and any field that changes
+appreciably within a period fell back to the unsplit scheme - and resolving such
+changes is much of the reason to run an unaveraged code. In 3D it was worth
+nothing (x and y still carry the quiver), and even in 1D its error was not
+monotonic in the step. The kernel has none of those limits and stands on the 3D
+result alone.
 
 ## The inner transverse mesh, and its margin
 
@@ -436,17 +316,17 @@ goldens bit-for-bit. 2 and 3 select the quadratic and cubic B-splines, in 1D and
 
 Recommended, on this evidence:
 
-- **1D**: `iShapeOrder = 3` with `qQuiverSplit = .true.`. It is better and
-  faster than the default, so there is little reason not to.
-- **3D**: `iShapeOrder = 3` alone when the question is whether a result is
-  converged - 38x the accuracy margin for 4x the time. `qQuiverSplit` adds
-  nothing in 3D (section 4b), so leave it off there. Keep `iShapeOrder = 1` when
-  the question is throughput, because at equal accuracy cubic is about 1.7x
-  slower in 3D. `iShapeOrder = 2` is the middle: roughly break-even on time, 7x
-  on error.
-- **Either**: do not expect any of it to rescue a run taking more than about one
-  cell per step, and do not change `iShapeOrder` on a deck whose numbers you are
-  comparing against older runs (see section 6).
+- **3D**: `iShapeOrder = 3` when the question is whether a result is converged -
+  up to 39x the accuracy margin for 4x the time. Keep `iShapeOrder = 1` when the
+  question is throughput, because at equal accuracy cubic is about 1.7x slower
+  in 3D. `iShapeOrder = 2` is the middle: roughly break-even on time, 5-7x on
+  error.
+- **1D**: worth it on a planar undulator with a fine mesh or many steps per
+  period (3-6x); not at the default 12 nodes/λr (1.1-1.5x for 1.5x the cost),
+  and not on a helical undulator, where the z2 motion has no figure-of-eight to
+  smooth.
+- **Either**: do not change `iShapeOrder` on a deck whose numbers you are
+  comparing against older runs (see section 5).
 
 The wider stencil reaches one node further left and right than the linear one,
 which the parallel field layout has to account for: `rearrElecs` shifts which

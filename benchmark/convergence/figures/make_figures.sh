@@ -32,52 +32,50 @@ for o in 1 2 3; do
   scan pp_n12_o$o SCAN_ORDER=$o -- planepole 240 $STEPS1
   scan hel_n12_o$o SCAN_ORDER=$o -- helical 240 $STEPS1
   scan pp_n24_o$o SCAN_ORDER=$o SCAN_NODES=24 -- planepole 240 12 16 20 24 30 40 60
-  scan 3d_o$o SCAN_ORDER=$o SCAN_SPLIT=off SCAN_WRITE=1 \
+  scan 3d_o$o SCAN_ORDER=$o SCAN_WRITE=1 \
     SCAN_DECK="$TOP/test/inputs/3D/clara_test.in" SCAN_INPUTS="$TOP/test" \
     -- planepole 240 12 16 20 24 30 40
 done
 # with a write every period, for the overlays
-scan ov_lin SCAN_ORDER=1 SCAN_SPLIT=off SCAN_WRITE=1 -- planepole 240 12 30
-scan ov_cub SCAN_ORDER=3 SCAN_SPLIT=on SCAN_WRITE=1 -- planepole 240 12 30
+scan ov_lin SCAN_ORDER=1 SCAN_WRITE=1 -- planepole 240 12 30
+scan ov_cub SCAN_ORDER=3 SCAN_WRITE=1 -- planepole 240 12 30
 wait
 
 DECK="1D (no diffraction), seeded, noise-free: benchmark/convergence/scan.in. Planar undulator unless stated, aw = 1.012, λw = 2.75 cm, γr = 456.4, ρ = 0.005, λr = 100 nm, 60 periods, no undulator ends; flat-top beam 50 z̄2 long, 400 A, σγ/γ = 0.001, 4 macroparticles per λr; flat-top seed at ωr, |A| = 0.01, x-polarised."
-ERR="Error is the relative L2 difference of the whole final field, real and imaginary parts, from a reference run with the same kernel at 240 steps/period, unsplit. The references themselves agree with 480-step ones to a few times 1e-7 (README, 'How the error is measured')."
+ERR="Error is the relative L2 difference of the whole final field, real and imaginary parts, from a reference run with the same kernel at 240 steps/period. The references themselves agree with 480-step ones to a few times 1e-7 (README, 'How the error is measured')."
 
 $PY "$HERE/../plot_convergence.py" "$HERE/convergence.png" --scans "$SCANS" \
-  --title "Step-size convergence by deposition kernel (iShapeOrder) and quiver split (qQuiverSplit)" \
-  --scenario "$DECK 3D: the 3D e2e deck test/inputs/3D/clara_test.in - 85x85 transverse, 21 nodes/λr, a periodic single-wavelength slice, diffraction on, beam read from HDF5 so the realisation is fixed, 5 periods with undulator ends; unsplit, since the split is worth nothing in 3D.
+  --title "Step-size convergence by deposition kernel (iShapeOrder): linear, quadratic and cubic B-splines" \
+  --scenario "$DECK 3D: the 3D e2e deck test/inputs/3D/clara_test.in - 85x85 transverse, 21 nodes/λr, a periodic single-wavelength slice, diffraction on, beam read from HDF5 so the realisation is fixed, 5 periods with undulator ends.
 
-$ERR Filled markers and solid lines: qQuiverSplit on; open markers and dashed: off.
-
-With the split on the error is not monotonic in the step: on planepole 16 steps/period beats 20, and on helical 14 and 16 are 3-6x worse than 12 or 20. The bump sits at the same step counts for every kernel, and the unsplit curves have none, so it belongs to the split integrator, not to the deposition. The orders are therefore the slope from 12 to 20, as in the README, and are not given for helical." \
+$ERR The kernel can only remove the error from macroparticles crossing mesh nodes, so it is worth most where they cross many: in 3D at this mesh density, and on a planar undulator, whose figure-of-eight drags particles back and forth in z2. At the 1D default (12 nodes/λr) the quiver dominates the step error instead, and on a helical undulator, with no figure-of-eight, the kernel is worth nothing in 1D." \
   --command "bash benchmark/convergence/figures/make_figures.sh SCANS  (run_scan.py, 240-step references; steps $STEPS1)"
 
 OV="$DECK Every panel compares a coarse step against the same kernel's 240 step/period reference, so the gap between the curves is step-size error and nothing else. Solver times are left out: these runs write every period and ran alongside the others; the README's timings are from a Release build, best of three."
 R="$SCANS/runs"
 
 $PY "$TOP/benchmark/averaged/plot_compare_latt.py" "$HERE/overlay_linear.png" \
-  --unavg "$R/ov_lin/planepole_ref_o1" --avg "$R/ov_lin/planepole_30_o1_plain" \
-  --before "$R/ov_lin/planepole_12_o1_plain" --no-times \
+  --unavg "$R/ov_lin/planepole_ref_o1" --avg "$R/ov_lin/planepole_30_o1" \
+  --before "$R/ov_lin/planepole_12_o1" --no-times \
   --labels "linear, 240 steps/period (reference)|linear, 30 steps/period (shipped default)|linear, 12 steps/period" \
   --ratio "30 steps / 240 steps" --ratio-before "12 steps / 240 steps" --modules "0:60:undulator, 60 periods" \
-  --title "Linear deposition, unsplit - the shipped default - at 30 and 12 steps per period" \
+  --title "Linear deposition - the shipped default - at 30 and 12 steps per period" \
   --scenario "$OV" \
-  --command "SCAN_ORDER=1 SCAN_SPLIT=off SCAN_WRITE=1 python3 run_scan.py planepole 240 12 30"
+  --command "SCAN_ORDER=1 SCAN_WRITE=1 python3 run_scan.py planepole 240 12 30"
 
-$PY "$TOP/benchmark/averaged/plot_compare_latt.py" "$HERE/overlay_cubic_split.png" \
-  --unavg "$R/ov_cub/planepole_ref_o3" --avg "$R/ov_cub/planepole_30_o3_split" \
-  --before "$R/ov_cub/planepole_12_o3_split" --no-times \
-  --labels "cubic, 240 steps/period, unsplit (reference)|cubic + qQuiverSplit, 30 steps/period|cubic + qQuiverSplit, 12 steps/period" \
+$PY "$TOP/benchmark/averaged/plot_compare_latt.py" "$HERE/overlay_cubic.png" \
+  --unavg "$R/ov_cub/planepole_ref_o3" --avg "$R/ov_cub/planepole_30_o3" \
+  --before "$R/ov_cub/planepole_12_o3" --no-times \
+  --labels "cubic, 240 steps/period (reference)|cubic, 30 steps/period|cubic, 12 steps/period" \
   --ratio "30 steps / 240 steps" --ratio-before "12 steps / 240 steps" --modules "0:60:undulator, 60 periods" \
-  --title "Cubic deposition with the quiver split (iShapeOrder = 3, qQuiverSplit) at 30 and 12 steps per period" \
-  --scenario "$OV" \
-  --command "SCAN_ORDER=3 SCAN_SPLIT=on SCAN_WRITE=1 python3 run_scan.py planepole 240 12 30"
+  --title "Cubic deposition (iShapeOrder = 3) at 30 and 12 steps per period" \
+  --scenario "$OV At this mesh density the step error is mostly the quiver's, not the deposition's, so the cubic kernel does little better than the linear one in the companion figure." \
+  --command "SCAN_ORDER=3 SCAN_WRITE=1 python3 run_scan.py planepole 240 12 30"
 
 $PY "$TOP/benchmark/averaged/plot_compare_latt.py" "$HERE/overlay_kernels.png" \
   --unavg "$R/ov_lin/planepole_ref_o1" --avg "$R/ov_cub/planepole_ref_o3" --no-times \
   --labels "linear, 240 steps/period|cubic, 240 steps/period" \
   --ratio "cubic / linear" --modules "0:60:undulator, 60 periods" \
   --title "What the smoother kernel changes at a converged step: linear against cubic, both at 240 steps per period" \
-  --scenario "$DECK Both runs are converged in the step - each kernel's 60-step run is already within 3e-4 of its 240-step one, against a 5% difference in the field here - so the difference is the kernel's own: a B-spline filters the source in space, weakening the coupling at a fixed mesh by a form factor that falls as the square of the cell size. It is a different discretisation, not an error - README, section 6." \
+  --scenario "$DECK Both runs are converged in the step - each kernel's 60-step run is already within 3e-4 of its 240-step one, against a 5% difference in the field here - so the difference is the kernel's own: a B-spline filters the source in space, weakening the coupling at a fixed mesh by a form factor that falls as the square of the cell size. It is a different discretisation, not an error - README, section 5." \
   --command "SCAN_ORDER=1|3 SCAN_WRITE=1 python3 run_scan.py planepole 240 ..."

@@ -11,8 +11,6 @@ Usage:  python3 run_scan.py <undulator-type> <ref-steps> <steps> [<steps> ...]
 Environment:
   SCAN_NODES   nodesPerLambdar to use instead of the deck's
   SCAN_ORDER   iShapeOrder: 1 linear (default), 2 quadratic, 3 cubic
-  SCAN_SPLIT   "both" (default) runs every step count unsplit and split;
-               "off" unsplit only, "on" split only
   SCAN_DECK    the deck to scan instead of scan.in, e.g. the 3D e2e deck
                test/inputs/3D/clara_test.in
   SCAN_INPUTS  a directory whose entries are linked into every run directory,
@@ -46,7 +44,6 @@ PUFFIN = os.environ.get(
 
 NODES_PER_LAMBDAR = os.environ.get("SCAN_NODES")
 SHAPE_ORDER = int(os.environ.get("SCAN_ORDER", "1"))
-SPLIT = os.environ.get("SCAN_SPLIT", "both")
 DECK = os.path.abspath(os.environ.get("SCAN_DECK", os.path.join(HERE, "scan.in")))
 INPUTS = os.path.abspath(os.environ.get("SCAN_INPUTS", HERE))
 RUNS = os.path.abspath(os.environ.get("SCAN_RUNS", os.path.join(HERE, "runs")))
@@ -56,7 +53,7 @@ JSON_OUT = os.environ.get("SCAN_JSON")
 KERNEL_NAME = {1: "linear", 2: "quadratic", 3: "cubic"}
 
 
-def write_deck(path, und_type, steps, split, order):
+def write_deck(path, und_type, steps, order):
     with open(DECK) as fh:
         text = fh.read()
     if NODES_PER_LAMBDAR:
@@ -69,13 +66,12 @@ def write_deck(path, und_type, steps, split, order):
         text = re.sub(r"\b%s\s*=\s*\d+" % key, "%-22s = %d" % (key, every), text)
     text = text.replace(
         "&MDATA\n",
-        "&MDATA\n qQuiverSplit           = .%s.\n iShapeOrder            = %d\n"
-        % ("true" if split else "false", order))
+        "&MDATA\n iShapeOrder            = %d\n" % order)
     with open(path, "w") as fh:
         fh.write(text)
 
 
-def run(tag, und_type, steps, split=False, order=1, nproc=1):
+def run(tag, und_type, steps, order=1, nproc=1):
     # Under runs/, not HERE: a "run_*" directory alongside the script makes
     # rm -rf run_* eat run_scan.py itself. It has happened twice.
     workdir = os.path.join(RUNS, tag)
@@ -87,7 +83,7 @@ def run(tag, und_type, steps, split=False, order=1, nproc=1):
     else:
         for f in os.listdir(INPUTS):
             os.symlink(os.path.join(INPUTS, f), os.path.join(workdir, f))
-    write_deck(os.path.join(workdir, "run.in"), und_type, steps, split, order)
+    write_deck(os.path.join(workdir, "run.in"), und_type, steps, order)
 
     env = dict(os.environ, OMP_NUM_THREADS="1")
     cmd = ["mpirun", "-np", str(nproc), PUFFIN, "run.in"]
@@ -131,17 +127,13 @@ def l2(xs):
 def main():
     """<und-type> <ref-steps> <steps>...
 
-    The reference is always run UNSPLIT at <ref-steps>, and with the SAME
-    deposition kernel as the runs being measured against it, so what comes out
-    is the error from the integration step alone.  Mixing kernels here would
-    measure something else: a smoother kernel filters the field slightly
-    differently in space, so it converges, at any step size, to a marginally
-    different answer.  That spatial difference is real but it is not step-size
-    error, and at these step counts it would swamp it.
-
-    Using one reference for both the split and unsplit columns is what makes
-    those two comparable, and doubles as the correctness check on the split
-    scheme: it solves the same ODE, so at a fine step it has to agree.
+    The reference is run at <ref-steps> with the SAME deposition kernel as the
+    runs measured against it, so what comes out is the error from the
+    integration step alone.  Mixing kernels here would measure something else:
+    a smoother kernel filters the field slightly differently in space, so it
+    converges, at any step size, to a marginally different answer.  That
+    spatial difference is real but it is not step-size error, and at these
+    step counts it would swamp it.
     """
     und_type = sys.argv[1]
     ref_steps = int(sys.argv[2])
@@ -156,50 +148,37 @@ def main():
     print("  kernel: %s (iShapeOrder=%d), nodesPerLambdar=%s"
           % (kern, order, nodes), flush=True)
 
-    wd, secs = run("%s_ref_o%d" % (und_type, order), und_type, ref_steps,
-                   split=False, order=order)
+    wd, secs = run("%s_ref_o%d" % (und_type, order), und_type, ref_steps, order=order)
     ref = read_field(wd)
     ref_norm = l2(ref)
     ref_energy = sum(x * x for x in ref)
-    print("  reference: unsplit, %s kernel, %d steps/period, %.1f s"
+    print("  reference: %s kernel, %d steps/period, %.1f s"
           % (kern, ref_steps, secs), flush=True)
 
     rows = []
-    splits = {"both": (False, True), "off": (False,), "on": (True,)}[SPLIT]
-    for split in splits:
-        for s in steps:
-            tag = "%s_%d_o%d_%s" % (und_type, s, order, "split" if split else "plain")
-            wd, secs = run(tag, und_type, s, split=split, order=order)
-            f = read_field(wd)
-            err = l2([a - b for a, b in zip(f, ref)]) / ref_norm
-            den = abs(sum(x * x for x in f) - ref_energy) / ref_energy
-            rows.append((split, s, err, den, secs))
-            print("  ran %-10s N=%-4d %-6s err=%.4e" %
-                  (und_type, s, "split" if split else "plain", err), flush=True)
+    for s in steps:
+        wd, secs = run("%s_%d_o%d" % (und_type, s, order), und_type, s, order=order)
+        f = read_field(wd)
+        err = l2([a - b for a, b in zip(f, ref)]) / ref_norm
+        den = abs(sum(x * x for x in f) - ref_energy) / ref_energy
+        rows.append((s, err, den, secs))
+        print("  ran %-10s N=%-4d err=%.4e" % (und_type, s, err), flush=True)
 
     print()
     print("  kernel = %s, nodesPerLambdar = %s" % (kern, nodes))
-    print("  %-10s  %-9s  %-10s  %-12s  %-12s  %-12s  %s" %
-          ("und", "steps/pd", "cells/step", "plain L2", "split L2",
-           "err x lower", "runtime (s)"))
-    print("  " + "-" * 88)
-    plain = dict((s, (e, d, t)) for sp, s, e, d, t in rows if not sp)
-    split = dict((s, (e, d, t)) for sp, s, e, d, t in rows if sp)
-    nan = (float("nan"), float("nan"), float("nan"))
-    for s in steps:
-        pe = plain.get(s, nan)[0]
-        se = split.get(s, nan)[0]
-        print("  %-10s  %-9d  %-10.2f  %-12.4e  %-12.4e  %-12s  %6.2f" %
-              (und_type, s, float(nodes) / s, pe, se,
-               ("%.1fx" % (pe / se)) if se > 0 else "-",
-               split.get(s, plain.get(s, nan))[2]))
+    print("  %-10s  %-9s  %-10s  %-12s  %s" %
+          ("und", "steps/pd", "cells/step", "rel. L2", "runtime (s)"))
+    print("  " + "-" * 60)
+    for s, e, d, t in rows:
+        print("  %-10s  %-9d  %-10.2f  %-12.4e  %6.2f" %
+              (und_type, s, float(nodes) / s, e, t))
 
     if JSON_OUT:
         with open(JSON_OUT, "w") as fh:
             json.dump({"und": und_type, "order": order, "nodes": float(nodes),
                        "deck": os.path.basename(DECK), "ref_steps": ref_steps,
-                       "runs": [{"split": sp, "steps": s, "err": e, "energy_err": d,
-                                 "secs": t} for sp, s, e, d, t in rows]},
+                       "runs": [{"steps": s, "err": e, "energy_err": d, "secs": t}
+                                for s, e, d, t in rows]},
                       fh, indent=1)
 
 
