@@ -158,6 +158,18 @@ jobs:
           exit 1
         fi
 
+    - name: Keep Open MPI off UCX
+      if: runner.os == 'Linux' && matrix.mode == 'parallel'
+      # The conda-forge Open MPI (5.0.x) prefers the UCX PML, and on some
+      # hosted runners UCX cannot open the VM's mana_0 verbs device
+      # ("uct_iface_open(ud_verbs/mana_0:1) failed: Address not valid"), so
+      # every MPI test dies in MPI_Comm_dup before Puffin runs. The tests are
+      # 2 ranks on one node, so ob1 over shared memory loses nothing. sm is
+      # Open MPI 5's name for what was vader. Set for the remaining steps.
+      run: |
+        echo "OMPI_MCA_pml=ob1" >> "$GITHUB_ENV"
+        echo "OMPI_MCA_btl=self,sm,tcp" >> "$GITHUB_ENV"
+
     - name: Run tests
       shell: bash -l {0}
       working-directory: build
