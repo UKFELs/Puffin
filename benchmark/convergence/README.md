@@ -52,6 +52,9 @@ takes `--labels` and `--ratio` to compare any two runs - the other three.
   error numbers look like in the observables.
 - [`figures/overlay_kernels.png`](figures/overlay_kernels.png): linear against
   cubic, both converged in the step - the kernel's form factor of section 5.
+- [`figures/corefine.png`](figures/corefine.png), from
+  `figures/make_corefine_figure.sh`: the co-refinement study below - the one
+  that says which kernel is closer to the physical answer.
 
 ## How the error is measured
 
@@ -79,11 +82,71 @@ So the floor of this measurement is a few times 1e-7. The smallest error quoted
 anywhere below is 1.2e-4, more than two orders of magnitude above it, so every
 ratio here is measuring the scheme rather than the reference.
 
-## What the scans showed
+## Co-refinement: which kernel is closer to the physical answer
 
-Throughout, a factor like "38x" means *error reduced by* that factor at the same
-step count - the linear kernel's error divided by this one's. It has nothing to
-do with FEL gain. All runs are on one MPI rank, in the Debug build.
+Every scan in the sections after this one varies the step alone, against a
+reference with the same mesh, the same macroparticles and the same kernel. That
+measures time-step error at a frozen spatial discretisation, and nothing else:
+it cannot say whether a run is close to the physical answer, and it cannot
+compare kernels, which converge to different answers on a given mesh. The
+resolutions interact - the error a run makes depends on the cells per
+wavelength, the macroparticles per cell and the cells crossed per step
+together - so a claim of convergence needs them refined together.
+
+`run_corefine.py` does that, in 1D, for planepole and helical. Level r has 12r
+cells per resonant wavelength, `iMPsZ2PerWave = 4r` and 30r steps per period,
+so 6.3 macroparticles per cell and 0.4 cells crossed per step at every level,
+for r = 1, 2, 4, 8. From level 2 it also doubles each of the three alone.
+`analyse_corefine.py` compares physical observables at the end of the
+undulator - pulse energy, peak power, mid-beam bunching, energy loss, and the
+complex field envelope per resonant wavelength, which is mesh-independent -
+against the finest runs and against a Richardson extrapolation from levels 2,
+4 and 8. Note that Puffin lays `nodesPerLambdar - 1` cells in each wavelength,
+so 12 cells needs `nodesPerLambdar = 13`; the step scans below say "12
+nodes/λr" and mean 11 cells.
+
+What it shows ([`figures/corefine.png`](figures/corefine.png)):
+
+- **All three kernels converge to the same answer.** The extrapolated limits
+  of pulse energy, peak power and bunching agree to 1e-4 across kernels, and
+  every observable converges at second order (observed 1.97-2.04) for every
+  kernel.
+- **At these ratios the z2 mesh carries all of the error.** From level 2,
+  doubling only the cells reproduces the full refinement for every kernel;
+  doubling only the macroparticles, or only the steps, changes no observable
+  in its third figure. The time-step error the B-spline kernel was built to
+  reduce is negligible here.
+- **The smoother kernels are less accurate on a given mesh, not more.** Pulse
+  energy against the extrapolated limit, planepole:
+
+  | cells per λr | linear | quadratic | cubic |
+  | --- | --- | --- | --- |
+  | 12 | -6.6% | -10.5% | -14.2% |
+  | 24 | -2.0% | -3.0% | -4.0% |
+  | 48 | -0.51% | -0.76% | -1.01% |
+  | 96 | -0.13% | -0.19% | -0.26% |
+
+  Helical is the same to within 20%. Every kernel undershoots, and the ratio
+  is 1 : 1.5 : 2 at every level - the ratio of the B-splines' variances,
+  (k + 1) Δ² / 12 for degree k. The leading error is the deposition kernel's
+  own spatial smoothing of the source, the linear kernel's included, and a
+  smoother kernel smooths more.
+
+So in 1D, at practical ratios, a higher `iShapeOrder` makes results worse. The
+step scans below are correct as measurements of time-step error, but that is
+not the error that limits these runs. Whether 3D differs - the 3D deck runs at
+0.7-1.8 cells per step, where its step error is far larger - needs the same
+study in 3D, with the transverse cells and macroparticles refined too, and has
+not been done.
+
+## Step scans at a fixed spatial discretisation
+
+Everything from here to section 5 measures time-step error only, against a
+reference with the same mesh, macroparticles and kernel - read it with the
+section above in mind. A factor like "38x" means *time-step error reduced by*
+that factor at the same step count - the linear kernel's error divided by this
+one's. It has nothing to do with FEL gain. All runs are on one MPI rank, in the
+Debug build.
 
 ### 1. Two sources of step error, and which one the kernel can touch
 
@@ -103,6 +166,11 @@ mesh - more nodes to cross - is *less* accurate. 1D planepole, linear:
 | 12 | 7.98e-2 | 2.05e-1 | 2.6x |
 | 20 | 1.41e-2 | 3.40e-2 | 2.4x |
 | 30 | 2.19e-3 | 3.32e-3 | 1.5x |
+
+That comparison is confounded: the beam was loaded at a fixed 4 slices per
+wavelength, so doubling the mesh also halved the macroparticles per cell, and
+part of the difference may be a sparser, more granular source rather than more
+node crossings. The co-refinement above holds that ratio fixed.
 
 A smoother kernel removes the kink and nothing else. So what it is worth depends
 entirely on how much of the error the node crossings account for - which is set
@@ -132,7 +200,7 @@ On the finer 24-node mesh the crossings matter more and the kernel is worth
 1.5-6x, with the slope now ordered by degree (3.5 / 4.5 / 4.8). Quadratic sits
 close to cubic throughout.
 
-### 3. In 3D, where it matters
+### 3. In 3D, where the step error is large
 
 The 3D path is a tensor product of the same splines, and the node indices stride
 by `nspinDX` and `ntrndsi_G` as well as by one, so it is worth measuring rather
@@ -154,12 +222,13 @@ against its own 240 step/period reference:
 | --- | --- | --- | --- |
 | 3D | 1.4 | 3.2 | 5.2 |
 
-Here the deposition dominates, and the kernel's continuity class shows up
-directly as the observed order of convergence. This deck samples 21 nodes per
+Here the node crossings dominate the step error, and the kernel's continuity
+class shows up directly as the observed order of convergence in the step. This deck samples 21 nodes per
 wavelength and runs at 0.5 to 1.8 cells per step, where the crossings set the
-error; the 1D default sits at 0.4 with half the mesh density, where the quiver
-does. CLARA-style 3D decks sample finely in z2 and sit exactly where the kernel
-pays, so the 1D figures understate what it is worth to them.
+step error; the 1D default sits at 0.4 with half the mesh density, where the
+quiver does. Whether reducing it makes a 3D run closer to the physical answer
+depends on how large this step error is against the kernel's own smoothing
+error, which only a 3D co-refinement can say.
 
 Beyond about 24 steps/period the 3D error stops falling - cubic is 3.7e-3 at 24,
 4.1e-3 at 30, 3.0e-3 at 40, and linear is flat between 24 and 30 too. Some other
@@ -188,7 +257,9 @@ what the geometry predicts: the transverse quiver excursion, a_w lambda_w /
 rarely cross transverse nodes within a period, while along z2 the
 figure-of-eight sweeps them across several. A deck with a coarser transverse
 mesh, or a beam large enough for betatron motion to cross cells quickly, could
-need the transverse degree too; none was measured.
+need the transverse degree too; none was measured. Like everything in this
+part, this is about time-step error at a fixed mesh: it says where the kernel
+reduces step error, not that the result is closer to the physical answer.
 
 ### 4. What it costs, and whether it is worth turning on
 
@@ -200,9 +271,8 @@ numbers to quote.
 **1D**: cubic costs about 1.5x per step - four nodes touched instead of two,
 per gather and per scatter, diluted by the rest of the step (planepole, 12
 nodes/λr, 30 steps/period: 4.66 s linear, 7.04 s cubic - the cubic timing taken with the since-removed quiver split on, which cost nothing measurable). At the default mesh it
-buys 1.1-1.5x in accuracy for that, so it is a net loss there; on a finer mesh,
-or at many steps per period, where it is worth 3-6x, it pays. On a helical
-undulator it buys nothing in 1D.
+reduces the step error 1.1-1.5x for that, and the co-refinement shows the step
+error is not what limits a 1D run there anyway.
 
 **3D** is a different trade. Same deck as section 3, 40 periods, no dumps:
 
@@ -220,25 +290,26 @@ the scatter. Every scatter is an `!$OMP ATOMIC` into `getSource_3D` - already
 the memory-bound routine where an unrelated commit once cost 48% by moving
 symbols around (see `benchmark/RESULTS-2026-08-07-globals-refactor.md`).
 
-So the full cubic kernel buys accuracy and not speed: it reaches linear's
-30-step error at about 13 steps/period, 2.3x fewer steps at 4.0x the cost per
-step, about 1.7x *slower* for the same answer. **Cubic along z2 with linear x
-and y** reaches it at the same 13 steps for 1.7x the cost per step, so it costs
-0.74 of linear's 30-step run for the same answer, and gives 34x less error at a
-fixed step for 1.7x the time. Quadratic along z2 with linear x and y is similar
-(0.73 at equal accuracy, 7x at a fixed step for 1.45x). One caution on the
-equal-accuracy figures: linear's own error is flat between 24 and 30
-steps/period here (section 3), so linear at 24 steps (0.79 of its 30-step time)
-gives the same answer too. Against that, cubic along z2 alone is roughly
-break-even on time, and full cubic about 2x slower.
+Cubic along z2 with linear x and y gives 90% of the full cubic kernel's
+step-error reduction for 43% of its cost. An earlier version of this section
+went on to compare kernels "at equal accuracy". That comparison does not hold:
+each kernel's error was measured against its own reference, and the kernels
+converge to different answers on a given mesh - by far more, as the
+co-refinement shows, than the step errors being compared. Only a co-refinement
+in 3D can say whether the kernel's lower step error outweighs the extra
+smoothing error it brings.
 
 ### 5. What the smoothing costs: a real change to the discretisation
 
 A B-spline filters the source in space as well as smoothing it in time, so at a
-fixed mesh the coupling to the radiation is slightly weaker. This is a
-discretisation difference, not an error, and it converges away as the mesh is
-refined. Final field at 120 steps/period (converged in the step), planepole,
-relative to the linear kernel on the same mesh:
+fixed mesh the coupling to the radiation is weaker. This section first called
+that a discretisation difference rather than an error. The co-refinement above
+settles it: it is an error, against an answer every kernel converges to, and
+the linear kernel has the same error at two-thirds the size of the quadratic's
+and half the cubic's. Final field at 120 steps/period (converged in the step),
+planepole, relative to the linear kernel on the same mesh (these runs also
+held the macroparticles per wavelength fixed, so the 24-node column has half
+the macroparticles per cell):
 
 | kernel | `nodesPerLambdar = 12` | `nodesPerLambdar = 24` |
 | --- | --- | --- |
@@ -349,20 +420,21 @@ sets the whole stencil. In 3D the linear path, with its own arithmetic, runs
 only when both are 1. `iShapeOrderXY` has no effect in 1D, and the input reader
 warns if it is set there.
 
-Recommended, on this evidence:
+What this evidence supports:
 
-- **3D**: `iShapeOrder = 3` with `iShapeOrderXY = 1` - 34x less error at a
-  fixed step for 1.7x the time, and roughly break-even with linear at equal
-  accuracy. The full cubic kernel (`iShapeOrderXY` left at its default) adds
-  little more accuracy for 2.4x more cost on the measured deck; consider it
-  only for a deck where particles cross transverse cells quickly (section 3b).
-  Keep `iShapeOrder = 1` when nothing about the step is in question.
-- **1D**: worth it on a planar undulator with a fine mesh or many steps per
-  period (3-6x); not at the default 12 nodes/λr (1.1-1.5x for 1.5x the cost),
-  and not on a helical undulator, where the z2 motion has no figure-of-eight to
-  smooth.
-- **Either**: do not change `iShapeOrder` or `iShapeOrderXY` on a deck whose numbers you are
-  comparing against older runs (see section 5).
+- **1D**: keep `iShapeOrder = 1`. With macroparticles, cells and steps refined
+  together, the smoother kernels converge to the same answer as the linear one
+  but with 1.5x (quadratic) and 2x (cubic) its error at every resolution, and
+  the step error they reduce is negligible at practical ratios.
+- **3D**: not yet known. On the 3D test deck the kernel reduces time-step
+  error by up to 38x, and almost all of that comes from the z2 degree - but it
+  will also bring the extra smoothing error seen in 1D, and which wins has not
+  been measured. Until a 3D co-refinement settles it, treat `iShapeOrder > 1`
+  as an experimental option, and use it, if at all, along z2 only
+  (`iShapeOrderXY = 1`), which buys nearly all of the step-error reduction at
+  under half the cost.
+- **Either**: do not change `iShapeOrder` or `iShapeOrderXY` on a deck whose
+  numbers you are comparing against older runs (see section 5).
 
 The wider stencil reaches one node further left and right than the linear one,
 which the parallel field layout has to account for: `rearrElecs` shifts which
