@@ -72,7 +72,7 @@ contains
   !! particle and two ahead, and running off either end is a hard stop rather
   !! than something to be papered over.
   subroutine rhsRates(undType, iOrder, qOneD, fieldRate, beamRate, srcNorm, &
-                      xPut, innerXYOK)
+                      xPut, innerXYOK, iOrderXY, fieldMode)
 
     use Globals, only: sLengthOfElmX_G, sLengthOfElmY_G, sLengthOfElmZ2_G, NX_G, NY_G, &
                        NZ2_G, nspinDX, nspinDY, ntrndsi_G, fieldMesh, iTemporal, &
@@ -92,13 +92,20 @@ contains
     real(kind=wp), intent(in), optional :: xPut
     logical, intent(out), optional :: innerXYOK
 
+!   Optional: a transverse degree different from iOrder (3D), and a field
+!   that varies only along z2 (fieldMode = 1) or only along x (= 2) instead of
+!   along every node index.
+
+    integer(kind=ip), intent(in), optional :: iOrderXY
+    integer, intent(in), optional :: fieldMode
+
     type(tSimulationContext) :: ctx
     integer, parameter :: ne = 7, nz = 20, ntr = 49
     real(kind=wp), allocatable :: sAr(:,:), sAi(:,:), dAr(:,:), dAi(:,:)
     real(kind=wp), dimension(ne) :: sx, sy, sz2, spr, spi, sgam, &
                                     sdx, sdy, sdz2, sdpr, sdpi, sdgam
     real(kind=wp) :: dz2v, dxv, dyv, dV3v
-    integer :: nf, j
+    integer :: nf, j, iz, ix, mode
     logical :: qOK
 
     call makeUnd(ctx%und, ctx%frame, undType)
@@ -108,6 +115,10 @@ contains
     ctx%flags%parallel_arrays_ok = .true.
     ctx%flags%inner_xy_ok = .true.
     ctx%flags%shape_order = iOrder
+    ctx%flags%shape_order_xy = iOrder
+    if (present(iOrderXY)) ctx%flags%shape_order_xy = iOrderXY
+    mode = 0
+    if (present(fieldMode)) mode = fieldMode
 
 !   A mesh resolving the carrier, 12 nodes per resonant wavelength, and in 3D a
 !   7x7 transverse inner mesh with the macroparticles well inside it.
@@ -182,8 +193,19 @@ contains
     if (present(xPut)) sx(1) = xPut
 
     do j = 1, nf
-      sAr(j,1) = 0.1_wp * cos(0.7_wp * j)
-      sAi(j,1) = 0.1_wp * sin(0.3_wp * j + 1.0_wp)
+      iz = (j - 1) / ntrndsi_G + 1
+      ix = mod(j - 1, nspinDX) + 1
+      select case (mode)
+      case (1)
+        sAr(j,1) = 0.1_wp * cos(0.7_wp * iz)
+        sAi(j,1) = 0.1_wp * sin(0.3_wp * iz + 1.0_wp)
+      case (2)
+        sAr(j,1) = 0.1_wp * cos(0.7_wp * ix)
+        sAi(j,1) = 0.1_wp * sin(0.3_wp * ix + 1.0_wp)
+      case default
+        sAr(j,1) = 0.1_wp * cos(0.7_wp * j)
+        sAi(j,1) = 0.1_wp * sin(0.3_wp * j + 1.0_wp)
+      end select
     end do
 
     dAr = 0.0_wp
@@ -209,15 +231,17 @@ contains
 
 
   !> Gather and scatter agree, at every supported degree.
-  subroutine checkBalance(undType, iOrder, qOneD)
+  subroutine checkBalance(undType, iOrder, qOneD, iOrderXY)
 
     character(*), intent(in) :: undType
     integer(kind=ip), intent(in) :: iOrder
     logical, intent(in) :: qOneD
+    integer(kind=ip), intent(in), optional :: iOrderXY
 
     real(kind=wp) :: fieldRate, beamRate, srcNorm
 
-    call rhsRates(undType, iOrder, qOneD, fieldRate, beamRate, srcNorm)
+    call rhsRates(undType, iOrder, qOneD, fieldRate, beamRate, srcNorm, &
+                  iOrderXY=iOrderXY)
 
 !   Non-trivial - a kernel that deposited nothing would balance perfectly
 
@@ -276,6 +300,46 @@ contains
   end subroutine testLinearConservesEnergy3D
 
 
+  !> Different degrees along z2 and across x, y (iShapeOrder, iShapeOrderXY):
+  !! the stencil is no longer a cube, so the x/y and z2 widths and the offsets
+  !! of their weights in lis_GR can each go wrong on their own.
+  @test
+  subroutine testMixedDegreesConserveEnergy3D()
+    call checkBalance("helical", 3_ip, .false., 1_ip)
+    call checkBalance("planepole", 3_ip, .false., 1_ip)
+    call checkBalance("helical", 1_ip, .false., 3_ip)
+    call checkBalance("helical", 2_ip, .false., 3_ip)
+    call checkBalance("planepole", 3_ip, .false., 2_ip)
+  end subroutine testMixedDegreesConserveEnergy3D
+
+
+  !> Each degree acts along its own direction. The x/y weights of any degree
+  !! sum to one, so against a field that is uniform across x and y the
+  !! transverse degree cannot change what a macroparticle gathers: (3 in z2,
+  !! 1 across) must match (3, 3) to round-off, and differ from (1, 1).
+  !! Likewise against a field varying only in x, the z2 degree cannot matter.
+  !! Energy balance alone would not catch the degrees being swapped between
+  !! directions, since the gather and scatter would share the mistake.
+  @test
+  subroutine testEachDegreeActsOnItsOwnDirection()
+
+    real(kind=wp) :: f, b31, b33, b11, b13, n
+
+    call rhsRates("helical", 3_ip, .false., f, b31, n, iOrderXY=1_ip, fieldMode=1)
+    call rhsRates("helical", 3_ip, .false., f, b33, n, iOrderXY=3_ip, fieldMode=1)
+    call rhsRates("helical", 1_ip, .false., f, b11, n, iOrderXY=1_ip, fieldMode=1)
+    @assertEqual(b33, b31, 1.0e-12_wp * abs(b33))
+    @assertTrue(abs(b11 - b31) > 1.0e-6_wp * abs(b31))
+
+    call rhsRates("helical", 1_ip, .false., f, b13, n, iOrderXY=3_ip, fieldMode=2)
+    call rhsRates("helical", 3_ip, .false., f, b33, n, iOrderXY=3_ip, fieldMode=2)
+    call rhsRates("helical", 1_ip, .false., f, b11, n, iOrderXY=1_ip, fieldMode=2)
+    @assertEqual(b33, b13, 1.0e-12_wp * abs(b33))
+    @assertTrue(abs(b11 - b13) > 1.0e-6_wp * abs(b13))
+
+  end subroutine testEachDegreeActsOnItsOwnDirection
+
+
   !> A smoother kernel spreads the same charge over more nodes, so the source
   !! it deposits is smaller in norm than the linear one's for the same beam -
   !! the spatial filtering that makes a cubic run couple slightly more weakly
@@ -327,6 +391,13 @@ contains
 !   something deposited in the wrong place
 
     @assertEqual(0.0_wp, srcNorm, 0.0_wp)
+
+!   The transverse reach is the transverse degree's: cubic along z2 with linear
+!   x and y needs only nodes 6 and 7 at x = 0.9, and fits.
+
+    call rhsRates("helical", 3_ip, .false., fieldRate, beamRate, srcNorm, &
+                  0.9_wp, innerOK, iOrderXY=1_ip)
+    @assertTrue(innerOK)
 
   end subroutine testStencilOverrunIsCaught
 

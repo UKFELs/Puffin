@@ -121,6 +121,9 @@ contains
   type(tAvgFocusing) :: foc
   integer(kind=ip) :: ie
   integer(kind=ip) :: nShapeWid   ! nodes per dimension in the deposition stencil
+                                  ! (along z2 in 3D)
+  integer(kind=ip) :: nShapeWidXY ! the same along x and y, 3D only
+  logical :: qBspline             ! any direction wider than the linear stencil
 
 !     Begin
 
@@ -139,22 +142,33 @@ contains
   call alct_e_srtcts(iNumberElectrons_G)
 
   nShapeWid = shapeStencilWidth(ctx%flags%shape_order)
+  nShapeWidXY = shapeStencilWidth(ctx%flags%shape_order_xy)
+
+! The linear path is kept, with its own arithmetic, whenever every direction
+! is linear. In 3D the B-spline path takes any mix of degrees, so a cubic z2
+! stencil can run with linear x and y.
 
   if (tTransInfo_G%qOneD) then
-    if (ctx%flags%shape_order == 1_ip) then
+    qBspline = (ctx%flags%shape_order > 1_ip)
+  else
+    qBspline = (ctx%flags%shape_order > 1_ip) .or. (ctx%flags%shape_order_xy > 1_ip)
+  end if
+
+  if (tTransInfo_G%qOneD) then
+    if (.not. qBspline) then
       allocate(lis_GR(2,iNumberElectrons_G))
     else
       allocate(lis_GR(nShapeWid,iNumberElectrons_G))
     end if
   else
-    if (ctx%flags%shape_order == 1_ip) then
+    if (.not. qBspline) then
       allocate(lis_GR(8,iNumberElectrons_G))
     else
 
 !     One set of 1D weights per dimension, rather than one weight per node of
 !     the tensor product - see the comment on getInterps_3D_bspline.
 
-      allocate(lis_GR(3_ip*nShapeWid,iNumberElectrons_G))
+      allocate(lis_GR(2_ip*nShapeWidXY + nShapeWid,iNumberElectrons_G))
     end if
   end if
 
@@ -202,7 +216,7 @@ contains
 ! p_nodes for the B-spline kernels is built in getInterps_*_bspline instead,
 ! alongside the weights - where the stencil starts depends on the degree.
 
-  if (ctx%flags%shape_order > 1_ip) then
+  if (qBspline) then
 
 !   Nothing to do here.
 
@@ -255,7 +269,7 @@ contains
 ! and scatter are per-envelope, which is why the envelope loop belongs here
 ! rather than around getrhs.
 
-  if (ctx%flags%shape_order == 1_ip) then
+  if (.not. qBspline) then
 
     if (tTransInfo_G%qOneD) then
       call getInterps_1D(sz2, ctx%flags, ctx%field)
@@ -343,9 +357,9 @@ contains
     else
       call getInterps_3D_bspline(sx, sy, sz2, ctx%flags, ctx%field)
       if ((ctx%flags%parallel_arrays_ok) .and. (ctx%flags%inner_xy_ok)) then
-        call getFFelecs_3D_bspline(sAr(:,1), sAi(:,1), nShapeWid)
+        call getFFelecs_3D_bspline(sAr(:,1), sAi(:,1), nShapeWidXY, nShapeWid)
         call getSource_3D_bspline(sDADzr(:,1), sDADzi(:,1), spr, spi, sgam, &
-                                  ctx%frame%eta, nShapeWid)
+                                  ctx%frame%eta, nShapeWidXY, nShapeWid)
       end if
     end if
 

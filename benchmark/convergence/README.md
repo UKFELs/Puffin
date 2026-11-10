@@ -166,6 +166,30 @@ Beyond about 24 steps/period the 3D error stops falling - cubic is 3.7e-3 at 24,
 error source takes over there, the same for every kernel, and it has not been
 examined; the split-step diffraction advance is the obvious candidate.
 
+### 3b. Which direction the kernel is worth anything in
+
+In 3D the degree can be set separately along z2 (`iShapeOrder`) and across x
+and y (`iShapeOrderXY`, which defaults to `iShapeOrder`). Same deck, each
+combination against its own 240 step/period reference:
+
+| z2 / x, y degree | 20 steps/period | 24 | 30 | error reduced by, at 30 | order p, 12 to 20 |
+| --- | --- | --- | --- | --- | --- |
+| linear / linear | 3.1e-1 | 1.5e-1 | 1.5e-1 | - | 1.4 |
+| linear / cubic | 3.1e-1 | 1.4e-1 | 1.6e-1 | 1.0x | 1.1 |
+| quadratic / linear | 6.3e-2 | 2.1e-2 | 2.2e-2 | 7.0x | 3.2 |
+| cubic / linear | 1.6e-2 | 4.8e-3 | 4.6e-3 | 34x | 5.1 |
+| cubic / cubic | 1.4e-2 | 3.7e-3 | 4.1e-3 | 38x | 5.2 |
+
+Essentially all of it is in z2. A cubic kernel across x and y with linear z2
+changes nothing; cubic along z2 with linear x and y keeps 90% of the full cubic
+gain, and the observed order follows the z2 degree alone. On this deck that is
+what the geometry predicts: the transverse quiver excursion, a_w lambda_w /
+(2 pi gamma) ~ 10 um, is a quarter of a 39 um transverse cell, so particles
+rarely cross transverse nodes within a period, while along z2 the
+figure-of-eight sweeps them across several. A deck with a coarser transverse
+mesh, or a beam large enough for betatron motion to cross cells quickly, could
+need the transverse degree too; none was measured.
+
 ### 4. What it costs, and whether it is worth turning on
 
 Measured in an optimised build (`-DCMAKE_BUILD_TYPE=Release`), best of three,
@@ -182,26 +206,31 @@ undulator it buys nothing in 1D.
 
 **3D** is a different trade. Same deck as section 3, 40 periods, no dumps:
 
-| kernel | module time | per step |
-| --- | --- | --- |
-| linear | 0.73 s | - |
-| quadratic | 1.60 s | 2.2x |
-| cubic | 2.91 s | 4.0x |
+| z2 / x, y degree | nodes per particle | module time | per step | error reduced by, at 30 steps/period |
+| --- | --- | --- | --- | --- |
+| linear / linear | 8 | 0.74 s | - | - |
+| linear / cubic | 32 | 1.78 s | 2.4x | 1.0x |
+| quadratic / linear | 12 | 1.07 s | 1.45x | 7.0x |
+| cubic / linear | 16 | 1.25 s | 1.70x | 34x |
+| quadratic / quadratic | 27 | 1.59 s | 2.15x | 7.1x |
+| cubic / cubic | 64 | 2.96 s | 4.0x | 38x |
 
-A cubic stencil touches 64 nodes per particle rather than 8, for the gather and
-again for the scatter, and every scatter is an `!$OMP ATOMIC` into
-`getSource_3D` - already the memory-bound routine where an unrelated commit once
-cost 48% by moving symbols around (see `benchmark/RESULTS-2026-08-07-globals-refactor.md`).
-Four times per step is what that costs.
+The cost follows the nodes touched per particle, for the gather and again for
+the scatter. Every scatter is an `!$OMP ATOMIC` into `getSource_3D` - already
+the memory-bound routine where an unrelated commit once cost 48% by moving
+symbols around (see `benchmark/RESULTS-2026-08-07-globals-refactor.md`).
 
-Which means in 3D the kernel buys accuracy and not speed. At equal accuracy it
-is a loss: cubic reaches linear's 30-step error at about 13 steps/period, 2.3x
-fewer steps at 4.0x the cost per step, so about 1.7x *slower* for the same
-answer. Quadratic at ~15 steps/period comes out roughly even on time. What 3D
-gets is headroom - 38x less error for 4x the time at a fixed step, or 7x for
-2.2x with the quadratic - which is worth having when the question is whether a
-result is converged, and not worth having when the question is how many shots
-fit in a night.
+So the full cubic kernel buys accuracy and not speed: it reaches linear's
+30-step error at about 13 steps/period, 2.3x fewer steps at 4.0x the cost per
+step, about 1.7x *slower* for the same answer. **Cubic along z2 with linear x
+and y** reaches it at the same 13 steps for 1.7x the cost per step, so it costs
+0.74 of linear's 30-step run for the same answer, and gives 34x less error at a
+fixed step for 1.7x the time. Quadratic along z2 with linear x and y is similar
+(0.73 at equal accuracy, 7x at a fixed step for 1.45x). One caution on the
+equal-accuracy figures: linear's own error is flat between 24 and 30
+steps/period here (section 3), so linear at 24 steps (0.79 of its 30-step time)
+gives the same answer too. Against that, cubic along z2 alone is roughly
+break-even on time, and full cubic about 2x slower.
 
 ### 5. What the smoothing costs: a real change to the discretisation
 
@@ -314,18 +343,25 @@ deposition, on the original arithmetic: all four e2e suites still match their
 goldens bit-for-bit. 2 and 3 select the quadratic and cubic B-splines, in 1D and
 3D, and work on both the temporal and periodic meshes.
 
+`iShapeOrderXY`, also in `&MDATA`, sets the degree across x and y in 3D
+separately; left out, it follows `iShapeOrder`, so `iShapeOrder` alone still
+sets the whole stencil. In 3D the linear path, with its own arithmetic, runs
+only when both are 1. `iShapeOrderXY` has no effect in 1D, and the input reader
+warns if it is set there.
+
 Recommended, on this evidence:
 
-- **3D**: `iShapeOrder = 3` when the question is whether a result is converged -
-  up to 39x the accuracy margin for 4x the time. Keep `iShapeOrder = 1` when the
-  question is throughput, because at equal accuracy cubic is about 1.7x slower
-  in 3D. `iShapeOrder = 2` is the middle: roughly break-even on time, 5-7x on
-  error.
+- **3D**: `iShapeOrder = 3` with `iShapeOrderXY = 1` - 34x less error at a
+  fixed step for 1.7x the time, and roughly break-even with linear at equal
+  accuracy. The full cubic kernel (`iShapeOrderXY` left at its default) adds
+  little more accuracy for 2.4x more cost on the measured deck; consider it
+  only for a deck where particles cross transverse cells quickly (section 3b).
+  Keep `iShapeOrder = 1` when nothing about the step is in question.
 - **1D**: worth it on a planar undulator with a fine mesh or many steps per
   period (3-6x); not at the default 12 nodes/λr (1.1-1.5x for 1.5x the cost),
   and not on a helical undulator, where the z2 motion has no figure-of-eight to
   smooth.
-- **Either**: do not change `iShapeOrder` on a deck whose numbers you are
+- **Either**: do not change `iShapeOrder` or `iShapeOrderXY` on a deck whose numbers you are
   comparing against older runs (see section 5).
 
 The wider stencil reaches one node further left and right than the linear one,

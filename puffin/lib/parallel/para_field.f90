@@ -1403,9 +1403,10 @@ contains
 !   fix it, an early exit from the undulator section in undulator.f90.  So it
 !   grows with the stencil rather than being spent.
 !
-!   shapeLeftReach is zero at iShapeOrder = 1, leaving the historical 3.
+!   shapeLeftReach is zero at iShapeOrder = 1, leaving the historical 3. The
+!   transverse degree (iShapeOrderXY) is the one that matters here.
 
-  inBuf = 3_ip + shapeLeftReach(flags%shape_order)
+  inBuf = 3_ip + shapeLeftReach(flags%shape_order_xy)
 
   if (iNumberElectrons_G > 0_ipl) then
 

@@ -423,7 +423,10 @@ type :: tSimulationFlags
                                              ! to scatter the source onto the mesh
                                              ! and gather the field back. 1 is the
                                              ! historical linear deposition
-                                             ! (see shape_functions.f90)
+                                             ! (see shape_functions.f90). In 3D,
+                                             ! the degree along z2 only
+    integer(kind=ip) :: shape_order_xy = 1_ip ! iShapeOrderXY - the degree along
+                                             ! x and y in 3D; unused in 1D
 
     ! Mesh properties
     logical :: fixed_mesh                    ! qFMesh_G

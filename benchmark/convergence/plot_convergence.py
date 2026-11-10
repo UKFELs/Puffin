@@ -10,6 +10,7 @@ Usage:
     pp_n24_o{1,2,3}.json    1D planepole, nodesPerLambdar = 24
     hel_n12_o{1,2,3}.json   1D helical, nodesPerLambdar = 12
     3d_o{1,2,3}.json        the 3D e2e deck
+    3d_o{3,2,1}xy{1,1,3}.json   the same, z2 and x/y degrees differing
   (make_figures.sh runs them all).  A missing file leaves its curves out.
 
 Panels: relative L2 error of the final field against each kernel's own
@@ -104,10 +105,19 @@ def main():
             s, e = series(sc)
             lab, c = KERN[k]
             ax[key].loglog(s, e, "-" + m, color=c, lw=1.6, ms=4, label=lab)
+        if key == "3d":
+            for kz, kxy in ((3, 1), (2, 1), (1, 3)):
+                sc = load(o.scans, "3d_o%dxy%d" % (kz, kxy))
+                if sc is None:
+                    continue
+                s, e = series(sc)
+                ax[key].loglog(s, e, "--" + m, color=KERN[kz][1], lw=1.3, ms=4, mfc="white",
+                               label="%s z2, %s x/y" % (KERN[kz][0].split()[0],
+                                                       KERN[kxy][0].split()[0]))
         ax[key].set_title(title, loc="left", pad=8)
         ax[key].set_ylabel("relative L2 error, final field")
         steps_axis(ax[key])
-        ax[key].legend(fontsize=7.5, loc="lower left")
+        ax[key].legend(fontsize=7 if key == "3d" else 7.5, loc="lower left")
         lin, cub = S[key][1], S[key][3]
         if lin and cub:
             e0, e1 = dict(zip(*series(lin))), dict(zip(*series(cub)))

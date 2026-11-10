@@ -27,7 +27,7 @@ use Globals, only: nspinDX, nspinDY, iRedNodesX_G, iRedNodesY_G, fieldMesh, sper
   qUndEnds_G, qhdf5_G, sRedistLen_G, iRedistStp_G, tArrayA, tArrayZ, iWriteNthSteps, cmd_call_G, &
   zBFile_G, zSFile_G, ioutInfo_G, qDiffraction_G, qFilter, qResume, qWrite, qscaled_G, &
   qInitWrLat_G, qDumpEnd_G, qAveraged_G, sLambdarPerCell_G, iAvgHarmonics_G, nAvgHarmMax_CG, &
-  iShapeOrder_G
+  iShapeOrder_G, iShapeOrderXY_G
 use shape_functions, only: qShapeOrderOK
 use MASPin, only: nMPs4MASP_G
 use cwrites, only: qWrArray_G, getwrarray
@@ -284,7 +284,7 @@ subroutine read_in(zfilename, &
   integer(kind=ip) :: meshType
   integer(kind=ip) :: ioutInfo
   integer(kind=ip) :: iRandSeed
-  integer(kind=ip) :: iShapeOrder
+  integer(kind=ip) :: iShapeOrder, iShapeOrderXY
 
 
 
@@ -318,7 +318,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
                  iRedistStp, qscaled, nspinDX, nspinDY, qInitWrLat, qDumpEnd, &
                  wr_file, qMeasure, DFact, iDumpNthSteps, speout, meshType, &
                  sPerWaves, ioutInfo, iRandSeed, qAveraged, lambdarPerCell, &
-                 avgHarmonics, iShapeOrder
+                 avgHarmonics, iShapeOrder, iShapeOrderXY
 
 
 ! Begin subroutine:
@@ -419,6 +419,7 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
 ! shape_functions.f90 and benchmark/convergence/README.md.
 
   iShapeOrder = 1_ip
+  iShapeOrderXY = 0_ip     ! 0: the same as iShapeOrder
 
 ! Open and read namelist
 
@@ -450,6 +451,25 @@ namelist /mdata/ qOneD, qFieldEvolve, qElectronsEvolve, &
   end if
 
   iShapeOrder_G = iShapeOrder
+
+! The transverse degree defaults to the z2 one, so iShapeOrder alone still sets
+! the whole 3D stencil. Setting it separately lets the two directions differ -
+! a wide kernel in z2, where macroparticles cross nodes fastest, with the
+! cheaper linear one across x and y.
+
+  if (qOneD .and. (iShapeOrderXY /= 0_ip) .and. (iShapeOrderXY /= iShapeOrder)) then
+    print*, "WARNING: iShapeOrderXY has no effect in 1D, which has no x or y mesh."
+  end if
+
+  if (iShapeOrderXY == 0_ip) iShapeOrderXY = iShapeOrder
+
+  if (.not. qShapeOrderOK(iShapeOrderXY)) then
+    print*, "ERROR: iShapeOrderXY = ", iShapeOrderXY, " is not supported."
+    print*, "Use 1 (linear), 2 (quadratic) or 3 (cubic), or leave it out to use iShapeOrder."
+    call StopCode()
+  end if
+
+  iShapeOrderXY_G = iShapeOrderXY
   qhdf5_G = qhdf5
   qscaled_G = qscaled
   qInitWrLat_G = qInitWrLat

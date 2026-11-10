@@ -4,7 +4,7 @@
 #   bash make_figures.sh SCANS [python]
 #
 # SCANS is a scratch directory for the runs (a few GB) and their results.
-# Every scan is started at once, one MPI rank each - 14 at a time, so give it
+# Every scan is started at once, one MPI rank each - 17 at a time, so give it
 # a machine with that many cores, or expect it to take proportionally longer
 # (about 25 min on an 18-core Apple M5 Pro, Debug build).  Rerunning with the
 # results already in SCANS only redraws: delete SCANS/*.json to rerun a scan.
@@ -36,6 +36,12 @@ for o in 1 2 3; do
     SCAN_DECK="$TOP/test/inputs/3D/clara_test.in" SCAN_INPUTS="$TOP/test" \
     -- planepole 240 12 16 20 24 30 40
 done
+# 3D with the z2 and x/y degrees differing
+for c in 31 21 13; do
+  scan 3d_o${c:0:1}xy${c:1:1} SCAN_ORDER=${c:0:1} SCAN_ORDER_XY=${c:1:1} SCAN_WRITE=1 \
+    SCAN_DECK="$TOP/test/inputs/3D/clara_test.in" SCAN_INPUTS="$TOP/test" \
+    -- planepole 240 12 16 20 24 30 40
+done
 # with a write every period, for the overlays
 scan ov_lin SCAN_ORDER=1 SCAN_WRITE=1 -- planepole 240 12 30
 scan ov_cub SCAN_ORDER=3 SCAN_WRITE=1 -- planepole 240 12 30
@@ -46,7 +52,7 @@ ERR="Error is the relative L2 difference of the whole final field, real and imag
 
 $PY "$HERE/../plot_convergence.py" "$HERE/convergence.png" --scans "$SCANS" \
   --title "Step-size convergence by deposition kernel (iShapeOrder): linear, quadratic and cubic B-splines" \
-  --scenario "$DECK 3D: the 3D e2e deck test/inputs/3D/clara_test.in - 85x85 transverse, 21 nodes/λr, a periodic single-wavelength slice, diffraction on, beam read from HDF5 so the realisation is fixed, 5 periods with undulator ends.
+  --scenario "$DECK 3D: the 3D e2e deck test/inputs/3D/clara_test.in - 85x85 transverse, 21 nodes/λr, a periodic single-wavelength slice, diffraction on, beam read from HDF5 so the realisation is fixed, 5 periods with undulator ends. Dashed in the 3D panel: the degree along z2 (iShapeOrder) and across x, y (iShapeOrderXY) set differently - cubic along z2 alone keeps nearly all of the full cubic kernel's gain.
 
 $ERR The kernel can only remove the error from macroparticles crossing mesh nodes, so it is worth most where they cross many: in 3D at this mesh density, and on a planar undulator, whose figure-of-eight drags particles back and forth in z2. At the 1D default (12 nodes/λr) the quiver dominates the step error instead, and on a helical undulator, with no figure-of-eight, the kernel is worth nothing in 1D." \
   --command "bash benchmark/convergence/figures/make_figures.sh SCANS  (run_scan.py, 240-step references; steps $STEPS1)"

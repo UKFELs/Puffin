@@ -10,7 +10,9 @@ Usage:  python3 run_scan.py <undulator-type> <ref-steps> <steps> [<steps> ...]
 
 Environment:
   SCAN_NODES   nodesPerLambdar to use instead of the deck's
-  SCAN_ORDER   iShapeOrder: 1 linear (default), 2 quadratic, 3 cubic
+  SCAN_ORDER   iShapeOrder: 1 linear (default), 2 quadratic, 3 cubic - in 3D
+               the degree along z2
+  SCAN_ORDER_XY  iShapeOrderXY, the degree across x and y in 3D [SCAN_ORDER]
   SCAN_DECK    the deck to scan instead of scan.in, e.g. the 3D e2e deck
                test/inputs/3D/clara_test.in
   SCAN_INPUTS  a directory whose entries are linked into every run directory,
@@ -44,6 +46,7 @@ PUFFIN = os.environ.get(
 
 NODES_PER_LAMBDAR = os.environ.get("SCAN_NODES")
 SHAPE_ORDER = int(os.environ.get("SCAN_ORDER", "1"))
+SHAPE_ORDER_XY = int(os.environ.get("SCAN_ORDER_XY", str(SHAPE_ORDER)))
 DECK = os.path.abspath(os.environ.get("SCAN_DECK", os.path.join(HERE, "scan.in")))
 INPUTS = os.path.abspath(os.environ.get("SCAN_INPUTS", HERE))
 RUNS = os.path.abspath(os.environ.get("SCAN_RUNS", os.path.join(HERE, "runs")))
@@ -66,7 +69,8 @@ def write_deck(path, und_type, steps, order):
         text = re.sub(r"\b%s\s*=\s*\d+" % key, "%-22s = %d" % (key, every), text)
     text = text.replace(
         "&MDATA\n",
-        "&MDATA\n iShapeOrder            = %d\n" % order)
+        "&MDATA\n iShapeOrder            = %d\n iShapeOrderXY          = %d\n"
+        % (order, SHAPE_ORDER_XY))
     with open(path, "w") as fh:
         fh.write(text)
 
@@ -141,6 +145,9 @@ def main():
 
     order = SHAPE_ORDER
     kern = KERNEL_NAME.get(order, str(order))
+    if SHAPE_ORDER_XY != order:
+        kern += " in z2, %s across x, y" % KERNEL_NAME.get(SHAPE_ORDER_XY, str(SHAPE_ORDER_XY))
+    otag = "o%d" % order if SHAPE_ORDER_XY == order else "o%dxy%d" % (order, SHAPE_ORDER_XY)
     with open(DECK) as fh:
         deck_nodes = re.search(r"nodesPerLambdar\s*=\s*(\d+)", fh.read()).group(1)
     nodes = NODES_PER_LAMBDAR or deck_nodes
@@ -148,7 +155,7 @@ def main():
     print("  kernel: %s (iShapeOrder=%d), nodesPerLambdar=%s"
           % (kern, order, nodes), flush=True)
 
-    wd, secs = run("%s_ref_o%d" % (und_type, order), und_type, ref_steps, order=order)
+    wd, secs = run("%s_ref_%s" % (und_type, otag), und_type, ref_steps, order=order)
     ref = read_field(wd)
     ref_norm = l2(ref)
     ref_energy = sum(x * x for x in ref)
@@ -157,7 +164,7 @@ def main():
 
     rows = []
     for s in steps:
-        wd, secs = run("%s_%d_o%d" % (und_type, s, order), und_type, s, order=order)
+        wd, secs = run("%s_%d_%s" % (und_type, s, otag), und_type, s, order=order)
         f = read_field(wd)
         err = l2([a - b for a, b in zip(f, ref)]) / ref_norm
         den = abs(sum(x * x for x in f) - ref_energy) / ref_energy
@@ -175,7 +182,8 @@ def main():
 
     if JSON_OUT:
         with open(JSON_OUT, "w") as fh:
-            json.dump({"und": und_type, "order": order, "nodes": float(nodes),
+            json.dump({"und": und_type, "order": order, "order_xy": SHAPE_ORDER_XY,
+                       "nodes": float(nodes),
                        "deck": os.path.basename(DECK), "ref_steps": ref_steps,
                        "runs": [{"steps": s, "err": e, "energy_err": d, "secs": t}
                                 for s, e, d, t in rows]},
