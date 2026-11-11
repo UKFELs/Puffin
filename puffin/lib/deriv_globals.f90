@@ -25,6 +25,7 @@ public :: ata_G, c, chic_disp, chic_slip, chic_zbar, cmd_call_G, dadz_w, delmz, 
            iAvgHarmonics_G, iGloNumElectrons_G, iInputType_G, iIntWriteNthSteps, &
            iNodesPerElement_G, &
            iNumberElectrons_G, iNumberNodes_G, ioutInfo_G, iPeriodic, iPX_CG, iPY_CG, iReadDist_G, &
+           iShapeOrder_G, iShapeOrderXY_G, &
            iReadH5_G, iReadH5Field_G, iReadMASP_G, iRedistStp_G, iRedNodesX_G, iRedNodesY_G, &
            iSimpleSeed_G, iStep, iTemporal, iUndEnd_G, iUndMain_G, iUndPlace_G, iUndStart_G, &
            iWriteNthSteps, iX_CG, iY_CG, iZ2_CG, kbnx_arr, kbny_arr, kx_G, kx_und_G, ky_G, &
@@ -410,6 +411,19 @@ integer(kind=ip) :: iAvgHarmonics_G(nAvgHarmMax_CG) = 0_ip
                                     ! fundamental (avgHarmonics in the input
                                     ! file). Zero entries are unused; all
                                     ! zero, the default, is fundamental only.
+
+
+integer(kind=ip) :: iShapeOrder_G ! Degree of the B-spline used to deposit the
+                                  ! macroparticles onto the field mesh, and to
+                                  ! gather the field back. 1 = linear (default,
+                                  ! the historical scheme), 2 = quadratic,
+                                  ! 3 = cubic. See shape_functions.f90.
+                                  ! In 3D this is the degree along z2.
+
+integer(kind=ip) :: iShapeOrderXY_G ! Degree of the B-spline along x and y in
+                                    ! 3D (iShapeOrderXY in the input file),
+                                    ! resolved at input to iShapeOrder_G when
+                                    ! not given. Unused in 1D.
 
 
 logical   ::  qDump_G            ! Dump data in case of crash?

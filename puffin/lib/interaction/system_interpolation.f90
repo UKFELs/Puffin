@@ -17,11 +17,13 @@ use puffin_kinds, only: WP, IPL, IP
 use globals, only: NZ2_G, ntrndsi_G, nspinDX, nspinDY, fieldMesh, iTemporal, s_chi_bar_G, &
   procelectrons_G
 use GlobalTypes, only: tSimulationFlags, tFieldValues
+use shape_functions, only: getShapeWeights, shapeStencilWidth, iShapeMaxWidth
 
 implicit none (type, external)
 private
 
-public :: getffelecs_3d, getinterps_3d, getsource_3d
+public :: getffelecs_3d, getinterps_3d, getsource_3d, &
+          getffelecs_3d_bspline, getinterps_3d_bspline, getsource_3d_bspline
 
 
 contains
@@ -291,5 +293,232 @@ real(kind=wp) :: dadzRInst, dadzIInst
 !$OMP END DO
 
 end subroutine getSource_3D_kernel
+
+
+
+!         ########################################################
+!
+!     Higher-order (B-spline) deposition in 3D.
+!
+!     The tensor-product weights are not expanded into one weight per corner as
+!     they are for the linear stencil: a cubic touches 64 nodes, so lis_GR holds
+!     the three sets of 1D weights (x and y, nwxy each, then z2, nwz) and the
+!     gather and scatter loops form the products as they go.  That keeps lis_GR
+!     at 2*nwxy + nwz rows instead of nwxy**2 * nwz.
+!
+!     x and y share one degree (iShapeOrderXY) and z2 has its own (iShapeOrder),
+!     so a wide stencil can be spent only where macroparticles cross nodes
+!     fastest.  Either may be linear: degree 1 through getShapeWeights is the
+!     same hat function the linear path uses.
+!
+!         ########################################################
+
+
+
+subroutine getInterps_3D_bspline(sx, sy, sz2, flags, field)
+
+use rhs_vars, only: halfx, halfy, lis_GR, p_nodes, dx, dy, dz2, WP, IPL, IP
+
+real(kind=wp), intent(in) :: sx(:), sy(:), sz2(:)
+type(tSimulationFlags), intent(inout) :: flags
+type(tFieldValues), intent(in) :: field
+
+integer(kind=ip) :: xn0, yn0, zn0, nwxy, nwz, iOrderXY, iOrderZ
+integer(kind=ipl) :: i
+
+real(kind=wp) :: wx(iShapeMaxWidth), wy(iShapeMaxWidth), wz(iShapeMaxWidth)
+
+  iOrderZ = flags%shape_order
+  iOrderXY = flags%shape_order_xy
+  nwz = shapeStencilWidth(iOrderZ)
+  nwxy = shapeStencilWidth(iOrderXY)
+
+!$OMP DO PRIVATE(xn0, yn0, zn0, wx, wy, wz)
+  do i = 1, procelectrons_G(1)
+
+      call getShapeWeights(iOrderXY, (sx(i) + halfx) / dx, xn0, wx)
+      call getShapeWeights(iOrderXY, (sy(i) + halfy) / dy, yn0, wy)
+      call getShapeWeights(iOrderZ, sz2(i) / dz2, zn0, wz)
+
+!     Transverse: the whole stencil has to sit inside the inner mesh, which
+!     getInNode will grow if it does not.
+
+      if ((xn0 < 1_ip) .or. (xn0 + nwxy - 1_ip > nspinDX)) then
+        flags%inner_xy_ok = .false.
+        flags%parallel_arrays_ok = .false.
+      end if
+
+      if ((yn0 < 1_ip) .or. (yn0 + nwxy - 1_ip > nspinDY)) then
+        flags%inner_xy_ok = .false.
+        flags%parallel_arrays_ok = .false.
+      end if
+
+!     Front of the z2 mesh - as in 1D, this is the deck's to fix and not ours
+!     to paper over.  See the comment in getInterps_1D_bspline.
+
+      if (zn0 < 1_ip) then
+        print*, "Z2 coord is too small for the deposition stencil, with node:", &
+                zn0, " and pos ", sz2(i)
+        print*, "iShapeOrder > 1 reaches one node behind the particle. Start the"
+        print*, "beam a few nodes into the mesh, or use iShapeOrder = 1."
+        STOP
+      end if
+
+      if (fieldMesh == itemporal) then
+        if (zn0 + nwz - 1_ip > NZ2_G) then
+          print*, "Z2 coord is too large!! with node:", zn0 + nwz - 1_ip, &
+                  " and pos ", sz2(i)
+          STOP
+        end if
+      end if
+
+      if ((zn0 + nwz - 1_ip > field%bz2) .or. (zn0 < field%fz2)) then
+        flags%parallel_arrays_ok = .false.
+      end if
+
+      p_nodes(i) = xn0 + ((yn0 - 1_ip) * nspinDX) &
+                       + ((zn0 - field%fz2) * ntrndsi_G)
+
+      lis_GR(1_ip:nwxy, i) = wx(1_ip:nwxy)
+      lis_GR(nwxy+1_ip:2_ip*nwxy, i) = wy(1_ip:nwxy)
+      lis_GR(2_ip*nwxy+1_ip:2_ip*nwxy+nwz, i) = wz(1_ip:nwz)
+
+  end do
+!$OMP END DO
+
+
+end subroutine getInterps_3D_bspline
+
+
+
+!      ##################################################
+
+
+
+subroutine getFFelecs_3D_bspline(sAr, sAi, nwxy, nwz)
+
+
+use rhs_vars, only: p_nodes, lis_GR, sField4ElecReal, sField4ElecImag, WP, IP
+
+real(kind=wp), contiguous, intent(in) :: sAr(:), sAi(:)
+integer(kind=ip), intent(in) :: nwxy, nwz
+
+integer(kind=ipl) :: i
+integer(kind=ip) :: kx, ky, kz, ibase
+real(kind=wp) :: wyz, wxyz
+
+!$OMP DO PRIVATE(kx, ky, kz, ibase, wyz, wxyz)
+  do i = 1, procelectrons_G(1)
+
+    do kz = 1_ip, nwz
+      do ky = 1_ip, nwxy
+
+        wyz = lis_GR(nwxy+ky, i) * lis_GR(2_ip*nwxy+kz, i)
+
+        ibase = p_nodes(i) + ((ky - 1_ip) * nspinDX) &
+                           + ((kz - 1_ip) * ntrndsi_G)
+
+        do kx = 1_ip, nwxy
+
+          wxyz = lis_GR(kx, i) * wyz
+
+          sField4ElecReal(i) = wxyz * sAr(ibase + kx - 1_ip) + sField4ElecReal(i)
+          sField4ElecImag(i) = wxyz * sAi(ibase + kx - 1_ip) + sField4ElecImag(i)
+
+        end do
+
+      end do
+    end do
+
+  end do
+!$OMP END DO
+
+end subroutine getFFelecs_3D_bspline
+
+
+
+!         ########################################################
+
+
+
+subroutine getSource_3D_bspline(sDADzr, sDADzi, spr, spi, sgam, seta, nwxy, nwz)
+
+
+use rhs_vars, only: p_nodes, lis_GR, dV3, sp2, WP, IPL
+
+real(kind=wp), contiguous, intent(inout) :: sDADzr(:), sDADzi(:)
+real(kind=wp), contiguous, intent(in) :: spr(:), spi(:)
+real(kind=wp), contiguous, intent(in) :: sgam(:)
+real(kind=wp), intent(in) :: seta
+integer(kind=ip), intent(in) :: nwxy, nwz
+
+  call getSource_3D_bspline_kernel(sDADzr, sDADzi, spr, spi, sgam, seta, &
+                                   s_chi_bar_G, sp2, p_nodes, lis_GR, dV3, &
+                                   nspinDX, ntrndsi_G, nwxy, nwz, &
+                                   procelectrons_G(1))
+
+end subroutine getSource_3D_bspline
+
+
+
+subroutine getSource_3D_bspline_kernel(sDADzr, sDADzi, spr, spi, sgam, seta, &
+                                       s_chi_bar_G, sp2, p_nodes, lis_GR, dV3, &
+                                       nspinDX, ntrndsi_G, nwxy, nwz, &
+                                       nLocalElecs)
+
+real(kind=wp), contiguous, intent(inout) :: sDADzr(:), sDADzi(:)
+real(kind=wp), contiguous, intent(in) :: spr(:), spi(:)
+real(kind=wp), contiguous, intent(in) :: sgam(:)
+real(kind=wp), intent(in) :: seta
+real(kind=wp), contiguous, intent(in) :: s_chi_bar_G(:), sp2(:)
+integer(kind=ip), contiguous, intent(in) :: p_nodes(:)
+real(kind=wp), contiguous, intent(in) :: lis_GR(:,:)
+real(kind=wp), intent(in) :: dV3
+integer(kind=ip), intent(in) :: nspinDX, ntrndsi_G, nwxy, nwz
+integer(kind=ipl), intent(in) :: nLocalElecs
+
+integer(kind=ipl) :: i
+integer(kind=ip) :: kx, ky, kz, ibase, inode
+real(kind=wp) :: dadzRInst, dadzIInst, wyz, wxyz
+
+!$OMP DO PRIVATE(dadzRInst, dadzIInst, kx, ky, kz, ibase, inode, wyz, wxyz)
+  do i = 1, nLocalElecs
+
+!                  Get 'instantaneous' dAdz
+
+      dadzRInst = ((s_chi_bar_G(i)/dV3) * (1 + seta * sp2(i) ) &
+                        * spr(i) / sgam(i) )
+
+      dadzIInst = ((s_chi_bar_G(i)/dV3) * (1 + seta * sp2(i) ) &
+                        * spi(i) / sgam(i) )
+
+      do kz = 1_ip, nwz
+        do ky = 1_ip, nwxy
+
+          wyz = lis_GR(nwxy+ky, i) * lis_GR(2_ip*nwxy+kz, i)
+
+          ibase = p_nodes(i) + ((ky - 1_ip) * nspinDX) &
+                             + ((kz - 1_ip) * ntrndsi_G)
+
+          do kx = 1_ip, nwxy
+
+            wxyz = lis_GR(kx, i) * wyz
+            inode = ibase + kx - 1_ip
+
+            !$OMP ATOMIC
+            sDADzr(inode) = wxyz * dadzRInst + sDADzr(inode)
+
+            !$OMP ATOMIC
+            sDADzi(inode) = wxyz * dadzIInst + sDADzi(inode)
+
+          end do
+
+        end do
+      end do
+
+  end do
+!$OMP END DO
+
+end subroutine getSource_3D_bspline_kernel
 
 end module FiElec

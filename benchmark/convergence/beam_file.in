@@ -1,0 +1,30 @@
+&NBLIST
+nbeams = 1
+dtype = 'simple'
+/
+
+&BLIST
+sSigmaE = 0.084, 0.084, 1E8, 1.0, 1.0, 0.001
+sLenE = 1E-6, 1E-6, 50.0, 1E-6, 1E-6, 0.006
+emitx = 1.0
+emity = 1.0
+Ipk = 400
+! Start the beam a little way into the mesh rather than hard against node 1: a
+! stencil wider than the linear one reaches a node behind the particle, and
+! there is no node behind the first one.
+!
+! This has to be written as half the beam length plus the offset wanted, not as
+! the offset: getOffsets in init_conds.f90 overrides any bcenter below
+! samLenE(z2)/2 with samLenE(z2)/2, which puts the beam front exactly on z2 = 0.
+! Here the beam is 50 long, so 25.03 starts it 0.03 in - about five cells at
+! nodesPerLambdar = 12. See benchmark/convergence/README.md.
+bcenter = 25.03
+gammaf = 1.0
+iMPsZ2PerWave = 4
+TrLdMeth = 2
+nseqparts = 19
+qRndEj_G = .true.
+sSigEj_G = 0.1
+qFixCharge = .false.
+qMatched_A = .true.
+/

@@ -20,8 +20,11 @@ use Globals, only: NX_G, NY_G, NZ2_G, ntrndsi_G, nspinDX, nspinDY, sLengthOfElmX
 use Equations, only: dppdz_r_f, dppdz_i_f, dgamdz_f, dxdz_f, dydz_f, dz2dz_f, alct_e_srtcts, &
   dalct_e_srtcts, adjundplace, sInv2rho, sp2, sField4ElecReal, sField4ElecImag, bxu, byu, bzu
 use wigglerVar, only: getalpha
-use FiElec1D, only: getinterps_1d, getffelecs_1d, getsource_1d
-use FiElec, only: getinterps_3d, getffelecs_3d, getsource_3d
+use FiElec1D, only: getinterps_1d, getffelecs_1d, getsource_1d, &
+  getinterps_1d_bspline, getffelecs_1d_bspline, getsource_1d_bspline
+use FiElec, only: getinterps_3d, getffelecs_3d, getsource_3d, &
+  getinterps_3d_bspline, getffelecs_3d_bspline, getsource_3d_bspline
+use shape_functions, only: shapeStencilWidth
 use gtop2, only: getp2, getp2avg
 use averaging, only: tAvgCoupling, getAvgCoupling, getResonantMomentum, &
   tAvgFocusing, getAvgFocusCoef, getAvgFocusing
@@ -117,6 +120,10 @@ contains
   type(tAvgCoupling) :: cpl
   type(tAvgFocusing) :: foc
   integer(kind=ip) :: ie
+  integer(kind=ip) :: nShapeWid   ! nodes per dimension in the deposition stencil
+                                  ! (along z2 in 3D)
+  integer(kind=ip) :: nShapeWidXY ! the same along x and y, 3D only
+  logical :: qBspline             ! any direction wider than the linear stencil
 
 !     Begin
 
@@ -134,10 +141,35 @@ contains
 
   call alct_e_srtcts(iNumberElectrons_G)
 
+  nShapeWid = shapeStencilWidth(ctx%flags%shape_order)
+  nShapeWidXY = shapeStencilWidth(ctx%flags%shape_order_xy)
+
+! The linear path is kept, with its own arithmetic, whenever every direction
+! is linear. In 3D the B-spline path takes any mix of degrees, so a cubic z2
+! stencil can run with linear x and y.
+
   if (tTransInfo_G%qOneD) then
-    allocate(lis_GR(2,iNumberElectrons_G))
+    qBspline = (ctx%flags%shape_order > 1_ip)
   else
-    allocate(lis_GR(8,iNumberElectrons_G))
+    qBspline = (ctx%flags%shape_order > 1_ip) .or. (ctx%flags%shape_order_xy > 1_ip)
+  end if
+
+  if (tTransInfo_G%qOneD) then
+    if (.not. qBspline) then
+      allocate(lis_GR(2,iNumberElectrons_G))
+    else
+      allocate(lis_GR(nShapeWid,iNumberElectrons_G))
+    end if
+  else
+    if (.not. qBspline) then
+      allocate(lis_GR(8,iNumberElectrons_G))
+    else
+
+!     One set of 1D weights per dimension, rather than one weight per node of
+!     the tensor product - see the comment on getInterps_3D_bspline.
+
+      allocate(lis_GR(2_ip*nShapeWidXY + nShapeWid,iNumberElectrons_G))
+    end if
   end if
 
 !     Initialise right hand side to zero
@@ -181,7 +213,14 @@ contains
 
 
 
-  if (tTransInfo_G%qOneD) then
+! p_nodes for the B-spline kernels is built in getInterps_*_bspline instead,
+! alongside the weights - where the stencil starts depends on the degree.
+
+  if (qBspline) then
+
+!   Nothing to do here.
+
+  else if (tTransInfo_G%qOneD) then
 
 
 
@@ -230,13 +269,15 @@ contains
 ! and scatter are per-envelope, which is why the envelope loop belongs here
 ! rather than around getrhs.
 
-  if (tTransInfo_G%qOneD) then
-    call getInterps_1D(sz2, ctx%flags, ctx%field)
-  else
-    call getInterps_3D(sx, sy, sz2, ctx%flags, ctx%field)
-  end if
+  if (.not. qBspline) then
 
-  if (ctx%flags%period_averaged) then
+    if (tTransInfo_G%qOneD) then
+      call getInterps_1D(sz2, ctx%flags, ctx%field)
+    else
+      call getInterps_3D(sx, sy, sz2, ctx%flags, ctx%field)
+    end if
+
+    if (ctx%flags%period_averaged) then
 
 !   Averaged mode drives both Cartesian components of every band, each
 !   through its own q_c. sField4ElecReal/Imag hold one component's field at a
@@ -245,55 +286,80 @@ contains
 !   zeroing the gathered field does on the unaveraged path.
 
 !$OMP WORKSHARE
-    sdgam = 0.0_wp
+      sdgam = 0.0_wp
 !$OMP END WORKSHARE
 
-    do ie = 1, ctx%field%nEnv
+      do ie = 1, ctx%field%nEnv
 
-      if (ie > 1) then
+        if (ie > 1) then
 !$OMP WORKSHARE
-        sField4ElecReal = 0.0_wp
-        sField4ElecImag = 0.0_wp
+          sField4ElecReal = 0.0_wp
+          sField4ElecImag = 0.0_wp
 !$OMP END WORKSHARE
-      end if
-
-      if (tTransInfo_G%qOneD) then
-        if (ctx%flags%parallel_arrays_ok) then
-          call getFFelecs_1D(sAr(:,ie), sAi(:,ie))
-          call getSource_1D(sDADzr(:,ie), sDADzi(:,ie), sprRes(:,ie), spiRes(:,ie), &
-                            sgam, ctx%frame%eta)
         end if
-      else
-        if ((ctx%flags%parallel_arrays_ok) .and. (ctx%flags%inner_xy_ok)) then
-          call getFFelecs_3D(sAr(:,ie), sAi(:,ie))
-          call getSource_3D(sDADzr(:,ie), sDADzi(:,ie), sprRes(:,ie), spiRes(:,ie), &
-                            sgam, ctx%frame%eta)
-        end if
-      end if
 
-      if (qElectronFieldCoupling_G) then
-        call dgamdz_f(sx, sy, sz2, sprRes(:,ie), spiRes(:,ie), sgam, &
-                      sdgamC, ctx%frame)
+        if (tTransInfo_G%qOneD) then
+          if (ctx%flags%parallel_arrays_ok) then
+            call getFFelecs_1D(sAr(:,ie), sAi(:,ie))
+            call getSource_1D(sDADzr(:,ie), sDADzi(:,ie), sprRes(:,ie), spiRes(:,ie), &
+                              sgam, ctx%frame%eta)
+          end if
+        else
+          if ((ctx%flags%parallel_arrays_ok) .and. (ctx%flags%inner_xy_ok)) then
+            call getFFelecs_3D(sAr(:,ie), sAi(:,ie))
+            call getSource_3D(sDADzr(:,ie), sDADzi(:,ie), sprRes(:,ie), spiRes(:,ie), &
+                              sgam, ctx%frame%eta)
+          end if
+        end if
+
+        if (qElectronFieldCoupling_G) then
+          call dgamdz_f(sx, sy, sz2, sprRes(:,ie), spiRes(:,ie), sgam, &
+                        sdgamC, ctx%frame)
 !$OMP WORKSHARE
-        sdgam = sdgam + sdgamC
+          sdgam = sdgam + sdgamC
 !$OMP END WORKSHARE
-      end if
+        end if
 
-    end do
+      end do
 
-  else
+    else
 
 !   Unaveraged: one envelope, the resolved A_perp.
 
+      if (tTransInfo_G%qOneD) then
+        if (ctx%flags%parallel_arrays_ok) then
+          call getFFelecs_1D(sAr(:,1), sAi(:,1))
+          call getSource_1D(sDADzr(:,1), sDADzi(:,1), spr, spi, sgam, ctx%frame%eta)
+        end if
+      else
+        if ((ctx%flags%parallel_arrays_ok) .and. (ctx%flags%inner_xy_ok)) then
+          call getFFelecs_3D(sAr(:,1), sAi(:,1))
+          call getSource_3D(sDADzr(:,1), sDADzi(:,1), spr, spi, sgam, ctx%frame%eta)
+        end if
+      end if
+
+    end if
+
+  else
+
+!   A higher-order kernel together with the averaged mode is refused at
+!   setup - see checkAveraged in checks.f90 - so the resonant momenta and
+!   the harmonic bands cannot arise on this path: one envelope, the resolved
+!   A_perp.
+
     if (tTransInfo_G%qOneD) then
+      call getInterps_1D_bspline(sz2, ctx%flags, ctx%field)
       if (ctx%flags%parallel_arrays_ok) then
-        call getFFelecs_1D(sAr(:,1), sAi(:,1))
-        call getSource_1D(sDADzr(:,1), sDADzi(:,1), spr, spi, sgam, ctx%frame%eta)
+        call getFFelecs_1D_bspline(sAr(:,1), sAi(:,1), nShapeWid)
+        call getSource_1D_bspline(sDADzr(:,1), sDADzi(:,1), spr, spi, sgam, &
+                                  ctx%frame%eta, nShapeWid)
       end if
     else
+      call getInterps_3D_bspline(sx, sy, sz2, ctx%flags, ctx%field)
       if ((ctx%flags%parallel_arrays_ok) .and. (ctx%flags%inner_xy_ok)) then
-        call getFFelecs_3D(sAr(:,1), sAi(:,1))
-        call getSource_3D(sDADzr(:,1), sDADzi(:,1), spr, spi, sgam, ctx%frame%eta)
+        call getFFelecs_3D_bspline(sAr(:,1), sAi(:,1), nShapeWidXY, nShapeWid)
+        call getSource_3D_bspline(sDADzr(:,1), sDADzi(:,1), spr, spi, sgam, &
+                                  ctx%frame%eta, nShapeWidXY, nShapeWid)
       end if
     end if
 

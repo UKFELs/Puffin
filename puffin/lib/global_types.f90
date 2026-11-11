@@ -414,6 +414,20 @@ type :: tSimulationFlags
                                              ! slowly varying envelope, quiver
                                              ! averaged out (see averaging.f90)
 
+    ! Deposition
+    ! Defaulted, not merely documented: a type whose zero value would divert
+    ! getrhs onto the B-spline path is a trap for anything that builds a
+    ! tSimulationFlags directly rather than through the adapters - the unit
+    ! tests do exactly that.
+    integer(kind=ip) :: shape_order = 1_ip   ! iShapeOrder - B-spline degree used
+                                             ! to scatter the source onto the mesh
+                                             ! and gather the field back. 1 is the
+                                             ! historical linear deposition
+                                             ! (see shape_functions.f90). In 3D,
+                                             ! the degree along z2 only
+    integer(kind=ip) :: shape_order_xy = 1_ip ! iShapeOrderXY - the degree along
+                                             ! x and y in 3D; unused in 1D
+
     ! Mesh properties
     logical :: fixed_mesh                    ! qFMesh_G
     logical :: fixed_charge                  ! qFixCharge_G
