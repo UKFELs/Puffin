@@ -99,18 +99,21 @@ so 6.3 macroparticles per cell and 0.4 cells crossed per step at every level,
 for r = 1, 2, 4, 8. From level 2 it also doubles each of the three alone.
 `analyse_corefine.py` compares physical observables at the end of the
 undulator - pulse energy, peak power, mid-beam bunching, energy loss, and the
-complex field envelope per resonant wavelength, which is mesh-independent -
-against the finest runs and against a Richardson extrapolation from levels 2,
-4 and 8. Note that Puffin lays `nodesPerLambdar - 1` cells in each wavelength,
+complex field envelope (demodulated on the carrier, low-passed, and sampled at
+the same z2 points for every mesh) - against a Richardson extrapolation from
+levels 2, 4 and 8. The scalars are extrapolated with their fitted order; the
+envelope and the energy history point by point, at order 2. No finite run is
+used as a reference. The script's docstring defines every quantity exactly. Note that Puffin lays `nodesPerLambdar - 1` cells in each wavelength,
 so 12 cells needs `nodesPerLambdar = 13`; the step scans below say "12
 nodes/λr" and mean 11 cells.
 
 What it shows ([`figures/corefine.png`](figures/corefine.png)):
 
 - **All three kernels converge to the same answer.** The extrapolated limits
-  of pulse energy, peak power and bunching agree to 1e-4 across kernels, and
-  every observable converges at second order (observed 1.97-2.04) for every
-  kernel.
+  of pulse energy, peak power, bunching and energy loss agree to 5e-5 across
+  kernels, and the extrapolated field envelopes to 2e-6. Every observable,
+  the envelope included, converges at second order (observed 1.92-2.04) for
+  every kernel.
 - **At these ratios the z2 mesh carries all of the error.** From level 2,
   doubling only the cells reproduces the full refinement for every kernel;
   doubling only the macroparticles, or only the steps, changes no observable
@@ -131,6 +134,17 @@ What it shows ([`figures/corefine.png`](figures/corefine.png)):
   (k + 1) Δ² / 12 for degree k. The leading error is the deposition kernel's
   own spatial smoothing of the source, the linear kernel's included, and a
   smoother kernel smooths more.
+
+- **Total-energy conservation cannot see this error.** The drift in field +
+  beam energy, W = ½ Σ|A|² ΔV + Σ χΓ / 2ρ, is 2e-8 to 1.2e-4 of the energy
+  exchanged in every run, while the energy exchanged is 7-16% short at 12
+  cells per wavelength. The gather and scatter are transposes, so the
+  spatially discretised system conserves W exactly at any mesh and kernel; the
+  drift measures time-integration error alone. It does confirm the kernel's
+  design aim: the cubic kernel drifts about 10x less than the linear one, and
+  doubling only the cells (so twice the cells crossed per step) raises the
+  drift 15-60x. But that error is three to four orders of magnitude below the
+  mesh error.
 
 So in 1D, at practical ratios, a higher `iShapeOrder` makes results worse. The
 step scans below are correct as measurements of time-step error, but that is
