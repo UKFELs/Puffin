@@ -5,7 +5,7 @@ Usage:
   python3 plot_compare_latt.py OUT.png --unavg DIR --avg DIR [--before DIR]
         [--fold F] [--modules "A:B:label;..."] [--title T] [--scenario TEXT]
         [--specx LO,HI] [--command TEXT] [--before-label TEXT]
-        [--harmonics H,H]
+        [--harmonics H,H] [--labels "A|B|C"] [--ratio "B / A"]
 
   DIR         a run directory written by run_compare_latt.py (run_*_aperp_*,
               run_integrated_*, run_electrons_*).
@@ -28,6 +28,14 @@ Usage:
               one wavelength when F = 1.
   --modules   undulator modules to shade on the z axes, in periods.
   --scenario  text under the title; paragraphs separated by a blank line.
+  --ratio-before  with --before, a second ratio block for that run against
+              --unavg, under this heading.
+  --labels    legend entries for the --unavg, --avg and --before runs, in
+              that order, separated by |, in place of the ones read from each
+              run.in.  With --ratio, which names the end-of-run ratio box
+              ("averaged / unaveraged" by default), this compares any two
+              runs - two deposition kernels, two step sizes - not only the
+              averaged against the unaveraged solver.
 
 Panels: peak power, pulse energy, beam mean energy and |bunching| along the
 undulator; and at the last dump, power along the pulse, the spectrum of the
@@ -310,9 +318,15 @@ def main():
                     help="leave solver times out, for runs not timed fairly (e.g. with "
                          "frequent dumps, or alongside other jobs)")
     ap.add_argument("--harmonics", default="", help="H,H: add the harmonic-band row")
+    ap.add_argument("--labels", default="",
+                    help="A|B|C: legend entries for --unavg, --avg, --before")
+    ap.add_argument("--ratio", default="averaged / unaveraged",
+                    help="what the ratio box divides: the --avg run by the --unavg run")
+    ap.add_argument("--ratio-before", default="",
+                    help="also give the --before run's ratios to --unavg, under this heading")
     o = ap.parse_args()
 
-    def label(d):
+    def deck_label(d):
         """The resolution as the deck asked for it (run.in), not as read back
         from the dump, which carries the mesh after Puffin rounded it."""
         with open(os.path.join(d, "run.in")) as fh:
@@ -325,11 +339,18 @@ def main():
         v = re.search(r"(?m)^\s*nodesPerLambdar\s*=\s*([^\s,]+)", deck).group(1)
         return "unaveraged, %s nodes/λr" % v
 
+    given = [v.strip() for v in o.labels.split("|")] if o.labels else []
+    named = dict(zip([o.unavg, o.avg, o.before], given))
+
+    def label(d):
+        return named.get(d) or deck_label(d)
+
     T = {d: runtime(d) for d in (o.unavg, o.avg)}
     runs = [(label(d) if o.no_times else "%s (%s)" % (label(d), fmt_time(*T[d])), d, c, ls)
             for d, c, ls in ((o.unavg, C_UN, "-"), (o.avg, C_AV, "--"))]
     if o.before:
-        runs.append((label(o.before) + ", " + o.before_label, o.before, C_PRE, ":"))
+        runs.append((label(o.before) if o.before in named else
+                     label(o.before) + ", " + o.before_label, o.before, C_PRE, ":"))
 
     text = "\n".join(textwrap.fill(" ".join(par.split()), 200)
                      for par in o.scenario.split("\n\n"))
@@ -374,13 +395,18 @@ def main():
     lu, la = runs[0][0], runs[1][0]
     r = lambda i: H[la][1][i][-1] / H[lu][1][i][-1]  # noqa: E731
     (tu, nu), (ta, na) = T[o.unavg], T[o.avg]
-    speed = "\n\nsolver time, unaveraged / averaged\n %.0fx" % (tu / ta)
+    speed = "\n\nsolver time, %s\n %.0fx" % (" / ".join(o.ratio.split(" / ")[::-1]), tu / ta)
     if nu != na:
         speed += " (on %s and %s ranks)" % (nu, na)
     if o.no_times:
         speed = ""
-    ax["P"].text(0.98, 0.03, "at end, averaged / unaveraged\n peak power %.3f\n pulse energy %.3f"
-                 "\n bunching %.3f%s" % (r(1), r(2), r(5), speed),
+    if o.before and o.ratio_before:
+        lb = runs[2][0]
+        rb = lambda i: H[lb][1][i][-1] / H[lu][1][i][-1]  # noqa: E731
+        speed = ("\n\nat end, %s\n peak power %.3f\n pulse energy %.3f\n bunching %.3f"
+                 % (o.ratio_before, rb(1), rb(2), rb(5))) + speed
+    ax["P"].text(0.98, 0.03, "at end, %s\n peak power %.3f\n pulse energy %.3f"
+                 "\n bunching %.3f%s" % (o.ratio, r(1), r(2), r(5), speed),
                  transform=ax["P"].transAxes, ha="right", va="bottom", fontsize=8,
                  family="monospace", bbox=dict(fc="white", ec="#ced4da", alpha=0.9))
 
@@ -432,7 +458,7 @@ def main():
             hax[i].set_ylabel("W (middle 30%)")
             e = ends.get(h, {})
             if o.unavg in e and o.avg in e:
-                hax[i].text(0.98, 0.03, "at end, averaged / unaveraged\n %.3f" % (e[o.avg] / e[o.unavg]),
+                hax[i].text(0.98, 0.03, "at end, %s\n %.3f" % (o.ratio, e[o.avg] / e[o.unavg]),
                             transform=hax[i].transAxes, ha="right", va="bottom", fontsize=8,
                             family="monospace", bbox=dict(fc="white", ec="#ced4da", alpha=0.9))
             for j, (s0, s1, lab) in enumerate(mods):

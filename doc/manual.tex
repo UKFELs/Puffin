@@ -920,6 +920,8 @@ Rejected outright:
 
 \item {\bf avgHarmonics holding anything but distinct odd harmonics of 3 or more}: an even harmonic (no on-axis coupling to carry), $1$ (the fundamental is always carried) or anything below it, or the same harmonic twice. And {\bf avgHarmonics} set without {\bf qAveraged}: the unaveraged solver resolves harmonics on its mesh already.
 
+\item {\bf A higher-order deposition kernel} ({\bf iShapeOrder} or {\bf iShapeOrderXY} $> 1$). The kernel filters the source in space, and that has only been characterised against a mesh that resolves the carrier, not against the coarse envelope mesh.
+
 \end{itemize}
 
 Warned about, but allowed to run:
@@ -1294,6 +1296,33 @@ Logical turning on/off the filtering of low frequency content during the siffrac
 {\bf qAveraged}
 
 Logical turning on/off the period-averaged (SVEA) solver mode, described in Section~\ref{puff-avg}. {\bf Experimental:} see that section before relying on its results. When {\bf .true.}, the field mesh holds the slowly varying envelope of the radiation about the resonant carrier rather than the resolved field, and the electron equations are averaged over an undulator period, with the quiver carried analytically. The mesh no longer has to resolve the resonant wavelength, and is set by {\bf lambdarPerCell}; the step no longer has to resolve the undulator period either, and {\bf stepsPerPeriod} $=1$ or $2$ is usually enough. It is an opt-in alternative to the unaveraged solver for regimes where averaging is valid: it discards coherent spontaneous emission from sharp current gradients, bandwidth beyond the envelope mesh's roughly $\pm 1/(2\times${\bf lambdarPerCell}$)$ of the resonant frequency, harmonics other than the odd ones asked for with {\bf avgHarmonics}, and electrons far from resonance, for which the ponderomotive phase is no longer slow. Detuned lattice modules, two-colour cases and strongly tapered undulators are limited by the band and by these electrons; see Section~\ref{puff-avg-latt}. 1D and 3D, for any undulator polarisation; the undulator ends, if modelled, only ramp the coupling. Several inputs are rejected or warned about at setup in this mode, including HDF5 and MASP macroparticle input, HDF5 field input and {\bf qResume} - see Section~\ref{puff-avg-refuses} for the full list and the reasons. [.false.]
+
+{\bf iShapeOrder}
+
+Integer. Degree of the B-spline shape function used to deposit the macroparticles onto the field mesh, and to gather the field back onto them. $=1$ is the linear (hat) deposition Puffin has always used, and is the default; $=2$ and $=3$ select the quadratic and cubic B-splines, in 1D and 3D and on either mesh type.
+
+The linear kernel is only C$^0$: as a macroparticle crosses a node the source term it scatters gains a kink, and Runge-Kutta cannot integrate through a kink at fourth order. The quadratic and cubic kernels are C$^1$ and C$^2$, and they reduce the error that comes from the integration step: by up to $38\times$ on the 3D test deck at $30$ steps per period, where the observed orders of convergence in the step are $1.4$, $3.2$ and $5.2$. That is not the same as being closer to the physical answer. With the $\bar{z}_2$ cells, the macroparticles and the steps refined together in 1D, all three kernels converge to the same answer at second order, the error at a given resolution is set by the mesh rather than the step, and it is $1.5\times$ (quadratic) and $2\times$ (cubic) the linear kernel's - the ratio of the B-splines' variances, because the leading error is the kernel's own spatial smoothing of the source. In 1D the default is therefore the more accurate choice. Whether the reduced step error outweighs the extra smoothing error in 3D has not been measured; treat values above $1$ as experimental. See {\tt benchmark/convergence/README.md}.
+
+The cost depends strongly on dimensionality, because the stencil is a tensor product: a cubic kernel touches $4$ nodes per macroparticle in 1D but $64$ in 3D, for the gather and again for the scatter. Measured in an optimised build, that is about $1.5\times$ per step in 1D and $4\times$ in 3D. Almost all of the step-error reduction comes from the $\bar{z}_2$ direction, and keeping $x$ and $y$ linear with {\bf iShapeOrderXY} removes most of the cost; see below.
+
+A deck using a wider kernel must leave the first few mesh nodes empty of
+macroparticles. The kernel reaches one node behind the particle, and there is no
+node behind the first, so a run whose beam front sits on $\bar{z}_2 = 0$ stops
+with ``Z2 coord is too small for the deposition stencil''. That is the common
+case rather than an unusual one: {\tt getOffsets} in {\tt init\_conds.f90}
+replaces any {\bf bcenter} below half the beam length with exactly half the beam
+length, which places the beam front on $\bar{z}_2 = 0$. To move it, set {\bf
+bcenter} to half the beam length plus the offset wanted. Periodic meshes need no
+such care: the wrap already leaves the room. Making the macroparticle generation
+leave that gap by itself is open work.
+
+Note that this changes the spatial discretisation and not only its smoothness: the kernel filters the source, so a higher degree couples more weakly at a fixed mesh. In the seeded 1D benchmark at $12$ cells per resonant wavelength, the pulse energy at the end of the undulator is $6.6\%$ below the converged value with the linear kernel and $14\%$ below with the cubic, falling as the square of the cell size for both. The difference is considerably larger for a run starting from shot noise, whose drive is broadband. It is therefore not a drop-in refinement of an existing deck's numbers. Not supported in the averaged mode ({\bf qAveraged}), which rejects it at setup. [1]
+
+{\bf iShapeOrderXY}
+
+Integer. In 3D, the degree of the B-spline deposition across $x$ and $y$, so that it can differ from the degree along $\bar{z}_2$, which {\bf iShapeOrder} then sets alone. Values as for {\bf iShapeOrder}; left out, it takes the value of {\bf iShapeOrder}, so that one setting still controls the whole stencil. No effect in 1D, where the input reader warns if it is set.
+
+Nearly all of the kernel's reduction in step error comes from the $\bar{z}_2$ direction, where the planar figure-of-eight sweeps macroparticles across nodes several times a period; across $x$ and $y$ the quiver excursion is usually a fraction of a cell. On the 3D test deck, cubic along $\bar{z}_2$ with {\bf iShapeOrderXY} $=1$ reduces the step error at $30$ steps per period by $34\times$, against $38\times$ for the full cubic kernel, while touching $16$ nodes per macroparticle instead of $64$: $1.7\times$ the linear kernel's cost per step instead of $4\times$. Cubic across $x$ and $y$ with linear $\bar{z}_2$ changes nothing. As for {\bf iShapeOrder}, a smaller step error does not by itself mean a result closer to the physical answer, and in 3D that comparison has not been made. If a higher degree is used in 3D, {\bf iShapeOrderXY} $=1$ gets nearly all of its effect for under half the cost. Like {\bf iShapeOrder}, rejected above $1$ in the averaged mode. [{\bf iShapeOrder}]
 
 {\bf ioutinfo}
 

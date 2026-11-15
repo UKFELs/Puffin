@@ -1,0 +1,27 @@
+! Beam for the cubic-deposition e2e test: the f1main beam, moved off node 1.
+!
+! bcenter is written as half the beam length plus the offset wanted, not as the
+! offset: getOffsets in init_conds.f90 replaces any bcenter below
+! samLenE(z2)/2 with samLenE(z2)/2, which puts the beam front exactly on z2 = 0.
+! The beam is 2.0 long, so 1.04 starts it 0.04 in - about five cells at
+! nodesPerLambdar = 17, rho = 0.01.
+
+&NBLIST
+nbeams = 1
+dtype = 'simple'
+/
+
+&BLIST
+sSigmaE = 0.1, 0.1, 1E8, 1.0, 1.0, 1.0
+sLenE = 1E-6, 1E-6, 2.0, 1E-6, 1E-6, 1E-6
+qOneDCold = .true.
+iMPsZ2PerWave = 20
+emitx = 1.0
+emity = 1.0
+bcenter = 1.04
+gammaf = 1.0
+qRndEj_G = .false.
+sSigEj_G = 0.02
+qMatched_A = .false.
+qFixCharge = .true.
+/
