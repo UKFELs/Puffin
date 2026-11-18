@@ -13,7 +13,7 @@ use GlobalTypes, only: tUndulator, tFELFrame
 implicit none (type, external)
 private
 
-public :: adjundplace, alct_e_srtcts, bxu, byu, bzu, dalct_e_srtcts, dgamdz_f, dppdz_i_f, &
+public :: adjundplace, bxu, byu, bzu, dgamdz_f, dppdz_i_f, &
            dppdz_r_f, dxdz_f, dydz_f, dz2dz_f, sField4ElecImag, sField4ElecReal, sInv2rho, sp2
 
 
@@ -179,40 +179,6 @@ contains
 
   end subroutine dz2dz_f
 
-
-
-
-  subroutine alct_e_srtcts(ar_sz)
-
-    implicit none (type, external)
-
-! Allocate the arrays used in the calculation of
-! the electron eqns
-
-    integer(kind=ip), intent(in) :: ar_sz
-
-    allocate(sp2(ar_sz), sField4ElecReal(ar_sz), &
-             sField4ElecImag(ar_sz))! , Lj(ar_sz))
-
-    allocate(bxu(ar_sz), byu(ar_sz), bzu(ar_sz))
-
-  end subroutine alct_e_srtcts
-
-
-
-  subroutine dalct_e_srtcts()
-
-    implicit none (type, external)
-
-! Allocate the arrays used in the calculation of
-! the electron eqns
-
-    deallocate(sp2, sField4ElecReal, &
-             sField4ElecImag)! , Lj(ar_sz))
-
-    deallocate(bxu, byu, bzu)
-
-  end subroutine dalct_e_srtcts
 
 
 
