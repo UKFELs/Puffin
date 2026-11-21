@@ -17,8 +17,9 @@ use ArrayFunctions, only: tErrorLog_G, log_error
 use Globals, only: NX_G, NY_G, NZ2_G, ntrndsi_G, nspinDX, nspinDY, sLengthOfElmX_G, &
   sLengthOfElmY_G, sLengthOfElmZ2_G, procelectrons_G, iNumberElectrons_G, qElectronsEvolve_G, &
   qFieldEvolve_G, qElectronFieldCoupling_G
-use Equations, only: dppdz_r_f, dppdz_i_f, dgamdz_f, dxdz_f, dydz_f, dz2dz_f, alct_e_srtcts, &
-  dalct_e_srtcts, adjundplace, sInv2rho, sp2, sField4ElecReal, sField4ElecImag, bxu, byu, bzu
+use Equations, only: dppdz_r_f, dppdz_i_f, dgamdz_f, dxdz_f, dydz_f, dz2dz_f, &
+  adjundplace, sInv2rho, sp2, sField4ElecReal, sField4ElecImag, bxu, byu, bzu
+use rhs_vars, only: p_nodes, lis_GR
 use wigglerVar, only: getalpha
 use FiElec1D, only: getinterps_1d, getffelecs_1d, getsource_1d
 use FiElec, only: getinterps_3d, getffelecs_3d, getsource_3d
@@ -34,7 +35,19 @@ use Functions, only: tProcInfo_G
 implicit none (type, external)
 private
 
-public :: getrhs, IP, log_error, sp2, tErrorLog_G, tProcInfo_G, WP
+public :: getrhs, releaseRhsWork, IP, log_error, sp2, tErrorLog_G, tProcInfo_G, WP
+
+! Averaged mode only - see averaging.f90. sprRes, spiRes hold the resonant
+! momenta q_x, q_y of every band (column per field component, x and y of the
+! fundamental first, then each harmonic band), which replace spr, spi wherever
+! the electrons couple to that component. One array for both the source and
+! the energy equation is what keeps the averaged system energy-conserving.
+! sdgamC is one component's share of dGamma/dz.
+!
+! They are work arrays of getrhs, kept here rather than as locals so that they
+! persist between calls, as the rhs_vars arrays do. See ensureRhsWork.
+
+real(kind=wp), allocatable :: sprRes(:,:), spiRes(:,:), sdgamC(:)
 
 
 contains
@@ -76,8 +89,7 @@ contains
                     sDADzr, sDADzi, &
                     qOK, ctx)
 
-  use rhs_vars, only: p_nodes, halfx, halfy, lis_GR, dx, dy, dz2, sp2, sField4ElecReal, &
-    sField4ElecImag, bxu, byu, bzu, WP, IP
+  use rhs_vars, only: halfx, halfy, dx, dy, dz2
 
   implicit none (type, external)
 
@@ -106,17 +118,9 @@ contains
 
   logical :: qOKL
 
-! Averaged mode only - see averaging.f90. sprRes, spiRes hold the resonant
-! momenta q_x, q_y of every band (column per field component, x and y of the
-! fundamental first, then each harmonic band), which replace spr, spi wherever
-! the electrons couple to that component. One array for both the source and
-! the energy equation is what keeps the averaged system energy-conserving.
-! sdgamC is one component's share of dGamma/dz.
-
-  real(kind=wp), allocatable :: sprRes(:,:), spiRes(:,:), sdgamC(:)
   type(tAvgCoupling) :: cpl
   type(tAvgFocusing) :: foc
-  integer(kind=ip) :: ie
+  integer(kind=ip) :: ie, nWts
 
 !     Begin
 
@@ -124,21 +128,17 @@ contains
   qOKL = .false.
 
 !     SETUP AND INITIALISE THE PARTICLE'S POSITION
-!     ALLOCATE THE ARRAYS
-
-!  allocate(Lj(iNumberElectrons_G))
-  allocate(p_nodes(iNumberElectrons_G))
-!  allocate(p_nodes2(ispt))
-!  allocate(tmp1(500000))
-!  allocate(tmp2(ispt))
-
-  call alct_e_srtcts(iNumberElectrons_G)
+!     The per-macroparticle work arrays persist between calls, and are only
+!     (re)allocated here when their shape has changed.
 
   if (tTransInfo_G%qOneD) then
-    allocate(lis_GR(2,iNumberElectrons_G))
+    nWts = 2_ip
   else
-    allocate(lis_GR(8,iNumberElectrons_G))
+    nWts = 8_ip
   end if
+
+  call ensureRhsWork(iNumberElectrons_G, nWts, ctx%field%nEnv, &
+                     size(sdgam, kind=ip), ctx%flags%period_averaged)
 
 !     Initialise right hand side to zero
 
@@ -155,9 +155,6 @@ contains
   if (ctx%flags%period_averaged) then
     call getAvgCoupling(sZ, ctx%und, ctx%frame, cpl)
     call getAvgFocusCoef(sZ, ctx%und, ctx%frame, ctx%flags%focusing, foc)
-    allocate(sprRes(iNumberElectrons_G, ctx%field%nEnv), &
-             spiRes(iNumberElectrons_G, ctx%field%nEnv))
-    allocate(sdgamC(size(sdgam)))
   end if
 
 
@@ -413,15 +410,7 @@ contains
        sdz2 = 0.0_wp
     end if
 
-!     Deallocate arrays
-
-!    deallocate(i_n4e,N,iNodeList_Re,iNodeList_Im,i_n4ered)
-!    deallocate(sField4ElecReal,sField4ElecImag,Lj,dp2f)
-    !deallocate(Lj)
-    deallocate(lis_GR)
-    deallocate(p_nodes)
-    call dalct_e_srtcts()
-
+!     The work arrays are kept for the next call - see ensureRhsWork.
 
     ! Set the error flag and exit
 
@@ -438,6 +427,74 @@ contains
 
 
 !        #########################################
+
+
+!> @brief
+!> Make sure the per-macroparticle work arrays of getrhs exist and have the
+!> shape this call needs, allocating them only if they do not.
+!>
+!> getrhs is called four times per RK4 step. Allocating these on entry and
+!> freeing them on exit, as it used to, had the allocator hand the memory back
+!> to the kernel and fault it in again on every call, which cost 20-26% of the
+!> wall time of a 1D run (UKFELs/Puffin#156). They are now allocated on the
+!> first call and reused until the number of local macroparticles changes;
+!> deallact_rk4_arrs releases them along with the RK4 workspace.
+!>
+!> Every array is fully written before it is read within a call, bar
+!> sField4ElecReal/Imag, which getFFelecs_* accumulates into and which getrhs
+!> therefore still zeroes on each call.
+!> @param[in] nElec Number of local macroparticles
+!> @param[in] nWts Interpolation weights per macroparticle (2 in 1D, 8 in 3D)
+!> @param[in] nEnv Number of field envelopes (averaged mode only)
+!> @param[in] nGam Size of the caller's dGamma/dz array (averaged mode only)
+!> @param[in] qAveraged Whether the averaged-mode arrays are needed
+
+subroutine ensureRhsWork(nElec, nWts, nEnv, nGam, qAveraged)
+
+  integer(kind=ip), intent(in) :: nElec, nWts, nEnv, nGam
+  logical, intent(in) :: qAveraged
+
+  if (allocated(p_nodes)) then
+    if ((size(p_nodes) /= nElec) .or. (size(lis_GR, 1) /= nWts)) call releaseRhsWork()
+  end if
+
+  if (.not. allocated(p_nodes)) then
+    allocate(p_nodes(nElec), lis_GR(nWts, nElec))
+    allocate(sp2(nElec), sField4ElecReal(nElec), sField4ElecImag(nElec))
+    allocate(bxu(nElec), byu(nElec), bzu(nElec))
+  end if
+
+  if (qAveraged) then
+
+    if (allocated(sprRes)) then
+      if ((size(sprRes, 1) /= nElec) .or. (size(sprRes, 2) /= nEnv) .or. &
+          (size(sdgamC) /= nGam)) deallocate(sprRes, spiRes, sdgamC)
+    end if
+
+    if (.not. allocated(sprRes)) then
+      allocate(sprRes(nElec, nEnv), spiRes(nElec, nEnv), sdgamC(nGam))
+    end if
+
+  end if
+
+end subroutine ensureRhsWork
+
+
+!> @brief
+!> Free the work arrays of getrhs. Safe to call when they are not allocated.
+!> The next getrhs call allocates them again.
+
+subroutine releaseRhsWork()
+
+  if (allocated(p_nodes)) then
+    deallocate(p_nodes, lis_GR)
+    deallocate(sp2, sField4ElecReal, sField4ElecImag)
+    deallocate(bxu, byu, bzu)
+  end if
+
+  if (allocated(sprRes)) deallocate(sprRes, spiRes, sdgamC)
+
+end subroutine releaseRhsWork
 
 
 !> @author

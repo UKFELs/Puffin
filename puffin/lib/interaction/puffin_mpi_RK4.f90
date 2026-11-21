@@ -8,6 +8,7 @@ module RK4int
    use Globals, only: NX_G, NY_G, ntrndsi_G, iNumberElectrons_G, sElX_G, sElY_G, sElZ2_G, &
      sElPX_G, sElPY_G, sElGam_G, dadz_w, WP
    use Derivative, only: derivs
+   use rhs, only: releaseRhsWork
    use IO, only: tErrorLog_G, log_error
    use ParaField, only: upd8a, inner2outer, outer2inner
    use GlobalTypes, only: tSimulationContext, tFieldValues, tRK4Workspace
@@ -494,6 +495,12 @@ contains
          work%dpz2t, work%pz2t)
 
       deallocate(dadz_w)
+
+!     getrhs keeps its own per-macroparticle scratch between calls. Let it go
+!     here, where the macroparticle count may be about to change, so it is
+!     never held across a redistribution or between undulator modules.
+
+      call releaseRhsWork()
 
    end subroutine deallact_rk4_arrs
 
