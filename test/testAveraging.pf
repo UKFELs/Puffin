@@ -1383,10 +1383,9 @@ contains
   end subroutine testRhsConservesEnergyTaperedRamp
 
 
-  !> The same balance through the 3D path - getInterps_3D, getFFelecs_3D and
-  !! getSource_3D - where the averaged focusing is also live.  Beam and field
-  !! still have to balance exactly: focusing moves transverse momentum, not
-  !! energy.
+  !> The same balance through the 3D path - getInteract_3D - where the
+  !! averaged focusing is also live.  Beam and field still have to balance
+  !! exactly: focusing moves transverse momentum, not energy.
   @test
   subroutine testRhsConservesEnergy3DHelical()
     call checkRhsEnergyBalance("helical", 1.0_wp, 1.0_wp, 0.0_wp, .false., 0.37_wp, .false.)

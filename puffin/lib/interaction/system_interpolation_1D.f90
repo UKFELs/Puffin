@@ -121,7 +121,7 @@ end subroutine getFFelecs_1D
 !> Scatter the electron source term into the local field arrays.
 !>
 !> Split into a wrapper and getSource_1D_kernel below for the same reason as
-!> getSource_3D in system_interpolation.f90 - see the comment there.  The
+!> getInteract_3D in system_interpolation.f90 - see the comment there.  The
 !> !$OMP ATOMIC updates are memory barriers, so a loop reading dadz_w, p_nodes
 !> and lis_GR straight from their modules has to reload each array descriptor
 !> from memory every iteration, which puts the linker's choice of module symbol
