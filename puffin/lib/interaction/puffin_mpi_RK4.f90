@@ -129,52 +129,21 @@ contains
 
 
 
+!    The source term is scattered into dA/dz (getInteract_3D, getSource_1D)
+!    by accumulation, so the three stage derivatives start from zero. Every
+!    other stage array is written in full before it is read - the trial
+!    points by the updates below, the electron derivatives by derivs - so
+!    they need no clearing. If a stage finds a macroparticle outside the local
+!    field (parallel_arrays_ok) the remaining stages are skipped and the step
+!    is redone from the unchanged sEl*_G and in_r, so nothing left over from
+!    an earlier step is ever used.
+
       work%dadz_r(:,:,0) = 0_wp
       work%dadz_r(:,:,1) = 0_wp
       work%dadz_r(:,:,2) = 0_wp
       work%dadz_i(:,:,0) = 0_wp
       work%dadz_i(:,:,1) = 0_wp
       work%dadz_i(:,:,2) = 0_wp
-
-      work%A_r(:,:,0) = 0_wp
-      work%A_r(:,:,1) = 0_wp
-      work%A_r(:,:,2) = 0_wp
-      work%A_r(:,:,3) = 0_wp
-      work%A_i(:,:,0) = 0_wp
-      work%A_i(:,:,1) = 0_wp
-      work%A_i(:,:,2) = 0_wp
-      work%A_i(:,:,3) = 0_wp
-
-
-
-      work%xt = 0_wp
-      work%yt = 0_wp
-      work%z2t = 0_wp
-      work%pxt = 0_wp
-      work%pyt = 0_wp
-      work%pz2t = 0_wp
-
-      work%dxdx = 0.0_wp
-      work%dydx = 0.0_wp
-      work%dz2dx = 0.0_wp
-      work%dpxdx = 0.0_wp
-      work%dpydx = 0.0_wp
-      work%dpz2dx = 0.0_wp
-
-      work%dxm = 0.0_wp
-      work%dxt = 0.0_wp
-      work%dym = 0.0_wp
-      work%dyt = 0.0_wp
-      work%dpxm = 0.0_wp
-      work%dpxt = 0.0_wp
-      work%dpym = 0.0_wp
-      work%dpyt = 0.0_wp
-      work%dz2m = 0.0_wp
-      work%dz2t = 0.0_wp
-      work%dpz2m = 0.0_wp
-      work%dpz2t = 0.0_wp
-
-
 
       work%A_r(:,:,0) = work%in_r
       work%A_i(:,:,0) = work%in_i
@@ -415,10 +384,19 @@ contains
 
    subroutine allact_rk4_arrs(field, work)
 
+!     Size the integration scratch for the current field layout and number
+!     of local macroparticles, and load the inner field mesh into in_r/in_i.
+!
+!     The workspace is kept between field relayouts (see deallact_rk4_arrs),
+!     and arrays already the right size are reused rather than reallocated.
+!     At hundreds of thousands of macroparticles and a 3D mesh they total
+!     hundreds of MB, and allocating them afresh every iRedistStp steps meant
+!     faulting every page of them in again.
+
       type(tFieldValues), intent(in) :: field
       type(tRK4Workspace), intent(inout) :: work
 
-      integer(kind=ip) :: tllen43D, nEnv
+      integer(kind=ip) :: tllen43D, nEnv, nE
 
       tllen43D = field%tllen * ntrndsi_G
 
@@ -426,32 +404,45 @@ contains
 !     (x and y). Set once at setup, in field%nEnv.
 
       nEnv = field%nEnv
+      nE = iNumberElectrons_G
 
-      allocate(work%dadz_r(tllen43D, nEnv, 0:2), work%dadz_i(tllen43D, nEnv, 0:2))
-      allocate(work%A_r(tllen43D, nEnv, 0:3), work%A_i(tllen43D, nEnv, 0:3))
-      allocate(work%in_r(tllen43D, nEnv), work%in_i(tllen43D, nEnv))
+      if (allocated(work%in_r)) then
+        if ((size(work%in_r, 1) /= tllen43D) .or. (size(work%in_r, 2) /= nEnv)) then
+          deallocate(work%in_r, work%in_i)
+          deallocate(work%dadz_r, work%dadz_i)
+          deallocate(work%A_r, work%A_i)
+        end if
+      end if
 
-      allocate(work%dxdx(iNumberElectrons_G))
-      allocate(work%dydx(iNumberElectrons_G))
-      allocate(work%dpxdx(iNumberElectrons_G))
-      allocate(work%dpydx(iNumberElectrons_G))
-      allocate(work%dz2dx(iNumberElectrons_G))
-      allocate(work%dpz2dx(iNumberElectrons_G))
+      if (.not. allocated(work%in_r)) then
+        allocate(work%dadz_r(tllen43D, nEnv, 0:2), work%dadz_i(tllen43D, nEnv, 0:2))
+        allocate(work%A_r(tllen43D, nEnv, 0:3), work%A_i(tllen43D, nEnv, 0:3))
+        allocate(work%in_r(tllen43D, nEnv), work%in_i(tllen43D, nEnv))
+      end if
 
-      allocate(work%dxm(iNumberElectrons_G), &
-         work%dxt(iNumberElectrons_G), work%xt(iNumberElectrons_G))
-      allocate(work%dym(iNumberElectrons_G), &
-         work%dyt(iNumberElectrons_G), work%yt(iNumberElectrons_G))
-      allocate(work%dpxm(iNumberElectrons_G), &
-         work%dpxt(iNumberElectrons_G), work%pxt(iNumberElectrons_G))
-      allocate(work%dpym(iNumberElectrons_G), &
-         work%dpyt(iNumberElectrons_G), work%pyt(iNumberElectrons_G))
-      allocate(work%dz2m(iNumberElectrons_G), &
-         work%dz2t(iNumberElectrons_G), work%z2t(iNumberElectrons_G))
-      allocate(work%dpz2m(iNumberElectrons_G), &
-         work%dpz2t(iNumberElectrons_G), work%pz2t(iNumberElectrons_G))
+      if (allocated(work%dxdx)) then
+        if (size(work%dxdx) /= nE) call deallactElecArrs(work)
+      end if
 
-      allocate(dadz_w(iNumberElectrons_G))
+      if (.not. allocated(work%dxdx)) then
+
+        allocate(work%dxdx(nE))
+        allocate(work%dydx(nE))
+        allocate(work%dpxdx(nE))
+        allocate(work%dpydx(nE))
+        allocate(work%dz2dx(nE))
+        allocate(work%dpz2dx(nE))
+
+        allocate(work%dxm(nE), work%dxt(nE), work%xt(nE))
+        allocate(work%dym(nE), work%dyt(nE), work%yt(nE))
+        allocate(work%dpxm(nE), work%dpxt(nE), work%pxt(nE))
+        allocate(work%dpym(nE), work%dpyt(nE), work%pyt(nE))
+        allocate(work%dz2m(nE), work%dz2t(nE), work%z2t(nE))
+        allocate(work%dpz2m(nE), work%dpz2t(nE), work%pz2t(nE))
+
+        allocate(dadz_w(nE))
+
+      end if
 
       call outer2InnerEnv(work%in_r, work%in_i, field)
 
@@ -460,19 +451,46 @@ contains
 
 
 
-   subroutine deallact_rk4_arrs(field, work)
+   subroutine deallact_rk4_arrs(field, work, qKeep)
+
+!     Write the inner mesh back to the field, and free the workspace - unless
+!     qKeep is set, as it is around a field relayout, when allact_rk4_arrs
+!     will want the same arrays again straight after.
 
       type(tFieldValues), intent(inout) :: field
       type(tRK4Workspace), intent(inout) :: work
+      logical, intent(in), optional :: qKeep
 
 !     The inner mesh is a working copy; write it back to the authoritative
 !     outer mesh before letting it go.
 
       call inner2OuterEnv(work%in_r, work%in_i, field)
 
+!     getrhs keeps its own per-macroparticle scratch between calls. Let it go
+!     here, where the macroparticle count may be about to change, so it is
+!     never held across a redistribution or between undulator modules. It is
+!     a few arrays of one value per macroparticle, so unlike the workspace
+!     below it costs little to fault back in.
+
+      call releaseRhsWork()
+
+      if (present(qKeep)) then
+        if (qKeep) return
+      end if
+
       deallocate(work%in_r, work%in_i)
       deallocate(work%dadz_r, work%dadz_i)
       deallocate(work%A_r, work%A_i)
+
+      call deallactElecArrs(work)
+
+   end subroutine deallact_rk4_arrs
+
+
+
+   subroutine deallactElecArrs(work)
+
+      type(tRK4Workspace), intent(inout) :: work
 
       deallocate(work%dxdx)
       deallocate(work%dydx)
@@ -481,28 +499,16 @@ contains
       deallocate(work%dz2dx)
       deallocate(work%dpz2dx)
 
-      deallocate(work%dxm, &
-         work%dxt, work%xt)
-      deallocate(work%dym, &
-         work%dyt, work%yt)
-      deallocate(work%dpxm, &
-         work%dpxt, work%pxt)
-      deallocate(work%dpym, &
-         work%dpyt, work%pyt)
-      deallocate(work%dz2m, &
-         work%dz2t, work%z2t)
-      deallocate(work%dpz2m, &
-         work%dpz2t, work%pz2t)
+      deallocate(work%dxm, work%dxt, work%xt)
+      deallocate(work%dym, work%dyt, work%yt)
+      deallocate(work%dpxm, work%dpxt, work%pxt)
+      deallocate(work%dpym, work%dpyt, work%pyt)
+      deallocate(work%dz2m, work%dz2t, work%z2t)
+      deallocate(work%dpz2m, work%dpz2t, work%pz2t)
 
       deallocate(dadz_w)
 
-!     getrhs keeps its own per-macroparticle scratch between calls. Let it go
-!     here, where the macroparticle count may be about to change, so it is
-!     never held across a redistribution or between undulator modules.
-
-      call releaseRhsWork()
-
-   end subroutine deallact_rk4_arrs
+   end subroutine deallactElecArrs
 
 
 !subroutine RK4_inc

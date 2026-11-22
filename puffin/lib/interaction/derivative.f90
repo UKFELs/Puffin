@@ -91,7 +91,7 @@ contains
                 qOKL, ctx)
 
 ! flags%parallel_arrays_ok and flags%inner_xy_ok are now written directly by
-! getInterps_1D/3D via ctx%flags — no global→flags sync needed here.
+! getInterps_1D / getInteract_3D via ctx%flags — no global→flags sync needed here.
 
 
 
