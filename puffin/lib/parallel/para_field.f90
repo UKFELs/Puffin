@@ -53,6 +53,16 @@ integer(kind=ip), allocatable :: lrank_v(:), rrank_v(:,:), &
 
 integer(kind=ip) :: nsnds_bf, nrecvs_bf
 
+! The arrays the previous field layout was redistributed from, kept for the
+! next relayout to redistribute into. A relayout always holds the old and the
+! new layout at once, so keeping one set back does not raise peak memory, and
+! it saves faulting a field's worth of fresh pages in every iRedistStp steps.
+! Used only if the new layout needs arrays of the same shape.
+
+real(kind=wp), allocatable :: spare_fr_r(:,:), spare_fr_i(:,:), &
+                              spare_bk_r(:,:), spare_bk_i(:,:), &
+                              spare_ac_r(:,:), spare_ac_i(:,:)
+
 ! if fz2 to ez2 overlaps, give warning - but not fail...
 ! No, fz2 to ez2 will only overlap if less nodes than procs...
 ! in which case, we share ALL nodes...but do this later...
@@ -253,30 +263,24 @@ contains
 
 
 
-  allocate(fr_rfield_old(size(field%fr_r,1), field%nComp), &
-           fr_ifield_old(size(field%fr_i,1), field%nComp))
-  allocate(bk_rfield_old(size(field%bk_r,1), field%nComp), &
-           bk_ifield_old(size(field%bk_i,1), field%nComp))
-  allocate(ac_rfield_old(size(field%ac_r,1), field%nComp), &
-           ac_ifield_old(size(field%ac_i,1), field%nComp))
+! The old layout's arrays become the source of the redistribution. Moving
+! them, rather than copying them and freeing the originals, saves a full copy
+! of the field - and the page faults of a fresh field-sized allocation - on
+! every relayout.
 
-  fr_rfield_old = field%fr_r
-  fr_ifield_old = field%fr_i
-  bk_rfield_old = field%bk_r
-  bk_ifield_old = field%bk_i
-  ac_rfield_old = field%ac_r
-  ac_ifield_old = field%ac_i
+  call move_alloc(field%fr_r, fr_rfield_old)
+  call move_alloc(field%fr_i, fr_ifield_old)
+  call move_alloc(field%bk_r, bk_rfield_old)
+  call move_alloc(field%bk_i, bk_ifield_old)
+  call move_alloc(field%ac_r, ac_rfield_old)
+  call move_alloc(field%ac_i, ac_ifield_old)
 
-  deallocate(field%ac_r, field%ac_i)
-  deallocate(field%fr_r, field%fr_i)
-  deallocate(field%bk_r, field%bk_i)
-
-  allocate(field%fr_r(field%tlflen4arr*ntrnds_G, field%nComp), &
-           field%fr_i(field%tlflen4arr*ntrnds_G, field%nComp))
-  allocate(field%bk_r(field%tlelen4arr*ntrnds_G, field%nComp), &
-           field%bk_i(field%tlelen4arr*ntrnds_G, field%nComp))
-  allocate(field%ac_r(field%tllen*ntrnds_G, field%nComp), &
-           field%ac_i(field%tllen*ntrnds_G, field%nComp))
+  call takeSpare(spare_fr_r, field%fr_r, field%tlflen4arr*ntrnds_G, field%nComp)
+  call takeSpare(spare_fr_i, field%fr_i, field%tlflen4arr*ntrnds_G, field%nComp)
+  call takeSpare(spare_bk_r, field%bk_r, field%tlelen4arr*ntrnds_G, field%nComp)
+  call takeSpare(spare_bk_i, field%bk_i, field%tlelen4arr*ntrnds_G, field%nComp)
+  call takeSpare(spare_ac_r, field%ac_r, field%tllen*ntrnds_G, field%nComp)
+  call takeSpare(spare_ac_i, field%ac_i, field%tllen*ntrnds_G, field%nComp)
 
   field%ac_r = 0_wp
   field%ac_i = 0_wp
@@ -340,9 +344,12 @@ contains
              ac_ar_old)
 
 
-  deallocate(ac_rfield_old, ac_ifield_old)
-  deallocate(fr_rfield_old, fr_ifield_old)
-  deallocate(bk_rfield_old, bk_ifield_old)
+  call move_alloc(ac_rfield_old, spare_ac_r)
+  call move_alloc(ac_ifield_old, spare_ac_i)
+  call move_alloc(fr_rfield_old, spare_fr_r)
+  call move_alloc(fr_ifield_old, spare_fr_i)
+  call move_alloc(bk_rfield_old, spare_bk_r)
+  call move_alloc(bk_ifield_old, spare_bk_i)
 
 
   if (.not. field%qUnique) then
@@ -534,6 +541,28 @@ contains
       flags%parallel_arrays_ok = .true.
 
     end subroutine getLocalFieldIndices
+
+
+
+!> Give arr the shape (n1, n2), taking over spare's storage if it already has
+!> that shape. Contents are undefined either way.
+
+    subroutine takeSpare(spare, arr, n1, n2)
+
+      real(kind=wp), allocatable, intent(inout) :: spare(:,:), arr(:,:)
+      integer(kind=ip), intent(in) :: n1, n2
+
+      if (allocated(spare)) then
+        if ((size(spare, 1) == n1) .and. (size(spare, 2) == n2)) then
+          call move_alloc(spare, arr)
+          return
+        end if
+        deallocate(spare)
+      end if
+
+      allocate(arr(n1, n2))
+
+    end subroutine takeSpare
 
 
 !  ###################################################
@@ -3120,8 +3149,22 @@ contains
     tmpez2_act = nz2_G
 
 
-    allocate(field%tre_fft(tmpmainlen*ntrnds_G, field%nComp), &
-             field%tim_fft(tmpmainlen*ntrnds_G, field%nComp))
+!    The FFTW data distribution is fixed for the whole run, so the
+!    redistributed field arrays are allocated once and kept: at a 3D mesh
+!    they are hundreds of MB, and allocating them afresh for every
+!    diffraction step meant faulting every page of them in again.
+
+    if (allocated(field%tre_fft)) then
+      if ((size(field%tre_fft, 1) /= tmpmainlen*ntrnds_G) .or. &
+          (size(field%tre_fft, 2) /= field%nComp)) then
+        deallocate(field%tre_fft, field%tim_fft)
+      end if
+    end if
+
+    if (.not. allocated(field%tre_fft)) then
+      allocate(field%tre_fft(tmpmainlen*ntrnds_G, field%nComp), &
+               field%tim_fft(tmpmainlen*ntrnds_G, field%nComp))
+    end if
 
 
     field%tre_fft = 0_wp
@@ -3184,7 +3227,6 @@ contains
 
     end do
 
-    deallocate(field%tre_fft, field%tim_fft)
     deallocate(field%ft_ar)
 
 

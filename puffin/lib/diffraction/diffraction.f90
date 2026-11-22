@@ -160,6 +160,18 @@ subroutine multiplyexp(h, kz2Carrier, qOK)
                    delz2, &           !< Mesh spacing in z2
                    kz2p               !< Physical z2 wavenumber of this mode
 
+! The diffraction factor depends on x and y only through kx**2 + ky**2, and
+! kx_G, ky_G are symmetric about zero, so each z2 slice needs exp() for only
+! about a quarter of its transverse modes. ux, uy map each mode to its
+! distinct value of kx**2, ky**2 (exact equality), and fac holds one slice's
+! factors for each pair of distinct values: the same expression on the same
+! operands as before, so the same result, but evaluated once per pair.
+
+  integer(kind=ip), allocatable :: ux(:), uy(:)
+  real(kind=wp), allocatable :: kx2u(:), ky2u(:)
+  complex(kind=wp), allocatable :: fac(:,:)
+  integer(kind=ip) :: ia, ib
+
 !------------------------------------------------------
 !                      Begin
 
@@ -173,42 +185,52 @@ subroutine multiplyexp(h, kz2Carrier, qOK)
 
 !      Main loop, multiply FT field by exp factor
 
+  allocate(ux(0:NX_G-1_IP), uy(0:NY_G-1_IP), kx2u(NX_G), ky2u(NY_G))
+  call distinctValues(kx_G(0:NX_G-1_IP)**2, ux, kx2u)
+  call distinctValues(ky_G(0:NY_G-1_IP)**2, uy, ky2u)
+  allocate(fac(maxval(ux), maxval(uy)))
+
   do z2_inc=0,loc_nz2-1_IP
-     do y_inc=0,NY_G-1_IP
-        do x_inc=0,NX_G-1_IP
 
-           !ind=x_inc+y_inc*NX_G+z2_inc*NX_G*NY_G
+     kz2p = kz2_loc_G(z2_inc) + kz2Carrier
 
-           kz2p = kz2_loc_G(z2_inc) + kz2Carrier
+!    The high-pass filter's cutoff is defined on the physical wavenumber.
+!    In averaged mode every mode the envelope mesh can hold is within
+!    ~1/(2 lambdarPerCell) of its band's carrier, far above any sensible
+!    sfilt, so the filter is inert there - which is the right answer, not
+!    a special case: a cut at envelope kz2 = 0 would delete the carrier.
 
-!          The high-pass filter's cutoff is defined on the physical wavenumber.
-!          In averaged mode every mode the envelope mesh can hold is within
-!          ~1/(2 lambdarPerCell) of its band's carrier, far above any sensible
-!          sfilt, so the filter is inert there - which is the right answer, not
-!          a special case: a cut at envelope kz2 = 0 would delete the carrier.
+     if ((kz2p>cutoff) .or. (kz2p<-cutoff)) then
 
-           if ((kz2p>cutoff) .or. (kz2p<-cutoff)) then
+        if (kz2p/=0.0_WP) then
 
-              if (kz2p/=0.0_WP) then
+           do ib = 1, size(fac, 2)
+              do ia = 1, size(fac, 1)
+                 fac(ia, ib) = exp(posI*h*(kx2u(ia) + &
+                                           ky2u(ib)) / &
+                                   (2.0_WP*kz2p))
+              end do
+           end do
 
-                Afftw(x_inc+1,y_inc+1,z2_inc+1) = &
-                           exp(posI*h*(kx_G(x_inc)**2 + &
-                                     ky_G(y_inc)**2) / &
-                                (2.0_WP*kz2p)) * &
-                           Afftw(x_inc+1,y_inc+1,z2_inc+1)
+           do y_inc=0,NY_G-1_IP
+              do x_inc=0,NX_G-1_IP
+                 Afftw(x_inc+1,y_inc+1,z2_inc+1) = &
+                            fac(ux(x_inc), uy(y_inc)) * &
+                            Afftw(x_inc+1,y_inc+1,z2_inc+1)
+              end do
+           end do
 
-              end if
+        end if
 
-           else
+     else
 
-              if (qFilter) Afftw(x_inc+1,y_inc+1,z2_inc+1) = &
-                         CMPLX(0.0, 0.0, C_DOUBLE_COMPLEX)
+        if (qFilter) Afftw(:,:,z2_inc+1) = CMPLX(0.0, 0.0, C_DOUBLE_COMPLEX)
 
-           end if
+     end if
 
-        end do
-     end do
   end do
+
+  deallocate(ux, uy, kx2u, ky2u, fac)
 
 !              Set error flag and exit
 
@@ -363,7 +385,7 @@ SUBROUTINE DiffractionStep(h, sAr, sAi, iHarm, ctx, qOK)
 
 !      Now solve for the absorbing boundary layer
 
-  call AbsorptionStep(Afftw, h, kz2Carrier, ffact)
+  call AbsorptionStep(Afftw, sAr, sAi, h, kz2Carrier, ffact)
 
   call Get_time(tr_time_e)
 
@@ -415,7 +437,7 @@ END SUBROUTINE DiffractionStep
 !> @param[in] h Diffraction step size \f$ \Delta \bar{z} \f$
 !> @param[in] ffact Absorption coefficient
 
-SUBROUTINE AbsorptionStep(sAl,h,kz2Carrier,ffact)
+SUBROUTINE AbsorptionStep(sAl,sAnbr,sAnbi,h,kz2Carrier,ffact)
 
 ! This subroutine implements a boundary region
 ! in the x, y and z2 directions. The method used
@@ -456,6 +478,15 @@ SUBROUTINE AbsorptionStep(sAl,h,kz2Carrier,ffact)
 
   complex(C_DOUBLE_COMPLEX), pointer, intent(inout) :: sAl(:,:,:)
 
+! Real and imaginary parts of the part of the field the mask holds back from
+! the absorbing transform, to be added back at the end - sAnb in the
+! description above. Any array of the local mesh's size will do: the caller
+! passes the real-valued field arrays it will overwrite with the result
+! anyway, which saves allocating a field-sized complex scratch array on every
+! call. Indexed like sAl, flattened.
+
+  real(kind=wp), intent(inout) :: sAnbr(:), sAnbi(:)
+
   REAL(KIND=WP), INTENT(IN) :: h,ffact
 
 ! Offset from the stored field's z2 wavenumber to the physical one - zero
@@ -466,12 +497,15 @@ SUBROUTINE AbsorptionStep(sAl,h,kz2Carrier,ffact)
 !               LOCAL ARGS
 
   REAL(KIND=WP), allocatable :: mask(:), mask_z2(:)
-  COMPLEX(KIND=WP), allocatable :: sAnb(:,:,:)
-  COMPLEX(KIND=WP) :: posI
-  INTEGER(KIND=IP) :: iz2, x_inc, y_inc, z2_inc, ix, iy
+  COMPLEX(KIND=WP) :: posI, sAnb
+  INTEGER(KIND=IP) :: iz2, x_inc, y_inc, z2_inc, ix, iy, ind
   INTEGER(KIND=IP) :: loc_nz2
   REAL(KIND=WP) :: kz2p
   LOGICAL :: qOKL
+
+  integer(kind=ip), allocatable :: ux(:), uy(:)
+  real(kind=wp), allocatable :: kxu(:), kyu(:), fac(:,:)
+  integer(kind=ip) :: ia, ib
 
 ! ############################
 
@@ -480,7 +514,6 @@ SUBROUTINE AbsorptionStep(sAl,h,kz2Carrier,ffact)
 ! ****************************
 
   allocate(mask(NX_G*NY_G), mask_z2(tTransInfo_G%loc_nz2))
-  allocate(sAnb(nx_g, ny_g, loc_nz2))
 
 ! ****************************
 
@@ -511,9 +544,13 @@ SUBROUTINE AbsorptionStep(sAl,h,kz2Carrier,ffact)
       do iy = 1_ip, ny_g
         do ix = 1_ip, nx_g
 
-          sAnb(ix, iy, iz2) = (1.0_WP - (mask(ix+((iy-1)*nx_g)) +  &
+          sAnb = (1.0_WP - (mask(ix+((iy-1)*nx_g)) +  &
                   ( mask_z2(iz2) *  (1.0_WP - mask(ix+((iy-1)*nx_g) ) ) ) ) ) * &
                   sAl(ix,iy,iz2)
+
+          ind = ix + nx_g*(iy-1) + nx_g*ny_g*(iz2-1)
+          sAnbr(ind) = real(sAnb, kind=wp)
+          sAnbi(ind) = aimag(sAnb)
 
 !    sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP) =   (1.0_WP - mask_z2(iz2)) * &
 !      sAnb(NX_G*NY_G*iz2 : NX_G*NY_G*(iz2+1_IP) - 1_IP)
@@ -534,30 +571,47 @@ SUBROUTINE AbsorptionStep(sAl,h,kz2Carrier,ffact)
 
 !     Apply filter, by decreasing fourier coefficients
 
+!     The absorption factor depends on x and y only through |kx| + |ky|, so,
+!     as in multiplyexp, exp() is evaluated once per pair of distinct |kx|,
+!     |ky| values in each slice, on the same operands as before.
+!
+!     The loop forming the factors must not be vectorised: the compiler would
+!     then call a SIMD exp (glibc's libmvec), whose results are not
+!     guaranteed to match the scalar exp the per-node loop always used. Hence
+!     the NOVECTOR directive, which other compilers treat as a comment.
+
+  allocate(ux(0:NX_G-1_IP), uy(0:NY_G-1_IP), kxu(NX_G), kyu(NY_G))
+  call distinctValues(abs(kx_G(0:NX_G-1_IP)), ux, kxu)
+  call distinctValues(abs(ky_G(0:NY_G-1_IP)), uy, kyu)
+  allocate(fac(maxval(ux), maxval(uy)))
+
   do z2_inc=0,loc_nz2-1_IP
-    do y_inc=0,NY_G-1_IP
-      do x_inc=0,NX_G-1_IP
 
-        kz2p = kz2_loc_G(z2_inc) + kz2Carrier
+    kz2p = kz2_loc_G(z2_inc) + kz2Carrier
 
-        if (kz2p/=0.0_WP) then
+    if (kz2p/=0.0_WP) then
 
-              !  sAl(ind)=exp(-posI*h*(kx_G(x_inc)**2 + &
-              !             ky_G(y_inc)**2) / &
-              !             (2.0_WP*kz2_loc_G(z2_inc)))*sAl(ind)
-
-           sAl(x_inc+1,y_inc+1,z2_inc+1) = exp(-h*sBeta_G*(abs(kx_G(x_inc)) + &
-                          abs(ky_G(y_inc))) / &
-                          (sqrt(abs(2.0_WP * kz2p)))) * &
-                          sAl(x_inc+1,y_inc+1,z2_inc+1)
-
-!          sAl(ind) = exp(-h*sBeta_G) * sAl(ind)
-
-        end if
-
+      do ib = 1, size(fac, 2)
+!GCC$ novector
+        do ia = 1, size(fac, 1)
+          fac(ia, ib) = exp(-h*sBeta_G*(kxu(ia) + &
+                        kyu(ib)) / &
+                        (sqrt(abs(2.0_WP * kz2p))))
+        end do
       end do
-    end do
+
+      do y_inc=0,NY_G-1_IP
+        do x_inc=0,NX_G-1_IP
+          sAl(x_inc+1,y_inc+1,z2_inc+1) = fac(ux(x_inc), uy(y_inc)) * &
+                         sAl(x_inc+1,y_inc+1,z2_inc+1)
+        end do
+      end do
+
+    end if
+
   end do
+
+  deallocate(ux, uy, kxu, kyu, fac)
 
 !     Inverse FFT
 
@@ -573,11 +627,17 @@ SUBROUTINE AbsorptionStep(sAl,h,kz2Carrier,ffact)
 
 !     Recombine masked field around boundary with remainder
 
-  sAl = sAl + sAnb
+  do iz2 = 1_IP, loc_nz2
+    do iy = 1_ip, ny_g
+      do ix = 1_ip, nx_g
+        ind = ix + nx_g*(iy-1) + nx_g*ny_g*(iz2-1)
+        sAl(ix,iy,iz2) = sAl(ix,iy,iz2) + cmplx(sAnbr(ind), sAnbi(ind), kind=wp)
+      end do
+    end do
+  end do
 
 
   deallocate(mask, mask_z2)
-  deallocate(sAnb)
 
 END SUBROUTINE AbsorptionStep
 
@@ -659,5 +719,38 @@ SUBROUTINE clearA(sA, qOK)
 END SUBROUTINE clearA
 
 !**************************************************
+
+!> Map each entry of v to an index into its distinct values, compared exactly.
+!> On return u(1:maxval(map)) holds the distinct values, in order of first
+!> appearance, and v(i) == u(map(i)) bit for bit. O(n * distinct), which is
+!> nothing for a transverse mesh dimension.
+
+subroutine distinctValues(v, map, u)
+
+  real(kind=wp), intent(in) :: v(:)
+  integer(kind=ip), intent(out) :: map(:)
+  real(kind=wp), intent(out) :: u(:)
+
+  integer(kind=ip) :: i, j, nu
+
+  nu = 0_ip
+
+  do i = 1, size(v, kind=ip)
+    map(i) = 0_ip
+    do j = 1, nu
+      if (u(j) == v(i)) then
+        map(i) = j
+        exit
+      end if
+    end do
+    if (map(i) == 0_ip) then
+      nu = nu + 1_ip
+      u(nu) = v(i)
+      map(i) = nu
+    end if
+  end do
+
+end subroutine distinctValues
+
 
 end module PDiff
