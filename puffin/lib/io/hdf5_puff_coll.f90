@@ -99,6 +99,7 @@ contains
     CHARACTER(LEN=12), PARAMETER :: limgrpname = "globalLimits"  ! Group name
     REAL(kind=WP), ALLOCATABLE :: limdata (:)  ! Data to write
     real(kind=wp), allocatable :: sz2_temp(:)
+    real(kind=wp), allocatable :: ebuf(:,:)  !< this rank's [7, n] block
     real(kind=wp) :: ebound
     ! Local vars
     !integer(kind=ip) :: iep
@@ -133,7 +134,6 @@ contains
     dims = [7,iNumberElectrons_G] ! Dataset dimensions
     fdims = [7,iGloNumElectrons_G] ! Dataset dimensions
     doffset=[0,startOffset]
-    dsize=[1,iNumberElectrons_G]
     attr_data_string="electrons_x,electrons_y,electrons_z,electrons_px," // &
       "electrons_py,electrons_gamma,electrons_weight"
     attr_string_len=94
@@ -166,255 +166,75 @@ contains
      CALL h5sclose_f(filespace, error)
 !     Print*,'hdf5_puff:outputH5BeamSD(filespace closed)'
 !     Print*,error
-! Select hyperslab in the file.
+! Write this rank's macroparticles as one hyperslab of the [7, N] dataset.
+! The coordinate is the fast index on disk, so writing each coordinate as its
+! own [1, N] row is a strided write of every 7th value - with MPI-IO that cost
+! seconds per dump at a few hundred thousand macroparticles. Packing the seven
+! coordinates into a [7, n] buffer first makes it one contiguous block; the
+! dataset written is identical.
 
+    dsize = [7_HSIZE_T, int(iNumberElectrons_G, HSIZE_T)]
 
-!      if (procelectrons_G(1).GT.0) then
-! for the corresponding space on disk
-        CALL h5screate_simple_f(rank, dsize, dspace_id, error)
-        if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(dspace_id, error)
+    if (procelectrons_G(1) > 0) then
 
-!        Print*,'hdf5_puff:outputH5BeamFilesSD(memory dataspace allocated)'
-!        Print*,error
-        CALL h5dget_space_f(dset_id, filespace, error)
-        CALL h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, doffset, dsize, error)
-        if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
-!        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
-!          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-!      else
-! all ranks must participate, so select no space to write when dealing with
-! ranks which hold no data for this field fr_real, etc
-!        CALL h5sselect_none_f(filespace,error)
-!        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
-!          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-!        CALL h5sselect_none_f(dspace_id,error)
-!      end if
-      CALL h5pcreate_f(H5P_DATASET_XFER_F, plist_id, error)
-!      CALL h5pset_dxpl_mpio_f(plist_id, H5FD_MPIO_INDEPENDENT_F, error)
-      CALL h5pset_dxpl_mpio_f(plist_id, H5FD_MPIO_COLLECTIVE_F, error)
-!      CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, &
-!         sElX_G((startOffset+1):(startOffset+procelectrons_G(1))), dsize, error, &
-!         xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
-      CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, &
-         sElX_G, dsize, error, &
-         xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
-!      Print*,'hdf5_puff:outputH5BeamSD(write done)'
-      CALL h5sclose_f(filespace, error)
-!      Print*,'hdf5_puff:outputH5BeamSD(x space closed) rank: ' // &
-!         trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-!      Defer this until all coordinates/components are written
-!      CALL h5sclose_f(dspace_id, error)
-!      Print*,'hdf5_puff:outputH5FieldSD(hyperslab space closed)'
-!      Print*,error
+      allocate(ebuf(7, iNumberElectrons_G))
 
-! repeat for some next y dataset
+      ebuf(1,:) = sElX_G(1:iNumberElectrons_G)
+      ebuf(2,:) = sElY_G(1:iNumberElectrons_G)
 
+      if (fieldMesh == iPeriodic) then
 
-    doffset=[1,startOffset]
+        allocate(sz2_temp(procelectrons_G(1)))
+        sz2_temp = sElZ2_G
+        ebound = 4.0_wp * pi * ctx%frame%rho * sperwaves_G
+        where (sz2_temp > ebound) sz2_temp = sz2_temp - &
+                        (real(floor(sElZ2_G / ebound), kind=wp) * ebound )
+        ebuf(3,:) = sz2_temp(1:iNumberElectrons_G)
+        deallocate(sz2_temp)
 
-!if (procelectrons_G(1).GT.0) then
-! for the corresponding space on disk
+      else
 
-  CALL h5dget_space_f(dset_id, filespace, error)
-  CALL h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, doffset, dsize, error)
-!        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
-!          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-!else
-! all ranks must participate, so select no space to write when dealing with
-! ranks which hold no data for this field fr_real, etc
-  if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
-!        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
-!          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-!end if
+        ebuf(3,:) = sElZ2_G(1:iNumberElectrons_G)
 
+      end if
 
+      ebuf(4,:) = sElPX_G(1:iNumberElectrons_G)
+      ebuf(5,:) = sElPY_G(1:iNumberElectrons_G)
+      ebuf(6,:) = sElgam_G(1:iNumberElectrons_G)
 
+! Chi goes in the file too - slightly redundant, as the charge on a
+! macroparticle doesn't change through the simulation, but it keeps each file
+! self contained.
 
-    !CALL H5Dget_space_f(dset_id, filespace, error)
-    !CALL h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, doffset, &
-    !   dsize, error)
-
-
-
-    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, &
-       sElY_G, dsize, error, &
-       xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
-!      Print*,'hdf5_puff:outputH5BeamSD(y space closed) rank: ' // &
-!         trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-! was       dspace_id, filespace)
-    CALL h5sclose_f(filespace, error)
-
-!
-! repeat for some next z dataset
-    doffset=[2,startOffset]
-
-!    if (procelectrons_G(1).GT.0) then
-    ! for the corresponding space on disk
-
-      CALL h5dget_space_f(dset_id, filespace, error)
-      CALL h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, doffset, dsize, error)
-    !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
-    !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-!    else
-    ! all ranks must participate, so select no space to write when dealing with
-    ! ranks which hold no data for this field fr_real, etc
-      if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
-    !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
-    !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-!    end if
-
-    if (fieldMesh == iPeriodic) then
-
-      allocate(sz2_temp(procelectrons_G(1)))
-      sz2_temp = sElZ2_G
-      ebound = 4.0_wp * pi * ctx%frame%rho * sperwaves_G
-      where (sz2_temp > ebound) sz2_temp = sz2_temp - &
-                      (real(floor(sElZ2_G / ebound), kind=wp) * ebound )
-
-      call h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, &
-         sz2_temp, dsize, error, &
-         xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
-
-      deallocate(sz2_temp)
+      ebuf(7,:) = s_chi_bar_G(1:iNumberElectrons_G)
 
     else
 
-      call h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, &
-         sElZ2_G, dsize, error, &
-         xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
+! All ranks must take part in the collective write, so a rank with no
+! macroparticles selects nothing, in memory and in the file.
+
+      allocate(ebuf(7, 1))
 
     end if
 
+    CALL h5screate_simple_f(rank, dsize, dspace_id, error)
+    if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(dspace_id, error)
 
-!      Print*,'hdf5_puff:outputH5BeamSD(z2 space closed) rank: ' // &
-!         trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-! was       dspace_id, filespace)
-    CALL h5sclose_f(filespace, error)
+    CALL h5dget_space_f(dset_id, filespace, error)
+    CALL h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, doffset, dsize, error)
+    if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
 
-! repeat for some next px dataset
-    doffset=[3,startOffset]
+    CALL h5pcreate_f(H5P_DATASET_XFER_F, plist_id, error)
+    CALL h5pset_dxpl_mpio_f(plist_id, H5FD_MPIO_COLLECTIVE_F, error)
 
-!    if (procelectrons_G(1).GT.0) then
-    ! for the corresponding space on disk
-
-      CALL h5dget_space_f(dset_id, filespace, error)
-      CALL h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, doffset, dsize, error)
-    !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
-    !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-!    else
-    ! all ranks must participate, so select no space to write when dealing with
-    ! ranks which hold no data for this field fr_real, etc
-      if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
-
-    !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
-    !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-!    end if
-
-!    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, &
-!       sElPX_G((startOffset+1):(startOffset+procelectrons_G(1))), dsize, error, &
-!       xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
     CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, &
-       sElPX_G, dsize, error, &
+       ebuf, dsize, error, &
        xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
-!      Print*,'hdf5_puff:outputH5BeamSD(px space closed) rank: ' // &
-!         trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-! was       dspace_id, filespace)
+
     CALL h5sclose_f(filespace, error)
-
-! repeat for some next py dataset
-    doffset=[4,startOffset]
-
-!    if (procelectrons_G(1).GT.0) then
-    ! for the corresponding space on disk
-
-      CALL h5dget_space_f(dset_id, filespace, error)
-      CALL h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, doffset, dsize, error)
-    !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
-    !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-!    else
-    ! all ranks must participate, so select no space to write when dealing with
-    ! ranks which hold no data for this field fr_real, etc
-      if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
-    !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
-    !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-!    end if
-
-!    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, &
-!       sElPY_G((startOffset+1):(startOffset+procelectrons_G(1))), dsize, error, &
-!       xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
-    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, &
-       sElPY_G, dsize, error, &
-       xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
-!      Print*,'hdf5_puff:outputH5BeamSD(py space closed) rank: ' // &
-!         trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-! was       dspace_id, filespace)
-    CALL h5sclose_f(filespace, error)
-
-! repeat for some next gamma dataset (actually beta*gamma)
-    doffset=[5,startOffset]
-
-!    if (procelectrons_G(1).GT.0) then
-    ! for the corresponding space on disk
-
-      CALL h5dget_space_f(dset_id, filespace, error)
-      CALL h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, doffset, dsize, error)
-    !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
-    !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-!    else
-    ! all ranks must participate, so select no space to write when dealing with
-    ! ranks which hold no data for this field fr_real, etc
-      if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
-    !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
-    !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-!    end if
-
-!    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, &
-!       sElgam_G((startOffset+1):(startOffset+procelectrons_G(1))), dsize, error, &
-!       xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
-    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, &
-       sElgam_G, dsize, error, &
-       xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
-!      Print*,'hdf5_puff:outputH5BeamSD(pz2 space closed) rank: ' // &
-!         trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-! was       dspace_id, filespace)
-    CALL h5sclose_f(filespace, error)
-!
-!
-! put Chi in the file, slightly redundant as charge on a macroparticle
-! doesn't increase or decrease through the simulation. But does make
-! Everything self contained. Perhaps we use in future a funky h5 technique
-! to point this column at a separate file which holds the data, reducing
-! the size of this column from every written file.
-    doffset=[6,startOffset]
-
-!    if (procelectrons_G(1).GT.0) then
-    ! for the corresponding space on disk
-
-      CALL h5dget_space_f(dset_id, filespace, error)
-      CALL h5sselect_hyperslab_f (filespace, H5S_SELECT_SET_F, doffset, dsize, error)
-    !        Print*,trim(adjustl(IntegerToString(error))) // " selecting particles on rank" &
-    !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-!    else
-    ! all ranks must participate, so select no space to write when dealing with
-    ! ranks which hold no data for this field fr_real, etc
-      if (procelectrons_G(1) <= 0) CALL h5sselect_none_f(filespace,error)
-    !        Print*,trim(adjustl(IntegerToString(error))) // " selecting no particles on rank" &
-    !          //   trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-!    end if
-
-!    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, &
-!       s_chi_bar_G((startOffset+1):(startOffset+procelectrons_G(1))), dsize, error, &
-!       xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
-    CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, &
-       s_chi_bar_G, dsize, error, &
-       xfer_prp = plist_id, file_space_id = filespace, mem_space_id = dspace_id)
-!      Print*,'hdf5_puff:outputH5BeamSD(charge dataspace closed) rank: ' // &
-!         trim(adjustl(IntegerToString(tProcInfo_G%Rank)))
-! was       dspace_id, filespace)
-    CALL h5sclose_f(filespace, error)
-! Terminate access to the data space.
-!
     CALL h5sclose_f(dspace_id, error)
+
+    deallocate(ebuf)
 !
 ! ATTRIBUTES FOR PARTICLE DATASET
 !

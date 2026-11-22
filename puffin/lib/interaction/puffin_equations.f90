@@ -13,66 +13,11 @@ use GlobalTypes, only: tUndulator, tFELFrame
 implicit none (type, external)
 private
 
-public :: adjundplace, bxu, byu, bzu, dgamdz_f, dppdz_i_f, &
-           dppdz_r_f, dxdz_f, dydz_f, dz2dz_f, sField4ElecImag, sField4ElecReal, sInv2rho, sp2
+public :: adjundplace, bxu, byu, bzu, dgamdz_f, dxdz_f, dydz_f, dz2dz_f, &
+           getelecderivs, sField4ElecImag, sField4ElecReal, sInv2rho, sp2
 
 
 contains
-
-  subroutine dppdz_r_f(sx, sy, sz2, spr, spi, sgam, &
-                       sZ, sdpr, und, frame)
-
-        implicit none (type, external)
-
-
-    real(kind=wp), contiguous, intent(in) :: sx(:), sy(:), sz2(:), spr(:), &
-                                             spi(:), sgam(:)
-    real(kind=wp), intent(in) :: sZ
-    real(kind=wp), contiguous, intent(out) :: sdpr(:)
-    type(tUndulator), intent(in) :: und
-    type(tFELFrame), intent(in) :: frame
-
-
-!$OMP WORKSHARE
-    sdpr = sInv2rho * ( und%n2col * byu  &
-                        - frame%eta * sp2 / frame%kappa**2 *    &
-                        sField4ElecReal ) &
-           + frame%kappa * spi / sgam * (1 + frame%eta * sp2) &
-               * und%n2col * bzu
-!$OMP END WORKSHARE
-
-  end subroutine dppdz_r_f
-
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-
-
-  subroutine dppdz_i_f(sx, sy, sz2, spr, spi, sgam, sZ, &
-                       sdpi, und, frame)
-
-    implicit none (type, external)
-
-    real(kind=wp), contiguous, intent(in) :: sx(:), sy(:), sz2(:), spr(:), &
-                                             spi(:), sgam(:)
-    real(kind=wp), intent(in) :: sZ
-    real(kind=wp), contiguous, intent(out) :: sdpi(:)
-    type(tUndulator), intent(in) :: und
-    type(tFELFrame), intent(in) :: frame
-
-
-!$OMP WORKSHARE
-    sdpi = sInv2rho * (  und%n2col * bxu  &
-           - frame%eta * sp2 / frame%kappa**2 * &
-                        sField4ElecImag ) &
-           - frame%kappa * spr / sgam * (1 + frame%eta * sp2) &
-               * und%n2col * bzu
-!$OMP END WORKSHARE
-
-  end subroutine dppdz_i_f
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine dgamdz_f(sx, sy, sz2, spr, spi, sgam, &
                       sdgam, frame)
@@ -178,6 +123,67 @@ contains
 !$OMP END WORKSHARE
 
   end subroutine dz2dz_f
+
+
+
+
+!> d/dz of all six electron coordinates, unaveraged mode, in one pass.
+!>
+!> The z2, x, y and gamma right hand sides are those of dz2dz_f, dxdz_f,
+!> dydz_f and dgamdz_f (which averaged mode still calls), written element by
+!> element with the same order of operations, so they give the same bits; keep
+!> them in step. One loop reads sp2, sgam, the momenta, the gathered field and
+!> the undulator field once per macroparticle, where a whole-array statement
+!> per equation read them six times over.
+
+  subroutine getElecDerivs(spr, spi, sgam, sZ, &
+                           sdx, sdy, sdz2, sdpr, sdpi, sdgam, und, frame)
+
+    implicit none (type, external)
+
+    real(kind=wp), contiguous, intent(in) :: spr(:), spi(:), sgam(:)
+    real(kind=wp), intent(in) :: sZ
+    real(kind=wp), contiguous, intent(inout) :: sdx(:), sdy(:), sdz2(:), &
+                                                sdpr(:), sdpi(:), sdgam(:)
+    type(tUndulator), intent(in) :: und
+    type(tFELFrame), intent(in) :: frame
+
+    integer(kind=ip) :: i
+
+!$OMP DO
+    do i = 1, size(sdz2, kind=ip)
+
+      sdz2(i) = sp2(i)
+
+      sdx(i) = 2 * frame%rho * frame%kappa / sqrt(frame%eta) * &
+               (1 + frame%eta * sp2(i)) / sgam(i) *  &
+               spr(i)
+
+      sdy(i) = - 2 * frame%rho * frame%kappa / sqrt(frame%eta) * &
+               (1 + frame%eta * sp2(i)) / sgam(i) *  &
+               spi(i)
+
+      sdpr(i) = sInv2rho * ( und%n2col * byu(i)  &
+                          - frame%eta * sp2(i) / frame%kappa**2 *    &
+                          sField4ElecReal(i) ) &
+                + frame%kappa * spi(i) / sgam(i) * (1 + frame%eta * sp2(i)) &
+                    * und%n2col * bzu(i)
+
+      sdpi(i) = sInv2rho * (  und%n2col * bxu(i)  &
+                - frame%eta * sp2(i) / frame%kappa**2 * &
+                          sField4ElecImag(i) ) &
+                - frame%kappa * spr(i) / sgam(i) * (1 + frame%eta * sp2(i)) &
+                    * und%n2col * bzu(i)
+
+      sdgam(i) = -frame%rho * ( 1 + frame%eta * sp2(i) ) / sgam(i) * 2_wp *   &
+                 ( spr(i) * sField4ElecReal(i) + spi(i) * sField4ElecImag(i) )
+
+    end do
+!$OMP END DO
+
+  end subroutine getElecDerivs
+
+
 
 
 

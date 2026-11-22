@@ -17,12 +17,12 @@ use ArrayFunctions, only: tErrorLog_G, log_error
 use Globals, only: NX_G, NY_G, NZ2_G, ntrndsi_G, nspinDX, nspinDY, sLengthOfElmX_G, &
   sLengthOfElmY_G, sLengthOfElmZ2_G, procelectrons_G, iNumberElectrons_G, qElectronsEvolve_G, &
   qFieldEvolve_G, qElectronFieldCoupling_G
-use Equations, only: dppdz_r_f, dppdz_i_f, dgamdz_f, dxdz_f, dydz_f, dz2dz_f, &
+use Equations, only: dgamdz_f, dxdz_f, dydz_f, dz2dz_f, getelecderivs, &
   adjundplace, sInv2rho, sp2, sField4ElecReal, sField4ElecImag, bxu, byu, bzu
 use rhs_vars, only: p_nodes, lis_GR
 use wigglerVar, only: getalpha
 use FiElec1D, only: getinterps_1d, getffelecs_1d, getsource_1d
-use FiElec, only: getinterps_3d, getffelecs_3d, getsource_3d
+use FiElec, only: getinteract_3d
 use gtop2, only: getp2, getp2avg
 use averaging, only: tAvgCoupling, getAvgCoupling, getResonantMomentum, &
   tAvgFocusing, getAvgFocusCoef, getAvgFocusing
@@ -89,7 +89,7 @@ contains
                     sDADzr, sDADzi, &
                     qOK, ctx)
 
-  use rhs_vars, only: halfx, halfy, dx, dy, dz2
+  use rhs_vars, only: dz2
 
   implicit none (type, external)
 
@@ -129,12 +129,15 @@ contains
 
 !     SETUP AND INITIALISE THE PARTICLE'S POSITION
 !     The per-macroparticle work arrays persist between calls, and are only
-!     (re)allocated here when their shape has changed.
+!     (re)allocated here when their shape has changed. Only the 1D
+!     interpolation keeps node indices and weights between getInterps_1D and
+!     the gather and scatter; getInteract_3D forms them on the fly, so 3D asks
+!     for none (nWts = 0).
 
   if (tTransInfo_G%qOneD) then
     nWts = 2_ip
   else
-    nWts = 8_ip
+    nWts = 0_ip
   end if
 
   call ensureRhsWork(iNumberElectrons_G, nWts, ctx%field%nEnv, &
@@ -174,47 +177,24 @@ contains
 
   if (tTransInfo_G%qOneD) then
 
-
-
 !$OMP WORKSHARE
 
     p_nodes = int(sz2 / dz2, kind=ip) + 1_IP - (ctx%field%fz2-1)
 
 !$OMP END WORKSHARE
 
-  else
-
-!$OMP WORKSHARE
-
-!    p_nodes = (floor( (sx+halfx)  / dx)  + 1_IP) + &
-!              (floor( (sy+halfy)  / dy) * ReducedNX_G )  + &   !  y 'slices' before primary node
-!              (ReducedNX_G * ReducedNY_G * &
-!                              floor(sz2  / dz2) ) - &
-!                              (fz2-1)*ntrnds_G  ! transverse slices before primary node
-
-    p_nodes = (int( (sx+halfx)  / dx, kind=ip)  + 1_IP) + &
-              (int( (sy+halfy)  / dy, kind=ip) * nspinDX )  + &   !  y 'slices' before primary node
-              (nspinDX * nspinDY * &
-                              int(sz2  / dz2, kind=ip) ) - &
-                              (ctx%field%fz2-1)*ntrndsi_G  ! transverse slices before primary node
-
-!$OMP END WORKSHARE
-
   end if
 
 
-
-
-! The field arrays carry an envelope index, and getInterps_* has already done
-! the part that is shared between envelopes - locating each macroparticle's
-! nodes and computing its interpolation weights into rhs_vars. Only the gather
-! and scatter are per-envelope, which is why the envelope loop belongs here
-! rather than around getrhs.
+! The field arrays carry an envelope index. In 1D, getInterps_1D does the part
+! that is shared between envelopes - locating each macroparticle's nodes and
+! computing its interpolation weights into rhs_vars - and only the gather and
+! scatter are per-envelope, which is why the envelope loop belongs here rather
+! than around getrhs. In 3D, getInteract_3D does all three per envelope:
+! re-forming 8 weights is cheaper than storing and re-reading them.
 
   if (tTransInfo_G%qOneD) then
     call getInterps_1D(sz2, ctx%flags, ctx%field)
-  else
-    call getInterps_3D(sx, sy, sz2, ctx%flags, ctx%field)
   end if
 
   if (ctx%flags%period_averaged) then
@@ -245,11 +225,9 @@ contains
                             sgam, ctx%frame%eta)
         end if
       else
-        if ((ctx%flags%parallel_arrays_ok) .and. (ctx%flags%inner_xy_ok)) then
-          call getFFelecs_3D(sAr(:,ie), sAi(:,ie))
-          call getSource_3D(sDADzr(:,ie), sDADzi(:,ie), sprRes(:,ie), spiRes(:,ie), &
-                            sgam, ctx%frame%eta)
-        end if
+        call getInteract_3D(sx, sy, sz2, sAr(:,ie), sAi(:,ie), &
+                            sDADzr(:,ie), sDADzi(:,ie), sprRes(:,ie), spiRes(:,ie), &
+                            sgam, ctx%frame%eta, ctx%flags, ctx%field)
       end if
 
       if (qElectronFieldCoupling_G) then
@@ -272,10 +250,8 @@ contains
         call getSource_1D(sDADzr(:,1), sDADzi(:,1), spr, spi, sgam, ctx%frame%eta)
       end if
     else
-      if ((ctx%flags%parallel_arrays_ok) .and. (ctx%flags%inner_xy_ok)) then
-        call getFFelecs_3D(sAr(:,1), sAi(:,1))
-        call getSource_3D(sDADzr(:,1), sDADzi(:,1), spr, spi, sgam, ctx%frame%eta)
-      end if
+      call getInteract_3D(sx, sy, sz2, sAr(:,1), sAi(:,1), sDADzr(:,1), sDADzi(:,1), &
+                          spr, spi, sgam, ctx%frame%eta, ctx%flags, ctx%field)
     end if
 
   end if
@@ -304,23 +280,18 @@ contains
                           bxu, byu, bzu, ctx%und, ctx%frame)
         end if
 
-!     z2
-
-        CALL dz2dz_f(sx, sy, sz2, spr, spi, sgam, &
-                     sdz2)
-
-!     X
-
-        call dxdz_f(sx, sy, sz2, spr, spi, sgam, &
-                    sdx, ctx%frame)
-
-!     Y
-
-        call dydz_f(sx, sy, sz2, spr, spi, sgam, &
-                    sdy, ctx%frame)
-
-
         if (ctx%flags%period_averaged) then
+
+!     z2, x and y
+
+          call dz2dz_f(sx, sy, sz2, spr, spi, sgam, &
+                       sdz2)
+
+          call dxdz_f(sx, sy, sz2, spr, spi, sgam, &
+                      sdx, ctx%frame)
+
+          call dydz_f(sx, sy, sz2, spr, spi, sgam, &
+                      sdy, ctx%frame)
 
 !     Averaged mode: pperp holds only its slow part. The undulator quiver is
 !     carried analytically, and the radiation-driven quiver (the A term in
@@ -346,20 +317,10 @@ contains
 
         else
 
-!     PX (Real pperp)
+!     All six coordinates at once - see getElecDerivs.
 
-          call dppdz_r_f(sx, sy, sz2, spr, spi, sgam, sZ, &
-                         sdpr, ctx%und, ctx%frame)
-
-!     -PY (Imaginary pperp)
-
-          call dppdz_i_f(sx, sy, sz2, spr, spi, sgam, sz, &
-                         sdpi, ctx%und, ctx%frame)
-
-!     P2
-
-          call dgamdz_f(sx, sy, sz2, spr, spi, sgam, &
-                       sdgam, ctx%frame)
+          call getElecDerivs(spr, spi, sgam, sZ, &
+                             sdx, sdy, sdz2, sdpr, sdpi, sdgam, ctx%und, ctx%frame)
 
         end if
 
@@ -441,10 +402,13 @@ contains
 !> deallact_rk4_arrs releases them along with the RK4 workspace.
 !>
 !> Every array is fully written before it is read within a call, bar
-!> sField4ElecReal/Imag, which getFFelecs_* accumulates into and which getrhs
-!> therefore still zeroes on each call.
+!> sField4ElecReal/Imag, which getFFelecs_1D accumulates into and which getrhs
+!> therefore still zeroes on each call. (getInteract_3D writes each in full
+!> for every macroparticle it can place, and leaves the zero for one it
+!> skips.)
 !> @param[in] nElec Number of local macroparticles
-!> @param[in] nWts Interpolation weights per macroparticle (2 in 1D, 8 in 3D)
+!> @param[in] nWts Interpolation weights per macroparticle kept between the
+!> interpolation and the gather and scatter: 2 in 1D, none (0) in 3D
 !> @param[in] nEnv Number of field envelopes (averaged mode only)
 !> @param[in] nGam Size of the caller's dGamma/dz array (averaged mode only)
 !> @param[in] qAveraged Whether the averaged-mode arrays are needed
@@ -454,14 +418,23 @@ subroutine ensureRhsWork(nElec, nWts, nEnv, nGam, qAveraged)
   integer(kind=ip), intent(in) :: nElec, nWts, nEnv, nGam
   logical, intent(in) :: qAveraged
 
-  if (allocated(p_nodes)) then
-    if ((size(p_nodes) /= nElec) .or. (size(lis_GR, 1) /= nWts)) call releaseRhsWork()
+  if (allocated(sp2)) then
+    if (size(sp2) /= nElec) call releaseRhsWork()
   end if
 
-  if (.not. allocated(p_nodes)) then
-    allocate(p_nodes(nElec), lis_GR(nWts, nElec))
+  if (allocated(lis_GR)) then
+    if ((size(lis_GR, 1) /= nWts) .or. (size(lis_GR, 2) /= nElec)) then
+      deallocate(p_nodes, lis_GR)
+    end if
+  end if
+
+  if (.not. allocated(sp2)) then
     allocate(sp2(nElec), sField4ElecReal(nElec), sField4ElecImag(nElec))
     allocate(bxu(nElec), byu(nElec), bzu(nElec))
+  end if
+
+  if ((nWts > 0_ip) .and. (.not. allocated(lis_GR))) then
+    allocate(p_nodes(nElec), lis_GR(nWts, nElec))
   end if
 
   if (qAveraged) then
@@ -486,8 +459,9 @@ end subroutine ensureRhsWork
 
 subroutine releaseRhsWork()
 
-  if (allocated(p_nodes)) then
-    deallocate(p_nodes, lis_GR)
+  if (allocated(lis_GR)) deallocate(p_nodes, lis_GR)
+
+  if (allocated(sp2)) then
     deallocate(sp2, sField4ElecReal, sField4ElecImag)
     deallocate(bxu, byu, bzu)
   end if

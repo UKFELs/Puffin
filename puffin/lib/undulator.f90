@@ -243,7 +243,7 @@ end if
         call rk4par(sZl, ctx%integration%step_size, qDiffrctd, ctx, work)
         if (igoes>3_ip) exit
         if (.not. ctx%flags%parallel_arrays_ok) then
-          call deallact_rk4_arrs(ctx%field, work)
+          call deallact_rk4_arrs(ctx%field, work, qKeep=.true.)
           if (.not. ctx%flags%inner_xy_ok) then
             call getInNode(ctx%flags)
             ctx%flags%inner_xy_ok = .true.
@@ -374,7 +374,7 @@ end if
 
   if (mod(ctx%lattice%cumulative_steps, ctx%integration%redistribution_step) == 0) then
 
-    call deallact_rk4_arrs(ctx%field, work)
+    call deallact_rk4_arrs(ctx%field, work, qKeep=.true.)
     call layoutField(ctx%integration%redistribution_length)
     call allact_rk4_arrs(ctx%field, work)
 
